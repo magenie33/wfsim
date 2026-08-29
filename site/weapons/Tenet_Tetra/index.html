@@ -713,14 +713,19 @@
                    never inside a row. -->
               <div id="opt-pairings"></div>
               <div id="opt-mods-sel"></div>
-              <!-- HOW FULL A SEARCHED BUILD MUST BE, beside the marks it
-                   constrains rather than beside the text filter it has nothing
-                   to do with (owner, 2026-08-29). Read down, the three rows are
-                   one sentence: what is marked, how many a build carries, and
-                   therefore what the search actually walks. It shared a flex
-                   row with the search box, where a column-stacked label pushed
-                   the filter to the bottom of a four-line row and read as a
-                   setting ON the filter.
+              <div id="opt-mods" class="combo-menu opt-modlist"></div>
+              <!-- HOW FULL A SEARCHED BUILD MUST BE, AFTER THE MARKING AND
+                   NOT BEFORE IT (owner, 2026-08-29). It is not a filter and it
+                   is not a summary: it is the CONCLUSION you reach once the
+                   required and the pooled are chosen, so it closes the list
+                   rather than sitting over it. It shared a flex row with the
+                   search box first (a column-stacked label made that row four
+                   lines tall and read as a setting ON the filter), then joined
+                   the marks summary above the list — which was still ahead of
+                   the act it concludes.
+                   THE 8 MAIN SLOTS ARE ITS SUBJECT, which is why it lands here
+                   and not after the Exilus block below: that slot is the +1 and
+                   is counted separately.
                    THE INPUTS STAY IN THE MARKUP because `init` wires them once;
                    only the effective-range line is rendered, by
                    `updateOptEstimate`, which is where the numbers already are. -->
@@ -731,7 +736,6 @@
                 <input id="opt-size" type="number" min="1" max="8" value="8" title="the most a searched build may carry" data-i18n-title>
                 <span id="opt-size-eff" class="opt-size-eff"></span>
               </div>
-              <div id="opt-mods" class="combo-menu opt-modlist"></div>
               <div id="opt-exilus-sect">
                 <div class="exlabel" data-i18n>Exilus</div>
                 <div class="exhint" data-i18n>the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</div>
@@ -853,7 +857,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">9967e820+ · 2026-08-29 04:49Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">dd1a8b55+ · 2026-08-29 08:34Z</span>
     </div>
   </footer>
 

@@ -689,12 +689,12 @@ label.check input{width:auto}
 /* ---- Optimizer: mod scope (rich searchable list) + results ---- */
 .opt-mods-head{display:flex;gap:10px;align-items:flex-end;margin-bottom:8px}
 .opt-mods-head #opt-mod-filter{flex:1 1 auto}
-/* HOW FULL A BUILD MUST BE, on the marks-summary rows rather than on the
-   search box (owner, 2026-08-29). It used to share the head's flex row as a
-   column-stacked label, which made that row four lines tall, dropped the
-   filter to the bottom of it, and read as a setting ON the filter. `.oselrow`
-   is the summary's own row, so the three lines align and read as one
-   statement: what is marked, how many a build carries, what that comes to. */
+/* HOW FULL A BUILD MUST BE — the line that CLOSES the mod list rather than one
+   that sits over it (owner, 2026-08-29). It is a conclusion, not a filter and
+   not a summary: it only means anything once the required and the pooled have
+   been chosen, so it reads after them. It borrows `.oselrow`'s flex layout for
+   the label + inputs and adds the closing rule of its own. */
+#opt-size-row{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
 #opt-size-row input[type=number]{width:52px;padding:2px 6px;font-size:12px}
 #opt-size-row .osdash{color:var(--muted)}
 .opt-size-eff{font-size:11px;color:var(--muted);margin-left:4px}

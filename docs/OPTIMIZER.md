@@ -508,22 +508,28 @@ it — it asks for builds the scope has already ruled out — while one above it
 wins. `scripts/check_build_size.mjs` asserts both ends on screen, in the preset
 and in the request.
 
-### The floor starts at 0, and it sits with the marks (owner, 2026-08-29)
+### The floor starts at 0, and it closes the list (owner, 2026-08-29)
 
-`Mods / build` shared a flex row with the mod search box, as a column-stacked
-label. That made the row four lines tall, dropped the filter to the bottom of
-it, and read as a setting **on the filter** — which it has nothing to do with.
+**IT IS A CONCLUSION, NOT A FILTER AND NOT A SUMMARY**, and that is what
+decides where it goes: how full a build must be only means anything once the
+required and the pooled have been chosen, so it comes AFTER the marking. It
+took two tries to land — first it shared a flex row with the mod search box as
+a column-stacked label (four lines tall, the filter pushed to the bottom of it,
+reading as a setting *on the filter*), then it joined the marks summary, which
+is still above the list and so still ahead of the act it concludes.
 
-It is on the marks-summary rows now, and the three lines read down as one
-statement:
+It closes the mod list now, under a rule, and before the Exilus block — because
+the two numbers count the **8 main slots** and the exilus slot is the +1,
+counted separately.
 
 ```
-必带 (1/8)   [Serration]
-候选 (3)     [Split Chamber] [Point Strike] [Vital Sense]
-Mods / build [0] – [8]   actually 2–8: 1 required, plus at least one pooled
+  … the mod list, where you mark …
+  ────────────────────────────────────────────────────────────
+  Mods / build [0] – [8]   actually 2–8: 1 required, plus at least one pooled
+  EXILUS
 ```
 
-**THE THIRD LINE EXISTS BECAUSE THE CONTROL WAS LYING.** The floor the search
+**THE SENTENCE BESIDE IT EXISTS BECAUSE THE CONTROL WAS LYING.** The floor the search
 uses is the larger of what you typed and what the marks imply
 (`min_slots = derived_min.max(build_min)`), so a box reading 0 could sit over a
 search that never looks below 3. It is stated only when the two DIFFER — a line

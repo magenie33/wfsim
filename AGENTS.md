@@ -925,7 +925,12 @@ around (decision 2026-07-31).
   a searched build must be is a RANGE (`build_min`–`build_size`), so "exactly 8
   mods" is a setting rather than something the scope cannot express — both ends
   push each other, both ride the search preset, and both reach the request.
-  THE FLOOR STARTS AT 0 AND SITS WITH THE MARKS (owner, 2026-08-29). "Nothing
+  THE FLOOR STARTS AT 0 AND CLOSES THE LIST (owner, 2026-08-29). How full a
+  build must be is a CONCLUSION, not a filter and not a summary — it means
+  nothing until the required and the pooled are chosen — so it is drawn AFTER
+  the mod list and before the Exilus block, whose +1 slot it does not count.
+  It sat on the search box's own flex row first and then above the list with
+  the marks summary; both were ahead of the act it concludes. "Nothing
   marked" is the EMPTY option on every other axis — an unmarked exilus slot
   stays empty, an unmarked arcane seat searches no arcane — and the mods axis
   alone answered it with "no legal builds in this scope", though

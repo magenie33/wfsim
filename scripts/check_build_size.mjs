@@ -25,11 +25,24 @@ const r = await evaluate(`(async () => {
   const out = {};
   const set = async (el, v) => { const n=document.getElementById(el); n.value=String(v); n.dispatchEvent(new Event('input',{bubbles:true})); await sleep(200); };
   out.present = !!document.getElementById('opt-min') && !!document.getElementById('opt-size');
-  // …AND ON ITS OWN ROW, not sharing a flex line with the search box, where a
-  // column-stacked label made that row four lines tall and read as a setting
-  // ON the filter (owner, 2026-08-29).
-  out.ownRow = !!document.getElementById('opt-min')?.closest('#opt-size-row')
-    && !document.getElementById('opt-min')?.closest('.opt-mods-head');
+  // …AND IT COMES AFTER THE MARKING (owner, 2026-08-29). How full a build must
+  // be is the CONCLUSION you reach once the required and the pooled are
+  // chosen, so it closes the mod list rather than sitting over it — it was on
+  // the search box's own flex row first, then above the list with the marks
+  // summary, and both were ahead of the act it concludes. Asserted as DOCUMENT
+  // ORDER against the list itself, so it holds however the row is styled.
+  {
+    const row = document.getElementById('opt-size-row');
+    const list = document.getElementById('opt-mods');
+    // Node.DOCUMENT_POSITION_FOLLOWING === 4: the row follows the list.
+    out.afterList = !!row && !!list
+      && (list.compareDocumentPosition(row) & 4) === 4;
+    // …and BEFORE the exilus block, because the two numbers count the 8 MAIN
+    // slots and the exilus slot is the +1, counted separately.
+    const ex = document.getElementById('opt-exilus-sect');
+    out.beforeExilus = !!ex && (row.compareDocumentPosition(ex) & 4) === 4;
+    out.ownRow = !document.getElementById('opt-min')?.closest('.opt-mods-head');
+  }
 
   // AN EMPTY SCOPE IS THE BARE WEAPON, and it is a legal search. Every other
   // axis reads "nothing marked" as the EMPTY option; this one answered it with
@@ -89,6 +102,10 @@ const r = await evaluate(`(async () => {
 
 check("both ends exist on screen", r.present === true);
 check("...on a row of their own, off the search box", r.ownRow === true);
+check("...drawn AFTER the list, because it is a conclusion of the marking",
+  r.afterList === true);
+check("...and before the exilus block, whose slot it does not count",
+  r.beforeExilus === true);
 check("an untouched scope floors at 0", r.emptyFloor === "0", `"${r.emptyFloor}"`);
 check("...so the bare weapon is a legal search, not an error",
   r.emptyRuns === true && r.emptyEst.includes("~1"),
