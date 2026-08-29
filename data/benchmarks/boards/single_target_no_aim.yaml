@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3499
-engine: 404856a8704ebfe895e77ca34307a148e90a9d60
+submissions: 3505
+engine: 553aae3cb1da2b327d9a56c7c4a7586fd3a704f5
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -5784,6 +5784,15 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
+    score: 1.7514551378248355
+    fp: d388d738646a134c
+    mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: critical_damage
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
     score: 1.7215726714437931
     fp: 113d6f4c53b106ad
     mods: [split_chamber, serration, rifle_elementalist, magnetic_capacity, riven, malignant_force, hellfire, thermite_rounds]
@@ -5998,6 +6007,13 @@ entries:
     score: 0.5788045389542485
     fp: baa5483a1934b518
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]
+  - weapon: zarr
+    mode: base
+    score: 0.1821781794825744
+    fp: 20d514f2be2fffc0
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
+    arcanes: [primary_compression]
   - weapon: zylok
     mode: cycle
     score: 0.35810972388857815

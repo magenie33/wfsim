@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3499
-engine: 404856a8704ebfe895e77ca34307a148e90a9d60
+submissions: 3505
+engine: 553aae3cb1da2b327d9a56c7c4a7586fd3a704f5
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -3916,6 +3916,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 73.25147727918474
+    fp: 0f12a2dd3fc83458
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 71.33333333333333
     fp: f9f1cf7aa0e43ce7
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds, riven]
@@ -3925,6 +3936,17 @@ entries:
       bonuses: [damage, heat, multishot]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 63.083725744686184
+    fp: 0f12a2dd3fc83458
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 63
@@ -3982,6 +4004,17 @@ entries:
       bonuses: [cold, damage, multishot]
       malus: critical_chance
       rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 54.8888265506785
+    fp: 4fde401597f36369
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 53.727736539690014
@@ -10936,6 +10969,15 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
+    score: 1.7514551378248355
+    fp: f5b5b935f382d4f1
+    mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: critical_damage
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
     score: 1.7215726714437931
     fp: 2f31edd4cc3c9962
     mods: [split_chamber, serration, rifle_elementalist, magnetic_capacity, riven, malignant_force, hellfire, thermite_rounds]
@@ -11150,6 +11192,13 @@ entries:
     score: 0.5788045389542485
     fp: ebc5b5437c7881e1
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]
+  - weapon: zarr
+    mode: base
+    score: 0.6578649582974334
+    fp: 1815e38e0d9ede87
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
+    arcanes: [primary_compression]
   - weapon: zylok
     mode: cycle
     score: 8.66703268576869
