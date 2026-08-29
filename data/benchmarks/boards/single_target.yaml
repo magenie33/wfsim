@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3481
+submissions: 3499
 engine: 404856a8704ebfe895e77ca34307a148e90a9d60
 entries:
   - weapon: acceltra_prime
@@ -9670,6 +9670,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
+    score: 41.240119854795594
+    fp: a15941714a592003
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, riven, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
     score: 41.13412158709187
     fp: 800d15ad4260d5b1
     exilus: vigilante_supplies
@@ -9692,6 +9704,17 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: torid
     mode: cycle
+    score: 39.29260785371981
+    fp: ebbf5ab969e8ce82
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, electricity]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
     score: 37.87207344547847
     fp: 6fea0b508b5b48ee
     mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
@@ -9712,6 +9735,18 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 36.880753215553646
+    fp: c1ce23dd02a5ca56
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, riven, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
@@ -10011,6 +10046,17 @@ entries:
     mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: cycle
+    score: 23.61659763588739
+    fp: 668e9b6144d7d8b8
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, primed_cryo_rounds, hellfire, riven, infected_clip, malignant_force]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, electricity]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     score: 23.39630271450462

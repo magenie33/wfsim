@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3481
+submissions: 3499
 engine: 404856a8704ebfe895e77ca34307a148e90a9d60
 entries:
   - weapon: acceltra_prime
@@ -4325,6 +4325,26 @@ entries:
     arcanes: [primary_crux]
   - weapon: ocucor
     mode: base
+    score: 42.46810781673911
+    fp: 5651063ebcbcd2f8
+    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, sentient_surge, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_irradiate]
+    riven:
+      bonuses: [damage, multishot]
+      malus: status_duration
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: ocucor
+    mode: base
+    score: 36.22197713037296
+    fp: 174b372d060bb3eb
+    mods: [galvanized_diffusion, hornet_strike, magnetic_might, sentient_surge, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_irradiate]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: ocucor
+    mode: base
     score: 24.93463981803973
     fp: 77c9a89307bdd0c5
     mods: [seeker, galvanized_diffusion, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, riven]
@@ -4373,16 +4393,6 @@ entries:
     arcanes: [secondary_irradiate]
   - weapon: ocucor
     mode: base
-    score: 19.05866861341702
-    fp: 5651063ebcbcd2f8
-    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, sentient_surge, riven, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_irradiate]
-    riven:
-      bonuses: [critical_damage, multishot]
-      malus: reload_speed
-      rolls: [1.1, 1.1, 0.9]
-  - weapon: ocucor
-    mode: base
     score: 18.645149224060024
     fp: 0b304be1c92f48ab
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4401,30 +4411,10 @@ entries:
     arcanes: [secondary_irradiate]
   - weapon: ocucor
     mode: base
-    score: 14.929367484229756
-    fp: bb0d440e33b8d6e1
-    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_fortifier]
-    riven:
-      bonuses: [critical_damage, multishot]
-      malus: reload_speed
-      rolls: [1.1, 0.9, 1.1]
-  - weapon: ocucor
-    mode: base
     score: 14.71547717802228
     fp: 630a7f0d0e4335f2
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, primed_heated_charge]
     arcanes: [secondary_irradiate]
-  - weapon: ocucor
-    mode: base
-    score: 14.485100062002289
-    fp: a6e439f3a8848af2
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, riven]
-    arcanes: [secondary_fortifier]
-    riven:
-      bonuses: [damage_to_corpus, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ocucor
     mode: base
     score: 14.115432961977737
