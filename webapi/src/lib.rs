@@ -6258,9 +6258,9 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         .map(|(t, val)| json!({ "type": format!("{t:?}"), "value": val }))
         .collect();
 
-    // EVERY displayed number comes from the MEDIAN engagement (user,
-    // 2026-07-29: one internally consistent run — the meter, the curve,
-    // the kills and the handling stats all line up). The cross-run
+    // EVERY displayed number comes from the MEDIAN engagement — one
+    // internally consistent run, where the meter, the curve, the kills and the
+    // handling stats all line up. The cross-run
     // spread (min–max ±σ) stays as explicit spread stats.
     let m = &s.median_run;
     // THE NAMES ARE DERIVED, not listed. This was a hand-written table of

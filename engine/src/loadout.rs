@@ -1556,9 +1556,9 @@ pub struct TimedBuff {
     pub initial_active: bool,
 }
 
-/// How the Condition Overload bonus behaves — PER WEAPON (user,
-/// 2026-07-24: "some weapons take it as an independent multiplier, some
-/// fold it into base damage, and some don't benefit at all"; the wiki
+/// How the Condition Overload bonus behaves — PER WEAPON: some weapons take it
+/// as an independent multiplier, some fold it into base damage, and some do not
+/// benefit at all. The wiki
 /// CO-mechanic catalog classifies weapons):
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoBehavior {

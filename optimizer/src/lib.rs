@@ -1366,9 +1366,9 @@ pub fn run_funnel(
                 // academic: a build that never finishes its second kill has
                 // `std_kills` 0 and a kill progress that moves all run long, so
                 // it was handed a zero-width band and admitted or dropped on
-                // whichever side of the line noise had left it (owner,
-                // 2026-08-14: kill progress is the whole KPM logic and every
-                // kill figure has to come off it).
+                // whichever side of the line noise had left it: kill
+                // progress is the whole KPM logic and every kill figure has to
+                // come off it.
                 let pooled = (scored
                     .iter()
                     .map(|(_, s)| s.std_kill_progress * s.std_kill_progress)

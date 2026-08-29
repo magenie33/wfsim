@@ -12358,8 +12358,8 @@ const wfOverride = (key, label, floorKey, min, max, step, why) => {
 //
 // `ids` names the host element per section; a section with no host is not
 // drawn. Nothing is drawn differently per host — a flag that moved one field
-// for one tab would be the same lookalike-that-drifts in miniature (user,
-// 2026-08-02, on finding the optimizer's enemy box one field longer).
+// for one tab would be the same lookalike-that-drifts in miniature — the shape
+// that leaves the optimizer's enemy box one field longer than the simulator's.
 //
 // ENGAGEMENT LENGTH sits with the enemy, not with the measurement: it is a
 // property of the fight, which is exactly why the optimizer needs it while

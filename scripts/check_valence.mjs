@@ -475,8 +475,8 @@ check("...and a mode the recipient cannot derive would travel with it",
 // later by the scoring job, which prints its reason into a workflow log. So a
 // build the board will never take looked exactly like one it took — forever.
 // Three Kuva Nukor submissions sat there carrying no progenitor element,
-// refused on every run since they arrived, while the page said "sent" (owner,
-// 2026-08-14: he had tested several on his phone and none appeared).
+// refused on every run since they arrived, while the page said "sent" — a
+// submission that never appears on any board.
 //
 // The endpoint is `validate_for_board` ITSELF, so this asserts the app gets the
 // board's answer rather than a second opinion that agrees today.

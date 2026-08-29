@@ -9,9 +9,8 @@
 //!
 //! # The aim policy
 //!
-//! **ONE TARGET AT A TIME, AND YOU SWITCH ONLY WHEN IT DIES** (owner,
-//! 2026-08-15, decided before this module existed so it would not be invented
-//! by whoever wrote it). "Who do you shoot at" is a PLAY PATTERN, the same
+//! **ONE TARGET AT A TIME, AND YOU SWITCH ONLY WHEN IT DIES.** "Who do you
+//! shoot at" is a PLAY PATTERN, the same
 //! class of decision as reload interruption, and docs/UNMODELLED.md is explicit
 //! that this repo refuses to invent one.
 //!

@@ -9012,9 +9012,9 @@ fn field_tick(
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     // CO on an AoE part is the EXCEPTION, not the default. What the mods say is
     // direct hits only — which is why the radial path never takes it — and the
-    // Torid's cloud is an anomaly the CO catalog gives its own row (user,
-    // 2026-07-30: in theory an AoE would not get it, but DE let this one). So
-    // the field takes CO only where the weapon declares it; otherwise it gets
+    // Torid's cloud is an anomaly the CO catalog gives its own row: in theory
+    // an AoE would not get it, and DE let this one. So the field takes CO only
+    // where the weapon declares it; otherwise it gets
     // the same bracket the radial does.
     let bucket = if f.takes_condition_overload {
         // A FIELD keeps the direct hit's base fraction: the CO catalog puts
@@ -15638,9 +15638,9 @@ pub fn run_once_traced(
                     // animation is faster, so the buff was already there before
                     // any reload began.
                     //
-                    // AND IT IS SPENT WHEN THE TRANSFORM COMPLETES (owner,
-                    // same day). Which collapses the rule to one line rather
-                    // than a list of events: SWAPPING EITHER WAY FULLY RELOADS
+                    // AND IT IS SPENT WHEN THE TRANSFORM COMPLETES, which
+                    // collapses the rule to one line rather than a list of
+                    // events: SWAPPING EITHER WAY FULLY RELOADS
                     // THE BASE FORM'S MAGAZINE (wiki), so both transforms are
                     // reloads, and the buff is spent by whatever
                     // refills the magazine. Nothing else has to be enumerated.
