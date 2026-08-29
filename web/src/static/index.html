@@ -189,6 +189,9 @@
                 <span class="tbl" data-i18n>Cores</span>
                 <span id="compute-select"></span>
               </div>
+              <!-- The site's own page, so it leads the row that is otherwise
+                   "this project, elsewhere". -->
+              <a class="dl-link ghost-btn" href="/download" title="Download the Windows app" data-i18n-title aria-label="Download"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v11m0 0-4-4m4 4 4-4M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/></svg><span class="tbl" data-i18n>Windows app</span></a>
               <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="tbl">GitHub</span></a>
               <span class="tbcomm" id="community-alt">
                 <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg><span class="tbl" data-i18n>QQ group</span></a>
@@ -200,6 +203,78 @@
     </div>
   </header>
 
+
+  <!-- THE DESKTOP CLIENT'S OWN PAGE. A page of the SHELL like /support and
+       /benchmark: it belongs to no weapon, so it sits beside the home grid
+       rather than under /weapons/<name>, and it is not a fourth MODULE — it
+       produces nothing the builder, the simulator or the optimizer consume.
+
+       IT EXISTS BECAUSE THE OFFER IS A PAGE OF QUESTIONS, not a button. What
+       SmartScreen does on first run, why the program is unsigned, what
+       updating costs, what uninstalling means, where the source is — none of
+       that fits beside a hero button, and all of it is asked. The URL is also
+       the thing that can be said out loud: a reader who saw this in a video
+       types wfsim.app/download, not "scroll down on the home page".
+
+       Hidden inside the desktop app, where the offer is replaced by the fact
+       that they are already running it. -->
+  <main id="download-page" class="dl-page" hidden>
+    <h1 class="hero-h" data-i18n>WFSim for Windows</h1>
+    <p class="hero-sub" data-i18n>The same calculator on your own machine — it opens instantly, works with no connection, and keeps itself up to date. It is not a cut-down version: the engine is the same wasm module this site serves.</p>
+
+    <!-- The button and the source it comes from, drawn by `renderDownloadPage`
+         so that one function answers the machine asking. -->
+    <div class="dl-offer" id="dl-offer"></div>
+
+    <!-- FIRST, because it is the first thing that happens and the most common
+         reason a download is abandoned. The wording is the owner's own, from
+         the notes file that ships beside the binary; it is on the page as well
+         because a warning you meet before you have read the notes is a warning
+         with no answer next to it. -->
+    <section class="block">
+      <div class="bh"><h2 data-i18n>The first time you open it</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>Windows shows a blue notice, "Windows protected your PC". Click "More info", then "Run anyway".</li>
+          <li data-i18n>It says that because this program has no code-signing certificate — one costs several thousand yuan a year, which a free tool does not justify. An antivirus warning is the same thing for the same reason: an unsigned program nobody has seen before.</li>
+          <li data-i18n>If you would rather check first, the SHA-256 and the command to verify it ship in the notes beside the download. Or just use the site — it does everything this does.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Why install it</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>Nothing is downloaded when you open it. The engine is already on your disk, so a fight is computed the moment you ask for it — however slow this site is to reach from where you are.</li>
+          <li data-i18n>It works with no connection at all.</li>
+          <li data-i18n>It updates itself, and takes only what changed: a release touching one file is under a kilobyte on the wire. You download this once.</li>
+          <li data-i18n>The site stays exactly where it is. Both run the same engine, and a build link opens in either.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>What it is not</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>Not an installer. There is nothing to run as administrator, and nothing is written to the registry.</li>
+          <li data-i18n>Not a second engine. It carries the same wasm the site serves, so a number is the same number in both.</li>
+          <li data-i18n>Uninstalling is deleting the file. Its data sits in %LOCALAPPDATA%\WFSim and can go with it.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>The source</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li><span data-i18n>AGPL-3.0. A source archive sits beside the download because the licence requires the source to be offered wherever the binary is — it is the same source that is on GitHub, and you do not need it to run the program.</span> <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
   <!-- Home: the weapon list. Click a card → that weapon's config page. -->
   <main id="home-page" class="home-page" hidden>
     <!-- ONE i18n key for the whole sentence; the gold on "Prime" is applied
@@ -208,14 +283,15 @@
          old "The Simulacrum. / The Primed One." pair awkward to translate. -->
     <h1 class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
     <p class="hero-sub" data-i18n>WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.</p>
-    <!-- THE DESKTOP DOWNLOAD, rendered by `renderDownloads` in app.js because
-         it is a TABLE rather than a link: one row per platform, and several
-         SOURCES under each. A single hard-coded URL was fine for the hour there
-         was one download; it stops being fine the moment there are two
-         platforms and a mirror, which is the same day.
+    <!-- A POINTER TO /download, one line. The offer itself is a page of
+         questions — SmartScreen, signing, updating, uninstalling — and the
+         home hero is read by someone who has not yet seen the tool work, which
+         is the worst moment to ask them to run an unsigned executable. The
+         people who want the client are the ones already using the site.
 
-         Hidden inside the desktop app itself, where a download link is an
-         invitation to install what is already running. -->
+         Drawn by `renderDownloads`, which answers the machine asking: a phone
+         is shown nothing, a desktop we do not build for is told so rather than
+         handed a link. Hidden inside the desktop app itself. -->
     <div class="hero-dl" id="hero-dl"></div>
     <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
@@ -469,7 +545,7 @@
          lock. There were FOUR such lists and the Parts block was added to none
          of them, so it drew on the Simulator and the Optimizer tabs — a
          builder control on two pages that do not own a build. Same shape as
-         the Mode block's own bug (check_opt_modes, 2026-08-11), and the reason
+         the Mode block's own bug (check_opt_modes), and the reason
          a list was the wrong mechanism both times. -->
     <!-- THE PARTS, and only for a weapon that has any. A Kitgun has no
          published stat line — it has a Chamber, a Grip and a Loader, and every
@@ -903,7 +979,7 @@
          It is here because a fix that is deployed and a fix that is on the
          reader's screen are two different things, and without a version on the
          page neither side of a bug report can tell them apart — "still broken"
-         and "still on the old file" look identical (owner, 2026-08-18, after
+         and "still on the old file" look identical (after
          three rounds of exactly that). -->
     · <span class="build-stamp" id="build-stamp" title="which build this page is">dev</span>
     </div>

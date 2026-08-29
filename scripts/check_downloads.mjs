@@ -1,27 +1,25 @@
-// THE DOWNLOAD OFFER ANSWERS THE MACHINE ASKING, and has three answers.
+// THE DOWNLOAD OFFER ANSWERS THE MACHINE ASKING, AND ITS PAGE ANSWERS THE
+// QUESTIONS.
 //
-// The home page offers the desktop build, and what it should say depends on
-// where it is read: the platform we build for gets its own button, a desktop we
-// do NOT build for is told so instead of being shown an executable it cannot
-// run, and a phone is shown nothing at all — it is already running the thing a
-// download would install.
+// The offer is TWO SURFACES with one function behind each. The home hero is a
+// POINTER — one line, because that page is read by someone who has not yet
+// seen the tool work, which is the worst moment to ask them to run an unsigned
+// executable. `/download` is the offer itself, and it is a page rather than a
+// button because what it has to answer is a page: what SmartScreen does on
+// first run, why the program is unsigned, what updating costs, what
+// uninstalling means, where the source is.
 //
-// Only ONE of those is visible on the machine this is written on, so checking
-// by looking is checking a third of it. Worse, the failure modes are silent and
-// plausible: a Mac reader shown `WFSim.exe`, a phone reader shown a 34 MB
-// download. Each looks like a working page.
+// Only ONE machine's answer is visible on the machine this is written on, so
+// checking by looking is checking a third of it, and the failure modes are
+// silent and plausible: a Mac reader handed an .exe, a phone reader handed a
+// 34 MB download, a source badge that draws an icon and names nothing.
 //
-// IT PINS THE SOURCE BADGE, which is the offer's other half. This site does not host the executable — it lives on a Quark
-// network drive — and a reader about to run a downloaded binary is entitled to
-// see whose drive it is on BEFORE they click. A badge that drew an icon and no
-// NAME would look finished and identify nothing, which is why the name is
-// asserted rather than the element.
-//
-// WINDOWS ONLY, FOR NOW. The Linux row was built before anyone asked for it and
-// cost the offer its shape; the AppImage is still cut by the release workflow
-// and still on the GitHub release page, it is simply not what the hero is
-// about. The assertions that used to cover it are now the negative control:
-// a Linux reader must be TOLD, not handed an .exe.
+// THE PAGE IS PRERENDERED, which is the half no browser assertion can see. A
+// URL people paste and read off a video must carry its own title, description
+// and canonical; without them it previews as the app's own headline, and a link
+// that says "Ultimate Warframe Calculator" and opens on an executable download
+// is the kind of mismatch that reads as a scam.
+import { readFileSync } from "node:fs";
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ base: process.argv[2] });
@@ -49,6 +47,10 @@ const READ = `(() => {
     srcName: src ? src.textContent.trim() : null,
     srcHref: src ? src.href : null,
     srcIcon: !!(src && src.querySelector("svg")),
+    heroText: host.querySelector(".dl-line")
+      ? host.querySelector(".dl-line").textContent.trim() : null,
+    heroHref: host.querySelector(".dl-line")
+      ? host.querySelector(".dl-line").getAttribute("href") : null,
     links: [...host.querySelectorAll("a")].map((a) => a.href),
     // NOT NORMALISED, deliberately. A whitespace regex here sits inside a
     // TEMPLATE LITERAL, which eats the backslash — the page then runs /s+/g
@@ -56,6 +58,23 @@ const READ = `(() => {
     // assertion below read "only supports Window ." and failed on a correct
     // page. It only greps this string, so there is nothing to normalise for.
     text: host.innerText || "",
+  };
+})()`;
+
+/// The offer as /download draws it, plus everything the page says.
+const READ_PAGE = `(() => {
+  const host = document.getElementById("dl-offer");
+  const page = document.getElementById("download-page");
+  const btn = host && host.querySelector(".dl-btn");
+  const src = host && host.querySelector(".dl-src");
+  return {
+    drawn: !!(page && !page.hidden),
+    button: btn ? btn.textContent.trim() : null,
+    buttonHref: btn ? btn.href : null,
+    srcName: src ? src.textContent.trim() : null,
+    srcHref: src ? src.href : null,
+    srcIcon: !!(src && src.querySelector("svg")),
+    text: page ? page.innerText : "",
   };
 })()`;
 
@@ -68,7 +87,67 @@ for (const [name, ua] of Object.entries(UAS)) {
   seen[name] = await app.evaluate(READ);
 }
 
-// ---- 1. A PHONE IS SHOWN NOTHING ----------------------------------------
+// The page itself, read as the machine it is for.
+await app.send("Emulation.setUserAgentOverride", { userAgent: UAS.Windows });
+await app.load("/download");
+const page = await app.evaluate(READ_PAGE);
+check("/download draws its page", page.drawn === true, JSON.stringify(page).slice(0, 160));
+
+// ---- 1. THE HOME HERO IS A POINTER ------------------------------------
+// One line to the page, not the offer. A button here would be the offer in two
+// places, and the one on the hero could not carry the answers.
+check("Windows is pointed at the download page",
+  (seen.Windows.heroHref || "").endsWith("/download"),
+  `hero ${JSON.stringify(seen.Windows.heroText)} -> ${seen.Windows.heroHref}`);
+check("...and the hero holds no download button",
+  seen.Windows.button === null,
+  `button ${JSON.stringify(seen.Windows.button)}`);
+
+// ---- 2. THE PAGE CARRIES THE OFFER --------------------------------------
+check("the page offers Windows",
+  /Windows/.test(page.button || ""),
+  `button ${JSON.stringify(page.button)}`);
+check("...going to the network drive, not GitHub",
+  (page.buttonHref || "").includes("pan.quark.cn"),
+  page.buttonHref || "(no button)");
+
+// THE SOURCE IS NAMED BESIDE IT. The NAME is the assertion, not the element:
+// an icon alone identifies nothing, which is the whole failure this prevents.
+check("...and names the drive the file is on",
+  (page.srcName || "").includes("夸克网盘"),
+  `badge ${JSON.stringify(page.srcName)}`);
+check("...with a mark, pointing at the same place",
+  page.srcIcon === true && (page.srcHref || "") === (page.buttonHref || "x"),
+  `icon ${page.srcIcon}, href ${page.srcHref}`);
+
+// ---- 3. AND IT ANSWERS THE QUESTIONS ------------------------------------
+// The reason this is a page. Each of these is a real question a downloader
+// asks, and a page carrying the button and none of them is the button with
+// more scrolling.
+for (const [what, needle] of [
+  ["what SmartScreen does", /SmartScreen|protected your PC|已保护你的电脑/],
+  ["why it is unsigned", /code-signing|代码签名/],
+  ["how updating works", /updates itself|自己更新/],
+  ["how to uninstall", /LOCALAPPDATA/],
+  ["where the source is", /AGPL/],
+]) {
+  check(`the page says ${what}`, needle.test(page.text || ""),
+    (page.text || "").slice(0, 100));
+}
+
+// ---- 4. A PLATFORM WE DO NOT BUILD FOR IS TOLD SO ------------------------
+// The negative control, and the one a check that only tested Windows would
+// pass while the page handed a Mac or Linux reader an .exe.
+for (const os of ["macOS", "Linux"]) {
+  check(`${os} is offered no download on the home page`,
+    !(seen[os].links || []).some((u) => /pan\.quark\.cn/.test(u)),
+    JSON.stringify(seen[os].links));
+  check(`...and ${os} is told the desktop build is Windows`,
+    /Windows/.test(seen[os].text || ""),
+    (seen[os].text || "").slice(0, 120));
+}
+
+// ---- 5. A PHONE IS SHOWN NOTHING ON THE HERO ----------------------------
 // Not "a smaller button": an executable a phone cannot execute is noise on the
 // one screen with the least room for it, and the reader is already using the
 // thing the download would give them.
@@ -76,40 +155,27 @@ check("a phone is offered nothing at all",
   seen.Android.hidden === true,
   JSON.stringify(seen.Android).slice(0, 160));
 
-// ---- 2. THE PLATFORM WE BUILD FOR GETS ITS OWN BUTTON --------------------
-check("Windows is offered Windows",
-  /Windows/.test(seen.Windows.button || ""),
-  `button ${JSON.stringify(seen.Windows.button)}`);
-check("...and it goes to the network drive, not GitHub",
-  (seen.Windows.buttonHref || "").includes("pan.quark.cn"),
-  seen.Windows.buttonHref || "(no button)");
-
-// ---- 3. THE SOURCE IS NAMED BESIDE IT -----------------------------------
-// The NAME is the assertion, not the element: an icon alone identifies nothing,
-// which is the whole failure this badge exists to prevent.
-check("the source is named beside the button",
-  (seen.Windows.srcName || "").includes("夸克网盘"),
-  `badge ${JSON.stringify(seen.Windows.srcName)}`);
-check("...with a mark, and pointing at the same place",
-  seen.Windows.srcIcon === true
-    && (seen.Windows.srcHref || "") === (seen.Windows.buttonHref || "x"),
-  `icon ${seen.Windows.srcIcon}, href ${seen.Windows.srcHref}`);
-
-// ---- 4. A PLATFORM WE DO NOT BUILD FOR IS TOLD SO ------------------------
-// The negative control, and the one a check that only tested Windows would
-// pass while the page handed a Mac or Linux reader an .exe.
-for (const os of ["macOS", "Linux"]) {
-  check(`${os} is offered no button`,
-    seen[os].button === null && seen[os].hidden === false,
-    `button ${JSON.stringify(seen[os].button)}, hidden ${seen[os].hidden}`);
-  check(`...and ${os} is told the desktop build is Windows`,
-    /Windows/.test(seen[os].text || ""),
-    (seen[os].text || "").slice(0, 120));
-  // AND IS HANDED NOTHING IT CANNOT RUN. Saying the right sentence beside a
-  // live .exe link would read as a pass on every assertion above.
-  check(`...and ${os} is handed no executable`,
-    !(seen[os].links || []).some((u) => /\.exe|pan\.quark\.cn/.test(u)),
-    JSON.stringify(seen[os].links));
+// ---- 6. THE PAGE IS PRERENDERED -----------------------------------------
+// Its own title, description and canonical, none of which a browser assertion
+// can see: the SPA replaces the head on boot, so this reads the built file.
+let built = "";
+try {
+  built = readFileSync(new URL("../site/download/index.html", import.meta.url), "utf8");
+} catch {
+  built = "";
+}
+check("/download is prerendered with its own head", built.length > 0, "site/download missing");
+if (built) {
+  check("...with a title that is not the app's headline",
+    /<title>[^<]*Windows[^<]*<\/title>/.test(built)
+      && !/<title>WFSim — Ultimate/.test(built),
+    (built.match(/<title>[^<]*<\/title>/) || ["(none)"])[0]);
+  check("...a canonical pointing at itself",
+    /rel="canonical"[^>]*\/download/.test(built),
+    (built.match(/rel="canonical"[^>]*>/) || ["(none)"])[0]);
+  check("...and a description about the app, not the calculator",
+    /name="description"[^>]*Windows app/.test(built),
+    (built.match(/name="description"[^>]*>/) || ["(none)"])[0].slice(0, 120));
 }
 
-await app.finish("the download offer answers the machine asking");
+await app.finish("the download offer answers the machine asking, and its page answers the questions");

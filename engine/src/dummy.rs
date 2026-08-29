@@ -5078,10 +5078,10 @@ pub mod ledger {
         }
 
         /// THE BIGGEST SINGLE NUMBER the build produced. Every instance, not
-        /// just direct pellet hits: it used to be booked at the pellet site
-        /// alone, so a Slash tick or a Blast detonation larger than any hit
-        /// could not be it — which is not what the field says it is, and the
-        /// field is what a reader is shown.
+        /// just direct pellet hits: booked at the pellet site alone, a Slash
+        /// tick or a Blast detonation larger than any hit could not be it —
+        /// which is not what the field says it is, and the field is what a
+        /// reader is shown.
         pub fn max_hit(&self) -> f64 {
             self.max_hit
         }
@@ -5137,10 +5137,9 @@ pub mod ledger {
         // AND THE ARGUMENTS ARE BUILT ONLY IF ANYONE IS READING. An `Instance` is a
         // dozen locals, three Vecs and a String, and a `TargetAt` re-runs the
         // armour scaling curve; paying for all of it on the 999 runs nobody reads
-        // measured +4.0% on `one_fight`. That gate used to be an
-        // `if recording(rec)` at each call site, which is exactly the second thing
-        // a new site had to remember. It is a closure now, and forgetting it is not
-        // something the language will let you do.
+        // measures +4.0% on `one_fight`. As an `if recording(rec)` at each
+        // call site the gate is a second thing a new site has to remember; as a
+        // closure, forgetting it is not something the language allows.
             r.meter.book(settled.raw, settled.effective, clock);
         r.spread.credit(body, settled.effective);
         let i = t.max(0.0) as usize;
@@ -5354,10 +5353,10 @@ pub struct RunResult {
     ///
     /// Its fields are private to `ledger`, which is the whole point: a damage
     /// site CANNOT book a number without writing the row that explains it,
-    /// because the language will not let it reach the field. It used to be two
-    /// `+=` lines beside a `log_damage` call, kept in step by whoever
-    /// remembered, with a test comparing the sum against the meter as the only
-    /// guard — a guard rather than a guarantee.
+    /// because the language will not let it reach the field. Two `+=` lines
+    /// beside a `log_damage` call are kept in step by whoever remembers, with a
+    /// test comparing the sum against the meter as the only guard — a guard
+    /// rather than a guarantee.
     pub meter: ledger::Meter,
     /// The DPS-over-time curve — booked by [`ledger::settle`] and by nothing
     /// else, for the same reason the totals are.
@@ -5452,10 +5451,10 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 /// A SHOT THAT COSTS NOTHING needs no round at all. Dual
 /// Toxocyst hits this exactly: the last round headshots, the magazine lands on
 /// 0, and that same kill arms Frenzy's +100% ammo efficiency — so the next shot
-/// is free and fires instead of forcing a reload. That used to be its own
-/// `free_shot` flag threaded through this call; the ceiling subsumes it, since
-/// `0 <= ceil(anything)` holds on an empty magazine too (owner:
-/// the free shot is not the fundamental thing, the COST is).
+/// is free and fires instead of forcing a reload. The ceiling subsumes that
+/// without a `free_shot` flag threaded through this call, since
+/// `0 <= ceil(anything)` holds on an empty magazine too: the free shot is not
+/// the fundamental thing, the COST is.
 ///
 /// What the ceiling ADDS is the case above one round. Seven left and a shot
 /// costing ten: `10 <= ceil(7)` is false, so the weapon reloads. The old test
@@ -8784,10 +8783,9 @@ fn orb_detonation(
 /// damage that rolls its own crit and its own status, not a status settlement —
 /// but the two are INTERLEAVED here: every status event preceding a field tick
 /// is settled before it. That matters in both directions. A field tick's own
-/// procs become DoTs that must still burn (the end-of-run drain used to run
-/// before the last clouds ticked, so those procs were pushed and never settled
-/// — a test caught it), and the CO bonus a tick reads has to include the
-/// statuses its predecessors applied.
+/// procs become DoTs that must still burn — an end-of-run drain running before
+/// the last clouds tick pushes those procs and never settles them — and the CO
+/// bonus a tick reads has to include the statuses its predecessors applied.
 #[allow(clippy::too_many_arguments)]
 fn process_field_ticks(
     fields: &mut Vec<FieldState>,
@@ -8895,9 +8893,8 @@ fn process_field_ticks(
         if killed {
             // A CLOUD IS A PLACE, AND IT OUTLIVES WHAT IT STUCK TO.
             //
-            // This used to clear the fields with the words "the clouds were
-            // stuck to the one that died, and its statuses go with it". The
-            // weapon's own page refutes it, verbatim: "Torid projectiles can
+            // The fields are NOT cleared with the corpse they stuck to. The
+            // weapon's own page says so, verbatim: "Torid projectiles can
             // also attach to corpses and will remain at their position even if
             // they disintegrate, granting a fixed position mid-air and allowing
             // a greater spread of toxin damage onto enemies" — and the
@@ -9666,13 +9663,10 @@ fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
 /// mean anything: a reload is `secs x (1 + bucket)` seconds of WORK and a total
 /// of `add` retires it at `1 + bucket + add` per second.
 ///
-/// IT USED TO TAKE A LAPSING WINDOW, because Ready Retaliation was modelled as
-/// a 6 s buff that could run out halfway through and leave the rest of the
-/// reload at the slower rate. It cannot any more: that buff is scoped to the
-/// reload ACTION — it arrives when the reload starts and is gone when it ends
-/// — so there is nothing left that lapses mid-reload, and
-/// the partial-rate branch went with it. If a lapsing reload buff ever exists
-/// again, this is where it goes back.
+/// NO LAPSING WINDOW. Ready Retaliation is scoped to the reload ACTION — it
+/// arrives when the reload starts and is gone when it ends — so nothing lapses
+/// mid-reload and there is no partial-rate branch. If a lapsing reload buff
+/// ever exists, this is where it goes.
 ///
 /// `secs` arrives ALREADY divided by `(1 + bucket)` — it is the modded reload —
 /// so multiplying it back out is what recovers the work, and a weapon with no
@@ -9733,8 +9727,8 @@ fn live_reload_speed(
 fn sample_stacks(
     params: &DummyParams,
     // THE ROSTER the answer is positional against — `DummyParams::buff_roster`.
-    // It used to be `&Replay`, which is the only consumer that had one; the
-    // combat record needs the same list and never builds a replay.
+    // A LIST, not `&Replay`: the combat record needs the same roster and never
+    // builds a replay.
     roster: &[BuffSeries],
     now: f64,
     arc: &mut ArcRuntime,
@@ -11895,10 +11889,10 @@ pub fn run_once_traced(
     // A MACRO BECAUSE IT IS CALLED WHERE STATE CHANGES, and those are six
     // places that each own a different set of locals: the shot that spends a
     // round, the two ends of a reload, and the two ends of each transform. It
-    // used to be written at the SHOT only, so every event between two shots
-    // carried the previous shot's weapon — a `transform_end` that had just put
-    // 216 charges in an Incarnon magazine reported `base 0/12`, which is the
-    // one row a reader opens the record to see.
+    // Written at every EVENT and not at the shot only: otherwise every event
+    // between two shots carries the previous shot's weapon, and a
+    // `transform_end` that has just put 216 charges in an Incarnon magazine
+    // reports `base 0/12` — the one row a reader opens the record to see.
     macro_rules! weapon_now {
         () => {
             if rec.is_on() {
@@ -11918,11 +11912,11 @@ pub fn run_once_traced(
                         if in_base_form {
                             // THE CHARGES ARE THE GAUGE IN ANOTHER UNIT. A Laetum's 216 charges over a
                             // 12-unit gauge is 18 a unit exactly, and the row
-                            // used to print `216 / 216` from the moment the
-                            // fight opened — a full Incarnon magazine on a
-                            // weapon that has not earned a single unit of it,
-                            // which is the one column a reader opens this panel
-                            // to check. The gauge decides it; `charges` can run
+                            // must not print `216 / 216` from the moment the
+                            // fight opens — a full Incarnon magazine on a
+                            // weapon that has not earned a single unit of it is
+                            // the one column a reader opens this panel to
+                            // check. The gauge decides it; `charges` can run
                             // past the fill mark, so the share is clamped.
                             let share = if cy.charges_to_fill > 0 {
                                 (f64::from(charges) / f64::from(cy.charges_to_fill)).min(1.0)
@@ -12056,11 +12050,10 @@ pub fn run_once_traced(
     // long the weapon spent not firing.
     let mut last_shot_t = f64::NEG_INFINITY;
     // SAMPLING IS A MACRO because it happens TWICE, and the second time is
-    // after the loop that used to own it. A macro rather than a closure: the
+    // after the loop as well as inside it. A macro rather than a closure: the
     // body mutably borrows `arc`, `gal`, `buff_stacks`, `target`, `r`,
     // `debuffs`, `others` and `trace` at once, which a closure cannot hold
-    // together — and the body is the previous code verbatim, so the in-loop
-    // behaviour is unchanged by construction.
+    // together.
     macro_rules! sample_frames_up_to {
         ($until:expr) => {
             if let Some(rep) = trace.as_deref_mut() {
@@ -12772,12 +12765,11 @@ pub fn run_once_traced(
         let last_n = ap.burst.map_or(1.0, |b| f64::from(b.count));
         // …AND THE WINDOW IS THE ACTIVE MAGAZINE'S, whichever that is.
         // `in_base_form` is only ever true inside an Incarnon CYCLE, so this
-        // branch used to read "the cycle's base phase" against "everything
-        // else" — and everything else includes a plain base-form run, which is
-        // how a `base`-mode board row is played and how anyone measures the
-        // weapon on its own. The burst window was written for the cycle and
-        // silently became one round outside it: 5 pellets a magazine instead of
-        // 15 on a Burston.
+        // branch must not read "the cycle's base phase" against "everything
+        // else": everything else includes a plain base-form run, which is how a
+        // `base`-mode board row is played and how anyone measures the weapon on
+        // its own. A burst window written for the cycle silently becomes one
+        // round outside it — 5 pellets a magazine instead of 15 on a Burston.
         let mag_left = if in_base_form { base_mag } else { magazine };
         let last_round = mag_left <= last_n + 1e-9;
         // THE CHAMBER FAMILY'S GATE, and it is READ AFTER THE ROUND IS PAID
@@ -13428,11 +13420,11 @@ pub fn run_once_traced(
             };
             // EXPIRE WHAT HAS RUN OUT, before anything reads a stack count.
             //
-            // It used to happen as a side effect of taking the mitigation
-            // snapshot here; the snapshot moved into the stage loop, and the
-            // per-pellet reads below — Cold's flat crit damage received and
-            // Condition Overload's type count — went with it by accident,
-            // counting a stack that had already expired. `mitigation` still
+            // ITS OWN CALL, not a side effect of the mitigation snapshot:
+            // that snapshot lives in the stage loop, and the per-pellet reads
+            // below — Cold's flat crit damage received and Condition Overload's
+            // type count — would go with it and count a stack that had already
+            // expired. `mitigation` still
             // prunes and pruning is idempotent, so this is the one call that
             // decides WHEN, rather than a second copy of the rule.
             debuffs.prune(t, status_damage);
@@ -13813,17 +13805,16 @@ pub fn run_once_traced(
             // choose — and zero is what makes the whole clause below collapse
             // to what it was.
             let off_axis = aim_off_axis;
-            // THE DEVIATION AND ITS DIRECTION ARE KEPT, not collapsed. They
-            // used to produce one scalar — how far the pellet passed the aimed
-            // body — because that was the only thing one body could be asked.
-            // A crowd asks WHERE, so both survive to build the epicentre below.
+            // THE DEVIATION AND ITS DIRECTION ARE KEPT, not collapsed into
+            // one scalar. How far the pellet passed the aimed body is the only
+            // thing ONE body can be asked; a crowd asks WHERE, so both survive
+            // to build the epicentre below.
             let (dev, phi) = match ap.spread {
                 Some(s) if !s.is_pinpoint() && range > 0.0 => {
                     let dev = s.draw(d.aim.next_f64());
                     // WHICH WAY IT WENT, drawn whenever the weapon points away
                     // from the body OR there is a crowd.
-                    // Against one body only the magnitude decides anything,
-                    // which is why it used to be drawn only in the first case;
+                    // Against one body only the magnitude decides anything;
                     // with a crowd the side decides who is in the blast. Off
                     // `blast_dir`, a stream of its own, so adding the draw
                     // shifts no other roll — see `rng::Draws`. No board ruler
@@ -13877,11 +13868,11 @@ pub fn run_once_traced(
             // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
             // EXPLOSION.
             //
-            // It used to be two. The aimed body read its falloff from the miss
-            // distance, correctly; every OTHER body read its distance from the
-            // aimed body's SURFACE, so a shot that went nine metres wide
-            // dropped the aimed body's damage by 61% and left the body two
-            // metres behind it taking a direct hit's blast. Measured on the
+            // NOT TWO. With the aimed body reading its falloff from the miss
+            // distance and every OTHER body reading its distance from the aimed
+            // body's SURFACE, a shot nine metres wide drops the aimed body's
+            // damage by 61% and leaves the body two metres behind it taking a
+            // direct hit's blast. Measured on the
             // wire before this landed: 7115 with the shot on target, 7120 with
             // it nine metres off.
             //
@@ -15481,10 +15472,9 @@ pub fn run_once_traced(
 
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
         //
-        // The counter used to decay only through its own timer, because nothing
-        // in this arena could miss — the sniper entries said so in `unmodeled:`
-        // and the number ran slightly generous. It can miss now, so the other
-        // half of the mechanic is here.
+        // A counter that decays only through its own timer runs slightly
+        // generous, and is the right model only in an arena where nothing can
+        // miss. This one can, so the other half of the mechanic is here.
         //
         // PER SHOT, not per pellet: the counter counts trigger pulls that
         // connected, and a multishot pull that lands one pellet connected.
@@ -15628,10 +15618,11 @@ pub fn run_once_traced(
                     crate::loadout::ChargeOn::Kills => fresh_kills,
                 };
                 // A FULL GAUGE ARMS THE TRANSFORM; the cadence below still
-                // runs. This block used to `continue`, which skipped the
-                // completing shot's OWN interval and let the next shot fire at
-                // the same instant — the transform was a free extra shot. The moment is the end of the shot that filled
-                // the gauge, which is the start of the next one.
+                // runs. A `continue` here would skip the completing shot's OWN
+                // interval and let the next shot fire at the same instant,
+                // making the transform a free extra shot. The moment is the end
+                // of the shot that filled the gauge, which is the start of the
+                // next one.
                 //
                 // The gauge also OVERSHOOTS and that is not a rounding: a
                 // 7-pellet shot into a 30-charge gauge arrives at 35 on the
@@ -16008,10 +15999,10 @@ pub fn run_once_traced(
 
     // THE REPLAY COVERS THE WHOLE FIGHT, INCLUDING THE PART WITH NO SHOOTING
     // IN IT. The firing loop `break`s the moment a finite reserve runs dry,
-    // and it used to take the sampler with it — so a 180-second engagement
-    // that ran out of ammo at 58.5 was DRAWN as a 58.5-second one, and every
-    // rate the replay derives divided by that shorter clock. The panel read
-    // 378 KPM beside its own `852.83 kill score in 180s`, which is 284.
+    // and the sampler must NOT go with it: a 180-second engagement that runs
+    // out of ammo at 58.5 would be drawn as a 58.5-second one, and every rate
+    // the replay derives would divide by that shorter clock — 378 KPM beside
+    // its own `852.83 kill score in 180s`, which is 284.
     //
     // It was never only the divisor: the two `process_*` calls above settle
     // the burning clouds and the remaining DoTs all the way to the end, so
@@ -16180,10 +16171,10 @@ pub struct Summary {
     /// Per-run σ of THAT number. The optimizer ranks by `mean_kill_progress`,
     /// so every statistical decision it makes — the amnesty band at a cut
     /// line, the 3σ racing cull, "is this build actually better" — needs the
-    /// spread of the statistic being ranked. It used to reach for `std_kills`,
-    /// which is a different statistic (whole kills, no partial credit) that
-    /// merely looks like it: a build that never finishes its second kill has
-    /// `std_kills` 0 and a kill progress that moves all run long.
+    /// spread of the statistic being ranked. NOT `std_kills`, which is a
+    /// different statistic (whole kills, no partial credit) that merely looks
+    /// like it: a build that never finishes its second kill has `std_kills` 0
+    /// and a kill progress that moves all run long.
     pub std_kill_progress: f64,
     pub mean_shots: f64,
     pub mean_pellets: f64,
@@ -16246,11 +16237,11 @@ pub struct Summary {
 /// than I can measure".
 ///
 /// So a caller that wants the second question answered gets the runs
-/// themselves. The quick calc used to ask instead whether the MEDIAN run's
-/// proc COUNT had changed and call the comparison exact when it had not; on
-/// the Kuva Nukor all seven progenitor elements answer 6079 while the fights
-/// plainly differ, so every one of its chips claimed an exactness it did not
-/// have.
+/// themselves. Asking instead whether the MEDIAN run's proc COUNT changed, and
+/// calling the comparison exact when it has not, fails in the direction that
+/// matters: on the Kuva Nukor all seven progenitor elements answer 6079 while
+/// the fights plainly differ, so every chip would claim an exactness it does
+/// not have.
 ///
 /// BESIDE [`Summary`] rather than in it: `Summary` is `Copy` and the optimizer
 /// copies one per candidate, so two `Vec`s in it would be a cost paid by
@@ -16318,8 +16309,8 @@ pub fn monte_carlo_series_reporting(
 /// the wasm boundary as JSON, and **a JSON number in JavaScript is a double** —
 /// so a 64-bit RNG state above 2^53 comes back ROUNDED, the merge replays a
 /// state that never existed, and the median engagement is a different fight.
-/// It cost an evening: every mean matched to the last bit and only `score`
-/// disagreed, because `score` is the one figure taken from the median run.
+/// It shows as every mean matching to the last bit while only `score`
+/// disagrees, because `score` is the one figure taken from the median run.
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 struct RunKey {
     /// Effective damage — what the ranking is by.
@@ -16770,12 +16761,11 @@ mod tests {
 
     /// COLD COUNTS ONCE FOR CONDITION OVERLOAD, frozen or not.
     ///
-    /// THE SENTINEL FOR THE TRAP THIS REFACTOR WALKED INTO. `distinct_statuses`
-    /// used to count `freeze` and `frozen` on separate lines, which was
-    /// harmless only because the old model made them mutually exclusive —
-    /// exactly one was ever live. Letting the chill STAY while Frozen would
-    /// have counted Cold twice and inflated every CO bracket on a frozen
-    /// target, with nothing else in the suite noticing.
+    /// THE SENTINEL FOR A TRAP NOTHING ELSE IN THE SUITE WOULD NOTICE.
+    /// `distinct_statuses` counting `freeze` and `frozen` on separate lines is
+    /// harmless only while the two are mutually exclusive; under a model where
+    /// the chill STAYS while Frozen it counts Cold twice and inflates every CO
+    /// bracket on a frozen target.
     #[test]
     fn cold_is_one_status_type_whether_or_not_the_target_is_frozen() {
         assert_eq!(chill(1, None, false, false).distinct_statuses(), 1, "chilled");
@@ -20745,10 +20735,9 @@ mod tests {
     /// A RELOAD IS PAID FOR WHILE IT RUNS, and the bonus composes with the
     /// static bucket rather than replacing it.
     ///
-    /// The lapsing-window case this test used to cover is gone with the window:
-    /// Ready Retaliation lasts exactly as long as the reload it starts, so
-    /// nothing can run out halfway through any more. What
-    /// is left is the arithmetic that was always the point — mods worth +100%
+    /// There is no lapsing-window case: Ready Retaliation lasts exactly as long
+    /// as the reload it starts, so nothing runs out halfway through. What is
+    /// left is the arithmetic that is the point — mods worth +100%
     /// already halve a 4 s reload to the 2 s that arrives here, and the perk's
     /// +100% on top makes it 4/(1+1+1) of the unmodded four rather than 1 s.
     #[test]
@@ -21234,8 +21223,8 @@ mod tests {
 
     /// Plentiful Mayhem, discrete branch: "only applies to projectiles
     /// GENERATED BY multishot". Two pellets a pull means ONE plain and ONE at
-    /// x1.6, so a pull deals 2.6 pellet-units where it used to deal 2.0 — not
-    /// 3.2, which is what treating it as a weapon-wide bonus would give.
+    /// x1.6, so a pull deals 2.6 pellet-units against a plain 2.0 — not 3.2,
+    /// which is what treating it as a weapon-wide bonus would give.
     #[test]
     fn plentiful_mayhem_pays_only_the_multishot_generated_projectiles() {
         let p = |bonus: f64| DummyParams {
@@ -21658,8 +21647,8 @@ mod tests {
     /// CO on an AoE part is the EXCEPTION. The mods say Condition Overload
     /// boosts DIRECT hits, so a field gets nothing unless its weapon declares
     /// otherwise — the Torid's cloud does, and the CO catalog gives it a row
-    /// precisely because an AoE part taking CO is not supposed to happen. This pins the DEFAULT, which no roster weapon exercises yet
-    /// and which the engine used to get wrong for every field.
+    /// precisely because an AoE part taking CO is not supposed to happen. This
+    /// pins the DEFAULT, which no roster weapon exercises yet.
     #[test]
     fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
         let p = |takes: bool| DummyParams {
@@ -22820,9 +22809,8 @@ mod tests {
             s.mean_field_ticks
         );
         // …AND THE SAME FORM WITHOUT A METER THROWS ON EVERY TRIGGER PULL,
-        // which is the `transformed` mode and is the number this weapon used to
-        // report for everything. The two differ by 45x, which is what the meter
-        // was worth getting wrong.
+        // which is the `transformed` mode. The two differ by 45x, which is
+        // what the meter is worth getting wrong.
         // …AND THE SAME ORB WITHOUT A METER SHOWS THE REPLACE RULE INSTEAD.
         // Throwing every second, each one wipes the last after a single strike
         // — 180 throws worth 180 strikes, against 4 throws worth 24. Only one
@@ -23618,11 +23606,11 @@ mod tests {
         // BIG crit, which is the exact statement — the damage ratio is not,
         // because this fixture's total is not all crit-scaled.
         assert!(off.mean_big_crit_rate < 1e-9, "no promotion, no big crits");
-        // EVERY crit is a big crit — an identity, not a threshold. This used to
-        // read `> 0.44` against a rate that is ~0.445 because the denominator
-        // counts all instances and the zero-damage direct hit never crits; the
-        // margin was 0.002 and the seed that produced it was the only evidence
-        // for it. Splitting the RNG streams moved this sample to 0.430 and the
+        // EVERY crit is a big crit — an identity, not a threshold. A
+        // `> 0.44` against a rate of ~0.445 leaves a 0.002 margin whose only
+        // evidence is the seed that produced it: the denominator counts all
+        // instances and the zero-damage direct hit never crits. Splitting the
+        // RNG streams moves this sample to 0.430 and the
         // test failed on a fixture nothing was wrong with (old spread over ten
         // seeds 0.438-0.457, new 0.430-0.453 — the same distribution).
         //
@@ -25919,11 +25907,11 @@ mod tests {
     /// target enemy Health"* said about the OVERFLOW rather than about the whole
     /// hit: five per cent of 160 is 8, and the pop-up read 2.
     ///
-    /// THE ENGINE USED TO ANSWER ZERO. `apply` charged the whole hit to the
-    /// shield and discarded the excess (`// no spill`), so the shot that kills
-    /// this Crewman in game left it at full health here — and the entire Corpus
-    /// half of the mitigation model went unexercised, because all three entries
-    /// in `data/enemies/` carry `shield: 0`.
+    /// AN ENGINE THAT DISCARDS THE EXCESS ANSWERS ZERO: charge the whole hit
+    /// to the shield with no spill and the shot that kills this Crewman in game
+    /// leaves it at full health. Nothing in the roster catches it either — all
+    /// three entries in `data/enemies/` carry `shield: 0`, so the entire Corpus
+    /// half of the mitigation model goes unexercised.
     #[test]
     fn a_hit_that_breaks_a_shield_leaks_five_per_cent_to_health() {
         // The measurement's target, as the pop-ups describe it: 120 shield,
@@ -26164,12 +26152,12 @@ mod tests {
         // enemy no longer deal their respective damage separately, like current
         // Slash statuses, but once per second, similar to Heat status. However,
         // they still maintain each own timer and will not refresh, unlike Heat."
-        // The owner saw the same thing in game on 2026-08-22: one number, and
-        // its cadence stays with the first proc.
+        // Confirmed in game: one number, and its cadence stays with the first
+        // proc.
         //
-        // This test used to be `electricity_dot_ticks_immediately` and asserted
-        // the PRE-33.6 model — shot at k ticking at k..k+5, so
-        // 6+6+6+6+6+5+4+3+2+1 = 45 ticks × 37.5 = 1687.5.
+        // The PRE-33.6 model — shot at k ticking at k..k+5 — gives
+        // 6+6+6+6+6+5+4+3+2+1 = 45 ticks × 37.5 = 1687.5, and is not what this
+        // asserts.
         //
         // Under one clock the first proc still ticks at 0 (there is no clock to
         // join yet) and every later one waits for the shared tick, which this
@@ -26378,8 +26366,8 @@ mod tests {
     /// THE CYCLE, EARNED — and the same fixture opening primed, for contrast.
     ///
     /// The engagement starts in the BASE form and pays for its first transmute
-    /// like everything else consumable in this sim. It used to open transformed
-    /// with a full charge magazine, which is a gift a fight should not make;
+    /// like everything else consumable in this sim. Opening transformed with a
+    /// full charge magazine is a gift a fight should not make by default;
     /// `starts_primed` keeps that reading available and this test pins both, so
     /// the difference between them is a number rather than a memory.
     #[test]
@@ -26399,11 +26387,10 @@ mod tests {
         //   -> inc @11. 5x100 + 4x50 = 700, one Incarnon shot traded for one
         //   base shot.
         //
-        // THE SHOT THAT FILLS THE GAUGE PAYS ITS OWN INTERVAL, which is why the
-        // Incarnon rounds land at 3 and not at 2. The transform used to
-        // `continue` past the cadence, so the completing shot was followed
-        // IMMEDIATELY by an Incarnon one and every transform was worth a free
-        // shot.
+        // THE SHOT THAT FILLS THE GAUGE PAYS ITS OWN INTERVAL, which is why
+        // the Incarnon rounds land at 3 and not at 2. A transform that
+        // `continue`s past the cadence follows the completing shot IMMEDIATELY
+        // with an Incarnon one, making every transform worth a free shot.
         //
         // The window is 12 s rather than 10 for a reason worth keeping: at 10 s
         // the two readings TIE at 600, because the primed run's free magazine is
@@ -26463,11 +26450,11 @@ mod tests {
         assert!(q.mean_damage > s.mean_damage, "the gift is worth something");
     }
 
-    /// `charge_on` is WEAPON DATA, not a constant. It used to be documented in
-    /// the yaml and ignored by the loader, so every weapon charged off
-    /// weak-point hits — wrong for the Torid, which the wiki charges through
-    /// plain direct hits ("Angstrum Incarnon Genesis and Torid Incarnon Genesis
-    /// are instead charged through direct hits").
+    /// `charge_on` is WEAPON DATA, not a constant. Documented in the yaml and
+    /// ignored by the loader, every weapon charges off weak-point hits — wrong
+    /// for the Torid, which the wiki charges through plain direct hits
+    /// ("Angstrum Incarnon Genesis and Torid Incarnon Genesis are instead
+    /// charged through direct hits").
     ///
     /// Body-only aim is the discriminator: there are no weak-point hits at all,
     /// so a `WeakpointHits` weapon never transforms again and a `DirectHits`
@@ -27821,8 +27808,8 @@ mod tests {
         // A beam tick at 0.5 clears the same ceiling with room to spare.
         assert!(can_fire(0.2, 0.5), "0.5 <= ceil(0.2)");
         // A FREE shot is not a special case, it is `cost == 0`: the ceiling
-        // lets it through on an empty magazine, which is what the `free_shot`
-        // flag used to be for.
+        // lets it through on an empty magazine, so no `free_shot` flag is
+        // needed.
         assert!(can_fire(0.0, 0.0), "0 <= ceil(0)");
         assert!(can_fire(-0.8, 0.0), "and on an overdrawn one");
 

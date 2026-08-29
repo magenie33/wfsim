@@ -1647,7 +1647,8 @@ function route() {
   // under /weapons/<name>.
   const support = /^\/support\/?$/.test(location.pathname);
   const bench = /^\/benchmark\/?$/.test(location.pathname);
-  const m = (support || bench) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
+  const dl = /^\/download\/?$/.test(location.pathname);
+  const m = (support || bench || dl) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -1658,19 +1659,21 @@ function route() {
   );
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
-  document.body.classList.toggle("on-home", !w && !support && !bench);
+  document.body.classList.toggle("on-home", !w && !support && !bench && !dl);
   document.body.classList.toggle("on-support", support);
   document.body.classList.toggle("on-benchmark", bench);
+  document.body.classList.toggle("on-download", dl);
   document.body.classList.toggle("on-simulator", mod === "simulator");
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
   document.body.classList.toggle("on-enemies", mod === "enemies");
-  $("home-page").hidden = !!w || support || bench;
+  $("home-page").hidden = !!w || support || bench || dl;
   $("support-page").hidden = !support;
   $("bench-page").hidden = !bench;
+  $("download-page").hidden = !dl;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : (!w && !support) ? "home" : "";
+  const here = bench ? "benchmark" : (!w && !support && !dl) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
@@ -1681,10 +1684,13 @@ function route() {
   // that has to be found rather than enjoyed. The joke
   // stays on the page, which is where a player meets it.
   document.title = support ? `${tr("Support")} — WFSim`
+    : dl ? `${tr("WFSim for Windows")} — WFSim`
     : bench ? `${tr("Benchmark")} — WFSim`
     : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
   if (support) {
     renderSupport();
+  } else if (dl) {
+    renderDownloadPage();
   } else if (bench) {
     renderBenchBoard();
   } else if (w) {
@@ -18260,41 +18266,74 @@ const DOWNLOADS = [
   },
 ];
 
-/// Draws the offer, and says nothing it cannot back.
+/// The button and the source it came from, as one piece of markup.
 ///
-/// THREE ANSWERS, because there are three situations. A machine we build for
-/// gets its own button. A DESKTOP we do not build for (macOS, Linux) is told so
-/// plainly rather than shown a Windows button it cannot use. A PHONE is shown
-/// nothing at all: it is already running the thing a download would install,
-/// and an executable it cannot execute is noise.
+/// THE SOURCE IS NAMED BESIDE THE BUTTON. This site does not host the
+/// executable, and a reader about to run a downloaded binary is entitled to see
+/// whose drive it is on before they click rather than after the tab has opened.
+/// The badge links to the same place, so "where does this come from" and "take
+/// me there to look first" are one click apart.
+function downloadOffer(d) {
+  const src = d.source;
+  return `<a class="dl-btn" href="${escHtml(src.url)}" target="_blank" rel="noopener">`
+    + `${escHtml(tr("Download for {os}").replace("{os}", d.os))}</a>`
+    + `<a class="dl-src" href="${escHtml(src.url)}" target="_blank" rel="noopener"`
+    + ` title="${escHtml(trF("hosted on {name} — this is where the file comes from",
+      { name: src.name }))}">${src.icon}<span>${escHtml(src.name)}</span></a>`;
+}
+
+/// The machine asking, in one answer for both surfaces to use. `null` means a
+/// phone: it is already running what a download would install.
+function downloadFor(ua) {
+  if (/Android|iPhone|iPad|iPod/i.test(ua || "")) return null;
+  return DOWNLOADS.find((d) => d.detect(ua || "")) || false;
+}
+
+/// THE HOME HERO'S POINTER, one line. The offer is a page of questions — what
+/// SmartScreen does, why the program is unsigned, what updating costs — and
+/// the hero is read by someone who has not yet seen the tool work, which is the
+/// worst moment to ask them to run an unsigned executable.
+///
+/// A DESKTOP WE DO NOT BUILD FOR IS TOLD SO, rather than handed a link it
+/// cannot use. Warframe has no macOS client either, so that reader is rarely
+/// anyone — which is exactly why the case would go unnoticed.
 function renderDownloads() {
   const host = document.getElementById("hero-dl");
   if (!host) return;
-  const ua = navigator.userAgent || "";
-  if (/Android|iPhone|iPad|iPod/i.test(ua)) {
+  const mine = downloadFor(navigator.userAgent);
+  if (mine === null) {
     host.hidden = true;
     return;
   }
-  const mine = DOWNLOADS.find((d) => d.detect(ua));
-
-  let head;
-  if (mine) {
-    const src = mine.source;
-    // THE BADGE IS A LINK TO THE SAME PLACE, so it is an answer rather than a
-    // label: "where does this come from" and "take me there to look first" are
-    // the same question, asked by the same reader, one click apart.
-    head = `<a class="dl-btn" href="${escHtml(src.url)}" target="_blank" rel="noopener">`
-      + `${escHtml(tr("Download for {os}").replace("{os}", mine.os))}</a>`
-      + `<a class="dl-src" href="${escHtml(src.url)}" target="_blank" rel="noopener"`
-      + ` title="${escHtml(trF("hosted on {name} — this is where the file comes from",
-        { name: src.name }))}">${src.icon}<span>${escHtml(src.name)}</span></a>`;
-  } else {
-    head = `<span class="dl-why">${escHtml(tr("A desktop version is available for Windows."))}</span>`;
-  }
-
-  host.innerHTML = `<div class="dl-head">${head}</div>`
-    + `<div class="dl-why">${escHtml(tr("The same calculator on your own machine — opens instantly, works offline, and updates itself."))}</div>`;
+  host.innerHTML = mine
+    ? `<a class="dl-line" href="/download">${escHtml(
+      trF("{os} app — opens instantly, works offline, updates itself", { os: mine.os }))}`
+      + ` <span class="dl-go">→</span></a>`
+    : `<span class="dl-why">${escHtml(tr("A desktop version is available for Windows."))}</span>`;
   host.hidden = false;
+}
+
+/// The page at /download: the offer, above the questions the markup asks.
+function renderDownloadPage() {
+  const host = document.getElementById("dl-offer");
+  if (!host) return;
+  // ALREADY RUNNING IT. The URL is typed by hand and read off a video, so it
+  // has to answer inside the client too — as the fact that there is nothing
+  // here to install rather than as a blank.
+  if (window.__WFSIM_DESKTOP__) {
+    host.innerHTML = `<span class="dl-why">${escHtml(
+      tr("You are running the Windows app. It updates itself — there is nothing to download here."))}</span>`;
+    return;
+  }
+  const mine = downloadFor(navigator.userAgent);
+  // A PHONE READS THE PAGE. The hero shows a phone nothing because an
+  // executable is noise on the one screen with the least room for it; a reader
+  // who has navigated HERE asked, and is answered with the button they cannot
+  // use today plus the reason.
+  const d = mine || DOWNLOADS[0];
+  host.innerHTML = downloadOffer(d)
+    + (mine ? "" : `<span class="dl-why">${escHtml(
+      tr("This is a Windows program — it will not run on the machine you are reading this on."))}</span>`);
 }
 
 function mountDesktopUpdater() {

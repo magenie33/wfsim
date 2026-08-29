@@ -98,7 +98,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
    instead of one selector per block — which is what this was, and the Parts
    block was in none of the lists: it drew on the Simulator and the Optimizer
    tabs, a builder control on two pages that do not own a build. The same shape
-   as the Mode block's own bug (check_opt_modes, 2026-08-11), which is why a
+   as the Mode block's own bug (check_opt_modes), which is why a
    list is the wrong mechanism.
 
    The BUILDER is the default tab, so its blocks show whenever no other
@@ -217,7 +217,7 @@ body.on-enemies [data-module="builder"]{display:none}
 .ar-jump:disabled{opacity:.45;cursor:default}
 .arena.ar-ro .ar-jump{opacity:.45;cursor:default;pointer-events:none}
 .arena{margin:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel2);overflow:hidden}
-/* A FINGER SCROLLS unless the reader says otherwise (hard rule, 2026-08-18), so
+/* A FINGER SCROLLS unless the reader says otherwise (hard rule), so
    the ban on browser gestures belongs to the SVG scene, which has no drag mode
    of its own. The canvas editor sets its own on the CANVAS and leaves its
    chrome — a scrolling brush panel — alone. */
@@ -791,7 +791,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .sup-usage{font-size:13px;color:var(--gold);border-left:2px solid var(--gold);
   padding:2px 0 2px 12px;margin:22px 0 0;max-width:760px;line-height:1.6}
 .sup-count{font-size:12px;color:var(--text-2);margin:10px 0 0}
-.sup-costs{list-style:none;margin:0;padding:0;font-size:13px}
+.sup-costs,.dl-page .sup-costs{list-style:none;margin:0;padding:0;font-size:13px}
 .sup-costs li{padding:7px 0;color:var(--text-2)}
 .sup-costs li+li{border-top:1px solid var(--line)}
 .sup-costs a{color:var(--accent)}
@@ -1892,6 +1892,19 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .dl-src:hover{color:var(--text-2)}
 .dl-src svg{flex:none;opacity:.85}
 .dl-why{color:var(--text-2);font-size:13px;margin-top:6px}
+/* THE HOME HERO'S POINTER. One line, weighted below the two headlines above
+   it: the offer lives at /download, and this is the sign pointing there. */
+.dl-line{display:inline-flex;align-items:center;gap:6px;font-size:13px;
+  color:var(--text-2);text-decoration:none;border-bottom:1px solid var(--line);
+  padding-bottom:2px}
+.dl-line:hover{color:var(--gold);border-bottom-color:var(--gold)}
+.dl-go{opacity:.7}
+
+/* /download — a reading page, so it takes the support page's measure and its
+   list styling rather than growing a second set. */
+.dl-page{max-width:1060px;margin:0 auto;padding:28px 18px}
+.dl-page .block{max-width:760px}
+.dl-offer{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0 8px}
 
 /* THE WHOLE FIGHT — a reading surface first, so it is dense and quiet. Folded
    shut by default; the ordinary reader is not asked to care. */
@@ -2118,7 +2131,7 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
    inside a 1080px table, and the two narrow columns beside it lost so much
    room that a two-character Chinese label wrapped one character per line —
    "头 部" over two rows and the proc chips turned on their side (seen on the
-   Chinese page, 2026-08-27). A minimum keeps them readable; the table already
+   Chinese page). A minimum keeps them readable; the table already
    scrolls sideways inside its own container, which is where the extra width
    comes from. */
 .rec-t td:nth-child(3){min-width:66px;white-space:nowrap}

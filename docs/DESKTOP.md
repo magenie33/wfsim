@@ -190,32 +190,51 @@ Upload once. It is a **download link, not an update channel** — a network driv
 has no stable direct URL, and automated downloads would not count as real
 traffic anyway.
 
-### What the home page offers, and what it says about it
+### The offer: a pointer, and a page
 
-**Windows only, for now**. The release workflow still cuts
-`WFSim.AppImage` and the GitHub release page still lists it; the hero simply is
-not about it. The Linux row was built before anyone asked for it and it cost the
-offer its shape — a Windows button, a GitHub link beside it, then a second row
-reading `Linux · GitHub`: four things for what is one decision. Warframe on Linux
-is Proton, a smaller audience than the row it was taking.
+`/download` is the offer. It is a page of the SHELL like `/support` and
+`/benchmark` — it belongs to no weapon, and it is **not a fourth module**,
+because it produces nothing the builder, the simulator or the optimizer
+consume.
+
+It is a page rather than a button because what a downloader asks is a page:
+what SmartScreen does on first run, why the program is unsigned, what updating
+costs, what uninstalling means, where the source is. The SmartScreen section is
+the **owner's own wording**, transcribed from the notes file that ships beside
+the binary — the notes answer the warning after the download, and the page
+answers it before.
+
+The URL is also the half that can be said out loud: a reader who saw this in a
+video types `wfsim.app/download`.
+
+The home hero carries **one line** pointing at it. That page is read by someone
+who has not yet seen the tool work, which is the worst moment to ask them to run
+an unsigned executable; the people who want the client are the ones already
+using the site.
+
+**Windows only.** The release workflow still cuts `WFSim.AppImage` and the
+GitHub release page still lists it; the offer is not about it.
 
 **The source is named beside the button.** This site does not host the
 executable — it is on a Quark network drive — and a reader about to run a
-downloaded binary is entitled to see whose drive it is on BEFORE they click
-rather than after the tab has opened. The badge is a link to the same place, so
-"where does this come from" and "take me there to look first" are one click
-apart. Its mark is a **generic drive glyph, not Quark's own logo**: the badge has
-to say which service this is, which the name does; reproducing somebody else's
-trademark to do it would borrow their mark for a claim they have not made about
-this file.
+downloaded binary is entitled to see whose drive it is on before they click.
+The badge links to the same place, so "where does this come from" and "take me
+there to look first" are one click apart. Its mark is a **generic drive glyph,
+not Quark's own logo**: the badge has to say which service this is, which the
+name does, and reproducing somebody else's trademark would borrow their mark
+for a claim they have not made about this file.
 
-`scripts/check_downloads.mjs` holds all of it, and the NAME is what it asserts
-rather than the element — an icon alone identifies nothing, which is the failure
-the badge exists to prevent. Its negative control is the other two desktops: a
-Mac or Linux reader must be TOLD, and must be handed no `.exe` link, since
-printing the right sentence beside a live download would pass every other
-assertion.
+**Inside the client**, `/download` says there is nothing here to install. The
+URL is typed by hand and read off a video, so it has to answer there too.
 
+`scripts/check_downloads.mjs` holds all of it. The NAME is what it asserts
+rather than the element — an icon alone identifies nothing, which is the
+failure the badge exists to prevent — and it asserts that the page ANSWERS each
+question, since a page carrying the button and none of them is the button with
+more scrolling. Its negative control is the other two desktops: a Mac or Linux
+reader must be told, and handed no download link. It also reads the built
+`site/download/index.html`, because the prerendered head is the half no browser
+assertion can see.
 
 ## Three ways this builds cleanly and ships the wrong thing
 

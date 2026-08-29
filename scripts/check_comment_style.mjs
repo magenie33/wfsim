@@ -49,7 +49,7 @@ const NARRATIVE = new RegExp(
 
 // THE CEILING MAY ONLY FALL. Lower it whenever a pass removes some; never raise
 // it to make a red run green — that is the one edit this file exists to refuse.
-const NARRATIVE_CEILING = 304;
+const NARRATIVE_CEILING = 270;
 
 const files = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")

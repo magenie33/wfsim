@@ -528,7 +528,36 @@ def prerender(flagged: str) -> None:
         newline="\n",
     )
 
-    urls = [SITE + "/", SITE + "/support"] + [SITE + wiki_path(s["name"]) for s in roster()]
+    # /download — the URL a reader types after seeing it in a video, so it is
+    # prerendered like /support: without its own title, description and
+    # canonical it previews as the app's own headline, and a link that says
+    # "Ultimate Warframe Calculator" and opens on an executable download is the
+    # kind of mismatch that reads as a scam.
+    dl_desc = (
+        "WFSim as a Windows app: the same calculator on your own machine, "
+        "opening instantly, working with no connection and updating itself. "
+        "It is not a cut-down version — it carries the same engine the site "
+        "serves. Free and open source, AGPL-3.0."
+    )
+    (APP / "download").mkdir(parents=True, exist_ok=True)
+    (APP / "download" / "index.html").write_text(
+        shell(
+            flagged,
+            "Download WFSim for Windows",
+            dl_desc,
+            SITE + "/download",
+            f"{SITE}/logo.svg",
+            "    <h1>WFSim for Windows</h1>\n"
+            f"    <p>{html_mod.escape(dl_desc)}</p>\n"
+            f'    <p><a href="{SITE}/">wfsim.app</a></p>\n',
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+    urls = [SITE + "/", SITE + "/support", SITE + "/download"] + [
+        SITE + wiki_path(s["name"]) for s in roster()
+    ]
     (APP / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -544,7 +573,7 @@ def prerender(flagged: str) -> None:
         encoding="utf-8",
         newline="\n",
     )
-    print(f"prerendered {len(urls) - 2} weapon pages + /support + sitemap.xml + robots.txt")
+    print(f"prerendered {len(urls) - 3} weapon pages + /support + /download + sitemap.xml + robots.txt")
 
 
 def run(*cmd: str) -> None:

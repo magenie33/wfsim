@@ -1204,6 +1204,19 @@ Each asserts a property of the shipping build. Run the ones a change touches.
 - **Absolute asset paths in the UI** (`/img/…`, `/pol/…`, `/logo.svg`): the SPA
   also loads at `/weapons/<Wiki_Name>`, where relative paths resolve into the
   SPA fallback's HTML.
+- **A PAGE THAT IS NOT A MODULE IS A SHELL PAGE** — /support, /benchmark and
+  /download. It belongs to no weapon, so it sits beside the home grid rather
+  than under `/weapons/<name>`, and it is not a fourth MODULE: it produces
+  nothing the three consume. /download is the offer for the Windows client, and
+  it is a PAGE rather than a button because what a downloader asks is a page —
+  what SmartScreen does on first run, why the program is unsigned, what updating
+  costs, what uninstalling means, where the source is. Its SmartScreen section
+  is the OWNER'S OWN WORDING, transcribed from the notes file that ships beside
+  the binary: the notes answer the warning after the download, the page answers
+  it before. The home hero carries one LINE pointing at it — that page is read
+  by someone who has not yet seen the tool work, which is the worst moment to
+  ask them to run an unsigned executable, and the people who want the client are
+  the ones already using the site. See `docs/DESKTOP.md`.
 - **THE PAGE IS THREE MODULES — Builder | Simulator | Optimizer** — with one
   tab/view each, plus EDITORS that feed them. An editor is not a fourth module:
   it produces something the three consume, and it earns a tab only because it is
