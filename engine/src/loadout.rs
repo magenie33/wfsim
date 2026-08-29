@@ -1295,8 +1295,8 @@ pub struct ModDef {
     /// exilus-eligible mod is legal in a main slot too, which is why that one
     /// travels in a field of its own (AGENTS.md, 2026-08-25).
     ///
-    /// Keyed by [`crate::weapons_data::FormKind::id`].
-    pub stance: Option<&'static [(&'static str, &'static [crate::weapons_data::ComboHit])]>,
+    /// Keyed by [`crate::weapons_data::FormKind::id`] — see [`StanceCombos`].
+    pub stance: Option<StanceCombos>,
     /// Mods sharing a family are mutually exclusive (wiki Incompatible).
     pub family: Option<&'static str>,
     /// Weapon property required to EQUIP this mod at all — "continuous" for
@@ -1423,6 +1423,17 @@ pub struct StackSpec {
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
 }
+
+/// WHAT A STANCE PUBLISHES: `(form id, its swings)`.
+///
+/// NO NAME, and that is a decision rather than an omission (owner,
+/// 2026-08-29). A MODE'S NAME IS FIXED and the stance changes what it is WORTH:
+/// swapping this card moves the numbers behind `neutral` and never what
+/// `neutral` is called, which is the only way "which stance is best for the
+/// neutral combo" can be asked at all. It was briefly a triple carrying the
+/// combo's own name, and drawing that name on the mode made the two builds
+/// incomparable.
+pub type StanceCombos = &'static [(&'static str, &'static [crate::weapons_data::ComboHit])];
 
 /// TENNOKAI, resolved: what the equipped cards came to.
 ///

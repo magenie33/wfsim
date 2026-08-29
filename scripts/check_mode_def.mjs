@@ -55,7 +55,10 @@ const grab = (weapon) => `(async () => {
 //   Cortege   gauge fed by kills on a HELD beam, and its earned form is an
 //             alt-fire rather than a charged shot
 //   Lex       the ordinary case: weakpoint hits
-const WEAPONS = ["Mausolon", "Torid", "Cortege", "Lex"];
+//   Kuva Hind three FREE modes, whose ids are their FORMS' ids — the shape
+//             that broke, see below
+//   Magistar  seven of them, all melee
+const WEAPONS = ["Mausolon", "Torid", "Cortege", "Lex", "Kuva_Hind", "Magistar"];
 
 for (const lang of ["en", "zh"]) {
   await evaluate(
@@ -75,6 +78,24 @@ for (const lang of ["en", "zh"]) {
     check(`${w}/${lang}: every entry got a sentence`, r.lines.length >= r.names.length,
       `${r.lines.length} lines for ${r.names.length} entries`);
     check(`${w}/${lang}: the one you are in is marked, once`, r.marked === 1, `${r.marked}`);
+
+    // **NO TWO MODES OF ONE WEAPON SHARE A NAME**, which is the assertion this
+    // check was missing and the reason a real bug shipped for two weeks.
+    //
+    // `modeLabel` had branches for `cycle`, `alternate` and `transformed` and
+    // fell through to "the default form" for anything else — so a mode whose id
+    // IS a form's id matched nothing and took the default form's name. The Kuva
+    // Hind drew all three of its modes as "Base Form" from the day its third
+    // trigger landed (2026-08-14), and melee made it seven identical entries
+    // before anyone saw it (owner, 2026-08-29).
+    //
+    // EVERY ASSERTION ABOVE PASSED THE WHOLE TIME. One entry per mode, a
+    // sentence each, one marked, the right language — all true of a list that
+    // says the same word three times. What none of them asked is whether the
+    // names TELL THE MODES APART, which is the only thing a name is for.
+    const dupes = r.names.filter((n, i) => r.names.indexOf(n) !== i);
+    check(`${w}/${lang}: the names tell the modes apart`,
+      dupes.length === 0, `${dupes.length} repeated of ${r.names.length}: ${names}`);
 
     // THE NUMBERS ARE ON SCREEN. A cycle whose text carries no digits is the
     // old dropdown with more words: this is the assertion that the gauge

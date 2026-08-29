@@ -34,12 +34,20 @@ seven different builds being ranked, which is what the board is for.
 | `slide` | slide | Hell's Wave | 200% (360deg, forced Impact) |
 | `heavy_slam` | heavy, airborne | — | 630 Blast, 10 m sphere |
 
-**A mode id is the INPUT, never the combo's name.** A stance names its own
-combos and a different hammer stance names them differently, so a name here
-would bake one stance into a durable id that every saved preset, share link and
-board row carries. The input is what does not change; the NAME is derived and
-filled in from the stance, which is `check_mode_def.mjs`'s existing machinery
-and costs no translation.
+**A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT** (owner, 2026-08-29). The id
+is the INPUT — `neutral`, `block_forward` — and so is what a reader sees;
+swapping the stance changes what `neutral` is WORTH and never what it is called.
+
+That was briefly the other way round: the label was derived from the equipped
+stance, so the same mode read "Raging Whirlwind" under Crushing Ruin and
+"Falling Rock" under Shattering Storm. It is worse, and for the one question a
+stance slot exists to answer — *which stance is best for the neutral combo* —
+cannot be asked at all if the two builds call that mode different things. One
+vocabulary, seven entries, and the numbers underneath them move.
+
+The combo's own name stays in a comment above each block in the stance file,
+where it is documentation for whoever transcribes the next stance rather than a
+label the app draws.
 
 ---
 
@@ -141,6 +149,19 @@ slot could NOT do — an exilus-eligible mod is legal in a main slot too — whi
 is why THAT one travels in a field of its own (AGENTS.md, 2026-08-25) and this
 one rides `mods`, appended. Nothing about the share link, the board record, the
 worker's table or `builds::identity` had to change.
+
+**A TENNOKAI HEAVY BREAKS THE CHAIN**, so the next light swing starts the combo
+over (owner, 2026-08-29). The wiki says nothing about a stance chain's position
+— asked directly, and the page is silent on what advances it and what resets it
+— so this is his answer and is recorded as one rather than derived.
+
+It decides which swings ever happen, which is why it could not be left to
+whichever behaviour fell out of the code. Raging Whirlwind is
+`400 / 200 / 300 / 500`, and a chain that restarts on every window fires the
+opener again and again. The sharp case is Discipline's Merit: it opens the
+window every FOUR hits, which is exactly that combo's length, so the 500%
+finisher is never reached at all. `swing_idx += 1` against `swing_idx = 0` was
+the whole difference.
 
 The slot is drawn on a melee weapon and on nothing else, the picker's filter
 runs BOTH ways (a stance is refused from the eight, and only a stance is offered

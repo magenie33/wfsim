@@ -27,6 +27,14 @@ description: "Wielders of this Stance thrust in strong whirlwind attacks."
 # slam a combo ends on, `ImpactMultiplier` is a bonus to the Impact component
 # alone, and `Duration` is the combo's length at 1.0x attack speed.
 #
+# A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT (owner, 2026-08-29). Swapping
+# this card changes what `neutral` is WORTH and never what it is called — which
+# is the only way the question a stance slot exists to answer can be asked at
+# all: "which stance is best for the neutral combo" needs both builds to call
+# that mode the same thing. The combo's own name is in the comment above each
+# block, where it belongs: it is documentation for whoever transcribes the next
+# stance, not a label the app draws.
+#
 # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
 # the direct swings share the published duration.
 combos:

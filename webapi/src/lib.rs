@@ -1089,6 +1089,16 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // engine's answer to "what does this weapon swing", and the
                 // page has never needed to know.
                 "stance": m.stance.is_some(),
+                // …AND WHAT EACH OF ITS COMBOS COMES TO, keyed by the form it
+                // is. NOT the combo's NAME — a mode's name is fixed and its
+                // STRENGTH is not (owner, 2026-08-29), and these three numbers
+                // are the strength: swapping this card is what moves them.
+                "stance_combos": m.stance.map(|c| {
+                    c.iter()
+                        .map(|(form, hits)| (*form, combo_summary(hits)))
+                        .collect::<std::collections::BTreeMap<_, _>>()
+                }),
+
                 "family": m.family,
                 "category": mod_category(m),
                 "image": assets().mods.get(m.id),
@@ -1425,8 +1435,19 @@ pub fn meta_json() -> Value {
                             .iter()
                             .find(|f| f.kind.id() == *id)
                             .and_then(|f| wfsim_engine::weapons_data::spec(f.weapon_id));
+                        // WHAT THIS FORM SWINGS, in the three numbers that
+                        // decide between melee's seven modes: how many swings,
+                        // what they come to, and how long they take. Absent on
+                        // every gun.
+                        //
+                        // THE ENTRY'S OWN, which is what an EMPTY stance slot
+                        // fires — a stance in the slot replaces it, and sends
+                        // the same three numbers of its own (`stance_combos`).
+                        let combo = s.map(|s| &s.attack.combo_script).filter(|c| !c.is_empty())
+                            .map(|c| combo_summary(c));
                         json!({
                         "id": id, "name": name, "is_default": def,
+                        "combo": combo,
                         // Is this the form the GAUGE switches into? Then it
                         // exists only while its unlock is installed — and a mod
                         // that cannot be worn beside that unlock (`evo_forbids`)
@@ -2147,6 +2168,22 @@ pub fn build_keys_json(v: &Value) -> Value {
         })
         .collect();
     json!({ "ok": true, "keys": keys })
+}
+
+/// A COMBO IN THE THREE NUMBERS THAT DECIDE BETWEEN MODES: how many swings, what
+/// they come to, and how long they take at 1.0x attack speed.
+///
+/// THE SLAM IS COUNTED AND TAKES NO TIME, which is how the wiki's own module
+/// states it — a combo's `Duration` is its direct swings', and the slam three of
+/// Crushing Ruin's four end on rides the swing it is listed with.
+fn combo_summary(script: &[wfsim_engine::weapons_data::ComboHit]) -> Value {
+    let swings = script.iter().filter(|h| h.slam_multiplier.is_none()).count();
+    let total: f64 = script
+        .iter()
+        .map(|h| (h.multiplier + h.slam_multiplier.unwrap_or(0.0)) * f64::from(h.hits))
+        .sum();
+    let seconds: f64 = script.iter().map(|h| h.windup_seconds + h.delay_seconds).sum();
+    json!({ "swings": swings, "total": r3(total), "seconds": r3(seconds) })
 }
 
 pub fn board_check_json(v: &Value) -> Value {

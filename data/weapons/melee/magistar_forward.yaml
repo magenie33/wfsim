@@ -7,7 +7,12 @@ form: forward
 transform_group: magistar
 co_behavior: additive_with_base_damage
 attack:
-  trigger: semi_auto
+  # A SWING IS NOT A TRIGGER PULL. The engine reads this field for exactly
+  # three values — `held` (a beam), `charge` and `burst` — so `melee` matches
+  # none of them and is simply the truth; the page then prints the form's name
+  # with no parenthetical, where `semi_auto` had it reading "Neutral Combo
+  # (semi-auto)".
+  trigger: melee
   shot_type: hit_scan
   fire_rate: 0.833
   multishot: 1.0

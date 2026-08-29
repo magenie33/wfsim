@@ -748,8 +748,7 @@ fn to_moddef(mf: ModFile) -> ModDef {
     // A STANCE'S COMBO SCRIPTS, keyed by form. Leaked because a `ModDef` is
     // `'static` for the life of the process, the same way every other string on
     // it is — the pool is built once at load.
-    let stance: Option<&'static [(&'static str, &'static [crate::weapons_data::ComboHit])]> =
-        mf.combos.as_ref().map(|m| {
+    let stance: Option<crate::loadout::StanceCombos> = mf.combos.as_ref().map(|m| {
             let v: Vec<(&'static str, &'static [crate::weapons_data::ComboHit])> = m
                 .iter()
                 .map(|(form, hits)| {

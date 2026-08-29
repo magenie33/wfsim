@@ -62,7 +62,12 @@ unmodeled:
   - "melee RIVENS are not modelled — there is no melee riven pool yet, so the riven editor offers this weapon nothing"
 
 attack:
-  trigger: semi_auto
+  # A SWING IS NOT A TRIGGER PULL. The engine reads this field for exactly
+  # three values — `held` (a beam), `charge` and `burst` — so `melee` matches
+  # none of them and is simply the truth; the page then prints the form's name
+  # with no parenthetical, where `semi_auto` had it reading "Neutral Combo
+  # (semi-auto)".
+  trigger: melee
   shot_type: hit_scan
   # ATTACK SPEED, in the fire-rate bucket — which is what makes Fury and
   # Berserker ordinary mods here. A stance's swing delays are published at 1.0x,

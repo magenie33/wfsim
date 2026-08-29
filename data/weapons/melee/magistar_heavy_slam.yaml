@@ -21,7 +21,12 @@ unmodeled:
   - "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode"
   - "the slam's radius grows with the height it was dropped from — up to 150% at 15 m and down to a floor of 2.5m/radius — and this arena has no vertical axis, so the listed radius is what is used"
 attack:
-  trigger: semi_auto
+  # A SWING IS NOT A TRIGGER PULL. The engine reads this field for exactly
+  # three values — `held` (a beam), `charge` and `burst` — so `melee` matches
+  # none of them and is simply the truth; the page then prints the form's name
+  # with no parenthetical, where `semi_auto` had it reading "Neutral Combo
+  # (semi-auto)".
+  trigger: melee
   shot_type: hit_scan
   fire_rate: 0.833
   multishot: 1.0

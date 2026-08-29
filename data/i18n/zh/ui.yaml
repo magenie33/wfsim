@@ -413,6 +413,15 @@ ui:
   "the slam's radius grows with the height it was dropped from — up to 150% at 15 m and down to a floor of 2.5m/radius — and this arena has no vertical axis, so the listed radius is what is used": 捶地半径会随落下高度增长——15 米以上可达 150%，最低降到 2.5m/半径 的下限——而这个竞技场没有垂直轴，所以直接采用面板半径
   "Condition Overload does not apply to slams, heavy slams or radial attacks (the mod's own words), and this entry does not yet exempt it — a build carrying Condition Overload therefore reads HIGH in this mode": 异常状态过载不作用于捶地、重击捶地和径向攻击（mod 卡面原话），而本条目尚未做这个豁免——所以带异常状态过载的配装在这个模式下读数偏高
   "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode": 近战**暴击率** mod 在重击上读作 x2——斩铁、牺牲之钢、镀锌之钢的卡面都这么写——而本条目没有做这个翻倍，所以暴击流派在这个模式下读数偏低
+  "{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.": 共 {n} 击，合计基伤的 {total}%，在 1.0x 攻速下耗时 {secs} 秒。
+  "Swung as its {form} for the whole engagement.": 整场交战都用{form}挥击。
+  "Neutral Combo": 中立连段
+  "Forward Combo": 前冲连段
+  "Block Combo": 格挡连段
+  "Block Forward Combo": 格挡前冲连段
+  "Heavy Attack": 重击
+  "Slide Attack": 滑行攻击
+  "Heavy Slam": 重击震地
   "this build is already on the board ({row}) — nothing was sent": 这套配装已经在榜上了（{row}），所以没有上传。
   "It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.": 它本身就是榜上的一行，所以这里什么都改不了，跑出来的结果也不会提交。复制一份，全部就都能改了——mod、赋能、进化，还有形态——而且你跑出来的成绩会作为你自己的一行进榜。
   "It tells you what it cannot model, on the card where you are standing: on a weapon, an evolution, a mod, an arcane, an enemy. It lists those itself rather than waiting to be asked.":

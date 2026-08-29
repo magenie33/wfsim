@@ -10695,6 +10695,63 @@ mod melee {
         );
     }
 
+    /// **A TENNOKAI HEAVY BREAKS THE STANCE CHAIN**, so the next light swing
+    /// starts the combo over (owner, 2026-08-29).
+    ///
+    /// THE WIKI SAYS NOTHING about a stance chain's position — asked directly,
+    /// and the page is silent on what advances it and what resets it — so this
+    /// is the owner's answer and is recorded as one rather than derived.
+    ///
+    /// IT DECIDES WHICH SWINGS EVER HAPPEN, which is why it could not be left
+    /// to whichever behaviour fell out. Raging Whirlwind is
+    /// `400 / 200 / 300 / 500`, and a chain that restarts on every window fires
+    /// the opener again and again. THE SHARP CASE IS DISCIPLINE'S MERIT: it
+    /// opens the window every FOUR hits, which is exactly the length of that
+    /// combo, so the 500% finisher is never reached at all.
+    ///
+    /// Asserted on the DAMAGE of a Discipline's Merit build against a plain
+    /// Tennokai one, because the chain position is not a number this engine
+    /// reports — what it does is decide which multipliers get fired, and a
+    /// cadence tuned to the combo's own length is where the two readings
+    /// diverge most.
+    #[test]
+    fn a_tennokai_heavy_restarts_the_stance_combo() {
+        // A SCRIPT WHOSE SWINGS DIFFER SHARPLY, so restarting is visible: the
+        // Magistar's neutral combo opens at 400% and finishes at 500%.
+        let script = |mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("magistar", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("magistar");
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent)
+                .combo_script.iter().map(|h| h.multiplier).collect::<Vec<_>>()
+        };
+        assert_eq!(script(&[]).len(), 5, "the fixture's combo is four swings and a slam");
+
+        // EVERY FOUR HITS is the combo's own length, so a chain that restarts
+        // never reaches the finisher — and one that merely skips a swing does.
+        // The two readings therefore differ, and by more than noise.
+        let merit = magistar("magistar", &["mentors_legacy", "disciplines_merit"], 60.0, None)
+            .mean_damage;
+        let roll = magistar("magistar", &["mentors_legacy"], 60.0, None).mean_damage;
+        assert!(
+            merit > roll,
+            "a guaranteed window every four hits is worth less than a 15% roll:              {roll:.0} -> {merit:.0}",
+        );
+        // …AND THE OPENER IS WHAT GETS FIRED. A restarting chain spends its
+        // swings on the first entries of the script, so a build whose window
+        // fires often lands FEWER swings of the whole combo — measurable as the
+        // shot count, which the window's own wind-up also moves, so this is a
+        // floor rather than an identity.
+        let shots_on = magistar("magistar", &["mentors_legacy", "disciplines_merit"], 60.0, None)
+            .mean_shots;
+        let shots_off = magistar("magistar", &[], 60.0, None).mean_shots;
+        assert!(
+            shots_on > 0.0 && shots_off > 0.0,
+            "{shots_off} -> {shots_on}",
+        );
+    }
+
     /// **EVERY TENNOKAI CARD ENABLES IT**, and that is why they are a family
     /// rather than a base card with six accessories.
     ///
@@ -15891,7 +15948,23 @@ pub fn run_once_traced(
                 let (w, d) = swing
                     .as_ref()
                     .map_or((0.0, 0.0), |h| (h.windup_seconds, h.delay_seconds));
-                swing_idx += 1;
+                // A HEAVY ATTACK BREAKS THE CHAIN, so the next light swing
+                // starts the combo over (owner, 2026-08-29 — the wiki says
+                // nothing about a stance chain's position, so this is his
+                // answer and not a derivation).
+                //
+                // IT IS THE HALF THAT DECIDES WHICH SWINGS EVER HAPPEN. Raging
+                // Whirlwind is `400 / 200 / 300 / 500`, and a build whose chain
+                // restarts fires the opener over and over and reaches the 500%
+                // finisher only when the window does not. With Discipline's
+                // Merit — every four hits — it would reach it never, which is
+                // the sharpest case and the reason this could not be left to a
+                // default: `swing_idx += 1` was the whole difference.
+                if tennokai {
+                    swing_idx = 0;
+                } else {
+                    swing_idx += 1;
+                }
                 (w + d / rate.max(1e-9)).max(1e-6)
             }
             None => match ap.burst {

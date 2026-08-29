@@ -110,6 +110,29 @@ around (decision 2026-07-31).
   that read it, leaving INITIAL COMBO (a floor refilling at 40 points a second)
   as that build's whole engine. Both cards land in brackets this engine already
   had, with one `(combo - 1)` term each.
+  A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT (owner, 2026-08-29). The id is
+  the INPUT — `neutral`, `block_forward` — and so is what a reader sees; the
+  stance changes what `neutral` is WORTH and never what it is called. Derived
+  from the equipped stance first ("Raging Whirlwind" under one, "Falling Rock"
+  under the other) and that is worse: the one question a stance slot exists to
+  answer — which stance is best for the neutral combo — cannot be asked if the
+  two builds call that mode different things.
+  A MODE ID CAN BE A FORM ID, and `modeLabel` did not know it — a bug it shipped
+  with from the day a THIRD firing mode arrived (2026-08-14): it branched on
+  `cycle`, `alternate` and `transformed` and fell through to "the default form"
+  for everything else, so the Kuva Hind drew all three of its modes as "Base
+  Form" and the Magistar all seven as "Neutral Combo". `check_mode_def` passed
+  the whole time — one entry per mode, a sentence each, one marked, the right
+  language, all true of a list that says the same word three times. What none of
+  its assertions asked was whether the names TELL THE MODES APART, which is the
+  only thing a name is for; it asks now, over the Kuva Hind and the Magistar.
+  A TENNOKAI HEAVY BREAKS THE STANCE CHAIN, so the next light swing starts the
+  combo over (owner, 2026-08-29 — the wiki is silent on what advances a chain
+  and what resets it, so this is his answer rather than a derivation). It
+  decides which swings ever happen: Raging Whirlwind is `400/200/300/500`, and
+  Discipline's Merit opens the window every FOUR hits, which is exactly that
+  combo's length — so under a restarting chain the 500% finisher is never
+  reached at all.
   A STANCE IS THE FIRST MOD THAT CHANGES WHAT A WEAPON FIRES (2026-08-29) rather
   than what it fires with: it publishes a combo per FORM and installing one
   replaces the entry's own script, so the same Magistar in the same mode is a

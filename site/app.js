@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "8baa00c5+ · 2026-08-28 18:46Z";
+const BUILD_ID = "d698efff+ · 2026-08-29 00:25Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -1873,6 +1873,29 @@ const modeLabel = (w, id) => {
   if (id === "cycle") {
     const f = earnedForm(w);
     return f ? trF("{form} cycle", { form: tr(f.name) }) : tr("cycle");
+  }
+  // **A MODE ID CAN BE A FORM ID**, and this function did not know it — which
+  // is a bug it shipped with from the day a third firing mode arrived
+  // (2026-08-14) and melee only made loud. `semi_auto`, `auto` and the seven
+  // melee kinds each take their FORM's own id as their mode id, none of them
+  // matched a branch below, and every one of them fell through to "the default
+  // form" — so the Kuva Hind drew all three of its modes as "Base Form" and the
+  // Magistar drew all seven as "Neutral Combo" (owner, 2026-08-29).
+  //
+  // THE DIRECT MATCH GOES FIRST and costs the older modes nothing: no form is
+  // called `cycle`, `alternate` or `transformed`, so those three fall past it
+  // into the branches they always had, and a gun's `base` mode finds the form
+  // named `base`, which IS its default one.
+  // A MODE'S NAME IS FIXED, and the stance changes what it is WORTH (owner,
+  // 2026-08-29). It was briefly derived from the equipped stance — "Raging
+  // Whirlwind" under Crushing Ruin, "Falling Rock" under Shattering Storm — and
+  // that is worse for the one question a stance slot exists to answer: "which
+  // stance is best for the neutral combo" cannot be asked if the two builds
+  // call that mode different things. One vocabulary, seven entries, and the
+  // numbers underneath them move.
+  const named = forms.find((x) => x.id === id);
+  if (named) {
+    return tr(named.name);
   }
   // A WEAPON CAN HAVE MORE THAN ONE ALTERNATE, so "the non-default form" is
   // not an answer: a bow with an adapter has a tapped shot AND an Incarnon
@@ -11366,6 +11389,21 @@ const CHARGE_WORD = {
 /// gauge economy (`/api/meta`), so a weapon that arrives tomorrow explains
 /// itself. Each sentence is ONE translated template with `{named}` holes, so a
 /// weapon with different numbers costs no translation at all.
+/// WHAT THIS MODE SWINGS, in the three numbers that decide between the seven:
+/// how many swings, what they come to, and how long they take.
+///
+/// FROM THE STANCE WHEN ONE IS EQUIPPED, because that is the card that moves
+/// them — a mode's NAME is fixed and its STRENGTH is not (owner, 2026-08-29).
+/// The form's own is what an empty stance slot fires.
+const comboOf = (w, id) => {
+  const f = ((w || {}).forms || []).find((x) => x.id === id);
+  if (!f) return null;
+  const sid = (slots[STANCE] || {}).mod;
+  const m = sid ? modById(sid) : null;
+  const fromStance = m && m.stance_combos ? m.stance_combos[id] : null;
+  return fromStance || f.combo || null;
+};
+
 function modeExplain(w, id) {
   const forms = (w || {}).forms || [];
   const def = forms.find((x) => x.is_default) || forms[0] || {};
@@ -11381,14 +11419,53 @@ function modeExplain(w, id) {
   };
   const out = [];
   if (id === "base") {
-    out.push(trF("Fired in its {form} for the whole engagement — it never transforms.",
-      { form: fired(def) }));
+    out.push(def.trigger === "melee"
+      ? trF("Swung as its {form} for the whole engagement.", { form: tr(def.name || "") })
+      : trF("Fired in its {form} for the whole engagement — it never transforms.",
+        { form: fired(def) }));
+    // …AND A MELEE WEAPON'S `base` IS A COMBO, whose FORM id is `neutral` and
+    // therefore never equals the mode id. Same three numbers as its siblings.
+    const c = comboOf(w, def.id);
+    if (c) {
+      out.push(trF("{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.",
+        { n: c.swings, total: Math.round(c.total * 100), secs: (+c.seconds).toFixed(2) }));
+    }
   } else if (id === "alternate") {
     out.push(trF("Fired in its {form} for the whole engagement.", { form: fired(alt) }));
     out.push(tr("Nothing is spent to be in it, so it can be held forever — a ruler ranks it."));
   } else if (id === "transformed") {
     out.push(trF("Its {form} alone, from the first second.", { form: fired(earned) }));
     out.push(tr("It is NOT a way to play a whole engagement — the form has to be bought and runs out, so no ruler ranks it. It is here so you can read the form's own numbers."));
+  } else if (forms.some((x) => x.id === id)) {
+    // **A MODE WHOSE ID IS A FORM'S ID**, which is every melee mode and the
+    // Kuva Hind's two extra triggers. There was no arm for it: `modeExplain`
+    // knew `base`, `alternate`, `transformed` and `cycle`, returned an empty
+    // list for anything else, and `renderMode` DROPS an entry with no lines —
+    // so the block drew one row for the Hind's three modes and one for the
+    // Magistar's seven (owner, 2026-08-29).
+    const f = forms.find((x) => x.id === id) || {};
+    const c = comboOf(w, id);
+    // A SWING IS NOT A SHOT, and the verb is the only word in this sentence
+    // that says which. `fired` is right for the Kuva Hind's two extra triggers
+    // and reads as nonsense over a hammer.
+    out.push(f.trigger === "melee"
+      ? trF("Swung as its {form} for the whole engagement.", { form: tr(f.name || "") })
+      : trF("Fired in its {form} for the whole engagement.", { form: fired(f) }));
+    // THE THREE NUMBERS THAT DECIDE BETWEEN THE SEVEN, which is what this
+    // block exists for: a name says which mode, these say why you would pick
+    // it. They come from the STANCE when one is equipped, because that is the
+    // card that moves them — the mode's name is fixed and its strength is not.
+    //
+    // OPTIONAL, because this arm is not melee's alone: the Kuva Hind's two
+    // extra triggers take their form's id as their mode id too, and a gun has
+    // no combo to state. That is what the arm was missing when it first landed
+    // — it required one, so the Hind fell through it and kept drawing a single
+    // row for three modes.
+    if (c) {
+      out.push(trF("{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.",
+        { n: c.swings, total: Math.round(c.total * 100), secs: (+c.seconds).toFixed(2) }));
+    }
+    out.push(tr("Nothing is spent to be in it, so it can be held forever — a ruler ranks it."));
   } else if (id === "cycle" && earned) {
     const g = earned.gauge || {};
     out.push(trF(
