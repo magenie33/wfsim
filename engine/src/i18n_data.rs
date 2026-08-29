@@ -600,7 +600,7 @@ mod tests {
                             // `round()` gives 3 and a card DE prints as "0.4"
                             // stops matching a value we hold as 0.35 — which
                             // is exactly what this reported, against data that
-                            // was right (Seeking Force, 2026-08-03). The whole
+                            // was right (Seeking Force). The whole
                             // job here is to decide what a number LOOKS like
                             // at a given precision, so the comparison has to
                             // be done at that precision too.

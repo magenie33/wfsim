@@ -12,7 +12,7 @@
 //! state) run EMERGENTLY; triggers outside the sim's world (rolls, ability
 //! casts, weapon swaps, overshields) contribute their assumed-max value ONLY
 //! under [`StackPolicy::AssumedMax`] — under `Emergent` they are honest
-//! no-ops until the configured-buff policy lands (devlog 2026-07-27).
+//! no-ops until the configured-buff policy lands.
 
 use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
@@ -1950,7 +1950,7 @@ mod tests {
         let ft = secondary("secondary_fortifier")
             .unwrap()
             .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
-        // ×9, not ×8: the card's "x8" is the EXTRA (M38, owner 2026-08-09).
+        // ×9, not ×8: the card's "x8" is the EXTRA (M38,).
         assert!((ft.overguard_multiplier - 9.0).abs() < 1e-9);
         let en = secondary("secondary_encumber")
             .unwrap()

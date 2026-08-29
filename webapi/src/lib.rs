@@ -115,10 +115,9 @@ struct WeaponInfo {
     subtype: String,
     sentinel: bool,
     /// The forms this weapon REGISTERS (`data/weapons/*.yaml` `form:`), default
-    /// first: `(wire id, display name, is the arsenal's default)`. Data-driven
-    /// — it used to be hardcoded as "the three Incarnon options, or a single
-    /// fake form called `primary`". The default travels with the list because
-    /// it is the form a weapon is FIRED in when nothing else is asked for.
+    /// first: `(wire id, display name, is the arsenal's default)`, entirely
+    /// data-driven. The default travels with the list because it is the form a
+    /// weapon is FIRED in when nothing else is asked for.
     forms: Vec<(&'static str, String, bool)>,
     /// Does a form have to be TRANSFORMED into (gauge + transmute animations)?
     /// Only then is there a two-form cycle to simulate; without it the weapon
@@ -128,10 +127,9 @@ struct WeaponInfo {
     /// Which arcane pool this weapon draws from — its own slot
     /// ("secondary" / "primary"). The picker filters on it.
     /// The EQUIPMENT slot — primary / secondary / sentinel / archgun. What
-    /// the home grid groups by. It used to be read off `arcane_slot`, which
-    /// worked only while every weapon's arcane pool was named after its slot;
-    /// an Arch-Gun seats two pools and is neither of them, so the two facts
-    /// are now two fields.
+    /// the home grid groups by, and a FIELD OF ITS OWN rather than a reading of
+    /// `arcane_slot`: an Arch-Gun seats two arcane pools and is neither of
+    /// them, so the pool and the slot are two facts.
     slot: String,
     /// The arcane POOLS this weapon seats, one arcane each. Almost always a
     /// single pool named after the equipment slot; a sentinel seats none; an
@@ -326,9 +324,9 @@ fn evo_forbids(info: &WeaponInfo) -> serde_json::Map<String, Value> {
 }
 
 fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
-    // BY ITS TAG, not by ladder position. It used to be "tier 1's first
-    // option", which is a guess that happens to hold for the four Incarnon
-    // weapons in the roster and says nothing about the fifth.
+    // BY ITS TAG, not by ladder position: "tier 1's first option" is a guess
+    // that happens to hold for the Incarnon weapons in the roster and says
+    // nothing about the next one.
     let group = evo_group(info);
     wfsim_engine::evolutions_data::pool()
         .iter()
@@ -451,11 +449,9 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     {
         t = t.with_frame(f);
     }
-    // HEALTH JOINS ARMOR AND ENERGY. It was the one base
-    // stat the roster carried and the wire could not set, which was invisible
-    // until a mod read it: the Basmu's Dreadful Killshot pays "+20% Damage and
-    // Status Chance for every 75 Warframe Health", so without this the mod has
-    // no way to be worth anything a player can steer.
+    // HEALTH JOINS ARMOR AND ENERGY, because a mod reads it: the Basmu's
+    // Dreadful Killshot pays "+20% Damage and Status Chance for every 75
+    // Warframe Health", which a player can only steer if the wire can set it.
     t.health = get_f64(v, "wf_health", t.health).clamp(0.0, 100_000.0);
     t.armor = get_f64(v, "wf_armor", t.armor).clamp(0.0, 100_000.0);
     t.energy = get_f64(v, "wf_energy", t.energy).clamp(0.0, 100_000.0);
@@ -609,10 +605,10 @@ fn intern(s: String) -> &'static str {
 /// thing for a build to contain.
 ///
 /// An UNKNOWN stat id is not that, and it is an ERROR. `resolved_slots` drops
-/// a stat it cannot find, so a typo used to equip a riven that occupied a
-/// slot, drained capacity and granted nothing — silently, with the card still
+/// a stat it cannot find, so a typo left unrefused equips a riven that occupies
+/// a slot, drains capacity and grants nothing — silently, with the card still
 /// naming the stats. That is the one failure a damage calculator must never
-/// hide, and it is the same rule `mods` already follows ("unknown mod id").
+/// hide, and it is the same rule `mods` follows ("unknown mod id").
 /// Why a mod id did not resolve against THIS weapon's pool.
 ///
 /// "unknown mod id: amalgam_serration" is true of the pool and false of the
@@ -670,10 +666,10 @@ fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
 /// A REQUEST THAT NAMES NO ASSEMBLY GETS THE DEFAULT, never the chamber's
 /// preview: the preview is the module's no-grip row and is a stat line no
 /// player can reproduce, so simulating it would answer a question about a
-/// weapon nobody has. `valence_element_of` decided the same thing for the same
+/// weapon nobody has. `valence_element_of` decides the same thing for the same
 /// reason. It also REPAIRS a part this entry cannot take — a grip from the
-/// other slot, a loader that no longer exists — which would otherwise compose
-/// to nothing and panic the panel, and which is reached from a stale share link
+/// other slot, a loader that does not exist — which would otherwise compose to
+/// nothing and panic the panel, and which arrives from a stale share link
 /// rather than from an omission.
 pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::kitguns_data::Assembly> {
     let spec = wfsim_engine::weapons_data::spec(id)?;
@@ -752,9 +748,9 @@ pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
 /// one the page itself opens on, rather than a fight against a weapon that
 /// does not exist.
 ///
-/// It also repairs an element this weapon cannot roll, which used to fall
-/// through `apply_valence`'s own rejection and silently apply nothing — the
-/// same shape of bug, reached from a stale link instead of from an omission.
+/// It also repairs an element this weapon cannot roll, which would otherwise
+/// fall through `apply_valence`'s own rejection and silently apply nothing —
+/// the same shape, arriving from a stale link instead of from an omission.
 ///
 /// Empty survives for exactly one case, and it is the case that means it: a
 /// weapon with no valence spec, where the axis does not exist. Two paths read
@@ -911,11 +907,10 @@ fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModD
     p
 }
 
-// 8 main slots (innate polarities from the weapon yaml) + the exilus slot
-// as the UI's 9th slot, carrying ITS innate polarity too (wiki "Exilus
-// Polarity" — caught in the 2026-07-28 wiki cross-check; it was modeled as
-// unpolarized before). Same model as autoForma and the optimizer — without
-// the 9th slot a 9-mod build trips plan_forma's mods≤slots assert.
+// 8 main slots (innate polarities from the weapon yaml) + the exilus slot as
+// the UI's 9th slot, carrying ITS innate polarity too (wiki "Exilus Polarity").
+// Same model as autoForma and the optimizer — without the 9th slot a 9-mod
+// build trips plan_forma's mods≤slots assert.
 fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
     let mut v = wfsim_engine::weapons_data::innate_slots(id).to_vec();
     v.push(wfsim_engine::weapons_data::exilus_polarity(id));
@@ -1072,10 +1067,9 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // falls back to spelling.
                 "si": wfsim_engine::share_order::index_of(m.id),
 
-                // DE's own name, straight from the yaml. This used to be
-                // `prettify(m.id)` — a title-cased id, which is not the same
-                // string: "Semi-Shotgun Cannonade" came back without its
-                // hyphen, so the card's wiki link 404'd.
+                // DE's own name, straight from the yaml, never a
+                // title-cased id: "Semi-Shotgun Cannonade" loses its hyphen
+                // that way and the card's wiki link 404s.
                 "name": m.name,
                 "drain": m.base_drain,
                 "max_rank": m.max_rank,
@@ -1305,9 +1299,9 @@ pub fn meta_json() -> Value {
                 // per set of numbers (data/unmodelled/reasons.yaml).
                 // EVERY FORM'S, exactly like `unmodeled` above — the banner
                 // shows one weapon and both halves are the reader's to know
-                // about. Taking only the base entry's made the two lists
-                // different lengths and the banner drew three lines for four
-                // gaps (caught by check_disclosure, 2026-08-15).
+                // about. Taking only the base entry's leaves the two lists
+                // different lengths, and the banner then draws three lines for
+                // four gaps (`check_disclosure`).
                 "unmodeled_parts": wfsim_engine::weapons_data::forms_of(&w.id)
                     .iter()
                     .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
@@ -1318,13 +1312,13 @@ pub fn meta_json() -> Value {
                     "template": u.template,
                     "params": u.params,
                 })).collect::<Vec<_>>(),
-                // The mods this weapon can actually EQUIP, by id. The client
-                // used to union the class tables and re-apply the rules in JS,
-                // which is one fact stated twice — and the copy went stale the
-                // moment the engine learned a new rule (Amalgam mods off
-                // sentinel weapons, ammo mods off an infinite reserve: neither
-                // reached the builder or the optimizer). `pool_for_weapon` is
-                // now the only place that decides, and this is it speaking.
+                // The mods this weapon can actually EQUIP, by id.
+                // `pool_for_weapon` is the only place that decides and this is
+                // it speaking: a client that unioned the class tables and
+                // re-applied the rules in JS would be one fact stated twice,
+                // and the copy goes stale the moment the engine learns a rule
+                // (Amalgam mods off sentinel weapons, ammo mods off an infinite
+                // reserve).
                 "mods": wfsim_engine::mods_data::pool_for_weapon(&w.id)
                     .iter()
                     .map(|m| m.id)
@@ -1335,10 +1329,9 @@ pub fn meta_json() -> Value {
                 // until tier 1 goes in (wiki, Semi-Pistol_Cannonade: "must have
                 // Semi-Auto trigger type for both firing modes").
                 //
-                // The CONSEQUENCE, not the rule: the client used to re-implement
-                // pool rules in JS and every one of them went stale (see `mods`
-                // above). The engine answers "what does picking this cost you",
-                // and the picker just subtracts.
+                // The CONSEQUENCE, not the rule (see `mods` above): the
+                // engine answers "what does picking this cost you", and the
+                // picker just subtracts.
                 "evo_forbids": evo_forbids(w),
                 // A MODULAR WEAPON'S PARTS, and only for one. Absent everywhere
                 // else, which is what the page tests to decide whether this
@@ -1353,14 +1346,13 @@ pub fn meta_json() -> Value {
                 // different one would show a build that is not the one being
                 // simulated.
                 "assembly": assembly_meta(&w.id),
-                // WHICH ARCANES THIS WEAPON MAY SEAT — the CONSEQUENCE, computed
-                // by the engine, for `evo_forbids`' and `auras`' reason. The
-                // page used to re-derive it from `equip_classes`, which was
-                // enough while every narrowing arcane named a class; the eight
-                // Kitgun ones narrow by a TRAIT instead, because no class can
-                // say "Kitgun" — a secondary Tombfinger is a `pistol` exactly
-                // like a Lex, so the page offered all eight on a Lex. A second
-                // rule added tomorrow would go stale the same way.
+                // WHICH ARCANES THIS WEAPON MAY SEAT — the CONSEQUENCE,
+                // computed by the engine, for `evo_forbids`' and `auras`'
+                // reason. Re-deriving it from `equip_classes` on the page is
+                // enough only while every narrowing arcane names a class: the
+                // eight Kitgun ones narrow by a TRAIT, because no class can say
+                // "Kitgun" — a secondary Tombfinger is a `pistol` exactly like
+                // a Lex — and a second such rule would go the same way.
                 "arcanes": w.arcane_pools
                     .iter()
                     .flat_map(|p| wfsim_engine::arcanes_data::pool_for_weapon(&w.id, p))
@@ -1450,33 +1442,32 @@ pub fn meta_json() -> Value {
                         // ENTRY's rather than the stance's, and both the reason
                         // a reader would pick this mode over the one beside it.
                         //
-                        // A SLAM'S DAMAGE IS NOT IN ITS SWING AT ALL: the entry
-                        // states a zero direct vector and 630 Blast in
+                        // A SLAM'S DAMAGE IS NOT IN ITS SWING AT ALL: the
+                        // entry states a zero direct vector and 630 Blast in
                         // `radial:`, so a summary counting swing multipliers
-                        // reported "100% of base" for an attack that deals 300%. The share
-                        // is stated separately rather than folded into `total`
-                        // because it is also the thing that frees the mode from
-                        // the weapon's reach, which is worth a sentence of its
-                        // own.
+                        // says "100% of base" for an attack that deals 300%.
+                        // The share is stated separately rather than folded
+                        // into `total` because it is also what frees the mode
+                        // from the weapon's reach.
                         "slam": s.and_then(|s| s.attack.radial.as_ref())
                             .is_some_and(|r| r.blast_kind
                                 == wfsim_engine::weapons_data::BlastKind::Slam),
                         // THE DENOMINATOR IS THE WEAPON'S BASE, not this
                         // form's. A heavy slam states a ZERO direct vector —
                         // all of it is in `radial:` — so dividing by the form's
-                        // own damage divides by nothing and the share came back
-                        // absent, leaving the line reading 100% again. Every
-                        // other number on this line is already a share of the
-                        // weapon's base, which is what makes them addable.
-                        // WHAT A SWING MULTIPLIER OF 1.0 IS WORTH, as a share
-                        // of the weapon's base. A combo script's multipliers
-                        // are relative to the ENTRY they are written in, and a
-                        // heavy slam's entry states `damage: { impact: 0.0 }`
-                        // — the whole attack is its explosion — so its 1.0
-                        // swing is 100% of nothing and adding it to the
-                        // explosion's 300% reported 400%. Every other melee
-                        // entry carries the weapon's own vector, where this is
-                        // 1.0 and nothing moves.
+                        // own damage divides by nothing and the share comes
+                        // back absent. Every other number on this line is
+                        // already a share of the weapon's base, which is what
+                        // makes them addable.
+                        // WHAT A SWING MULTIPLIER OF 1.0 IS WORTH, as a
+                        // share of the weapon's base. A combo script's
+                        // multipliers are relative to the ENTRY they are
+                        // written in, and a heavy slam's entry states
+                        // `damage: { impact: 0.0 }` — the whole attack is its
+                        // explosion — so its 1.0 swing is 100% of nothing and
+                        // adding it to the explosion's 300% would say 400%.
+                        // Every other melee entry carries the weapon's own
+                        // vector, where this is 1.0 and nothing moves.
                         "swing_share": s.and_then(|f| {
                             let base: f64 = wfsim_engine::weapons_data::spec(&w.id)
                                 .map(|b| b.attack.damage.values().sum())
@@ -1540,19 +1531,17 @@ pub fn meta_json() -> Value {
                                 // comparing it against the tier's other option
                                 // sees "+60 base and +33% per status" and
                                 // concludes it is strictly better. The stats
-                                // panel said so on the CO row; the tile you
-                                // pick from did not, and that is where the
-                                // question gets asked (reported 2026-08-05).
+                                // panel states it on the CO row; the tile is
+                                // where the question actually gets asked.
                                 "co_excluded": e.co_base_excludes_this_evolution,
-                                // WHAT IT DOES NOT DO YET, on the tile where
-                                // the choice is made. An evolution with an
-                                // inert effect used to look exactly like a
-                                // working one: same card, same tier, and a
-                                // number that never moved. Naming the gap is
-                                // the whole point — a tier where two of three
-                                // options do nothing is not a choice, and the
-                                // player is the last person who should have to
-                                // discover that by measuring.
+                                // WHAT IT DOES NOT DO YET, on the tile
+                                // where the choice is made. An evolution with
+                                // an inert effect is otherwise indistinguishable
+                                // from a working one: same card, same tier, and
+                                // a number that never moves. A tier where two
+                                // of three options do nothing is not a choice,
+                                // and the player is the last person who should
+                                // have to discover that by measuring.
                                 // DERIVED from the loaded effects, so it can
                                 // never drift from what is actually modelled.
                                 "unmodeled": e.unmodeled_effects(),
@@ -1575,7 +1564,7 @@ pub fn meta_json() -> Value {
                                 // bug: the effect works and its own CARD is
                                 // wrong about it. A live bug says do not pick
                                 // this; a misprint says pick it for a reason
-                                // the card does not state (owner, 2026-08-18:
+                                // the card does not state (owner:
                                 // anything that differs from what the game
                                 // DISPLAYS is to be noted).
                                 "misprints": e.misprints(),
@@ -1693,10 +1682,9 @@ pub fn meta_json() -> Value {
             "max_rank": a.max_rank,
             "rarity": format!("{:?}", a.rarity).to_lowercase(),
             "not_modeled": a.has_unmodeled(),
-            // …and the PARTLY-modelled case, which was silent until 2026-08-08.
-            // Same field name and same meaning as a mod's, so the card renders
-            // both with one function: everything else on this arcane works and
-            // these do not.
+            // …and the PARTLY-modelled case. Same field name and same
+            // meaning as a mod's, so the card renders both with one function:
+            // everything else on this arcane works and these do not.
             "unmodeled_effects": a.unmodeled_effects(),
             // WHICH WEAPON CLASSES MAY EQUIP IT. Empty = any weapon whose slot
             // seats it. The page filters its picker on this so the arsenal and
@@ -1718,9 +1706,9 @@ pub fn meta_json() -> Value {
             // an option — the engine answers with `seats` and the page tests
             // membership.
             "seats": a.seats,
-            // The DIRECTORY, kept for a page that has not been rebuilt: it was
-            // this field alone until seats existed, and a stale `site/app.js`
-            // reading it still gets every arcane it used to.
+            // The DIRECTORY, kept for a page that has not been rebuilt: a
+            // stale `site/app.js` reads this field alone and still gets every
+            // arcane.
             "slot": slot,
         }));
     }
@@ -1792,11 +1780,12 @@ pub fn meta_json() -> Value {
         // 250/0/105. The page picks by the weapon.
         // **WHAT A FIGHT CONSISTS OF**, and which of it this weapon takes away.
         //
-        // `engine::scenario::SCENARIO_AXES` is the one declaration; this states
-        // its CONSEQUENCE per weapon, which is `evo_forbids`' and `auras:`' own
-        // pattern. The page used to re-derive the three forcing rules from
-        // weapon flags — two implementations of one rule, and a forced field
-        // looks identical whoever forced it, so they could drift in silence.
+        // `engine::scenario::SCENARIO_AXES` is the one declaration; this
+        // states its CONSEQUENCE per weapon, which is `evo_forbids`' and
+        // `auras:`' own pattern. Re-deriving the forcing rules from weapon
+        // flags on the page would be two implementations of one rule, and a
+        // forced field looks identical whoever forced it, so they would drift
+        // in silence.
         //
         // The FORCED map is per weapon and only carries what is actually
         // forced: `{ "<weapon id>": { "<axis>": [value, "why"] } }`. Absent
@@ -1873,9 +1862,9 @@ pub fn meta_json() -> Value {
                 };
                 json!({ "kind": kind, "value": v, "element": element })
             }).collect();
-            // …and the FIRST one under the old keys, because the page's card
-            // has read `kind`/`element` since abilities landed and every stored
-            // scenario's element pick is keyed off them.
+            // …and the FIRST one under the `kind`/`element` keys, which is
+            // what the page's card reads and what every stored scenario's
+            // element pick is keyed off.
             let (kind, element) = match grants.first() {
                 Some(g) => (g["kind"].clone(), g["element"].clone()),
                 None => (Value::Null, Value::Null),
@@ -1972,15 +1961,14 @@ pub fn meta_json() -> Value {
         // WHAT A BUILD CONSISTS OF, from the one place that declares it
         // (`engine::builds::BUILD_AXES`). Served for the same reason
         // `board_build_mods` is: the page and the worker each carry a table of
-        // their own spellings, and this is what a check measures those tables
-        // against — an axis added in Rust cannot then stay invisible to a
+        // their own spellings, and this is what a check measures those
+        // tables against, so an axis added in Rust cannot stay invisible to a
         // surface that never heard of it.
         // HOW MANY BODIES A FIGHT CAN HOLD — declared once, in the engine
-        // (`formation::MAX_BODIES`), and served so the canvas stops carrying a
-        // copy of it. The page had `ARENA_MAX_BODIES = 50` written out, which
-        // is the same shape as every axis-list bug this file already guards
-        // against: two declarations of one fact, and the day one moves the
-        // other is silently wrong.
+        // (`formation::MAX_BODIES`), and served so the canvas carries no copy
+        // of it. A number written out on the page is the same shape as every
+        // axis-list bug this file guards against: two declarations of one fact,
+        // and the day one moves the other is silently wrong.
         "max_bodies": wfsim_engine::formation::MAX_BODIES,
         "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
@@ -2126,7 +2114,7 @@ pub fn meta_json() -> Value {
 /// board will never accept looks exactly like one it took, forever. Three Kuva
 /// Nukor submissions sat in that state carrying no progenitor element, refused
 /// on every run since they arrived, while the page that sent them said nothing
-/// (owner, 2026-08-14: he had tested several and none appeared).
+/// (he had tested several and none appeared).
 ///
 /// It is the SAME function the scorer calls, not a copy of its rules: a second
 /// implementation of "is this admissible" is a second answer, and the one the
@@ -2773,7 +2761,7 @@ fn enumerate_buffs(
                 // kill, so at a level where kills are slow — or against a
                 // target that never dies — the weapon's own augment measures
                 // as nothing and there was no knob to say otherwise (player
-                // report, 2026-08-08). One count buys two stats by
+                // report). One count buys two stats by
                 // construction, so it is ONE card that names both, the same
                 // rule Frostbite's follows.
                 PerTendril { .. } => {
@@ -3889,7 +3877,7 @@ pub fn panel_json(v: &Value) -> Value {
         };
         let pc = |x: f64| format!("{:.1}%", x * 100.0);
         let mut stats = Vec::new();
-        // Every base stat is ALWAYS listed (user: the panel must state the whole
+        // Every base stat is ALWAYS listed (the panel must state the whole
         // base panel, not just what changed) — the UI drops the arrow when
         // base == final.
         // A LOCKED row says so. Base == final and an empty source list is what
@@ -4957,7 +4945,7 @@ pub(crate) struct Fight {
 /// resolves `incarnon_cycle` — a mode, not a form — to the weapon's default.
 /// Mapping one onto the other made the search run the BASE form of every
 /// cycling weapon (the Torid lost 9x, the Boar GAINED; caught by the optimizer
-/// baseline, 2026-08-04). It is a function of the FIGHT, so it is written here
+/// baseline). It is a function of the FIGHT, so it is written here
 /// rather than at each caller: `parse_optimize` had the only copy, and the
 /// pairing endpoint needs the same answer or it would label the wrong form's
 /// elements.
@@ -6280,7 +6268,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // THE NAMES ARE DERIVED, not listed. This was a hand-written table of
     // fifteen that had to stay in `DamageType`'s declaration order, and the
     // enum has seventeen variants — so the day a weapon first dealt TAU
-    // (the Haalvu, 2026-08-20) every per-type array in the engine went out of
+    // (the Haalvu) every per-type array in the engine went out of
     // range and this table would have named the wrong types if it had not.
     let type_name = |i: usize| -> String {
         let n = wfsim_engine::damage::DamageType::ALL[i].name();
@@ -7355,7 +7343,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         arcanes = fxs;
     }
 
-    // No cap (user: allow spending local resources). The funnel handles large
+    // No cap (allow spending local resources). The funnel handles large
     // spaces by culling obviously-bad combos in cheap early rounds.
 
     // ---- final-round contract: the last round is
@@ -7898,7 +7886,7 @@ pub fn run_optimize_resumable(
     // survives the process.
     on_checkpoint: Option<&CheckpointSink<'_>>,
     // Best-so-far during the screen. A browser cancel TERMINATES the worker,
-    // so a leaderboard that has not already left it is lost (user 2026-07-30:
+    // so a leaderboard that has not already left it is lost (:
     // 20 minutes, cancelled, nothing shown).
     on_board: Option<&BoardSink<'_>>,
 ) -> Value {
@@ -8444,7 +8432,7 @@ mod asset_tests {
     ///
     /// A missing one does not fail anything at runtime — it renders as
     /// nothing, and the card just looks empty (Verglas Prime and ten mods
-    /// shipped that way, user 2026-07-31). The map is filled by
+    /// shipped that way,). The map is filled by
     /// `scripts/gen_assets.py` from the committed WFCD export, so a failure
     /// here is one command away from fixed, and this is what makes anyone
     /// run it.
@@ -8528,7 +8516,7 @@ mod asset_tests {
     /// A formation body was identified only by its index in the request until
     /// 2026-08-17 — enough for the ENGINE, which reads bodies by index and
     /// always will, and not enough for anything that has to talk ABOUT one
-    /// (owner: "我们场景的敌人应该要每个都有id，才对"). Every debuff, pool and
+    /// ("我们场景的敌人应该要每个都有id，才对"). Every debuff, pool and
     /// DoT was already per body; what was missing was a way to say WHOSE.
     ///
     /// Asserts the three halves that make it useful: a name given is a name

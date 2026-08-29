@@ -8,7 +8,7 @@
 //
 // THIS HAS GONE WRONG TWICE, THE SAME WAY BOTH TIMES. The Mode control was the
 // builder's, drawn on the optimizer tab "only because nothing hid it"
-// (check_opt_modes, 2026-08-11) — the page offered a choice it never sent. Then
+// (check_opt_modes) — the page offered a choice it never sent. Then
 // the Parts block, added 2026-08-23, drew on the Simulator and the Optimizer
 // and was numbered nowhere.
 //

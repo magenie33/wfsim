@@ -146,7 +146,7 @@ shipping build at 1,275 and 1,162 DPS.
 stance mod is legal in the stance slot and NOWHERE else, so a flat mod list can
 say which entry is the stance by looking at it. That is exactly what the exilus
 slot could NOT do — an exilus-eligible mod is legal in a main slot too — which
-is why THAT one travels in a field of its own (AGENTS.md, 2026-08-25) and this
+is why THAT one travels in a field of its own (AGENTS.md) and this
 one rides `mods`, appended. Nothing about the share link, the board record, the
 worker's table or `builds::identity` had to change.
 

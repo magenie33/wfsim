@@ -14,7 +14,7 @@
 // stance mod is legal in the stance slot and NOWHERE else, so a flat mod list
 // can say which entry is the stance by looking at it — where an exilus-eligible
 // mod is legal in a main slot too, which is why THAT one travels in a field of
-// its own (AGENTS.md, 2026-08-25). The consequence is that the stance rides
+// its own (AGENTS.md). The consequence is that the stance rides
 // `mods`, and the round trip through `stateFromBuild` has to put it back in the
 // slot it came out of rather than in slot 9.
 //

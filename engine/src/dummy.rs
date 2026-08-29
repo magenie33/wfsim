@@ -1,6 +1,6 @@
 //! Minimal "shoot the training dummy" Monte Carlo — the first end-to-end sim.
 //!
-//! Scope (see devlog 2026-07-24):
+//! Scope:
 //! - Dual Toxocyst **base form** (7.5 Impact / 60 Puncture / 7.5 Slash = 75,
 //!   5% crit, 2.0x crit, 37% status), quantized damage vector.
 //! - **Secondary Enervate** equipped (max rank): flat crit stacks on hit, resets
@@ -18,7 +18,7 @@
 //!     Proc selection uses the **quantized** vector's shares
 //!     (`status::procs_for_hit`); status damage never procs status; a killing
 //!     hit's procs are discarded (the respawned target is a fresh individual
-//!     with a clean DebuffBar — decision 2026-07-24).
+//!     with a clean DebuffBar).
 //! - **No** elements/mods yet, no Frenzy. Infinite ammo.
 //!
 //! Body parts, crit tiers, and headcrit fold-in as documented in
@@ -430,7 +430,7 @@ pub struct Portion {
     /// and without this the ledger would describe an instance the pool never
     /// took: `base × steps × mitigation` would come out at 228 beside a row
     /// reading 88, which is precisely the shape of error this whole record
-    /// exists to make visible (found by `check_combat_record`, 2026-08-27).
+    /// exists to make visible (found by `check_combat_record`).
     ///
     /// It is a fact about the TARGET rather than about the hit, which is why it
     /// is here and last: everything above it is what the attacker and the
@@ -1029,7 +1029,7 @@ impl TargetState {
                     // carries the Disrupt amp the shield damage was computed
                     // with, and Toxin does not. One portion cannot describe a
                     // sum of two chains, so they are two (found by
-                    // `check_combat_record`, 2026-08-27).
+                    // `check_combat_record`).
                     leak_part = overflow * led_gate_leak;
                     health_part += leak_part;
                 } else {
@@ -1450,7 +1450,7 @@ struct HeatEntity {
     /// damage was always right; what the debuff table reported was
     /// `heat.is_some()` — 0 or 1 — so a player watching a ten-stack burn was
     /// told it was one stack, and had no way to see the ramp that is most of
-    /// what Heat does (player report via owner, 2026-08-21).
+    /// what Heat does (player report reported).
     ///
     /// UNCAPPED, because the spec says so: `max_stacks: null`, *"indefinite
     /// ramp while kept refreshed"*. Under a per-unit cap it holds at the cap,
@@ -2155,7 +2155,7 @@ impl DebuffState {
     /// the consolidated tick value and refresh the shared expiry (ticks stay
     /// anchored to the first proc). Under a per-unit cap, hold at most `cap`
     /// contributions FIFO — a new proc drops the OLDEST contribution instead
-    /// of being ignored (the universal replace-oldest rule; user 2026-07-25).
+    /// of being ignored (the universal replace-oldest rule;).
     fn apply_heat(
         &mut self,
         t: f64,
@@ -3791,7 +3791,7 @@ impl DummyParams {
     /// silences an arcane's buff exactly as it silences a mod's. Three sites
     /// built params — `simulate_json`, the optimizer's scorer, the tests — and
     /// the Incarnon cycle's inner base form was assigned by none of them
-    /// (owner, 2026-08-11; it landed one layer down, where the optimizer's
+    /// (owner; it landed one layer down, where the optimizer's
     /// one-panel-many-arcanes pairing actually happens).
     /// Metres from the muzzle to a point on the floor.
     ///
@@ -4659,7 +4659,7 @@ impl Default for DummyParams {
     }
 }
 
-/// Time-bucketed effective damage for the results' DPS-over-time curve. ONE-SECOND buckets (user: the precision should be
+/// Time-bucketed effective damage for the results' DPS-over-time curve. ONE-SECOND buckets (the precision should be
 /// 1 s); the array is capacity for the longest supported engagement —
 /// callers slice to the actual duration. A wrapper type because a large
 /// array has no derived `Default`.
@@ -5331,7 +5331,7 @@ pub struct RunResult {
     /// is one longer than the cap.
     /// Kills + the depleted fraction of the CURRENT target's total pool
     /// (overguard + health) at engagement end — partial credit so the
-    /// objective is not a step function (user, 2026-07-24: "draining 80%
+    /// objective is not a step function ("draining 80%
     /// of the total pool scores 0.8").
     pub kill_progress: f64,
     /// Effective damage by source (direct / per-proc-type / arcane).
@@ -5460,7 +5460,7 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 /// 0, and that same kill arms Frenzy's +100% ammo efficiency — so the next shot
 /// is free and fires instead of forcing a reload. That used to be its own
 /// `free_shot` flag threaded through this call; the ceiling subsumes it, since
-/// `0 <= ceil(anything)` holds on an empty magazine too (owner, 2026-08-01:
+/// `0 <= ceil(anything)` holds on an empty magazine too (owner:
 /// the free shot is not the fundamental thing, the COST is).
 ///
 /// What the ceiling ADDS is the case above one round. Seven left and a shot
@@ -5479,7 +5479,7 @@ fn can_fire(magazine: f64, cost: f64) -> bool {
 /// cycle, and an Arch-Gun's alt fire, draw from the same supply. Written once
 /// because it was written zero times inside the cycle: every draw there was
 /// free until 2026-08-04, which made the Infinite-ammo setting a no-op on every
-/// Incarnon weapon (owner: the setting has to be adjustable).
+/// Incarnon weapon (the setting has to be adjustable).
 fn draw_from(reserve: &mut f64, infinite: bool, want: f64) -> f64 {
     if infinite {
         return want;
@@ -7427,7 +7427,7 @@ struct SpreadShot {
 /// budget buys is HOW MANY, which `space::struck_along` decides and
 /// `space::BODY_MATERIAL_M` prices.
 ///
-/// A DIRECT HIT IN EVERY SENSE: it may HEADSHOT (owner, 2026-08-17 — punch
+/// A DIRECT HIT IN EVERY SENSE: it may HEADSHOT (owner — punch
 /// through does not stop a shot being aimed) and it is per PELLET, because
 /// every pellet that lands punches through. That makes it the opposite of a
 /// chain hop, which does neither.
@@ -7908,7 +7908,7 @@ fn spread_from_tendrils(
 /// formation existed it had nothing to reach — which is why an AoE weapon and a
 /// single-target one scored the same way here.
 ///
-/// THE THREE BLAST RULES DECIDE ALL OF IT (`engine::space`, owner 2026-08-17):
+/// THE THREE BLAST RULES DECIDE ALL OF IT (`engine::space`,):
 /// it goes off on the aimed body's SURFACE, any body touching the sphere is
 /// caught, and each one's falloff reads its own NEAREST point.
 ///
@@ -8912,7 +8912,7 @@ fn process_field_ticks(
             // they disintegrate, granting a fixed position mid-air and allowing
             // a greater spread of toxin damage onto enemies" — and the
             // respawned individual stands where the dead one did, so the cloud
-            // is on it (owner, 2026-08-17, asking the same question of the GAS
+            // is on it (asking the same question of the GAS
             // proc, which the Gas page answers the same way).
             //
             // IT MOVES SCORES, and that is the point: the cloud was wiped on
@@ -10101,7 +10101,7 @@ mod every_form_runs {
     /// POINT BLANK IS THE FIGHT THIS ENGINE HAS ALWAYS RUN, and the 2D layer
     /// has to leave it BYTE-IDENTICAL rather than merely close.
     ///
-    /// That is the whole contract of the refactor (owner, 2026-08-15: the
+    /// That is the whole contract of the refactor (the
     /// current work is the 2D structure, and every case is point blank). It is
     /// asserted as a PROPERTY rather than trusted: the same build at range 0
     /// with its real cone and with no cone at all must produce the same run,
@@ -11420,7 +11420,7 @@ pub fn run_once_traced(
     //
     // BESIDE the aimed body's state rather than holding it too, which is the
     // aim policy showing through: the beam is on ONE body and every other is
-    // reached only by what spreads (`formation`, owner 2026-08-15). When the
+    // reached only by what spreads (`formation`,). When the
     // aimed one dies the nearest of these takes its place, so `target` and
     // `debuffs` above stay what the whole loop already reads.
     let mut others: Vec<SpreadFoe> = params
@@ -12383,7 +12383,7 @@ pub fn run_once_traced(
                 // Charge magazine spent: revert to the base form. The swap
                 // fully reloads the base magazine (wiki side effect). The
                 // revert does NOT count as a transform — `transforms` counts
-                // TRANSMUTES INTO the Incarnon form only (user, 2026-07-29:
+                // TRANSMUTES INTO the Incarnon form only (user:
                 // both-directions counting read as doubled).
                 // COMING OUT OF INCARNON FORM IS A RELOAD too, and for the
                 // same stated reason: the swap refills the base magazine. It
@@ -12471,7 +12471,7 @@ pub fn run_once_traced(
                 // The static `stacks_per_trigger` is the OUTER form's magazine,
                 // and in a cycle the outer form is the INCARNON one — so a
                 // base-form reload of 6 shells was granting 60 stacks, straight
-                // to +600% fire rate (measured 61 on the Felarx, 2026-08-10).
+                // to +600% fire rate (measured 61 on the Felarx).
                 // Counting the draw is the same rule the Incarnon route already
                 // used and it needs no second number to stay true: a dry
                 // reserve loads fewer shells and pays fewer stacks, with
@@ -12534,7 +12534,7 @@ pub fn run_once_traced(
             // THE ROW LANDS HERE, after the rounds are actually in. Announced
             // one line earlier it read `0 / 6` — a reload that had just
             // finished reporting an empty magazine, which is the one thing that
-            // row exists to deny (found by reading a Felarx record, 2026-08-27).
+            // row exists to deny (found by reading a Felarx record).
             weapon_now!();
             rec.push(t, None, crate::record::Kind::ReloadEnd);
             // …AND THE SHELLS IT LOADED PAY THEIR STACKS. One per shell, from
@@ -13469,7 +13469,7 @@ pub fn run_once_traced(
                 + params.arcane.crit_damage_relative;
             // SPITEFUL DEFILEMENT rides the same after-mods FLAT bucket Cold's
             // received bonus does — "Bonus is added after mods as a flat value"
-            // (wiki, supplied by the owner 2026-08-10), so it is added to the
+            // (wiki, supplied measured 2026-08-10), so it is added to the
             // finished multiplier rather than scaling the weapon's base.
             //
             // The counter is DISTINCT TYPES, which is what the card's own
@@ -13674,7 +13674,7 @@ pub fn run_once_traced(
             // Deadhead that is 3 x 1.3 x 1.5 = 5.85x, against 5.4x additive.
             // LINGERING JUDGEMENT's open window, in the ADDITIVE bracket:
             // "Headshot damage bonus stacks additively with Primary Deadhead's
-            // headshot damage bonus" (wiki, owner 2026-08-10). So it sums with
+            // headshot damage bonus" (wiki,). So it sums with
             // the arcane's before the bracket is spent — never multiplies it —
             // which is why a Deadhead build gets much less than +50% out of it.
             //
@@ -13814,7 +13814,7 @@ pub fn run_once_traced(
             // circumference facing the target — so the leg here is one radius
             // in from the distance between two centres. It is the ray-circle
             // test's parameter and NOT a flight; what the shot flies is the gap
-            // below (`space::range_to_centre`, owner 2026-08-16).
+            // below (`space::range_to_centre`,).
             let range = params.range_to_centre();
             let gap_m = params.gap();
             // HOW FAR THE TARGET ALREADY IS FROM THE AIM LINE, before a degree
@@ -14383,7 +14383,7 @@ pub fn run_once_traced(
                     // THE EXPLOSION reads the distance from its EPICENTRE to
                     // the body's NEAREST POINT, not to its centre — a body
                     // standing across a falloff gradient takes the best number
-                    // on it (`space::blast_reach`, owner 2026-08-17). Zero when
+                    // on it (`space::blast_reach`,). Zero when
                     // the pellet hit, and zero for anything the blast is
                     // standing inside.
                     (Some(r), _) => {
@@ -15909,7 +15909,7 @@ pub fn run_once_traced(
                     .as_ref()
                     .map_or((0.0, 0.0), |h| (h.windup_seconds, h.delay_seconds));
                 // A HEAVY ATTACK BREAKS THE CHAIN, so the next light swing
-                // starts the combo over (owner, 2026-08-29 — the wiki says
+                // starts the combo over (owner — the wiki says
                 // nothing about a stance chain's position, so this is his
                 // answer and not a derivation).
                 //
@@ -16041,7 +16041,7 @@ pub fn run_once_traced(
     sample_frames_up_to!(params.duration_seconds);
 
     // Partial credit: the fraction of the current individual's TOTAL bar
-    // already depleted — overguard + shield + health (user 2026-07-25: the
+    // already depleted — overguard + shield + health (: the
     // whole bar counts, so shield damage earns progress and shield REGEN
     // gives it back). If health has hit 0 the unit is DEAD, so the whole bar
     // is gone regardless of any overguard/shield left (e.g. a Toxin-bypass
@@ -16918,7 +16918,7 @@ mod tests {
 
     /// THE DUAL TOXOCYST COMPUTES GunCO ON A FLAT 75, WHATEVER ITS PANEL SAYS —
     /// and Carnage Reign's own "+33% per Status Type" does not work at all
-    /// (MEASUREMENTS M49, owner 2026-08-16).
+    /// (MEASUREMENTS M49,).
     ///
     /// Two findings from one session, and each overturns something this repo
     /// had written down.
@@ -16993,7 +16993,7 @@ mod tests {
     }
 
     /// THE TORID'S INCARNON FORM COMPUTES CO ON 51 OF ITS 102 (MEASUREMENTS
-    /// M50, owner 2026-08-16) — the second weapon where the catalog's
+    /// M50,) — the second weapon where the catalog's
     /// ABSENCE-MEANS-ORDINARY rule was measured and was wrong, and the
     /// most-played Incarnon in the game.
     ///
@@ -17070,7 +17070,7 @@ mod tests {
         // AND THE BASE FORM IS THE OTHER CLASS, which is the deliberate half.
         // It is `Multiplying` where the form measured above is `Adding`, and it
         // reads its FULL evolved 151 — the cheapest open experiment there was
-        // (393 if fed against 311 if not, 26% apart), run by the owner within
+        // (393 if fed against 311 if not, 26% apart), run measured within
         // the day and answering FED. Its own readings are the test below.
         let base = crate::loadout::WeaponBase::from_data(
             "torid",
@@ -17528,7 +17528,7 @@ mod tests {
     /// half of its own card and was not read at all: the loader took
     /// `trigger`/`grants` and the per-rank values and never `condition:`, so
     /// the echo fired off a target with no Radiation on it (player report via
-    /// the owner, 2026-08-18). This test measured the bug for as long as it
+    /// the owner). This test measured the bug for as long as it
     /// existed, because a bare Dual Toxocyst makes no Radiation and the echo
     /// landed anyway.
     #[test]
@@ -18714,7 +18714,7 @@ mod tests {
     /// LINGERING JUDGEMENT joins the ADDITIVE headshot bracket, beside Primary
     /// Deadhead's — it does not multiply it.
     ///
-    /// VERBATIM (wiki, supplied by the owner 2026-08-10): "Headshot damage
+    /// VERBATIM (wiki, supplied measured 2026-08-10): "Headshot damage
     /// bonus stacks additively with Primary Deadhead's headshot damage bonus."
     /// That is the whole finding, because the two readings are far apart on a
     /// build that carries the arcane and identical on one that does not — so a
@@ -18816,7 +18816,7 @@ mod tests {
 
     /// SPITEFUL DEFILEMENT counts status TYPES, and dies on the third.
     ///
-    /// VERBATIM (wiki, owner 2026-08-10): "Multiple instances of the same
+    /// VERBATIM (wiki,): "Multiple instances of the same
     /// status effect are not counted separately, e.g. having 5 corrosive and 5
     /// radiation status effects on a target will not disable this buff." That
     /// example is the test: ten procs of two types must leave it running, and
@@ -20567,7 +20567,7 @@ mod tests {
 
     /// …AND IT MAY LAND ON A HEAD, which no other spread in this engine can.
     ///
-    /// Owner, 2026-08-18: half of them do. The assertion is on the DAMAGE
+    /// Owner: half of them do. The assertion is on the DAMAGE
     /// rather than on a counter, because a chance that is stored and not
     /// applied looks exactly like one that works — a humanoid head is 3x, so a
     /// coin-flip head is worth a large, visible fraction of every bounce.
@@ -20686,7 +20686,7 @@ mod tests {
 
     /// THE EMPTY MAGAZINE ARMS IT, and the TRANSFORM is what proves that.
     ///
-    /// Owner, 2026-08-11
+    /// Owner
     ///
     /// A reload alone cannot tell the two readings apart: armed at the empty
     /// magazine and armed when the reload starts both make that reload faster.
@@ -21626,7 +21626,7 @@ mod tests {
     }
 
     /// Ammo efficiency serves the MAGAZINE round only — it never reaches
-    /// Plentiful Mayhem's multishot surcharge (✅ measured, user 2026-07-30).
+    /// Plentiful Mayhem's multishot surcharge (✅ measured,).
     /// So 100% efficiency makes the shot itself free while every generated
     /// projectile still pays full price out of reserve, and the two pools
     /// empty independently.
@@ -24937,7 +24937,7 @@ mod tests {
         );
     }
 
-    /// M11 (in-game, 2026-07-30): on a LONE enemy one Laetum shot grants
+    /// M11 (in-game): on a LONE enemy one Laetum shot grants
     /// TWO stacks of Overwhelming Attrition — the direct hit and the
     /// explosion each arm it. The clean way to assert that here is a
     /// ZERO-damage radial: it still runs as a stage, so any extra damage
@@ -26879,7 +26879,7 @@ mod tests {
     fn fortifier_multiplies_damage_while_overguard_holds() {
         // ×9 on every direct hit while the (infinite) overguard is up:
         // 10 × 75 × 9 = 6750. NINE, not eight — the card's "x8" is the EXTRA
-        // (MEASUREMENTS M38, owner 2026-08-09).
+        // (MEASUREMENTS M38,).
         let mut t = TargetParams::training_dummy();
         t.base_overguard = 1e9;
         let p = DummyParams {
@@ -27308,7 +27308,7 @@ mod tests {
     #[test]
     fn shield_depletion_counts_toward_kill_progress() {
         // Pure Impact never reaches health, but denting the SHIELD now earns
-        // partial credit (user 2026-07-25: the whole overguard+shield+health
+        // partial credit (: the whole overguard+shield+health
         // bar counts, so shield damage — and regen — moves the score). One
         // 75-Impact shot into a 1000+1000 = 2000 bar -> 75/2000 = 0.0375,
         // with health still full (0 kills).
@@ -27718,7 +27718,7 @@ mod tests {
     /// single entity whose tick grows linearly — so there is no list to count
     /// and the debuff row read `heat.is_some()`, which is 0 or 1. A player
     /// watching a twenty-stack burn was told it was one stack, and the ramp is
-    /// most of what Heat does (report via owner, 2026-08-21).
+    /// most of what Heat does (report reported).
     #[test]
     fn a_heat_pile_reports_its_depth_and_not_just_that_it_is_burning() {
         let ignite = DEBUFF_ROSTER.iter().position(|(k, _)| *k == "ignite").expect("ignite");
@@ -28927,7 +28927,7 @@ mod stormburst_tests {
 /// `docs/BUFFS.md` has named three since the buff vocabulary was written and
 /// only one of the timed ones was implemented; every stacking buff therefore
 /// decayed the Galvanized way whether or not that was its rule. Stormburst is
-/// the first that is not (owner, in game 2026-08-07: each stack keeps its own
+/// the first that is not (in game 2026-08-07: each stack keeps its own
 /// 2 s clock, FIFO, cap 3), and the difference is not cosmetic — under the
 /// Galvanized rule ONE hit per window holds the whole pile, under this one it
 /// holds exactly one stack.
@@ -29149,7 +29149,7 @@ mod attrition_times_co_tests {
 
     /// DEVASTATING ATTRITION AND GUN CO MULTIPLY, they do not share a bracket.
     ///
-    /// MEASURED IN GAME by the owner, which is what makes this a
+    /// MEASURED IN GAME measured, which is what makes this a
     /// fact rather than a reading. It also agrees with both sources: the
     /// perk's own wiki note says "multiplicative to base damage bonuses such
     /// as Hornet Strike", and the weapon sits on the CO catalog's
@@ -29215,7 +29215,7 @@ mod debilitate_attrition_tests {
     use super::*;
 
     /// A DEBILITATE DoT EATS ATTRITION TWICE, and the calculator gave it zero
-    /// (player report through the owner, 2026-08-08, then measured: the final
+    /// (player report through the owner, then measured: the final
     /// DoT eats three faction layers and = 21x21). It is a BUG of DE's — the
     /// split fires a ZERO-damage instance that still takes its own faction
     /// bracket and its own Attrition roll, and when the DoT replaces the
@@ -29623,7 +29623,7 @@ mod warframe_ability_tests {
         // if the split were "abilities are live" they would behave alike — they
         // do not, because the split is about the BRACKET: the faction bonus is
         // part of what a status inherits and the FINAL multiplier is applied
-        // once, at the proc (owner measured both, 2026-08-23; the wiki draws
+        // once, at the proc (owner measured both; the wiki draws
         // the same line for its own reason).
         let ebleed = |seconds: Option<f64>| {
             let mut p = params(&[("eclipse", seconds)], 1.0);

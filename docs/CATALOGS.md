@@ -250,17 +250,15 @@ Every row, with the perk the printed number identifies:
 | Bronco Prime | 238 or 448 (Evolution II **Perk 1**) | Speeding Bullet, +30 a pellet x7 = the 210 printed | 0.5312 (catalog 53%) |
 | Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
 
-**EXCLUDING AN EVOLUTION'S FLAT DAMAGE IS NOW THE DEFAULT**. This section used to say the opposite, and the
-paragraph below is what it said. The reason it turned around is in the table's
-own columns rather than in any one measurement:
+**EXCLUDING AN EVOLUTION'S FLAT DAMAGE IS THE DEFAULT**, and the reason is in
+the table's own columns rather than in any one measurement:
 
 **THE ELEVEN ROWS ABOVE ARE THE ONLY ONES THAT MEASURED AN EVOLVED WEAPON.**
 They are the rows whose damage column prints a DOUBLE value — "100 or 124 (with
 Evolution II)". Every other row prints one number, and that number is the
 UNEVOLVED base, so a row reading `Torid | Main-fire | 100 | 100%` says the CO
 bonus equals the base of a Torid with no evolution installed. That is true by
-construction. It is not a statement that an evolution would feed the term, and
-this repo read it as one.
+construction, and it is NOT a statement that an evolution would feed the term.
 
 On the question actually asked the score is **15 to 0**:
 
@@ -279,14 +277,13 @@ weapon+perk pairs moved, by 37% on average at two Galvanized stacks against two
 status types.
 
 **`Multiplying` READS THE FULL EVOLVED BASE — MEASURED, and it is the OPPOSITE
-answer** (MEASUREMENTS M51). The owner drew the line himself on the version of
-this change that covered both classes, then ran the reading that settles it: the
-Torid's base form, `Multiplying` where its Incarnon form is `Adding`, the same
-two tier-2 perks. The CO multiplier came back 1.40 and 1.80 under BOTH the +51
-and the +31 — identical, where a term reading the unevolved base prints 1.265
-and 1.305. So "the rule may well be the same on both sides, since which base the
-term reads sits upstream of how it combines" — which this file used to say — is
-wrong. **The class decides which base the term reads.**
+answer** (MEASUREMENTS M51). The reading that settles it: the Torid's base
+form, `Multiplying` where its Incarnon form is `Adding`, the same two tier-2
+perks. The CO multiplier comes back 1.40 and 1.80 under BOTH the +51 and the
++31 — identical, where a term reading the unevolved base prints 1.265 and 1.305.
+So the rule is NOT the same on both sides, even though which base the term reads
+sits upstream of how it combines. **The class decides which base the term
+reads.**
 
 | class | the term reads | evidence |
 |---|---|---|
@@ -318,12 +315,12 @@ what was believed and why:
 **INCLUDING an evolution's flat damage is the DEFAULT**;
 the exclusion is opt-in per perk.
 
-**AND THE DEFAULT FOLLOWS THE WIKI; A MEASUREMENT RE-CERTIFIES**. Flipping that default the other way was considered and refused:
-it would have touched 107 perks across 65 weapons on the strength of ONE
-measured weapon, and the repo's own rule forbids exactly that ("the catalog is
-authoritative and absence means ORDINARY", "a row is transcribed for the entry
-it names rather than generalised to a class"). What the Burston measurement
-(M48) actually established is narrower and is now applied:
+**AND THE DEFAULT FOLLOWS THE WIKI; A MEASUREMENT RE-CERTIFIES**. Flipping
+that default the other way would touch 107 perks across 65 weapons on the
+strength of ONE measured weapon, which the repo's own rule forbids ("the catalog
+is authoritative and absence means ORDINARY", "a row is transcribed for the
+entry it names rather than generalised to a class"). What the Burston
+measurement (M48) establishes is narrower, and is what is applied:
 
 > **A fraction the catalog DERIVES belongs to the PERK, so it reaches every
 > attack part the perk's damage landed on — not only the part the row names.**
@@ -575,7 +572,7 @@ does not "fix" them away.
 
 ### Where this has already gone wrong
 
-- **Zylok / Zylok Prime, 2026-08-11.** Both radials were filed as "no CO catalog
+- **Zylok / Zylok Prime.** Both radials were filed as "no CO catalog
   row for this weapon" and so took the engine's defaults — CO off, multishot on
   — and BOTH were wrong. There is a row, and the reason it was missed is worth
   the line: the catalog keys it under `{{Weapon|Zylok}}/{{Weapon|Zylok Prime}}`,
@@ -585,7 +582,7 @@ does not "fix" them away.
   rather than a one-off. Found while answering "why doesn't the Burston Prime's
   radial take multishot" — the question that made the column worth reading as a
   column.
-- **Shedu, 2026-08-10.** Filed as `additive_with_base_damage` on the reasoning
+- **Shedu.** Filed as `additive_with_base_damage` on the reasoning
   that it had no row. It has one, and it says Multiplying. The mistake was
   asserting an absence without opening the page — and the page's own Bugs
   section ("Galvanized Aptitude is multiplicative to base damage sources on

@@ -784,7 +784,7 @@ mod tests {
     /// Gas burn. Nothing in a mod list can add Gas literally; this can — the
     /// wiki's own sentence being *"added parallel to the weapon's Elemental
     /// Damage, meaning it will NOT combine with elements on the weapon"*
-    /// (measured by the owner on a Braton Prime, 2026-08-23).
+    /// (measured on a Braton Prime).
     #[test]
     fn valence_formation_imbues_the_combined_element_it_was_given() {
         let def = get("valence_formation").expect("valence_formation");

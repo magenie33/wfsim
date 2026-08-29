@@ -841,7 +841,7 @@ pub fn schedule(n_jobs: usize) -> Vec<(u32, usize, bool)> {
 /// `finalists` candidates at `final_runs` runs each — everything before it
 /// only whittles the field down to that size.
 ///
-/// The cadence is AUTO-PLANNED from the inputs (user, 2026-07-28: "derive
+/// The cadence is AUTO-PLANNED from the inputs ("derive
 /// the elimination rhythm from N directly"):
 /// - round count: k = ceil(log₈(N/F)) — "cull at most ×8 per round" is the
 ///   pace anchor and decides ONLY how many rounds exist;
@@ -886,7 +886,7 @@ pub fn schedule_to(n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32
 
 /// Worker-thread budget for [`evaluate_batch`] and the search. 0 =
 /// auto: ALL CORES MINUS TWO — the optimizer must not freeze the machine
-/// it runs on (user, 2026-07-29: the full-core default made the whole
+/// it runs on (the full-core default made the whole
 /// system stutter). Set per request via [`set_worker_threads`]; the seeds
 /// never depend on the thread count, so any setting reproduces the same
 /// numbers.
@@ -1166,7 +1166,7 @@ pub type CheckpointFn<'a> = dyn Fn(usize, &[(Job, Summary)]) + 'a;
 ///
 /// It exists because a browser cancel is a KILL: the page terminates the
 /// worker, so anything the worker has not already pushed out is gone (a
-/// 20-minute run that showed nothing, user 2026-07-30). Native cancel is
+/// 20-minute run that showed nothing,). Native cancel is
 /// cooperative — `stream_screen` returns its own best-so-far — so nothing
 /// there depends on this.
 pub type ScreenBoardFn<'a> = dyn Fn(&[ScreenedJob]) + 'a;
@@ -1388,7 +1388,7 @@ pub fn run_funnel(
             planned
         };
         scored.truncate(keep_n);
-        // Adaptive racing cull (user, 2026-07-28: "reduce cleverly before
+        // Adaptive racing cull ("reduce cleverly before
         // the final"): beyond the planned 1/8, drop every survivor whose 3σ
         // upper confidence bound still misses the finalists boundary's 3σ
         // lower bound — statistically hopeless candidates never see another

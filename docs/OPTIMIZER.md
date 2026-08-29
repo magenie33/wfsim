@@ -195,7 +195,7 @@ It rode the search preset with a BLANK box meaning *"the fight's own count"*.
 That is one control with two readings, and the wrong home for both. A run count
 is not what to search; and it is not the fight either — `sim.runs` has never
 existed, because *"how hard do I want to measure right now"* is a fact about
-the person and not about the engagement (`SIM_RUNS_KEY`, 2026-08-13).
+the person and not about the engagement (`SIM_RUNS_KEY`).
 
 So it is a preference with a key of its own (`OPT_RUNS_KEY`), TYPED rather than
 defaulted from somewhere else, saved by no preset and pinned by no ruler, drawn
@@ -214,7 +214,7 @@ two standard errors.
 
 Same argument, other direction. How much of this machine the page may use is
 ONE setting and it lives in the topbar beside the language and the theme
-(`compute-select`, a share of the reported cores, 2026-08-18). A `CPU threads`
+(`compute-select`, a share of the reported cores). A `CPU threads`
 box in the search preset was a per-search override of a global preference —
 two controls for one fact — and it put that override on the one thing most able
 to cook a phone, which is the last place a global heat setting should be
@@ -486,7 +486,7 @@ The old answer was `ENUM_BUDGET_MS` in `wasm/src/lib.rs`: stop walking after
 Raising the budget does not fix (2): at 5 minutes the coverage of a full pool
 goes from one ten-millionth to one millionth, and it is still the same corner.
 The fix is to stop substituting exhaustive enumeration for search — ONE path at
-every scope, graded by the harness above (user, 2026-08-03: rigour over
+every scope, graded by the harness above (rigour over
 convenience; a user who wants less work should pool fewer mods).
 
 ## EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS
@@ -695,9 +695,8 @@ simulated engagement.
 `0..len` (a 4-round Feistel network with cycle-walking). The search walks it:
 reaching the end visits every subset exactly once, so the run IS an exhaustive
 enumeration; stopping early leaves a uniform sample WITHOUT REPLACEMENT. There
-is no mode to select and no size threshold — the 2,000,000-candidate
-materialize/stream split is gone, and with it the class of bug where one
-regime had a fix the other did not (the tenno/policy leak was in exactly one).
+is no mode to select and no size threshold, and therefore no class of bug
+where one regime carries a fix the other does not.
 `SearchStats::exhaustive` reports which a run turned out to be, and
 `coverage()` is exact because the denominator is a counted index range.
 
@@ -780,11 +779,11 @@ Each shard also CLIMBS on its own. That is a feature rather than a compromise:
 N independent hill-climbs from N independent samples is exactly the basin
 diversity one best-first climb lacks.
 
-The count is the **topbar's compute share** and nothing else: `woptWorkerCount()` is `poolSize()`, a percentage of the cores the
-machine reports. It used to be the search preset's own `CPU threads` box with
-that share as its default — see §"…and so did CPU threads" for why a
-per-search override of a global setting was the wrong shape, particularly on
-the one thing here most able to cook a phone.
+The count is the **topbar's compute share** and nothing else:
+`woptWorkerCount()` is `poolSize()`, a percentage of the cores the machine
+reports. See §"…and so did CPU threads" for why a per-search override of a
+global setting is the wrong shape, particularly on the one thing here most able
+to cook a phone.
 
 **Merging** is a sort: every row was produced by its shard's own funnel at the
 same run count under the same scenario, so the scores are directly comparable.

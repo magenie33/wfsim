@@ -256,7 +256,7 @@ for (const lang of ["en", "zh"]) {
     // Swift Punishment prints "With Sprint Speed 1.2 or Higher" and its wiki
     // row says *"Despite the description, the effect only requires 1.1"* — a
     // player reading the card would mod for a threshold the game never asks
-    // for (owner, 2026-08-18: anything that differs from what the game DISPLAYS
+    // for (anything that differs from what the game DISPLAYS
     // is to be noted).
     //
     // A NEGATIVE CONTROL IN THE SAME TIER, which is what makes the assertion

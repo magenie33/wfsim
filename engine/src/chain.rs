@@ -356,7 +356,7 @@ pub fn resolve_with(
     let mut seeds: Vec<usize> = struck.clone();
     seeds.extend((0..bodies.len()).filter(|&i| {
         // ANY PART OF A BODY TOUCHING THE SPHERE IS ENOUGH — the blast rule,
-        // in one place (`space::caught_by_blast`, owner 2026-08-17). So the
+        // in one place (`space::caught_by_blast`,). So the
         // radius a splash really seeds over is its own plus a body radius.
         !struck.contains(&i)
             && crate::space::caught_by_blast(bodies[i].distance(splash.at), splash.radius_m)

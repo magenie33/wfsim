@@ -87,11 +87,10 @@ The sim request carries `form` = a registered kind (or `incarnon_cycle` for the
 mode); an unknown value falls back to the weapon's DEFAULT form — the roster
 entry, which is the one the wiki module marks with `_TooltipAttackDisplay`.
 
-Before this was data, the registry advertised a fake form called `primary` for
-every non-Incarnon weapon while the simulator understood only
-`base`/`incarnon`/cycle, so asking for the advertised form built a cycle out of
-a borrowed gauge — a weapon with nothing to transform into paid 2.35 s + 1.0 s
-of animation every 9 weakpoint hits.
+It is DATA. A registry that advertised a fake form while the simulator
+understood a fixed set would build a cycle out of a borrowed gauge — a weapon
+with nothing to transform into paying 2.35 s + 1.0 s of animation every 9
+weakpoint hits.
 
 ## Firing and hits
 

@@ -318,7 +318,7 @@ fn full() -> f64 {
 /// buckets the MODS feed, so a scenario's +60% multishot and Split Chamber's
 /// +90% sum, exactly as two multishot mods would.
 ///
-/// PERMANENT, by the owner's own framing. No trigger, no clock, no stack count:
+/// PERMANENT, measured's own framing. No trigger, no clock, no stack count:
 /// a `data/abilities/` buff is the thing with a duration, and this is the thing
 /// without one. That is what makes it cheap to be right about — there is no
 /// uptime to model, and the number the player types is the number every shot

@@ -126,7 +126,7 @@ defined position (Frenzy appends "+100% Toxin" at the **end** of the order).
 **Ammo efficiency.** `shots_per_ammo = 1 / (1 - e)`; sources add (except
 Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 
-**Mod restrictions & conditional-buff activation** (`loadout::resolve`, 2026-07-27).
+**Mod restrictions & conditional-buff activation** (`loadout::resolve`).
 - **`requires: <trait>`** (ModDef): a mod whose required weapon trait
   (`WeaponBase.traits`, e.g. `semi_auto`/`beam`) is absent is INERT — all its
   effects/locks are skipped. Calc-layer, NOT an equip gate. Declared only when a
@@ -498,17 +498,16 @@ Hellfire tells them apart: base 35, Gas 63, and the wrong denominator snaps four
 components to 33 units instead of 32 — **101.06 against a measured 98**. Four
 builds were measured and the right denominator reproduces all four to the digit.
 
-One visible consequence: a MONO-TYPE vector is no longer automatically lossless.
-It used to be exactly 32 units of itself; it is now however many units of
-ModdedBase it happens to be, so a pure 63 Gas on a base of 35 is 57.6 units and
-snaps to 58.
+One visible consequence: a MONO-TYPE vector is not automatically lossless. It
+is however many units of ModdedBase it happens to be, so a pure 63 Gas on a base
+of 35 is 57.6 units and snaps to 58.
 
 Related: per-shot **damage** quantization also exists and was changed from
 1/16 to 1/32 steps in Update 40 (undocumented, per the wiki `Damage` patch
 history). Exact mechanics not yet transcribed — same recorded-only status.
 
 **A STATUS TICK'S ACCUMULATOR STARTS AT 1** (wiki `Damage/Calculation` §Damage
-Over Time; measured, 2026-08-23, M58).
+Over Time; measured, M58).
 
 ```
 Unrounded Tick Damage = (Σ Sᵢ + 1) × C × M
@@ -846,10 +845,10 @@ Equinox Duality …), and a bow's charge multiplier — a charged shot's CO is
 computed off the UNCHARGED base.
 
 **Evolution exclusion — a per-PERK anomaly, not a law.** The line *"CO-bonus
-does not use base damage increase Evolution"* reads like a general rule, and the
-engine used to treat it as one: any weapon carrying a flat-damage evolution had
-its CO term scaled by `co_base_fraction = original_base / evolved_base`. **That
-is wrong**, and reading the catalog's columns is what settles it:
+does not use base damage increase Evolution"* reads like a general rule and is
+not one: scaling every flat-damage evolution's CO term by
+`co_base_fraction = original_base / evolved_base` is **wrong**, and reading the
+catalog's columns is what settles it:
 
 | column | Dual Toxocyst, Incarnon Mode |
 | --- | --- |
@@ -1013,26 +1012,26 @@ Headshot-damage bonuses (e.g. sniper zoom) stack additively with each other.
 policy can change that** — `AssumedMax` is about a buff's stack COUNT, not
 about aim. Both halves of Acuity (Primary / Pistol) live in their own buckets
 (`weakpoint_damage`, `weakpoint_cc_rel`), which the sim gates on `is_head` per
-pellet, and Cascadia Accuracy's weak-point crit joins them there. The crit half
-used to fold into the plain crit bucket under `AssumedMax`, splitting one mod
-down the middle: its Weak Point Damage stayed conditional while its Weak Point
-Crit Chance became unconditional. On the panel — always `AssumedMax` — that
-read the Burston Prime Incarnon's 28% as **126% on every shot**, and handed the
-same 126% to the RADIAL, which can never weak-point-hit at all. Both halves now
-state themselves as their own rows next to the plain ones, on the direct part
-only. Sim results never moved: the sim runs `Emergent`.
+pellet, and Cascadia Accuracy's weak-point crit joins them there. Folding the
+crit half into the plain crit bucket under `AssumedMax` splits one mod down the
+middle — its Weak Point Damage conditional, its Weak Point Crit Chance not — and
+on the panel, which is always `AssumedMax`, reads the Burston Prime Incarnon's
+28% as **126% on every shot**, handing the same 126% to the RADIAL, which can
+never weak-point-hit at all. Both halves state themselves as their own rows next
+to the plain ones, on the direct part only. The sim runs `Emergent` and is
+unaffected either way.
 
 **Aiming is a SCENARIO input, not an assumption.** A pile of mods only pay out
 `while aiming` — Galvanized Crosshairs and Galvanized Scope, Hydraulic
 Crosshairs, Argon Scope, Sharpened Bullets, Bladed Rounds, Pressurized
-Magazine, Embedded Catalyzer and Catalyzer Link. The sim used to satisfy that
-condition silently, which flatters every build carrying one: a Dual Toxocyst
-with Galvanized Crosshairs measures **52.33% crit rate / 203,591 DPS** aiming
-against **36.92% / 150,041 DPS** hip-firing — a quarter of the DPS handed over
-for free. It is now `aiming` on the Sim and Optimizer scenario (default ON, the
-old behaviour), gating `ModEffect::WhileAiming` in `loadout::resolve_with`. The
-optimizer reads the same flag: scoring a build with aim assumed and replaying
-it without would rank a buff the replay never grants.
+Magazine, Embedded Catalyzer and Catalyzer Link. Satisfying that condition
+silently flatters every build carrying one: a Dual Toxocyst with Galvanized
+Crosshairs measures **52.33% crit rate / 203,591 DPS** aiming against **36.92% /
+150,041 DPS** hip-firing — a quarter of the DPS handed over for free. So it is
+`aiming` on the Sim and Optimizer scenario (default ON), gating
+`ModEffect::WhileAiming` in `loadout::resolve_with`. The optimizer reads the
+same flag: scoring a build with aim assumed and replaying it without would rank
+a buff the replay never grants.
 
 Aiming does more in-game than gate buffs (zoom, spread, some weapons' fire
 behaviour, movement speed) — none of that is modeled yet, and the flag makes no
@@ -1516,7 +1515,7 @@ only widens who receives it.
 A sphere at a chain node could not belong to the beam, whose contact point is
 elsewhere, so it would have to be the node's own damage instance — an explosion
 needing a falloff nothing documents. Hence `false`, flipped 2026-08-06 from the
-`true` the line carried since 2026-07-30 (user, on this argument). It also
+`true` the line carried since 2026-07-30 (on this argument). It also
 explains the datamined asymmetry: no radius on the Incarnon attack, a falloff on
 the Poison Cloud, because only one of the two is a damage instance.
 
@@ -1915,7 +1914,7 @@ target**."* And the catalog row gives the class outright:
 form. The Incarnon form has **no row**, and that absence is a POSITIVE statement
 rather than a gap: the table enumerates exceptions, so an attack it does not
 name is ordinary — **Adding at +100%**, joining the base-damage bucket like
-Hornet Strike (confirmed, user 2026-07-30). Inferring the class from a sibling
+Hornet Strike (confirmed,). Inferring the class from a sibling
 form would get it exactly backwards. Both halves of the Incarnon form's CO
 behaviour follow from that one absence: the class *and* the 100% base.
 
@@ -2272,7 +2271,7 @@ f1/f2 = 1 + c·Δ^e   (low-level / high-level curves)
 S = smoothstep between the transition bounds:
     S(Δ) = 3T² − 2T³,  T = (Δ − lo) / (hi − lo), clamped to [0,1]
 ```
-- Resolved wiki self-contradiction (M4, 2026-07-24): the Murmur tab's
+- Resolved wiki self-contradiction (M4): the Murmur tab's
   text also listed Anarchs, but the Commandeered Ash Prime @L1000 stat
   block matches the **Corrupted curves to the cent** — Anarchs = Corrupted
   (health `2.1/0.685`, shields `2.0/0.75`); the tab text is a typo.
@@ -2465,7 +2464,7 @@ say *"Burst firing maintains spool-up"* while the Phenmor's says the spool
 *"resets once the player stops firing"*, and it would be easy to read that as two
 mechanics needing two flags. It is not worth one: this sim holds the trigger, so
 the only pauses in it are the reloads the weapon forces, and no play pattern is
-invented by treating those the same way everywhere (owner, 2026-08-10 — taken
+invented by treating those the same way everywhere (owner — taken
 to the limit, exempting a spool means firing one round at a time).
 
 **What is not modelled is the play pattern that dodges it** — on the faller, a
@@ -2565,7 +2564,7 @@ reload, and the ceiling display are **measured** (M14).
 
 ## 10. WHAT A STATUS-CHANCE CARD IS WORTH — the estimate, and the half everybody drops
 
-Asked often enough to write down (owner, 2026-08-16, after a player asked why
+Asked often enough to write down (after a player asked why
 the Burston Prime's board build takes **Galvanized Aptitude** over Serration or
 Heavy Caliber). The naive comparison puts all three in the base-damage bucket
 and stops there, which under-counts the status card by about half.
@@ -2828,7 +2827,7 @@ well-defined, and it separates from the alternative at three targets:
 
 The 75% COMPOUNDS ALONG A PATH, so the difference grows with the crowd.
 
-### Settled by the owner, 2026-08-17
+### Settled measured
 
 * **THE NEXT HOP IS THE NEAREST VIABLE TARGET.**
 * **NO LINE OF SIGHT** — a hop is a distance test and nothing else.
@@ -3192,7 +3191,7 @@ Offense's 0.75 does not), which is that caveat showing.
 
 The body behind takes the shot itself, at full damage — the page names no
 attenuation per body and the engine invents none. It carries multishot (every
-pellet punches through) and it may HEADSHOT (owner, 2026-08-17: punch through
+pellet punches through) and it may HEADSHOT (punch through
 does not stop a shot being aimed). That makes it the opposite of a chain hop,
 which does neither.
 
@@ -3248,7 +3247,7 @@ example, Ignis or Torid Incarnon Genesis"* — and the **Ignis is on the
 punch-through page's EXCEPTION list**, with infinite body punch-through. Two
 weapons the wiki puts in one group for one mechanic sit on opposite sides of
 another. So the answer is transcribed per ENTRY, which is docs/CATALOGS.md's
-rule generalised once more (owner, 2026-08-17: the Torid Incarnon was the
+rule generalised once more (the Torid Incarnon was the
 question that found it).
 
 ### The exception list is a real catalog, and it has an Arch-Gun section

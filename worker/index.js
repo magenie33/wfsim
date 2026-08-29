@@ -1,17 +1,16 @@
 // THE WORKER — one script in front of a static site.
 //
 // wfsim.app is a Cloudflare Worker with STATIC ASSETS (`wrangler.jsonc`), not a
-// Pages project. That distinction cost an evening: this file began life as
-// `functions/api/board/submit.js`, which is the Pages convention, and Pages
-// conventions do nothing on a Worker — the endpoint returned the SPA's HTML
-// with a 200, because `not_found_handling: single-page-application` answers
-// every unmatched path with index.html. A 200 carrying the wrong content type
-// is the quietest possible failure.
+// Pages project, so the Pages conventions do nothing here: an endpoint this
+// script does not claim answers with the SPA's HTML and a 200, because
+// `not_found_handling: single-page-application` answers every unmatched path
+// with index.html. A 200 carrying the wrong content type is the quietest
+// possible failure.
 //
 // Two things make it work here, and both are in `wrangler.jsonc`:
 //   - `assets.binding: ASSETS`, so this script can hand a request back to the
 //     CDN unchanged — everything that is not the api is still a static file,
-//     served the same way it was before this script existed;
+//     served exactly as the CDN serves it;
 //   - `assets.run_worker_first: ["/api/*"]`, so the SPA fallback cannot claim
 //     an api path before the script sees it.
 //
@@ -34,20 +33,12 @@ const ID = /^[a-z0-9_]{1,64}$/;
 
 /// WHAT A BUILD IS, declared ONCE.
 ///
-/// Three things are derived from this table — the shape check, the stored
-/// record, and the identity key — and they used to be three hand-written lists.
-/// That is the defect generator: adding an axis meant remembering all three,
-/// and TWICE an axis was added to some of them and not the others. `mode` was
-/// validated and neither stored nor keyed, so the scorer took its migration
-/// fallback and every Incarnon weapon's row said `cycle`. Then
-/// `valence` was neither stored nor keyed, so seven Kuva Nukor submissions were
-/// refused on every scoring run — "has no Valence element" — while the panel
-/// had told each submitter "sent".
-///
-/// Neither was a hard bug to fix and both were invisible for weeks, because a
-/// dropped field does not throw: it produces a record that is merely INCOMPLETE
-/// and a scorer that quietly refuses it. So the answer is not to be more
-/// careful with three lists, it is to have one.
+/// Three things are derived from this table: the shape check, the stored record
+/// and the identity key. Three hand-written lists would be the defect
+/// generator, because adding an axis to some of them and not the others does
+/// not throw — it produces a record that is merely INCOMPLETE and a scorer that
+/// quietly refuses it, which is invisible until somebody notices a board row
+/// that never appeared.
 ///
 /// `kind`:
 ///   - `id`  — a single slug. `required` ones must be present and non-empty;
@@ -70,10 +61,9 @@ const ID = /^[a-z0-9_]{1,64}$/;
 /// in KV; the alternative is two rules that drift, and a worker confidently
 /// rejecting builds a benchmark would have accepted.
 // EXPORTED for `scripts/check_board_submit.mjs`, which asserts this table
-// against the keys the PAGE actually sends. That assertion is the one that
-// would have caught both losses on the day they happened — a name added to
-// `boardPayload()` and not to this table fails it immediately, without anyone
-// having to notice a board row that never appeared.
+// against the keys the PAGE actually sends: a name added to `boardPayload()`
+// and not to this table fails immediately, rather than through a board row that
+// never appears.
 //
 // `axis` names which of `engine::builds::BUILD_AXES` an entry carries, where
 // there is one. It is not this worker's list to keep — the engine declares what
@@ -106,11 +96,11 @@ export const AXES = [
   // scores every row at the roll's maximum, so the percentage is not a row's to
   // state. Empty on everything that is not out of a Lich.
   { key: "valence", kind: "id", axis: "valence" },
-  // An OUTER BOUND, not the rule. Admission became the BENCHMARK's business on
-  // 2026-08-05 — "full" means every evolution tier and arcane seat THIS weapon
-  // has — and this worker has no game data: it cannot know that a Laetum has
-  // five tiers and a rifle none. It briefly hardcoded "exactly 8", which was
-  // right for one benchmark and would silently be wrong for the second.
+  // An OUTER BOUND, not the rule. Admission is the BENCHMARK's business —
+  // "full" means every evolution tier and arcane seat THIS weapon has — and
+  // this worker has no game data: it cannot know that a Laetum has five tiers
+  // and a rifle none, so a fixed count here would be right for one benchmark
+  // and silently wrong for the next.
   { key: "mods", kind: "ids", max: MAX_MODS, axis: "mods" },
   { key: "evolutions", kind: "ids", max: 8, set: true, axis: "evolutions" },
   { key: "arcanes", kind: "ids", max: 4, axis: "arcanes" },
@@ -152,10 +142,8 @@ const bad = (msg, status = 400) =>
 ///
 /// EVERY axis, which is the whole point of deriving it: a key that cannot tell
 /// two builds apart files the second under the first's number, silently, and
-/// the build that loses is the one submitted second. It has happened twice, and
-/// both times the missing axis was also the one that was not being stored —
-/// see the note on `AXES`. Writes stay idempotent because the same build always
-/// produces the same key.
+/// the build that loses is the one submitted second. Writes stay idempotent
+/// because the same build always produces the same key.
 const identity = (b) =>
   // `identity: false` marks an axis the record CARRIES and is not IDENTIFIED by
   // — provenance rather than a choice inside the build. Read off the same table
@@ -194,8 +182,8 @@ async function submit(request, env) {
       if (v !== undefined && typeof v !== "string") return bad(`bad ${a.key}`);
       const s = v || "";
       if (a.required ? !ID.test(s) : s && !ID.test(s)) return bad(`bad ${a.key}`);
-      // An empty optional axis is absent rather than empty — an ordinary
-      // weapon's record has no `valence` key, exactly as before this table.
+      // An empty optional axis is absent rather than empty: an ordinary
+      // weapon's record carries no `valence` key at all.
       if (s) rec[a.key] = s;
     } else {
       // AN EMPTY LIST IS AN ABSENT AXIS, the same rule an `id` axis has three
@@ -240,7 +228,7 @@ async function submit(request, env) {
 /// the library grow this month", "which facts are stale" are the questions
 /// running a board consists of, and none of them can be put to a key-value
 /// store. D1 is SQLite — it answers them, and it dumps whole, which is a hard
-/// requirement for an asset with no other copy (docs/BOARD.md, 2026-08-26).
+/// requirement for an asset with no other copy (docs/BOARD.md).
 ///
 /// A FAILURE HERE MAY NOT REACH THE SUBMITTER. The submission already succeeded
 /// — the authoritative write is above — so a broken mirror must be invisible:

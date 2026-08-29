@@ -214,7 +214,7 @@ EXPECTED = {
     ('grimoire', 'magazine'): 'a Tome has none; 1 so the sim can fire it',
     # THE MEASUREMENT WINS. The module publishes 350 for the orb's hit and 250
     # for its blast; in game both are that value x0.8 — 280 and 200 — measured
-    # by the owner 2026-08-28 (MEASUREMENTS M63). Two independent ratios of
+    # measured 2026-08-28 (MEASUREMENTS M63). Two independent ratios of
     # exactly 0.800 is what makes it ONE multiplier rather than two
     # transcription slips, so it is registered here as a deliberate divergence
     # rather than corrected back towards the module.

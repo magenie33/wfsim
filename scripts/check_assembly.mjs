@@ -50,7 +50,7 @@ const drawn = await evaluate(`(async () => {
   const block = document.getElementById('assembly-block');
   const row = document.getElementById('assembly-row');
   const id = $('weapon').value;
-  // OPENING A LIST IS WHAT STARTS THE MEASUREMENT (openRanked, 2026-08-24) —
+  // OPENING A LIST IS WHAT STARTS THE MEASUREMENT (openRanked) —
   // the same moment the mod and arcane pickers have always used. The parts are
   // ONE axis, so opening either list measures both. It used to run from the
   // block's render, which is why this simply read the rows.

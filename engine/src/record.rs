@@ -769,7 +769,7 @@ impl Record {
         // CLEARED FIRST. A shot IS a cause and has none of its own — leaving
         // the previous one in place made every trigger pull point at the one
         // before it, which reads as a chain of shots causing shots (found by
-        // looking at a real record, 2026-08-27).
+        // looking at a real record).
         self.shot = None;
         let id = self.push(t, None, Kind::Shot { pellets });
         self.shot = id;

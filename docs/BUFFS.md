@@ -181,13 +181,13 @@ bucket effect **and** a `kind: buff` effect.
 
 ### The decay families, and which are real
 
-`lose_one_and_reset` is the Galvanized rule and was for a long time the only
-TIMED one implemented — so every stacking buff decayed that way whether or not
-it was its rule. `all_drop` is the on-status arcane family (Cascadia Flare).
+`lose_one_and_reset` is the Galvanized rule; `all_drop` is the on-status
+arcane family (Cascadia Flare). A stacking buff decays by ITS OWN rule, never by
+whichever one happens to be implemented.
 
 `per_stack_expiry` became real on 2026-08-07: each stack keeps its OWN clock and
 expires on it, oldest first. Stormburst is the first perk that needed it
-(owner, observed in game), and at the cap a new stack evicts the oldest rather
+(observed in game), and at the cap a new stack evicts the oldest rather
 than being dropped.
 
 `all_at_once` became real on 2026-08-18, on a MOD rather than a perk. Split
@@ -224,11 +224,10 @@ vocabularies costs no engine code at all**. The yaml is
 `duration:` / `decay:`, and the buff's id is the MOD's, leaked once — which is
 what stops those four readers from drifting.
 
-It is a separate `kind:` from the existing `kind: buff` deliberately. That one
-contributes at the ASSUMED MAX through `CondBucket`, which is the right answer
-for a card whose trigger the sim has no event for and the wrong one the moment
-it does — so opting in per mod is what keeps every card written before this
-exactly where it was.
+It is a separate `kind:` from `kind: buff` deliberately. That one contributes
+at the ASSUMED MAX through `CondBucket`, which is the right answer for a card
+whose trigger the sim has no event for and the wrong one the moment it does — so
+a card opts in per mod rather than being moved by a change to the family.
   one_stack_per_instance: true  # optional, arcanes: cap the GRANT (see below)
 ```
 
@@ -523,7 +522,7 @@ Supporting rules:
   randomness. Makes Monte Carlo reproducible and golden tests stable. (Critical
   here because random big crits can *feed back* into a buff's own reset.)
 
-  The seed drives THREE streams rather than one (`rng::Draws`, 2026-08-07):
+  The seed drives THREE streams rather than one (`rng::Draws`):
   `spine` (multishot, crit tier, promotion, body part), `status` (whether a hit
   procs and with what), `extra` (buff triggers, arcane rolls). One stream made
   the sim answer "what does this mod change?" much more loudly than the mod: a

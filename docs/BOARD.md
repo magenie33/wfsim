@@ -130,7 +130,7 @@ themselves — as `engine:` at the top of the file. Next run:
 - **fingerprint moved** → everything is rescored, and the log says what moved.
 
 TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
-(asked and answered, owner 2026-08-11). An untouched row is valid forever; a row
+(asked and answered,). An untouched row is valid forever; a row
 whose engine moved is wrong immediately, not in an hour. A cooldown would be
 both too slow and too fast at once.
 
@@ -227,10 +227,10 @@ submitted verbatim — it has no mod pool and cannot tell an elemental mod from
 any other — and the scorer collapses spellings after `validate` has canonicalised
 them.
 
-**The rows scored before this are wrong**, and worse, unrecoverable: the
-endpoint SORTED on the way in, so the order those players actually built is
-gone. They re-score as "elements in alphabetical order", which is a legal build
-and probably not theirs. New submissions keep what was placed.
+**Rows submitted while the endpoint sorted on the way in are unrecoverable**:
+the order those players built is gone, and they re-score as "elements in
+alphabetical order" — a legal build, and probably not theirs. Submissions keep
+what was placed.
 
 ## The pipeline, stated once
 
@@ -370,8 +370,7 @@ fingerprint, because they *are* its argmax.
 
 ## What is not on the board
 
-*(The exilus slot used to be here. It is on the board as of 2026-08-25 — see
-below.)*
+*(The exilus slot is on the board — see below.)*
 
 ## The exilus slot is OPTIONAL
 

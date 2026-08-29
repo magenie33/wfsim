@@ -222,7 +222,7 @@ def overlay_section(text: str, section: str) -> dict:
 #
 # That is not hypothetical: five Boar Prime evolution names were simply absent,
 # nothing said so, and they got TRANSLATED from the English instead — four of
-# the five wrong (docs/DATA_SOURCES.md, 2026-08-03). A name that cannot be read
+# the five wrong (docs/DATA_SOURCES.md). A name that cannot be read
 # must be left empty and asked for; being told it is empty is the first half.
 #
 #   family -> (ids glob, overlay file, table, WFCD can name it)

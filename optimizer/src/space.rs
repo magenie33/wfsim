@@ -17,7 +17,7 @@
 //!   construction;
 //! - **coverage** is `tried / len()`, an exact number rather than a hope;
 //! - a scope small enough to exhaust simply *is* exhausted by the sweep, so
-//!   "small" and "large" stop being two behaviours (user, 2026-08-03: one
+//!   "small" and "large" stop being two behaviours (one
 //!   path, rigour over convenience).
 //!
 //! **Family exclusivity is rejected, not indexed.** Folding mutually

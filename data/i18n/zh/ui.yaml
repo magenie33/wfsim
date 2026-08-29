@@ -1687,6 +1687,28 @@ ui:
     "Cloudflare —— 让应用和它的美术资源从同一个源站发出来所需的带宽和构建时长，这样这个页面需要的东西就不会来自一个在你那边可能连不上的地方。"
   "Time, which is most of it: new weapons, new mechanics, and the hours in the game that every calibrated number is measured against.":
     "时间，而且这是大头：新武器、新机制，以及每一个校准过的数字背后那些泡在游戏里的小时数。"
+  "WFSim for Windows": "WFSim Windows 桌面版"
+  "The same calculator on your own machine — it opens instantly, works with no connection, and keeps itself up to date. It is not a cut-down version: the engine is the same wasm module this site serves.": "同一个计算器，跑在你自己的电脑上 —— 秒开、可离线、自动更新。它不是缩水版：引擎就是本站在用的同一个 wasm 模块。"
+  "The first time you open it": "第一次打开"
+  'Windows shows a blue notice, "Windows protected your PC". Click "More info", then "Run anyway".': "Windows 会弹出蓝色提示「Windows 已保护你的电脑」。点「更多信息」→「仍要运行」即可。"
+  "It says that because this program has no code-signing certificate — one costs several thousand yuan a year, which a free tool does not justify. An antivirus warning is the same thing for the same reason: an unsigned program nobody has seen before.": "因为本程序没有购买代码签名证书（一年好几千，一个免费工具不值得）。如果杀毒软件报警，也是同样的原因：没有签名的新程序。"
+  "If you would rather check first, the SHA-256 and the command to verify it ship in the notes beside the download. Or just use the site — it does everything this does.": "介意的话，下载旁边的使用说明里有 SHA-256 和校验命令。或者直接用在线版 —— 它能做的这个都能做。"
+  "Why install it": "为什么装它"
+  "Nothing is downloaded when you open it. The engine is already on your disk, so a fight is computed the moment you ask for it — however slow this site is to reach from where you are.": "打开时不下载任何东西。引擎已经在你硬盘上，所以你一点它就开算 —— 不管本站在你那儿有多慢。"
+  "It works with no connection at all.": "完全断网也能用。"
+  "It updates itself, and takes only what changed: a release touching one file is under a kilobyte on the wire. You download this once.": "它自己更新，而且只拿变了的部分：一次只改了一个文件的发布，上下行不到一 KB。这个你只需要下一次。"
+  "The site stays exactly where it is. Both run the same engine, and a build link opens in either.": "网页版一点不变。两边跑的是同一个引擎，一个配装链接在哪边都能开。"
+  "What it is not": "它不是什么"
+  "Not an installer. There is nothing to run as administrator, and nothing is written to the registry.": "不是安装程序。不需要管理员权限，也不写注册表。"
+  "Not a second engine. It carries the same wasm the site serves, so a number is the same number in both.": "不是另一个引擎。它带的就是本站发的那份 wasm，所以同一个数字两边一样。"
+  'Uninstalling is deleting the file. Its data sits in %LOCALAPPDATA%\WFSim and can go with it.': '卸载就是删文件。程序数据在 %LOCALAPPDATA%\WFSim，可一并删除。'
+  "The source": "源码"
+  "AGPL-3.0. A source archive sits beside the download because the licence requires the source to be offered wherever the binary is — it is the same source that is on GitHub, and you do not need it to run the program.": "AGPL-3.0。下载旁边放了一份源码包，因为开源许可证要求在提供二进制的地方同时提供源码 —— 它和 GitHub 上的是同一份，正常使用不需要下载。"
+  "{os} app — opens instantly, works offline, updates itself": "{os} 桌面版 —— 秒开、可离线、自动更新"
+  "Windows app": "Windows 桌面版"
+  "Download the Windows app": "下载 Windows 桌面版"
+  "You are running the Windows app. It updates itself — there is nothing to download here.": "你正在用的就是 Windows 桌面版。它会自己更新 —— 这里没有需要下载的东西。"
+  "This is a Windows program — it will not run on the machine you are reading this on.": "这是一个 Windows 程序 —— 在你现在看这页的设备上跑不了。"
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']

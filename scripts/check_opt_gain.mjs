@@ -13,7 +13,7 @@
 //   2. a candidate that lands on a DIFFERENT pairing says so on its row. That
 //      label is not decoration: adding a fourth element re-pairs the other
 //      three, so a mod reading "+90% Electricity" can measure NEGATIVE, and
-//      without the label that looks like a bug (the shape of user, 2026-08-02:
+//      without the label that looks like a bug (the shape of user:
 //      "why does adding status chance LOWER the damage?");
 //   3. a mod that changes no partition stays SILENT — a second mod of an
 //      element the build already has POOLS (`ElementalInput::push` merges

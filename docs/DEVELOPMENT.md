@@ -123,7 +123,7 @@ exilus pool from different sources — agreeing only by coincidence.
 `one_fight` is the harness for it. It exists because the repo could already
 grade the search's ACCURACY (`wfsim-truth`) and had no way to state its COST —
 and "it feels faster" and "it got dumber" are indistinguishable without both
-(community request, 2026-08-14).
+(community request).
 
 ```bash
 cargo run --release --bin one_fight -- save    # remember where you started
@@ -199,7 +199,7 @@ Scourge and **+31% on the Gotva Prime**. One weapon would have said "ship it"
 and one "revert", both truthfully.
 
 **What has already been tried, so nobody spends a day on it twice** (this
-machine, 2026-08-14; per-run cost 0.4–1.2 ms for a 180 s fight, repeat spread
+machine; per-run cost 0.4–1.2 ms for a 180 s fight, repeat spread
 ~2%):
 
 | tried | result |

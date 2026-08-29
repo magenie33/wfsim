@@ -216,7 +216,7 @@ const r = await evaluate(`(async () => {
       out.foeSel = [...document.querySelectorAll('.rp-foe.sel')].map((c) => c.dataset.rpfoe);
       out.foeAfter = live();
     }
-    // …AND PICKING ONE MUST NOT COST THE RESULT (owner, 2026-08-18: clicking an
+    // …AND PICKING ONE MUST NOT COST THE RESULT (clicking an
     // enemy in the result deleted it and the run had to be paid for again).
     //
     // The pick is free by design — the panel redraws from the STORED result at

@@ -89,7 +89,7 @@ What it turned on:
 - **radial falloff**, because a missed projectile detonates beside the target
   and the explosion finally has an epicentre distance to read. 10 admissions;
 - **the shot combo counter dropping on a miss**, which is the other half of a
-  mechanic that previously only decayed on its timer.
+  mechanic that otherwise only decays on its timer.
 
 What is still open here:
 
@@ -310,7 +310,7 @@ crosses it, the shot lands, and the sphere seeds from its surface as it should.
 
 These are things the engine COULD do today and deliberately does not, because
 doing them means inventing a play pattern. The repo's rule is that a policy is
-the owner's call, not the model's (the 99-stack decision, 2026-08-08).
+the owner's call, not the model's (the 99-stack decision).
 
 ### Bullet Attractor — OPEN, and it wants a MEASUREMENT (Scourge, Scourge Prime)
 
@@ -401,7 +401,7 @@ of them, is the play pattern that dodges it:
 covers both — the same one as the reload above, for the same reason. It is the
 reading that needs no play pattern invented for it. Naming a burst length, or a
 pause short enough to keep a spool, would be inventing the very thing the ruling
-refuses to invent (owner, 2026-08-10 — taken to the limit, a weapon
+refuses to invent (owner — taken to the limit, a weapon
 exempted from its own spool is a weapon fired one round at a time).
 
 Each weapon's own card says so, which is what makes the decision reachable: the

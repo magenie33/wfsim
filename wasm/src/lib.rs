@@ -221,7 +221,7 @@ fn optimize_inner(
             // that would return an empty result — this asks for a best-so-far,
             // and the result reports the COVERAGE it reached.
             //
-            // Five minutes, not the 20 s it was (user, 2026-08-03: accuracy
+            // Five minutes, not the 20 s it was (accuracy
             // over convenience — a search the visitor asked for, with a
             // progress bar and a Cancel button in front of it, may take real
             // time). What the number cannot fix is WHICH builds a cut leaves

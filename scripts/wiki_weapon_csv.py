@@ -150,7 +150,7 @@ def gun_rows(text, complain=True):
 def roster():
     """Every entry in `data/weapons/`, keyed by file, with its parent resolved.
 
-    A FORM INHERITS ITS WEAPON (AGENTS.md, 2026-08-15), so an entry may carry no
+    A FORM INHERITS ITS WEAPON (AGENTS.md), so an entry may carry no
     `internal_name` of its own — it is its parent's. Resolving that here is what
     keeps 88 form siblings from being reported as weapons the wiki has never
     heard of.

@@ -385,7 +385,7 @@ pub struct AttackSpec {
     /// outright, so
     /// a per-part spelling would be six chances to make them differ.
     ///
-    /// Its value here is ASSUMED rather than measured (owner: 0.1) and the
+    /// Its value here is ASSUMED rather than measured (0.1) and the
     /// weapon says so on its own page.
     #[serde(default)]
     pub unaimed_headshot_chance: Option<f64>,
@@ -526,7 +526,7 @@ pub struct AttackSpec {
     pub forced_procs: Vec<String>,
     /// Seconds of BULLET ATTRACTOR this attack plants on what it hits — the
     /// spearguns' throw, and the one attack in the roster that applies the
-    /// Void field without dealing Void (owner, 2026-08-14: the field IS the
+    /// Void field without dealing Void (the field IS the
     /// Void effect, and only the FIELD dies when the next throw starts —
     /// what it already applied runs its own clock on the enemy).
     ///
@@ -841,7 +841,7 @@ pub struct OrbSpec {
     /// a trigger pull up.
     pub throw_seconds: f64,
     /// …and the RECOVERY after it, before the weapon can do anything else
-    /// (owner: 0.85 s). Together they are the second a throw costs, which on
+    /// (0.85 s). Together they are the second a throw costs, which on
     /// this weapon is also its listed fire rate of 1 — the animation IS the
     /// cadence.
     ///
@@ -937,7 +937,7 @@ pub struct LingeringSpec {
     /// that is trying — Vital Sense multiplies the crit DAMAGE bucket, taking a
     /// field's 1.0 to 2.2, and a post-mod ADDITIVE crit-chance source (Arcane
     /// Avenger) lifts the chance off zero. Together those make a fire that
-    /// cannot crit crit for 2.2x (owner asked, 2026-08-23; found by the test
+    /// cannot crit crit for 2.2x (owner asked; found by the test
     /// the question prompted).
     ///
     /// So this is declared rather than inferred from a zero: a field with 0%
@@ -1854,7 +1854,7 @@ pub struct WeaponSpec {
     /// a bigger magazine makes the reload LONGER, so a magazine mod buys
     /// capacity and pays for it in downtime. Modelled as one flat block until
     /// 2026-08-08, which made Ammo Stock read as free capacity on exactly the
-    /// weapons the game charges for it (owner, calibrating the Felarx).
+    /// weapons the game charges for it (calibrating the Felarx).
     #[serde(default)]
     pub reload_style: Option<String>,
     /// The three parts of a by-round reload, where the weapon's page states
@@ -2472,7 +2472,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         // numbers because "while you are in it" is a real thing to ask about. A
         // METERED form is not a state — you throw one orb and you are back on
         // the primary before it lands. There is no "while you are in it" to
-        // show, so there is nothing to show it for (owner, 2026-08-28:
+        // show, so there is nothing to show it for (owner:
         // `transformed` is the Incarnon's and is not to be borrowed).
         //
         // So a Tome has exactly TWO ways to be played and both are here: the
@@ -5051,7 +5051,7 @@ mod tests {
     /// THE CYCLE DRAWS FROM THE SAME RESERVE. Both forms are one weapon with
     /// one supply, but every draw inside the cycle was free until 2026-08-04 —
     /// so a finite reserve was ignored on every Incarnon weapon, which is most
-    /// of the roster (owner: the Infinite-ammo setting has to be adjustable).
+    /// of the roster (the Infinite-ammo setting has to be adjustable).
     #[test]
     fn an_incarnon_cycle_runs_dry_like_anything_else() {
         use crate::dummy::{monte_carlo, DummyParams, LockMode};
@@ -5526,7 +5526,7 @@ mod tests {
         // also raises base damage (+50), and this assertion read 1.0 until it
         // was measured: at the 125 panel, Galvanized Shot at 3 stacks against 2
         // status types gives 305, and a CO term on the full 125 would give 425
-        // (MEASUREMENTS M49, owner 2026-08-16).
+        // (MEASUREMENTS M49,).
         //
         // WHAT IT COST TO LEARN, and why the flag is still per PERK. The
         // catalog's ABSENCE-MEANS-ORDINARY rule produced the old number, and
@@ -5897,7 +5897,7 @@ mod laetum_tests {
         );
     }
 
-    /// M10 (in-game, 2026-07-30): a reload-speed buff is live in BOTH
+    /// M10 (in-game): a reload-speed buff is live in BOTH
     /// forms; it does NOT touch the gauge, but it DOES shorten transmute
     /// in and out. The observable consequence in a fixed engagement is
     /// that more cycles fit — the gauge requirement staying put.

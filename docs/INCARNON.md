@@ -1,6 +1,6 @@
 # Incarnon guns — the whole roster, what covers what, and what is done
 
-Plan of record, 2026-08-07: **before any other weapon, do every
+Plan of record: **before any other weapon, do every
 Incarnon primary and secondary.** This file is the checklist. docs/WEAPON_INTAKE.md
 still holds what one weapon costs and the non-Incarnon backlog behind it.
 
@@ -47,19 +47,19 @@ carries that name.
 | **Braton Genesis** | `braton`, `mk1_braton`, `braton_vandal`, `braton_prime` (+ `_incarnon`) — 2026-08-08 |
 | **Latron Genesis** | `latron`, `latron_wraith`, `latron_prime` (+ `_incarnon`) — 2026-08-08 |
 | **Boltor Genesis** | `boltor`, `telos_boltor`, `boltor_prime` (+ `_incarnon`) — 2026-08-08 |
-| **Sybaris Genesis** | `sybaris`, `dex_sybaris`, `sybaris_prime` — BULK, 2026-08-08 |
-| **Dera Genesis** | `dera`, `dera_vandal` — BULK, 2026-08-08 |
-| **Lato Genesis** | `lato`, `lato_vandal`, `lato_prime` — BULK, 2026-08-08 |
-| **Lex Genesis** | `lex`, `lex_prime` — BULK, 2026-08-08 |
-| **Vasto Genesis** | `vasto`, `vasto_prime` — BULK, 2026-08-08 |
-| **Bronco Genesis** | `bronco`, `bronco_prime` — BULK, 2026-08-08 |
-| **Kunai Genesis** | `kunai`, `mk1_kunai` — BULK, 2026-08-08 |
+| **Sybaris Genesis** | `sybaris`, `dex_sybaris`, `sybaris_prime` — BULK |
+| **Dera Genesis** | `dera`, `dera_vandal` — BULK |
+| **Lato Genesis** | `lato`, `lato_vandal`, `lato_prime` — BULK |
+| **Lex Genesis** | `lex`, `lex_prime` — BULK |
+| **Vasto Genesis** | `vasto`, `vasto_prime` — BULK |
+| **Bronco Genesis** | `bronco`, `bronco_prime` — BULK |
+| **Kunai Genesis** | `kunai`, `mk1_kunai` — BULK |
 
 Remaining: **16 adapters (30 weapons) + 2 naturals**.
 
 ## BULK vs HAND — what "rough" means, precisely
 
-Owner, 2026-08-08 So from the Sybaris onward the intake runs a
+Owner So from the Sybaris onward the intake runs a
 pipeline, and the two halves of a weapon are held to different
 standards ON PURPOSE:
 
@@ -87,7 +87,7 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
   EVOLUTION strings need the CN wiki one adapter at a time, and the bulk pass
   does not do it. A Chinese session shows English perk names on a bulk weapon
   until its family is transcribed.
-- ~~**CO catalog rows.**~~ **READ AND APPLIED, 2026-08-08.** The whole catalog
+- ~~**CO catalog rows.**~~ **READ AND APPLIED.** The whole catalog
   was pulled for every weapon in the program. What it
   changed and what it exposed:
 
@@ -327,7 +327,7 @@ Torid, Angstrum, Stug** (wiki, Incarnon — verbatim in `torid_incarnon.yaml`).
 
 ### A CHARGE POOL IS NOT A MAGAZINE, and nothing in the game treats it as one
 
-Roster-wide invariant, stated by the owner: **no mechanism anywhere
+Roster-wide invariant, stated measured: **no mechanism anywhere
 restores charges in an Incarnon form, and none spends extra ones.** The pool is
 filled by the gauge — weakpoint or direct hits, converted at
 `rounds_per_charge` — and emptied by firing at the form's own `ammo_cost`. That
@@ -458,7 +458,7 @@ is intrinsic — but they still model as a transform group here, and they carry
 in this document has entries, evolutions, art and names. What is left is
 per-gun VERIFICATION and the mechanics below.
 
-## The verification pass, 2026-08-12 — 182 undifferentiated gaps to 74
+## The verification pass — 182 undifferentiated gaps to 74
 
 The roster has had entries since 2026-08-08; what it did not have was PERKS that
 did anything. This night was that pass, and the shape of it is worth keeping

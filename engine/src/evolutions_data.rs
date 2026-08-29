@@ -49,7 +49,7 @@ struct EvoFile {
     ///     so they say the CO base equals the base of a weapon with no
     ///     evolution on it, which is true by construction and says nothing
     ///     about this question.
-    ///   · FOUR perks across two weapons were measured by the owner, and all
+    ///   · FOUR perks across two weapons were measured, and all
     ///     four are excluded — the Dual Toxocyst's two (M49) and the Torid
     ///     Incarnon's two (M50). One of those four WAS on the catalog and three
     ///     were not, so the catalog's silence has now been tested three times
@@ -378,7 +378,7 @@ enum EvoEffect {
     ///
     /// The bonus joins the ADDITIVE headshot bracket: "Headshot damage bonus
     /// stacks additively with Primary Deadhead's headshot damage bonus" (wiki,
-    /// supplied by the owner 2026-08-10). That is the same bucket the arcane
+    /// supplied measured 2026-08-10). That is the same bucket the arcane
     /// feeds, so the two sum before the bracket is spent rather than
     /// multiplying — which is what makes the perk worth much less on a Deadhead
     /// build than the card's +50% suggests.
@@ -628,7 +628,7 @@ pub struct EvolutionDef {
     /// the description, the effect only requires 1.1"* — a player reading the
     /// card would mod for a threshold the game does not ask for.
     ///
-    /// Owner, 2026-08-18: anything that differs from what the game DISPLAYS is
+    /// Owner: anything that differs from what the game DISPLAYS is
     /// to be noted. It rides beside the effect rather than short-circuiting it,
     /// which is the whole difference from `live_bug` in the same position.
     misprints: Vec<String>,
@@ -998,7 +998,7 @@ impl EvolutionDef {
     /// and starts the instant a new unknown kind is written.
     ///
     /// Empty means every effect is modelled. It is the honest thing for the
-    /// UI to show and the honest thing to grep for (user, 2026-08-06: 如果有
+    /// UI to show and the honest thing to grep for (如果有
     /// 的东西没做完，得说这个东西未完成 …… 不要隐瞒欺骗自己).
     pub fn unmodeled_effects(&self) -> Vec<&str> {
         self.effects
@@ -2620,7 +2620,7 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
             // everything under evolutions/ must parse as an evolution.
             let ef = serde_norway::from_str::<EvoFile>(text)
                 .unwrap_or_else(|e| panic!("parse {path}: {e}"));
-            // NAMING CONTRACT, enforced at load (user, 2026-07-29: full
+            // NAMING CONTRACT, enforced at load (full
             // weapon names, no abbreviations — long but unambiguous):
             //   id = "<weapon>_<evolution>"  and  filename = "<id>.yaml".
             // Scoping is NOT redundant with the `weapon:` field: evolution
@@ -2724,7 +2724,7 @@ mod tests {
     /// NOTHING IN THE ROSTER RESIZES AN INCARNON CHARGE POOL — no evolution,
     /// under any combination.
     ///
-    /// A roster-wide invariant, stated by the owner: there is no
+    /// A roster-wide invariant, stated measured: there is no
     /// mechanism anywhere that restores charges in an Incarnon form or spends
     /// extra ones. The pool is filled by the GAUGE and emptied by firing, and
     /// that is the whole of it — which is why the magazine family of effects is
@@ -3423,7 +3423,7 @@ mod furis_co_split_tests {
     /// The disclosure is derived, so the count is honest without anyone
     /// maintaining it — and honest is not the same as improving. A tag that
     /// nobody is obliged to remove becomes a way of feeling finished
-    /// (owner, 2026-08-08, asking whether this transparency is good for the
+    /// (asking whether this transparency is good for the
     /// work as well as for the reader).
     ///
     /// Lower this number when a kind gets implemented; that is the only edit
@@ -3704,7 +3704,7 @@ mod after_mods_layer_tests {
     /// falls to Inert rather than paying out unconditionally") and one arm had
     /// never obeyed it: `punch_through_bonus` read `value` and nothing else, so
     /// Fortress Salvo's "With Armor Over 450: +4 Punch Through" paid out to
-    /// every frame in the game. It was reported by the owner, and
+    /// every frame in the game. It was measured, and
     /// nothing here could have caught it — so this is that thing.
     ///
     /// IT WALKS THE DATA rather than a list of kinds. Every effect in every

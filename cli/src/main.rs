@@ -363,7 +363,7 @@ fn main() {
     );
 
     // Test 2 - THE ULTIMATE STRESS TEST (standard benchmark for every
-    // weapon, user 2026-07-26): Thrax Centurion @9999 STEEL PATH, instant
+    // weapon,): Thrax Centurion @9999 STEEL PATH, instant
     // respawn, Secondary Enervate equipped (always on in this sim).
     // 9.67M health behind 15.5M neutral Overguard.
     let inc2 = DummyParams {

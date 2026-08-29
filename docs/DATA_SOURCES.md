@@ -212,7 +212,7 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
   git history, not per-file status fields. Golden tests vs
   Simulacrum remain the arbiter of the ENGINE; the data is simply kept
   current.
-- **Field discipline** (decision 2026-07-28, full statement in
+- **Field discipline** (a decision, full statement in
   [`../data/README.md`](../data/README.md)): fields are structured data a
   program consumes; human narrative is a `#` comment. No prose in fields.
 
@@ -622,7 +622,7 @@ the corrections: `docs/MEASUREMENTS.md` M35.
 
 ### Open SOURCE-SPLIT: the Torid Incarnon's beam geometry
 
-The official wiki's raw wikitext (`?action=raw`, 2026-07-30) reads, with markup:
+The official wiki's raw wikitext (`?action=raw`) reads, with markup:
 
 ```
 '''37''' meter range, and a '''2.3''' meter damage radius ...
@@ -907,14 +907,13 @@ This one joins it against the **POOL TAGS** — `PRIMARY`, `Rifle`, `Assault
 Rifle`, `Bow`, `Sniper`, `Shotgun`, `Pistol`, `Archgun` — which is where the
 other five hundred live.
 
-Nothing looked at those, and the failure mode is invisible in a way a missing
-mod is not: **a pool a weapon DECLARES and no directory holds resolves to an
-empty list, with no error anywhere.** Nine bows had carried
-`mod_pools: [primary, rifle, bow]` since the roster began and `data/mods/bow/`
-did not exist, so Split Flights — the only multishot mod a bow can hold — was
-unreachable. Fifteen snipers carried `[primary, rifle]` and no `sniper` at all,
-so both Chambers were. Neither shows up as a gap in any earlier sweep, because
-every sweep before this one asked about mods we HAVE.
+The failure mode is invisible in a way a missing mod is not: **a pool a weapon
+DECLARES and no directory holds resolves to an empty list, with no error
+anywhere.** A bow carrying `mod_pools: [primary, rifle, bow]` with no
+`data/mods/bow/` cannot reach Split Flights, the only multishot mod a bow can
+hold; a sniper carrying `[primary, rifle]` and no `sniper` cannot reach either
+Chamber. No sweep that asks about the mods we HAVE can see it, which is why this
+one works from the ROSTER.
 
 `scripts/survey_pool_mods.py` writes `data/surveys/pool_mods.yaml`, read by
 `the_pool_mods_we_still_owe_only_goes_down` and nothing else. 461 rows;

@@ -321,7 +321,7 @@ struct PoolFile {
 /// forms you can fire for free is what it has. A riven belongs to the weapon,
 /// not to a mode of it: Larkspur Prime's beam is 11% Impact and its alt-fire —
 /// one held button away, no gauge, no animation — is 33%, and a player's real
-/// card rolls negative Impact (through the owner, 2026-08-07).
+/// card rolls negative Impact (through the owner).
 ///
 /// A GAUGE-SWITCHED form stays out, and the survey is what settles it rather
 /// than the argument that used to stand here. An Incarnon form is paid for
@@ -1403,7 +1403,7 @@ fn an_element_is_never_a_malus() {
 
     /// A riven's Damage is IN SERRATION'S BUCKET, not a multiplier of its own.
     ///
-    /// Asked directly (user, 2026-08-01: "did you treat the riven's base
+    /// Asked directly ("did you treat the riven's base
     /// damage as an extra multiplicative bucket?"), and the answer has to be
     /// a number rather than a reading of the code: if it were its own bucket,
     /// a riven would be worth far more than the same percentage on a mod, and

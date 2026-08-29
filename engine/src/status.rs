@@ -63,7 +63,7 @@ pub fn draw_proc_type(
 ///
 /// AN IMMUNITY BEATS A GUARANTEE. A forced proc of a type the target cannot
 /// take does not land — the game shows the proc icon on the damage number and
-/// the status never appears on the enemy (owner, 2026-08-12, with Valence
+/// the status never appears on the enemy (with Valence
 /// Formation's forced Radiation on a Radiation-immune unit). Only the DISPLAY
 /// is fooled; nothing is applied, and the random draws below renormalise
 /// exactly as they already did.

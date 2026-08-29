@@ -1,6 +1,6 @@
 // THE SEVENTEENTH CHECK — there is ONE dropdown.
 //
-// Owner, 2026-08-06. The site had eight native `<select>`s beside a rich
+// Owner. The site had eight native `<select>`s beside a rich
 // searchable picker, so the quick calc's SCENARIO — a list that grows, since
 // a scenario is a preset you make — was the plainest control on the page
 // while a mod list two blocks away searched and sorted.

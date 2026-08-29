@@ -121,7 +121,7 @@ const gain = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
   history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
-  // OPENING THE LIST IS WHAT STARTS THE SCAN (openRanked, 2026-08-24) — the
+  // OPENING THE LIST IS WHAT STARTS THE SCAN (openRanked) — the
   // same moment the mod and arcane pickers have always used. It used to run
   // from the block's render, which is why this simply waited.
   document.querySelector('#element-cfg .slot.axis .dots').click();

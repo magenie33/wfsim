@@ -9,7 +9,7 @@
 // families are offered from a roster and both write into `sim`, so a panel that
 // drew every card correctly and sent nothing would read as a working feature —
 // the same shape as the mode control that was picked on the optimizer tab and
-// never sent (check_opt_modes.mjs, 2026-08-11). Every assertion below is either
+// never sent (check_opt_modes.mjs). Every assertion below is either
 // ON THE WIRE or on a real `/api/simulate` answer in the shipping wasm build.
 //
 // The other half is the ADMISSION. Twenty of the twenty-seven shard effects pay
@@ -31,7 +31,7 @@ const r = await evaluate(`(async () => {
 
   // A SCENARIO OF YOUR OWN FIRST. A first-time visitor lands on the OFFICIAL
   // ruler, whose fight is pinned — every edit below would be refused by a lock
-  // that has nothing to do with this feature (check_arena.mjs, 2026-08-16).
+  // that has nothing to do with this feature (check_arena.mjs).
   const bar0 = document.querySelector('#preset-bar-simulator-scenarios');
   const add0 = bar0 && bar0.querySelector('.pchip.add');
   if (add0) { add0.click(); await sleep(1500); }

@@ -26,13 +26,11 @@
 //! wire payload already says most of that: it carries no polarities, no Forma,
 //! no slot positions and no mod ranks (every mod simulates at max rank).
 //!
-//! ORDER DOES COUNT, and this said the opposite for a day on the strength of
-//! ONE measurement — eight mods reversed scored 0.96478 both ways, which was
-//! true of that build and not of builds. Mods combine ELEMENTS in listed order:
-//! Heat, Cold, Toxin, Electric is Blast + Corrosive; Heat, Toxin, Cold,
-//! Electric is Gas + Magnetic, and on the Torid that is 12,424 DPS against
-//! 46,583. A sorted identity collapsed those into one row
-//! and scored whichever the sort happened to produce.
+//! ORDER DOES COUNT. Mods combine ELEMENTS in listed order: Heat, Cold, Toxin,
+//! Electric is Blast + Corrosive; Heat, Toxin, Cold, Electric is Gas +
+//! Magnetic, and on the Torid that is 12,424 DPS against 46,583. A sorted
+//! identity collapses those into one row and scores whichever the sort happens
+//! to produce.
 //!
 //! ...but what counts is the PAIRING, not the positions. `elements::combine`
 //! chunks the POOLED element list and combines each chunk with `combined_of`,
@@ -41,15 +39,16 @@
 //! among themselves is part of the fight — only which elements share a chunk,
 //! and which one trails.
 //!
-//! Both of those were treated as significant, and it put the Ocucor on the
-//! board twice at the same score with Frostbite and Pistol Pestilence swapped. The rule was right and one notch too fine.
+//! Treating either as significant is one notch too fine: it puts the same
+//! weapon on the board twice at the same score with two elemental mods
+//! swapped.
 //!
 //! CANONICALISE ON THE POOLED SEQUENCE, never on mod slots. Two mods of one
 //! element are ONE entry to the engine, so every position after them shifts —
 //! a canonicaliser that chunks the MOD list agrees with the engine until a
-//! build carries a duplicate element and then quietly scores a different
-//! fight. That shipped and was reverted (5669040): Primed Heated Charge and
-//! Scorch pooled, and Viral + Heat was published as Blast + Toxin.
+//! build carries a duplicate element and then quietly scores a different fight:
+//! Primed Heated Charge and Scorch pool, and Viral + Heat publishes as Blast +
+//! Toxin.
 //!
 //! So the identity is the weapon, the mod sequence CANONICALISED to one
 //! representative per PAIRING, the evolution set, and the arcanes.
@@ -66,10 +65,9 @@ use crate::mods::PlannedMod;
 /// A benchmark build is judged with a Catalyst installed and polarized to the
 /// weapon's own ceiling — the state a build worth submitting is in.
 ///
-/// It used to be the constant 60, which is only a rank-30 weapon's answer.
-/// Capacity "correlates to their Rank" and a rank-40 weapon reaches 80, so a
-/// board that assumed 60 would have refused builds the game allows the moment
-/// a Kuva weapon joined the roster (`crate::mods::fit`).
+/// Never a constant: 60 is only a rank-30 weapon's answer. Capacity
+/// "correlates to their Rank" and a rank-40 weapon reaches 80, so a fixed 60
+/// refuses builds the game allows on every Kuva weapon (`crate::mods::fit`).
 pub const BENCHMARK_INVESTMENT: crate::mods::Investment = crate::mods::Investment {
     catalyst: true,
     polarize_to_max: true,
@@ -103,10 +101,10 @@ pub struct BuildAxis {
 ///
 /// A build travels through eight representations — the page's live state, a
 /// stored preset, a simulate request, an optimize scope, a ranked row, a board
-/// submission, a board record, a share link — and until this list existed, each
-/// of them held its own hand-written answer to "which axes are there". Adding
-/// one meant editing every copy, and the copy nobody edited dropped that axis
-/// in silence, because a missing axis and a defaulted axis are the same absence
+/// submission, a board record, a share link. A hand-written answer to "which
+/// axes are there" in each of them means adding one is eight edits, and the
+/// copy nobody edits drops that axis in silence, because a missing axis and a
+/// defaulted axis are the same absence
 /// on the wire.
 ///
 /// It happened four times: `mode` lost from the board submission,

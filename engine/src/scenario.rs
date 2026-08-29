@@ -244,7 +244,7 @@ pub enum AxisKind {
     /// Anything the panel shows as what it HOLDS rather than as a control: a
     /// formation, a buff map, an aura list. Edited in its own panel, because
     /// two controls over one document is how one of them silently undoes the
-    /// other (the arena's own rule, 2026-08-16).
+    /// other (the arena's own rule).
     Structured,
 }
 

@@ -1292,7 +1292,7 @@ pub struct ModDef {
     /// else, so a flat mod list can say which entry is the stance by looking at
     /// it. That is exactly what the exilus slot could NOT do — an
     /// exilus-eligible mod is legal in a main slot too, which is why that one
-    /// travels in a field of its own (AGENTS.md, 2026-08-25).
+    /// travels in a field of its own (AGENTS.md).
     ///
     /// Keyed by [`crate::weapons_data::FormKind::id`] — see [`StanceCombos`].
     pub stance: Option<StanceCombos>,
@@ -1369,7 +1369,7 @@ pub enum StackPolicy {
     /// Full stacks / 100% uptime on every conditional buff.
     AssumedMax,
     /// On-kill stacking buffs start at their configured INITIAL stacks
-    /// (full, per user 2026-07-24 correction) and then evolve purely by
+    /// (full, per correction) and then evolve purely by
     /// mechanics: kills refresh/grant, timeouts decay one stack.
     Emergent,
     /// A COMPANION's weapon. Galvanized (and other conditional
@@ -1386,7 +1386,7 @@ pub enum StackPolicy {
     ///
     /// So this is an ARENA limit, not a game rule, and it is the wrong answer
     /// the moment a Tenno weapon and a companion weapon are simulated side by
-    /// side. (wiki `Galvanized_Mods`; user 2026-07-25, corrected 2026-07-31)
+    /// side. (wiki `Galvanized_Mods`;, corrected 2026-07-31)
     BaseOnly,
 }
 
@@ -2628,7 +2628,7 @@ pub struct LingeringBase {
     /// Does this field take Condition Overload? **Default NO** — the normal
     /// rule is what the mods say on the tin: CO boosts DIRECT hits only, and an
     /// AoE part should get nothing. The Torid's cloud is an ANOMALY that the CO
-    /// catalog records with a row of its own (user, 2026-07-30: "in theory it
+    /// catalog records with a row of its own ("in theory it
     /// would not get it, but the programmer let it"), so the weapon declares it
     /// rather than the engine assuming every field behaves that way.
     pub takes_condition_overload: bool,
@@ -5509,7 +5509,7 @@ mod tests {
         // …AND NEITHER DOES A CRIT MOD, in either half. "It cannot crit via any
         // means", so the zero above has to survive a build that is TRYING to
         // make it crit — a zero asserted only on a bare weapon says nothing
-        // about the mod that would move it (owner asked, 2026-08-23: this
+        // about the mod that would move it (owner asked: this
         // decides how the weapon is built).
         //
         // BOTH HALVES, because they are two buckets and a field could leak
@@ -6688,7 +6688,7 @@ mod tests {
 
     /// THE SIX MEASURED CHAIN COUNTS, reproduced from the multishot alone.
     ///
-    /// ✅ MEASURED (M63, owner 2026-08-28) by counting Invocation stacks — those
+    /// ✅ MEASURED (M63,) by counting Invocation stacks — those
     /// four mods gain one per hit, so how many bodies a strike reached is
     /// readable off the buff instead of being inferred from a damage total:
     ///
@@ -6727,7 +6727,7 @@ mod tests {
     ///
     /// Three distances on this attack and only two of them move: Fulmination
     /// enlarges the orb's REACH and its detonation RADIUS, and leaves a chain
-    /// HOP at the six metres the page gives it (owner, 2026-08-28 — his
+    /// HOP at the six metres the page gives it (owner — his
     /// *"不受增益"* was about the range bucket, not the damage one).
     ///
     /// Asserted as an asymmetry rather than as three numbers, because the three

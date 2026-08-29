@@ -38,7 +38,7 @@ mod, and that constraint is about how many mods fit, never about which polarity
 goes where. So it does not reach the planner: nine polarities, eight or nine
 mods, and the eligibility rule lives in the slot check.
 
-## The mechanics, verified (wiki, 2026-08-04)
+## The mechanics, verified (wiki)
 
 | fact | the wiki's own words |
 | --- | --- |
@@ -58,7 +58,7 @@ capacity     = max_rank_now * (catalyst ? 2 : 1)
 30 + Catalyst = 60, which is the constant hardcoded today. 40 + Catalyst = 80.
 (The +10 stance bonus that takes a Paracesis to 90 is melee-only.)
 
-Settled by the owner, 2026-08-04:
+Settled measured:
 
 - **An Arch-gun has no Exilus slot at all**, so the question of it consuming
   capacity does not arise. Nor does a robotic (Sentinel/MOA) weapon have one.

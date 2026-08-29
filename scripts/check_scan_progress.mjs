@@ -72,7 +72,7 @@ const r = await evaluate(`(async () => {
 
   // ---- 2. THE RANKED SLOTS -----------------------------------------------
   // THE EVOLUTION TIERS, THE VALENCE ELEMENT AND A KITGUN'S PARTS are one
-  // control now (rankedSlot, 2026-08-24) reached by one path: a card with a
+  // control now (rankedSlot) reached by one path: a card with a
   // ⋯ that opens the ranked list, and the scan fires when the list OPENS. So
   // they are watched the way the mod picker above is, through the control the
   // reader actually uses, rather than through a render.

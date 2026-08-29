@@ -358,7 +358,7 @@ mod tests {
         assert_eq!(s("enemy").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("thrax_centurion"));
         assert_eq!(s("level").and_then(|v| v.as_u64()), Some(9999));
         assert_eq!(s("steel_path").and_then(|v| v.as_bool()), Some(true));
-        // 180 s since 2026-08-10, down from 300 (owner: five minutes stops
+        // 180 s since 2026-08-10, down from 300 (five minutes stops
         // pricing a build's ramp and starts paying for it twice). The pin moved
         // WITH the change, which is what it is for.
         assert_eq!(s("duration").and_then(|v| v.as_u64()), Some(180));

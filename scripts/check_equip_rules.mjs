@@ -222,7 +222,7 @@ check("the panel pins Fire Rate at the weapon's default",
   JSON.stringify(r.frRow));
 // The row must not argue with itself: the number stays the weapon's, and the
 // bonus it is ignoring is struck through and SAID, not silently listed as a
-// contribution (owner, 2026-08-08 — the question was whether the lock works at
+// contribution (owner — the question was whether the lock works at
 // all, asked of a panel that showed both answers at once).
 console.log("locked row:", JSON.stringify(r.frLocked), JSON.stringify(r.frDead));
 const frOf = (s) => (String(s).match(/([\d.]+)\/s/) || [])[1];
