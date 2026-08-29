@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3632
+submissions: 3651
 engine: 6d0994a29af5fd9d965ff5fe09afcbcad16be506
 entries:
   - weapon: acceltra_prime
@@ -3205,6 +3205,17 @@ entries:
       bonuses: [critical_damage, fire_rate, status_chance]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: coda_bassocyst
+    mode: base
+    score: 6.366331840212287
+    fp: 1d93b1e33e746d94
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, riven, primed_chilling_grasp, toxic_barrage]
+    arcanes: [primary_crux]
+    valence: heat
+    riven:
+      bonuses: [critical_damage, fire_rate, status_chance]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: coda_bubonico
     mode: base
     score: 20.9404956667639
@@ -3268,6 +3279,28 @@ entries:
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds]
     arcanes: [primary_crux]
     valence: electricity
+  - weapon: corinth_prime
+    mode: base
+    score: 18.542607870839326
+    fp: e7e7ed710f9e7db4
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, riven]
+    arcanes: [shotgun_vendetta]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: projectile_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: corinth_prime
+    mode: base
+    score: 16.745972902929008
+    fp: be290c382a04300c
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, riven]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: projectile_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: corinth_prime
     mode: base
     score: 12.130510084627277
@@ -8195,6 +8228,16 @@ entries:
     fp: d69360889f704a7f
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, parallax_scope, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_encumber]
+  - weapon: mausolon
+    mode: base
+    score: 2.2264494327171556
+    fp: 37894433e40f2384
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, parallax_scope, primed_polar_magazine, riven]
+    arcanes: [primary_bulwark, secondary_outburst]
+    riven:
+      bonuses: [damage_to_corpus, electricity]
+      malus: fire_rate
+      rolls: [1.1, 1.1, 0.9]
   - weapon: miter
     mode: cycle
     score: 22.70526480250924
@@ -8514,6 +8557,56 @@ entries:
     exilus: galvanized_acceleration
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_barrage, shotgun_elementalist, primed_charged_shell, toxic_barrage, scattering_inferno]
     arcanes: [primary_debilitate]
+  - weapon: phantasma
+    mode: base
+    score: 16.378911125093225
+    fp: e980fa6d09a8a4a8
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [damage, electricity, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: phantasma
+    mode: base
+    score: 15.582848806859026
+    fp: 090a92a773a9499e
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, riven, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [cold, fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: phantasma
+    mode: base
+    score: 15.369508783420232
+    fp: 090a92a773a9499e
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, riven, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: phantasma
+    mode: base
+    score: 15.101808899572855
+    fp: f0386ce3fc4569f6
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: phantasma
+    mode: base
+    score: 14.90053856872082
+    fp: 24030c99ed5a8a8b
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, riven, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 0.9]
   - weapon: phantasma
     mode: base
     score: 14.761021479195907
@@ -10200,6 +10293,39 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, infected_clip]
     arcanes: [primary_deadhead]
     valence: electricity
+  - weapon: tenet_glaxion
+    mode: base
+    score: 6.165654862775898
+    fp: 67c7604201b48b7d
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, rifle_elementalist, magnetic_capacity, riven, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+    valence: heat
+    riven:
+      bonuses: [cold, reload_speed, toxin]
+      malus: damage
+      rolls: [0.9, 0.9, 0.9, 0.9]
+  - weapon: tenet_glaxion
+    mode: base
+    score: 3.423361565776905
+    fp: 3cfb629710d2d4a7
+    mods: [primed_shred, split_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, riven, hellfire]
+    arcanes: [primary_overcharge]
+    valence: magnetic
+    riven:
+      bonuses: [cold, reload_speed, toxin]
+      malus: damage
+      rolls: [0.9, 1.1, 0.9, 0.9]
+  - weapon: tenet_glaxion
+    mode: base
+    score: 3.229069946087683
+    fp: 006708836086f388
+    mods: [primed_shred, split_chamber, serration, critical_delay, hammer_shot, magnetic_capacity, riven, hellfire]
+    arcanes: [primary_overcharge]
+    valence: heat
+    riven:
+      bonuses: [cold, reload_speed, toxin]
+      malus: damage
+      rolls: [0.9, 1.1, 0.9, 0.9]
   - weapon: tenet_plinx
     mode: base
     score: 0.9649230126082624
