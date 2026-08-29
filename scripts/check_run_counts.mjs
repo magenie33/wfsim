@@ -11,12 +11,14 @@
 //   the QUICK CALC  takes its own, floored at 10, because a chip is meant to be
 //                   cheap; the floor is where a status mod stops being a coin
 //                   flip (M24)
-//   the OPTIMIZER   takes its own for the final round, and BLANK means the
-//                   fight's — the precision the replay will use
+//   the OPTIMIZER   takes its own for the final round, TYPED, saved by no
+//                   preset and pinned by no ruler (owner, 2026-08-29)
 //
-// The last one is the reason this exists as a check rather than a comment. A
-// blank box that silently means something is exactly the kind of state that
-// reads as broken and works, or reads as fine and sends 0.
+// The last one is the reason this exists as a check rather than a comment. It
+// used to be a blank box meaning "the fight's own count" — one control with
+// two readings, which is exactly the kind of state that reads as broken and
+// works, or reads as fine and sends 0. It is a preference now, in neither
+// half of the tab and in neither preset, and this asserts all three.
 //
 //   node scripts/check_run_counts.mjs
 //
@@ -101,26 +103,39 @@ const r = await evaluate(`(async () => {
   };
   const set = async (el,v) => { const n=document.getElementById(el); n.value=String(v); n.dispatchEvent(new Event('input',{bubbles:true})); await sleep(200); };
 
+  // IT IS A PREFERENCE, TYPED, AND IN NEITHER PRESET (owner, 2026-08-29).
+  // It used to ride the search preset with a BLANK box meaning "the fight's
+  // own count" — one control with two readings, and the wrong home for both:
+  // a run count is not what to search and the fight has never carried one
+  // either. So the assertions moved with the decision.
+  const setC = async (el,v) => { const n=document.getElementById(el); n.value=String(v); n.dispatchEvent(new Event('change',{bubbles:true})); await sleep(200); };
   const runsBox = document.getElementById('opt-runs');
   out.optOnScreen = !!runsBox;
-  out.optBlank = runsBox ? runsBox.value : 'MISSING';
-  // BLANK = the fight's own count, whatever it happens to be.
-  out.sentBlank = (await sendOnce()).final_runs;
-  // …and it FOLLOWS the fight rather than having copied it once.
-  setSimRuns(137);
-  out.sentFollows = (await sendOnce()).final_runs;
-  setSimRuns(100);
-  // A number of its own overrides it, and does not move the fight.
-  await set('opt-runs', 60);
+  // FILLED, never blank — the reader can always say what the last round used.
+  out.optShown = runsBox ? runsBox.value : 'MISSING';
+  out.sentDefault = (await sendOnce()).final_runs;
+  // IN NEITHER BOX. The two halves are the two presets; this is outside both,
+  // which is the whole claim the page is making by drawing it there.
+  out.optRunsOutside = !!runsBox
+    && !runsBox.closest('#opt-plan') && !runsBox.closest('#opt-fight-half');
+  // A number of its own reaches the request, and does not move the simulator's.
+  await setC('opt-runs', 60);
   out.sentOwn = (await sendOnce()).final_runs;
   out.simStillDefault = simRuns();
-  // It is a SEARCH setting, so it survives a preset round trip.
+  // NOT SAVED BY THE SEARCH PRESET, which is the half a round-trip test would
+  // have got backwards before today: the snapshot must not carry it at all,
+  // and restoring a scope taken while it read something else must leave it
+  // exactly where the reader put it.
   const snap = snapshotOpt();
-  optRun.runs = 0; applyOptState(snap); await sleep(200);
-  out.restored = [optRun.runs, document.getElementById('opt-runs').value];
-  // …and back to blank means back to the fight's.
-  await set('opt-runs', 0);
-  out.sentBackToFight = (await sendOnce()).final_runs;
+  out.notInPreset = !('runs' in snap) && !('threads' in snap);
+  await setC('opt-runs', 250);
+  applyOptState(snap); await sleep(200);
+  out.survivesPreset = [finalRuns(), document.getElementById('opt-runs').value];
+  await setC('opt-runs', 100);
+  // …and the CPU-thread box is gone: how much of the machine the page may use
+  // is the topbar's one setting.
+  out.threadsBox = !!document.getElementById('opt-threads');
+  out.sentThreads = 'threads' in (await sendOnce());
 
   // ---- A LONG SIM SAYS HOW FAR IT HAS GOT -------------------------------
   //
@@ -268,13 +283,18 @@ check("...and typing in it reaches the scan", r.qcFromScreen === 40, `${r.qcFrom
 check("...a rejected number snaps back to what was taken", r.qcSnapBack === "10", r.qcSnapBack);
 
 check("the optimizer offers a final-round count", r.optOnScreen === true);
-check("...blank by default, meaning the fight's", r.optBlank === "", `"${r.optBlank}"`);
-check("...and blank SENDS the page's", r.sentBlank === 100, `${r.sentBlank}`);
-check("...following it rather than a copy of it", r.sentFollows === 137, `${r.sentFollows}`);
-check("...its own number overrides", r.sentOwn === 60, `${r.sentOwn}`);
-check("...and does not edit the page's", r.simStillDefault === 100, `${r.simStillDefault}`);
-check("...it survives a search-preset round trip", String(r.restored) === "60,60", String(r.restored));
-check("...and clearing it returns to the page's", r.sentBackToFight === 100, `${r.sentBackToFight}`);
+check("...with a number in it, never blank", r.optShown === "100", `"${r.optShown}"`);
+check("...and that number is what it SENDS", r.sentDefault === 100, `${r.sentDefault}`);
+check("...drawn outside both halves, because it is in neither preset",
+  r.optRunsOutside === true);
+check("...its own number reaches the request", r.sentOwn === 60, `${r.sentOwn}`);
+check("...and does not edit the simulator's", r.simStillDefault === 100, `${r.simStillDefault}`);
+check("...the search preset does not carry it", r.notInPreset === true);
+check("...so restoring a scope leaves it where the reader put it",
+  String(r.survivesPreset) === "250,250", String(r.survivesPreset));
+check("...and CPU threads is gone, the topbar owning that question",
+  r.threadsBox === false && r.sentThreads === false,
+  `box ${r.threadsBox}, sent ${r.sentThreads}`);
 
 // AND A LONG ONE SAYS HOW FAR IT HAS GOT.
 check(`a ${r.progBodies}-body fight reports its progress`,

@@ -138,30 +138,44 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   that has not already left it cannot be recovered — this is what makes a
   cancelled run show its ranking instead of an empty page.
 
-## The optimizer tab is TWO HALVES (2026-08-02)
+## The optimizer tab is TWO HALVES (2026-08-02, drawn as two boxes 2026-08-29)
 
 Two preset bars, and the page is cut cleanly between them — nothing on it
 belongs to neither, which is what makes the two domains legible instead of a
 rule to remember (user).
 
+**AND NOW THEY ARE TWO CONTAINERS** (owner, 2026-08-29). The split was the rule
+for four weeks and only headings said so, which cannot tell a reader WHICH
+preset bar owns the thing they are editing. A box says it without a sentence.
+
 ```
-preset bar: SEARCH  ─┐
-  Mods                │  the search preset. What to look through,
-  Exilus              │  and how to look: scope + finalists + threads.
-  Arcanes             │
-  Evolutions          │
-  Search  ────────────┘   finalists · CPU threads
-preset bar: SCENARIO ─┐
-  The fight           │  the SIMULATOR's, shown READ-ONLY. Edited there,
-  The Tenno           │  because a preset is edited in exactly one place.
-  Limits              │
-  Buffs   ────────────┘
+┌ THE SEARCH ─────────┐   everything in this box, and only it,
+│ preset bar: SEARCH  │   is what a search preset saves.
+│   1 · Mode          │
+│   2 · Mods          │   The axes, their order, their numbers and
+│         Exilus      │   their names are the BUILDER's — read off
+│   3 · Arcane        │   its blocks rather than restated here.
+│   4 · Evolution     │
+│   5 · Valence       │
+│   Search            │   finalists
+└─────────────────────┘
+┌ THE FIGHT ──────────┐   the SIMULATOR's, shown READ-ONLY. Edited
+│ preset bar: SCENARIO│   there, because a preset is edited in
+│   The fight         │   exactly one place.
+│   The Tenno         │
+│   Limits            │
+│   Buffs             │
+└─────────────────────┘
+  Final-round runs        IN NEITHER BOX, AND IN NEITHER PRESET.
+  Run Optimizer
 ```
 
 | what | where it lives | why |
 |---|---|---|
-| scope, finalists, CPU threads | the SEARCH preset | all three are decisions about a search: what to look through, how many winners to keep, how much of the machine to spend |
+| the scope, and `finalists` | the SEARCH preset | both are decisions about a search: what to look through, and how many winners survive to the last round |
 | the fight, the player, the buffs | the SCENARIO preset, read-only here | a preset is edited in exactly one place; the winner has to be scored under the fight the replay will run |
+| the final round's run count | **neither** — `OPT_RUNS_KEY`, a preference | how hard you want to measure right now is a fact about the person, not about the search and not about the fight |
+| how many cores to use | **neither** — the topbar's compute share | one setting for the whole page; a per-search override is two controls for one fact |
 
 The BUFFS were the last thing to move (2026-08-02). The optimizer kept its own
 scope-wide config — a union over everything searchable, with its own stack
@@ -174,19 +188,94 @@ disagreement cannot exist. The section still shows the WIDE list — every buff
 this weapon could produce, which is what the scenario's "all potential buffs"
 view is for — because a search does cover builds you are not holding; a buff
 nobody set simply falls to its own default, which for anything timed is now 0.
-| final runs | the scenario's `runs` | how hard you measure is the FIGHT's question, and a second box crowns a winner at a precision the replay never used |
 
-`threads` does describe this MACHINE rather than the search — the earlier
-reading, and why it used to live in its own localStorage key. But an optimizer
-preset never leaves this machine (a share link carries builds, scenarios and
-rivens, not searches), so the only thing that reading bought was a second place
-to look; a heavy scope wanting more cores than a light one is a real setting to
-save. The old key is read once, as a migration.
+### The run count left the preset (owner, 2026-08-29)
 
-`runs` is the FINAL ROUND's, and 0 (a blank box) means the fight's own — see
-AGENTS.md. An older preset may still carry `final_runs` from the era when the
-setting meant something else; that key is ignored on load rather than migrated,
-and 0 is what we would read out of it anyway.
+It rode the search preset with a BLANK box meaning *"the fight's own count"*.
+That is one control with two readings, and the wrong home for both. A run count
+is not what to search; and it is not the fight either — `sim.runs` has never
+existed, because *"how hard do I want to measure right now"* is a fact about
+the person and not about the engagement (`SIM_RUNS_KEY`, 2026-08-13).
+
+So it is a preference with a key of its own (`OPT_RUNS_KEY`), TYPED rather than
+defaulted from somewhere else, saved by no preset and pinned by no ruler, drawn
+outside both boxes. The same shape as the simulator's Runs, because it is the
+same question asked in the other module — written twice now, rather than
+answered two different ways.
+
+**The cost is stated rather than hidden.** The two counts can differ, so a
+winner may be crowned at a precision the replay will not use. That was already
+possible — a typed number already overrode the fight's — and the ranking
+already reports it: every row is re-run through `/api/simulate` and marked `≠`
+when the search's figure and the simulator's disagree by more than 4σ of their
+two standard errors.
+
+### …and so did CPU threads
+
+Same argument, other direction. How much of this machine the page may use is
+ONE setting and it lives in the topbar beside the language and the theme
+(`compute-select`, a share of the reported cores, 2026-08-18). A `CPU threads`
+box in the search preset was a per-search override of a global preference —
+two controls for one fact — and it put that override on the one thing most able
+to cook a phone, which is the last place a global heat setting should be
+ignorable. `woptWorkerCount()` is `poolSize()`.
+
+An older preset may still carry `threads` and `runs`. Neither is read, neither
+is migrated into the new homes — guessing which of a weapon's saved searches
+meant the reader's current preference would be worse than the default — and the
+auto-save drops them the first time that scope is touched.
+
+`check_run_counts.mjs` asserts all of it, including the negative control that
+the threads box is gone and that no `threads` reaches the request;
+`check_search.mjs` asks for one worker through the compute share instead, and
+asserts the share actually moved the lane count — otherwise its "a fleet covers
+more ground than one worker" assertion would pass for the wrong reason.
+
+## The optimizer is the BUILDER, in bulk (owner, 2026-08-29)
+
+Every axis on this tab is a question the builder already asks. The only
+difference is what gets bound: the builder binds a **value**, the optimizer
+binds a **set**. That is the whole of the relationship, and the page did not
+say it — the optimizer opened on Mods and put Mode fourth, called the builder's
+*Arcane* block *Arcanes* and its *Evolution* block *Evolutions*, and numbered
+nothing. Three chances for a reader crossing between the tabs to conclude they
+are about different things.
+
+So the scope is **the builder's blocks, in the builder's order, under the
+builder's numbers and the builder's names** — and the exilus slot sits INSIDE
+Mods, because that is where the builder's exilus slot sits.
+
+**NOTHING DECLARES THAT ORDER TWICE.** `orderOptScope` walks
+`section.block[data-module="builder"]` in DOM order and appends each axis's
+section as it meets one, stamping the heading from that block's own `.n` and
+`<h2>` — already translated by `applyI18n`, so the label is the builder's word
+in the reader's language rather than a second string to keep in step. Reorder a
+builder block, renumber one, rename one, and this tab follows with no edit
+anywhere. `OPT_SCOPE_OF` — which section is which block's bulk form — is the
+only hand-written half, and it is touched only when an axis is added or
+removed. `check_parity.mjs` asserts it, and **scrambles the sections first**:
+the markup is authored in the right order, so reading it as it stands would
+pass just as well on a page where nothing orders anything. Verified to bite:
+an `orderOptScope` that returns early reddens it, reporting the scrambled
+sequence with every heading empty.
+
+The same argument one level down. The `.opt` row is one function
+(`modRow`) with the trailing control as its parameter — the drain for the
+builder, the pool/req segs for the optimizer — and the segs are one function
+(`oseg`) that six lists call. It was two copies of the row with
+`// The picker's .opt row markup verbatim` written over the second, which is a
+comment that stops being true in silence, and it did: the optimizer's copy
+never grew the builder's **stance filter**, so every melee weapon offered its
+stances as MAIN-slot marks — a build nobody can hold.
+
+### What the scope still cannot reach
+
+Searching the **stance slot** itself. A stance decides what the weapon swings
+(Crushing Ruin against Shattering Storm is 1,275 against 1,162 DPS on the same
+Magistar in the same mode), so it is a real axis and a large one — it wants the
+treatment the exilus slot has, in `optimizer/` as well as on the page. Today
+the builder has the slot and the optimizer has nothing, which is the one place
+these two tabs still disagree about what a build is.
 
 ## The search and the replay must be the SAME fight (2026-08-03)
 
@@ -522,10 +611,12 @@ Each shard also CLIMBS on its own. That is a feature rather than a compromise:
 N independent hill-climbs from N independent samples is exactly the basin
 diversity one best-first climb lacks.
 
-The count is the search preset's own **CPU threads** — the setting already
-existed and meant this on the native server. Blank = cores − 1, capped at 8
-(past that the strides shorten, each worker costs its own 2.3 MB wasm
-instance, and a phone starts swapping).
+The count is the **topbar's compute share** and nothing else (owner,
+2026-08-29): `woptWorkerCount()` is `poolSize()`, a percentage of the cores the
+machine reports. It used to be the search preset's own `CPU threads` box with
+that share as its default — see §"…and so did CPU threads" for why a
+per-search override of a global setting was the wrong shape, particularly on
+the one thing here most able to cook a phone.
 
 **Merging** is a sort: every row was produced by its shard's own funnel at the
 same run count under the same scenario, so the scores are directly comparable.
@@ -542,3 +633,69 @@ second is that message.
 
 **Resume is unsharded.** A checkpoint is one worker's field, so resuming a run
 starts a single worker rather than a fraction of a fleet.
+
+## FILLING A SCOPE IS THE UNSOLVED HALF (2026-08-29, not built)
+
+A search preset is a **way of looking for a build on this weapon** — the
+pool/req marks on every axis plus the funnel that spends them — and it is per
+weapon by the same rule a build is (`wfsim-presets-<weapon>-optimizer`). That
+model is right and is not what is wrong with the optimizer.
+
+What is wrong is that the only ways to fill one are the mod list's sort, its
+polarity filter and its search box, all of which are *"let me scroll less"*.
+Marking a scope is still one click per card, and **a new weapon starts from
+nothing** — which is exactly the moment a player has the least idea what to
+mark. Two ways in, and each has a trap that is not obvious (owner, 2026-08-29).
+
+### ① Import a ranked build's cards into the pool
+
+`BOARD[weaponId]` is already on the page — every stored row carries a complete
+build (mods, arcane, evolutions, valence, exilus, riven) — so pouring a
+weapon's leading rows into `opt.mods` as **pool** marks costs no server work at
+all. The appeal is real: those cards have been scored, so a search starts from
+a set somebody already proved is worth something.
+
+**THE TRAP IS THAT A NEW WEAPON HAS NO ROWS**, and a new weapon is the case
+this exists for. Importing *this* weapon's board only helps the weapons that
+least need help. The form that answers the actual complaint is **CROSS-WEAPON**:
+take the leading rows of the other weapons sharing this one's `mod_pools`, and
+filter what they carry through this weapon's own pool (`pool_for_weapon` /
+`buildPool()`) on the way in.
+
+That does not weaken **NOTHING CROSSES BETWEEN WEAPONS** (AGENTS.md), and the
+distinction is the whole reason it is allowed: what crosses is a **SCOPE** —
+a set of cards worth searching — never a BUILD. A build is a statement about
+one weapon and stays one; "these are the mods people win with on rifles" is a
+statement about the POOL.
+
+Two decisions it still needs:
+
+- **Pool, never req.** `req` pins a slot; pinning eight slots from a table is
+  not a search, it is a copy. An import may only ever widen what is searched.
+- **Which axes.** A board row is a build on four axes. Importing only `mods` is
+  the honest minimum; arcanes and evolutions are cheap to add and valence is
+  not (a progenitor element is a property of the COPY a player owns).
+
+### ② Mark every card that does one thing
+
+*"Click 多重 and every card carrying a multishot bonus joins the pool."*
+
+`mod_category` (webapi `mods_json`) is **not** this and must not be stretched
+into it. It is **single-valued and first-match** — element → crit → status →
+handling → damage — so a dual-stat card lands in exactly one bucket, and there
+is no multishot class at all. What this needs is a **multi-valued tag set**: a
+card is *multishot* and *status* at once.
+
+**IT IS DERIVED IN THE ENGINE, NOT LISTED IN THE PAGE.** The tags come off the
+`ModEffect` variants a card actually carries and ride `/api/meta` beside
+`category`, so a mod added tomorrow tags itself and a hand list cannot go
+stale. A table of mod ids in `app.js` would be wrong within a week and nothing
+would report it — the same failure `pool_for_weapon` was written to end (see
+`applyWeaponInner`).
+
+### Both of them have to show the bill
+
+A tag button can put thirty cards in a pool in one click, and the candidate
+count is combinatorial in pool size. `updateOptEstimate` already computes it;
+a batch control that does not put that number next to itself is a button that
+quietly makes the search unfinishable.

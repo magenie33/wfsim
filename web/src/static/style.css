@@ -978,6 +978,18 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .runs-row .sim-hint{margin:0}
 @media(max-width:520px){.runs-row{flex-wrap:wrap;gap:6px}}
 
+/* THE OPTIMIZER'S TWO HALVES, MADE VISIBLE (owner, 2026-08-29). The split has
+   been the tab's rule since 2026-08-02 and only headings said so, which cannot
+   tell a reader WHICH preset bar owns the thing they are editing. A box says
+   it without a sentence: one holds the search, the other holds the fight the
+   search is scored under, and anything outside both is in neither preset. */
+.opt-half{margin:14px 0 4px;padding:2px 13px 13px;border:1px solid var(--line);border-radius:10px}
+.opt-half-h{font-size:12px;margin:13px 0 9px;color:var(--text);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.opt-half-h .sim-hint{display:block;font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0;line-height:1.45;color:var(--muted);margin:3px 0 0;max-width:66ch}
+/* The half's own heading is the first thing in it, so the section heading
+   under it does not need the 16px a section break wants. */
+.opt-half > .sim-h:first-of-type{margin-top:10px}
+
 /* A tier that cannot be chosen yet: the one before it is not installed. */
 .opt-tier-block.locked .opt-tier-h{opacity:.45}
 .opt-tier-block.locked .opt{opacity:.45}

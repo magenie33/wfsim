@@ -69,13 +69,21 @@ const r = await evaluate(`(async () => {
 
   // THE POINT OF THE FLEET: N workers over disjoint strides must cover N
   // times the ground of one. Same scope, same per-worker budget, one worker.
-  optRun.threads = 1;
+  //
+  // THE LANE COUNT COMES FROM THE TOPBAR NOW (owner, 2026-08-29): the search's
+  // own CPU-threads box is gone, so one worker is asked for by shrinking the
+  // page's compute share rather than by overriding it. Stubbing detectedCores
+  // is what makes that exact — the share is a percentage of whatever THIS
+  // machine reports, so 10% is one lane on eight cores and three on twenty-six.
+  const pctWas = computePct;
+  setComputePct(computeSteps()[0].pct);   // the narrowest share this machine offers
+  out.soloWorkers = woptWorkerCount();
   const solo = await runIt({ ...req,
     mods: Object.fromEntries(wide.map(id => [id, 'search'])),
     build_size: 8, build_min: 1, max_evals: 40 });
   out.soloSampled = solo && solo.sampled;
   out.fleetSampled = big && big.sampled;
-  optRun.threads = 0;
+  setComputePct(pctWas);
 
   // What the page SAYS about each — the numbers are worth nothing if the
   // difference between "sampled" and "proven" never reaches the screen.
@@ -98,9 +106,16 @@ check("a budgeted run still ranks", r.bigOk === true && r.bigResults > 0);
 check("...and does NOT claim to be exhaustive", r.bigExhaustive === false);
 check("...reporting a coverage below 1", r.bigCoverage > 0 && r.bigCoverage < 1, String(r.bigCoverage));
 check(`the fleet ran ${r.bigWorkers} workers`, r.bigWorkers > 1, String(r.bigWorkers));
+// …AND THE TOPBAR IS WHAT SET THAT (owner, 2026-08-29). The search's own CPU
+// box is gone, so the only way a run can be made to use fewer lanes is the
+// page's compute share — and if that were ignored, the two runs below would
+// have covered the same ground and the next assertion would pass for the
+// wrong reason.
+check(`...and the compute share moved it (${r.bigWorkers} → ${r.soloWorkers})`,
+  r.soloWorkers < r.bigWorkers, `${r.bigWorkers} vs ${r.soloWorkers}`);
 check("...and covered more ground than one worker would",
   r.fleetSampled > r.soloSampled * 1.5,
-  `fleet ${r.fleetSampled} vs solo ${r.soloSampled} index positions`);
+  `fleet ${r.fleetSampled} at ${r.bigWorkers} lanes vs solo ${r.soloSampled} at ${r.soloWorkers}`);
 check("the page says it sampled", /searched .*% of this scope|搜索覆盖了/.test(r.bigText), JSON.stringify(r.bigText.slice(0, 160)));
 
 await app.finish("the search reports the ground it actually covered");

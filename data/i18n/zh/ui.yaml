@@ -1304,6 +1304,13 @@ ui:
     "{runs} 次交战 · {rolls} 次伤害判定，全部跑在你自己的机器上。"
   "{what} — the board takes a weapon built as far as it goes, so this one is not sent": "{what} —— 榜单收的是这把武器的最努力配置，所以这一份不会提交"
   "…with the fight and the measurement →": ……连同战场与测量结果 →
+  "The search": 搜索方案
+  "what to look through, and how hard to look — all of it, and only it, is what a search preset saves": 要搜哪些东西、搜得有多狠 —— 这个框里的全部，也只有这些，才是一份搜索方案保存的内容
+  "how many builds survive to the last round": 有多少套配装能进入最后一轮
+  "the simulator's, shown read-only — every candidate is scored under it, and it is edited over there": 模拟器的那一场，这里只读 —— 每个候选都在它下面计分，而它在那边编辑
+  "how many simulations each finalist gets in the last round. Yours, not the search's and not the fight's: it is saved by no preset and pinned by no ruler. A smaller number searches faster and is worth re-measuring in the simulator": 最后一轮里每个优胜跑多少次模拟。这是你的设置，既不属于搜索方案也不属于这场仗：没有任何预设保存它，也没有任何官方标尺钉死它。数字小搜得快，值得在模拟器里重测一遍
+  "yours, in neither preset — the simulator's Runs is the same setting for the replay": 你的设置，不在任何一份预设里 —— 模拟器的「次数」是回放的同一个设置
+  "what to search, and how hard — the fight is the simulator's": 搜什么、搜得多狠 —— 这场仗是模拟器的
 
 # Effect-line phrase substitutions for mod/arcane/evolution descriptions
 # ("+X% Critical Chance" → "+X% 暴击几率"). ORDERED — longest phrases first

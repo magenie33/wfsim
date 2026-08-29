@@ -298,6 +298,47 @@ const stale = [...Object.keys(TRAVELS_AS), ...NOT_A_ROW].filter((k) => !AXES.bui
 app.check("...and nothing is named here that the build no longer has",
   stale.length === 0, stale.join(", "));
 
+// ---- …AND IN THE SAME ORDER, UNDER THE SAME NUMBERS AND NAMES -----------
+//
+// The optimizer is the builder in bulk — the same axes, asked as a SET instead
+// of as a value — so a reader must be able to move between the two tabs
+// without re-learning where anything is. It could not: the optimizer opened on
+// Mods and put Mode fourth, called the builder's "Arcane" block "Arcanes" and
+// its "Evolution" block "Evolutions", and numbered nothing (owner, 2026-08-29).
+//
+// `orderOptScope` reads the ORDER, the NUMBER and the NAME off the builder's
+// own blocks, so this asserts one property rather than a list: reorder,
+// renumber or rename a builder block and the optimizer follows with no edit,
+// and this stays true. `OPT_SCOPE_OF` — which section is which block's bulk
+// form — is the only hand-written half and is the only thing that can rot.
+//
+// IT SCRAMBLES FIRST. The markup is authored in the right order, so reading it
+// as it stands would pass just as well on a page where nothing orders
+// anything; the headings are blanked for the same reason. Verified to bite:
+// an `orderOptScope` that returns early reddens it, reporting the scrambled
+// sequence with every heading empty.
+const ORDER = await app.evaluate(`(() => {
+  const host = document.getElementById("opt-scope");
+  host.insertBefore(host.lastElementChild, host.firstElementChild);
+  host.querySelectorAll(".axh").forEach((h) => { h.textContent = ""; });
+  orderOptScope();
+  const want = [], got = [];
+  for (const b of document.querySelectorAll('section.block[data-module="builder"]')) {
+    const id = OPT_SCOPE_OF[b.id];
+    if (!id) continue;
+    want.push(id + " = " + b.querySelector(".bh .n").textContent.trim()
+      + " · " + b.querySelector(".bh h2").textContent.trim());
+  }
+  for (const sect of [...host.children]) {
+    const h = sect.querySelector(".axh");
+    got.push(sect.id + " = " + (h ? h.textContent.trim() : "(no heading)"));
+  }
+  return { want, got };
+})()`);
+app.check(`the optimizer's scope is the builder's blocks, in order (${ORDER.want.length} axes)`,
+  ORDER.want.length >= 4 && JSON.stringify(ORDER.want) === JSON.stringify(ORDER.got),
+  `builder: ${ORDER.want.join(" | ")}\n    optimizer: ${ORDER.got.join(" | ")}`);
+
 // The table above already names each mismatch; `finish` only has to carry the
 // verdict and the exit code.
 app.failures += bad;

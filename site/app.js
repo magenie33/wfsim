@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "66d55616+ · 2026-08-29 02:05Z";
+const BUILD_ID = "078d1db2+ · 2026-08-29 04:24Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -757,19 +757,14 @@ function loadCheckpoint() {
 // order_exactly`). Each also climbs on its own, so N workers are also N
 // independent hill-climbs, which is the diversity one best-first climb lacks.
 //
-// The count is the search preset's own `CPU threads` — the setting already
-// existed and meant this on the native server; it now means it here too.
-// A `CPU threads` preset is taken AS TYPED — no cap. It is the same decision
-// as the compute share above: the reader is told what a lane costs (48 MB) and
-// then trusted with the number, rather than having one picked for them.
-function woptWorkerCount() {
-  if (optRun.threads > 0) return optRun.threads;
-  // THE GLOBAL SETTING IS THE DEFAULT — see `poolSize`. A search owns its
-  // workers for minutes, so it is the one thing on this page most able to cook
-  // a phone, and the setting would be worth little if it were the one thing
-  // that ignored it. A `CPU threads` preset still wins: that is a decision.
-  return poolSize();
-}
+// THE COUNT IS THE TOPBAR'S COMPUTE SHARE, and as of 2026-08-29 it is the
+// whole answer (owner). A search used to be able to override it with a `CPU
+// threads` box in its own preset, on the reasoning that a heavy scope might
+// want more cores than a light one. That is two controls for one fact — the
+// arena's own rule — and it put the override on the one thing most able to
+// cook a phone, which is the last place a global heat setting should be
+// ignorable. `poolSize()` is the setting; this is now only a name for it.
+const woptWorkerCount = () => poolSize();
 
 // Merge the fleet's leaderboards into one. Each worker ran its own funnel over
 // its own elites, so every row here is measured at the SAME run count under the
@@ -1147,43 +1142,48 @@ let optSeeded = false;
 // It reads the SCENARIO's now — see `renderOptBuffs`.)
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
-// HOW THE SEARCH RUNS — `finalists` and `threads`, and both are the search's
-// (user, 2026-08-02).
+// HOW THE SEARCH RUNS. `finalists` is the whole of it, and it IS the search's:
+// how many builds survive to the last round is a decision about this search
+// and about nothing else, so it rides the search preset.
 //
-// The optimizer tab is TWO HALVES and the split is now total: everything from
-// its own preset bar down through the Search block is the SEARCH and is saved
-// in the search preset; everything under the fight's bar is the SIMULATOR's
-// and is read-only. There is nothing left that belongs to neither, which is
-// what makes the two preset domains legible rather than a rule to remember.
+// The optimizer tab is TWO HALVES and the page now draws them as two BOXES
+// (owner, 2026-08-29): the search preset owns everything in the first, the
+// simulator owns everything in the second and it is read-only here. What sits
+// outside both boxes is in neither preset — which is exactly one thing.
 //
-// `threads` rides the preset with the rest of it. It does describe this
-// MACHINE rather than the search — the earlier reading, and why it used to sit
-// in its own localStorage key — but an optimizer preset never leaves this
-// machine (a share link carries builds, scenarios and rivens, not searches),
-// so the only thing that reading bought was a second place to look. A heavy
-// scope wanting more cores than a light one is a real setting to save.
+// THE FINAL ROUND'S RUN COUNT IS THAT THING (owner, 2026-08-29). It used to
+// ride the search preset, with a blank box meaning "the fight's own count" —
+// two readings of one setting, and the wrong home for both. A run count is not
+// what to search and it is not the fight either: `sim.runs` has never existed,
+// because "how hard do I want to measure right now" is a fact about the person
+// (see `SIM_RUNS_KEY`). So it is a PREFERENCE with a key of its own, typed
+// rather than defaulted from somewhere else, saved by no preset and pinned by
+// no ruler — the same shape, and now the same shape written twice rather than
+// two different answers to one question.
 //
-// The FINAL-ROUND CONTRACT is `finalists` × a run count, and the count has TWO
-// legitimate answers (owner, 2026-08-11), so it is a setting with a default
-// rather than a rule:
-//
-//   0 / blank = THE FIGHT'S OWN, which is the old rule and still the default.
-//               A winner crowned at the precision the replay will use is a
-//               winner you can reproduce by pressing Run Sim.
-//   a number  = this search's own. The fight now measures at 1000 runs, and a
-//               wide scope's last round is `finalists × runs` on top of
-//               everything before it — so "search cheaply, then measure the
-//               winner properly in the simulator" became a real way to work,
-//               and it was the one thing the scope could not say.
-//
-// It is a SEARCH setting, not the fight's: it says how hard to search, like
-// finalists and threads, and it travels in the search preset with them.
-const finalRuns = () => optRun.runs || simRuns();
-const OPT_RUN_DEFAULTS = { finalists: 10, threads: 0, runs: 0 }; // 0 = the fight's own
+// The cost is stated rather than hidden: the two counts can now differ, so a
+// winner may be crowned at a precision the replay will not use. That was
+// always possible (a typed number already overrode the fight's), and the
+// ranking already reports it — each row is re-run through `/api/simulate` and
+// marked `≠` when the two disagree by more than 4σ.
+const OPT_RUNS_KEY = "wfsim-opt-final-runs";
+const finalRuns = () => {
+  const v = Math.round(Number(localStorage.getItem(OPT_RUNS_KEY)));
+  return Number.isFinite(v) && v >= 1 && v <= 20000 ? v : SIM_RUNS_DEFAULT;
+};
+const setFinalRuns = (n) => {
+  const v = Math.max(1, Math.min(20000, Math.round(Number(n)) || SIM_RUNS_DEFAULT));
+  localStorage.setItem(OPT_RUNS_KEY, String(v));
+};
+// `threads` LEFT ON 2026-08-29 (owner). How much of this machine the page may
+// use is ONE setting and it lives in the topbar beside the language and the
+// theme (`compute-select`, a share of the reported cores); a per-search
+// override of a global preference is two controls for one fact, which is the
+// arena's own rule in another module. `poolSize()` is the whole answer now.
+// An older preset may still carry `threads` and `runs`; both are ignored on
+// load, and the auto-save drops them the first time the scope is touched.
+const OPT_RUN_DEFAULTS = { finalists: 10 };
 let optRun = { ...OPT_RUN_DEFAULTS };
-// One-time migration off the old machine-local key; the preset auto-save
-// takes it from here.
-try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s && s.threads) optRun.threads = s.threads; } catch (_) {}
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
 let pickerPrefs = { sort: "gain", dir: "desc", pol: null };
@@ -1495,23 +1495,10 @@ async function init() {
     optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
     updateOptEstimate();
   });
-  // BLANK MEANS THE FIGHT'S, which is why the box is empty rather than
-  // pre-filled with the scenario's number: a copy of a number that lives
-  // elsewhere is a second opinion waiting to go stale (the fight's count can
-  // change under it), and an empty box says "not my question" out loud.
-  if (optRun.runs) $("opt-runs").value = optRun.runs;
-  $("opt-runs").placeholder = tr("the fight's");
-  $("opt-runs").title = tr("how many simulations each finalist gets in the last round — blank uses the fight's own count, which is what the replay will use. A smaller number searches faster and is worth re-measuring in the simulator");
-  $("opt-runs").addEventListener("input", () => {
-    optRun.runs = Math.max(0, Math.min(20000, Number($("opt-runs").value) || 0));
-    updateOptEstimate(); // the scope's auto-save; runs lands in the preset
-  });
-  if (optRun.threads) $("opt-threads").value = optRun.threads;
-  $("opt-threads").title = tr("blank = every core minus two, at low priority — the machine stays responsive either way. Saved with the search, so a heavy scope can ask for more than a light one");
-  $("opt-threads").addEventListener("input", () => {
-    optRun.threads = Math.max(0, Math.min(128, Number($("opt-threads").value) || 0));
-    updateOptEstimate(); // the scope's auto-save; threads lands in the preset
-  });
+  // (The final-round run count and the CPU-thread box used to be wired here.
+  // The count is a PREFERENCE now and draws itself — `renderOptRuns`, outside
+  // both halves because it is in neither preset; threads is gone, because the
+  // topbar's compute picker is the one place that question is answered.)
   // BEFORE ANY LIST IS READ: a riven is the FAMILY's as of 2026-08-25, and the
   // lists already on this machine are filed per weapon. It needs `META`, which
   // is why it is called here rather than beside the migrations it belongs with.
@@ -10921,6 +10908,46 @@ function sectionedRows(items, sectionOf, rowHtml) {
   return parts.join("");
 }
 
+/// ONE MOD ROW, drawn by the builder's picker and by the optimizer's scope.
+///
+/// Both modules show the same card — polarity, image, the wiki-linked name,
+/// the EXILUS chip, the effect lines — and the only thing that differs is the
+/// TRAILING control, which is the whole difference between the modules: the
+/// builder binds a VALUE (the drain of the card it is about to seat) where the
+/// optimizer binds a SET (pool / req). Stating that once here is what makes a
+/// change to the card reach both tabs.
+///
+/// It was two copies, with `// The picker's .opt row markup verbatim` written
+/// over the second — a comment that stops being true in silence, which is
+/// exactly what it did: the optimizer's copy never grew the builder's stance
+/// filter, so a melee weapon offered its stances as MAIN-slot marks.
+/// `exilusChip` is off in the EXILUS SLOT's own list, where every row is
+/// exilus-eligible and the chip is the heading repeated once per card.
+const modRow = (m, { cls = "", title = "", attrs = "", chips = "", note = "",
+  trailing = "", exilusChip = true } = {}) =>
+  `<div class="opt ${cls} ${m.rarity ? "rar-" + m.rarity : ""}" ${attrs} title="${title}">
+      ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
+      <div class="info"><div class="mn">${
+    m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${
+    exilusChip && m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}${chips}</div><div class="me">${
+    cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div>${note}</div>${trailing}</div>`;
+
+/// THE SCOPE CONTROL — the optimizer's trailing half of the row above.
+///
+/// `pool` = an option the search may take, `req` = pinned into every candidate.
+/// Six lists carry it (mods, exilus, modes, valence, arcanes, evolution tiers)
+/// and it was written out six times; the ATTRIBUTE differs per list because
+/// each one's click handler reads its own (`data-m`, `data-a`, `data-t`+`data-e`),
+/// which is why that is the parameter and the rest is not.
+const oseg = (attrs, st, { poolDead = false, reqDead = false, poolTitle = "",
+  reqTitle = "", extra = "" } = {}) =>
+  `<div class="oseg">
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""} ${extra}" ${attrs} data-s="search"${
+    poolTitle ? ` title="${escHtml(poolTitle)}"` : ""}>${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""} ${extra}" ${attrs} data-s="fixed"${
+    reqTitle ? ` title="${escHtml(reqTitle)}"` : ""}>${tr("req")}</span>
+      </div>`;
+
 function renderMenu(slotIdx, query) {
   rivenPickerSlot = slotIdx;
   const menu = $("mod-menu");
@@ -11001,9 +11028,15 @@ function renderMenu(slotIdx, query) {
       : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
       : at >= 0 ? `swap with ${at === EXILUS ? "the exilus slot" : "slot " + (at + 1)}`
       : m.effects.join(" · ");
-    return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
-      ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}${gainChip}</div><div class="me">${cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+    return modRow(m, {
+      cls: `${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""}`,
+      attrs: `data-id="${m.id}"`,
+      title,
+      chips: ` ${badge}${gainChip}`,
+      // THE BUILDER BINDS A VALUE, and this is it: what seating this card
+      // costs the slot you are standing in.
+      trailing: `<span class="dr">${m.drain}</span>`,
+    });
   };
   menu.innerHTML = scanStrip(gainScan, { kind: "mods", idx: slotIdx }, hits.map((m) => m.id))
     + (hits.length
@@ -16331,6 +16364,80 @@ const arcaneOptionsIn = (pool) => {
 };
 const evoPinned = (tier) => { const m = opt.evos[tier] || {}; return Object.keys(m).find((id) => m[id] === "fixed") || null; };
 
+/// WHICH BUILDER BLOCK EACH SCOPE SECTION IS THE BULK FORM OF.
+///
+/// The ONLY hand-written half of the alignment below, and it is a mapping
+/// rather than an order: `stats-block` and `assembly-block` have no bulk form
+/// (a search does not sum a build, and a kitgun's parts are the weapon), so
+/// they are simply absent. Everything else — the sequence, the numbers, the
+/// names — is read off the builder itself.
+const OPT_SCOPE_OF = {
+  "mode-block": "opt-modes-sect",
+  "mod-block": "opt-mods-sect",
+  "arcane-block": "opt-arcanes-sect",
+  "evo-block": "opt-evos-sect",
+  "element-block": "opt-valence-sect",
+};
+
+/// THE OPTIMIZER IS THE BUILDER, IN BULK (owner, 2026-08-29).
+///
+/// Every axis here is a question the builder already asks — the difference is
+/// that the builder binds a VALUE and the optimizer binds a SET. So the two
+/// must read as one page: the same axes, in the same sequence, under the same
+/// numbers and the same names. They did not. The optimizer opened on Mods and
+/// put Mode fourth, called the builder's "Arcane" block "Arcanes" and its
+/// "Evolution" block "Evolutions", and numbered nothing — three chances for a
+/// reader to think the two tabs are about different things.
+///
+/// NOTHING DECLARES THAT ORDER TWICE. This walks the builder's own blocks in
+/// DOM order and appends each axis's section as it meets one, stamping the
+/// heading from that block's `.n` and `<h2>` — which `applyI18n` has already
+/// translated, so the label is the builder's word in the reader's language
+/// rather than a second string to keep in step. Reorder a builder block,
+/// renumber one, rename one, and the optimizer follows with NO edit: the map
+/// above is touched only when an axis is added or removed.
+function orderOptScope() {
+  const host = $("opt-scope");
+  if (!host) return;
+  document.querySelectorAll('section.block[data-module="builder"]').forEach((b) => {
+    const sect = $(OPT_SCOPE_OF[b.id] || "");
+    if (!sect) return;
+    // appendChild MOVES it — walking the builder in order therefore leaves
+    // this host in the builder's order, whatever it was before.
+    host.appendChild(sect);
+    const h = sect.querySelector(".axh");
+    const n = b.querySelector(".bh .n"), h2 = b.querySelector(".bh h2");
+    if (h && n && h2) h.textContent = `${n.textContent.trim()} · ${h2.textContent.trim()}`;
+  });
+}
+
+/// THE FINAL ROUND'S RUN COUNT — the simulator's Runs control, said again.
+///
+/// Deliberately the same component in the same words, because it is the same
+/// question: how hard do you want to measure, right now, on this machine. It
+/// sits OUTSIDE both halves and is saved by neither preset (`OPT_RUNS_KEY`) —
+/// the search preset says what to look through, the scenario says what the
+/// fight is, and neither of them has ever had an opinion about precision.
+///
+/// It is TYPED rather than defaulted from the fight (owner, 2026-08-29). The
+/// blank box that used to mean "the fight's own count" was one control with
+/// two readings, which is how a reader ends up unable to say what number the
+/// last round actually used.
+function renderOptRuns() {
+  const box = $("opt-runs-block");
+  if (!box) return;
+  box.innerHTML =
+    `<label title="${escHtml(tr("how many simulations each finalist gets in the last round. Yours, not the search's and not the fight's: it is saved by no preset and pinned by no ruler. A smaller number searches faster and is worth re-measuring in the simulator"))}">${
+      escHtml(tr("Final-round runs"))} <input type="number" id="opt-runs" min="1" max="20000" step="10" value="${finalRuns()}"></label>` +
+    `<span class="sim-hint">${escHtml(tr("yours, in neither preset — the simulator's Runs is the same setting for the replay"))}</span>`;
+  const el = $("opt-runs");
+  el.addEventListener("change", () => {
+    setFinalRuns(el.value);
+    el.value = String(finalRuns());
+    updateOptEstimate(); // the planned funnel quotes this number
+  });
+}
+
 function renderOpt() {
   // Every weapon is optimizable: the scope is built from the weapon's OWN
   // pools (mod class, arcane slot, evolution tiers), so nothing here is
@@ -16350,6 +16457,8 @@ function renderOpt() {
   // STATES its one mode (a fact about the weapon); a search over one option is
   // not a scope, so this section is simply absent — the same rule the exilus,
   // arcane and evolution sections follow.
+  orderOptScope();
+  renderOptRuns();
   show("opt-modes-sect", modeOpts(w).length > 0);
   show("opt-valence-sect", !!valenceSpec(w.id));
   show("opt-exilus-sect", AX.hasExilus);
@@ -16470,15 +16579,16 @@ function renderOptExilus() {
     const poolDead = !!fam;
     const reqDead = !!fam;
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)` : "";
-    const eff = cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("");
-    return `<div class="opt ${st === "off" ? "" : st} ${fam ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why}">
-      ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div><div class="me">${eff}</div></div>
-      <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!reqDead && hasPool ? `title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
-      </div>
-    </div>`;
+    return modRow(m, {
+      cls: `${st === "off" ? "" : st} ${fam ? "dis-soft" : ""}`,
+      title: why,
+      exilusChip: false,
+      trailing: oseg(`data-m="${m.id}"`, st, {
+        poolDead,
+        reqDead,
+        reqTitle: !reqDead && hasPool ? tr("req pins the slot — the pool marks give way") : "",
+      }),
+    });
   };
   $("opt-exilus").innerHTML = weaponAxes().exilus.map(row).join("")
     || `<div class="opt dis">no exilus mods in this pool</div>`;
@@ -16530,12 +16640,12 @@ function renderOptModes() {
       return `<div class="opt ${st === "off" ? "" : st} ${offReason ? "dis" : ""}">
         <div class="info"><div class="mn">${escHtml(label)}</div>${
           offReason ? `<div class="ef warn">⊘ ${escHtml(offReason)}</div>` : ""}</div>
-        <div class="oseg">
-          <span class="seg ${st === "search" ? "on" : ""}${offReason ? " dis" : ""}" data-m="${escHtml(id)}" data-s="search"${
-            pinned && pinned !== id ? ` title="${escHtml(tr("pooling opens the slot — the pin gives way"))}"` : ""}>${tr("pool")}</span>
-          <span class="seg ${st === "fixed" ? "on" : ""}${offReason ? " dis" : ""}" data-m="${escHtml(id)}" data-s="fixed"${
-            hasPool ? ` title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
-        </div>
+        ${oseg(`data-m="${escHtml(id)}"`, st, {
+          poolDead: !!offReason,
+          reqDead: !!offReason,
+          poolTitle: pinned && pinned !== id ? tr("pooling opens the slot — the pin gives way") : "",
+          reqTitle: hasPool ? tr("req pins the slot — the pool marks give way") : "",
+        })}
       </div>`;
     })
     .join("");
@@ -16590,12 +16700,10 @@ function renderOptValence() {
       const st = opt.valence[id] || "off";
       return `<div class="opt ${st === "off" ? "" : st}">
         <div class="info"><div class="mn">${escHtml(DT(id))}</div></div>
-        <div class="oseg">
-          <span class="seg ${st === "search" ? "on" : ""}" data-m="${escHtml(id)}" data-s="search"${
-            pinned && pinned !== id ? ` title="${escHtml(tr("pooling opens the slot — the pin gives way"))}"` : ""}>${tr("pool")}</span>
-          <span class="seg ${st === "fixed" ? "on" : ""}" data-m="${escHtml(id)}" data-s="fixed"${
-            hasPool ? ` title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
-        </div>
+        ${oseg(`data-m="${escHtml(id)}"`, st, {
+          poolTitle: pinned && pinned !== id ? tr("pooling opens the slot — the pin gives way") : "",
+          reqTitle: hasPool ? tr("req pins the slot — the pool marks give way") : "",
+        })}
       </div>`;
     })
     .join("");
@@ -16631,10 +16739,10 @@ function renderOptArcanes() {
     return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${st === "off" ? "" : st}">
       ${imgTag(IMG(a.image), "mod")}
       <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${optGainChipFor(a.id)}</div>${eff}</div>
-      <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""}" data-a="${a.id}" data-s="search" ${pinned && pinned !== a.id ? `title="${escHtml(tr("pooling opens the slot — the pin gives way"))}"` : ""}>${tr("pool")}</span>
-        <span class="seg ${st === "fixed" ? "on" : ""}" data-a="${a.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
-      </div>
+      ${oseg(`data-a="${a.id}"`, st, {
+        poolTitle: pinned && pinned !== a.id ? tr("pooling opens the slot — the pin gives way") : "",
+        reqTitle: hasPool ? tr("req pins the slot — the pool marks give way") : "",
+      })}
     </div>`;
   };
   // ONE SECTION PER SLOT. An arcane belongs to exactly one pool, so the flat
@@ -16708,10 +16816,11 @@ function renderOptEvos() {
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}${
           evoGapChips(o, "span")
         }${optGainChipFor(o.id)}</div><div class="me">${desc}</div>${optPairingNoteFor(o.id)}</div>
-        <div class="oseg">
-          <span class="seg ${st === "search" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search" ${pinned && pinned !== o.id ? `title="${escHtml(tr("pooling opens the tier — the pin gives way"))}"` : ""}>${tr("pool")}</span>
-          <span class="seg ${st === "fixed" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the tier — the pool marks give way"))}"` : ""}>${tr("req")}</span>
-        </div>
+        ${oseg(`data-t="${t.tier}" data-e="${o.id}"`, st, {
+          extra: locked ? "tlocked" : "",
+          poolTitle: pinned && pinned !== o.id ? tr("pooling opens the tier — the pin gives way") : "",
+          reqTitle: hasPool ? tr("req pins the tier — the pool marks give way") : "",
+        })}
       </div>`;
     }).join("");
     return `<div class="opt-tier-block${locked ? " locked" : ""}" ${locked
@@ -16836,8 +16945,6 @@ function snapshotOpt() {
     arcanes: { ...opt.arcanes }, modes: { ...opt.modes },
     evos: JSON.parse(JSON.stringify(opt.evos)),
     finalists: optRun.finalists,
-    threads: optRun.threads,
-    runs: optRun.runs,
   };
 }
 
@@ -16847,7 +16954,7 @@ const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
   // The build's own mode, the way an empty scope seeds every other axis from
   // what you are holding.
   modes: { [mode]: "fixed" },
-  finalists: optRun.finalists, threads: optRun.threads, runs: optRun.runs });
+  finalists: optRun.finalists });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
 //
@@ -16896,17 +17003,14 @@ function applyOptState(st) {
     });
     if (Object.keys(valid).length) opt.evos[t] = valid;
   });
-  // How the search RUNS travels with the search it was tuned for. `runs` is
-  // read as its own field and NOT from the `final_runs` an old preset may
-  // still carry: that one was written when the setting meant something else,
-  // and 0/absent is the reading we want from it anyway — the fight's.
+  // FINALISTS IS THE ONLY THING LEFT HERE (owner, 2026-08-29). A preset written
+  // before today also carries `runs` and `threads`; both are read by nothing
+  // now — the run count is a preference of the reader's (`OPT_RUNS_KEY`) and
+  // the thread count is the topbar's compute share — so they are not migrated
+  // into either, they are simply dropped the next time this scope is saved.
   if (st.finalists) optRun.finalists = st.finalists;
-  if (st.threads != null) optRun.threads = st.threads;
-  optRun.runs = Math.max(0, Math.min(20000, Number(st.runs) || 0));
-  const f = $("opt-finalists"), th = $("opt-threads"), rn = $("opt-runs");
+  const f = $("opt-finalists");
   if (f) f.value = optRun.finalists;
-  if (th) th.value = optRun.threads || "";
-  if (rn) rn.value = optRun.runs || "";
 }
 
 function applyOptPreset(st) {
@@ -17047,6 +17151,14 @@ function renderOptModList() {
   // so marking one here makes it compete for a MAIN slot; the exilus SLOT
   // has its own block below.
   const hits = poolWithRivens()
+    // A STANCE IS NOT A MAIN-SLOT MOD, and this list offered every melee
+    // weapon's as one until 2026-08-29. The builder's picker has run the same
+    // filter in both directions since the stance slot landed — a stance is
+    // legal there and NOWHERE else — and this copy of the list never grew it,
+    // so marking one here asked the search for a build nobody can hold.
+    // Searching the stance SLOT is a real axis and is not this: it wants the
+    // treatment the exilus slot has, in the optimizer as well as here.
+    .filter((m) => !m.stance)
     .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
     .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
@@ -17074,15 +17186,19 @@ function renderOptModList() {
     const reqBlocked = st !== "fixed" && (fixedN + 1 > opt.size - (poolAfter > 0 ? 1 : 0));
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)`
       : dead ? `all ${opt.size} slots are required already` : "";
-    const eff = cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("");
-    return `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
-      ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}${optGainChipFor(m.id)}</div><div class="me">${eff}</div>${optPairingNoteFor(m.id)}</div>
-      <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? `title="${escHtml(tr("pooled mods reserve ≥1 open slot — raise max mods or clear pools"))}"` : ""}>${tr("req")}</span>
-      </div>
-    </div>`;
+    return modRow(m, {
+      cls: `${st === "off" ? "" : st} ${dead ? "dis-soft" : ""}`,
+      title: why || (m.effects || []).join(" · "),
+      chips: optGainChipFor(m.id),
+      note: optPairingNoteFor(m.id),
+      // …AND THE OPTIMIZER BINDS A SET.
+      trailing: oseg(`data-m="${m.id}"`, st, {
+        poolDead: dead,
+        reqDead: dead || reqBlocked,
+        reqTitle: !dead && reqBlocked
+          ? tr("pooled mods reserve ≥1 open slot — raise max mods or clear pools") : "",
+      }),
+    });
   };
   // THE OPTIMIZER'S OWN SCAN, same component and a different state. It has no
   // slots and therefore no axis — there is one list and one question — so the
@@ -17297,8 +17413,9 @@ async function runOptimize() {
       // `parse_optimize` reads only its own five, so a scenario field the
       // optimizer has no opinion about simply arrives and is used.
       ...theFight(),
+      // No `threads`: the server reads an absent one as 0 = auto, which is the
+      // only answer this page has now that the compute share is the topbar's.
       final_runs: finalRuns(), finalists: optRun.finalists,
-      threads: optRun.threads || 0, // 0 = auto (cores − 2)
     };
     const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {

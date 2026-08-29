@@ -394,7 +394,15 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_mobile.mjs` is the FIFTEENTH and the only
+  weapon can carry.
+  AND IN THE SAME ORDER, UNDER THE SAME NUMBERS AND NAMES (2026-08-29) — see
+  the hard rule below. It asserts the property rather than a list, because
+  `orderOptScope` READS the order off the builder's own blocks; and it
+  SCRAMBLES the sections first, since the markup is authored in the right order
+  and reading it as it stands would pass just as well on a page where nothing
+  orders anything. Verified to bite: an `orderOptScope` that returns early
+  reddens it, reporting the scrambled sequence with every heading empty.
+  `node scripts/check_mobile.mjs` is the FIFTEENTH and the only
   one that looks at GEOMETRY rather than at what the DOM says: the page must fit
   the screen it is on, at 360-1280px, with nothing past the viewport and no
   sideways scroll. It exists because horizontal overflow is invisible on the
@@ -629,12 +637,15 @@ around (decision 2026-07-31).
   100. The quick calc takes its own count with a FLOOR of 10, which is where a
   status mod stops being a coin flip (M24: one run swings it ±39 points), and a
   number under it is raised rather than obeyed. The optimizer's final round
-  takes its own too, where it used to take the fight's by rule — and BLANK still
-  means the fight's, which is the case the check exists for: a blank box that
-  silently means something either reads as broken and works, or reads as fine
-  and sends 0. It asserts blank FOLLOWS the fight rather than having copied it
-  once, that a count of its own does not edit the fight, and that clearing it
-  goes back.
+  takes its own too, and it is a PREFERENCE as of 2026-08-29 — typed, never
+  blank, in NEITHER half of the tab and in NEITHER preset. The blank box that
+  used to mean "the fight's own count" is what this check existed for, and it
+  is what the check now asserts is gone: a control with two readings either
+  reads as broken and works, or reads as fine and sends 0. It asserts the
+  number on screen is the number sent, that the box is drawn outside both
+  halves, that `snapshotOpt` does not carry it, that restoring a scope leaves
+  it where the reader put it — and, its own negative control, that the CPU
+  threads box is gone and no `threads` reaches the request.
   `node scripts/check_arena.mjs` is the TWENTY-EIGHTH: THE ARENA IS A PLACE YOU
   CAN DRAG, and what you drag is what gets simulated. A fight is two bodies on a
   floor, so the panel draws two bodies on a floor and you move them with your
@@ -964,6 +975,35 @@ around (decision 2026-07-31).
   free while the optimizer scored the base form (2026-08-03), and the
   optimizer keeping a buff config of its own (2026-08-02). A shared helper is
   not enough — the DECISIONS around it have to be shared too.
+- **THE OPTIMIZER IS THE BUILDER, IN BULK** (owner, 2026-08-29). The rule above
+  is about the ENGINE; this is the same claim on the PAGE. Every axis on the
+  optimizer tab is a question the builder already asks, and the only difference
+  is what gets bound — the builder binds a VALUE, the optimizer binds a SET. So
+  the two must read as one page: the same axes, in the same order, under the
+  same numbers and the same names, with the exilus slot INSIDE Mods because
+  that is where the builder's exilus slot sits. They did not — the optimizer
+  opened on Mods and put Mode fourth, said "Arcanes" where the builder says
+  "Arcane" and "Evolutions" where it says "Evolution", and numbered nothing:
+  three chances for a reader crossing between the tabs to conclude they are
+  about different things.
+  NOTHING DECLARES THAT ORDER TWICE. `orderOptScope` walks the builder's own
+  blocks in DOM order and appends each axis's section as it meets one, stamping
+  the heading from that block's `.n` and `<h2>` — already translated, so the
+  label is the builder's word in the reader's language rather than a second
+  string to keep in step. Reorder a builder block, renumber one, rename one,
+  and the optimizer follows with NO edit; `OPT_SCOPE_OF` is the only
+  hand-written half and is touched only when an axis is added or removed.
+  THE SAME ARGUMENT ONE LEVEL DOWN, and it is where the cost had already been
+  paid. The `.opt` row is ONE function (`modRow`) with the trailing control as
+  its parameter — the drain for the builder, the pool/req segs for the
+  optimizer — and those segs are one function (`oseg`) that six lists call. It
+  was two copies of the row with `// The picker's .opt row markup verbatim`
+  written over the second, which is a comment that stops being true in silence:
+  the optimizer's copy never grew the builder's STANCE FILTER, so every melee
+  weapon offered its stances as MAIN-slot marks, which is a build nobody can
+  hold. Searching the stance SLOT is a real axis and is still missing — it
+  wants the treatment the exilus slot has, in `optimizer/` as well as on the
+  page (docs/OPTIMIZER.md §"The optimizer is the BUILDER, in bulk").
 - **A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT** (owner, 2026-08-18).
   A browser decides who owns a gesture at `pointerdown` and never gives it back,
   so a body that drags on touch means the finger that started on it can no
@@ -1951,19 +1991,34 @@ around (decision 2026-07-31).
   new items ("build 2") and every tooltip that refers to one. A **preset** is a saved state of something that
   always exists, read only by its own module: `builder-builds` (a build),
   `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
-  search: the SCOPE and HOW to run it — finalists, final-round runs and CPU
-  threads (never buffs: those are the fight's). The
-  optimizer tab is two halves split at its two preset bars, with nothing on it
-  belonging to neither: everything above the fight's bar is the search preset,
-  everything below is the simulator's, read-only. The final round is
-  `finalists × runs`, and the RUNS ARE THE SEARCH'S with the fight's as their
-  default — blank means "the count the replay will use", a number means "search
-  at this instead" (owner, 2026-08-11). The default is the fight's because a
-  winner crowned at a precision the replay never used is a winner nobody can
-  reproduce; the override exists because the simulator defaults to the rulers'
-  1000 runs, so a wide scope's last round is `finalists × 1000` on top of
-  everything before it, and "search cheaply, then measure the winner properly in
-  the simulator" is a real way to work.).
+  search: the SCOPE and `finalists`, and nothing else — never buffs, and as of
+  2026-08-29 never a run count or a thread count either).
+  THE OPTIMIZER TAB IS TWO HALVES AND NOW TWO BOXES (owner, 2026-08-29): the
+  split has been the rule since 2026-08-02 and only headings said so, which
+  cannot tell a reader which preset bar owns the thing they are editing. One
+  box is the SEARCH and is exactly what a search preset saves; the next is the
+  SIMULATOR's fight, read-only, edited there. What sits OUTSIDE both boxes is
+  in neither preset, and that is one thing.
+  THE FINAL ROUND'S RUN COUNT IS THAT THING. It used to ride the search preset
+  with a blank box meaning "the fight's own count" (owner, 2026-08-11) — one
+  control with two readings, and the wrong home for both: a run count is not
+  what to search, and the fight has never carried one either (`sim.runs` does
+  not exist, because "how hard do I want to measure right now" is a fact about
+  the person). So it is a PREFERENCE with a key of its own, TYPED rather than
+  defaulted from elsewhere, saved by no preset and pinned by no ruler — the
+  same shape as the simulator's Runs, which is the same question asked in the
+  other module. The cost is stated rather than hidden: the two counts can now
+  differ, so a winner may be crowned at a precision the replay will not use.
+  That was already possible (a typed number overrode the fight's), and the
+  ranking already reports it — every row is re-run through `/api/simulate` and
+  marked `≠` when the two disagree by more than 4σ.
+  CPU THREADS IS GONE for the same reason in the other direction: how much of
+  this machine the page may use is ONE setting and it is in the TOPBAR
+  (`compute-select`, a share of the reported cores). A per-search override of a
+  global preference is two controls for one fact, and it put that override on
+  the one thing most able to cook a phone. `woptWorkerCount()` is `poolSize()`
+  now; an older preset's `threads` and `runs` are read by nothing and are
+  dropped the next time the scope is saved.
   There is always ≥1,
   "active" means the state you are in, and the key is
   `wfsim-presets-<weapon>-<domain>`. A **custom** is a thing you MADE that the

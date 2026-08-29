@@ -97,7 +97,10 @@ const r = await evaluate(`(async () => {
   // row must come back in that mode, and it must be the one that was pinned
   // rather than the weapon's default — which is exactly what the report was.
   opt.mods = {}; picks.forEach(i=>{opt.mods[i]='search';});
-  opt.size = 2; opt.min = 2; optRun.runs = 12; optRun.finalists = 6;
+  // The final-round count is a PREFERENCE now (owner, 2026-08-29), not a
+  // field on optRun — set it where it lives. (No backticks: this whole body
+  // is a template literal.)
+  opt.size = 2; opt.min = 2; setFinalRuns(12); optRun.finalists = 6;
   const runFull = async () => {
     optLast = null;
     updateOptEstimate(); renderOptMods(); await sleep(300);
