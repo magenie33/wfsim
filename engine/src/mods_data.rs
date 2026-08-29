@@ -539,8 +539,8 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                         "status_damage" => CondBucket::StatusDamage,
                         "fire_rate" => CondBucket::FireRate,
                         "reload_speed" => CondBucket::ReloadSpeed,
-                        // An INDIRECT grant used to hit `return None` here,
-                        // which threw the number away and left three mods
+                        // An INDIRECT grant must not hit `return None` here:
+                        // that throws the number away and leaves three mods
                         // (Twitch, Reflex Draw, Targeting Subsystem) loading
                         // with no effects at all. `CondBucket` is damage
                         // buckets only, so route these to the indirect
@@ -1031,10 +1031,9 @@ impl ModDescInfo {
 /// Description info by mod id — the VERBATIM in-game text with each `X`
 /// filled, which is what the picker and a configured slot display.
 ///
-/// Covers EVERY class. It used to scan `mods/pistol/` alone, from when the
-/// rifle pool was hardcoded; the rifle pool has been yaml-driven with a
-/// description on every file for a while, so every rifle mod silently fell
-/// back to the engine's modeled effect lines. That fallback only states what
+/// Covers EVERY class. Scanning one directory — `mods/pistol/` — silently
+/// falls every other pool back to the engine's modeled effect lines, which only
+/// state what
 /// the ENGINE models, so anything unmodeled on a mod simply vanished from the
 /// UI — the card looked like it did less than it does.
 ///
@@ -2125,10 +2124,10 @@ mod class_tests {
 
 /// A CARD'S SENTENCES AND ITS EFFECTS ARE ONE ORDER.
 ///
-/// `desc_info` used to fill the X placeholders by walking the effects forward
-/// and nothing else, which made the yaml's effect ORDER an unwritten part of
-/// the card's meaning — a contract that was real, undocumented and unchecked,
-/// and that Winds of Purity broke the day it was written.
+/// Filling the X placeholders by walking the effects forward and nothing else
+/// makes the yaml's effect ORDER an unwritten part of the card's meaning — a
+/// contract that is real, undocumented and unchecked, and that a card like
+/// Winds of Purity breaks.
 ///
 /// The filler now asks the LINE first (`effect_spoken_at`), so an effect the
 /// card names is found wherever it sits. This rule therefore no longer guards
@@ -2526,10 +2525,9 @@ mod weapon_exclusive_survey {
             roster, now,
             "the survey was joined against {roster} weapon files and there are {now} now —              re-run scripts/survey_weapon_mods.py"
         );
-        // EQUALITY, not a ceiling. The ratchet used to allow drifting below and
-        // asked the ceiling to follow; at zero there is nowhere below to drift,
+        // EQUALITY, not a ceiling: at zero there is nowhere below to drift,
         // so the two directions collapse into one assertion — a mod appearing
-        // fails it, and so would a mod being deleted without this line moving.
+        // fails it, and so does a mod being deleted without this line moving.
         assert_eq!(
             missing.len(),
             OWED,

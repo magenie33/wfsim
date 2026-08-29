@@ -62,9 +62,9 @@ const r = await evaluate(`(async () => {
   //   · at(i) asks the scene itself where it drew body i (host.__arena.px
   //     is the renderer's own metres-to-pixels map), so a drag starts exactly
   //     where the body is on screen rather than where a DOM box says it is.
-  //   · ink(x, y) reads the PIXELS BACK. "It is drawn" used to mean "an
-  //     element exists"; on a canvas it can mean the thing a reader actually
-  //     sees, which is a better question to be asking.
+  //   · ink(x, y) reads the PIXELS BACK. On a canvas "it is drawn" can mean
+  //     the thing a reader actually sees rather than "an element exists",
+  //     which is the better question to be asking.
   const cvEl = () => document.querySelector('#sim-target-arena .arc-cv');
   const arena = () => document.querySelector('#sim-target-arena').__arena;
   const at = (i) => {

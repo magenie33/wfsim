@@ -96,10 +96,10 @@ const r = await evaluate(`(async () => {
   // A CONTROL THAT BINDS THE FORM, in either shape — a native field or one of
   // the page's own dropdowns, both of which carry data-k.
   //
-  // It used to be "any dropdown in this block at all", which was a PROXY for
-  // "a form control" and held only while this block had no dropdowns of its
-  // own. The Warframe picker became a dropdown on 2026-08-18 and this check
-  // read it as a form. A proxy that names the wrong thing passes for months and
+  // NOT "any dropdown in this block at all", which is a PROXY for "a form
+  // control" and holds only while this block has no dropdowns of its own: a
+  // Warframe picker that becomes a dropdown is then read as a form. A proxy
+  // that names the wrong thing passes for months and
   // then fails for a reason unrelated to what it is about.
   const formish = (el) => /form|mode/i.test(
     (el.dataset.k || '') + ' ' + (el.dataset.dd || '') + ' ' + (el.id || ''));

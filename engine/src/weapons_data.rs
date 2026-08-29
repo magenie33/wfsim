@@ -3462,9 +3462,9 @@ pub fn base_panel_assembled(
         Some(pr) => (pr.magazine, pr.reload_seconds),
         // A WEAPON WITH NO MAGAZINE IS NOT ASKED FOR ONE.
         //
-        // `no_magazine` used to be a flag on an entry that stated a magazine
-        // anyway (the Grimoire's 1), and melee is the first family where the
-        // field is not merely unused but has no value to state: a swing spends
+        // `no_magazine` is a flag an entry can carry while stating a magazine
+        // anyway (the Grimoire's 1); melee is the family where the field is not
+        // merely unused but has no value to state: a swing spends
         // nothing and there is no reload to time. Requiring the number would
         // mean writing a fiction into the data — which is the one thing
         // data/README.md forbids — so the requirement reads the declaration.
@@ -3635,8 +3635,8 @@ pub fn base_panel_assembled(
             // 1 / (Modded Charge Time + 1 / Modded Fire Rate)". The listed
             // rate is not the whole cycle there — it is what happens AFTER
             // the charge completes — so the two are added, and the guard
-            // that used to refuse this case now routes it (Larkspur Prime's
-            // alt-fire: 0.5 s draw + 1/2.0 s = 1.0 s per shot).
+            // guard routes this case rather than refusing it (Larkspur
+            // Prime's alt-fire: 0.5 s draw + 1/2.0 s = 1.0 s per shot).
             (_, Some(c)) => {
                 assert!(c > 0.0, "{id}: a 0.0 charge outside a bow is just a fire rate");
                 Some(c)
@@ -5853,10 +5853,10 @@ mod laetum_tests {
         );
     }
 
-    /// Lethal Rearmament used to load INERT. It is an on-headshot stacking
-    /// reload-speed buff, and reload speed also scales the Incarnon
-    /// transmute animations — so on a weapon whose whole cycle is
-    /// reload-bound it must buy back real time.
+    /// Lethal Rearmament must not load INERT. It is an on-headshot stacking
+    /// reload-speed buff, and reload speed also scales the Incarnon transmute
+    /// animations — so on a weapon whose whole cycle is reload-bound it buys
+    /// back real time.
     #[test]
     fn lethal_rearmament_shortens_the_cycle_not_just_reloads() {
         use crate::dummy::{monte_carlo, DummyParams};
@@ -6440,9 +6440,8 @@ mod play_mode_tests {
             // Incarnon form.
             let alts: Vec<_> = forms.iter().filter(|f| !f.is_default).collect();
             // THE SAME QUESTION `play_modes` ASKS, asked through the same
-            // function. This used to derive its own copy and went red the day a
-            // second kind of gate arrived — a ratchet drifting from the thing it
-            // ratchets is worse than no ratchet.
+            // function, never a copy of it: a ratchet drifting from the thing
+            // it ratchets is worse than no ratchet.
             let gauged = |f: &FormRef| is_gauge_fed(f.weapon_id);
             let any_gauged = alts.iter().any(|f| gauged(f));
             let has = |m: PlayMode| multishot.iter().any(|x| x.mode == m);
@@ -6528,15 +6527,14 @@ mod play_mode_tests {
         assert_eq!(on("ocucor"), vec!["base"]);
     }
 
-    /// A GAUGE WITHOUT AN ADAPTER — the Mausolon, and the case that used to be
-    /// unrepresentable.
+    /// A GAUGE WITHOUT AN ADAPTER — the Mausolon.
     ///
     /// Its alt-fire is bought with five kills ("Getting 5 kills with the
     /// Mausolon's primary fire will unlock an Alternate Fire", wiki), so it is
     /// the same POLICY as a Zariman weapon's and none of the same hardware:
     /// no Genesis, no tier-1 unlock, and a `charged` form rather than an
-    /// `incarnon` one. Every one of those three used to be how the roster
-    /// recognised a gauge.
+    /// `incarnon` one — each of which is a tempting way to recognise a gauge
+    /// and none of which works.
     ///
     /// Three claims, and each fails on a different half of that:
     ///   * the cycle EXISTS, and is sustainable — kills keep coming;
@@ -6612,10 +6610,9 @@ mod play_mode_tests {
             // `reduction` is the fraction KEPT, so a weapon that keeps all of
             // its damage has no falloff and should not be carrying the field.
             assert!(f.reduction < 1.0 && f.reduction > 0.0, "{}: keeps {}", w.id, f.reduction);
-            // …AND IT NO LONGER ADMITS ANYTHING. This assertion
-            // used to read the other way round — every falloff weapon had to
-            // SAY it was not modelled — and the direction flipped with the
-            // arena's 2D layer. An admission that outlives the gap it names is
+            // …AND IT ADMITS NOTHING. A falloff weapon SAYING it is not
+            // modelled is the right assertion only while the arena has no 2D
+            // layer. An admission that outlives the gap it names is
             // worse than none: it tells a player to distrust a number that is
             // now right, and the page is where they would read it.
             //

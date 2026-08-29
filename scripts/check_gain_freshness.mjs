@@ -2,10 +2,10 @@
 //
 // The gain scan is measured under a scenario, so when the scenario changes the
 // numbers on screen are answers to a question nobody is asking any more. The
-// cache key used to name the scenario's fields ONE BY ONE and the list had
-// drifted: `buffs` was missing, so raising a buff's starting stacks changed
-// what the scan would measure without changing the key, and a stale ranking
-// stayed on screen looking current.
+// cache key must not name the scenario's fields ONE BY ONE: such a list
+// drifts, and a missing `buffs` means raising a buff's starting stacks changes
+// what the scan would measure without changing the key, leaving a stale ranking
+// on screen looking current.
 //
 // Asserts the two halves separately, because they fail separately: the key
 // must MOVE when the fight changes, and something must then RE-RUN.
@@ -120,11 +120,9 @@ const r = await evaluate(`(async () => {
     const staleKey = gainScan.key;
 
     // The fight moves. Straight into the LIVE fight, which is the only place
-    // one is edited: theFight() reads sim and nothing else as of
-    // 2026-08-17, so the key moves on the assignment with no auto-save to wait
-    // out — the very debounce this used to dodge by writing into the preset
-    // behind the scan's back. A preset write is no longer a fight edit and
-    // must not behave like one.
+    // one is edited: theFight() reads sim and nothing else, so the key moves
+    // on the assignment with no auto-save to wait out. A preset write is not a
+    // fight edit and must not behave like one.
     sim.level = 900;
     out.stillRunningAtCut = gainScan.running;
     const t0 = Date.now();

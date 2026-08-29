@@ -10,10 +10,10 @@
 // plausible numbers over the bodies would look exactly right and mean nothing.
 //
 // SO THE PROPERTY IS ONE-TO-ONE, AND IT IS CHECKED BY NAME.
-// The engine used to carry a `Replay.pops` buffer beside the combat record —
-// the same nine damage sites written down twice, capped by two different rules
-// — so a number could float over a body with no row to explain it and a row
-// could name a number that never appeared. Both were "the engine's", so a
+// A `Replay.pops` buffer beside the combat record is the same nine damage
+// sites written down twice, capped by two different rules — so a number can
+// float over a body with no row to explain it and a row can name a number that
+// never appeared. Both would be "the engine's", so a
 // check that only asked "is this text one the engine produced" passed on it.
 // There is ONE stream now: every drawn number carries `data-rpevent`, the id of
 // the row it IS, and this asserts that the row exists, that its effective
@@ -138,9 +138,8 @@ const r = await evaluate(`(async () => {
   // nobody sees, which is the failure a screenshot would not catch either.
   const sceneEl = document.getElementById('rp-scene');
   const sbox = sceneEl ? sceneEl.getBoundingClientRect() : { left: 0, right: 0, top: 0, bottom: 0 };
-  // INSIDE THE SCENE, and this is tight on purpose: the numbers used to stack
-  // straight off the top of the panel, which a generous margin would have
-  // called fine.
+  // INSIDE THE SCENE, and tight on purpose: numbers stacking straight off the
+  // top of the panel are what a generous margin would call fine.
   out.allInside = drawn.every((el) => {
     const b = el.getBoundingClientRect();
     return b.left >= sbox.left - 40 && b.right <= sbox.right + 40

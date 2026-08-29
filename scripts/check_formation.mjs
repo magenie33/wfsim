@@ -121,10 +121,10 @@ const r = await evaluate(`(async () => {
   // 3b. THE BRUSH IS NOT A CONTROL OVER THE FLOOR.
   //
   // The card on the left says what you are ABOUT to place; it does not reach
-  // back and rewrite what is already standing there. It used to, and silently:
-  // a body carried no unit of its own, the server reads a blank one as "the
-  // aimed body's", so picking a different enemy to place next turned every
-  // enemy already on the floor into that one. Placing a Gunner line and then
+  // back and rewrite what is already standing there. A body carrying no unit
+  // of its own does exactly that silently: the server reads a blank one as "the
+  // aimed body's", so picking a different enemy to place next turns every enemy
+  // already on the floor into that one. Placing a Gunner line and then
   // reaching for a Thrax destroyed the Gunner line.
   //
   // Asserted on the WIRE rather than on the state, because the state agreeing
@@ -184,10 +184,10 @@ const r = await evaluate(`(async () => {
     markScenarioDirty(); renderSim(); await sleep(900);
     out.legacyBlank = sim.formation.every(f => f.enemy === undefined);
     // AWAY AND BACK is what re-runs 'applyScenario', and the check has to make
-    // its OWN second scenario to go away to. It used to click chips[0] then
-    // chips[last] and rely on those being two different presets — true only
-    // while the app auto-created a 'scenario 1' on boot. Nothing is
-    // auto-created since 2026-08-19, so on a fresh profile there was one chip,
+    // its OWN second scenario to go away to. Clicking chips[0] then
+    // chips[last] relies on those being two different presets, which holds only
+    // while the app auto-creates a 'scenario 1' on boot. Nothing is
+    // auto-created, so on a fresh profile there is one chip,
     // both clicks landed on it, and 'selectPreset' returns early on the preset
     // already open: the reload never happened and the two assertions below
     // were reporting on a scenario that had never been loaded.
@@ -226,10 +226,10 @@ const r = await evaluate(`(async () => {
   // 4b. A DRAG NEVER SHOVES ANYBODY. A body is pushed out of the ONE body it
   //     is entering — which is what makes two circles touch at contact instead
   //     of passing through — and if that lands it in somebody else it does not
-  //     move at all. Nothing but the dragged body may change: the settle used to project four passes over every body,
-  //     which in a crowd squeezed the dragged one through gaps until it found
-  //     somewhere to sit, so a drag toward a packed rank ended somewhere the
-  //     finger never went.
+  //     move at all. Nothing but the dragged body may change: a settle that
+  //     projects four passes over every body squeezes the dragged one through
+  //     gaps in a crowd until it finds somewhere to sit, so a drag toward a
+  //     packed rank ends somewhere the finger never went.
   //
   //     arenaBodies is [target, ...formation], so a formation body's index
   //     here is its own plus one.
@@ -292,9 +292,9 @@ const r = await evaluate(`(async () => {
   // matters - aiming past a body still resolves to the body in front.
   out.stopsShort = out.struck >= 0;
 
-  // …AND A BARE CLICK DOES NOT AIM. It used to, on the
-  // reasoning that a body is dragged and a place has nothing to grab; the cost
-  // was that every mis-click while selecting silently re-aimed the weapon, and
+  // …AND A BARE CLICK DOES NOT AIM. Aiming on a bare click — on the reasoning
+  // that a body is dragged and a place has nothing to grab — means every
+  // mis-click while selecting silently re-aims the weapon, and
   // a fight that moves on a mis-click makes the result you were just looking at
   // a result for a fight nobody was in. AIM IS DRAGGED, like everything else
   // with a position on this canvas.
@@ -348,9 +348,8 @@ const r = await evaluate(`(async () => {
   pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
   out.official = officialScenarioActive();
   const n0 = (sim.formation || []).length;
-  // THE PLACE TOOL IS DISABLED and painting writes nothing — the button that
-  // used to be the thing to disable is gone, so the assertion moved to the tool
-  // that replaced it.
+  // THE PLACE TOOL IS DISABLED and painting writes nothing — the tool is what
+  // the assertion names, since there is no separate button to disable.
   const tool1 = document.querySelector('#sim-target-arena [data-tool="place"]');
   out.officialAddDisabled = !tool1 || tool1.disabled;
   {

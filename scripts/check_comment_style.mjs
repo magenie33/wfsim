@@ -26,7 +26,8 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXEMPT = new Set(["docs/MEASUREMENTS.md", "scripts/check_comment_style.mjs"]);
+// LICENSE is the AGPL text verbatim and is nobody's to edit.
+const EXEMPT = new Set(["docs/MEASUREMENTS.md", "scripts/check_comment_style.mjs", "LICENSE"]);
 const SKIP = ["site/", "private/", "vendor/", "target/"];
 const EXTS = [".rs", ".js", ".mjs", ".html", ".css", ".md", ".py", ".yaml", ".yml", ".jsonc", ".toml"];
 
@@ -49,7 +50,7 @@ const NARRATIVE = new RegExp(
 
 // THE CEILING MAY ONLY FALL. Lower it whenever a pass removes some; never raise
 // it to make a red run green — that is the one edit this file exists to refuse.
-const NARRATIVE_CEILING = 232;
+const NARRATIVE_CEILING = 174;
 
 const files = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")

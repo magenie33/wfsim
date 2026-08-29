@@ -52,8 +52,7 @@ const drawn = await evaluate(`(async () => {
   const id = $('weapon').value;
   // OPENING A LIST IS WHAT STARTS THE MEASUREMENT (openRanked) —
   // the same moment the mod and arcane pickers have always used. The parts are
-  // ONE axis, so opening either list measures both. It used to run from the
-  // block's render, which is why this simply read the rows.
+  // ONE axis, so opening either list measures both.
   row.querySelector('.slot.axis .dots').click();
   await new Promise(r => setTimeout(r, 300));
   document.querySelector('#slot-menu [data-a="swap"]').click();
@@ -135,9 +134,9 @@ check("...and every option that is a candidate is ranked, not just described",
 check("...and the loader list is the long one, so it is searchable",
   drawn.picks.filter(x => x.startsWith("loader:")).length >= 20,
   JSON.stringify(drawn.picks.filter(x => x.startsWith("loader:")).length));
-// THE CHAMBER IS NOT DRAWN AT ALL. It used to be stated as a read-only value;
-// the chamber IS the weapon, whose name is already at the top of the page, so
-// the row said the same word twice.
+// THE CHAMBER IS NOT DRAWN AT ALL: the chamber IS the weapon, whose name is
+// already at the top of the page, so a read-only row would say the same word
+// twice.
 check("...and the chamber is not drawn at all",
   !drawn.fixed.includes("Tombfinger") && !drawn.controls.includes("dd-chamber"),
   JSON.stringify({ fixed: drawn.fixed, controls: drawn.controls }));

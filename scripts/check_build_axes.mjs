@@ -119,10 +119,10 @@ if (axesBlock) {
   // `valence` were lost. `check_board_submit` proves the derivation end to end
   // against a KV stub; this asserts the shape it depends on has not been
   // unpicked into hand-written lists again.
-  // ASSERTED AS A PROPERTY, NOT AS A SPELLING. This used to require the literal
-  // `AXES.map((a) =>`, and the day `benchmark` became provenance rather than
-  // identity — `AXES.filter((a) => a.identity !== false).map(…)` — the check
-  // went red on code that was still entirely derived. A check that
+  // ASSERTED AS A PROPERTY, NOT AS A SPELLING. Requiring the literal
+  // `AXES.map((a) =>` reddens on code that is still entirely derived the moment
+  // an axis becomes provenance rather than identity —
+  // `AXES.filter((a) => a.identity !== false).map(…)`. A check that
   // fails on a refactor it should not care about is a check people learn to
   // edit rather than to read.
   //

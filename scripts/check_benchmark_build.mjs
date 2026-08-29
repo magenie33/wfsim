@@ -78,14 +78,14 @@ const cold = await evaluate(`(async () => {
   // and submitted nothing, with no line anywhere saying why.
   out.locked = ['mod-block','arcane-block','evo-block','mode-block']
     .map(id => ((document.getElementById(id)||{}).className||'').includes('locked-hard'));
-  // …and the page SAYS the runs are not submitted, since the consent panel
-  // hides itself on a board row and used to be the only thing that mentioned it.
+  // …and the page SAYS the runs are not submitted: the consent panel hides
+  // itself on a board row, so it cannot be the only thing that mentions it.
   out.consentHidden = (document.getElementById('board-consent')||{}).hidden;
   // The submit path's own verdict, asked the way it asks itself.
   out.wouldSubmit = officialScenarioActive() && !officialBuildActive();
-  // A WAY OUT YOU CAN CLICK. The note used to point at a ⧉ chip elsewhere on
-  // the page; a reader who wants to change something needs a button, and a
-  // locked block has to say why rather than simply not reacting.
+  // A WAY OUT YOU CAN CLICK, not a note pointing at a ⧉ chip elsewhere on the
+  // page: a reader who wants to change something needs a button, and a locked
+  // block has to say why rather than simply not reacting.
   out.copyBtn = !!document.getElementById('build-copy');
   out.lockedTitle = ((document.getElementById('mod-block')||{}).title || '').length;
   const btn = document.getElementById('build-copy');

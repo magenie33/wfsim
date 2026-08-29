@@ -282,7 +282,7 @@ check("...and its average is the same quantity, not a stack count",
   hs && /\d+\.\d%\/500%/.test(hs.stat), hs && hs.stat);
 // THE STEPPER IS STILL IN HITS, and its maximum is the first hit that reaches
 // the ceiling — 417 at max rank, which is the wiki's own column and one more
-// than the "last stack that fits under 500%" this used to compute.
+// than the "last stack that fits under 500%".
 check("...while the card that seeds it counts HITS, to the 417th",
   r.hsCard && r.hsCard.cap === "/ 417", JSON.stringify(r.hsCard));
 // THE NEGATIVE CONTROL, in the same run: an ordinary stack-capped buff is

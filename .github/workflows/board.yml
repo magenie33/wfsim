@@ -159,10 +159,10 @@ jobs:
         id: fp
         run: |
           set -euo pipefail
-          # THE CODE, AND ONLY THE CODE. `data/` used to be hashed in here, so
-          # adding a weapon (a file no existing row reads) invalidated every
-          # stored score and bought a full rescore: about an hour of wall clock
-          # and thirty of CPU to reproduce numbers that could not have moved.
+          # THE CODE, AND ONLY THE CODE. Hashing `data/` in here makes adding
+          # a weapon (a file no existing row reads) invalidate every stored
+          # score and buy a full rescore: about an hour of wall clock and
+          # thirty of CPU to reproduce numbers that could not have moved.
           # The data half is asked PER ROW now, inside the scorer, from the
           # files that row actually reads (`engine::data_fingerprint`), so a
           # mod correction costs the rows carrying that mod and nothing else.
@@ -183,8 +183,8 @@ jobs:
 
       # THE LIBRARY IS FETCHED ONCE AND THEN ONLY ADDED TO. `restore-keys` takes
       # the newest cache whatever run wrote it, while the `key` carries this run
-      # id so every run SAVES one — which is what keeps the chain moving. A miss
-      # costs exactly what every run used to cost, so nothing depends on it.
+      # id so every run SAVES one — which is what keeps the chain moving. A
+      # miss costs a full listing and nothing depends on it.
       - name: restore the library
         if: steps.wired.outputs.yes == 'true'
         uses: actions/cache@v4
@@ -324,10 +324,10 @@ jobs:
 
       # TWO OUTPUTS: the canonical yaml, and the json the PAGE fetches.
       #
-      # This step used to regenerate the whole site, and it failed on a clean
-      # runner because `web/cache/img/` is gitignored — but the real problem was
-      # not the images. A board that changes hourly should never have needed a
-      # 2.5 MB wasm rebuilt to reach anyone: install wasm-bindgen, fetch 300
+      # It does NOT regenerate the whole site: that fails on a clean runner
+      # because `web/cache/img/` is gitignored, and the images are not even the
+      # real problem. A board that changes hourly must not need a 2.5 MB wasm
+      # rebuilt to reach anyone — install wasm-bindgen, fetch 300
       # images, recompile, to change a few numbers. The board is fetched at
       # runtime now, so this writes two small files and is done.
       - name: assemble every benchmark
@@ -339,9 +339,10 @@ jobs:
             prior=""
             # A BRAND-NEW BENCHMARK HAS NO BOARD YET, and that is a legal
             # state — the ruler exists before anyone has submitted to it. This
-            # `cp` used to be unguarded, and under `set -e` a missing file
-            # aborted the whole publish job, so ADDING A RULER would have
-            # broken the hourly board until somebody hand-wrote an empty yaml. The scoring step above never had the problem: it
+            # An unguarded `cp` aborts the whole publish job under `set -e`
+            # when the file is missing, so ADDING A RULER would break the
+            # hourly board until somebody hand-wrote an empty yaml. The
+            # scoring step above does not have the problem: it
             # passes the path straight to the binary, which treats an
             # unreadable prior as "full rescore" and carries on.
             if [ "${{ inputs.full }}" != "true" ]                && [ -f "data/benchmarks/boards/$id.yaml" ]; then

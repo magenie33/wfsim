@@ -229,10 +229,11 @@ console.log("the board's submission endpoint\n");
   check("...and reaches storage under its own name",
     rec && rec.benchmark === fresh.benchmark, JSON.stringify(rec && rec.benchmark));
 
-  // …AND ONE BUILD IS ONE RECORD, whichever ruler it arrived from. This assertion used to be its opposite — two rulers scoring one
-  // build were two records, because the identity key carried the benchmark — and
-  // it was right while a submission was bound to the fight it was measured
-  // under. It is not any more: the store is a LIBRARY OF BUILDS and every ruler
+  // …AND ONE BUILD IS ONE RECORD, whichever ruler it arrived from. Two rulers
+  // scoring one build are two records only while the identity key carries the
+  // benchmark, which is right only while a submission is bound to the fight it
+  // was measured under. It is not: the store is a LIBRARY OF BUILDS and every
+  // ruler
   // crosses the whole of it, so the ruler is provenance (`identity: false`) and
   // the same build arriving from two fights is the same build.
   //

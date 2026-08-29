@@ -2973,16 +2973,16 @@ use crate::loadout::WeaponBase;
         // Each line is a DECISION, and the reason is beside the effect in its
         // own yaml. Kept as a flat list so a diff here is readable.
         let expected: Vec<&str> = vec![
-            // (The four `unlocks_weapon` tier-1 entries used to live here.
-            // They still apply nothing — the form is a separate weapon with
+            // (The four `unlocks_weapon` tier-1 entries are NOT here.
+            // They apply nothing — the form is a separate weapon with
             // its own stats — but they are no longer INERT: `UnlocksForm`
             // carries the form's id, and reading it is what lets a form
             // request imply the evolution that IS that form instead of
             // silently falling back to base. Inert meant the
             // target was dropped at parse time and "which evolution unlocks
             // the form" had to be guessed from ladder position.)
-            // (RELOAD CADENCE used to keep five Ready Retaliations here, on
-            // the reasoning that nobody had published their WINDOW: only the
+            // (RELOAD CADENCE keeps no Ready Retaliation here. Nobody has
+            // published their WINDOW: only the
             // Phenmor's page states one ("for 6 seconds") and the rest say
             // "+100% Reload Speed" and stop, so a duration looked like a number
             // that would have to be borrowed from another weapon.
@@ -3131,8 +3131,8 @@ use crate::loadout::WeaponBase;
             // of its payloads are spatial anyway — punch-through needs a second
             // body and accuracy needs a miss to prevent.
             //
-            // (RAPID REINFORCEMENT used to sit here, four rows at a time. It is
-            // IMPLEMENTED now — `EvoEffect::ReloadSpeedBonus`, into the same
+            // (RAPID REINFORCEMENT is not here. It is IMPLEMENTED —
+            // `EvoEffect::ReloadSpeedBonus`, into the same
             // additive bucket the mods feed — because the intake kept adding it
             // and docs/INCARNON.md counts it on 14 guns. The CONDITIONAL member
             // of the family, Ready Retaliation, is still inert below: its

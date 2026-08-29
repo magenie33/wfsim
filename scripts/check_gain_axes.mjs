@@ -2,8 +2,8 @@
 //
 // Tier N of an evolution set is choosable only once N-1 is filled — a tier-2
 // perk with no tier 1 is not a weaker build, it is not a build. The builder
-// greys those rows out; the quick-calc gain scan used to measure them anyway,
-// so the picker ranked evolutions nobody could click, on builds that cannot
+// greys those rows out, and the quick-calc gain scan must not measure them
+// anyway — that ranks evolutions nobody can click, on builds that cannot
 // exist.
 //
 //   node scripts/check_gain_axes.mjs

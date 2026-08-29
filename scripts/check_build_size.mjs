@@ -1,9 +1,8 @@
 // HOW FULL A BUILD MUST BE IS A RANGE, AND BOTH ENDS TRAVEL.
 //
-// The optimizer used to offer only a ceiling ("max mods / build"), so
-// "search only full 8-mod builds" was not a thing you could ask for — and
-// every search paid for the sizes below it. The
-// floor is its own control now.
+// A ceiling alone ("max mods / build") cannot ask for "only full 8-mod
+// builds", and every search pays for the sizes below it. The floor is its own
+// control.
 //
 // Asserts what is on SCREEN and in the REQUEST, not what is in a variable:
 // the two ends push each other, the scope estimate follows the floor, the

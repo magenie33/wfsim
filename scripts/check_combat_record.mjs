@@ -358,8 +358,9 @@ check(`${tag} ...and "only the misses" is a view`,
 // ---- A RESULT WITH NO ENGAGEMENT TO NAME SAYS SO ---------------------------
 //
 // The record is fetched by naming the run it explains, and a result SAVED
-// before that name existed has none to give. The block used to vanish, so a
-// reader coming back to a stored result found the feature absent with nothing
+// before that name existed has none to give. The block must not simply vanish,
+// or a reader coming back to a stored result finds the feature absent with
+// nothing
 // saying why — reported as "the combat record does not show". An unexplained absence reads as a missing feature, which
 // is the same rule this panel already follows about its own caps.
 const stale = await evaluate(`(async () => {

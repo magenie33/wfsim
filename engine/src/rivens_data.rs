@@ -323,10 +323,10 @@ struct PoolFile {
 /// one held button away, no gauge, no animation — is 33%, and a player's real
 /// card rolls negative Impact (through the owner).
 ///
-/// A GAUGE-SWITCHED form stays out, and the survey is what settles it rather
-/// than the argument that used to stand here. An Incarnon form is paid for
-/// with evolutions and a riven's pool is fixed when it drops — but the
-/// evidence is better than the argument: the Latron, Lex and Atomos Incarnon
+/// A GAUGE-SWITCHED form stays out, and the SURVEY settles it rather than the
+/// argument. An Incarnon form is paid for with evolutions and a riven's pool is
+/// fixed when it drops — but the evidence is better than the argument: the
+/// Latron, Lex and Atomos Incarnon
 /// forms all fire a literal travelling projectile, and their families show 0,
 /// 4 and 0 Projectile Speed listings out of 500. Counting those forms would
 /// have offered a stat no card in the sample carries.
@@ -423,10 +423,10 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
 /// where somebody has looked; the SURVEY is neither of those and no longer
 /// appears here at all.
 ///
-/// It used to. `pools.yaml` outranked the derivation, which made a scrape a
-/// silent authority over 26 weapon families — and a re-run of it came back
-/// "nothing rolls anything" for every one of them. Nothing in the pipeline
-/// would have caught that: the file parsed, the pools emptied, and the two
+/// It must not. `pools.yaml` outranking the derivation makes a scrape a silent
+/// authority over 26 weapon families, and a re-run of one came back "nothing
+/// rolls anything" for every one of them. Nothing in the pipeline catches that:
+/// the file parses, the pools empty, and the two
 /// tests that failed were both about something else. Evidence belongs in a
 /// check (`the_survey_still_agrees_with_the_rules`), where a broken scrape is
 /// loud.
@@ -1064,9 +1064,9 @@ pub fn perfect(shape: &RivenShape, class: &str, mut score: impl FnMut(&RivenSpec
         // **A TIE GOES TO THE PLAYER**. A stat this fight
         // cannot read — Zoom, Recoil, Ammo Maximum against one standing target
         // — scores the same at both ends, and the board is publishing a riven
-        // somebody will go and try to obtain. It used to keep the FIRST corner,
-        // which is every bit clear: every bonus at its MINIMUM. So a shape with
-        // one dead stat was published asking for a worse card than it needs.
+        // somebody will go and try to obtain. Keeping the FIRST corner means
+        // every bit clear, i.e. every bonus at its MINIMUM, so a shape with one
+        // dead stat would be published asking for a worse card than it needs.
         //
         // THE TIE IS EXACT, not "within noise", and that is what makes this
         // deterministic rather than a tolerance somebody picked: every corner is
@@ -1117,10 +1117,10 @@ fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
     // A STAT THE FIGHT CANNOT READ COMES BACK AT THE END THAT IS BETTER FOR THE
     // PLAYER — every bonus at its ceiling, the malus at its floor.
     //
-    // It used to come back at the BOTTOM, and this test asserted that: the
-    // first corner won a tie and the first corner is every bit clear, so every
-    // BONUS landed at its minimum. Determinism was the right thing to want and
-    // the wrong end to take it at — a board row is a riven somebody will go and
+    // Coming back at the BOTTOM is what a first-corner tiebreak gives: every
+    // bit clear, so every BONUS at its minimum. Determinism is the right thing
+    // to want and the wrong end to take it at — a board row is a riven somebody
+    // will go and
     // try to obtain, so a shape with one dead stat was published asking for a
     // worse card than it needs.
     let flat = perfect(&shape, "rifle", |_| 1.0);
@@ -1514,9 +1514,9 @@ fn an_element_is_never_a_malus() {
 
         // The OTHER rule is the flight one, and here the derivation is only
         // the fallback. Phantasma Prime's plasma bomb genuinely flies at
-        // 25 m/s, which is why this test used to assert it keeps Projectile
-        // Speed — and 500 real Phantasma rivens carry it zero times, so the
-        // survey overrules the reasoning. Gotva Prime is the same claim with
+        // 25 m/s, which by the derivation alone would keep Projectile Speed
+        // — and 500 real Phantasma rivens carry it zero times, so the survey
+        // overrules the reasoning. Gotva Prime is the same claim with
         // no survey behind it: its family is the one warframe.market refused,
         // so the derivation still answers for it.
         let p = excluded_for("phantasma_prime");
@@ -1814,10 +1814,9 @@ fn an_element_is_never_a_malus() {
 
     /// AN EXCEPTION OVERRIDES THE RULES, and only an exception does.
     ///
-    /// The survey used to sit in this path and does not any more. What survived the move is every answer it was giving —
-    /// because each one became an entry in `exceptions.yaml` carrying the
-    /// count it came from — so this asserts the ANSWERS, which is what a
-    /// player sees, rather than
+    /// The survey is not in this path. Every answer it gave is an entry in
+    /// `exceptions.yaml` carrying the count it came from, so this asserts the
+    /// ANSWERS, which is what a player sees, rather than
     /// which file produced them.
     #[test]
     fn an_exception_overrides_the_derivation_and_nothing_else_does() {
@@ -1855,9 +1854,9 @@ fn an_element_is_never_a_malus() {
 
     /// THE SURVEY IS A CHECK, NOT A SOURCE — this is the check.
     ///
-    /// It exists because the opposite arrangement failed silently. `pools.yaml`
-    /// used to outrank the derivation, so a re-run of the scrape that came back
-    /// "nothing rolls anything" for all 26 families would have emptied every
+    /// It exists because the opposite arrangement fails silently. With
+    /// `pools.yaml` outranking the derivation, a re-run of the scrape that came
+    /// back "nothing rolls anything" for all 26 families would empty every
     /// pool in the app, and the only thing that noticed was two tests about
     /// something else.
     ///

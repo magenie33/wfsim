@@ -1,9 +1,9 @@
 // A BUILD THE BOARD ALREADY HOLDS IS NOT SENT TO IT AGAIN.
 //
-// The page used to answer "is this already a row?" with a POINTER:
+// Answering "is this already a row?" with a POINTER fails:
 // `officialBuildActive()` says whether the ACTIVE PRESET is a builtin, which is
 // true of a board row opened from the picker and false of the same build
-// reached any other way. So a player who copied a board build into a preset of
+// reached any other way. So a player who copies a board build into a preset of
 // their own — the ⧉ the picker offers on every benchmark row — was told their
 // run was being uploaded to a board that already holds it.
 //

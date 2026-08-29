@@ -4303,10 +4303,10 @@ pub fn resolve_for(
                 // count, not about where a bullet lands: no policy can make a
                 // body shot into a head shot.
                 //
-                // The CC half used to fold into the plain bucket under
-                // AssumedMax, which split ONE mod down the middle — Acuity's
-                // Weak Point Damage stayed conditional while its Weak Point
-                // Crit Chance became unconditional. On the panel (always
+                // Folding the CC half into the plain bucket under
+                // AssumedMax splits ONE mod down the middle — Acuity's Weak
+                // Point Damage stays conditional while its Weak Point Crit
+                // Chance becomes unconditional. On the panel (always
                 // AssumedMax) that read the Burston Incarnon's 28% as 126%,
                 // and handed the same 126% to the RADIAL, which can never
                 // weak-point-hit at all. The arcane source of the same effect
@@ -4528,8 +4528,8 @@ pub fn resolve_for(
     // component; innate PRIMARY elements (Torid's Toxin, Verglas Prime's Cold)
     // go into their own bucket, which the hierarchy places LAST — the mods
     // combine among themselves and the innate takes what is left over
-    // (MECHANICS §3 rule 2; the code used to place them FIRST, which is the
-    // superseded draft the doc calls out). They still scale with base-damage
+    // (MECHANICS §3 rule 2; placing them FIRST is the superseded draft the doc
+    // calls out). They still scale with base-damage
     // mods like the rest of the base. (A physical-innate weapon leaves `input`
     // empty here, so this is a no-op for Dual Toxocyst.)
     // THE MODDED MAGAZINE, computed HERE because on one weapon it is a damage
@@ -5934,9 +5934,9 @@ mod tests {
         t
     }
 
-    /// Spectral Serration reads "+330% Damage while Invisible", and used to be
-    /// a flat `base_damage_bonus` — every shot of every build collected it.
-    /// The condition is now a TENNO question: the neutral player in
+    /// Spectral Serration reads "+330% Damage while Invisible". As a flat
+    /// `base_damage_bonus` every shot of every build would collect it; the
+    /// condition is a TENNO question, so the neutral player in
     /// `data/tenno/` is visible, so the mod contributes nothing, and the same
     /// mod on an invisible Tenno pays in full through the same code path.
     ///
@@ -6225,10 +6225,9 @@ mod tests {
     /// So the conditional half is NOT per variant — only X is — which is the
     /// part a per-variant transcription gets wrong by habit.
     ///
-    /// The clause used to be `out_of_scope`, on the ruling that the Tenno walks
-    /// in with a full loadout. That ruling is still the DEFAULT and now only the
-    /// default: the scenario says which, and a shut gate
-    /// costs exactly nothing, which is what keeps every board row meaning what
+    /// "The Tenno walks in with a full loadout" is the DEFAULT and only the
+    /// default: the scenario says which, and a shut gate costs exactly nothing,
+    /// which is what keeps every board row meaning what
     /// it meant.
     #[test]
     fn lone_gun_pays_its_two_halves_only_with_no_other_weapon() {
@@ -6604,9 +6603,9 @@ mod tests {
             "the Incarnon form is using the BASE form's crit chance — the Arsenal's bug");
     }
 
-    /// The sim used to satisfy `while_aiming` silently, so every aim-gated
-    /// buff fired whether or not the scenario implied aiming. `resolve_with(.., aiming)` is the knob; `resolve` keeps
-    /// assuming aim.
+    /// Satisfying `while_aiming` silently fires every aim-gated buff whether or
+    /// not the scenario implies aiming. `resolve_with(.., aiming)` is the knob;
+    /// `resolve` assumes aim.
     #[test]
     fn aiming_gates_the_while_aiming_effects_and_only_those() {
         use crate::mods_data::class_pool;
@@ -6662,8 +6661,8 @@ mod tests {
         // Multishot to its default ignoring other bonuses, even negative
         // effects" (wiki, Primary/Pistol Acuity), and this base carries Fevered
         // Frenzy, whose permanent stacked multishot never passed through the mod
-        // bucket. It used to survive the lock, so an Acuity build on Dual
-        // Toxocyst kept the evolution's pellets.
+        // bucket — so a lock that reaches only the mod bucket leaves an
+        // Acuity build on Dual Toxocyst holding the evolution's pellets.
         let lock = m_req("acuity", None, vec!["multishot"], vec![]);
         let ms_mod = m("multishot", vec![ModEffect::Multishot(1.0)]);
         let locked = resolve(&base, &[&ms_mod, &lock], StackPolicy::AssumedMax);
@@ -7005,7 +7004,7 @@ mod tests {
     /// it is the first build where "innate last" is observable: Heat(1) and
     /// Electricity(2) combine with EACH OTHER into Radiation and the innate
     /// Toxin, last, is left pure. Placing the innate first — the superseded
-    /// draft the engine used to implement — would give Gas + Electricity.
+    /// draft — gives Gas + Electricity.
     #[test]
     fn torid_innate_toxin_takes_what_the_mods_leave() {
         let heat = m("hellfire", vec![ModEffect::Element(Heat, 0.90)]);

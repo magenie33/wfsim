@@ -117,10 +117,10 @@ check("...a measured zero says so in words instead", noEffect.length > 0,
 // spread of `c_i − ratio·b_i` over the runs, which is the error of the number
 // actually printed.
 //
-// It used to be a PROXY: had the median run's proc count changed? A count that
-// happened to coincide printed a bare number and claimed the comparison was
-// exact — and on the Kuva Nukor all seven progenitor elements report the same
-// count while their fights differ by up to 30%, so seven chips claimed an
+// NOT a PROXY — "did the median run's proc count change?" A count that happens
+// to coincide prints a bare number and claims the comparison is exact, and on
+// the Kuva Nukor all seven progenitor elements report the same count while
+// their fights differ by up to 30%, so seven chips would claim an
 // exactness none of them had and the order between two of them was a coin flip
 // printed as a fact.
 //

@@ -84,8 +84,8 @@ async function serveSite(root) {
 
 /// Chrome picks the debugging port and writes it into its own profile.
 ///
-/// Every check used to hardcode one, which meant a fixed list nobody could keep
-/// distinct and two checks running at once racing for the same number.
+/// A hardcoded port per check is a fixed list nobody can keep distinct, and two
+/// checks running at once race for the same number.
 /// `--remote-debugging-port=0` plus `DevToolsActivePort` is Chrome's own answer.
 async function debugPort(profile) {
   const file = join(profile, "DevToolsActivePort");

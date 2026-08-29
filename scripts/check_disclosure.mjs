@@ -235,9 +235,9 @@ for (const lang of ["en", "zh"]) {
 
     // 7b. THE TODO CHIP, on a weapon that still has one.
     //
-    // It used to be read off the Stug above, and that stopped working the day
-    // the Stug's last inert perk was modelled — which is the
-    // check succeeding at its job and then failing for it. The assertion is
+    // NOT read off the Stug above: that stops working the day its last inert
+    // perk is modelled, which is the check succeeding at its job and then
+    // failing for it. The assertion is
     // that the gold "not modelled YET" chip still RENDERS, so it has to be
     // asked of a weapon that has one; the Felarx does, and it also carries
     // three weapon-level gaps of its own.
@@ -307,10 +307,9 @@ for (const lang of ["en", "zh"]) {
         .filter(e => /aim down sights/.test(e.textContent)).length;
 
     // 8. NEGATIVE CONTROL: a weapon with nothing to admit, ANYWHERE in its
-    //    transform group. Opened EXPLICITLY, because this used to read whatever
-    //    page the block above happened to leave behind — which was the right
-    //    page only by accident of ordering, and stopped being so the moment a
-    //    step was inserted.
+    //    transform group. Opened EXPLICITLY: reading whatever page the block
+    //    above happens to leave behind is right only by accident of ordering,
+    //    and stops being so the moment a step is inserted.
     //
     //    THE TORID, and it is hand-written: no gaps, no inert perks, and both
     //    of its forms carry a transcribed SPREAD (0/0 on the grenade, which is
