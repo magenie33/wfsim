@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3463
+submissions: 3464
 engine: e0a212b8de95b97d892fe7eb20c0fe34f2a5f03d
 entries:
   - weapon: acceltra_prime
@@ -3284,6 +3284,16 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pathogen_rounds, deep_freeze]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: enkaus
+    mode: base
+    score: 0.37125935899150464
+    fp: 79c7616df1c2598d
+    mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, vile_acceleration, riven, rime_rounds, hellfire, malignant_force]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [damage, fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: epitaph_prime
     mode: base
     score: 1.1831630152518509

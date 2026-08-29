@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3463
+submissions: 3464
 engine: e0a212b8de95b97d892fe7eb20c0fe34f2a5f03d
 entries:
   - weapon: acceltra_prime
@@ -1447,6 +1447,16 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [cascadia_flare]
+  - weapon: enkaus
+    mode: base
+    score: 0.11516697829050056
+    fp: e8a001830745b57c
+    mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, vile_acceleration, riven, rime_rounds, hellfire, malignant_force]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [damage, fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: epitaph_prime
     mode: alternate
     score: 0.0826618181753532
@@ -5034,11 +5044,11 @@ entries:
   - weapon: torid
     mode: cycle
     score: 5.035325607712647
-    fp: bdd9c97a4fda6774
+    fp: 62abe2522de22529
     exilus: terminal_velocity
     mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_overcharge]
+    arcanes: [primary_deadhead]
     riven:
       bonuses: [damage, heat, multishot]
       malus: ammo_maximum
@@ -5046,11 +5056,11 @@ entries:
   - weapon: torid
     mode: cycle
     score: 5.035325607712647
-    fp: 62abe2522de22529
+    fp: bdd9c97a4fda6774
     exilus: terminal_velocity
     mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_deadhead]
+    arcanes: [primary_overcharge]
     riven:
       bonuses: [damage, heat, multishot]
       malus: ammo_maximum
