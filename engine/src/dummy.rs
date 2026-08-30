@@ -1362,32 +1362,17 @@ impl Dot {
     /// status-damage bonuses. So the `1` is worth `C × M` — this method — and
     /// it is neither a flat +1 of damage nor anything the seed carries.
     ///
-    /// IT IS PER TICK GROUP, ONCE. The page says so and says why it matters:
-    /// *"If several seeds are consolidated into a single tick, they are added
-    /// to the same accumulator, so its initial value of 1 is included only
-    /// once. It is therefore neither a final flat +1 damage bonus nor a bonus
-    /// applied once per status stack."* Heat, Electricity and Gas consolidate;
-    /// Slash and Toxin tick independently and each carries its own.
+    /// IT IS PER TICK GROUP, ONCE: *"If several seeds are consolidated into a
+    /// single tick, they are added to the same accumulator, so its initial
+    /// value of 1 is included only once."* Heat, Electricity and Gas
+    /// consolidate; Slash and Toxin tick independently and each carries its own.
+    /// What it is worth, and the capture bounding it from both sides, is
+    /// MEASUREMENTS M56.
     ///
-    /// WHAT IT WAS WORTH, and how it was found. Nine DoT readings on a Braton
-    /// Prime came back a flat 36/35 above what this engine computed, across
-    /// three independent element brackets, while every direct hit on the same
-    /// builds landed on the digit (M56). `(35 + 1) × 0.5 = 18` reproduces all
-    /// nine; `35 × 0.5 = 17.5` reproduces none. It is 2.9% on a base of 35 and
-    /// 0.25% on a base of 400 — a small weapon's problem, and invisible on a
-    /// big one, which is why measuring it took a base-35 rifle.
-    ///
-    /// AND THE SAME SESSION BOUNDS IT FROM THE OTHER SIDE. Blast is NOT in the
-    /// page's list of five, and the capture proves it: a detonation read 11 /
-    /// 21 / 63 across body, crit and critical headshot, which is `0.3 × 35`
-    /// times 1 / 2 / 6 exactly. With an accumulator the crit line would be
-    /// `0.3 × 36 × 2 = 21.6`, displayed 22.
-    ///
-    /// ONLY ONE FACTION LAYER. The seed already carries the hit's own — the
-    /// page's Toxin example is `(40 × 1.55 + 1) × 0.5 × 3.25 × 1.55`, with the
-    /// bonus inside the seed AND in `M`, and the `1` added between them. So a
-    /// payload at `depth` puts `depth − 1` layers in the seed and exactly one
-    /// here.
+    /// ONLY ONE FACTION LAYER — the seed already carries the hit's own. The
+    /// page's Toxin example is `(40 × 1.55 + 1) × 0.5 × 3.25 × 1.55`, the bonus
+    /// inside the seed AND in `M` with the `1` between them, so a payload at
+    /// `depth` puts `depth − 1` layers in the seed and exactly one here.
     fn accumulator_unit(&self, params: &DummyParams, now: f64) -> f64 {
         if !self.source_scaled || self.unit == 0.0 {
             return 0.0;
@@ -1517,39 +1502,25 @@ struct DebuffState {
     /// GAS CLOUDS AND TESLA ARCS THIS BODY IS THE ORIGIN OF, waiting to be
     /// handed to everybody standing near it.
     ///
-    /// Gas and Electricity are the only two elements whose proc is an AREA, and
-    /// both were an ordinary DoT on one body until 2026-08-17 — right while the
-    /// arena held one, and half the mechanic once it held 361. Verbatim, from
-    /// each element's own page:
+    /// Gas and Electricity are the only two elements whose proc is an AREA:
+    /// gas leaves "a gas cloud that deals a tick of damage each second to all
+    /// enemies within a 3-meter radius" growing "by 0.3 meters up to 6 meters",
+    /// and an Electricity proc "chains between nearby enemies" hitting "all
+    /// enemies in a 3-meter radius" where "only the original target will be
+    /// stunned". SO ONLY THE DoT TRAVELS — the stun, the arcane triggers and
+    /// the stack counts stay on the body that was hit.
     ///
-    ///   · GAS — "a gas cloud that deals a tick of damage each second to all
-    ///     enemies within a 3-meter radius", "subsequent procs increase the
-    ///     radius by 0.3 meters up to 6 meters", "6 second duration".
-    ///   · ELECTRICITY — the proc "chains between nearby enemies", hitting "all
-    ///     enemies in a 3-meter radius", and "only the original target will be
-    ///     stunned ... others around it will only take damage".
+    /// AN OUTBOX RATHER THAN A THREADED QUEUE: `settle_procs` holds ONE body's
+    /// debuff state and spreading needs every body's, while the DRAIN knows
+    /// which body it is reading. Nothing moves here, so draining a moment later
+    /// is exact — a `Dot` carries an absolute `next_tick`.
+    /// …AND HOW MANY OF THAT EXACT CLOUD. Within one shot every gas proc
+    /// produces the SAME cloud — same value, radius and tick time, from the
+    /// same instant of the same shot — so they are one entry and a COUNT.
     ///
-    /// SO ONLY THE DoT TRAVELS: the stun, the arcane triggers and the stack
-    /// counts stay on the body that was hit.
-    ///
-    /// AN OUTBOX RATHER THAN A THREADED QUEUE. `settle_procs` holds ONE body's
-    /// debuff state and spreading needs every body's — and this struct is
-    /// already the per-body thing every proc path has in hand, so recording it
-    /// here costs no parameter anywhere. The DRAIN knows which body it is
-    /// reading, which is the one fact `settle_procs` does not have.
-    ///
-    /// Nothing moves in this arena, so draining a moment later is exact rather
-    /// than approximate: a `Dot` carries an absolute `next_tick`.
-    /// …AND HOW MANY OF THAT EXACT CLOUD. Within one shot a body can take a
-    /// hundred gas procs and every one produces the SAME cloud — same value,
-    /// same radius, same tick time, because they came from the same instant of
-    /// the same shot. They are indistinguishable, so they are one entry and a
-    /// COUNT rather than a hundred entries.
-    ///
-    /// It is what makes a crowd affordable. The drain hands each entry to every
-    /// body in radius, a dozen on a 1.5 m grid, and the receiving body keeps at
-    /// most its stack cap — so a hundred pushes to keep ten was ten times the
-    /// work for the same answer.
+    /// It is what makes a crowd affordable: the drain hands each entry to every
+    /// body in radius, a dozen on a 1.5 m grid, and the receiver keeps at most
+    /// its stack cap.
     area_out: Vec<(Dot, f64, u16)>,
     /// INSTANT area damage this body owes its neighbours — today only a
     /// simultaneous BLAST detonation. `(damage, radius_m)`.
@@ -1980,43 +1951,27 @@ impl DebuffState {
     /// natural cap; under a per-unit cap the count of THIS TYPE is limited,
     /// FIFO replace-oldest (the oldest same-type instance drops).
     /// THE BODY DIED and a fresh individual takes its place, carrying none of
-    /// its statuses.
+    /// its statuses. THREE THINGS SURVIVE, which is what makes this a method:
     ///
-    /// THREE THINGS SURVIVE, and they are what makes this a method rather than
-    /// `*debuffs = default()` written five times:
-    ///
-    ///   · THE OUTBOXES. A cloud or a detonation this body already produced
-    ///     belongs to its NEIGHBOURS and has not been delivered yet; wiping it
-    ///     with the corpse would lose damage that was already dealt.
-    ///   · A GAS CLOUD, because a cloud is a PLACE and not a body. Verbatim:
-    ///     "If the host target dies, Gas will continue to tick damage on all
-    ///     enemies caught in the host's radius for its remaining duration" —
-    ///     and the respawned individual stands where the dead one did, so it is
-    ///     one of those enemies. ONLY gas: the page says it
-    ///     of gas and of nothing else, and inventing it for Toxin or Bleed
-    ///     would be a rule nobody published.
-    ///   · …and THE BLAST STACKS DETONATE ON THE WAY OUT — "stacks detonate
+    ///   · THE OUTBOXES — a cloud or detonation this body already produced
+    ///     belongs to its NEIGHBOURS and is not delivered yet.
+    ///   · A GAS CLOUD, because a cloud is a PLACE: "If the host target dies,
+    ///     Gas will continue to tick damage on all enemies caught in the host's
+    ///     radius for its remaining duration". ONLY gas — the page says it of
+    ///     gas and of nothing else.
+    ///   · THE BLAST STACKS DETONATE ON THE WAY OUT — "stacks detonate
     ///     simultaneously when … the target dying", and a simultaneous
-    ///     detonation is the one that reaches 5 m. The host takes nothing more
-    ///     (it is already dead, and the AoE never hits it anyway).
-    /// POST A CLOUD OR AN ARC for the neighbours, keeping at most `cap` of them.
+    ///     detonation is the one that reaches 5 m.
+    /// POST A CLOUD OR AN ARC for the neighbours, keeping at most `cap`.
     ///
-    /// NOT ONLY AN OPTIMISATION. A cloud that is evicted from its own host
-    /// before the next tick never ticked anybody: ticks are one a second and a
-    /// shot is a fraction of that, so twenty gas procs in one shot leave ten
-    /// clouds and the other ten delivered nothing. Keeping every one of them
-    /// would hand the neighbours DoTs that do not exist.
-    ///
-    /// IT IS ALSO MOST OF THE COST. The drain hands each entry to every body in
-    /// radius — a dozen on a 1.5 m grid — so posting a hundred a shot to keep
-    /// ten is ten times the work for the same answer.
+    /// NOT ONLY AN OPTIMISATION: a cloud evicted from its own host before the
+    /// next tick never ticked anybody, so twenty gas procs in one shot leave
+    /// ten clouds and keeping the other ten hands the neighbours DoTs that do
+    /// not exist. It is also most of the COST — the drain hands each entry to
+    /// every body in radius, a dozen on a 1.5 m grid.
     /// IS THERE ANYTHING TO TICK? A body with no DoT, no Heat and no Blast fuse
-    /// has no event `process_ticks` could find, so calling it is a scan of
-    /// three empty lists.
-    ///
-    /// That is 361 bodies once per shot on a crowd ruler, and all but a few
-    /// dozen of them are never touched at all — the shot reaches thirteen
-    /// bodies and the formation has 361.
+    /// has no event to find, and that question is asked of 361 bodies once per
+    /// shot on a crowd ruler while the shot reaches thirteen.
     fn idle(&self) -> bool {
         self.dots.is_empty() && self.heat.is_none() && self.blast.is_empty()
     }
@@ -5724,25 +5679,18 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
 /// How many times a FACTION bonus has been applied by the time a payload lands.
 ///
 /// Faction damage is re-applied at every DERIVATION step, and that is the whole
-/// rule — there is no special case anywhere, only a count of how far a number
-/// is from the hit that started it:
+/// rule — a count of how far a number is from the hit that started it: a direct
+/// hit is depth 1 (×f), a status the hit applied is 2 (×f²), a status a DERIVED
+/// instance applied is 3 (×f³).
 ///
-/// | payload | depth | faction |
-/// | --- | --- | --- |
-/// | a direct hit | 1 | ×f |
-/// | a status/DoT the hit applied | 2 | ×f² |
-/// | a status/DoT applied by a DERIVED damage instance | 3 | ×f³ |
+/// Depth 3 is arithmetic rather than a quirk to hardcode: a DoT is one step
+/// past its source, so a DoT at ×f³ PROVES an intermediate damage instance
+/// exists — which is how Primary Debilitate's extra status is known to deal one
+/// rather than merely add a stack.
 ///
-/// Depth 3 is not a quirk to hardcode. It is arithmetic: a DoT is always one
-/// step past its source, so a DoT at ×f³ PROVES its source was already at ×f²,
-/// i.e. that an intermediate damage instance exists.
-/// That is how Primary Debilitate's extra status is known to deal an
-/// instance and not merely add a stack — the wiki states ×f³ for it and
-/// never mentions the instance.
-///
-/// Writing it as a depth rather than as `fm2` and a future `fm3` is what keeps
-/// the next spreading mechanic (melee Influence, Secondary Encumber) from
-/// inventing its own multiplier.
+/// A depth rather than `fm2` and a future `fm3` is what keeps the next
+/// spreading mechanic (melee Influence, Secondary Encumber) from inventing its
+/// own multiplier.
 const DEPTH_HIT: u32 = 1;
 const DEPTH_PROC: u32 = 2;
 /// A status applied by a damage instance that was itself derived from a hit.
@@ -5825,15 +5773,11 @@ pub const DEBILITATE_STACKS: usize = 10;
 /// - roll `chance` (0.5 at rank 0 → 1.0 at rank 5)
 /// - pick between the two components 50/50
 ///
-/// **The threshold is where BLAST stopped being a special case.** Reading it as
-/// "already holds ten" made the arcane dead on Blast and only on Blast —
-/// reaching ten DETONATES and drains every stack (detonate.yaml), so a
-/// pre-application count is 0..=9 forever and no eleventh application exists to
-/// wait for. That was patched here as an `if proc == Blast` for two days. It is
-/// not a Blast rule: the tenth APPLICATION is the trigger for every
-/// combination, Blast is simply the one where the difference is the whole
-/// mechanic rather than one shot, and the owner reports it firing about as often
-/// as anything else. MEASUREMENTS M34.
+/// **The threshold is why BLAST is not a special case.** Read as "already holds
+/// ten" it is dead on Blast and only on Blast — reaching ten DETONATES and
+/// drains every stack, so a pre-application count is 0..=9 forever. The tenth
+/// APPLICATION is the trigger for every combination; Blast is simply where the
+/// difference is the whole mechanic rather than one shot. MEASUREMENTS M34.
 ///
 /// Once per DAMAGE INSTANCE, which is what the wiki's own note about beams
 /// describes: "only activate once per damage instance, making it less
@@ -6065,37 +6009,18 @@ fn dot_cap_for(p: &TargetParams, dtype: DamageType) -> Option<usize> {
 /// HOW MANY INSTANCES OF ONE DoT FAMILY A BODY CAN CARRY — and the answer is
 /// only ever "ten" for GAS.
 ///
-/// This was TEN for all four families, generalised from the Gas page's *"Up to
-/// 10 instances of the effect can stack on the same target"*. That sentence is
-/// the one place the number is a STACK cap; the other three pages say the
-/// opposite in as many words, and the ten they mention is a DISPLAY limit on
-/// the game's floating damage numbers (re-read 2026-08-21):
+/// TEN IS THE GAS PAGE'S AND NOBODY ELSE'S: *"Up to 10 instances of the effect
+/// can stack on the same target … Any instances after the 10th will REPLACE THE
+/// OLDEST"* — a real cap, and FIFO. Slash and Toxin say each instance keeps its
+/// own timer and that ten is how many "tick numbers are actually SHOWN … to
+/// save performance"; Electricity states no cap at all. Reading the Gas
+/// sentence as a class rule is the Condition Overload lesson in another
+/// mechanic, and it costs a Torid 34 live Gas instances where the game allows
+/// ten.
 ///
-///   Slash:       *"Multiple instances of the effect can stack on the same
-///                target, with each instance having its own timer, but only up
-///                to 10 tick numbers are actually SHOWN, the rest are hidden to
-///                save performance."*
-///   Toxin:       *"Multiple instances … can stack on the same target, with
-///                each instance having its own timer. To preserve game
-///                performance, a maximum of 10 tick numbers are SHOWN at once."*
-///   Electricity: *"Multiple instances of the effect can stack with each
-///                instance having its own timer."* — no cap stated at all.
-///   Gas:         *"Up to 10 instances of the effect can stack on the same
-///                target … Any instances after the 10th will REPLACE THE
-///                OLDEST."* — a real cap, and FIFO, which is what
-///                `push_dot_capped` already does.
-///
-/// It is the Condition Overload lesson in another mechanic: a rule read off ONE
-/// page and applied to a class. The two halves were wrong in opposite
-/// directions — the area path capped all four at ten, and the direct path
-/// capped none of them, so a Torid carried 34 live Gas instances where the game
-/// allows 10.
-///
-/// COST: the cap was also what bounded the work, since `process_ticks` walks a
-/// body's list once per shot. Gas is the family that AREA-spreads to every
-/// neighbour, so it is the one whose list could grow fastest — and it is the
-/// one that keeps its cap. The other three are handed out per hit, which is
-/// already bounded by the fire rate.
+/// The cap is also what bounds the work, since `process_ticks` walks a body's
+/// list once per shot. Gas is the family that AREA-spreads to every neighbour,
+/// so it is the one whose list grows fastest — and the one that keeps a cap.
 fn dot_family_cap(dtype: DamageType) -> Option<usize> {
     match dtype {
         DamageType::Gas => Some(TEN_STACK_CAP),
@@ -6722,54 +6647,16 @@ fn settle_procs(
             if let Some(part) =
                 debilitate_split(proc, stacks_before + 1, params.arcane.debilitate_chance, rng)
             {
-                // THE SPLIT PROC IS AN ORDINARY PROC.
-                // Nothing about it is special-cased: it enters the same match
-                // below, takes the same `push_dot`, and picks up its OWN
-                // element bracket — a Corrosive that splits into Toxin is
-                // scaled by the TOXIN
-                // mod bonus, and by 1.0 when the build carries no Toxin mod,
-                // which is what "otherwise you only get the base portion"
-                // means. The one thing that differs is the depth.
+                // THE SPLIT PROC IS AN ORDINARY PROC: same match, same
+                // `push_dot`, its OWN element bracket. Only the DEPTH differs,
+                // so the "separate damage instance" the wiki names is the
+                // status APPLICATION rather than a second number, and the extra
+                // faction layer is the ×f³ the page reports.
                 //
-                // So the "separate damage instance" the wiki names is the
-                // status APPLICATION, not a second damage number to add: what
-                // it buys is the extra faction layer, which is exactly the
-                // ×f³ the page reports and the only observable it predicts.
-                //
-                // WHAT BASE IT BURNS OFF IS OPEN — see MEASUREMENTS M33, and
-                // it is the whole of what is left to decide about this arcane.
-                //
-                // `mb_live` is `ModifiedBase`, "unmodded x (1 +
-                // BaseDamageBonuses)", which EXCLUDES the elemental portions
-                // (poison.yaml, quoting the wiki's Toxin page) — DE's rule for
-                // a status a WEAPON's own hit applied. A status an ABILITY
-                // applied reads that ability's own damage instead: Toxic Lash
-                // on a 200-damage weapon deals 78 and its proc ticks for 39,
-                // half of 78 and not half of 200.
-                //
-                // The community formula that decodes M33's 29551 is the
-                // ABILITY case — its parent is Cyte-09's Extra Hit — so it
-                // shows a Toxic-Lash-shaped chain and says nothing about a
-                // plain weapon shot. Reading the full
-                // modded hit here was shipped for one commit on that
-                // generalisation and reverted: it moved published board rows
-                // by up to +112% on an inference.
-                //
-                // DECIDED: the weapon is the SOURCE, so
-                // the base is computed the weapon's way. That is also the only
-                // one of the three readings that is documented for a
-                // weapon-applied status, and this engine
-                // matches the Toxin page's worked example to the digit.
-                //
-                // WHAT IS STILL OPEN IS THE EXPONENT, not the base — see M33.
-                // If the base is the weapon's, an ordinary weapon status
-                // double-dips faction and `f^3` looks like one layer too many. The wiki states the three outright and the source
-                // says the instance "has no damage"; those are consistent in
-                // exactly one way — the instance is real enough to add a layer
-                // and carries no damage,
-                // so the magnitude comes from the weapon and the layer is the
-                // only trace it leaves. Held at 3 because that is the stated
-                // number; M33 has the Bane on/off ratio that settles it.
+                // THE BASE IS THE WEAPON'S — `mb_live` is `ModifiedBase`, which
+                // EXCLUDES the elemental portions, DE's rule for a status a
+                // WEAPON's hit applied. The exponent is what is open:
+                // MEASUREMENTS M33.
                 settle_procs(
                     vec![part],
                     at,
@@ -6784,48 +6671,16 @@ fn settle_procs(
                         mb_live: extra_hit_status_base(0.0, mb_live),
                         crit_multiplier,
                         part_factor,
-                        // A SECOND ATTRITION ROLL, ON TOP OF THE HIT'S — and it
-                        // is a BUG of DE's, not a design.
+                        // A SECOND ATTRITION ROLL ON TOP OF THE HIT'S, and
+                        // a BUG of DE's rather than a design: one instance's
+                        // multipliers left on another instance's magnitude.
+                        // MEASUREMENTS M37 derives it.
                         //
-                        // MEASURED first: the DoT at the end of 直伤 -> 附加伤害
-                        // -> dot eats three faction layers and "441倍强袭损耗" =
-                        // 21x21. Then EXPLAINED, and the explanation is what
-                        // this line follows: the split fires a damage instance
-                        // whose damage is ZERO, and zero still gets multiplied
-                        // by that instance's own faction bracket and its own
-                        // Attrition roll. When the DoT is then computed, the
-                        // zero is replaced by the parent hit's value — but the
-                        // two multipliers already applied to it are left in.
-                        // That is the whole leak: one instance's multipliers on
-                        // another instance's magnitude.
-                        //
-                        // IT ROLLS EVEN WHEN THE HIT CRIT, which is the part of
-                        // the story that is NOT the intuitive one. The zero
-                        // instance carries no crit of its own — there is nothing
-                        // to crit — so "on a hit that is not critical" is
-                        // satisfied whatever the parent did. A
-                        // critting build therefore takes 1 x 21 here rather
-                        // than 441, and never 1.
-                        //
-                        // THE LITERAL `0` IS THE CLAIM, and it is the tier
-                        // rather than a rounded-down roll: the split is
-                        // permanently non-critical, not a zero-damage hit that
-                        // happens to be rolling crit against a zero. Those two
-                        // readings are identical in damage and opposite in
-                        // eligibility, and only the first leaves the perk live
-                        // on a build that crits every shot.
-                        //
-                        // ✅ MEASURED IN GAME: Phenmor,
-                        // crit chance pushed to guaranteed, Devouring
-                        // Attrition — every hit orange, and the Debilitate DoT
-                        // still comes out x21 some of the time. Under the other
-                        // reading it could never fire again. Two weapons now,
-                        // since the deduction came off the Felarx's
-                        // Devastating Attrition. MEASUREMENTS M37.
-                        //
-                        // `crit_multiplier` is still carried, in `InstanceScale` above:
-                        // the parent's value is what the zero is replaced BY, and
-                        // that value critted. MEASUREMENTS M37.
+                        // IT ROLLS EVEN WHEN THE HIT CRIT — the zero instance
+                        // has no crit of its own, so "on a hit that is not
+                        // critical" holds whatever the parent did. The literal
+                        // `0` is the CLAIM: permanently non-critical, not a
+                        // zero rolling crit.
                         attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng),
                         // Inherited unchanged: the split is the same weapon's,
                         // so a Blast it splits out detonates behind the same
@@ -7358,25 +7213,19 @@ struct SpreadShot {
 /// budget buys is HOW MANY, which `space::struck_along` decides and
 /// `space::BODY_MATERIAL_M` prices.
 ///
-/// A DIRECT HIT IN EVERY SENSE: it may HEADSHOT (owner — punch
-/// through does not stop a shot being aimed) and it is per PELLET, because
-/// every pellet that lands punches through. That makes it the opposite of a
-/// chain hop, which does neither.
-///
-/// ONLY FOR A WEAPON WITH NO BEAM. Where there IS one, `spread_from_seeds`
-/// already emits these bodies — they are its seeds, which is the wiki's own
-/// rule for the two together: *"Each enemy hit by the main beam from Punch
-/// Through can generate a new set of 3 chains."* Firing both would pay twice.
+/// A DIRECT HIT IN EVERY SENSE: it may HEADSHOT, and it is per PELLET because
+/// every pellet that lands punches through — the opposite of a chain hop, which
+/// does neither. ONLY FOR A WEAPON WITH NO BEAM: where there is one,
+/// `spread_from_seeds` already emits these bodies as its seeds, *"Each enemy
+/// hit by the main beam from Punch Through can generate a new set of 3
+/// chains"*, and firing both would pay twice.
 /// EVERY BODY A MELEE SWING REACHED PAST THE FIRST, at `FT^(n-1)`.
 ///
-/// `struck` is `melee_struck`'s answer — nearest first, the aimed body at index
-/// 0 — so `n` is simply the position in it. NEVER A HEADSHOT: this arena's
-/// melee weapons put nothing on a head at all (`Capability::AimsAtHead`), and
-/// even if they did a swing that carried on past one body is not aimed at the
-/// next.
-///
-/// A ZERO FOLLOW THROUGH IS A REAL WEAPON — nothing in the roster has one, but
-/// the arithmetic gives it the aimed body alone, which is what it means.
+/// `struck` is `melee_struck`'s answer, nearest first with the aimed body at
+/// index 0, so `n` is the position in it. NEVER A HEADSHOT: melee here puts
+/// nothing on a head (`Capability::AimsAtHead`), and a swing carrying on past
+/// one body is not aimed at the next. A ZERO follow through gives the aimed
+/// body alone, which is what it means.
 #[allow(clippy::too_many_arguments)]
 fn spread_from_follow_through(
     others: &mut [SpreadFoe],
@@ -7532,37 +7381,24 @@ fn spread_from_punch_through(
 /// A RICOCHET — the projectile arriving again, at a body it has not hit yet.
 ///
 /// The SEVENTH way a shot reaches a body, and the only one that is a second
-/// arrival of the whole shot rather than a share of it. Verbatim, from the
-/// Latron Incarnon Genesis page:
+/// arrival of the whole shot rather than a share of it: *"a traveling
+/// projectile that can ricochet off enemies and terrain, exploding up to 6
+/// times with a 4 meter radius, dealing damage once for any collision on
+/// enemies, and again for the explosion"*.
 ///
-///   *"Incarnon Form changes the weapon's fire mode from hitscan to a traveling
-///    projectile that can ricochet off enemies and terrain, exploding up to 6
-///    times with a 4 meter radius, dealing damage once for any collision on
-///    enemies, and again for the explosion."*
+/// TWO INSTANCES PER BOUNCE. This fires the COLLISION; the explosion rides the
+/// radial part and walks the same path (`bounces`). IN FULL — the page names no
+/// attenuation per bounce, only that *"each ricochet will cause the projectile
+/// to slow down"*.
 ///
-/// TWO INSTANCES PER BOUNCE, which is what "dealing damage once for any
-/// collision, and again for the explosion" says: the collision lands on the
-/// body it bounced off, and the explosion is an ordinary blast centred there.
-/// This function fires the COLLISION; the explosion rides the radial part and
-/// walks the same path (`bounces`), so both halves agree about where the
-/// projectile went.
+/// AND IT MAY HEADSHOT, at a flat chance the data states, alone among the
+/// spreads: a chain hop, a splash, an echo and a tendril all land on the body
+/// because none of them is the shot. A ricochet IS the shot and is not aimed
+/// either, so `headshot_pct` — a statement about the player's aim — is the
+/// wrong number for it.
 ///
-/// IN FULL. The page names no attenuation per bounce and names the one thing
-/// that does change — *"Each ricochet will cause the projectile to slow
-/// down"* — so a bounce deals the collision the aimed body took, undiminished.
-///
-/// AND IT MAY HEADSHOT, at a flat chance the data states. This is the one spread in the engine that can: a chain hop, a splash,
-/// an echo and a tendril all land on the body, because none of them is the shot
-/// and none is aimed. A ricochet IS the shot, and it is not aimed either — so
-/// the scenario's `headshot_pct`, which is a statement about the player's aim,
-/// is the wrong number for it and a flat chance is the honest one.
-///
-/// WHAT IT DOES NOT DO, and the weapons declare it: it does not bounce off
-/// TERRAIN (this arena has no walls, so a projectile that would have come off a
-/// surface finds the next body instead, and a fight against one body bounces
-/// nowhere), and it does not come back to a body it has already hit — the
-/// page's own note that repeated bounces *"seem to require multiple enemies"*
-/// is the reason, and it is the same rule a chain path follows.
+/// It does NOT bounce off terrain (this arena has no walls) and does not return
+/// to a body it has hit, which is the chain path's rule.
 #[allow(clippy::too_many_arguments)]
 fn spread_from_ricochet(
     others: &mut [SpreadFoe],
@@ -13589,27 +13425,17 @@ pub fn run_once_traced(
             // 8.25x) and the bracket multiplies the sum. Rides the part
             // context into DoT snapshots.
             // The additive bracket, and the ONE weapon whose innate share is
-            // not in it. An innate headshot bonus normally joins the bracket
-            // (the wiki lists Kuva Chakkhurr among the additive sources), but
-            // "Cernos Prime's headshot bonus is unique and stacks
+            // not in it: "Cernos Prime's headshot bonus is unique and stacks
             // MULTIPLICATIVELY with Primary Deadhead's headshot bonus" — a
-            // per-weapon anomaly, carried on the weapon rather than inferred
-            // from anything about it. On a 3x head with Primary
-            // Deadhead that is 3 x 1.3 x 1.5 = 5.85x, against 5.4x additive.
-            // LINGERING JUDGEMENT's open window, in the ADDITIVE bracket:
+            // per-weapon anomaly carried on the weapon. On a 3x head with
+            // Deadhead that is 3 x 1.3 x 1.5 = 5.85x against 5.4x additive.
+            // LINGERING JUDGEMENT and SEQUENTIAL SKULLBUSTER are ADDITIVE:
             // "Headshot damage bonus stacks additively with Primary Deadhead's
-            // headshot damage bonus" (wiki,). So it sums with
-            // the arcane's before the bracket is spent — never multiplies it —
-            // which is why a Deadhead build gets much less than +50% out of it.
-            //
-            // It sits with the ARCANE's term rather than the weapon's in both
-            // branches, because that is the group the card names. The
-            // multiplicative branch is Cernos Prime's anomaly and no weapon
-            // carries both.
-            // SEQUENTIAL SKULLBUSTER joins Lingering Judgement here, in the
-            // same additive bracket and for the same reason: every innate
-            // headshot source the wiki lists is additive with Primary
-            // Deadhead's, and only Cernos Prime's is called out as unique.
+            // headshot damage bonus", so they sum with the arcane's before the
+            // bracket is spent — which is why a Deadhead build gets much less
+            // than +50% out of one. They sit with the ARCANE's term because
+            // that is the group the card names; no weapon carries both a
+            // multiplicative innate and one of these.
             let streak_bonus = match params.headshot_streak {
                 Some(s) if t < streak_expiry => s.value,
                 _ => 0.0,
@@ -13683,62 +13509,20 @@ pub fn run_once_traced(
                     1.0
                 };
 
-            // ---- ATTACK PARTS ----------------------------------------
-            // A projectile can carry TWO damage instances: the direct hit
-            // and, when the weapon declares one, the radial explosion. They
-            // are resolved SEPARATELY because they ARE separate damage —
+            // ---- ATTACK PARTS (MECHANICS §7) -------------------------
+            // A projectile carries TWO instances where the weapon declares a
+            // radial, resolved SEPARATELY because they ARE separate damage —
             // wiki (Laetum): "Initial hit and explosion apply status
-            // separately". Each rolls its own crit and its own status draw
-            // from its OWN damage vector.
-            //
-            // The per-stage bindings SHADOW the direct-hit names, so the
-            // proc-application block further down serves whichever instance
-            // is in flight without knowing which it is.
-            //
-            // What the radial stage does differently (MECHANICS §7):
-            //   · no body-part multiplier — an explosion never headshots,
-            //     so it also never charges a weakpoint gauge and never
-            //     feeds headshot-gated buffs;
-            //   · no Condition Overload — CO is direct-damage only. It
-            //     still takes the arcane's live base-damage bucket, which
-            //     shares `co_mult`'s bracket on the direct side;
-            //   · no forced procs — those are declared per attack part
-            //     (Astilla: the direct hit forces Impact, the radial does
-            //     not);
-            //   · falloff is 1.0 here: the projectile detonates ON the
-            //     target, so the epicentre distance is zero.
-            // ...and ONCE PER PULL rather than per pellet where the weapon
-            // says so. A radial normally rides its projectile, so two
-            // projectiles detonate twice; the Burston's Incarnon is the
-            // exception the wiki states outright ("The Radial Attack does not
-            // benefit from Multishot bonuses"), and firing it on the first
-            // pellet only is exactly that.
-            // FROM THE ACTIVE FORM, for the same reason as `co_mult_radial`
-            // above — this is the line that fired it (M32).
-            // ---- WHERE THIS PELLET WENT ------------------------------
-            // Spread is an ANGLE, so what it costs is a function of range: the
-            // same cone that cannot miss at point blank is metres wide across a
-            // room. The offset is how far from the target's centre this pellet
-            // crossed its plane.
-            //
-            // THE ANGLE IS DRAWN UNIFORM OVER [0, 2 x spread], which has mean
-            // `spread` — the stat is DEFINED as an average ("Average Spread =
-            // (Minimum + Maximum) / 2", wiki `Accuracy`), and one number cannot
-            // say more than its own mean. The direction around the axis is not
-            // drawn at all: the target is a circle, so only the magnitude of
-            // the deviation decides anything.
-            //
-            // NOT DRAWN AT ALL unless a miss is possible — no transcribed
-            // accuracy, a weapon that lands on the reticle, or a fight at point
-            // blank all skip it. That is what keeps `d.aim` untouched in every
-            // fight this engine ran before it had a range, and therefore keeps
-            // every golden value and every board row exactly where it was.
-            //
-            // IT LEAVES THE MUZZLE, which is a point on the player's own
-            // circumference facing the target — so the leg here is one radius
-            // in from the distance between two centres. It is the ray-circle
-            // test's parameter and NOT a flight; what the shot flies is the gap
-            // below (`space::range_to_centre`,).
+            // separately". The per-stage bindings SHADOW the direct-hit names,
+            // so the proc block below serves whichever is in flight. The radial
+            // fires ONCE PER PULL where the weapon says so, from the ACTIVE
+            // form (M32).
+            // ---- WHERE THIS PELLET WENT (MECHANICS §11) --------------
+            // Spread is an ANGLE, so what it costs is a function of range.
+            // Drawn uniform over [0, 2 x spread], whose mean is the stat's own
+            // definition; the direction is not drawn, because the target is a
+            // circle. NOT DRAWN AT ALL unless a miss is possible, which is what
+            // leaves `d.aim` untouched in every fight with no range in it.
             let range = params.range_to_centre();
             let gap_m = params.gap();
             // HOW FAR THE TARGET ALREADY IS FROM THE AIM LINE, before a degree
@@ -24615,51 +24399,17 @@ mod tests {
     }
 
     /// A VOLLEY SETTLES PELLET BY PELLET, AND EVERY INSTANCE RE-READS THE
-    /// TARGET — measured in game.
+    /// TARGET. The four popped numbers and the arithmetic that forces this
+    /// ordering out of them are MEASUREMENTS M62; the assertion pins the
+    /// numbers rather than the rule, so any of the three regressing reddens it.
     ///
-    /// A weapon whose pellets each carry an explosion, one Viral damage mod, an
-    /// effect forcing a Viral proc on every instance, 110% multishot, and a
-    /// body with no mitigation at all. Four numbers popped, and the target
-    /// finished on four Viral stacks:
-    ///
-    /// ```text
-    /// 200   450   1200   1500
-    /// ```
-    ///
-    /// # The order is FORCED by the arithmetic
-    ///
-    /// The two instances are 200 and 600 — the weapon's own 1:3 — and Viral is
-    /// +100% on the first stack and +25% on each after it, so the ladder an
-    /// instance can read is 1 / 2 / 2.25 / 2.5. Divide the four numbers by the
-    /// two bases and exactly one assignment survives:
-    ///
-    /// | # | instance | stacks BEFORE it | Viral | damage |
-    /// |---|---|---|---|---|
-    /// | 1 | pellet 1 direct | 0 | x1.00 | 200 |
-    /// | 2 | pellet 1 radial | 1 | x2.00 | 1,200 |
-    /// | 3 | pellet 2 direct | 2 | x2.25 | 450 |
-    /// | 4 | pellet 2 radial | 3 | x2.50 | 1,500 |
-    ///
-    /// 200 cannot be an explosion (that would need x0.667, and stacks only
-    /// climb) and neither can 450 (x0.75, below the x2.00 the second number has
-    /// already used), so the two small numbers are the COLLISIONS and the two
-    /// large ones the EXPLOSIONS. From there only one ordering has multipliers
-    /// that climb.
-    ///
-    /// # It pins three things, and the third is why it is a golden test
-    ///
-    /// * **PELLET-MAJOR.** A pellet resolves its own explosion before the next
-    ///   pellet's collision. Stage-major — every collision, then every
-    ///   explosion — would put pellet 2's direct second at `200 x 2.00 = 400`,
-    ///   which is not one of the four numbers, while `600 x 2.00 = 1,200` is.
-    /// * **AN INSTANCE DOES NOT AMPLIFY ITSELF.** The first collision reads
-    ///   x1.00: its own forced proc lands after it has been settled.
-    /// * **EVERY INSTANCE RE-READS THE TARGET** — not every shot, and not even
-    ///   every pellet. Pellet 1's explosion already reads the stack pellet 1's
-    ///   collision left one instant earlier. A mitigation snapshot hoisted out
-    ///   of the instance loop for speed would leave every number in a volley
-    ///   reading the stacks the volley STARTED with; on a status build that is
-    ///   a few per cent, in the direction of "this build is good", and it is
+    /// * **PELLET-MAJOR** — a pellet resolves its own explosion before the next
+    ///   pellet's collision.
+    /// * **AN INSTANCE DOES NOT AMPLIFY ITSELF** — the first collision reads
+    ///   x1.00, because its own forced proc lands after it is settled.
+    /// * **EVERY INSTANCE RE-READS THE TARGET**, not every shot and not even
+    ///   every pellet. A mitigation snapshot hoisted out of the instance loop
+    ///   for speed is a few per cent in the "this build is good" direction, and
     ///   invisible in every mean this engine reports.
     #[test]
     fn a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target() {
@@ -25630,42 +25380,28 @@ mod tests {
     /// skips them a stale key advances its Dot a second time and BURNS a tick,
     /// so the damage comes out LOW rather than double.
     ///
-    /// The density is what makes this test worth having: eight forced procs a
-    /// shot at 10/s holds hundreds of stacks, well past the 32 that switches
-    /// paths. At one proc a shot the fixture never leaves the scan and the
-    /// guard is dead code the test cannot see — it would pass identically with
-    /// the guard removed.
-    ///
-    /// Measured: 48,000 with the guard, 47,400 without — sixteen burnt ticks.
+    /// The DENSITY is what makes it worth having: eight forced procs a shot at
+    /// 10/s holds hundreds of stacks, well past the 32 that switches paths. At
+    /// one proc a shot the fixture never leaves the scan and the guard is dead
+    /// code the test cannot see. Measured: 48,000 with it, 47,400 without —
+    /// sixteen burnt ticks.
     /// THE RECORD IS THE WHOLE FIGHT — every number, and nothing invented.
     ///
-    /// This is the assertion the combat record exists for, and it is the one
-    /// that makes it a LEDGER rather than a report: the effective damage of
-    /// every event in the stream must add up to the run's own damage total. A
-    /// damage site that moved a pool and recorded nothing fails it low, and one
-    /// that recorded an instance twice fails it high — neither shows up in any
-    /// aggregate this engine reports, because both are already inside the mean.
-    ///
-    /// THE FIXTURE IS DELIBERATELY BUSY: multishot, crits, a weak point, a
-    /// Slash bleed and a Heat burn, so the stream is exercising the direct
-    /// path, the status path and the consolidated-tick path at once rather than
-    /// proving the property about one of them.
+    /// The assertion the combat record exists for, and what makes it a LEDGER
+    /// rather than a report: the effective damage of every event must add up to
+    /// the run's own total. A site that moves a pool and records nothing fails
+    /// it low, one that records twice fails it high, and neither shows up in
+    /// any aggregate here — both are already inside the mean.
     /// THE DAMAGE METER'S PARTS ADD UP TO THE WHOLE.
     ///
-    /// `SourceDamage` is the one family of aggregates that is NOT behind
-    /// `ledger`'s door, and this is why it does not have to be. The totals are
-    /// one question with one answer, so a private field and a single `book`
-    /// closes them; the buckets are EIGHT differently shaped answers — two of
-    /// them split a whole damage VECTOR across a faction column — so a
-    /// descriptor carrying all of that to `settle` would move the shapes rather
-    /// than remove them.
-    ///
-    /// What the door would guarantee, this asserts: every instance is
-    /// credited to exactly one bucket, so a site that books damage and forgets
-    /// its bucket shows up as parts that no longer sum to the whole. The
-    /// fixture is deliberately busy — multishot, crits, a weak point, a Slash
-    /// bleed, a Heat burn and an explosion — so the direct, radial and status
-    /// paths are all live rather than one of them.
+    /// `SourceDamage` is the one family of aggregates NOT behind `ledger`'s
+    /// door: the totals are one question with one answer, while the buckets are
+    /// EIGHT differently shaped ones — two split a damage VECTOR across a
+    /// faction column — so a descriptor carrying that to `settle` would move
+    /// the shapes rather than remove them. What the door would guarantee, this
+    /// asserts: every instance is credited to exactly one bucket. Both fixtures
+    /// are deliberately busy, so the direct, radial and status paths are live
+    /// rather than one of them.
     #[test]
     fn the_damage_meters_parts_add_up_to_the_whole() {
         let mut p = DummyParams {

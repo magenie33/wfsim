@@ -25,6 +25,7 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const NL = String.fromCharCode(10);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // LICENSE is the AGPL text verbatim and is nobody's to edit.
 const EXEMPT = new Set(["docs/MEASUREMENTS.md", "scripts/check_comment_style.mjs", "LICENSE"]);
@@ -128,39 +129,51 @@ check("comment style ...and no note outlives its last use",
 // ---------------------------------------------------------------------------
 // A COMMENT IS A CONSTRAINT, NOT AN ESSAY.
 //
-// Past about a dozen lines a block has stopped stating a rule and started
-// explaining a subject, which is what `docs/` is for — and an explanation in
-// two places is two explanations that drift. The ceiling counts BLOCKS over the
-// limit rather than lines, so splitting one essay into two does not pass.
+// Two ratchets, and neither counts blocks over twelve lines — that number GOES
+// UP when one essay is split into two well-sized comments, which is the
+// improvement, so it is a metric a fix can fail.
 //
-// A ratchet rather than a hard cap, because a handful of blocks genuinely are
-// evidence: a verbatim wiki table, a measured series. Those move to `docs/`
-// with a one-line reference when they are touched, and the ceiling falls.
-const BLOCK_LIMIT = 12;
-const BLOCK_CEILING = 860;
+//   ESSAYS — blocks over twenty lines. Past twenty a block has stopped stating
+//   a rule and started explaining a subject, which is what `docs/` is for, and
+//   an explanation in two places is two explanations that drift. Measured: the
+//   band above twenty is a fifth of the blocks over twelve and five times the
+//   lines, while 321 blocks are THIRTEEN TO FIFTEEN and account for 596 lines
+//   between them. This is the number being driven to zero.
+//
+//   TOTAL COMMENT LINES — monotone, and it cannot be gamed by splitting.
+//
+// Both may only FALL. Lower them whenever a pass removes some; never raise one
+// to make a red run green, which is the one edit this file exists to refuse.
+const ESSAY_LIMIT = 20;
+const ESSAY_CEILING = 259;
+const LINE_CEILING = 69_483;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
-let longBlocks = 0;
+let essays = 0;
+let commentLines = 0;
 const worst = [];
 for (const rel of files) {
   if (rel.endsWith(".md") || rel.endsWith(".html") || rel.endsWith(".css")) continue;
   let src;
   try { src = readFileSync(resolve(ROOT, rel), "utf8"); } catch { continue; }
   let run = 0, start = 0;
-  const lines = src.split("\n");
+  const lines = src.split(NL);
   for (let i = 0; i <= lines.length; i += 1) {
     if (i < lines.length && LINE_COMMENT.test(lines[i]) && lines[i].trim() !== "#") {
       if (run === 0) start = i + 1;
       run += 1;
+      commentLines += 1;
       continue;
     }
-    if (run > BLOCK_LIMIT) { longBlocks += 1; worst.push(`${rel}:${start} (${run})`); }
+    if (run > ESSAY_LIMIT) { essays += 1; worst.push(`${rel}:${start} (${run})`); }
     run = 0;
   }
 }
 worst.sort((a, b) => Number(b.match(/\((\d+)\)$/)[1]) - Number(a.match(/\((\d+)\)$/)[1]));
-check(`comment style blocks over ${BLOCK_LIMIT} lines (${longBlocks} ≤ ${BLOCK_CEILING})`,
-  longBlocks <= BLOCK_CEILING,
-  `${longBlocks} blocks, longest: ${worst.slice(0, 4).join(", ")}`);
+check(`comment style essays over ${ESSAY_LIMIT} lines (${essays} ≤ ${ESSAY_CEILING})`,
+  essays <= ESSAY_CEILING,
+  `${essays} blocks, longest: ${worst.slice(0, 4).join(", ")}`);
+check(`comment style total comment lines (${commentLines.toLocaleString()} ≤ ${LINE_CEILING.toLocaleString()})`,
+  commentLines <= LINE_CEILING, `${commentLines} lines`);
 
 // A ratchet nobody lowers is a ratchet that stops meaning anything, so a run
 // that is comfortably under says so rather than passing in silence.
