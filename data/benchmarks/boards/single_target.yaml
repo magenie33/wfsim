@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3806
+submissions: 3812
 engine: b5f42fe94b372fdbb9268cb0b3a7747f88fd9571
 entries:
   - weapon: acceltra_prime
@@ -12297,6 +12297,15 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
+    score: 2.348459942416726
+    fp: f2cf56988b669ff4
+    mods: [split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
     score: 2.336205771492443
     fp: 78ca9433d35d48e3
     mods: [split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
@@ -12396,6 +12405,14 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: verglas_prime
     mode: base
+    score: 2.042671076932322
+    fp: a0eaaa39bf409a3f
+    mods: [heavy_caliber, split_chamber, serration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: verglas_prime
+    mode: base
     score: 2.041485424109794
     fp: b3a6aa93f37c2d74
     mods: [heavy_caliber, split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
@@ -12477,6 +12494,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
+    score: 1.816927325371029
+    fp: a0392644c7cd5969
+    mods: [split_chamber, serration, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: verglas_prime
+    mode: base
     score: 1.8097173647601348
     fp: 954b94eed366ae81
     mods: [galvanized_chamber, serration, hammer_shot, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, riven]
@@ -12493,6 +12518,14 @@ entries:
       bonuses: [damage, heat, multishot]
       malus: critical_damage
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 1.7362531338735026
+    fp: f2cf56988b669ff4
+    mods: [split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: verglas_prime
     mode: base
     score: 1.7215726714437931
@@ -12549,6 +12582,14 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
+    score: 1.5187568835251073
+    fp: c3b0ba32e072eb4e
+    mods: [heavy_caliber, serration, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: verglas_prime
+    mode: base
     score: 1.45291064955833
     fp: 6a35e3fb8314ab5e
     mods: [split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
@@ -12574,6 +12615,14 @@ entries:
       bonuses: [damage, heat]
       malus: critical_chance
       rolls: [1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 1.3900293329490274
+    fp: f4594d8864f7e0f7
+    mods: [split_chamber, serration, magnetic_capacity, primed_cryo_rounds, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: verglas_prime
     mode: base
     score: 1.3392491655327392

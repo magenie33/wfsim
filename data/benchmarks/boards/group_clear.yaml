@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3806
+submissions: 3812
 engine: b5f42fe94b372fdbb9268cb0b3a7747f88fd9571
 entries:
   - weapon: acceltra_prime
@@ -7372,6 +7372,15 @@ entries:
     score: 3.7508629366940136
     fp: ded7482555512e50
     mods: [split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.687093335743076
+    fp: b905155e2b238822
+    mods: [split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds, riven]
     riven:
       bonuses: [damage, heat, multishot]
       malus: damage_to_infested
