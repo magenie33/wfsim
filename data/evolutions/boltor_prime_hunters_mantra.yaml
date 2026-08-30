@@ -23,12 +23,7 @@ effects:
   - kind: punch_through_bonus
     value: 4.0
     condition: channeling
-  # …and the other half of the same bullet, WHICH NOW PAYS. It was
-  # filed `no_distance` on the reasoning that accuracy only matters where a shot
-  # can miss and nothing here spread or travelled — both halves of which stopped
-  # being true when the arena got a range: a pellet draws inside this weapon's
-  # own cone and +40% accuracy narrows it. Worth nothing at point blank, which
-  # is where both boards are scored, and real at any distance.
+  # see notes: accuracy_half_now_pays
   - kind: gated_by_tenno
     condition: channeling
     grant: accuracy_bonus

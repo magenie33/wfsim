@@ -148,6 +148,13 @@ notes:
   catalog_says_aoe_part: |
     THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
     no area part does. Verbatim (docs/CATALOGS.md §1):
+  ghosts_are_counted_not_fought: |
+    A CHARGED-SHOT KILL LEAVES A GHOST, and this counts them and nothing else.
+    Seven seconds apiece, within 50 m of the wielder, one per body — so a shot
+    that punches through and finishes three leaves three. What a ghost DOES is
+    not modelled: it neither attacks nor blocks a shot of yours (measured), so
+    there is nothing for the fight to read back, and the run reports how many
+    were left standing and the most that stood at once.
   infinite_body_punch_through: |
     INNATE INFINITE BODY PUNCH THROUGH — the punch-through page's own class,
     "weapons that shoot wide projectiles or a stream of particles … pierce an
@@ -195,6 +202,38 @@ notes:
     shot could only reach the body it hit and nothing could miss; the arena has
     formations and a range, so punch through crosses bodies
     (`space::struck_along`) and accuracy narrows the cone a pellet draws inside.
+  warframe_ability_buff_not_a_build: |
+    A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build. Not a mod, not
+    an arcane, not a weapon perk: a thing another actor (or the player's own
+    frame) does to this weapon for a while. It belongs to the SCENARIO, and the
+    BOARD carries none of these.
+  accuracy_half_now_pays: |
+    …AND THE OTHER HALF OF THE SAME BULLET NOW PAYS. It was filed `no_distance`
+    on the reasoning that accuracy only matters where a shot can miss and
+    nothing here spread or travelled — both halves of which stopped being true
+    when the arena got a range: a pellet draws inside this weapon's own cone and
+    the bonus narrows it. Worth nothing at point blank, which is where both
+    boards are scored, and real at any distance.
+  reavers_rapture_no_clock: |
+    A STACKING BUFF WITH NO CLOCK — the same perk the Burston carries, on a
+    weapon that is also a burst. Held until something takes it rather than
+    timing out.
+
+    FOUR STACKS HERE, five on the Burston: each family's own card states its
+    own cap, and this one's is in the notes cell rather than the effect column.
+    "Bonus is additive with other sources of base damage such as Serration", so
+    the payload joins the base-damage bucket.
+
+    THE TRIGGER IS A COMPLETED BURST and the moment is its LAST ROUND, so the
+    burst that earns a stack does not carry it. Both Sybaris forms are bursts —
+    the Incarnon one included — so the trigger means the same thing in each,
+    and nothing has to be said about the form.
+
+    ALL THREE VARIANTS, and the raw table is what says so: the row's variant
+    cells are one `colspan="3" | -`, which is this table's way of writing "no
+    per-variant difference" (the same convention the Burston file cites). Two
+    readings of the RENDERED page called it Prime-exclusive and base-exclusive
+    respectively; the markup is not ambiguous.
   charge_x2_is_the_primes_alone: |
     THE CHARGE x2 IS THE PRIME'S ALONE. On the Ballistica Prime a released shot
     takes (1 + charge progress) and a FULL charge is the x2 end of it, so that

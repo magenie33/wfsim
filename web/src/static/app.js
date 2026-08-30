@@ -15920,6 +15920,10 @@ function renderResults(r, testedAt) {
     kpi("Pellets crit", pc(r.crit_rate), "crit_rate"), kpi("Orange+", pc(r.big_crit_rate), "big_crit_rate"),
     kpi("Procs", n0(r.procs), "procs"), kpi("Shots", n0(r.shots), "shots"),
     kpi("Reloads", n0(r.reloads), "reloads"), kpi("Transforms", n0(r.transforms), "transforms"),
+    // COUNTED, NOT FOUGHT. The row is drawn only where a weapon leaves
+    // something standing, and it says BOTH numbers because neither is the
+    // mechanic on its own: how many were left, and how many stood at once.
+    r.ghosts == null ? "" : kpi("Ghosts", `${n0(r.ghosts)} (${n0(r.ghosts_peak)} ${tr("at once")})`, "ghosts"),
   ].join("");
   // WoW-style damage meter: effective damage BY SOURCE
   // over the whole engagement — what actually hurt the target. The panel's

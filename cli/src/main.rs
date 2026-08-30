@@ -62,6 +62,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         range_m: f64::INFINITY,
         super_crit_on_status: None,
         weakpoint_stacks: None,
+        spawn_on_kill: None,
         enervate_stacks: 0,
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         // The historical calibration profile is a point-blank fight, and this

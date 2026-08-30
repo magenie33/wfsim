@@ -1,8 +1,4 @@
-# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
-#
-# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
-# player's own frame) does to this weapon for a while. It belongs to the
-# SCENARIO, and the BOARD carries none of these.
+# see notes: warframe_ability_buff_not_a_build
 
 # THE FIRST ONE THAT MOVES NO DAMAGE NUMBER AT ALL, and it is worth saying why
 # it belongs here anyway. Ammo efficiency divides what a shot costs the

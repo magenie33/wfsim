@@ -7,25 +7,7 @@ description: "On Full Burst Hit: +20% Damage, resets on Reload. Stacks up to 4x.
 selection: choose_one
 
 effects:
-  # A STACKING BUFF WITH NO CLOCK — the same perk the Burston carries, on a
-  # weapon that is also a burst. Held until something takes it rather than
-  # timing out.
-  #
-  # FOUR STACKS HERE, five on the Burston: each family's own card states its
-  # own cap, and this one's is in the notes cell rather than the effect column.
-  # "Bonus is additive with other sources of base damage such as Serration", so
-  # the payload joins the base-damage bucket.
-  #
-  # THE TRIGGER IS A COMPLETED BURST and the moment is its LAST ROUND, so the
-  # burst that earns a stack does not carry it. Both Sybaris forms are bursts —
-  # the Incarnon one included — so the trigger means the same thing in each,
-  # and nothing has to be said about the form.
-  #
-  # ALL THREE VARIANTS, and the raw table is what says so: the row's variant
-  # cells are one `colspan="3" | -`, which is this table's way of writing "no
-  # per-variant difference" (the same convention the Burston file cites). Two
-  # readings of the RENDERED page called it Prime-exclusive and base-exclusive
-  # respectively; the markup is not ambiguous.
+  # see notes: reavers_rapture_no_clock
   - kind: stacking_buff
     per_stack:
       base_damage_bonus: 0.20

@@ -2960,6 +2960,8 @@ pub struct DummyParams {
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
     /// See `loadout::WeaponBase::weakpoint_stacks` — the Knell's Death Knell.
     pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
+    /// See `loadout::WeaponBase::spawn_on_kill` — the Ballistica's ghosts.
+    pub spawn_on_kill: Option<crate::weapons_data::SpawnOnKillSpec>,
     /// Hemorrhage's status-conversion roll (per damage instance, max one).
     pub proc_conversion: Option<crate::loadout::ProcConv>,
     /// The equipped secondary arcane, resolved at its rank from
@@ -4180,6 +4182,7 @@ impl DummyParams {
             crit_damage_below_status_count: panel.crit_damage_below_status_count,
             super_crit_on_status: panel.super_crit_on_status,
             weakpoint_stacks: panel.weakpoint_stacks,
+            spawn_on_kill: panel.spawn_on_kill,
             beam_ramp_floor: panel.beam_ramp_floor,
             applies_microwave: panel.applies_microwave,
             independent_procs: panel.independent_procs,
@@ -4487,6 +4490,7 @@ impl Default for DummyParams {
             crit_chance_per_hit_held: false,
             super_crit_on_status: None,
             weakpoint_stacks: None,
+            spawn_on_kill: None,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             applies_microwave: false,
             independent_procs: &[],
@@ -5185,6 +5189,10 @@ pub struct RunResult {
     pub field_ticks: u32,
     pub reloads: u32,    // magazine reloads performed
     pub transforms: u32, // TRANSMUTES into the Incarnon form (reverts don't count)
+    /// KILLS THAT LEFT SOMETHING STANDING — `spawn_on_kill`, one per body.
+    pub ghost_kills: u32,
+    /// The most standing at once — where the duration is visible.
+    pub ghosts_peak: u32,
     pub kills: u32,      // InstantRespawn deaths (0 with InfiniteHealth)
     /// …of which this many were taken DIRECTLY by a tendril — see
     /// [`RunResult::note_tendril_kills`]. Those spawn no tendril of their own,
@@ -5399,6 +5407,13 @@ fn weakpoint_ammo(
     spec.map_or(0.0, |w| {
         if pile.current(t, w.duration_seconds) > 0 { w.ammo_efficiency } else { 0.0 }
     })
+}
+
+/// DOES A KILL HERE LEAVE ONE STANDING? The weapon has to say so, and the body
+/// has to be inside the range the card names.
+fn leaves_one(ap: &DummyParams, from: crate::space::Vec2, body: crate::space::Vec2) -> bool {
+    ap.spawn_on_kill
+        .is_some_and(|g| (body.x - from.x).hypot(body.y - from.y) <= g.range_m)
 }
 
 fn ammo_efficiency(
@@ -6855,6 +6870,13 @@ impl SpreadBy {
     fn spawns_a_tendril(self) -> bool {
         self != SpreadBy::Tendril
     }
+
+    /// IS THIS THE SHOT ITSELF? Punch through is the same round still
+    /// travelling, which is why a charged shot that finishes three bodies
+    /// leaves three ghosts. Everything else here is a second thing it produced.
+    fn is_the_shot_itself(self) -> bool {
+        self == SpreadBy::PunchThrough
+    }
 }
 
 /// ONE CHAIN OR SPLASH INSTANCE LANDING ON A BODY OTHER THAN THE AIMED ONE.
@@ -7014,6 +7036,9 @@ fn spread_hit(
     } else {
         r.sources.direct += eff;
         add_by_type(&mut r.sources.direct_by_type, vector, eff, &col);
+    }
+    if killed && by.is_the_shot_itself() && leaves_one(ap, params.player_at, spec.at) {
+        r.ghost_kills += 1;
     }
     if by.spawns_a_tendril() {
         r.note_kills(u32::from(killed), t);
@@ -11591,6 +11616,10 @@ pub fn run_once_traced(
     // arena (its damage on the beam's own target is cosmetic), so a tendril
     // kills nothing here and `r.kills` is precisely the qualifying set.
     let mut tendril_kill_mark = 0u32;
+    // WHAT THE KILLS LEFT STANDING, one expiry apiece. It exists to be
+    // COUNTED: nothing reads it back into the fight.
+    let mut ghosts: Vec<f64> = Vec::new();
+    let mut ghost_mark = 0u32;
     // Which kills the magazine refill has already paid out — see the spend
     // below for why this cannot be the same watermark.
     let mut refill_kill_mark = 0u32;
@@ -11898,6 +11927,22 @@ pub fn run_once_traced(
             // a tendril's own proc caused.
             let spawning = r.kills - r.kills_by_tendril;
             tendrils = (tendril_seed + (spawning - tendril_kill_mark)).min(params.tendril_max);
+        }
+
+        // …AND THE SAME MARK-AND-DIFF FOR WHAT IS STANDING. The kills were
+        // counted where they happened; this is where they become a duration.
+        // The DURATION is the weapon's, so it is read off whichever form
+        // carries it — the kills were already filtered by the form that fired.
+        let spawner = params
+            .spawn_on_kill
+            .or_else(|| params.cycle.as_ref().and_then(|c| c.base_form.spawn_on_kill));
+        if let Some(g) = spawner {
+            ghosts.retain(|e| *e > t);
+            for _ in 0..(r.ghost_kills - ghost_mark) {
+                ghosts.push(t + g.seconds);
+            }
+            ghost_mark = r.ghost_kills;
+            r.ghosts_peak = r.ghosts_peak.max(ghosts.len() as u32);
         }
 
         // HATA-SATYA's pile, the same mark-and-diff one block up with the
@@ -14360,6 +14405,12 @@ pub fn run_once_traced(
                 // crit, a weak point, or both — and "both" is its own number in
                 // game, not a crit with a multiplier on it.
                 r.note_kills(killed as u32, t);
+                // …AND WHAT THE KILL LEAVES STANDING. `direct` because a ghost
+                // is left by the shot rather than by anything it set off, and
+                // the range is the card's own ("within 50 meters of the user").
+                if killed && direct && leaves_one(ap, params.player_at, params.target_at) {
+                    r.ghost_kills += 1;
+                }
                 // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
                 // this is the only place that knows both halves of its
                 // condition: `head_direct` says the pellet landed in a head,
@@ -15706,6 +15757,10 @@ pub struct Summary {
     pub mean_dot_ticks: f64,
     pub mean_reloads: f64,
     pub mean_transforms: f64,
+    /// GHOSTS — how many a run left standing, and the most at once. Counted,
+    /// and nothing in the fight reads them back.
+    pub mean_ghosts: f64,
+    pub ghosts_peak: u32,
     pub mean_kills: f64,
     pub std_kills: f64,
     pub min_kills: u32,
@@ -15882,6 +15937,8 @@ pub struct Shard {
     dot_ticks: u64,
     reloads: u64,
     transforms: u64,
+    ghost_kills: u64,
+    ghosts_peak: u32,
     kills: u64,
     kills_sq: u64,
     kill_progress: f64,
@@ -15929,6 +15986,8 @@ impl Default for Shard {
             dot_ticks: 0,
             reloads: 0,
             transforms: 0,
+            ghost_kills: 0,
+            ghosts_peak: 0,
             kills: 0,
             kills_sq: 0,
             kill_progress: 0.0,
@@ -15972,6 +16031,8 @@ impl Shard {
         self.dot_ticks += o.dot_ticks;
         self.reloads += o.reloads;
         self.transforms += o.transforms;
+        self.ghost_kills += o.ghost_kills;
+        self.ghosts_peak = self.ghosts_peak.max(o.ghosts_peak);
         self.kills += o.kills;
         self.kills_sq += o.kills_sq;
         self.kill_progress += o.kill_progress;
@@ -16098,6 +16159,8 @@ pub fn shard(
         a.dot_ticks += u64::from(r.dot_ticks);
         a.reloads += u64::from(r.reloads);
         a.transforms += u64::from(r.transforms);
+        a.ghost_kills += u64::from(r.ghost_kills);
+        a.ghosts_peak = a.ghosts_peak.max(r.ghosts_peak);
         a.kills += u64::from(r.kills);
         a.kills_sq += u64::from(r.kills) * u64::from(r.kills);
         a.kill_progress += r.kill_progress;
@@ -16135,6 +16198,7 @@ impl Shard {
         let (effective, effective_sq, dot) = (self.effective, self.effective_sq, self.dot);
         let (procs, field_ticks, reloads, transforms) =
             (self.procs, self.field_ticks, self.reloads, self.transforms);
+        let (ghost_kills, ghosts_peak) = (self.ghost_kills, self.ghosts_peak);
         let dot_ticks = self.dot_ticks;
         let (kills, kills_sq) = (self.kills, self.kills_sq);
         let (kill_progress, kill_progress_sq) = (self.kill_progress, self.kill_progress_sq);
@@ -16191,6 +16255,8 @@ impl Shard {
         mean_dot_ticks: dot_ticks as f64 / n,
         mean_reloads: reloads as f64 / n,
         mean_transforms: transforms as f64 / n,
+        mean_ghosts: ghost_kills as f64 / n,
+        ghosts_peak,
         mean_kills: kills as f64 / n,
         std_kills: {
             let mean_k = kills as f64 / n;
@@ -27999,6 +28065,48 @@ mod tests {
     /// Read off the DAMAGE, which at 100% crit chance IS the multiplier, and
     /// dealt as IMPACT because the pile's other half raises status chance and
     /// an Impact proc deals no damage.
+    /// A KILL LEAVES ONE STANDING, AND NOTHING READS IT BACK. Three rules the
+    /// data could lose silently: the weapon must DECLARE it, the body must be
+    /// in range, and the PEAK is what a 7 s life is visible in.
+    #[test]
+    fn a_kill_leaves_a_ghost_standing_where_the_weapon_says_so() {
+        let spec = crate::weapons_data::SpawnOnKillSpec { seconds: 7.0, range_m: 50.0 };
+        let build = |declared: bool, metres_away: f64| DummyParams {
+            player_at: crate::space::Vec2::new(0.0, 0.0),
+            target_at: crate::space::Vec2::new(0.0, metres_away),
+            damage: DamageVector::new().with(DamageType::Impact, 5000.0),
+            fire_rate: 5.0,
+            magazine_size: 1e9,
+            infinite_reserve: true,
+            duration_seconds: 30.0,
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            body_parts: mono_body(1.0),
+            spawn_on_kill: declared.then_some(spec),
+            ..DummyParams::default()
+        };
+        let run = |p: &DummyParams| monte_carlo(p, 20, 0x6057);
+
+        // DECLARED: every kill leaves one, and they pile up while they last.
+        let on = run(&build(true, 10.0));
+        assert!(on.mean_kills > 10.0, "the fixture stopped killing: {}", on.mean_kills);
+        assert!((on.mean_ghosts - on.mean_kills).abs() < 1e-9,
+            "{} kills left {} standing", on.mean_kills, on.mean_ghosts);
+        assert!(on.ghosts_peak > 1, "a 7 s life should stack up: {}", on.ghosts_peak);
+
+        // NOT DECLARED: the same kills leave nothing.
+        let off = run(&build(false, 10.0));
+        assert!((off.mean_kills - on.mean_kills).abs() < 1e-9, "the control moved");
+        assert!((off.mean_ghosts).abs() < 1e-9, "undeclared, got {}", off.mean_ghosts);
+
+        // OUT OF RANGE: the card says 50 m, so a body standing at 60 leaves
+        // nothing — and dies at exactly the same rate, this arena having no
+        // falloff on the fixture.
+        let far = run(&build(true, 60.0));
+        assert!((far.mean_kills - on.mean_kills).abs() < 1e-9, "the control moved");
+        assert!((far.mean_ghosts).abs() < 1e-9, "out of range, got {}", far.mean_ghosts);
+    }
+
     #[test]
     fn death_knell_adds_its_stacks_to_the_finished_crit_multiplier() {
         let spec = crate::weapons_data::WeakpointStacksSpec {

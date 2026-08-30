@@ -13,9 +13,14 @@ transform_group: ballistica_prime
 transforms_to: ballistica_prime_incarnon
 
 # see notes: bulk_intake_stats_are
+# see notes: ghosts_are_counted_not_fought
+spawn_on_kill:
+  seconds: 7.0
+  range_m: 50.0
+
 unmodeled:
   - "a PARTLY charged shot is not modelled — releasing early fires a shot worth (1 + charge progress) times the Normal Shot, so a 50% charge deals 1.5x it, and this entry carries only the two ends of that ramp: no charge at all, and the full charge that fires this attack instead"
-  - "a charged-shot KILL leaves a GHOST of the enemy that fights beside you for 7 seconds — this arena holds one wielder and one target, so nothing is spawned and none of what a ghost would kill is counted here"
+  - "a GHOST is counted, not fought: a charged-shot kill leaves one for 7 seconds and the run reports how many stood, but what a ghost does is not modelled — it neither attacks nor blocks a shot of yours, so nothing in the fight reads it back"
 accuracy: 4
 disposition: 1.2
 polarities: [naramon, madurai, madurai]

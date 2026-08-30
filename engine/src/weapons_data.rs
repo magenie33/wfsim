@@ -1891,6 +1891,11 @@ pub struct WeaponSpec {
     /// WEAK-POINT STACKS — the Knell family's "Death Knell".
     #[serde(default)]
     pub weakpoint_stacks: Option<WeakpointStacksSpec>,
+    /// WHAT A KILL BY THIS ATTACK LEAVES STANDING — the Ballistica Prime's
+    /// ghosts. COUNTED AND NOTHING ELSE: see notes, and the entry's own
+    /// `unmodeled:` for what a ghost does that this does not.
+    #[serde(default)]
+    pub spawn_on_kill: Option<SpawnOnKillSpec>,
     /// The Ocucor's tendrils — see [`TendrilSpec`].
     #[serde(default)]
     pub tendrils: Option<TendrilSpec>,
@@ -2588,6 +2593,15 @@ pub fn polarity(name: &str) -> Polarity {
 /// afterwards, which is how Vigilante can carry it to a Tier-4 hit — so the
 /// lock binds the chance, not the ceiling.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct SpawnOnKillSpec {
+    /// How long one of them stands, seconds.
+    pub seconds: f64,
+    /// How far from the wielder a kill still leaves one, metres.
+    pub range_m: f64,
+}
+
+/// WEAK-POINT STACKS — the Knell family's "Death Knell".
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct WeakpointStacksSpec {
     pub max_stacks: u32,
     /// ONE CLOCK, from the last weak-point hit: when it falls due one stack is
@@ -3679,6 +3693,7 @@ pub fn base_panel_assembled(
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         super_crit_on_status: s.super_crit_on_status,
         weakpoint_stacks: s.weakpoint_stacks,
+        spawn_on_kill: s.spawn_on_kill,
         tendril_max: s.tendrils.map_or(0, |t| t.max),
         tendril_range_m: s.tendrils.as_ref().map_or(0.0, |t| t.range_m),
         tendril_acquire_deg: s.tendrils.as_ref().map_or(0.0, |t| t.acquire_deg),

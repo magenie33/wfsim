@@ -209,6 +209,8 @@ ui:
   "Hystrix Injection, the Hystrix-exclusive augment — a weapon-exclusive card outside the pools this roster loads": "「Hystrix Injection」，Hystrix 家族的专属增强 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "INFINITE BODY PUNCH THROUGH: the page grants this weapon 1.1 m of punch through AND unlimited penetration of BODIES specifically. The 1.1 m is transcribed and spends `space::BODY_MATERIAL_M` a body like every other weapon's, so the slug stops after two enemies here where in game it would cross the whole line": "无限穿透身体：页面给这把武器 1.1 米穿透，并且额外给了对「身体」的无限穿透。这里录入的是那 1.1 米，并且和其他武器一样每穿过一个身体扣掉 `space::BODY_MATERIAL_M`，所以这颗弹丸在这里穿过两个敌人就停了，而在游戏里它会穿过一整排"
   "Incarnon Form": 灵化形态
+  "Ghosts": 灵体
+  "at once": 同时在场
   "infinite": 无限
   "Normal Shot": 普通射击
   "Incarnon Genesis": 灵化之源
@@ -476,7 +478,7 @@ ui:
   "a benchmark build — measured under": 基准配装 —— 测试标准
   "a bigger magazine makes the reload LONGER here and the sim does not know it — shells are loaded one at a time, so Ammo Stock buys capacity and pays for it in reload": 弹匣越大装填越慢，模拟不知道这件事 —— 子弹是一发一发上的，所以弹药储存换来的容量要拿装填时间去付
   "a PARTLY charged shot is not modelled — releasing early fires a shot worth (1 + charge progress) times the Normal Shot, so a 50% charge deals 1.5x it, and this entry carries only the two ends of that ramp: no charge at all, and the full charge that fires this attack instead": 半蓄力射击尚未建模 —— 提前松手会打出一发相当于普通射击 ×(1 + 蓄力进度) 的子弹，所以 50% 蓄力是它的 1.5 倍；本条目只装了这条斜坡的两端：完全不蓄力，以及打出这一发的满蓄力
-  "a charged-shot KILL leaves a GHOST of the enemy that fights beside you for 7 seconds — this arena holds one wielder and one target, so nothing is spawned and none of what a ghost would kill is counted here": 蓄力射击造成的击杀会留下该敌人的幽灵，在你身边战斗 7 秒 —— 本场只有一个使用者和一个目标，所以这里不会召出任何幽灵，它们本该打出的伤害也一分没有计入
+  "a GHOST is counted, not fought: a charged-shot kill leaves one for 7 seconds and the run reports how many stood, but what a ghost does is not modelled — it neither attacks nor blocks a shot of yours, so nothing in the fight reads it back": 灵体只统计、不参战：蓄力射击的击杀会留下一个、持续 7 秒，本次运行会报告它们的数量，但灵体做什么没有建模 —— 它既不攻击，也不会挡住你的子弹，所以战斗里没有任何东西会读它
   "a cube left alone detonates after 9 seconds, which needs a miss and a clock this arena does not run": "无人理会的方块会在 9 秒后自行引爆，这需要一次打偏和一个本场并不运行的计时"
   "a direct hit forces a KNOCKDOWN and the explosion a RAGDOLL (module ForcedProcs) — neither is a damage type and this arena's enemies are neither knocked down nor thrown": "直接命中必定造成击倒、爆炸必定造成布娃娃（模块 ForcedProcs）—— 两者都不是伤害类型，而这个战场里的敌人既不会被击倒也不会被抛飞"
   "a direct hit forces a KNOCKDOWN whether or not the grenade explodes (wiki) — this arena's enemies are not knocked down, so the crowd control that makes this weapon safe to fire up close pays nothing here": "无论榴弹是否爆炸，直接命中都会造成击倒（维基）—— 这个战场里的敌人不会被击倒，所以那个让这把武器可以贴脸开火的控制效果在这里一分不值"

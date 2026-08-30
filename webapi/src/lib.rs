@@ -6569,6 +6569,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "timeline": m.curve.buckets()[..nb].to_vec(),
         "replay": replay,
         "transforms": m.transforms,
+        // COUNTED, NOT FOUGHT — `weapons_data::SpawnOnKillSpec`. Absent on
+        // every weapon that leaves nothing, so the page draws no row for them.
+        "ghosts": (m.ghost_kills > 0).then_some(m.ghost_kills),
+        "ghosts_peak": (m.ghost_kills > 0).then_some(m.ghosts_peak),
         "reloads": m.reloads,
         "duration": s.duration_seconds,
         "runs": s.runs,

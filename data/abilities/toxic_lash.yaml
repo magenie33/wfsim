@@ -1,8 +1,4 @@
-# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
-#
-# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
-# player's own frame) does to this weapon for a while. It belongs to the
-# SCENARIO, and the BOARD carries none of these.
+# see notes: warframe_ability_buff_not_a_build
 
 # AN EXTRA HIT (docs/EXTRA_HIT.md), and the wiki says so in as many words:
 # "Toxic Lash adds an extra Toxin attack that scales with weapon damage, before
