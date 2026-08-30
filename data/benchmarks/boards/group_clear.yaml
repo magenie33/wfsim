@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3812
-engine: b5f42fe94b372fdbb9268cb0b3a7747f88fd9571
+submissions: 3817
+engine: 9ac946c9e5f881d76f555dc4b45659e22f905e09
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -151,6 +151,17 @@ entries:
       rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: atomos
     mode: cycle
+    score: 48.61612799833476
+    fp: b7be64c51d2facf1
+    mods: [galvanized_diffusion, galvanized_shot, anemic_agility, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: atomos
+    mode: cycle
     score: 35.878705626275966
     fp: c2ef6882360a33c1
     exilus: primed_pistol_ammo_mutation
@@ -168,6 +179,17 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: critical_chance
       rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 33.020780729851886
+    fp: b7be64c51d2facf1
+    mods: [galvanized_diffusion, galvanized_shot, anemic_agility, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 0.9, 1.1, 1.1]
   - weapon: atomos
     mode: cycle
     score: 31.147995737674425
@@ -6596,6 +6618,17 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, primed_shred, rifle_elementalist, magnetic_capacity, riven, hellfire, thermite_rounds]
     arcanes: [primary_crux]
     valence: heat
+    riven:
+      bonuses: [cold, reload_speed, toxin]
+      malus: damage
+      rolls: [0.9, 0.9, 0.9, 0.9]
+  - weapon: tenet_glaxion
+    mode: base
+    score: 26.45203901661446
+    fp: c6a5c1c3317ecd71
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, rifle_elementalist, magnetic_capacity, riven, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+    valence: impact
     riven:
       bonuses: [cold, reload_speed, toxin]
       malus: damage
