@@ -12,7 +12,7 @@ description: "On Cold Status Effect: X% chance to spread that status to other en
 # worth a great deal in a crowd.
 effects:
   # 2D groundwork: a real stat with no SINGLE-TARGET damage
-  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  # payload — never `kind: unmodeled`, which throws the number away.
   # `audit_mod_effects` flags this CONDITIONAL-AS-FLAT, correctly: the spread
   # rolls on a Cold status. Flat anyway, for the same reason as Aerial Ace —
   # `CondBucket` holds damage buckets only, so a triggered multi-target stat

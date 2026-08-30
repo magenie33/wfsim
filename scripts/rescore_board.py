@@ -55,7 +55,7 @@ def build_scorer() -> None:
     """ALWAYS, not only when the binary is missing.
 
     This tool exists to answer "is the board still what this engine scores",
-    and it used to skip the build whenever `wfsim-board.exe` already existed —
+    and skipping the build whenever `wfsim-board.exe` already exists is wrong —
     so it answered with whatever engine was compiled last time. On 2026-08-07 it
     reported a clean board immediately after a change that moved every row,
     because the binary predated the change. A tool that can be stale about

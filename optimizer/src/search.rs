@@ -1,7 +1,7 @@
 //! THE SEARCH — one path at every scope.
 //!
-//! The optimizer used to enumerate the whole space and rank it. That works
-//! while the space fits: a 22-mod pool is 571,569 candidates and a browser can
+//! Enumerating the whole space and ranking it works while the space fits: a
+//! 22-mod pool is 571,569 candidates and a browser can
 //! walk it. It does not scale, because the space is superexponential
 //! (30 mods → 9.2 million, the full 60-mod pool → ~10⁹–10¹⁰) while one
 //! evaluation costs a full simulated engagement (~150/s single-threaded in

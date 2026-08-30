@@ -15,7 +15,7 @@ description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
 # build nothing to carry.
 effects:
   # 2D groundwork: a real stat with no SINGLE-TARGET damage
-  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  # payload — never `kind: unmodeled`, which throws the number away.
   - kind: ammo_conversion
     rank0: 0.05
     rankMax: 0.30

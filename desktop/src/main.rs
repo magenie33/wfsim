@@ -576,8 +576,8 @@ fn main() {
     let root = layout.current();
 
     if selftest {
-        // A DEADLINE FOR EVERY CHECK MODE. This used to live inside the payload
-        // verification below, which `--selftest-update` skips — leaving the one
+        // A DEADLINE FOR EVERY CHECK MODE, not one inside the payload
+        // verification below — `--selftest-update` skips that, leaving the one
         // mode that waits on a network with nothing to stop it. A check that
         // hangs is worse than one that fails: it reports nothing, and the
         // caller learns only that its own timeout expired.

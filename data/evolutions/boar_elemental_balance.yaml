@@ -24,9 +24,9 @@ effects:
   # and the base form fires eight of the first while the Incarnon form is one of
   # the second.
   #
-  # BOTH ARE THIS WEAPON'S. The pair used to carry the other variant's weapon
-  # status chances in a parenthetical, which was two mistakes at once: they are
-  # not this evolution's numbers at all, and they are not this file's weapon.
+  # BOTH ARE THIS WEAPON'S. Carrying the other variant's weapon status chances
+  # in a parenthetical is two mistakes at once: they are not this evolution's
+  # numbers at all, and they are not this file's weapon.
   # `flat_base_status_chance_by_form` picks by whether the entry carries an
   # `incarnon:` block, the same gate the magazine evolutions use.
   - kind: flat_base_status_chance_by_form

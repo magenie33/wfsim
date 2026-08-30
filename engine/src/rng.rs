@@ -46,8 +46,8 @@ impl Rng {
 /// ONE ENGAGEMENT'S RANDOMNESS, SPLIT SO THAT UNRELATED DECISIONS DO NOT MOVE
 /// EACH OTHER.
 ///
-/// Every roll used to come off one stream, which made the simulator's answer to
-/// "what does this mod change?" much noisier than the mod. A status chance high
+/// Every roll off ONE stream makes the simulator's answer to "what does this
+/// mod change?" much noisier than the mod. A status chance high
 /// enough to land a second proc draws one more number to pick its element — and
 /// from there every crit roll, every body part, every fractional multishot in
 /// the rest of the engagement is a DIFFERENT number than it would have been.

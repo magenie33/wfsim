@@ -19,16 +19,16 @@ description: "Only compatible with Semi-Auto Trigger. Fire Rate cannot be modifi
 # WFCD export carries no such field, so this module is the only
 # structured source for what a mod REFUSES to be equipped on.
 excludes_weapon: [modular_gun]
-# Both halves of the card's first line, which this file used to state in prose
-# and model nowhere — the pistol twin has carried them since it was written.
+# Both halves of the card's first line, MODELLED rather than stated in prose —
+# the pistol twin carries the same pair.
 requires: semi_auto      # weapon trigger must be Semi-Auto, else the mod is inert
 disables: [fire_rate]    # locks Fire Rate from being modified while equipped
 
 effects:
-  # There used to be a bare `- kind: fire_rate_bonus` here with no value: a
-  # reading of "Fire Rate cannot be modified" as an EFFECT rather than as the
-  # lock it is. It parsed to a zero-valued fire-rate bonus, so it changed no
-  # number — but it also meant the lock was not modelled at all, and the mod
+  # NO bare `- kind: fire_rate_bonus` with no value, which is what reading
+  # "Fire Rate cannot be modified" as an EFFECT rather than as the lock it is
+  # produces. It parses to a zero-valued fire-rate bonus and changes no number
+  # — but the lock is then not modelled at all, and the mod
   # kept paying its damage on a full-auto weapon it cannot go on.
   - kind: base_damage_bonus
     rank0: 0.4

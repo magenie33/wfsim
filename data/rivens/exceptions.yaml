@@ -7,10 +7,10 @@
 # by case basis" half of the wiki's own sentence, and it is hand-written,
 # because an exception is a thing somebody looked at.
 #
-# WHY IT IS NOT THE SURVEY. `pools.yaml` used to outrank
-# the derivation, which means a bad scrape rewrote every weapon's pool without
-# failing anything — and one did: a re-run of the survey came back "nothing
-# rolls anything" for all 26 families and the only reason it did not ship is
+# WHY IT IS NOT THE SURVEY. With `pools.yaml` outranking the derivation, a bad
+# scrape rewrites every weapon's pool without failing anything — and one does:
+# a re-run of the survey comes back "nothing rolls anything" for all 26
+# families, and the only reason it does not ship is
 # that two unrelated tests
 # happened to notice. A count is EVIDENCE, and evidence belongs in a check.
 # `pools.yaml` is now read by `the_survey_still_agrees_with_the_rules` and by

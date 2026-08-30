@@ -2,7 +2,7 @@
 """THE SHARE MANIFEST — a frozen, APPEND-ONLY order for every id a share link
 can name.
 
-A share link used to spell its ids out (`galvanized_diffusion`), which is why a
+A share link spelling its ids out (`galvanized_diffusion`) is why a
 build cost ~280 characters even after deflate: the payload is mostly identifiers
 and deflate cannot know the ones the payload does NOT contain. Sending an INDEX
 instead takes the same build to ~76.

@@ -15,7 +15,7 @@ effects:
   # go on a companion weapon (see `excludes_weapon` below).
   # "+25% Sprint Speed"
   # 2D groundwork: a real stat with no SINGLE-TARGET damage
-  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  # payload — never `kind: unmodeled`, which throws the number away.
   - kind: sprint_speed_bonus
     rank0: 0.0227
     rankMax: 0.25

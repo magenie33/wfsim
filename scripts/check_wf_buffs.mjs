@@ -133,7 +133,7 @@ for (const lang of ["en", "zh"]) {
     out.pickedDefault = (sim.abilities.find(a => a.id === 'resupply') || {}).element;
     // BY CLICKING IT, which is the only path a player has.
     //
-    // It used to set .value and dispatch a change event by hand, which is the
+    // Setting .value and dispatching a change event by hand is the
     // BINDING's half and skips the control's. That made it blind to the way
     // this picker actually broke: converted from a native select to the page's
     // own dropdown, it opened, listed the elements, showed the picked one on

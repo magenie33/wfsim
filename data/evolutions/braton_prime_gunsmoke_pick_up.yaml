@@ -20,10 +20,9 @@ effects:
   #     some amount of punch-through.
   # The variant cell is one colspan="4" dash, so all four Bratons take it.
   #
-  # THE SECOND NOTE CORRECTS WHAT THIS FILE USED TO SAY. It read that the
-  # trigger "needs a second body behind the first, and the arena has one
-  # target" — the wiki says the opposite in as many words, so the TRIGGER is
-  # perfectly reachable here and `one_target` was the wrong reason.
+  # THE TRIGGER IS REACHABLE HERE. It does NOT need a second body behind the
+  # first — the wiki says the opposite in as many words — so `one_target` is
+  # the wrong reason to admit anything about it.
   # What it cannot pay out is the payload: this arena runs on infinite ammo, so
   # a restored round buys nothing.
   - kind: out_of_scope

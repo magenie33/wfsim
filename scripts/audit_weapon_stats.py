@@ -61,7 +61,7 @@ except ImportError:
 # cannot tell the columns apart must not pretend to check them. Companion weapons
 # are unverified for the same reason and are left out until somebody reads their
 # module's shape.
-# COMPANION WEAPONS ARE IN as of 2026-08-21. The header used to say they were
+# COMPANION WEAPONS ARE IN. A header saying they are
 # "unverified for the same reason and left out until somebody reads their
 # module's shape" — so somebody read it: `Module:Weapons/data/companion` carries
 # ONE stat column (Accuracy, AmmoMax, Magazine, Reload, Disposition, Mastery and
@@ -80,7 +80,7 @@ except ImportError:
 # It was worth reading rather than assuming. Every one of the thirty entries
 # turned out to carry the ATMOSPHERE damage already — the fault data/README.md
 # records against WFCD's export was never in this roster — and the four-field
-# subset this comment used to describe was leaving the other twenty unverified
+# subset such a header describes leaves the other twenty unverified
 # for a reason that did not exist.
 
 MOD = {}

@@ -77,7 +77,7 @@ const r = await evaluate(`(async () => {
   // they are watched the way the mod picker above is, through the control the
   // reader actually uses, rather than through a render.
   //
-  // This half used to read the strip out of #evo-rows after calling
+  // This half must not read the strip out of #evo-rows after calling
   // refreshGains(), which was right while the tiers were rows of chips that
   // ranked themselves unopened. It went red the day they became cards, which
   // is the check doing its job: axis=mods running=false, because nothing

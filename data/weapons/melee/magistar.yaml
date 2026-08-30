@@ -15,8 +15,8 @@ max_rank: 30
 # engagement — which is the definition of a mode in this repo, and why each of
 # the seven is an independent board row rather than an animation.
 #
-# TWO CROSS-CHECK FINDINGS, both recorded because they cost nothing to write and
-# would cost an evening to re-derive:
+# TWO CROSS-CHECK FINDINGS, recorded because they cost nothing to write and are
+# expensive to re-derive:
 #
 #   1. WFCD's top-level `damage` object has PUNCTURE AND SLASH SWAPPED for this
 #      weapon (`puncture: 10.5, slash: 31.5`). Its own `damagePerShot` array and

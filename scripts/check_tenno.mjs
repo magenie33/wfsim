@@ -134,7 +134,7 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
 // AN OVERRIDE IS A TICK AND A NUMBER. Four assertions,
 // and the first two are the ones the design exists for.
 //
-// The field used to be a bare number whose tooltip said "0 = no frame", and the
+// A bare number whose tooltip says "0 = no frame" is not enough, and the
 // page sent it on EVERY fight — so the floor in data/tenno/default.yaml was
 // overwritten with 0 before it could be read, and "the neutral Tenno has 105
 // armor" was true of the data and false of what the simulator ran. It could not
@@ -405,7 +405,7 @@ check("...and clearing a box drops the key entirely",
 // ...AND IT DOES **NOT** TRAVEL IN A SHARE LINK. The
 // wielder is part of the FIGHT, and a share link is a build and nothing else —
 // so a recipient keeps their own floor rather than inheriting the sender's
-// frame. This used to assert the opposite, which was right while a link could
+// frame. The opposite assertion is right only while a link can
 // carry a scenario and is the exact behaviour that was removed: a link must
 // never move somebody else's fight.
 //

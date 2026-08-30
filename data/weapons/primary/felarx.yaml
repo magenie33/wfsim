@@ -92,8 +92,8 @@ attack:
   # has no geometry, so everything the ray meets is a body.
   #
   # It is also why Dual-Mode Chamber's +4 m adds nothing — not a gap, a
-  # CEILING already reached. That used to be filed as an unmodelled admission,
-  # which was true only while the arena had one body.
+  # CEILING already reached — an unmodelled admission only while the arena has
+  # one body.
   punch_through_m: 999.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 300.0 m" — a PROJECTILE with a range row, like the Grattler

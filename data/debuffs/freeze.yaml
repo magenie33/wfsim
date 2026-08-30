@@ -35,8 +35,8 @@ stack_overflow: none
 # "Maximum stacks: 10 total", of which "the 10th stack" IS the Frozen state.
 #
 # IT ALSO REMOVES THREE SPECIAL CASES. An Overguard holder's cap of 4, an
-# Acolyte's cap of 4 and an outright immunity all used to be their own branch;
-# now a cap below ten makes the Frozen trigger unreachable by arithmetic,
+# Acolyte's cap of 4 and an outright immunity need no branch of their own: a
+# cap below ten makes the Frozen trigger unreachable by arithmetic,
 # which is how the wiki itself puts it ("can receive a maximum of 4 Cold
 # stacks", "preventing Frozen status entirely").
 #

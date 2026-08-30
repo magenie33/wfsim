@@ -665,10 +665,9 @@ pub struct Scenario {
     /// scheme as the web Sim panel). Empty = the emergent default.
     pub buff_cfg: BuffConfig,
     /// INFINITE RESERVE — the simulator's own scenario knob, which the
-    /// optimizer used to ignore. A weapon with a finite reserve (Larkspur
-    /// Prime) was therefore SEARCHED running dry while the simulator replayed
-    /// it resupplied, and the search reported half the number for the same
-    /// build.
+    /// optimizer READS. Ignoring it SEARCHES a weapon with a finite reserve
+    /// (Larkspur Prime) running dry while the simulator replays it resupplied,
+    /// and the search then reports half the number for the same build.
     pub infinite_ammo: bool,
     /// How conditional buffs are valued. NOT a constant: a SENTINEL weapon
     /// resolves under `BaseOnly` — this arena fires one weapon, so nothing on

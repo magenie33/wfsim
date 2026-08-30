@@ -14,9 +14,9 @@ transforms_from: torid
 # The Incarnon transformation economy (wiki Torid Incarnon Genesis).
 gauge_form:
   gauge:
-    # DIRECT hits, not weakpoint hits — this is the field that used to be
-    # documentation-only, and getting it wrong silently gave the Torid the
-    # Zariman rule. VERBATIM (wiki Incarnon): "Angstrum Incarnon Genesis and
+    # DIRECT hits, not weakpoint hits. A documentation-only field here is
+    # silently the Zariman rule. VERBATIM (wiki Incarnon): "Angstrum Incarnon
+    # Genesis and
     # Torid Incarnon Genesis are instead charged through direct hits."
     charge_on: direct_hits
     charges_to_fill: 5
@@ -56,9 +56,9 @@ pseudo_reload:
   reload_seconds: 2.7
 
 # CO behavior: ADDITIVE — ✅ measured. The catalog has no row
-# for this form, and `independent` used to be INFERRED here from the weapon's
-# other two rows (Main-fire and Toxin AoE Cloud, both "Multiplying"). The
-# inference was wrong: the Incarnon form takes the ordinary additive class,
+# for this form, and `independent` is NOT to be inferred from the weapon's
+# other two rows (Main-fire and Toxin AoE Cloud, both "Multiplying"): the
+# Incarnon form takes the ordinary additive class,
 # joining the base-damage bucket like Hornet Strike, while the BASE form's two
 # parts really are Multiplying. So the two forms of one weapon differ in CO
 # class, which is exactly why this is per-form weapon data.

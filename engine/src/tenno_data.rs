@@ -233,8 +233,8 @@ fn yes() -> bool {
 }
 
 /// The player STATES a card can be conditional on. One home for all of them:
-/// `aiming` used to be a bool threaded through `loadout::resolve` beside a
-/// separate Tenno holding the rest, which is two places for one kind of fact.
+/// `aiming` as a bool threaded through `loadout::resolve`, beside a separate
+/// Tenno holding the rest, is two places for one kind of fact.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct TennoState {
     /// Holding aim. Gates every `while_aiming` mod (Galvanized Crosshairs /
@@ -362,7 +362,7 @@ pub struct StatBonuses {
 
 impl StatBonuses {
     /// Is every bucket zero? The default, and what a fight that says nothing
-    /// means — used to keep the panel from listing a source worth nothing.
+    /// means — it keeps the panel from listing a source worth nothing.
     pub fn is_empty(&self) -> bool {
         *self == Self::default()
     }

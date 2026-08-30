@@ -13,7 +13,7 @@ effects:
   # itself.
   # "+100% chance to reduce the Stagger effect from self-imposed Radial Attacks"
   # 2D groundwork: a real stat with no SINGLE-TARGET damage
-  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  # payload — never `kind: unmodeled`, which throws the number away.
   - kind: self_stagger_reduction
     rank0: 0.0909
     rankMax: 1.0

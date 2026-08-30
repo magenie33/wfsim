@@ -5,7 +5,7 @@ data/assets.yaml into web/cache/img/ (gitignored).
 NOT optional any more. Both deployments serve art SAME-ORIGIN — the native
 server from this cache, the static build from site/img/, which
 `scripts/build_site_app.py` copies out of it and refuses to build without.
-The static build used to hotlink the CDN instead, and that CDN 301s to
+A static build that hotlinks the CDN instead goes through a redirector: it 301s to
 raw.githubusercontent.com: unreliable to blocked from mainland China, where
 the players are. (DE permits hosting the art; their Content Policy asks only
 that the use be non-commercial.)

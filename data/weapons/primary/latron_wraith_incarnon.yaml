@@ -52,9 +52,8 @@ co_behavior: additive_with_base_damage
 # again for the explosion."
 #
 # The first collision and its explosion land on the target in front of you, and
-# THE BOUNCES ARE MODELLED as of 2026-08-18 (`ricochet:` below). The reason they
-# were not used to be that a single-target arena had nowhere for them to go;
-# the formation landed on 2026-08-17 and gave them somewhere.
+# THE BOUNCES ARE MODELLED (`ricochet:` below): a formation gives them somewhere
+# to go, which a single-target arena does not.
 #
 # What is still missing is TERRAIN — the page says enemies *and terrain*, this
 # arena has no walls, and a projectile that would have come off one finds the

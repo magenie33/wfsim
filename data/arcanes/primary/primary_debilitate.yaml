@@ -43,9 +43,8 @@ effects:
   # reading: the wiki says the status it leaves carries the faction bonus THREE
   # times, a status always carries it one time more than whatever caused it, and
   # a hit carries it once — so three is only reachable through one more link in
-  # the chain. That instance is a SCALE, not a damage
-  # number. The two sentences used to be one, and it read as if the arcane
-  # hit you twice.
+  # the chain. That instance is a SCALE, not a damage number — two separate
+  # sentences, because read as one it says the arcane hits you twice.
   #
   # AND THAT INSTANCE IS PERMANENTLY NON-CRITICAL — not a zero-damage hit that
   # rolls crit against a zero. The two readings deal the same nothing and differ

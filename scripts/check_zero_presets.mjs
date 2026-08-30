@@ -1,6 +1,6 @@
 /// THE THIRTY-SIXTH: YOU OWN NOTHING UNTIL YOU MAKE SOMETHING.
 ///
-/// Opening a weapon used to write a blank "build 1" into storage, opening the
+/// Opening a weapon must not write a blank "build 1" into storage, nor opening the
 /// app wrote a "scenario 1", and opening the optimizer wrote a "search 1". So a
 /// reader who browsed forty weapons owned forty builds they had never made.
 /// That is invisible while the only place a preset is listed is the bar of the

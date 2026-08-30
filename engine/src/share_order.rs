@@ -1,9 +1,9 @@
 //! THE SHARE MANIFEST — a frozen, APPEND-ONLY order for every id a share link
 //! can name.
 //!
-//! A share link used to spell its ids out (`galvanized_diffusion`), which is
-//! why a build cost about 280 characters even after deflate: the payload is
-//! mostly identifiers, and deflate cannot know the ones the payload does NOT
+//! A share link spelling its ids out (`galvanized_diffusion`) costs about 280
+//! characters for a build even after deflate: the payload is mostly
+//! identifiers, and deflate cannot know the ones the payload does NOT
 //! contain. Sending an INDEX instead takes the same build to about 76.
 //!
 //! **THE PRICE IS THIS FILE, and the repo's own rule named it before it was

@@ -55,7 +55,14 @@ const NARRATIVE = new RegExp(
 
 // THE CEILING MAY ONLY FALL. Lower it whenever a pass removes some; never raise
 // it to make a red run green — that is the one edit this file exists to refuse.
-const NARRATIVE_CEILING = 65;
+//
+// The six left are all ordinary English rather than a history being retold:
+// this rule's own statement in AGENTS.md, "in the backlog for a long time" in
+// CONTRIBUTING.md, "may not be used to brand" in README.md, "only ever used to
+// pick BETWEEN corners" in the scorer, and DE's own Energy Channel card text
+// twice. A phrase list cannot tell those from the rest, which is why this is a
+// ratchet and not a hard zero.
+const NARRATIVE_CEILING = 6;
 
 const files = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")

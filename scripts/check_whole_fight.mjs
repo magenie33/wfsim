@@ -1,7 +1,7 @@
 // THE FORTIETH CHECK: **A FIGHT IS ONE DOCUMENT, AND A READER CAN SEE ALL OF IT.**
 //
 // The scenario blocks show what APPLIES to the weapon in front of you, which is
-// the right default and used to leave two things invisible:
+// the right default and leaves two things invisible:
 //
 //   * a field this weapon FORCES — a sentinel's headshot rate is 0 whatever the
 //     document carries, and the document carries whatever you set for the rest
@@ -18,7 +18,7 @@
 //
 // AND THAT THE RULE IS THE ENGINE'S. `engine::scenario::settled_for` decides and
 // `/api/meta` states the consequence per weapon; the page reads it. The three
-// forcing rules used to be re-derived in `app.js` from weapon flags — two
+// forcing rules must not be re-derived in `app.js` from weapon flags — two
 // implementations of one rule, drifting in silence, because a forced field
 // looks identical whoever forced it.
 //

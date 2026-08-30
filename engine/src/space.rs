@@ -941,10 +941,10 @@ mod tests {
     /// A GRAZE COSTS A SLIVER, NOT A WHOLE BODY.
     ///
     /// Punch through buys MATERIAL, so what a body costs depends on where the
-    /// ray crossed it. It used to be a flat [`BODY_MATERIAL_M`] however the
-    /// round went through — the walk even computed the half-chord to place the
-    /// entry point and then threw it away — so a body clipped at the very edge
-    /// ate as much budget as one shot through the middle.
+    /// ray crossed it. A flat [`BODY_MATERIAL_M`] however the round went
+    /// through makes a body clipped at the very edge eat as much budget as one
+    /// shot through the middle — and the walk already has the half-chord, from
+    /// placing the entry point.
     #[test]
     fn a_body_costs_what_the_ray_actually_crossed() {
         // 1. THE CENTRE SHOT IS THE PUBLISHED FIGURE, to the last bit. This is
@@ -1122,9 +1122,9 @@ mod tests {
 
     /// …AND A CROWD IS WHY IT HAD TO EXIST. A shot that goes wide moves the
     /// epicentre AWAY from a bystander standing beside the target, which is
-    /// the whole of the bug this replaced: the bystander used to read its
-    /// distance from the aimed body's surface and take a direct hit's blast
-    /// off a shot that went nowhere near it.
+    /// the whole of what one epicentre fixes: reading its distance from the
+    /// aimed body's SURFACE, the bystander takes a direct hit's blast off a
+    /// shot that went nowhere near it.
     #[test]
     fn a_wide_shot_moves_the_epicentre_off_the_bystander_too() {
         let shooter = Vec2::new(0.0, 0.0);

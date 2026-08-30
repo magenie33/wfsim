@@ -129,7 +129,7 @@ check("the build is the shared one", /\(shared\)/.test(got.activeBuild || ""), g
 check("the riven travelled", got.rivens.length === 1, JSON.stringify(got.rivens));
 check("the riven is equipped in its slot", /^riven:/.test(got.mods[6] || ""), got.mods[6]);
 // AND THE SCENARIO DOES NOT TRAVEL, which is the inversion of what this line
-// used to assert. The sender was on level 155 at 40% headshots; the recipient
+// would assert. The sender was on level 155 at 40% headshots; the recipient
 // keeps whatever fight they were already in, and 155/40 arriving would mean a
 // link had moved it. That is the one thing a build link must never do.
 check("the scenario does NOT travel — the reader's own fight is untouched",
@@ -214,7 +214,7 @@ check("...and they are still on their own", bo.active === mine.active,
 
 // ---- v3: THE IDS TRAVEL AS INDICES, AND NOTHING ELSE CHANGES ---------------
 //
-// A link used to spell its ids out and deflate them; v3 sends each one's place
+// A link spelling its ids out and deflating them is v2; v3 sends each one's place
 // in a frozen manifest and puts the text in the URL raw. That is a renumbering of every id in the payload,
 // laid on top of a format that has ALREADY silently dropped an axis once
 // (2026-08-15: `mode` and `valence` were in the state and not in the tuple, so

@@ -1,6 +1,6 @@
 """Reconcile every roster entry with the wiki's Condition Overload Attack Catalog.
 
-WHY THIS EXISTS, and it is the whole lesson. Every weapon yaml used to open with
+WHY THIS EXISTS, and it is the whole lesson. A weapon yaml can open with
 "NO row in the wiki's CO catalog" — and that check had been run against
 **docs/CATALOGS.md**, our own transcription, which by construction carries only
 "rows the roster already has". Asking it whether a NEW weapon has a row can only

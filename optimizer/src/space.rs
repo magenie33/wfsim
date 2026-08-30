@@ -1,7 +1,7 @@
 //! The mod-subset space as an INDEX RANGE — `nth(i)` instead of a walk.
 //!
-//! The enumeration used to be a depth-first descent (`enumerate_rec`), which
-//! is fine when it runs to completion and disastrous when it does not: what a
+//! A depth-first descent (`enumerate_rec`) is fine when it runs to completion
+//! and disastrous when it does not: what a
 //! cut leaves behind is a lexicographic prefix — builds made of the first few
 //! pool entries plus one varying tail — rather than a sample. Measured on a
 //! 22-mod pool, the complete walk carries Heat in 2.77% of its candidates and

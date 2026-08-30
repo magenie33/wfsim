@@ -1,8 +1,8 @@
 # WHY A NUMBER IS NOT THERE — the reasons, once each.
 #
-# A weapon's `unmodeled:` used to be free prose, and an audit on 2026-08-15
-# counted 116 distinct sentences across 248 uses with thirteen families of
-# near-duplicates in them: sixteen spellings of the damage-falloff line that
+# A weapon's `unmodeled:` as free prose is 116 distinct sentences across 248
+# uses with thirteen families of near-duplicates in them: sixteen spellings of
+# the damage-falloff line that
 # differed only in three numbers, ten of the punch-through line that differed
 # in one. Every new spelling cost a new Chinese translation, so the overlay grew
 # with the roster rather than with the ideas in it.
@@ -71,9 +71,9 @@ reasons:
   # NO `tome_meter` — IT IS MODELLED. The 45 second recharge, the
   # second a landing pellet takes off it and the ten seconds an ammo pickup is
   # worth are `meter:` on the Grimoire's alt fire, and the mode it produces is a
-  # CYCLE: fire the primary, throw an orb when the clock says so. What used to
-  # be the loudest admission in the roster — "everything below is the ceiling
-  # rather than the average, and by a wide margin" — is a number now.
+  # CYCLE: fire the primary, throw an orb when the clock says so. The loudest
+  # admission the roster could carry — "everything below is the ceiling rather
+  # than the average, and by a wide margin" — is a number instead.
   # NO `orb_shocks_over_time`, AND NO `orb_strikes_do_not_travel` — the orb is
   # MODELLED, as an entity with a position that flies, slows
   # on contact, strikes one body inside its reach six times and detonates where

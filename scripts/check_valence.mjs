@@ -122,7 +122,7 @@ const gain = await evaluate(`(async () => {
   localStorage.clear();
   history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
   // OPENING THE LIST IS WHAT STARTS THE SCAN (openRanked) — the
-  // same moment the mod and arcane pickers have always used. It used to run
+  // same moment the mod and arcane pickers use. It must not run
   // from the block's render, which is why this simply waited.
   document.querySelector('#element-cfg .slot.axis .dots').click();
   await sleep(300);
@@ -370,7 +370,7 @@ check("...so the build carries the element the row was scored with",
     && added.live.element === added.rowElement && added.live.bonus === 0.6,
   JSON.stringify({ state: added.stateValence, live: added.live }));
 // THE FALSIFIABLE HALF, at a fixed seed: equal to the run it claims, and not
-// equal to the run it used to become. 22.34 against 17.44 was this gap.
+// equal to the run it would otherwise become. 22.34 against 17.44 is the gap.
 check("...and it re-runs as the weapon it was scored on, not the default one",
   added.asAdded !== null && added.asAdded === added.asScored
     && added.asAdded !== added.asDefaulted,
@@ -397,7 +397,7 @@ const build = await evaluate(`(async () => {
   const w = weaponInfo('kuva_nukor');
   const cap = document.getElementById('capacity').textContent;
 
-  // A FULL EIGHT, which is the case that used to read red: it fits 80 and
+  // A FULL EIGHT, which is the case most easily read as red: it fits 80 and
   // never fitted 60.
   const eight = ['hornet_strike', 'barrel_diffusion', 'lethal_torrent',
                  'primed_pistol_gambit', 'primed_target_cracker',

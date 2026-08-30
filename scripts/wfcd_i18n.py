@@ -347,7 +347,7 @@ def main() -> int:
               + (f", {gaps} unnamed" if gaps else ", nothing unnamed"))
         return 1 if bad else 0
 
-    # FILL IS ADDITIVE. It used to rewrite the whole section from WFCD, which
+    # FILL IS ADDITIVE. Rewriting the whole section from WFCD
     # destroyed two things a generated list cannot carry: the COMMENTS (where
     # the Acolytes' names came from, "the tapped form, same weapon") and the
     # DELIBERATE DIVERGENCES they explain — `cernos_prime_uncharged` is

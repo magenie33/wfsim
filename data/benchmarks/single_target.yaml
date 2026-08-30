@@ -32,9 +32,8 @@
 # place to say anything wrong about it.
 id: single_target
 # THE RULER A READER MEETS FIRST — the board opens on it and a first-time
-# visitor's default scenario is its fight. Declared because the rulers used to
-# be in path order and that stopped being the same thing the moment a second
-# one arrived.
+# visitor's default scenario is its fight. DECLARED, never taken from path
+# order, which stops being the same thing the moment a second ruler arrives.
 primary: true
 
 # The name states the whole definition, because a benchmark whose terms are
@@ -228,10 +227,10 @@ scenario:
   # could only ever rank that one. Each submission names its own mode and the
   # scorer translates it at the boundary (`WeaponPlayMode::form`).
   #
-  # `form: default` used to sit here and it read as neutral. It was not: it
-  # resolved to the cycle on a weapon that has one and to the arsenal form on a
-  # weapon that does not, so the board silently ranked Incarnon weapons at their
-  # ceiling and had no way to ask for anything else.
+  # NO `form: default` here. It reads as neutral and is not: it resolves to
+  # the cycle on a weapon that has one and to the arsenal form on a weapon that
+  # does not, so the board would silently rank Incarnon weapons at their
+  # ceiling with no way to ask for anything else.
 
   # THE TENNO, pinned rather than defaulted. Two arcanes read Warframe armor
   # and energy directly (Primary Bulwark, Primary Overcharge) and several mods
