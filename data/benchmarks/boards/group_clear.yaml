@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3948
+submissions: 3982
 engine: e302c588ccff589736b043f838e2c4f8e0d5639a
 entries:
   - weapon: acceltra_prime
@@ -160,6 +160,16 @@ entries:
     arcanes: [primary_crux]
   - weapon: atomos
     mode: base
+    score: 80.66886478595099
+    fp: 82816e8d3e3c0f0f
+    mods: [galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, punch_through]
+      rolls: [1.1, 1.1]
+  - weapon: atomos
+    mode: base
     score: 65.99206608144338
     fp: fac4f167411890c2
     mods: [seeker, galvanized_diffusion, primed_target_cracker, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
@@ -169,6 +179,16 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: critical_chance
       rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 62.704823259181595
+    fp: be4f38f9b49d24ba
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, punch_through]
+      rolls: [1.1, 1.1]
   - weapon: atomos
     mode: cycle
     score: 48.61612799833476
@@ -181,6 +201,24 @@ entries:
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: atomos
+    mode: base
+    score: 44.73564224452395
+    fp: 9f830f80808765f3
+    mods: [seeker, galvanized_diffusion, primed_target_cracker, magnetic_might, frostbite, riven, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [cold, damage]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 42.06767955114582
+    fp: 0c7624224a5e6e63
+    mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: atomos
     mode: cycle
     score: 35.878705626275966
     fp: b36e5232aaedcef7
@@ -188,28 +226,6 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
     arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 34.11286119102066
-    fp: ffc69ef0d76d56c2
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
-    arcanes: [secondary_enervate]
-    riven:
-      bonuses: [damage, multishot, toxin]
-      malus: critical_chance
-      rolls: [1.1, 0.9, 1.1, 0.9]
-  - weapon: atomos
-    mode: base
-    score: 33.020780729851886
-    fp: 2e7c0766d771a90f
-    mods: [galvanized_diffusion, galvanized_shot, anemic_agility, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
-    arcanes: [secondary_enervate]
-    riven:
-      bonuses: [damage, multishot, toxin]
-      malus: critical_chance
-      rolls: [1.1, 0.9, 1.1, 1.1]
   - weapon: atomos
     mode: cycle
     score: 31.147995737674425
@@ -294,22 +310,6 @@ entries:
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
     arcanes: [cascadia_flare]
   - weapon: atomos
-    mode: base
-    score: 21.02196133052942
-    fp: c2eec2e4b5d690c4
-    exilus: primed_pistol_ammo_mutation
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: atomos
-    mode: base
-    score: 19.335907115893537
-    fp: 137cb7df086da8c9
-    exilus: ruinous_extension
-    mods: [galvanized_diffusion, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_mercenary_chamber, atomos_survivors_edge]
-    arcanes: [cascadia_flare]
-  - weapon: atomos
     mode: cycle
     score: 18.85021884674353
     fp: b08735a0962ef2a7
@@ -318,87 +318,12 @@ entries:
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: atomos
-    mode: base
-    score: 18.684607278706302
-    fp: 496751f03afd3ae6
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
-    arcanes: [secondary_enervate]
-  - weapon: atomos
     mode: cycle
     score: 18.67596590374348
     fp: 501944de15d2ca56
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
     arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 18.59146431431306
-    fp: d0d4ae49f807d7e3
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
-    arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 18.55517730094779
-    fp: eee2112d5fb83119
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: atomos
-    mode: base
-    score: 15.79414958711804
-    fp: d1c0aae33604dd7a
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
-    arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 15.041152477740775
-    fp: 8eaaed2eb81ea7da
-    exilus: primed_pistol_ammo_mutation
-    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
-    arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 15
-    fp: b08735a0962ef2a7
-    exilus: primed_pistol_ammo_mutation
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: atomos
-    mode: base
-    score: 14.881803327624096
-    fp: 24e0eca33d923874
-    exilus: primed_pistol_ammo_mutation
-    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
-    arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 14.644347624888784
-    fp: 02f2edb9036a44de
-    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
-    arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 13.006220037654844
-    fp: 6f1e583490f4d334
-    exilus: primed_pistol_ammo_mutation
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: atomos
-    mode: base
-    score: 12.592479510115393
-    fp: 70bed51fe811351a
-    exilus: primed_pistol_ammo_mutation
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
-    arcanes: [secondary_enervate]
   - weapon: ax_52
     mode: base
     score: 1.5811584615940897
@@ -3375,6 +3300,17 @@ entries:
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: furis
     mode: cycle
+    score: 48.333434336287866
+    fp: cc8f029d30b79331
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, frostbite, pistol_pestilence, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 48.011492056631454
     fp: cfe208e876f567a1
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, riven, primed_heated_charge]
@@ -3909,6 +3845,16 @@ entries:
     score: 0.24857270694566047
     fp: b05e43568a021502
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, lethal_torrent, riven, primed_convulsion, pathogen_rounds]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: puncture
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: knell_prime
+    mode: base
+    score: 0.23985300542065707
+    fp: 8db0e7f7dfc09fa8
+    mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, riven, frostbite, scorch, pistol_pestilence]
     arcanes: [secondary_deadhead]
     riven:
       bonuses: [critical_chance, damage]

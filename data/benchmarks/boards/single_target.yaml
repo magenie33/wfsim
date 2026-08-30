@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3948
+submissions: 3982
 engine: e302c588ccff589736b043f838e2c4f8e0d5639a
 entries:
   - weapon: acceltra_prime
@@ -287,6 +287,16 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: atomos
     mode: base
+    score: 11.666666666666666
+    fp: 8265bde5470d7d6d
+    mods: [galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, punch_through]
+      rolls: [1.1, 1.1]
+  - weapon: atomos
+    mode: base
     score: 11.41107219716292
     fp: 30bf4f9f72926ecf
     exilus: ruinous_extension
@@ -361,6 +371,16 @@ entries:
     mods: [galvanized_diffusion, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_mercenary_chamber, atomos_survivors_edge]
     arcanes: [cascadia_flare]
+  - weapon: atomos
+    mode: base
+    score: 9.380258062009224
+    fp: 923758d76072d394
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, punch_through]
+      rolls: [1.1, 1.1]
   - weapon: atomos
     mode: base
     score: 9.343038670933556
@@ -455,6 +475,13 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
     arcanes: [cascadia_flare]
+  - weapon: atomos
+    mode: base
+    score: 8.003719484440746
+    fp: 071772806401a24d
+    mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: atomos
     mode: base
     score: 7.676309695378287
@@ -4080,6 +4107,17 @@ entries:
       rolls: [1.1, 1.1]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 85.48455519517806
+    fp: cdd10d4fb7c7f528
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, riven]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [damage, electricity, multishot]
+      malus: critical_damage
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 83.2531065089126
     fp: 35d06456f6729ed2
     exilus: trick_mag
@@ -4163,6 +4201,13 @@ entries:
     score: 72.57917257245768
     fp: 0b4d09f248aa6346
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 69.67544172504975
+    fp: 4d4eaaf277397b9a
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
@@ -4252,6 +4297,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 49.56417435674749
+    fp: 4a09eaeeda45a520
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_encumber]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 48.07822599460719
     fp: 9c479d0b977062b3
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion]
@@ -4281,15 +4333,15 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 45.9636592811897
-    fp: 601720c66392ef19
+    fp: 6ed92cf3d5021ead
+    exilus: steady_hands
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_enervate]
   - weapon: dual_toxocyst
     mode: cycle
     score: 45.9636592811897
-    fp: 6ed92cf3d5021ead
-    exilus: steady_hands
+    fp: 601720c66392ef19
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_enervate]
@@ -5245,6 +5297,17 @@ entries:
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: furis
     mode: cycle
+    score: 48.333434336287866
+    fp: 0cabf85ada1c52af
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, frostbite, pistol_pestilence, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 48.011492056631454
     fp: 7fa86b4f50d5d34f
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, riven, primed_heated_charge]
@@ -5822,6 +5885,16 @@ entries:
     score: 0.24857270694566047
     fp: 4bca5d265fa0e8a4
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, lethal_torrent, riven, primed_convulsion, pathogen_rounds]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: puncture
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: knell_prime
+    mode: base
+    score: 0.23985300542065707
+    fp: 1cfca7b156eb169e
+    mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, riven, frostbite, scorch, pistol_pestilence]
     arcanes: [secondary_deadhead]
     riven:
       bonuses: [critical_chance, damage]
@@ -7499,6 +7572,13 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
+    score: 41.804593148304996
+    fp: a44dc199976287b5
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, hollow_point, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
     score: 41.37741181036355
     fp: 94edca1c14909d76
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, target_cracker, accelerated_isotope, magnetic_might, convulsion, pistol_pestilence]
@@ -7692,6 +7772,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
+    score: 36.89845066548072
+    fp: 6197a4622080a016
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, hollow_point, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_deadhead]
+  - weapon: laetum
+    mode: cycle
     score: 36.72473025188728
     fp: 51218c1d6c1b3d57
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, accelerated_isotope, deep_freeze, pathogen_rounds, primed_heated_charge]
@@ -7767,6 +7854,13 @@ entries:
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
+    score: 34.92847201175887
+    fp: 2695c0cca915f0b4
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, hollow_point, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
