@@ -145,3 +145,38 @@ the status base, the multishot rule and the kill rule are already right for it
 because they were never written per-member. The one thing that IS per-member is
 the trigger: a weapon hit for the abilities, ten stacks of a combined element
 for Debilitate. That belongs where it is.
+
+## How the multipliers stack, factor by factor
+
+`engine::dummy::extra_hit` takes the triggering instance's finished
+`trigger_raw` and MULTIPLIES rather than rebuilding anything, which is why the
+wiki's one-line formula
+
+> Extra Hit Damage = Weapon Hit Damage × Extra Hit Percentage
+>                    × (1 + Faction Damage Bonuses)
+
+produces every oddity people report: `Weapon Hit Damage` already contains a
+faction layer, a crit multiplier and a body-part multiplier.
+
+- **Faction, again.** One `faction_at_time` on top of however many the trigger
+  already carried. A direct hit is at depth 1, so its extra hit is at 2; a Blast
+  detonation is at depth 2, so ITS extra hit is at 3 — which is the "triple dip"
+  both wikis name, and it is not hardcoded anywhere.
+- **The body part, again**, and the CALLER is what knows. A direct headshot
+  passes its `part_factor`; a radial, a field tick and a Blast detonation pass
+  1.0, since none of them struck a body part. DE's CN card states both halves:
+  「同理，弱点倍率也会被计算两次」for a hit, 「弱点倍率只会被计算一次」off a
+  Blast detonation.
+- **Crit, once and inherited.** The extra hit rolls no crit of its own (the EN
+  wiki files "Xata's Whisper's Extra Hits cannot crit" under Bugs), but
+  `trigger_raw` critted — so the number behind an orange hit is orange-sized,
+  which is what "affected by … critical … damage mods (e.g. Vital Sense)" on the
+  ability's own page means.
+- **The bracket** is the trigger's elemental correction, 1.0 everywhere except
+  where the trigger's own bracket differs from the base attack's. The Blast
+  detonation is the loud case: it takes NO elemental bonus, and the extra hit
+  off it takes the whole one.
+
+It is a real instance, so it lands through `TargetState::apply` like any other:
+Void's ×1.5 against Overguard is the vulnerability column doing its job, not a
+rule written in the function.

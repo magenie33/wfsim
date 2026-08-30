@@ -2795,10 +2795,17 @@ and clawed back by exactly the mods the source says cannot touch it.
 
 ## 12. BEAM CHAINING — the mechanic a second target turns on
 
-Nothing here is modelled yet: the arena holds one target, so every clause below
-resolves to zero. It is written down because the Torid Incarnon carries all
-THREE ways a shot reaches a second body at once, which makes it the weapon a
-multi-target model should be built against.
+`engine::chain` implements this section: given where the bodies are and where
+the shot landed, it answers which of them takes an instance, at what share of
+the direct hit, and under which rules. What each instance then DOES is the
+ordinary damage pipeline's, because a chain hop is not a special kind of hit —
+it is *"a beam with a smaller base damage"*, so its crit, its status, its procs
+and their DoTs fall out of the share.
+
+The Torid Incarnon carries all THREE ways a shot reaches a second body at once,
+which is why it is the weapon the model is written against. The Amprex
+(3 hops / 10 m / 0.5) and the Kuva Nukor (2 / 9 m / 0.5) are the same shape with
+other constants, so nothing in the module is named after a weapon.
 
 ### The three paths to a second target
 

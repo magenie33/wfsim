@@ -1,59 +1,19 @@
 //! THE COMBAT RECORD — one ordered stream of everything that happened in a
 //! fight, and the authority on what it was.
 //!
-//! # A row is a thing that happened
+//! Every other output here is a CURVE or a TOTAL, and both hide an error
+//! inside an average: a factor applied twice moves a mean by a few per cent
+//! and reads as a build being good. This is a stream of discrete events, each
+//! carrying every number behind it.
 //!
-//! Every other output this engine produces is a CURVE or a TOTAL, and both hide
-//! an error inside an average: a factor applied twice moves a mean by a few per
-//! cent and reads as a build being good. The record is the opposite — a stream
-//! of discrete events, each carrying every number behind it, so any one of them
-//! can be checked by hand and the whole run can be diffed against another.
+//! **A DAMAGE EVENT IS ONE NUMBER THE GAME POPS**, not one hit: a pellet
+//! landing on a shielded body pops two, because Toxin bypasses the shield and
+//! its siblings do not. That 1:1 with the screen is what makes this the only
+//! output of this app that can be laid beside a recording and checked.
 //!
-//! **A DAMAGE EVENT IS ONE NUMBER THE GAME POPS.** Not "one hit": a pellet that
-//! lands on a shielded body pops two numbers, because Toxin bypasses the shield
-//! and its siblings do not, and the game shows them side by side. That 1:1 with
-//! the screen is what makes this the only output of this app that can be laid
-//! beside a recording and checked — which for a product whose promise is
-//! "matches in-game measurements" is the final arbiter.
-//!
-//! **EVERYTHING IS AN EVENT, not just damage**. A reload, a
-//! transmute into an Incarnon form, a pellet that missed, a status running out
-//! — none of them pop a number and all of them explain the stream around them.
-//! A Warframe casting an ability and a body moving are the same shape and are
-//! not modelled yet; they arrive as new [`Kind`] variants and nothing else has
-//! to change. The consequence worth stating: a weapon event belongs to NOBODY,
-//! so a per-enemy view of this stream is a FILTER (`subject == that body, or
-//! none`) rather than the same event copied into every enemy's table.
-//!
-//! # It is the write path, not a report
-//!
-//! A log written *beside* the simulation is a report, and a report can drift
-//! from what it reports; the checks over it can then only prove it is
-//! self-consistent. This one is filled by the same call that mutates the
-//! target's pools, from the same numbers, which is what makes "the sum of the
-//! record is the damage total" true by construction rather than by assertion.
-//!
-//! What it is authoritative about is bounded, and the bounds are worth saying:
-//!
-//! * **WHAT happened** — amounts, order, pools, whose body — by construction.
-//! * **WHY** — only half. The factor NAMES are hand-written strings, and no
-//!   mechanism ties `"critical"` to the 4.4 beside it; a check can prove the
-//!   product equals the damage and cannot prove the label is right.
-//! * **One engagement**, not a score. A board number is the mean over a
-//!   thousand runs; this is the median one. It can show that this fight's every
-//!   number is right and says nothing about whether the mean is.
-//!
-//! # Cost
-//!
-//! Measured 2026-08-27 over one 180 s engagement: an ordinary fight deals
-//! **2,000–5,000** damage instances (Braton Prime single target 5,016; Torid on
-//! the 19x19 group ruler 3,690), so its whole record fits in a megabyte and can
-//! be handed over entire. The worst measured build — Phantasma Prime, eight
-//! status mods, 361 bodies — deals **408,817**, which is why [`Record`] takes a
-//! WINDOW and a cap rather than assuming the small case.
-//!
-//! Recording is off for every run nobody is reading, which is 999 of a
-//! thousand: [`Record::off`] allocates nothing and every `push` is one branch.
+//! What the stream contains, what it is authoritative about and what it is
+//! NOT: AGENTS.md §"A FIGHT POPS NUMBERS" and §"THE STREAM IS THE FOUR THINGS
+//! A FIGHT DOES".
 
 use crate::damage::DamageType;
 

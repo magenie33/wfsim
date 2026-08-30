@@ -137,7 +137,7 @@ check("comment style ...and no note outlives its last use",
 // evidence: a verbatim wiki table, a measured series. Those move to `docs/`
 // with a one-line reference when they are touched, and the ceiling falls.
 const BLOCK_LIMIT = 12;
-const BLOCK_CEILING = 864;
+const BLOCK_CEILING = 860;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
 let longBlocks = 0;
 const worst = [];

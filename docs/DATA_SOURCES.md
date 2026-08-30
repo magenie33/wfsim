@@ -1171,6 +1171,47 @@ column".
 
 ## Riven pools: the rules decide, the survey checks
 
+### What actually generates a pool
+
+The 25% rule is an APPROXIMATION of DE's data, not the mechanism. Three findings
+pin down what the mechanism is:
+
+1. **A riven belongs to a FAMILY, and DE names it.** The weekly trade dump
+   carries `compatibility`, documented as *"Name of item/family of items it can
+   be equipped on"* — `Boltor` with no `Boltor Prime`, `Ballistica` with no
+   `Rakta Ballistica`, `Lex` with no `Lex Prime`. The wiki says the same in
+   words (*"assigned to a single weapon (and its variants) per Riven mod"*) and
+   DE treats compatibility narrowing to one variant as a bug they reverted.
+   `data/rivens/de_families.yaml` is that list. DISPOSITION IS THE EXCEPTION AND
+   PROVES IT: it is per VARIANT (the Boltor is 1.30, its Prime and the Telos are
+   1.20) while compatibility is per family — two different keys on one card.
+2. **DE maintains the pool per family, by hand.** *"Fixed issue where weapons
+   could end up with Rivens that aren't compatible (ex: Projectile Flight Speed
+   on Vadarya Prime Rivens)"* — an incompatible stat is a bug DE fixes per
+   weapon, which is only possible over explicit data. That is why the wiki's
+   rule says *"usually"* and *"exceptions exist on a case by case basis"*: it is
+   the community's best fit to a table, not the table.
+3. **A FAMILY'S POOL IS THE UNION OVER ITS MEMBERS, not the intersection.** Both
+   readings fit the rule, and the surveyed families settle it: seven
+   (family, stat) pairs have members that disagree under the 25% line, and real
+   cards say the stat ROLLS in five of them — Boar Slash, Braton Impact, Braton
+   Puncture, Karak Slash, Sybaris Puncture, each earned by ONE member being over
+   the line. The two that go the other way are one family, the Sicarus, and it
+   is already an exception carrying its own count (0 of 500 for both Puncture
+   and Slash).
+
+So: UNION over the family's members, UNION over each member's free forms, then
+the exceptions. An exception is not a patch on a broken rule; it is the one
+place DE's actual table is recorded, and the rule is what fills in for a family
+nobody has a card from.
+
+A GAUGE-SWITCHED form stays out, and the survey settles that rather than the
+argument. An Incarnon form is paid for with evolutions and a riven's pool is
+fixed when it drops — but the evidence is better than the argument: the Latron,
+Lex and Atomos Incarnon forms all fire a literal travelling projectile, and
+their families show zero cards carrying Projectile Speed.
+
+
 Three files, and which one DECIDES is the whole design:
 
 | file | role |

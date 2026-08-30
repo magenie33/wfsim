@@ -253,42 +253,10 @@ struct PoolFile {
 /// Riven stats THIS WEAPON cannot roll, out of its class pool.
 ///
 /// The pool is per CLASS, but two rifles do not roll the same stats: DE does
-/// not hand a weapon an attribute for a stat the weapon does not have.
-///
-/// # WHAT ACTUALLY GENERATES A POOL (established 2026-08-21)
-///
-/// The 25% rule below is an APPROXIMATION of DE's data, not the mechanism, and
-/// three findings pin down what the mechanism is:
-///
-/// 1. **A riven belongs to a FAMILY, and DE names it.** The weekly trade dump
-///    carries `compatibility`, documented as *"Name of item/family of items it
-///    can be equipped on"* — `Boltor` with no `Boltor Prime`, `Ballistica` with
-///    no `Rakta Ballistica`, `Lex` with no `Lex Prime`. The wiki says the same
-///    in words (*"assigned to a single weapon (and its variants) per Riven
-///    mod"*) and DE treats compatibility narrowing to one variant as a BUG they
-///    reverted. `data/rivens/de_families.yaml` is that list.
-///    DISPOSITION IS THE EXCEPTION AND PROVES IT: it is per VARIANT (the Boltor
-///    is 1.30, its Prime and the Telos are 1.20) while compatibility is per
-///    family. Two different keys on the same card.
-/// 2. **DE maintains the pool per family, by hand.** *"Fixed issue where
-///    weapons could end up with Rivens that aren't compatible (ex: Projectile
-///    Flight Speed on Vadarya Prime Rivens)"* — an incompatible stat is a bug
-///    DE fixes per weapon, which is only possible over explicit data. That is
-///    why the wiki's rule says *"usually"* and *"exceptions exist on a case by
-///    case basis"*: it is the community's best fit to a table, not the table.
-/// 3. **A FAMILY'S POOL IS THE UNION OVER ITS MEMBERS, not the intersection.**
-///    Both readings are consistent with the rule, and the surveyed families
-///    settle it: seven (family, stat) pairs have members that disagree under
-///    the 25% line, and real cards say the stat ROLLS in five of them — Boar
-///    Slash, Braton Impact, Braton Puncture, Karak Slash, Sybaris Puncture,
-///    each earned by ONE member being over the line. The two that go the other
-///    way are one family, the Sicarus, and it is already an exception carrying
-///    its own count (0 of 500 for both Puncture and Slash).
-///
-/// So: UNION over the family's members, UNION over each member's free forms,
-/// then the exceptions — which is exactly the order below. An exception is not
-/// a patch on a broken rule; it is the one place DE's actual table is recorded,
-/// and the rule is what fills in for a family nobody has a card from.
+/// not hand a weapon an attribute for a stat the weapon does not have. What
+/// generates a pool — DE's per-family table, and why the 25% rule is an
+/// approximation of it rather than the mechanism — is docs/DATA_SOURCES.md
+/// §"Riven pools".
 ///
 /// THREE SOURCES, IN THIS ORDER, and the derivation is the LAST of them. What a weapon can roll is DE's own per-weapon table, it is
 /// published nowhere, and a survey of ~12 000 live riven listings says it is

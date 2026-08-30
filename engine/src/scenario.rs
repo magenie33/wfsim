@@ -1,69 +1,15 @@
-//! **WHAT A FIGHT CONSISTS OF, declared once for the whole product** — [`BUILD_AXES`](crate::builds::BUILD_AXES)'s sibling, for the
-//! other half of a simulation.
+//! **WHAT A FIGHT CONSISTS OF, declared once for the whole product** —
+//! [`BUILD_AXES`](crate::builds::BUILD_AXES)'s sibling, for the other half of
+//! a simulation. A BUILD is what you are carrying; a FIGHT is everything else.
 //!
-//! A BUILD is what you are carrying; a FIGHT is everything else, and until this
-//! list existed the second half had no declaration at all. Three consequences,
-//! and they are why this file exists rather than being tidy:
-//!
-//! 1. **THE PAGE RE-DERIVED THE RULES.** Some scenario fields are settled by
-//!    the weapon rather than by the reader, and `parse_fight` settled them
-//!    while `app.js` independently greyed the same boxes. Two implementations
-//!    of one rule, able to drift in silence, because a settled field looks
-//!    identical whoever settled it. The pattern `evo_forbids` and `auras: [id]`
-//!    already refuse: THE ENGINE DECIDES AND `/api/meta` STATES THE CONSEQUENCE.
-//!
-//! 2. **`defaultScenario()` IS A HAND LIST.** A field the server gains and the
-//!    page forgets does not RESET when a preset is switched — the Eximus bug of
-//!    2026-08-07, where switching back to the official ruler left it fighting
-//!    an Eximus because that yaml never says `eximus:`.
-//!
-//! 3. **A READER COULD NOT SEE THE WHOLE FIGHT.** What is hidden or settled for
-//!    the current weapon was invisible, so "the same fight across two weapons"
-//!    was a claim nobody could check.
-//!
-//! **THE DOCUMENT KEEPS EVERYTHING; THE UI SHOWS WHAT APPLIES.** The buff map's
-//! own rule (AGENTS.md), generalised: the whole map travels because it is the
-//! FIGHT's, and pruning it to what the current build can grant made the quick
-//! calc a different fight the moment a candidate granted a buff the current
-//! build lacked.
+//! The rule this serves is AGENTS.md §"A FIGHT IS ONE DOCUMENT": the ENGINE
+//! decides what may be ruled on and `/api/meta` states the consequence per
+//! weapon, so the page never re-derives a rule and the two cannot drift. The
+//! document keeps EVERY field even where one is settled or hidden, because a
+//! map pruned to what the current build can grant is a different fight the
+//! moment a candidate grants something the build lacks.
 //!
 //! # THE PRIMITIVE IS A CAPABILITY, NOT A "FORCED" FLAG
-//!
-//! The first version of this file had an `Applies::WhenWeapon(Rule)` and a
-//! `forced_for` that matched on the axis id — which was a hand list wearing a
-//! type, and whose declared `Rule` the function then ignored and re-derived.
-//! Worse, "forced" is ONE VERB over several different relationships, and they
-//! come apart the moment a second kind of weapon exists:
-//!
-//!   * the weapon has no such mechanism at all (a Sentinel has no reserve);
-//!   * the mechanism is there and the answer is not yours (a Sentinel aims,
-//!     always).
-//!
-//! So an axis declares the CAPABILITIES it needs, in order, each with the value
-//! it resolves to when the weapon lacks one. Nothing is written down as forced:
-//! it is DERIVED by asking the weapon. The reason is one sentence per
-//! CAPABILITY rather than one per (axis, weapon) pair, so a new weapon class
-//! costs no new prose.
-//!
-//! **THE AMMO BOX IS WHY.** It is settled either way and for OPPOSITE reasons —
-//! `HasReserve` absent means nothing can run out (on), `CanResupply` absent
-//! means pickups it cannot get (off). One flag read as the wrong one of those
-//! two facts ticked-and-disabled the box on the whole roster, so the only
-//! weapon whose ammo you could adjust was the one weapon the game gives no way
-//! to adjust. Two capabilities cannot make that mistake; one flag
-//! could not avoid it.
-//!
-//! **AND IT IS WHAT MELEE WILL NEED.** The same `aiming` axis wants OPPOSITE
-//! values on two weapon kinds — a Sentinel is always aiming (`ChoosesAim`
-//! absent, so true), a melee weapon never aims at all (`Aims` absent, so false)
-//! — which one rule per axis cannot say and two capabilities say without
-//! arguing. `Aims` is deliberately NOT declared yet: there is no melee weapon
-//! in the roster, and a capability every weapon has is a capability nothing
-//! tests. The shape is here so the day it lands is a one-line day.
-//!
-//! WHAT THIS FILE IS NOT: it does not parse, apply or validate. `parse_fight`
-//! still reads the request and is still the authority on what a field MEANS.
-//! This says which fields exist, and when the weapon takes the choice away.
 
 /// A value a settled axis resolves to.
 ///

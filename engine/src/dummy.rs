@@ -5861,72 +5861,14 @@ fn debilitate_split(
 }
 
 /// EXTRA HIT — the second damage instance an ability grants, fired off the one
-/// that triggered it (wiki `Extra_Hit`; MECHANICS §7 §"Extra Hit"). Returns
-/// whether it killed the target.
+/// that triggered it. Returns whether it killed the target.
 ///
-/// The wiki's formula is one line —
-///
-/// > Extra Hit Damage = Weapon Hit Damage × Extra Hit Percentage
-/// >                    × (1 + Faction Damage Bonuses)
-///
-/// — and every oddity people report about Xata's Whisper falls out of `Weapon
-/// Hit Damage` ALREADY containing a faction layer, a crit multiplier and a
-/// body-part multiplier. So this function takes the triggering instance's
-/// finished `trigger_raw` and multiplies rather than rebuilding anything:
-///
-/// - **faction, again.** One `faction_at_time` here, on top of however many the
-///   trigger already carried. A direct hit is at depth 1, so its extra hit is
-///   at 2; a Blast detonation is at depth 2, so ITS extra hit is at 3 — which
-///   is the "triple dip" both wikis name and neither has to be hardcoded.
-/// - **the body part, again** — `part_again`, and it is the caller that knows.
-///   A direct headshot passes its `part_factor`; a radial, a field tick and a
-///   Blast detonation pass 1.0, since none of them struck a body part in the
-///   first place. DE's CN card states both halves: "同理，弱点倍率也会被计算两
-///   次" for a hit, and "弱点倍率只会被计算一次" off a Blast detonation.
-/// - **crit, once and inherited.** The extra hit rolls no crit of its own (the
-///   EN wiki files "Xata's Whisper's Extra Hits cannot crit" under Bugs) but
-///   `trigger_raw` critted, so the number behind an orange hit is orange-sized
-///   — which is what "affected by ... critical ... damage mods (e.g. Vital
-///   Sense)" on the ability's own page means.
-/// - **`bracket`** is the trigger's elemental correction, and it is 1.0
-///   everywhere except where the trigger's own bracket differs from the base
-///   attack's — see [`DummyParams::extra_hit_bracket`]. The Blast detonation is
-///   the loud case: it takes NO elemental bonus, and the extra hit off it takes
-///   the whole one.
-///
-/// It is a real instance, so it lands through [`TargetState::apply`] like any
-/// other: Void's ×1.5 against Overguard is the vulnerability column doing its
-/// job, not a rule written here.
-///
-/// AND IT ROLLS ITS OWN STATUS, at the weapon's own chance ("附加的虚空伤害具有
-/// 基于武器本身触发几率的独立触发几率"). Its vector is one type, so the proc is
-/// always that type — a Void proc, worth a Condition Overload stack and no
-/// damage.
-///
-/// THE CALLER DECIDES WHETHER IT FIRES, and the rule is short: a WEAPON damage
-/// instance triggers one, a status payload does not — except a Blast
-/// detonation, which does and is filed under Bugs. Nothing here checks; a
-/// function that guessed from its arguments which kind of instance it was
-/// handed would be the third place that knowledge lives.
-/// WHAT A STATUS LEFT BY AN EXTRA HIT BURNS OFF — the one place the rule lives,
-/// because the category has two members and they answer it differently for the
-/// same reason (docs/EXTRA_HIT.md).
-///
-/// The wiki states it for an Extra Hit that deals damage: *"Damage over Time
-/// status effects created by an Extra Hit will use the Extra Hit Damage as
-/// Modded Base Damage"* — which is why such a status takes the ELEMENTAL
-/// bonuses an ordinary weapon status is denied: they are already inside that
-/// number.
-///
-/// Read literally it gives ZERO for Primary Debilitate, which the same page
-/// calls "a 0-damage Extra Hit", and that status plainly does damage. The rule
-/// that covers both:
-///
-/// > an Extra Hit REPLACES the base its status would have used. A 0% one
-/// > replaces nothing, so the level above stands.
-///
-/// The owner's phrasing for the other direction is the clearest statement of
-/// it there is — 上一级被 resupply 替换了.
+/// The factor-by-factor account is docs/EXTRA_HIT.md §"How the multipliers
+/// stack"; the shape here is that it MULTIPLIES the triggering instance's
+/// finished `trigger_raw` rather than rebuilding anything, so faction and the
+/// body part are applied a second time and crit is inherited rather than
+/// rolled. `part_again` is the caller's, because only the caller knows whether
+/// what triggered this struck a body part at all.
 fn extra_hit_status_base(extra_hit_damage: f64, level_above: f64) -> f64 {
     if extra_hit_damage > 0.0 {
         extra_hit_damage

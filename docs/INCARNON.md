@@ -523,3 +523,108 @@ Boar Prime cost nothing to verify). New sessions are needed for:
   WEAPON_INTAKE §Batch C;
 - **Vectis's gauge** — 5 hits × 10 rounds should be 50, the page says 45;
 - **Stug** — everything about it.
+
+## Perks this loader does not model, and what each needs
+
+`evolutions_data`'s `every_inert_perk_is_accounted_for` pins the list; this is
+what each entry is waiting on. An unknown effect kind is the only spelling that
+means "nothing models this yet" and stays true — the kinds that would fit all
+pay out UNCONDITIONALLY, so `flat_base_damage` would load Haven Foray's
+overshield clause as a silent +30 on every build, `flat_base_crit_multiplier`
+would grant Prelude of Might's +3x to everyone, and a `stacking_buff` carrying a
+multishot payload becomes `AssumedMaxMultishot` whatever trigger sits beside it.
+
+`unmodeled_effects` is derived from the same variants, so a perk's tile and this
+list cannot disagree.
+
+### Ammo efficiency, and it is CONDITIONAL
+
+Efficiency is real DPS the moment a reserve runs dry, so it is not an indirect
+stat. One member is gated on a movement state and one on a headshot window, and
+applying either unconditionally overstates the build. Both also land on the
+Laetum's Incarnon magazine, which is charge-backed and takes no efficiency at
+all.
+
+### One-stack stacking buffs
+
+A "timed buff" is a stacking buff with ONE stack — same trigger, same window —
+so it uses that vocabulary and lands here when its PAYLOAD is one the engine
+does not model. The label names the payload, which is what tells the two apart.
+
+- **Ripper Rounds** — punch through, multi-target only.
+- **Neurotoxin** — "+70% Toxin for 3 s on headshot", real DPS on a weapon played
+  at 100% headshots and the one genuine gap in this group. It is also
+  `currently_broken` in game ("Currently does not work"), and `apply` skips
+  broken evolutions wholesale, so the two cancel out. Whoever models a per-type
+  buff payload should check DE fixed the perk first: a mechanic that cannot be
+  measured cannot be verified.
+
+### The Furis Genesis
+
+Five of its eight perks, each written under a kind this loader does not know.
+What the remaining one needs: **Haven Foray** wants a Tenno with overshields,
+which `TennoCondition` has no room for.
+
+### The Phenmor
+
+Four inert perks. Two are the family's — an instant reload the sim cannot end,
+and Ready Retaliation's reload-speed kind. The other two would be real damage
+here rather than handling stats:
+
+- **Spiteful Defilement** is the ANTI-Condition-Overload perk: a crit multiplier
+  that pays while the target carries fewer than three statuses and stops the
+  moment CO starts paying. The counter it needs exists (CO's bucket IS the
+  status-type count); a crit bracket that reads it does not.
+- **Lingering Judgement** is armed by a headshot STREAK — two inside two
+  seconds, held for eight. The engine has per-headshot triggers for fire rate
+  and reload and a flat headshot-damage bonus, but nothing that counts N hits
+  inside a window. On the official ruler, which puts every shot into a head, it
+  would arm on the second shot and never lapse: a flat +50% headshot damage for
+  the whole engagement, and the largest thing on this list.
+
+### The Braton family — one adapter, four weapons
+
+Every gap here is four rows of the same fact.
+
+- **Daring Reverie**'s larger half needs a CHANNELED ABILITY, a Warframe state
+  this arena has no concept of. Worth naming because on three of the four
+  variants the conditional half is the BIGGER number, so a Braton's figure is
+  not its ceiling.
+- **Munitions Grit**'s +20% multishot has no flat-multishot arm. Its surcharge
+  (`multishot_consumes_ammo`) IS modelled, and the pair is circular: the
+  surcharge only pays on projectiles multishot generated.
+- **Gunsmoke Pick Up** is out of reach twice — no ammo-restore kind, and a
+  PUNCH THROUGH trigger needs a second body behind the first.
+
+### The Latron family — three weapons, four kinds
+
+Two are near-misses rather than absences.
+
+- **Riddled Target** wants the live stacking-multishot buff the engine already
+  has; that one's trigger is an ELECTRICITY status and this one is PUNCTURE.
+  The machinery exists and the trigger arm does not — a large gap here, since
+  the base form is 60–80% Puncture, so four stacks of +25% would be held up
+  indefinitely off the weapon's own main damage type.
+- **Flensing Spikes** strips armour per PUNCTURE status. Armour stripping exists
+  for Corrosive and Heat, the two the game strips with; a third rule has no arm.
+  Against the official ruler's Thrax at level 9999 it would be worth a great
+  deal.
+- **Marksman's Focus** is zoom, which is not merely cosmetic in general — a zoom
+  level carries its own damage or crit bonus on many weapons — but carries none
+  on this one. Marksman's Hand is recoil and IS loaded, into the indirect
+  bucket.
+
+### The Boltor family — three weapons, three kinds
+
+- **Crimson Overture** is an on-kill stacking buff on the BASE damage, and would
+  be the first: the engine's on-kill stacks (Galvanized Chamber's multishot,
+  Bladed Rounds' crit damage) all multiply the base rather than move it.
+- **Hunter's Mantra**'s second half needs a CHANNELED ABILITY, and both of its
+  payloads are spatial anyway — punch-through needs a second body and accuracy
+  needs a miss to prevent.
+
+Rapid Reinforcement is NOT on the list: it is implemented
+(`EvoEffect::ReloadSpeedBonus`, into the additive bucket the mods feed). The
+conditional member of that family, **Ready Retaliation**, is inert — its
+`condition:` is unread, and granting a conditional bonus unconditionally is
+worse than not granting it.

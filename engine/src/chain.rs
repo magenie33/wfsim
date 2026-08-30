@@ -1,87 +1,21 @@
 //! BEAM CHAINING — where ONE shot lands when there is more than one body.
 //!
-//! A chaining beam is the first mechanic in this engine that cannot be asked
-//! about a single target: every clause of it is a statement about a FORMATION.
-//! This module answers the geometric half and nothing else — given where the
-//! bodies are and where the shot landed, which of them takes a damage
-//! instance, at what share of the direct hit, and under which rules. What each
-//! instance then DOES is the ordinary damage pipeline's business, because a
-//! chain hop is not a special kind of hit: it is *"a beam with a smaller base
-//! damage"*, so its crit, its status, its procs and their
-//! DoTs all fall out of the share and need no rule of their own.
+//! The mechanic, its wiki quotes and its measurements are docs/MECHANICS.md
+//! §12. This module is the geometric half: which bodies a shot reaches, at what
+//! share, in what order.
 //!
-//! # The mechanic
+//! THE TWO ANSWERS THAT ARE THIS MODULE'S RATHER THAN THE GAME'S:
 //!
-//! Sourced from the Torid Incarnon's page, which states it more completely than
-//! the general `Continuous_Weapon` page does. The Amprex (3 hops / 10 m / 0.5)
-//! and the Kuva Nukor (2 / 9 m / 0.5) are the same shape with other constants,
-//! which is why nothing here is named after a weapon.
-//!
-//! **THE DAMAGE RADIUS SEEDS THE CHAINS.** *"The beam will chain independently
-//! to 5 additional enemies starting from EACH target hit by the initial damage
-//! radius. Each chain chooses targets independently, and an enemy can be struck
-//! by multiple chains."* So a splash that catches four bodies starts four
-//! chains, not one — and that, rather than the splash damage itself, is what a
-//! radius mod is buying (see the numbers in docs/MECHANICS.md §12).
-//!
-//! **A PATH VISITS NOBODY TWICE**. "Struck by multiple
-//! chains" means the repeats come from DISTINCT paths rather than from a path
-//! looping back on itself. It is what makes the arithmetic well-defined, and it
-//! separates from the alternative at three targets, because the falloff
-//! compounds ALONG a path.
-//!
-//! **THE NEXT HOP IS THE NEAREST VIABLE TARGET**, and this
-//! is the one clause with a MEASUREMENT behind it: ten hops read off two paths
-//! in the Simulacrum went to an orthogonal neighbour every time, never to a
-//! diagonal and never past a nearer body (MEASUREMENTS M52).
-//!
-//! **AND THE TIE-BREAK IS NOT REPRODUCIBLE, SO IT IS NOT REPRODUCED.** Nine of
-//! those ten hops were exact ties, and no rule expressible in the formation's
-//! own geometry fits them: a fixed compass priority scores 8 of 10 over all 24
-//! orderings, a turn preference 8 of 10 over all 96, entity-index order 4 to 7.
-//! The same situation resolved two ways — from (3,1) the path went straight
-//! where from (4,1) it turned — so nothing that reads only relative positions
-//! can be right.
-//!
-//! The owner's own observation says why: a NON-HUMANOID model changes the path
-//! while leaving every relative position identical. What changes with the model
-//! is the collider, so the order is the game's spatial query returning bodies
-//! in world-space broadphase order — which depends on which cell each body
-//! falls into, and is not a function of the formation at all.
-//!
-//! WHAT IS GUARANTEED HERE INSTEAD: *"if the enemies never
-//! move, the chain path is always fixed"*. That is the property [`resolve`]
-//! has — ties go to the lowest body index, so one formation always produces one
-//! path. It is arbitrary and it is stable, which is the honest pair when the
-//! real rule is unknowable. And it costs nothing that matters: the TOTAL is
-//! invariant to tie-breaking (`the_total_is_invariant_to_tie_breaks`), so the
-//! part nobody can know moves damage between bodies without changing how much
-//! the formation took.
-//!
-//! **NO LINE OF SIGHT** — a hop is a distance test and
-//! nothing else, so a body behind another is as reachable as one beside it.
-//!
-//! **ONLY THE DIRECTLY STRUCK TARGET CAN BE HEADSHOT**.
-//! Everything the splash catches and everything a chain reaches lands on the
-//! body. It is the clause with the most consequence for build ranking: in a
-//! 3 x 3 formation at 3 m under Primed Firestorm, one of TWENTY-FOUR instances
-//! is headshot-eligible and it carries 7.6% of the damage — so a build leaning
-//! on a head multiplier keeps almost none of it in a crowd, while a status
-//! build collects 24 rolls at full chance.
-//!
-//! **MULTISHOT FOLLOWS THE SEED, AND CARRIES DOWN ITS WHOLE PATH.** Verbatim:
-//! *"the spherical damage radius does not benefit from Multishot; only targets
-//! directly hit by the beam benefit"*, and *"due to the damage radius not
-//! benefiting from multishot, beams chaining from targets that were in the
-//! damage radius but not directly struck by the initial beam itself will also
-//! not benefit from multishot"*. So the flag is decided once per seed and
-//! inherited by every hop that seed launches.
-//!
-//! # What this module does NOT decide
-//!
-//! Whether a radius mod widens the CHAIN range. It does not here: [`Splash::radius_m`] is the modded value and [`Spec::range_m`]
-//! is not touched by it. Two wiki pages disagree about this and the weapon's
-//! own page is the one followed — see docs/MECHANICS.md §12.
+//! - **A TIE GOES TO THE LOWEST BODY INDEX.** The real tie-break is not a
+//!   function of the formation at all — a non-humanoid model changes the path
+//!   while every relative position stays identical, so the order is the game's
+//!   spatial query returning bodies in world-space broadphase order. What is
+//!   guaranteed instead is the property the wiki states, *"if the enemies never
+//!   move, the chain path is always fixed"*: arbitrary, stable, and free,
+//!   because the TOTAL is invariant to it
+//!   (`the_total_is_invariant_to_tie_breaks`).
+//! - **A HOP IS A DISTANCE TEST AND NOTHING ELSE.** No line of sight, so a body
+//!   behind another is as reachable as one beside it.
 
 use crate::space::Vec2;
 

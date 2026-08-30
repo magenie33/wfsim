@@ -3015,129 +3015,15 @@ use crate::loadout::WeaponBase;
             // per-type buff payload should check DE fixed the perk first —
             // a mechanic that cannot be measured cannot be verified.
             "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage_bonus",
-            // ---- THE FURIS GENESIS ---------------------------------------
-            // Five of its eight perks, and every one is written under a kind
-            // this loader does NOT know — deliberately, because the kinds that
-            // would have fit all pay out unconditionally:
+            // WHAT EACH ENTRY IS WAITING ON: docs/INCARNON.md §"Perks this
+            // loader does not model, and what each needs".
             //
-            //   `flat_base_damage` ignores `condition:`, so Haven Foray's
-            //   overshield clause would have loaded a silent +30 on every
-            //   build. `flat_base_crit_multiplier` ignores it too, so Prelude
-            //   of Might would have granted +3x to everyone. And a
-            //   `stacking_buff` carrying a multishot payload becomes
-            //   AssumedMaxMultishot whatever trigger sits beside it, so
-            //   Stormburst would have handed +1.2 multishot to builds with no
-            //   Electricity in them.
-            //
-            // An unknown kind is the only spelling that means "nothing models
-            // this yet" and stays true.
-            //
-            // THREE HAVE LEFT THIS LIST. Prelude of Might needed a
-            // condition read off the RESOLVED panel, which nothing here did, so
-            // it got `CritMultiplierBelowCritChance` and a late hook in
-            // `resolve`. Headcracker needed a live stacking buff in the
-            // additive fire-rate bucket; `resolve` converts its +5% into the
-            // absolute rate that fraction is worth, so the sim never needed an
-            // unmodded rate of its own. And STORMBURST needed a stacking buff
-            // that could state a TARGET condition — which the static
-            // `AssumedMaxMultishot` path cannot, but a LIVE buff can, because
-            // it is bumped inside the fight where the target's debuffs are in
-            // hand. That was the first buff added AFTER the StackingBuff
-            // refactor, and it cost exactly what the design promised: one
-            // trigger arm, one grant arm, no bookkeeping.
-            //
-            // What the remaining one needs: HAVEN FORAY needs a Tenno with
-            // overshields, which `TennoCondition` has no room for.
-            //
-            // EXECUTIONER'S FORTUNE was here until 2026-08-10, on the reading
-            // that it "needs a reload the sim can END rather than scale". That
-            // was the wrong shape: its trigger is a HEADSHOT, and you cannot
-            // shoot while reloading, so there is never a reload in flight for
-            // it to end. It is a magazine that fills — the machinery Sentient
-            // Surge already had — and the only thing missing was reading the
-            // headshot and the kill at the one site that knows both.
-            //
-            // Every one of them now says so on its own tile — `unmodeled_effects`
-            // is derived from these same variants, so this list and the UI
+            // An unknown effect kind is the only spelling that means "nothing
+            // models this yet" and stays true — every kind that would fit pays
+            // out UNCONDITIONALLY, so loading one grants a conditional bonus to
+            // builds that do not meet the condition. `unmodeled_effects` is
+            // derived from these same variants, so a perk's tile and this list
             // cannot disagree.
-            // THE PHENMOR, the first natural Incarnon after the
-            // Laetum and the first weapon to bring FOUR inert perks at once.
-            // Two are the family's and already argued above — an instant reload
-            // the sim cannot end, and Ready Retaliation's reload-speed kind
-            // that this loader has no arm for.
-            //
-            // The other two are new shapes, and both would be worth real damage
-            // here rather than being handling stats:
-            //
-            // SPITEFUL DEFILEMENT is the ANTI-Condition-Overload perk — a crit
-            // multiplier that pays while the TARGET carries fewer than three
-            // statuses and stops the moment CO starts paying. The counter it
-            // needs already exists (CO's bucket IS the status-type count); what
-            // does not is a crit bracket that reads it.
-            //
-            // LINGERING JUDGEMENT is a buff armed by a headshot STREAK — two
-            // inside two seconds, held for eight. The engine has per-headshot
-            // triggers for fire rate and reload and a flat headshot-damage
-            // bonus, but nothing that counts N hits inside a window. On the
-            // official ruler, which puts every shot into a head, it would arm
-            // on the second shot and never lapse: a flat +50% headshot damage
-            // for the whole engagement, and the largest thing on this list.
-            // THE BRATON FAMILY — one adapter, four weapons, so
-            // every gap below is four rows of the same fact. THREE kinds:
-            //
-            // DARING REVERIE's larger half needs a CHANNELED ABILITY, a
-            // Warframe state this arena has no concept of — it fires one weapon
-            // and casts nothing. Worth naming because on three of the four
-            // variants the conditional half is the BIGGER number, so a Braton's
-            // figure here is not its ceiling.
-            //
-            // MUNITIONS GRIT's +20% multishot has no flat-multishot arm in this
-            // loader. Its surcharge (`multishot_consumes_ammo`) IS modelled, and
-            // the pair is circular: the surcharge only pays on projectiles
-            // multishot generated, so the perk's own multishot is what makes its
-            // own multiplier worth anything.
-            //
-            // GUNSMOKE PICK UP is out of reach twice — no ammo-restore kind, and
-            // a PUNCH THROUGH trigger needs a second body behind the first.
-            // THE LATRON FAMILY — three weapons, four kinds, and
-            // two of them are near-misses rather than absences.
-            //
-            // RIDDLED TARGET wants the live stacking-multishot buff the engine
-            // already has; that one's trigger is an ELECTRICITY status
-            // (Stormburst's) and this one is PUNCTURE. The machinery exists and
-            // the trigger arm does not, which is the whole gap — and it is a
-            // large one here, since the base form is 60-80% Puncture, so four
-            // stacks of +25% would be held up indefinitely off the weapon's own
-            // main damage type.
-            //
-            // FLENSING SPIKES strips armour per PUNCTURE status. Armour
-            // stripping exists for Corrosive and Heat, the two the game strips
-            // with; a third rule has no arm. Against the official ruler's Thrax
-            // at level 9999 it would be worth a great deal.
-            //
-            // MARKSMAN'S FOCUS is zoom, which is NOT merely cosmetic in
-            // general — a zoom level carries its own damage or crit bonus on
-            // many weapons — but carries none on this one. Marksman's Hand is
-            // recoil and IS loaded, into the indirect bucket, like every other
-            // handling stat here.
-            // THE BOLTOR FAMILY — three weapons, three kinds.
-            //
-            // CRIMSON OVERTURE is an on-kill stacking buff on the BASE damage,
-            // and it would be the first: the engine's on-kill stacks (Galvanized
-            // Chamber's multishot, Bladed Rounds' crit damage) all multiply the
-            // base rather than move it.
-            //
-            // HUNTER'S MANTRA's second half needs a CHANNELED ABILITY, and both
-            // of its payloads are spatial anyway — punch-through needs a second
-            // body and accuracy needs a miss to prevent.
-            //
-            // (RAPID REINFORCEMENT is not here. It is IMPLEMENTED —
-            // `EvoEffect::ReloadSpeedBonus`, into the same
-            // additive bucket the mods feed — because the intake kept adding it
-            // and docs/INCARNON.md counts it on 14 guns. The CONDITIONAL member
-            // of the family, Ready Retaliation, is still inert below: its
-            // `condition:` is unread, and granting a conditional bonus
-            // unconditionally is worse than not granting it.)
         ];
         // TWO POPULATIONS, AND THE PREFIX IS WHICH. The list above is the ARGUED
         // one: a hand-written perk whose effect the engine cannot express, where
