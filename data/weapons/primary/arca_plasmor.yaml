@@ -68,12 +68,9 @@ attack:
   crit_chance: 0.22
   crit_multiplier: 1.6
   status_chance: 0.28
-  # INNATE INFINITE BODY PUNCH-THROUGH — "Innate Infinite Body Punch Through",
-  # under this weapon's Advantages, and the punch-through page's own exception
-  # list names it. Written as a number the sim can hold, and it IS the whole
-  # mechanic here: the page's qualifier separates BODIES from geometry ("does
-  # not apply to surfaces") and this arena has no geometry.
-  punch_through_m: 999.0
+  # "Innate Infinite Body Punch Through", under this weapon's Advantages, and
+  # the page's own list names it. see notes: infinite_body_punch_through
+  punch_through_m: infinite
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 30.0 m", Projectile at 60 m/s — and the disadvantages say the
   # same thing in words, which is not true of the Tenet variant.

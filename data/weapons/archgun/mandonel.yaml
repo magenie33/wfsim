@@ -57,14 +57,11 @@ attack:
   crit_chance: 0.30
   crit_multiplier: 2.5
   status_chance: 0.20
-  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
-  # list, "Mandonel". Written as a number the sim can
-  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
-  # from geometry ("innate punch through does not apply to surfaces") and this
-  # arena has no geometry, so everything the ray meets is a body.
+  # The page's own list names it: "Mandonel".
+  # see notes: infinite_body_punch_through
   # UNQUALIFIED on the infinite list, where the finite list says "Charged Shot
   # only" — so the restriction the page wanted, it wrote.
-  punch_through_m: 999.0
+  punch_through_m: infinite
   damage: { puncture: 400.0, heat: 600.0, radiation: 800.0 }   # 1800
 
 unmodeled:

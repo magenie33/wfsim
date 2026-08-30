@@ -51,12 +51,9 @@ attack:
   crit_chance: 0.4
   crit_multiplier: 3
   status_chance: 0.2
-  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
-  # list, "Paris (Incarnon Form)". Written as a number the sim can
-  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
-  # from geometry ("innate punch through does not apply to surfaces") and this
-  # arena has no geometry, so everything the ray meets is a body.
-  punch_through_m: 999.0
+  # The page's own list names it: "Paris (Incarnon Form)".
+  # see notes: infinite_body_punch_through
+  punch_through_m: infinite
   damage: { impact: 95, heat: 365 }   # total 460
 
 # incarnon_evolutions: see data/weapons/primary/paris.yaml (shared group)

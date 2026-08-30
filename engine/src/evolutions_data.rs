@@ -1570,6 +1570,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 // stack drops on timeout and the timer restarts.
                 decay: match v.get("decay").and_then(Value::as_str) {
                     Some("per_stack_expiry") => crate::loadout::BuffDecay::PerStackExpiry,
+                    Some("all_at_once") => crate::loadout::BuffDecay::AllAtOnce,
                     _ => crate::loadout::BuffDecay::LoseOneAndReset,
                 },
                 cleared_by: match v.get("cleared_by").and_then(Value::as_str) {
@@ -2373,6 +2374,7 @@ fn buff_trigger(s: &str) -> Option<crate::loadout::BuffTrigger> {
     Some(match s {
         "firing" => T::Firing,
         "headshot" => T::Headshot,
+        "punch_through" => T::PunchThrough,
         "consecutive_headshot" => T::ConsecutiveHeadshot,
         "hit" => T::Hit,
         "plain_hit" => T::PlainHit,
@@ -2397,6 +2399,7 @@ fn buff_grant(s: &str) -> Option<crate::loadout::BuffGrant> {
         "base_multishot" => G::BaseMultishot,
         "multishot_percent" => G::MultishotPercent,
         "base_crit_damage" => G::BaseCritDamage,
+        "crit_chance" => G::CritChance,
         "headshot_damage_bonus" => G::HeadshotDamage,
         _ => return None,
     })
@@ -2427,6 +2430,7 @@ fn stacking_card_id(
         (T::Kill, G::FlatBaseDamage) => "on_kill_damage",
         (T::ReloadFromEmpty, G::FlatBaseDamage) => "on_empty_reload_damage",
         (T::ReloadFromEmpty, G::BaseCritDamage) => "on_empty_reload_crit_damage",
+        (T::PunchThrough, G::CritChance) => "on_punch_through_crit_chance",
         // A pair nobody has written a card for yet. It is still a real buff and
         // still runs; it just shares one generic id, which is visible the first
         // time two of them appear on one weapon and is the point at which the

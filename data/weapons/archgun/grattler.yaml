@@ -62,13 +62,10 @@ attack:
   crit_chance: 0.25
   crit_multiplier: 2.0
   status_chance: 0.25
-  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
-  # list, "Grattler". Written as a number the sim can
-  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
-  # from geometry ("innate punch through does not apply to surfaces") and this
-  # arena has no geometry, so everything the ray meets is a body.
+  # The page's own list names it: "Grattler".
+  # see notes: infinite_body_punch_through
   # An AoE weapon ON the exception list, which is what the list is for.
-  punch_through_m: 999.0
+  punch_through_m: infinite
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 225.0 m". A PROJECTILE with a range row, where the Dread and the Kuva Bramma have none — the case that killed the class rule
   range_m: 225.0

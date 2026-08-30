@@ -1708,6 +1708,8 @@ pub struct WeaponBase {
     /// PUNCH-THROUGH DEPTH the WEAPON brings, in metres of material — see
     /// [`crate::weapons_data::AttackSpec::punch_through_m`].
     pub punch_through_m: f64,
+    /// [`crate::weapons_data::AttackSpec::projectile_width_m`] — 0 is a ray.
+    pub projectile_width_m: f64,
     /// [`crate::weapons_data::AttackSpec::range_m`] — `INFINITY` when the
     /// weapon declares none, which is what every weapon did before 2026-08-19.
     pub range_m: f64,
@@ -2183,6 +2185,10 @@ pub enum BuffTrigger {
     PlainHit,
     /// Lethal Rearmament, Headcracker: any weak-point hit.
     Headshot,
+    /// Prolific Perforation: a pellet that went THROUGH the body it hit into
+    /// another. One per landing pellet, and nothing at all against a lone
+    /// target — the mechanic, not an admission.
+    PunchThrough,
     /// Stormburst: a hit on a target that ALREADY carries this status. The
     /// condition is on the TARGET, not on the shot — which is why it could not
     /// be expressed as a static `AssumedMaxMultishot` (that would grant the
@@ -2296,6 +2302,9 @@ pub enum BuffGrant {
     /// difference matters: a BASE grant is multiplied by the crit-damage mods
     /// at resolve and this one is one of them.
     CritDamage,
+    /// Prolific Perforation: a RELATIVE crit chance, into the bracket its card
+    /// names — "additive to other sources … such as Pistol Gambit".
+    CritChance,
     /// The RELATIVE status-chance bucket. Galvanized Elementalist's on-kill
     /// `+30% Status Chance`.
     StatusChance,
@@ -2357,6 +2366,7 @@ impl BuffGrant {
             BuffGrant::FireRate => "fire_rate",
             BuffGrant::Multishot => "multishot",
             BuffGrant::BaseCritDamage | BuffGrant::CritDamage => "crit_damage",
+            BuffGrant::CritChance => "crit_chance",
             BuffGrant::StatusChance => "status_chance",
             BuffGrant::HeadshotDamage => "headshot_damage",
         }
@@ -2377,6 +2387,7 @@ impl BuffGrant {
             BuffGrant::FireRate => "Fire Rate",
             BuffGrant::BaseCritDamage => "Base Critical Damage",
             BuffGrant::CritDamage => "Critical Damage",
+            BuffGrant::CritChance => "Crit Chance",
             BuffGrant::StatusChance => "Status Chance",
             BuffGrant::HeadshotDamage => "Headshot Damage",
         }
@@ -2390,6 +2401,7 @@ impl BuffTrigger {
         match self {
             BuffTrigger::PlainHit => "on a hit that neither crits nor procs",
             BuffTrigger::Headshot => "on a weak-point hit",
+            BuffTrigger::PunchThrough => "on a punch-through hit",
             BuffTrigger::HitEnemyWithStatus(_) => "on hitting a target already carrying the status",
             BuffTrigger::ReloadComplete => "on a completed reload",
             BuffTrigger::ReloadFromEmpty => "on a reload from empty",
@@ -3131,6 +3143,9 @@ pub struct ResolvedPanel {
     /// mod, riven and evolution that grants one, and ZERO on an attack that
     /// cannot use it. See [`crate::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
+    /// How wide the projectile is — see [`WeaponBase::projectile_width_m`]. No
+    /// mod moves it, so it arrives here unchanged.
+    pub projectile_width_m: f64,
     /// HOW FAR THIS ATTACK REACHES, metres — `INFINITY` when the weapon
     /// declares none. See [`crate::weapons_data::AttackSpec::range_m`]: past it
     /// there is nothing, which is a different fact from `falloff`, a ramp.
@@ -4883,6 +4898,7 @@ pub fn resolve_for(
         slot: base.slot,
         mod_pools: base.mod_pools,
         punch_through_m,
+        projectile_width_m: base.projectile_width_m,
         range_m: beam_range_m,
         damage,
         radial,

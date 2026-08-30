@@ -10,14 +10,14 @@ effects:
   # from: "Increase Base Damage by +30"
   - kind: flat_base_damage
     value: 30.0
-  # see notes: edge_gap_see_docs
-  - kind: out_of_scope
-    clause: "On Punch Through Hit: +10% Critical Chance for 3 seconds"
-    reason: one_target
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 8x"
-  - kind: unmodelled_stacks_up_to_x
+  # see notes: ballistica_bolt_that_went_through
+  - kind: stacking_buff
+    trigger: punch_through
+    per_stack:
+      crit_chance: 0.10
+    max_stacks: 8
+    duration_seconds: 3.0
+    decay: all_at_once
 
 source:
   url: https://wiki.warframe.com/w/Ballistica_Incarnon_Genesis

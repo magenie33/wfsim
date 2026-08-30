@@ -511,6 +511,16 @@ pub struct Traversal {
     pub left_m: f64,
 }
 
+/// WHAT "INFINITE BODY PUNCH THROUGH" IS WORTH IN METRES OF MATERIAL.
+///
+/// The class pierces every enemy and no geometry, and this arena has no
+/// geometry — so the number only has to outlast the deepest line of bodies a
+/// formation can build, which it does by three orders of magnitude at
+/// [`BODY_MATERIAL_M`] apiece. FINITE on purpose: what a shot does not spend
+/// crossing bodies is spent as flight (`dissipation_point`), and an infinity
+/// there is a NaN epicentre.
+pub const INFINITE_BODY_PUNCH_THROUGH_M: f64 = 999.0;
+
 /// EVERY BODY A SHOT PASSES THROUGH, and where it ran out — ONE walk, because
 /// two readers of it must not be able to disagree.
 ///
@@ -525,7 +535,13 @@ pub struct Traversal {
 /// approximate here: the page's one qualifier on innate punch-through — *"does
 /// not apply to surfaces"* — separates bodies from geometry, and this floor has
 /// no geometry. Everything the ray meets is a body.
-pub fn traverse(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) -> Traversal {
+pub fn traverse(
+    muzzle: Vec2,
+    dir: Vec2,
+    bodies: &[Vec2],
+    punch_through_m: f64,
+    width_m: f64,
+) -> Traversal {
     let len = dir.x.hypot(dir.y);
     if len <= 0.0 {
         return Traversal { struck: Vec::new(), stopped_in: None, left_m: 0.0 };
@@ -543,7 +559,12 @@ pub fn traverse(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) 
                 return None;
             }
             let perp = (px * uy - py * ux).abs();
-            if perp > BODY_RADIUS_M {
+            // A WIDE PROJECTILE SWEEPS RATHER THAN THREADS. The class the
+            // punch-through page names — "weapons that shoot wide projectiles"
+            // — catches a body its centre line misses, so the reach is half the
+            // width plus the body's own radius. Zero is a RAY, which is every
+            // other weapon and the behaviour this arena has always had.
+            if perp > BODY_RADIUS_M + width_m / 2.0 {
                 return None;
             }
             let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
@@ -571,8 +592,14 @@ pub fn traverse(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) 
 
 /// Every body a shot passes through — [`traverse`]'s first answer, kept as its
 /// own name because most callers want only this.
-pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) -> Vec<usize> {
-    traverse(muzzle, dir, bodies, punch_through_m).struck
+pub fn struck_along(
+    muzzle: Vec2,
+    dir: Vec2,
+    bodies: &[Vec2],
+    punch_through_m: f64,
+    width_m: f64,
+) -> Vec<usize> {
+    traverse(muzzle, dir, bodies, punch_through_m, width_m).struck
 }
 
 /// WHERE A TERMINAL BLAST GOES OFF — `weapons_data::BlastKind::Terminal`.
@@ -606,6 +633,7 @@ pub fn dissipation_point(
     aim_at: Vec2,
     bodies: &[Vec2],
     punch_through_m: f64,
+    width_m: f64,
 ) -> Vec2 {
     let (dx, dy) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
     let len = dx.hypot(dy);
@@ -613,7 +641,7 @@ pub fn dissipation_point(
         return contact;
     }
     let (ux, uy) = (dx / len, dy / len);
-    let t = traverse(muzzle, Vec2::new(dx, dy), bodies, punch_through_m);
+    let t = traverse(muzzle, Vec2::new(dx, dy), bodies, punch_through_m, width_m);
     if let Some(i) = t.stopped_in {
         // IT RAN OUT INSIDE THIS ONE. The epicentre is its surface facing the
         // shooter — the convention the contact case uses, so a round that
@@ -846,7 +874,7 @@ mod tests {
         let dir = Vec2::new(0.0, 1.0);
         let bodies = [Vec2::new(0.0, 3.0), Vec2::new(0.0, 3.0 + CONTACT_RANGE_M)];
         for &(pt, second) in table {
-            let hit = struck_along(muzzle, dir, &bodies, pt);
+            let hit = struck_along(muzzle, dir, &bodies, pt, 0.0);
             assert_eq!(
                 hit.len(), if second { 2 } else { 1 },
                 "{pt} m of punch through: the wiki says the second body is {}",
@@ -854,6 +882,29 @@ mod tests {
             );
             assert_eq!(hit[0], 0, "the near body is always the first one struck");
         }
+    }
+
+    /// A WIDE PROJECTILE SWEEPS A LANE, and a ray threads a line.
+    ///
+    /// The one thing the width changes: who is ON the shot. A body a metre off
+    /// the centre line is missed by every other weapon in the roster and caught
+    /// by this class, and it costs the sweep NOTHING to catch — `material_at`
+    /// is zero past the body's own radius, so a wide shot is not paying punch
+    /// through for the bodies it merely clips.
+    #[test]
+    fn a_wide_projectile_catches_what_a_ray_threads_past() {
+        let muzzle = Vec2::new(0.0, 0.0);
+        let dir = Vec2::new(0.0, 1.0);
+        // One dead ahead, one a metre to the side and further out.
+        let bodies = [Vec2::new(0.0, 5.0), Vec2::new(1.0, 8.0)];
+        assert_eq!(struck_along(muzzle, dir, &bodies, 99.0, 0.0), vec![0],
+            "a ray threads past the one beside it");
+        assert_eq!(struck_along(muzzle, dir, &bodies, 99.0, 3.0), vec![0, 1],
+            "a 3 m lane reaches 1.5 m either side, plus the body's own radius");
+        // …AND THE EDGE IS THE EDGE. 1.5 m of lane plus 0.25 m of body is
+        // 1.75 m, so a body at 1.8 m is outside it whatever the punch through.
+        let far = [Vec2::new(0.0, 5.0), Vec2::new(1.8, 8.0)];
+        assert_eq!(struck_along(muzzle, dir, &far, 99.0, 3.0), vec![0]);
     }
 
     /// ...AND THE ORDER IS THE RAY'S, not the list's. A formation is stored in
@@ -866,11 +917,11 @@ mod tests {
         let dir = Vec2::new(0.0, 1.0);
         // Deliberately stored far, near, middle.
         let bodies = [Vec2::new(0.0, 9.0), Vec2::new(0.0, 3.0), Vec2::new(0.0, 6.0)];
-        assert_eq!(struck_along(muzzle, dir, &bodies, 1.0), vec![1, 2, 0]);
+        assert_eq!(struck_along(muzzle, dir, &bodies, 1.0, 0.0), vec![1, 2, 0]);
         // A budget that pays for one crossing reaches two of them.
-        assert_eq!(struck_along(muzzle, dir, &bodies, 0.5), vec![1, 2]);
+        assert_eq!(struck_along(muzzle, dir, &bodies, 0.5, 0.0), vec![1, 2]);
         // …and none at all is the shot this engine has always fired.
-        assert_eq!(struck_along(muzzle, dir, &bodies, 0.0), vec![1]);
+        assert_eq!(struck_along(muzzle, dir, &bodies, 0.0, 0.0), vec![1]);
     }
 
     /// A BODY OFF THE LINE IS NOT CROSSED however much punch through is on the
@@ -880,7 +931,7 @@ mod tests {
         let muzzle = Vec2::new(0.0, BODY_RADIUS_M);
         let dir = Vec2::new(0.0, 1.0);
         let bodies = [Vec2::new(0.0, 3.0), Vec2::new(5.0, 6.0)];
-        assert_eq!(struck_along(muzzle, dir, &bodies, 99.0), vec![0]);
+        assert_eq!(struck_along(muzzle, dir, &bodies, 99.0, 0.0), vec![0]);
     }
 
     /// A GRAZE COSTS A SLIVER, NOT A WHOLE BODY.
@@ -913,18 +964,18 @@ mod tests {
         let clipped: Vec<Vec2> = (0..6)
             .map(|i| Vec2::new(3.0 + 1.5 * i as f64, BODY_RADIUS_M * 0.9))
             .collect();
-        let a = struck_along(muzzle, dir, &centred, 2.1);
-        let b = struck_along(muzzle, dir, &clipped, 2.1);
+        let a = struck_along(muzzle, dir, &centred, 2.1, 0.0);
+        let b = struck_along(muzzle, dir, &clipped, 2.1, 0.0);
         assert_eq!(a.len(), 5, "a centred 2.1 m still reaches five: {a:?}");
         assert_eq!(b.len(), 6, "the same budget grazing them reaches them all: {b:?}");
 
         // 5. ONE WALK, TWO READERS: where the round stopped and which bodies it
         //    struck come from the same traversal, so they cannot disagree.
-        let t = traverse(muzzle, dir, &centred, 2.1);
+        let t = traverse(muzzle, dir, &centred, 2.1, 0.0);
         assert_eq!(t.struck, a);
         assert_eq!(t.stopped_in, Some(4), "it ran out inside the fifth");
         assert!(t.left_m == 0.0);
-        let t = traverse(muzzle, dir, &clipped, 2.1);
+        let t = traverse(muzzle, dir, &clipped, 2.1, 0.0);
         assert_eq!(t.stopped_in, None, "it got out of all six");
         assert!(t.left_m > 0.0, "and had budget left: {}", t.left_m);
     }
@@ -942,33 +993,33 @@ mod tests {
 
         // 1. NO BUDGET: the contact point, unchanged — what keeps this class
         //    byte-identical until a mod moves it.
-        let d = dissipation_point(contact, muzzle, aim, &one, 0.0);
+        let d = dissipation_point(contact, muzzle, aim, &one, 0.0, 0.0);
         assert!(gap(d, contact) < 1e-9, "{d:?}");
 
         // 2. A QUEUE: 2.2 m crosses four bodies at BODY_MATERIAL_M each, so the
         //    round stops in the FIFTH — which is the case a distance-based
         //    reading gets wrong, and the case a crowd is made of.
         let queue: Vec<Vec2> = (0..8).map(|i| Vec2::new(5.0 + 1.5 * i as f64, 0.0)).collect();
-        let d = dissipation_point(contact, muzzle, aim, &queue, 2.2);
+        let d = dissipation_point(contact, muzzle, aim, &queue, 2.2, 0.0);
         assert!(gap(d, queue[4]) - BODY_RADIUS_M < 1e-9, "{d:?} should be at the 5th body");
 
         // 3. IT GOT THROUGH EVERYTHING: the leftover budget is spent as flight,
         //    because this arena has no wall to stop it. The Ferrox's 1.5 m less
         //    the one body it crossed leaves 1.0 m — well inside its 4 m radius,
         //    so its radial still lands.
-        let d = dissipation_point(contact, muzzle, aim, &one, 1.5);
+        let d = dissipation_point(contact, muzzle, aim, &one, 1.5, 0.0);
         assert!((gap(d, one[0]) - 1.0).abs() < 1e-9, "{d:?}");
 
         // 4. …AND THE BURSTON'S CASE: 2.1 m less one body leaves 1.6 m, which
         //    clears most of a 2.0 m blast radius and is why its damage drops.
-        let d = dissipation_point(contact, muzzle, aim, &one, 2.1);
+        let d = dissipation_point(contact, muzzle, aim, &one, 2.1, 0.0);
         assert!((gap(d, one[0]) - 1.6).abs() < 1e-9, "{d:?}");
 
         // 5. IT FOLLOWS THE AIM, not an axis.
         let diag = Vec2::new(3.0, 4.0);
         let far = [Vec2::new(3.0, 4.0)];
         let c2 = Vec2::new(3.0 - 0.6 * BODY_RADIUS_M, 4.0 - 0.8 * BODY_RADIUS_M);
-        let d = dissipation_point(c2, muzzle, diag, &far, 1.5);
+        let d = dissipation_point(c2, muzzle, diag, &far, 1.5, 0.0);
         assert!((gap(d, far[0]) - 1.0).abs() < 1e-9, "{d:?}");
     }
 
@@ -980,7 +1031,7 @@ mod tests {
         let dir = Vec2::new(1.0, 4.0);
         let bodies = [Vec2::new(2.0, 8.0), Vec2::new(1.0, 4.2), Vec2::new(-9.0, 1.0)];
         let first = first_hit(muzzle, dir, &bodies).map(|(i, _)| i);
-        assert_eq!(struck_along(muzzle, dir, &bodies, 0.0).first().copied(), first);
+        assert_eq!(struck_along(muzzle, dir, &bodies, 0.0, 0.0).first().copied(), first);
     }
 
     /// POINTING SOMEWHERE ELSE IS A REAL ANGLE, and pointing AT a body is zero

@@ -37,9 +37,9 @@ reload_seconds: 1.2
 #
 #   |{{Weapon|Ballistica Prime}}||Charged Shot||Projectile||76||38||50%||Adding||Uses uncharged damage value
 #
-# "CO Damage Bonus Relative To Base Damage" IS `co_base_fraction`: the term is
-# computed on the UNCHARGED value, and the charge x2 reaches it too — 40 x 2 =
-# 80 against 152, measured (M66). 80/152 is 40/76; the catalog rounds it to 50%.
+# "CO Damage Bonus Relative To Base Damage" IS `co_base_fraction`: computed on
+# the UNCHARGED value, and the charge x2 reaches it too — 80 against 152,
+# measured (M66). That is 40/76, which the catalog rounds to 50%.
 co_behavior: additive_with_base_damage
 co_base_fraction: 0.526316
 

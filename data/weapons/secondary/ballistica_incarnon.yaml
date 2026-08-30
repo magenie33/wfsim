@@ -48,7 +48,10 @@ attack:
   crit_chance: 0.2
   crit_multiplier: 2
   status_chance: 0.2
-  punch_through_m: 0.0
+  # see notes: ballistica_incarnon_pierces_bodies
+  punch_through_m: infinite
+  # see notes: ballistica_incarnon_projectile_width
+  projectile_width_m: 3.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 80.0 m", Projectile
   range_m: 80.0

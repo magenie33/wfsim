@@ -301,6 +301,32 @@ impl RangeSpec {
     }
 }
 
+/// METRES OF MATERIAL, OR THE WORD FOR ANY AMOUNT OF IT.
+///
+/// `punch_through_m: infinite` is the wiki's own class — *"weapons that shoot
+/// wide projectiles or a stream of particles … pierce an unlimited amount of
+/// enemies, but not level geometry"* — and it is a STATEMENT where a big
+/// number is a guess someone has to re-derive. Held as
+/// [`crate::space::INFINITE_BODY_PUNCH_THROUGH_M`] rather than as a true
+/// infinity, because a budget that survives every body is spent as FLIGHT
+/// (`space::dissipation_point`) and `0.0 * f64::INFINITY` is NaN.
+fn punch_through_metres<'de, D>(d: D) -> Result<f64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+    match serde_norway::Value::deserialize(d)? {
+        serde_norway::Value::Number(n) => n.as_f64().ok_or_else(|| D::Error::custom("not a number")),
+        // Loud rather than lenient, the rule `RangeSpec` follows: an
+        // unrecognised word is a data error, and the alternative is a weapon
+        // that silently reaches through everything.
+        serde_norway::Value::String(w) if w == "infinite" => {
+            Ok(crate::space::INFINITE_BODY_PUNCH_THROUGH_M)
+        }
+        v => Err(D::Error::custom(format!("punch_through_m: a number or `infinite`, got {v:?}"))),
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
     pub trigger: String,
@@ -575,8 +601,15 @@ pub struct AttackSpec {
     /// not Punch Through enemies or level geometry at all. Instead the
     /// projectile will explode on first contact"*, and *"Projectile AoE weapons
     /// cannot have their Punch Through stat modified"*.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "punch_through_metres")]
     pub punch_through_m: f64,
+    /// HOW WIDE THE PROJECTILE IS, in metres — 0 is a ray, which is every
+    /// weapon that has not been measured. The class is the punch-through
+    /// page's own ("weapons that shoot wide projectiles"), the width of one is
+    /// published NOWHERE, and an entry that states a number says where it came
+    /// from.
+    #[serde(default)]
+    pub projectile_width_m: f64,
     /// HOW FAR THIS ATTACK REACHES, metres — and PAST IT THERE IS NOTHING.
     ///
     /// The wiki's own Range stat, transcribed per weapon. A shot does not
@@ -3671,6 +3704,7 @@ pub fn base_panel_assembled(
         multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),
         punch_through_m: s.attack.punch_through_m,
+        projectile_width_m: s.attack.projectile_width_m,
         // ONE FACT, TWO SPELLINGS, resolved here rather than left to a reader
         // to notice. `beam.range_m` has carried a beam's reach since the block
         // existed — the Torid Incarnon's 37 m is asserted in this file's own
@@ -4272,10 +4306,9 @@ mod tests {
         );
     }
 
-    /// M66 — TWO NUMBERS NOBODY PUBLISHES, SOLVED OUT OF FOUR READINGS.
-    ///
-    /// Each row is `(B + 0.4·mods·types·C) × 33/32`: two solve the pair and
-    /// the other two check it, and the yaml has to return both.
+    /// M66 — TWO NUMBERS NOBODY PUBLISHES, SOLVED OUT OF FOUR READINGS. Each
+    /// row is `(B + 0.4·mods·types·C) × 33/32`: two solve the pair, the other
+    /// two check it, and the yaml has to return both.
     #[test]
     fn the_ballistica_primes_charge_multiplier_solves_out_of_its_gunco_rows() {
         // (mods x types, the damage popped) — MEASUREMENTS M66.
@@ -4286,13 +4319,13 @@ mod tests {
         let modded = raw(rows[2].1) - rows[2].0 * co_base;
         assert!((co_base - 80.0).abs() < 0.5, "solved a CO base of {co_base}, against 80");
         assert!((modded - 496.0).abs() < 1.0, "solved a modded base of {modded}, against 496");
-        // …and the other two reproduce, which no pair of wrong numbers does.
+        // …and the other two reproduce, which a wrong pair does not.
         for (k, hit) in rows {
             let got = (modded + k * co_base) * 33.0 / 32.0;
             assert!((got - hit).abs() < 1.0, "{k}x GunCO: measured {hit}, solved {got:.1}");
         }
 
-        // Neither is a published number: 152 + 3, and the uncharged 40 doubled.
+        // Neither is published: 152 + 3, and the uncharged 40 doubled.
         let b = crate::loadout::WeaponBase::from_data(
             "ballistica_prime", false, &["ballistica_prime_headcracker"],
         );
@@ -7303,8 +7336,7 @@ mod condition_overload_catalog_tests {
             ("angstrum_incarnon", 30.0),
             ("atomos_incarnon", 100.0),
             ("ballistica", 100.0),
-            // TWICE THE ROW: a full charge takes a x2 nothing publishes,
-            // measured at 4 x 152 (M66).
+            // TWICE THE ROW: a full charge takes a x2 nothing publishes (M66).
             ("ballistica_prime", 608.0),
             ("ballistica_prime_incarnon", 830.0),
             ("bronco_prime_incarnon", 238.0),   // 34 x 7 — the row that caught the bug

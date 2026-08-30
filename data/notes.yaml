@@ -148,6 +148,39 @@ notes:
   catalog_says_aoe_part: |
     THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
     no area part does. Verbatim (docs/CATALOGS.md §1):
+  infinite_body_punch_through: |
+    INNATE INFINITE BODY PUNCH THROUGH — the punch-through page's own class,
+    "weapons that shoot wide projectiles or a stream of particles … pierce an
+    unlimited amount of enemies, but NOT level geometry, objects, or barriers".
+    The qualifier costs nothing here: this arena has no geometry, so everything
+    the ray meets is a body. `infinite` is the spelling; what the engine holds
+    is `space::INFINITE_BODY_PUNCH_THROUGH_M`.
+  ballistica_bolt_that_went_through: |
+    ONE STACK PER BOLT THAT WENT THROUGH, so a four-bolt shot into a line earns
+    four and a lone target earns none — the mechanic, not an admission.
+    ADDITIVE WITH CRIT MODS, and the notes cell says so: "Critical Chance bonus
+    is additive to other sources of Critical Chance such as Pistol Gambit".
+    THE WHOLE PILE GOES AT ONCE when the window lapses, where Headcracker's
+    stacks each carry their own clock — both measured, MEASUREMENTS M67.
+  ballistica_incarnon_projectile_width: |
+    THE X-SHAPED PROJECTILE HAS WIDTH, and the number is an ASSUMPTION rather
+    than a source: it is what makes this weapon one of the "wide projectiles"
+    the punch-through page names, and neither the wiki, the module nor DE's
+    export publishes a width for any weapon in that class. 3 m is the owner's
+    working figure — a measurement replaces it here and nowhere else. Every
+    other weapon leaves the field at 0, which is a ray and is what this arena
+    has always fired.
+  ballistica_incarnon_pierces_bodies: |
+    INNATE INFINITE BODY PUNCH THROUGH, and the stat field is 0. The EVO1 card
+    states it for the family — "Fire cross-shaped projectiles that punch through
+    enemies" — and the Punch Through page's own definition of the class is
+    "weapons that shoot wide projectiles … pierce an unlimited amount of
+    enemies, but not level geometry", which is what an X-shaped projectile is.
+    That page's list omits this weapon and lists the Dread's and the Paris
+    family's Incarnon forms; five bodies in a line were measured on the Prime
+    (M67), so the omission is the list's. Written as a number the sim can hold,
+    and the BODIES-only qualifier costs nothing here: this arena has no
+    geometry, so everything the ray meets is a body.
   charge_x2_is_the_primes_alone: |
     THE CHARGE x2 IS THE PRIME'S ALONE. On the Ballistica Prime a released shot
     takes (1 + charge progress) and a FULL charge is the x2 end of it, so that

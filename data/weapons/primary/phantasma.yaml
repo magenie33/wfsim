@@ -79,7 +79,7 @@ attack:
   # qualifier separates BODIES from geometry and this arena has no geometry, so
   # unlimited-through-bodies is the whole of the mechanic here. It was 0.0 with
   # this comment while the arena held one body and there was nothing to reach.
-  punch_through_m: 999.0
+  punch_through_m: infinite
   # 15 per beam, mostly Radiation — "This weapon deals primarily Radiation
   # damage", and the innate element is already COMBINED, so MECHANICS §3 rule 2
   # applies: the innate takes what the elemental mods leave rather than

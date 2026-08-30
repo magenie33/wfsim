@@ -76,14 +76,9 @@ attack:
   crit_chance: 0.18
   crit_multiplier: 2.2
   status_chance: 0.40
-  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
-  # list, "Coda Bassocyst (infinite body punch through)", defined there as
-  # "allows these weapons to pierce an unlimited amount of enemies, but not
-  # level geometry, objects, or barriers". Written as a number the sim can hold,
-  # and it IS the whole mechanic here: the qualifier separates BODIES from
-  # geometry and this arena has no geometry, so everything the ray meets is a
-  # body.
-  punch_through_m: 999.0
+  # The page's list names it: "Coda Bassocyst (infinite body punch through)".
+  # see notes: infinite_body_punch_through
+  punch_through_m: infinite
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Normal Attack: "Range: 49.6 m", Projectile at 62 m/s.
   #

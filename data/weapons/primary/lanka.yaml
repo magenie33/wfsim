@@ -68,13 +68,10 @@ attack:
   crit_chance: 0.25
   crit_multiplier: 2.0
   status_chance: 0.25
-  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
-  # list, "Lanka". Written as a number the sim can
-  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
-  # from geometry ("innate punch through does not apply to surfaces") and this
-  # arena has no geometry, so everything the ray meets is a body.
+  # The page's own list names it: "Lanka".
+  # see notes: infinite_body_punch_through
   # The infobox's 5 m is the GEOMETRY figure and is not this.
-  punch_through_m: 999.0
+  punch_through_m: infinite
   damage: { electricity: 525.0 }
 unmodeled:
   - reason: sniper_combo_miss

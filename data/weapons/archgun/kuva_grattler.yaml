@@ -71,12 +71,9 @@ attack:
   crit_chance: 0.27
   crit_multiplier: 2.0
   status_chance: 0.27
-  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
-  # list, "Kuva Grattler". Written as a number the sim can
-  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
-  # from geometry ("innate punch through does not apply to surfaces") and this
-  # arena has no geometry, so everything the ray meets is a body.
-  punch_through_m: 999.0
+  # The page's own list names it: "Kuva Grattler".
+  # see notes: infinite_body_punch_through
+  punch_through_m: infinite
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 225.0 m", Projectile
   range_m: 225.0

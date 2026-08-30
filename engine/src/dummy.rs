@@ -2928,6 +2928,8 @@ pub struct DummyParams {
     /// PUNCH-THROUGH DEPTH in metres of material — innate plus mods, and 0 on
     /// an attack that cannot use it. See [`crate::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
+    /// How wide the projectile is — see `loadout::WeaponBase::projectile_width_m`.
+    pub projectile_width_m: f64,
     /// HOW FAR THIS WEAPON REACHES, metres — `INFINITY` when it declares none.
     /// See [`crate::weapons_data::AttackSpec::range_m`].
     pub range_m: f64,
@@ -3733,7 +3735,9 @@ impl DummyParams {
         bodies.push(self.target_at);
         bodies.extend(self.others.iter().map(|f| f.at));
         let dir = crate::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
-        let hit = crate::space::struck_along(muzzle, dir, &bodies, self.punch_through_m);
+        let hit = crate::space::struck_along(
+            muzzle, dir, &bodies, self.punch_through_m, self.projectile_width_m,
+        );
         // THE AIMED BODY IS STRUCK BY DEFINITION. The ray is cast at the aim
         // point, and `webapi` has already resolved which body that is — so a
         // walk that somehow disagrees (an aim point past everything, a body
@@ -4190,6 +4194,7 @@ impl DummyParams {
             tendril_max: panel.tendril_max,
             target_id,
             punch_through_m: panel.punch_through_m,
+            projectile_width_m: panel.projectile_width_m,
             range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,
             tendril_acquire_deg: panel.tendril_acquire_deg,
@@ -4364,6 +4369,7 @@ impl Default for DummyParams {
             // NO PUNCH THROUGH by default, so the fixture fires the one-body
             // shot every golden value was calibrated against.
             punch_through_m: 0.0,
+            projectile_width_m: 0.0,
             range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
@@ -12444,7 +12450,10 @@ pub fn run_once_traced(
             // worth everything in the four combo modes and nothing in the two
             // heavy ones: there the counter is emptied by the swing that reads
             // it, so it is standing at the floor when the next one starts.
-            + ap.crit_chance_per_combo * (combo_mult - 1.0);
+            + ap.crit_chance_per_combo * (combo_mult - 1.0)
+            // …AND EVERY STACKING GRANT OF IT, the bracket Prolific
+            // Perforation's card puts itself in by naming Pistol Gambit.
+            + buff_total!(ap, crate::loadout::BuffGrant::CritChance, t);
         // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
         // Genesis): "Enemies are undamaged as long as their health and shield
         // have not been damaged. Damaging Overguard is not taken into account."
@@ -13503,6 +13512,7 @@ pub fn run_once_traced(
                         aim,
                         &bodies,
                         params.punch_through_m,
+                        params.projectile_width_m,
                     ),
                     height_m: det.height_m,
                 }
@@ -14429,6 +14439,11 @@ pub fn run_once_traced(
                         meter_seconds += m.seconds_per_hit;
                     }
                     r.pellets += 1;
+                    // A PELLET THAT WENT THROUGH: `struck` is who is on the
+                    // line, so a second body means this bolt left the first.
+                    if struck.len() > 1 {
+                        bump_buffs!(crate::loadout::BuffTrigger::PunchThrough, t, d.extra);
+                    }
                     r.crits += (tier >= 1) as u32;
                     r.big_crits += (tier >= 2) as u32;
                     r.crit_tier_sum += tier;

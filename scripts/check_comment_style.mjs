@@ -146,7 +146,7 @@ check("comment style ...and no note outlives its last use",
 // would take out the evidence, which is the one thing a comment here is for.
 const ESSAY_LIMIT = 20;
 const ESSAY_CEILING = 49;
-const LINE_CEILING = 67408;
+const LINE_CEILING = 67381;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
 let essays = 0;
 let commentLines = 0;

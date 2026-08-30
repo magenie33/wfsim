@@ -49,12 +49,9 @@ attack:
   status_chance: 0.44
   # see notes: guaranteed_impact_every_shot
   forced_procs: [impact]
-  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
-  # list, "Lex Prime (Incarnon Form)". Written as a number the sim can
-  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
-  # from geometry ("innate punch through does not apply to surfaces") and this
-  # arena has no geometry, so everything the ray meets is a body.
-  punch_through_m: 999.0
+  # The page's own list names it: "Lex Prime (Incarnon Form)".
+  # see notes: infinite_body_punch_through
+  punch_through_m: infinite
   # see notes: modelled_arena_has_no
   falloff:
     start_m: 10
