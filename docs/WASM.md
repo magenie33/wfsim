@@ -5,6 +5,25 @@ rebuilds `site/app/` (needs `rustup target add wasm32-unknown-unknown` +
 `cargo install wasm-bindgen-cli` at the Cargo.lock version); wrangler deploys
 `site/` as before. Phase 5 (worker pool over all cores) remains open.
 
+**THE DEPLOY RETRIES CLOUDFLARE, NOT ITSELF.** The Workers Build's deploy
+command is `bash scripts/deploy.sh` — set once in the dashboard, because that
+field is not in the repo. It runs `npx wrangler deploy` and retries up to four
+times with a 10/30/60 s backoff, but ONLY when the output carries one of the
+phrases Cloudflare's own API produces when it is unwell:
+
+```
+GET /accounts/<id>/workers/scripts/wfsim/secrets -> 503 Service Unavailable
+upstream connect error or disconnect/reset before headers
+[ERROR] Received a malformed response from the API
+```
+
+Anything else — a wrong binding, a missing `site/`, a bad `wrangler.jsonc` —
+fails on the FIRST attempt and says so, because retrying a real error three
+times buys nothing and costs the reader three copies of one message. A build
+that fails leaves the site on the previous commit with nothing in the repo to
+show for it, which is the whole reason this is worth a script: a push that
+looks green in git can be a site that never moved.
+
 **Goal.** wfsim.app serves static files only; every simulation and optimizer
 run executes on the visitor's own CPU, inside the browser, via WebAssembly.
 No server compute, no install. The native local server stays fully working —

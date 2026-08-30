@@ -32,7 +32,7 @@ number**. Everything else follows from it:
 | what the page reads | `site/board.json` | fetched at runtime, not compiled in |
 | consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
 | the submissions | a Cloudflare KV namespace (binding `SUBMISSIONS`) | written by the endpoint |
-| the deploy | `wrangler.jsonc` | `npx wrangler deploy`, from a git push |
+| the deploy | `wrangler.jsonc` | `scripts/deploy.sh`, from a git push |
 | the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
 
 **THE ENDPOINT STORES THE WHOLE BUILD, and it has failed to twice.** `mode` was
