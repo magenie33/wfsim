@@ -145,8 +145,8 @@ check("comment style ...and no note outlives its last use",
 // Both may only FALL. Lower them whenever a pass removes some; never raise one
 // to make a red run green, which is the one edit this file exists to refuse.
 const ESSAY_LIMIT = 20;
-const ESSAY_CEILING = 249;
-const LINE_CEILING = 69321;
+const ESSAY_CEILING = 203;
+const LINE_CEILING = 69096;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
 let essays = 0;
 let commentLines = 0;
