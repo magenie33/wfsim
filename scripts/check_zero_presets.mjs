@@ -1,12 +1,11 @@
 /// THE THIRTY-SIXTH: YOU OWN NOTHING UNTIL YOU MAKE SOMETHING.
 ///
-/// Opening a weapon must not write a blank "build 1" into storage, nor opening the
-/// app wrote a "scenario 1", and opening the optimizer wrote a "search 1". So a
-/// reader who browsed forty weapons owned forty builds they had never made.
-/// That is invisible while the only place a preset is listed is the bar of the
-/// weapon you are standing on, and it stops being invisible the moment one page
-/// lists everything you own — there, the answer would be "everything", which is
-/// the same as no answer.
+/// Opening a weapon must not write a blank "build 1" into storage, opening the
+/// app must not write a "scenario 1", and opening the optimizer must not write
+/// a "search 1" — or a reader who browsed forty weapons owns forty builds they
+/// never made. That is invisible while a preset is listed only in the bar of
+/// the weapon you are standing on, and stops being invisible the moment one
+/// page lists everything you own, where the answer becomes "everything".
 ///
 /// THE RULE THIS LOOKS LIKE IT BREAKS, AND DOES NOT: "the modules always have a
 /// state, and 'no build' is not something the builder can show". Still true. It

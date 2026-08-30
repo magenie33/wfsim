@@ -1,32 +1,23 @@
 // WHAT A BUILD CONSISTS OF IS DECLARED ONCE, AND EVERY SURFACE ANSWERS TO IT.
 //
-// The THIRTY-FIRST check, and the cheap half of a pair. Its partner,
-// `check_opt_replay`, asserts the ANSWER — a ranked row re-run in the simulator
-// comes back with its own number — and that one can never go stale because it
-// holds no list. This one holds the list, and exists for the surfaces an answer
-// cannot reach: a share link nobody has clicked yet, a board record nobody has
-// submitted yet.
+// The THIRTY-FIRST check, and the CHEAP half of a pair: its partner
+// `check_opt_replay` asserts the ANSWER and can never go stale because it holds
+// no list. This one holds the list, for the surfaces an answer cannot reach — a
+// share link nobody has clicked, a board record nobody has submitted.
 //
-// `engine::builds::BUILD_AXES` is the single declaration and arrives in
+// `engine::builds::BUILD_AXES` is the single declaration, served at
 // `/api/meta.build_axes`. Three JS surfaces carry their own SPELLINGS of those
-// axes, because each protocol names them differently and renaming would migrate
-// every stored preset:
+// axes, because renaming them would migrate every stored preset:
 //
 //   * the page's build state   (`BUILD_STATE_KEYS` in app.js)
 //   * the share tuple          (`SHARE_AXES` in app.js)
 //   * the board record         (`AXES` in worker/index.js, `axis:` per row)
 //
-// Each of those had, at some point, an axis the others had — and the one that
-// did not dropped it in silence, because a missing field and a defaulted field
-// are the same absence on the wire. Four times: `mode` from the board
-// submission, `valence` from the worker's table, both
-// from the share tuple, `valence` from the optimizer's "+ add".
-//
-// So the assertion is COVERAGE, in one direction only: every axis the engine
-// declares must be claimed by every surface that is supposed to carry it. It
-// runs in plain node against the served meta and the two source files — no
-// browser — so it can sit in CI beside the parity and board-submit checks
-// rather than being something to remember.
+// Each has at some point dropped an axis in silence, because a missing field
+// and a defaulted field are the same absence on the wire. So the assertion is
+// COVERAGE: every axis the engine declares must be claimed by every surface
+// supposed to carry it. Plain node against the served meta and two source
+// files, so it sits in CI rather than being something to remember.
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";

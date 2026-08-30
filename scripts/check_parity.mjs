@@ -240,17 +240,13 @@ app.check(`every unmodelled evolution is marked on the BUILDER's tile too (${VIS
 // and not the SUBMISSION is the failure this file is about, one surface over:
 // the page offers a choice, the player makes it, and the board never hears it.
 //
-// It cost three submissions. The Kuva Nukor's progenitor element reached the
-// builder at 19:13 on 2026-08-13 and `boardPayload` at 22:25 — three hours in
-// which wfsim.app let you pick an element and dropped it on the way out, so
-// every Nukor build tested in that window is stored with no element and refused
-// on every scoring run since.
+// It cost three submissions: the Kuva Nukor's progenitor element reached the
+// builder three hours before `boardPayload`, so every Nukor build tested in
+// that window is stored with no element and refused on every scoring run since.
 //
-// DERIVED FROM THE BUILD, not from a list of axes somebody remembered to
-// update: `snapshotState()` IS the build, so every key in it must either travel
-// or be named here as something a board row is not. That list is short and
-// stating it is the point — a row carries the build, not the layout you reached
-// it through.
+// DERIVED FROM THE BUILD rather than from a list somebody remembered to update:
+// `snapshotState()` IS the build, so every key in it must either travel or be
+// named here as something a board row is not.
 // WHERE EACH ONE GOES. A map rather than a name match, because the payload is a
 // PROJECTION of the build and not a copy of it — `slots` becomes `mods` with
 // the exilus one dropped, `evoSel` becomes a list. Adding an axis therefore has

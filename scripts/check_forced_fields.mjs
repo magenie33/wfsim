@@ -1,37 +1,23 @@
 /// THE THIRTY-FIFTH: A FIGHT CANNOT ASK EVERY WEAPON EVERY QUESTION, AND THE
-/// PANEL SAYS SO WHERE THE QUESTION IS ASKED.
+/// PANEL SAYS SO WHERE THE QUESTION IS ASKED. Three of the scenario's technique
+/// fields are not the reader's on every weapon:
 ///
-/// Three of the scenario's technique fields are not the reader's on every
-/// weapon, and each is forced for a reason the weapon itself carries:
-///
-///   · AIMING          — a sentinel is fired by the companion and is always aiming
-///   · INFINITE AMMO   — three states, not two: no reserve to run out of
-///                       (sentinel, ticked), a reserve it cannot refill (ground
-///                       Arch-Gun, unticked), or yours (everything else)
+///   · AIMING          — a sentinel is fired by the companion, always aiming
+///   · INFINITE AMMO   — three states, not two: no reserve to run out of, a
+///                       reserve it cannot refill, or yours
 ///   · HEADSHOT %      — a sentinel never aims at the head, and `parse_fight`
 ///                       forces 0 whatever the request carries
 ///
-/// The first two have been pinned-and-explained since 2026-08-04. The THIRD was
-/// not, and nothing here could see it: the value was right from both ends while
-/// the control stayed a bare editable number, so a reader could type 100 on a
-/// Verglas, watch the page take it, and get a run computed at 0 with nothing on
-/// screen saying why. A column that is shown and not
-/// applied looks exactly like one that works.
+/// A column that is shown and not applied looks exactly like one that works: a
+/// reader can type 100 on a Verglas, watch the page take it, and get a run
+/// computed at 0 with nothing saying why.
 ///
 /// TWO THINGS ARE ASSERTED OF EACH, because either alone passes on a broken
-/// panel: that it is PINNED, and that it NAMES what pinned it. A disabled field
-/// with no reason is a dead end, and a reason on an editable field is a lie.
-///
-/// THE NEGATIVE CONTROL IS NOT OPTIONAL HERE — a check that only asserts
-/// "disabled" passes perfectly on a panel that disables everything for
-/// everybody, which would be a far worse bug than the one it is looking for.
-/// So an ordinary weapon must have all three back, editable.
-///
-/// AND THE LAST ONE IS THE REGRESSION GUARD FOR HOW THIS WAS FIXED. The pin is
-/// DISPLAY-ONLY, because `headshot_pct` lives in a scenario SHARED across the
-/// whole roster: writing 0 into the state would rewrite the fight every time a
-/// sentinel was opened, and auto-save would store it. So the reader's own value
-/// has to survive a trip through a sentinel and come back.
+/// panel: that it is PINNED, and that it NAMES what pinned it. THE NEGATIVE
+/// CONTROL IS NOT OPTIONAL, since "disabled" alone passes on a panel that
+/// disables everything for everybody. AND THE PIN IS DISPLAY-ONLY, because
+/// `headshot_pct` lives in a scenario SHARED across the roster — writing 0 into
+/// the state would rewrite the fight every time a sentinel was opened.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

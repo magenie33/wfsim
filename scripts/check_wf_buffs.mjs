@@ -1,32 +1,22 @@
 // A WARFRAME BUFF IS THE FIGHT'S, AND IT REACHES THE NUMBER.
 //
-// The NINETEENTH check, and the first for a family that belongs to neither the
+// The NINETEENTH check, and the first for a family belonging to neither the
 // build nor the weapon: Roar, Eclipse, Nourish and the four elemental augments
-// are things done TO this weapon for a while (`data/abilities/`). That
-// ownership is the whole design, and every claim below is a way it could
-// silently stop being true:
+// are things done TO this weapon for a while (`data/abilities/`). Every claim
+// below is a way that ownership could silently stop being true:
 //
-//   · the section DRAWS, in both languages, with DE's own ability names —
-//     these are transcribed (战吼, 黯然失色), and a phrase-substituted card
-//     would read as a translation nobody wrote;
-//   · the value on the card FOLLOWS Ability Strength, because a page that
-//     shows a static +50% while the sim runs +100% is worse than showing
-//     nothing;
-//   · ticking one MOVES THE SIM — asserted against a real /api/simulate in the
-//     shipping wasm build, not against the state object;
-//   · two of a FAMILY do not stack and the page SAYS which one lost. This is
-// the rule the owner asked for by name and it is the one a
-// player cannot verify by eye — the difference between +50% and +80% is a
-// number you have to be told; · the OPTIMIZER shows the same buffs,
-// read-only, because it runs the
-//     simulator's fight and a search scored under a different Roar is scored
-//     under a fight nobody can reproduce;
-//   · and the BOARD carries none — the negative control, and the reason a
-//     board row is still a statement about the weapon.
-//
-//   node scripts/check_wf_buffs.mjs
-//
-// Exits non-zero on the first failure.
+//   · the section DRAWS, in both languages, under DE's own transcribed ability
+//     names (战吼, 黯然失色) rather than a phrase-substituted card;
+//   · the value on the card FOLLOWS Ability Strength, because a static +50%
+//     over a sim running +100% is worse than showing nothing;
+//   · ticking one MOVES THE SIM, asserted against a real /api/simulate in the
+//     shipping wasm build rather than against the state object;
+//   · two of a FAMILY do not stack and the page SAYS which one lost, which is
+//     the one thing here a player cannot verify by eye;
+//   · the OPTIMIZER shows the same buffs read-only, because a search scored
+//     under a different Roar is scored under a fight nobody can reproduce;
+//   · and the BOARD carries none — the negative control, and the reason a board
+//     row is still a statement about the weapon.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

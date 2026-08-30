@@ -140,13 +140,12 @@ check("the panel reproduces the sender's exactly", got.panel === sent.panel,
 
 // ---- ACT THREE: a BUILD is not a CLAIM, and it moves nobody's fight -------
 //
-// The sharp case, and the reason the split exists. A build
-// link posted into a chat is clicked by people who are in the middle of their
-// own measurement; landing a scenario preset in their collection and switching
-// them onto it is not a thing a build is allowed to do. `importShare` skips
-// the whole scenario arm when no fight travelled, and this asserts the
-// CONSEQUENCE rather than the branch — a reader's own level, their own active
-// scenario, and the length of their own list, before and after.
+// The sharp case, and why the split exists: a build link posted into a chat is
+// clicked by people in the middle of their own measurement, and landing a
+// scenario preset in their collection is not a thing a build may do.
+// `importShare` skips the whole scenario arm when no fight travelled, and this
+// asserts the CONSEQUENCE rather than the branch — a reader's own level, their
+// own active scenario, and the length of their own list, before and after.
 //
 // The recipient is set up on a DIFFERENT weapon with a DISTINCTIVE fight,
 // because a scenario is shared across the roster (SHARED_DOMAINS) and the
@@ -154,12 +153,10 @@ check("the panel reproduces the sender's exactly", got.panel === sent.panel,
 // disturb it.
 //
 // A SCENARIO OF THEIR OWN FIRST. The app lands a first-time visitor on the
-// OFFICIAL ruler, whose fight is PINNED — so writing `sim.level` on it changes
-// an in-memory object that is never saved, and the reload reads the ruler's own
-// 9999/100 back. The first version of this act did exactly that and its setup
-// assertion still passed, because it read the same in-memory value it had just
-// written. Same trap `check_arena.mjs` names: an editable fight has to be MADE,
-// from the preset bar's "+ new", and the check has to assert that it was.
+// OFFICIAL ruler, whose fight is PINNED, so writing `sim.level` on it changes
+// an in-memory object that is never saved and a setup assertion passes by
+// reading back what it just wrote. Same trap `check_arena.mjs` names: an
+// editable fight has to be MADE, and the check has to assert that it was.
 await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();

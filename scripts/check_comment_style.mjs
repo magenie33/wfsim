@@ -1,12 +1,10 @@
 // PROSE IN THIS REPOSITORY STATES THE CURRENT RULE, AND NOTHING ELSE.
 //
 // Git holds what a rule used to be, who asked for it and how it was found. A
-// doc or a comment that retells that is duplicated, goes stale, and buries the
-// one thing a reader needs — which for an agent loading `AGENTS.md` into every
-// session is a direct cost per turn.
-//
-// Two claims, enforced differently, because only one of them can be finished in
-// a single pass:
+// doc or a comment retelling that is duplicated, goes stale, and buries the one
+// thing a reader needs — a direct cost per turn for an agent loading
+// `AGENTS.md` into every session. Two claims, enforced differently, because
+// only one can be finished in a single pass:
 //
 //   ATTRIBUTION is a HARD ZERO. `(owner, 2026-08-29)`, `(user, …)`, a bare
 //   dated parenthetical: a rule in a public repository has no author and no
@@ -145,8 +143,8 @@ check("comment style ...and no note outlives its last use",
 // Both may only FALL. Lower them whenever a pass removes some; never raise one
 // to make a red run green, which is the one edit this file exists to refuse.
 const ESSAY_LIMIT = 20;
-const ESSAY_CEILING = 84;
-const LINE_CEILING = 67787;
+const ESSAY_CEILING = 54;
+const LINE_CEILING = 67503;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
 let essays = 0;
 let commentLines = 0;

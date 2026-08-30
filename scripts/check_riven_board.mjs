@@ -1,37 +1,24 @@
 // A BOARD ROW MAY WEAR A RIVEN, AND TAKING IT GIVES YOU THE RIVEN.
 //
-// A riven is an item that exists on one machine, which is why no board row
-// could hold one until now. What a row holds is a SHAPE — which stats, which is
-// the malus — scored at that shape's own ceiling, the same way every row is
-// scored at full Forma and every valence at the roll's maximum. What one copy
-// landed on is luck, and the board has never ranked luck.
-//
-// Three things have to be true on the page, and each has a way of being subtly
-// wrong that looks fine:
+// A riven is an item that exists on one machine, so what a row holds is a
+// SHAPE — which stats, which is the malus — scored at that shape's own ceiling,
+// the way every row is scored at full Forma. Three things have to be true on
+// the page, each with a way of being subtly wrong that looks fine:
 //
 //   * THE RANKING IS ONE LIST AND THE VIEW NARROWS IT. A riven build does not
 //     always beat a plain one, so they rank together — but under "all builds" a
-//     weapon whose riven build wins hides its plain one, and those are the
-//     builds most readers can actually make. That is what the "no riven" view
-//     is for, and a filter that quietly showed the same row in all three
-//     positions would look like it worked.
-//   * A RANK SAYS WHAT IT IS BEST OF. The board's floor already treats riven
-//     and plain as separate fields, so a weapon has two leaders — and a `#1`
-//     that could mean either would be the only number on the page that does not
-//     say what it ranks among.
+//     weapon whose riven build wins hides its plain one, which is the build
+//     most readers can actually make. A filter that quietly showed the same row
+//     in all three positions would look like it worked.
+//   * A RANK SAYS WHAT IT IS BEST OF: the floor treats riven and plain as
+//     separate fields, so a weapon has two leaders and a `#1` that could mean
+//     either is the one number on the page not saying what it ranks among.
 //   * TAKING THE ROW GIVES YOU THE RIVEN. The record carries the bare `riven`
-//     at its own position; on this side a mod id has to name an ITEM, so one is
-//     created — once, idempotently, and only when the build is actually taken.
-//     Without it the slot is dropped as "an id gone from the pool" and the
-//     reader gets a seven-mod build that scores nothing like the row.
+//     and a mod id has to name an ITEM, so one is created once, idempotently,
+//     only when the build is taken — without it the slot is dropped.
 //
-// The row is SYNTHETIC. Nobody has submitted a riven build yet — the endpoint
-// only started keeping them today — so the live board has none, and a check
-// that waited for one would pass by doing nothing for weeks.
-//
-//   node scripts/check_riven_board.mjs
-//
-// Exits non-zero on the first failure.
+// The row is SYNTHETIC, because the live board has no riven build yet and a
+// check waiting for one would pass by doing nothing for weeks.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

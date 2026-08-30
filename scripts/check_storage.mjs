@@ -3,33 +3,22 @@
 //   node scripts/check_storage.mjs
 //
 // The THIRTY-FOURTH check, and the only one about how much room the app takes
-// on a reader's own machine. It exists because the answer was "all of it".
+// on a reader's own machine.
 //
-// A REPLAY IS 41x THE RESULT IT BELONGS TO — measured here, not estimated:
-// 66 KB of frames, debuff series and hit accounts against a 1.6 KB summary of
-// every number a card, a share or the board ever reads. One was stored per
-// WEAPON, so about seventy-five weapons filled a 5 MB origin, and the roster is
-// 136. Past that the failure is not "storage is full": `localStorage.setItem`
-// throws, the throw lands in the save path of the run that just finished, and
-// the reader is told "sim failed: QuotaExceededError" for a simulation that
-// worked perfectly.
+// A REPLAY IS 41x THE RESULT IT BELONGS TO, measured: 66 KB of frames and
+// debuff series against a 1.6 KB summary of every number a card, a share or the
+// board reads. Stored per WEAPON that fills a 5 MB origin at seventy-five of a
+// 136-weapon roster, and past it `localStorage.setItem` throws in the save path
+// of the run that just finished. Four claims:
 //
-// Four claims:
-//
-//   · THE DISK NEVER TAKES A REPLAY. Not "sheds it under pressure" — never
-//     takes it. That is what makes the footprint of a measurement bounded by
-//     its summary rather than by how hard it was measured.
-//   · …AND THE PANEL STILL DRAWS ONE, because `resultMem` keeps it for the
-//     session. A fix that quietly removed the replay would pass the first
-//     assertion and break the feature.
-//   · A SHED SWEEPS THE ORIGIN. A quota belongs to the origin and the old shed
-//     belonged to the list being written, so a write for one weapon would fail
-//     on space held by another, shed its own list to nothing, and still fail.
-//     Asserted by filling the disk from OTHER weapons' keys and then saving.
-//   · WHAT IS ALREADY THERE COMES BACK. Growth stopping is not the same as
-//     space returning, and a reader at their quota fails the NEXT write rather
-//     than the one that filled it — so the boot reclaims every replay written
-//     under the old rule.
+//   · THE DISK NEVER TAKES A REPLAY — not "sheds it under pressure", never
+//     takes it, which is what bounds a measurement's footprint by its summary.
+//   · …AND THE PANEL STILL DRAWS ONE from `resultMem`, because a fix that
+//     removed the replay would pass the first assertion and break the feature.
+//   · A SHED SWEEPS THE ORIGIN, since a quota belongs to the origin: asserted
+//     by filling the disk from OTHER weapons' keys and then saving.
+//   · WHAT IS ALREADY THERE COMES BACK, because growth stopping is not space
+//     returning — the boot reclaims every replay written under the old rule.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

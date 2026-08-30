@@ -1,10 +1,9 @@
 // EVERY WEAPON, EVERY TAB, BOTH LANGUAGES — does the page come up at all?
 //
-// The other checks each go deep on one thing. This one goes wide and shallow,
-// and it is the only one that would catch a weapon whose page throws on the way
-// in: a data field the renderer does not expect, an evolution with no tier, a
-// dropdown handed something it cannot draw. Those break one weapon and leave
-// the other sixteen fine, so nothing aimed at Torid or the Laetum sees them.
+// The other checks go deep on one thing; this goes wide and shallow, and is the
+// only one that catches a weapon whose page throws on the way in — a data field
+// the renderer does not expect, an evolution with no tier. Those break one
+// weapon and leave the rest fine, so nothing aimed at the Torid sees them.
 //
 // It asserts four things per page, and the last two are the ones that matter:
 //
@@ -13,15 +12,12 @@
 //   · the URL actually RESOLVED to the weapon it names
 //   · ...and to the RIGHT weapon
 //
-// The last two exist because the first version of this check asked only
-// "did something draw", and the home grid answers yes. Its Chinese pass had
-// been building URLs from the LOCALIZED name, so every one of them fell through
-// to the home page and the check called it a clean sweep. A page that renders
-// is not a page that rendered what you asked for.
+// The last two exist because "did something draw" is answered yes by the home
+// grid: a Chinese pass building URLs from the LOCALIZED name fell through to it
+// on every page and reported a clean sweep. A page that renders is not a page
+// that rendered what you asked for.
 //
 //   node scripts/check_pages.mjs
-//
-// Exits non-zero if any page throws, fails a load, or is not the one asked for.
 import { openApp } from "./cdp.mjs";
 
 // boot: 0 — the language passes below each load the app themselves.

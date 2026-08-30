@@ -1,31 +1,22 @@
 // A MODE IS EXPLAINED, NOT JUST NAMED — and its name is DERIVED.
 //
-// The builder's Mode control was a dropdown of names and nothing else. That is
-// enough while every weapon's second mode is the same mechanic, and it stopped
-// being enough the day two weapons earned a form by KILLING rather than by
-// hitting: "cycle" does not say what fills the gauge, how
-// many of them it takes, or what the earned form gets to fire — and those are
-// exactly the numbers that decide whether the mode is worth picking. A Torid
-// pays 5 direct hits for 170 rounds; a Mausolon pays 5 kills for ONE.
+// A dropdown of names is enough while every weapon's second mode is the same
+// mechanic, and stopped being enough the day two weapons earned a form by
+// KILLING rather than by hitting: "cycle" does not say what fills the gauge,
+// how many it takes, or what the earned form fires — the numbers that decide
+// whether the mode is worth picking. A Torid pays 5 direct hits for 170 rounds;
+// a Mausolon pays 5 kills for ONE.
 //
-// The other half is the NAME. `modeLabel` returned a hardcoded "Incarnon
-// cycle", which was right for sixty-nine weapons and wrong for the first one
-// that earns a form with no adapter anywhere on it. So this check carries a
-// matched pair, and neither half passes alone:
+// The other half is the NAME, and this carries a MATCHED PAIR because neither
+// half passes alone: the Mausolon must NOT be told it has an Incarnon anything,
+// and the Torid, which does, must still say so. A check asserting only the
+// first passes on a page that dropped the word entirely.
 //
-//   * the Mausolon must NOT be told it has an Incarnon anything;
-//   * the Torid, which does, must still say so.
-//
-// A check that only asserted the first would pass on a page that had dropped
-// the word entirely, which is a different bug with the same symptom.
-//
-// It runs the whole pass in BOTH languages, because the sentences are
-// TEMPLATES with `{named}` holes: a hole filled into an untranslated string is
-// invisible in English and is half an English sentence on a Chinese page.
+// It runs the whole pass in BOTH languages, because the sentences are TEMPLATES
+// with `{named}` holes — a hole filled into an untranslated string is invisible
+// in English and half an English sentence on a Chinese page.
 //
 //   node scripts/check_mode_def.mjs
-//
-// Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

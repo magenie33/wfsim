@@ -2,12 +2,11 @@
 // QUESTIONS.
 //
 // The offer is TWO SURFACES with one function behind each. The home hero is a
-// POINTER — one line, because that page is read by someone who has not yet
-// seen the tool work, which is the worst moment to ask them to run an unsigned
-// executable. `/download` is the offer itself, and it is a page rather than a
-// button because what it has to answer is a page: what SmartScreen does on
-// first run, why the program is unsigned, what updating costs, what
-// uninstalling means, where the source is.
+// POINTER — one line, because that page is read by someone who has not seen the
+// tool work, the worst moment to ask them to run an unsigned executable.
+// `/download` is the offer itself, and it is a page rather than a button
+// because what it has to answer is a page: SmartScreen, why the program is
+// unsigned, what updating costs, what uninstalling means, where the source is.
 //
 // Only ONE machine's answer is visible on the machine this is written on, so
 // checking by looking is checking a third of it, and the failure modes are

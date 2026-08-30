@@ -1,42 +1,23 @@
 // THERE IS ONE FIGHT, AND EVERY MODULE SENDS IT.
 //
 // The THIRTY-THIRD check, and the page's half of AGENTS.md's hard rule. The
-// server's half has been true since `parse_fight`: the fight is parsed once
-// and the optimizer calls it, so the two cannot read different fields. The
-// PAGE had no such half — it grew FIVE spellings of "the fight", and each one
-// was a chance for a module to measure something the simulator never runs:
+// server's half has held since `parse_fight`; the PAGE grew FIVE spellings of
+// "the fight", and each was a chance for a module to measure something the
+// simulator never runs — the share card sending a RAW `sim` with no
+// `custom_enemies`, the quick calc resolving a scenario of its OWN from a
+// sticky persisted pointer, the optimizer sending the STORED shape rather than
+// the live one. Each was right when written and none was right by the end,
+// which is the argument against having five: a fight GAINS fields, and each new
+// one reaches whichever spellings somebody remembered.
 //
-//   * Run Sim sent `fightPayload()`;
-//   * the share card sent a RAW `sim` — no run count, so the server's own
-//     default rather than the page's, and no `custom_enemies`, so the claim on
-//     a card for a fight against a target you MADE was measured against a
-//     target the server had never heard of;
-//   * the quick calc resolved a scenario of its OWN, from a sticky persisted
-//     pointer that outlived the weapon, the scenario and the session — build a
-//     nine-body Ocucor fight, switch the simulator to it, and every mod was
-//     still ranked under whichever scenario that popover was last left on;
-//   * the optimizer's gain scan spread that scenario raw, without
-//     `custom_enemies`;
-//   * the optimizer itself sent the STORED shape of the fight rather than the
-//     live one.
-//
-// Each was right when written and none of them was right by the end, which is
-// the argument against having five: a fight gains a field — `custom_enemies`,
-// a formation, an aim point — and it reaches whichever spellings somebody
-// remembered.
-//
-// IT HOLDS NO LIST OF FIELDS, which is what makes it the strong half of the
-// pair with `check_run_counts` (that one reads the box; this one reads the
-// wire). The expected value is `theFight()` ITSELF, so every key it carries is
-// asserted on every module's outgoing request — including keys nobody has
-// invented yet. The only exemptions are the four things a CALLER legitimately
-// owns rather than the fight: `runs` (the quick calc's own precision, the one
-// axis that is deliberately decoupled), `seed` and `run_series` (a scan pairs
-// its two builds run for run) and `replay` (Run Sim alone pays for one).
+// IT HOLDS NO LIST OF FIELDS, which makes it the strong half of the pair with
+// `check_run_counts` (that one reads the box; this reads the wire). The
+// expected value is `theFight()` ITSELF, so every key it carries is asserted on
+// every module's outgoing request, including keys nobody has invented yet. The
+// exemptions are the four things a CALLER owns rather than the fight: `runs`,
+// `seed`, `run_series` and `replay`.
 //
 //   node scripts/check_one_fight.mjs
-//
-// Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

@@ -1,32 +1,23 @@
 // A RIVEN IS THE WEAPON FAMILY'S — the THIRTY-EIGHTH check.
 //
 // A riven mod belongs to a weapon FAMILY, not to one entry in it: *"Riven mods
-// can be used on variants of a particular weapon, including MK1, Prime,
-// Vandal, Wraith, Dex, Prisma, Mara, and Syndicate variants"* (wiki `Riven
-// Mods`). The app filed them per WEAPON, so a card built on the Burston was
-// invisible on the Burston Prime and a player had to build it twice — two
-// cards for one riven, free to drift apart.
+// can be used on variants of a particular weapon, including MK1, Prime, Vandal,
+// Wraith, Dex, Prisma, Mara, and Syndicate variants"*. Filed per WEAPON, a card
+// built on the Burston is invisible on the Burston Prime and a player builds it
+// twice — two cards for one riven, free to drift apart.
 //
 // THE NUMBERS FOLLOW BY THEMSELVES, which is why the fix is a storage scope
-// rather than a feature: a saved riven holds ROLLS, and the shown value is the
-// roll against THIS weapon's disposition. So the same card reads 1.45's worth
-// on a Burston and 1.35's on its Prime, which is what the game does — *"the
-// cycling screen allows players to view the Riven stats on every owned variant
-// of said weapon"*. That RATIO is asserted here, because a list that shares a
-// card and shows the wrong numbers for it is worse than one that shares
+// rather than a feature: a saved riven holds ROLLS and the shown value is the
+// roll against THIS weapon's disposition, so one card reads 1.45's worth on a
+// Burston and 1.35's on its Prime. That RATIO is asserted here, because a list
+// sharing a card and showing the wrong numbers is worse than one sharing
 // nothing.
 //
 // THREE NEGATIVE CONTROLS, because "one big list" passes every positive above:
-//   * an unrelated weapon does not see it;
-//   * a KITGUN's two builds do not see each other's — one family, two cards (a
-//     chamber built as a primary takes a RIFLE riven, as a secondary a PISTOL
-//     one), which an engine test holds from the data side;
-//   * and the MIGRATION keeps what is already on the machine, build references
-//     included, which is the only part of this that can lose a player's work.
-//
-//   node scripts/check_riven_family.mjs
-//
-// Exits non-zero on the first failure.
+// an unrelated weapon does not see it; a KITGUN's two builds do not see each
+// other's (one family, two cards, since a chamber built as a primary takes a
+// RIFLE riven); and the MIGRATION keeps what is already on the machine, build
+// references included, which is the only part that can lose a player's work.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

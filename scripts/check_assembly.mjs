@@ -1,34 +1,24 @@
 // A MODULAR WEAPON IS ASSEMBLED, AND THE ASSEMBLY IS THE NUMBER.
 //
-// A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
-// and every figure on the panel is composed from the three. So the failure this
-// check exists for is a page that draws a perfectly good parts picker and
-// simulates something else — the most convincing wrong thing this app could
-// show, because there is no printed stat line anywhere to contradict it.
-//
-// Every assertion below is therefore either ON THE WIRE or on a real
-// `/api/simulate` in the shipping wasm build. That is `check_squad`'s rule and
-// `check_opt_modes`' lesson: the Phantasma's charged mode was OFFERED on the
-// optimizer tab and never sent, so the page presented a choice it did not make.
+// A Kitgun has no published stat line: every figure on the panel is composed
+// from its Chamber, Grip and Loader. So the failure this exists for is a page
+// that draws a perfectly good parts picker and simulates something else, with
+// no printed stat line anywhere to contradict it — which is why every assertion
+// is ON THE WIRE or on a real `/api/simulate` in the shipping wasm build.
 //
 // The sharp cases:
 //
 //   * two grips are two weapons, in the ANSWER and not only on the card;
 //   * a build REMEMBERS its parts, through a preset and through a share link —
 //     parts that reset to the default turn a saved build into a different
-//     weapon with the same name, which is what a missing axis did four times;
-//   * the block is HIDDEN on the other 134 weapons, which is the negative
-//     control: a check that only asserts presence passes just as well on a page
-//     showing a parts picker for a Braton.
+//     weapon with the same name;
+//   * the block is HIDDEN on the other 134 weapons, the negative control.
 //
-// It also pins the two structural decisions, because both are invisible from
-// outside and both would read as bugs if they regressed: the CHAMBER is stated
-// rather than offered (it is the weapon), and only THIS slot's five grips are
-// offered rather than all ten.
+// It also pins the two structural decisions, both invisible from outside and
+// both reading as bugs if they regressed: the CHAMBER is stated rather than
+// offered (it is the weapon), and only THIS slot's five grips are offered.
 //
 //   node scripts/check_assembly.mjs
-//
-// Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

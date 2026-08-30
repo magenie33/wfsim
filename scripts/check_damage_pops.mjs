@@ -1,29 +1,23 @@
 // THE NUMBERS A FIGHT POPS — the THIRTY-SIXTH check.
 //
 // Every other thing the replay draws is a CURVE: a pool falling, a stack count,
-// a running total. This is the one output that is an EVENT — a discrete number
-// that happened at a place at a time — and it is the only view in the app where
-// "one hit for 400,000" and "twenty for 20,000" look different rather than
-// reading identically as an average.
+// a running total. This is the one output that is an EVENT, and the only view
+// where "one hit for 400,000" and "twenty for 20,000" look different rather
+// than reading identically as an average — which is also why it is the easiest
+// thing here to FAKE, since a layer floating plausible numbers over the bodies
+// would look exactly right and mean nothing.
 //
-// WHICH IS ALSO WHY IT IS THE EASIEST THING HERE TO FAKE. A layer that floated
-// plausible numbers over the bodies would look exactly right and mean nothing.
+// SO THE PROPERTY IS ONE-TO-ONE, AND IT IS CHECKED BY NAME. Two lists filled
+// from one place and capped by two rules let a number float over a body with no
+// row to explain it, and both would be "the engine's" — so a check asking only
+// "is this text one the engine produced" passes on it. Every drawn number
+// carries `data-rpevent`, the id of the row it IS, and this asserts the row
+// exists, its effective damage is the text on screen, and it belongs to the
+// frame being shown.
 //
-// SO THE PROPERTY IS ONE-TO-ONE, AND IT IS CHECKED BY NAME.
-// A `Replay.pops` buffer beside the combat record is the same nine damage
-// sites written down twice, capped by two different rules — so a number can
-// float over a body with no row to explain it and a row can name a number that
-// never appeared. Both would be "the engine's", so a
-// check that only asked "is this text one the engine produced" passed on it.
-// There is ONE stream now: every drawn number carries `data-rpevent`, the id of
-// the row it IS, and this asserts that the row exists, that its effective
-// damage is the text on screen, and that it belongs to the frame being shown.
-// An overlay drawing plausible numbers now has to forge an id as well.
-//
-// THE CAP IS PART OF THE FEATURE and it moved with the stream: it is a DISPLAY
-// decision now, twelve a frame with the biggest kept, made where the numbers
-// are drawn. A frame that dropped any must SAY so — a cap nobody is told about
-// reads as "that is everyone".
+// THE CAP IS PART OF THE FEATURE and is a DISPLAY decision, twelve a frame with
+// the biggest kept, made where the numbers are drawn. A frame that dropped any
+// must SAY so — a cap nobody is told about reads as "that is everyone".
 
 import { openApp } from "./cdp.mjs";
 

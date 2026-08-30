@@ -1,36 +1,22 @@
 // THE FORTIETH CHECK: **A FIGHT IS ONE DOCUMENT, AND A READER CAN SEE ALL OF IT.**
 //
-// The scenario blocks show what APPLIES to the weapon in front of you, which is
-// the right default and leaves two things invisible:
+// The scenario blocks show what APPLIES to the weapon in front of you, which
+// leaves two things invisible: a field this weapon FORCES (a sentinel's
+// headshot rate is 0 whatever the document carries, so two different numbers
+// exist and only one runs), and a field it merely does not USE, which is still
+// part of the fight and still travels. So "the same fight across two weapons"
+// was a claim nobody could check; this asserts that it can be.
 //
-//   * a field this weapon FORCES — a sentinel's headshot rate is 0 whatever the
-//     document carries, and the document carries whatever you set for the rest
-//     of the roster. Two different numbers, one of them the one that runs, and
-//     nothing on screen said so.
-//   * a field it merely does not USE, which is still part of the fight and
-//     still travels. That is the buff map's own rule (AGENTS.md): the whole map
-//     travels because it is the FIGHT's, and pruning it to what the current
-//     build can grant made the quick calc a different fight the moment a
-//     candidate granted a buff the current build lacked.
+// AND THAT THE RULE IS THE ENGINE'S: `engine::scenario::settled_for` decides,
+// `/api/meta` states the consequence per weapon, and the page reads it. The
+// forcing rules must not be re-derived in `app.js` from weapon flags, because a
+// forced field looks identical whoever forced it.
 //
-// So "the same fight across two weapons" was a claim nobody could check. This
-// asserts that it can be.
-//
-// AND THAT THE RULE IS THE ENGINE'S. `engine::scenario::settled_for` decides and
-// `/api/meta` states the consequence per weapon; the page reads it. The three
-// forcing rules must not be re-derived in `app.js` from weapon flags — two
-// implementations of one rule, drifting in silence, because a forced field
-// looks identical whoever forced it.
-//
-// AND WHAT THE FIGHT ITSELF RULES, per weapon class (§5-6). A scenario carries
-// the rules for classes it is not pointed at, which is what makes it one
-// document any weapon can be measured against — and OVERRIDES SIT BEHIND
-// LEGALITY, so the check's sharpest assertion is a NEGATIVE one: a Companion
-// settles three fields and may be ruled on for none of them, because all three
-// are the game's rule rather than the sim's simplification. An editor that drew
-// a box beside every settled row would pass everything else here.
-//
-//   node scripts/check_whole_fight.mjs
+// AND WHAT THE FIGHT ITSELF RULES, per weapon class (§5-6). OVERRIDES SIT
+// BEHIND LEGALITY, so the sharpest assertion is a NEGATIVE one: a Companion
+// settles three fields and may be ruled on for none, since all three are the
+// game's rule rather than the sim's simplification — an editor drawing a box
+// beside every settled row would pass everything else.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

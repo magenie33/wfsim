@@ -1,40 +1,24 @@
 // THE ARENA IS A PLACE YOU CAN DRAG, and what you drag is what gets simulated.
 //
 // A fight is two bodies on a floor, so the panel draws two bodies on a floor
-// and you move them with your finger. The picture is not a
-// decoration and that is the whole reason this check exists: a scene that
-// looked right and did not reach `/api/simulate` would be the most convincing
-// wrong thing on the page.
-//
-//   node scripts/check_arena.mjs
-//
-// Four claims, and the last two are the sharp ones:
+// and you move them with your finger. The picture is not a decoration: a scene
+// that looked right and did not reach `/api/simulate` would be the most
+// convincing wrong thing on the page.
 //
 //   · IT DRAWS — two bodies, a MUZZLE on the shooter's own circumference with
 //     the arrow that says which way they face, and a distance label.
 //   · DRAGGING MOVES THE FIGHT — the label, the scenario state and a real
 //     `/api/simulate` in the shipping wasm build all follow the finger.
-//   · BODIES DO NOT PASS THROUGH EACH OTHER, and CONTACT READS ZERO. Dragging
-//     the enemy onto the player leaves their CENTRES 0.4 m apart — twice the
-//     measured 0.2 m radius (M47) — and the number on screen is the GAP between
-//     their surfaces, which is 0. What a player calls point
-//     blank is zero; the 0.4 m is the model's business.
-//   · …AND AT CONTACT NOTHING MISSES. The shot leaves the muzzle, one radius
-//     forward, so its closest approach to the target's centre is `r·sin(θ) ≤ r`
-//     for every θ. Asserted here for the weapon on screen and for the WHOLE
-//     roster in `space`, where a cone is a number rather than a page.
-//   · AN OFFICIAL RULER'S FIGHT DOES NOT MOVE. The benchmark pins its
-//     distance, so the scene refuses the gesture there — and it has to refuse
-//     it ITSELF, because the official lock disables inputs and the bodies are
-//     SVG circles that sweep never reaches.
-//   · THE CANVAS IS THE ONLY PLACE A POSITION IS SET. The
-//     typed Distance box is gone; the shortcuts that replaced it live INSIDE
-//     the scene, and a quick-set moves the target ALONG the line it already
-//     stands on rather than snapping it to an axis — same rule the drag obeys,
-//     because they move the same body.
+//   · BODIES DO NOT PASS THROUGH EACH OTHER, and CONTACT READS ZERO: their
+//     CENTRES stop two radii apart and the number on screen is the GAP.
+//   · …AND AT CONTACT NOTHING MISSES, since the shot leaves the muzzle one
+//     radius forward and its closest approach is `r·sin(θ) ≤ r` for every θ.
+//   · AN OFFICIAL RULER'S FIGHT DOES NOT MOVE, and the scene has to refuse the
+//     gesture ITSELF: the lock disables inputs and these are SVG circles.
+//   · THE CANVAS IS THE ONLY PLACE A POSITION IS SET, so a quick-set moves the
+//     target ALONG the line it stands on, the same rule the drag obeys.
 //
-// …and the negative control: the OPTIMIZER draws the same scene read-only,
-// because it runs the simulator's fight and a preset is edited in one place.
+// …and the negative control: the OPTIMIZER draws the same scene read-only.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

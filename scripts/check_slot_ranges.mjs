@@ -1,28 +1,22 @@
 // EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS, and it says it the same way.
 //
 // The optimizer's axes are all one shape — N slots, an option set, and a range
-// saying how many of the slots a searched build must fill — and the page said
-// it three different ways:
+// saying how many slots a searched build must fill — said three different ways:
 //
 //   mods              a numeric range, 0–8, on screen
 //   exilus            0–1 reachable, but only by pooling a hidden `none` row
 //   arcane seats      0–1 not reachable at all
 //   evolution tiers   0–1 not reachable at all
 //
-// …so which of 0–0 / 0–1 / 1–1 you got was decided by whether you had marked
-// anything, on three of the four. This walks all three states on all of them
-// and asserts them ON THE WIRE, because a range that draws correctly and sends
-// nothing looks exactly like a working control (check_opt_modes' own lesson).
+// …so on three of the four, which of 0–0 / 0–1 / 1–1 you got was decided by
+// whether you had marked anything. This walks all three states on all of them
+// ON THE WIRE, because a range that draws correctly and sends nothing looks
+// exactly like a working control.
 //
-// IT IS DERIVED FIRST AND ADJUSTED SECOND, and the derived half is the one
-// that must not regress: marking candidates and saying nothing else still
-// means 1–1, so no scope that exists today grows. That is the 2026-08-01
-// decision about empty arcane seats, kept — it was against the empty seat
-// being a DEFAULT, not against asking for it.
-//
-//   node scripts/check_slot_ranges.mjs
-//
-// Exits non-zero on the first failure.
+// IT IS DERIVED FIRST AND ADJUSTED SECOND, and the derived half must not
+// regress: marking candidates and saying nothing else still means 1–1, so no
+// scope that exists today grows. That keeps the decision about empty arcane
+// seats — it was against the empty seat being a DEFAULT, not against asking.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 14000 });

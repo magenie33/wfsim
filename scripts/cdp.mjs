@@ -1,20 +1,15 @@
 // THE PLUMBING EVERY UI CHECK NEEDS, written once.
 //
 // Every `check_*.mjs` drives the SHIPPING build in headless Chrome over CDP and
-// asserts real DOM state. Getting to the first assertion takes a static server
-// for `site/`, a Chrome launch, a WebSocket, a request/response map, an
-// `evaluate` helper and a `check` counter — thirty to ninety lines that were
-// copied into eighteen files and then drifted: some `evaluate`s threw on a page
-// exception and some returned undefined, some servers resolved a directory to
-// its `index.html` and some 404'd it into the SPA fallback, and every file
-// picked its own debugging port by hand, so two checks running at once could
-// fight over one. None of that is what any check is about.
+// asserts real DOM state. Getting to the first assertion takes a static server,
+// a Chrome launch, a WebSocket, a request/response map, an `evaluate` helper
+// and a `check` counter — thirty to ninety lines copied into eighteen files and
+// drifting, down to every file picking its own debugging port.
 //
-// The escaping is the other reason. A check's page-side code is a string inside
+// The escaping is the other reason: a check's page-side code is a string inside
 // a template literal, and a backslash that does not survive the trip turns
-// `/\s+/` into `/s+/` — which silently rewrote "Winds" to "Wind " and looked
-// like an app bug for as long as it took to find. One place to get that right
-// is better than eighteen.
+// `/\s+/` into `/s+/`, which silently rewrote "Winds" to "Wind " and looked
+// like an app bug.
 //
 // Usage:
 //

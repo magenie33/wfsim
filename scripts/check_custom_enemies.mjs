@@ -187,25 +187,19 @@ check("...and the same target at x1 takes damage", r.normal > 0, String(r.normal
 // The two mechanics, told apart by measurement rather than by reading the
 // card back.
 check("procs happen at all", r.plainProcs > 0, String(r.plainProcs));
-// THE SAMPLE IS THE WHOLE RUN SET, and for a day it was not. This assertion
-// went red at 0.533/pellet -> 0.689 and stayed red identically on every re-run,
-// which reads as a systematic effect and was not one: procs and pellets in the
-// response are the MEDIAN ENGAGEMENT's counts, so the sample was 45 pellets no
-// matter how many runs the fight was paid for. At a rate near 0.6 the binomial
-// sd over 45 trials is 3.3 procs and 15% of 24 is 3.6 — a two-sigma draw fails
-// this by construction, and no run count could ever have fixed it, because
-// raising it picks a different median run rather than adding a trial. It is
-// SELECTION-BIASED on top of that: the median run is chosen by damage and more
-// procs means more damage, so it climbs with the run count (measured on the
-// Torid: 0.5556 at 1 run, 0.6444 at 200, 0.7778 at 1000, while the pooled rate
-// held at 0.6244).
+// THE SAMPLE IS THE WHOLE RUN SET. Reading `procs` and `pellets` off the
+// response takes the MEDIAN ENGAGEMENT's counts — 45 pellets however many runs
+// the fight was paid for — where the binomial sd over 45 trials at a rate near
+// 0.6 is 3.3 procs, so a two-sigma draw fails a 15% tolerance by construction
+// and no run count fixes it. It is SELECTION-BIASED on top of that: the median
+// run is chosen by damage and more procs means more damage, so it climbs with
+// the run count (0.5556 at 1 run, 0.7778 at 1000, while the pooled rate held at
+// 0.6244).
 //
-// It is procs_mean over pellets_mean now — 45,000 trials at the default 1000
-// runs — and the answer is EXACT: 0.6244 both ways, 0.000% apart, because the
-// damage column is not read by the proc draw at all and the two fights roll the
-// same dice. So the tolerance is 3% rather than 15%: loose enough that a
-// legitimate feedback path from damage into the fight would not redden it,
-// tight enough to catch a PARTIAL conflation, where the old one could only ever
+// procs_mean over pellets_mean is 45,000 trials at the default 1000 runs, and
+// the answer is EXACT — 0.6244 both ways, because the damage column is not read
+// by the proc draw and the two fights roll the same dice. So the tolerance is
+// 3%: tight enough to catch a PARTIAL conflation, where 15% could only ever
 // have caught a total one.
 //
 // AND THE SAMPLE IS ASSERTED BESIDE IT, because a tolerance without an n is the

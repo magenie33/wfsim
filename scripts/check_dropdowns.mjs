@@ -1,27 +1,23 @@
 // THE SEVENTEENTH CHECK — there is ONE dropdown.
 //
-// Owner. The site had eight native `<select>`s beside a rich
-// searchable picker, so the quick calc's SCENARIO — a list that grows, since
-// a scenario is a preset you make — was the plainest control on the page
-// while a mod list two blocks away searched and sorted.
+// Eight native `<select>`s beside a rich searchable picker leaves the quick
+// calc's SCENARIO — a list that GROWS — as the plainest control on the page
+// while a mod list two blocks away searches and sorts.
 //
 // What this asserts is the thing that decays: not that the component exists,
-// but that nothing has quietly gone back to a native select, and that the four
-// contracts it has to honour still hold.
+// but that nothing has gone back to a native select and that its four contracts
+// still hold.
 //
 //   1. NO native `<select>` is left except `#weapon`, which is hidden and is
 //      the router's source of truth rather than a control.
-//   2. The SEARCH BAR follows its own rule — forced where a list grows (the
-//      scenario), absent where the whole list is two rows (the language). A
-//      search box over two options is furniture; the panel and rows are what
-//      make it "one look".
-//   3. `data-k` still works. The scenario panel binds its fields generically —
-//      it reads `el.value` and listens for `change` — so the replacement keeps
-//      `HTMLButtonElement.value` reflecting and dispatches `change` itself.
-//      This is the riskiest part of the swap and the least visible.
+//   2. The SEARCH BAR follows its own rule — forced where a list grows,
+//      absent where the whole list is two rows, since a search box over two
+//      options is furniture.
+//   3. `data-k` still works: the scenario panel binds its fields generically,
+//      so the replacement keeps `HTMLButtonElement.value` reflecting and
+//      dispatches `change` itself. The riskiest part of the swap.
 //   4. NESTING. The mod picker's Sort control lives INSIDE `#mod-popover`, so
-//      opening it must not close the picker it belongs to. `closePopovers`
-//      takes the anchor and spares any popover containing it.
+//      opening it must not close the picker it belongs to.
 import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 11000 });
 const { evaluate, check, sleep, send, BASE } = app;

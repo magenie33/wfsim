@@ -1,38 +1,24 @@
 // A BLOCK BELONGS TO ONE MODULE, AND IT APPEARS ON THAT MODULE'S TAB ONLY.
 //
-// The page is three modules — Builder | Simulator | Optimizer — plus the
-// editors that feed them, and the chain runs one way: builder → simulator →
-// optimizer, each reading upstream and writing nothing. A BUILD is the
-// builder's, so a control that edits one has no business on the two tabs that
-// do not own a build.
+// The page is three modules plus the editors that feed them, and the chain runs
+// one way: builder → simulator → optimizer, each reading upstream and writing
+// nothing. A BUILD is the builder's, so a control that edits one has no
+// business on the tabs that do not own a build.
 //
-// THIS HAS GONE WRONG TWICE, THE SAME WAY BOTH TIMES. The Mode control was the
-// builder's, drawn on the optimizer tab "only because nothing hid it"
-// (check_opt_modes) — the page offered a choice it never sent. Then
-// the Parts block, added 2026-08-23, drew on the Simulator and the Optimizer
-// and was numbered nowhere.
+// IT HAS GONE WRONG TWICE THE SAME WAY, and the mechanism was a LIST both
+// times: four of them named the builder's blocks by id and a new block was
+// added to none. A list cannot report what is not on it, so every block
+// DECLARES its module (`data-module`) and all four derive from that.
 //
-// Both times the mechanism was a LIST. There were four of them naming the
-// builder's blocks by id — two CSS rules, the step numbering, and the
-// official-build lock — and a new block was added to none. A list cannot
-// report what is not on it, so the fix was to make every block DECLARE its
-// module (`data-module`) and derive all four from that.
+// So this holds the declaration rather than any block:
 //
-// So this check holds the declaration rather than any block:
-//
-//   * every block in the config page declares a module — one added tomorrow
-//     with none fails here, which is the whole point;
+//   * every block in the config page declares a module;
 //   * on each tab, every VISIBLE block belongs to that tab's module;
-//   * ...and the builder's blocks are visible on the builder, which is the
-//     negative control: a page that hid everything would pass the first two.
+//   * ...and the builder's blocks are visible on the builder, the negative
+//     control, since a page that hid everything would pass the first two.
 //
-// It runs on a KITGUN, because the Parts block is the one that was missing and
-// it is hidden outright on the other 134 weapons — checking this on an ordinary
-// rifle would pass without ever looking at it.
-//
-//   node scripts/check_module_blocks.mjs
-//
-// Exits non-zero on the first failure.
+// It runs on a KITGUN, because the Parts block is hidden on the other 134
+// weapons and an ordinary rifle would pass without looking at it.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

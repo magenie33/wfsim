@@ -1,28 +1,24 @@
 // THE TWENTY-SIXTH: a quick-calc chip says how well it knows its own number.
 //
-// "≈0%" was one string for two different findings — a mod that does nothing,
-// and a mod nobody measured hard enough — and only the difference between them
-// is actionable: the first says pick something else, the second says raise the
-// runs. So a chip either states a number it is
-// sure of, or states the number AND its width.
+// "≈0%" is one string for two different findings — a mod that does nothing, and
+// a mod nobody measured hard enough — and only the difference is actionable:
+// the first says pick something else, the second says raise the runs. So a chip
+// either states a number it is sure of, or states the number AND its width.
 //
-// It also asserts the two properties that make the width trustworthy, because
-// both were wrong at once and either one alone brings the symptom back:
+// It also asserts the two properties that make the width trustworthy, either
+// of which alone brings the symptom back:
 //
-//   1. The scan reads the MEAN of the runs it paid for, not the median run.
-//      `score`/`dps` are one engagement however many were run — at 10 runs the
-//      median moved 9.8% between seeds where the mean moved 5.9%.
+//   1. The scan reads the MEAN of the runs it paid for rather than the median
+//      run — at 10 runs the median moved 9.8% between seeds, the mean 5.9%.
 //   2. The width comes from the SERVER's spread over those runs, not from
-//      running the reference a second time at another seed. That second run was
-//      a single sample of the spread, and on identical inputs it answered
-//      anywhere from 0.7% to 11.2% — so the same scan censored every chip or
-//      none of them, at random.
+//      re-running the reference at another seed: that is ONE sample of the
+//      spread, answering anywhere from 0.7% to 11.2% on identical inputs, so
+//      the scan censors every chip or none, at random.
 //
 // The NEGATIVE CONTROL is the pair the bug was reported on: Serration and
-// Amalgam Serration differ only in base damage, so neither re-rolls the fight,
-// both compare against the reference exactly, and both must print a bare
-// number in the order their cards state. A band on those two would mean the
-// pairing was lost, which is how a 3.8% difference gets printed upside down.
+// Amalgam Serration differ only in base damage, so both compare exactly and
+// print a bare number in the order their cards state. A band on those two means
+// the pairing was lost, which is how a 3.8% difference prints upside down.
 import { openApp } from "./cdp.mjs";
 
 let failed = 0;

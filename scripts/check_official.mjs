@@ -3,27 +3,20 @@
 // Two of them, one contract: the official SCENARIO (data/benchmarks/) and the
 // official BUILDS (data/benchmarks/boards/). Neither is a preset — no weapon
 // owns them, nothing stores them, nobody edits them — and both sit in the bar
-// that already holds their kind, marked, selectable, copyable.
+// that already holds their kind, marked, selectable, copyable. Three claims,
+// each failing in its own way:
 //
-// `data/benchmarks/*.yaml` is a ruler rather than a preset: no weapon owns it,
-// nothing stores it, nobody edits it. Three claims that have to hold ON SCREEN,
-// because each fails in its own way:
-//
-//   - it APPEARS, on every weapon in the roster (a per-weapon list would make
-//     it a preset again, and presets never cross weapons);
-//   - it is READ-ONLY where a write would actually happen — auto-save, not the
-//     disabled attribute. A control that looks inert while auto-save still
-//     reads it is the exact bug this guards;
-//   - it can be COPIED into an ordinary scenario, which is the whole answer to
-//     "but I want to change it".
+//   - it APPEARS on every weapon in the roster, where a per-weapon list would
+//     make it a preset again and presets never cross weapons;
+//   - it is READ-ONLY where a write would actually happen, which is auto-save
+//     rather than the disabled attribute: a control that looks inert while
+//     auto-save still reads it is the exact bug this guards;
+//   - it can be COPIED into an ordinary scenario, the whole answer to "but I
+//     want to change it".
 //
 // Run twice, in both languages: the name is translated for display but its
 // IDENTITY is the benchmark id, so switching language must not orphan the
 // pointer that says which scenario is open.
-//
-//   node scripts/check_official_scenario.mjs
-//
-// Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

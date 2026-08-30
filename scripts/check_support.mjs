@@ -1,9 +1,8 @@
 // EVERY NUMBER ON THE PAGE THAT ASKS FOR SOMETHING IS COUNTED, NOT TYPED.
 //
 // `/support` is the one page here that asks the reader for money, and it makes
-// its case in counts: the roster and the pools from META, the tests, checks and
-// commits from the site build. A page of counts has exactly one failure mode
-// worth testing for — figures that are DRAWN but not COUNTED. A hardcoded strip
+// its case in counts. A page of counts has exactly one failure mode worth
+// testing for — figures that are DRAWN but not COUNTED, since a hardcoded strip
 // looks identical, reads correctly, and goes stale in a week unnoticed.
 //
 // So the sharp assertions here compare what is on screen against the source it
@@ -11,17 +10,14 @@
 // against the union of `META.mod_pools`, the built line against the injected
 // `PROJECT_FACTS`. A typed number fails all three.
 //
-// THE OTHER HALF IS WHAT THE READER HAS RUN, which is the one line on the page
-// that is about them and the one that must never travel. It is asserted in
-// both directions — absent on a browser that has run nothing (a fresh visitor
-// told "you have run 0 simulations" is worse than being told nothing), present
-// and CORRECT after a real run, and absent from the request that run sent.
+// THE OTHER HALF IS WHAT THE READER HAS RUN — the one line on the page that is
+// about them and the one that must never travel. Asserted in both directions:
+// absent on a browser that has run nothing, present and CORRECT after a real
+// run, and absent from the request that run sent.
 //
-// AND THE NEGATIVE CONTROLS ARE THE CHANNELS. An entry with no url must draw
-// nothing — that is the rule the channel table has always had, and it is what
-// makes an unopened Patreon safe to declare — and the supporter line must stay
-// silent while its store is unconfigured, which is the state every check runs
-// in, since the static server has no worker behind it.
+// AND THE NEGATIVE CONTROLS ARE THE CHANNELS: an entry with no url must draw
+// nothing, which is what makes an unopened Patreon safe to declare, and the
+// supporter line must stay silent while its store is unconfigured.
 import { openApp, sleep } from "./cdp.mjs";
 
 const app = await openApp({ boot: 20000 });

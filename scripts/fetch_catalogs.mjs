@@ -2,27 +2,21 @@
 //
 // Some mechanics are a formula plus a published table with one ROW PER WEAPON,
 // and the row says what the weapon's own stats never would (docs/CATALOGS.md).
-// Every intake has to read them, and reading them meant a network round trip —
-// so a weapon gets added without its row being checked, which is how the Boar's
-// CO row became the Boar Prime's.
+// Every intake has to read them, and a network round trip per read is how a
+// weapon gets added without its row being checked.
 //
 // THROUGH A BROWSER, because the wiki answers `curl` and `urllib` with a 403
-// and its API with a "Please wait" interstitial: it is behind a bot challenge
-// that a real browser passes and a script does not. This repo already owns a
-// headless Chrome for exactly this class of problem (`cdp.mjs`), so the fetch
-// uses it rather than inventing a way around the challenge.
+// and its API with a "Please wait" interstitial — a bot challenge a real
+// browser passes. This repo already owns a headless Chrome for that (`cdp.mjs`).
 //
 //   node scripts/fetch_catalogs.mjs            fetch what is missing
 //   node scripts/fetch_catalogs.mjs --force    re-fetch, and say what MOVED
 //
-// Cached as WIKITEXT (`?action=raw`), not rendered HTML: the table is a wiki
-// table, `grep` finds a weapon's row in it, and a diff between two fetches is a
-// diff of the CATALOG rather than of the site's markup.
-//
-// The cache lives under `vendor/`, which is gitignored — these are somebody
-// else's pages and this script is the tracked half. A row that DECIDES
-// something is transcribed into the weapon's own yaml and into
-// docs/CATALOGS.md; the cache is where you go to find it.
+// Cached as WIKITEXT (`?action=raw`) rather than rendered HTML, so `grep`
+// finds a weapon's row and a diff between two fetches is a diff of the CATALOG
+// rather than of the site's markup. The cache lives under gitignored `vendor/`;
+// a row that DECIDES something is transcribed into the weapon's own yaml and
+// into docs/CATALOGS.md.
 import { openApp, sleep } from "./cdp.mjs";
 import fs from "node:fs";
 import path from "node:path";

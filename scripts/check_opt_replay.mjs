@@ -2,32 +2,25 @@
 // NUMBER.
 //
 // The THIRTIETH check, and the only one written so that it cannot go stale.
+// Every other check about a build NAMES the axes it is about; this asserts the
+// ANSWER. "The simulator is the truth and the optimizer obeys it" covers the
+// ENGINE — not the PAGE, which kept its own hand-written translation of a
+// ranked row into a build and dropped an axis out of it four times, the last
+// measured by a player at 26 KPM on the ranking and 15 in the simulator.
 //
-// Every other check about a build NAMES the axes it is about. This one asserts
-// the ANSWER. "The simulator is the truth and the optimizer obeys it" was a
-// statement about the ENGINE and it held — `parse_fight` sees to it, and a
-// winner replayed under the fight it was scored in matches to 0.1%. What it
-// never covered was the PAGE, which kept its own hand-written translation of a
-// ranked row into a build and dropped an axis out of it four times: `mode` from
-// the board submission, `valence` from the worker's table, both from the share tuple, and `valence` from the
-// optimizer's "+ add" — the one a player measured, reporting 26
-// KPM on the ranking and 15 in the simulator for what he had been told was the
-// same build.
+// It kept coming back because every guard was a LIST of axes somebody has to
+// maintain. This holds no list: it runs a real search, applies the winner the
+// way the button does, runs the simulator, and asserts the two numbers agree,
+// so a fifth axis is covered on the day it is added, by nobody.
 //
-// Four patches, one shape, and the reason it kept coming back is that every
-// guard was a LIST of axes, and a list has to be maintained by whoever adds the
-// fifth. This one holds no list: it runs a real search, applies the winner the
-// way the button does, runs the simulator, and asserts the two numbers agree. A
-// fifth axis is covered on the day it is added, by nobody.
-//
-// ON CONTROLS. Deleting an axis from the request must be OBSERVED — otherwise
-// the whole check might be comparing a thing with itself. But "every axis
-// changes the answer" is a claim about the GAME and it is false: the Kuva Nukor
-// has one firing mode, so dropping `mode` is legitimately free. So the rotation
-// is discovered from the payload's own keys, the pipe is proven by requiring
-// that SOME axis moves, and the sharp control is the last one — a build
-// assembled from a replay with a live axis removed must fail the very assertion
-// that would otherwise pass, which is what proves the assertion can fail at all.
+// ON CONTROLS. Deleting an axis from the request must be OBSERVED, or the check
+// might be comparing a thing with itself — but "every axis changes the answer"
+// is a claim about the GAME and it is false, since the Kuva Nukor has one
+// firing mode and dropping `mode` is legitimately free. So the rotation is
+// discovered from the payload's own keys, the pipe is proven by requiring that
+// SOME axis moves, and the sharp control is last: a build assembled from a
+// replay with a live axis removed must fail the assertion that otherwise
+// passes.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

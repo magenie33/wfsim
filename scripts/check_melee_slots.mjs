@@ -3,27 +3,23 @@
 //
 // The STANCE slot is the first slot in this app whose contents change what the
 // weapon FIRES rather than what it fires with: a stance publishes a combo per
-// mode, and installing one replaces the weapon entry's own script. So the same
-// Magistar in the same mode is a different sequence of swings under Crushing
-// Ruin and under Shattering Storm, and a slot that drew correctly and sent
-// nothing would look exactly like a working feature — which is
-// `check_opt_modes`' own lesson, and why every assertion here is either ON THE
-// WIRE or on a real `/api/simulate` in the shipping wasm build.
+// mode and installing one replaces the entry's own script, so the same Magistar
+// in the same mode is a different sequence of swings under Crushing Ruin and
+// under Shattering Storm. A slot that drew correctly and sent nothing would
+// look exactly like a working feature, which is why every assertion here is ON
+// THE WIRE or on a real `/api/simulate` in the shipping wasm build.
 //
-// IT NEEDS NO FIELD OF ITS OWN, and that is the claim worth testing hardest. A
-// stance mod is legal in the stance slot and NOWHERE else, so a flat mod list
-// can say which entry is the stance by looking at it — where an exilus-eligible
-// mod is legal in a main slot too, which is why THAT one travels in a field of
-// its own (AGENTS.md). The consequence is that the stance rides
-// `mods`, and the round trip through `stateFromBuild` has to put it back in the
-// slot it came out of rather than in slot 9.
+// IT NEEDS NO FIELD OF ITS OWN, the claim worth testing hardest: a stance mod
+// is legal in the stance slot and NOWHERE else, so a flat mod list can say
+// which entry is the stance by looking at it, where an exilus-eligible mod is
+// legal in a main slot too. The stance therefore rides `mods`, and the round
+// trip through `stateFromBuild` must put it back in the stance slot.
 //
-// THE EXILUS SLOT IS HERE FOR THE OTHER REASON: it is the one slot in this app
-// whose whole pool is a single mechanic plus four cards this arena has no room
-// for. Since Tennokai landed, seven of the eleven PAY and four declare — so the
-// assertion is not "nothing pays", which was true for a day and is now false,
-// but the invariant underneath it: NO CARD IS SILENT. Every one of them either
-// has an effect the engine computes or says on its own card why it has none.
+// THE EXILUS SLOT IS HERE FOR THE OTHER REASON: its whole pool is a single
+// mechanic plus four cards this arena has no room for. Seven of the eleven PAY
+// and four declare, so the assertion is not "nothing pays" but the invariant
+// underneath it — NO CARD IS SILENT: each either has an effect the engine
+// computes or says on its own card why it has none.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 22000 });

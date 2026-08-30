@@ -1,33 +1,23 @@
 // WHAT A MOD'S CARD SAYS THE WEAPON MAY DO — the equip rule, and the LOCK.
 //
 // Two claims, one pair of mod families (the Cannonades and the Acuity twins),
-// and both are about a weapon the game will not let you build or a number it
-// will not let you move.
-//
-// "Weapons with an Incarnon mode must have Semi-Auto trigger type for both
-// firing modes in order to equip this mod" (wiki, Semi-Pistol_Cannonade). Dual
-// Toxocyst is semi-auto and transforms into a full-auto form, so the mod fits
-// while the Genesis is not installed and does not the moment tier 1 is.
+// both about a weapon the game will not let you build or a number it will not
+// let you move. "Weapons with an Incarnon mode must have Semi-Auto trigger type
+// for both firing modes in order to equip this mod" — and Dual Toxocyst wears
+// it until tier 1 goes in.
 //
 // The engine decides (`pool_for_build`) and the page is TOLD the consequence
-// (`evo_forbids` in /api/meta) — this asserts the page acts on it, on SCREEN:
+// (`evo_forbids`); this asserts the page acts on it, on SCREEN:
 //
-//   · the picker offers the mod on a bare weapon and stops offering it once the
-//     form is installed, and offers it again when the form comes back off
-//   · installing the form UNEQUIPS it and says so — a slot emptying under you
-//     silently is the one thing a build must never do
+//   · the picker stops offering the mod once the form is installed, and offers
+//     it again when the form comes back off
+//   · installing the form UNEQUIPS it and says so
 //   · the Form control greys the Incarnon options while the mod is worn, with
-//     the reason on screen, and does NOT move the scenario's own selection
-//   · and the rule holds through the shipping wasm: the sim refuses the pair
+//     the reason on screen, without moving the scenario's own selection
+//   · and the sim refuses the pair through the shipping wasm
 //
-// Then the LOCK. "Equipping this mod will set weapon's Fire Rate to its default
-// ignoring other bonuses, even negative effects" (wiki) — so the panel shows the
-// weapon's own fire rate and NAMES what pinned it, and Frenzy, whose only effect
-// is fire rate, is not offered as a buff to configure.
-//
-//   node scripts/check_equip_rules.mjs
-//
-// Exits non-zero on the first failure.
+// Then the LOCK: "set weapon's Fire Rate to its default ignoring other
+// bonuses", so the panel pins the stat and NAMES what pinned it.
 import { openApp } from "./cdp.mjs";
 
 // ENGLISH, so the assertions below read the strings the repo's source is

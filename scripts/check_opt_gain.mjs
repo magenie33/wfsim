@@ -12,9 +12,8 @@
 //      pairings is larger than any single mod's, so it is not a footnote;
 //   2. a candidate that lands on a DIFFERENT pairing says so on its row. That
 //      label is not decoration: adding a fourth element re-pairs the other
-//      three, so a mod reading "+90% Electricity" can measure NEGATIVE, and
-//      without the label that looks like a bug (the shape of user:
-//      "why does adding status chance LOWER the damage?");
+//      three, so a mod reading "+90% Electricity" can measure NEGATIVE, which
+//      without the label reads as a bug;
 //   3. a mod that changes no partition stays SILENT — a second mod of an
 //      element the build already has POOLS (`ElementalInput::push` merges
 //      them), so it adds no pairing and must not claim one. Getting that

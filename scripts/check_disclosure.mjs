@@ -1,32 +1,24 @@
 // WHAT THE APP DOES NOT MODEL IS ON THE PAGE, in every family that has one.
 //
-// The owner debugs the way a player does — by reading the card — so a gap that
-// exists only in a yaml comment or a report script is a gap nobody can act on. Five families can admit something, each with its own
-// surface, and each has gone silent at least once:
+// A gap that exists only in a yaml comment or a report script is a gap nobody
+// can act on, and each of the five surfaces that can admit one has gone silent
+// at least once:
 //
 //   · WEAPON      a banner over the stats panel, one line per gap
 //   · EVOLUTION   a chip on the perk tile — "not modelled yet" / "partly"
 //   · MOD         a line under the card — the same two, plus "outside the sim"
-//   · ARCANE      the same, and it was silent until 2026-08-08: an effect the
-//                 loader has no arm for went to `Inert`, which printed nothing
+//   · ARCANE      the same, and silent while an effect the loader had no arm
+//                 for went to `Inert`, which printed nothing
 //   · ENEMY       a caveat on the target card
 //
-// The riven picker has a surface of its own ("it rolls, it names the riven, and
-// it adds no damage") and no case: every stat in both class pools is modelled
-// today, so there is nothing here to assert against. `check_riven_pool` owns
-// that picker.
+// The riven picker has a surface of its own and no case, since every stat in
+// both class pools is modelled today; `check_riven_pool` owns that picker.
 //
-// AND A NEGATIVE CONTROL, which is what makes the rest mean anything: a weapon
-// with nothing to admit shows no banner. A check that only asserts presence
-// passes just as well on a page that shouts "not modelled" at everything.
-//
-// It runs the whole pass TWICE, in both languages: the banner's lines were
-// rendered raw for a day, so a Chinese page carried its one important
-// paragraph in English.
-//
-//   node scripts/check_disclosure.mjs
-//
-// Exits non-zero on the first failure.
+// AND A NEGATIVE CONTROL, which makes the rest mean anything: a weapon with
+// nothing to admit shows no banner, where a check asserting only presence
+// passes on a page that shouts "not modelled" at everything. It runs the whole
+// pass TWICE, in both languages, because a banner rendered raw carries its one
+// important paragraph in English on a Chinese page.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

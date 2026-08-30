@@ -2,18 +2,16 @@
 // that is neither the engine nor the page.
 //
 // A build reaches the board through three things: the PAGE builds a payload,
-// the WORKER writes it to KV, the SCORER reads it back and validates it. Two of
-// those are covered — `check_parity.mjs` asserts every axis a build has reaches
-// the page's payload, and `engine::builds::validate_for_board` is unit-tested
-// and is what `/api/board/check` calls before sending. The middle one had no
-// test at all, and that is where builds were being lost.
+// the WORKER writes it to KV, the SCORER reads it back and validates it. The
+// outer two are covered by `check_parity.mjs` and by
+// `engine::builds::validate_for_board`; the middle one is where builds were
+// being lost.
 //
 // TWICE, the same way. `mode` was sent by the page and never written down, so
-// the scorer took its migration fallback and every Incarnon weapon's row said
-// `cycle`. Then `valence`: seven Kuva Nukor submissions refused on
-// every scoring run since they arrived — "Kuva Nukor has no Valence element" —
-// while the panel had told each submitter "sent", because the field was dropped
-// AFTER `/api/board/check` had approved the payload carrying it. The page could not see it and the engine could not see it.
+// every Incarnon weapon's row said `cycle`; then `valence`, where seven Kuva
+// Nukor submissions were refused on every scoring run since they arrived while
+// the panel had told each submitter "sent" — dropped AFTER `/api/board/check`
+// approved the payload carrying it.
 //
 // So this asserts the property rather than the two fields: EVERY KEY THE PAGE
 // SENDS SURVIVES INTO STORAGE, and the key a record hashes to tells two builds

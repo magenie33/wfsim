@@ -1,14 +1,11 @@
 // The SIXTEENTH check: A BOARD ROW OPENS THAT ROW.
 //
 // The board page lists one line per weapon per ruler, and clicking one is the
-// main way anybody arrives at a build. What arrives has to be the build that
-// line is about — under the ruler that line is on.
-//
-// The failure it exists for. The link carried the weapon
-// and the mode and NOT the ruler, and both boards call their leader "#1 ·
-// Incarnon cycle" — so the no-aim leader opened the aimed board's leader,
-// under the aimed board's fight, and re-running it produced a number that
-// matched neither line on either board.
+// main way anybody arrives at a build. The failure it exists for: a link that
+// carried the weapon and the mode and NOT the ruler, where both boards call
+// their leader "#1 · Incarnon cycle" — so the no-aim leader opened the aimed
+// board's leader, under the aimed board's fight, and re-running it matched
+// neither line on either board.
 //
 // Two halves, because a row is two things:
 //   · the BUILD — mods, arcane, evolutions, the mode it was played in
@@ -18,10 +15,9 @@
 // Asserted against `BOARD` itself rather than against a build written down
 // here, so it keeps holding as the board moves under it.
 //
-// A THIRD concern joined them on 2026-08-20, one level down: the board page
-// lists a weapon's BEST row per mode, and the deeper ranks live in the
-// builder's picker — where a rank only means something inside one way of
-// playing. See the section at the bottom.
+// A THIRD concern, one level down: the board page lists a weapon's BEST row
+// per mode and the deeper ranks live in the builder's picker, where a rank only
+// means something inside one way of playing. See the section at the bottom.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

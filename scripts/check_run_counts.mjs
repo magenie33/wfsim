@@ -1,27 +1,23 @@
 // HOW HARD YOU MEASURE IS A NUMBER SOMEONE CAN SET, in all three modules.
 //
-// A run count is three different kinds of thing: the simulator's own setting,
-// a floor the quick calc keeps to itself, and the optimizer's final round. So
-// this walks all three and asserts the number a reader
-// picks is the number the request carries.
+// A run count is three different kinds of thing — the simulator's own setting,
+// a floor the quick calc keeps to itself, and the optimizer's final round — so
+// this walks all three and asserts the number a reader picks is the number the
+// request carries.
 //
-//   the SIMULATOR   defaults to 1000 — the official rulers' count, so a first
+//   the SIMULATOR   defaults to 1000, the official rulers' count, so a first
 //                   number is comparable with the board without touching a box
-//   the QUICK CALC  takes its own, floored at 10, because a chip is meant to be
-//                   cheap; the floor is where a status mod stops being a coin
-//                   flip (M24)
+//   the QUICK CALC  takes its own, floored at 10 — where a status mod stops
+//                   being a coin flip (M24)
 //   the OPTIMIZER   takes its own for the final round, TYPED, saved by no
 //                   preset and pinned by no ruler
 //
-// The last one is the reason this exists as a check rather than a comment. A
-// blank box meaning "the fight's own count" is one control with two readings,
-// which is exactly the kind of state that reads as broken and works, or reads
-// as fine and sends 0. It is a preference, in neither half of the tab and in
-// neither preset, and this asserts all three.
+// The last one is why this is a check rather than a comment: a blank box
+// meaning "the fight's own count" is one control with two readings, which reads
+// as broken and works, or reads as fine and sends 0. It is a preference, in
+// neither half of the tab and in neither preset, and this asserts all three.
 //
 //   node scripts/check_run_counts.mjs
-//
-// Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });

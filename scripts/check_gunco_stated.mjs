@@ -2,17 +2,11 @@
 //
 // The rules are PER WEAPON and hand-transcribed from a catalog: Adding or
 // Multiplying, which attack parts take it, and what fraction of the base the
-// term reads (docs/CATALOGS.md). The Burston Prime's fraction was wrong for
-// months and was only caught because a player measured it — so the adopted
-// rule belongs on the panel of every weapon that could ever take a GunCO
-// source, not only on the ones where a source is already equipped. Someone who owns the gun can then argue with it.
-//
-//   node scripts/check_gunco_stated.mjs
-//
-// It is a STATEMENT OF METHOD, not an admission — `unmodeled:` and the
-// disclosure banner are for what the sim cannot do; this is what it does.
-//
-// Four claims:
+// term reads (docs/CATALOGS.md). The Burston Prime's was wrong for months and
+// was caught only because a player measured it, so the adopted rule belongs on
+// the panel of every weapon that could take a GunCO source rather than only
+// where one is equipped. A STATEMENT OF METHOD rather than an admission: the
+// disclosure banner is for what the sim cannot do, this is what it does.
 //
 //   · THE ROW IS THERE WITH NOTHING EQUIPPED. That is the whole point: a row
 //     that appears only once a CO card is on the build hides the one thing a

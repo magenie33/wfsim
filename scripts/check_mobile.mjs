@@ -114,19 +114,16 @@ for (const [label, w, h, mobile] of SCREENS) {
 
   // ---- AND WITH A POPOVER OPEN ------------------------------------------
   //
-  // THIS CHECK'S OWN BLIND SPOT UNTIL 2026-08-25: everything above measures a
-  // page AT REST, and the overflow the owner hit came from a thing that is not
-  // on the page until it is opened. place put a popover's left edge at its
-  // anchor's and stopped, which is right on a desktop — so a mod slot's ⋯ at
-  // x=295 of a 360px screen opened a 200px menu that ran to 495: the DOCUMENT
-  // went 495 wide, the browser fit that into 360, the whole page shrank, and
-  // the Swap/Remove being reached for sat off the right edge. It was reported
-  // as two bugs ("the card is too long to reach its top right" and "the menu
-  // makes the page smaller") and it was one.
+  // THIS CHECK'S OWN BLIND SPOT: everything above measures a page AT REST, and
+  // a popover is not on the page until it is opened. place putting a
+  // popover's left edge at its anchor's is right on a desktop and is overflow
+  // on a phone — a mod slot's ⋯ at x=295 of a 360px screen opens a 200px menu
+  // running to 495, so the DOCUMENT goes 495 wide, the browser fits that into
+  // 360, and the control being reached for sits off the right edge.
   //
-  // The openings are the ones a builder page actually has, driven through the
-  // app's own entry points. Each is measured on its own, because a popover
-  // that overflows only tells on the screen where its anchor is far right.
+  // The openings are the ones a builder page has, driven through the app's own
+  // entry points, each measured on its own because a popover that overflows
+  // only tells on the screen where its anchor is far right.
   //
   // IT PUTS ITSELF BACK ON THE BUILDER FIRST. The touch branch above navigates
   // to another weapon's SIMULATOR and stays there, so this ran against an
@@ -306,20 +303,13 @@ for (const [label, w, h, mobile] of SCREENS) {
 
 // ---- AND IT FITS IN EVERY LANGUAGE ------------------------------------
 //
-// THE PASS ABOVE HAS ONLY EVER MEASURED ONE. It never set a display language,
-// so it took the browser's — `navigator.language` is `zh-CN` on the machine
-// this is written on — and Chinese labels are the SHORT ones. The module tab
-// strip is five flex children with no wrap: 342px in Chinese and **474px in
-// English** at a 360px screen, so the DOCUMENT was 474 wide, the browser
-// fitted that into 360, every page shrank to 76% and the right quarter went
-// off the edge. That is where a mod card keeps its ⋯, which is why it was
-// reported as "the mod area is too big" — the exilus slot sitting beside it
-// looked fine only because its right-hand side is empty.
-//
-// So the one check that is about phones was structurally blind to the whole
-// English UI, while `check_disclosure`, `check_enemies` and `check_mode_def`
-// have all run both languages for exactly this reason. A width is a TEXT
-// measurement; a check that fixes the language is measuring one translation.
+// A WIDTH IS A TEXT MEASUREMENT, so a check that fixes the language is
+// measuring one translation. Taking the browser's — `zh-CN` on the machine this
+// is written on — measures the SHORT labels: the module tab strip is five flex
+// children with no wrap, 342px in Chinese and **474px in English** at a 360px
+// screen, so the DOCUMENT goes 474 wide, the browser fits that into 360, every
+// page shrinks to 76% and the right quarter goes off the edge — which is where
+// a mod card keeps its ⋯.
 //
 // It is the PHONE widths only and the overflow facts only: the touch, menu and
 // numbering assertions above do not depend on how long a word is, and doubling

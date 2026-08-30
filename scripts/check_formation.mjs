@@ -1,26 +1,19 @@
 // A FORMATION IS SOMETHING YOU BUILD ON THE FLOOR, and what you build is what
 // gets simulated.
 //
-// The arena has drawn two bodies since 2026-08-15. This is the same claim for
-// fifty of them: put enemies down, drag them anywhere, aim
-// at a body or at bare floor, and the number that comes back is the fight on
-// screen. It is the check that would catch the most convincing possible bug —
-// a scene that looks like a formation and sends one target.
+// The arena has drawn two bodies since 2026-08-15; this is the same claim for
+// fifty, and it catches the most convincing possible bug: a scene that looks
+// like a formation and sends one target.
 //
-//   node scripts/check_formation.mjs
-//
-// Five claims:
-//
-//   · THEY DRAW AND THEY DRAG. Adding bodies puts them on the floor without
-//     standing on each other, and any one of them can be moved.
+//   · THEY DRAW AND THEY DRAG: bodies land on the floor without standing on
+//     each other, and any one can be moved.
 //   · WHAT IS ON SCREEN IS WHAT IS SENT — the payload's `formation` is the
 //     scene's, body for body.
-//   · IT REACHES THE NUMBER. A real `/api/simulate` in the shipping wasm build
-//     answers HIGHER for a crowd than for one body, which is the whole point:
-//     the chain has somewhere to go.
-//   · AIM IS A PLACE. The marker rides the target until you drag it, and once
-//     dragged the beam is on whichever body the LINE crosses — not the one
-//     nearest the cursor.
+//   · IT REACHES THE NUMBER: a real `/api/simulate` in the shipping wasm build
+//     answers HIGHER for a crowd than for one body, because the chain has
+//     somewhere to go.
+//   · AIM IS A PLACE: the marker rides the target until dragged, and then the
+//     beam is on whichever body the LINE crosses rather than the nearest.
 //   · AND THE CAP IS REAL, at the number the api refuses at.
 //
 // …and the negative controls: a formation of one is byte-identical to the fight

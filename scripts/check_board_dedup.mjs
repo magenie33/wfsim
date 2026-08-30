@@ -7,13 +7,12 @@
 // their own — the ⧉ the picker offers on every benchmark row — was told their
 // run was being uploaded to a board that already holds it.
 //
-// THE ANSWER IS THE ENGINE'S, and that is the whole point of the endpoint this
-// asserts. A build is not its spelling: `builds::canonical_mods` sorts the
-// non-elementals by drain and leaves the elementals in the order that PAIRS
-// them, evolutions are a set, a riven is a shape and not its rolls — and the
-// mod POOL is what tells an elemental mod from any other, which only the engine
-// has. `/api/build/keys` is `builds::board_key` itself, the same key the scorer
-// files rows under, so the two sides cannot be keyed by two different answers.
+// THE ANSWER IS THE ENGINE'S, which is the point of the endpoint this asserts.
+// A build is not its spelling: `canonical_mods` sorts the non-elementals by
+// drain and leaves the elementals in the order that PAIRS them, evolutions are
+// a set, a riven is a shape — and only the engine has the mod POOL that tells
+// an elemental mod from any other. `/api/build/keys` IS `builds::board_key`,
+// the key the scorer files rows under.
 //
 // THE NEGATIVE CONTROL IS THE HALF THAT MATTERS. "Nothing is uploaded" passes
 // perfectly on a page that has stopped uploading altogether, which would be a
