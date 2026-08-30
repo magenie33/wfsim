@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3909
+submissions: 3948
 engine: e302c588ccff589736b043f838e2c4f8e0d5639a
 entries:
   - weapon: acceltra_prime
@@ -143,6 +143,26 @@ entries:
     fp: 88d9bb8df0c71f89
     mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, rifle_elementalist, high_voltage, malignant_force, thermite_rounds]
     arcanes: [primary_crux]
+  - weapon: amprex
+    mode: base
+    score: 0.10204898132407796
+    fp: 8c39e06bd9b9c1f6
+    mods: [galvanized_chamber, primed_shred, critical_delay, vital_sense, riven, primed_cryo_rounds, malignant_force, stormbringer]
+    arcanes: [primary_bulwark]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: amprex
+    mode: base
+    score: 0.0793525813988201
+    fp: 1254e9516beedb0d
+    mods: [galvanized_chamber, primed_shred, primed_bane_of_grineer, critical_delay, vital_sense, riven, malignant_force, stormbringer]
+    arcanes: [primary_bulwark]
+    riven:
+      bonuses: [cold, critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: angstrum
     mode: cycle
     score: 0.22398680277065233
@@ -872,6 +892,18 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [braton_prime_evo1_incarnon_form, braton_prime_munitions_grit, braton_prime_voids_guidance, braton_prime_critical_parallel]
     arcanes: [primary_merciless]
+  - weapon: braton_prime
+    mode: cycle
+    score: 0.350685062118447
+    fp: 611bc2416bf42a82
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, riven, hellfire]
+    evolutions: [braton_prime_evo1_incarnon_form, braton_prime_munitions_grit, braton_prime_mercenary_chamber, braton_prime_prelude_of_might]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [damage, electricity, slash]
+      malus: weapon_recoil
+      rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: braton_prime
     mode: cycle
     score: 0.3416699784584165
@@ -1724,6 +1756,14 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 1.2480465283041875
+    fp: 7bfeb83658689a87
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_enervate]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 1.2397561667179924
     fp: ccc4dafff7f093ee
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, frostbite, primed_convulsion]
@@ -1779,6 +1819,13 @@ entries:
     fp: c98746383524f750
     mods: [pistol_acuity, hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, anemic_agility, magnetic_might, primed_heated_charge]
     arcanes: [secondary_deadhead]
+  - weapon: felarx
+    mode: base
+    score: 17.420609846474658
+    fp: 76b55461deb6376c
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [shotgun_vendetta]
   - weapon: felarx
     mode: base
     score: 12.104459959043142
@@ -1908,27 +1955,6 @@ entries:
     riven:
       bonuses: [multishot, toxin]
       rolls: [1.1, 1.1]
-  - weapon: felarx
-    mode: base
-    score: 6.086121441598171
-    fp: 2db1234d8a86e04b
-    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
-    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
-    arcanes: [primary_crux]
-  - weapon: felarx
-    mode: base
-    score: 5.913029337374616
-    fp: 5210d129ccffd264
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, atomic_fallout, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
-    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
-    arcanes: [primary_crux]
-  - weapon: felarx
-    mode: base
-    score: 4.9318533255936
-    fp: b5209b16ba794dda
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
-    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
-    arcanes: [primary_crux]
   - weapon: felarx
     mode: cycle
     score: 4.606032267704569
@@ -2518,6 +2544,13 @@ entries:
       bonuses: [critical_chance, damage]
       malus: puncture
       rolls: [1.1, 1.1, 0.9]
+  - weapon: knell_prime
+    mode: base
+    score: 0.03034871611409558
+    fp: 3e13023409fc960e
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, lethal_torrent, magnetic_might, pathogen_rounds]
+    arcanes: [secondary_deadhead]
   - weapon: komorex
     mode: base
     score: 0.6000811386236055
@@ -2616,6 +2649,22 @@ entries:
     mods: [galvanized_chamber, primed_firestorm, critical_delay, vigilante_armaments, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     arcanes: [primary_merciless]
     valence: toxin
+  - weapon: kuva_chakkhurr
+    mode: base
+    score: 0.2331054489383715
+    fp: 1ae214e3d763a219
+    exilus: vile_precision
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, rifle_elementalist, semi_rifle_cannonade, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_frostbite]
+    valence: cold
+  - weapon: kuva_chakkhurr
+    mode: base
+    score: 0.22321843944360817
+    fp: d7a2628685b3b524
+    exilus: vile_precision
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, rifle_elementalist, semi_rifle_cannonade, vital_sense, thermite_rounds, malignant_force]
+    arcanes: [primary_frostbite]
+    valence: cold
   - weapon: kuva_drakgoon
     mode: base
     score: 0.6135173520017677
@@ -3076,6 +3125,28 @@ entries:
     score: 6.034524787698944
     fp: bb769b8c9f6e3aff
     mods: [merciless_gunfight, seeker, galvanized_diffusion, hornet_strike, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 6.031993390885369
+    fp: c030e7540c92b060
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 6.031993390885369
+    fp: 5592358c2a85c115
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 6.029427504003976
+    fp: c030e7540c92b060
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -5433,6 +5504,20 @@ entries:
     mods: [galvanized_chamber, primed_firestorm, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_compression]
     valence: electricity
+  - weapon: tenet_ferrox
+    mode: base
+    score: 0.07039987447526849
+    fp: af34c18cb270ae5c
+    mods: [galvanized_chamber, primed_shred, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_compression]
+    valence: heat
+  - weapon: tenet_ferrox
+    mode: base
+    score: 0.07039987447526849
+    fp: 6ee011378b85410e
+    mods: [galvanized_chamber, primed_shred, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_deadhead]
+    valence: heat
   - weapon: tenet_glaxion
     mode: base
     score: 1.9100051772191424
@@ -5657,6 +5742,48 @@ entries:
       bonuses: [critical_damage, multishot]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_quanta
+    mode: base
+    score: 0.2588936380355866
+    fp: 36cdb73a6fbd1034
+    mods: [galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, hunter_munitions, vital_sense, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_debilitate]
+    valence: radiation
+  - weapon: tenet_quanta
+    mode: base
+    score: 0.2582953529551171
+    fp: acefb2310567ba1a
+    mods: [galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, hunter_munitions, vital_sense, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_crux]
+    valence: magnetic
+  - weapon: tenet_spirex
+    mode: base
+    score: 0.39660809282290527
+    fp: d37aed87814eb472
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, semi_pistol_cannonade, primed_convulsion, pistol_pestilence]
+    arcanes: [secondary_merciless]
+    valence: radiation
+  - weapon: tenet_spirex
+    mode: base
+    score: 0.21996197548869872
+    fp: 84e648ee9bb8a053
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, semi_pistol_cannonade, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_merciless]
+    valence: radiation
+  - weapon: tenet_tetra
+    mode: base
+    score: 0.33445483048139224
+    fp: 2d7cd1dbb8b11337
+    mods: [galvanized_chamber, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_deadhead]
+    valence: magnetic
+  - weapon: tenet_tetra
+    mode: alternate
+    score: 0.06083318378196041
+    fp: 83156e14cd34af9f
+    mods: [galvanized_chamber, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_compression]
+    valence: magnetic
   - weapon: thornbak
     mode: base
     score: 0.33306093053459407
