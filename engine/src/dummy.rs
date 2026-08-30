@@ -2056,31 +2056,22 @@ impl DebuffState {
 
     fn push_dot_capped(&mut self, mut dot: Dot, cap: Option<usize>) {
         // A CONSOLIDATED FAMILY TICKS ON ONE CLOCK PER BODY, anchored to the
-        // instance that started it. Electricity and Gas are the two, and it is
-        // a THIRD model beside the per-instance one (Slash, Toxin) and Heat's
-        // singleton — wiki `Damage/Electricity Damage`, Update 33.6, verbatim:
+        // instance that started it — a THIRD model beside the per-instance one
+        // (Slash, Toxin) and Heat's singleton. Wiki `Damage/Electricity
+        // Damage`, Update 33.6, verbatim:
         //
         //   "multiple procs on an enemy no longer deal their respective damage
         //    separately, like current Slash statuses, but once per second,
         //    similar to Heat status. However, they still maintain each own
         //    timer and will not refresh, unlike Heat."
         //
-        // So the CLOCK is shared and the TIMER is not — which is why this moves
+        // So the CLOCK is shared and the TIMER is not, which is why this moves
         // `next_tick` and leaves `ticks_left` alone. Gas is the same shape,
-        // confirmed in game: one number, and its cadence
-        // stays with the first proc.
-        //
-        // IT IS TICK-COUNT NEUTRAL, and that is arithmetic rather than luck: an
-        // instance with `k` ticks left joining a clock `phi` in front of its own
-        // (phi < 1, because the clock period is 1 s) fires at `s, s+1, …` while
-        // `< n0 + k`, which is `ceil(k - phi)` = `k` ticks. What moves is WHEN
-        // the damage lands, not how much — so this is a fidelity fix and every
-        // golden value is expected to hold.
-        //
-        // HERE rather than in the `push_dot` closure because a Gas cloud and a
-        // Tesla arc reach NEIGHBOURS through `post_area`, and those instances
-        // have to join the neighbour's clock too. One site, no list of callers
-        // to keep up to date.
+        // confirmed in game. IT IS TICK-COUNT NEUTRAL by arithmetic: `k` ticks
+        // joining a clock `phi < 1` ahead fires `ceil(k - phi) = k` times, so
+        // what moves is WHEN the damage lands. HERE rather than in `push_dot`,
+        // because a Gas cloud and a Tesla arc reach NEIGHBOURS through
+        // `post_area` and those instances join the neighbour's clock too.
         if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
             if let Some(shared) = self
                 .dots
@@ -2251,33 +2242,19 @@ impl DebuffState {
     /// multiplier with 1 stack, and +0.05x per subsequent stack, adding up to
     /// +0.50x at 9 stacks"*.
     ///
-    /// THE LADDER HAS TEN RUNGS — MEASURED, against a wiki
-    /// sentence that says otherwise about the slow.
+    /// THE LADDER HAS TEN RUNGS, measured (MEASUREMENTS M46) against a wiki
+    /// sentence that says otherwise about the SLOW.
     ///
     /// `0.10 + 0.05 x (n - 1)`, so +0.50x at nine and **+0.55x at ten**. The
-    /// tenth is one past the published table, because the page stops at nine:
-    /// on everything it describes the tenth stack IS Frozen, whose own +1.0x
-    /// replaces the ladder anyway. The only target that can show a tenth rung
-    /// is one that reaches ten WITHOUT freezing.
+    /// tenth is one past the published table because the page stops at nine: on
+    /// everything it describes the tenth stack IS Frozen, whose own +1.0x
+    /// replaces the ladder. Only a target that reaches ten WITHOUT freezing can
+    /// show the tenth rung, which is why it took a Demolisher.
     ///
-    /// THE MEASUREMENT, on a Demolisher at ten stacks with a base-form Laetum,
-    /// all shots on the torso (MEASUREMENTS M46). The same non-crit of 192 came
-    /// with two different crits depending on whether the bonus was live:
-    ///
-    /// `(529 - 423) / 192 = 0.552`
-    ///
-    /// …which is +0.55x and not the +0.50x a nine-rung ladder would give
-    /// (that would have read 518, and (518 - 423) / 192 = 0.495). Taking the
-    /// DIFFERENCE at a fixed non-crit is what makes it clean: armour, faction,
-    /// level and the +200% Cold infusion are all common factors and cancel.
-    ///
-    /// A NINE-RUNG CAP SHIPPED FOR ONE COMMIT on the strength of the wiki's
-    /// `Demolisher` line — "will not freeze at 10 procs, instead their movement
-    /// will be Slowed by 90%", 90% being the ninth rung of the SLOW table. That
-    /// inference is now known to be wrong for the crit ladder, and it is left
-    /// on the record here rather than quietly removed: either the slow table
-    /// caps on its own or that sentence is loose, and it says nothing about
-    /// this one. A measurement beats a reading of a neighbouring table.
+    /// The `Demolisher` line — "will not freeze at 10 procs, instead their
+    /// movement will be Slowed by 90%" — is the SLOW table's ninth rung and
+    /// says nothing about this one. A measurement beats a reading of a
+    /// neighbouring table.
     fn chill_cd_bonus(&self) -> f64 {
         match self.freeze.len() {
             0 => 0.0,
@@ -3733,27 +3710,23 @@ impl DummyParams {
     /// (Incarnon Form), infinite reserve.
     /// A BUILD MEETS AN ARCANE HERE, and only here.
     ///
-    /// The arcane is an argument rather than something the caller assigns
+    /// The arcane is an ARGUMENT rather than something the caller assigns
     /// afterwards, because two of its answers are not the arcane's alone and
-    /// every site that assigned it had to remember both: Primary Compression is
-    /// worth what THIS build's blast radius is worth, and a stat LOCK (Acuity)
-    /// silences an arcane's buff exactly as it silences a mod's. Three sites
-    /// built params — `simulate_json`, the optimizer's scorer, the tests — and
-    /// the Incarnon cycle's inner base form was assigned by none of them
-    /// (owner; it landed one layer down, where the optimizer's
-    /// one-panel-many-arcanes pairing actually happens).
+    /// every assigning site has to remember both: Primary Compression is worth
+    /// what THIS build's blast radius is worth, and a stat LOCK silences an
+    /// arcane's buff exactly as it silences a mod's. Three sites build params,
+    /// and the Incarnon cycle's inner base form is a fourth, one layer down.
     /// Metres from the muzzle to a point on the floor.
     ///
-    /// THE SEAM. Every distance a damage instance needs is
-    /// asked this way — "how far to where this went off" — rather than read off
-    /// a scenario field, because the point stops being the target's the moment
-    /// a projectile has a flight time or an explosion has an epicentre of its
-    /// own. Those are the next change; this is the call site they inherit.
+    /// THE SEAM: every distance a damage instance needs is asked this way —
+    /// "how far to where this went off" — rather than read off a scenario
+    /// field, because the point stops being the target's the moment a
+    /// projectile has a flight time or an explosion its own epicentre.
     ///
-    /// FROM THE MUZZLE, which is a point on the player's own circumference
-    /// facing what they are aiming at (`space::muzzle`) — a body with a size
-    /// does not fire from its centre, so every range here is one radius shorter
-    /// than the distance between the two of them.
+    /// FROM THE MUZZLE, a point on the player's own circumference facing what
+    /// they are aiming at (`space::muzzle`): a body with a size does not fire
+    /// from its centre, so every range here is one radius shorter than the
+    /// distance between the two of them.
     pub fn range_to(&self, p: crate::space::Vec2) -> f64 {
         crate::space::muzzle(self.player_at, self.target_at).distance(p)
     }
@@ -4693,25 +4666,21 @@ impl SourceDamage {
 
 /// Credit one weapon-damage instance to its bucket's per-type split.
 ///
-/// Attribution is by each component's SHARE of the instance's vector, which
-/// is exact wherever a pool takes the whole hit (Overguard, health) and an
-/// approximation in exactly one place: while shields are up, Toxin bypasses
-/// them and its siblings do not, so the components were mitigated
-/// differently and a proportional split cannot see that. The bucket TOTAL is
-/// unaffected either way — this only distributes a number already computed.
+/// Attribution is by each component's SHARE of the instance's vector: exact
+/// wherever a pool takes the whole hit, and an approximation in exactly one
+/// place — while shields are up Toxin bypasses them and its siblings do not, so
+/// a proportional split cannot see that they were mitigated differently. The
+/// bucket TOTAL is unaffected; this only distributes a number already computed.
 ///
-/// The vector passed here is the QUANTIZED one, so the shares are the ones
-/// that actually landed and they will not match the panel's exactly: the
-/// Torid build reading Corrosive 164.73 / Magnetic 52.02 (76/24) snaps to
-/// 24/32 and 8/32 of the total, i.e. exactly 75/25. That gap is the wiki's
-/// quantization, not an error in either number.
+/// The vector is the QUANTIZED one, so the shares are the ones that landed and
+/// will not match the panel's: Corrosive 164.73 / Magnetic 52.02 (76/24) snaps
+/// to 24/32 and 8/32, exactly 75/25. That gap is the wiki's quantization.
 /// Split one instance's EFFECTIVE damage across the types that made it.
 ///
-/// The share is each component's contribution AFTER the vulnerability column
-/// — the same weights that produced `effective`. Splitting by the raw vector
-/// instead would report a 50/50 Impact/Slash hit on a Grineer unit as 50/50
-/// when Impact actually did 60% of the damage, which is exactly the number a
-/// reader consults to decide what to add next.
+/// The share is each component's contribution AFTER the vulnerability column,
+/// the same weights that produced `effective`. Splitting by the raw vector
+/// reports a 50/50 Impact/Slash hit on a Grineer unit as 50/50 when Impact did
+/// 60% of the damage — the number a reader consults to decide what to add.
 /// IS ANYONE READING? The gate `TargetState::apply` fills its breakdown behind.
 ///
 /// TWO CONSUMERS, ONE ANSWER: the replay's floating numbers and the combat
@@ -5403,20 +5372,18 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 /// (−1, 0], so `reload_draw`'s whole-round rule brings the magazine back at
 /// `capacity − 0.75` rather than full.
 ///
-/// A SHOT THAT COSTS NOTHING needs no round at all. Dual
-/// Toxocyst hits this exactly: the last round headshots, the magazine lands on
-/// 0, and that same kill arms Frenzy's +100% ammo efficiency — so the next shot
-/// is free and fires instead of forcing a reload. The ceiling subsumes that
-/// without a `free_shot` flag threaded through this call, since
-/// `0 <= ceil(anything)` holds on an empty magazine too: the free shot is not
-/// the fundamental thing, the COST is.
+/// A SHOT THAT COSTS NOTHING needs no round at all — the Dual Toxocyst case,
+/// where the last round headshots, the magazine lands on 0, and that kill arms
+/// Frenzy's +100% ammo efficiency. The ceiling subsumes it without a
+/// `free_shot` flag, since `0 <= ceil(anything)` holds on an empty magazine:
+/// the free shot is not the fundamental thing, the COST is.
 ///
 /// What the ceiling ADDS is the case above one round. Seven left and a shot
-/// costing ten: `10 <= ceil(7)` is false, so the weapon reloads. The old test
-/// was "anything left", so it fired, and landed on −3 — a debt one whole-round
-/// draw cannot clear. That hid for as long as it did because the two tests
-/// agree for every cost at or below one round (`ceil(x) >= 1` on any positive
-/// magazine): ammo efficiency put costs in the 0.x range and exposed nothing. The Larkspur Prime's alt-fire costs TEN.
+/// costing ten: `10 <= ceil(7)` is false, so the weapon reloads. "Anything
+/// left" fires instead and lands on −3, a debt one whole-round draw cannot
+/// clear — and the two tests agree for every cost at or below one round
+/// (`ceil(x) >= 1` on any positive magazine), so nothing but a cost ABOVE one
+/// exposes it. The Larkspur Prime's alt-fire costs TEN.
 fn can_fire(magazine: f64, cost: f64) -> bool {
     cost <= (magazine - 1e-9).max(0.0).ceil() + 1e-9
 }
@@ -5666,31 +5633,23 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
 
 /// Settle ONE damage instance's status procs onto the target — MECHANICS §6.
 ///
-/// Every instance kind applies status by identical rules, so this is one
-/// function rather than three copies: a direct pellet, a radial stage, and a
-/// lingering-FIELD tick all land here. `at` is the INSTANCE's own time, which
-/// is why it is a parameter and not the shot clock — a cloud ticks between
-/// shots, and its procs' durations have to run from the tick.
-///
-/// `scale` carries the instance's damage scaling for the DoT payloads
-/// (ModifiedBase × crit × body part), `params` is the engagement and `ap` the
-/// ACTIVE form (element brackets differ per form).
+/// Every instance kind applies status by identical rules — a direct pellet, a
+/// radial stage and a lingering-FIELD tick all land here. `at` is the
+/// INSTANCE's own time rather than the shot clock, because a cloud ticks
+/// between shots and its procs' durations run from the tick; `scale` carries
+/// the DoT payloads' scaling (ModifiedBase × crit × body part) and `ap` the
+/// ACTIVE form, whose element brackets differ.
 #[allow(clippy::too_many_arguments)]
 /// How many times a FACTION bonus has been applied by the time a payload lands.
 ///
-/// Faction damage is re-applied at every DERIVATION step, and that is the whole
-/// rule — a count of how far a number is from the hit that started it: a direct
-/// hit is depth 1 (×f), a status the hit applied is 2 (×f²), a status a DERIVED
-/// instance applied is 3 (×f³).
-///
-/// Depth 3 is arithmetic rather than a quirk to hardcode: a DoT is one step
-/// past its source, so a DoT at ×f³ PROVES an intermediate damage instance
-/// exists — which is how Primary Debilitate's extra status is known to deal one
-/// rather than merely add a stack.
-///
-/// A depth rather than `fm2` and a future `fm3` is what keeps the next
-/// spreading mechanic (melee Influence, Secondary Encumber) from inventing its
-/// own multiplier.
+/// Faction damage is re-applied at every DERIVATION step, so this is a count of
+/// how far a number is from the hit that started it: a direct hit is depth 1
+/// (×f), a status the hit applied is 2 (×f²), a status a DERIVED instance
+/// applied is 3 (×f³). Depth 3 is arithmetic rather than a quirk to hardcode —
+/// a DoT at ×f³ PROVES an intermediate damage instance exists, which is how
+/// Primary Debilitate's extra status is known to deal one rather than add a
+/// stack. A depth rather than `fm2` and a future `fm3` keeps the next spreading
+/// mechanic from inventing its own multiplier.
 const DEPTH_HIT: u32 = 1;
 const DEPTH_PROC: u32 = 2;
 /// A status applied by a damage instance that was itself derived from a hit.
@@ -5760,16 +5719,13 @@ pub const DEBILITATE_STACKS: usize = 10;
 /// PRIMARY DEBILITATE, decided: does this damage instance also inflict one of
 /// the combined status's components, and which one?
 ///
-/// A pure function on purpose — the whole mechanic's DECISION is here, where it
-/// can be tested without a fight. Only its damage PAYLOAD needs a measurement.
-///
-/// The rules, from the wiki and settled with the owner:
+/// A pure function on purpose: the DECISION is here, where it can be tested
+/// without a fight, and only the damage PAYLOAD needs a measurement.
 ///
 /// - the status just applied must be a COMBINED element — a primary or a
 ///   physical proc has no components to split into
 /// - the target must be AT [`DEBILITATE_STACKS`] **counting the stack this
-///   instance is applying**. At nine, the shot that makes it ten splits; you
-///   do not reach ten and then have to shoot again
+///   instance is applying**: at nine, the shot that makes it ten splits
 /// - roll `chance` (0.5 at rank 0 → 1.0 at rank 5)
 /// - pick between the two components 50/50
 ///
@@ -9095,31 +9051,23 @@ fn process_ticks(
     }
     let p = foe;
     let status_damage = params.status_duration_multiplier;
-    // A QUEUE, NOT A SCAN. This loop asks one question of every pending status
-    // on the body — which of you is next — and it asked it once per EVENT.
+    // A QUEUE, NOT A SCAN, above the threshold. Asking every pending status on
+    // a body which of them is next, once per EVENT, measures at 291 live DoTs,
+    // 58,918 tick events and 18.2 MILLION scan iterations a run on a dense
+    // status build — 80% of the engagement in this function. The 291 is not a
+    // leak: an ordinary enemy has no stack cap, so `dot_cap` is `None` on
+    // purpose and the list is that long because the game's is.
     //
-    // Measured on the build that made it matter (Phantasma Prime, eight status
-    // mods, Primary Debilitate, 180 s, unusable on a
-    // phone): 291 live DoTs, 58,918 tick events, 18.2 MILLION scan iterations a
-    // run, and this function alone was 80% of the engagement.
+    // …AND ONLY WHERE IT PAYS. A queue costs one pass plus `log n` an event; a
+    // scan costs `n` an event and nothing to set up, so on a body with three
+    // DoTs the scan wins outright — and a formation is mostly those, ~300,000
+    // per-body calls a run on a 19x19. Building a heap for each measured 444
+    // multishot a run against 831.
     //
-    // AND THE COUNT IS CORRECT — 291 is not a leak. An ordinary enemy has no
-    // stack cap, so Slash, Toxin and Electricity stack without limit and
-    // `dot_cap` is `None` for it on purpose. The list is that long because the
-    // game's is, which is why the fix had to be the algorithm.
-    // …AND ONLY WHERE IT PAYS. A queue costs one pass to build plus `log n` an
-    // event; a scan costs `n` an event and NOTHING to set up. On a body with
-    // three DoTs and one event due, the scan wins outright — and a formation is
-    // mostly those: this runs PER BODY, so a 19x19 ruler is ~300,000 calls a
-    // run, almost all of them finding one event or none. Building a heap for
-    // each cost more than the scan it replaced (measured: 444 multishot a run -> 831).
-    //
-    // So the shape of the state picks the path, and the two are one loop with
-    // two ways of asking for the next event — `scan_next` is the ORDER's
-    // definition and `TickKey` reproduces it, which is what keeps the answer
-    // identical whichever side of the threshold a body falls on.
-    //
-    // An empty `BinaryHeap` allocates nothing, so the scan path pays no setup.
+    // The shape of the state picks the path, and the two are one loop:
+    // `scan_next` is the ORDER's definition and `TickKey` reproduces it, which
+    // keeps the answer identical on either side of the threshold. An empty
+    // `BinaryHeap` allocates nothing.
     // WHICH SHOT THE EVENT BEING SETTLED BELONGS TO — set by each arm below.
     let mut seeded_by;
     let use_queue = debuffs.dots.len() > TICK_QUEUE_MIN;
@@ -9863,29 +9811,23 @@ mod every_form_runs {
     /// POINT BLANK IS THE FIGHT THIS ENGINE HAS ALWAYS RUN, and the 2D layer
     /// has to leave it BYTE-IDENTICAL rather than merely close.
     ///
-    /// That is the whole contract of the refactor (the
-    /// current work is the 2D structure, and every case is point blank). It is
-    /// asserted as a PROPERTY rather than trusted: the same build at range 0
-    /// with its real cone and with no cone at all must produce the same run,
-    /// field for field — same shots, same pellets, same crits, same procs, same
-    /// damage to the last bit.
+    /// Asserted as a PROPERTY rather than trusted: the same build at range 0
+    /// with its real cone and with no cone at all produces the same run, field
+    /// for field, to the last bit.
     ///
-    /// WHAT IT ACTUALLY CATCHES, established by breaking it rather than by
-    /// arguing about it:
+    /// WHAT IT CATCHES, established by breaking it:
     ///
-    /// - removing the `range > 0.0` GATE does NOT fail this test, and that is
-    ///   worth knowing: the offset is `range * tan(theta)`, so at range 0 it is
-    ///   zero whether the angle was drawn or not. The gate saves a draw and
-    ///   protects a future second consumer of `d.aim`; it is not what makes
-    ///   point blank safe.
-    /// - dropping the `range *` from the offset — the ordinary "forgot to scale
-    ///   by distance" bug — DOES fail it, loudly: the Strun lands 105 pellets
-    ///   against 144. That is the regression this exists for, and it is the one
-    ///   that would otherwise move every board row while every test that looks
-    ///   at averages still passed.
+    /// - removing the `range > 0.0` GATE does NOT fail it. The offset is
+    ///   `range * tan(theta)`, zero at range 0 whether the angle was drawn or
+    ///   not; the gate saves a draw and protects a future second consumer of
+    ///   `d.aim`, and is not what makes point blank safe.
+    /// - dropping the `range *` — the ordinary "forgot to scale by distance"
+    ///   bug — DOES, loudly: the Strun lands 105 pellets against 144. That is
+    ///   the regression that would otherwise move every board row while every
+    ///   test looking at averages still passed.
     ///
     /// `one_fight` makes the same claim across three whole builds at 1000 runs;
-    /// this one makes it cheap enough to run on every commit.
+    /// this makes it cheap enough for every commit.
     #[test]
     fn at_point_blank_a_cone_changes_nothing_at_all() {
         for id in ["boar", "braton", "strun", "torid", "vectis"] {
@@ -12350,29 +12292,22 @@ pub fn run_once_traced(
         // takes the combo multiplier on top of it.
         //
         // IT IS FOLDED INTO THE BASE rather than applied to the finished
-        // instance, and the difference is the QUANTIZATION GRID: the snap is
-        // per component against `ModdedBase / 32`, so a swing worth 4x either
-        // snaps on a grid four times as coarse or on the weapon's own. Folding
-        // is the reading with an argument behind it — DE publishes a damage
-        // figure per combo attack, so the swing IS the attack's damage — and it
-        // is also the harmless one, since quantizing `kX` against `ks` is `k`
-        // times quantizing `X` against `s` (see `pellet_layers`). UNMEASURED
-        // either way, and flagged as such.
+        // instance, and the difference is the QUANTIZATION GRID — the snap is
+        // per component against `ModdedBase / 32`. Folding is the reading with
+        // an argument behind it (DE publishes a damage figure per combo attack,
+        // so the swing IS the attack's damage) and the harmless one, since
+        // quantizing `kX` against `ks` is `k` times quantizing `X` against `s`.
+        // UNMEASURED either way, and flagged as such.
         // ---- IS THIS SWING A TENNOKAI HEAVY? --------------------------
-        //
-        // Only on a form that is not ALREADY a heavy one — the window makes a
-        // heavy attack free, and a mode whose every swing is a heavy has
-        // nothing to convert. `heavy` is the CLASS's multiplier and wind-up,
-        // stated on every melee form for exactly this.
-        // THE WINDOW IS OPEN, and what it BUYS depends on the mode.
-        //
-        // On a LIGHT form the swing becomes a heavy attack — the class's
-        // multiplier in place of the stance's, times a combo multiplier it does
-        // not spend. On a form that is ALREADY heavy there is nothing to
-        // convert, and the window's other half is what pays: the swing costs no
-        // combo, so the counter it read is still there for the next one.
-        //
-        // ONE WINDOW, ONE SWING, either way: the flash goes out with it.
+        // Only on a form that is not ALREADY heavy: the window makes a heavy
+        // attack free and a mode whose every swing is one has nothing to
+        // convert. `heavy` is the CLASS's multiplier and wind-up.
+        // THE WINDOW IS OPEN, and what it BUYS depends on the mode. On a LIGHT
+        // form the swing becomes a heavy attack — the class's multiplier in
+        // place of the stance's, times a combo multiplier it does not spend. On
+        // an already-heavy form the other half pays: the swing costs no combo,
+        // so the counter it read is there for the next one. ONE WINDOW, ONE
+        // SWING either way — the flash goes out with it.
         let tennokai = ap.tennokai.enabled && t < tennokai_until;
         let tennokai_heavy = tennokai && !ap.spends_combo && ap.heavy.is_some();
         if tennokai {
@@ -14518,33 +14453,21 @@ pub fn run_once_traced(
                 // `killed` says it finished the target. An explosion never
                 // headshots, so a radial pellet cannot pay.
                 //
-                // PER PELLET, like every other on-hit roll in this loop — a
-                // multishot pull that puts two pellets in a head gets two
-                // chances, which is the same rule the wiki states from the
-                // other side for charge gauges ("additional shots from
-                // Multishot count as separate weakpoint hits").
-                //
-                // AND IT DOES NOT ROLL AT ALL IN AN INCARNON FORM. VERBATIM
-                // (wiki, this perk): "Does not affect Incarnon Form" — because
-                // what it refills is a MAGAZINE, and an Incarnon form has max
-                // CHARGES instead. The two are different
-                // pools: the gauge is converted from weakpoint hits, sits
-                // outside the ammo economy, and has no reload to make instant.
-                //
-                // The test is at the TRIGGER rather than at the refill so the
-                // roll is not even taken — a roll that can never be spent still
-                // draws from `extra`, and a perk that changes a fight it cannot
-                // affect is worse than one that does nothing.
-                // LINGERING JUDGEMENT's streak, counted at the same site and
-                // for the same reason: `head_direct` is the only place a
-                // headshot is known to have LANDED. Per pellet, so a multishot
-                // pull can arm it on its own.
-                //
-                // THE ARMING HIT DOES NOT BENEFIT: its damage was settled
-                // above, and the window opens here. That is the ordinary
-                // reading of "on 2 headshots: +50% for 8 seconds" and it is
-                // also the only one this loop can express without pricing a
-                // hit twice.
+                // PER PELLET, like every on-hit roll here — the rule the
+                // wiki states from the other side for charge gauges
+                // ("additional shots from Multishot count as separate weakpoint
+                // hits"). AND IT DOES NOT ROLL IN AN INCARNON FORM: "Does not
+                // affect Incarnon Form", because what it refills is a MAGAZINE
+                // and an Incarnon form has max CHARGES. Tested at the TRIGGER
+                // so the roll is not even taken — one that can never be spent
+                // still draws from `extra`.
+                // LINGERING JUDGEMENT's streak, counted here for the same
+                // reason: `head_direct` is the only place a headshot is known
+                // to have LANDED, and per pellet, so a multishot pull can arm
+                // it alone. THE ARMING HIT DOES NOT BENEFIT — its damage was
+                // settled above and the window opens here, which is the only
+                // reading of "on 2 headshots: +50% for 8 seconds" this loop can
+                // express without pricing a hit twice.
                 if let Some(s) = params.headshot_streak {
                     if head_direct && s.hits > 0 {
                         head_times.retain(|&x| t - x < s.within);
@@ -14873,24 +14796,20 @@ pub fn run_once_traced(
                 // Slash in its vector still gets one, which is the whole point
                 // of the mod.
                 //
-                // Pushing it HERE, rather than applying a bleed directly, is
-                // what makes its damage right for free: a Slash proc is
-                // 0.35 x ModdedBase x THE PROCCING HIT's crit/part
-                // multipliers, so the tier this pellet rolled (including a
-                // Vigilante promotion) and the body part it struck already
-                // scale it — "Headshots, orange and red Critical Hits will
-                // greatly increase the damage dealt".
+                // Pushed HERE rather than applied as a bleed directly, which
+                // makes its damage right for free: a Slash proc is
+                // `0.35 x ModdedBase x the PROCCING HIT's crit/part`, so the
+                // tier this pellet rolled and the part it struck already scale
+                // it — "Headshots, orange and red Critical Hits will greatly
+                // increase the damage dealt".
                 //
-                // It STACKS with a Slash the weapon's own status chance
-                // applied — the wiki says so outright, "but can stack with
-                // Slash statuses applied using a weapon's innate status
-                // chance" — so this pushes a second bleed and does not check
-                // `procs`. What it cannot double up with is a FORCED Slash:
-                // "cannot produce multiple procs in a single instance of
-                // damage alongside forced Slash from sources such as Internal
-                // Bleeding or the debuff from Seeking Talons". Internal
-                // Bleeding is handled below by its own guard, which sees this
-                // push because it runs after; a weapon-forced Slash has to be
+                // It STACKS with an innate Slash ("but can stack with Slash
+                // statuses applied using a weapon's innate status chance"), so
+                // this pushes a second bleed and does not check `procs`. It
+                // cannot double a FORCED one: "cannot produce multiple procs in
+                // a single instance of damage alongside forced Slash from
+                // sources such as Internal Bleeding". Internal Bleeding's own
+                // guard runs after and sees this push; a weapon-forced Slash is
                 // checked here, at its source, since `procs` cannot say which
                 // Slash came from where.
                 if ap.slash_on_crit > 0.0
@@ -15580,25 +15499,21 @@ pub fn run_once_traced(
             //   Effective Fire Rate = Burst Count / [1/Fire Rate + (Burst
             //   Count−1)·Burst Delay]                       (wiki, verbatim)
             //
-            // `b.delay_seconds` arrives already shortened by the mod layer
-            // (loadout::resolve), which is where the wiki's net-negative
-            // exception lives. The LIVE buff factor is applied here, the same
-            // reciprocal trick the draw above uses: `rate / ap.fire_rate` is
-            // exactly what the live buffs did, 1.0 when none are up. It is
-            // clamped the same way, so a live fire-rate PENALTY does not
-            // stretch the burst either.
-            // A MELEE SWING HAS ITS OWN LENGTH. A stance publishes a
-            // sequence and a per-combo damage-per-second, so the combo's
-            // duration is derived (`sum of multipliers / that rate`) and the
-            // swings share it — evenly, which is the ONE approximation in the
-            // script and is declared on every melee entry: nothing published
-            // states an individual swing's animation length. It moves a DoT's
-            // start by fractions of a second inside a combo and moves no total.
+            // `b.delay_seconds` arrives already shortened by the mod layer,
+            // where the wiki's net-negative exception lives. The LIVE buff
+            // factor is applied here by the same reciprocal trick the draw
+            // above uses — `rate / ap.fire_rate`, 1.0 when nothing is up, and
+            // clamped so a live PENALTY does not stretch the burst either.
+            // A MELEE SWING HAS ITS OWN LENGTH. A stance publishes a sequence
+            // and a per-combo damage-per-second, so the combo's duration is
+            // `sum of multipliers / that rate` and the swings share it EVENLY —
+            // the one approximation in the script, declared on every melee
+            // entry, because nothing published states an individual swing's
+            // animation length. It moves a DoT's start by fractions of a second
+            // and moves no total.
             //
-            // DIVIDED BY THE LIVE ATTACK SPEED, which is the same reciprocal
-            // trick the charge draw above uses. The script is published at
-            // 1.0x and `rate` is the whole attack speed — the weapon's own
-            // 0.833x, the mod bucket, and whatever a buff is doing right now —
+            // DIVIDED BY THE LIVE ATTACK SPEED, the same reciprocal trick: the
+            // script is published at 1.0x and `rate` is the whole attack speed,
             // so Fury is an ordinary fire-rate mod here and an on-kill speed
             // buff shortens a swing without knowing melee exists.
             None if !ap.combo_script.is_empty() => {
@@ -16530,36 +16445,15 @@ mod tests {
 
     /// THE BURSTON PRIME'S CO READS 13 OF ITS 55, ON THE DIRECT HIT TOO.
     ///
-    /// MEASURED. Incarnon form, Forceful Finality and
-    /// Galvanized Aptitude and nothing else, torso, unarmoured target, ONE
-    /// status type on it:
+    /// MEASURED — the six readings, the ratio that cancels the target's
+    /// damage-type column, and the solve that lands on 13/55 = 0.2364 (the 24%
+    /// the catalog prints) are MEASUREMENTS M48.
     ///
-    /// | form | stacks | status types | direct crit | radial |
-    /// |---|---|---|---|---|
-    /// | Incarnon | 1 | 1 | 181 | — |
-    /// | Incarnon | 2 | 1 | 196 | 65 |
-    /// | Incarnon | 2 | 2 | 227 | 76 |
-    /// | base | — | 0 (bare) | 188 | — |
-    /// | base | 1 | 3 | 306 | — |
-    /// | base | 2 | 3 | 423 | — |
-    ///
-    /// The BASE form is the independent one: a different attack, a different
-    /// crit multiplier and a different fraction (46/88 against the Incarnon's
-    /// 13/55). Its readings are taken as RATIOS to the bare crit, which cancels
-    /// the target's damage-type column — x1.19 on this IPS mix, and the reason
-    /// working from absolutes made three status types look like four.
-    ///
-    /// The form is 13 base + the perk's 42 = 55, and a crit is x3.0, so the
-    /// direct hit before CO is 165. Solving each reading for the fraction CO
-    /// reads gives 0.242 and 0.235 — both 13/55 = 0.2364, the 24% the catalog
-    /// prints for this weapon. The radial confirms it independently: an
-    /// uncritical 55 x 1.1891 = 65.4.
-    ///
-    /// WHAT IT FIXED. That 24% had been read as the RADIAL's alone, so the
-    /// direct hit computed CO on the full 55 and this engine returned 231 where
-    /// the game gives 181 — a 28% overstatement. The exclusion is the PERK's,
-    /// not the attack part's, so `co_base_excludes_this_evolution` on both
-    /// tier-2 +42 options carries it to wherever the +42 landed.
+    /// Reading that 24% as the RADIAL's alone computes the direct hit's CO on
+    /// the full 55 and returns 231 where the game gives 181, a 28%
+    /// overstatement. The exclusion is the PERK's rather than the attack
+    /// part's, so `co_base_excludes_this_evolution` on both tier-2 +42 options
+    /// carries it to wherever the +42 landed.
     #[test]
     fn the_burston_primes_co_reads_only_its_unevolved_base() {
         let base = crate::loadout::WeaponBase::from_data(
@@ -16793,33 +16687,19 @@ mod tests {
 
     /// M51 — THE TORID'S BASE FORM, AND THE TWO CO CLASSES DISAGREE.
     ///
-    /// The experiment the test above named, on the same weapon, the same two
-    /// tier-2 perks and the same mod — but the `Multiplying` entry rather than
-    /// the `Adding` one. Readings, with +165% base damage
-    /// and +90% Electricity, as `impact / cloud`:
+    /// The same weapon and the same two tier-2 perks as the test above, on the
+    /// `Multiplying` entry rather than the `Adding` one. The readings are
+    /// MEASUREMENTS M51; the answer is the OPPOSITE of M50's — the CO
+    /// multiplier is 1.40 and 1.80 under BOTH perks, so a `Multiplying` entry
+    /// reads its full evolved base.
     ///
-    /// | perk | 0 x 0 | 1 x 1 | 1 x 2 |
-    /// |---|---|---|---|
-    /// | Final Fusillade (+51) | 763 / 460 | 1068 / 644 | 1373 / 827 |
-    /// | Plentiful Mayhem (+31) | 662 / 359 | 926 / 502 | 1191 / 646 |
-    ///
-    /// THE ANSWER IS THE OPPOSITE OF M50's, and that is the finding: the CO
-    /// multiplier is 1.40 and 1.80 under BOTH perks, so the term is scaled by
-    /// NOTHING — a `Multiplying` entry reads its full evolved base. Fed on the
-    /// unevolved 100 it would print 1.265 under the +51 and 1.305 under the
-    /// +31, which are neither each other nor what was read.
-    ///
-    /// THE DECISIVE SHAPE IS THE TWO COLUMNS, and it needs only the +51: the
-    /// impact's evolved base is 151 and the cloud's is 91, because the same
-    /// flat +51 lands on both attack parts. Any term reading something OTHER
-    /// than the evolved base has a different fraction in each column (100/151 =
-    /// 0.662 against 40/91 = 0.440) and must print two different multipliers,
-    /// 1.265 against 1.176. It printed 1.3997 and 1.4000. The +31 pair is a
-    /// second, independent confirmation rather than the argument.
-    ///
-    /// AND THE CLOUD TAKING CO AT ALL is the doubly-discrepant catalog row
-    /// confirmed from the other side — an AoE part receiving the bonus, and
-    /// receiving it as `Multiplying` (torid.yaml).
+    /// THE DECISIVE SHAPE IS THE TWO COLUMNS. The same flat +51 lands on both
+    /// attack parts, so the impact's evolved base is 151 and the cloud's is 91.
+    /// A term reading anything OTHER than the evolved base has a different
+    /// fraction in each column (0.662 against 0.440) and must print two
+    /// different multipliers; it printed 1.3997 and 1.4000. And the CLOUD
+    /// taking CO at all confirms the doubly-discrepant catalog row from the
+    /// other side.
     #[test]
     fn the_torid_base_forms_multiplying_co_reads_its_full_evolved_base() {
         for (perk, evolved, impact, cloud) in [
@@ -22239,21 +22119,15 @@ mod tests {
     ///   thrown from beyond the reach                         4.17 s   -> 5
     /// ```
     ///
-    /// Six strikes a second apart need the body in reach for more than five
-    /// seconds, and 4.17 is the most this weapon's numbers can buy — so the
-    /// count tops out at FIVE however far the throw is.
+    /// Six strikes a second apart need more than five seconds in reach, and
+    /// 4.17 is the most this weapon's numbers buy.
     ///
-    /// AND THE ANSWER IS THE ARENA, not any of these numbers. The orb BOUNCES
-    /// off walls, and this arena has none, so in a room it
-    /// comes straight back and spends its fuse beside what it was thrown at.
-    /// Every value here is right and the fight they are fired in is an open
-    /// field — worth measured at +55.6% on the same build, which is why the
-    /// weapon's own page calls this number a floor.
-    ///
-    /// IT IS PINNED SO THE OPEN-FIELD ANSWER CANNOT MOVE IN SILENCE, and the
-    /// last two arms are what made the mechanism findable: they say what a
-    /// slower drift and a standstill would be worth, and the standstill is what
-    /// a wall amounts to.
+    /// THE ANSWER IS THE ARENA, not any of these numbers: the orb BOUNCES off
+    /// walls and this arena has none, so every value here is right and the
+    /// fight is an open field — +55.6% on the same build with the drift taken
+    /// out, which is why the weapon's page calls this a floor. The last two
+    /// arms are what made that findable, because a standstill is what a wall
+    /// amounts to.
     #[test]
     fn an_orb_that_drifts_leaves_a_lone_target_behind() {
         let strikes = |gap_m: f64, orb: crate::loadout::ResolvedOrb| {
@@ -25372,36 +25246,21 @@ mod tests {
     /// A CONSOLIDATED FAMILY PAYS ONCE, and the HEAP path pays the same as the
     /// scan.
     ///
-    /// `process_ticks` has two ways of asking for the next event — a linear
-    /// SCAN under `TICK_QUEUE_MIN` live DoTs and a heap over it. The merge
-    /// advances EVERY live instance of a family when the first of them fires,
-    /// which leaves keys in the heap for ticks already paid; the scan can never
-    /// produce one, because it reads `next_tick` live. Without the guard that
-    /// skips them a stale key advances its Dot a second time and BURNS a tick,
-    /// so the damage comes out LOW rather than double.
-    ///
-    /// The DENSITY is what makes it worth having: eight forced procs a shot at
-    /// 10/s holds hundreds of stacks, well past the 32 that switches paths. At
-    /// one proc a shot the fixture never leaves the scan and the guard is dead
-    /// code the test cannot see. Measured: 48,000 with it, 47,400 without —
-    /// sixteen burnt ticks.
-    /// THE RECORD IS THE WHOLE FIGHT — every number, and nothing invented.
-    ///
-    /// The assertion the combat record exists for, and what makes it a LEDGER
-    /// rather than a report: the effective damage of every event must add up to
-    /// the run's own total. A site that moves a pool and records nothing fails
-    /// it low, one that records twice fails it high, and neither shows up in
-    /// any aggregate here — both are already inside the mean.
-    /// THE DAMAGE METER'S PARTS ADD UP TO THE WHOLE.
-    ///
-    /// `SourceDamage` is the one family of aggregates NOT behind `ledger`'s
-    /// door: the totals are one question with one answer, while the buckets are
-    /// EIGHT differently shaped ones — two split a damage VECTOR across a
-    /// faction column — so a descriptor carrying that to `settle` would move
-    /// the shapes rather than remove them. What the door would guarantee, this
-    /// asserts: every instance is credited to exactly one bucket. Both fixtures
-    /// are deliberately busy, so the direct, radial and status paths are live
-    /// rather than one of them.
+    /// `process_ticks` asks for the next event by a linear SCAN under
+    /// `TICK_QUEUE_MIN` live DoTs and a heap over it. The merge advances EVERY
+    /// live instance of a family at once, leaving heap keys for ticks already
+    /// paid; without the guard that skips them a stale key BURNS a tick and the
+    /// damage comes out LOW. The DENSITY is what makes it bite — at one proc a
+    /// shot the fixture never leaves the scan. 48,000 with it, 47,400 without.
+    /// THE RECORD IS THE WHOLE FIGHT: the effective damage of every event adds
+    /// up to the run's own total, which is what makes it a LEDGER rather than a
+    /// report. A site that moves a pool and records nothing fails it low, one
+    /// that records twice fails it high, and neither shows up in any aggregate.
+    /// THE DAMAGE METER'S PARTS ADD UP TO THE WHOLE — every instance credited
+    /// to exactly one bucket. `SourceDamage` is the one aggregate NOT behind
+    /// `ledger`'s door, because its buckets are EIGHT differently shaped
+    /// answers where the totals are one, so a descriptor carrying that to
+    /// `settle` would move the shapes rather than remove them.
     #[test]
     fn the_damage_meters_parts_add_up_to_the_whole() {
         let mut p = DummyParams {
@@ -25825,27 +25684,18 @@ mod tests {
 
     #[test]
     fn electricity_joins_one_clock_per_body() {
-        // THE GOLDEN MOVED BECAUSE THE MECHANIC DID, and the citation is dated:
-        // wiki `Damage/Electricity Damage`, Update 33.6 — "multiple procs on an
-        // enemy no longer deal their respective damage separately, like current
-        // Slash statuses, but once per second, similar to Heat status. However,
-        // they still maintain each own timer and will not refresh, unlike Heat."
-        // Confirmed in game: one number, and its cadence stays with the first
-        // proc.
+        // THE GOLDEN FOLLOWS THE MECHANIC, and the citation is dated: wiki
+        // `Damage/Electricity Damage`, Update 33.6 — "multiple procs on an
+        // enemy no longer deal their respective damage separately … but once
+        // per second, similar to Heat status. However, they still maintain each
+        // own timer and will not refresh, unlike Heat." The PRE-33.6 model
+        // gives 45 ticks × 37.5 = 1687.5 and is not what this asserts.
         //
-        // The PRE-33.6 model — shot at k ticking at k..k+5 — gives
-        // 6+6+6+6+6+5+4+3+2+1 = 45 ticks × 37.5 = 1687.5, and is not what this
-        // asserts.
-        //
-        // Under one clock the first proc still ticks at 0 (there is no clock to
-        // join yet) and every later one waits for the shared tick, which this
-        // cadence puts exactly one second ahead: shot at k ticks at k+1..k+6.
-        // Before 10 s that is 6+6+6+6+5+4+3+2+1+0 = 39 ticks × 37.5 = 1462.5.
-        //
-        // IT IS NOT A 13% NERF TO ELECTRICITY. The six ticks are not lost, they
-        // are past the ten-second window this fixture counts in — every
-        // instance still pays its full six. What a real engagement loses is the
-        // tail of the last few procs, which is the same tail every DoT has.
+        // Under one clock the first proc ticks at 0 and every later one waits
+        // for the shared tick, one second ahead: 39 ticks × 37.5 = 1462.5
+        // before 10 s. IT IS NOT A 13% NERF — the six ticks are past the
+        // fixture's window rather than lost, and every instance still pays its
+        // full six.
         //
         // THE ACCUMULATOR IS PER TICK GROUP, and Electricity is the family that
         // has groups: the 39 seed-ticks land on TEN distinct tick times (0, and
@@ -28176,31 +28026,19 @@ mod tests {
 
     /// ...AND IT BURNS OFF `ModifiedBase`, WHICH MAY BE WRONG (M33).
     ///
-    /// This pins TODAY'S reading so the open question cannot be resolved by
-    /// accident. A DoT's nominal base excludes the elemental portions of the
-    /// hit — DE's rule for a status a WEAPON applied — and this says the split
-    /// follows it: doubling how much ELEMENT the hit carries, with
-    /// `ModifiedBase` held fixed, changes nothing.
+    /// It pins TODAY'S reading so the open question cannot be resolved by
+    /// accident: a DoT's nominal base excludes the elemental portions of the
+    /// hit, DE's rule for a status a WEAPON applied, and the split follows it.
+    /// The rival reading — the split reads the whole modded INSTANCE, the way
+    /// an ability-applied status does — puts this ratio at 2.0, and flipping
+    /// the assertion below is the whole of the change. M33.
     ///
-    /// The rival reading is that the split reads the INSTANCE that applied it,
-    /// the whole modded hit, the way an ability-applied status does (Toxic
-    /// Lash: 78 direct, a tick of 39 — half of 78, not half of the weapon's
-    /// 200). Under it this ratio is 2.0. The formula that decodes M33's in-game
-    /// 29551 has that shape, but its parent is an ABILITY's hit, so it
-    /// demonstrates the ability case and not this one. Flipping the assertion
-    /// below to 2.0 is the whole of the change.
-    ///
-    /// The fixture holds `ModifiedBase` at 100 and varies how much ELEMENT the
-    /// hit carries on top of it — 100 of Corrosive against 200 — which is what
-    /// an elemental mod does. Under the old reading the split's DoT is `0.5 x
-    /// ModifiedBase x child bracket` and does not move at all; under this one
-    /// it doubles with the hit that applied it.
-    ///
-    /// Varying `dot_modified_base` instead proves nothing, and finding that out
-    /// is worth the line: `mb_live` is derived FROM it, so halving it halves
-    /// `mb_live` and doubles the ratio, and the product — the instance's own
-    /// damage — is invariant. Which is the property being claimed, so a test
-    /// written that way passes at ratio 1.000 whichever reading is in force.
+    /// THE FIXTURE HOLDS `ModifiedBase` AT 100 and varies the ELEMENT on top of
+    /// it, 100 of Corrosive against 200, which is what an elemental mod does.
+    /// Varying `dot_modified_base` instead proves nothing: `mb_live` is derived
+    /// FROM it, so halving it halves `mb_live` and doubles the ratio, and the
+    /// product is invariant — which is the property being claimed, so such a
+    /// test passes at 1.000 under either reading.
     #[test]
     fn a_debilitate_split_burns_off_modified_base_not_the_hit() {
         // Corrosive only: it has no DoT of its own, so every point of damage
