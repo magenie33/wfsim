@@ -74,6 +74,27 @@ POOL_TAG = {
 # its own text. `survey_weapon_mods.py` keeps a per-`uniqueName` table instead,
 # and that is right for it: its rows are one-offs with individual arguments,
 # where these are whole families of the game's own bookkeeping.
+def unreleased(m):
+    """DE'S FILES ARE NOT THE GAME, and the export says which is which.
+
+    WFCD scrapes the client, so it carries cards DE has built and never
+    shipped; those have no version behind them and read `introduced: TBA` /
+    `releaseDate: 0000-00-00`. Two of the export's 1806 mods are marked that
+    way. This survey listed one of them, Primed Electrified Barrel, as a gap
+    to transcribe — so it was transcribed, and sat in the archgun pool and on
+    three boards as a card no player can hold. The wiki has no page for it,
+    which is the same statement from the source that wins.
+
+    Checked BEFORE `rule_out` and for CARRIED entries too: every other rule
+    here answers "may a player equip this", and this one answers "does it
+    exist", which has to be asked first.
+    """
+    intro = (m.get('introduced') or {}).get('name')
+    if intro == 'TBA' or m.get('releaseDate') == '0000-00-00':
+        return 'unreleased: the export marks it `introduced: TBA` and the wiki has no page for it'
+    return None
+
+
 def rule_out(uniq, name, carried_names):
     # A RIVEN PLACEHOLDER. `/Randomized/Raw*RandomMod` is the unrolled riven
     # itself, which this app models as an EDITOR producing a mod (AGENTS.md),
@@ -170,20 +191,31 @@ def main():
             '  add the (type, compatName) pair to POOL_TAG, or the pool can only be empty'
             % ', '.join(unmapped))
 
-    rows = []
+    rows, shipped_nothing = [], []
     for m in mods:
         pool = POOL_TAG.get((m.get('type'), m.get('compatName')))
         if pool is None or pool not in claimed:
             continue
         uniq = m.get('uniqueName', '')
+        gone = unreleased(m)
+        if gone and uniq in have:
+            shipped_nothing.append('  %s  %s' % (have[uniq], m['name']))
         rows.append({
             'name': m['name'],
             'pool': pool,
             'internal_name': uniq,
-            'carried': have.get(uniq),
-            'excluded': None if uniq in have else rule_out(uniq, m['name'], have_names),
+            'carried': None if gone else have.get(uniq),
+            'excluded': gone or (None if uniq in have else rule_out(uniq, m['name'], have_names)),
         })
     rows.sort(key=lambda r: (r['pool'], r['name'], r['internal_name']))
+
+    # A CARD THE GAME HAS NEVER SHIPPED IS NOT A GAP THIS SURVEY CAN CLOSE.
+    # Loud rather than silent: the row above would otherwise still read
+    # `excluded`, and the file it names would stay in the pool.
+    if shipped_nothing:
+        raise SystemExit(
+            'carried mods the export marks unreleased — delete the file, it is not in the game:\n%s'
+            % '\n'.join(sorted(shipped_nothing)))
 
     miss = [r for r in rows if not r['carried'] and not r['excluded']]
     excl = [r for r in rows if r['excluded']]

@@ -12,10 +12,10 @@
 # app refuses by RULE (flawed variants, riven placeholders, Conclave-only),
 # and the rule rides beside it.
 #
-# 390 of 614 carried, 203 excluded by rule, 21 still to transcribe.
+# 389 of 614 carried, 204 excluded by rule, 21 still to transcribe.
 #
 # Per pool (carried / in export, gap):
-#   archgun         38 /  38, gap 0
+#   archgun         37 /  38, gap 0
 #   assault_rifle    8 /  15, gap 0
 #   bow              1 /  10, gap 4
 #   hammer           2 /   3, gap 0
@@ -134,7 +134,8 @@ mods:
   - name: Primed Electrified Barrel
     pool: archgun
     internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingWeaponElectricityDamageModExpert
-    carried: data/mods/archgun/primed_electrified_barrel.yaml
+    carried: excluded
+    reason: "unreleased: the export marks it `introduced: TBA` and the wiki has no page for it"
   - name: Primed Polar Magazine
     pool: archgun
     internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingWeaponFreezeDamageModExpert

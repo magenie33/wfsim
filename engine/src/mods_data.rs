@@ -2689,6 +2689,55 @@ mod pool_survey {
             }
         }
     }
+
+    /// NOTHING THE SURVEY EXCLUDED IS IN THE POOLS.
+    ///
+    /// The survey's `excluded` rows are the export entries a player cannot
+    /// equip — riven placeholders, DE's internal tiers, Conclave-only cards,
+    /// and mods the export marks unreleased. The generator refuses to write a
+    /// row that is both excluded and carried, but the generator reads
+    /// `vendor/`, which is gitignored and therefore absent from CI: a mod file
+    /// added without re-running it would be excluded in the committed survey
+    /// and in the pool at once, and nothing would say so.
+    ///
+    /// The bug this was written for is `Primed Electrified Barrel`: DE built
+    /// the card, never shipped it, WFCD's export carries it with `introduced:
+    /// TBA`, the survey listed it as a gap, and it was transcribed. The wiki
+    /// has no page for it. It sat in the archgun pool and on three boards.
+    #[test]
+    fn no_mod_the_survey_excluded_is_carried() {
+        let text = crate::data::file("surveys/pool_mods.yaml")
+            .expect("data/surveys/pool_mods.yaml — run scripts/survey_pool_mods.py");
+        let mut excluded: std::collections::BTreeMap<&str, &str> = Default::default();
+        let (mut name, mut uniq) = ("", "");
+        for line in text.lines() {
+            let l = line.trim();
+            if let Some(v) = l.strip_prefix("- name:") {
+                name = v.trim();
+            } else if let Some(v) = l.strip_prefix("internal_name:") {
+                uniq = v.trim();
+            } else if l.strip_prefix("carried:").map(str::trim) == Some("excluded") {
+                excluded.insert(uniq, name);
+            }
+        }
+        assert!(!excluded.is_empty(), "the survey excludes nothing: it looks unparsed");
+        let mut carried: Vec<String> = Vec::new();
+        for (path, body) in crate::data::files_under("mods/").filter(|(p, _)| p.ends_with(".yaml")) {
+            for l in body.lines() {
+                if let Some(v) = l.strip_prefix("internal_name:") {
+                    if let Some(why) = excluded.get(v.trim()) {
+                        carried.push(format!("{path} carries {why}"));
+                    }
+                }
+            }
+        }
+        assert!(
+            carried.is_empty(),
+            "the survey excludes these and the pool holds them — delete the file, \
+             or change the rule in scripts/survey_pool_mods.py and say why:\n  {}",
+            carried.join("\n  ")
+        );
+    }
 }
 
 #[cfg(test)]
