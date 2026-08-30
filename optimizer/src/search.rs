@@ -1,51 +1,31 @@
 //! THE SEARCH — one path at every scope.
 //!
-//! Enumerating the whole space and ranking it works while the space fits: a
-//! 22-mod pool is 571,569 candidates and a browser can
-//! walk it. It does not scale, because the space is superexponential
-//! (30 mods → 9.2 million, the full 60-mod pool → ~10⁹–10¹⁰) while one
-//! evaluation costs a full simulated engagement (~150/s single-threaded in
-//! wasm). At that ratio a search can afford ~10⁴ evaluations against 10⁹
-//! candidates, so BEING CUT SHORT IS THE NORMAL CASE — and the old
-//! enumeration, being depth-first, left a lexicographic corner behind when it
-//! was cut rather than a sample of the space (docs/OPTIMIZER.md).
+//! The space is superexponential — a 22-mod pool is 571,569 candidates, 30 mods
+//! is 9.2 million, the full 60-mod pool ~10⁹ — while one evaluation costs a
+//! full simulated engagement (~150/s single-threaded in wasm). At that ratio a
+//! search affords ~10⁴ evaluations against 10⁹ candidates, so BEING CUT SHORT
+//! IS THE NORMAL CASE, and a depth-first enumeration cut short leaves a
+//! lexicographic corner rather than a sample (docs/OPTIMIZER.md).
 //!
-//! This module keeps the two halves of the problem apart, because they are
-//! different problems and only one of them was ever solved here:
+//! This file is WHICH BUILDS TO LOOK AT; which of them is best under noise is
+//! the funnel, which culls 22,316 jobs to 10 for 1.5% of the flat cost and
+//! loses nothing against ground truth.
 //!
-//! - **Which builds to look at** — the search. That is this file.
-//! - **Which of them is best under noise** — the funnel, unchanged. Measured
-//!   against ground truth it culls 22,316 jobs to 10 for 1.5% of the flat cost
-//!   and loses nothing, so it is not what needed replacing.
+//! ONE LOOP, BOTH REGIMES. The search walks [`Shuffle`], a pseudorandom
+//! bijection on the subset space's index range, so walking to the end visits
+//! every subset exactly once and stopping early leaves a uniform sample WITHOUT
+//! REPLACEMENT. There is no mode to pick and no threshold to cross;
+//! [`SearchStats::exhaustive`] says which a run turned out to be.
 //!
-//! ## One loop, both regimes
+//! SAMPLING ALONE IS NOT ENOUGH, so the budget is split: 10⁴ uniform samples of
+//! 10⁹ builds find a build at about the 1-in-10⁴ quantile, so once the explore
+//! share is spent the rest goes to the NEIGHBOURHOOD of what was found — swap
+//! one mod, add one, drop one — deduplicated against everything already tried.
 //!
-//! The search walks [`Shuffle`], a pseudorandom bijection on the subset
-//! space's index range. Walking it to the end visits every subset exactly once
-//! — the search IS exhaustive, provably, for any scope the budget can finish.
-//! Stopping early leaves a uniform sample WITHOUT REPLACEMENT. There is no
-//! mode to pick and no threshold to cross; which
-//! one a run turned out to be is just whether it reached the end, and
-//! [`SearchStats::exhaustive`] says which.
-//!
-//! ## Sampling alone is not enough, so the budget is split
-//!
-//! 10⁴ uniform samples of 10⁹ builds find a build at about the 1-in-10⁴
-//! quantile, which is not an answer anyone wants. So once the explore share of
-//! the budget is spent, the rest goes to the NEIGHBOURHOOD of what the samples
-//! found: swap one mod, add one, drop one. Build quality is largely modular
-//! with a few strong interactions (elements, status thresholds, Condition
-//! Overload), which is exactly the landscape a 1-swap neighbourhood climbs
-//! well. Every proposal is deduplicated against everything already tried, so
-//! exploitation never re-buys what exploration already paid for.
-//!
-//! ## Why a 1-run screen is allowed to steer
-//!
-//! Measured, not assumed: over a 64,796-job scope, ranking every job on ONE
-//! Monte-Carlo run and keeping the top sixth drops **0 of the true top 100**
-//! (docs/OPTIMIZER.md). Kill progress over a 300 s engagement is a low-variance
-//! statistic. So the cheap screen is a sound gradient, and the expensive
-//! precision belongs where it always did — the final rounds.
+//! A 1-RUN SCREEN IS ALLOWED TO STEER, measured rather than assumed: over a
+//! 64,796-job scope, ranking every job on ONE Monte-Carlo run and keeping the
+//! top sixth drops **0 of the true top 100**, because kill progress over a
+//! 300 s engagement is a low-variance statistic.
 
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;

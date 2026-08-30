@@ -17,30 +17,21 @@ effects:
   #                                                           the direct stage
   #   "Additional shots from Multishot WILL trigger Spread
   #    hits, except from beam weapons"                     -> falls out: a
-  #       continuous weapon merges its multishot into ONE instance
-  #       (`n_pellets = 1`, `beam_merge`), so the echo already fires once a tick
-  #       rather than once per instance. Nothing here had to special-case it.
+  #       continuous weapon merges its multishot into ONE instance, so the echo
+  #       already fires once a tick rather than once per instance
   #   "count as regular body hits"                         -> headshot: false,
   #                                                           part_factor 1.0
   #   "calculate damage separately from the original hit"  -> each body brings
-  #       its own Condition Overload bucket, half-health term, armour, shields
-  #       and procs (`spread_hit`)
+  #       its own CO bucket, half-health term, armour, shields and procs
   #   "apply the SAME status effects as the hit that
   #    proc'd them, and benefit from Status Damage"        -> the echo rolls its
-  #       OWN procs at full status chance rather than copying the trigger's.
-  #       Same mean, and the page is ambiguous between "the same effects" and
-  #       "effects of the same kinds" — flagged, not silently read one way.
-  #   "Will roll a separate critical hit chance per enemy" -> NOT MODELLED. The
-  #       echo inherits the triggering pellet's crit multiplier, so every body
-  #       in the radius crits together or not at all. The MEAN is unchanged
-  #       (E[share x raw] either way); what differs is the correlation, which a
-  #       KILL COUNT is sensitive to and a damage total is not.
-  #   "Spread hits require line of sight"                  -> an EDGE, not a
-  #       gap: this arena has no cover, so line of sight never fails.
-  #   "Will not deal spread hit damage to enemies which
-  #    require hitting specific parts, such as The Severed
-  #    Warden, but can still apply status effects"         -> no such enemy is
-  #                                                           in the roster
+  #       OWN procs at full status chance; same mean, and the page is ambiguous
+  #       between "the same effects" and "effects of the same kinds"
+  #   "Will roll a separate critical hit chance per enemy" -> NOT MODELLED: the
+  #       echo inherits the pellet's crit multiplier, so the MEAN is unchanged
+  #       and only the CORRELATION differs, which a kill count is sensitive to
+  #   "Spread hits require line of sight"                  -> an EDGE: this
+  #                                                           arena has no cover
   - kind: aoe_echo
     # READ AND SIMULATED as of 2026-08-18 (`arc_condition` ->
     # `ArcCondition::TargetRadiationStacks`). The echo fires only off a body

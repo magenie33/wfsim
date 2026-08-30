@@ -7,18 +7,13 @@
 //!
 //!   cargo run --release --bin formation_value -- [cols] [rows] [spacing_m]
 //!
-//! # What this is, and what it is not
+//! It is the SHOT's geometry — `chain::resolve` over a formation, summed —
+//! with every body identical and at full health, which is what makes the answer
+//! a clean multiplier against the same shot on one enemy.
 //!
-//! It is the SHOT's geometry: `chain::resolve` over a formation, summed. Every
-//! body is assumed identical and at full health, which is what makes the answer
-//! a clean multiplier — the damage the formation takes, relative to the same
-//! shot against one enemy.
-//!
-//! It is NOT the fight. Per-body armor, status, death and re-targeting live in
-//! the run loop, which does not consume `chain` yet (`engine::formation` is the
-//! layer it will). Those change WHO dies and WHEN; they do not change the
-//! multiplier below, because it is what one shot delivers before anything on
-//! the receiving end has had a say.
+//! It is NOT the fight: per-body armor, status, death and re-targeting live in
+//! the run loop and change WHO dies and WHEN, not the multiplier below, which
+//! is what one shot delivers before the receiving end has had a say.
 use wfsim_engine::chain::{resolve, Spec, Splash};
 use wfsim_engine::formation::Formation;
 

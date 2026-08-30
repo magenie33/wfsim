@@ -1223,19 +1223,17 @@ const SCREEN_SNAP_EVERY: usize = 8_192;
 /// progress and carries the cancel flag: on cancel the in-flight round is
 /// discarded and the last COMPLETED round's leaderboard is returned.
 ///
-/// `on_round` (optional) fires after every COMPLETED round (docs/WASM.md
-/// phase 3): single-threaded wasm cannot poll `state` from outside a busy
-/// worker, so the callback is where progress leaves the funnel — the caller
-/// reads `state` inside it. Native callers pass `None` and poll instead.
+/// `on_round` (optional) fires after every COMPLETED round: single-threaded
+/// wasm cannot poll `state` from outside a busy worker, so the callback is
+/// where progress leaves the funnel. Native callers pass `None` and poll.
 ///
 /// `start_round` RESUMES: rounds before it are skipped and `alive` is taken as
 /// that round's incoming field. Seeds key off the ABSOLUTE round index, so a
 /// resumed run draws exactly the numbers an uninterrupted one would.
 ///
 /// `on_checkpoint(next_round, alive)` fires after each completed round with the
-/// survivors — the caller persists it so a reload costs one round instead of
-/// the whole search (browser workers do not survive a page reload; measured
-/// 2026-07-30, a SharedWorker does not either).
+/// survivors, so a reload costs one round instead of the whole search — a
+/// browser worker does not survive a page reload, and nor does a SharedWorker.
 #[allow(clippy::too_many_arguments)] // search-config surface, like enumerate_candidates
 pub fn run_funnel(
     cands: &[Candidate],

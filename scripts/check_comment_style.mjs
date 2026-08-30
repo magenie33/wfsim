@@ -133,18 +133,20 @@ check("comment style ...and no note outlives its last use",
 //
 //   ESSAYS — blocks over twenty lines. Past twenty a block has stopped stating
 //   a rule and started explaining a subject, which is what `docs/` is for, and
-//   an explanation in two places is two explanations that drift. Measured: the
-//   band above twenty is a fifth of the blocks over twelve and five times the
-//   lines, while 321 blocks are THIRTEEN TO FIFTEEN and account for 596 lines
-//   between them. This is the number being driven to zero.
+//   an explanation in two places is two explanations that drift.
 //
 //   TOTAL COMMENT LINES — monotone, and it cannot be gamed by splitting.
 //
 // Both may only FALL. Lower them whenever a pass removes some; never raise one
 // to make a red run green, which is the one edit this file exists to refuse.
+//
+// THE FLOOR IS NOT ZERO AND IS NOT MEANT TO BE. What remains above the line is
+// a published table, a verbatim quote, or a rule whose four clauses are each
+// load-bearing — read one by one and kept. Squeezing those to reach a number
+// would take out the evidence, which is the one thing a comment here is for.
 const ESSAY_LIMIT = 20;
-const ESSAY_CEILING = 54;
-const LINE_CEILING = 67503;
+const ESSAY_CEILING = 49;
+const LINE_CEILING = 67409;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
 let essays = 0;
 let commentLines = 0;

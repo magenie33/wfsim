@@ -67,9 +67,8 @@ attack:
   damage: { puncture: 42.0, slash: 98.0 }   # total 140
 
 # Incarnon evolutions are perks shared by the transform group; definitions live
-# in data/evolutions/phenmor_*.yaml. THIRTEEN of them, not nine: a natural
-# Incarnon carries five tiers (1 + 3 + 3 + 3 + 3), where an adapter carries
-# four (docs/INCARNON.md).
+# in data/evolutions/phenmor_*.yaml. THIRTEEN of them: a natural Incarnon
+# carries five tiers (1 + 3 + 3 + 3 + 3) where an adapter carries four.
 # incarnon_evolutions:
 # - { tier: 1, unlock: kill 100 enemies,
 # options: [phenmor_evo1_incarnon_form] }

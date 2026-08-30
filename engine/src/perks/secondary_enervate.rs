@@ -1,15 +1,12 @@
 //! Secondary Enervate — a secondary-weapon arcane, modeled as a [`Perk`].
 //!
-//! On the trigger it grants/updates a stacking, weapon-scoped buff in the
-//! [`BuffBar`] (the same buff the player sees in the HUD). This perk keeps the
-//! private bookkeeping the UI does not show (the big-crit counter and the
-//! rate-limit timer); the visible stacks live on the [`Buff`].
+//! On the trigger it grants a stacking, weapon-scoped buff in the [`BuffBar`]
+//! — the one the player sees in the HUD — and keeps the private bookkeeping the
+//! UI does not show: the big-crit counter and the rate-limit timer.
 //!
-//! Data / source of truth: the inline `kind: buff` block in
-//! `data/arcanes/secondary/secondary_enervate.yaml` (trigger + rank fields +
-//! hit-counting notes in one place)
-//! (<https://wiki.warframe.com/w/Secondary_Enervate>). Terminology per
-//! `docs/GLOSSARY.md` (flat crit chance, big crit, Hit).
+//! Source of truth: the inline `kind: buff` block in
+//! `data/arcanes/secondary/secondary_enervate.yaml`. Terminology per
+//! `docs/GLOSSARY.md`.
 //!
 //! Mechanic (status: **unverified** — pending in-game golden test):
 //! - On Hit: gain one stack of `+flat_crit_per_stack` **flat crit chance** (an

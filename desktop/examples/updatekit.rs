@@ -1,19 +1,15 @@
 //! Key generation and manifest signing for the update channel.
 //!
-//! AN EXAMPLE, NOT A BIN, and that is not a stylistic choice. Tauri's bundler
-//! picks one binary out of the crate to package, and with two to choose from it
-//! picked this one: it took `updatekit`, renamed it to `wfsim-desktop` and
-//! shipped a 288 KB installer that installs cleanly and contains the signing
-//! tool instead of the app. `mainBinaryName` renames the choice,
-//! it does not make it — setting it produced the same wrong binary under the
-//! right name. An example is invisible to `cargo build --bins`, so the crate
-//! has exactly one binary and the bundler cannot get it wrong.
+//! AN EXAMPLE, NOT A BIN, and not for style: Tauri's bundler picks one binary
+//! out of the crate to package, and given two it takes this one — renaming
+//! `updatekit` to `wfsim-desktop` and shipping an installer that contains the
+//! signing tool instead of the app. `mainBinaryName` renames the choice rather
+//! than making it. An example is invisible to `cargo build --bins`, so the
+//! crate has exactly one binary and the bundler cannot get it wrong.
 //!
-//! Kept out of the shipped binary's path on purpose: this is the half that
-//! holds the PRIVATE key, and it runs on a development machine or in CI, never
-//! on a reader's. `updatekit keygen` writes the private key where git cannot
-//! see it and prints the public key to paste into `update.rs`; `updatekit sign`
-//! is what the release job runs.
+//! It holds the PRIVATE key and runs on a development machine or in CI, never
+//! on a reader's: `updatekit keygen` writes the private key where git cannot
+//! see it and prints the public key to paste into `update.rs`.
 //!
 //! THE PRIVATE KEY IS THE ONE UNRECOVERABLE THING IN THIS PROJECT. Losing it
 //! means never being able to update an installed client again — every reader

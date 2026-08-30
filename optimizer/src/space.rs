@@ -1,24 +1,17 @@
 //! The mod-subset space as an INDEX RANGE — `nth(i)` instead of a walk.
 //!
-//! A depth-first descent (`enumerate_rec`) is fine when it runs to completion
-//! and disastrous when it does not: what a
-//! cut leaves behind is a lexicographic prefix — builds made of the first few
-//! pool entries plus one varying tail — rather than a sample. Measured on a
-//! 22-mod pool, the complete walk carries Heat in 2.77% of its candidates and
-//! the first 3,000 of a 60-mod pool carry it in 0% (docs/OPTIMIZER.md). A
-//! browser can afford ~10⁴ evaluations against a space of ~10⁹, so being cut
-//! is the NORMAL case, and an enumeration whose truncation is biased is not
-//! usable at that ratio.
+//! A depth-first descent is fine when it runs to completion and disastrous when
+//! it does not: a cut leaves a lexicographic prefix rather than a sample. On a
+//! 22-mod pool the complete walk carries Heat in 2.77% of its candidates and
+//! the first 3,000 of a 60-mod pool carry it in 0% (docs/OPTIMIZER.md), and a
+//! browser affords ~10⁴ evaluations against ~10⁹, so being cut is the NORMAL
+//! case. Indexing fixes it at the root without a second code path:
 //!
-//! Indexing fixes it at the root, and it does so without a second code path:
-//!
-//! - a **full sweep** is `0..len()`, and produces exactly what the walk did;
-//! - a **sample** is any set of indices, and a uniform one is unbiased by
-//!   construction;
+//! - a **full sweep** is `0..len()`, producing exactly what the walk did;
+//! - a **sample** is any set of indices, and a uniform one is unbiased;
 //! - **coverage** is `tried / len()`, an exact number rather than a hope;
-//! - a scope small enough to exhaust simply *is* exhausted by the sweep, so
-//!   "small" and "large" stop being two behaviours (one
-//!   path, rigour over convenience).
+//! - a scope small enough to exhaust *is* exhausted by the sweep, so "small"
+//!   and "large" stop being two behaviours.
 //!
 //! **Family exclusivity is rejected, not indexed.** Folding mutually
 //! exclusive families into the index is exact but intricate; rejecting the

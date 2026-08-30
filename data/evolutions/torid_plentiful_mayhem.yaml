@@ -46,12 +46,11 @@ effects:
   #    comes from the magazine and always takes ammo efficiency, perk or no —
   #    while the SURCHARGE takes no efficiency at all (measured, user
   #    2026-07-30), so even a 100% source does not make multishot free;
-  #  - and the extras can STARVE. The projectiles are
-  #    produced in order, each paying its round as it goes, and one that cannot
-  #    pay is not fired at all — same rule as running dry normally. With 3
-  #    charges left and a 4-multishot pull: the round is spent, two extras fire,
-  #    the third does not exist. So the perk's damage silently degrades as the
-  #    pool empties, which is the opposite of a flat bonus;
+  #  - and the extras can STARVE: the projectiles are produced in order, each
+  #    paying its round as it goes, and one that cannot pay is not fired. With
+  #    3 charges left and a 4-multishot pull the round is spent, two extras
+  #    fire, the third does not exist — so the perk degrades as the pool
+  #    empties, the opposite of a flat bonus;
   #  - "In the Incarnon form, instead of increasing the damage of additional
   #    projectiles created by multishot, all multishot bonuses are increased by
   #    60%" — a different rule per form, and it exists because a beam MERGES its

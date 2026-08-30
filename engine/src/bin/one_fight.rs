@@ -1,61 +1,32 @@
 //! `one_fight` — WHAT AN ENGAGEMENT COSTS, and whether your change to the
 //! engine made it cheaper WITHOUT making it wrong.
 //!
-//! The repo has [`wfsim-truth`] for the search's ACCURACY and had nothing for
-//! its COST, which is half of every performance conversation and the half
-//! nobody could settle: "it feels faster" and "it got dumber" are
-//! indistinguishable without both numbers (community request via the owner,
-//! 2026-08-14).
-//!
-//! # The loop this is for
+//! [`wfsim-truth`] grades the search's ACCURACY; this is the other half, and
+//! without both "it feels faster" and "it got dumber" are the same sentence.
 //!
 //! ```text
 //! cargo run --release --bin one_fight -- save     # remember where you started
 //! …edit the engine…
-//! cargo run --release --bin one_fight             # what did it cost, what did it change
+//! cargo run --release --bin one_fight             # cost, and what it changed
+//! cargo run --release --bin one_fight -- weapon=torid runs=2000 duration=60
+//! cargo run --release --bin one_fight -- enemy=training   # no mitigation
 //! ```
 //!
-//! The second command prints a delta against your saved baseline AND whether
-//! the answer moved. **An optimisation that changes a number is not an
-//! optimisation, it is a bug**, and that is the one thing this must never let
-//! you miss — so a moved answer is a non-zero exit code, not a line of text you
-//! might scroll past.
+//! It prints a delta against the saved baseline AND whether the answer moved.
+//! **An optimisation that changes a number is not an optimisation, it is a
+//! bug**, so a moved answer is a non-zero exit code.
 //!
-//! # Why a SUITE and not one weapon
-//!
-//! A change to the inner loop rarely moves every weapon the same way, and
-//! picking one to measure is how you optimise for the shape you happened to
-//! choose. Measured while writing this: `-C target-cpu=native` is −23% on the
-//! Torid, −36% on the Scourge and **+31% on the Gotva Prime**. One weapon would
-//! have said "ship it" and one would have said "revert", both truthfully.
-//!
-//! So the default is three shapes that stress different parts of the engine,
-//! and the table is read across, not down.
-//!
-//! # One shape, every knob
-//!
-//! ```text
-//! cargo run --release --bin one_fight -- weapon=gotva_prime runs=2000 duration=60
-//! cargo run --release --bin one_fight -- weapon=torid mods=serration,split_chamber
-//! cargo run --release --bin one_fight -- enemy=training     # no mitigation at all
-//! ```
-//!
-//! `enemy=training` is the bare dummy: it isolates the weapon's own arithmetic
-//! from armour, shields and overguard, which is the right fixture for "what did
-//! I do to the damage pipeline" and the wrong one for "what does a search pay"
-//! — the dummy cannot be killed, so kill progress reads 0 and the answer column
-//! stops being able to catch anything.
-//!
-//! # How to read it
+//! A SUITE RATHER THAN ONE WEAPON, because a change to the inner loop rarely
+//! moves every weapon the same way: `-C target-cpu=native` is −23% on the
+//! Torid, −36% on the Scourge and **+31% on the Gotva Prime**. Read ACROSS.
+//! `enemy=training` is the bare dummy, isolating the weapon's own arithmetic
+//! from armour and shields — the right fixture for "what did I do to the
+//! damage pipeline" and the wrong one for "what does a search pay", since the
+//! dummy cannot be killed and the answer column catches nothing.
 //!
 //! Repeats are separate `monte_carlo` calls at the same seed, so they differ
-//! only by the machine. The tool takes the MINIMUM and prints the spread it
-//! saw; a delta smaller than that spread is not a result, and it says so
-//! rather than leaving you to decide.
-//!
-//! Native, not wasm. The product runs in a browser and this is a proxy for it —
-//! good for ranking two versions of the same code, not for predicting what a
-//! phone will do.
+//! only by the machine: the tool takes the MINIMUM and prints the spread, and a
+//! delta smaller than that spread is not a result. Native rather than wasm.
 
 use std::time::Instant;
 

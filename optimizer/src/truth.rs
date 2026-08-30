@@ -1,26 +1,20 @@
 //! GROUND TRUTH — what the search is graded against.
 //!
-//! The optimizer's promise is accuracy, and accuracy is not something a search
-//! strategy can assert about itself: it has to be MEASURED against an answer
-//! obtained another way. That answer is this module. Take a scope small enough
-//! to **exhaust**, evaluate **every** job in it flat at a high run count, and
-//! the resulting ranking is the reference any strategy — today's funnel,
-//! tomorrow's search — is scored against.
-//!
-//! Two things this deliberately does NOT assume:
+//! Accuracy is not something a search strategy can assert about itself, so it
+//! is MEASURED against an answer obtained another way: take a scope small
+//! enough to **exhaust**, evaluate **every** job in it flat at a high run
+//! count, and that ranking is the reference. Two things it does NOT assume:
 //!
 //! 1. **That the truth is a single build.** The objective is a Monte-Carlo
-//!    mean, so it comes with a standard error, and the top of a real scope is
-//!    usually a CLUSTER of builds no run count can separate. Demanding that a
-//!    search return rank 1 would fail it for being unlucky rather than wrong.
-//!    The target is [`Truth::indistinguishable`]: the set of jobs whose mean is
-//!    within a few combined standard errors of the best. Returning any member
-//!    of it is correct, and [`Verdict::within_noise`] is the pass/fail.
+//!    mean with a standard error, and the top of a real scope is usually a
+//!    CLUSTER no run count can separate, so demanding rank 1 fails a search
+//!    for being unlucky rather than wrong. The target is
+//!    [`Truth::indistinguishable`] and [`Verdict::within_noise`] is the
+//!    pass/fail.
 //! 2. **That the truth is trustworthy by construction.** A reference measured
-//!    at too few runs is just another noisy ranking wearing a badge.
-//!    [`Truth::agrees_with`] re-measures under a different seed and reports the
-//!    overlap; a harness that cannot show that overlap has not established a
-//!    reference and must raise its run count.
+//!    at too few runs is another noisy ranking wearing a badge, so
+//!    [`Truth::agrees_with`] re-measures under a different seed and reports
+//!    the overlap.
 
 use wfsim_engine::dummy::Summary;
 

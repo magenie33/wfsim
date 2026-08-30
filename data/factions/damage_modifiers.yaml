@@ -119,25 +119,20 @@ special:
 # (never by FactionDamageOverride, which only redirects the table above).
 # Total-damage multiplier; applied a SECOND time to DoT ticks from status
 # effects ("double dipping").
-# The faction damage MODS themselves (Bane/Cleanse/Expel/Smite) are MOD
-# entries with per-rank values — data/mods/*/expel_*.yaml is the source of
-# truth (normal +5%/rank to +30%, Primed to +55%). Nothing mod-shaped is
-# recorded here.
-# System notes: our canonical bucket is faction_damage (GLOSSARY.md) —
-# additive WITHIN the bucket, multiplies total damage, double-dips DoT
-# ticks. Ability members share the bucket: Roar (matches ALL factions),
-# Paracesis' anti-Sentient passive. Mods exist only for grineer, corpus,
-# infested, orokin, the_murmur; Sentient coverage is melee-only
-# (Sacrificial Pressure/Steel). No mods exist for anarchs, narmer, scaldra,
-# techrot, stalker, wild, zariman, unknown.
+# The MODS themselves are MOD entries with per-rank values —
+# data/mods/*/expel_*.yaml is the source of truth (normal +5%/rank to +30%,
+# Primed to +55%) — and nothing mod-shaped is recorded here. The canonical
+# bucket is faction_damage (GLOSSARY.md): additive WITHIN the bucket,
+# multiplies total damage, double-dips DoT ticks, and shared by Roar (which
+# matches ALL factions) and Paracesis' anti-Sentient passive. Mods exist only
+# for grineer, corpus, infested, orokin and the_murmur; Sentient coverage is
+# melee-only.
   # strict_matching: >-
   # No inheritance across counterparts: Bane of Grineer works on Lancer but
-  # NOT on Corrupted Lancer or Narmer Lancer; Infested mods do NOT affect
-  # Techrot. Thrax units (Faction "Unknown") match no faction mod at all -
-  # their Zariman override only selects the multiplier column above.
+  # NOT on Corrupted Lancer or Narmer Lancer, and Infested mods do NOT affect
+  # Techrot. Thrax units (Faction "Unknown") match no faction mod at all.
   # note: >-
-  # Both systems stack multiplicatively when both apply (a regular Lancer
-  # takes Bane of Grineer x1.55 AND Impact x1.5). The wiki enemy module even
+  # Both systems stack multiplicatively when both apply. The wiki enemy module
   # contains a Corrupted unit with FactionDamageOverride "Corpus": it takes
   # Bane of Orokin (Faction) while using the Corpus multiplier column
   # (Override) - proof the two keys are independent.
