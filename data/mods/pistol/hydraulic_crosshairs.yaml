@@ -6,10 +6,7 @@ base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/Event/CritChanceWhileAimingPistolMod
 description: "On Headshot:\n+X% Critical Chance when Aiming for Xs"
-# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
-# (`IncompatibilityTags`) — the same list the mod infobox prints. The
-# WFCD export carries no such field, so this module is the only
-# structured source for what a mod REFUSES to be equipped on.
+# see notes: de_s_own_incompatibility
 excludes_weapon: [power_weapon]
 
 effects:
@@ -20,8 +17,7 @@ effects:
     rank0: 0.225
     rankMax: 1.35
     max_stacks: 1
-    # RAMPS with rank (WFCD levelStats); `duration` is the max-rank value
-    # the engine builds with, `duration_rank0` is where the card starts.
+    # see notes: ramps_with_rank_wfcd
     duration_rank0: 2
     duration: 9
 

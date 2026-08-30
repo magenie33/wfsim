@@ -32,8 +32,7 @@ riven_family: Verglas
 traits: [prime]
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle
 noise: alarming
-# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
-# economy to model, so no `ammo_max`. The magazine and reload are real.
+# see notes: sentinel_weapons_draw_from
 magazine: 80
 reload_seconds: 1.6
 
@@ -63,10 +62,7 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.36
   punch_through_m: 0.0
-  # THE RANGE IS A WALL, NOT A RAMP: full damage to the end of it and
-  # literally nothing past it. Transcribed from the wiki's Range stat; it
-  # already sat in this file's `beam_range` note, which the engine could
-  # not read.
+  # see notes: range_wall_ramp_full
   range_m: 24.0
   damage: { cold: 32.0 }
 

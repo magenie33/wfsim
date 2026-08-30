@@ -82,8 +82,7 @@ co_base_fraction: 0.5
 # carries (184 per arrow). Attacks[1], the tapped shot at exactly half the
 # damage, is the sibling entry.
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 12

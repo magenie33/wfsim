@@ -3,10 +3,7 @@ name: Trusty Sidearm
 weapon: lex_prime
 tier: 2
 description: "Increase Base Damage by +20. With Channeled Ability active: +60% Ammo Efficiency."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
-# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+# see notes: genesis_family_s_adapter_3
 #
 #   Lex Prime||Incarnon Mode||…||1200 or 1220 (with Evolution II)||1200||100% or 98%||Adding||CO-bonus does not use base damage increase Evolution
 #
@@ -18,9 +15,7 @@ effects:
   # from: "Increase Base Damage by +20"
   - kind: flat_base_damage
     value: 20.0
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
-  # this simulator cannot pay it out, and the reason will not change with
-  # any amount of work on evolutions.
+  # see notes: edge_gap_see_docs
   - kind: out_of_scope
     clause: "With Channeled Ability active: +60% Ammo Efficiency"
     reason: infinite_ammo

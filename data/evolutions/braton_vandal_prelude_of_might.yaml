@@ -3,44 +3,19 @@ name: Prelude of Might
 weapon: braton_vandal
 tier: 4
 description: "With Critical Chance Below 50%: Increase Base Critical Damage Multiplier by +3.0x"
-# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
-# four Bratons, so all four carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_braton
 selection: choose_one
 
 effects:
-  # The condition is on the crit chance THE HIT HAS — the panel plus every live
-  # bonus, Puncture's Weakened included (the wiki's own note on this row) —
-  # which no `condition:` here can express, since every one of those asks about
-  # the Tenno or the target. Its own kind, granted late in `resolve` and
-  # re-checked per shot by the sim (see furis_prelude_of_might for the argument).
+  # see notes: condition_crit_chance_hit
   #
-  # The threshold is 50% on this family against the Furis's 40%, and it bites
-  # harder here: taking it means holding crit chance under half, which Critical
-  # Parallel and Survivor's Edge in the same tier both push against.
-  # HOW THIS DIFFERS FROM THE SICARUS'S WISEMAN'S REGARD — two perks that both
-  # say "Critical Chance" and read two different numbers.
+  # see notes: threshold_50_family_against
   #
-  # THIS one is read AT THE MOMENT OF THE HIT, so a crit source that lives on
-  # the TARGET counts: the row's note names Puncture outright ("Condition is
-  # affected by the critical chance increase effect of Puncture status"), and
-  # Puncture is the only source that can raise your crit chance without your
-  # panel ever moving. Wiseman's Regard is the opposite — resolved once off the
-  # panel, and its own row names King's Gambit and Cascadia Accuracy as things
-  # it does NOT see.
+  # see notes: read_at_moment_hit
   #
-  # WEAK-POINT CRIT IS THE OPEN HALF. This engine reads the condition per SHOT,
-  # not per pellet, so Pistol Acuity / Cascadia Accuracy / King's Gambit do not
-  # move it — the argument being that those are properties of where a projectile
-  # landed rather than of the weapon the condition asks about. The wiki's note
-  # names only Puncture and settles nothing either way; the owner reads it as
-  # counting and is measuring in game. If it counts, the check
-  # moves into the pellet loop beside the weak-point bucket.
+  # see notes: weak_point_crit_open
   #
-  # AND IT CUTS THE OTHER WAY. Wiseman's Regard pays MORE the more crit you
-  # have; this one is LOST the moment you cross the line. Same reading, opposite
-  # sign, so the two must not be reasoned about together.
+  # see notes: cuts_other_way_wiseman
   #
   - kind: crit_multiplier_below_crit_chance
     value: 3.0

@@ -7,12 +7,7 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/ShredMod
 description: "+X% Fire Rate (x2 for Bows)\n+X Punch Through"
 
-# The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale with
-# rank. BOTH sources agree: WFCD levelStats prints the same "x2" at every rank,
-# and the wiki's rank table carries a separate Fire Rate (Bows) column that is
-# exactly twice the rifle column at every rank. That column also settles the
-# scope - the multiplier applies to FIRE RATE only, not to punch through.
-# No bow is in data/weapons yet, so nothing models it.
+# see notes: x2_bows_clause_literal
 effects:
   - kind: fire_rate_bonus
     # +5% -> +30%, both sources: WFCD levelStats and the wiki rank table.

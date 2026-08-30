@@ -1,18 +1,12 @@
 id: imperator
 name: Imperator
-# ARCH-GUN — its own equipment slot, and not a Primary or a Secondary: the wiki
-# is explicit that Archguns "are not considered either primary or secondary
-# weapons", which is also why they seat two arcanes rather than one.
+# see notes: arch_gun_own_equipment
 slot: archgun
 class: archgun
 form: base
 default_form: true
 
-# TWO COLUMNS, and the fields below are the ATMOSPHERE one because this arena is
-# the ground. See docs/WEAPON_INTAKE.md §1: the page's infobox has an `Archwing`
-# tab and an `Atmosphere` tab, WFCD carries only the Archwing one, and the two
-# differ in damage, reserve, reload and shot type while agreeing on crit,
-# multiplier, status, fire rate and magazine.
+# see notes: two_columns_fields_below
 #
 #   |            | damage | reload | Ammo Max | shot type        |
 #   | Atmosphere |    100 | 2.00 s |      800 | hit-scan         |
@@ -26,8 +20,7 @@ deployments:
   archwing:
     reload_seconds: 4.25
     no_resupply: false      # a regenerating magazine, so no reserve to dry
-    # THE OTHER TAB, transcribed rather than derived — both columns are written
-    # down so either can be checked against the page without arithmetic.
+    # see notes: other_tab_transcribed_rather
     damage: { impact: 20.0, puncture: 17.5, slash: 12.5 }   # 50 total
 mod_pools: [archgun]
 mastery_rank: 0
@@ -56,8 +49,7 @@ no_resupply: true
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 1
     max_deg: 3
@@ -73,8 +65,7 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.12
   punch_through_m: 1.2
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan
+  # see notes: wall_ramp_full_damage_6
   range_m: 300.0
   damage: { impact: 40.0, puncture: 35.0, slash: 25.0 }   # 100 total
 unmodeled:
@@ -82,6 +73,4 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Imperator
-  # Every stat is the wiki page's Atmosphere tab. WFCD `warframe-items` was
-  # read for `internal_name` only: its Arch-Gun entries are the ARCHWING
-  # column, which is the wrong one here (docs/DATA_SOURCES.md).
+  # see notes: every_stat_wiki_page_2

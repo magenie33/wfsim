@@ -53,9 +53,7 @@ attack:
   crit_multiplier: 3.5
   status_chance: 0.57
   punch_through_m: 0.0
-  # AND IT MAY NOT BE GIVEN ANY — this attack has an area-of-effect component,
-  # so the punch-through page's class rule applies and the engine refuses Shred
-  # and both Augers on it. The `radial:` block below states the shape.
+  # see notes: may_be_given_any
   #
   # NO RANGE ROW on the Burst block — Projectile at 25 m/s. The 7.0 m below is
   # the RADIUS. See data/surveys/weapon_range.yaml.

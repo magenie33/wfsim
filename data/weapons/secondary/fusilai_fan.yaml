@@ -8,14 +8,11 @@ transform_group: fusilai
 
 introduced: "22"
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
-# has no row for either of its two. Absence means ORDINARY.
+# see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
     max_deg: 0.0
@@ -29,8 +26,7 @@ attack:
   crit_multiplier: 1.5
   status_chance: 0.123
   punch_through_m: 0.0
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack
   damage: { puncture: 30.8, slash: 46.2 }   # 77 a pellet, 231 a shot
 
 unmodeled:

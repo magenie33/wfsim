@@ -3,9 +3,7 @@ name: Deadly Pace
 weapon: mk1_paris
 tier: 2
 description: "Increase Base Damage by +50. With Sprint Speed 1.2 or Higher: +80% Fire Rate."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -23,23 +21,13 @@ effects:
   # as the wiki's wording for this family says.
   - kind: fire_rate_bonus
     value: 0.80
-    # THE CARD SAYS 1.2 AND THE EFFECT WANTS 1.1. VERBATIM, from this row's own
-    # Notes cell: *"Despite the description, the effect only requires 1.1 or
-    # higher sprint speed."* So the description above stays DE's sentence and the
-    # threshold below is the measured one — the same split every card text in this
-    # repo already obeys.
+    # see notes: card_says_1_2
     #
-    # It is transcribed PER ROW rather than generalised: the Bronco's Speeding
-    # Bullet prints the same 1.2 and its Notes cell carries no such line, so it
-    # keeps 1.2. Six of the roster's eight sprint gates move and two do not.
+    # see notes: transcribed_per_row_rather
     #
-    # The threshold is what makes the row's OTHER note true — *"Equipping Amalgam
-    # Serration will allow any Warframe to reach the threshold"* — since the
-    # slowest frame reaches 0.9 x 1.25 = 1.125, which clears 1.1 and not 1.2.
+    # see notes: threshold_what_makes_row
     condition: "sprint_speed >= 1.1"
-    # THE CARD IS WRONG AND THE EFFECT IS RIGHT — see the threshold note
-    # above. Declared so it reaches the perk's own card rather than living
-    # only in this comment.
+    # see notes: card_wrong_effect_right
     misprint: >-
       the card prints Sprint Speed 1.2 or Higher and the effect requires 1.1 — so it pays on frames the card says it should not, and Amalgam Serration alone carries any Warframe over the line
 

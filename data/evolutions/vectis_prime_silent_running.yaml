@@ -3,15 +3,11 @@ name: Silent Running
 weapon: vectis_prime
 tier: 3
 description: "Reduce the chance an enemy will hear gunfire by 100%."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
-  # this simulator cannot pay it out, and the reason will not change with
-  # any amount of work on evolutions.
+  # see notes: edge_gap_see_docs
   - kind: out_of_scope
     clause: "Reduce the chance an enemy will hear gunfire by 100%"
     reason: nobody_shoots_back

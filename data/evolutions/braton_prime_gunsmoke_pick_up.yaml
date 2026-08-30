@@ -3,28 +3,14 @@ name: Gunsmoke Pick Up
 weapon: braton_prime
 tier: 3
 description: "On Punch Through Hit: 20% chance for 10% Ammo restored."
-# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
-# four Bratons, so all four carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
-# "The bonus does not apply to the Incarnon form" (the row's first note).
+# see notes: genesis_family_s_braton_2
 base_form_only: true
 selection: choose_one
 
 effects:
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. VERBATIM
-  # (Braton_Incarnon_Genesis, the row's effect cell and its notes):
-  #   * On Punch Through Hit: '''20%''' chance for '''10%''' Ammo restored.
-  #   * The bonus does not apply to the Incarnon form.
-  #   * A second target does not need to be hit, the bullet just has to have
-  #     some amount of punch-through.
-  # The variant cell is one colspan="4" dash, so all four Bratons take it.
+  # see notes: edge_gap_see_docs_2
   #
-  # THE TRIGGER IS REACHABLE HERE. It does NOT need a second body behind the
-  # first — the wiki says the opposite in as many words — so `one_target` is
-  # the wrong reason to admit anything about it.
-  # What it cannot pay out is the payload: this arena runs on infinite ammo, so
-  # a restored round buys nothing.
+  # see notes: trigger_reachable_here_does
   - kind: out_of_scope
     clause: "On Punch Through Hit: 20% chance for 10% Ammo restored"
     reason: infinite_ammo

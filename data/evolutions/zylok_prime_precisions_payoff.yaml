@@ -3,10 +3,7 @@ name: Precision's Payoff
 weapon: zylok_prime
 tier: 2
 description: "Increase Base Damage by +30. On Burst Headshots: Increase Base Damage by +20. Stacks up to 3x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
-# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+# see notes: genesis_family_s_adapter_3
 #
 #   Zylok Prime||Incarnon Mode||…||500 or 530 (with Evolution II)||500||100% or 94%||Adding||CO-bonus does not use base damage increase Evolution
 #

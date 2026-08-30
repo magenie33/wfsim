@@ -10,8 +10,7 @@ mod_pools: [pistol]
 mastery_rank: 7
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 16.0
 disposition: 1.35           # riven disposition
 polarities: []               # the infobox states none
@@ -27,13 +26,11 @@ ammo_pickup: 40
 magazine: 57
 reload_seconds: 1.3
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
     max_deg: 12.0
@@ -46,8 +43,7 @@ attack:
   crit_multiplier: 1.9
   status_chance: 0.13
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m", Hit-Scan.
+  # see notes: wall_ramp_full_damage
   range_m: 300.0
   damage: { impact: 14.19, puncture: 3.3, slash: 15.51 }   # total 33
 

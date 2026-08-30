@@ -4,8 +4,7 @@ name: Furis (Incarnon Form)
 # rather than this shot is inherited from `furis`, and only what
 # DIFFERS is written here. See `weapons_data::INHERITED`.
 inherits: furis
-# Gauge-switched: entering it costs a charge meter and a transmute animation,
-# which is what gives the sim a two-form CYCLE to run.
+# see notes: gauge_switched_entering_costs
 form: incarnon
 
 # TWO WEAPONS MODEL: second entry of the transform group — see
@@ -35,8 +34,7 @@ gauge_form:
     # - Charges survive holstering and bleedout; DEATH removes them.
   transmute:
     activation: alt_fire
-    # VERBATIM: "Mode switching is not instantaneous and has an animation equal
-    # to the weapon's reload speed."
+    # see notes: verbatim_mode_switching_instantaneous
     animation_seconds: reload_speed
     auto_transmute_out: on_incarnon_ammo_empty
   incarnon_magazine:
@@ -54,9 +52,7 @@ pseudo_reload:
 # CONDITION OVERLOAD — and THIS is the entry the catalog's Furis row is about.
 # Verbatim:
 #
-#   Furis | Incarnon Mode | Projectile | 100 or 128 (with Evolution II) | 100 |
-#     100% or 78% | Adding | "CO-bonus does not use base damage increase
-#     Evolution"
+# see notes: furis_incarnon_mode_projectile
 #
 # Two facts. The class is Adding, which is this engine's
 # `additive_with_base_damage`. And the CO base EXCLUDES Evolution II's flat
@@ -73,8 +69,7 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 5
     max_deg: 15

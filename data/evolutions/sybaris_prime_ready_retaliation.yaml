@@ -3,22 +3,13 @@ name: Ready Retaliation
 weapon: sybaris_prime
 tier: 3
 description: "On Reload From Empty: +60% Reload Speed."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
-  # ARMED BY THE EMPTY MAGAZINE, SPENT BY THE NEXT REFILL. No duration, and that
-  # is not an omission — there is nothing to time. The buff
-  # is on the weapon the moment the magazine runs out, which is why transforming
-  # right then is faster too, and it is gone when a reload or either Incarnon
-  # transform completes, because all three refill the magazine.
+  # see notes: armed_empty_magazine_spent
   #
-  # THIS FILE SPELLED IT `unmodelled_*` and so stayed inert when the perk was
-  # implemented: six of the twelve weapons carrying it were written
-  # this way and the other six as `reload_speed_bonus`, so a fix to the loader
-  # reached half of them. The spelling is the data's, not the mechanic's.
+  # see notes: file_spelled_unmodelled_stayed
   - kind: reload_speed_bonus
     value: 0.60
     condition: reload_from_empty

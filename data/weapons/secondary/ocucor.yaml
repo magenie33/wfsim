@@ -91,8 +91,7 @@ tendrils:
   cleared_by: [reload, empty_magazine]
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0

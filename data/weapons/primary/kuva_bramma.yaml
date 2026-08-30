@@ -12,8 +12,7 @@ mastery_rank: 15
 # RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 16.7
 disposition: 0.65
 # "Innate Madurai polarity."
@@ -36,8 +35,7 @@ reload_seconds: 0.6
 # attack that IS modelled is ordinary Additive at the full +100%.
 co_behavior: additive_with_base_damage
 
-# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
-# quoted Characteristic. Seven elements, never Puncture and never Slash.
+# see notes: progenitor_bonus_see_data
 valence:
   elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
   min: 0.25

@@ -8,24 +8,11 @@ mod_pools: [pistol]
 mastery_rank: 2
 max_rank: 30
 
-# TWO WEAPONS MODEL: base and Incarnon forms are
-# separate entries linked by a transform group.
+# see notes: two_weapons_model_base
 transform_group: stug
 transforms_to: stug_incarnon
 
-# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-# array, which is DE's own export and which agreed with the wiki infobox field
-# for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half: transcribed from the wiki's table,
-# with every clause the intake's rule engine did not recognise loaded as a
-# NAMED INERT effect that the builder and the optimizer both print as "not
-# modelled yet". Nothing is dropped in silence — some perks do nothing
-# yet and say so on their own tile.
-# NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
-# multi-part base needs a SECOND weapon entry to be right; the Cernos
-# Prime is the pattern (uncharged and charged are two entries in one
-# transform group). Until that exists, this weapon's number is the number
-# for the part named in `attack:` below and NOT for the whole weapon.
+# see notes: bulk_intake_stats_are_2
 unmodeled:
   - "the blob economy is not modelled — a shot EMBEDS and only explodes after a delay or at max stacks, and the sim fires the embed as an ordinary hit"
   - "the Incarnon form's bouncing secondary projectiles are not modelled — a stacked shot releases 2 to 5 of them, each exploding on up to 3 bounces"
@@ -52,8 +39,7 @@ reload_seconds: 2
 co_behavior: inert
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0

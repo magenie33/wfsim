@@ -39,8 +39,7 @@ no_resupply: true
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 10
     max_deg: 20
@@ -57,15 +56,12 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.28
   punch_through_m: 0.0
-  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
-  # (docs/CATALOGS.md §2):
+  # see notes: primary_compression_published_table
   #
   #   Morgha | Primary Fire + AoE | 0% | Doesn't Work | N/A | "Archguns
   #   cannot equip mod"
   #
-  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
-  # attack at all, and saying so is the difference between "checked" and
-  # "nobody looked".
+  # see notes: zero_row_omission_arcane
   compression:
     effectiveness: 0.00
     stacking: multiplies

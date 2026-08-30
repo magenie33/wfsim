@@ -3,9 +3,7 @@ name: Paragon Essence
 weapon: dera_vandal
 tier: 2
 description: "Increase Base Damage by +4. On Status Effect: +5% Fire Rate for 5 seconds. Stacks up to 6x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -19,8 +17,7 @@ effects:
   # ADDITIVE WITH FIRE-RATE MODS: "Fire Rate bonus stacks additively with other
   # fire rate bonuses such as Speed Trigger" (notes cell).
   #
-  # The stack cap was a separate inert effect until now; it is this grant's
-  # ceiling, not a mechanic of its own.
+  # see notes: stack_cap_was_separate
   - kind: stacking_buff
     trigger: status_applied
     per_stack:

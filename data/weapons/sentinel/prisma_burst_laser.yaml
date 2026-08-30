@@ -1,8 +1,6 @@
 id: prisma_burst_laser
 name: Prisma Burst Laser
-# SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
-# companion. NO exilus slot and NO arcane; both follow from `class` containing
-# "sentinel", so their absence here is a fact rather than an omission.
+# see notes: sentinel_weapon_own_equipment
 slot: sentinel
 class: sentinel_weapon
 form: base
@@ -25,13 +23,9 @@ internal_name: /Lotus/Types/Sentinels/SentinelWeapons/PrismaBurstLaserPistol
 noise: alarming
 magazine: 15
 reload_seconds: 0.01
-# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
-# economy to model, so no `ammo_max`. The magazine and reload are real.
+# see notes: sentinel_weapons_draw_from
 
-# No Condition Overload row for this weapon, so the ordinary class — the
-# catalog "lists only discrepant attacks. Anything not listed should be assumed
-# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
-# appears in it at all).
+# see notes: no_condition_overload_row
 co_behavior: additive_with_base_damage
 
 attack:
@@ -55,6 +49,4 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Burst_Laser
-  # Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
-  # `warframe-items` supplied `internal_name` and was cross-checked on the
-  # rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).
+  # see notes: every_stat_wiki_page

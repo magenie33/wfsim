@@ -9,16 +9,12 @@ class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE
-# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
-# Eleanor, so there is no lich to vanquish under the requirement.
+# see notes: enforced_unlike_kuva_or
 mastery_rank: 17
-# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
-# at rank 40 after 5 polarizations, granting the weapon additional mod
-# capacity" (docs/INVESTMENT.md).
+# see notes: rank_40_30_polarizing
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 20.0
 disposition: 0.95            # riven disposition
 polarities: [madurai, madurai]
@@ -36,8 +32,7 @@ ammo_pickup: 0
 magazine: 72
 reload_seconds: 2.0
 
-# Condition Overload: THE CATALOG NAMES THIS ONE and it is MULTIPLYING. Verbatim
-# row (docs/CATALOGS.md §1):
+# see notes: condition_overload_catalog_names_2
 #
 #   Weapon    | Attack Name   | Projectile Type | Attack Unmodded Damage
 #             | Actual CO Damage Bonus at +100% | CO Damage Bonus Relative To
@@ -60,8 +55,7 @@ valence:
   max: 0.60
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 10.0

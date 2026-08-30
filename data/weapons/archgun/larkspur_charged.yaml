@@ -26,8 +26,7 @@ accuracy: 100                # "Very High" for the alt-fire, like the Prime's
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0
@@ -46,16 +45,13 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column, Alt-Fire Projectile Impact: "Range: 100.0 m", Projectile (its 9.6 m explosion is a RADIUS). The BEAM is 40 m — a form states its own
   range_m: 100.0
-  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
-  # (docs/CATALOGS.md §2):
+  # see notes: primary_compression_published_table
   #
   #   Larkspur (Atmosphere) | Charged Shot + AoE | 0% | Doesn't Work | N/A |
   #   "Archguns cannot equip mod" — the ARCHWING row is 'Untested', and this
   #   roster ships the ATMOSPHERE column
   #
-  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
-  # attack at all, and saying so is the difference between "checked" and
-  # "nobody looked".
+  # see notes: zero_row_omission_arcane
   compression:
     effectiveness: 0.00
     stacking: multiplies

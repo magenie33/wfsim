@@ -14,8 +14,7 @@ mastery_rank: 15
 # RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 9.09
 disposition: 1.0
 polarities: []
@@ -31,12 +30,10 @@ ammo_pickup: 15
 magazine: 4
 reload_seconds: 1.9
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row_5
 co_behavior: additive_with_base_damage
 
-# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
-# quoted Characteristic. Seven elements, never Puncture and never Slash.
+# see notes: progenitor_bonus_see_data
 valence:
   elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
   min: 0.25
@@ -58,8 +55,7 @@ attack:
   # PER PELLET, so seven rolls a shot.
   status_chance: 0.133
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m", Hit-Scan
+  # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   # …AND A RAMP AS WELL: "100% below 15m, linear to 17.2% at 30m+".
   falloff:

@@ -13,8 +13,7 @@ mod_pools: [pistol]
 mastery_rank: 9
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 13.3
 disposition: 1.15            # riven disposition — shared with the ordinary Detron
 polarities: []               # the infobox states none
@@ -36,8 +35,7 @@ reload_seconds: 1.05
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 6.0
     max_deg: 9.0

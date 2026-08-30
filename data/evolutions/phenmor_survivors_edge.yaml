@@ -4,10 +4,7 @@ weapon: phenmor
 tier: 4
 icon: XCritChanceYStatChance(xWhite).png
 description: "Increase Base Critical Chance by +10%. Increase Base Status Chance by +10%."
-# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
-# belongs to the weapon rather than to an adapter shared by a family. Five
-# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
-# differently from the 31 adapters.
+# see notes: natural_incarnon_phenmor_carries
 selection: choose_one
 
 effects:

@@ -10,17 +10,9 @@ tier: 1
 # fetcher now checks magic bytes so the next wrong guess is loud.
 icon: ShortRangeBeams(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.\nFire up to three short-range chaining Heat beams."
-# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
-# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
-# SAME evolutions: every row spans both weapon columns with a dash
-# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
-# difference". So the value below is THIS weapon's, which happens to be the same
-# number the other one carries — and if DE ever splits them, the table grows a
-# real cell and the two files diverge there.
+# see notes: genesis_family_s_boar
 #
-# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE. A file
-# that states two weapons' values is a file where the reader has to work out
-# which one they are looking at, every time.
+# see notes: no_other_variant_says
 selection: fixed                # tier 1 has no choice
 
 # Under the two-weapons model this perk IS the unlock of weapon #2: the held

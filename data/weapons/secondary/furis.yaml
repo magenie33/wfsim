@@ -51,9 +51,7 @@ reload_seconds: 1.4
 # CONDITION OVERLOAD — the catalog HAS a Furis row, and it is not about this
 # entry. Verbatim:
 #
-#   Furis | Incarnon Mode | Projectile | 100 or 128 (with Evolution II) | 100 |
-#     100% or 78% | Adding | "CO-bonus does not use base damage increase
-#     Evolution"
+# see notes: furis_incarnon_mode_projectile
 #
 # That row is the INCARNON FORM's, which this roster does not carry yet (see
 # the note at the bottom). The base form has no row, and absence in that
@@ -69,8 +67,7 @@ reload_seconds: 1.4
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 1
     max_deg: 8

@@ -44,8 +44,7 @@ unmodeled:
   - "the innate reload while holstered or deployed (33% of the magazine per second) — this arena never holsters the weapon"
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 12

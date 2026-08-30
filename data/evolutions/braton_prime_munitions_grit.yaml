@@ -3,38 +3,21 @@ name: Munitions Grit
 weapon: braton_prime
 tier: 2
 description: "Increase Base Damage by +2. Multishot consumes ammo directly from Capacity and does +54% Damage. +20% Multishot."
-# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
-# four Bratons, so all four carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_braton
 selection: choose_one
 
 # CO'S BASE EXCLUDES THIS PERK'S FLAT DAMAGE — the catalog's Braton row.
 #
-# docs/CATALOGS.md: "Braton family | Incarnon Form Radial | 95% | Adding |
-# derived: 70 + 4 = 74, 70/74". That +4 is Daring Reverie's, and Munitions Grit
-# is its tier-2 twin — flagged together the way the Atomos's, the Zylok's and
-# the Burston's tier-2 pairs already are.
+# see notes: docs_catalogs_md_braton
 #
-# WHY IT REACHES THE DIRECT HIT AND NOT ONLY THE ROW'S NAMED PART. The exclusion
-# belongs to the PERK, not to the attack part: the +4 raises whatever it lands
-# on, and CO reads the base BEFORE it wherever that is. Measured on the Burston
-# (MEASUREMENTS M48) — five readings across both of its forms, at two fractions
-# — and the Zylok family was already flagged this way. This is the third and
-# last of the catalog's three DERIVED-fraction rows; the other two were treated
-# so, and it was not.
+# see notes: why_reaches_direct_hit
 #
-# NOT A GENERALISATION TO WEAPONS WITHOUT A ROW. The default stays what the
-# catalog says it is: follow the wiki, and let a MEASUREMENT
-# re-certify an entry. Absence still means ordinary.
+# see notes: generalisation_weapons_without_row
 co_base_excludes_this_evolution: true
 effects:
   - kind: flat_base_damage
     value: 2.0
-  # The multishot surcharge, whose four rules are transcribed in full on
-  # data/evolutions/torid_plentiful_mayhem.yaml — an INDEPENDENT multiplier, on
-  # the projectiles multishot GENERATED only, paid for out of Capacity, and able
-  # to STARVE when the pool runs low.
+  # see notes: multishot_surcharge_whose_four
   - kind: multishot_consumes_ammo
     value: 0.54
   # NOT LOADED: the loader has no flat-multishot arm for an evolution. It would

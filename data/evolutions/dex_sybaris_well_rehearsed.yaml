@@ -3,9 +3,7 @@ name: Well Rehearsed
 weapon: dex_sybaris
 tier: 2
 description: "Increase Base Damage by +15. On Consecutive Weakpoint Hits: Increase Base Damage by +5. Stacks up to 3x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -30,8 +28,7 @@ effects:
   # NO CLOCK. What ends the pile is what you hit next, so a duration would be a
   # second ending nobody wrote.
   #
-  # The stack cap was a separate inert effect until now; it is this grant's
-  # ceiling, not a mechanic of its own.
+  # see notes: stack_cap_was_separate
   - kind: stacking_buff
     trigger: consecutive_headshot
     per_stack:

@@ -6,10 +6,7 @@ base_drain: 2                 # max drain 12 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleSPMod
 description: "On Headshot:\n+X% Critical Chance when Aiming for Xs\nOn Headshot Kill:\n+X% Critical Chance when Aiming for Xs. Stacks up to Xx."
-# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
-# (`IncompatibilityTags`) — the same list the mod infobox prints. The
-# WFCD export carries no such field, so this module is the only
-# structured source for what a mod REFUSES to be equipped on.
+# see notes: de_s_own_incompatibility
 excludes_weapon: [power_weapon]
 
 effects:

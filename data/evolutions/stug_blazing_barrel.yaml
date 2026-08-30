@@ -3,26 +3,18 @@ name: Blazing Barrel
 weapon: stug
 tier: 2
 description: "Increase Base Damage by +175. On Firing: +5% Multishot. Stacks up to 10x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
   # from: "Increase Base Damage by +175"
   - kind: flat_base_damage
     value: 175.0
-  # BLAZING BARREL. Two clauses on the card and ONE mechanic: the stack cap
-  # belongs to the grant above it, and the bulk intake filed it as an effect of
-  # its own.
+  # see notes: blazing_barrel_two_clauses_2
   #
-  # "+5% Multishot" — a PERCENTAGE of the weapon's base, which is what a
-  # multishot MOD grants, so it joins their bucket. The Strun family's Blazing
-  # Barrel reads "+0.05 BASE Multishot" and lands in a different bracket; the
-  # name is shared and the number is not, which is why `base:` is required.
+  # see notes: 5_multishot_percentage_weapon
   #
-  # NO DURATION — VERBATIM (wiki): "There is no timer—the stacks persist until
-  # a reload occurs."
+  # see notes: no_duration_verbatim_wiki
   - kind: stacking_multishot_on_firing
     base: false
     per_stack: 0.05

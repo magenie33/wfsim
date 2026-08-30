@@ -14,10 +14,7 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/RifleSemiAutoFantasyMod
 requires_weapon: semi_auto
 
 description: "Only compatible with Semi-Auto Trigger. Fire Rate cannot be modified.\n+X% Damage\n+X Punch Through"
-# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
-# (`IncompatibilityTags`) — the same list the mod infobox prints. The
-# WFCD export carries no such field, so this module is the only
-# structured source for what a mod REFUSES to be equipped on.
+# see notes: de_s_own_incompatibility
 excludes_weapon: [modular_gun]
 # Both halves of the card's first line, MODELLED rather than stated in prose —
 # the pistol twin carries the same pair.

@@ -3,15 +3,11 @@ name: Reaper's Plenty
 weapon: vasto_prime
 tier: 4
 description: "On Headshot: +100% Ammo Efficiency for 2 seconds."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
-  # this simulator cannot pay it out, and the reason will not change with
-  # any amount of work on evolutions.
+  # see notes: edge_gap_see_docs
   - kind: out_of_scope
     clause: "On Headshot: +100% Ammo Efficiency for 2 seconds"
     reason: infinite_ammo

@@ -24,8 +24,7 @@ attack:
   status_chance: 0.33
   # NO PUNCH THROUGH from the hip — the aimed burst's 0.5 m is that mode's.
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m", Hit-Scan
+  # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { impact: 19.98, puncture: 15.66, slash: 18.36 }   # total 54
 

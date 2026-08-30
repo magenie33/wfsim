@@ -4,8 +4,7 @@ name: Burston Prime (Incarnon Form)
 # rather than this shot is inherited from `burston_prime`, and only what
 # DIFFERS is written here. See `weapons_data::INHERITED`.
 inherits: burston_prime
-# Gauge-switched: entering it costs a charge meter and a transmute animation,
-# which is what gives the sim a two-form CYCLE to run.
+# see notes: gauge_switched_entering_costs
 form: incarnon
 
 # TWO WEAPONS MODEL: second entry of the transform group — see
@@ -45,8 +44,7 @@ gauge_form:
     #   removes both.
   transmute:
     activation: alt_fire
-    # VERBATIM: "Mode switching is not instantaneous and has an animation equal
-    # to the weapon's reload speed."
+    # see notes: verbatim_mode_switching_instantaneous
     animation_seconds: reload_speed
     auto_transmute_out: on_incarnon_ammo_empty
     # "Swapping to and from Incarnon Form will fully reload the normal form's
@@ -86,8 +84,7 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 2
     max_deg: 5
@@ -117,9 +114,7 @@ attack:
     radius_calculation: snapshot
 
   radial:
-    # A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
-    # which is why this weapon takes punch-through mods where an ordinary
-    # explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+    # see notes: terminal_blast_bores_through
     blast_kind: terminal
     damage: { heat: 13.0 }
     radius_m: 2.0

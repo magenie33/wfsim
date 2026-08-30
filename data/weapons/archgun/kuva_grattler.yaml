@@ -58,8 +58,7 @@ valence:
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 5
     max_deg: 7
@@ -81,15 +80,12 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 225.0 m", Projectile
   range_m: 225.0
-  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
-  # (docs/CATALOGS.md §2):
+  # see notes: primary_compression_published_table
   #
   #   Grattler (Kuva Grattler) | Primary Fire + AoE | 0% | Doesn't Work |
   #   N/A | "Archguns cannot equip mod"
   #
-  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
-  # attack at all, and saying so is the difference between "checked" and
-  # "nobody looked".
+  # see notes: zero_row_omission_arcane
   compression:
     effectiveness: 0.00
     stacking: multiplies

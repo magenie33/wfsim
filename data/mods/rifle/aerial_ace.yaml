@@ -7,10 +7,7 @@ max_rank: 5
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/JumpRefreshOnKillRifleMod
 description: "On Kill:\nRefresh Double Jump up to Xx while Airborne."
-# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
-# (`IncompatibilityTags`) — the same list the mod infobox prints. The
-# WFCD export carries no such field, so this module is the only
-# structured source for what a mod REFUSES to be equipped on.
+# see notes: de_s_own_incompatibility
 excludes_weapon: [power_weapon]
 
 effects:

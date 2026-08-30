@@ -21,16 +21,12 @@ deployments:
 co_behavior: independent
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 7
   trigger: semi_auto
-  # NO CHARGE. An uncharged shot has no draw at all, and `charge_seconds: 0.0`
-  # is refused outright — "a 0.0 charge outside a bow is just a fire rate".
-  # Omitting it is the spelling that means "no draw"; a bow may state a zero
-  # because there the draw IS the cycle and the magazine is one arrow.
+  # see notes: no_charge_uncharged_shot
   shot_type: projectile
   projectile_speed_mps: 125
   fire_rate: 5.0

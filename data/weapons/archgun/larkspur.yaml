@@ -54,8 +54,7 @@ co_behavior: additive_with_base_damage
 # a COMBINED element, so it cannot be consumed by a mod pairing and enters the
 # hierarchy last (MECHANICS §3 rule 2).
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 10
     max_deg: 14

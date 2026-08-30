@@ -58,8 +58,7 @@ beam_ramp_floor: 0.30
 # is a hit-location mechanic this arena has no aim for.
 applies_microwave: true
 
-# No CO catalog row for this attack, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+# see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
 # THE VALENCE BONUS — what this weapon CAN have, never what a given copy does.
@@ -84,8 +83,7 @@ valence:
   max: 0.60
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0

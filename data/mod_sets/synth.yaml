@@ -5,9 +5,7 @@ name: Synth
 #   Holstering Primary and Secondary weapons reloads X% of their Magazine per
 # second.
 #
-# NOT MODELLED, and declared rather than left undefined — which is the whole
-# convention here (see hunter.yaml): a set whose bonus does nothing for the
-# WEAPON is still written down, so the app can say so instead of being silent.
+# see notes: modelled_declared_rather_than
 #
 # THE HOLSTER, which is the one on this list that would pay real damage if the
 # arena ever grew it: a magazine refilling while stowed is exactly the Felarx

@@ -4,10 +4,7 @@ weapon: latron
 tier: 3
 icon: IncarnonClipSize(xWhite).png
 description: "Increase Base Magazine Capacity by +15."
-# THE GENESIS IS THE FAMILY'S. One Latron Incarnon Genesis upgrades any of the
-# three Latrons, so all three carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_latron
 selection: choose_one
 
 effects:

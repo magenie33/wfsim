@@ -12,8 +12,7 @@ mod_pools: [primary, shotgun]
 mastery_rank: 8
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 4.0
 disposition: 1.1             # riven disposition
 polarities: [vazarin]
@@ -29,8 +28,7 @@ ammo_pickup: 15
 magazine: 4
 reload_seconds: 1.2
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
 attack:

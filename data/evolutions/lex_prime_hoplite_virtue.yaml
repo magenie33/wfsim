@@ -3,10 +3,7 @@ name: Hoplite Virtue
 weapon: lex_prime
 tier: 2
 description: "Increase Base Damage by +20. On Shield Break: Increase Base Damage by +80 for 8 seconds."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
-# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+# see notes: genesis_family_s_adapter_3
 #
 #   Lex Prime||Incarnon Mode||…||1200 or 1220 (with Evolution II)||1200||100% or 98%||Adding||CO-bonus does not use base damage increase Evolution
 #
@@ -18,16 +15,9 @@ effects:
   # from: "Increase Base Damage by +20"
   - kind: flat_base_damage
     value: 20.0
-  # AN EDGE, NOT A GAP. WHOSE shield is the whole question, and only one page
-  # in the family answers it — the Gorgon's notes cell: "This is on personal
-  # shield break, not breaking enemy shields." The Lex's page says nothing at
-  # all, so reading the weapon you are working on would have left it a coin
-  # flip between a trigger this sim fires constantly and one it can never fire.
+  # see notes: edge_gap_whose_shield
   #
-  # Personal shields break when something SHOOTS YOU, and nothing does here
-  # (UNMODELLED.md §6). So this pays exactly zero in every fight this simulator
-  # runs, today and after any amount of work on evolutions — which is a
-  # different sentence from "not modelled yet" and now reads as one.
+  # see notes: personal_shields_break_when
   - kind: out_of_scope
     clause: "On Shield Break: Increase Base Damage by +80 for 8 seconds"
     reason: nobody_shoots_back

@@ -3,29 +3,18 @@ name: Blazing Barrel
 weapon: mk1_strun
 tier: 2
 description: "Increase Base Damage by +68. On Firing: +0.05 Base Multishot. Stacks up to 5x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
   # from: "Increase Base Damage by +68"
   - kind: flat_base_damage
     value: 68.0
-  # BLAZING BARREL. Two clauses on the card and ONE mechanic: the stack cap
-  # belongs to the grant above it, and the bulk intake filed it as an effect of
-  # its own — which is why "Stacks up to Nx" was the single commonest inert
-  # kind in the whole roster.
+  # see notes: blazing_barrel_two_clauses
   #
-  # "+0.05 BASE Multishot": added before mods and therefore multiplied by them,
-  # the bracket the wiki spells out on Forceful Finality ("added before mods,
-  # and is thus multiplied by multishot bonuses"). The Sybaris family's Blazing
-  # Barrel grants a PERCENTAGE instead and says so; same name, different number
-  # on any build with a multishot mod, so `base:` is required here.
+  # see notes: 0_05_base_multishot
   #
-  # NO DURATION — the card states none and the wiki states the reset instead:
-  # "resets entirely upon reloading. Entering Incarnon Form counts as reloading
-  # but exiting does not."
+  # see notes: no_duration_card_states
   - kind: stacking_multishot_on_firing
     base: true
     per_stack: 0.05

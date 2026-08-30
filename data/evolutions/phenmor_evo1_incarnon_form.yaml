@@ -3,10 +3,7 @@ name: Incarnon Form
 weapon: phenmor
 tier: 1
 description: "Weakpoint Hits charge Incarnon Transmutation; Alt Fire transmutes. Switching back will expend any remaining charge."
-# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
-# belongs to the weapon rather than to an adapter shared by a family. Five
-# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
-# differently from the 31 adapters.
+# see notes: natural_incarnon_phenmor_carries
 selection: fixed
 
 effects:

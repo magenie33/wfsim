@@ -7,21 +7,15 @@ transform_group: cyanex
 
 introduced: "25.0"
 
-# Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
-# (docs/CATALOGS.md §1):
+# see notes: condition_overload_catalog_names
 #
 #   Cyanex | Burst Mode | Projectile | 72 | 72 | 100% | Multiplying
 #
-# THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
-# ordinary class assumed because nobody had opened the catalog for this
-# weapon — the check was run against our own transcription of it, which
-# only ever carried the rows the roster already had.
+# see notes: entry_read_adding_at
 co_behavior: independent
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 1.0
     max_deg: 1.5
@@ -35,8 +29,7 @@ attack:
   crit_multiplier: 1.4
   status_chance: 0.32
   punch_through_m: 0.5
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack
   damage: { impact: 2.88, puncture: 30.24, slash: 38.88 }   # total 72
   # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
   # say properly: `count` is a constant and the real number is however many

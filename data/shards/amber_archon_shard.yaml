@@ -1,15 +1,10 @@
 # Amber Archon Shard — an ARCHON SHARD, one of five sockets on a Warframe.
 #
-# A SHARD IS A PICK, not a mod: the socket holds ONE of the effects below, and a
-# TAUFORGED shard of the same colour grants the larger number ("50% higher stat
-# bonuses"). So a Warframe carries up to five (colour, effect, tauforged) picks.
+# see notes: shard_pick_mod_socket
 #
-# It rides on the fight's Tenno for the same reason an aura does — it is the
-# WARFRAME's, not the weapon's.
+# see notes: rides_fight_s_tenno
 #
-# EVERY EFFECT IS LISTED, including the ones this simulator cannot pay. A shard
-# that is absent reads as a shard that does nothing, and the reader cannot tell
-# that from one that was never transcribed.
+# see notes: every_effect_listed_including
 id: amber_archon_shard
 name: Amber Archon Shard
 colour: amber

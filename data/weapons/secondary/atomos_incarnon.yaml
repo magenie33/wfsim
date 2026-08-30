@@ -7,14 +7,7 @@ form: incarnon
 transform_group: atomos
 transforms_from: atomos
 
-# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-# array, which is DE's own export and which agreed with the wiki infobox field
-# for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half: transcribed from the wiki's table,
-# with every clause the intake's rule engine did not recognise loaded as a
-# NAMED INERT effect that the builder and the optimizer both print as "not
-# modelled yet". Nothing is dropped in silence — some perks do nothing
-# yet and say so on their own tile.
+# see notes: bulk_intake_stats_are
 
 gauge_form:
   gauge:
@@ -36,13 +29,11 @@ pseudo_reload:
   magazine: 21
   reload_seconds: 3.0
 
-# No CO catalog row for this attack, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+# see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0
@@ -66,8 +57,7 @@ attack:
     crit_chance: 0.18
     crit_multiplier: 3
     status_chance: 0.41
-    # NOT DECLARED: no CO catalog row for this weapon, so the radial
-    # takes the engine's default — no Condition Overload on an explosion.
+    # see notes: declared_no_co_catalog
 
 # incarnon_evolutions: see data/weapons/secondary/atomos.yaml (shared group)
 

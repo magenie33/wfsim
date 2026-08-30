@@ -1,10 +1,7 @@
 id: torment
 name: Torment
 image: ControlAcolyte.png
-# One of the Stalker's six Acolytes. The statline, the stack caps and the
-# 1x head below are the family's, identical across all six — they are written
-# out here rather than shared because a target has to stand on its own, and
-# explained once in angst.yaml. Sourcing: docs/DATA_SOURCES.md §Acolytes.
+# see notes: stalker_s_six_acolytes
 faction: stalker                   # no faction damage MOD exists for Stalker
 scaling_faction: unaffiliated      # the catch-all row (MECHANICS.md §8)
 can_be_eximus: false

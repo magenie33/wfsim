@@ -1,19 +1,12 @@
 id: cryotra
 name: Cryotra
-# SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
-# companion. NO exilus slot and NO arcane; both follow from `class` containing
-# "sentinel", so their absence here is a fact rather than an omission.
+# see notes: sentinel_weapon_own_equipment
 slot: sentinel
 class: sentinel_weapon
 form: base
 default_form: true
 
-# RIFLE MODS. The pool is PER WEAPON on this class and it is the field most
-# worth getting right: a sentinel weapon is not a Primary, DE's compat tag is
-# SentinelWeapons rather than LongGuns, and the page's own "Mod Pool" row is
-# what decides. This one says Rifle. The `primary` pool (Hunter Munitions,
-# Vigilante) is NOT claimed — unsourced either way, and omitting compatibility
-# we cannot cite beats inventing it (the rule verglas_prime.yaml set).
+# see notes: rifle_mods_pool_per
 mod_pools: [rifle]
 mastery_rank: 0
 max_rank: 30
@@ -29,18 +22,13 @@ internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapo
 noise: alarming
 magazine: 3
 reload_seconds: 5.0
-# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
-# economy to model, so no `ammo_max`. The magazine and reload are real.
+# see notes: sentinel_weapons_draw_from
 
-# No Condition Overload row for this weapon, so the ordinary class — the
-# catalog "lists only discrepant attacks. Anything not listed should be assumed
-# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
-# appears in it at all).
+# see notes: no_condition_overload_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 40
     max_deg: 40
@@ -68,6 +56,4 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Cryotra
-  # Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
-  # `warframe-items` supplied `internal_name` and was cross-checked on the
-  # rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).
+  # see notes: every_stat_wiki_page

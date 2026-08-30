@@ -3,9 +3,7 @@ name: Haven Foray
 weapon: angstrum
 tier: 2
 description: "Increase Base Damage by +50. With Overshields: Increase Base Damage by +50."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -17,19 +15,13 @@ effects:
   # from: "Increase Base Damage by +50"
   - kind: flat_base_damage
     value: 50.0
-  # …and the SAME statement, gated on the player. "With Overshields" is a
-  # question about who is carrying the gun, exactly as "With Armor Over 450" and
-  # "With Energy Max Over 700" are, so it is one more `TennoGate` — a yes/no,
-  # since the card asks whether you HAVE them and not how many.
+  # see notes: same_statement_gated_player
   #
   # It folds through `WeaponBase::add_flat_base_damage`, the same call the flat
   # perk above makes: the base vector scales pro-rata and the explosion takes it
   # too, so a gated +50 and a plain +50 are the same weapon.
   #
-  # NOTHING HERE TAKES OVERSHIELDS AWAY (UNMODELLED.md — nobody shoots back), so
-  # this is a state the player declares rather than one the fight tracks. Off by
-  # default, like every other Tenno field: with nobody having said so, the
-  # wielder claims nothing.
+  # see notes: nothing_here_takes_overshields
   - kind: gated_by_tenno
     condition: overshields
     grant: flat_base_damage

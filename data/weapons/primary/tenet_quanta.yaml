@@ -11,13 +11,10 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, BEAM, ASSAULT_AMMO
 transform_group: tenet_quanta
 mastery_rank: 16
-# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
-# at rank 40 after 5 polarizations, granting the weapon additional mod
-# capacity" (docs/INVESTMENT.md).
+# see notes: rank_40_30_polarizing
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 100.0
 disposition: 0.75            # riven disposition
 polarities: [vazarin, madurai, naramon]
@@ -33,8 +30,7 @@ ammo_pickup: 80
 magazine: 100
 reload_seconds: 2.0
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%. Absence means ORDINARY.
+# see notes: condition_overload_no_row_6
 co_behavior: additive_with_base_damage
 
 # THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
@@ -48,8 +44,7 @@ valence:
   max: 0.60
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0

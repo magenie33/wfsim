@@ -22,11 +22,7 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode"
 attack:
-  # A SWING IS NOT A TRIGGER PULL. The engine reads this field for exactly
-  # three values — `held` (a beam), `charge` and `burst` — so `melee` matches
-  # none of them and is simply the truth; the page then prints the form's name
-  # with no parenthetical, where `semi_auto` had it reading "Neutral Combo
-  # (semi-auto)".
+  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 0.833
@@ -39,10 +35,7 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.4
-  # THE CLASS'S HEAVY ATTACK — 6x with a 1.2 s charge, from the wiki's
-  # per-weapon-type table. Stated on EVERY form including the light ones,
-  # because TENNOKAI turns one of their swings into a heavy attack and a form
-  # with no heavy of its own could not fire the swing the window buys.
+  # see notes: class_s_heavy_attack
   heavy: { multiplier: 6.0, windup_seconds: 1.2 }
   spends_combo: true
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }

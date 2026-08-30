@@ -8,24 +8,11 @@ mod_pools: [primary, rifle]
 mastery_rank: 6
 max_rank: 30
 
-# TWO WEAPONS MODEL: base and Incarnon forms are
-# separate entries linked by a transform group.
+# see notes: two_weapons_model_base
 transform_group: miter
 transforms_to: miter_incarnon
 
-# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-# array, which is DE's own export and which agreed with the wiki infobox field
-# for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half: transcribed from the wiki's table,
-# with every clause the intake's rule engine did not recognise loaded as a
-# NAMED INERT effect that the builder and the optimizer both print as "not
-# modelled yet". Nothing is dropped in silence — some perks do nothing
-# yet and say so on their own tile.
-# NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
-# multi-part base needs a SECOND weapon entry to be right; the Cernos
-# Prime is the pattern (uncharged and charged are two entries in one
-# transform group). Until that exists, this weapon's number is the number
-# for the part named in `attack:` below and NOT for the whole weapon.
+# see notes: bulk_intake_stats_are_2
 unmodeled:
   - "the Uncharged Shot is not modelled — this entry carries only the Charged Shot"
   - reason: spread_not_transcribed
@@ -44,8 +31,7 @@ ammo_pickup: 40
 magazine: 20
 reload_seconds: 2
 
-# THE CATALOG GIVES THIS ATTACK ITS OWN FRACTION, and it is per WEAPON rather
-# than a range across the family — the row, verbatim:
+# see notes: catalog_gives_attack_own
 #
 #   |{{Weapon|Miter}}||Charged Attack||Projectile||500||200||40%||Adding||CO-bonus only applies to base (partially charged) damage; uses bows mechanics; has innate 2x damage multiplier when fully charged
 #

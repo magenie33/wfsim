@@ -4,9 +4,7 @@ name: Motus
 #
 #   X% chance to become immune to Knockdown effects while Airborne.
 #
-# NOT MODELLED, and declared rather than left undefined — which is the whole
-# convention here (see hunter.yaml): a set whose bonus does nothing for the
-# WEAPON is still written down, so the app can say so instead of being silent.
+# see notes: modelled_declared_rather_than
 #
 # Defensive, and nobody knocks this player down: nothing shoots back here. The
 # arena does track `airborne`, so the CONDITION is expressible — the payload

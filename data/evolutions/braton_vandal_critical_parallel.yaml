@@ -3,16 +3,11 @@ name: Critical Parallel
 weapon: braton_vandal
 tier: 4
 description: "Increase Base Critical Chance by +16%. Increase Base Critical Damage Multiplier by +0.4x."
-# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
-# four Bratons, so all four carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_braton
 selection: choose_one
 
 effects:
-  # Both are BASE-stat additions, so the crit mods multiply the new base —
-  # "Increase Base Critical Chance" / "Increase Base Critical Damage
-  # Multiplier" is the wiki's own wording.
+  # see notes: both_are_base_stat
   - kind: flat_base_crit_chance
     value: 0.16
   - kind: flat_base_crit_multiplier

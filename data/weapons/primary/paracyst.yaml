@@ -11,9 +11,7 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASS
 mastery_rank: 7
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
-# NO ACCURACY ROW — the module states none for this weapon.
+# see notes: weapon_level_metadata_wiki_4
 disposition: 1.31           # riven disposition
 polarities: [vazarin]
 exilus_polarity: naramon
@@ -28,21 +26,16 @@ ammo_pickup: 80
 magazine: 60
 reload_seconds: 2
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
-# — ordinary Additive at the full +100%. The catalog gives a class PER
-# ATTACK and none of this weapon's is named.
+# see notes: condition_overload_no_row_3
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
     max_deg: 4.0
   trigger: burst
-  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 3 rounds
-  # spaced by the delay below.
+  # see notes: burst_listed_fire_rate_2
   burst:
     count: 3
     delay_seconds: 0.05       # module BurstDelay
@@ -55,8 +48,7 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.3
   punch_through_m: 0.0
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack
   damage: { toxin: 33 }   # total 33
 
 unmodeled:

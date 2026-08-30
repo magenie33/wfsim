@@ -48,8 +48,7 @@ co_behavior: additive_with_base_damage
 # STATUS CHANCE IS PER PROJECTILE TOO, which is why it reads lower than the base
 # form's: three chances at 0.0933 against one at 0.14.
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 8
     max_deg: 12
@@ -62,10 +61,7 @@ attack:
   crit_chance: 0.22
   crit_multiplier: 2.8
   status_chance: 0.0933
-  # Module:Weapons/data, this form's own attack row (Incarnon Form). It read 0.0
-  # until 2026-08-21 — not a measurement, an unfilled field, and one that
-  # was harmless while the arena had a single body and stopped being so
-  # when `space::traverse` started spending it (AGENTS.md, punch through).
+  # see notes: module_weapons_data_form
   punch_through_m: 0.6
   damage: { impact: 0.4, puncture: 1.2, slash: 2.4 }   # total 4 per projectile
   # NO RADIAL. This form is a spread of bolts, not an explosion — the only

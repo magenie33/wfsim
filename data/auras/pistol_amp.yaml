@@ -1,8 +1,6 @@
 # Pistol Amp — an AURA, which is the SQUAD's mod rather than the weapon's.
 #
-# Auras are on the WARFRAME, so this file is read into the fight's Tenno beside
-# armour and energy — the block that becomes a real frame when frames are built. Nothing here is a weapon stat and nothing belongs in a
-# build: two players with the same gun and different squads are two fights.
+# see notes: auras_are_warframe_file
 #
 # The pistol half of Rifle Amp.
 id: pistol_amp

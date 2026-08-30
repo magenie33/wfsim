@@ -3,17 +3,11 @@ name: Wiseman's Regard
 weapon: sicarus
 tier: 4
 description: "Increase Base Status Chance by 30% of current Critical Chance, up to 40%."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
-  # ONE STAT FROM THE OTHER, capped. "CURRENT Critical Chance" is the MODDED
-  # value, and the mirror perk's own note is the proof: the Dera's High Ground
-  # reads "+366.7% Status Chance is needed to max out the Critical Chance bonus",
-  # and 0.30 x (1 + 3.667) = 1.40 is exactly what a 35% cap at 25% a point
-  # demands. Same arithmetic, read the other way round.
+  # see notes: stat_from_other_capped
   #
   # "BASE Status Chance" is where the grant LANDS, so the status mods multiply
   # it afterwards — which is what makes this worth more on a build that already

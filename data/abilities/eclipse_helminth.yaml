@@ -1,16 +1,8 @@
 # A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
 #
-# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
-# player's own frame) does to this weapon for a while. It belongs to the
-# SCENARIO — two builds compared under the same Roar is a comparison, one of
-# them getting it is not — and the BOARD carries none of these, which is what
-# keeps a board row a statement about the weapon.
+# see notes: mod_arcane_weapon_perk
 #
-# EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
-# frame layer it will eventually live in, so the section is deliberately small:
-# pick the buff, set the strength, set how long it lasts. When frames land, the
-# strength comes from the frame and the duration from Ability Duration, and
-# these files stay as they are.
+# see notes: early_access_said_page
 
 # +30% subsumed against Mirage's +200% (wiki) — the widest gap of any pair
 # here, which is why offering both mattered.
@@ -18,18 +10,13 @@
 id: eclipse_helminth
 name: Eclipse (Helminth)
 frame: Helminth
-# Which buffs REPLACE each other rather than adding. Same family =
-# only the strongest is running (wiki, Freeze Force).
+# see notes: which_buffs_replace_each
 family: eclipse
 helminth: true
 
-# At MAX RANK and 100% Ability Strength. The page multiplies by the
-# strength you set; there is no per-rank table, because a calculator
-# is asked what a maxed ability does.
+# see notes: at_max_rank_100
 value: 0.3
-# Max rank at 100% Ability Duration, in seconds. The page lets you
-# override it — or run the whole fight, which is the honest way to
-# ask what a weapon is worth UNDER Roar rather than around it.
+# see notes: max_rank_at_100
 duration_seconds: 25
 
 effect:

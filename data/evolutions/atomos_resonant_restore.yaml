@@ -3,13 +3,7 @@ name: Resonant Restore
 weapon: atomos
 tier: 3
 description: "On Reload From Empty: Increase Base Magazine Capacity by +5. Stacks up to 7x. Does not affect Incarnon Form."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
-# BASE FORM ONLY — the card's last clause, "Does not affect Incarnon Form",
-# qualifies the whole perk. The evolution is still EQUIPPED in both forms (one
-# Genesis ladder), so the engine skips it when building the Incarnon entry
-# rather than refusing to select it.
+# see notes: genesis_family_s_adapter_2
 base_form_only: true
 selection: choose_one
 
@@ -19,16 +13,11 @@ effects:
   #     Stacks up to '''7x'''.
   #   * This bonus does not affect Incarnon form
   #
-  # "BASE Magazine Capacity", so a magazine mod multiplies every stack —
-  # `resolve` scales the per-stack value before the sim ever sees it, the same
-  # units conversion a flat base-damage grant takes.
+  # see notes: base_magazine_capacity_magazine
   #
-  # NO CLOCK ON THIS CARD, in any of the three families that carry it: nothing
-  # says the stacks expire and nothing says an event takes them, so the cap is
-  # the only thing that stops it.
+  # see notes: no_clock_card_any
   #
-  # THE MAGAZINE GROWS, IT DOES NOT FILL. A reload still draws from the reserve
-  # as it always did; what the stack buys is room for the next draw to use.
+  # see notes: magazine_grows_does_fill
   - kind: magazine_growth_on_empty_reload
     per_stack: 5.0
     max_stacks: 7

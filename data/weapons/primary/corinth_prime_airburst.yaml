@@ -7,14 +7,11 @@ transform_group: corinth_prime
 
 introduced: "27.3.6"
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
-# weapon's is named. Absence means ORDINARY.
+# see notes: inherited_co_catalog_gives_2
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 6.0
     max_deg: 16.0
@@ -31,10 +28,7 @@ attack:
   punch_through_m: 0.0
   # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
   forced_procs: [impact]
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
-  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
-  # (docs/CATALOGS.md §2):
+  # see notes: no_range_row_attack_2
   #
   #   Corinth (Corinth Prime) | Alt-Fire + AoE | 100% | Multiplies |
   #   Snapshot

@@ -8,8 +8,7 @@ internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingCCImmunityIfAimingMod
 description: "+X% Chance to Resist Staggers/Knockdowns when Aiming\n+X% Accuracy when Aiming"
 
 effects:
-  # 2D groundwork: a real stat with no SINGLE-TARGET damage
-  # payload — never `kind: unmodeled`, which throws the number away.
+  # see notes: 2d_groundwork_real_stat
   - kind: stagger_resist_bonus
     rank0: 0.1667
     rankMax: 1.0

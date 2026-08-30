@@ -1,17 +1,12 @@
 id: multron
 name: Multron
-# ROBOTIC COMPANION WEAPON — a MOA's, not a Sentinel's, but the same equipment
-# slot and the same rules here: no exilus, no arcane, an infinite reserve, and
-# a mod pool that is the weapon's own rather than the class's.
+# see notes: robotic_companion_weapon_moa
 slot: sentinel
 class: sentinel_weapon
 form: base
 default_form: true
 
-# RIFLE MODS, and this one is quoted rather than read off a row: the page's own
-# opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
-# weapons were held back a night because the infobox row would not extract and
-# guessing a mod pool is the one thing this class must not do.
+# see notes: rifle_mods_quoted_rather
 mod_pools: [rifle]
 mastery_rank: 3
 max_rank: 30

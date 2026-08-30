@@ -3,9 +3,7 @@ name: Rapid Reinforcement
 weapon: strun
 tier: 3
 description: "+60% Reload Speed."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:

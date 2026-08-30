@@ -3,9 +3,7 @@ name: Accelerating Volley
 weapon: kunai
 tier: 4
 description: "On Fire: +20% Fire Rate for 0.5 seconds. Stacks up to 5x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -21,8 +19,7 @@ effects:
   # only stand while you keep firing, and the first pause drops the pile one
   # stack at a time on the Galvanized clock.
   #
-  # The stack cap was a separate inert effect until now; it is this grant's
-  # ceiling, not a mechanic of its own.
+  # see notes: stack_cap_was_separate
   - kind: stacking_buff
     trigger: firing
     per_stack:

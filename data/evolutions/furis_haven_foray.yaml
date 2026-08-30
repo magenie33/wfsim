@@ -4,18 +4,13 @@ weapon: furis
 tier: 2
 icon: DamageAndIncreasedDamageWithOvershields(xWhite).png
 description: "Increase Base Damage by +28.\nWith Overshields: Increase Base Damage by +30."
-# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
-# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
-# DIFFERS between them the wiki prints it as a pair, and the number below is
-# this weapon's.
+# see notes: genesis_family_s_furis
 selection: choose_one
 
 # CONDITION OVERLOAD — this perk's added base is EXCLUDED from the CO term.
 # The catalog's Furis row, verbatim:
 #
-#   Furis | Incarnon Mode | Projectile | 100 or 128 (with Evolution II) | 100 |
-#     100% or 78% | Adding | "CO-bonus does not use base damage increase
-#     Evolution"
+# see notes: furis_incarnon_mode_projectile
 #
 # The arithmetic ties it down: the Incarnon form is 100 Heat, Evolution II adds
 # 28, and 100/128 = 78% is the third column exactly. So CO keeps multiplying

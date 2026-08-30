@@ -9,19 +9,14 @@ form: incarnon
 transform_group: mk1_braton
 transforms_from: mk1_braton
 
-# The Incarnon transformation economy (wiki Braton Incarnon Genesis), and it is
-# the FAMILY's: all four Bratons share this gauge.
+# see notes: incarnon_transformation_economy_wiki
 gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 20
     rounds_per_charge: 10
     max_rounds: 200
-    # charge_rules:
-    # - Each weakpoint hit grants 10 Incarnon rounds; 20 hits fill the gauge to
-    # the 200-round cap.
-    # - "Charges build individually on multishot bullets."
-    # - A full gauge is NOT required to transmute.
+    # see notes: charge_rules
   transmute:
     activation: alt_fire
     animation_seconds: reload_speed
@@ -32,21 +27,16 @@ gauge_form:
     unaffected_by_ammo_efficiency: true
   transmute_in_seconds: 2.0      # = base reload time, unmodded
 
-# SIM CONVENIENCE: with the gauge LOCKED full the cycle reduces to a
-# magazine/reload model the plain sim consumes directly.
+# see notes: sim_convenience_with_gauge
 pseudo_reload:
   magazine: 200
   reload_seconds: 3.0   # transmute out (1.0) + in (2.0), unmodded
 
 co_behavior: additive_with_base_damage
 
-# TWO ATTACK PARTS. "Incarnon Form has a 3 meter area of effect that deals pure
-# Heat damage, with much higher Critical Chance, Critical Multiplier, and Status
-# Chance. Fire Rate is reduced, and the explosion possesses Damage Falloff from
-# 100% to 90% from central impact."
+# see notes: two_attack_parts_incarnon
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.3
     max_deg: 0.7
@@ -72,13 +62,7 @@ attack:
     radius_calculation: snapshot
 
   radial:
-    # A TERMINAL BLAST. This form carries an explosion AND an evolution that
-    # rewards punch-through hits ("Gunsmoke Pick Up — On Punch Through Hit: 20%
-    # chance for 10% Ammo restored"), so it cannot be a weapon that refuses
-    # punch through. DEFAULTED to the Burston's answer
-    # rather than measured: one shot at one enemy would confirm whether the
-    # blast lands on it or behind it. See `weapons_data::BlastKind` and
-    # MEASUREMENTS M53.
+    # see notes: terminal_blast_form_carries
     blast_kind: terminal
     damage: { heat: 50.0 }
     radius_m: 3.0
@@ -87,23 +71,14 @@ attack:
     crit_chance: 0.2
     crit_multiplier: 2.4
     status_chance: 0.1
-    # CO ON AN EXPLOSION — the second family in the roster to do it, after the
-    # Burston. "Radial hit only receives CO bonus on target directly hit by
-    # bullet", which the single-target arena always is.
+    # see notes: co_explosion_second_family
     takes_condition_overload: true
-    # ...and it fires ONCE PER PULL: "AoE does not scale off multishot".
-    # MEASURED on this family (M41, owner 2026-08-11): the Braton Prime's
-    # Incarnon form at multishot 2.5 puts out one explosion per TRIGGER PULL,
-    # not one per pellet — two rounds, two explosions against the ~5 pellets
-    # they fired. Before that this line rested on the catalog row alone, and
-    # the row admitted a reading where the sentence was about the TABLE's
-    # arithmetic rather than about the game.
+    # see notes: fires_once_per_pull
     takes_multishot: false
 
 # incarnon_evolutions: see data/weapons/primary/mk1_braton.yaml (shared group)
 
 source:
   url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis
-  # Attack stats from the wiki infobox and WFCD's `attacks` array ("Incarnon
-  # Form" and "Incarnon Form AoE"), which agree on every field.
+  # see notes: attack_stats_from_wiki
 

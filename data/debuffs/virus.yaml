@@ -1,9 +1,4 @@
-# NOT LOADED BY ANY CODE. `data/debuffs/` is the written SPEC for status
-# effects: no `files_under("debuffs/")` call exists, and the behaviour is
-# hand-implemented in `engine::dummy` / `engine::status`, which cite these
-# files by name. Changing a number here changes nothing on its own — it is a
-# documentation change that also needs the matching code edit and a test.
-# See data/README.md "Conventions".
+# see notes: loaded_any_code_data
 id: virus
 name: Virus
 default_scope: enemy
@@ -53,8 +48,7 @@ immunities:
 crit_chance_effects: []
 # on_kill_cosmetic: flowing miasma in the inflicting weapon's energy color
 
-# railjack_variant: >-
-# None - no Railjack counterpart; excluded from Railjack proc weighting.
+# see notes: railjack_variant
 
 source:
   url: https://wiki.warframe.com/w/Damage/Viral_Damage

@@ -11,8 +11,7 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
 mastery_rank: 0             # a starter-tier weapon: the module says Mastery 0
 max_rank: 30
 
-# Weapon-level metadata (wiki `Module:Weapons/data/primary`, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_5
 accuracy: 25
 disposition: 1.45            # riven disposition — HIGHER than the Prime's 1.35,
                              # the usual shape, and the same 1.45 the Boar has
@@ -35,8 +34,7 @@ reload_seconds: 2.0
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 8

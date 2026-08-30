@@ -7,14 +7,7 @@ form: incarnon
 transform_group: dex_sybaris
 transforms_from: dex_sybaris
 
-# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-# array, which is DE's own export and which agreed with the wiki infobox field
-# for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half: transcribed from the wiki's table,
-# with every clause the intake's rule engine did not recognise loaded as a
-# NAMED INERT effect that the builder and the optimizer both print as "not
-# modelled yet". Nothing is dropped in silence — some perks do nothing
-# yet and say so on their own tile.
+# see notes: bulk_intake_stats_are
 
 gauge_form:
   gauge:
@@ -36,13 +29,11 @@ pseudo_reload:
   magazine: 200
   reload_seconds: 2.5
 
-# No CO catalog row for this attack, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+# see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 2
     max_deg: 5
@@ -66,8 +57,7 @@ attack:
   # always present is also a permanent +1 to Condition Overload's count.
   forced_procs: [blast]
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  # see notes: wall_ramp_full_damage_4
   range_m: 300.0
   damage: { impact: 28.8, slash: 43.2, puncture: 24 }   # total 96.0
 

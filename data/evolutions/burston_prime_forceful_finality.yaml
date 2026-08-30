@@ -4,34 +4,22 @@ weapon: burston_prime
 tier: 2
 icon: MultishotOnLastBurstInMag(xWhite).png
 description: "Increase Base Damage by +42.\n+5 Base Multishot on final magazine burst."
-# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
-# Burston or the Burston Prime, and the wiki's evolution table proves the two
-# get the SAME evolutions: every row spans both weapon columns with a dash
-# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
-# difference".
+# see notes: genesis_family_s_burston
 selection: choose_one
 
 # CO'S BASE EXCLUDES THIS PERK'S +42 — MEASURED.
 #
-# Burston Prime, Incarnon form, this perk and Galvanized Aptitude and nothing
-# else, torso, unarmoured target, one status type on it:
+# see notes: burston_prime_incarnon_form
 #
 #   1 stack   direct crit 181     2 stacks   direct crit 196, radial 65
 #
-# The Incarnon form is 13 base + this +42 = 55, and a crit is x3.0, so the
-# direct hit before CO is 165. Solving each reading for the fraction CO reads:
+# see notes: incarnon_form_13_base
 #
-#   165 x (1 + 0.4 x 1 x f) = 181  ->  f = 0.242
-#   165 x (1 + 0.8 x 1 x f) = 196  ->  f = 0.235
+# see notes: 165_x_1_0
 #
-# Both land on 13/55 = 0.2364 — the 24% the CO catalog prints for this weapon.
-# The radial confirms it independently at the same fraction: 55 x 1.1891 = 65.4,
-# an uncritical explosion.
+# see notes: both_land_13_55
 #
-# WHAT THIS FIXES. The catalog's 24% was read as the RADIAL's alone, so the
-# DIRECT hit computed CO on the full 55 and the engine returned 231 where the
-# game gives 181 — a 28% overstatement on this build. The exclusion is the
-# PERK's, not the attack part's: it applies wherever the +42 landed.
+# see notes: what_fixes_catalog_silence
 #
 # FLAGGED ON BOTH TIER-2 OPTIONS, which is the pattern the catalog already uses
 # for the Atomos ("both tier-2 options, each +24"). Fortress Salvo adds the same

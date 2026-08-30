@@ -22,10 +22,7 @@ attack:
     min_deg: 6.0
     max_deg: 16.0
   trigger: semi_auto
-  # NO CHARGE. An uncharged shot has no draw at all, and `charge_seconds: 0.0`
-  # is refused outright — "a 0.0 charge outside a bow is just a fire rate".
-  # Omitting it is the spelling that means "no draw"; a bow may state a zero
-  # because there the draw IS the cycle and the magazine is one arrow.
+  # see notes: no_charge_uncharged_shot
   shot_type: hit_scan
   fire_rate: 2.0
   # Eleven pellets of 80 — 880 a shell.

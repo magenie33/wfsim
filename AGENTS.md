@@ -21,9 +21,22 @@ what does the next agent get wrong?"**. Answer "nothing" → delete it.
 | kind | contains | length |
 |---|---|---|
 | **constraint** | an imperative plus the consequence of breaking it | ≤3 lines |
-| **evidence** | the value plus its source (wiki page, datamine, measurement id); verbatim quote when the wording is load-bearing | as long as it needs |
-| **design** | the rule plus the one sentence that makes the wrong alternative visibly wrong | as long as it needs |
+| **evidence** | the value plus its source (wiki page, datamine, measurement id); verbatim quote when the wording is load-bearing | ≤12 lines |
+| **design** | the rule plus the one sentence that makes the wrong alternative visibly wrong | ≤12 lines |
 | **everything else** | — | delete |
+
+**TWELVE LINES IS THE CEILING FOR A COMMENT.** Past about a dozen lines a block
+has stopped stating a rule and started explaining a subject, which is what
+`docs/` is for — and a subject explained in two places is two explanations that
+drift. Longer than that, the explanation moves to `docs/` and the comment keeps
+one line naming the section.
+
+**A NOTE THAT REPEATS IS AN ID.** `data/notes.yaml` holds each shared sourcing
+note once and a file that would repeat it carries `# see notes: <id>`, the same
+rule `data/unmodelled/reasons.yaml` states for admissions. Nothing in the engine
+reads either — `build.rs` embeds every yaml with its comments stripped — so
+`check_comment_style.mjs` is what stops a reference naming a note that is gone
+and a note outliving its last use.
 
 Where each lives: **this file** carries constraints, one entry each, and points
 at `docs/` for the rest. **`docs/`** carries evidence and design, organised by

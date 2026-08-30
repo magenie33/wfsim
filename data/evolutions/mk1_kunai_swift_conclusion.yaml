@@ -3,9 +3,7 @@ name: Swift Conclusion
 weapon: mk1_kunai
 tier: 2
 description: "Increase Damage by +80. Increase Damage by +200% if enemy has less than half health."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -19,19 +17,11 @@ effects:
   # so no `co_base_excludes_this_evolution` here, deliberately.
   - kind: flat_base_damage
     value: 80.0
-  # A CONDITION ON THE TARGET, evaluated per damage instance because the
-  # target's health is falling while the shot resolves.
+  # see notes: condition_target_evaluated_per
   #
-  # THE BRACKET IS STATED and both halves of the sentence are obeyed. VERBATIM
-  # (wiki notes): "Bonus damage is additive with mods such as Hornet Strike but
-  # does not take into account the Base Damage increase from this perk." So it
-  # joins the bucket Serration feeds — diluted by it, not multiplied on top —
-  # and the rate is scaled at load time so that this card's OWN flat base damage
-  # is excluded from what it multiplies.
+  # see notes: bracket_stated_both_halves
   #
-  # HEALTH, not the pools in front of it: a target still on its shields or its
-  # overguard is not below half HEALTH, and reading the total would switch this
-  # on at the start of every fight against an Eximus.
+  # see notes: health_pools_front_target
   - kind: base_damage_below_half_health
     value: 2.0
 

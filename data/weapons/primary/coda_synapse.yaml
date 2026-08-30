@@ -15,13 +15,10 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_A
 # Rank requirement is enforced." A Coda weapon is BOUGHT from Eleanor, so there
 # is no lich to vanquish under the requirement.
 mastery_rank: 17
-# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
-# at rank 40 after 5 polarizations, granting the weapon additional mod
-# capacity" (docs/INVESTMENT.md).
+# see notes: rank_40_30_polarizing
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 100.0
 disposition: 0.9             # riven disposition
 polarities: [madurai]
@@ -62,8 +59,7 @@ valence:
   max: 0.60
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0

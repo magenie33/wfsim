@@ -3,32 +3,16 @@ name: Galvanic Reload
 weapon: strun
 tier: 3
 description: "On hitting a target affected by an Electricity status, 40% chance to restore 1 round in the magazine from ammo pool."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
-# The bonus does not affect the Incarnon form (the row's third note), and that
-# is a property of the CARD rather than of one of its effects.
+# see notes: genesis_family_s_adapter_4
 base_form_only: true
 selection: choose_one
 
 effects:
-  # VERBATIM (Strun_Incarnon_Genesis, EVO3, the row's effect cell and its notes):
-  #   *On hitting a target affected by an {{D|Electricity}} status, '''40%''' chance
-  #    to restore 1 round in the magazine from ammo pool.
-  #   *The status effect may originate from any source.
-  #   *The bonus can only apply once per enemy hit.
-  #   *The bonus does not affect the Incarnon form.
-  # The variant cell is one colspan="4" dash, so all four Struns take it.
+  # see notes: verbatim_strun_incarnon_genesis
   #
-  # EACH NOTE DECIDES SOMETHING. "May originate from any source" costs nothing
-  # here — the engine asks the TARGET what it is carrying and not who put it
-  # there. "Once per enemy hit" is why the roll is per SHOT and not per pellet,
-  # which on a shotgun is a tenfold difference. "Does not affect the Incarnon
-  # form" is the card-level flag above.
+  # see notes: each_note_decides_something
   #
-  # "FROM AMMO POOL" is the last clause and it is not decoration: the round is
-  # drawn from the reserve like any other, so a dry one restores nothing. And a
-  # restore is not a RELOAD — nothing that watches reloads sees it.
+  # see notes: from_ammo_pool_last
   - kind: round_restore_on_status_hit
     status: electricity
     chance: 0.40

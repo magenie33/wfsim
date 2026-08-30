@@ -8,22 +8,14 @@ transform_group: fulmin_prime
 
 introduced: "33.6"
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
-# has no row for either of its two. Absence means ORDINARY.
+# see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
 
-# THE HEAD IS WORTH 1x on this attack. The module gives it
-# `ExtraHeadshotDmg: -2`, which put through the additive headshot bracket would
-# be NEGATIVE and heal the target — so what is transcribed is the wiki's own
-# sentence for the same field on the Arca Plasmor, "1x headshot multiplier". The
-# shot still counts as a HEAD (Primary Deadhead pays on it); only the enemy's
-# own multiplier is overruled, and the critical-headshot doubling goes with it.
+# see notes: head_worth_1x_attack
 headshot_multiplier: 1.0
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 6.0
     max_deg: 16.0
@@ -39,8 +31,7 @@ attack:
   punch_through_m: 0.0
   # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
   forced_procs: [impact]
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack
   falloff:
     start_m: 12.0
     end_m: 24.0

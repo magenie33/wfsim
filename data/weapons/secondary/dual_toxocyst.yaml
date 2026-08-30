@@ -52,8 +52,7 @@ default_upgrades:
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
     max_deg: 12
@@ -61,14 +60,7 @@ attack:
   shot_type: hit_scan
   fire_rate: 1.0
   multishot: 1.0
-  # NOT READ by the engine: nothing in engine/ references
-  # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
-  # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
-  # per trace - unless they are Flamethrowers", and the only beam in the
-  # roster is the Torid's Incarnon form, whose pool is charge-backed and
-  # "not affected by Ammo Efficiency" — i.e. outside the ammo economy that
-  # rule exists to help. So nothing in the sim turns on it today. See
-  # docs/MECHANICS.md "Continuous ammo cost" for what would settle it.
+  # see notes: read_engine_nothing_engine
   ammo_cost: 1
   crit_chance: 0.05
   crit_multiplier: 2.0

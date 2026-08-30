@@ -27,14 +27,11 @@ gauge_form:
 # THE CHARGE POOL, not the magazine: this form fires once per fill.
 magazine: 1
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
-# this weapon's is named. Absence means ORDINARY.
+# see notes: inherited_co_catalog_gives_4
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
     max_deg: 2.0
@@ -48,8 +45,7 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.18
   punch_through_m: 2.0
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack
   damage: { blast: 390 }   # total 390
 
 unmodeled:

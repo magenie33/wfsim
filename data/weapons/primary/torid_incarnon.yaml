@@ -32,8 +32,7 @@ gauge_form:
     # - Charges cannot be gained while already in Incarnon form (33.0.13).
   transmute:
     activation: alt_fire
-    # VERBATIM: "Mode switching is not instantaneous and has an animation equal
-    # to the weapon's reload speed."
+    # see notes: verbatim_mode_switching_instantaneous
     animation_seconds: reload_speed
     auto_transmute_out: on_incarnon_ammo_empty
   incarnon_magazine:
@@ -87,8 +86,7 @@ co_behavior: additive_with_base_damage
 # a child of attack 1 (AttackParentIndex 1, the grenade), and the Incarnon
 # attack has no field of its own.
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 1
     max_deg: 1.5
@@ -96,14 +94,7 @@ attack:
   shot_type: beam
   fire_rate: 8.0
   multishot: 1.0
-  # NOT READ by the engine: nothing in engine/ references
-  # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
-  # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
-  # per trace - unless they are Flamethrowers", and the only beam in the
-  # roster is the Torid's Incarnon form, whose pool is charge-backed and
-  # "not affected by Ammo Efficiency" — i.e. outside the ammo economy that
-  # rule exists to help. So nothing in the sim turns on it today. See
-  # docs/MECHANICS.md "Continuous ammo cost" for what would settle it.
+  # see notes: read_engine_nothing_engine
   ammo_cost: 1                  # of the separate 170-round charge magazine
   crit_chance: 0.29
   crit_multiplier: 3.1

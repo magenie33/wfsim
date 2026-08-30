@@ -9,16 +9,12 @@ class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [pistol]
-# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
-# Eleanor, so there is no lich to vanquish under the requirement.
+# see notes: enforced_unlike_kuva_or
 mastery_rank: 17
-# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
-# at rank 40 after 5 polarizations, granting the weapon additional mod
-# capacity" (docs/INVESTMENT.md).
+# see notes: rank_40_30_polarizing
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 6.3
 disposition: 0.65            # riven disposition
 polarities: [madurai]
@@ -34,8 +30,7 @@ ammo_pickup: 20
 magazine: 37
 reload_seconds: 1.7
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%. Absence means ORDINARY.
+# see notes: condition_overload_no_row_6
 co_behavior: additive_with_base_damage
 
 # THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,

@@ -3,59 +3,28 @@ name: Daring Reverie
 weapon: braton_prime
 tier: 2
 description: "Increase Base Damage by +4. With Channeled Ability active: Increase Base Damage by +38. +50% Ammo Efficiency"
-# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
-# four Bratons, so all four carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_braton
 selection: choose_one
 
 # CO'S BASE EXCLUDES THIS PERK'S FLAT DAMAGE — the catalog's Braton row.
 #
-# docs/CATALOGS.md: "Braton family | Incarnon Form Radial | 95% | Adding |
-# derived: 70 + 4 = 74, 70/74". That +4 is Daring Reverie's, and Munitions Grit
-# is its tier-2 twin — flagged together the way the Atomos's, the Zylok's and
-# the Burston's tier-2 pairs already are.
+# see notes: docs_catalogs_md_braton
 #
-# WHY IT REACHES THE DIRECT HIT AND NOT ONLY THE ROW'S NAMED PART. The exclusion
-# belongs to the PERK, not to the attack part: the +4 raises whatever it lands
-# on, and CO reads the base BEFORE it wherever that is. Measured on the Burston
-# (MEASUREMENTS M48) — five readings across both of its forms, at two fractions
-# — and the Zylok family was already flagged this way. This is the third and
-# last of the catalog's three DERIVED-fraction rows; the other two were treated
-# so, and it was not.
+# see notes: why_reaches_direct_hit
 #
-# NOT A GENERALISATION TO WEAPONS WITHOUT A ROW. The default stays what the
-# catalog says it is: follow the wiki, and let a MEASUREMENT
-# re-certify an entry. Absence still means ordinary.
+# see notes: generalisation_weapons_without_row
 co_base_excludes_this_evolution: true
 effects:
-  # VERBATIM (Braton_Incarnon_Genesis, EVO2, the row's effect cell and its note):
-  #   * Increase Base Damage by '''+X'''.
-  #   * With [[Channeled Abilities|Channeled Ability]] active: Increase Base
-  #     Damage by '''+Y'''. '''+50%''' Ammo Efficiency
-  #   | X = 24<br>Y = 30 | X = 28<br>Y = 22 | X = 12<br>Y = 34 | X = 4<br>Y = 38
-  #   * Channeled Abilities must be draining energy to be considered active.
-  #     Abilities that do not drain energy over time such as Nekros's Desecrate,
-  #     Hildryn's Haven, or Sevagoth's Gloom (with no enemies nearby) do not
-  #     count.
+  # see notes: verbatim_braton_incarnon_genesis
   #
-  # THE COLUMNS ARE Braton | Mk1-Braton | Braton Vandal | Braton Prime, from the
-  # table's `! class=unsortable` header rows — NOT from the page's opening
-  # sentence, which lists them in a different order (Braton, Vandal, Prime,
-  # Mk1). Reading the sentence makes three of the four look wrong.
+  # see notes: columns_are_braton_mk1
   #
   # from: "Increase Base Damage by +4"
   - kind: flat_base_damage
     value: 4.0
-  # …and the SAME statement, gated on the player. A channeled ability is a
-  # STATE this arena cannot observe — it fires one weapon and casts nothing —
-  # so the player declares it, the same way overshields are declared. What the
-  # note requires is an ENERGY DRAIN over time, which is not modelled either;
-  # the control's own wording carries that, since ticking it for a Desecrate
-  # would be wrong by the card's own definition.
+  # see notes: same_statement_gated_player_2
   #
-  # ON THIS FAMILY THE CONDITIONAL HALF IS THE LARGER ONE for three of the four,
-  # which is worth knowing before reading an unticked Braton as its ceiling.
+  # see notes: family_conditional_half_larger
   - kind: gated_by_tenno
     condition: channeling
     grant: flat_base_damage

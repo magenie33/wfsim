@@ -31,8 +31,7 @@ scope:
   magnification: 2.7
   headshot_damage: 0.5
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0
@@ -48,8 +47,7 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.53
   punch_through_m: 0.0
-  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
-  # (docs/CATALOGS.md §2):
+  # see notes: primary_compression_published_table
   #
   #   Sporothrix (Coda Sporothrix) | Primary Fire + AoE | 100% | Multiplies
   #   | Snapshot

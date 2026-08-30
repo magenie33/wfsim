@@ -10,8 +10,7 @@ mod_pools: [pistol]         # CompatibilityTags PROJECTILE
 mastery_rank: 5
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 16.7
 disposition: 1.2            # riven disposition
 polarities: [madurai]
@@ -27,13 +26,11 @@ ammo_pickup: 40
 magazine: 30
 reload_seconds: 1.1
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 4.0
     max_deg: 8.0
@@ -47,8 +44,7 @@ attack:
   crit_multiplier: 1.5
   status_chance: 0.15
   punch_through_m: 0.0
-  # NO RANGE ROW on this attack — Projectile at 90 m/s. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack_5
   damage: { impact: 12.33, puncture: 12.33, slash: 12.33 }   # total 36.99
 
 unmodeled:

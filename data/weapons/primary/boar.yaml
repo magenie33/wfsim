@@ -45,8 +45,7 @@ co_behavior: additive_with_base_damage
 # ONE attack part. The Incarnon form is its own weapon entry (boar_incarnon),
 # the way the Prime's is.
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 10
     max_deg: 30
@@ -76,8 +75,7 @@ attack:
     start_m: 15
     end_m: 25
     reduction: 0.5   # fraction KEPT past end_m
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m", Hit-Scan
+  # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { impact: 12.1, puncture: 3.3, slash: 6.6 }
   # Damage FALLOFF, hitscan: full damage to 15 m, decaying to 50% of it at 25 m

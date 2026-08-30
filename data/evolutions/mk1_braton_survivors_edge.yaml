@@ -4,10 +4,7 @@ weapon: mk1_braton
 tier: 4
 icon: XCritChanceYStatChance(xWhite).png
 description: "Increase Base Critical Chance by +12%. Increase Base Status Chance by +12%."
-# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
-# four Bratons, so all four carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_braton
 selection: choose_one
 
 effects:

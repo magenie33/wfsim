@@ -97,6 +97,71 @@ check(`comment style the narrative ratchet holds (${narrative} ≤ ${NARRATIVE_C
   narrative <= NARRATIVE_CEILING,
   `${narrative} phrases retelling a history, ceiling ${NARRATIVE_CEILING}`);
 
+// ---------------------------------------------------------------------------
+// A NOTE THAT REPEATS IS AN ID, NOT A PARAGRAPH.
+//
+// `data/notes.yaml` holds each shared sourcing note once and a file that would
+// repeat it carries `# see notes: <id>`. Nothing in the engine reads either —
+// `build.rs` embeds every yaml with its comments stripped — so this is what
+// keeps a reference from naming an entry that is gone and an entry from
+// outliving its last use.
+const notesSrc = readFileSync(resolve(ROOT, "data/notes.yaml"), "utf8");
+const defined = new Set(
+  [...notesSrc.matchAll(/^ {2}([a-z0-9_]+): \|/gm)].map((m) => m[1]));
+const used = new Map();
+for (const rel of files) {
+  if (!rel.startsWith("data/")) continue;
+  let src;
+  try { src = readFileSync(resolve(ROOT, rel), "utf8"); } catch { continue; }
+  for (const m of src.matchAll(/# see notes: ([a-z0-9_]+)/g)) {
+    used.set(m[1], (used.get(m[1]) || 0) + 1);
+  }
+}
+const dangling = [...used.keys()].filter((id) => !defined.has(id));
+const orphans = [...defined].filter((id) => !used.has(id));
+
+check(`comment style every \`see notes:\` resolves (${used.size} ids, ${[...used.values()].reduce((a, b) => a + b, 0)} uses)`,
+  dangling.length === 0, dangling.slice(0, 6).join(", "));
+check("comment style ...and no note outlives its last use",
+  orphans.length === 0, orphans.slice(0, 6).join(", "));
+
+// ---------------------------------------------------------------------------
+// A COMMENT IS A CONSTRAINT, NOT AN ESSAY.
+//
+// Past about a dozen lines a block has stopped stating a rule and started
+// explaining a subject, which is what `docs/` is for — and an explanation in
+// two places is two explanations that drift. The ceiling counts BLOCKS over the
+// limit rather than lines, so splitting one essay into two does not pass.
+//
+// A ratchet rather than a hard cap, because a handful of blocks genuinely are
+// evidence: a verbatim wiki table, a measured series. Those move to `docs/`
+// with a one-line reference when they are touched, and the ceiling falls.
+const BLOCK_LIMIT = 12;
+const BLOCK_CEILING = 864;
+const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
+let longBlocks = 0;
+const worst = [];
+for (const rel of files) {
+  if (rel.endsWith(".md") || rel.endsWith(".html") || rel.endsWith(".css")) continue;
+  let src;
+  try { src = readFileSync(resolve(ROOT, rel), "utf8"); } catch { continue; }
+  let run = 0, start = 0;
+  const lines = src.split("\n");
+  for (let i = 0; i <= lines.length; i += 1) {
+    if (i < lines.length && LINE_COMMENT.test(lines[i]) && lines[i].trim() !== "#") {
+      if (run === 0) start = i + 1;
+      run += 1;
+      continue;
+    }
+    if (run > BLOCK_LIMIT) { longBlocks += 1; worst.push(`${rel}:${start} (${run})`); }
+    run = 0;
+  }
+}
+worst.sort((a, b) => Number(b.match(/\((\d+)\)$/)[1]) - Number(a.match(/\((\d+)\)$/)[1]));
+check(`comment style blocks over ${BLOCK_LIMIT} lines (${longBlocks} ≤ ${BLOCK_CEILING})`,
+  longBlocks <= BLOCK_CEILING,
+  `${longBlocks} blocks, longest: ${worst.slice(0, 4).join(", ")}`);
+
 // A ratchet nobody lowers is a ratchet that stops meaning anything, so a run
 // that is comfortably under says so rather than passing in silence.
 if (narrative < NARRATIVE_CEILING) {

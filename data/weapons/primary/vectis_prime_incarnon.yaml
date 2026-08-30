@@ -7,14 +7,7 @@ form: incarnon
 transform_group: vectis_prime
 transforms_from: vectis_prime
 
-# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-# array, which is DE's own export and which agreed with the wiki infobox field
-# for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half: transcribed from the wiki's table,
-# with every clause the intake's rule engine did not recognise loaded as a
-# NAMED INERT effect that the builder and the optimizer both print as "not
-# modelled yet". Nothing is dropped in silence — some perks do nothing
-# yet and say so on their own tile.
+# see notes: bulk_intake_stats_are
 unmodeled:
   - "the Incarnon Form Embed AoE is not modelled — this form has more parts than this entry carries"
   - "the sniper combo counter and the scope's headshot bonus are not modelled in this form — both are modelled on the base form, and no source states whether either survives the transform (the wiki notes only that you must UNZOOM to enter it)"
@@ -39,13 +32,11 @@ pseudo_reload:
   magazine: 45
   reload_seconds: 1.85
 
-# No CO catalog row for this attack, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+# see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 15
@@ -95,8 +86,7 @@ attack:
     crit_chance: 0.35
     crit_multiplier: 3
     status_chance: 0.3
-    # NOT DECLARED: no CO catalog row for this weapon, so the radial
-    # takes the engine's default — no Condition Overload on an explosion.
+    # see notes: declared_no_co_catalog
 
 # incarnon_evolutions: see data/weapons/primary/vectis_prime.yaml (shared group)
 

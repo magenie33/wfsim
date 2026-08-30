@@ -13,8 +13,7 @@ mod_pools: [pistol]
 mastery_rank: 6
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 50.0
 disposition: 1.2             # riven disposition
 polarities: []               # the infobox states none
@@ -46,8 +45,7 @@ battery:
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 1.0
     max_deg: 3.0

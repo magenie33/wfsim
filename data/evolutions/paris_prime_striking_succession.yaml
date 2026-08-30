@@ -3,9 +3,7 @@ name: Striking Succession
 weapon: paris_prime
 tier: 4
 description: "On Hit: Increase Base Damage by +15 for 3 seconds. Stacks up to 4x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -26,8 +24,7 @@ effects:
   # ALL THREE VARIANTS — the row's variant cells are one `colspan="3" | -`,
   # this table's way of writing "no per-variant difference".
   #
-  # The stack cap was a separate inert effect until now; it is this grant's
-  # ceiling, not a mechanic of its own.
+  # see notes: stack_cap_was_separate
   - kind: stacking_buff
     trigger: hit
     per_stack:

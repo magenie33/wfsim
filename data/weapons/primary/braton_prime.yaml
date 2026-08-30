@@ -10,14 +10,11 @@ grip_type: RIFLE
 mastery_rank: 8
 max_rank: 30
 
-# TWO WEAPONS MODEL: base and Incarnon forms are separate
-# entries linked by a transform group. The Incarnon form exists only once the
-# Braton Incarnon Genesis is installed and its tier-1 evolution taken.
+# see notes: two_weapons_model_base_3
 transform_group: braton_prime
 transforms_to: braton_prime_incarnon
 
-# Weapon-level metadata (wiki infobox, cross-checked against WFCD
-# warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_3
 accuracy: 28.57
 disposition: 1.25
 polarities: []
@@ -33,19 +30,12 @@ ammo_pickup: 80              # rifle pickup, as every other rifle here
 magazine: 75
 reload_seconds: 2.15
 
-# Condition Overload behavior class. The wiki's CO catalog carries ONE Braton
-# row and it is the Incarnon form's RADIAL (see the incarnon entry); this
-# attack has none, and absence there means ORDINARY rather than unknown. The
-# CO base excludes an evolution's flat damage automatically (`co_base_fraction`
-# stays at the loader's 1.0), which is what the catalog's 95% column is saying
-# from the other side: 70 of the radial's 74 feed the bonus, and the missing 4
-# is Daring Reverie's.
+# see notes: condition_overload_behavior_class
 co_behavior: additive_with_base_damage
 
 # ONE ATTACK PART. The radial belongs to the Incarnon form (braton_prime_incarnon).
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 2
     max_deg: 5
@@ -58,8 +48,7 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.26
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m", Hit-Scan
+  # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { impact: 1.75, puncture: 12.25, slash: 21.0 }   # total 35
 

@@ -1,15 +1,8 @@
 # Tombfinger, as a PRIMARY — one of the two forms of ONE weapon.
 #
-# A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
-# and `engine::kitguns_data` composes them. This file is the CHAMBER's half —
-# everything a grip and a loader do not touch, plus the two tables that are
-# published PER GRIP because DE publishes them that way rather than as a
-# formula.
+# see notes: kitgun_has_no_published
 #
-# WHY THIS IS A SEPARATE FILE FROM THE OTHER SLOT. The chamber is the WEAPON
-# (mastery, riven family and the wiki page are all per chamber), but the two
-# slots are two stat blocks in DE's own module and the difference reaches the
-# damage TYPE. A flag could not carry that; two files can. See README.md.
+# see notes: why_separate_file_from
 #
 # A CHARGED TRIGGER, and the GRIP sets the charge time (0.5 s on Brash to
 # 1.4 s on Tremor). So a Tombfinger row on the board carries a SLOT and a
@@ -28,8 +21,7 @@ name: Tombfinger
 chamber: tombfinger
 slot: primary
 
-# THE STATS THAT ARE THE CHAMBER'S OWN — everything a grip and a loader
-# do not touch.
+# see notes: stats_are_chambers_own
 crit_chance: 0.24
 crit_multiplier: 2
 status_chance: 0.24
@@ -45,12 +37,10 @@ silent: false
 spread:
   min_deg: 1
   max_deg: 3
-# DE's own compatibility tags, transcribed. They are what a mod pool and
-# an equip rule are decided from elsewhere in this repo.
+# see notes: de_s_own_compatibility
 tags: ["PROJECTILE", "AOE", "MODULAR_GUN", "SEMI_AUTO"]
 
-# DAMAGE IS PER GRIP, published per grip. There is no formula behind these
-# — the module states one vector per grip and this is that table.
+# see notes: damage_per_grip_published
 damage:
   base: { impact: 40, radiation: 18 }
   brash: { impact: 30, radiation: 8 }

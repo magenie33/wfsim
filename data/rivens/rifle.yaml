@@ -7,13 +7,9 @@
 # this class's canonical values exactly: Damage 165%, Crit Chance 150%, Crit Damage 120%, Multishot 90%
 # at disposition 1.0.
 #
-# `malus: false` = wiki-listed bonus-only, never the negative stat.
-# `kind: unmodeled` = a real riven stat the engine does not model; it
-# still occupies a rolled slot and still shapes the name.
+# see notes: malus_false_wiki_listed
 #
-# `order` is DE's own index in upgradeEntries. Stats that share a base
-# are worth exactly the same at the same roll, so the name's magnitude
-# ordering ties between them. This is what breaks it.
+# see notes: order_de_s_own
 class: rifle
 stats:
   - id: ammo_maximum

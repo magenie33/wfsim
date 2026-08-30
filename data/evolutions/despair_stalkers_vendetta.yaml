@@ -3,10 +3,7 @@ name: Stalker's Vendetta
 weapon: despair
 tier: 2
 description: "Increase Base Damage by +60. With Dread and Hate equipped: bonus Multishot and Damage."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
-# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+# see notes: genesis_family_s_adapter_3
 #
 #   Despair||Incarnon Mode||…||60 or 120 (with Evolution II Perk 2)||60||100% or 50%||Adding||CO-bonus does not use base damage increase Evolution
 #

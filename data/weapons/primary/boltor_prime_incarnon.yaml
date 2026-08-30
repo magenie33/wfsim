@@ -48,8 +48,7 @@ co_behavior: additive_with_base_damage
 # STATUS CHANCE IS PER PROJECTILE TOO, which is why it reads lower than the base
 # form's: three chances at 0.2000 against one at 0.34.
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 8
     max_deg: 12

@@ -15,8 +15,7 @@ effects:
     rank0: 0.15
     rankMax: 0.9
     max_stacks: 1
-    # RAMPS with rank (WFCD levelStats); `duration` is the max-rank value
-    # the engine builds with, `duration_rank0` is where the card starts.
+    # see notes: ramps_with_rank_wfcd
     duration_rank0: 2
     duration: 9
 

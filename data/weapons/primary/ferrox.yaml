@@ -14,8 +14,7 @@ transform_group: ferrox
 mastery_rank: 14
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 16.7
 disposition: 1.25            # riven disposition
 polarities: [madurai, vazarin]
@@ -38,8 +37,7 @@ reload_seconds: 1.8
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 12.0
@@ -84,13 +82,10 @@ attack:
   # here, where the Tenet's radial carries the charged shot's own three-way
   # split; the two are not the same attack scaled.
   radial:
-    # A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
-    # which is why this weapon takes punch-through mods where an ordinary
-    # explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+    # see notes: terminal_blast_bores_through
     blast_kind: terminal
     damage: { impact: 100 }
-    # THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
-    # no area part does. Verbatim (docs/CATALOGS.md §1):
+    # see notes: catalog_says_aoe_part
     #
     #   Ferrox | Hitscan AoE Direct | Hitscan | 200 | 700 | 350% | Adding
     #

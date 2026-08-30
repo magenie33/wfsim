@@ -12,8 +12,7 @@ mod_pools: [primary, shotgun]
 mastery_rank: 8
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 15.4
 disposition: 1.1             # riven disposition
 polarities: [vazarin]
@@ -29,21 +28,16 @@ ammo_pickup: 15
 magazine: 1
 reload_seconds: 1.6
 
-# Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
-# (docs/CATALOGS.md §1):
+# see notes: condition_overload_catalog_names
 #
 #   Exergis | Normal Attack | Projectile | 1620 | 1620 | 100% |
 #   Multiplying
 #
-# THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
-# ordinary class assumed because nobody had opened the catalog for this
-# weapon — the check was run against our own transcription of it, which
-# only ever carried the rows the roster already had.
+# see notes: entry_read_adding_at
 co_behavior: independent
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 5.0
     max_deg: 8.0
@@ -61,8 +55,7 @@ attack:
   # costs `space::BODY_MATERIAL_M`, so it reaches the second of two enemies
   # standing against each other.
   punch_through_m: 0.5
-  # NO RANGE ROW on this attack — Projectile at 100 m/s. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack_3
   falloff:
     start_m: 30.0
     end_m: 60.0

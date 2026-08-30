@@ -4,10 +4,7 @@ weapon: furis
 tier: 4
 icon: OnHeadshotFireRateForXSecs(xWhite).png
 description: "On Headshot: +5% Fire Rate for 2s. Stacks up to 10x."
-# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
-# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
-# DIFFERS between them the wiki prints it as a pair, and the number below is
-# this weapon's.
+# see notes: genesis_family_s_furis
 selection: choose_one
 
 effects:
@@ -31,16 +28,9 @@ effects:
     max_stacks: 10
     duration: 2
     chance: 0.50
-    # FIFO, EACH STACK ON ITS OWN CLOCK — the same rule Stormburst carries, and
-    # observed the same way, in game.
+    # see notes: fifo_each_stack_own
     #
-    # It was the Galvanized rule here, HARDCODED in the loader on the reading
-    # that the card says nothing else. The difference is not cosmetic and it is
-    # bigger on this perk than on Stormburst: under Galvanized decay one headshot
-    # inside the window holds all TEN stacks, under this one it holds exactly
-    # one, so a streak that lapses falls off a stack at a time instead of
-    # surviving whole. At the cap a new stack evicts the oldest rather than being
-    # dropped.
+    # see notes: was_galvanized_rule_here
     decay: per_stack_expiry
 
 source:

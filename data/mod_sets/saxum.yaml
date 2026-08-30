@@ -5,9 +5,7 @@ name: Saxum
 #   Lifted enemies explode on death, dealing X% of their max health as Impact
 # Damage in an X-meter radius.
 #
-# NOT MODELLED, and declared rather than left undefined — which is the whole
-# convention here (see hunter.yaml): a set whose bonus does nothing for the
-# WEAPON is still written down, so the app can say so instead of being silent.
+# see notes: modelled_declared_rather_than
 #
 # LIFTED is a Warframe crowd-control state this arena has no concept of, and
 # the explosion damages what is NEARBY rather than the corpse — so on one

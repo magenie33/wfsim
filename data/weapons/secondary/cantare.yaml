@@ -13,8 +13,7 @@ mod_pools: [pistol]         # CompatibilityTags PROJECTILE, THROWN
 mastery_rank: 10
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 100.0
 disposition: 1.05            # riven disposition
 polarities: [madurai, madurai]
@@ -32,8 +31,7 @@ ammo_pickup: 0
 magazine: 6
 reload_seconds: 1.2
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
 attack:
@@ -56,8 +54,7 @@ attack:
   # `space::BODY_MATERIAL_M` (0.5 m), so a thrown blade crosses two enemies and
   # reaches a third.
   punch_through_m: 1.4
-  # NO RANGE ROW on this attack — Projectile at 70 m/s. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack_4
   damage: { puncture: 27, slash: 63 }   # total 90
 
 unmodeled:

@@ -1,0 +1,938 @@
+# SHARED SOURCING NOTES — each written once, referenced by id.
+#
+# A weapon or mod file that would repeat a paragraph carries
+# `# see notes: <id>` instead. The same rule `data/unmodelled/reasons.yaml`
+# states for admissions: a note that repeats is a REASON, not a sentence.
+#
+# Nothing in the engine reads this file; `notes_are_referenced_and_every`
+# `_reference_resolves` in `engine::data` is what keeps an id from rotting and
+# an entry from being orphaned.
+
+notes:
+  0_05_base_multishot: |
+    "+0.05 BASE Multishot": added before mods and therefore multiplied by them,
+    the bracket the wiki spells out on Forceful Finality ("added before mods,
+    and is thus multiplied by multishot bonuses"). The Sybaris family's Blazing
+    Barrel grants a PERCENTAGE instead and says so; same name, different number
+    on any build with a multishot mod, so `base:` is required here.
+  165_x_1_0: |
+      165 x (1 + 0.4 x 1 x f) = 181  ->  f = 0.242
+      165 x (1 + 0.8 x 1 x f) = 196  ->  f = 0.235
+  2d_groundwork_real_stat: |
+    2D groundwork: a real stat with no SINGLE-TARGET damage
+    payload — never `kind: unmodeled`, which throws the number away.
+  5_multishot_percentage_weapon: |
+    "+5% Multishot" — a PERCENTAGE of the weapon's base, which is what a
+    multishot MOD grants, so it joins their bucket. The Strun family's Blazing
+    Barrel reads "+0.05 BASE Multishot" and lands in a different bracket; the
+    name is shared and the number is not, which is why `base:` is required.
+  after_fires_reset_zero: |
+    After it fires: reset to zero AND no conversion at all until the cooldown is
+    out — "the cooldown is tied only to that weapon, during which the weapon will
+    not convert any affinity into points, and all collected points are reset to
+    zero". Two rules, not one, and the second is why a fast-killing build cannot
+    bank points through the downtime.
+  arch_gun_own_equipment: |
+    ARCH-GUN — its own equipment slot, and not a Primary or a Secondary: the wiki
+    is explicit that Archguns "are not considered either primary or secondary
+    weapons", which is also why they seat two arcanes rather than one.
+  armed_empty_magazine_spent: |
+    ARMED BY THE EMPTY MAGAZINE, SPENT BY THE NEXT REFILL. No duration, and that
+    is not an omission — there is nothing to time. The buff
+    is on the weapon the moment the magazine runs out, which is why transforming
+    right then is faster too, and it is gone when a reload or either Incarnon
+    transform completes, because all three refill the magazine.
+  arming_all_affinity_earned: |
+    ARMING. "All affinity earned by the weapon during a mission fills a gauge",
+    and a weapon kill gives the weapon HALF the enemy's affinity (wiki Affinity:
+    "Kill with weapons: Half Affinity goes to the Warframe and half to the killing
+    weapon"). 1000 points at a maxed augment; a lower rank needs MORE.
+  at_max_rank_100: |
+    At MAX RANK and 100% Ability Strength. The page multiplies by the
+    strength you set; there is no per-rank table, because a calculator
+    is asked what a maxed ability does.
+  attack_stats_from_wiki: |
+    Attack stats from the wiki infobox and WFCD's `attacks` array ("Incarnon
+    Form" and "Incarnon Form AoE"), which agree on every field.
+  auras_are_warframe_file: |
+    Auras are on the WARFRAME, so this file is read into the fight's Tenno beside
+    armour and energy — the block that becomes a real frame when frames are built. Nothing here is a weapon stat and nothing belongs in a
+    build: two players with the same gun and different squads are two fights.
+  base_magazine_capacity_magazine: |
+    "BASE Magazine Capacity", so a magazine mod multiplies every stack —
+    `resolve` scales the per-stack value before the sim ever sees it, the same
+    units conversion a flat base-damage grant takes.
+  blazing_barrel_two_clauses: |
+    BLAZING BARREL. Two clauses on the card and ONE mechanic: the stack cap
+    belongs to the grant above it, and the bulk intake filed it as an effect of
+    its own — which is why "Stacks up to Nx" was the single commonest inert
+    kind in the whole roster.
+  blazing_barrel_two_clauses_2: |
+    BLAZING BARREL. Two clauses on the card and ONE mechanic: the stack cap
+    belongs to the grant above it, and the bulk intake filed it as an effect of
+    its own.
+  both_are_base_stat: |
+    Both are BASE-stat additions, so the crit mods multiply the new base —
+    "Increase Base Critical Chance" / "Increase Base Critical Damage
+    Multiplier" is the wiki's own wording.
+  both_forms_clause_each: |
+    BOTH FORMS, one clause each. The wiki prints the base form's number and
+    the Incarnon form's as two sentences, and reading them as two separate
+    bonuses gave the base form both (fixed 2026-08-08).
+  both_indirect_arena_hits: |
+    BOTH INDIRECT: the arena hits what it aims at by construction
+    (`headshot_pct`) and has no geometry for recoil to disturb. Loaded so the
+    panel states them rather than dropping them.
+  both_land_13_55: |
+    Both land on 13/55 = 0.2364 — the 24% the CO catalog prints for this weapon.
+    The radial confirms it independently at the same fraction: 55 x 1.1891 = 65.4,
+    an uncritical explosion.
+  bracket_stated_both_halves: |
+    THE BRACKET IS STATED and both halves of the sentence are obeyed. VERBATIM
+    (wiki notes): "Bonus damage is additive with mods such as Hornet Strike but
+    does not take into account the Base Damage increase from this perk." So it
+    joins the bucket Serration feeds — diluted by it, not multiplied on top —
+    and the rate is scaled at load time so that this card's OWN flat base damage
+    is excluded from what it multiplies.
+  bulk_intake_stats_are: |
+    BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
+    array, which is DE's own export and which agreed with the wiki infobox field
+    for field on every one of the eleven guns checked by hand first. The
+    EVOLUTIONS are the rough half: transcribed from the wiki's table,
+    with every clause the intake's rule engine did not recognise loaded as a
+    NAMED INERT effect that the builder and the optimizer both print as "not
+    modelled yet". Nothing is dropped in silence — some perks do nothing
+    yet and say so on their own tile.
+  bulk_intake_stats_are_2: |
+    BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
+    array, which is DE's own export and which agreed with the wiki infobox field
+    for field on every one of the eleven guns checked by hand first. The
+    EVOLUTIONS are the rough half: transcribed from the wiki's table,
+    with every clause the intake's rule engine did not recognise loaded as a
+    NAMED INERT effect that the builder and the optimizer both print as "not
+    modelled yet". Nothing is dropped in silence — some perks do nothing
+    yet and say so on their own tile.
+    NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
+    multi-part base needs a SECOND weapon entry to be right; the Cernos
+    Prime is the pattern (uncharged and charged are two entries in one
+    transform group). Until that exists, this weapon's number is the number
+    for the part named in `attack:` below and NOT for the whole weapon.
+  burst_listed_fire_rate: |
+    THE BURST. The listed `fire_rate` counts BURSTS: one pull is 2 rounds
+    spaced by the delay below.
+  burst_listed_fire_rate_2: |
+    THE BURST. The listed `fire_rate` counts BURSTS: one pull is 3 rounds
+    spaced by the delay below.
+  burston_prime_incarnon_form: |
+    Burston Prime, Incarnon form, this perk and Galvanized Aptitude and nothing
+    else, torso, unarmoured target, one status type on it:
+  card_says_1_2: |
+    THE CARD SAYS 1.2 AND THE EFFECT WANTS 1.1. VERBATIM, from this row's own
+    Notes cell: *"Despite the description, the effect only requires 1.1 or
+    higher sprint speed."* So the description above stays DE's sentence and the
+    threshold below is the measured one — the same split every card text in this
+    repo already obeys.
+  card_with_stat_swapped: |
+    ONE CARD WITH THE STAT SWAPPED. All four Invocations read "Alternate Fire
+    increases <stat> by X% for 20s for each enemy hit", and they are loaded the
+    same way whether or not the stat reaches a number here — a card a player
+    owns and cannot find in the builder is indistinguishable from one the app
+    got wrong.
+  card_wrong_effect_right: |
+    THE CARD IS WRONG AND THE EFFECT IS RIGHT — see the threshold note
+    above. Declared so it reaches the perk's own card rather than living
+    only in this comment.
+  catalog_gives_attack_own: |
+    THE CATALOG GIVES THIS ATTACK ITS OWN FRACTION, and it is per WEAPON rather
+    than a range across the family — the row, verbatim:
+  catalog_says_aoe_part: |
+    THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
+    no area part does. Verbatim (docs/CATALOGS.md §1):
+  charge_rules: |
+    charge_rules:
+    - Each weakpoint hit grants 10 Incarnon rounds; 20 hits fill the gauge to
+    the 200-round cap.
+    - "Charges build individually on multishot bullets."
+    - A full gauge is NOT required to transmute.
+  class_s_heavy_attack: |
+    THE CLASS'S HEAVY ATTACK — 6x with a 1.2 s charge, from the wiki's
+    per-weapon-type table. Stated on EVERY form including the light ones,
+    because TENNOKAI turns one of their swings into a heavy attack and a form
+    with no heavy of its own could not fire the swing the window buys.
+  co_explosion_second_family: |
+    CO ON AN EXPLOSION — the second family in the roster to do it, after the
+    Burston. "Radial hit only receives CO bonus on target directly hit by
+    bullet", which the single-target arena always is.
+  co_full_base_charged: |
+    CO ON THE FULL BASE. The charged entry computes it on HALF, and
+    that 0.5 is the charge multiplier sitting outside the additive
+    bracket. There is no charge multiplier here, so the fraction stays
+    at the loader default of 1.0 — the same split the Cernos Prime's
+    two entries carry.
+  co_half_base_catalog: |
+    CO ON HALF THE BASE. The catalog lists this family's Charged Attack as
+    "Adding, 25-50%", and for a bow the number is derivable: the drawn shot
+    deals exactly TWICE the tapped one in DE's export, so the 2x is a charge
+    multiplier outside the additive bracket and CO computes on half. The
+    Cernos Prime carries 0.5 for the same reason.
+  columns_are_braton_mk1: |
+    THE COLUMNS ARE Braton | Mk1-Braton | Braton Vandal | Braton Prime, from the
+    table's `! class=unsortable` header rows — NOT from the page's opening
+    sentence, which lists them in a different order (Braton, Vandal, Prime,
+    Mk1). Reading the sentence makes three of the four look wrong.
+  condition_crit_chance_hit: |
+    The condition is on the crit chance THE HIT HAS — the panel plus every live
+    bonus, Puncture's Weakened included (the wiki's own note on this row) —
+    which no `condition:` here can express, since every one of those asks about
+    the Tenno or the target. Its own kind, granted late in `resolve` and
+    re-checked per shot by the sim (see furis_prelude_of_might for the argument).
+  condition_overload_behavior_class: |
+    Condition Overload behavior class. The wiki's CO catalog carries ONE Braton
+    row and it is the Incarnon form's RADIAL (see the incarnon entry); this
+    attack has none, and absence there means ORDINARY rather than unknown. The
+    CO base excludes an evolution's flat damage automatically (`co_base_fraction`
+    stays at the loader's 1.0), which is what the catalog's 95% column is saying
+    from the other side: 70 of the radial's 74 feed the bonus, and the missing 4
+    is Daring Reverie's.
+  condition_overload_catalog_names: |
+    Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
+    (docs/CATALOGS.md §1):
+  condition_overload_catalog_names_2: |
+    Condition Overload: THE CATALOG NAMES THIS ONE and it is MULTIPLYING. Verbatim
+    row (docs/CATALOGS.md §1):
+  condition_overload_granted_evolution: |
+    CONDITION OVERLOAD, granted by an evolution — the same per-type rate the
+    Galvanized mods and the innate sources feed, diluted and combined by the
+    weapon's own `co_behavior` (Additive here) rather than forming a bucket of
+    its own. An evolution grants a rate and never decides how it combines.
+  condition_overload_no_row: |
+    Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+    ordinary Additive at the full +100%.
+  condition_overload_no_row_2: |
+    Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+    ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+    and neither of this weapon's is named.
+  condition_overload_no_row_3: |
+    Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+    — ordinary Additive at the full +100%. The catalog gives a class PER
+    ATTACK and none of this weapon's is named.
+  condition_overload_no_row_4: |
+    Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+    ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+    and none of this weapon's is named.
+  condition_overload_no_row_5: |
+    Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+    ordinary Additive at the full +100%.
+  condition_overload_no_row_6: |
+    Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+    ordinary Additive at the full +100%. Absence means ORDINARY.
+  condition_target_evaluated_per: |
+    A CONDITION ON THE TARGET, evaluated per damage instance because the
+    target's health is falling while the shot resolves.
+  cone_half_angle_from: |
+    Cone half-angle from the reticle, degrees — wiki
+    Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  cone_half_angle_from_2: |
+    Cone half-angle from the reticle, degrees — wiki
+    Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+    never inherited, so every form states its own.
+  cuts_other_way_wiseman: |
+    AND IT CUTS THE OTHER WAY. Wiseman's Regard pays MORE the more crit you
+    have; this one is LOST the moment you cross the line. Same reading, opposite
+    sign, so the two must not be reasoned about together.
+  damage_per_grip_published: |
+    DAMAGE IS PER GRIP, published per grip. There is no formula behind these
+    — the module states one vector per grip and this is that table.
+  de_s_own_compatibility: |
+    DE's own compatibility tags, transcribed. They are what a mod pool and
+    an equip rule are decided from elsewhere in this repo.
+  de_s_own_incompatibility: |
+    DE's own incompatibility tags, from the wiki's `Module:Mods/data`
+    (`IncompatibilityTags`) — the same list the mod infobox prints. The
+    WFCD export carries no such field, so this module is the only
+    structured source for what a mod REFUSES to be equipped on.
+  decay_read_mods_data: |
+    `decay` is NOT read by mods_data. The engine hardcodes the matching model
+    per effect kind — `LiveStacks` (dummy.rs): on timeout lose ONE stack and
+    reset the timer. This line is the written record, not the source.
+  declared_no_co_catalog: |
+    NOT DECLARED: no CO catalog row for this weapon, so the radial
+    takes the engine's default — no Condition Overload on an explosion.
+  defined_once_referenced_id: |
+    Defined once and referenced by id, because six effects are shared by dozens
+    of augment mods and by the Syndicate weapons themselves — a payload copied
+    onto each card would be the same six facts written many times, free to
+    disagree. A mod names its syndicate; the numbers live here.
+  docs_catalogs_md_braton: |
+    docs/CATALOGS.md: "Braton family | Incarnon Form Radial | 95% | Adding |
+    derived: 70 + 4 = 74, 70/74". That +4 is Daring Reverie's, and Munitions Grit
+    is its tier-2 twin — flagged together the way the Atomos's, the Zylok's and
+    the Burston's tier-2 pairs already are.
+  drain_max_rank_come: |
+    DRAIN AND MAX RANK COME FROM THE EXPORT, which is the ONE standing exception
+    to "the wiki wins" (AGENTS.md): the wiki is wrong about them for ~20 mods.
+    The RANK TABLE and the description are the wiki's own.
+  each_note_decides_something: |
+    EACH NOTE DECIDES SOMETHING. "May originate from any source" costs nothing
+    here — the engine asks the TARGET what it is carrying and not who put it
+    there. "Once per enemy hit" is why the roll is per SHOT and not per pellet,
+    which on a shotgun is a tenfold difference. "Does not affect the Incarnon
+    form" is the card-level flag above.
+  early_access_said_page: |
+    EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
+    frame layer it will eventually live in, so the section is deliberately small:
+    pick the buff, set the strength, set how long it lasts. When frames land, the
+    strength comes from the frame and the duration from Ability Duration, and
+    these files stay as they are.
+  edge_gap_see_docs: |
+    AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+    this simulator cannot pay it out, and the reason will not change with
+    any amount of work on evolutions.
+  edge_gap_see_docs_2: |
+    AN EDGE, NOT A GAP — see docs/UNMODELLED.md. VERBATIM
+    (Braton_Incarnon_Genesis, the row's effect cell and its notes):
+      * On Punch Through Hit: '''20%''' chance for '''10%''' Ammo restored.
+      * The bonus does not apply to the Incarnon form.
+      * A second target does not need to be hit, the bullet just has to have
+        some amount of punch-through.
+    The variant cell is one colspan="4" dash, so all four Bratons take it.
+  edge_gap_whose_shield: |
+    AN EDGE, NOT A GAP. WHOSE shield is the whole question, and only one page
+    in the family answers it — the Gorgon's notes cell: "This is on personal
+    shield break, not breaking enemy shields." The Lex's page says nothing at
+    all, so reading the weapon you are working on would have left it a coin
+    flip between a trigger this sim fires constantly and one it can never fire.
+  enforced_unlike_kuva_or: |
+    ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+    Eleanor, so there is no lich to vanquish under the requirement.
+  entry_read_adding_at: |
+    THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
+    ordinary class assumed because nobody had opened the catalog for this
+    weapon — the check was run against our own transcription of it, which
+    only ever carried the rows the roster already had.
+  every_effect_listed_including: |
+    EVERY EFFECT IS LISTED, including the ones this simulator cannot pay. A shard
+    that is absent reads as a shard that does nothing, and the reader cannot tell
+    that from one that was never transcribed.
+  every_eight_buys_something: |
+    EVERY ONE OF THE EIGHT BUYS SOMETHING THIS ARENA DOES NOT HAVE, and each says
+    which rather than sharing one sentence: see the `unmodeled`/`out_of_scope`
+    line on each. That is the point of loading them at all — a card a player owns
+    and cannot find in the builder is indistinguishable from one the app got
+    wrong, and now the builder offers it and states what it is worth here.
+  every_stat_wiki_page: |
+    Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
+    `warframe-items` supplied `internal_name` and was cross-checked on the
+    rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).
+  every_stat_wiki_page_2: |
+    Every stat is the wiki page's Atmosphere tab. WFCD `warframe-items` was
+    read for `internal_name` only: its Arch-Gun entries are the ARCHWING
+    column, which is the wrong one here (docs/DATA_SOURCES.md).
+  explosion_single_target_relevant: |
+    THE EXPLOSION. Single-target relevant in full: a 25 m radius is one the
+    arena's only enemy is always inside, so this lands whole.
+  family_conditional_half_larger: |
+    ON THIS FAMILY THE CONDITIONAL HALF IS THE LARGER ONE for three of the four,
+    which is worth knowing before reading an unticked Braton as its ceiling.
+  fifo_each_stack_own: |
+    FIFO, EACH STACK ON ITS OWN CLOCK — the same rule Stormburst carries, and
+    observed the same way, in game.
+  file_spelled_unmodelled_stayed: |
+    THIS FILE SPELLED IT `unmodelled_*` and so stayed inert when the perk was
+    implemented: six of the twelve weapons carrying it were written
+    this way and the other six as `reload_speed_bonus`, so a fix to the loader
+    reached half of them. The spelling is the data's, not the mechanic's.
+  fires_once_per_pull: |
+    ...and it fires ONCE PER PULL: "AoE does not scale off multishot".
+    MEASURED on this family (M41, owner 2026-08-11): the Braton Prime's
+    Incarnon form at multishot 2.5 puts out one explosion per TRIGGER PULL,
+    not one per pellet — two rounds, two explosions against the ~5 pellets
+    they fired. Before that this line rested on the catalog row alone, and
+    the row admitted a reading where the sentence was about the TABLE's
+    arithmetic rather than about the game.
+  form_transformation_releasing_early: |
+    A FORM, NOT A TRANSFORMATION: releasing early costs nothing — no gauge,
+    no transmute animation, just a shorter press — which is why this entry
+    carries no `transforms_from`. See docs/GLOSSARY.md "FORMS".
+    TWO WEAPONS MODEL: base and Incarnon forms are
+    separate entries linked by a transform group.
+  from_ammo_pool_last: |
+    "FROM AMMO POOL" is the last clause and it is not decoration: the round is
+    drawn from the reserve like any other, so a dry one restores nothing. And a
+    restore is not a RELOAD — nothing that watches reloads sees it.
+  furis_incarnon_mode_projectile: |
+      Furis | Incarnon Mode | Projectile | 100 or 128 (with Evolution II) | 100 |
+        100% or 78% | Adding | "CO-bonus does not use base damage increase
+        Evolution"
+  gauge_switched_entering_costs: |
+    Gauge-switched: entering it costs a charge meter and a transmute animation,
+    which is what gives the sim a two-form CYCLE to run.
+  generalisation_weapons_without_row: |
+    NOT A GENERALISATION TO WEAPONS WITHOUT A ROW. The default stays what the
+    catalog says it is: follow the wiki, and let a MEASUREMENT
+    re-certify an entry. Absence still means ordinary.
+  genesis_family_s_adapter: |
+    THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+    of them carry the same ladder; a value that differs between them is
+    printed per variant by the wiki and transcribed per variant here.
+  genesis_family_s_adapter_2: |
+    THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+    of them carry the same ladder; a value that differs between them is
+    printed per variant by the wiki and transcribed per variant here.
+    BASE FORM ONLY — the card's last clause, "Does not affect Incarnon Form",
+    qualifies the whole perk. The evolution is still EQUIPPED in both forms (one
+    Genesis ladder), so the engine skips it when building the Incarnon entry
+    rather than refusing to select it.
+  genesis_family_s_adapter_3: |
+    THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+    of them carry the same ladder; a value that differs between them is
+    printed per variant by the wiki and transcribed per variant here.
+    THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+  genesis_family_s_adapter_4: |
+    THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+    of them carry the same ladder; a value that differs between them is
+    printed per variant by the wiki and transcribed per variant here.
+    The bonus does not affect the Incarnon form (the row's third note), and that
+    is a property of the CARD rather than of one of its effects.
+  genesis_family_s_boar: |
+    THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
+    Boar or the Boar Prime, and the wiki's evolution table proves the two get the
+    SAME evolutions: every row spans both weapon columns with a dash
+    (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+    difference". So the value below is THIS weapon's, which happens to be the same
+    number the other one carries — and if DE ever splits them, the table grows a
+    real cell and the two files diverge there.
+  genesis_family_s_boltor: |
+    THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
+    three Boltors, so all three carry the same ladder of nine perks. Where a value
+    DIFFERS between them the wiki's table prints a per-variant column, and the
+    number below is this weapon's.
+  genesis_family_s_braton: |
+    THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+    four Bratons, so all four carry the same ladder of nine perks. Where a value
+    DIFFERS between them the wiki's table prints a per-variant column, and the
+    number below is this weapon's.
+  genesis_family_s_braton_2: |
+    THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+    four Bratons, so all four carry the same ladder of nine perks. Where a value
+    DIFFERS between them the wiki's table prints a per-variant column, and the
+    number below is this weapon's.
+    "The bonus does not apply to the Incarnon form" (the row's first note).
+  genesis_family_s_burston: |
+    THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+    Burston or the Burston Prime, and the wiki's evolution table proves the two
+    get the SAME evolutions: every row spans both weapon columns with a dash
+    (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+    difference".
+  genesis_family_s_furis: |
+    THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
+    Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
+    DIFFERS between them the wiki prints it as a pair, and the number below is
+    this weapon's.
+  genesis_family_s_latron: |
+    THE GENESIS IS THE FAMILY'S. One Latron Incarnon Genesis upgrades any of the
+    three Latrons, so all three carry the same ladder of nine perks. Where a value
+    DIFFERS between them the wiki's table prints a per-variant column, and the
+    number below is this weapon's.
+  ground_field_family_here: |
+    A GROUND FIELD, and the one family here that is not a weapon stat at all: on
+    a kill, with a 20% chance, it leaves something on the floor that deals its
+    OWN damage for a while to whatever comes near. Every number is transcribed
+    below; what is missing is the machinery.
+  guaranteed_impact_every_shot: |
+    GUARANTEED IMPACT, every shot — the wiki module's `ForcedProcs` for this
+    attack. WFCD's export carries no such field, so the bulk intake had no
+    source for it and this weapon under-reported its status. A type that is
+    always present is also a permanent +1 to Condition Overload's count.
+  head_worth_1x_attack: |
+    THE HEAD IS WORTH 1x on this attack. The module gives it
+    `ExtraHeadshotDmg: -2`, which put through the additive headshot bracket would
+    be NEGATIVE and heal the target — so what is transcribed is the wiki's own
+    sentence for the same field on the Arca Plasmor, "1x headshot multiplier". The
+    shot still counts as a HEAD (Primary Deadhead pays on it); only the enemy's
+    own multiplier is overruled, and the critical-headshot doubling goes with it.
+  health_pools_front_target: |
+    HEALTH, not the pools in front of it: a target still on its shields or its
+    overguard is not below half HEALTH, and reading the total would switch this
+    on at the start of every fight against an Eximus.
+  identical_wording_value_burston: |
+    Identical in wording and value to the Burston's Fatal Affliction, which has
+    carried this since it was hand-checked; these ten were left inert only
+    because the bulk intake had no rule for the clause, not because anything
+    about them was in doubt.
+  incarnon_form_13_base: |
+    The Incarnon form is 13 base + this +42 = 55, and a crit is x3.0, so the
+    direct hit before CO is 165. Solving each reading for the fraction CO reads:
+  incarnon_transformation_economy_wiki: |
+    The Incarnon transformation economy (wiki Braton Incarnon Genesis), and it is
+    the FAMILY's: all four Bratons share this gauge.
+  inherited_co_catalog_gives: |
+    NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+    has no row for either of its two. Absence means ORDINARY.
+  inherited_co_catalog_gives_2: |
+    NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+    weapon's is named. Absence means ORDINARY.
+  inherited_co_catalog_gives_3: |
+    NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of
+    this weapon's is named. Absence means ORDINARY.
+  inherited_co_catalog_gives_4: |
+    NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
+    this weapon's is named. Absence means ORDINARY.
+  kitgun_has_no_published: |
+    A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
+    and `engine::kitguns_data` composes them. This file is the CHAMBER's half —
+    everything a grip and a loader do not touch, plus the two tables that are
+    published PER GRIP because DE publishes them that way rather than as a
+    formula.
+  kitgun_rather_than_modular: |
+    `kitgun` rather than `modular`: a Zaw's Exodia and an Amp's Virtuos are the
+    same shape and are NOT these, so the seat is named for the family that fits
+    it. Filed under one directory because arcane ids are globally unique.
+  loaded_any_code_data: |
+    NOT LOADED BY ANY CODE. `data/debuffs/` is the written SPEC for status
+    effects: no `files_under("debuffs/")` call exists, and the behaviour is
+    hand-implemented in `engine::dummy` / `engine::status`, which cite these
+    files by name. Changing a number here changes nothing on its own — it is a
+    documentation change that also needs the matching code edit and a test.
+    See data/README.md "Conventions".
+  magazine_grows_does_fill: |
+    THE MAGAZINE GROWS, IT DOES NOT FILL. A reload still draws from the reserve
+    as it always did; what the stack buys is room for the next draw to use.
+  malus_false_wiki_listed: |
+    `malus: false` = wiki-listed bonus-only, never the negative stat.
+    `kind: unmodeled` = a real riven stat the engine does not model; it
+    still occupies a rolled slot and still shapes the name.
+  max_rank_at_100: |
+    Max rank at 100% Ability Duration, in seconds. The page lets you
+    override it — or run the whole fight, which is the honest way to
+    ask what a weapon is worth UNDER Roar rather than around it.
+  may_be_given_any: |
+    AND IT MAY NOT BE GIVEN ANY — this attack has an area-of-effect component,
+    so the punch-through page's class rule applies and the engine refuses Shred
+    and both Augers on it. The `radial:` block below states the shape.
+  mod_arcane_weapon_perk: |
+    Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
+    player's own frame) does to this weapon for a while. It belongs to the
+    SCENARIO — two builds compared under the same Roar is a comparison, one of
+    them getting it is not — and the BOARD carries none of these, which is what
+    keeps a board row a statement about the weapon.
+  modelled_arena_has_no: |
+    NOT MODELLED — the arena has no distance, so this weapon is
+    simulated at point blank. Recorded because the RIVEN pool reads
+    it: a hitscan weapon that lists a falloff still rolls Projectile
+    Speed, which scales the whole range (wiki `Projectile Speed`).
+  modelled_declared_rather_than: |
+    NOT MODELLED, and declared rather than left undefined — which is the whole
+    convention here (see hunter.yaml): a set whose bonus does nothing for the
+    WEAPON is still written down, so the app can say so instead of being silent.
+  modelled_no_rule_clause: |
+    NOT MODELLED — no rule for this clause, so it loads as
+    `EvoEffect::Inert` and both the builder and the optimizer print it
+    as such. VERBATIM: "Stacks up to 4x"
+  module_says_active_grenade: |
+    THE MODULE SAYS `Active` — a grenade DETONATED BY HAND. This engine
+    has one trigger, so the shot is semi-auto and the blast lands where it
+    falls; what a second trigger buys is in `unmodeled:`.
+  module_weapons_data_form: |
+    Module:Weapons/data, this form's own attack row (Incarnon Form). It read 0.0
+    until 2026-08-21 — not a measurement, an unfilled field, and one that
+    was harmless while the arena had a single body and stopped being so
+    when `space::traverse` started spending it (AGENTS.md, punch through).
+  multishot_surcharge_whose_four: |
+    The multishot surcharge, whose four rules are transcribed in full on
+    data/evolutions/torid_plentiful_mayhem.yaml — an INDEPENDENT multiplier, on
+    the projectiles multishot GENERATED only, paid for out of Capacity, and able
+    to STARVE when the pool runs low.
+  natural_incarnon_phenmor_carries: |
+    A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+    belongs to the weapon rather than to an adapter shared by a family. Five
+    tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+    differently from the 31 adapters.
+  natural_incarnon_phenmor_carries_2: |
+    A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+    belongs to the weapon rather than to an adapter shared by a family. Five
+    tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+    differently from the 31 adapters.
+    NO `icon:`. The field is optional and the build FAILS on one that does not
+    resolve to a real image, so a guessed wiki file name is worse than none —
+    these five had no verified `File:` name and the Laetum's thirteen ship
+    without icons for the same reason.
+  no_charge_uncharged_shot: |
+    NO CHARGE. An uncharged shot has no draw at all, and `charge_seconds: 0.0`
+    is refused outright — "a 0.0 charge outside a bow is just a fire rate".
+    Omitting it is the spelling that means "no draw"; a bow may state a zero
+    because there the draw IS the cycle and the magazine is one arrow.
+  no_clock_card_any: |
+    NO CLOCK ON THIS CARD, in any of the three families that carry it: nothing
+    says the stacks expire and nothing says an event takes them, so the cap is
+    the only thing that stops it.
+  no_co_catalog_row: |
+    No CO catalog row for this attack, so the ordinary class — absence in that
+    catalog means ORDINARY rather than unknown, since it lists the anomalies.
+  no_condition_overload_row: |
+    No Condition Overload row for this weapon, so the ordinary class — the
+    catalog "lists only discrepant attacks. Anything not listed should be assumed
+    to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
+    appears in it at all).
+  no_duration_card_states: |
+    NO DURATION — the card states none and the wiki states the reset instead:
+    "resets entirely upon reloading. Entering Incarnon Form counts as reloading
+    but exiting does not."
+  no_duration_verbatim_wiki: |
+    NO DURATION — VERBATIM (wiki): "There is no timer—the stacks persist until
+    a reload occurs."
+  no_other_variant_says: |
+    NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE. A file
+    that states two weapons' values is a file where the reader has to work out
+    which one they are looking at, every time.
+  no_range_row_attack: |
+    NO RANGE ROW on this attack — the page states none. See
+    data/surveys/weapon_range.yaml.
+  no_range_row_attack_2: |
+    NO RANGE ROW on this attack — the page states none. See
+    data/surveys/weapon_range.yaml.
+    PRIMARY COMPRESSION — the published table names this attack. Verbatim
+    (docs/CATALOGS.md §2):
+  no_range_row_attack_3: |
+    NO RANGE ROW on this attack — Projectile at 100 m/s. See
+    data/surveys/weapon_range.yaml.
+  no_range_row_attack_4: |
+    NO RANGE ROW on this attack — Projectile at 70 m/s. See
+    data/surveys/weapon_range.yaml.
+  no_range_row_attack_5: |
+    NO RANGE ROW on this attack — Projectile at 90 m/s. See
+    data/surveys/weapon_range.yaml.
+  notes_cell: |
+    Notes cell:
+      CO-bonus only applies to base (uncharged) damage; bows have innate 2x
+      damage multiplier when fully charged
+  nothing_here_takes_overshields: |
+    NOTHING HERE TAKES OVERSHIELDS AWAY (UNMODELLED.md — nobody shoots back), so
+    this is a state the player declares rather than one the fight tracks. Off by
+    default, like every other Tenno field: with nobody having said so, the
+    wielder claims nothing.
+  only_element_restore_buff: |
+    Only the ELEMENT, the restore and the buff differ, which is why those three
+    are the only fields that vary below.
+  order_de_s_own: |
+    `order` is DE's own index in upgradeEntries. Stats that share a base
+    are worth exactly the same at the same roll, so the name's magnitude
+    ordering ties between them. This is what breaks it.
+  other_tab_transcribed_rather: |
+    THE OTHER TAB, transcribed rather than derived — both columns are written
+    down so either can be checked against the page without arithmetic.
+  own_seat_whole_point: |
+    ITS OWN SEAT, and that is the whole point: a Kitgun holds one of these AND an
+    ordinary Primary/Secondary arcane at the same time. The wiki says so in as
+    many words — "These can be installed simultaneously with Secondary/Primary
+    arcanes" (`Kitgun` §Kitgun Arcanes) — so filing this family under the weapon's
+    own slot made the two compete for one seat and the reader pick between a Pax
+    and a Merciless, which the game never asks.
+  personal_shields_break_when: |
+    Personal shields break when something SHOOTS YOU, and nothing does here
+    (UNMODELLED.md §6). So this pays exactly zero in every fight this simulator
+    runs, today and after any amount of work on evolutions — which is a
+    different sentence from "not modelled yet" and now reads as one.
+  primary_compression_published_table: |
+    PRIMARY COMPRESSION — the published table names this attack. Verbatim
+    (docs/CATALOGS.md §2):
+  progenitor_bonus_see_data: |
+    THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+    quoted Characteristic. Seven elements, never Puncture and never Slash.
+  railjack_variant: |
+    railjack_variant: >-
+    None - no Railjack counterpart; excluded from Railjack proc weighting.
+  ramps_with_rank_wfcd: |
+    RAMPS with rank (WFCD levelStats); `duration` is the max-rank value
+    the engine builds with, `duration_rank0` is where the card starts.
+  range_wall_ramp_full: |
+    THE RANGE IS A WALL, NOT A RAMP: full damage to the end of it and
+    literally nothing past it. Transcribed from the wiki's Range stat; it
+    already sat in this file's `beam_range` note, which the engine could
+    not read.
+  rank_40_30_polarizing: |
+    RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+    at rank 40 after 5 polarizations, granting the weapon additional mod
+    capacity" (docs/INVESTMENT.md).
+  read_at_moment_hit: |
+    THIS one is read AT THE MOMENT OF THE HIT, so a crit source that lives on
+    the TARGET counts: the row's note names Puncture outright ("Condition is
+    affected by the critical chance increase effect of Puncture status"), and
+    Puncture is the only source that can raise your crit chance without your
+    panel ever moving. Wiseman's Regard is the opposite — resolved once off the
+    panel, and its own row names King's Gambit and Cascadia Accuracy as things
+    it does NOT see.
+  read_engine_nothing_engine: |
+    NOT READ by the engine: nothing in engine/ references
+    `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
+    It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
+    per trace - unless they are Flamethrowers", and the only beam in the
+    roster is the Torid's Incarnon form, whose pool is charge-backed and
+    "not affected by Ammo Efficiency" — i.e. outside the ammo economy that
+    rule exists to help. So nothing in the sim turns on it today. See
+    docs/MECHANICS.md "Continuous ammo cost" for what would settle it.
+  rides_fight_s_tenno: |
+    It rides on the fight's Tenno for the same reason an aura does — it is the
+    WARFRAME's, not the weapon's.
+  rifle_mods_pool_per: |
+    RIFLE MODS. The pool is PER WEAPON on this class and it is the field most
+    worth getting right: a sentinel weapon is not a Primary, DE's compat tag is
+    SentinelWeapons rather than LongGuns, and the page's own "Mod Pool" row is
+    what decides. This one says Rifle. The `primary` pool (Hunter Munitions,
+    Vigilante) is NOT claimed — unsourced either way, and omitting compatibility
+    we cannot cite beats inventing it (the rule verglas_prime.yaml set).
+  rifle_mods_quoted_rather: |
+    RIFLE MODS, and this one is quoted rather than read off a row: the page's own
+    opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
+    weapons were held back a night because the infobox row would not extract and
+    guessing a mod pool is the one thing this class must not do.
+  robotic_companion_weapon_moa: |
+    ROBOTIC COMPANION WEAPON — a MOA's, not a Sentinel's, but the same equipment
+    slot and the same rules here: no exilus, no arcane, an infinite reserve, and
+    a mod pool that is the weapon's own rather than the class's.
+  round_reload_shell_at: |
+    BY-ROUND RELOAD — a shell at a time, interruptible, and the magazine size
+    is IN the reload time. That is the part that was missing: a magazine mod
+    on this weapon buys capacity and PAYS for it in downtime, and modelling
+    the reload as one flat block made Ammo Stock read as free.
+  same_statement_gated_player: |
+    …and the SAME statement, gated on the player. "With Overshields" is a
+    question about who is carrying the gun, exactly as "With Armor Over 450" and
+    "With Energy Max Over 700" are, so it is one more `TennoGate` — a yes/no,
+    since the card asks whether you HAVE them and not how many.
+  same_statement_gated_player_2: |
+    …and the SAME statement, gated on the player. A channeled ability is a
+    STATE this arena cannot observe — it fires one weapon and casts nothing —
+    so the player declares it, the same way overshields are declared. What the
+    note requires is an ENERGY DRAIN over time, which is not modelled either;
+    the control's own wording carries that, since ticking it for a Desecrate
+    would be wrong by the card's own definition.
+  sentinel_weapon_own_equipment: |
+    SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
+    companion. NO exilus slot and NO arcane; both follow from `class` containing
+    "sentinel", so their absence here is a fact rather than an omission.
+  sentinel_weapons_draw_from: |
+    Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
+    economy to model, so no `ammo_max`. The magazine and reload are real.
+  shard_pick_mod_socket: |
+    A SHARD IS A PICK, not a mod: the socket holds ONE of the effects below, and a
+    TAUFORGED shard of the same colour grants the larger number ("50% higher stat
+    bonuses"). So a Warframe carries up to five (colour, effect, tauforged) picks.
+  sim_convenience_with_gauge: |
+    SIM CONVENIENCE: with the gauge LOCKED full the cycle reduces to a
+    magazine/reload model the plain sim consumes directly.
+  stack_cap_was_separate: |
+    The stack cap was a separate inert effect until now; it is this grant's
+    ceiling, not a mechanic of its own.
+  stalker_s_six_acolytes: |
+    One of the Stalker's six Acolytes. The statline, the stack caps and the
+    1x head below are the family's, identical across all six — they are written
+    out here rather than shared because a target has to stand on its own, and
+    explained once in angst.yaml. Sourcing: docs/DATA_SOURCES.md §Acolytes.
+  stat_from_other_capped: |
+    ONE STAT FROM THE OTHER, capped. "CURRENT Critical Chance" is the MODDED
+    value, and the mirror perk's own note is the proof: the Dera's High Ground
+    reads "+366.7% Status Chance is needed to max out the Critical Chance bonus",
+    and 0.30 x (1 + 3.667) = 1.40 is exactly what a 35% cap at 25% a point
+    demands. Same arithmetic, read the other way round.
+  stats_are_chambers_own: |
+    THE STATS THAT ARE THE CHAMBER'S OWN — everything a grip and a loader
+    do not touch.
+  swing_trigger_pull_engine: |
+    A SWING IS NOT A TRIGGER PULL. The engine reads this field for exactly
+    three values — `held` (a beam), `charge` and `burst` — so `melee` matches
+    none of them and is simply the truth; the page then prints the form's name
+    with no parenthetical, where `semi_auto` had it reading "Neutral Combo
+    (semi-auto)".
+  taken_at_cap_weapon: |
+    TAKEN AT THE CAP, and on this weapon that is nearly exact rather than a
+    convention. One thrown orb strikes six times and each strike reaches
+    `floor(3 x multishot)` bodies, so a bare build lands 18 hits with the FIRST
+    orb against a 15-stack cap; the buff lasts 20 s and the meter throws another
+    orb about every 18 s once the primary fire is filling it.
+  terminal_blast_bores_through: |
+    A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
+    which is why this weapon takes punch-through mods where an ordinary
+    explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+  terminal_blast_form_carries: |
+    A TERMINAL BLAST. This form carries an explosion AND an evolution that
+    rewards punch-through hits ("Gunsmoke Pick Up — On Punch Through Hit: 20%
+    chance for 10% Ammo restored"), so it cannot be a weapon that refuses
+    punch through. DEFAULTED to the Burston's answer
+    rather than measured: one shot at one enemy would confirm whether the
+    blast lands on it or behind it. See `weapons_data::BlastKind` and
+    MEASUREMENTS M53.
+  threshold_50_family_against: |
+    The threshold is 50% on this family against the Furis's 40%, and it bites
+    harder here: taking it means holding crit chance under half, which Critical
+    Parallel and Survivor's Edge in the same tier both push against.
+    HOW THIS DIFFERS FROM THE SICARUS'S WISEMAN'S REGARD — two perks that both
+    say "Critical Chance" and read two different numbers.
+  threshold_what_makes_row: |
+    The threshold is what makes the row's OTHER note true — *"Equipping Amalgam
+    Serration will allow any Warframe to reach the threshold"* — since the
+    slowest frame reaches 0.9 x 1.25 = 1.125, which clears 1.1 and not 1.2.
+  tome_mod_grimoire_tome: |
+    A TOME MOD. The Grimoire is a Tome, and *"Tomes can equip Pistol Mods but also
+    have access to unique Tome Mods that grant player buffs or enemy debuffs"*
+    (wiki `Tome`) — so this pool sits BESIDE `pistol` rather than replacing it.
+  transcribed_per_row_rather: |
+    It is transcribed PER ROW rather than generalised: the Bronco's Speeding
+    Bullet prints the same 1.2 and its Notes cell carries no such line, so it
+    keeps 1.2. Six of the roster's eight sprint gates move and two do not.
+  trigger_reachable_here_does: |
+    THE TRIGGER IS REACHABLE HERE. It does NOT need a second body behind the
+    first — the wiki says the opposite in as many words — so `one_target` is
+    the wrong reason to admit anything about it.
+    What it cannot pay out is the payload: this arena runs on infinite ammo, so
+    a restored round buys nothing.
+  two_at_time_across: |
+    TWO AT A TIME, ACROSS BOTH WEAPONS: "Residual Arcanes can only have **two**
+    active puddles at a time. For example; creating two puddles with a primary
+    kitgun will prevent both your primary *and* secondary kitgun from creating
+    any until the first two expire." A cap that spans two equipped weapons is
+    outside anything this arena can express — it fires one weapon.
+  two_attack_parts_incarnon: |
+    TWO ATTACK PARTS. "Incarnon Form has a 3 meter area of effect that deals pure
+    Heat damage, with much higher Critical Chance, Critical Multiplier, and Status
+    Chance. Fire Rate is reduced, and the explosion possesses Damage Falloff from
+    100% to 90% from central impact."
+  two_columns_fields_below: |
+    TWO COLUMNS, and the fields below are the ATMOSPHERE one because this arena is
+    the ground. See docs/WEAPON_INTAKE.md §1: the page's infobox has an `Archwing`
+    tab and an `Atmosphere` tab, WFCD carries only the Archwing one, and the two
+    differ in damage, reserve, reload and shot type while agreeing on crit,
+    multiplier, status, fire rate and magazine.
+  two_weapons_model_base: |
+    TWO WEAPONS MODEL: base and Incarnon forms are
+    separate entries linked by a transform group.
+  two_weapons_model_base_2: |
+    TWO WEAPONS MODEL: base and Incarnon forms are separate
+    entries linked by a transform group.
+  two_weapons_model_base_3: |
+    TWO WEAPONS MODEL: base and Incarnon forms are separate
+    entries linked by a transform group. The Incarnon form exists only once the
+    Braton Incarnon Genesis is installed and its tier-1 evolution taken.
+  verbatim_braton_incarnon_genesis: |
+    VERBATIM (Braton_Incarnon_Genesis, EVO2, the row's effect cell and its note):
+      * Increase Base Damage by '''+X'''.
+      * With [[Channeled Abilities|Channeled Ability]] active: Increase Base
+        Damage by '''+Y'''. '''+50%''' Ammo Efficiency
+      | X = 24<br>Y = 30 | X = 28<br>Y = 22 | X = 12<br>Y = 34 | X = 4<br>Y = 38
+      * Channeled Abilities must be draining energy to be considered active.
+        Abilities that do not drain energy over time such as Nekros's Desecrate,
+        Hildryn's Haven, or Sevagoth's Gloom (with no enemies nearby) do not
+        count.
+  verbatim_mode_switching_instantaneous: |
+    VERBATIM: "Mode switching is not instantaneous and has an animation equal
+    to the weapon's reload speed."
+  verbatim_strun_incarnon_genesis: |
+    VERBATIM (Strun_Incarnon_Genesis, EVO3, the row's effect cell and its notes):
+      *On hitting a target affected by an {{D|Electricity}} status, '''40%''' chance
+       to restore 1 round in the magazine from ammo pool.
+      *The status effect may originate from any source.
+      *The bonus can only apply once per enemy hit.
+      *The bonus does not affect the Incarnon form.
+    The variant cell is one colspan="4" dash, so all four Struns take it.
+  wall_ramp_full_damage: |
+    A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+    wiki: "Range: 300.0 m", Hit-Scan.
+  wall_ramp_full_damage_2: |
+    A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+    wiki: "Range: 300.0 m", Hit-Scan
+  wall_ramp_full_damage_3: |
+    A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+    wiki: "Range: 300.0 m" on this attack.
+  wall_ramp_full_damage_4: |
+    A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+    wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  wall_ramp_full_damage_5: |
+    A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+    wiki: "Range: 1000.0 m", Hit-Scan
+  wall_ramp_full_damage_6: |
+    A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+    wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan
+  wall_ramp_full_damage_7: |
+    A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+    wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan
+  warframe_half_read_weapon: |
+    THE WARFRAME HALF — NOT READ by a weapon-damage sim, and recorded because it
+    is real and because these two lines are what tell the six effects apart for a
+    player choosing between them. The restore scales off maximum MODDED health or
+    shield (rank-0 values for energy), and the buff is additive to mods of its
+    own type and lasts 30 s.
+  was_galvanized_rule_here: |
+    It was the Galvanized rule here, HARDCODED in the loader on the reading
+    that the card says nothing else. The difference is not cosmetic and it is
+    bigger on this perk than on Stormburst: under Galvanized decay one headshot
+    inside the window holds all TEN stacks, under this one it holds exactly
+    one, so a streak that lapses falls off a stack at a time instead of
+    surviving whole. At the cap a new stack evicts the oldest rather than being
+    dropped.
+  weak_point_crit_open: |
+    WEAK-POINT CRIT IS THE OPEN HALF. This engine reads the condition per SHOT,
+    not per pellet, so Pistol Acuity / Cascadia Accuracy / King's Gambit do not
+    move it — the argument being that those are properties of where a projectile
+    landed rather than of the weapon the condition asks about. The wiki's note
+    names only Puncture and settles nothing either way; the owner reads it as
+    counting and is measuring in game. If it counts, the check
+    moves into the pellet loop beside the weak-point bucket.
+  weapon_level_metadata_wiki: |
+    Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+    against WFCD warframe-items — 0 disagreements).
+  weapon_level_metadata_wiki_2: |
+    Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+    against WFCD warframe-items — 0 disagreements).
+  weapon_level_metadata_wiki_3: |
+    Weapon-level metadata (wiki infobox, cross-checked against WFCD
+    warframe-items — 0 disagreements).
+  weapon_level_metadata_wiki_4: |
+    Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+    against WFCD warframe-items — 0 disagreements).
+    NO ACCURACY ROW — the module states none for this weapon.
+  weapon_level_metadata_wiki_5: |
+    Weapon-level metadata (wiki `Module:Weapons/data/primary`, cross-checked
+    against WFCD warframe-items — 0 disagreements).
+  what_every_them_does: |
+    WHAT EVERY ONE OF THEM DOES, identically (the page states it once for all):
+      - 1000 damage of its own element in a 25 m radius, with a guaranteed
+        status proc;
+      - restores 25% of one Warframe attribute;
+      - a 30 s buff, additive to mods of its type;
+      - a 30 s cooldown after detonation, during which the weapon converts NO
+        affinity and the collected points reset to zero.
+  what_fixes_catalog_silence: |
+    WHAT THIS FIXES. The catalog's 24% was read as the RADIAL's alone, so the
+    DIRECT hit computed CO on the full 55 and the engine returned 231 where the
+    game gives 181 — a 28% overstatement on this build. The exclusion is the
+    PERK's, not the attack part's: it applies wherever the +42 landed.
+  which_buffs_replace_each: |
+    Which buffs REPLACE each other rather than adding. Same family =
+    only the strongest is running (wiki, Freeze Force).
+  why_reaches_direct_hit: |
+    WHY IT REACHES THE DIRECT HIT AND NOT ONLY THE ROW'S NAMED PART. The exclusion
+    belongs to the PERK, not to the attack part: the +4 raises whatever it lands
+    on, and CO reads the base BEFORE it wherever that is. Measured on the Burston
+    (MEASUREMENTS M48) — five readings across both of its forms, at two fractions
+    — and the Zylok family was already flagged this way. This is the third and
+    last of the catalog's three DERIVED-fraction rows; the other two were treated
+    so, and it was not.
+  why_separate_file_from: |
+    WHY THIS IS A SEPARATE FILE FROM THE OTHER SLOT. The chamber is the WEAPON
+    (mastery, riven family and the wiki page are all per chamber), but the two
+    slots are two stat blocks in DE's own module and the difference reaches the
+    damage TYPE. A flag could not carry that; two files can. See README.md.
+  x2_bows_clause_literal: |
+    The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale with
+    rank. BOTH sources agree: WFCD levelStats prints the same "x2" at every rank,
+    and the wiki's rank table carries a separate Fire Rate (Bows) column that is
+    exactly twice the rifle column at every rank. That column also settles the
+    scope - the multiplier applies to FIRE RATE only, not to punch through.
+    No bow is in data/weapons yet, so nothing models it.
+  zero_row_omission_arcane: |
+    ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+    attack at all, and saying so is the difference between "checked" and
+    "nobody looked".
+  zero_statement_rather_than: |
+    ZERO, and it is a statement rather than an absence: the nock alone
+    paces a tapped bow.

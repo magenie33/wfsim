@@ -3,21 +3,13 @@ name: Carnage Reign
 weapon: lato
 tier: 4
 description: "+40% Direct Damage per Active Status Type affecting target."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
-  # CONDITION OVERLOAD, granted by an evolution — the same per-type rate the
-  # Galvanized mods and the innate sources feed, diluted and combined by the
-  # weapon's own `co_behavior` (Additive here) rather than forming a bucket of
-  # its own. An evolution grants a rate and never decides how it combines.
+  # see notes: condition_overload_granted_evolution
   #
-  # Identical in wording and value to the Burston's Fatal Affliction, which has
-  # carried this since it was hand-checked; these ten were left inert only
-  # because the bulk intake had no rule for the clause, not because anything
-  # about them was in doubt.
+  # see notes: identical_wording_value_burston
   - kind: condition_overload
     value: 0.40
 

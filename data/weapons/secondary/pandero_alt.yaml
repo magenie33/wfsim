@@ -8,14 +8,11 @@ transform_group: pandero
 
 introduced: "20"
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
-# has no row for either of its two. Absence means ORDINARY.
+# see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 6.5
     max_deg: 18.0
@@ -35,8 +32,7 @@ attack:
   crit_multiplier: 2.8
   status_chance: 0.1
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m" on this attack.
+  # see notes: wall_ramp_full_damage_3
   range_m: 300.0
   damage: { impact: 18, puncture: 18, slash: 36 }   # total 72
 

@@ -11,8 +11,7 @@ mod_pools: [pistol]         # CompatibilityTags BEAM
 mastery_rank: 10
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 100.0
 disposition: 1.45            # riven disposition
 polarities: []               # the infobox states none
@@ -28,8 +27,7 @@ ammo_pickup: 40
 magazine: 80
 reload_seconds: 1.2
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
 # WHERE THE RAMP STARTS. "Damage ramps up from 25% to 100% over 0.6 seconds when

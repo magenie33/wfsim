@@ -8,14 +8,11 @@ transform_group: enkaus
 
 introduced: "42"
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
-# weapon's is named. Absence means ORDINARY.
+# see notes: inherited_co_catalog_gives_2
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 1.0
     max_deg: 1.0
@@ -34,16 +31,11 @@ attack:
   # here until 2026-08-20, which was the mod rule applied to the wrong half.
   # 1 m — the wiki module's figure for this attack.
   punch_through_m: 1.0
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
-  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
-  # (docs/CATALOGS.md §2):
+  # see notes: no_range_row_attack_2
   #
   #   Enkaus | Alt-Fire + AoE | 0% | Doesn't Work | N/A
   #
-  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
-  # attack at all, and saying so is the difference between "checked" and
-  # "nobody looked".
+  # see notes: zero_row_omission_arcane
   compression:
     effectiveness: 0.00
     stacking: multiplies

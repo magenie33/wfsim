@@ -12,9 +12,7 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [pistol]
 transform_group: tenet_plinx
 mastery_rank: 6
-# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
-# at rank 40 after 5 polarizations, granting the weapon additional mod
-# capacity" (docs/INVESTMENT.md).
+# see notes: rank_40_30_polarizing
 max_rank: 40
 
 # Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
@@ -68,8 +66,7 @@ valence:
   max: 0.60
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 1.0
     max_deg: 3.0

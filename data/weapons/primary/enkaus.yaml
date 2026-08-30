@@ -11,8 +11,7 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM
 mastery_rank: 12
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 1.0
 disposition: 0.7            # riven disposition
 polarities: [naramon]
@@ -33,15 +32,11 @@ ammo_pickup: 1
 magazine: 60
 reload_seconds: 2.2
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
-# and none of this weapon's is named.
+# see notes: condition_overload_no_row_4
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 1.0
     max_deg: 1.0

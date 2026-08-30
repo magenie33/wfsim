@@ -34,15 +34,11 @@ reload_seconds: 1.7  # module: Reload
 # WFCD's export does not carry it, so nothing cross-checked the first
 # transcription.
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
-# and none of this weapon's is named.
+# see notes: condition_overload_no_row_4
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 5.0
     max_deg: 15.0
@@ -55,8 +51,7 @@ attack:
   crit_multiplier: 2.1
   status_chance: 0.17
   punch_through_m: 0.0
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack
   damage: { impact: 20, puncture: 55 }   # total 75
 
 source:

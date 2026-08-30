@@ -3,10 +3,7 @@ name: Hunter's Mantra
 weapon: telos_boltor
 tier: 2
 description: "Increase Base Damage by +4. With Channeled Ability active: Punch Through +4 and +40% Accuracy."
-# THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
-# three Boltors, so all three carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_boltor
 selection: choose_one
 
 effects:

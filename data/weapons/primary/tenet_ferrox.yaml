@@ -11,13 +11,10 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, rifle]   # Speargun, CompatibilityTags PROJECTILE — as the Scourge
 transform_group: tenet_ferrox
 mastery_rank: 16
-# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
-# at rank 40 after 5 polarizations, granting the weapon additional mod
-# capacity" (docs/INVESTMENT.md).
+# see notes: rank_40_30_polarizing
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 16.7
 disposition: 1.15            # riven disposition
 polarities: [madurai, madurai, vazarin]
@@ -65,8 +62,7 @@ valence:
   max: 0.60
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 12.0
@@ -113,13 +109,10 @@ attack:
   # punch through distance", with a 1x body-part multiplier and no headshot
   # conditions, the engine's standing rule for every radial.
   radial:
-    # A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
-    # which is why this weapon takes punch-through mods where an ordinary
-    # explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+    # see notes: terminal_blast_bores_through
     blast_kind: terminal
     damage: { impact: 6, puncture: 42, slash: 12 }   # total 60
-    # THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
-    # no area part does. Verbatim (docs/CATALOGS.md §1):
+    # see notes: catalog_says_aoe_part
     #
     #   Tenet Ferrox | Hitscan AoE Direct | Hitscan | 240 | 800 | 333% | Adding
     #

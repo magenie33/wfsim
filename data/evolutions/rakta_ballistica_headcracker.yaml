@@ -3,9 +3,7 @@ name: Headcracker
 weapon: rakta_ballistica
 tier: 2
 description: "Increase Base Damage by +10. On Headshot: +7.5% Fire Rate for 4 seconds. Stacks up to 10x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
@@ -23,23 +21,15 @@ effects:
   # "Fire Rate bonus is additive to other sources of Fire Rate such as
   # Gunslinger" — which is the bracket this kind already lands in.
   #
-  # The stack cap was a separate inert effect until now; it is this grant's
-  # ceiling, not a mechanic of its own.
+  # see notes: stack_cap_was_separate
   - kind: on_headshot_fire_rate
     per_stack: 0.075
     max_stacks: 10
     duration: 4.0
     chance: 0.5
-    # FIFO, EACH STACK ON ITS OWN CLOCK — the same rule Stormburst carries, and
-    # observed the same way, in game.
+    # see notes: fifo_each_stack_own
     #
-    # It was the Galvanized rule here, HARDCODED in the loader on the reading
-    # that the card says nothing else. The difference is not cosmetic and it is
-    # bigger on this perk than on Stormburst: under Galvanized decay one headshot
-    # inside the window holds all TEN stacks, under this one it holds exactly
-    # one, so a streak that lapses falls off a stack at a time instead of
-    # surviving whole. At the cap a new stack evicts the oldest rather than being
-    # dropped.
+    # see notes: was_galvanized_rule_here
     decay: per_stack_expiry
 
 source:

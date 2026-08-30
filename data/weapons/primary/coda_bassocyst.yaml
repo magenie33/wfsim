@@ -9,12 +9,9 @@ class: shotgun
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, shotgun]
-# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
-# Eleanor, so there is no lich to vanquish under the requirement.
+# see notes: enforced_unlike_kuva_or
 mastery_rank: 17
-# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
-# at rank 40 after 5 polarizations, granting the weapon additional mod
-# capacity" (docs/INVESTMENT.md).
+# see notes: rank_40_30_polarizing
 max_rank: 40
 
 # Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked

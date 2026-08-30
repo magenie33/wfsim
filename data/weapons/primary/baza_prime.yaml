@@ -11,8 +11,7 @@ mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
 mastery_rank: 10
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 80.0
 disposition: 1.0             # riven disposition
 polarities: [madurai, madurai]
@@ -28,13 +27,11 @@ ammo_pickup: 80
 magazine: 60
 reload_seconds: 1.1
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 1.0
     max_deg: 1.5
@@ -47,8 +44,7 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.14
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m", Hit-Scan.
+  # see notes: wall_ramp_full_damage
   range_m: 300.0
   # "Shorter Damage Falloff distance for a hit-scan Weapon" — the page lists it
   # among the disadvantages, which is what makes it worth transcribing: half

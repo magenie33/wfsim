@@ -3,14 +3,7 @@ name: Lingering Judgement
 weapon: phenmor
 tier: 5
 description: "On 2 headshots within 2 seconds: +50% Headshot damage for 8 seconds."
-# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
-# belongs to the weapon rather than to an adapter shared by a family. Five
-# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
-# differently from the 31 adapters.
-# NO `icon:`. The field is optional and the build FAILS on one that does not
-# resolve to a real image, so a guessed wiki file name is worse than none —
-# these five had no verified `File:` name and the Laetum's thirteen ship
-# without icons for the same reason.
+# see notes: natural_incarnon_phenmor_carries_2
 selection: choose_one
 
 effects:

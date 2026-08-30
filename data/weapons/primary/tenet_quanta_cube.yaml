@@ -38,9 +38,7 @@ attack:
   # this attack, against 26% on the explosion beside it.
   status_chance: 1.0
   punch_through_m: 0.0
-  # AND IT MAY NOT BE GIVEN ANY — this attack has an area-of-effect component,
-  # so the punch-through page's class rule applies and the engine refuses Shred
-  # and both Augers on it. The `radial:` block below states the shape.
+  # see notes: may_be_given_any
   #
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Cube (direct hit): "Range: 15.0 m", Projectile at 25 m/s — a real

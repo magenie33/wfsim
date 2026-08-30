@@ -17,8 +17,7 @@ mod_pools: [primary, shotgun]
 mastery_rank: 10
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 9.1
 disposition: 0.95            # riven disposition
 polarities: [madurai, madurai]
@@ -40,8 +39,7 @@ reload_seconds: 2.8
 # multiplier is overruled.
 headshot_multiplier: 1.0
 
-# Condition Overload: THE CATALOG NAMES THIS ONE and it is MULTIPLYING. Verbatim
-# row (docs/CATALOGS.md §1):
+# see notes: condition_overload_catalog_names_2
 #
 #   Weapon       | Attack Name   | Projectile Type | Attack Unmodded Damage
 #                | Actual CO Damage Bonus at +100% | CO Damage Bonus Relative To

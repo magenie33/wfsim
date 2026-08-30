@@ -6,10 +6,7 @@ base_drain: 2                 # max drain 12 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/Event/CritChanceWhileAimingPistolSPMod
 description: "On Headshot:\n+X% Critical Chance when Aiming for 12s\nOn Headshot Kill:\n+X% Critical Chance when Aiming for 12s. Stacks up to 5x."
-# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
-# (`IncompatibilityTags`) — the same list the mod infobox prints. The
-# WFCD export carries no such field, so this module is the only
-# structured source for what a mod REFUSES to be equipped on.
+# see notes: de_s_own_incompatibility
 excludes_weapon: [power_weapon]
 
 effects:

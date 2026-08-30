@@ -15,8 +15,7 @@ mod_pools: [primary, rifle, assault_rifle]
 mastery_rank: 14
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 100
 disposition: 0.85            # riven disposition
 polarities: [madurai, madurai, naramon]
@@ -78,8 +77,7 @@ super_crit_on_status:
   crit_chance: 3.0
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0
@@ -95,8 +93,7 @@ attack:
   # the sim (there is no spatial model), recorded because the shot combo and
   # multi-hit mechanics that would read it are coming with the sniper.
   punch_through_m: 0.5
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m", Hit-Scan
+  # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { puncture: 25.0 }   # pure Puncture, total 25
 

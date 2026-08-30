@@ -11,8 +11,7 @@ mod_pools: [primary, rifle]   # CompatibilityTags PROJECTILE, AOE, SINGLESHOT
 mastery_rank: 6
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki
 accuracy: 100.0
 disposition: 1.35           # riven disposition
 polarities: []               # the infobox states none
@@ -28,19 +27,15 @@ ammo_pickup: 5
 magazine: 5
 reload_seconds: 2.5
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
+# see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0
-  # THE MODULE SAYS `Active` — a grenade DETONATED BY HAND. This engine
-  # has one trigger, so the shot is semi-auto and the blast lands where it
-  # falls; what a second trigger buys is in `unmodeled:`.
+  # see notes: module_says_active_grenade
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 20

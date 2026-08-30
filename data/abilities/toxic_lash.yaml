@@ -29,8 +29,7 @@
 id: toxic_lash
 name: Toxic Lash
 frame: Saryn
-# Which buffs REPLACE each other rather than adding. Same family =
-# only the strongest is running (wiki, Freeze Force).
+# see notes: which_buffs_replace_each
 family: toxic_lash
 helminth: false
 

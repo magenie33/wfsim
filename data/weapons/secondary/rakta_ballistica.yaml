@@ -8,24 +8,11 @@ mod_pools: [pistol]
 mastery_rank: 6
 max_rank: 30
 
-# TWO WEAPONS MODEL: base and Incarnon forms are
-# separate entries linked by a transform group.
+# see notes: two_weapons_model_base
 transform_group: rakta_ballistica
 transforms_to: rakta_ballistica_incarnon
 
-# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-# array, which is DE's own export and which agreed with the wiki infobox field
-# for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half: transcribed from the wiki's table,
-# with every clause the intake's rule engine did not recognise loaded as a
-# NAMED INERT effect that the builder and the optimizer both print as "not
-# modelled yet". Nothing is dropped in silence — some perks do nothing
-# yet and say so on their own tile.
-# NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
-# multi-part base needs a SECOND weapon entry to be right; the Cernos
-# Prime is the pattern (uncharged and charged are two entries in one
-# transform group). Until that exists, this weapon's number is the number
-# for the part named in `attack:` below and NOT for the whole weapon.
+# see notes: bulk_intake_stats_are_2
 unmodeled:
   - "the Burst Shot is not modelled — this entry carries only the Charged Shot"
 accuracy: 4
@@ -43,8 +30,7 @@ ammo_pickup: 40
 magazine: 20
 reload_seconds: 2
 
-# THE CATALOG GIVES THIS ATTACK ITS OWN FRACTION, and it is per WEAPON rather
-# than a range across the family — the row, verbatim:
+# see notes: catalog_gives_attack_own
 #
 #   |{{Weapon|Rakta Ballistica}}||Charged Shot||Projectile||300||75||25%||Adding||Uses uncharged damage value
 #
@@ -55,8 +41,7 @@ co_behavior: additive_with_base_damage
 co_base_fraction: 0.25
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 50

@@ -4,10 +4,7 @@ weapon: telos_boltor
 tier: 4
 icon: HighStatus(xWhite).png
 description: "Increase Base Status Chance by +20%."
-# THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
-# three Boltors, so all three carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_boltor
 selection: choose_one
 
 effects:

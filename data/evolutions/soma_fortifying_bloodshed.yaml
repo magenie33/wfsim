@@ -3,9 +3,7 @@ name: Fortifying Bloodshed
 weapon: soma
 tier: 2
 description: "Increase Base Damage by +10. On Slash Status Kill: +100 Overshield."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:

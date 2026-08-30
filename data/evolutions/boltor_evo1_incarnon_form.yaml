@@ -3,10 +3,7 @@ name: Incarnon Form
 weapon: boltor
 tier: 1
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Prioritize Slash Damage and gain Multishot."
-# THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
-# three Boltors, so all three carry the same ladder of nine perks. Where a value
-# DIFFERS between them the wiki's table prints a per-variant column, and the
-# number below is this weapon's.
+# see notes: genesis_family_s_boltor
 selection: fixed
 
 effects:

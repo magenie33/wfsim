@@ -14,8 +14,7 @@ description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
 # value here is being a Vigilante member in the exilus slot, where it costs a
 # build nothing to carry.
 effects:
-  # 2D groundwork: a real stat with no SINGLE-TARGET damage
-  # payload — never `kind: unmodeled`, which throws the number away.
+  # see notes: 2d_groundwork_real_stat
   - kind: ammo_conversion
     rank0: 0.05
     rankMax: 0.30

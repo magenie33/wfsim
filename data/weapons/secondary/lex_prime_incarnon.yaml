@@ -7,14 +7,7 @@ form: incarnon
 transform_group: lex_prime
 transforms_from: lex_prime
 
-# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
-# array, which is DE's own export and which agreed with the wiki infobox field
-# for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half: transcribed from the wiki's table,
-# with every clause the intake's rule engine did not recognise loaded as a
-# NAMED INERT effect that the builder and the optimizer both print as "not
-# modelled yet". Nothing is dropped in silence — some perks do nothing
-# yet and say so on their own tile.
+# see notes: bulk_intake_stats_are
 
 gauge_form:
   gauge:
@@ -36,14 +29,12 @@ pseudo_reload:
   magazine: 20
   reload_seconds: 3.35
 
-# No CO catalog row for this attack, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+# see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
     max_deg: 12
@@ -56,10 +47,7 @@ attack:
   crit_chance: 0.35
   crit_multiplier: 3
   status_chance: 0.44
-  # GUARANTEED IMPACT, every shot — the wiki module's `ForcedProcs` for this
-  # attack. WFCD's export carries no such field, so the bulk intake had no
-  # source for it and this weapon under-reported its status. A type that is
-  # always present is also a permanent +1 to Condition Overload's count.
+  # see notes: guaranteed_impact_every_shot
   forced_procs: [impact]
   # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
   # list, "Lex Prime (Incarnon Form)". Written as a number the sim can
@@ -67,10 +55,7 @@ attack:
   # from geometry ("innate punch through does not apply to surfaces") and this
   # arena has no geometry, so everything the ray meets is a body.
   punch_through_m: 999.0
-  # NOT MODELLED — the arena has no distance, so this weapon is
-  # simulated at point blank. Recorded because the RIVEN pool reads
-  # it: a hitscan weapon that lists a falloff still rolls Projectile
-  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  # see notes: modelled_arena_has_no
   falloff:
     start_m: 10
     end_m: 18

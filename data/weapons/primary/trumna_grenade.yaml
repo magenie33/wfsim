@@ -8,21 +8,15 @@ transform_group: trumna
 
 introduced: "29"
 
-# Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
-# (docs/CATALOGS.md §1):
+# see notes: condition_overload_catalog_names
 #
 #   Trumna | Alt-fire | Projectile | 100 | 100 | 100% | Multiplying
 #
-# THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
-# ordinary class assumed because nobody had opened the catalog for this
-# weapon — the check was run against our own transcription of it, which
-# only ever carried the rows the roster already had.
+# see notes: entry_read_adding_at
 co_behavior: independent
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 6.0
     max_deg: 16.0
@@ -36,8 +30,7 @@ attack:
   status_chance: 0.5
   # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
   punch_through_m: 0.0
-  # NO RANGE ROW on this attack — the page states none. See
-  # data/surveys/weapon_range.yaml.
+  # see notes: no_range_row_attack
   damage: { impact: 100 }   # total 100
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

@@ -12,8 +12,7 @@ mastery_rank: 15
 # RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
 max_rank: 40
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 16.0
 disposition: 1.1
 polarities: []
@@ -41,16 +40,14 @@ reload_seconds: 2.3
 # its own row says so (docs/CATALOGS.md).
 co_behavior: independent
 
-# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
-# quoted Characteristic. Seven elements, never Puncture and never Slash.
+# see notes: progenitor_bonus_see_data
 valence:
   elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
   min: 0.25
   max: 0.60
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
     max_deg: 12

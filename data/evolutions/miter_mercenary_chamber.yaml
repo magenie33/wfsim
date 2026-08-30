@@ -3,13 +3,7 @@ name: Mercenary Chamber
 weapon: miter
 tier: 3
 description: "Increase Base Ammo Capacity to 160. Does not affect Incarnon Form."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
-# BASE FORM ONLY — the card's last clause, "Does not affect Incarnon Form",
-# qualifies the whole perk. The evolution is still EQUIPPED in both forms (one
-# Genesis ladder), so the engine skips it when building the Incarnon entry
-# rather than refusing to select it.
+# see notes: genesis_family_s_adapter_2
 base_form_only: true
 selection: choose_one
 

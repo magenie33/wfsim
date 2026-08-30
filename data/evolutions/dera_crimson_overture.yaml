@@ -3,24 +3,18 @@ name: Crimson Overture
 weapon: dera
 tier: 2
 description: "Increase Base Damage by +8. On Kill: +20% Ammo Efficiency for 5 seconds. Stacks up to 4x."
-# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
-# of them carry the same ladder; a value that differs between them is
-# printed per variant by the wiki and transcribed per variant here.
+# see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
   # from: "Increase Base Damage by +8"
   - kind: flat_base_damage
     value: 8.0
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
-  # this simulator cannot pay it out, and the reason will not change with
-  # any amount of work on evolutions.
+  # see notes: edge_gap_see_docs
   - kind: out_of_scope
     clause: "On Kill: +20% Ammo Efficiency for 5 seconds"
     reason: infinite_ammo
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 4x"
+  # see notes: modelled_no_rule_clause
   - kind: unmodelled_stacks_up_to_x
 
 source:

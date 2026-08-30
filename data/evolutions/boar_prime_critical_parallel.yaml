@@ -8,9 +8,7 @@ Increase Base Critical Damage Multiplier by +0.5x."
 selection: choose_one
 
 effects:
-  # Both are BASE-stat additions, so the crit mods multiply the new base —
-  # "Increase Base Critical Chance" / "Increase Base Critical Damage
-  # Multiplier" is the wiki's own wording.
+  # see notes: both_are_base_stat
   - kind: flat_base_crit_chance
     value: 0.20
   - kind: flat_base_crit_multiplier

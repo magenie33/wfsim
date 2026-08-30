@@ -63,8 +63,7 @@ unmodeled:
   - reason: ricochet_terrain
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0
@@ -77,10 +76,7 @@ attack:
   crit_chance: 0.44
   crit_multiplier: 3.4
   status_chance: 0.3
-  # GUARANTEED IMPACT, every shot — the wiki module's `ForcedProcs` for this
-  # attack. WFCD's export carries no such field, so the bulk intake had no
-  # source for it and this weapon under-reported its status. A type that is
-  # always present is also a permanent +1 to Condition Overload's count.
+  # see notes: guaranteed_impact_every_shot
   forced_procs: [impact]
   punch_through_m: 0.0
   # PUNCH THROUGH DOES NOTHING HERE, and the page says so outright rather than
@@ -139,6 +135,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Latron_Incarnon_Genesis
-  # Attack stats from the wiki infobox and WFCD's `attacks` array ("Incarnon
-  # Form" and "Incarnon Form AoE"), which agree on every field.
+  # see notes: attack_stats_from_wiki
 

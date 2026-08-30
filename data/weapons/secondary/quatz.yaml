@@ -12,8 +12,7 @@ mod_pools: [pistol]   # CompatibilityTags PROJECTILE, SECONDARYSHOTGUN
 mastery_rank: 9
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 40.0
 disposition: 1.2            # riven disposition
 polarities: []               # the infobox states none
@@ -29,15 +28,11 @@ ammo_pickup: 40
 magazine: 72
 reload_seconds: 2.7
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
-# and neither of this weapon's is named.
+# see notes: condition_overload_no_row_2
 co_behavior: additive_with_base_damage
 
 attack:
-  # Cone half-angle from the reticle, degrees — wiki
-  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
-  # never inherited, so every form states its own.
+  # see notes: cone_half_angle_from_2
   spread:
     min_deg: 2.0
     max_deg: 3.0
@@ -50,8 +45,7 @@ attack:
   crit_multiplier: 1.5
   status_chance: 0.27
   punch_through_m: 0.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 300.0 m" on this attack.
+  # see notes: wall_ramp_full_damage_3
   range_m: 300.0
   damage: { electricity: 11, impact: 9, puncture: 2, slash: 7 }   # total 29
 

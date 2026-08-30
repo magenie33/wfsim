@@ -12,8 +12,7 @@ mod_pools: [pistol]
 mastery_rank: 6
 max_rank: 30
 
-# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# see notes: weapon_level_metadata_wiki_2
 accuracy: 7.1
 disposition: 1.15            # riven disposition
 polarities: []               # the infobox states none

@@ -5,17 +5,9 @@ tier: 2
 icon: ReloadFromEmpty(xWhite).png
 description: "Increase Base Damage by +10.
 On Reload From Empty: Increase Base Damage by +14."
-# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
-# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
-# SAME evolutions: every row spans both weapon columns with a dash
-# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
-# difference". So the value below is THIS weapon's, which happens to be the same
-# number the other one carries — and if DE ever splits them, the table grows a
-# real cell and the two files diverge there.
+# see notes: genesis_family_s_boar
 #
-# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE. A file
-# that states two weapons' values is a file where the reader has to work out
-# which one they are looking at, every time.
+# see notes: no_other_variant_says
 selection: choose_one
 
 effects:

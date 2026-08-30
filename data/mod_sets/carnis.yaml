@@ -5,9 +5,7 @@ name: Carnis
 #   Killing an enemy with a Heavy Attack grants X% Evasion and immunity to
 # Status Effects for X seconds.
 #
-# NOT MODELLED, and declared rather than left undefined — which is the whole
-# convention here (see hunter.yaml): a set whose bonus does nothing for the
-# WEAPON is still written down, so the app can say so instead of being silent.
+# see notes: modelled_declared_rather_than
 #
 # A MELEE heavy attack, paying in EVASION and status immunity. Two reasons it
 # is worth nothing here and either would be enough: this arena fires a gun and
