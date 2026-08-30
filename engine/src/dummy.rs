@@ -233,11 +233,10 @@ impl ArcRuntime {
     }
 }
 
-/// The real Incarnon combat cycle: the run STARTS
-/// with a full gauge in Incarnon Form; when the charge magazine empties,
-/// revert (`transmute_out_seconds`), fight in the base form until weakpoint hits
-/// (each multishot pellet counts) rebuild the gauge, transmute
-/// (`transmute_seconds`), repeat. Swapping either way fully reloads the
+/// The real Incarnon combat cycle: the run STARTS IN THE BASE FORM WITH AN
+/// EMPTY GAUGE and earns its way in — weakpoint hits (each multishot pellet
+/// counts) fill it, transmute (`transmute_seconds`), spend the charge
+/// magazine, revert (`transmute_out_seconds`), repeat. Swapping either way fully reloads the
 /// base form's magazine (wiki side effect). Frenzy EXISTS in the Incarnon
 /// Form too: the buff persists across
 /// transforms and headshots keep triggering it in both forms.
@@ -4231,10 +4230,11 @@ impl DummyParams {
         }
     }
 
-    /// The REAL Incarnon cycle engagement from both forms' resolved panels: start transformed with a full gauge; dump
-    /// the charge magazine; revert; rebuild 9 weakpoint charges in the
-    /// base form (Frenzy per `frenzy_lock`); transmute; repeat. Both
-    /// transitions scale by the reload formula (M9).
+    /// The REAL Incarnon cycle engagement from both forms' resolved panels. It
+    /// OPENS IN THE BASE FORM WITH AN EMPTY GAUGE (`starts_primed: false`, and
+    /// the rule is on that field), rebuilds the gauge on weakpoint hits (Frenzy
+    /// per `frenzy_lock`), transmutes, dumps the charge magazine and reverts.
+    /// Both transitions scale by the reload formula (M9).
     ///
     /// `frenzy` is the WEAPON's passive, not a constant: it belongs to
     /// whichever weapon lists the perk (Dual Toxocyst does, the Laetum does
