@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3872
+submissions: 3883
 engine: d05c240129bf367eb006f80a36f5050bef627c0f
 entries:
   - weapon: acceltra_prime
@@ -1124,6 +1124,27 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, high_voltage, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 0.2563444582046059
+    fp: d218c0782b991f5a
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, stormbringer, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 0.25356804729210597
+    fp: 395e521d9f9593d4
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 0.24203855436386573
+    fp: 3df2109290e78abe
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, rime_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: cedo_prime
     mode: base
     score: 0.31868806381663123
@@ -1626,6 +1647,20 @@ entries:
     mods: [hornet_strike, barrel_diffusion, lethal_torrent, perpetual_agony, pistol_elementalist, magnetic_might, sure_shot, pistol_pestilence]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_evolved_autoloader, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 1.79298312481497
+    fp: 6e5c5c48f254c17c
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [cascadia_flare]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 1.5835281768531055
+    fp: e1aefe0b564b1b42
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: dual_toxocyst
     mode: cycle
     score: 1.349837472037508
@@ -2846,15 +2881,15 @@ entries:
   - weapon: kuva_nukor
     mode: base
     score: 8.795283810083168
-    fp: 9fb214e92490e8da
+    fp: 60ee26cb7cd981db
+    exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 8.795283810083168
-    fp: 60ee26cb7cd981db
-    exilus: ruinous_extension
+    fp: 9fb214e92490e8da
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -6373,6 +6408,17 @@ entries:
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: vectis_prime
+    mode: cycle
+    score: 0.744914692842726
+    fp: 862208e386f852c6
+    mods: [galvanized_chamber, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, riven, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, puncture, toxin]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: vectis_prime
     mode: base
     score: 0.4696357513511713
     fp: eefbc20c15c59b47
@@ -6404,17 +6450,6 @@ entries:
     riven:
       bonuses: [critical_chance, fire_rate]
       rolls: [1.1, 1.1]
-  - weapon: vectis_prime
-    mode: cycle
-    score: 0.28276436020730333
-    fp: a280ad0438d5b420
-    mods: [heavy_caliber, primary_acuity, hunter_munitions, semi_rifle_cannonade, continuous_misery, primed_chamber, riven, high_voltage]
-    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_frostbite]
-    riven:
-      bonuses: [critical_chance, critical_damage, multishot]
-      malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: base
     score: 0.27925156712436017
@@ -6474,17 +6509,6 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: cycle
-    score: 0.232497376116403
-    fp: e907da5588054751
-    mods: [split_chamber, primed_bane_of_grineer, serration, critical_delay, primed_chamber, stormbringer, hellfire, riven]
-    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_deadhead]
-    riven:
-      bonuses: [cold, critical_chance, critical_damage]
-      malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: vectis_prime
-    mode: cycle
     score: 0.21450230653564545
     fp: 93f2815f80371c77
     mods: [galvanized_chamber, primed_firestorm, galvanized_scope, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, hellfire]
@@ -6492,31 +6516,11 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: vectis_prime
     mode: cycle
-    score: 0.2055552071350636
-    fp: 821e4aaca632bf4a
-    mods: [primary_acuity, serration, galvanized_scope, hammer_shot, hunter_munitions, vital_sense, riven, malignant_force]
-    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_deadhead]
-    riven:
-      bonuses: [critical_chance, fire_rate]
-      rolls: [1.1, 1.1]
-  - weapon: vectis_prime
-    mode: cycle
     score: 0.1963719129689166
     fp: 3f425ec08283ddb2
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
-  - weapon: vectis_prime
-    mode: cycle
-    score: 0.15332656072776263
-    fp: 75a30873fff59476
-    mods: [primary_acuity, serration, bladed_rounds, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force]
-    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_deadhead]
-    riven:
-      bonuses: [critical_chance, fire_rate]
-      rolls: [1.1, 1.1]
   - weapon: vectis_prime
     mode: cycle
     score: 0.1526076098720609
