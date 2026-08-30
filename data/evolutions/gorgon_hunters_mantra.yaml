@@ -10,10 +10,14 @@ effects:
   # from: "Increase Base Damage by +10"
   - kind: flat_base_damage
     value: 10.0
-  # see notes: edge_gap_see_docs
-  - kind: out_of_scope
-    clause: "With Channeled Ability Active: +3 Punch Through, +40% Accuracy"
-    reason: one_target
+  # see notes: channeled_gate_both_halves_pay
+  - kind: punch_through_bonus
+    value: 3.0
+    condition: channeling
+  - kind: gated_by_tenno
+    condition: channeling
+    grant: accuracy_bonus
+    value: 0.40
 
 source:
   url: https://wiki.warframe.com/w/Gorgon_Incarnon_Genesis

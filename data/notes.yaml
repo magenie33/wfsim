@@ -190,6 +190,11 @@ notes:
     (M67), so the omission is the list's. Written as a number the sim can hold,
     and the BODIES-only qualifier costs nothing here: this arena has no
     geometry, so everything the ray meets is a body.
+  channeled_gate_both_halves_pay: |
+    BOTH HALVES PAY NOW, on one gate. The clause was filed `one_target` when a
+    shot could only reach the body it hit and nothing could miss; the arena has
+    formations and a range, so punch through crosses bodies
+    (`space::struck_along`) and accuracy narrows the cone a pellet draws inside.
   charge_x2_is_the_primes_alone: |
     THE CHARGE x2 IS THE PRIME'S ALONE. On the Ballistica Prime a released shot
     takes (1 + charge progress) and a FULL charge is the x2 end of it, so that

@@ -17,14 +17,10 @@ effects:
   # from: "Increase Base Damage by +18"
   - kind: flat_base_damage
     value: 18.0
-  # AN EDGE, NOT A GAP — and note that the STATE is modelled now
-  # (`condition: channeling`, as the Braton's Daring Reverie uses). What cannot
-  # pay out is the PAYLOAD, and it would still not pay if the Warframe layer
-  # were closed tomorrow, which is the test for which reason to file: punch
-  # through needs a second body to reach, and this arena has one target.
-  - kind: out_of_scope
-    clause: "With Channeled Ability active: Punch Through +4"
-    reason: one_target
+  # see notes: channeled_gate_both_halves_pay
+  - kind: punch_through_bonus
+    value: 4.0
+    condition: channeling
   # …and the other half of the same bullet, WHICH NOW PAYS. It was
   # filed `no_distance` on the reasoning that accuracy only matters where a shot
   # can miss and nothing here spread or travelled — both halves of which stopped

@@ -209,6 +209,7 @@ ui:
   "Hystrix Injection, the Hystrix-exclusive augment — a weapon-exclusive card outside the pools this roster loads": "「Hystrix Injection」，Hystrix 家族的专属增强 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "INFINITE BODY PUNCH THROUGH: the page grants this weapon 1.1 m of punch through AND unlimited penetration of BODIES specifically. The 1.1 m is transcribed and spends `space::BODY_MATERIAL_M` a body like every other weapon's, so the slug stops after two enemies here where in game it would cross the whole line": "无限穿透身体：页面给这把武器 1.1 米穿透，并且额外给了对「身体」的无限穿透。这里录入的是那 1.1 米，并且和其他武器一样每穿过一个身体扣掉 `space::BODY_MATERIAL_M`，所以这颗弹丸在这里穿过两个敌人就停了，而在游戏里它会穿过一整排"
   "Incarnon Form": 灵化形态
+  "infinite": 无限
   "Normal Shot": 普通射击
   "Incarnon Genesis": 灵化之源
   "Incarnon cycle": 灵化循环

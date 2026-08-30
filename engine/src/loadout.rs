@@ -809,6 +809,14 @@ impl IndirectStat {
     /// they disagreeing is how "+800% Beam Range (m)" reached the picker for a
     /// mod that grants 8 metres.
     pub fn format(&self, v: f64) -> String {
+        // INFINITE IS A WORD, NOT A BIG NUMBER: the engine holds a finite
+        // sentinel (see it for why) and no reader is shown it. `>=`, because
+        // mods add to it — a Seeker takes the total to 1001.4.
+        if *self == IndirectStat::PunchThrough
+            && v >= crate::space::INFINITE_BODY_PUNCH_THROUGH_M
+        {
+            return "infinite".to_string();
+        }
         let unit = self.unit();
         if unit == "%" {
             return pct(v);
@@ -820,6 +828,27 @@ impl IndirectStat {
             format!("{a:.2}").trim_end_matches('0').trim_end_matches('.').to_string()
         };
         format!("{}{s}{unit}", if v >= 0.0 { "+" } else { "−" })
+    }
+}
+
+#[cfg(test)]
+mod infinite_punch_through_display {
+    use super::IndirectStat;
+
+    /// A READER IS NEVER SHOWN THE SENTINEL — including with a mod's metres
+    /// added on top of it.
+    #[test]
+    fn infinite_punch_through_reads_as_a_word_and_only_for_that_stat() {
+        let pt = IndirectStat::PunchThrough;
+        let inf = crate::space::INFINITE_BODY_PUNCH_THROUGH_M;
+        assert_eq!(pt.format(inf), "infinite");
+        assert_eq!(pt.format(inf + 2.4), "infinite", "a Seeker on top is still infinite");
+        // …and an ordinary depth is still metres.
+        assert_eq!(pt.format(2.4), "+2.4m");
+        assert_eq!(pt.format(0.0), "+0m");
+        // THE RULE IS THE STAT'S, not the number's: 999 of anything else is
+        // 999 of it.
+        assert_eq!(IndirectStat::BeamRange.format(inf), "+999m");
     }
 }
 
