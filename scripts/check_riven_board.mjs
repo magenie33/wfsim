@@ -102,11 +102,15 @@ const picker = await evaluate(`(async () => {
     // stores, so a collision makes one of them unreachable.
     ids: mine.map(b => b.builtin),
     unique: new Set(mine.map(b => b.builtin)).size === mine.length,
-    // The riven rows must be CONTIGUOUS, or the picker draws their group
-    // header twice with plain rows wedged inside it.
+    // The riven rows must be CONTIGUOUS INSIDE A MODE — a mode is a control of
+    // its own and holds its own two rankings. Across the weapon they are not.
     contiguous: (() => {
-      const flags = mine.map(b => !!(b.board && b.board.riven));
-      return flags.filter((v, i) => i && v !== flags[i - 1]).length <= 1;
+      const byMode = {};
+      for (const b of mine) {
+        (byMode[b.mode] = byMode[b.mode] || []).push(!!(b.board && b.board.riven));
+      }
+      return Object.values(byMode)
+        .every(fs => fs.filter((v, i) => i && v !== fs[i - 1]).length <= 1);
     })(),
   };
 })()`);
@@ -119,7 +123,8 @@ check("...and the riven one says so in its name, in the page's own language",
     && !(picker.plainName || "").includes(picker.word),
   `"${picker.word}": riven "${picker.rivenName}" vs plain "${picker.plainName}"`);
 check("...no two entries share a builtin id", picker.unique, picker.ids.join(" | "));
-check("...and the riven rows are contiguous", picker.contiguous, JSON.stringify(picker));
+check("...and the riven rows are contiguous inside each mode",
+  picker.contiguous, JSON.stringify(picker.ids));
 
 // ---- taking the row gives you the riven ------------------------------------
 

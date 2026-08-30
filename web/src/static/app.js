@@ -7506,18 +7506,23 @@ function renderBenchmarkBarIn(bar, cfg) {
   bar.hidden = !ps.length;
   if (!ps.length) { bar.innerHTML = ""; return; }
   const noun = cfg.noun || "preset";
-  // TWO PICKS, BECAUSE THERE ARE TWO QUESTIONS. A chip row
+  // ONE PICK PER QUESTION, AND A RANK IS NOT ONE OF THEM. A chip row
   // was right while a weapon had ten official builds under one ruler; one
-  // dropdown holding rulers x modes x ranks was right while that was forty
-  // rows. The board is designed for a hundred rulers with a hundred rows each,
-  // and at that size a
+  // dropdown holding rulers x modes x kinds x ranks was right while that was
+  // forty rows. The board is designed for a hundred rulers with a hundred rows
+  // each, and at that size a
   // single list is not a list — you cannot scan it, and searching it means
   // knowing what a rank is a rank ON before you can ask.
   //
-  // So: WHICH RULER, then WHICH ROW INSIDE IT. Each list stays the size of one
-  // question. The second one appears only where the first leaves a choice —
-  // the official SCENARIOS are one per ruler, so picking the ruler IS picking
-  // the scenario and a second control would be a control with one item.
+  // So: WHICH RULER, WHICH MODE, WHICH KIND, then WHICH ROW. Each list stays
+  // the size of one question, and each appears only where the one before it
+  // leaves a choice — the official SCENARIOS are one per ruler, so picking the
+  // ruler IS picking the scenario and a control for it would hold one item.
+  //
+  // EVERY LIST IS STRONGEST-FIRST, and so is its default: the entries arrive in
+  // that order from `builtinBuilds`, so a reader who touches nothing is on this
+  // board's leading build — the mode that wins, with a riven if the winner
+  // has one.
   const ruler = (p) => p.benchmark || p.builtin;
   const sel = ps.find((p) => presetId(p) === active) || null;
   const rulers = [];
@@ -7526,26 +7531,29 @@ function renderBenchmarkBarIn(bar, cfg) {
   }
   const curRuler = sel ? ruler(sel) : rulers[0].id;
   const inRuler = ps.filter((p) => ruler(p) === curRuler);
-  // THEN WHETHER IT CARRIES A RIVEN, and only then the rank.
-  //
-  // A weapon's board holds TWO RANKINGS under one ruler — the builds with a
-  // riven and the builds without — and "#1" means something different in each.
-  // Both were in one list, told apart only by a suffix on the group header, so
-  // the CHIP on the bar read "#1" whichever of the two leaders it was on and
-  // the list ran two rankings past each other.
-  //
-  // A THIRD PICK RATHER THAN A LONGER LABEL, which is what this bar already
-  // does with the ruler: each list stays the size of ONE question, and the
-  // number at the end goes back to being a number.
+  // THEN HOW THE WEAPON IS PLAYED, and it is a CONTROL rather than a header
+  // inside the row list: a rank only means something within one way of
+  // playing, so the Torid's Incarnon rows and its base rows are two rankings
+  // and a reader after one of them should not scroll through the other.
+  const modeOf = (p) => p.mode || "base";
+  const curMode = sel ? modeOf(sel) : modeOf(inRuler[0]);
+  const modes = [];
+  for (const p of inRuler) {
+    if (!modes.some((m) => m.id === modeOf(p))) modes.push({ id: modeOf(p), label: p.modeName || modeOf(p) });
+  }
+  const inMode = inRuler.filter((p) => modeOf(p) === curMode);
+  // THEN WHETHER IT CARRIES A RIVEN, and only then the rank. A weapon's board
+  // holds TWO RANKINGS under one ruler and mode — the builds with a riven and
+  // the builds without — and "#1" means something different in each. A PICK
+  // RATHER THAN A LONGER LABEL, as with the ruler: each list stays the size of
+  // ONE question, and the number at the end goes back to being a number.
   const kindOf = (p) => (p.riven ? "riven" : "plain");
-  const curKind = sel ? kindOf(sel) : kindOf(inRuler[0]);
-  // IN THE ORDER THE ROWS COME IN — plain before riven, which is the order
-  // `builtinBuilds` sorts them into and the order the board page lists its
-  // views in. Derived, so a weapon with only one kind offers no choice.
+  const curKind = sel ? kindOf(sel) : kindOf(inMode[0]);
+  // IN THE ORDER THE ROWS COME IN, which is the stronger kind first. Derived,
+  // so a mode with only one kind offers no choice.
   const kinds = [];
-  for (const p of inRuler) if (!kinds.includes(kindOf(p))) kinds.push(kindOf(p));
-  const inKind = inRuler.filter((p) => kindOf(p) === curKind);
-  const grouped = inKind.some((p) => p.modeGroup);
+  for (const p of inMode) if (!kinds.includes(kindOf(p))) kinds.push(kindOf(p));
+  const inKind = inMode.filter((p) => kindOf(p) === curKind);
   bar.innerHTML =
     `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${ps.length}</b></span>` +
     // THE RULER. Searched, because this list is the one designed to reach a
@@ -7562,21 +7570,36 @@ function renderBenchmarkBarIn(bar, cfg) {
         if (first) pickPreset(cfg, presetId(first));
       },
     }) +
-    // WHICH OF THE TWO RANKINGS. Absent where the weapon has only one kind on
-    // this ruler, which is most of them — a control with one item is not a
-    // control, and this bar has said so since it was split in two.
+    // HOW IT IS PLAYED. Absent where the weapon has one mode, which is most of
+    // the roster — a control with one item is not a control.
+    (modes.length > 1
+      ? ddButton(`dd-bench-mode-${cfg.domain}`, {
+        value: curMode,
+        title: cfg.rowHintTitle || "",
+        items: modes.map((m) => ({ value: m.id, label: m.label })),
+        // Picking a mode lands on ITS leader, the same way picking a ruler
+        // lands on the ruler's.
+        onPick: (v) => {
+          const first = inRuler.find((p) => modeOf(p) === v);
+          if (first) pickPreset(cfg, presetId(first));
+        },
+      })
+      : "") +
+    // WHICH OF THE TWO RANKINGS. Absent where the weapon has only one kind in
+    // this mode, which is most of them.
     (kinds.length > 1
       ? ddButton(`dd-bench-kind-${cfg.domain}`, {
         value: curKind,
         title: cfg.rowHintTitle || "",
+        // SAID AS A PROPERTY OF THE BUILD, not as a filter over a list: this
+        // control picks one of two rankings, where the board page's own
+        // three-way filter narrows one — so "riven only" stays over there.
         items: kinds.map((k) => ({
           value: k,
-          label: tr(k === "riven" ? "Riven only" : "No riven"),
+          label: tr(k === "riven" ? "With riven" : "Without riven"),
         })),
-        // Picking a kind lands on ITS leader, the same way picking a ruler
-        // lands on the ruler's.
         onPick: (v) => {
-          const first = inRuler.find((p) => kindOf(p) === v);
+          const first = inMode.find((p) => kindOf(p) === v);
           if (first) pickPreset(cfg, presetId(first));
         },
       })
@@ -7586,18 +7609,13 @@ function renderBenchmarkBarIn(bar, cfg) {
         value: presetId(sel || inKind[0]),
         search: true,
         title: cfg.rowHintTitle || "",
-        // GROUPED BY MODE inside the ruler where the weapon has more than one:
-        // a hundred rows split into "base" and "cycle" is two readable lists,
-        // and a rank only means something within one way of playing.
+        // A FLAT LIST OF NUMBERS. The ruler, the mode and which of the two
+        // rankings are each answered by a control to its left, so a rank here
+        // is a rank again.
         items: inKind.map((p) => ({
           value: presetId(p),
-          // A PURE NUMBER. Which ruler and which of the two rankings are both
-          // answered by the controls to its left, so the rank is a rank again.
           label: p.rank != null ? `#${p.rank}` : p.name,
           hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
-          // GROUPED BY MODE, where the weapon has more than one: a rank only
-          // means something within one way of playing.
-          group: (grouped ? p.modeGroup : "") || "",
         })),
         onPick: (v) => pickPreset(cfg, v),
       })
@@ -7894,16 +7912,24 @@ const builtinBuilds = () => {
     const i = benchList().findIndex((b) => b.id === id);
     return i < 0 ? 99 : i;
   };
-  // …AND THEN BY MODE, IN THE WEAPON'S OWN ORDER, because the picker draws a
-  // group header only where the group CHANGES. board.json is sorted by SCORE
-  // inside a ruler and knows nothing about modes, so the two ways to play one
-  // weapon arrive interleaved: the Burston Prime's two `base` rows sit at
-  // positions 93 and 94 of its 100 `cycle` rows, which drew the Incarnon group
-  // twice with the base group wedged inside it and every rank out of order. A rank only means something within one way of playing,
-  // and a list that says so has to keep them contiguous.
-  //
-  // `w.modes` is the order the builder's own Mode control offers — base first —
-  // so the picker and the control agree without either naming a mode.
+  // …THEN BY MODE AND BY KIND, STRONGEST GROUP FIRST. Each is a control on the
+  // bar and a control's order is its own answer — which way of playing this
+  // weapon wins here, and whether the winner carries a riven — so a reader who
+  // touches nothing lands on the board's leader. A GROUP IS RANKED BY ITS BEST
+  // ROW: one huge build and fifty mediocre ones are not comparable by any
+  // other statistic the board holds.
+  const best = {};
+  for (const r of BOARD[w.id] || []) {
+    const k = `${r.benchmark}#${r.mode || "base"}`;
+    const k2 = `${k}#${rowHasRiven(r) ? "r" : "p"}`;
+    best[k] = Math.max(best[k] ?? -1, r.score || 0);
+    best[k2] = Math.max(best[k2] ?? -1, r.score || 0);
+  }
+  const modeKey = (r) => `${r.benchmark}#${r.mode || "base"}`;
+  const kindKey = (r) => `${modeKey(r)}#${rowHasRiven(r) ? "r" : "p"}`;
+  // TIES KEEP THE GROUPS CONTIGUOUS, or a rank means nothing — the picker
+  // numbers each group as it walks the list. `w.modes` is the order the
+  // builder's own Mode control offers, so the tiebreak agrees with it.
   const modeOrder = (m) => {
     const i = (w.modes || []).indexOf(m || "base");
     return i < 0 ? 99 : i;
@@ -7911,14 +7937,11 @@ const builtinBuilds = () => {
   const rows = (BOARD[w.id] || []).slice()
     .sort((a, b) =>
       order(a.benchmark) - order(b.benchmark)
+      || (best[modeKey(b)] || 0) - (best[modeKey(a)] || 0)
       || modeOrder(a.mode) - modeOrder(b.mode)
-      // …AND RIVEN ROWS AFTER PLAIN ONES, contiguous, for the reason modes are:
-      // the picker draws a group header only where the group CHANGES, and a
-      // rank only means something within one group. The board's floor already
-      // treats the two as separate fields; a `#1` that could mean either would
-      // be the only number on this page that does not say what it is best of.
+      || (best[kindKey(b)] || 0) - (best[kindKey(a)] || 0)
       || (rowHasRiven(a) ? 1 : 0) - (rowHasRiven(b) ? 1 : 0)
-      // Best first inside a mode. board.json already arrives this way; stating
+      // Best first inside a group. board.json already arrives this way; stating
       // it here is what makes `#1` the leader rather than a bet on the scorer's
       // write order.
       || (b.score || 0) - (a.score || 0));
@@ -7943,16 +7966,11 @@ const builtinBuilds = () => {
     const label = m && kind ? `${m}（${kind}）` : (m || kind);
     return {
       name: label ? `#${n} · ${label}` : `#${n}`,
-      // THE MODE ALONE, for a list that groups by it — the riven is marked on
-      // the ROW instead. Putting both in the group header
-      // made the header the only place the fact lived, so the CHIP on the bar
-      // read "#1" whether or not that leader carried a riven, and the reader
-      // had no way to tell which of the two they were looking at.
-      modeGroup: m,
-      // The two halves of that name, for a picker that puts the MODE in a
-      // group header and leaves the row to say the rank.
+      // THE MODE IN WORDS, for the control that picks one — stated even where
+      // the name above omits it, since the control is drawn from these entries.
+      modeName: modeLabel(w, mode),
+      // The rank alone, for the control that picks a row.
       rank: n,
-      subgroup: label,
       // Unique per ruler, mode AND kind: the id is what the active pointer
       // stores, and a plain #1 and a riven #1 are two different builds.
       builtin: `${row.benchmark}#${mode}#${rv ? "r" : "p"}#${n}`,

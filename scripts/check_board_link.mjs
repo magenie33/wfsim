@@ -236,22 +236,18 @@ check("...carrying that row's build",
 // ---- and the RANK a picker shows is a rank WITHIN a mode ---------------
 //
 // The board page lists a weapon's BEST row per mode; the deeper ranks live in
-// the builder's own picker, which groups them by mode and labels each one with
-// its rank inside that mode. Both halves were right and the ORDER was not:
-// `builtinBuilds` sorted by ruler only, and inside a ruler it inherited
-// board.json's order — which is by SCORE and knows nothing about modes. The
-// picker draws a group header where the group CHANGES, so two interleaved
-// modes drew one of them TWICE with the other wedged inside it, and the ranks
-// restarted mid-list.
+// the builder's own picker, where the mode is a CONTROL of its own and the row
+// list under it is one ranking. The failure: `builtinBuilds` sorted by ruler
+// only and inherited board.json's order, which is by SCORE and knows nothing
+// about modes — so two modes arrived interleaved and the ranks restarted
+// mid-list, live on nine weapons when it was found.
 //
-// Live on nine weapons when it was found: the Burston
-// Prime's two `base` rows sat at positions 93 and 94 of its 100 `cycle` rows,
-// so the picker read "Incarnon cycle #1..#92, base #1 #2, Incarnon cycle
-// #93..#100".
+// AND THE STRONGEST GROUP LEADS, by its best row: which mode wins here is the
+// question the control exists to answer.
 //
 // TWO HALVES, because either alone passes on a page that lost the other. The
 // ORDER is asserted over every weapon the board holds in more than one mode —
-// a property, not a weapon — and the DRAWING is asserted once in the DOM,
+// a property, not a weapon — and the CONTROL is asserted once in the DOM,
 // since an order nothing renders is an order nobody reads.
 const pick = await evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
@@ -273,12 +269,14 @@ const pick = await evaluate(`(async () => {
     const ps = builtinBuilds();
     const blocks = [];
     const prev = {};
+    // THE BEST ROW OF EACH BLOCK, in the order the mode control is drawn in.
+    const top = {};
     let last = null, ok = true, why = '';
     for (const p of ps) {
       // THE GROUP IS THREE THINGS, not two. Riven rows became their own block
       // on 2026-08-24 — a rank only means something inside one — and a key that
       // stopped at the mode reported the two rankings interleaved, which is
-      // exactly what a reader would see if the page had not grouped them.
+      // exactly what a reader would see if the page had not split them.
       const k = p.benchmark + '#' + p.mode + '#' + (p.riven ? 'r' : 'p');
       if (k !== last) { blocks.push(k); last = k; }
       // WHAT A RANK MEANS: #1 is that mode's leader. Counting positions would
@@ -292,11 +290,46 @@ const pick = await evaluate(`(async () => {
         break;
       }
       prev[k] = sc;
+      if (top[k] === undefined) top[k] = sc;
+    }
+    // …AND THE BLOCKS THEMSELVES ARE STRONGEST-FIRST, compared by their
+    // leaders — two rankings of different depth compare no other way.
+    //
+    // ONE LEVEL AT A TIME, because each level is a CONTROL: a ruler's modes are
+    // ordered against each other and the two kinds INSIDE a mode against each
+    // other. Flat this is false by design — a mode's riven-less ranking sits
+    // under its own riven one and over nothing else.
+    let led = true, ledWhy = '';
+    const leadOf = {};   // a mode's leader is the first block of it in order
+    for (const k of blocks) {
+      const m = k.split('#').slice(0, 2).join('#');
+      if (leadOf[m] === undefined) leadOf[m] = top[k];
+    }
+    const descends = (seq, val, label) => {
+      for (let i = 1; i < seq.length && led; i++) {
+        if (val(seq[i]) > val(seq[i - 1]) + 1e-12) {
+          led = false;
+          ledWhy = label + ': ' + seq[i] + ' leads with ' + val(seq[i])
+            + ', above ' + seq[i - 1] + ' (' + val(seq[i - 1]) + ') before it';
+        }
+      }
+    };
+    const grouped = (keys, of) => {
+      const g = {};
+      for (const k of keys) (g[of(k)] = g[of(k)] || []).push(k);
+      return g;
+    };
+    const modeKey = (k) => k.split('#').slice(0, 2).join('#');
+    for (const [r, ms] of Object.entries(grouped(Object.keys(leadOf), m => m.split('#')[0]))) {
+      descends(ms, (m) => leadOf[m], 'ruler ' + r);
+    }
+    for (const [m, ks] of Object.entries(grouped(blocks, modeKey))) {
+      descends(ks, (k) => top[k], 'mode ' + m);
     }
     out.weapons.push({
       id: w.id, rows: ps.length,
       blocks: blocks.length, groups: new Set(blocks).size,
-      bestFirst: ok, why,
+      bestFirst: ok, why, strongestFirst: led, ledWhy,
     });
   }
   // THE WORST-INTERLEAVED ONE for the DOM half, not the one with the most
@@ -310,16 +343,32 @@ const pick = await evaluate(`(async () => {
   if (deep) {
     const w = (META.weapons || []).find(x => x.id === deep.id);
     history.pushState({}, '', '/weapons/' + wikiSlug(w)); route(); await s(3200);
-    // BY PREFIX, not by the domain's name: the row picker is the second of the
-    // benchmark bar's two dropdowns and the only one whose id starts this way.
+    // BY PREFIX, not by the domain's name: each control is the only one whose
+    // id starts this way.
     const btn = document.querySelector('[id^="dd-bench-row-"]');
     out.hasPicker = !!btn;
+    const mbtn = document.querySelector('[id^="dd-bench-mode-"]');
+    out.hasModes = !!mbtn;
+    if (mbtn) {
+      mbtn.click(); await s(400);
+      const menu = document.getElementById('dd-menu');
+      out.modeOpts = [...menu.querySelectorAll('.opt[data-v]')].map(el => el.dataset.v);
+      out.modeShown = mbtn.value;
+      document.getElementById('dd-popover').hidden = true;
+      // THE RULER THE BAR IS ON, off its own first control (a shared suffix).
+      const onRuler = (document.getElementById(
+        'dd-bench-' + mbtn.id.slice('dd-bench-mode-'.length)) || {}).value;
+      out.onRuler = onRuler;
+      out.wantModes = [...new Set(builtinBuilds()
+        .filter(p => p.benchmark === onRuler).map(p => p.mode))];
+    }
     if (btn) {
       btn.click(); await s(400);
       const menu = document.getElementById('dd-menu');
-      out.headers = [...(menu ? menu.children : [])]
-        .filter(el => el.className.indexOf('ddgroup') >= 0)
-        .map(el => el.textContent.trim());
+      out.groups = [...menu.children]
+        .filter(el => el.className.indexOf('ddgroup') >= 0).length;
+      out.rowLabels = [...menu.querySelectorAll('.opt .mn')].map(el => el.textContent.trim());
+      document.getElementById('dd-popover').hidden = true;
     }
   }
   return out;
@@ -335,16 +384,32 @@ for (const w of pick.weapons) {
     w.blocks === w.groups, `${w.blocks} blocks for ${w.groups} modes`);
   check(`[${w.id}] ...and #1 is that mode's leader, best first`,
     w.bestFirst, w.why);
+  check(`[${w.id}] ...and the strongest way of playing it leads`,
+    w.strongestFirst, w.ledWhy);
 }
 // …AND THE PICKER DRAWS IT. The order above is invisible until something
-// renders a header from it, and the header is the only thing on screen that
-// says what a rank is a rank ON.
+// renders a control from it, and that control is the only thing on screen
+// saying what a rank is a rank ON.
 check(`[${pick.drawn}] the picker offers its rows`, pick.hasPicker !== false,
   String(pick.hasPicker));
-check(`[${pick.drawn}] ...drawing each mode's header exactly once`,
-  !!pick.headers && pick.headers.length > 0
-    && pick.headers.length === new Set(pick.headers).size,
-  JSON.stringify(pick.headers));
+check(`[${pick.drawn}] ...and a control of its own for the mode`,
+  pick.hasModes === true, String(pick.hasModes));
+check(`[${pick.drawn}] ...offering each mode exactly once`,
+  !!pick.modeOpts && pick.modeOpts.length > 1
+    && pick.modeOpts.length === new Set(pick.modeOpts).size,
+  JSON.stringify(pick.modeOpts));
+// IN THE ORDER `builtinBuilds` PUT THEM IN, asserted above to be strongest first.
+check(`[${pick.drawn}] ...in the board's own order, strongest first`,
+  JSON.stringify(pick.modeOpts) === JSON.stringify(pick.wantModes),
+  `${JSON.stringify(pick.modeOpts)} vs ${JSON.stringify(pick.wantModes)}`);
+check(`[${pick.drawn}] ...and it opens on that one`,
+  pick.modeShown === (pick.modeOpts || [])[0],
+  `${pick.modeShown} vs ${JSON.stringify(pick.modeOpts)}`);
+// A ROW IS A NUMBER AGAIN: the control beside it answers the mode.
+check(`[${pick.drawn}] ...and its rows are bare ranks, ungrouped`,
+  pick.groups === 0 && (pick.rowLabels || []).length > 0
+    && pick.rowLabels.every((t) => /^#\d+$/.test(t)),
+  `${pick.groups} headers, ${JSON.stringify((pick.rowLabels || []).slice(0, 4))}`);
 
 // ---- and the page you land on starts at the top ----------------------------
 //
