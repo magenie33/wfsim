@@ -431,18 +431,13 @@ pub struct Fitted {
 /// Forma to leave more room", and 1 before 2 means the room the mastery Forma
 /// buy is available to 2 before it starts counting.
 ///
-/// Capacity is not a constant, and on a rank-40 weapon it is not even an INPUT:
-/// every Forma both polarizes a slot and adds two max rank, so how much room
-/// there is depends on how much Forma was spent, which depends on how much room
-/// there is. The default settles it by not asking — five polarizations is what
-/// full mastery affinity takes whether or not the build needs them, so capacity
-/// is known before planning starts and there is nothing to solve.
-///
-/// With `polarize_to_max` off the loop is real, and it is solved by SEARCHING
-/// the budget rather than iterating to a fixed point: for each f from 0 up, ask
-/// what the build needs at the capacity f would buy, and take the first f that
-/// covers its own answer. Bounded by five, and every f it rejects is one the
-/// player genuinely could not afford to stop at.
+/// CAPACITY IS NOT AN INPUT on a rank-40 weapon: every Forma both polarizes a
+/// slot and adds two max rank, so how much room there is depends on how much
+/// Forma was spent, which depends on how much room there is. The default
+/// settles it by not asking — five polarizations is what full mastery affinity
+/// takes either way. With `polarize_to_max` off the loop is real and is solved
+/// by SEARCHING the budget: for each f from 0 up, ask what the build needs at
+/// the capacity f would buy and take the first f that covers its own answer.
 pub fn fit(
     base_max_rank: u32,
     innate_slots: &[Option<Polarity>],

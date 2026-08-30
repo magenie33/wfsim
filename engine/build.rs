@@ -1,54 +1,27 @@
 //! Embed the `data/` tree at compile time (docs/WASM.md phase 1).
 //!
-//! Scans `../data` for `*.yaml` and generates `$OUT_DIR/embedded_data.rs`
-//! with one `include_str!` entry per file, sorted by relative path with
-//! forward slashes. `crate::data` includes the table; every loader reads
-//! from it, so native and wasm builds carry the identical data set and no
-//! binary depends on the current working directory.
+//! Scans `../data` for `*.yaml` and generates `$OUT_DIR/embedded_data.rs` with
+//! one `include_str!` entry per file, so native and wasm builds carry the
+//! identical data set and no binary depends on the working directory.
 //!
-//! WHAT IS EMBEDDED IS THE DATA, NOT THE PROSE. `data/` is
-//! **43% comments and blank lines** — 1.55 MB of 3.57 MB, and 55% of
-//! `weapons/`, 67% of `evolutions/`, 75% of `debuffs/` — because this repo
-//! makes every value cite its source, which is a rule about the REPO and not
-//! about the artefact players download. So each file is stripped of its
-//! full-line comments on the way into `$OUT_DIR` and the stripped copy is what
-//! `include_str!` takes. AGENTS.md's own rule is what makes this safe: *"YAML
-//! fields are consumed data; narrative/prose belongs in comments"*, so nothing
-//! reads a comment.
+//! WHAT IS EMBEDDED IS THE DATA, NOT THE PROSE. `data/` is **43% comments and
+//! blank lines**, because this repo makes every value cite its source — a rule
+//! about the REPO rather than about the artefact players download. Each file is
+//! stripped of its full-line comments on the way into `$OUT_DIR`, which
+//! AGENTS.md's own rule makes safe: *"YAML fields are consumed data;
+//! narrative/prose belongs in comments"*. MEASURED on the wire at **-22%** of
+//! what a visitor downloads, against `wasm-opt -Oz`'s -0.3%.
 //!
-//! MEASURED, on the wire and not on disk, which is the only figure that is
-//! about a reader: the wasm goes 6.74 MB -> 4.33 MB raw, and 1,192 KB -> 927 KB
-//! under the same brotli the CDN serves — **-22%** of what every visitor
-//! downloads. Essentially all of it is this: `wasm-opt -Oz`, run for the first
-//! time in the same change, is worth -0.3% there, because it shrinks CODE and
-//! 59% of this binary is data.
+//! A LINE IS DROPPED OR KEPT BYTE FOR BYTE, because several loaders read the
+//! embedded text as LINES rather than through serde, so re-emitting the yaml
+//! through a parser would rewrite the quoting they stand on. Inline comments
+//! are left alone for the same reason, and THE BLOCK-SCALAR ARM IS DEFENSIVE:
+//! a `#` inside a `|`/`>` block is CONTENT, though removing that arm changes
+//! the meaning of ZERO of today's 1,607 files.
 //!
-//! A LINE IS DROPPED OR KEPT BYTE FOR BYTE. Several loaders read the embedded
-//! text as LINES rather than through serde — `l.starts_with("internal_name:")`
-//! in `mods_data`, `strip_prefix("set:")` in `mod_sets_data` — so re-emitting
-//! the yaml through a parser, which is the obvious way to drop comments, would
-//! silently rewrite the quoting those readers stand on. Removing whole lines
-//! cannot. Inline comments are left alone for the same reason: `mod_sets_data`
-//! strips its own with `split('#')`, so they are already somebody's input.
-//!
-//! THE BLOCK-SCALAR ARM IS DEFENSIVE, AND SAYS SO. A `#` line inside a `|`/`>`
-//! block is CONTENT, so the scanner tracks blocks and passes them through — but
-//! measured against today's `data/`, removing that arm changes the meaning of
-//! ZERO of 1,607 files, because none of the 110 live blocks contains such a
-//! line. It is here for the block somebody writes next year, and claiming the
-//! data needs it today would be claiming a test that does not test anything.
-//!
-//! THE BUILD PROVES IT RATHER THAN A TEST. Every file is parsed before and
+//! THE BUILD PROVES IT RATHER THAN A TEST: every file is parsed before and
 //! after and the two `Value`s must be equal, so a stripper that changed a
-//! meaning cannot compile — there is no window in which the artefact is wrong
-//! and the suite is green. Verified to bite: also dropping `name:` lines fails
-//! the build naming `data/abilities/eclipse.yaml`.
-//!
-//! It is strict in a second way that turned out to matter: `serde_norway`
-//! refuses a DUPLICATE KEY, and the first run of this build found fourteen in
-//! `data/i18n/zh/ui.yaml` — four of them a Chinese translation that had never
-//! reached a screen, which no i18n check could see because a key translated
-//! twice still counts as translated.
+//! meaning cannot compile. `serde_norway` also refuses a DUPLICATE KEY.
 
 use std::env;
 use std::fmt::Write as _;

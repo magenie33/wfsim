@@ -1,11 +1,10 @@
 //! Parazon Mercy window (wiki `Parazon` §Mercy; docs/MECHANICS.md §8).
 //!
-//! Pure predicate: given the unit's attributes and current state, is the
-//! Mercy prompt available? Rules (unverified until golden-tested):
-//! - Only **mercy-eligible** units (per-enemy data flag; list on the
-//!   Parazon page).
-//! - Base window: **40%** of total health; **60%** on Corpus with all
-//!   shields removed; **80%** on Eximus.
+//! Pure predicate: given the unit's attributes and current state, is the Mercy
+//! prompt available? Rules (unverified until golden-tested):
+//! - Only **mercy-eligible** units (per-enemy data flag).
+//! - Base window: **40%** of total health; **60%** on Corpus with all shields
+//!   removed; **80%** on Eximus.
 //! - Impact (Stagger) stacks: **+8%** each, capped at **80%** (**100%** on
 //!   Corpus and Eximus).
 //! - Above level **150**: window shrinks **1% per 5 levels**, floor **10%**.

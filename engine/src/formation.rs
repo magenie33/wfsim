@@ -1,34 +1,22 @@
 //! THE FORMATION — more than one body on the floor, and which one is being shot.
 //!
-//! The arena has held exactly one target since this engine was written, and
-//! every golden value rests on that. This is the layer that makes the count a
-//! number instead of a constant, and it is deliberately SMALL: a formation is a
-//! list of bodies plus the index of the one being aimed at, and the whole of
-//! what it decides is WHO. What each body then is — its pools, its armor, its
-//! hitboxes, its debuffs — stays exactly what it was.
-//!
-//! # The aim policy
+//! Deliberately SMALL: a formation is a list of bodies plus the index of the
+//! one being aimed at, and the whole of what it decides is WHO. What each body
+//! then is — its pools, its armor, its hitboxes, its debuffs — stays exactly
+//! what it was for a single target.
 //!
 //! **ONE TARGET AT A TIME, AND YOU SWITCH ONLY WHEN IT DIES.** "Who do you
-//! shoot at" is a PLAY PATTERN, the same
-//! class of decision as reload interruption, and docs/UNMODELLED.md is explicit
-//! that this repo refuses to invent one.
+//! shoot at" is a PLAY PATTERN, the same class of decision as reload
+//! interruption, and docs/UNMODELLED.md is explicit that this repo refuses to
+//! invent one. It buys two things: the fight stays CONTINUOUS with the
+//! single-target behaviour every golden value rests on, since with one body the
+//! policy never fires; and punch-through, explosions and chaining stay pure
+//! upside rather than something a re-targeting rule is quietly optimising
+//! around. WHICH ONE NEXT is the model's own choice — the NEAREST LIVE body,
+//! the only rule that needs no state — and `retarget` is where it lives.
 //!
-//! It buys two things. The fight stays CONTINUOUS with the single-target
-//! behaviour every golden value and both boards rest on — with one body the
-//! policy never fires. And it makes punch-through, explosions and chaining
-//! pure upside rather than something a re-targeting rule is quietly optimising
-//! around.
-//!
-//! WHICH ONE NEXT is the model's own choice and not the owner's: the NEAREST
-//! LIVE body to the player. It is the only rule that needs no state, and a
-//! player who has just lost their target looks at what is in front of them.
-//! `retarget` is the one place it lives.
-//!
-//! # What a formation does NOT do
-//!
-//! Move. Bodies stand where they are put, which is what makes a chain's path
-//! fixed (MEASUREMENTS M52) and what the whole 2D arena assumes today.
+//! A formation does NOT MOVE. Bodies stand where they are put, which is what
+//! makes a chain's path fixed (M52) and what the 2D arena assumes.
 
 use crate::space::Vec2;
 
@@ -36,29 +24,19 @@ use crate::space::Vec2;
 ///
 /// DECLARED HERE and read by everyone: the api refuses a longer list and
 /// `RunResult::damage_by_body` is sized off it. It is the SIM that pays, which
-/// is why the number belongs to the engine rather than to the page — every
-/// body is a full target with its own pools, procs and DoTs, and a chain
-/// resolves against all of them on every shot.
-/// FOUR HUNDRED, and the number is MEASURED rather than chosen.
+/// is why the number belongs to the engine — every body is a full target with
+/// its own pools, procs and DoTs, and a chain resolves against all of them.
+/// FOUR HUNDRED, MEASURED rather than chosen. A cap must clear the size a CROWD
+/// RULER needs or the ARENA becomes the thing being measured: the roster's
+/// largest blast (the Morgha alt's 12 m) stops growing at 110 bodies on a 19x19
+/// and stays there through 21x21 and 23x23, so 361 is where the measurement
+/// settles and past it only an infinite-punch-through column keeps growing.
 ///
-/// It was 50 while the arena was learning to hold more than two bodies, which
-/// was the right number for "some, not unbounded" and the wrong one the moment
-/// a CROWD RULER was sized: `formation_cost` says the roster's largest blast —
-/// the Morgha alt's 12 m — stops growing at a 17x17 grid, which is 289 bodies.
-/// A cap under that would have made the ARENA the thing being measured.
-///
-/// RAISING IT IS FREE, which is the part that had to be checked rather than
-/// assumed: `RunResult` is `Copy` and carries a `[f64; MAX_BODIES + 1]`, so the
-/// worry was a fixed cost paid by every fight including the single-target ones
-/// the board already runs. Measured at 400 against 50, a one-body engagement
-/// costs 0.538 multishot against 0.533 — inside the noise of the machine. The array is
-/// 3.2 KB and a run produces one.
-///
-/// 400 rather than 289: a 19x19 is 361, and that is the size the measurement
-/// settles on — where the roster's LARGEST blast (the Morgha alt's 12 m) stops
-/// growing at 110 bodies and stays there through 21x21 and 23x23. Past 19 the
-/// only thing more rows change is how deep an infinite-punch-through weapon's
-/// column runs, which is the one thing that should not grow.
+/// RAISING IT IS FREE, which had to be checked rather than assumed: `RunResult`
+/// is `Copy` and carries a `[f64; MAX_BODIES + 1]`, so the worry was a fixed
+/// cost on every single-target fight. At 400 against 50 a one-body engagement
+/// costs 0.538 multishot against 0.533 — inside the machine's noise, on a
+/// 3.2 KB array a run produces one of.
 pub const MAX_BODIES: usize = 400;
 
 /// One body in the formation, as the caller declares it — everything that
@@ -138,9 +116,8 @@ impl Formation {
     /// `spacing` metres, all of one kind, the front row nearest the player.
     ///
     /// The front row's MIDDLE body is the one aimed at, because that is the one
-    /// a player can actually put a beam on: the centre of a formation is behind
-    /// it. It is the fixture MECHANICS §12's numbers are
-    /// computed against.
+    /// a player can put a beam on — the centre of a formation is behind it. It
+    /// is the fixture MECHANICS §12's numbers are computed against.
     /// THE POSITIONS OF A GRID BUILT AROUND THE BODY BEING AIMED AT, index 0
     /// being that body — the shape a SCENARIO describes.
     ///

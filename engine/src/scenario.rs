@@ -23,34 +23,26 @@ pub enum AxisValue {
     Number(f64),
 }
 
-/// **A QUESTION ABOUT A WEAPON THAT THE WEAPON DATA ALREADY ANSWERS.**
-///
-/// A CLOSED SET, and each arm is a pure function of [`WeaponSpec`]. That is the
-/// discipline that keeps this from becoming a second place to get a fact wrong
-/// — the lesson `docs/CATALOGS.md` records in another domain. A capability that
-/// needed its own data field would be a taxonomy inventing facts, not reading
-/// them.
+/// **A QUESTION ABOUT A WEAPON THAT THE WEAPON DATA ALREADY ANSWERS** — a
+/// CLOSED SET, each arm a pure function of [`WeaponSpec`], so this cannot
+/// become a second place to get a fact wrong.
 /// **WHY A WEAPON LACKS A CAPABILITY — and therefore whether a SCENARIO may
 /// argue with it**.
 ///
 /// The four capabilities are not the same kind of thing, and the difference
-/// decides what a scenario file is allowed to CLAIM:
+/// decides what a scenario file may CLAIM:
 ///
 ///   * a GAME FACT is the game's own rule. A Sentinel cannot put a shot on a
-///     head; a scenario that said otherwise would produce a number nobody can
-///     reproduce in game, which is the opposite of this product's promise.
-///   * a HOUSE RULE is OURS. "Infinite ammo" is already a stand-in for ammo
-///     PICKUPS the sim has no entities for — the finite reserve is "the
-///     pessimistic half of a mechanic we only half have" (`parse_fight`). Which
-///     half a fight is scored under is a RULER'S CHOICE, and the official
-///     rulers already make it in prose: *"Ammo pickups are modelled. An entry
-///     that cannot be resupplied runs on its own reserve."*
+///     head, and a scenario saying otherwise produces a number nobody can
+///     reproduce in game.
+///   * a HOUSE RULE is OURS. "Infinite ammo" is a stand-in for ammo PICKUPS
+///     the sim has no entities for, so which half of that mechanic a fight is
+///     scored under is a RULER'S CHOICE — which the official rulers already
+///     make in prose.
 ///
-/// SO OVERRIDES SIT BEHIND LEGALITY, and that is the whole guard: a scenario
-/// may say "in my fight, Arch-Guns have infinite ammo" and may not say "in my
-/// fight, Sentinels land headshots". Exactly one of today's four is a house
-/// rule, and it is the one the owner reached for first — which is a sign the
-/// distinction was already there and merely unwritten.
+/// SO OVERRIDES SIT BEHIND LEGALITY: a scenario may say "in my fight, Arch-Guns
+/// have infinite ammo" and may not say "in my fight, Sentinels land headshots".
+/// Exactly one of today's four is a house rule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Absence {
     /// The game's rule. A scenario may not override it.

@@ -2,75 +2,46 @@
 //
 // wfsim.app is a Cloudflare Worker with STATIC ASSETS (`wrangler.jsonc`), not a
 // Pages project, so the Pages conventions do nothing here: an endpoint this
-// script does not claim answers with the SPA's HTML and a 200, because
-// `not_found_handling: single-page-application` answers every unmatched path
-// with index.html. A 200 carrying the wrong content type is the quietest
-// possible failure.
+// script does not claim answers with the SPA's HTML and a 200, which is the
+// quietest possible failure.
 //
-// Two things make it work here, and both are in `wrangler.jsonc`:
-//   - `assets.binding: ASSETS`, so this script can hand a request back to the
-//     CDN unchanged — everything that is not the api is still a static file,
-//     served exactly as the CDN serves it;
-//   - `assets.run_worker_first: ["/api/*"]`, so the SPA fallback cannot claim
-//     an api path before the script sees it.
+// Two things make it work, both in `wrangler.jsonc`: `assets.binding: ASSETS`,
+// so this script can hand a request back to the CDN unchanged; and
+// `assets.run_worker_first: ["/api/*"]`, so the SPA fallback cannot claim an
+// api path before the script sees it.
 //
-// WHAT THIS ENDPOINT DOES: stores a BUILD. Nothing else.
-// WHAT IT DOES NOT DO: score it. A submission carries no number and none would
-// be believed — the board is computed from the builds by the scheduled job in
-// `.github/workflows/board.yml`, running the same engine that ships to the
-// browser. That is what makes a row reproducible and a forged score pointless,
-// and it is why this endpoint can be public and unauthenticated without being
-// a hole: the worst a flood achieves is builds that rank badly.
+// WHAT THIS ENDPOINT DOES: stores a BUILD. It does NOT score it — the board is
+// computed from the builds by `.github/workflows/board.yml`, running the same
+// engine that ships to the browser, which is what makes a row reproducible, a
+// forged score pointless and this endpoint safe to leave unauthenticated.
 //
-// KEYED BY IDENTITY, so writes are idempotent. A hundred players who arrive at
-// the same build write the same key a hundred times and produce ONE row —
-// which is the correct semantics for a board of builds, and it means no dedup
-// pass and no counting.
+// KEYED BY IDENTITY, so writes are idempotent: a hundred players arriving at
+// the same build produce ONE row, with no dedup pass and no counting.
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 const MAX_MODS = 9;            // an OUTER BOUND, not the rule — see below
 const ID = /^[a-z0-9_]{1,64}$/;
 
-/// WHAT A BUILD IS, declared ONCE.
+/// WHAT A BUILD IS, declared ONCE. Three things are derived from it — the shape
+/// check, the stored record and the identity key — because three hand-written
+/// lists is a defect generator: adding an axis to some and not the others
+/// produces an INCOMPLETE record and a scorer that quietly refuses it.
 ///
-/// Three things are derived from this table: the shape check, the stored record
-/// and the identity key. Three hand-written lists would be the defect
-/// generator, because adding an axis to some of them and not the others does
-/// not throw — it produces a record that is merely INCOMPLETE and a scorer that
-/// quietly refuses it, which is invisible until somebody notices a board row
-/// that never appeared.
+/// `kind`: `id` is a single slug — `required` ones present and non-empty, the
+/// rest optional, and an EMPTY optional axis is not written at all — and `ids`
+/// is a list, always written. `set` means the ORDER does not matter, so the key
+/// sorts it: evolutions are a set, mods are not.
 ///
-/// `kind`:
-///   - `id`  — a single slug. `required` ones must be present and non-empty;
-///             the rest may be empty, which is what an ordinary weapon sends
-///             for `valence` and what a weapon with one mode sends for `mode`.
-///             An EMPTY optional axis is not written to the record at all.
-///   - `ids` — a list of slugs, always written even when empty.
-/// `set`: the ORDER does not matter for this axis, so the key sorts it.
-/// Evolutions are a set (one per tier, the tier decides where each sits). Mods
-/// are NOT: they combine elements in the order they are listed, and on the
-/// Torid Heat/Cold/Toxin/Electric against Heat/Toxin/Cold/Electric is 12,424
-/// DPS against 46,583.
-///
-/// SHAPE ONLY, throughout. Whether these ids exist, whether the mods are
-/// compatible, whether the build fits 60 capacity and whether THIS weapon has
-/// the mode or the element named are questions for the engine, and the engine
-/// is not here — `engine::builds::validate_for_board` answers them in the
-/// scoring job, where the whole data set is available. Anything that fails
-/// there is never scored and never reaches the board. The cost is a little junk
-/// in KV; the alternative is two rules that drift, and a worker confidently
-/// rejecting builds a benchmark would have accepted.
+/// SHAPE ONLY: whether these ids exist and whether the build is legal are the
+/// engine's questions, answered by `engine::builds::validate_for_board` in the
+/// scoring job. The cost is a little junk in KV; the alternative is two rules
+/// that drift.
 // EXPORTED for `scripts/check_board_submit.mjs`, which asserts this table
-// against the keys the PAGE actually sends: a name added to `boardPayload()`
-// and not to this table fails immediately, rather than through a board row that
-// never appears.
-//
-// `axis` names which of `engine::builds::BUILD_AXES` an entry carries, where
-// there is one. It is not this worker's list to keep — the engine declares what
-// a build consists of and serves it at `/api/meta.build_axes`, and
-// `scripts/check_build_axes.mjs` asserts every axis marked `on_board` is
-// claimed by a row here. A worker with no game data cannot look that up at
-// request time, so the check does it once, on the ground.
+// against the keys the PAGE actually sends, so a name added to `boardPayload()`
+// and not here fails immediately. `axis` names which of
+// `engine::builds::BUILD_AXES` an entry carries — not this worker's list to
+// keep, so `scripts/check_build_axes.mjs` asserts every `on_board` axis is
+// claimed by a row here.
 export const AXES = [
   // THE RULER IS NOT PART OF WHAT THIS IS. A submission has
   // never carried a score — it carries a BUILD, and the number is produced by
@@ -222,13 +193,11 @@ async function submit(request, env) {
 /// looks at it yet. That is what makes the step reversible: delete the binding
 /// and the system is exactly what it was.
 ///
-/// WHY D1 AT ALL. The library is the one irreplaceable thing here and KV cannot
-/// be asked a question about it: no queries, no transactions, no bulk read, and
-/// listing is the only index. "Which weapons are under-covered", "how much did
-/// the library grow this month", "which facts are stale" are the questions
-/// running a board consists of, and none of them can be put to a key-value
-/// store. D1 is SQLite — it answers them, and it dumps whole, which is a hard
-/// requirement for an asset with no other copy (docs/BOARD.md).
+/// WHY D1 AT ALL: the library is the one irreplaceable thing here and KV cannot
+/// be asked a question about it — no queries, no transactions, no bulk read,
+/// and listing is the only index. "Which weapons are under-covered" and "how
+/// much did the library grow this month" are what running a board consists of.
+/// D1 is SQLite, and it dumps whole, which an asset with no other copy needs.
 ///
 /// A FAILURE HERE MAY NOT REACH THE SUBMITTER. The submission already succeeded
 /// — the authoritative write is above — so a broken mirror must be invisible:

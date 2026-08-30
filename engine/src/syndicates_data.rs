@@ -4,33 +4,22 @@
 //! explosion of its own element in a 25 m radius, armed by AFFINITY the weapon
 //! earns and fired on a 30-second cooldown.
 //!
-//! # Why they are a table and not fields on a card
+//! A TABLE RATHER THAN FIELDS ON A CARD, because dozens of augment mods and
+//! every Syndicate weapon grant one of exactly six effects — written onto each
+//! card the same six facts would exist in many copies, each free to drift.
 //!
-//! Dozens of augment mods and every Syndicate weapon grant one of exactly six
-//! effects. Written onto each card, the same six facts would exist in many
-//! copies, each free to drift; here a mod names its syndicate and the numbers
-//! live once (data/README.md, "define once / reference anywhere").
+//! The wiki states the shared half ONCE for all six and tabulates only three
+//! columns: the ELEMENT, which attribute is restored, and which buff is given.
+//! Those are the only fields that differ, and a seventh effect would differ in
+//! the same three. JUSTICE IS THE ONE EXCEPTION, and it is about the status:
+//! "With the exception of Justice, radial explosions have a 100% chance to
+//! apply their respective Status Effect... Instead of causing a Blast status
+//! effect, Justice stuns nearby enemies" — its damage is Blast and its proc is
+//! not, which is why `guaranteed_status` is a field.
 //!
-//! # What varies, and what does not
-//!
-//! The wiki states the shared half ONCE for all six — the damage, the radius,
-//! the guaranteed proc, the 25% restore, the 30 s buff, the 30 s cooldown — and
-//! tabulates only three columns: the ELEMENT, which attribute is restored, and
-//! which buff is given. So those are the only fields that differ, and a seventh
-//! effect would differ in the same three.
-//!
-//! JUSTICE IS THE ONE EXCEPTION and it is about the status: "With the exception
-//! of Justice, radial explosions have a 100% chance to apply their respective
-//! Status Effect... Instead of causing a Blast status effect, Justice stuns
-//! nearby enemies". Its damage is Blast and its proc is not, which is why
-//! `guaranteed_status` is a field rather than an assumption.
-//!
-//! # What this sim uses
-//!
-//! The explosion, whole: a 25 m radius is one the arena's only enemy is always
-//! inside. The restore and the buff act on the WARFRAME and are carried
-//! unread — they are what tells the six apart for a player, and a
-//! weapon-damage sim has nowhere to spend them.
+//! WHAT THIS SIM USES is the explosion, whole. The restore and the buff act on
+//! the WARFRAME and are carried unread: they tell the six apart for a player,
+//! and a weapon-damage sim has nowhere to spend them.
 
 use std::sync::OnceLock;
 

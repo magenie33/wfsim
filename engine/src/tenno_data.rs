@@ -1,19 +1,14 @@
 //! The TENNO — the player side of a fight, loaded from `data/tenno/`.
 //!
-//! A fight has TWO actors. The target has always been one; this is the other.
-//! It carries what the player IS (a Warframe's stat block) and what the player
-//! is DOING ([`TennoState`]), and both reach the calculation: a mod's
-//! `condition: while_invisible` is asked of the state, and an arcane that
-//! scales off Warframe armor or energy reads the stats.
-//!
-//! Field names are the wiki's own (`Module:Warframes/data`: Armor, Health,
-//! Shield, Energy, Sprint), so the day a frame is transcribed it fills these in
-//! rather than needing a second vocabulary invented for it.
+//! A fight has TWO actors; this is the player. It carries what the player IS
+//! (a Warframe's stat block) and what the player is DOING ([`TennoState`]), and
+//! both reach the calculation. Field names are the wiki's own
+//! (`Module:Warframes/data`), so a transcribed frame fills them in rather than
+//! needing a second vocabulary.
 //!
 //! `data/tenno/default.yaml` is the NEUTRAL Tenno — no frame chosen, no
-//! abilities running, aiming down sights. A scenario starts from it and
-//! overrides what it knows; that is why every field has a defined meaning at
-//! its default rather than being a placeholder waiting for a frame.
+//! abilities running, aiming down sights — which a scenario starts from and
+//! overrides, so every field has a defined meaning at its default.
 //!
 //! `health` / `shield` are still PLACEHOLDERS at 1 (see the yaml): nothing
 //! reads them, because nothing shoots BACK yet. What is waiting on that, all
@@ -312,23 +307,18 @@ fn full() -> f64 {
 ///
 /// Everything a weapon is handed by something that is not its build: a squad
 /// buff, a Warframe ability, an arcane on another weapon, a Helminth this app
-/// has no entry for. Rather than one definition per source — each of which
-/// would need a bracket nobody published — the player says what it is WORTH and
-/// declares the arithmetic by declaring the shape: these join the same additive
-/// buckets the MODS feed, so a scenario's +60% multishot and Split Chamber's
-/// +90% sum, exactly as two multishot mods would.
+/// has no entry for. Rather than one definition per source — each needing a
+/// bracket nobody published — the player says what it is WORTH and the SHAPE
+/// declares the arithmetic: these join the additive buckets the MODS feed, so a
+/// scenario's +60% multishot and Split Chamber's +90% sum.
 ///
-/// PERMANENT, measured's own framing. No trigger, no clock, no stack count:
-/// a `data/abilities/` buff is the thing with a duration, and this is the thing
-/// without one. That is what makes it cheap to be right about — there is no
-/// uptime to model, and the number the player types is the number every shot
-/// gets.
+/// PERMANENT: no trigger, no clock, no stack count, since a `data/abilities/`
+/// buff is the thing with a duration. There is no uptime to model, and the
+/// number the player types is what every shot gets.
 ///
-/// It lives on the TENNO because it is the fight's side of the fight, which is
-/// also what carries it everywhere for free: every `resolve_for` in the
-/// workspace is already handed the fight's player, so the panel, the simulator
-/// and the optimizer cannot disagree about it and no call site had to be
-/// remembered.
+/// It lives on the TENNO because it is the fight's side of the fight, which
+/// carries it everywhere for free — every `resolve_for` is already handed the
+/// fight's player.
 ///
 /// NO ELEMENTS. An elemental mod is position-sensitive and enters a hierarchy
 /// (MECHANICS §2), so "+90% Heat here" is not a number, it is a place in an

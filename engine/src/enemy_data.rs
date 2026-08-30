@@ -177,19 +177,13 @@ pub struct EnemySpec {
     /// particular proc type, the respective damage type is EXCLUDED from proc
     /// type chance calculations for that enemy."*
     ///
-    /// So the two are independent — the wiki says so outright, "regardless of
-    /// whether that enemy is also immune to Corrosive damage":
-    ///
-    /// - `damage_modifiers` x0 changes what a hit DEALS. The proc distribution
-    ///   does not move: a type that lands nothing is still drawn.
-    /// - a status immunity changes what a hit PROCS, by removing that type from
-    ///   the denominator so the rest RENORMALIZE onto the roll. It is not a
-    ///   wasted proc — the wiki's own worked example takes Corrosive out of
-    ///   20/5/10/25/50 and the other four go from 18.18/4.55/9.09/22.73% to
-    ///   33.33/8.33/16.67/41.67%.
-    ///
-    /// The engine has done the renormalisation since `status::draw_proc_type`
-    /// was written; what it had no way to hear was an enemy DECLARING one.
+    /// So the two are independent, "regardless of whether that enemy is also
+    /// immune to Corrosive damage": `damage_modifiers` x0 changes what a hit
+    /// DEALS and leaves the proc distribution alone, while a status immunity
+    /// changes what it PROCS by removing that type from the denominator so the
+    /// rest RENORMALIZE — the worked example takes Corrosive out of
+    /// 20/5/10/25/50 and the other four go from 18.18/4.55/9.09/22.73% to
+    /// 33.33/8.33/16.67/41.67%.
     #[serde(default)]
     pub status_immunities: Vec<String>,
     /// THE OTHER KIND, and it is a different arithmetic: the proc LANDS and its

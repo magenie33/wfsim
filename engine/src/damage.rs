@@ -261,30 +261,21 @@ impl DamageVector {
     /// difference is every elemental mod ever equipped. The page states both
     /// halves as formulas — `Scale = ModdedBase / 32` and
     /// `x = TypeValue / ModdedBase` — where ModdedBase is `base × (1 + damage
-    /// mods)` with the elemental portions EXCLUDED, the same number
-    /// [`crate::dummy::DummyParams::dot_modified_base`] already carries for
-    /// status payloads. Elements are in the numerator only, which is why the
-    /// note beside it holds: a non-elemental bonus "multiplies both the base
-    /// value of rounding numerator and Scale of rounding denominator, and
+    /// mods)` with the elemental portions EXCLUDED. Elements are in the
+    /// numerator only, which is why a non-elemental bonus "multiplies both the
+    /// base value of rounding numerator and Scale of rounding denominator, and
     /// therefore is a simple multiplier to any quantized total".
     ///
-    /// IT WAS THIS VECTOR'S TOTAL FOR MONTHS AND NOTHING COULD SEE IT. The
-    /// page's worked example is 30/30/40 with no mods at all, so ModdedBase and
-    /// the total are the same 100 and the example passes either way — the one
-    /// test on this function could not distinguish the two readings. A Braton
-    /// Prime with Infected Clip and Hellfire could: base 35, Gas 63, and the
-    /// wrong denominator snaps the four components to 33 units instead of 32,
-    /// for **101.06 against a measured 98**. Four
-    /// builds were measured and the right denominator reproduces all four to
-    /// the digit.
+    /// THE PAGE'S WORKED EXAMPLE CANNOT TELL THE TWO READINGS APART: 30/30/40
+    /// with no mods makes ModdedBase and the total the same 100. A Braton Prime
+    /// with Infected Clip and Hellfire can — base 35, Gas 63, where the wrong
+    /// denominator snaps the components to 33 units instead of 32 for **101.06
+    /// against a measured 98** — and the right denominator reproduces all four
+    /// measured builds to the digit.
     ///
-    /// A MONO-TYPE VECTOR IS NO LONGER AUTOMATICALLY LOSSLESS, which is the
-    /// visible consequence: it was exactly 32 units of itself, and it is now
-    /// however many units of ModdedBase it happens to be. A pure 63 Gas on a
-    /// base of 35 is 57.6 units and snaps to 58.
-    ///
-    /// There is deliberately no zero-argument form. The denominator being
-    /// IMPLICIT is the whole of the bug above.
+    /// A MONO-TYPE VECTOR IS THEREFORE NOT AUTOMATICALLY LOSSLESS: a pure 63
+    /// Gas on a base of 35 is 57.6 units and snaps to 58. There is no
+    /// zero-argument form, because an IMPLICIT denominator is the whole bug.
     pub fn quantized_against(&self, modded_base: f64) -> Self {
         if modded_base <= 0.0 || self.total() <= 0.0 {
             return *self;

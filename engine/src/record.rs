@@ -390,17 +390,14 @@ pub struct Snap {
 
 /// ONE LAYER OF THE OFFENSIVE LEDGER, and the shape SAYS which mechanic it is.
 ///
-/// It was a flat list of multipliers, and that is what made the panel print
-/// things the game does not have. Condition Overload is an ADDITIVE term in the
-/// base-damage bracket on most weapons, so the only way to fit it into a chain
-/// of multipliers was to divide the bracket by itself — `(1 + base + co) /
-/// (1 + base)` — and print the quotient with a `x` in front of it. Quantization
-/// is a per-component snap to a grid, so the only way to fit THAT into a chain
-/// was the ratio of the totals. Two invented numbers, both looking exactly like
-/// a game multiplier.
+/// A flat list of multipliers makes the panel print things the game does not
+/// have: Condition Overload is an ADDITIVE term in the base-damage bracket on
+/// most weapons, so fitting it into a chain of multipliers means dividing the
+/// bracket by itself and printing the quotient with a `x` in front of it, and
+/// quantization is a per-component snap fitted in as a ratio of totals.
 ///
-/// So a layer is one of three shapes, and the shape is the information:
-/// a BRACKET lists its terms and adds them, QUANTIZE shows the grid, and only a
+/// So a layer is one of three shapes and the shape is the information: a
+/// BRACKET lists its terms and adds them, QUANTIZE shows the grid, and only a
 /// MUL gets a multiplication sign. Anything the engine divided out cannot be
 /// drawn at all, because there is no variant for it.
 ///
@@ -757,13 +754,10 @@ impl Record {
     /// fraction of that — so a reader scrubbed to the last ten seconds was
     /// paying for a `TargetAt` snapshot, three Vecs and a String on every one
     /// of the instances before it, all of them thrown away by `push`.
-    /// IT COUNTS WHAT IT REFUSES, which the first version did not — and that
-    /// made the panel lie about its own cap. `dropped` is `push`'s counter, and
-    /// short-circuiting here meant a damage row past the limit never reached
-    /// it: on a 180 s fight cut off at 146 s, the panel reported **542** left
-    /// out when the truth was tens of thousands, because the only events still
-    /// calling `push` were the shots and reloads. A cap that under-reports itself is worse than one that says
-    /// nothing.
+    /// IT COUNTS WHAT IT REFUSES, or the panel lies about its own cap:
+    /// `dropped` is `push`'s counter, so short-circuiting here leaves a damage
+    /// row past the limit never reaching it — a 180 s fight cut off at 146 s
+    /// reported **542** left out when the truth was tens of thousands.
     ///
     /// ONE PER INSTANCE, not per number: a hit on a shielded body is two rows
     /// and this is asked before the portions are known. It undercounts a

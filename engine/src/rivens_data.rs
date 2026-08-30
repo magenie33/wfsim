@@ -208,11 +208,10 @@ struct PoolFile {
 
 /// Riven stats THIS WEAPON cannot roll, out of its class pool.
 ///
-/// The pool is per CLASS, but two rifles do not roll the same stats: DE does
-/// not hand a weapon an attribute for a stat it does not have. What generates
-/// a pool is docs/DATA_SOURCES.md §"Riven pools", and THE DERIVATION IS THE
-/// LAST OF THREE SOURCES — `data/rivens/exceptions.yaml` overrides per riven
-/// FAMILY, and these rules fill in for a family nobody has a card from.
+/// The pool is per CLASS, but two rifles do not roll the same stats. What
+/// generates one is docs/DATA_SOURCES.md §"Riven pools", and THE DERIVATION IS
+/// THE LAST OF THREE SOURCES — `data/rivens/exceptions.yaml` overrides per
+/// riven FAMILY, and these rules fill in for a family nobody has a card from.
 /// `data/rivens/pools.yaml` is neither: a count over live listings, read by
 /// `the_survey_still_agrees_with_the_rules` and by nothing in the calculation.
 ///
@@ -1570,13 +1569,12 @@ fn an_element_is_never_a_malus() {
     /// exception — which is the shape this whole file is built on, arrived at
     /// from the other end.
     ///
-    /// EACH HALF IS ASSERTED ON ITS OWN CALL, and the first version was not.
-    /// Four of the five UNION families are also in `exceptions.yaml` — the same
-    /// survey answered the question and wrote those entries — so `excluded_for`
-    /// returns the exception's answer whatever the rule does, and the test
-    /// passed on a derivation sabotaged to take the INTERSECTION. The union
-    /// half asks `derived_for`, which is the rule alone; the Sicarus half asks
-    /// `excluded_for`, which is the rule plus the exception that overrules it.
+    /// EACH HALF IS ASSERTED ON ITS OWN CALL, because four of the five UNION
+    /// families are also in `exceptions.yaml` — so `excluded_for` returns the
+    /// exception's answer whatever the rule does, and passes on a derivation
+    /// sabotaged to take the INTERSECTION. The union half asks `derived_for`,
+    /// the rule alone; the Sicarus half asks `excluded_for`, the rule plus the
+    /// exception that overrules it.
     #[test]
     fn a_family_pool_is_the_union_and_the_sicarus_is_the_exception() {
         // The five the cards earn through ONE member being over the line —
@@ -1617,13 +1615,10 @@ fn an_element_is_never_a_malus() {
     /// would cost — in real cards, per family, rather than in argument.
     ///
     /// The rule above reads the union of the forms a weapon fires FOR FREE, and
-    /// the question the union raises is where "for free" stops. A gauge-switched
-    /// form is paid for with evolutions and a riven's pool is fixed when it
-    /// drops, which is the reasoning; the reasoning is not what settles it.
-    ///
-    /// Removing the `is_adapter_form` filter moves 25 weapons, and seven of
-    /// them would gain a PHYSICAL stat that the survey of live listings records
-    /// **zero** times:
+    /// what settles where "for free" stops is not the reasoning (a gauge form
+    /// is paid for with evolutions) but the cards. Removing the
+    /// `is_adapter_form` filter moves 25 weapons, seven of which would gain a
+    /// PHYSICAL stat the survey records **zero** times:
     ///
     /// | family | stat the Incarnon form would unlock | cards carrying it |
     /// | --- | --- | --- |
@@ -1635,22 +1630,16 @@ fn an_element_is_never_a_malus() {
     /// | Kunai | Slash | 0 of 430 |
     /// | Bronco | Slash | 0 of 309 |
     ///
-    /// About 3,200 listings, not one of them carrying a stat the wider rule
-    /// would offer. That is the same shape of evidence the flight rule already
-    /// rests on (the Latron, Lex and Atomos Incarnon forms all fire a literal
-    /// travelling projectile and their families show 0, 4 and 0 Projectile
-    /// Speed cards) — so it is not two arguments, it is one finding on both
-    /// halves of the derivation.
+    /// About 3,200 listings, not one carrying a stat the wider rule would
+    /// offer — the same evidence the flight rule rests on, so it is one finding
+    /// on both halves of the derivation rather than two arguments.
     ///
-    /// THE SURVEY IS EVIDENCE AND NOT A LAW, and `data/rivens/pools.yaml` says
-    /// so itself: *"absence in 500 listings is strong evidence and not a
+    /// THE SURVEY IS EVIDENCE AND NOT A LAW, as `data/rivens/pools.yaml` says
+    /// itself: *"absence in 500 listings is strong evidence and not a
     /// guarantee. An in-game card that contradicts a `never` here beats the
-    /// file."* One real card carrying negative Slash on a Boltor settles this
-    /// the other way, and the way to record it is an entry in
-    /// `exceptions.yaml` — the same route the Furis took.
-    ///
-    /// This test exists so that flipping the rule is a decision with a price
-    /// tag on it rather than a one-line edit that quietly reddens nothing.
+    /// file."* One real card settles it the other way, recorded as an entry in
+    /// `exceptions.yaml`. This test exists so flipping the rule is a decision
+    /// with a price tag rather than a one-line edit that reddens nothing.
     #[test]
     fn an_incarnon_form_does_not_widen_the_physical_pool() {
         // Each pair is (weapon, the stat its Incarnon form would unlock). The
@@ -1990,21 +1979,16 @@ fn an_element_is_never_a_malus() {
 /// A RIVEN IS THE WEAPON FAMILY'S, so every member of a family has to offer the
 /// same card — **within one riven CLASS**.
 ///
-/// The wiki states the mechanic and the app files rivens by family (page,
-/// 2026-08-25): *"Riven mods can be used on variants of a particular weapon,
-/// including MK1, Prime, Vandal, Wraith, Dex, Prisma, Mara, and Syndicate
-/// variants"*. That makes the pool a property of the FAMILY rather than of the
-/// entry, and this asserts the data agrees — a stat one variant can roll and
-/// another cannot would be a card the editor offers on both, the board accepts
-/// on one, and refuses on the other.
+/// *"Riven mods can be used on variants of a particular weapon, including MK1,
+/// Prime, Vandal, Wraith, Dex, Prisma, Mara, and Syndicate variants"*, so the
+/// pool is a property of the FAMILY rather than of the entry: a stat one
+/// variant can roll and another cannot is a card the editor offers on both, the
+/// board accepts on one, and refuses on the other.
 ///
-/// THE CLASS IS PART OF THE KEY, and a KITGUN is why. `tombfinger_primary` and
-/// `tombfinger_secondary` are one family and two riven types: built as a
-/// primary the chamber takes a RIFLE riven, built as a secondary a PISTOL one,
-/// which is a different card with a different pool. Grouping by family alone
-/// makes those two look like a disagreement inside one family when they are
-/// two families' worth of card that happen to share a name — and it is what
-/// this test caught the day the page started filing by family.
+/// THE CLASS IS PART OF THE KEY, and a KITGUN is why: `tombfinger_primary` and
+/// `tombfinger_secondary` are one family and two riven types — as a primary the
+/// chamber takes a RIFLE riven, as a secondary a PISTOL one — so grouping by
+/// family alone reads two families' worth of card as a disagreement inside one.
 ///
 /// Derived from the roster rather than from a list of families, so a weapon
 /// added tomorrow is covered by nobody.

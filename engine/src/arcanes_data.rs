@@ -581,18 +581,15 @@ enum ArcEffect {
     ///   Warframe energy, enemy behaviour, traversal, reviving. Never a todo,
     ///   because building it would not move a single damage figure.
     ///
-    /// Telling a player "not modelled" for both is what makes the whole app
-    /// look unfinished when four of the seven cases are the model's own edge.
-    ///
-    /// Neither carries text: the explanation belongs in a YAML comment, where a
-    /// maintainer reads it, not in a field the app renders. Primary
-    /// Debilitate: on a damage instance that lands a COMBINED status bringing
-    /// the target TO [`DEBILITATE_STACKS`] of it — this stack counted, so at
-    /// nine the shot that makes it ten fires (owner-measured, M34) — a
-    /// chance to also inflict one of its two component statuses, chosen 50/50,
-    /// one stack, and dealt as its own damage INSTANCE (which is why the status
-    /// it leaves carries the faction bonus a third time; see
-    /// `dummy::faction_at`).
+    /// Telling a player "not modelled" for both makes the whole app look
+    /// unfinished when four of the seven cases are the model's own edge.
+    /// Neither carries text: the explanation belongs in a YAML comment.
+    /// Primary Debilitate: on a damage instance landing a COMBINED status that
+    /// brings the target TO [`DEBILITATE_STACKS`] — this stack counted, so at
+    /// nine the shot that makes it ten fires (M34) — a chance to also inflict
+    /// one of its two components, chosen 50/50, one stack, dealt as its own
+    /// damage INSTANCE (which is why the status it leaves carries the faction
+    /// bonus a third time).
     Debilitate(Scale),
     /// PAX CHARGE: the magazine becomes a rechargeable BATTERY.
     ///
@@ -1851,9 +1848,8 @@ mod tests {
     ///     when the shot lands, so the two `fx` are legitimately identical and
     ///     what must be non-zero is the gate the sim reads.
     ///
-    /// The test this replaced named two arcanes by hand, which is why the third
-    /// one's broken gate sat there for six months: a hand list cannot report
-    /// what is not on it.
+    /// DERIVED, because a hand list cannot report what is not on it — which is
+    /// how the third arcane's broken gate sat there for six months.
     #[test]
     fn every_condition_is_honoured_at_resolve_or_at_the_hit() {
         let tenno = crate::tenno_data::default_tenno();

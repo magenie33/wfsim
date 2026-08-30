@@ -1,43 +1,26 @@
 //! KITGUNS — three parts and one rule, and the first weapon in this roster with
 //! no published stat line of its own.
 //!
-//! Every other entry in `data/weapons/` states its numbers. A Kitgun states a
-//! CHAMBER, a GRIP and a LOADER, and the numbers are what they compose to.
-//! `docs/KITGUNS.md` is the design; `data/kitguns/README.md` is the data; this
-//! is the rule, and the rule is EXACT — there is nothing here to approximate,
-//! which is why every one of the assemblies can be a test case with a published
-//! answer.
+//! Every other entry in `data/weapons/` states its numbers; a Kitgun states a
+//! CHAMBER, a GRIP and a LOADER, and the numbers are what they compose to. The
+//! rule is EXACT, which is why every assembly can be a test case with a
+//! published answer. `docs/KITGUNS.md` is the design.
 //!
-//! # THE WEAPON IS THE CHAMBER
-//!
-//! Catchmoon is one weapon and its primary and secondary forms are two forms of
-//! it — DE's own model, on three independent pieces of their data: one mastery
-//! entry per chamber (*"the primary and secondary variants of each chamber share
-//! the same Mastery progression"*), one riven compatibility per chamber in their
-//! weekly trade dump, and one wiki page per chamber with the two slots as
-//! sections inside it.
-//!
-//! That is about IDENTITY. The DATA is two stat blocks, because the difference
+//! THE WEAPON IS THE CHAMBER, on three independent pieces of DE's data: one
+//! mastery entry per chamber, one riven compatibility per chamber in the weekly
+//! trade dump, and one wiki page per chamber with the two slots as sections.
+//! That is IDENTITY; the DATA is two stat blocks, because the difference
 //! reaches the damage type, which is why [`Chamber`] is stored per slot.
 //!
-//! # TWO PARTS DECIDE THE MOD POOL
+//! TWO PARTS DECIDE THE MOD POOL: the GRIP decides primary or secondary, and
+//! the CHAMBER decides the pool within the primary slot (Catchmoon *"Uses
+//! Shotgun mods"*, Gaze *"Uses Rifle mods"*).
 //!
-//! The GRIP decides primary or secondary. The CHAMBER decides the pool within
-//! the primary slot — Catchmoon *"Uses Shotgun mods"*, Gaze *"Uses Rifle
-//! mods"*. The LOADER decides nothing about it.
-//!
-//! …WHICH IS WHY THE SLOT IS PART OF THE WEAPON AND NOT PART OF THE ASSEMBLY.
-//! The roster holds one entry per (chamber, slot) and each states its own
-//! `mod_pools`, so the pool is settled before a single part is chosen — there is
-//! no build to invalidate when a grip changes, and no mod lock to wait behind.
-//! Switching slots is switching WEAPONS, which already means a build of its own
-//! ("nothing crosses between weapons"). [`Assembly::pool_key`] is what that rule
-//! looked like while the slot lived in the assembly; it is kept because it is
-//! the statement of the rule and a chamber whose two slots share a pool still
-//! reads the same, and it is no longer what any build is keyed on.
-//!
-//! It is a function of the pair, because keying on "which part moved" would have
-//! to enumerate two different ways of crossing the same line.
+//! …WHICH IS WHY THE SLOT IS PART OF THE WEAPON RATHER THAN THE ASSEMBLY. The
+//! roster holds one entry per (chamber, slot), each stating its own
+//! `mod_pools`, so the pool is settled before a part is chosen and switching
+//! slots is switching WEAPONS. [`Assembly::pool_key`] states that rule and is
+//! no longer what any build is keyed on.
 
 use serde::Deserialize;
 use std::collections::BTreeMap;

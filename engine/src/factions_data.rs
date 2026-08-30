@@ -1,11 +1,11 @@
 //! The post-U36 faction VULNERABILITY COLUMN: `data/factions/damage_modifiers.yaml`
 //! → an incoming-damage multiplier per damage type.
 //!
-//! This is **System B** of the two faction systems (docs/MECHANICS.md §8). It
-//! is not the Bane/Expel bucket — that one is keyed by the enemy's `Faction`,
-//! multiplies the whole instance and double-dips DoT ticks. This one is keyed
-//! by `FactionDamageOverride ?? Faction`, is a clean **per-component**
-//! multiplier, and stacks multiplicatively with everything else:
+//! **System B** of the two faction systems (docs/MECHANICS.md §8) — not the
+//! Bane/Expel bucket, which is keyed by the enemy's `Faction`, multiplies the
+//! whole instance and double-dips DoT ticks. This one is keyed by
+//! `FactionDamageOverride ?? Faction` and is a clean **per-component**
+//! multiplier:
 //!
 //! ```text
 //! per-component = damage × bane_mult × column(type) × pool math
@@ -13,16 +13,14 @@
 //!
 //! Two consequences the shape of this module encodes:
 //!
-//! - The column is chosen by the POOL as well as the enemy. Damage landing on
+//! - The column is chosen by the POOL as well as the enemy: damage landing on
 //!   Overguard reads the Overguard column (neutral but ×1.5 Void), never the
-//!   enemy's own — which is why [`Columns`] carries both and the pool decides.
-//! - **The table is COMPLETE at fifteen columns, and everything else is
-//!   neutral**. The wiki's `Damage/Overview_Table` publishes
-//!   exactly those fifteen; the enemy modules key eighteen faction values
-//!   against them, and the ones with no column (Stalker, Unknown, Duviri,
-//!   Neutral, Objects, Predator, Prey) are units the game gives no
-//!   vulnerability or resistance to. So an unlisted key is not an error to
-//!   report — it is the answer, and [`columns_for`] returns it.
+//!   enemy's own, which is why [`Columns`] carries both.
+//! - **The table is COMPLETE at fifteen columns and everything else is
+//!   neutral.** `Damage/Overview_Table` publishes exactly those fifteen, and
+//!   the seven faction values with no column are units the game gives no
+//!   vulnerability to — so an unlisted key is the answer rather than an error,
+//!   and [`columns_for`] returns it.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;

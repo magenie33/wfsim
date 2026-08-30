@@ -6,22 +6,16 @@
 //! needs the engine. What needs the engine is the only thing here — running
 //! each build under the benchmark and reading the number off.
 //!
-//! WHY A SUBMISSION CARRIES NO SCORE, restated because this binary is where it
-//! becomes true: nobody's number is trusted because nobody's number is asked
-//! for. A row's score is produced HERE, by this engine, under the benchmark's
-//! own pinned seed — so anyone with the repo can reproduce any row exactly, in
-//! a browser as well as natively. A forged submission cannot forge a rank; the worst it can
-//! do is submit a build that scores badly.
+//! WHY A SUBMISSION CARRIES NO SCORE: nobody's number is trusted because
+//! nobody's number is asked for. A row's score is produced HERE under the
+//! benchmark's own pinned seed, so anyone with the repo reproduces any row
+//! exactly, and an engine change re-scores everything instead of migrating
+//! anything — nobody is asked to resubmit.
 //!
-//! It also means an engine change re-scores everything instead of migrating
-//! anything: the builds are still builds. Nobody is ever asked to resubmit.
-//!
-//! TWO OUTPUTS, because the board has two readers with different needs. The
-//! YAML on stdout is the CANONICAL record, committed and diffable. The JSON is
-//! what the PAGE fetches at runtime — and it exists because a board that
-//! changes hourly must not require rebuilding a 2.5 MB wasm to reach anyone.
-//! Compiling it in made every board update a full site rebuild: install
-//! wasm-bindgen, fetch 300 images, recompile — to change a few numbers.
+//! TWO OUTPUTS, because the board has two readers. The YAML on stdout is the
+//! CANONICAL record, committed and diffable; the JSON is what the PAGE fetches
+//! at runtime, because a board that changes hourly must not require rebuilding
+//! the wasm to reach anyone.
 //!
 //!   cat submissions.json | wfsim-board single_target site/board.json > board.yaml
 
@@ -138,42 +132,25 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
     row
 }
 
-/// THE FLOOR: a row must score at least half its group's leader to be listed. It replaces a COUNT — the top hundred per ruler and
-/// mode, itself raised from ten on 2026-08-08.
+/// THE FLOOR: a row must score at least half its group's leader to be listed.
+/// A COUNT bounds how LONG the list gets and says nothing about whether the
+/// hundredth row is worth reading — the three groups that ever reached a cap of
+/// 100 had a hundredth row at 18.6%, 25.9% and 25.4% of their leader.
 ///
-/// A COUNT AND A FLOOR BOUND DIFFERENT THINGS. The count bounded how LONG the
-/// list could get and said nothing about whether the hundredth row was worth
-/// reading. On the board of 2026-08-19 the three groups that reached the cap
-/// had a hundredth row at 18.6%, 25.9% and 25.4% of their leader — so the list
-/// had stopped being about builds anybody would pick long before the cap cut
-/// it, and the cap was trimming the wrong end.
+/// WHAT IT REMOVES IS NOT THE CHEAP BUILD: the rows below the line carry 8 of 8
+/// mods like the rows above and differ by taking the WORSE arcane, or by
+/// spending slots on mods this fight cannot pay (docs/UNMODELLED.md).
 ///
-/// WHAT IT REMOVES IS NOT THE CHEAP BUILD. That was the objection, and this
-/// board refutes it: the rows below the line carry 8 of 8 mods exactly like the
-/// rows above, and they differ by taking the WORSE arcane (Merciless where
-/// Deadhead wins) or by spending slots on mods this fight cannot pay — Magazine
-/// Extension, Parallax Scope, Quick Reload, which docs/UNMODELLED.md already
-/// says are worth nothing against one standing target. Of 86 groups, three have
-/// ever held a row with no arcane at all, and in each of them it was the leader.
+/// IT IS MECHANICAL: the seed is pinned and a score reproduces to the last
+/// digit, so 50.3% and 49.5% are two different NUMBERS rather than two
+/// estimates of one, and an exact board has no tie band to grant.
 ///
-/// IT IS MECHANICAL, and that is the decision. The seed is pinned and a score
-/// reproduces to the last digit, so 50.3% and 49.5% are two different NUMBERS
-/// rather than two estimates of one — a board whose rows are exact has no tie
-/// band to grant, and the ruler separating two builds is what the ruler is for.
+/// FIFTY IS A CUT LINE rather than a measurement: the pooled distribution has
+/// no knee to sit on (the largest gap below 90% is 1.2 points), so the data
+/// cannot pick the number, only say it is not fragile — about 12 of 1274 rows
+/// per point. It is very generous against F1's 107% rule, which is the intent.
 ///
-/// FIFTY IS A CUT LINE, not a measurement, and the file says so rather than
-/// implying otherwise. The pooled distribution of score-as-a-fraction-of-leader
-/// has no knee to sit on (the largest gap anywhere below 90% is 1.2 points), so
-/// the data cannot pick the number; what it can say is that the number is not
-/// fragile — about 12 of 1274 rows per point, so 45 or 55 would cost a few per
-/// cent rather than a shape. Against the sports that draw the same kind of line
-/// (F1's 107% rule, cycling's 3-20% time limit) half the leader is very
-/// generous, which is the intent: it marks where a build stops being a
-/// DIFFERENT answer, not where it stops being the best one.
-///
-/// THERE IS NO CEILING NOW, so a group whose builds are genuinely close keeps
-/// every one of them. A group whose leader scores zero keeps all of its rows
-/// too — every row ties it, and a ratio has nothing to separate.
+/// THERE IS NO CEILING, so a group whose builds are close keeps all of them.
 const FLOOR: f64 = 0.5;
 
 /// Best first, then everything within `FLOOR` of each WEAPON AND MODE's own

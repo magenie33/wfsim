@@ -1,45 +1,26 @@
 //! OFFICIAL TEST SCENARIOS — `data/benchmarks/`.
 //!
-//! A benchmark is a scenario that belongs to no weapon. Every other scenario in
-//! the app is a PRESET: per weapon, editable, stored in the browser. This one is
-//! read-only, defined once, and appears on every weapon — which is the whole
-//! point, because a number only means something against a ruler someone else
-//! can pick up.
-//!
-//! # The rule that makes it scale
+//! A benchmark is a scenario that belongs to no weapon: read-only, defined
+//! once, and on every weapon, because a number only means something against a
+//! ruler someone else can pick up.
 //!
 //! **A benchmark may not name a weapon, a mod, an arcane, an evolution, or a
-//! weapon form.** [`no_benchmark_names_a_weapon`] enforces it, and the
-//! enforcement is the feature: a definition that never speaks about a member of
-//! the roster cannot be wrong about a member it has never seen. Adding weapon
-//! 201 can therefore never require editing a benchmark.
+//! weapon form**, which [`no_benchmark_names_a_weapon`] enforces. That is the
+//! feature — a definition that never speaks about a member of the roster cannot
+//! be wrong about a member it has never seen, so adding weapon 201 can never
+//! require editing a benchmark. It is stronger than tagging weapons, which is
+//! correct only while every weapon is tagged correctly.
 //!
-//! It is a stronger guarantee than tagging weapons would give. A tag scheme is
-//! correct only while every weapon is tagged correctly — one missed tag on
-//! weapon 201 is a silently wrong board. "Mentions no weapon at all" has no
-//! per-weapon step to get wrong.
+//! What replaces the per-weapon settings is POLICY the engine already resolves:
+//! `form: default`, an omitted `headshot_pct` (0 for a sentinel weapon, 100
+//! otherwise), and omitted `buffs` meaning each opens at the start state
+//! docs/BUFFS.md gives it.
 //!
-//! What replaces the per-weapon settings is POLICY, which the engine already
-//! resolves: `form: default` is the Incarnon cycle where a weapon has one and
-//! its arsenal default where it does not; an omitted `headshot_pct` is 0 for a
-//! sentinel weapon and 100 otherwise; omitted `buffs` means each buff opens at
-//! the start state docs/BUFFS.md gives it, which is a per-BUFF property and so
-//! identical on every weapon.
-//!
-//! # No version numbers
-//!
-//! There is one board per benchmark, it is regenerated WHOLE whenever this file
-//! or the engine changes, and what is deployed is always the current answer —
-//! so a version number would mark a distinction nobody could act on. What this file said last week is git's business.
-//!
-//! CHANGING A TERM HERE RE-SCORES; it does not discard. A build submitted when
-//! the fight was 300 s is still a build when it becomes 400 s — the standard
-//! changed and the build did not, so it carries over and competes, and whatever
-//! beats it displaces it. That is the whole reason a submission stores the
-//! BUILD and never a score.
-//!
-//! `id` is the identity, and it is stable across rewordings. A genuinely
-//! different ruler — `group_clear` — is a different id and keeps its own board.
+//! NO VERSION NUMBERS: there is one board per benchmark, regenerated WHOLE
+//! whenever this file or the engine changes. CHANGING A TERM HERE RE-SCORES
+//! rather than discarding — a build submitted when the fight was 300 s is still
+//! a build at 400 s — which is the whole reason a submission stores the BUILD.
+//! `id` is the identity and is stable across rewordings.
 
 use std::sync::OnceLock;
 

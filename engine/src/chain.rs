@@ -83,36 +83,22 @@ pub struct Splash {
 /// `aimed` is the index the beam struck directly — the one instance that may
 /// headshot, and the seed whose path carries multishot.
 ///
-/// # Ties
-///
-/// A formation is full of exact ties: in a square grid every orthogonal
-/// neighbour is the same distance away. They go to the LOWEST BODY INDEX, which
-/// makes one formation always produce one path — the property the owner asked
-/// for in place of reproducing a rule that is not reproducible (see the module
-/// header, and MEASUREMENTS M52 for the ten hops that refuted every candidate).
-///
-/// [`resolve_with`] takes the tie-break as an argument, which is what the
-/// invariance test uses; nothing in production should.
+/// TIES go to the LOWEST BODY INDEX — a square grid is full of them, every
+/// orthogonal neighbour being the same distance away — so one formation always
+/// produces one path, a stated property in place of a rule that is not
+/// reproducible (M52). [`resolve_with`] takes the tie-break as an argument for
+/// the invariance test; nothing in production should.
 /// THE PART OF A CHAIN THAT NEVER CHANGES, computed once per engagement.
 ///
-/// Nothing in this arena moves: the shooter stands still, the formation stands
-/// still, and a body that dies RESPAWNS where it was. So both of the O(N) scans
-/// inside [`resolve`] are asking a constant question thousands of times a run —
-/// which body the sphere catches, and which body is nearest to this one.
+/// Nothing in this arena moves, so both O(N) scans inside [`resolve`] ask a
+/// constant question thousands of times a run. That is the whole cost of a big
+/// formation: `seeds x hops x N` is ~11,000 distance computations a pellet on a
+/// 19x19 grid, to reach the same THIRTEEN bodies a 7x7 reaches.
 ///
-/// That is the whole cost of a big formation. A chain resolves once per landing
-/// pellet, and the scan is `seeds x hops x N`: on a 19x19 grid that is ~11,000
-/// distance computations a pellet, ~31 billion over the rulers' 1000 runs, to
-/// reach the same THIRTEEN bodies a 7x7 reaches (docs/BOARD.md). Precomputing
-/// makes the grid's size almost free — a hop becomes "the first unvisited entry
-/// in a list that is already in order".
-///
-/// THE ANSWER IS IDENTICAL, not approximate, and that is what makes this an
-/// optimisation rather than a model change: `near` is sorted by (distance,
-/// index), which is exactly the order the scan's "nearest, ties to the lowest
-/// index" rule produces, and it is truncated at the chain's range because a hop
-/// beyond it was never a candidate. `a_layout_answers_exactly_what_the_scan_does`
-/// asserts it over every seed of a grid.
+/// THE ANSWER IS IDENTICAL rather than approximate, which is what makes it an
+/// optimisation: `near` is sorted by (distance, index), exactly the order the
+/// scan's "nearest, ties to the lowest index" rule produces, truncated at the
+/// chain's range because a hop beyond it was never a candidate.
 #[derive(Debug, Clone)]
 pub struct Layout {
     /// Bodies the splash catches — the seed set, minus whatever was struck
@@ -154,22 +140,17 @@ impl Layout {
 /// THE PATH A DEFLECTED PROJECTILE TAKES — the same walk a chain does, with no
 /// damage rule attached to it.
 ///
-/// A RICOCHET IS NOT A CHAIN, and it is here because it is the same GEOMETRY.
-/// What differs is everything downstream: a chain hop is one instance at a
-/// share of the beam, and a bounce is the whole projectile arriving again —
-/// its collision damage in full, its own explosion, and its own chance at a
-/// head. So this returns the ORDER OF BODIES and the caller decides what
-/// arriving means.
+/// A RICOCHET IS NOT A CHAIN and is here because it is the same GEOMETRY: a
+/// chain hop is one instance at a share of the beam, a bounce is the whole
+/// projectile arriving again. So this returns the ORDER OF BODIES and the
+/// caller decides what arriving means.
 ///
-/// Verbatim, from the Latron Incarnon Genesis page: *"a traveling projectile
-/// that can ricochet off enemies and terrain, exploding up to 6 times with a 4
-/// meter radius, dealing damage once for any collision on enemies, and again
-/// for the explosion"*, and *"seem to require multiple enemies to ricochet
-/// repeatedly"* — which is this walk, observed from the other side.
-///
-/// NOBODY TWICE, like a chain path, and for the stronger reason: the page's own
-/// note says repeated bounces need MULTIPLE ENEMIES, so a projectile pinging
-/// between two of them is exactly what the game does not do.
+/// Verbatim (Latron Incarnon Genesis): *"a traveling projectile that can
+/// ricochet off enemies and terrain, exploding up to 6 times with a 4 meter
+/// radius, dealing damage once for any collision on enemies, and again for the
+/// explosion"*, and *"seem to require multiple enemies to ricochet
+/// repeatedly"*. NOBODY TWICE, and for the stronger reason: that second note
+/// says a projectile pinging between two bodies is what the game does not do.
 ///
 /// TERRAIN IS NOT HERE. The page says enemies *and terrain*, and this arena has
 /// no walls — so a bounce that would have come off a surface finds the next
@@ -257,12 +238,10 @@ pub fn resolve_with(
     if bodies.is_empty() {
         return out;
     }
-    // A SHOT THAT STRUCK NOBODY STILL SPLASHES. Aim is a direction and the
-    // place it lands may be bare floor — *"a 2.3 meter
-    // damage radius from the point of impact against a SURFACE"*, and a floor
-    // is a surface. Every body the sphere catches is then an ordinary seed:
-    // none was directly struck, so none may headshot and none carries
-    // multishot, which is the same rule the radius-caught seeds already follow.
+    // A SHOT THAT STRUCK NOBODY STILL SPLASHES: aim is a direction and the
+    // place it lands may be bare floor — *"a 2.3 meter damage radius from the
+    // point of impact against a SURFACE"*. Every body the sphere catches is an
+    // ordinary seed, so none may headshot and none carries multishot.
     // EVERY BODY THE SHOT PHYSICALLY PASSED THROUGH, in the order the ray met
     // them (`space::struck_along`). It was ONE body until 2026-08-17, which was
     // right while a bullet stopped at the first thing it hit; with punch

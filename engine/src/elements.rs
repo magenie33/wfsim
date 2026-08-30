@@ -226,25 +226,17 @@ mod tests {
     /// → Innate Cold → Innate Electricity → Innate Toxin"*.
     ///
     /// The table beneath it enumerates every (bonus, modded) pair against each
-    /// of the four innate elements — Tenet Spirex (Heat), Tenet Envoy (Cold),
-    /// Tenet Agendus (Electricity), Coda Mire (Toxin). It is transcribed here
-    /// cell for cell rather than summarised, because the rules that produce it
-    /// are three and every one of them is load-bearing:
+    /// of the four innate elements, transcribed cell for cell rather than
+    /// summarised because three rules produce it and each is load-bearing:
+    /// MODS FIRST and innates last; a MOD OF THE SAME ELEMENT pulls that innate
+    /// forward onto its slot, which is why "Bonus Heat + Modded Electricity" on
+    /// an innate-Electricity weapon is plain Radiation; and the two innates
+    /// order by HCET among themselves. A bonus MATCHING the weapon's own innate
+    /// is one element rather than two, so those cases are the diagonal.
     ///
-    /// * MODS FIRST, innates last (rule 2);
-    /// * a MOD OF THE SAME ELEMENT pulls that innate forward onto its slot
-    ///   (rule 3) — which is why "Bonus Heat + Modded Electricity" on an
-    ///   innate-Electricity weapon is plain Radiation and not Radiation + Heat;
-    /// * the two innates order by HCET among themselves.
-    ///
-    /// A bonus that MATCHES the weapon's own innate is one element, not two —
-    /// `apply_valence` merges it into the base vector — so those cases are the
-    /// diagonal of the table and are covered by the same rows.
-    ///
-    /// NO WEAPON IN THE ROSTER EXERCISES THIS YET: the Kuva Nukor's innate is
-    /// Radiation, which is already combined and never re-enters the hierarchy.
-    /// That is exactly when to write the table down — before the Tenet weapon
-    /// arrives that would have been silently wrong.
+    /// NO WEAPON IN THE ROSTER EXERCISES THIS YET — the Kuva Nukor's innate is
+    /// Radiation, already combined — which is exactly when to write the table
+    /// down, before the Tenet weapon arrives that would have been wrong.
     #[test]
     fn the_progenitor_hcet_table_reproduces_cell_for_cell() {
         // (bonus, modded) -> [innate Heat, innate Cold, innate Electricity,

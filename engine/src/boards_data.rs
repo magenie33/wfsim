@@ -12,13 +12,10 @@
 //! still builds. Nobody is asked to resubmit, because nobody ever submitted a
 //! number.
 //!
-//! # Why these are read-only presets and not a page of their own
-//!
-//! A board entry's OUTPUT is a build, and the builder is what consumes a build
-//! — the same relationship the riven editor has with mods. So it earns a place
-//! in the build bar rather than a tab, as a chip you
-//! can select and copy but not edit, exactly like the official scenario
-//! in the scenario bar.
+//! THEY ARE READ-ONLY PRESETS RATHER THAN A PAGE OF THEIR OWN, because a board
+//! entry's OUTPUT is a build and the builder is what consumes one — the riven
+//! editor's relationship with mods. So it is a chip in the build bar you can
+//! select and copy but not edit, like the official scenario in its own bar.
 
 use std::sync::OnceLock;
 

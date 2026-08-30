@@ -13,24 +13,18 @@
 //! files and a mod correction rescores the rows carrying that mod and nothing
 //! else.
 //!
-//! **THIS DOES NOT WEAKEN THE BOARD'S INVARIANT — IT STATES IT.**
-//! `board.yml` says *"a board whose rows were measured by different engine
-//! versions is not a board"*, which is a conservative proxy for the property
-//! that actually matters: every row's score is the number THIS engine would
-//! compute. A row that reads none of the files that changed would compute the
-//! same number, so its stored score already is that number. The proxy was
-//! standing in for a test we could not run; this is the test.
+//! **THIS DOES NOT WEAKEN THE BOARD'S INVARIANT — IT STATES IT.** "Different
+//! engine versions is not a board" is a conservative proxy for the property
+//! that matters: every row's score is the number THIS engine would compute, and
+//! a row that reads none of the changed files already stores that number.
 //!
-//! THE ONE HAND LIST HERE CAN ONLY COST TIME. Anything not attributed to an
-//! entity and not on `AFFECTS_NO_NUMBER` falls into the GLOBAL bucket, which
-//! every row carries — so a family added tomorrow rescores everything until
-//! somebody classifies it. Forgetting an entry is slow, never wrong, and that
-//! is the only direction a list like this may fail in.
+//! THE ONE HAND LIST HERE CAN ONLY COST TIME: anything not attributed to an
+//! entity and not on `AFFECTS_NO_NUMBER` falls into the GLOBAL bucket every row
+//! carries, so forgetting an entry is slow and never wrong.
 //!
-//! COMMENTS ARE ALREADY FREE. `build.rs` embeds each file with its full-line
-//! comments removed, so the bytes hashed here are the ones that carry meaning:
-//! rewriting a citation, or the prose above a table, produces an identical
-//! fingerprint and no rescore at all.
+//! COMMENTS ARE ALREADY FREE, since `build.rs` embeds each file with its
+//! full-line comments removed — rewriting a citation produces an identical
+//! fingerprint and no rescore.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;

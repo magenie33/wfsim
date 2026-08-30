@@ -1,42 +1,25 @@
 //! WARFRAME ABILITY BUFFS — the fight's PLAYER, loaded from `data/abilities/`.
 //!
 //! A mod, an arcane and an evolution belong to the BUILD; Roar belongs to the
-//! fight. That split is the whole reason this is a separate family rather than
-//! a row in the mod pool: two builds compared under the same Roar is a
-//! comparison, one of them getting it is not — and the BOARD carries none of
-//! these, which is what keeps a board row a statement about the weapon.
+//! fight — which is why this is its own family and why the BOARD carries none
+//! of these. [`resolve`] takes `strength` and a duration override as ARGUMENTS,
+//! those being the two inputs that move when frames land.
 //!
-//! EARLY ACCESS. When frames land, the Ability Strength
-//! comes from the frame and the duration from its Ability Duration; the buff
-//! DEFINITIONS here do not change, only where their two inputs come from. That
-//! is why [`resolve`] takes `strength` and a duration override as arguments
-//! rather than reading them
-//! from anywhere: the caller that supplies them is the part that will move.
+//! Four effect kinds, each difference measured or quoted:
 //!
-//! Four effect kinds, and the differences between them are all measured or
-//! quoted rather than assumed:
+//! - [`AbilityEffect::FactionDamage`] (Roar) joins a Bane mod's bracket and so
+//!   DOUBLE-DIPS on status for free.
+//! - [`AbilityEffect::FinalDamage`] (Eclipse) is "an unique multiplier" and
+//!   explicitly not double-dipped: "Unlike faction damage, which double dips
+//!   for status effects, the one from Eclipse is applied once."
+//! - [`AbilityEffect::AddElement`] (Nourish and the four augments) adds a
+//!   percentage of ModifiedBase as its element and DOES NOT COMBINE — it lands
+//!   on the finished vector, after the elemental hierarchy has run.
+//! - [`AbilityEffect::ExtraHit`] (Xata's Whisper) fires a SECOND damage
+//!   instance worth a percentage of the first (`dummy::fire_extra_hit`).
 //!
-//! - [`AbilityEffect::FactionDamage`] (Roar) joins the bracket a Bane mod is
-//!   in, so it DOUBLE-DIPS on status for free — this engine already applies
-//!   `faction_at(f, depth)`, and the wiki's "the bonus is used twice in the
-//!   calculation of status damage" is that.
-//! - [`AbilityEffect::FinalDamage`] (Eclipse) is "an unique multiplier" and,
-//!   explicitly, is NOT double-dipped: "Unlike faction damage, which double
-//!   dips for status effects, the one from Eclipse is applied once."
-//! - [`AbilityEffect::AddElement`] (Nourish, Shock Trooper, Fireball Frenzy,
-//!   Freeze Force, Venom Dose) adds a percentage of ModifiedBase as its
-//!   element, and DOES NOT COMBINE — it lands on the finished
-//!   vector, after the elemental hierarchy has run.
-//! - [`AbilityEffect::ExtraHit`] (Xata's Whisper) is the odd one out: it does
-//!   not scale the weapon's number at all, it fires a SECOND damage instance
-//!   worth a percentage of the first (wiki `Extra_Hit`). The engine's rules
-//!   for it are in `dummy::fire_extra_hit`; what lives here is only which
-//!   element and how much.
-//!
-//! THE FIRST THREE ARE MULTIPLIERS AND THE FOURTH IS AN INSTANCE, which is the
-//! split worth keeping in mind when a fifth arrives: a multiplier can be read
-//! at any point in the pipeline by whoever needs it, and an instance has to be
-//! FIRED by something that knows what triggered it.
+//! THE FIRST THREE ARE MULTIPLIERS AND THE FOURTH IS AN INSTANCE, which a
+//! fifth effect kind has to land on one side of.
 
 use std::sync::OnceLock;
 
@@ -212,17 +195,12 @@ struct AbilityFile {
     effects: Vec<EffectFile>,
     /// DOES ABILITY STRENGTH MOVE THIS NUMBER? `strength` (the default) for
     /// every buff whose card carries the Strength icon; `none` for the ones
-    /// whose wiki row does not — Energized Munitions' ammo efficiency is a flat
-    /// 75%, and Redline's weapon buffs ramp with the BATTERY, which is not a
-    /// stat this page has. The knob still moves the abilities it governs, and a
-    /// buff that ignores it says so on its own card rather than silently
-    /// pocketing a multiplier it never gets in game.
+    /// whose wiki row does not, and a buff that ignores the knob says so on its
+    /// own card.
     ///
-    /// **READ THE ICON, NEVER THE FAMILY**. The answer is
-    /// in the mod's own stats table, per COLUMN: a heading carrying
-    /// `{{Stat|<X>|icon=only}}` scales with X, and one that is merely
-    /// underlined scales with nothing. The five element-adding augments are the
-    /// case that proves guessing does not work, because four of them are
+    /// **READ THE ICON, NEVER THE FAMILY**: a column heading carrying
+    /// `{{Stat|<X>|icon=only}}` scales with X and a merely underlined one
+    /// scales with nothing. Four of the five element-adding augments are
     /// identical and the fifth is not:
     ///
     /// ```text
@@ -233,12 +211,9 @@ struct AbilityFile {
     /// Valence Formation  ! <u>Elemental Damage</u>
     /// ```
     ///
-    /// Valence Formation was filed as strength-scaling on exactly that
-    /// reasoning — it does what the other four do, so it must scale the way
-    /// they do — and it does not. Its Duration column carries the Duration
-    /// icon, so the row is not unmarked; it is marked to say Duration and NOT
-    /// Strength. Same lesson `docs/CATALOGS.md` keeps teaching in another
-    /// domain: mechanics that sound like one family do not share a rule.
+    /// Valence Formation does what the other four do and does NOT scale the
+    /// way they do: its Duration column carries the Duration icon, so the row
+    /// is marked to say Duration and not Strength.
     #[serde(default)]
     scales_with: Option<String>,
     #[serde(default)]

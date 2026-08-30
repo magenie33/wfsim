@@ -46,39 +46,27 @@ impl Rng {
 /// ONE ENGAGEMENT'S RANDOMNESS, SPLIT SO THAT UNRELATED DECISIONS DO NOT MOVE
 /// EACH OTHER.
 ///
-/// Every roll off ONE stream makes the simulator's answer to "what does this
-/// mod change?" much noisier than the mod. A status chance high
-/// enough to land a second proc draws one more number to pick its element — and
-/// from there every crit roll, every body part, every fractional multishot in
-/// the rest of the engagement is a DIFFERENT number than it would have been.
-/// The fight is re-rolled, not adjusted.
+/// Every roll off ONE stream makes the answer to "what does this mod change?"
+/// noisier than the mod: a status chance high enough to land a second proc
+/// draws one more number to pick its element, and every crit roll, body part
+/// and fractional multishot after it is a DIFFERENT number. The fight is
+/// re-rolled rather than adjusted, which reads on the page as a lie — a
+/// Cold-only build's status chance moved the reported DPS +0.73% where the same
+/// build re-seeded eight times spread 2.16%.
 ///
-/// The visible cost was a lie on the page. On a build whose only status is
-/// Cold — which deals no damage, and slows a target this arena does not model
-/// as moving — adding status chance moved the reported DPS by +0.73%, while
-/// the same build re-seeded eight times spread 2.16%. The number was noise, and
-/// it read as a recommendation.
+/// So the streams are split by WHAT IS BEING DECIDED, each derived from the
+/// run's own seed:
 ///
-/// So the streams are split by WHAT IS BEING DECIDED, and each is derived from
-/// the run's own seed:
+/// * `spine` — what the shot does: fractional multishot, crit tier and
+///   promotion, body part, the non-crit multiplier. Nothing else may perturb
+///   these.
+/// * `status` — whether a hit procs, which element, and the proc-derived rolls.
+/// * `extra` — everything conditional on the two above, kept off the spine
+///   because it fires a different number of times as the build changes.
 ///
-/// * `spine` — what the shot does: fractional multishot, crit tier, tier
-///   promotion, which body part, the non-crit multiplier. These decide damage
-///   directly and nothing else may perturb them.
-/// * `status` — whether a hit procs, which element, and the proc-derived rolls
-///   (Debilitate's split, proc conversion).
-/// * `extra` — everything conditional on the two above: buff triggers, arcane
-///   rolls, super-crit-on-status. Kept off the spine because they fire a
-///   different number of times as the build changes.
-///
-/// A change that only alters status now leaves `spine` untouched, so a Cold
-/// build's damage is bit-identical and the reported gain is exactly zero. Where
-/// the extra procs DO pay — Condition Overload, a Galvanized buff, Viral — the
-/// gain is the buff's, which is the only way it was ever earned.
-///
-/// This is the standard variance-reduction trick (common random numbers) done
-/// where it belongs: not by re-using one seed between two builds, which the
-/// caller already did, but by making the seed mean the same thing in both.
+/// That is common random numbers done where it belongs: not re-using one seed
+/// between two builds, which the caller already did, but making the seed mean
+/// the same thing in both.
 #[derive(Debug, Clone)]
 pub struct Draws {
     pub spine: Rng,

@@ -4,9 +4,8 @@
 //! than as an end: the Grimoire's meter is refilled by picking ammo up, so
 //! whether the last enemy dropped any is a term in that weapon's fire rate.
 //!
-//! IT NEEDS NO PER-ENEMY DROP TABLE, which is the finding that made it
-//! tractable at all. Ammo is not on an enemy's own table the way
-//! a resource is — the chance is a property of the SQUAD and the place:
+//! IT NEEDS NO PER-ENEMY DROP TABLE, which is what made it tractable — the
+//! chance is a property of the SQUAD and the place:
 //!
 //! > *"Chance to drop Primary or Secondary Ammo scales with squad size"* —
 //! > solo 45% (60% in Landscapes), 2 players 37.5% (52.5%), 3 players 30%
@@ -14,29 +13,15 @@
 //! > drop table will only result in a maximum of one Ammo Pickup."*
 //! > (wiki `Pickups`)
 //!
-//! So a Grineer Lancer and a Corpus Crewman drop ammo at the same rate, and the
-//! ten enemies this roster carries need nothing added to them. What DOES belong
-//! on an enemy is the one thing the page makes an enemy's own:
+//! The one thing the page makes an enemy's own is the EXIMUS guarantee, which
+//! is ADDITIONAL rather than instead: *"Eximus are guaranteed to drop either a
+//! Primary or Secondary Ammo … This does not overwrite the enemies normal
+//! chance of dropping an Ammo pickup."*
 //!
-//! > *"Eximus are guaranteed to drop either a Primary or Secondary Ammo, each
-//! > having the same chance of dropping. This does not overwrite the enemies
-//! > normal chance of dropping an Ammo pickup."*
-//!
-//! ADDITIONAL, not instead — so an Eximus rolls the ordinary chance AND drops
-//! one for certain, and this engine already knows which bodies are Eximus.
-//!
-//! WHAT IS NOT HERE, and will not be until it is measured:
-//!
-//! * **Health and energy orbs.** The same page lists them (50 Health, 25 or 50
-//!   Energy) and publishes no drop chance for either. They would also pay
-//!   nothing today: this arena has no ability economy for energy to feed and
-//!   the player has no health to restore.
-//! * **Resources.** A per-enemy table, published per enemy, and it feeds none
-//!   of BUILD, SIMULATE or SOLVE — a farming calculator is a different product
-//!   (AGENTS.md: anything new either feeds one of the three or reports from
-//!   one).
-//! * **Heavy ammo**, which is the one ammo kind that IS per enemy (specific
-//!   heavy units at 5.01%). No Arch-Gun in this roster reads a pickup yet.
+//! WHAT IS NOT HERE until it is measured: health and energy ORBS (listed with
+//! no drop chance, and paying nothing in an arena with no ability economy),
+//! RESOURCES (a per-enemy table feeding none of BUILD, SIMULATE or SOLVE), and
+//! HEAVY ammo, the one kind that IS per enemy.
 
 /// Which ammo a pickup turned out to be.
 ///

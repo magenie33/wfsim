@@ -1,17 +1,14 @@
 // The FIFTEENTH check: the page FITS THE SCREEN IT IS ON.
 //
-// The failure it exists for, reported on a phone: the mod
-// grid was two columns at every width, and `grid-template-columns:repeat(2,1fr)`
-// floors each track at its MIN-CONTENT. A slot's min-content is 198px, so two
-// of them plus the gap is 404px inside a 326px column — the right-hand slots
-// (2, 4, 6, 8) hung ~55px past the screen edge and their ⋯ button could only be
-// reached by panning the page sideways.
+// The failure it exists for: a mod grid at `repeat(2,1fr)` floors each track at
+// MIN-CONTENT, so two 198px slots plus the gap is 404px inside a 326px column
+// and the right-hand slots hang ~55px past the screen edge with their ⋯ button
+// reachable only by panning sideways.
 //
-// Why a check and not a one-line fix left to stand: horizontal overflow is
-// INVISIBLE on the machine it is written on. Every desktop width has room, the
-// browser silently allows the pan, and nothing in the other fourteen checks
-// looks at geometry at all — they assert what the DOM SAYS, and this is a class
-// of bug where the DOM says everything correctly and the layout is still wrong.
+// Why a check rather than a one-line fix: horizontal overflow is INVISIBLE on
+// the machine it is written on. Every desktop width has room, the browser
+// silently allows the pan, and every other check asserts what the DOM SAYS —
+// this is the class of bug where the DOM is correct and the layout is wrong.
 //
 // It asserts two things at each width, for the builder's mod grid and for the
 // three preset bars, which are the other wide row on the page:
