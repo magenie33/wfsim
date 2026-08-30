@@ -12,9 +12,10 @@ max_rank: 30
 transform_group: ballistica_prime
 transforms_to: ballistica_prime_incarnon
 
-# see notes: bulk_intake_stats_are_2
+# see notes: bulk_intake_stats_are
 unmodeled:
-  - "the Normal Shot is not modelled — this entry carries only the Charged Shot"
+  - "a PARTLY charged shot is not modelled — releasing early fires a shot worth (1 + charge progress) times the Normal Shot, so a 50% charge deals 1.5x it, and this entry carries only the two ends of that ramp: no charge at all, and the full charge that fires this attack instead"
+  - "a charged-shot KILL leaves a GHOST of the enemy that fights beside you for 7 seconds — this arena holds one wielder and one target, so nothing is spawned and none of what a ghost would kill is counted here"
 accuracy: 4
 disposition: 1.2
 polarities: [naramon, madurai, madurai]
@@ -27,18 +28,20 @@ noise: silent
 ammo_type: secondary
 ammo_max: 210
 ammo_pickup: 40
-magazine: 8
+# THE MAGAZINE IS COUNTED IN AMMO, NOT IN SHOTS: wiki infobox "Magazine Size
+# 32" with "Ammo Cost 4" on both attacks, so the 210 reserve is 52 shots.
+magazine: 32
 reload_seconds: 1.2
 
 # see notes: catalog_gives_attack_own
 #
 #   |{{Weapon|Ballistica Prime}}||Charged Shot||Projectile||76||38||50%||Adding||Uses uncharged damage value
 #
-# "CO Damage Bonus Relative To Base Damage" IS `co_base_fraction`: the CO term
-# multiplies 50% of this attack's damage, because the bonus is computed on the
-# UNCHARGED value while the shot deals the charged one.
+# "CO Damage Bonus Relative To Base Damage" IS `co_base_fraction`: the term is
+# computed on the UNCHARGED value, and the charge x2 reaches it too — 40 x 2 =
+# 80 against 152, measured (M66). 80/152 is 40/76; the catalog rounds it to 50%.
 co_behavior: additive_with_base_damage
-co_base_fraction: 0.5
+co_base_fraction: 0.526316
 
 attack:
   # see notes: cone_half_angle_from
@@ -52,13 +55,14 @@ attack:
   charge_seconds: 0.8
   charge_cadence: draw_then_rate
   multishot: 4.0
-  ammo_cost: 1
+  ammo_cost: 4
   crit_chance: 0.2
   crit_multiplier: 2
   status_chance: 0.15
   # "Charged shots have 1 meter Punch Through" (wiki).
   punch_through_m: 1.0
-  damage: { impact: 3.8, slash: 30.4, puncture: 41.8 }   # total 76.0
+  # see notes: charge_x2_is_the_primes_alone
+  damage: { impact: 7.6, slash: 60.8, puncture: 83.6 }   # 2 x 76 = 152.0
 
 # incarnon_evolutions: definitions live in data/evolutions/ballistica_prime_*.yaml.
 

@@ -212,7 +212,14 @@ fn weapons() -> &'static [WeaponInfo] {
                 // as `has_cycle`.
                 let forms = wfsim_engine::weapons_data::forms_of(&s.id)
                     .into_iter()
-                    .map(|f| (f.kind.id(), f.kind.label().to_string(), f.is_default))
+                    .map(|f| {
+                        // THE GAME'S NAME FOR IT where the entry states one —
+                        // a tapped shot is a "Normal Shot", never a "Base Form".
+                        let label = wfsim_engine::weapons_data::spec(f.weapon_id)
+                            .map_or_else(|| f.kind.label().to_string(),
+                                |x| x.form_label().to_string());
+                        (f.kind.id(), label, f.is_default)
+                    })
                     .collect();
                 WeaponInfo {
                     id: s.id.clone(),
@@ -3130,7 +3137,7 @@ pub fn panel_json(v: &Value) -> Value {
             continue;
         }
         forms_list.push((
-            f.kind.label(),
+            wspec(f.weapon_id).form_label(),
             attack_desc(wspec(f.weapon_id)),
             base_for(v, f.weapon_id, &evo_refs),
         ));
@@ -4872,8 +4879,10 @@ pub(crate) struct Fight {
     pub(crate) arena: wfsim_engine::arena::Arena,
     /// After the ladder is applied AND the form's own unlock is implied.
     pub(crate) evos: Vec<String>,
-    /// Is this the two-form CYCLE, or a single form fired throughout?
-    pub(crate) run_cycle: bool,
+    /// THE FORM A CYCLE FILLS ITS GAUGE IN, `None` when a single form is fired
+    /// throughout. Not the weapon's default: there is one cycle per form it can
+    /// be fed from (`play_modes`), and the MODE is what says which.
+    pub(crate) cycle_from: Option<&'static str>,
     /// The single form to fire (the cycle's Incarnon half when cycling).
     pub(crate) single_form: &'static str,
     /// The target's display NAME, resolved once. A second lookup would go to
@@ -4924,7 +4933,7 @@ pub(crate) struct Fight {
 /// pairing endpoint needs the same answer or it would label the wrong form's
 /// elements.
 pub(crate) fn firing_entry(fight: &Fight) -> String {
-    if fight.run_cycle {
+    if fight.cycle_from.is_some() {
         incarnon_id(fight.info).unwrap_or(&fight.info.id).to_string()
     } else {
         fight.single_form.to_string()
@@ -5122,9 +5131,18 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // BOTH SPELLINGS. `incarnon_cycle` was the token until 2026-08-15 and was
     // never persisted anywhere, so this is belt-and-braces rather than a
     // migration — but a request is a request and refusing one costs a fight.
-    let run_cycle = (form == "gauge_cycle" || form == "incarnon_cycle")
+    // THE HALF THE CYCLE RETURNS TO, off the mode that asked for it — and a
+    // request naming no mode gets the default form, which is what
+    // `form: gauge_cycle` has always meant.
+    let cycle_from = ((form == "gauge_cycle" || form == "incarnon_cycle")
         && info.has_cycle
-        && incarnon_id(info).is_some();
+        && incarnon_id(info).is_some())
+    .then(|| {
+        modes
+            .iter()
+            .find(|m| Some(m.id) == asked && m.other_id.is_some())
+            .map_or(info.id.as_str(), |m| m.weapon_id)
+    });
     // The single form to fire: the requested kind if this weapon registers it,
     // else its default (which is what an unknown or stale preset value gets).
     let single_form = registered
@@ -5550,7 +5568,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         buff_cfg,
         arena,
         evos,
-        run_cycle,
+        cycle_from,
         single_form,
         mode: mode_id,
         enemy_name: spec.name.clone(),
@@ -5648,7 +5666,7 @@ fn sim_params(
     refs: &[&ModDef],
     tenno: &wfsim_engine::tenno_data::Tenno,
     arena: &wfsim_engine::arena::Arena,
-    run_cycle: bool,
+    cycle_from: Option<&str>,
     single_form: &str,
     infinite_ammo: bool,
     frenzy_single: bool,
@@ -5662,9 +5680,9 @@ fn sim_params(
     // Either ONE registered form, or the real two-form cycle (which needs the
     // gauge form and the form it transforms out of, so it resolves both).
     let panel_of = |id: &str| resolve_for(&base_for(v, id, evo_refs), refs, policy, tenno);
-    if run_cycle {
+    if let Some(cycle_from) = cycle_from {
         let incarnon_panel = panel_of(incarnon_id(info).unwrap_or(&info.id));
-        let base_panel = panel_of(&info.id);
+        let base_panel = panel_of(cycle_from);
         // A TOME'S CYCLE IS NOT A TRANSFORMATION. Both are "fill a meter in one
         // form, spend it in the other", and only one of them puts the weapon in
         // the other form: a Tome shoots its primary fire the whole engagement
@@ -5735,7 +5753,7 @@ pub fn log_json(v: &Value) -> Value {
         Err(e) => return e,
     };
     let Fight {
-        info, policy, buff_cfg, arena, evos, run_cycle, single_form, tenno,
+        info, policy, buff_cfg, arena, evos, cycle_from, single_form, tenno,
         infinite_ammo, frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
@@ -5751,7 +5769,7 @@ pub fn log_json(v: &Value) -> Value {
         .collect();
     let (_, mut params) = sim_params(
         v, info, policy, &evo_refs, &refs, &tenno, &arena,
-        run_cycle, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
+        cycle_from, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
         &frenzy_locks,
     );
     if let Some(cfg) = &buff_cfg {
@@ -6063,7 +6081,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         Err(e) => return e,
     };
     let Fight {
-        info, policy, buff_cfg, arena, evos, run_cycle, single_form,
+        info, policy, buff_cfg, arena, evos, cycle_from, single_form,
         enemy_name, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
         frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
@@ -6167,7 +6185,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // got one.
     let (report_panel, mut params) = sim_params(
         v, info, policy, &evo_refs, &refs, &tenno, &arena,
-        run_cycle, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
+        cycle_from, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
         &frenzy_locks,
     );
     // An arcane the weapon cannot seat is an ERROR here, not a silent drop:

@@ -148,6 +148,13 @@ notes:
   catalog_says_aoe_part: |
     THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
     no area part does. Verbatim (docs/CATALOGS.md §1):
+  charge_x2_is_the_primes_alone: |
+    THE CHARGE x2 IS THE PRIME'S ALONE. On the Ballistica Prime a released shot
+    takes (1 + charge progress) and a FULL charge is the x2 end of it, so that
+    attack deals twice its published damage (M66). The Ballistica and the Rakta
+    Ballistica were measured for the same thing and do NOT have it, so their
+    charged shots are exactly as published. It is one weapon, not a family and
+    not a class: no other charge weapon may be given it without its own reading.
   charge_rules: |
     charge_rules:
     - Each weakpoint hit grants 10 Incarnon rounds; 20 hits fill the gauge to

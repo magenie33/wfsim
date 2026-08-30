@@ -209,6 +209,7 @@ ui:
   "Hystrix Injection, the Hystrix-exclusive augment — a weapon-exclusive card outside the pools this roster loads": "「Hystrix Injection」，Hystrix 家族的专属增强 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "INFINITE BODY PUNCH THROUGH: the page grants this weapon 1.1 m of punch through AND unlimited penetration of BODIES specifically. The 1.1 m is transcribed and spends `space::BODY_MATERIAL_M` a body like every other weapon's, so the slug stops after two enemies here where in game it would cross the whole line": "无限穿透身体：页面给这把武器 1.1 米穿透，并且额外给了对「身体」的无限穿透。这里录入的是那 1.1 米，并且和其他武器一样每穿过一个身体扣掉 `space::BODY_MATERIAL_M`，所以这颗弹丸在这里穿过两个敌人就停了，而在游戏里它会穿过一整排"
   "Incarnon Form": 灵化形态
+  "Normal Shot": 普通射击
   "Incarnon Genesis": 灵化之源
   "Incarnon cycle": 灵化循环
   "Infested": 感染者
@@ -473,6 +474,8 @@ ui:
   "a MISSED shot drops the combo counter and this entry cannot miss — the only thing that misses here is SPREAD, and this one lands on the reticle, so nothing but its {seconds} s timer ever takes a stack off. A player who pulls the shot loses the combo and this sim never pulls one": 打空一枪会掉连击，而这把在这里打不空 —— 这里唯一会失手的是散布，而它弹着点就在准星上，所以除了 {seconds} 秒计时之外没有任何东西会拿走一层。手抖打偏的玩家会掉连击，而这个模拟不会手抖
   "a benchmark build — measured under": 基准配装 —— 测试标准
   "a bigger magazine makes the reload LONGER here and the sim does not know it — shells are loaded one at a time, so Ammo Stock buys capacity and pays for it in reload": 弹匣越大装填越慢，模拟不知道这件事 —— 子弹是一发一发上的，所以弹药储存换来的容量要拿装填时间去付
+  "a PARTLY charged shot is not modelled — releasing early fires a shot worth (1 + charge progress) times the Normal Shot, so a 50% charge deals 1.5x it, and this entry carries only the two ends of that ramp: no charge at all, and the full charge that fires this attack instead": 半蓄力射击尚未建模 —— 提前松手会打出一发相当于普通射击 ×(1 + 蓄力进度) 的子弹，所以 50% 蓄力是它的 1.5 倍；本条目只装了这条斜坡的两端：完全不蓄力，以及打出这一发的满蓄力
+  "a charged-shot KILL leaves a GHOST of the enemy that fights beside you for 7 seconds — this arena holds one wielder and one target, so nothing is spawned and none of what a ghost would kill is counted here": 蓄力射击造成的击杀会留下该敌人的幽灵，在你身边战斗 7 秒 —— 本场只有一个使用者和一个目标，所以这里不会召出任何幽灵，它们本该打出的伤害也一分没有计入
   "a cube left alone detonates after 9 seconds, which needs a miss and a clock this arena does not run": "无人理会的方块会在 9 秒后自行引爆，这需要一次打偏和一个本场并不运行的计时"
   "a direct hit forces a KNOCKDOWN and the explosion a RAGDOLL (module ForcedProcs) — neither is a damage type and this arena's enemies are neither knocked down nor thrown": "直接命中必定造成击倒、爆炸必定造成布娃娃（模块 ForcedProcs）—— 两者都不是伤害类型，而这个战场里的敌人既不会被击倒也不会被抛飞"
   "a direct hit forces a KNOCKDOWN whether or not the grenade explodes (wiki) — this arena's enemies are not knocked down, so the crowd control that makes this weapon safe to fire up close pays nothing here": "无论榴弹是否爆炸，直接命中都会造成击倒（维基）—— 这个战场里的敌人不会被击倒，所以那个让这把武器可以贴脸开火的控制效果在这里一分不值"
@@ -863,7 +866,6 @@ ui:
   "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff": "较低的变焦档位尚未建模 —— 这个战场没有视野可以用来换倍率，所以瞄准镜永远停在最高档、吃它最好的加成"
   "the MERCY KILL BUFF that alt fire exists to earn: \"Performing a Mercy Kill grants +100% damage and Multishot for 20 seconds\", refreshed on every Mercy. A doubling of the weapon, gated behind a finisher this arena cannot perform": "交替射击存在的意义就是去换取的那个「慈悲击杀」增益：「完成一次慈悲击杀获得 +100% 伤害与多重射击，持续 20 秒」，每次慈悲都会刷新。这是把武器翻一倍，而它的门槛是一次本场做不到的处决"
   "the MICROWAVE status effect, which enlarges the body part that was shot (wiki). It is a unique proc with no damage of its own and this engine's status roster has no entry for it — what it does in game is make the enlarged part easier to hit again, which is an aiming aid this sim cannot use": "「微波」异常状态：把被击中的身体部位胀大（维基）。这是一个自身不造成伤害的独有触发效果，本引擎的异常状态表里没有它 —— 它在游戏里的作用是让那个部位更容易再次被打中，而那是一个本模拟用不上的瞄准辅助"
-  "the Normal Shot is not modelled — this entry carries only the Charged Shot": Normal Shot 尚未建模 —— 这个条目只装了 Charged Shot
   "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides": 半蓄力射击是一个独立条目（`lanka_uncharged`）—— 游戏里两者是同一个扳机在不同时刻松开，而这里在两者之间选择是一个形态选项，不是战斗自己决定的
   "the PELLET COUNT spools from 1 to 12 and this entry fires 12 from the first shot — the fire-rate spool is modelled and the multishot one is not, so a short burst puts more pellets downrange here than in game":
     弹丸数会从 1 爬升到 12，而这个条目从第一发就打 12 发 —— 射速的爬升已建模，弹丸数的爬升没有，所以短点射在这里打出的弹丸比游戏里多
@@ -1106,6 +1108,7 @@ ui:
   "{form} ({how})": "{form}（{how}）"
   "{form} ({secs}s charge)": "{form}（蓄力 {secs} 秒）"
   "{form} cycle": "{form}循环"
+  "{form} cycle ({base})": "{form}循环（{base}）"
   "{n} lanes · cores unknown, assuming {c}": "{n} 条通道 · 核心数未知，按 {c} 估算"
   "{n} more statuses this engine models never landed and are not drawn":
     这个引擎还模拟另外 {n} 种异常状态，本场一次都没上，因此没有画出来

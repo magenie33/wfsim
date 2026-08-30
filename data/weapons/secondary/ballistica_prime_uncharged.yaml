@@ -1,0 +1,38 @@
+id: ballistica_prime_uncharged
+name: Ballistica Prime
+inherits: ballistica_prime
+form: base
+form_name: Normal Shot
+
+# see notes: form_transformation_releasing_early
+transform_group: ballistica_prime
+
+introduced: "Update 21.6"
+
+# see notes: co_full_base_charged
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from_2
+  spread:
+    min_deg: 0.0
+    max_deg: 50
+  # Tapping is a semi-auto press, not a draw, and it costs the same four ammo
+  # ("Consumes 4 ammo per shot regardless of charge-up", wiki).
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 3.33
+  multishot: 4.0
+  ammo_cost: 4
+  crit_chance: 0.2
+  crit_multiplier: 2
+  status_chance: 0.15
+  punch_through_m: 0.0
+  damage: { impact: 2, slash: 16, puncture: 22 }   # total 40
+
+# incarnon_evolutions: see data/weapons/secondary/ballistica_prime.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Ballistica_Prime
+  # WFCD `attacks`: "Normal Shot"

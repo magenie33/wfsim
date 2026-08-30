@@ -58,7 +58,12 @@ const grab = (weapon) => `(async () => {
 //   Kuva Hind three FREE modes, whose ids are their FORMS' ids — the shape
 //             that broke, see below
 //   Magistar  seven of them, all melee
-const WEAPONS = ["Mausolon", "Torid", "Cortege", "Lex", "Kuva_Hind", "Magistar"];
+//   Ballistica Prime  TWO CYCLES — a weapon whose gauge can be filled by
+//             either of two shots has two of everything, and both pairs
+//             share a form name
+const WEAPONS = [
+  "Mausolon", "Torid", "Cortege", "Lex", "Kuva_Hind", "Magistar", "Ballistica_Prime",
+];
 
 for (const lang of ["en", "zh"]) {
   await evaluate(
@@ -86,25 +91,12 @@ for (const lang of ["en", "zh"]) {
     check(`${w}/${lang}: it got a sentence`, r.lines.length >= 1,
       `${r.lines.length} lines`);
 
-    // **NO TWO MODES OF ONE WEAPON SHARE A NAME**, which is the assertion this
-    // check was missing and the reason a real bug shipped for two weeks.
-    //
-    // `modeLabel` had branches for `cycle`, `alternate` and `transformed` and
-    // fell through to "the default form" for anything else — so a mode whose id
-    // IS a form's id matched nothing and took the default form's name. The Kuva
-    // Hind drew all three of its modes as "Base Form" from the day its third
-    // trigger landed, and melee made it seven identical entries
-    // before anyone saw it.
-    //
-    // EVERY ASSERTION ABOVE PASSED THE WHOLE TIME. One entry per mode, a
-    // sentence each, one marked, the right language — all true of a list that
-    // says the same word three times. What none of them asked is whether the
-    // names TELL THE MODES APART, which is the only thing a name is for.
-    //
-    // IT MOVED TO THE CONTROL when the block stopped listing every mode: one entry cannot repeat a name, so asking the block would
-    // have retired the assertion by making it vacuous. The dropdown is where
-    // all seven names still appear, and it is the surface the bug was actually
-    // about.
+    // **NO TWO MODES OF ONE WEAPON SHARE A NAME.** Every assertion above
+    // passes on a list that says one word three times: one entry per mode, a
+    // sentence each, one marked, the right language. Whether the names TELL
+    // THE MODES APART is the only thing a name is for, and it is asked of the
+    // CONTROL, because the block draws the picked mode alone — one entry
+    // cannot repeat a name, and the dropdown is where all of them appear.
     const dupes = r.offered.filter((n, i) => r.offered.indexOf(n) !== i);
     check(`${w}/${lang}: the mode control's names tell the modes apart`,
       dupes.length === 0,

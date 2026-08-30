@@ -5141,3 +5141,117 @@ they pay again (owner). This engine has one weapon and it is always out, so the
 question cannot arise; it is recorded in docs/UNMODELLED.md because it becomes a
 real decision the day weapon swapping lands.
 
+
+
+## M66 — the charge multiplier is (1 + progress), and a full charge is the ×2 end of it ✅ (owner, 2026-08-30)
+
+Eight readings on a **Ballistica Prime**, all with **Headcracker installed**
+(+3 base damage, and it cannot be uninstalled). They settle three things the
+published stats do not say, and they confirm two the engine already did.
+
+### The readings
+
+Uncharged panel **43** (2.2 Impact / 23.6 Puncture / 17.2 Slash), charged panel
+**158**. "Near full" is the highest the owner could reach by hand without the
+bar filling.
+
+| build | no charge | near full | full |
+| --- | --- | --- | --- |
+| no damage mods | **44** | **85** | **160** |
+| +220% base damage | **142** | **273** | **512** |
+
+GunCO, at +220% base damage, written `mods × status types`:
+
+| | 3×2 | 2×2 | 1×3 | 3×1 | 2×1 |
+| --- | --- | --- | --- | --- | --- |
+| Normal Shot | **241** | **208** | **191** | | |
+| Charged Shot | **709** | **643** | | **610** | **577** |
+| Incarnon Form | | | | **5864** | |
+
+### 1. ON THIS WEAPON, THE CHARGE MULTIPLIER IS (1 + PROGRESS) — THE BAR, NOT THE CLOCK
+
+**ONE WEAPON, NOT A CLASS.** Everything in this entry is the Ballistica
+Prime's, and it is the only weapon this has been found on (owner). No other
+charge weapon has been measured for it, and none may be given it without its
+own reading — a bow's drawn shot is calibrated against golden values that this
+would break.
+
+Releasing early fires: a shot at 50% of the bar deals 1.5× the Normal Shot, and
+the number tracks the PROGRESS rather than the time held (owner). The two "near
+full" readings are the same release point under both builds — 85/44.34 = 1.917
+and 273/141.9 = 1.924 — and a single p = 0.92 reproduces both to the digit:
+
+```
+43    × 1.92 × 33/32 =  85.1  ->  85
+137.6 × 1.92 × 33/32 = 272.5  -> 273
+```
+
+At the top of the ramp the shot becomes the CHARGED attack, which is where the
+discontinuity is: 40 × 2 = 80 against the 160 a full charge actually deals.
+
+### 2. A FULL CHARGE DEALS TWICE THE PUBLISHED CHARGED DAMAGE
+
+The wiki's infobox and DE's export both give 76 per projectile. The game deals
+**152**: with Headcracker's +3 that is a base of 155, and
+
+```
+155   × 33/32 = 159.8  -> 160
+155   × 3.2 × 33/32 = 511.5  -> 512
+```
+
+The ×2 is on the PUBLISHED base and not on the evolution's flat add — 152 + 3
+reproduces both rows where (76 + 3) × 2 = 158 misses both. Neither of this
+weapon's other two attacks is doubled: the Normal Shot's 44 is 43 × 33/32 and
+the Incarnon form's 5864 is 833 × 3.2 × 2.2 exactly.
+
+### 3. THE CO TERM'S BASE IS DOUBLED WITH IT — 80, NOT 76
+
+Two unknowns fall out of the four charged GunCO rows on their own, because each
+row is `(B + 0.4·a·b·C) × 33/32`:
+
+```
+(3×2) - (2×2):  0.8·C = 687.5 - 623.5 = 64   ->  C = 80.0
+back-substituted:                             ->  B = 496 = 155 × 3.2
+```
+
+B confirms §2 independently of the two full-charge pops. C = 80 is the
+UNCHARGED 40 with the same ×2 on it, which is the catalog's own sentence
+("uses uncharged damage value") surviving the multiplier. As a fraction of this
+attack's 152 that is 40/76 = **0.5263**, and the catalog's `50%` is it rounded —
+so `co_base_fraction` moved off the published number and onto the measured one.
+
+### What was already right
+
+**Quantization** (M57), on two independent readings: this weapon's 5/55/40
+split lands on 2 + 18 + 13 = 33 units of the ModdedBase/32 scale, a flat +3.1%,
+and 43 → 44.34 → **44** and 137.6 → 141.9 → **142** are both exact. The
+Incarnon form is mono-Slash, so it sits at 32/32 and its 5864 confirms the
+other end: a quantization that gained anything there would have missed it.
+
+**The `Adding` class reads the UNEVOLVED base** (M50). Headcracker's +3 is out
+of the CO term on all three attacks, which is the class default and needs no
+per-perk declaration: 137.6 + 2.4×40 = 233.6 → **241**, and 43 in place of 40
+would have printed 248.
+
+**`independent` on the Incarnon form.** 833 × 3.2 × 2.2 = 5864.3 → **5864**,
+the CO term as a free-standing final multiplier and the +3 inside the base.
+
+### Not settled by this
+
+**Nothing about how far this reaches, except where it does NOT.** The base
+Ballistica and the Rakta Ballistica were measured for the same thing and
+**neither has it** (owner) — their charged shots are exactly as published, and
+the ×2 is one weapon's, not the family's. Every other charge weapon in the
+roster is untested and stays as published: a bow's drawn shot is calibrated
+against golden values this would break. `data/notes.yaml`
+`charge_x2_is_the_primes_alone` is what the three entries carry.
+
+**The ramp itself is not modelled.** A partial charge is a shot this engine
+cannot fire — the entry says so in `unmodeled:`. It is dominated at both ends
+on this weapon (a 50% charge is 66 damage per 0.7 s against 44 per 0.3 s and
+160 per 1.1 s), so the two ends are the two builds worth ranking, which is what
+the roster carries.
+
+**The arsenal's charged panel reads 158**, i.e. (76 + 3) × 2, while the damage
+is computed from 152 + 3. The panel doubles the evolution's flat add and the
+hit does not; ours shows what the hit uses.

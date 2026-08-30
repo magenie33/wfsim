@@ -1603,6 +1603,11 @@ pub struct WeaponSpec {
     pub unmodeled_parts: Vec<UnmodelledPart>,
     pub id: String,
     pub name: String,
+    /// WHAT THE GAME CALLS THIS FORM — its page's own name for the attack
+    /// block, verbatim. [`FormKind::label`] is the fallback and it is OUR
+    /// word: nothing in the game is a "Base Form". docs/FORM_NAMES.md.
+    #[serde(default)]
+    pub form_name: Option<String>,
     /// THIS ENTRY CANNOT AIM DOWN SIGHTS, so nothing gated on aiming pays.
     ///
     /// On the wiki "Zoom" IS the word for aiming — its page opens "Zoom (or
@@ -2223,6 +2228,11 @@ impl WeaponSpec {
         FormKind::parse(&self.form)
     }
 
+    /// The name this form is SHOWN under: the game's own where it is stated.
+    pub fn form_label(&self) -> &str {
+        self.form_name.as_deref().unwrap_or_else(|| self.form_kind().label())
+    }
+
     /// The transform group this entry belongs to — its own id when it is a
     /// group of one (Verglas Prime: one weapon, one form).
     pub fn group(&self) -> &str {
@@ -2276,12 +2286,12 @@ pub enum PlayMode {
     /// ruler ranks it, and it exists as a mode only so the builder can show the
     /// form's own numbers.
     ///
-    /// Split off from `Alternate` in 2026-08-08, when the Paris arrived. A bow
-    /// with an adapter has THREE forms — drawn, tapped, Incarnon — and the two
-    /// alternates were both emitting `id: "alternate"`, so a build naming a
-    /// mode named two of them. A weapon with one alternate never noticed.
+    /// Its own mode rather than an `Alternate`, because a bow with an adapter
+    /// has THREE forms — drawn, tapped, Incarnon — and a build names a mode.
     Transformed,
-    /// Fill the gauge in the base form, spend it in the other, come back.
+    /// Fill the gauge in a form you can HOLD, spend it in the other, come
+    /// back. One per such form: which one fills it is a build, and the
+    /// Ballistica Prime's tapped shot fills it three times as fast.
     Cycle,
 }
 
@@ -2336,11 +2346,9 @@ impl WeaponPlayMode {
     pub fn form(&self) -> &'static str {
         match self.mode {
             // NOT `incarnon_cycle`: the policy is "fill a gauge in one form,
-            // spend it in the other, come back", and an Incarnon adapter is
-            // one thing that produces it. The Mausolon earns its alt-fire with
-            // KILLS and has no adapter. The old spelling is
-            // still ACCEPTED by the parser — it never reached a saved build or
-            // a board row, but it costs one `||` to be sure.
+            // spend it in the other, come back", and an adapter is one thing
+            // that produces it — the Mausolon earns its alt-fire with KILLS.
+            // The old spelling is still accepted by the parser.
             PlayMode::Cycle => "gauge_cycle",
             // The single form this mode fires, named by its KIND — the Cernos
             // Prime's `base` mode is its CHARGED form, because that is the one
@@ -2357,14 +2365,12 @@ impl WeaponPlayMode {
 /// may rank, and one you have to pay for is a `transformed` mode plus a
 /// `cycle`. "Always in it" is not a playstyle when it costs something.
 ///
-/// TWO GATES ANSWER YES and the answer does not distinguish them. An
-/// Incarnon-style [`GaugeFormSpec`] is earned with HITS; a Tome's
-/// [`MeterSpec`] is earned with SECONDS. A third will be earned with something
-/// else, and this is where it says so.
+/// TWO GATES ANSWER YES and the answer does not distinguish them: an
+/// Incarnon-style [`GaugeFormSpec`] is earned with HITS, a Tome's
+/// [`MeterSpec`] with SECONDS, and a third will say so here.
 ///
-/// It is a function rather than a line inside `play_modes` because the
-/// roster's own ratchet asks the same question: a second copy of the gauge test
-/// goes red the day a second gate arrives, which is the definition drifting in
+/// A function rather than a line inside `play_modes`, because the roster's own
+/// ratchet asks the same question and a second copy of the test would drift in
 /// exactly the place built to catch drift.
 pub fn is_gauge_fed(weapon_id: &str) -> bool {
     spec(weapon_id).is_some_and(WeaponSpec::has_gauge)
@@ -2375,6 +2381,11 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
     let Some(default) = forms.iter().find(|f| f.is_default).or(forms.first()) else {
         return Vec::new();
     };
+    let alts = || forms.iter().filter(|f| f.weapon_id != default.weapon_id);
+    // The GAUGE, not the kind: "does entering this cost a meter you must earn",
+    // answered by the entry. A form that answers no can be HELD — a mode of
+    // its own, and a form a cycle can be fed from.
+    let held = |f: &&FormRef| !is_gauge_fed(f.weapon_id);
     let mut out = vec![WeaponPlayMode {
         id: PlayMode::Base.id(),
         mode: PlayMode::Base,
@@ -2382,75 +2393,80 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         other_id: None,
         sustainable: true,
     }];
-    for alt in forms.iter().filter(|f| f.weapon_id != default.weapon_id) {
-        // The GAUGE, not the kind: "does entering this cost a meter you must
-        // earn" is the question, and the answer lives on the entry.
-        //
-        let gauged = is_gauge_fed(alt.weapon_id);
-        if gauged {
+    for alt in alts().filter(held) {
+        out.push(WeaponPlayMode {
+            id: free_form_id(alt.kind),
+            mode: PlayMode::Alternate,
+            weapon_id: alt.weapon_id,
+            other_id: None,
+            sustainable: true,
+        });
+    }
+    for alt in alts().filter(|f| !held(f)) {
+        // ONE CYCLE PER FORM YOU CAN HOLD: the form you fill the gauge IN is
+        // a different build — see `PlayMode::Cycle`.
+        for feeder in std::iter::once(default).chain(alts().filter(held)) {
             out.push(WeaponPlayMode {
-                id: PlayMode::Cycle.id(),
+                id: cycle_id(feeder.weapon_id == default.weapon_id, feeder.kind),
                 mode: PlayMode::Cycle,
-                weapon_id: default.weapon_id,
+                weapon_id: feeder.weapon_id,
                 other_id: Some(alt.weapon_id),
                 sustainable: true,
             });
         }
-        // …AND A FORM YOU NEVER HOLD GETS NO MODE OF ITS OWN.
-        //
-        // `Transformed` is a state you are IN: an Incarnon window, a form that
-        // fires its own magazine for a few seconds, and the builder shows its
-        // numbers because "while you are in it" is a real thing to ask about. A
-        // METERED form is not a state — you throw one orb and you are back on
-        // the primary before it lands. There is no "while you are in it" to
-        // show, so there is nothing to show it for (owner:
-        // `transformed` is the Incarnon's and is not to be borrowed).
-        //
-        // So a Tome has exactly TWO ways to be played and both are here: the
-        // primary alone (`base`), and the primary with the orb thrown whenever
-        // the meter fills (`cycle`).
+        // …AND A FORM YOU NEVER HOLD GETS NO MODE OF ITS OWN. `Transformed`
+        // is a state you are IN, and a METERED form is not one: you throw the
+        // orb and you are back on the primary before it lands, so a Tome has
+        // exactly two — `base` and `cycle`. MEASUREMENTS §"Two modes, and
+        // `transformed` is not one of them".
         if spec(alt.weapon_id).is_some_and(|s| s.attack.meter.is_some()) {
             continue;
         }
-        // ONE MODE PER ALTERNATE FORM, and the two kinds have DIFFERENT IDS —
-        // a weapon may have more than one alternate (a bow with an adapter has
-        // a tapped shot and an Incarnon form), and a mode id is what a build
-        // names, so two of them sharing one id names neither.
-        let mode = if gauged { PlayMode::Transformed } else { PlayMode::Alternate };
-        // …AND A THIRD FORM NEEDS A THIRD NAME. This is the same collision the
-        // Paris caused in 2026-08-08 — two alternates both emitting
-        // `id: "alternate"`, so a build naming a mode named neither — arriving
-        // from the other side: the Kuva Hind's two extra triggers are both FREE,
-        // so `Transformed` does not tell them apart either.
-        //
-        // A MODE IS NAMED FOR ITS FORM, but only where it has to be. Every kind
-        // that existed before keeps `"alternate"`, because a mode id is what a
-        // saved preset, a share link and a board row carry, and renaming one
-        // would orphan every stored build. Only the two kinds that could not
-        // have been stored yet take their own name.
-        let id = match (gauged, alt.kind) {
-            (true, _) => mode.id(),
-            (false, FormKind::SemiAuto | FormKind::Auto) => alt.kind.id(),
-            // EVERY MELEE FORM IS ITS OWN MODE, for the reason the Hind's two
-            // extra triggers are: they are all FREE, so `Alternate` cannot tell
-            // seven of them apart, and a mode id is what a board row carries.
-            // The owner settled the question the count raises — seven rows per
-            // weapon per ruler is not noise, because each one IS an
-            // independent build.
-            (false, k) if k.is_melee() => k.id(),
-            (false, _) => PlayMode::Alternate.id(),
-        };
         out.push(WeaponPlayMode {
-            id,
-            mode,
+            id: PlayMode::Transformed.id(),
+            mode: PlayMode::Transformed,
             weapon_id: alt.weapon_id,
             other_id: None,
             // A gauge you must fill and then run dry is exactly what cannot be
             // sustained; anything else can.
-            sustainable: !gauged,
+            sustainable: false,
         });
     }
     out
+}
+
+/// The mode id of a form you can HOLD, and two of them must DIFFER: a mode id
+/// is what a build names, so two sharing one names neither.
+///
+/// A MODE IS NAMED FOR ITS FORM, but only where it has to be. Every kind that
+/// existed before keeps `"alternate"`, because a mode id is what a saved
+/// preset, a share link and a board row carry and renaming one would orphan
+/// every stored build. Only the kinds that could not have been stored yet —
+/// the Kuva Hind's two extra triggers, melee's seven — take their own name.
+fn free_form_id(kind: FormKind) -> &'static str {
+    match kind {
+        FormKind::SemiAuto | FormKind::Auto => kind.id(),
+        // Melee's seven are all FREE, so `Alternate` cannot tell them apart,
+        // and each one IS an independent build — see MELEE.
+        k if k.is_melee() => k.id(),
+        _ => PlayMode::Alternate.id(),
+    }
+}
+
+/// A CYCLE IS NAMED FOR THE FORM THAT FEEDS IT, and the arsenal's own form
+/// keeps the bare `cycle` — what every stored build already means by it. A
+/// feeder with no name falls back to it and COLLIDES, which the roster's
+/// "two modes share an id" ratchet catches.
+fn cycle_id(is_default_form: bool, kind: FormKind) -> &'static str {
+    if is_default_form {
+        return PlayMode::Cycle.id();
+    }
+    match free_form_id(kind) {
+        "alternate" => "alternate_cycle",
+        "semi_auto" => "semi_auto_cycle",
+        "auto" => "auto_cycle",
+        _ => PlayMode::Cycle.id(),
+    }
 }
 
 /// Does this weapon have a form you TRANSFORM into? Only such a weapon has a
@@ -4256,6 +4272,42 @@ mod tests {
         );
     }
 
+    /// M66 — TWO NUMBERS NOBODY PUBLISHES, SOLVED OUT OF FOUR READINGS.
+    ///
+    /// Each row is `(B + 0.4·mods·types·C) × 33/32`: two solve the pair and
+    /// the other two check it, and the yaml has to return both.
+    #[test]
+    fn the_ballistica_primes_charge_multiplier_solves_out_of_its_gunco_rows() {
+        // (mods x types, the damage popped) — MEASUREMENTS M66.
+        let rows = [(1.2_f64, 610.0_f64), (2.4, 709.0), (1.6, 643.0), (0.8, 577.0)];
+        let raw = |hit: f64| hit * 32.0 / 33.0;
+        // A difference cancels B, leaving C alone.
+        let co_base = (raw(rows[1].1) - raw(rows[2].1)) / (rows[1].0 - rows[2].0);
+        let modded = raw(rows[2].1) - rows[2].0 * co_base;
+        assert!((co_base - 80.0).abs() < 0.5, "solved a CO base of {co_base}, against 80");
+        assert!((modded - 496.0).abs() < 1.0, "solved a modded base of {modded}, against 496");
+        // …and the other two reproduce, which no pair of wrong numbers does.
+        for (k, hit) in rows {
+            let got = (modded + k * co_base) * 33.0 / 32.0;
+            assert!((got - hit).abs() < 1.0, "{k}x GunCO: measured {hit}, solved {got:.1}");
+        }
+
+        // Neither is a published number: 152 + 3, and the uncharged 40 doubled.
+        let b = crate::loadout::WeaponBase::from_data(
+            "ballistica_prime", false, &["ballistica_prime_headcracker"],
+        );
+        assert!((b.base_vector.total() - modded / 3.2).abs() < 0.5,
+            "the charged base is {}, solved {}", b.base_vector.total(), modded / 3.2);
+        assert!((b.co_base - co_base).abs() < 0.5,
+            "the CO base is {}, solved {co_base}", b.co_base);
+        // The ramp's OTHER end is not doubled — the x2 is the charge's.
+        let n = crate::loadout::WeaponBase::from_data(
+            "ballistica_prime_uncharged", false, &["ballistica_prime_headcracker"],
+        );
+        assert!((n.base_vector.total() - 43.0).abs() < 1e-9);
+        assert!((n.co_base - 40.0).abs() < 1e-9, "the Adding class reads the unevolved base");
+    }
+
     /// EVERY CO ANOMALY IN THE ROSTER IS ON THIS LIST, and the list is the
     /// catalog. Nothing else may be anything but ordinary.
     ///
@@ -4265,10 +4317,8 @@ mod tests {
     ///
     /// A LIST rather than a count, because the failure this exists to stop is
     /// not "someone added an anomaly", it is "someone gave one to the variant
-    /// next door". Three entries had been generalised that way, and each of
-    /// them looked like a reasonable reading of a row that did not name it.
-    /// Adding a weapon whose family has a row now fails here until the row is
-    /// checked for that weapon's own name.
+    /// next door" — so adding a weapon whose family has a row fails here until
+    /// the row is checked for that weapon's own name.
     #[test]
     fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         // (entry, behaviour, co_base_fraction) — see docs/CATALOGS.md for the
@@ -4279,7 +4329,8 @@ mod tests {
             // Rocket Impact; the base Akarius has no row and stays ordinary.
             ("akarius_prime", "independent", 1.0),
             ("ballistica", "additive_with_base_damage", 0.25),
-            ("ballistica_prime", "additive_with_base_damage", 0.50),
+            // 0.5263 = 40/76, MEASURED (M66); the catalog's 50% is it rounded.
+            ("ballistica_prime", "additive_with_base_damage", 0.526_316),
             ("ballistica_prime_incarnon", "independent", 1.0),
             ("rakta_ballistica", "additive_with_base_damage", 0.25),
             ("cernos_prime", "additive_with_base_damage", 0.5),
@@ -6337,9 +6388,14 @@ mod play_mode_tests {
                 spec(f.weapon_id).is_some_and(|s| s.attack.meter.is_some())
             };
             let own_modes = alts.iter().filter(|f| !metered(f)).count();
+            // ONE CYCLE PER (GAUGE FORM, FORM YOU CAN HOLD): which form fills
+            // the gauge is a different build, so a weapon with a free second
+            // form has a second cycle rather than one that picks for you.
+            let cycles = alts.iter().filter(|f| gauged(f)).count()
+                * (1 + alts.iter().filter(|f| !gauged(f)).count());
             assert_eq!(
-                multishot.len(), 1 + own_modes + usize::from(any_gauged),
-                "{}: {} forms should give base + one mode each + a cycle: {:?}",
+                multishot.len(), 1 + own_modes + cycles,
+                "{}: {} forms should give base + one mode each + a cycle per feeder: {:?}",
                 w.id, forms.len(), multishot.iter().map(|m| m.id).collect::<Vec<_>>()
             );
             assert_eq!(has(PlayMode::Cycle), any_gauged, "{}: cycle iff gauge", w.id);
@@ -6408,6 +6464,30 @@ mod play_mode_tests {
         assert_eq!(on("cernos_prime"), vec!["base", "alternate"]);
         // ...and a weapon with one form offers one.
         assert_eq!(on("ocucor"), vec!["base"]);
+    }
+
+    /// TWO FORMS TO FILL THE GAUGE IN ARE TWO CYCLES. Which half fills it is a
+    /// build: the tapped shot puts four bolts a press into weakpoints where
+    /// the charged one pays 0.8 s a press for the same four.
+    #[test]
+    fn the_ballistica_prime_can_fill_its_gauge_from_either_shot() {
+        let modes = play_modes("ballistica_prime");
+        let ids: Vec<&str> = modes.iter().map(|m| m.id).collect();
+        assert_eq!(ids, ["base", "alternate", "cycle", "alternate_cycle", "transformed"]);
+        let cycle = |id: &str| *modes.iter().find(|m| m.id == id).expect(id);
+        // The two spend the SAME form and are fed by different ones.
+        assert_eq!(cycle("cycle").weapon_id, "ballistica_prime");
+        assert_eq!(cycle("alternate_cycle").weapon_id, "ballistica_prime_uncharged");
+        for id in ["cycle", "alternate_cycle"] {
+            assert_eq!(cycle(id).other_id, Some("ballistica_prime_incarnon"));
+            assert!(cycle(id).sustainable, "{id}: a cycle is a playstyle");
+            // ONE POLICY WORD for both: which form feeds it is the mode's own
+            // `weapon_id`, and not a second vocabulary at the fight boundary.
+            assert_eq!(cycle(id).form(), "gauge_cycle");
+        }
+        // Four ways to play it, and the Incarnon form alone is not one of them.
+        let on: Vec<&str> = modes.iter().filter(|m| m.sustainable).map(|m| m.id).collect();
+        assert_eq!(on, ["base", "alternate", "cycle", "alternate_cycle"]);
     }
 
     /// A GAUGE WITHOUT AN ADAPTER — the Mausolon.
@@ -7206,21 +7286,16 @@ mod valence_tests {
 mod condition_overload_catalog_tests {
     /// THE CO CATALOG'S DAMAGE COLUMN IS A FREE CROSS-CHECK OF THE SHOT.
     ///
-    /// "Attack Unmodded Damage" is the whole SHOT — every pellet of it — while
-    /// a weapon yaml carries the per-projectile damage and the pellet count
-    /// separately. So `base_vector.total() x base_multishot` has to reproduce
-    /// it, and a lost pellet count shows up here and nowhere else: the damage
-    /// per projectile stays right, the panel stays plausible, and the weapon
-    /// quietly deals a fraction of its shot.
+    /// "Attack Unmodded Damage" is the whole SHOT while a weapon yaml carries
+    /// the per-projectile damage and the pellet count separately, so
+    /// `base_vector.total() x base_multishot` has to reproduce it. A lost
+    /// pellet count shows up here and nowhere else.
     ///
-    /// That is exactly how the Bronco was found. Both Incarnon
-    /// entries had `multishot: 1.0` where the base forms had 7, so the Incarnon
-    /// Bronco dealt ONE SEVENTH of its shot — 22 against 154, and 34 against
-    /// 238 on the Prime.
+    /// That is exactly how the Bronco was found: both Incarnon entries carried
+    /// `multishot: 1.0` where the base forms had 7.
     ///
-    /// Rows transcribed from `Condition_Overload_(Mechanic)?action=raw`. Only
-    /// the entries the roster carries, and only the DIRECT attack of each,
-    /// because a radial's own damage is not in this column.
+    /// Rows transcribed from `Condition_Overload_(Mechanic)?action=raw` — only
+    /// the roster's entries, and only the DIRECT attack of each.
     #[test]
     fn every_catalog_row_reproduces_our_shot_damage() {
         // (entry, the catalog's Attack Unmodded Damage)
@@ -7228,7 +7303,9 @@ mod condition_overload_catalog_tests {
             ("angstrum_incarnon", 30.0),
             ("atomos_incarnon", 100.0),
             ("ballistica", 100.0),
-            ("ballistica_prime", 304.0),        // "76" is per projectile; 4 bolts
+            // TWICE THE ROW: a full charge takes a x2 nothing publishes,
+            // measured at 4 x 152 (M66).
+            ("ballistica_prime", 608.0),
             ("ballistica_prime_incarnon", 830.0),
             ("bronco_prime_incarnon", 238.0),   // 34 x 7 — the row that caught the bug
             ("cernos_prime", 552.0),
@@ -7252,15 +7329,12 @@ mod condition_overload_catalog_tests {
             ("lex_prime_incarnon", 1200.0),
             ("miter", 500.0),
             ("miter_incarnon", 60.0),
-            // THE KUNAI FAMILY'S ROWS ARE PER PROJECTILE, and the catalog's
-            // own Lato Vandal row is what proves the others are not: 152 is
-            // that form's 76 damage TIMES its 2 multishot, while these two
-            // carry 24 and 40, which are the damage alone. Three sources say
-            // the multishot is 2 — the module's attack row, the shared Genesis
-            // page ("2 base Multishot"), and the fact that this catalog is
-            // community-sourced by its own header, with the CLASS and the
-            // RELATIVE column being what this repo transcribes from it.
-            // Doubled here rather than in the data, because the data is right.
+            // THE KUNAI FAMILY'S ROWS ARE PER PROJECTILE, and the catalog's own
+            // Lato Vandal row proves the others are not: 152 is that form's 76
+            // TIMES its 2 multishot where these two carry the damage alone.
+            // Three sources give the multishot as 2 — the module's attack row,
+            // the Genesis page ("2 base Multishot"), and this catalog calling
+            // itself community-sourced. Doubled here: the data is right.
             ("mk1_kunai_incarnon", 48.0),
             ("mk1_paris", 230.0),
             ("paris", 320.0),
@@ -7286,10 +7360,9 @@ mod condition_overload_catalog_tests {
         }
     }
 
-    /// …AND THE RADIALS the catalog names, which are a separate column entry.
-    /// Their listed number INCLUDES the flat-damage evolution, so the check is
-    /// against the unevolved base the third column ("Relative To Base Damage")
-    /// is computed from.
+    /// …AND THE RADIALS the catalog names, a separate column entry whose
+    /// listed number INCLUDES the flat-damage evolution — so the check is
+    /// against the unevolved base the third column is computed from.
     #[test]
     fn every_catalog_radial_row_reproduces_our_explosion() {
         let rows: &[(&str, f64)] = &[
@@ -7315,14 +7388,12 @@ mod condition_overload_catalog_tests {
     /// fails if the flag is MISSING, on the WRONG PERK, or on a perk whose flat
     /// damage does not match.
     ///
-    /// That third failure is not hypothetical. This list is the group that has
-    /// gone wrong twice: eight weapons were missing the flag entirely, and the Vasto Prime was still missing it when the CO
-    /// mechanism was audited later the same day.
+    /// That third failure is not hypothetical: this list is the group that has
+    /// gone wrong twice.
     ///
-    /// A row that names "Evolution II Perk 1" or "Perk 2" means ONLY that perk
-    /// is discrepant — its tier-mate feeds the CO term in full even when it
-    /// raises base damage by the same amount, which is true of the Vasto Prime
-    /// (Lone Gun and Deathtrap Trigger are both +24) and of the Dual Toxocyst.
+    /// A row naming "Evolution II Perk 1" or "Perk 2" means ONLY that perk is
+    /// discrepant — its tier-mate feeds the CO term in full even when it adds
+    /// the same damage (the Vasto Prime's two are both +24).
     #[test]
     fn the_eleven_evolution_exclusion_rows_reproduce_their_own_percentages() {
         // (entry, perk, catalog unmodded, catalog with-evolution)

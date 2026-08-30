@@ -57,6 +57,7 @@ attack:
   crit_multiplier: 1.5
   status_chance: 0.1
   punch_through_m: 0.0
+  # see notes: charge_x2_is_the_primes_alone
   damage: { impact: 10, slash: 10, puncture: 80 }   # total 100
 
 # incarnon_evolutions: definitions live in data/evolutions/ballistica_*.yaml.

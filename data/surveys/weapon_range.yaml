@@ -82,6 +82,7 @@ checked:
   ballistica_incarnon:         { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile' }
   ballistica_prime:            { range: null, type: projectile, note: 'no Range row; Projectile' }
   ballistica_prime_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile' }
+  ballistica_prime_uncharged:  { range: null, type: read, note: 'the Normal Shot block states no Range; Projectile at 70 m/s' }
   basmu:                       { range: null, type: projectile, note: 'this form’s own attack block states no Range; its 1.7 m is the explosion RADIUS, not a reach; Projectile at 120 m/s' }
   basmu_beam:                  { range: null, type: read, note: 'this form’s own attack block states no Range' }
   battacor:                    { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 120 m/s' }

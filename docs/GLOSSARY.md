@@ -83,6 +83,11 @@ fill and two transmute animations to play), while `base` ↔ `charged` is a free
 per-trigger-pull choice. Only a gauge-switched form gives the simulator a
 two-form **cycle** to run, which is why the registry publishes `has_cycle`
 beside the form list instead of listing "Incarnon cycle" as if it were a form.
+There is one cycle per form the weapon can be HELD in, because which form
+fills the gauge is a build of its own: the Ballistica Prime's tapped shot fills
+it about three times as fast as its charged one and deals more while it does,
+and the charged one is the half that carries punch through. The mode fed by the
+arsenal's own form is `cycle`; the others are `<that form's mode>_cycle`.
 The sim request carries `form` = a registered kind (or `incarnon_cycle` for the
 mode); an unknown value falls back to the weapon's DEFAULT form — the roster
 entry, which is the one the wiki module marks with `_TooltipAttackDisplay`.

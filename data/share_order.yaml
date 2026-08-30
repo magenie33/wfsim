@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: ba5990a71f935271
-count: 1695
+digest: af4f52893d20001b
+count: 1696
 ids:
   - acceltra
   - acceltra_prime
@@ -1705,3 +1705,4 @@ ids:
   - melee_influence
   - melee_retaliation
   - melee_vortex
+  - ballistica_prime_uncharged
