@@ -106,29 +106,20 @@ pub fn gap(a: Vec2, b: Vec2) -> f64 {
 /// RAY-VERSUS-CIRCLE, and nothing more.
 ///
 /// A pellet that leaves `deviation_deg` off the aim line is a RAY from the
-/// muzzle, so the question "does it hit" is ray-versus-circle and the answer is
-/// `travel · sin(θ) ≤ r`. It was `centre_distance · tan(θ)` until 2026-08-16,
-/// which was wrong twice — from the centre rather than the muzzle, and `tan`
-/// rather than `sin`, so a wide cone's deviation blew up toward infinity
-/// instead of being bounded by the leg it is measured against.
+/// muzzle, so "does it hit" is ray-versus-circle and the answer is
+/// `travel · sin(θ) ≤ r`. Not `centre_distance · tan(θ)`, which is wrong twice
+/// over: from the centre rather than the muzzle, and `tan` rather than `sin`.
 ///
-/// `range_m` is [`range_to_centre`] and NOT a flight — the perpendicular is
+/// `range_m` is [`range_to_centre`] and NOT a flight: the perpendicular is
 /// dropped from the circle's CENTRE, so that is the leg the formula needs.
-/// What the shot flies is the [`gap`], one radius shorter. The parameter was
-/// called `travel_m` for a few hours and the name was the whole confusion.
+/// What the shot flies is the [`gap`], one radius shorter.
 ///
-/// The fix is what makes CONTACT unmissable at any cone width: the muzzle is
-/// then one radius from the target's centre, so the closest approach is
-/// `r · sin(θ) ≤ r` for every θ, and a shotgun pressed against an enemy cannot
-/// spray past it. The [`gap`] says the same thing more directly — at contact
-/// there is no distance to deviate over at all. Under the old formula a 60
-/// degree cone missed more than half its pellets at point blank, which nothing
-/// in the game does.
-///
-/// Beyond 90 degrees the shot is going AWAY, and a ray's closest approach is
-/// then its own origin — no weapon in the roster has a cone that wide, but the
-/// formula is the ray's rather than the infinite line's so it cannot report a
-/// hit for a shot fired backwards.
+/// It makes CONTACT unmissable at any cone width, because the muzzle is then
+/// one radius from the target's centre and the closest approach is
+/// `r · sin(θ) ≤ r` for every θ. Beyond 90 degrees the shot is going AWAY and a
+/// ray's closest approach is its own origin — no roster cone is that wide, but
+/// the formula is the ray's rather than the infinite line's, so it cannot
+/// report a hit for a shot fired backwards.
 pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     let rad = deviation_deg.to_radians();
     if rad >= std::f64::consts::FRAC_PI_2 {
@@ -180,26 +171,22 @@ pub fn miss_distance_off_axis(range_m: f64, off_axis_deg: f64, deviation_deg: f6
 /// WHERE THE PELLET ACTUALLY WENT OFF, when it did not hit anything.
 ///
 /// A FLOOR POINT AND A HEIGHT, because the arena is a plane and the spread cone
-/// is not. The cross-section of the cone at the target's range is a disc, and
-/// only its IN-FLOOR component moves the epicentre across the arena; the rest
-/// is how far over or under the shot went, which is a real distance to every
-/// body on the floor and belongs in the range rather than being thrown away.
+/// is not. Only the cone's IN-FLOOR component moves the epicentre across the
+/// arena; the rest is how far over or under the shot went, a real distance to
+/// every body on the floor that belongs in the range.
 ///
-/// WHY IT EXISTS. [`miss_distance_off_axis`] answers "how
-/// far did it pass the aimed body", which was the whole question while a fight
-/// held ONE body — its own doc says so: *"the model has never drawn which side
-/// — only the magnitude decides anything against one body"*. With a crowd, the
-/// side decides WHO IS IN THE BLAST, and until this existed every other body
-/// read its distance from the AIMED BODY'S SURFACE however wide the shot went.
-/// Measured on the wire: a shot nine metres wide dropped the aimed body's
-/// damage 61% and left the body two metres behind it on 7120 against 7115 —
-/// the bystander took a direct hit's blast off a shot that went nowhere near.
+/// WHY IT EXISTS. [`miss_distance_off_axis`] answers "how far did it pass the
+/// aimed body", which is the whole question while a fight holds ONE body. With
+/// a crowd the SIDE decides who is in the blast, and without this every other
+/// body reads its distance from the AIMED BODY'S SURFACE however wide the shot
+/// went: a shot nine metres wide dropped the aimed body's damage 61% and left
+/// the body two metres behind it on 7120 against 7115.
 ///
-/// IT CANNOT MOVE THE AIMED BODY'S NUMBER, by construction rather than by care:
-/// with the body at `O + a·û` and the pellet at `O + b·cos(2πφ)·û + b·sin(2πφ)·v̂`,
-/// the distance between them is `√(a² + b² − 2ab·cos 2πφ)`, which is
-/// [`miss_distance_off_axis`] exactly. This is that formula's two vectors kept
-/// apart instead of collapsed into their difference.
+/// IT CANNOT MOVE THE AIMED BODY'S NUMBER by construction: with the body at
+/// `O + a·û` and the pellet at `O + b·cos(2πφ)·û + b·sin(2πφ)·v̂` the distance
+/// between them is `√(a² + b² − 2ab·cos 2πφ)`, which is
+/// [`miss_distance_off_axis`] exactly — that formula's two vectors kept apart
+/// rather than collapsed into their difference.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Detonation {
     /// Where it went off, on the floor.
@@ -360,64 +347,38 @@ pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64
 /// The radius of a body, in metres — every actor is a circle, and that is the
 /// WHOLE model of how big a body is.
 ///
-/// **THE PLANE IS THE MODEL, NOT AN APPROXIMATION OF A SOLID**. This number was briefly split in two: a footprint for spacing
-/// and a bigger "effective" radius for the hit test, on the reasoning that a
-/// real spread cone spends half its deviation vertically where a humanoid is
-/// three times its own width, and a plane has nowhere to put that. The split
-/// was wrong, and the reason is a division of labour that already exists:
-///
-///   · the GEOMETRY answers "did this pellet reach the target at all";
-///   · `headshot_pct` answers "and given that it did, where did it land" — a
-///     pinned per-pellet aim weight, which is exactly the vertical question.
-///
-/// So folding a body's height into the hit radius asks the second question
-/// twice and the first one wrong. One circle, one number, and it is the same
-/// number for the hit test and for how much floor a body occupies when there
-/// is more than one of them.
+/// **THE PLANE IS THE MODEL, NOT AN APPROXIMATION OF A SOLID**, so this is not
+/// two numbers — a footprint for spacing and a bigger "effective" radius for
+/// the hit test. The division of labour already exists: the GEOMETRY answers
+/// "did this pellet reach the target at all", and `headshot_pct` answers "and
+/// given that it did, where did it land", which is exactly the vertical
+/// question. Folding a body's height into the hit radius asks the second twice
+/// and the first wrong.
 ///
 /// **AND IT IS ONE NUMBER TO CHANGE.** Nothing multiplies it, nothing derives
-/// from it, and no data file restates it — a measurement replaces this line and
-/// the whole model moves with it.
+/// from it, and no data file restates it.
 ///
-/// **MEASURED.** Walking into an enemy stops at **0.4 m**
-/// centre to centre, and two bodies of the same size touching at 0.4 m makes
-/// each of them **0.2 m**. That is the whole derivation and it needs nothing
-/// else: the closest approach IS twice the radius, so the one quantity a
-/// player can actually read off the game gives it directly.
+/// **0.25 m, from two independent sources** — see [`BODY_MATERIAL_M`], which
+/// is derived from it, for the published penetration table that brackets a
+/// humanoid's width to `(0.4, 0.5]` and so excludes any smaller radius.
 ///
-/// It replaces a guess of 0.25 m, which had been reached by taking the circle
-/// of the same AREA as a 0.6 x 1.8 m silhouette — an attempt to smuggle a
-/// body's HEIGHT back into a flat world, and wrong twice over: the plane is
-/// the model, and `headshot_pct` already owns where on a body a landed pellet
-/// went. The owner's original 0.2 m was right.
+/// CONTACT BEHAVIOUR IS INVARIANT under it, trivially: the muzzle sits one
+/// radius forward, so the closest approach at contact is `r · sin(θ) ≤ r` for
+/// every r and every cone. What a change moves is every distance BEYOND
+/// contact, where a smaller body is a harder target — the same 2 degree cone
+/// reaches a 0.25 m body to about 7 m and a 0.2 m one to about 5.7 m.
 ///
-/// WHAT IT DOES AND DOES NOT MOVE. Contact behaviour is invariant under it,
-/// and now trivially so: the muzzle sits one radius forward, so the closest
-/// approach at contact is `r · sin(θ) ≤ r` for every r and every cone — both
-/// boards and every golden value are where they were. What changes is every
-/// distance BEYOND contact, where a smaller body is a harder target: the same
-/// 2 degree cone that missed a 0.25 m body past about 7 m now misses a 0.2 m
-/// one past about 5.7 m.
-///
-/// STILL OPEN is whether the hit test should read this radius at all, or a
-/// larger effective one — DE publishes no hitbox size (the wiki's `Area of
-/// Effect` gives the zone shapes and never says whether a radius is measured
-/// to a body's centre or its surface, `Hit Mechanic` is the player's side
-/// only, and `Line of Sight` describes an enemy as three rays to head, torso
-/// and feet, a vertical segment with no width). What is measured is how much
-/// FLOOR a body occupies; that the same number governs whether a pellet
-/// reaches it is the model's choice, and docs/MEASUREMENTS.md carries the
-/// experiment that would confirm it: a counted number of pellets, a known
-/// range, a weapon of known spread, count what lands.
+/// STILL OPEN is whether the hit test should read this radius at all or a
+/// larger effective one: DE publishes no hitbox size, and what is measured is
+/// how much FLOOR a body occupies. docs/MEASUREMENTS.md carries the experiment
+/// that would settle it — a counted number of pellets, a known range, a weapon
+/// of known spread, count what lands.
 pub const BODY_RADIUS_M: f64 = 0.25;
 
 /// A WHOLE BODY'S WORTH OF MATERIAL — the DIAMETER, because a body is a circle.
 ///
-/// DERIVED, NOT DECLARED. This was its own constant at
-/// 0.5 m with its own source, sitting beside a radius of 0.2 m, and this file
-/// argued at length that the two were different quantities that must not be
-/// confused. They are the same quantity — how much of a body a shot goes
-/// through — and what made them look different was the radius being wrong.
+/// DERIVED, NOT DECLARED: this and the radius are the same quantity — how much
+/// of a body a shot goes through — rather than two with two sources.
 ///
 /// THE PUBLISHED TABLE WAS ALWAYS A MEASUREMENT OF THE RADIUS. The wiki's
 /// "Minimum Mod Ranks for Penetration" brackets a humanoid to `(0.4, 0.5]`:
@@ -630,14 +591,12 @@ pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f
 /// does for the direct hits, read one step further.
 ///
 /// AND WHEN IT GETS OUT OF ALL OF THEM, this arena has to answer a question the
-/// game answers with a WALL. In a room the round hits a surface a metre or two
-/// on and goes off there; this floor has no geometry (docs/UNMODELLED.md), so
-/// nothing would ever stop it. The leftover budget is spent as flight instead —
-/// the one place the model is a stand-in rather than the mechanic, and it is
-/// bounded by the weapon's own punch through rather than by a number invented
-/// here. Sending it away entirely was tried first and is wrong: the Tenet
+/// game answers with a WALL: this floor has no geometry (docs/UNMODELLED.md),
+/// so nothing would ever stop the round. The leftover budget is spent as flight
+/// — the one place the model is a stand-in rather than the mechanic, bounded by
+/// the weapon's own punch through. Sending it away entirely is wrong: the Tenet
 /// Ferrox's 1.5 m of INNATE punch through would kill its own 4 m radial against
-/// a lone target with no mod equipped at all.
+/// a lone target with no mod equipped.
 ///
 /// WITH NO BUDGET THE ANSWER IS THE CONTACT POINT, unchanged, which is what
 /// keeps every weapon of this class byte-identical until a mod moves it.
@@ -691,37 +650,23 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 /// projectile moves away from a surface equals the angle at which they enter).
 /// Bouncing projectiles will also lose velocity after collisions."*
 ///
-/// So a bounce is GEOMETRY. It was a nearest-first walk over the CHAIN's
-/// neighbour lists until 2026-08-21 — the mechanic for a ricochet, and for a
-/// bounce an approximation that kept every hop inside the crowd it started in.
-/// On the group-clear ruler that was worth 9.9x on the Latron Prime, with six
-/// 4 m explosions landing on one cluster of 30 bodies out of 361.
+/// So a bounce is GEOMETRY, not a nearest-first walk over the CHAIN's
+/// neighbour lists — that is the ricochet's mechanic, and for a bounce it keeps
+/// every hop inside the crowd it started in, worth 9.9x on a Latron Prime on
+/// the group-clear ruler.
 ///
-/// EVERY BOUNCE AFTER THE FIRST IS DETERMINED. The impact point fixes the
-/// normal, the normal fixes the outgoing ray, and the ray fixes what it meets.
-/// There is exactly ONE assumption in here and it is the first impact:
+/// EVERY BOUNCE AFTER THE FIRST IS DETERMINED: the impact point fixes the
+/// normal, the normal the outgoing ray, the ray what it meets. The ONE
+/// assumption is **WHERE ON THE FIRST BODY THE SHOT LANDS** — this arena aims
+/// at a body's CENTRE, and a ray through the centre reflects straight back the
+/// way it came, so every bounce would fly behind the shooter. `impact_offset`
+/// is that impact's distance from the centre in [-1, 1] of the radius, drawn
+/// uniformly across the body's width by the caller.
 ///
-/// **WHERE ON THE FIRST BODY THE SHOT LANDS.** This arena aims a ray at a
-/// body's CENTRE, and a ray through the centre reflects straight back the way
-/// it came — every bounce would fly behind the shooter and hit nothing, which
-/// is true of a dead-centre hit and false of the weapon. A real shot lands
-/// somewhere on the target, so `impact_offset` is where: a fraction of the
-/// radius, drawn uniformly across the body's width by the caller. Uniform is
-/// the assumption; the plane being the model is not (see `BODY_RADIUS_M` —
-/// the geometry answers "did it reach", `headshot_pct` answers "where").
-///
-/// A BODY MAY BE HIT TWICE, which the nearest-first walk forbade with a global
-/// `seen`. A reflected projectile can come back, and only the body it is
-/// LEAVING is excluded — it is standing on that surface, so the next thing it
-/// meets is something else.
-///
-/// Velocity loss is not modelled and costs nothing: this engine gives a
-/// projectile no travel time, so a slower bounce arrives at the same instant.
-/// `muzzle` is where the shot came from, so the first impact's incoming
-/// direction is real. `first` is the body it has just struck — that collision
-/// is already resolved and is not in the returned path. `impact_offset` is that
-/// impact's distance from the body's centre in [-1, 1] of the radius: THE ONE
-/// ASSUMPTION, and everything after it is geometry.
+/// A BODY MAY BE HIT TWICE: a reflected projectile can come back, so only the
+/// body it is LEAVING is excluded. Velocity loss is not modelled and costs
+/// nothing, since this engine gives a projectile no travel time. `first` is the
+/// body just struck — that collision is resolved and is not in the path.
 pub fn bounce_path(
     muzzle: Vec2,
     bodies: &[Vec2],

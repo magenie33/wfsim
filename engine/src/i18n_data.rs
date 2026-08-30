@@ -1,10 +1,9 @@
 //! i18n overlays: `data/i18n/<locale>/*.yaml` → one [`LocaleSpec`] per locale.
 //!
-//! English is not a locale here — it is the source of truth living on each
-//! entity's `name` field. Overlay files exist only for other languages, may
-//! be arbitrarily incomplete (missing entries fall back to English in the
-//! UI), and never touch ids. Referential integrity is enforced by the tests
-//! below: every key must be a real id.
+//! English is not a locale here — it is the source of truth on each entity's
+//! `name` field. Overlay files exist only for other languages, may be
+//! arbitrarily incomplete (missing entries fall back to English), and never
+//! touch ids; every key must be a real id.
 //!
 //! **A locale is a DIRECTORY, and its files are merged** — because the content
 //! in it has different AUTHORS, and they have different lifecycles:
@@ -16,11 +15,9 @@
 //! | `evolutions.yaml` | DE, via a wiki transcription | edited by hand — there is no export to regenerate it from |
 //!
 //! Sharing one file would bury the hand-written parts under a thousand
-//! generated lines and make regeneration a merge problem.
-//!
-//! Which sections come from where is not enforced — a locale's tables are
-//! simply the union of its files, and the same table may not be filled twice
-//! (a duplicate key is a hard error, not a last-one-wins).
+//! generated lines and make regeneration a merge problem. Which sections come
+//! from where is not enforced — a locale's tables are the union of its files,
+//! and a duplicate key is a hard error rather than last-one-wins.
 
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
@@ -303,18 +300,16 @@ mod tests {
     /// own string could not be reached", which is the documented way to say it
     /// (AGENTS: leave it empty and say so).
     ///
-    /// Written for a real failure and it is a structural one. A bulk-intake generator re-sorted `data/i18n/zh/ui.yaml`
-    /// LINE-WISE, which splits every two-line entry — the key stays where it
-    /// sorts and its indented value line sorts away as if it were a record of
-    /// its own. Twenty-nine translations were left empty, and the thirty-one
-    /// orphaned value lines landed under whichever key sorted before them,
-    /// where YAML folds an indented plain scalar into the value above it: the
-    /// share panel's second button came out 1,746 characters long, carrying the
-    /// whole support page and a dozen weapons' unmodelled notes into a tooltip.
+    /// The failure it was written for is structural: a LINE-WISE re-sort of
+    /// `data/i18n/zh/ui.yaml` splits every two-line entry, leaving the key
+    /// where it sorts and sending its indented value line off as if it were a
+    /// record of its own. Twenty-nine translations came out empty and the
+    /// orphaned value lines folded into whichever key sorted before them — the
+    /// share panel's second button was 1,746 characters long.
     ///
-    /// EMPTY IS THE COMPLETE TELL. However the orphan lands, the key it left
-    /// behind has nothing — so this catches the sort at its source without
-    /// needing a length threshold, which would be a number somebody picked.
+    /// EMPTY IS THE COMPLETE TELL: however the orphan lands, the key it left
+    /// behind has nothing, so this catches the sort at its source without a
+    /// length threshold somebody would have to pick.
     #[test]
     fn no_ui_string_is_empty() {
         for (code, spec) in locales() {
@@ -500,30 +495,22 @@ mod tests {
 
     /// The localized card and OUR card must state the same numbers.
     ///
-    /// The two sides are independent: our English text is the wiki module's
-    /// wording with our own values filled in, and the localized text is DE's
-    /// rendered string. That independence is the point — it is the same
-    /// dual-source check the English side already gets (docs/DATA_SOURCES
-    /// "rendered text vs levelStats"), and it is what catches a rebalance
-    /// landing in the vendored export before it lands in our values.
-    ///
-    /// Three tolerances, every one of them earned by reading the failures:
+    /// The two sides are independent — our English text is the wiki module's
+    /// wording with our own values, the localized text DE's rendered string —
+    /// which is what catches a rebalance landing in the vendored export first.
+    /// Three tolerances, each earned by reading the failures:
     ///
     /// 1. **The ENDPOINTS only.** Our data stores `rank0` and `rankMax` and
-    ///    INTERPOLATES the ranks between (`ModDescInfo::at`); DE ships a table
-    ///    with its own intermediate values, and the two legitimately differ
-    ///    there — Amalgam Serration reads 70.45 at rank 4 where DE prints 71,
-    ///    and `metal_auger`'s ramp is documented as non-linear outright
-    ///    (docs/DATA_SOURCES). So the middle is not a disagreement about the
-    ///    mod, it is our interpolation showing; the two ranks we actually
-    ///    store are where a mismatch means something.
+    ///    INTERPOLATES between them, while DE ships its own intermediate
+    ///    values: Amalgam Serration reads 70.45 at rank 4 where DE prints 71,
+    ///    and `metal_auger`'s ramp is non-linear outright. The middle is our
+    ///    interpolation showing, not a disagreement about the mod.
     /// 2. **DE's client rounds AND truncates for display** — "+18% 多重射击"
     ///    for 18.25, "254%" for 254.6, "16.6%" for 16.67. A localized number
     ///    matches if it is ours rounded *or* truncated at its own precision.
     /// 3. **SUBSET, not equality** — a translation may drop a literal:
-    ///    "(x2 for Bows)" is "（弓类武器效果加倍）", where the 2 became a
-    ///    word. The direction that matters is checked: a number DE prints
-    ///    that we cannot produce is a disagreement about the mod.
+    ///    "(x2 for Bows)" is "（弓类武器效果加倍）". The direction that matters
+    ///    is a number DE prints that we cannot produce.
     #[test]
     fn localized_card_numbers_are_numbers_we_also_state() {
         /// Every number in a rendered card, with the DECIMALS it was written
@@ -554,18 +541,14 @@ mod tests {
         /// Cards where OUR English text deliberately omits a clause DE's card
         /// carries, so its numbers are absent rather than wrong.
         ///
-        /// A NARROW list, keyed by id, because the whole point of this check is
-        /// that a number we state must be a number DE states. "Absent" is the
-        /// only tolerated difference and it has to be a decision someone wrote
-        /// down, not a gap nobody noticed.
+        /// A NARROW list, keyed by id: a number we state must be a number DE
+        /// states, so "absent" is the only tolerated difference and has to be a
+        /// decision someone wrote down.
         ///
-        /// `guided_ordnance`: "On Hit: +30% Accuracy when Aiming for 9s". The
-        /// duration is not an effect value — accuracy is an indirect stat with
-        /// no uptime to compute — so `fill_x` has nothing to put in its place,
-        /// and an unfilled X is itself a rendering failure the pool asserts
-        /// against. Hardcoding "9s" would be wrong at every rank below max (it
-        /// ramps 2 → 9). The clause is therefore off our card, and DE's 2 and 9
-        /// have nowhere to match. See data/mods/assault_rifle/guided_ordnance.yaml.
+        /// `guided_ordnance`: "On Hit: +30% Accuracy when Aiming for 9s".
+        /// Accuracy is an indirect stat with no uptime, so `fill_x` has nothing
+        /// to put there and hardcoding "9s" would be wrong at every rank below
+        /// max (it ramps 2 → 9). The clause is off our card.
         ///
         /// `double_tap`: "Stacks up to 80x outside of Conclave." The ladder is
         /// 80 / 40 / 26 / 20 and the schema stores two endpoints, so no

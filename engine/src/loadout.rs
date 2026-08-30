@@ -140,44 +140,36 @@ pub enum ModEffect {
     /// climbs with CONSECUTIVE HITS and stands on its own multiplier.
     ///
     /// "Multiplicatively stacks with damage bonuses like Serration and Faction
-    /// Damage Bonus" (wiki), so it is NOT the base-damage bucket: it joins the
-    /// chain of independent multipliers beside the faction bonus and Eclipse.
+    /// Damage Bonus", so it joins the chain of independent multipliers rather
+    /// than the base-damage bucket.
     ///
-    /// The count is PER TRIGGER PULL, not per pellet, and the card's own
-    /// arithmetic is what pins it: "the bonus is applied on hit to all pellets
-    /// as damage * 20% * (hits - 1)", worked through as "with a modded
-    /// multishot of 3, the first trigger pull would do +40% bonus damage, the
-    /// second +100%, the third +160%". So every pellet of a pull gets the SAME
-    /// bonus, computed from the running total INCLUDING that pull, less one —
-    /// which is also why an unmodded weapon gets nothing on its first shot.
+    /// The count is PER TRIGGER PULL rather than per pellet, pinned by the
+    /// card's own arithmetic: "the bonus is applied on hit to all pellets as
+    /// damage * 20% * (hits - 1)".
     /// SYNTH CHARGE: *"bonus damage to the final shot in the Magazine"*.
     ///
-    /// ITS OWN MULTIPLIER — "Damage stacks multiplicatively with Hornet Strike,
-    /// and any area damage the weapon may have is also affected" — so it is a
-    /// factor beside Double Tap's and never a base-damage bucket term.
+    /// ITS OWN MULTIPLIER — "Damage stacks multiplicatively with Hornet
+    /// Strike, and any area damage the weapon may have is also affected" — a
+    /// factor beside Double Tap's, never a base-damage bucket term.
     ///
-    /// THREE THINGS SWITCH IT OFF, all three the mod's own words: it "has no
-    /// effect on Continuous Weapons even if they meet the magazine
-    /// requirements", it "does not have an effect on any Incarnon fire modes",
-    /// and it is only EQUIPPABLE where the weapon's BASE magazine is 6 or
-    /// higher. The first two are resolved against the form; the third is an
-    /// equip rule, because a magazine mod can neither buy it nor lose it.
+    /// THREE THINGS SWITCH IT OFF, all the mod's own words: "has no effect on
+    /// Continuous Weapons", "does not have an effect on any Incarnon fire
+    /// modes", and only EQUIPPABLE at a BASE magazine of 6 or higher. The first
+    /// two resolve against the form; the third is an equip rule, because a
+    /// magazine mod can neither buy it nor lose it.
     LastRoundDamage(f64),
     /// **A BONUS COMPUTED FROM THE PLAYER**, per unit of one of their stats,
     /// capped — the Basmu's Dreadful Killshot: *"increases Damage and Status
     /// Chance for every 75 Current Warframe Health, up to 360% at all ranks"*.
     ///
-    /// The arcane side has carried this shape since Primary Bulwark
-    /// (`ArcEffect::TennoScaled`); this is its MOD-side twin, and it is a
-    /// separate variant rather than a shared one because a mod's effects are
-    /// resolved in a different pass — `base.tenno_scaled` is read in
-    /// `resolve_for`, where the Tenno is known, exactly as `base.gated` is.
+    /// The MOD-side twin of `ArcEffect::TennoScaled`, a separate variant
+    /// because a mod's effects resolve in a different pass — `base.tenno_scaled`
+    /// is read in `resolve_for`, where the Tenno is known.
     ///
     /// ONE PERCENTAGE, TWO BUCKETS, so the card is TWO entries with identical
-    /// parameters rather than one entry granting a pair. The wiki settles that
-    /// they are the same number — *"Both the Damage and Status chance bonuses
-    /// are additive"* — and two entries keep every grant a single bucket, which
-    /// is what the rest of this enum is.
+    /// parameters rather than one granting a pair: the wiki settles that they
+    /// are the same number (*"Both the Damage and Status chance bonuses are
+    /// additive"*), and two entries keep every grant a single bucket.
     ///
     /// WHICH BUCKET the damage half joins is not a guess: the wiki's own note
     /// is *"the equipped Warframe must have at least 675 current health for the
@@ -201,24 +193,18 @@ pub enum ModEffect {
     /// THE CHAMBER FAMILY: *"+X% Damage on first shot in Magazine"* (Charged
     /// Chamber, Primed Chamber).
     ///
-    /// THE GATE IS NOT "THE MAGAZINE WAS FULL", and the wiki says so on both
-    /// pages in the same words: the bonus lands *"as long as the magazine
-    /// counter is at Max Magazine - 1 **after** a shot is fired"*, with the
-    /// consequence spelled out — *"when used alongside 100% ammo efficiency,
-    /// make sure one shot is missing from the magazine, since the buff doesn't
-    /// apply on a completely full one"*. So it is a POST-SHOT reading, and with
-    /// an efficiency source a magazine sitting at max-1 pays it every shot
-    /// while a full one pays it never. `resolve` cannot answer that; the sim
-    /// does, where the round's real cost is known.
+    /// THE GATE IS NOT "THE MAGAZINE WAS FULL", and both pages say so in the
+    /// same words: the bonus lands *"as long as the magazine counter is at Max
+    /// Magazine - 1 **after** a shot is fired"*, so *"when used alongside 100%
+    /// ammo efficiency, make sure one shot is missing from the magazine"*. A
+    /// POST-SHOT reading, which `resolve` cannot answer and the sim can, where
+    /// the round's real cost is known.
     ///
-    /// ONE BRACKET FOR BOTH CARDS. Charged Chamber is *"multiplicative with
-    /// other damage mods"*, Primed Chamber is *"applied multiplicatively after
-    /// all other modifiers from mods and abilities"*, and they *"stack
-    /// additively with each other for up to 140% bonus damage"* — so the two
-    /// sum here and the sum is one factor, never a base-damage bucket term.
-    /// They are NOT a mod family: *"Despite its name, Primed Chamber is … not
-    /// the 'Primed version' of Charged Chamber, and thus can be equipped
-    /// alongside it"*.
+    /// ONE BRACKET FOR BOTH CARDS: they *"stack additively with each other for
+    /// up to 140% bonus damage"*, so the two sum here and the sum is one
+    /// factor, never a base-damage bucket term. They are NOT a mod family —
+    /// *"Despite its name, Primed Chamber is … not the 'Primed version' of
+    /// Charged Chamber, and thus can be equipped alongside it"*.
     ///
     /// IT REACHES STATUS DAMAGE — *"The damage bonus applies to all Multishot
     /// hits and to Status Damage"* — which is the one thing that separates it
@@ -1509,16 +1495,13 @@ impl CritPerHit {
 /// EXECUTIONER'S FORTUNE: a headshot's chance to FILL THE MAGAZINE, no reload
 /// played and no time spent.
 ///
-/// It is not a reload-speed bonus and it is not a percentage refill — it is the
-/// reload happening for free, which is why it lives beside the magazine rather
-/// than in the reload bucket. Like every other magazine refill in this engine
-/// it draws from the RESERVE, so a dry one gives nothing.
+/// Not a reload-speed bonus and not a percentage refill — the reload happening
+/// for free, which is why it lives beside the magazine. It draws from the
+/// RESERVE, so a dry one gives nothing.
 ///
-/// **It does nothing in an Incarnon form**, and the wiki's "Does not affect
-/// Incarnon Form" is not a special case bolted on: what this refills is a
-/// MAGAZINE, and an Incarnon form has max CHARGES instead. A charge pool is
-/// converted from weakpoint hits and sits outside the ammo economy, so it has
-/// no reload to make instant.
+/// **It does nothing in an Incarnon form**, and "Does not affect Incarnon Form"
+/// is no special case: what this refills is a MAGAZINE, and an Incarnon form
+/// has max CHARGES, outside the ammo economy.
 /// LINGERING JUDGEMENT: a headshot STREAK arms extra headshot damage.
 ///
 /// The bonus joins the ADDITIVE headshot bracket, beside Primary Deadhead's
@@ -2012,23 +1995,13 @@ pub struct WeaponBase {
     /// THE ORIGINAL BASE — the damage the GunCO term computes on, in the same
     /// units as `base_vector.total()`.
     ///
-    /// AN ABSOLUTE, NOT A FRACTION. It was
-    /// `co_base_fraction`, a ratio recomputed as `original / evolved` wherever
-    /// something raised the panel, and the ratio was the wrong noun: it
-    /// described the ARITHMETIC of one particular loadout instead of the FACT
-    /// underneath, which is that a weapon has an original base and some things
-    /// add to it while others only add to what it prints.
-    ///
-    /// What the fraction could not express, and this can:
-    ///
-    ///   · TWO SOURCES THAT DISAGREE. A weapon carrying two flat-damage perks,
-    ///     one feeding the term and one not, has no single ratio — the catalog
-    ///     says the Despair is exactly that (one tier-2 option excluded, the
-    ///     other not) and it only worked because nobody equips both.
-    ///   · A NEW MECHANIC. Anything that raises base damage says whether it
-    ///     feeds this, and the GunCO code does not change. Under the ratio,
-    ///     a new source meant recomputing `original / evolved` at a new site,
-    ///     which is the shape that keeps producing the same bug.
+    /// AN ABSOLUTE, NOT A FRACTION. A ratio recomputed as `original / evolved`
+    /// describes the ARITHMETIC of one loadout instead of the FACT underneath —
+    /// that a weapon has an original base, and some things add to it while
+    /// others only add to what it prints. What it cannot express: TWO SOURCES
+    /// THAT DISAGREE (a weapon carrying two flat-damage perks, one feeding the
+    /// term and one not, has no single ratio), and A NEW MECHANIC, which under
+    /// an absolute simply says whether it feeds this.
     ///
     /// A weapon may DECLARE a starting value below its own base
     /// (`co_base_fraction` in the yaml, 0.5 on a bow's charged entry); that is
@@ -2525,19 +2498,16 @@ pub struct StackingBuff {
     /// THE CARD OPENS AT ITS CAP — a DECISION, not a derivation.
     ///
     /// Every buff in this app opens EARNED at zero, because the modelled fight
-    /// is one you have been in a while but have not been in contact for the
-    /// last few seconds (docs/BUFFS.md). A short, CLOSED list is exempted
-    /// because keeping it up is not something a player has to think about, so
-    /// a fight that opens without it is the less realistic of the two — the
-    /// owner's own allowance, granted per buff and named in BUFFS.md.
+    /// is one you have been in a while without contact for the last few seconds
+    /// (docs/BUFFS.md). A short, CLOSED list is exempted, because keeping those
+    /// up is not something a player thinks about and a fight that opens without
+    /// them is the less realistic of the two.
     ///
-    /// IT IS A JUDGEMENT ABOUT PLAYING, NOT A CLAIM OFF THE CARD, and the two
-    /// diverge: a card can say "lasts the mission" for a pile that takes a
-    /// hundred kills to fill, which is exactly what should NOT open full. So
-    /// the wiki cannot decide this and nothing here derives it — the shape it
-    /// would derive from (`duration: NO_TIMEOUT` with `cleared_by: Nothing`)
-    /// is the DEFAULT for a buff that states neither, and twenty of them carry
-    /// it.
+    /// IT IS A JUDGEMENT ABOUT PLAYING, NOT A CLAIM OFF THE CARD: a card can
+    /// say "lasts the mission" for a pile that takes a hundred kills to fill,
+    /// which is exactly what should NOT open full. So nothing here derives it —
+    /// the shape it would derive from is the DEFAULT for a buff that states
+    /// neither, and twenty carry it.
     ///
     /// ONLY THE OPENING MOVES. The trigger still fires, the clear still clears
     /// and the decay still decays, so a buff on this list that DOES get taken
@@ -3061,19 +3031,15 @@ impl WeaponBase {
     /// A FLAT BASE-DAMAGE ADD, folded the way an evolution's is.
     ///
     /// The base damage TOTAL rises by `flat` and the vector scales pro-rata, so
-    /// the composition is untouched and every downstream reading of the base —
-    /// status payloads included — follows. The EXPLOSION takes it too, and keeps
-    /// multiplying its UNEVOLVED base for Condition Overload: the CO catalog's
-    /// Burston radial row is what settles both halves ("Attack Damage 55 | CO
-    /// Damage Bonus at +100% 13 | 24%", where 55 = 13 + the Genesis's only +42
-    /// and 13/55 is the printed 24%).
+    /// the composition is untouched and every downstream reading of the base
+    /// follows. The EXPLOSION takes it too and keeps multiplying its UNEVOLVED
+    /// base for Condition Overload, which the CO catalog's Burston radial row
+    /// settles ("Attack Damage 55 | CO Damage Bonus at +100% 13 | 24%").
     ///
     /// ONE IMPLEMENTATION, two callers: `evolutions_data::apply` for a plain
     /// flat perk and `resolve_for` for one the player's state gates. A gated
-    /// "+40 with overshields" and an ungated "+40" are the same statement about
-    /// the weapon, so they must not be able to come out as different panels —
-    /// `a_gated_flat_base_damage_folds_exactly_as_an_ungated_one` is that
-    /// assertion.
+    /// "+40 with overshields" and an ungated "+40" are the same statement, so
+    /// they must not come out as different panels.
     /// WHAT FRACTION OF THE PANEL THE CO TERM READS — derived from
     /// [`Self::co_base`], never stored. The damage math wants a fraction of the
     /// evolved base; the FACT is the absolute, and deriving one from the other
@@ -3604,31 +3570,20 @@ impl ResolvedPanel {
     /// scenario's Infinite-ammo setting?
     ///
     /// THE ONE PLACE THE RULE IS WRITTEN. It lives on the panel rather than in
-    /// a caller because there were TWO callers writing it — the web api and the
-    /// optimizer — and they wrote the same wrong version of it
-    /// (`infinite_ammo || !finite_reserve`). The simulator is the truth and the
-    /// optimizer obeys it, so the optimizer must CALL this, not restate it.
+    /// a caller because two callers wrote the same wrong version of it
+    /// (`infinite_ammo || !finite_reserve`): the simulator is the truth and the
+    /// optimizer obeys it, so the optimizer must CALL this rather than restate.
     ///
     /// IT TAKES THE FIGHT'S ANSWER, NOT THE READER'S BOX. A resupply half
     /// spelled here as `&& !self.no_resupply` is a second spelling of
-    /// `scenario::Capability::CanResupply` — the drift AGENTS.md warns about in
-    /// every other domain. `scenario::resolve` is the one that survives,
-    /// because it is the only one that can also hear a SCENARIO argue with it:
-    /// a fight may now declare "in here, Arch-Guns have infinite ammo", and a
-    /// rule buried in this method could never have been told.
-    ///
-    /// So `ammo_is_infinite` arrives already resolved — the reader's box, the
-    /// weapon's capability and the scenario's class rule folded into one
-    /// answer — and two facts meet here instead of three:
+    /// `scenario::Capability::CanResupply`, and `scenario::resolve` is the one
+    /// that survives because it is the only one that can hear a SCENARIO argue
+    /// — a fight may declare "in here, Arch-Guns have infinite ammo". So two
+    /// facts meet here instead of three:
     ///
     /// - `has_reserve` — is there a pool behind the magazine at all? A sentinel
-    ///   weapon has none, so nothing can make it run out, whatever anyone says.
+    ///   weapon has none, so nothing can make it run out.
     /// - `ammo_is_infinite` — the fight's answer for THIS weapon.
-    ///
-    /// NOTHING MOVED. For every scenario expressible before this change the two
-    /// forms agree, because `parse_fight` now applies the same `!no_resupply`
-    /// through the capability: an Arch-Gun with the box ticked resolved to
-    /// `false` there instead of being turned to `false` here.
     pub fn reserve_is_infinite(&self, ammo_is_infinite: bool) -> bool {
         !self.has_reserve || ammo_is_infinite
     }
@@ -3693,44 +3648,26 @@ pub fn resolve_for(
     policy: StackPolicy,
     tenno: &crate::tenno_data::Tenno,
 ) -> ResolvedPanel {
-    // A GATED FLAT BASE-DAMAGE ADD IS A CHANGE TO THE WEAPON, so it is folded
-    // BEFORE anything reads the panel — Haven Foray's "With Overshields:
-    // Increase Base Damage by +40" makes the same weapon a plain "+40" would,
-    // and `add_flat_base_damage` is the one place that decides what that means.
-    //
-    // It is the only gated grant that cannot be a term added later: the other
-    // four join a bucket, and this one moves the number every bucket multiplies.
-    // Hence the clone, and hence only when a gate is actually open — the neutral
-    // Tenno opens none, so the ordinary path allocates nothing.
+    // A GATED FLAT BASE-DAMAGE ADD IS A CHANGE TO THE WEAPON, folded BEFORE
+    // anything reads the panel: Haven Foray's "With Overshields: Increase Base
+    // Damage by +40" makes the same weapon a plain "+40" would. The only gated
+    // grant that cannot be a term added later, since the other four join a
+    // bucket and this moves the number every bucket multiplies.
     // A FORM THAT CANNOT ZOOM CANNOT BE AIMING. The wiki's word for aiming IS
-    // "Zoom" (its page opens "Zoom (or aiming, aiming down sights (ADS))", and
-    // the Galvanized mods link it as `[[Zoom|aiming]]`), and DE settled the
-    // consequence in a patch note about Mesa's Regulators: the buffs "never
-    // actually applied due to the 'on aim' criteria not being fulfilled".
+    // "Zoom", and DE settled the consequence in a patch note about Mesa's
+    // Regulators: the buffs "never actually applied due to the 'on aim'
+    // criteria not being fulfilled". Answered HERE because it is per FORM — the
+    // Vasto aims and its Incarnon form does not.
     //
-    // Answered HERE rather than in `webapi`, for two reasons. The optimizer and
-    // every other caller get it for free — and it is per FORM, which a single
-    // request-level Tenno cannot express: the Vasto aims and its Incarnon form
-    // does not, and a cycle resolves both.
+    // A SPRINT GATE READS THE MOD ON THE GUN, which is why the Tenno is
+    // adjusted before any gate is asked. VERBATIM, from the Notes cell of both
+    // Swift Punishment and Deadly Pace: *"Equipping Amalgam Serration will
+    // allow any Warframe to reach the threshold."*
     //
-    // A SPRINT GATE READS THE MOD ON THE GUN, and this is the second reason the
-    // Tenno is adjusted before any gate is asked. VERBATIM, from the Notes cell
-    // of both Swift Punishment (Latron Incarnon Genesis) and Deadly Pace (Paris
-    // Incarnon Genesis): *"Equipping Amalgam Serration will allow any Warframe
-    // to reach the threshold without needing to mod for sprint speed on the
-    // Warframe itself."*
-    //
-    // Its "+25% Sprint Speed" is a WARFRAME stat the weapon carries — that is
-    // why the mod is barred from companion weapons — so the frame the panel
-    // describes is not the frame holding this build. The roster's own sprint
-    // figures are UNMODDED, and the slowest frame is 0.9: 0.9 x 1.25 = 1.125,
-    // which clears the 1.1 those two perks actually require and does not clear
-    // the 1.2 their cards print. The wiki's two notes are consistent with each
-    // other only at 1.1, which is what makes them evidence rather than one
-    // claim.
-    //
-    // Sprint mods are a share of the BASE, added together, so a second one
-    // joins the same sum rather than compounding.
+    // Its "+25% Sprint Speed" is a WARFRAME stat the weapon carries. The
+    // roster's sprint figures are UNMODDED and the slowest frame is 0.9, so
+    // 0.9 x 1.25 = 1.125 clears the 1.1 those perks require and not the 1.2
+    // their cards print. Sprint mods are a share of the BASE, added together.
     let mut adjusted: Option<crate::tenno_data::Tenno> = None;
     let sprint_bonus: f64 = mods
         .iter()
@@ -4631,17 +4568,12 @@ pub fn resolve_for(
             // Electricity with one lower down. So a mod's own elements enter
             // the hierarchy in REVERSE of how the card prints them.
             //
-            // Only a riven can carry two (no mod in `data/mods/` has more than
-            // one elemental bonus), so this reverses nothing else — a single
-            // element reversed is itself. It is written for MODS rather than
-            // for rivens because the rule is about a mod's stat list, and a
-            // riven is a mod here by construction.
-            //
-            // Reported as wrong output: a Phantasma Prime
-            // with Magnetic / Cold / riven(Toxin, Electricity) / Electricity
-            // reads Magnetic + Toxin in game; listed-order pairing gave
-            // Viral + Electricity instead, because Cold met the riven's Toxin
-            // where the game has it meet the riven's Electricity.
+            // Only a riven can carry two, so this reverses nothing else.
+            // A Phantasma Prime with Magnetic / Cold / riven(Toxin,
+            // Electricity) / Electricity reads Magnetic + Toxin in game;
+            // listed-order pairing gives Viral + Electricity, because Cold
+            // meets the riven's Toxin where the game has it meet the
+            // Electricity.
             //
             // The wiki's other half needs no code: "if no other elemental
             // damage mods are present, the elements on the Riven mod will
@@ -4898,37 +4830,24 @@ pub fn resolve_for(
 
     // PUNCH THROUGH: the weapon's own plus every grant, in metres of material.
     //
-    // AN AoE ATTACK GETS NEITHER, and that is a catalog rule rather than a
-    // simplification — the punch-through page states both halves: *"weapon
-    // projectiles with an area of effect (AoE) component will not Punch Through
-    // enemies or level geometry at all. Instead the projectile will explode on
-    // first contact"*, and *"Projectile AoE weapons cannot have their Punch
-    // Through stat modified"*. So a Shred on a grenade launcher is worth
-    // literally nothing, which is a thing a build screen should say out loud
-    // rather than a number it should quietly add up.
+    // AN AoE ATTACK GETS NEITHER, and the punch-through page states both
+    // halves: *"weapon projectiles with an area of effect (AoE) component will
+    // not Punch Through enemies or level geometry at all"*, and *"Projectile
+    // AoE weapons cannot have their Punch Through stat modified"*.
     //
     // The page's *"very few exceptions"* announce themselves in the DATA: an
-    // exception is an entry whose own infobox carries a punch-through figure,
-    // and the roster has exactly one attack with both (the Vulcax's 2 m). It
-    // keeps its innate depth and takes nothing from mods, which is the reading
-    // that never invents a number the wiki did not print.
-    //
-    // "AN AREA OF EFFECT COMPONENT" IS BOTH SHAPES this engine models: a
-    // RADIAL (one explosion at impact) and a LINGERING cloud (an explosion that
-    // stays and ticks). The Torid is the second kind and carries no `radial:`
-    // at all, so a rule that named only radials would have let a grenade
-    // launcher take Primed Shred — which is the exact mod the page says cannot
-    // be applied.
-    // THE ENTRY DECIDES, and the class rule is only the fallback: the Torid's
-    // Incarnon form is a BEAM with a damage radius — no `radial:`, no
-    // `lingering:` — and its own page says "Punch Through mods have no effect
-    // on the behavior of the beam", which the shape alone would have missed.
-    // A TERMINAL BLAST IS NOT AN AREA-OF-EFFECT PROJECTILE for this rule. The
-    // page's sentence is about a round that goes off on contact, which is what
-    // stops it reaching anything behind; one that bores through and detonates
-    // where the FLIGHT ends is the opposite case, and DE builds Incarnon
-    // evolutions around its punch-through hits (Braton, Paris). See
-    // `weapons_data::BlastKind` and MEASUREMENTS M50.
+    // exception is an entry whose infobox carries a punch-through figure, and
+    // the roster has one (the Vulcax's 2 m). "AN AREA OF EFFECT COMPONENT" IS
+    // BOTH SHAPES this engine models: the Torid is a LINGERING cloud with no
+    // `radial:`, so a rule naming only radials would let it take Primed Shred.
+    // THE ENTRY DECIDES and the class rule is only the fallback: the Torid's
+    // Incarnon form is a BEAM with a damage radius — neither `radial:` nor
+    // `lingering:` — and its page says "Punch Through mods have no effect on
+    // the behavior of the beam".
+    // A TERMINAL BLAST IS NOT AN AREA-OF-EFFECT PROJECTILE for this rule: the
+    // page's sentence is about a round that goes off on contact, and one that
+    // bores through and detonates where the FLIGHT ends is the opposite case.
+    // See `weapons_data::BlastKind` and MEASUREMENTS M50.
     let contact_blast = base
         .radial
         .as_ref()
@@ -5002,14 +4921,12 @@ pub fn resolve_for(
         // THE SCRIPT COMES ACROSS AT 1.0x, which is what the stance publishes,
         // and the FIGHT divides by the live attack speed.
         //
-        // It was scaled here by `1 + fr` first, and that was wrong twice over:
-        // it missed the WEAPON's own attack speed (a Magistar swings at 0.833x,
-        // so its 3.00 s combo takes 3.60 s and the fixture was firing 80 swings
-        // a minute where the game fires 66), and it froze the answer at build
-        // time, which no live attack-speed buff could then reach. `panel.fire_rate`
-        // is `base_fire_rate * (1 + mods)` — the whole attack speed in one
-        // number — so the loop divides by it the same way a charge weapon
-        // divides its draw, and Berserker Fury will shorten a swing for free.
+        // Scaling it here by `1 + fr` is wrong twice over: it misses the
+        // WEAPON's own attack speed (a Magistar swings at 0.833x, so its 3.00 s
+        // combo takes 3.60 s — 66 swings a minute against 80), and it freezes
+        // the answer at build time where no live buff can reach it.
+        // `panel.fire_rate` is the whole attack speed in one number, so the
+        // loop divides by it as a charge weapon divides its draw.
         // THE WIND-UP IS SHORTENED HERE and the DELAY is not, which is the two
         // clocks made concrete: this bucket is Killing Blow's and the two
         // evolutions', and the delay divides by the live attack speed in the
@@ -6043,34 +5960,25 @@ mod tests {
         );
     }
 
-    /// WITH OVERSHIELDS — the eighth card to ask about the player, and the first
-    /// whose grant is not a term added later.
+    /// WITH OVERSHIELDS — the first gated grant that is not a term added later.
     ///
-    /// VERBATIM (Paris_Incarnon_Genesis, Guardian's Might):
+    /// VERBATIM (Paris_Incarnon_Genesis, Guardian's Might), columns Paris |
+    /// Mk1-Paris | Paris Prime:
     ///   *Increase Base Damage by '''+X'''.
     ///   *With Overshields: Increase Base Damage by '''+Y'''.
     ///   | X = 40<br>Y = 52  | X = 50<br>Y = 40  | X = 20<br>Y = 74
-    /// (columns: Paris | Mk1-Paris | Paris Prime, from the table header.)
     ///
-    /// The assertion that matters is that the gate changes NOTHING about what
-    /// the number means: a Paris Prime holding overshields must be exactly the
-    /// weapon a plain "+74" perk would make, down to the base vector's
-    /// composition and the explosion's Condition Overload fraction. Both routes
+    /// The assertion that matters is that the gate changes NOTHING about the
+    /// number's meaning: a Paris Prime holding overshields is the weapon a
+    /// plain "+74" perk would make. Both routes
     /// THE ORIGINAL BASE IS AN ABSOLUTE, and this is the case that made it one: TWO FLAT-DAMAGE SOURCES THAT DISAGREE.
     ///
-    /// The engine held `co_base_fraction`, a ratio recomputed as
-    /// `original / evolved` wherever something raised the panel. One ratio can
-    /// describe one verdict — everything feeds, or nothing does — so a build
-    /// carrying a perk that feeds the CO term and a perk that does not had no
-    /// value it could take. It was never wrong in practice only because no such
-    /// build could be assembled: the two flat-damage perks on a weapon are
-    /// tier-mates and you pick one. The catalog says the Despair is exactly
-    /// that pair (Stalker's Vendetta excluded, Fatal Affliction not), so the
-    /// arrangement is one game update away from existing.
-    ///
-    /// Here it is built by hand, because no roster weapon can express it yet.
-    /// A base of 100, one source of +50 that feeds and one of +30 that does
-    /// not: the panel reads 180 and the CO term reads 150.
+    /// One ratio can describe one verdict — everything feeds, or nothing does
+    /// — so a build carrying a perk that feeds the CO term and one that does
+    /// not has no value it can take, which is never wrong in practice only
+    /// because the two flat-damage perks on a weapon are tier-mates. Built by
+    /// hand: a base of 100, one source of +50 that feeds and one of +30 that
+    /// does not, so the panel reads 180 and the CO term reads 150.
     #[test]
     fn two_flat_sources_that_disagree_each_land_where_they_should() {
         let mut b = WeaponBase::from_data("braton", false, &[]);
@@ -6551,13 +6459,12 @@ mod tests {
     /// its own weapon entry and resolves its own panel — which is exactly why
     /// it is worth pinning, since nothing else would notice if it stopped.
     ///
-    /// FOUR NUMBERS OUT OF ONE SENTENCE. The same row states what it takes to
-    /// max the conversion: "achievable with '''+734%''' (Sicarus) / '''+434%''' (Prime)
-    /// modded Critical Chance, or '''+567%''' (Sicarus) / '''+345%''' (Prime) in
-    /// Incarnon Form". The cap needs 0.40/0.30 = 1.3333 current crit, so each
+    /// FOUR NUMBERS OUT OF ONE SENTENCE: "achievable with '''+734%''' (Sicarus)
+    /// / '''+434%''' (Prime) modded Critical Chance, or '''+567%''' / '''+345%'''
+    /// in Incarnon Form". The cap needs 0.40/0.30 = 1.3333 current crit, so each
     /// threshold implies that form's BASE crit chance — 1.3333/8.34 = 0.160,
-    /// /6.67 = 0.200, /5.34 = 0.250, /4.45 = 0.300 — and `data/weapons/` was
-    /// written from the weapon pages, so the two sources meet here.
+    /// /6.67 = 0.200, /5.34 = 0.250, /4.45 = 0.300 — which `data/weapons/` was
+    /// written from the weapon pages to match.
     #[test]
     fn wisemans_regard_reads_each_forms_own_crit_chance() {
         let rows: &[(&str, &str, f64, f64)] = &[

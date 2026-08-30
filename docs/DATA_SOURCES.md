@@ -1169,6 +1169,40 @@ hand-added neutral rows, with a test locking the set so "everything else is
 neutral" cannot quietly come to mean "we lost a
 column".
 
+## Riven config multiplier: which published table
+
+Every POSITIVE stat on a riven is scaled by a multiplier that depends on the
+card's SHAPE — how many bonuses, and whether it carries a malus. Three published
+tables disagree and only one survives checking.
+
+| shape | wiki (ours) | riven-mirror |
+|---|---|---|
+| 2 bonuses | 0.99 | 1.0 |
+| 3 bonuses | 0.75 | 0.755 |
+| 2 + malus | 1.2375 | 1.243 |
+| 3 + malus | 0.9375 | 0.942 |
+| malus, 2 + malus | -0.495 | -0.5 |
+| malus, 3 + malus | -0.75 | -0.755 |
+
+**We take the wiki's, as the only set verified from a primary source and the
+only one INTERNALLY CONSISTENT**: 1.2375 is exactly `0.99 x 1.25` and 0.9375
+exactly `0.75 x 1.25`, so a malus pays the bonuses 25% in both rows. A typo does
+not propagate like that. riven-mirror's (MIT, read from `toUpLevel` /
+`toNegaUpLevel` in `src/warframe/rivenmod.ts`) is where the community's "1.0"
+claim comes from and does not hold together: `1.243/1.0 = 1.243` against
+`0.942/0.755 = 1.2477`. It looks like a rounding of a consistent set; the wiki's
+does not. semlar's calculator computes client-side and states no constants;
+codingace lists 1.30 / 1.10 / 0.90 by bonus COUNT with no malus row and a
+"1 bonus" case weapon rivens do not roll, so it is describing something else.
+
+TAKING 1.0 ON THE ARGUMENT THAT `base x 90` LANDS ON ROUND NUMBERS (165 / 150 /
+120 / 90) IS WRONG: the wiki publishes its own base-value column and it IS
+`base x 90` — Damage 165%, Critical Chance 149.99%, Fire Rate 60.03%, matching
+DE's export to four figures including the ugly ones. Those numbers are the BASE,
+reached before any config multiplier, so their roundness says nothing about it.
+What remains is a 1% uncertainty on two-bonus rivens, and one in-game riven with
+a known roll settles it.
+
 ## Riven pools: the rules decide, the survey checks
 
 ### What actually generates a pool

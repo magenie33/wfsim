@@ -592,35 +592,25 @@ fn intern(s: String) -> &'static str {
     leaked
 }
 
-/// The rivens a request carries, as ordinary [`ModDef`]s.
+/// The rivens a request carries, as ordinary [`ModDef`]s — the visitor's own
+/// items, built against THIS weapon's disposition, so they travel with the
+/// request and join the pool only for the build being resolved.
 ///
-/// A riven is not part of any pool — it is the visitor's own item, built
-/// against THIS weapon's disposition — so it travels with the request and
-/// joins the pool only for the build being resolved. That keeps one shared
-/// mod pool for everyone and still lets a riven be equipped, searched and
-/// optimized exactly like a mod.
-///
-/// An INCOMPLETE riven is fine and resolves to whatever it does say. A card
-/// with no stats is a mod that does nothing, which is a perfectly ordinary
-/// thing for a build to contain.
-///
-/// An UNKNOWN stat id is not that, and it is an ERROR. `resolved_slots` drops
-/// a stat it cannot find, so a typo left unrefused equips a riven that occupies
-/// a slot, drains capacity and grants nothing — silently, with the card still
-/// naming the stats. That is the one failure a damage calculator must never
-/// hide, and it is the same rule `mods` follows ("unknown mod id").
+/// An INCOMPLETE riven is fine and resolves to whatever it does say. An
+/// UNKNOWN stat id is an ERROR: `resolved_slots` drops a stat it cannot find,
+/// so a typo left unrefused equips a riven that occupies a slot, drains
+/// capacity and grants nothing, with the card still naming the stats.
 /// Why a mod id did not resolve against THIS weapon's pool.
 ///
 /// "unknown mod id: amalgam_serration" is true of the pool and false of the
-/// world, and it is what a saved build got the moment the pool learned a rule
-/// (Amalgam mods off sentinel weapons, ammo mods off an infinite reserve).
-/// A mod that exists but does not fit says so.
+/// world, and it is what a saved build gets the moment the pool learns a rule
+/// (Amalgam mods off sentinel weapons). A mod that exists but does not fit
+/// says so.
 ///
-/// It is also what a saved build gets the moment an EVOLUTION takes a mod off
-/// the weapon (a Cannonade under an unlocked Incarnon form): the mod is in the
-/// weapon's own pool and out of this build's, and saying "not in this weapon's
-/// pool" there would be flatly untrue. Which of the two it is, is decided by
-/// asking the pool twice.
+/// It is also what a saved build gets when an EVOLUTION takes a mod off the
+/// weapon: the mod is in the weapon's own pool and out of this build's, so
+/// "not in this weapon's pool" would be untrue. Asking the pool twice decides
+/// which of the two it is.
 fn mod_not_here(id: &str, weapon: &WeaponInfo, evos: &[&str]) -> String {
     let known = wfsim_engine::mods_data::classes()
         .into_iter()
@@ -1762,30 +1752,23 @@ pub fn meta_json() -> Value {
                 "armor": f.armor, "energy": f.energy, "sprint": f.sprint,
             }))
             .collect::<Vec<_>>(),
-        // THE FLOOR THE FIGHT STARTS FROM — the neutral wielder, as five numbers.
-        //
-        // It is `data/tenno/default.yaml`: THE WORST MAX-RANK FRAME THAT DOES
-        // NOT EXIST, each stat the lowest any released Warframe has at rank 30.
-        // Static, so it rides on meta rather than costing a call — and it is
-        // served rather than repeated in the page because the page would then
-        // hold a second copy of a number the engine decides.
+        // THE FLOOR THE FIGHT STARTS FROM — the neutral wielder, as five
+        // numbers. It is `data/tenno/default.yaml`: THE WORST MAX-RANK FRAME
+        // THAT DOES NOT EXIST, each stat the lowest any released Warframe has
+        // at rank 30, served rather than repeated in the page.
         //
         // WHAT IT IS FOR: the fight's Warframe fields are OVERRIDES, and an
-        // override has to be shown against the thing it overrides or the reader
+        // override has to be shown against what it overrides or the reader
         // cannot tell "0 because no frame" from "0 because that IS the floor".
-        // Four frames really do have no energy pool.
         // TWO FLOORS, because there are two kinds of wielder: a Warframe holds
-        // most of the roster and a SENTINEL holds the 21 companion weapons, and
-        // their rosters have different lowest values — 450/130/80 against
-        // 250/0/105. The page picks by the weapon.
+        // most of the roster and a SENTINEL the 21 companion weapons, with
+        // different lowest values — 450/130/80 against 250/0/105.
         // **WHAT A FIGHT CONSISTS OF**, and which of it this weapon takes away.
         //
         // `engine::scenario::SCENARIO_AXES` is the one declaration; this
-        // states its CONSEQUENCE per weapon, which is `evo_forbids`' and
-        // `auras:`' own pattern. Re-deriving the forcing rules from weapon
-        // flags on the page would be two implementations of one rule, and a
-        // forced field looks identical whoever forced it, so they would drift
-        // in silence.
+        // states its CONSEQUENCE per weapon, `evo_forbids`' own pattern.
+        // Re-deriving the forcing rules on the page is two implementations of
+        // one rule, and a forced field looks identical whoever forced it.
         //
         // The FORCED map is per weapon and only carries what is actually
         // forced: `{ "<weapon id>": { "<axis>": [value, "why"] } }`. Absent
@@ -2109,19 +2092,15 @@ pub fn meta_json() -> Value {
 /// knocking on it.
 ///
 /// A submission is written to a store and validated an HOUR LATER by the
-/// scoring job, which prints its reason to a workflow log. The player is told
-/// "sent" by the only thing that answered them — the store — so a build the
+/// scoring job, which prints its reason to a workflow log — so a build the
 /// board will never accept looks exactly like one it took, forever. Three Kuva
-/// Nukor submissions sat in that state carrying no progenitor element, refused
-/// on every run since they arrived, while the page that sent them said nothing
-/// (he had tested several and none appeared).
+/// Nukor submissions sat in that state, refused on every run since they
+/// arrived, while the page said "sent".
 ///
-/// It is the SAME function the scorer calls, not a copy of its rules: a second
-/// implementation of "is this admissible" is a second answer, and the one the
-/// player gets has to be the one the board will give. Everything the app
-/// already knows how to check itself — eight mods, every seat filled — it still
-/// checks, because a reason on screen beats a round trip; this is the backstop
-/// for the rest, including every rule added after this comment.
+/// It is the SAME function the scorer calls rather than a copy of its rules:
+/// the answer the player gets has to be the one the board will give. What the
+/// app can check itself it still checks, because a reason on screen beats a
+/// round trip; this is the backstop for the rest.
 /// THE RIVEN SHAPE a board payload carries — two flat fields, the way the
 /// endpoint stores them.
 ///
@@ -2149,12 +2128,10 @@ pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::rivens_data::R
 
 /// THE BOARD'S ROW KEY FOR EACH OF A LIST OF BUILDS.
 ///
-/// It answers one question the page could not ask before: **is what I am
-/// looking at already a row?** The pointer it used instead (`officialBuildActive`)
-/// says only whether the ACTIVE PRESET is a builtin, so a board build copied
-/// into a preset of your own, or arrived at independently, or reached by moving
-/// one mod between two slots, was offered for upload as if it were new — which
-/// is what a player reported.
+/// It answers **is what I am looking at already a row?** A pointer answer
+/// (`officialBuildActive`) says only whether the ACTIVE PRESET is a builtin, so
+/// a board build copied into a preset of your own, or reached by moving one mod
+/// between two slots, is offered for upload as if it were new.
 ///
 /// IT IS THE ENGINE'S ANSWER, and that is the whole point of the endpoint. The
 /// normalisation behind it is not something a page can reproduce: a mod list is
@@ -2279,11 +2256,10 @@ pub fn board_check_json(v: &Value) -> Value {
 /// of the formula, so a slider cannot drift from what the sim would build.
 /// EVERY TARGET'S POOLS AT THE FIGHT'S LEVEL — what the picker shows.
 ///
-/// A unit's OWN base level (a Corrupted Heavy Gunner as 700 health, 500 armor)
-/// is the number nobody fights: the scenario runs at level 9999 Steel Path,
-/// where the same unit is four orders of magnitude bigger and its armor has
-/// stopped mattering the way the raw figure suggests. Choosing between two
-/// units on their base stats is choosing on the wrong axis.
+/// A unit's OWN base level (a Corrupted Heavy Gunner at 700 health, 500 armor)
+/// is the number nobody fights: at level 9999 Steel Path the same unit is four
+/// orders of magnitude bigger, so choosing between two units on their base
+/// stats is choosing on the wrong axis.
 ///
 /// It is an ENDPOINT and not a formula in the page, because the level curves
 /// are the engine's and a second implementation in JavaScript is a second

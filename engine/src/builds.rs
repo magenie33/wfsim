@@ -1,62 +1,23 @@
-//! IS THIS A BUILD SOMEONE COULD ACTUALLY EQUIP?
+//! IS THIS A BUILD SOMEONE COULD ACTUALLY EQUIP? The simulator does not ask,
+//! deliberately: it is a calculator and slot legality is the UI's job. A
+//! SUBMISSION is the other case — fed over a network where the UI is not on the
+//! path — so this module checks the arsenal's rules and never runs inside
+//! `simulate`.
 //!
-//! The simulator does not ask. That is deliberate and stays that way — it is a
-//! calculator, and `parse_simulate` says so: "the sim runs whatever it is given
-//! — slot legality (8 main + 1 exilus) is the UI's job, and the engine resolves
-//! any mod list honestly." Answering "what would this do" for a loadout nobody
-//! can build is a legitimate thing to want.
+//! NORMALISE, THEN REJECT. [`normalize`] runs first because the evolution
+//! ladder is applied by TRUNCATION rather than by an error, so hashing before
+//! it would let a board row name one build and hold another's number.
 //!
-//! A SUBMISSION is the other case. A public board is fed over a network, where
-//! the UI is not on the path and no answer can be assumed, so the rules the
-//! arsenal enforces have to be checked here instead. Two jobs, two places: this
-//! module never runs inside `simulate`.
+//! Two builds are the SAME FIGHT when they produce the same number, which the
+//! wire payload mostly says already. What it does not say is the PAIRING, and
+//! that IS a fight: Heat/Cold/Toxin/Electric is Blast + Corrosive against
+//! Heat/Toxin/Cold/Electric's Gas + Magnetic, 12,424 DPS to 46,583 on the
+//! Torid. So the identity is the weapon, the mod sequence CANONICALISED to one
+//! representative per pairing, the evolution set and the arcanes — rivens
+//! absent on purpose, since a board counting personal random items ranks luck.
 //!
-//! # Normalise, then reject — in that order
-//!
-//! [`normalize`] runs first and is not a courtesy. The evolution ladder is
-//! applied by TRUNCATION rather than by an error ([`webapi::chosen_evolutions`]
-//! → `ladder_prefix`), so a build carrying a tier nothing unlocked is scored as
-//! the trimmed build. If the identity were hashed before that, a board row
-//! would name one build and hold another's number. Hashing the NORMALISED form
-//! makes the row and the score the same object by construction.
-//!
-//! # What identity means here
-//!
-//! Two builds are the SAME FIGHT when they produce the same number, and the
-//! wire payload already says most of that: it carries no polarities, no Forma,
-//! no slot positions and no mod ranks (every mod simulates at max rank).
-//!
-//! ORDER DOES COUNT. Mods combine ELEMENTS in listed order: Heat, Cold, Toxin,
-//! Electric is Blast + Corrosive; Heat, Toxin, Cold, Electric is Gas +
-//! Magnetic, and on the Torid that is 12,424 DPS against 46,583. A sorted
-//! identity collapses those into one row and scores whichever the sort happens
-//! to produce.
-//!
-//! ...but what counts is the PAIRING, not the positions. `elements::combine`
-//! chunks the POOLED element list and combines each chunk with `combined_of`,
-//! which is symmetric and pools both amounts; the secondaries are then ADDED
-//! into a vector. So neither the order inside a pair nor the order of the pairs
-//! among themselves is part of the fight — only which elements share a chunk,
-//! and which one trails.
-//!
-//! Treating either as significant is one notch too fine: it puts the same
-//! weapon on the board twice at the same score with two elemental mods
-//! swapped.
-//!
-//! CANONICALISE ON THE POOLED SEQUENCE, never on mod slots. Two mods of one
-//! element are ONE entry to the engine, so every position after them shifts —
-//! a canonicaliser that chunks the MOD list agrees with the engine until a
-//! build carries a duplicate element and then quietly scores a different fight:
-//! Primed Heated Charge and Scorch pool, and Viral + Heat publishes as Blast +
-//! Toxin.
-//!
-//! So the identity is the weapon, the mod sequence CANONICALISED to one
-//! representative per PAIRING, the evolution set, and the arcanes.
-//!
-//! Rivens are absent on purpose: they are personal random
-//! items, so a board that counted them would rank luck. That also removes the
-//! one free-text field a player authors — a riven's name — from anything that
-//! would ever be uploaded.
+//! CANONICALISE ON THE POOLED SEQUENCE, never on mod slots: two mods of one
+//! element are ONE entry to the engine.
 
 use std::collections::BTreeSet;
 
@@ -99,25 +60,18 @@ pub struct BuildAxis {
 
 /// WHAT A BUILD CONSISTS OF, declared once for the whole product.
 ///
-/// A build travels through eight representations — the page's live state, a
-/// stored preset, a simulate request, an optimize scope, a ranked row, a board
-/// submission, a board record, a share link. A hand-written answer to "which
-/// axes are there" in each of them means adding one is eight edits, and the
-/// copy nobody edits drops that axis in silence, because a missing axis and a
-/// defaulted axis are the same absence
-/// on the wire.
-///
-/// It happened four times: `mode` lost from the board submission,
-/// `valence` from the worker's table, both from the share tuple, and `valence` from the optimizer's "+ add" — the
-/// last one measured by a player, who was shown 26 KPM on a ranking and 15 in
-/// the simulator for what he had been told was the same build.
+/// A build travels through eight representations, from the page's live state
+/// to a share link. A hand-written answer to "which axes are there" in each
+/// means adding one is eight edits, and the copy nobody edits drops that axis
+/// in silence, because a missing axis and a defaulted one are the same absence
+/// on the wire. It happened four times, the last measured by a player shown 26
+/// KPM on a ranking and 15 in the simulator for the same build.
 ///
 /// This does not unify the SPELLINGS, which are protocol details and would cost
-/// a migration of every stored preset to change. It unifies the LIST: it is
-/// served at `/api/meta.build_axes`, every surface declares which axis each of
-/// its own fields carries, and `scripts/check_build_axes.mjs` asserts the
-/// coverage is total. A surface that has never heard of a new axis then fails
-/// on the day the axis is added, instead of quietly halving somebody's damage.
+/// a migration of every stored preset. It unifies the LIST: served at
+/// `/api/meta.build_axes`, with every surface declaring which axis each of its
+/// fields carries and `scripts/check_build_axes.mjs` asserting the coverage is
+/// total.
 ///
 /// The other half of the guarantee is not a list at all and cannot go stale:
 /// every ranked row carries a simulate request that reproduces it, and
@@ -621,30 +575,24 @@ fn normalize_with(
 /// THE BOARD'S ADMISSION RULE: a legal build, and the shape THIS BENCHMARK asks
 /// for.
 ///
-/// `validate` answers whether a build could be equipped. This answers whether it
-/// belongs on a particular leaderboard, and those are different questions — four
-/// mods is a perfectly legal build and a meaningless board row.
+/// `validate` answers whether a build could be equipped; this answers whether
+/// it belongs on a leaderboard. Four mods is a legal build and a meaningless
+/// board row.
 ///
-/// THE RULE IS THE BENCHMARK'S, not a global constant. A
-/// benchmark owns its fight; it owns what it admits for the same reason, and a
-/// second ruler may reasonably want something else entirely. What it must NOT
-/// own is identity — `canonical_mods` is universal, because two boards that
-/// disagreed about whether two builds are the same build would break dedup and
-/// displacement on both.
+/// THE RULE IS THE BENCHMARK'S, not a global constant: a benchmark owns its
+/// fight, so it owns what it admits. What it must NOT own is identity —
+/// `canonical_mods` is universal, because two boards disagreeing about whether
+/// two builds are the same would break dedup and displacement on both.
 ///
-/// "FULL" IS COMPUTED PER WEAPON. Eight main slots for everything, but the
-/// evolution tiers this weapon actually has (Laetum 5, Boar Prime 4, an ordinary
-/// rifle 0) and the arcane seats it actually has (an Arch-Gun 2, a sentinel
-/// weapon 0). A weapon with nothing to fill is complete by having filled it,
-/// which is what lets one rule cover a roster of different shapes.
+/// "FULL" IS COMPUTED PER WEAPON: eight main slots for everything, plus the
+/// evolution tiers and arcane seats this weapon has. A weapon with nothing to
+/// fill is complete by having filled it.
 ///
-/// THE EXILUS SLOT IS OUTSIDE IT, in both directions: a build is not more
-/// complete for having one and not less for lacking one, and a submission that
-/// arrives with one is accepted with the exilus dropped rather than refused
-/// ("如果带着exilus测试，我们会收入然后去掉exilus"). The DROPPING happens in the
-/// client and has to: this payload is a flat list with no slot positions, and an
-/// exilus-eligible mod is legal in a main slot, so nothing here could tell which
-/// entry came out of the exilus slot.
+/// THE EXILUS SLOT IS OUTSIDE IT in both directions — a build is not more
+/// complete for having one and not less for lacking one — and a submission
+/// arriving with one is accepted with the exilus DROPPED rather than refused.
+/// The dropping happens in the client and has to: this payload is a flat list
+/// with no slot positions, and an exilus-eligible mod is legal in a main slot.
 pub fn validate_for_board(
     benchmark: &str,
     weapon: &str,

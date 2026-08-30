@@ -37,44 +37,19 @@ struct EvoFile {
     /// the explicit opt-out nothing uses yet.
     ///
     /// The other reading — that the CO catalog "lists only discrepant attacks",
-    /// so an unlisted perk feeds the term in full — loses 15 to 0:
+    /// so an unlisted perk feeds the term in full — loses 15 to 0. Eleven
+    /// catalog rows print a DOUBLE value ("100 or 124"), the only rows where
+    /// anyone measured an evolved weapon, and all eleven exclude; four measured
+    /// perks agree (M49, M50), three of them unlisted. The Torid's is the
+    /// decisive shape: two tier-2 perks giving panels of 102 and 82 both solve
+    /// to a CO base of ~51.
     ///
-    ///   · ELEVEN catalog rows print a DOUBLE value ("100 or 124") — the only
-    ///     rows where anyone measured the weapon with its evolution installed.
-    ///     All eleven came back excluded.
-    ///   · ZERO rows anywhere measured the evolved case and found it included.
-    ///     The "100%" rows print the UNEVOLVED base in their own damage column,
-    ///     so they say the CO base equals the base of a weapon with no
-    ///     evolution on it, which is true by construction and says nothing
-    ///     about this question.
-    ///   · FOUR perks across two weapons were measured, and all
-    ///     four are excluded — the Dual Toxocyst's two (M49) and the Torid
-    ///     Incarnon's two (M50). One of those four WAS on the catalog and three
-    ///     were not, so the catalog's silence has now been tested three times
-    ///     and meant "unmeasured" every time.
-    ///
-    /// The Torid's is the decisive shape: its two tier-2 perks give panels of
-    /// 102 and 82, and every reading off BOTH solves to a CO base of ~51 — the
-    /// unevolved value, constant across the pair. A term that fed on the
-    /// evolution would have solved to 102 and 82 and would not have agreed
-    /// with itself.
-    ///
-    /// AND THE ERROR IS ASYMMETRIC. Including it OVERSTATES, which for a
-    /// calculator whose promise is matching in-game measurements is the worse
-    /// direction: it ranks weapons on damage the game does not deal. It reaches
-    /// 186 weapon+perk pairs, by 37% on average at two Galvanized stacks
-    /// against two status types.
-    ///
-    /// THE FLAG IS STILL THE PERK's ON THE `Adding` SIDE, not the weapon's,
-    /// because the catalog names perks and a perk reaches both forms of its
-    /// transform group. `false` on a perk is how a measured exception gets
-    /// recorded there.
-    ///
-    /// ON A `Multiplying` ENTRY THE CLASS ANSWERS FIRST and this flag is never
-    /// read (M51, and see [`EvolutionDef::excludes_co_base`]). The two forms of
-    /// one group can be different classes with OPPOSITE answers — the Torid is
-    /// exactly that — so a perk's flag must not be able to reach the form it
-    /// was not measured on.
+    /// AND THE ERROR IS ASYMMETRIC — including it OVERSTATES, the worse
+    /// direction for a calculator promising in-game numbers, and reaches 186
+    /// weapon+perk pairs by 37% on average. THE FLAG IS THE PERK'S rather than
+    /// the weapon's, because the catalog names perks. ON A `Multiplying` ENTRY
+    /// THE CLASS ANSWERS FIRST and this is never read (M51): the two forms of
+    /// one group can be different classes with OPPOSITE answers.
     #[serde(default)]
     co_base_excludes_this_evolution: Option<bool>,
     /// …and on WHICH FORM it was measured, when the reading covers one of them.
@@ -177,34 +152,21 @@ enum EvoEffect {
     /// +14". It is applied UNCONDITIONALLY, i.e. the run is modelled as
     /// holding it from t = 0.
     ///
-    /// Held is EXACT here, not an approximation, and the timing is why: the
-    /// bonus lands the moment an empty reload BEGINS and does not wait for it
-    /// to finish (measured in game; the wiki claims the
-    /// opposite and loses, as it does to every measurement). So there is no
-    /// gap: the magazine empties, the reload starts, the buff is already back,
-    /// and it "lasts indefinitely until a manual reload is initiated while the
-    /// magazine is not empty" — which the sim never does. Under the wiki's
-    /// reading the buff would instead be DOWN for one reload every cycle, and
-    /// holding it would overstate the build.
+    /// Held is EXACT rather than an approximation, and the timing is why: the
+    /// bonus lands the moment an empty reload BEGINS (measured in game; the
+    /// wiki claims the opposite), so there is no gap — the magazine empties,
+    /// the reload starts, the buff is already back, and it "lasts indefinitely
+    /// until a manual reload is initiated while the magazine is not empty",
+    /// which the sim never does.
     ///
-    /// **THIS IS THE EXCEPTION, AND THE NAME SAYS SO**.
-    /// The DEFAULT for a reload-triggered effect is that it fires when the
-    /// reload COMPLETES; a new one gets its own variant and that default,
-    /// rather than reusing this. Two conditions have to hold together here
-    /// and neither is the ordinary case:
+    /// **THIS IS THE EXCEPTION, AND THE NAME SAYS SO.** The DEFAULT for a
+    /// reload-triggered effect is that it fires when the reload COMPLETES; two
+    /// unusual conditions hold together here — the magazine must be EMPTY, and
+    /// it fires when the reload STARTS — so the variant stays narrow.
     ///
-    ///   1. the magazine must be EMPTY (a manual reload does not count — it
-    ///      is what takes the bonus away);
-    ///   2. it fires when the reload STARTS, not when it ends.
-    ///
-    /// Only Boar Prime's Reified Bane is known to work this way. Whether any
-    /// other evolution ever joins it is open, so the variant stays narrow: a
-    /// general "on reload" effect is not this one with a flag.
-    ///
-    /// It stays its own variant rather than being folded into `FlatBaseDamage`
-    /// because it is a BUFF: `resolve` turns it into an `EvoBdBuff` so the bar
-    /// can show it and a card can scale it back out — opening at ONE stack,
-    /// which is the state a default test starts in.
+    /// Its own variant rather than part of `FlatBaseDamage` because it is a
+    /// BUFF: `resolve` turns it into an `EvoBdBuff` so the bar can show it and
+    /// a card can scale it back out.
     FlatBaseDamageOnEmptyReload(f64),
     /// A handling / mobility / multi-target stat with no single-target damage
     /// payload — recoil, accuracy, punch through, projectile speed, holstered
@@ -408,16 +370,14 @@ enum EvoEffect {
     /// The window still matters for what comes AFTER the reload: a transmute,
     /// or a second reload, inside the remaining seconds.
     ///
-    /// It is an ordinary reload-speed bonus in every other respect — which is
-    /// the correction that made it worth implementing. The Phenmor's page adds
-    /// *"Affects untransformed Phenmor. Can affect transition into Incarnon form
-    /// with a well-timed manual reload. Does not affect transition from Incarnon
-    /// back to base form."* and the last clause is WRONG: nothing about the buff
-    /// knows which direction an animation is going, so the revert takes it too.
-    /// Ready Retaliation. NO DURATION: the buff is scoped to the reload
-    /// action — it arrives when the reload starts and is gone when it ends
-    /// — so there is no window to state and nothing that
-    /// can lapse halfway through.
+    /// An ordinary reload-speed bonus in every other respect. The Phenmor's
+    /// page adds *"Can affect transition into Incarnon form with a well-timed
+    /// manual reload. Does not affect transition from Incarnon back to base
+    /// form."* and the last clause is WRONG: nothing about the buff knows which
+    /// direction an animation is going, so the revert takes it too.
+    /// Ready Retaliation. NO DURATION: the buff is scoped to the reload action,
+    /// arriving when it starts and gone when it ends, so there is no window to
+    /// state and nothing that can lapse halfway through.
     ReloadSpeedOnEmptyReload { value: f64 },
     /// Prelude of Might: "With Critical Chance below 40%: Increase Base
     /// Critical Damage Multiplier by +3x", carrying the wiki's note on the same
@@ -448,27 +408,22 @@ enum EvoEffect {
     /// Multishot for 2s. Stacks up to 3x."
     /// Blazing Barrel: *"On Firing: +X Multishot. Stacks up to Nx."*
     ///
-    /// `base` is which bracket the card names, and it is the whole reason one
-    /// perk name needs one variant rather than two: the Strun family reads
-    /// "+0.05 BASE Multishot" and the Sybaris family "+5% Multishot", which are
-    /// different numbers the moment a multishot mod is equipped.
-    ///
-    /// NO DURATION — neither wiki page states one, and both state the reset
-    /// instead: the stacks stand until a reload (`ClearedBy::Reload`).
+    /// `base` is which bracket the card names, and is why one perk name needs
+    /// one variant rather than two: the Strun family reads "+0.05 BASE
+    /// Multishot" and the Sybaris family "+5% Multishot". NO DURATION — neither
+    /// page states one and both state the reset instead, so the stacks stand
+    /// until a reload (`ClearedBy::Reload`).
     /// A STACKING BUFF, stated entirely in data: what triggers it, what it
     /// grants, how much, how many, how long, and what takes it.
     ///
-    /// Written after the fourth perk in a row that needed a new enum variant to
-    /// say something the three before it had already said. The vocabulary the
-    /// sim runs on — [`crate::loadout::BuffTrigger`], [`crate::loadout::BuffGrant`],
-    /// [`crate::loadout::ClearedBy`], [`crate::loadout::BuffDecay`] — is
-    /// expressive enough on its own; what was missing was a way for a yaml to
-    /// NAME a combination of it. A perk whose trigger and grant both exist is
-    /// now a yaml block and no Rust at all.
-    ///
+    /// The vocabulary the sim runs on — [`crate::loadout::BuffTrigger`],
+    /// [`crate::loadout::BuffGrant`], [`crate::loadout::ClearedBy`],
+    /// [`crate::loadout::BuffDecay`] — is expressive enough on its own; what
+    /// was missing was a way for a yaml to NAME a combination of it, so a perk
+    /// whose trigger and grant both exist is a yaml block and no Rust at all.
     /// The older single-purpose variants are kept where they carry reasoning a
     /// generic one cannot (Ready Retaliation's arming, Reaver's Rapture's burst
-    /// arithmetic); this is for the plain ones.
+    /// arithmetic).
     StackingGrant {
         trigger: crate::loadout::BuffTrigger,
         grant: crate::loadout::BuffGrant,
@@ -1032,52 +987,19 @@ impl EvolutionDef {
     ///
     /// **A DECLARATION WINS, AND IT IS SCOPED TO WHAT WAS MEASURED.**
     /// `only_form` exists because a perk reaches BOTH entries of its transform
-    /// group while a reading comes off ONE of them: the Torid's Incarnon form
-    /// was measured (M50) and its base form was not, and they are not even the
-    /// same CO class. A declaration that does not reach this form falls through
-    /// to the default below rather than answering for it.
+    /// group while a reading comes off ONE: the Torid's Incarnon form was
+    /// measured (M50) and its base form was not, and the two are not even the
+    /// same CO class. A declaration that does not reach this form falls through.
     ///
-    /// **AN UNDECLARED PERK IS ANSWERED BY THE ENTRY'S CO CLASS**, and the two
-    /// halves have very different amounts of evidence behind them:
-    ///
-    ///   · `Adding` — EXCLUDED. Fifteen to zero. Eleven catalog rows print a
-    ///     DOUBLE damage value ("100 or 124 (with Evolution II)") and are the
-    ///     only rows where anyone measured a weapon with its evolution
-    ///     installed; all eleven exclude. Four owner measurements agree — the
-    ///     Dual Toxocyst's two tier-2 perks (M49) and the Torid Incarnon's two
-    ///     (M50). Against that, NOTHING anywhere has measured an evolved weapon
-    ///     and found its evolution fed the term: every other catalog row prints
-    ///     a single number that is the UNEVOLVED base, so it says the CO bonus
-    ///     equals the base of a weapon with no evolution on it, which is true
-    ///     by construction. Three of the four measurements are on perks the
-    ///     catalog does not list, so its silence has been tested three times
-    ///     and meant "unmeasured" every time.
-    ///   · `Multiplying` — INCLUDED, and it is the CLASS that answers rather
-    ///     than a default the perks happen to agree with. MEASURED on the
-    ///     Torid's base form (M51), which is `Multiplying` where the form of
-    ///     M50 is `Adding`: the same two tier-2 perks, +51 and +31, and the CO
-    ///     multiplier came back 1.40 and 1.80 under BOTH — identical, where a
-    ///     term reading the unevolved base would have printed 1.265 under the
-    ///     +51 and 1.305 under the +31. The two answers are OPPOSITE: which
-    ///     base the term reads is decided by the CLASS, not upstream of it.
+    /// **AN UNDECLARED PERK IS ANSWERED BY THE ENTRY'S CO CLASS**: `Adding`
+    /// EXCLUDES (15 measurements to 0, see [`EvolutionDef::excludes_co_base`])
+    /// and `Multiplying` INCLUDES, measured on the Torid's base form (M51).
     ///
     /// So THE CLASS ANSWERS FIRST ON A `Multiplying` ENTRY, above the
-    /// declaration. A perk reaches every form of its
-    /// transform group and only one of them was ever the measured one, so a
-    /// reading off an `Adding` form must not be able to reach across and dilute
-    /// a `Multiplying` one — which the Torid's pair would do today without
-    /// `only_form`, and which the NEXT such perk would do by forgetting it. The
-    /// generalisation is deliberate and runs ahead of the catalog: the wiki
-    /// lists a fraction for a minority of entries, and the owner's call is that
-    /// this rule beats that table, to be revisited PER WEAPON if a measurement
-    /// ever contradicts it.
-    ///
-    /// THE RESERVED SLOT is the per-entry `co_base_fraction:` in the weapon
-    /// yaml, which is 1.0 on all 26 `Multiplying` entries and is where a future
-    /// measurement would land — one weapon's file, with nothing here to change.
-    ///
-    /// `Inert` gets the Adding answer and never reads it — it computes no CO
-    /// term at all.
+    /// declaration: a reading off an `Adding` form must not reach across and
+    /// dilute a `Multiplying` one. The generalisation runs ahead of the catalog
+    /// deliberately, to be revisited PER WEAPON in that weapon's
+    /// `co_base_fraction:`. `Inert` gets the Adding answer and never reads it.
     pub fn excludes_co_base(
         &self,
         form: crate::weapons_data::FormKind,
@@ -2973,47 +2895,26 @@ use crate::loadout::WeaponBase;
         // Each line is a DECISION, and the reason is beside the effect in its
         // own yaml. Kept as a flat list so a diff here is readable.
         let expected: Vec<&str> = vec![
-            // (The four `unlocks_weapon` tier-1 entries are NOT here.
-            // They apply nothing — the form is a separate weapon with
-            // its own stats — but they are no longer INERT: `UnlocksForm`
-            // carries the form's id, and reading it is what lets a form
-            // request imply the evolution that IS that form instead of
-            // silently falling back to base. Inert meant the
-            // target was dropped at parse time and "which evolution unlocks
-            // the form" had to be guessed from ladder position.)
-            // (RELOAD CADENCE keeps no Ready Retaliation here. Nobody has
-            // published their WINDOW: only the
-            // Phenmor's page states one ("for 6 seconds") and the rest say
-            // "+100% Reload Speed" and stop, so a duration looked like a number
-            // that would have to be borrowed from another weapon.
-            //
-            // There was nothing to borrow. The buff is scoped to the RELOAD
-            // ACTION — it arrives when the reload starts and is gone when it
-            // ends — so the silence was not missing data,
-            // it was the absence of a thing to say. All twelve work now, the
-            // Phenmor's 6 s is the buff icon's life rather than the bonus's,
-            // and the loader no longer demands a window it should never have
-            // wanted.)
+            // (The four `unlocks_weapon` tier-1 entries are NOT here: they
+            // apply nothing, the form being a separate weapon with its own
+            // stats. Not INERT either — `UnlocksForm` carries the form's id,
+            // which lets a form request imply the evolution that IS it.)
+            // (RELOAD CADENCE keeps no Ready Retaliation. Only the
+            // Phenmor's page states a window ("for 6 seconds") and the rest
+            // stop at "+100% Reload Speed", because the buff is scoped to the
+            // RELOAD ACTION — the Phenmor's 6 s is the buff icon's life rather
+            // than the bonus's.)
             // ---- AMMO EFFICIENCY, and it is CONDITIONAL -----------------
-            // Not an indirect stat: efficiency is real DPS the moment a
-            // reserve runs dry. But one is gated on a movement state and one
-            // on a headshot window, and applying either unconditionally would
-            // overstate the build. They also land on the Laetum's Incarnon
-            // magazine, which is charge-backed and takes no efficiency at all.
+            // Real DPS the moment a reserve runs dry, but one is gated on a
+            // movement state and one on a headshot window, so applying either
+            // unconditionally would overstate the build. They also land on the
+            // Laetum's Incarnon magazine, which takes no efficiency at all.
             // ---- ONE-STACK STACKING BUFFS -------------------------------
-            // A "timed buff" is a stacking buff with ONE stack — same trigger,
-            // same window — so it uses that vocabulary and lands here when its
-            // PAYLOAD is one the engine does not model. The label names the
-            // payload, so the two are told apart.
-            //
-            // Ripper Rounds: punch through, multi-target only. Neurotoxin:
-            // "+70% Toxin for 3 s on headshot" — REAL DPS on a weapon played
-            // at 100% headshots, and the one genuine gap in this list. It is
-            // also `currently_broken` in game (DE's wiki, re-read 2026-08-03:
-            // "Currently does not work"), and `apply` skips broken evolutions
-            // wholesale, so the two cancel out today. Whoever models a
-            // per-type buff payload should check DE fixed the perk first —
-            // a mechanic that cannot be measured cannot be verified.
+            // A "timed buff" is a stacking buff with ONE stack, landing here
+            // when its PAYLOAD is one the engine does not model. Ripper Rounds:
+            // punch through, multi-target only. Neurotoxin: "+70% Toxin for 3 s
+            // on headshot" — the one genuine gap here, though it is also
+            // `currently_broken` and `apply` skips those, so they cancel out.
             "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage_bonus",
             // WHAT EACH ENTRY IS WAITING ON: docs/INCARNON.md §"Perks this
             // loader does not model, and what each needs".
@@ -3302,22 +3203,17 @@ mod furis_co_split_tests {
     /// THE RATCHET. What the app does not model may go DOWN and not up.
     ///
     /// The disclosure is derived, so the count is honest without anyone
-    /// maintaining it — and honest is not the same as improving. A tag that
-    /// nobody is obliged to remove becomes a way of feeling finished
-    /// (asking whether this transparency is good for the
-    /// work as well as for the reader).
-    ///
-    /// Lower this number when a kind gets implemented; that is the only edit
-    /// this line should ever see.
+    /// maintaining it — and honest is not the same as improving: a tag nobody
+    /// is obliged to remove becomes a way of feeling finished. Lower this
+    /// number when a kind gets implemented; that is the only edit it takes.
     /// *"Does not affect Incarnon Form"* — obeyed, on the two perks where it
     /// is worth a number.
     ///
-    /// Eleven evolutions carry the sentence and nine of them qualify something
-    /// this sim does not model anyway (ammo capacity, range, an AoE hold), so
-    /// the qualifier was transcribed as a NAMED INERT effect and the perk it
-    /// qualified went on applying to both forms. On the two that raise a
-    /// MAGAZINE that was a real over-valuation: a Zylok Incarnon was fired with
-    /// 20 rounds where the card gives it 12.
+    /// Eleven evolutions carry the sentence and nine qualify something this sim
+    /// does not model anyway, so the qualifier is a NAMED INERT effect and the
+    /// perk applies to both forms. On the two that raise a MAGAZINE that is a
+    /// real over-valuation: a Zylok Incarnon fired with 20 rounds where the
+    /// card gives it 12.
     ///
     /// Asserted on BOTH forms of BOTH weapons, because a gate that skips
     /// everything passes the half of this that only checks the Incarnon.
@@ -3519,37 +3415,26 @@ mod after_mods_layer_tests {
         );
     }
 
-    /// A `# from:` COMMENT IS A CUT, AND A CUT AT THE WRONG PLACE PAYS TWICE.
+    /// A `# from:` COMMENT IS A CUT, AND A CUT AT THE WRONG PLACE PAYS TWICE:
+    /// the intake splits a card's sentence and files each piece as an effect,
+    /// so a split INSIDE a clause makes the head an unconditional grant the
+    /// card never had and the tail an inert remainder. Three such faults,
+    /// invisible to every other test:
     ///
-    /// The intake transcribes a card by splitting its sentence and filing each
-    /// piece as an effect, leaving `# from: "<fragment>"` above each one. When
-    /// the split lands INSIDE a clause, the head becomes an unconditional grant
-    /// the card never had and the tail becomes an inert remainder — and the
-    /// perk pays for both, because nothing downstream can tell that the two
-    /// were one sentence. Three faults of exactly this shape, all found on
-    /// 2026-08-12 and all invisible to every other test:
+    ///   - the Dera's High Ground, "+25% of current Status Chance" cut at the
+    ///     plus sign into a flat +25% base crit chance;
+    ///   - the Kunai's Deathtrap Trigger, "…by +1.4x for 4s" cut into a
+    ///     PERMANENT +1.4x beside its window.
     ///
-    ///   - the Dera's High Ground: "Increase Base Critical Chance by +25% of
-    ///     current Status Chance" cut at the plus sign into a flat +25% base
-    ///     crit chance plus an inert "of current Status Chance";
-    ///   - the Kunai's Deathtrap Trigger: "…by +1.4x for 4s" cut into a
-    ///     PERMANENT +1.4x beside the on-equip window it belongs to;
-    ///   - Vicious Promise, on all three Paris: both bullets cut before "on
-    ///     undamaged enemies", so the perk paid unconditionally AND on an
-    ///     undamaged target.
-    ///
-    /// So a fragment must END where its clause ends: at a sentence stop, a
-    /// comma, a semicolon, or the end of the description. Anything else is a
-    /// sentence taken apart in the middle, whatever the pieces then load as.
+    /// So a fragment must END where its clause ends: a sentence stop, a comma,
+    /// a semicolon, or the end of the description.
     /// A GATED PERK ASKS THE FRAME HOLDING THE GUN — both sides of it.
     ///
-    /// Fortress Salvo is "With Armor Over 450: +4 Punch Through", and it paid
-    /// out to everybody until 2026-08-20 because its arm read `value` and never
-    /// looked at `condition:`. The owner caught it by noticing a perk that wants
-    /// 450 armour working with none.
-    ///
+    /// Fortress Salvo is "With Armor Over 450: +4 Punch Through", and an arm
+    /// that reads `value` without looking at `condition:` pays it to everybody.
     /// THE NEUTRAL FRAME IS THE FLOOR OF EVERY RELEASED ONE (105 armour), so it
-    /// is the case a reader meets by default and the one the gate must shut on.
+    /// is the case a reader meets by default and the one the gate must shut
+    /// on.
     #[test]
     fn a_gated_perk_asks_the_frame_holding_the_gun() {
         use crate::loadout::{resolve, StackPolicy, WeaponBase};

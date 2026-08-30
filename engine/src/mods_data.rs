@@ -1031,14 +1031,11 @@ impl ModDescInfo {
 /// Description info by mod id — the VERBATIM in-game text with each `X`
 /// filled, which is what the picker and a configured slot display.
 ///
-/// Covers EVERY class. Scanning one directory — `mods/pistol/` — silently
-/// falls every other pool back to the engine's modeled effect lines, which only
-/// state what
-/// the ENGINE models, so anything unmodeled on a mod simply vanished from the
-/// UI — the card looked like it did less than it does.
-///
-/// None means the file genuinely has no `description`, and the caller falls
-/// back to the effect lines.
+/// Covers EVERY class. Scanning one directory silently falls every other pool
+/// back to the engine's modeled effect lines, which state only what the ENGINE
+/// models — so anything unmodeled on a mod vanishes from the UI and the card
+/// reads as doing less than it does. None means the file genuinely has no
+/// `description`, and the caller falls back to the effect lines.
 /// Where in `hay` this effect is SPOKEN ABOUT, if it is at all.
 ///
 /// A kind reads `<what>_<qualifiers>` and a card names the `<what>`:
@@ -1118,24 +1115,8 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
         for (_, text) in crate::data::files_under("mods/") {
             let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
             let Some(desc) = mf.description else { continue };
-            // The X's in a description are consumed IN ORDER, and an effect
-            // can supply more than one: "+X% Multishot for Xs. Stacks up to
-            // Xx." is one buff spending three of them.
-            //
-            // But the values are matched to placeholders BY KIND, not by
-            // position, because a description is free to write any of them as
-            // a literal — Galvanized Crosshairs spells out its 12s and its 5x
-            // and leaves only two X's, both for crit. Feeding values in effect
-            // order there put the duration in a crit slot: "+1200% Critical
-            // Chance", with everything after it shifted up one.
-            //
-            // Constants ride as (v, v) so `at(rank)` interpolates them to
-            // themselves. A kind with nothing left to give STOPS the fill, so
-            // the placeholder stays visible and
-            // `desc_info_fills_every_x_across_the_pool` fails, rather than a
-            // wrong-kind value quietly taking the slot.
-            // Values are matched to placeholders by KIND and by SENTENCE, not by
-            // position in a flat queue.
+            // Values are matched to placeholders by KIND and by SENTENCE,
+            // never by position in a flat queue.
             //
             // A `X%`-style placeholder opens the next effect that has a
             // rank-varying value; "for Xs" and "up to Xx" then describe THAT
@@ -1559,19 +1540,14 @@ mod tests {
 
     /// AN EQUIP RULE THE MOD DECLARES DECIDES EVERY POOL — derived, both ways.
     ///
-    /// This was a 136-row table, one line per weapon, and its stated reason was
-    /// good: "a check that recomputes the rule agrees with a wrong rule". What
-    /// changed is where the rule LIVES. It is not in this file and never was —
-    /// the mod's own yaml says `requires_weapon: semi_auto`, and
-    /// `every_cannonade_states_both_of_its_rules` pins that value against the
-    /// card. So this does not recompute anything: it asks the MOD what it
-    /// requires, asks the WEAPON what it is, and checks the pool agreed.
-    ///
-    /// The table cost one edit per weapon — `mods_data.rs` was touched in six
-    /// of six weapon-intake commits on 2026-08-15, and only ever for this — and
-    /// an audit found it reproduced by the rule 136 times out of 136, with no
-    /// exception in it at all. A snapshot with no surprises in it is a snapshot
-    /// of a rule.
+    /// A 136-row table, one line per weapon, guards against "a check that
+    /// recomputes the rule agrees with a wrong rule" — but the rule does not
+    /// live in this file: the mod's own yaml says `requires_weapon: semi_auto`
+    /// and `every_cannonade_states_both_of_its_rules` pins that against the
+    /// card. So this recomputes nothing; it asks the MOD what it requires, the
+    /// WEAPON what it is, and checks the pool agreed. The table cost one edit
+    /// per weapon and reproduced the rule 136 times out of 136, with no
+    /// exception in it — a snapshot with no surprises is a snapshot of a rule.
     ///
     /// BOTH DIRECTIONS, because each alone passes on a different bug: "offered
     /// ⇒ eligible" alone passes on a filter that offers nothing, and "eligible
@@ -1797,16 +1773,10 @@ mod tests {
     ///
     /// The authority is the wiki's `Rifle_Mods` / `Pistol_Mods` /
     /// `Shotgun_Mods` tables, which tag the genuinely restricted ones
-    /// "Exclusive to PvP". This pins the survivors as an explicit allowlist,
-    /// so neither mistake can be made silently: a new PvP-path mod fails until
-    /// someone checks that table.
-    ///
-    /// The SHOTGUN import is what this test was written for. The
-    /// generator brought 15 mods in under that path; `Shotgun_Mods` tags ten
-    /// of them "Exclusive to PvP" — Bounty Hunter, Crash Shot, Flak Shot,
-    /// Hydraulic Chamber, Kill Switch, Loaded Capacity, Loose Chamber,
-    /// Momentary Pause, Prize Kill, Shred Shot — and they were deleted. The
-    /// five below are the ones the table leaves unmarked.
+    /// "Exclusive to PvP". This pins the survivors as an explicit allowlist, so
+    /// a new PvP-path mod fails until someone checks that table — as the
+    /// SHOTGUN import did, where the generator brought 15 mods in under the
+    /// path and `Shotgun_Mods` tagged ten of them.
     #[test]
     fn only_pve_legal_conclave_mods_are_in_the_pools() {
         const PVE_LEGAL: [&str; 13] = [
@@ -2124,17 +2094,12 @@ mod class_tests {
 
 /// A CARD'S SENTENCES AND ITS EFFECTS ARE ONE ORDER.
 ///
-/// Filling the X placeholders by walking the effects forward and nothing else
-/// makes the yaml's effect ORDER an unwritten part of the card's meaning — a
-/// contract that is real, undocumented and unchecked, and that a card like
-/// Winds of Purity breaks.
-///
-/// The filler now asks the LINE first (`effect_spoken_at`), so an effect the
-/// card names is found wherever it sits. This rule therefore no longer guards
-/// the numbers for a named effect — it guards the two things left: the
-/// FALLBACK, which is still positional and is what an unnamed effect gets, and
-/// a reader, for whom a yaml listed in a different order than the card it
-/// prints is a puzzle with no answer in it.
+/// Filling the X placeholders by walking the effects forward makes the yaml's
+/// effect ORDER an unwritten part of the card's meaning — which a card like
+/// Winds of Purity breaks. The filler asks the LINE first
+/// (`effect_spoken_at`), so what this guards is the two things left: the
+/// FALLBACK, still positional and what an unnamed effect gets, and a reader,
+/// for whom a yaml ordered differently from the card is a puzzle.
 ///
 /// The check is derived: it does not know what any mod does. For each effect
 /// whose KIND names something the description actually says ("status chance",
@@ -2346,71 +2311,17 @@ mod card_values_tests {
 
 #[cfg(test)]
 mod weapon_exclusive_survey {
-    /// EVERY WEAPON-EXCLUSIVE GUN MOD OUR ROSTER CAN EQUIP, and how many of
-    /// them are still missing.
-    ///
-    /// A mod that fits ONE weapon is invisible to every other check we have:
-    /// the pools are built from what `data/mods/` holds, so a mod nobody
-    /// transcribed is a mod the builder cannot offer and nothing notices. The
-    /// Dread's Unseen Dread and the Latron's Double Tap sat missing that way
-    /// until someone read a wiki page.
-    ///
-    /// `data/surveys/weapon_exclusive_mods.yaml` is the survey — generated by
-    /// `scripts/survey_weapon_mods.py` from WFCD's export, joined on
-    /// `compatName` and read by this test and nothing else. It is the FACT:
-    /// what exists in game. This is the ratchet that stops the gap growing
-    /// quietly, and it only ever goes down.
-    ///
-    /// Seven of the twenty rows are EXCLUDED on purpose rather than owed: six
-    /// Conclave-exclusive mods that `only_pve_legal_conclave_mods_are_in_the_pools`
-    /// forbids anyway, and Soaring Truth, which is in DE's files and in no
-    /// released game. An exclusion has to carry its reason, so refusing a mod
-    /// costs the same sentence as transcribing one and cannot be the quiet
-    /// option.
-    ///
-    /// IT WAS AT ZERO FOR THIRTEEN DAYS AND THE ZERO WAS THE FILE'S, NOT THE
-    /// GAME'S.
-    ///
-    /// The survey is GENERATED, and nobody had regenerated it since the roster
-    /// was 20 rows wide. It has been answering "0 still to transcribe" about a
-    /// question whose real answer grew to 197 rows and 103 gaps — and this
-    /// ratchet reads the FILE, so it passed the whole way. `assert!(total >= 20)`
-    /// was the only thing looking at the size, and 20 was the number of rows the
-    /// day it was written.
-    ///
-    /// It is the lesson `docs/CATALOGS.md` records in another domain: asking a
-    /// generated file about something added after it was generated can only ever
-    /// answer no. So the survey now carries the ROSTER SIZE it was joined
-    /// against and this test compares it to the live roster — adding a weapon
-    /// makes the file stale and RED, which is the one state that cannot be
-    /// reached by forgetting.
-    ///
-    /// OF THE 103, forty-one are export rows whose mod NAME we already carry —
-    /// the sentinel copies of Split Chamber and friends, which need a
-    /// classification pass rather than a transcription — and sixty-two are real
-    /// gaps, one per weapon-exclusive mod nobody has written down. The ceiling
-    /// counts all of them, because the honest number is the one that includes
-    /// the work of deciding.
-    ///
-    /// The five that WERE genuinely closed by 2026-08-13 stay closed. The last
-    /// two of those needed a trigger the engine did not have — Eximus
-    /// Advantage's weak-point hit on an EXIMUS, and Hata-Satya's per-hit stack
-    /// that the RELOAD clears — and neither could be approximated: a `CondBuff`
-    /// applies a buff at its assumed maximum, which here is +600% base damage
-    /// against any target and +500% critical chance on the first shot of every
     /// **DREADFUL KILLSHOT PAYS IN WHOLE STEPS, AND STOPS AT THE CAP.**
     ///
     /// The Basmu's augment: *"increases Damage and Status Chance for every 75
-    /// Current Warframe Health, up to 360% at all ranks"*. It is the first mod
-    /// whose value is a function of the PLAYER, so the arithmetic is asserted
-    /// rather than trusted.
+    /// Current Warframe Health, up to 360% at all ranks"* — the first mod whose
+    /// value is a function of the PLAYER, so the arithmetic is asserted.
     ///
     /// THE WIKI'S OWN CROSS-CHECK IS THE SHARP ONE: *"the equipped Warframe
     /// must have at least 675 current health for the damage bonus to outdo
-    /// Serration"*. 675 is nine whole steps at 20% = 180%, against Serration's
-    /// 165% — so asserting that number is asserting that the damage half lands
-    /// in SERRATION'S BRACKET and not in some final multiplier, which is the
-    /// one thing the card's own text cannot say directly.
+    /// Serration"*. 675 is nine whole steps at 20% = 180% against Serration's
+    /// 165%, so asserting it is asserting that the damage half lands in
+    /// SERRATION'S BRACKET rather than a final multiplier.
     #[test]
     fn dreadful_killshot_pays_per_75_health_and_caps() {
         // FROM THE BASMU'S OWN POOL, which is also the assertion that the mod
@@ -2466,7 +2377,25 @@ mod weapon_exclusive_survey {
         near(at(100_000.0), 3.60);
     }
 
-    /// run.
+    /// EVERY WEAPON-EXCLUSIVE GUN MOD OUR ROSTER CAN EQUIP, and how many of
+    /// them are still missing.
+    ///
+    /// A mod that fits ONE weapon is invisible to every other check we have:
+    /// the pools are built from what `data/mods/` holds, so a mod nobody
+    /// transcribed is one the builder cannot offer and nothing notices.
+    ///
+    /// `data/surveys/weapon_exclusive_mods.yaml` is the survey — generated by
+    /// `scripts/survey_weapon_mods.py` from WFCD's export, joined on
+    /// `compatName` and read by this test and nothing else. An EXCLUSION has to
+    /// carry its reason, so refusing a mod costs the same sentence as
+    /// transcribing one.
+    ///
+    /// A GENERATED FILE CANNOT ANSWER ABOUT WHAT WAS ADDED AFTER IT WAS
+    /// GENERATED: an unregenerated survey answered "0 still to transcribe"
+    /// about a question whose real answer had grown to 103 gaps. So it carries
+    /// the ROSTER SIZE it was joined against and this test compares it to the
+    /// live roster. The ceiling counts rows needing a CLASSIFICATION pass as
+    /// well as real gaps, because the honest number includes deciding.
     #[test]
     fn the_weapon_exclusive_mods_we_still_owe_only_goes_down() {
         // RAISED FROM 102 ON 2026-08-28, and not by melee. The survey had gone
@@ -2678,31 +2607,21 @@ mod pool_survey {
     /// EVERY CLASS-TAGGED GUN MOD THE ROSTER'S POOLS CAN HOLD, and how many
     /// are still missing.
     ///
-    /// The sibling of `the_weapon_exclusive_mods_we_still_owe_only_goes_down`,
-    /// and the half it never covered. That survey joins `compatName` against
-    /// WEAPON NAMES, which finds the mod written for one gun; this one joins it
-    /// against the POOL TAGS — Rifle, Bow, Sniper, Shotgun, Pistol, Assault
-    /// Rifle, PRIMARY, Archgun — which is where the other five hundred live.
+    /// The sibling of `the_weapon_exclusive_mods_we_still_owe_only_goes_down`:
+    /// that survey joins `compatName` against WEAPON NAMES, this one against
+    /// the POOL TAGS — Rifle, Bow, Sniper, Shotgun, Pistol, Assault Rifle,
+    /// PRIMARY, Archgun — which is where the other five hundred live.
     ///
-    /// Nothing looked at those, and the failure mode was invisible: a pool a
-    /// weapon DECLARES and no directory holds resolves to an empty list, with
-    /// no error anywhere. Nine bows had claimed `bow` since the roster began
-    /// and `data/mods/bow/` did not exist, so Split Flights — the only
-    /// multishot mod a bow can hold — was unreachable; fifteen snipers claimed
-    /// no `sniper` pool at all, so both Chambers were.
+    /// The failure mode it covers is invisible: a pool a weapon DECLARES and no
+    /// directory holds resolves to an empty list with no error anywhere. Nine
+    /// bows claimed `bow` while `data/mods/bow/` did not exist, so Split
+    /// Flights was unreachable; fifteen snipers claimed no `sniper` pool at
+    /// all, so both Chambers were. `scripts/survey_pool_mods.py` refuses to run
+    /// when a weapon claims a pool no export tag maps to.
     ///
-    /// `scripts/survey_pool_mods.py` refuses to run when a weapon claims a pool
-    /// no export tag maps to, which is the check that catches the NEXT one at
-    /// the moment somebody writes the tag down rather than months later.
-    ///
-    /// The ceiling is a RATCHET and starts where the pools stood the day the
-    /// survey was written. It is not zero and is not meant to be yet — the 28
-    /// are a work list, not a defect: three Thunderbolt entries, the ammo
-    /// mutations, Target Acquired, Depleted Reload, Primed Blunderbuss, and a
-    /// handful of one-offs.
-    ///
-    /// 29 -> 28 on 2026-08-25, when the TOME pool arrived complete (8 of 8,
-    /// gap 0) — which is what lowering this line is for.
+    /// The ceiling is a RATCHET starting where the pools stood the day the
+    /// survey was written. It is not zero and is not meant to be yet: the rest
+    /// are a work list rather than a defect.
     #[test]
     fn the_pool_mods_we_still_owe_only_goes_down() {
         // LOWERED 28 -> 21 ON 2026-08-29, and not by transcribing seven cards.

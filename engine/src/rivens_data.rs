@@ -2,26 +2,22 @@
 //! formula, the generated name, and the [`ModDef`] a riven resolves to.
 //!
 //! A riven is not a mod with fixed numbers — it is a mod whose numbers are
-//! CONSTRUCTED from a roll. Everything here is that construction, so the
-//! builder can offer every legal riven and no illegal one.
+//! CONSTRUCTED from a roll, and this is that construction.
 //!
 //! ```text
 //! shown value = base x 10 x (rank + 1) x disposition x config x roll
 //! ```
 //!
 //! `base` is DE's own per-stat number (`upgradeEntries` in the export). The
-//! `10 x (rank + 1)` term is 90 at rank 8, and TWO independent sources agree
-//! on it: the wiki publishes its own base-value column and it is DE's number
-//! times 90, to four figures including the ugly ones — Damage 165%, Critical
-//! Chance 149.99%, Fire Rate 60.03% against 164.9997 / 149.9940 / 60.0300.
-//! Three values that are not round cannot match by coincidence.
+//! `10 x (rank + 1)` term is 90 at rank 8, and TWO independent sources agree on
+//! it: the wiki's own base-value column IS DE's number times 90, to four
+//! figures including the ugly ones — 164.9997 / 149.9940 / 60.0300 against
+//! Damage 165%, Critical Chance 149.99%, Fire Rate 60.03%.
 //!
-//! Every stat rolls its 0.9-1.1 INDEPENDENTLY — there is no shared per-riven
-//! quality. That is what makes a "god roll" a thing to hunt rather than one
-//! number, and it means the corner where every bonus is maximal and the
-//! malus minimal is legal, merely astronomically unlikely. This builder is a
-//! CONSTRUCTOR, not a roller, so it must be able to reach that corner: it is
-//! the ceiling the optimizer wants.
+//! Every stat rolls its 0.9-1.1 INDEPENDENTLY, with no shared per-riven
+//! quality, so the corner where every bonus is maximal and the malus minimal is
+//! legal and astronomically unlikely. This is a CONSTRUCTOR rather than a
+//! roller and must reach that corner: it is the ceiling the optimizer wants.
 
 use std::sync::OnceLock;
 
@@ -48,51 +44,11 @@ pub struct Shape {
 }
 
 impl Shape {
-    /// Multiplier on every POSITIVE stat — the wiki's table.
-    ///
-    /// Three published tables disagree and only one survives checking:
-    ///
-    /// - **wiki**: 0.99 / 1.2375 / 0.75 / 0.9375, maluses -0.495 / -0.75.
-    ///   Stated verbatim as a table, and internally consistent — 1.2375 is
-    ///   exactly 0.99 x 1.25 and 0.9375 exactly 0.75 x 1.25, so a malus pays
-    ///   the bonuses 25% in both rows. A typo would not propagate like that.
-    /// - **pa001024/riven-mirror** (MIT), read from source rather than from a
-    ///   claim about it — `toUpLevel` / `toNegaUpLevel` in
-    ///   `src/warframe/rivenmod.ts`:
-    ///
-    ///   | shape | riven-mirror | wiki (ours) |
-    ///   |---|---|---|
-    ///   | 2     | 1.0   | 0.99   |
-    ///   | 3     | 0.755 | 0.75   |
-    ///   | 2+1   | 1.243 | 1.2375 |
-    ///   | 3+1   | 0.942 | 0.9375 |
-    ///   | malus 2+1 | 0.5   | 0.495 |
-    ///   | malus 3+1 | 0.755 | 0.75  |
-    ///
-    ///   So the "community calculators read 1.0" claim IS real — this is
-    ///   where it comes from. It does not overturn the wiki set, because the
-    ///   wiki's is INTERNALLY CONSISTENT and this one is not: 1.2375 is
-    ///   exactly 0.99 x 1.25 and 0.9375 exactly 0.75 x 1.25, while
-    ///   1.243/1.0 = 1.243 against 0.942/0.755 = 1.2477. A rounding of a
-    ///   consistent set is what riven-mirror's numbers look like; a rounding
-    ///   is not what the wiki's look like.
-    /// - semlar's calculator computes client-side and states no constants.
-    /// - codingace: 1.30 / 1.10 / 0.90 by bonus COUNT with no malus row.
-    ///   It also has a "1 bonus" case, which weapon rivens do not roll, so
-    ///   its table is describing something else.
-    ///
-    /// We take the wiki's, as the only one verified from a primary source.
-    ///
-    /// AN EARLIER VERSION OF THIS CODE TOOK 1.0, arguing that it made
-    /// `base x 90` land on round canonical numbers (165 / 150 / 120 / 90).
-    /// That argument was wrong: the wiki publishes its own base-value column
-    /// and it IS `base x 90` — Damage 165%, Critical Chance 149.99%, Fire Rate
-    /// 60.03%, matching DE's export to four figures including the ugly ones.
-    /// So those numbers are the BASE, reached before any config multiplier,
-    /// and their roundness says nothing about it.
-    ///
-    /// What remains is a 1% uncertainty on two-bonus rivens, and one
-    /// in-game riven with a known roll settles it.
+    /// Multiplier on every POSITIVE stat — the wiki's table, which is the only
+    /// published set verified from a primary source AND internally consistent
+    /// (1.2375 is exactly `0.99 x 1.25`, 0.9375 exactly `0.75 x 1.25`). The
+    /// three tables that disagree, and why this one wins, are
+    /// docs/DATA_SOURCES.md §"Riven config multiplier".
     pub fn bonus_mult(&self) -> f64 {
         match (self.bonuses, self.malus) {
             (2, false) => 0.99,
@@ -253,54 +209,25 @@ struct PoolFile {
 /// Riven stats THIS WEAPON cannot roll, out of its class pool.
 ///
 /// The pool is per CLASS, but two rifles do not roll the same stats: DE does
-/// not hand a weapon an attribute for a stat the weapon does not have. What
-/// generates a pool — DE's per-family table, and why the 25% rule is an
-/// approximation of it rather than the mechanism — is docs/DATA_SOURCES.md
-/// §"Riven pools".
+/// not hand a weapon an attribute for a stat it does not have. What generates
+/// a pool is docs/DATA_SOURCES.md §"Riven pools", and THE DERIVATION IS THE
+/// LAST OF THREE SOURCES — `data/rivens/exceptions.yaml` overrides per riven
+/// FAMILY, and these rules fill in for a family nobody has a card from.
+/// `data/rivens/pools.yaml` is neither: a count over live listings, read by
+/// `the_survey_still_agrees_with_the_rules` and by nothing in the calculation.
 ///
-/// THREE SOURCES, IN THIS ORDER, and the derivation is the LAST of them. What a weapon can roll is DE's own per-weapon table, it is
-/// published nowhere, and a survey of ~12 000 live riven listings says it is
-/// not reliably derivable either: the Ocucor is 9% Puncture and 91% Radiation
-/// and rolls all three physical stats, while the Phenmor is 30% Puncture and
-/// rolls none of it. So:
-///
-/// 1. THE RULES BELOW, which read facts the weapon already states, so a new
-///    weapon arrives approximately right before anybody looks at a card.
-/// 2. `data/rivens/exceptions.yaml` — hand-written, per riven FAMILY, every
-///    entry naming what was looked at. The wiki's own "exceptions exist on a
-///    case by case basis", as data.
-///
-/// `data/rivens/pools.yaml` is NOT in that list. It is a count over live
-/// listings and it is EVIDENCE — read by `the_survey_still_agrees_with_the_
-/// rules` and by nothing in the calculation.
-///
-/// 1. **Physical damage** — wiki (`Riven_Mods`, attributes-table legend),
-///    verbatim: *"Weapons without more than 25% of a physical damage type
-///    usually cannot roll that respective attribute. For example, a Simulor
-///    Riven will never have +/- Slash Damage stat. Exceptions exist on a case
-///    by case basis."* The "exceptions" clause is why this is a derivation and
-///    not a law — the day one shows up it becomes a per-weapon override.
+/// 1. **Physical damage** — *"Weapons without more than 25% of a physical
+///    damage type usually cannot roll that respective attribute … Exceptions
+///    exist on a case by case basis."* That clause is why this is a derivation
+///    and not a law.
 /// 2. **A stat the weapon does not have** is inert whatever DE rolls, and the
-///    weapon's own wiki table is the evidence. Verglas Prime's has no Zoom row
-///    and no Recoil row (a SENTINEL weapon is never aimed by the player), says
-///    "Ammo Max: ∞ / Ammo Type: None", and says "Projectile Type: Hit-Scan".
+///    weapon's own wiki table is the evidence — Verglas Prime has no Zoom row,
+///    no Recoil row, "Ammo Max: ∞" and "Projectile Type: Hit-Scan".
 ///
-/// Both rules read the weapon as ONE THING WITH FORMS, and the union of the
-/// forms you can fire for free is what it has. A riven belongs to the weapon,
-/// not to a mode of it: Larkspur Prime's beam is 11% Impact and its alt-fire —
-/// one held button away, no gauge, no animation — is 33%, and a player's real
-/// card rolls negative Impact (through the owner).
-///
-/// A GAUGE-SWITCHED form stays out, and the SURVEY settles it rather than the
-/// argument. An Incarnon form is paid for with evolutions and a riven's pool is
-/// fixed when it drops — but the evidence is better than the argument: the
-/// Latron, Lex and Atomos Incarnon
-/// forms all fire a literal travelling projectile, and their families show 0,
-/// 4 and 0 Projectile Speed listings out of 500. Counting those forms would
-/// have offered a stat no card in the sample carries.
-///
-/// The MIRROR of that is why the exception list exists at all: the Furis is
-/// hit-scan in both forms and a player's card carries Projectile Speed anyway.
+/// Both rules read the weapon as ONE THING WITH FORMS, over the union of the
+/// forms you can fire for free: Larkspur Prime's beam is 11% Impact and its
+/// alt-fire 33%, and a real card rolls negative Impact. A GAUGE-SWITCHED form
+/// stays out.
 pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
     // A RIVEN BELONGS TO A FAMILY, so the pool is the family's. One card equips on every member — a Ballistica riven is a
@@ -1499,21 +1426,18 @@ fn an_element_is_never_a_malus() {
 
     /// A FAMILY IS CALLED WHAT DE CALLS IT.
     ///
-    /// `riven_family` decides three things — which weapons share a pool, which
-    /// weapons an `exceptions.yaml` entry covers, and whether the family can be
-    /// surveyed at all, since the market is queried by that name. So a name
-    /// nobody else uses is not a typo: it silently makes the family a singleton
-    /// and silently makes the survey come back empty.
+    /// `riven_family` decides which weapons share a pool, which an
+    /// `exceptions.yaml` entry covers, and whether the family can be surveyed
+    /// at all, since the market is queried by that name. So a name nobody else
+    /// uses silently makes the family a singleton and the survey empty.
     ///
-    /// It did, six times. The rule had been read as "strip the variant prefix",
-    /// which is right for a Prime, a Vandal, a Wraith, a Prisma, a Rakta or a
-    /// Telos — DE's list holds `Boltor` and no `Boltor Prime`, `Ballistica` and
-    /// no `Rakta Ballistica` — and WRONG for a weapon with no ordinary
-    /// counterpart, where the prefix is the name: `Kuva Ayanga`, `Gotva Prime`,
-    /// `Vadarya Prime`, `Coda Bassocyst`, `Dual Coda Torxica`, `EFV-5 Jupiter`.
-    /// One of those is why `pools.yaml` records "Gotva: NOT SURVEYED (the API
-    /// refused)" — the API did not refuse; it was asked about a weapon that
-    /// does not exist.
+    /// "Strip the variant prefix" is right for a Prime, a Vandal, a Wraith, a
+    /// Prisma, a Rakta or a Telos — DE's list holds `Boltor` and no `Boltor
+    /// Prime` — and WRONG for a weapon with no ordinary counterpart, where the
+    /// prefix IS the name: `Kuva Ayanga`, `Gotva Prime`, `Vadarya Prime`, `Coda
+    /// Bassocyst`, `Dual Coda Torxica`, `EFV-5 Jupiter`. It caught six, one of
+    /// which is why `pools.yaml` records "Gotva: NOT SURVEYED (the API
+    /// refused)" — it was asked about a weapon that does not exist.
     ///
     /// THE SNAPSHOT CONFIRMS AND NEVER REFUTES. `de_families.yaml` is one week
     /// of trades, so a family absent from it is a family nobody traded, not a
@@ -1578,8 +1502,7 @@ fn an_element_is_never_a_malus() {
     /// FIFTEEN FAMILIES DISAGREED WITH THEMSELVES. The sharpest is the
     /// Ballistica: the Prime's charged shot is over the 25% Slash line and the
     /// other two members are under it, so the same card was legal on one entry
-    /// and refused on the other two. The Ogris was the widest — the Kuva
-    /// variant rolled Impact and Puncture that the ordinary one refused.
+    /// and refused on the other two.
     ///
     /// ASSERTED OVER EVERY FAMILY rather than over the fifteen. A list of names
     /// cannot report the sixteenth, and the sixteenth arrives the day a weapon
@@ -1637,26 +1560,13 @@ fn an_element_is_never_a_malus() {
     /// THE FAMILY POOL IS THE UNION, and these are the cards that say so.
     ///
     /// A riven equips on every member of its family, so a family whose members
-    /// disagree under the 25% line has two readings and the rule cannot choose
-    /// between them: UNION (one member over the line earns it for all) or
-    /// INTERSECTION (every member must be over it). The question is not
-    /// answerable from the rule — only from cards.
-    ///
-    /// Seven (family, stat) pairs among the SURVEYED families disagree, and the
-    /// listings answer five of them UNION and two INTERSECTION:
-    ///
-    /// | family | stat | who is over the line | cards |
-    /// | --- | --- | --- | --- |
-    /// | Boar | Slash | the Boar, not its Prime | ROLLS |
-    /// | Braton | Impact | the Braton and the Vandal | ROLLS |
-    /// | Braton | Puncture | the Braton and its Prime | ROLLS |
-    /// | Karak | Slash | the Kuva Karak alone | ROLLS |
-    /// | Sybaris | Puncture | the Sybaris and its Prime | ROLLS |
-    /// | Sicarus | Puncture | the Prime alone | never |
-    /// | Sicarus | Slash | the Prime alone | never |
-    ///
-    /// Five to two, and the two are ONE FAMILY that is already an exception
-    /// carrying its own count. So the union is the rule and the Sicarus is the
+    /// disagree under the 25% line has two readings the rule cannot choose
+    /// between: UNION (one member over the line earns it for all) or
+    /// INTERSECTION. Only cards can answer it, and among the SURVEYED families
+    /// seven (family, stat) pairs disagree — the listings say UNION on five
+    /// (Boar Slash, Braton Impact, Braton Puncture, Karak Slash, Sybaris
+    /// Puncture) and INTERSECTION on two, which are ONE family already carrying
+    /// its own exception. So the union is the rule and the Sicarus is the
     /// exception — which is the shape this whole file is built on, arrived at
     /// from the other end.
     ///
