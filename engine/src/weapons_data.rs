@@ -41,13 +41,11 @@ pub struct DeploymentSpec {
     /// sustain differs" scores an Arch-Gun on the board at half its ground
     /// damage.
     ///
-    /// BOTH COLUMNS ARE WRITTEN DOWN, which is the point of stating a vector
-    /// here instead of the `x0.5` that would produce the same numbers: a
-    /// multiplier is DERIVED, and a reader of this file cannot check it against
-    /// the page. The doubling is "most", not all, so the ratio is an
+    /// BOTH COLUMNS ARE WRITTEN DOWN rather than the `x0.5` that produces the
+    /// same numbers, because a multiplier is DERIVED and a reader cannot check
+    /// it against the page. The doubling is "most", not all, so the ratio is an
     /// observation about a weapon and never a rule to compute with —
-    /// `deployment_tests` asserts which weapons follow it and NAMES the ones
-    /// that do not.
+    /// `deployment_tests` NAMES the weapons that do not follow it.
     #[serde(default)]
     pub damage: Option<BTreeMap<String, f64>>,
     /// ...and the same tab's RADIAL, when the attack has one. Required
@@ -421,12 +419,10 @@ pub struct AttackSpec {
     /// rate`, so the first damage of the fight is late by this much and every
     /// number after it is too.
     ///
-    /// THAT IS WORTH MODELLING even though the mean does not move, and the
-    /// owner said so when this was written off as latency: the combat record's
-    /// whole claim is that a row can be laid beside a recording and checked, and
-    /// a stream whose timestamps are all 0.1 s early fails that test. It also
-    /// reaches time-to-first-kill and the DPS curve's opening, which are the two
-    /// figures a short engagement is read by.
+    /// THAT IS WORTH MODELLING even though the mean does not move: the combat
+    /// record's whole claim is that a row can be laid beside a recording and
+    /// checked, and a stream whose timestamps are all 0.1 s early fails that
+    /// test. It also reaches time-to-first-kill and the DPS curve's opening.
     ///
     /// SHORTENED BY FIRE RATE, like the throw animation it is the sibling of.
     #[serde(default)]
@@ -610,16 +606,12 @@ pub struct AttackSpec {
     /// Punch Through stat modified"*. So an attack with a `radial:` or a
     /// `lingering:` takes none.
     ///
-    /// `Some(false)` is a WEAPON PAGE overruling that, and it is why this field
-    /// exists rather than the shape alone deciding. The Torid's Incarnon form
-    /// says *"Punch Through mods have no effect on the behavior of the beam"* —
-    /// and it is a BEAM with a damage radius, so it carries neither `radial:`
-    /// nor `lingering:` and the class rule would have let Shred onto it. The
-    /// same wiki sentence that classifies it for Primary Compression names the
-    /// family: *"beam attacks with an AoE component. For example, Ignis or
-    /// Torid Incarnon Genesis"* — and the Ignis is on the punch-through page's
-    /// EXCEPTION list, so the family does not decide it either. Only the entry
-    /// does, which is docs/CATALOGS.md's rule generalised once more.
+    /// `Some(false)` is a WEAPON PAGE overruling that, which is why the shape
+    /// alone does not decide: the Torid's Incarnon form says *"Punch Through
+    /// mods have no effect on the behavior of the beam"* and carries neither
+    /// `radial:` nor `lingering:`. Nor does the FAMILY decide — the sentence
+    /// grouping it with the Ignis for Primary Compression names a weapon on the
+    /// punch-through page's EXCEPTION list.
     ///
     /// `Some(true)` is the other direction, for an AoE attack a page says DOES
     /// take them. Nothing in the roster needs it yet.
@@ -676,29 +668,23 @@ pub struct FalloffSpec {
 
 /// THE CONE AN ATTACK FIRES INTO — degrees from the reticle, per ATTACK.
 ///
-/// **THE PRIMARY VALUE, and `accuracy` is the derived one**. The Arsenal prints an Accuracy that the wiki's own page defines
-/// as `100 / average spread in degrees` and then shows as a CATEGORY beside it
-/// ("Very High"); the thing the game has is this cone. Wiki `Accuracy` §Spread,
-/// verbatim: *"spread is internally represented as an angle in degrees from the
-/// reticle"*, with *"each weapon having a defined minimum (first-shot) and
-/// maximum spread. Minimum spread is represented by the **Deviation With Aim**
-/// stat while maximum spread is represented by the **Max Deviation** stat."*
+/// **THE PRIMARY VALUE, and `accuracy` is the derived one.** The Arsenal's
+/// Accuracy is `100 / average spread in degrees`; the thing the game has is
+/// this cone — *"spread is internally represented as an angle in degrees from
+/// the reticle"*, with a minimum (**Deviation With Aim**) and a maximum (**Max
+/// Deviation**) per weapon (wiki `Accuracy` §Spread).
 ///
-/// Deriving the cone back out of the scalar loses two things that matter: the
-/// min/max, and the FORM — `Module:Weapons/data` carries these per ATTACK, so
-/// the Torid's grenade is `0 / 0` (pinpoint, and its page says so in words)
-/// while its Incarnon beam is `1.0 / 1.5`. One accuracy number per weapon
-/// cannot say that, which is why 63 form entries had no accuracy at all.
+/// Deriving the cone back out of the scalar loses the min/max and the FORM:
+/// `Module:Weapons/data` carries these per ATTACK, so the Torid's grenade is
+/// `0 / 0` while its Incarnon beam is `1.0 / 1.5`. Transcribed by
+/// `scripts/intake_spread.py`, which refuses any attack it cannot identify by
+/// an exact multi-field match.
 ///
-/// Transcribed by `scripts/intake_spread.py`, which refuses any attack it
-/// cannot identify by an exact multi-field match.
-///
-/// **WHAT IS NOT MODELLED IS THE BLOOM.** The min is the FIRST SHOT and the max
-/// is where sustained fire takes it — *"the faster a weapon fires, the larger
-/// the size of the 'cone'"* — and the ramp between them is published nowhere.
-/// A pellet here draws uniformly across the window instead, which has the
-/// published average (`(min + max) / 2`, the wiki's own definition of the
-/// number Accuracy is computed from) and does not invent a rate.
+/// **WHAT IS NOT MODELLED IS THE BLOOM.** The min is the FIRST SHOT and the
+/// max is where sustained fire takes it — *"the faster a weapon fires, the
+/// larger the size of the 'cone'"* — and the ramp is published nowhere. A
+/// pellet draws uniformly across the window instead, which has the published
+/// average (`(min + max) / 2`) and invents no rate.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct SpreadSpec {
     /// Deviation With Aim — the first shot's cone.
@@ -710,31 +696,21 @@ pub struct SpreadSpec {
 /// A TOME'S RECHARGE METER — a clock you spend, and the third way this roster
 /// gates a form.
 ///
-/// The other two are a MAGAZINE (you spend rounds and reload) and an INCARNON
-/// GAUGE (you land hits and earn a window). This is neither: *"Requires a fully
-/// filled meter beneath the reticle in order to fire. The meter takes 45
-/// seconds to completely recharge. Hitting enemies with the primary fire
-/// reduces recharge time by 1 second per hit. Picking up secondary or universal
-/// ammo reduces recharge time by 10 seconds"* (wiki `Grimoire`).
+/// The other two are a MAGAZINE and an INCARNON GAUGE. This is neither:
+/// *"Requires a fully filled meter beneath the reticle in order to fire. The
+/// meter takes 45 seconds to completely recharge. Hitting enemies with the
+/// primary fire reduces recharge time by 1 second per hit"* (wiki `Grimoire`).
 ///
-/// SO IT IS A COUNTDOWN, and everything you do takes seconds off it. Modelled
-/// as a gauge filling at one unit a second because the two are the same thing
-/// and a gauge is what the rest of the engine already speaks; the FIELD NAMES
-/// stay in the page's own units, since "one second per hit" is the sentence a
-/// reader will check.
+/// SO IT IS A COUNTDOWN, modelled as a gauge filling at one unit a second
+/// because a gauge is what the engine speaks; the FIELD NAMES stay in the
+/// page's own units. ITS OWN TYPE, DELIBERATELY — it could be bent onto
+/// [`GaugeSpec`], and the mechanics differ in every particular: weak-point hits
+/// against seconds, a magazine against a single throw, emptied by firing
+/// against by one shot.
 ///
-/// ITS OWN TYPE, DELIBERATELY. It could be bent onto
-/// [`GaugeSpec`] — both fill and both gate a form — and the mechanics differ in
-/// every particular that matters: that one counts weak-point hits and this one
-/// counts seconds, that one grants a magazine and this one grants a single
-/// throw, that one is emptied by firing and this one by one shot. One weapon
-/// has it today. When a second and a third arrive the shared shape will be
-/// visible; guessing at it from one is how a wrong abstraction gets built.
-///
-/// WHAT THE HITS ARE. *"Multishot will count as an additional hit"* and
-/// *"Radial damage does not count an additional hit"* — so it is one second per
-/// landing PELLET of the primary fire, and its explosion adds nothing. Both
-/// sentences are on the page and both are about a distinction this engine
+/// WHAT THE HITS ARE: *"Multishot will count as an additional hit"* and
+/// *"Radial damage does not count an additional hit"*, so it is one second per
+/// landing PELLET and the explosion adds nothing — both distinctions the engine
 /// already makes, which is why neither needs a field.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct MeterSpec {
@@ -748,34 +724,23 @@ pub struct MeterSpec {
     pub seconds_per_ammo_pickup: f64,
 }
 
-/// A DEPLOYED ORB — an entity with a POSITION, a clock and a reach, which is
-/// none of the three things this engine had before it.
+/// A DEPLOYED ORB — an entity with a POSITION, a clock and a reach, none of
+/// which this engine had before it.
 ///
-/// IT IS NOT A FIELD, and the difference is the whole reason for the type. A [`LingeringSpec`] is an AREA: everyone standing in it
-/// burns, at their own falloff distance. An orb strikes exactly ONE body inside
-/// its reach — *"Orb will shock 1 enemy within 6 meters of it every 1 second"*
-/// (wiki `Grimoire`) — every strike deals the same number, and it MOVES between
-/// them, so where it is decides who is a candidate.
+/// IT IS NOT A FIELD: a [`LingeringSpec`] is an AREA and everyone in it burns,
+/// while an orb strikes exactly ONE body inside its reach — *"Orb will shock 1
+/// enemy within 6 meters of it every 1 second"* (wiki `Grimoire`) — and MOVES
+/// between them. Not a projectile either: it lives out a fuse striking as it
+/// drifts, so its attack settles no collision and no explosion at the impact.
 ///
-/// It is not a projectile either. A projectile in this engine arrives, deals
-/// its collision and its explosion, and is over; this one is thrown, lives out
-/// a fuse striking as it drifts, and detonates at the end wherever it has got
-/// to. So the attack it belongs to settles NO collision and no explosion at the
-/// impact — everything it deals is delivered by the orb.
+/// WHAT THE ORB DEALS IS THE ATTACK'S OWN — its strike is the attack's
+/// `damage`, crit, status and forced procs, its detonation the attack's
+/// `radial` moved to where the orb was. This block is GEOMETRY AND CLOCK.
 ///
-/// WHAT THE ORB DEALS IS THE ATTACK'S OWN. Its strike is the attack's `damage`,
-/// crit, status, `forced_procs` and `unaimed_headshot_chance`; its detonation is
-/// the attack's `radial`, moved to wherever the orb was when the fuse ran out.
-/// This block is the GEOMETRY AND THE CLOCK and nothing else, the same division
-/// [`BeamSpec`] makes for a beam.
-///
-/// THE STRIKE CLOCK RUNS FROM THE THROW, not from a contact, and that is what
-/// reproduces the measured count. Six ticks over a six second fuse; a tick with
-/// nobody inside the reach strikes nobody and is spent. So a throw that reaches
-/// its target in under a second loses nothing, one that takes 2.5 s lands four
-/// strikes, and against a body at contact it is always six — which is the
-/// owner's `ceil(6 - flight)` arriving out of the geometry rather than being
-/// written down (MEASUREMENTS M63).
+/// THE STRIKE CLOCK RUNS FROM THE THROW rather than from a contact, which
+/// reproduces the measured count: six ticks over a six second fuse, a tick with
+/// nobody in reach spent on nobody. A throw taking 2.5 s lands four strikes and
+/// one at contact always six — `ceil(6 - flight)` out of the geometry (M63).
 // All f64, so it travels BY VALUE rather than as a leaked reference: the sim
 // carries one per orb in the air and a Copy is cheaper than a pointer chase.
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -1231,27 +1196,20 @@ pub struct RadialSpec {
     pub takes_condition_overload: bool,
     /// Does the explosion fire once PER PELLET, or once per trigger pull?
     ///
-    /// **MOST AoE TAKES MULTISHOT**, and the reason is the
-    /// mechanism rather than a table: a pellet lands and detonates, so several
-    /// pellets are several detonations. Default YES.
+    /// **MOST AoE TAKES MULTISHOT**, by the mechanism rather than a table: a
+    /// pellet lands and detonates, so several pellets are several detonations.
+    /// Default YES.
     ///
     /// THE EXCEPTION IS A WEAPON WHOSE BLAST IS TIED TO THE SHOT rather than to
-    /// the projectile. The Burston Incarnon is the one the roster has and the
-    /// wiki states it outright — "The Radial Attack does not benefit from
-    /// Multishot bonuses" — and what makes it exceptional is that its explosion
-    /// counts PULLS: extra pellets ride along and add nothing to it.
+    /// the projectile — the Burston Incarnon, where the wiki states it outright
+    /// ("The Radial Attack does not benefit from Multishot bonuses") and the
+    /// explosion counts PULLS. WHAT SETTLES A DOUBTFUL ENTRY: a field is left
+    /// by a rocket that LANDED, so two napalm fields is two arrivals, and an
+    /// Ogris reading `false` costs a Split Chamber 43% of its worth.
     ///
-    /// WHAT SETTLES A DOUBTFUL ENTRY: a field is left by a rocket that
-    /// LANDED, so two napalm fields is two arrivals, and an arrival detonates.
-    /// An Ogris reading `false` costs a Split Chamber 43% of what it is worth
-    /// on that weapon — the second rocket arrives, leaves its fire, and deals
-    /// no blast damage at all.
-    ///
-    /// **73 ENTRIES STILL DECLARE `false` AND ONLY TWO HAVE A SOURCE** — the two
-    /// Burstons. The rest carry the shape of a bulk intake that applied it as a
-    /// rule, which is the one thing the line below forbids. Nobody has surveyed
-    /// them against the wiki yet; until somebody does, a `false` on any entry
-    /// other than a Burston should be read as unverified rather than as stated.
+    /// **73 ENTRIES STILL DECLARE `false` AND ONLY TWO HAVE A SOURCE** — the
+    /// two Burstons. The rest carry the shape of a bulk intake applying it as a
+    /// rule, so a `false` on anything else is unverified rather than stated.
     ///
     /// Declared per entry, never inferred.
     #[serde(default = "yes")]
@@ -1803,10 +1761,8 @@ pub struct WeaponSpec {
     /// scaled by. It belongs to the WEAPON, not to the riven, which is why
     /// **AN UNEXPLAINED, MEASURED COEFFICIENT ON SECONDARY IRRADIATE'S ECHO.**
     ///
-    /// The arcane's echo is `1.8 × the hit` at max rank, and on a pure
-    /// single-target weapon that is exactly what it deals, measured on several.
-    /// On the LAETUM'S INCARNON FORM it deals **3.6×**, twice as much, and
-    /// nobody knows why:
+    /// The echo is `1.8 × the hit` at max rank on every pure single-target
+    /// weapon measured. On the LAETUM'S INCARNON FORM it deals **3.6×**:
     ///
     /// ```text
     /// base form      1536 direct  ->  2764.8 echo   = 1.80x   (ordinary)
@@ -1814,21 +1770,11 @@ pub struct WeaponSpec {
     ///                 960 direct  ->  3456   echo   = 3.60x
     /// ```
     ///
-    /// IT IS NOT THE AoE TRIGGERING IT A SECOND TIME. Only a DIRECT hit ever
-    /// triggers this echo and the radial never does, which is measured and is
-    /// what `spread_from_echo` implements — it is called from the direct path
-    /// alone. So the explanation is not two triggers, and there is no other.
-    ///
-    /// WHAT IS SUSPECTED AND NOT ESTABLISHED: the two forms differ in that the
-    /// Incarnon one carries a radial, and other AoE weapons are reported to
-    /// show some of the same. That is a lead, not a rule — so this is a
-    /// per-ENTRY number rather than a rule about AoE weapons, until somebody
-    /// measures a second one. The same discipline `docs/CATALOGS.md` states for
-    /// Condition Overload: transcribe the row for the entry it names, never
-    /// generalise it to a class.
-    ///
-    /// NOT INHERITED (it is absent from `INHERITED`), because the base Laetum
-    /// measures 1.8 and only its Incarnon form does not.
+    /// IT IS NOT THE AoE TRIGGERING IT TWICE: only a DIRECT hit ever triggers
+    /// this echo, measured, which is why `spread_from_echo` is called from the
+    /// direct path alone. That the Incarnon form's radial is involved is a
+    /// LEAD, so this stays a per-ENTRY number rather than a rule about AoE
+    /// weapons. NOT INHERITED, because the base Laetum measures 1.8.
     #[serde(default = "one")]
     pub echo_multiplier: f64,
     /// one riven reads differently on two guns.
@@ -1944,24 +1890,19 @@ pub struct WeaponSpec {
     pub headshot_damage_bonus: Option<f64>,
     /// THE WEAPON'S OWN HEADSHOT MULTIPLIER, which REPLACES the body part's.
     ///
-    /// A head is worth what the ENEMY's body part says it is worth, on every
-    /// weapon but a handful: the Tenet Arca Plasmor's page states *"1x headshot
-    /// multiplier"* under its disadvantages and then *"It is exceedingly easy to
-    /// perform headshots with this weapon. Although it has a 1x headshot
-    /// multiplier (meaning it does no extra damage), this can be increased using
-    /// Primary Deadhead."* So the head is still a HEAD — the shot counts as one
-    /// and Deadhead pays on it — and only the enemy's own multiplier is
-    /// overruled.
+    /// A head is worth what the ENEMY's body part says, on every weapon but a
+    /// handful: the Tenet Arca Plasmor states *"1x headshot multiplier"* and
+    /// then *"Although it has a 1x headshot multiplier (meaning it does no
+    /// extra damage), this can be increased using Primary Deadhead."* So the
+    /// head is still a HEAD and only the enemy's own multiplier is overruled.
     ///
-    /// NOT `headshot_damage_bonus`, which is the additive bracket beside
-    /// Deadhead's and which the module states this weapon's value in:
-    /// `ExtraHeadshotDmg = -2`, on seven primaries (both Alternoxes, both Arca
-    /// Plasmors, both Fulmins' semi-auto mode, Nataruk's Perfect Shot). Put
-    /// through that bracket `1 + (-2)` is NEGATIVE and a headshot would heal the
-    /// target — so the datamined figure encodes a multiplier DE applies
-    /// somewhere this engine does not, and the wiki's own sentence, "1x", is
-    /// what gets transcribed. The two fields compose: a weapon may state this
-    /// multiplier and still take every additive bonus on top of it.
+    /// NOT `headshot_damage_bonus`, the additive bracket beside Deadhead's,
+    /// which is where the module states this weapon's value:
+    /// `ExtraHeadshotDmg = -2` on seven primaries. Put through that bracket
+    /// `1 + (-2)` is NEGATIVE and a headshot would heal the target, so the
+    /// datamined figure encodes a multiplier applied somewhere this engine does
+    /// not and the wiki's "1x" is what gets transcribed. The two fields
+    /// compose.
     ///
     /// It also silences the CRITICAL HEADSHOT doubling, which the engine gates
     /// on a part multiplier above 1x — correctly, since the wiki's rule is about
@@ -2793,30 +2734,19 @@ fn pretty_id(id: &str) -> String {
 /// A BURST trigger: one pull fires `count` rounds `delay_seconds` apart, and
 /// the weapon's listed `fire_rate` is BURSTS per second, not rounds.
 ///
-/// VERBATIM (wiki Fire Rate), and the reason a burst weapon is not just a
-/// slower auto:
-///
-/// - *"Effective Fire Rate = Burst Count / [1/Fire Rate + [(Burst Count−1)⋅
-///   Burst Delay]]"*
-/// - *"Fire Rate bonuses affect both the speed of the burst as well as the
-///   time between bursts"*
-/// - *"Burst Delay is not affected by net negative Fire Rate bonuses."*
-///
-/// The middle line is what makes this cheap: because a bonus scales BOTH
-/// terms, the effective rate is exactly linear in the fire-rate multiplier, so
-/// a positive-bonus build is indistinguishable from an auto weapon listed at
-/// the effective rate. The THIRD line is the only place burst stops being a
-/// relabelling — a net-negative bonus (Critical Delay, Vile Precision) stops
-/// stretching the intra-burst delay while it keeps stretching the gap between
-/// bursts, so the weapon loses less rate than the number on the card says.
-/// That asymmetry is modelled; see the `.max(1.0)` in `loadout::resolve`.
+/// VERBATIM (wiki Fire Rate): *"Effective Fire Rate = Burst Count / [1/Fire
+/// Rate + [(Burst Count−1)⋅Burst Delay]]"*, *"Fire Rate bonuses affect both the
+/// speed of the burst as well as the time between bursts"*, and *"Burst Delay
+/// is not affected by net negative Fire Rate bonuses."* The second makes this
+/// cheap — a bonus scales BOTH terms, so a positive-bonus build is an auto
+/// weapon at the effective rate — and the third is where burst stops being a
+/// relabelling (`loadout::resolve`).
 ///
 /// PRIMARY COMPRESSION's per-weapon row — see docs/CATALOGS.md §2.
 ///
-/// The arcane trades explosion RADIUS for damage, so what it is worth is a
-/// property of the weapon rather than of the arcane, and the wiki publishes a
-/// table with one row per weapon ATTACK. Two of its columns cannot be derived
-/// from anything else the weapon knows:
+/// The arcane trades explosion RADIUS for damage, so its worth is a property
+/// of the WEAPON and the wiki publishes one row per weapon ATTACK, two of whose
+/// columns cannot be derived from anything else the weapon knows:
 ///
 /// > Weapon | Effectiveness | Base Radius | Max Damage Bonus @ Base Radius |
 /// > Stacking Behavior | Notes
@@ -2867,31 +2797,23 @@ fn snapshot() -> String {
 
 /// A MAGAZINE THAT REFILLS ITSELF, on a clock rather than on a reload.
 ///
-/// The Shedu's battery, and the roster's first: *"This weapon does not use ammo
-/// pickups; ammo regenerates over time. Has a 1 second delay before ammo begins
-/// to regenerate; if there are still rounds left, the delay is 0.4 seconds
-/// instead. Ammo regenerates at 28 rounds per second"* (wiki Shedu, verbatim).
+/// The Shedu's battery, and the roster's first: *"ammo regenerates over time.
+/// Has a 1 second delay before ammo begins to regenerate; if there are still
+/// rounds left, the delay is 0.4 seconds instead. Ammo regenerates at 28 rounds
+/// per second"* (wiki Shedu).
 ///
-/// The listed "Reload Time" is therefore not a reload at all — it is
-/// `delay + magazine/rate`, and BOTH published numbers fall out of it: 1.0 +
-/// 7/28 = 1.25 s is the wiki's figure for an empty battery, 0.4 + 7/28 = 0.65 s
-/// is WFCD's for a partial one. The two sources never disagreed; each published
-/// a different case.
+/// The listed "Reload Time" is therefore not a reload — it is
+/// `delay + magazine/rate`, and both published numbers fall out of it: 1.25 s
+/// is the wiki's empty battery, 0.65 s WFCD's partial one.
 ///
 /// WHAT IT CHANGES that a plain reload does not: the battery refills BETWEEN
-/// SHOTS, and only for the part of the gap that exceeds the delay. So the
-/// weapon breaks even when
+/// SHOTS, for the part of the gap exceeding the delay, so it breaks even at
 ///
 ///   `1 / fire_rate  >=  delay_partial + ammo_cost / regen_per_second`
 ///
-/// which on the Shedu is `0.4 + 1/28 = 0.4357 s`, i.e. **2.295 rounds a
-/// second** — 8.2% below its listed 2.50. Above that it drains and reloads;
-/// below it, every gap returns more than a whole round and the battery NEVER
-/// EMPTIES. A fire-rate penalty of nine percent therefore removes the weapon's
-/// reload entirely, which is the one thing a `reload_seconds` cannot say.
-///
-/// The listed rate sits just 0.036 s above break-even, so the effect is not a
-/// curiosity: Vile Precision alone crosses it.
+/// — on the Shedu **2.295 rounds a second**, 8.2% below its listed 2.50. Below
+/// that the battery NEVER EMPTIES, so a nine percent fire-rate penalty removes
+/// the reload entirely and Vile Precision alone crosses it.
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
 pub struct Battery {
     /// Rounds a second, once the delay has passed (28).
@@ -2907,8 +2829,7 @@ pub struct Battery {
 /// A SPOOL: the rate MOVES the longer the trigger is held, and rebuilds from
 /// the start once firing pauses.
 ///
-/// Both directions, one field, because they are one mechanic — six weapons in
-/// the roster and five of them go UP:
+/// Both directions, one field — six in the roster and five go UP:
 ///
 /// | weapon | start | span | full/floor at |
 /// | --- | --- | --- | --- |
@@ -2920,23 +2841,10 @@ pub struct Battery {
 /// | Soma Prime | 25% | 2.5 | shot 4 |
 ///
 /// Each page states its spool TWICE — a percentage per shot and a count of
-/// shots to optimal — and the two reconcile exactly on all five risers, which
-/// is what `over_shots` is derived from and why it is not always an integer
-/// (the Gorgon's 10.667% per shot IS 0.8/7.5). VERBATIM, one of each shape:
-///
-/// > Fire rate starts at 20% of its listed value, and increases by 10.667% per
-/// > shot. Requires a spool-up of 9 shots before optimal fire rate is achieved.
-/// > Burst firing maintains spool-up.        (wiki Gorgon)
-///
-/// > Fire rate decreases from 100% to 60% over 51 shots as the trigger is held
-/// > … Spool resets once the player stops firing.          (wiki Phenmor)
-///
-/// The fall/climb is LINEAR — every page gives two ends and a count and nothing
-/// between them.
-///
-/// Not to be confused with `beam_ramp_floor`, which is a continuous weapon's
-/// DAMAGE ramp: that one climbs in seconds and holds, this one moves in SHOTS
-/// and is a cadence. The Phantasma has both and they are unrelated.
+/// shots to optimal — reconciling exactly on all five risers, which is what
+/// `over_shots` is derived from and why it is not always an integer (the
+/// Gorgon's 10.667% IS 0.8/7.5). The climb is LINEAR. Not `beam_ramp_floor`, a
+/// continuous weapon's DAMAGE ramp in seconds; the Phantasma has both.
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
 pub struct SustainedFireRate {
     /// Where the rate STARTS, as a fraction of the listed one, on the first
@@ -3020,8 +2928,7 @@ fn tendril_cone_default() -> f64 {
 /// milestone"* — so the thresholds are `min * 3^k` and the multiplier
 /// `1.5 + 0.5k`, which [`SniperCombo::multiplier`] walks rather than computing
 /// through a logarithm: `log3` of an exact power of three is not exactly an
-/// integer in binary, and the floor of it is off by one wherever it lands
-/// short.
+/// integer in binary.
 ///
 /// *"The Shot Combo Counter will be reduced by 1 after a short period of time
 /// that no successful hits have been made, or if the player misses a shot. All
@@ -3185,17 +3092,14 @@ pub fn exilus_polarity(id: &str) -> Option<Polarity> {
 /// transform group report the base entry's trigger.
 /// What a `requires:` gate on a mod or arcane is checked against.
 ///
-/// TWO KINDS, and only one of them existed until 2026-08-05: the firing
-/// TRIGGER (`semi_auto`, `auto`), and the weapon CLASS (`shotgun`, `bow`,
-/// `dual_pistols`, …). The class was missing, so `requires: dual_pistols` could
-/// never be satisfied and Akimbo Slip Shot was silently inert on every dual
-/// pistol in the game — the arcane equipped, contributed nothing, and said
-/// nothing. Its unit test passed `&["dual_pistols"]` by hand, so it proved the
-/// gate worked and never asked whether anything produced the trait.
+/// TWO KINDS: the firing TRIGGER (`semi_auto`, `auto`) and the weapon CLASS
+/// (`shotgun`, `bow`, `dual_pistols`, …). With the class missing,
+/// `requires: dual_pistols` can never be satisfied and Akimbo Slip Shot is
+/// silently inert — a unit test passing `&["dual_pistols"]` by hand proves the
+/// gate works and never asks whether anything produces the trait.
 ///
-/// The trigger comes from the BASE entry of a transform group (an Incarnon form
-/// does not get its own), while the class is the weapon's own — the two halves
-/// of one weapon share a class by construction.
+/// The trigger comes from the BASE entry of a transform group; the class is
+/// the weapon's own, shared by both halves by construction.
 /// The `independent_procs:` ids this entry declares, as a static slice.
 ///
 /// Leaked through a cache exactly like [`traits_for`], and for the same reason:
@@ -3300,14 +3204,12 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
 /// weapon with no assembly named — whose numbers are the chamber's `base`
 /// PREVIEW, which its own entry says out loud.
 ///
-/// WHY IT REWRITES THE SPEC RATHER THAN THE PANEL. `base_panel` derives a great
-/// deal from `s.attack` on the way past — the cone, the falloff, the CO class,
-/// the punch-through budget, the radial's own crit and status defaults — so a
-/// panel patched afterwards would have to re-derive every one of them, and the
-/// ones nobody remembered would silently keep the preview's answer. Composing
-/// one layer earlier means NOTHING downstream of this function has to learn
-/// what a Kitgun is; it is the same reason an evolution overrides a panel
-/// rather than the sim.
+/// WHY IT REWRITES THE SPEC RATHER THAN THE PANEL: `base_panel` derives a
+/// great deal from `s.attack` on the way past — the cone, the falloff, the CO
+/// class, the punch-through budget, the radial's crit and status defaults — so
+/// a panel patched afterwards would have to re-derive every one, and the ones
+/// nobody remembered would keep the preview's answer. Composing one layer
+/// earlier means nothing downstream has to learn what a Kitgun is.
 ///
 /// `None` when the assembly names parts that do not compose — a grip from the
 /// other slot, a loader that does not exist. A Kitgun that is not assembled has
@@ -4239,42 +4141,23 @@ mod tests {
 
     /// EVERY ENTRY'S RANGE PAGE HAS BEEN OPENED, and this is what says so.
     ///
-    /// It began as a ratchet counting how many entries said nothing — 209 of
-    /// 224 — and a shrinking number is a poor guarantee: it cannot tell "we
-    /// read the page and it states no range" from "nobody has looked". Now that
-    /// all 224 have been read, the invariant is the stronger one and it holds
-    /// for weapons added tomorrow: an entry either STATES a range or is
-    /// RECORDED in `data/surveys/weapon_range.yaml` as having been read.
-    ///
-    /// ABSENCE STILL MEANS UNLIMITED at runtime — 101 entries' pages really do
-    /// state no reach, which is a fact about the wiki rather than a gap in us,
-    /// and `infinite` is a claim the page has to make before we write it. What
-    /// is no longer possible is an entry nobody has checked.
-    ///
-    /// The worksheet is read HERE and by nothing else, which is the same shape
-    /// `data/rivens/pools.yaml` has: the rules decide, the survey checks.
+    /// An entry either STATES a range or is RECORDED in
+    /// `data/surveys/weapon_range.yaml` as having been read — which a count of
+    /// silent entries cannot do, since it cannot tell "the page states no
+    /// range" from "nobody has looked". ABSENCE STILL MEANS UNLIMITED at
+    /// runtime: 101 pages really do state no reach.
     /// EVERY `internal_name` IS ONE THE EXPORT ACTUALLY HOLDS.
     ///
-    /// It is the only join between this data and its cross-check source —
-    /// `internal_name` == WFCD's `uniqueName`, never the display name, because
-    /// the export carries stale duplicates sharing one (data/README.md). Every
-    /// weapon yaml written since then opens with "cross-checked against WFCD
-    /// warframe-items — 0 disagreements", and a key that resolves to NOTHING
-    /// produces exactly that sentence out of a comparison that never ran.
+    /// The only join between this data and its cross-check source —
+    /// `internal_name` == WFCD's `uniqueName`, never the display name, since
+    /// the export carries stale duplicates sharing one. A key resolving to
+    /// NOTHING still produces "cross-checked — 0 disagreements" out of a
+    /// comparison that never ran, which is how the Hema was skipped.
     ///
-    /// The Hema is why this exists: it shipped
-    /// `/Lotus/Weapons/Infested/InfWFAccompanyingPri/...` against DE's
-    /// `/Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/...` — one path
-    /// segment short — so every sweep since the roster began skipped that
-    /// weapon in silence. No earlier check could see it, because
-    /// each of them asked about the weapons it could FIND.
-    ///
-    /// The survey is generated by `scripts/survey_internal_names.py` and cannot
-    /// record a key that joins to nothing — it REFUSES to write instead. So the
-    /// test is the other half: every entry that states a key must be IN the
-    /// survey, which is what makes a newly-mistyped one fail here rather than
-    /// disappear from a file nobody re-reads. An entry with no key at all is a
-    /// FORM, which inherits its weapon's and states only what differs.
+    /// `scripts/survey_internal_names.py` REFUSES to write a key that joins to
+    /// nothing, so the test is the other half: every entry that states a key
+    /// must be IN the survey. An entry with no key at all is a FORM, which
+    /// inherits its weapon's.
     #[test]
     fn every_internal_name_resolves_in_the_export() {
         let raw = crate::data::file("surveys/internal_names.yaml")
@@ -7115,24 +6998,23 @@ mod play_mode_tests {
 
     /// THE TORID'S CO CATALOG ROWS, pinned — both of them, and both forms.
     ///
-    /// The wiki's Condition Overload catalog gives this weapon TWO rows, and
-    /// the owner supplied them verbatim:
+    /// The wiki's Condition Overload catalog gives this weapon TWO rows:
     ///
     /// > Torid | Main-fire | Projectile | 100 | 100 | 100% | Multiplying
     /// > Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | Multiplying
     ///
-    /// Three facts are load-bearing and none of them is the default:
+    /// Three facts are load-bearing and none is the default:
     ///
     /// 1. MULTIPLYING, which is `Independent` here — a free-standing
     ///    `x (1 + co x types)` rather than a share of the base-damage bucket.
-    /// 2. THE CLOUD TAKES IT TOO. CO is a direct-hit bonus everywhere else, so
-    ///    an AoE part getting it is the anomaly the catalog exists to record.
-    /// 3. THE INCARNON FORM DOES NOT. It is ordinary additive, which means one
-    ///    weapon's two forms disagree — exactly the shape a refactor flattens
-    ///    without anyone noticing, since both would still "have CO".
+    /// 2. THE CLOUD TAKES IT TOO, where CO is a direct-hit bonus everywhere
+    ///    else.
+    /// 3. THE INCARNON FORM DOES NOT: it is ordinary additive, so one weapon's
+    ///    two forms disagree — the shape a refactor flattens unnoticed, since
+    ///    both would still "have CO".
     ///
-    /// The base fractions are 100% on both rows, which is the default, so they
-    /// are asserted rather than declared in the files.
+    /// The base fractions are 100% on both rows, the default, so they are
+    /// asserted rather than declared.
     #[test]
     fn the_torid_carries_both_of_its_co_catalog_rows() {
         use crate::loadout::CoBehavior;
@@ -7491,34 +7373,22 @@ mod condition_overload_catalog_tests {
         // Absence from the table is a positive statement, so a perk that raises
         // base damage by the same number as its named sibling is still ordinary.
         //
-        // THIS HALF IS THE ONE UNDER PRESSURE. The wiki's Math section lists
-        // "Base Damage increases from Incarnon Genesis Evolutions" among the
-        // things Adding CO ignores, with no "some" on it — and read as a law it
-        // would flip all 107 of these. It is not a law, and
-        // the page argues that side itself: the same list's "Bow charging"
-        // bullet is enumerated by ~15 catalog rows that disagree with each
-        // other (50%, 40%, 38%, 57%, 65%, 25%) and contains outright
-        // counter-examples — the Cinta and Nataruk are charged bows at 100%
-        // Multiplying and the Balefire Charger is 0%. See docs/CATALOGS.md.
-        // THIS LOOP TURNED AROUND, and the comment is the record of it.
-        //
-        // Every entry here is an ADDING perk the catalog does not list, and
-        // each was asserted to compute CO on its FULL evolved base because the
-        // table "lists only discrepant attacks". Four perks were measured on
-        // 2026-08-16 and all four came back excluded — the Dual Toxocyst's two
-        // (M49) and the Torid Incarnon's two (M50) — and the reading of the
-        // table that produced this loop did not survive it: its eleven
+        // THIS HALF IS THE ONE UNDER PRESSURE: the wiki's Math section
+        // lists "Base Damage increases from Incarnon Genesis Evolutions" among
+        // the things Adding CO ignores, with no "some" on it, and read as a law
+        // it would flip all 107 of these. The page argues that side itself —
+        // its "Bow charging" bullet is enumerated by ~15 catalog rows that
+        // disagree with each other. See docs/CATALOGS.md.
+        // AN ADDING PERK THE CATALOG DOES NOT LIST STILL EXCLUDES ITS OWN
+        // BASE, 15 measurements to 0 (M49, M50). The catalog's eleven
         // double-valued rows are the only ones that ever measured an evolved
-        // weapon, all eleven exclude, and the "100%" rows print an UNEVOLVED
-        // base in their own damage column, which is true by construction and
-        // answers a different question. 15 to 0.
+        // weapon and all eleven exclude; its "100%" rows print an UNEVOLVED
+        // base in their own damage column, true by construction.
         //
-        // THE FLIP IS ADDING-ONLY. Nothing has measured a
-        // Multiplying entry's evolved CO base, so those are untouched and the
-        // Torid's base form is the open experiment — its own test pins it at
-        // 1.0. These five are kept, pointing the other way, because they are
-        // still the set that distinguishes the two defaults: a measurement
-        // finding an INCLUDED Adding perk is what would edit this loop.
+        // THE FLIP IS ADDING-ONLY: nothing has measured a Multiplying entry's
+        // evolved CO base, so the Torid's base form is the open experiment and
+        // its own test pins it at 1.0. These five are kept pointing the other
+        // way, because they are the set that distinguishes the two defaults.
         for (entry, perk) in [
             ("vasto_prime_incarnon", "vasto_prime_lone_gun"),
             ("bronco_prime_incarnon", "bronco_prime_infused_shots"),
@@ -7545,21 +7415,17 @@ mod condition_overload_catalog_tests {
     /// 1.40 and 1.80 under BOTH — so a `Multiplying` term reads the FULL
     /// evolved base and the two classes disagree.
     ///
-    /// GENERALISED TO ALL 26 ENTRIES ON ONE WEAPON'S READING, deliberately ahead of the catalog: the wiki prints a
-    /// fraction for a minority of attacks, this rule beats that table, and a
-    /// measurement that contradicts it edits ONE weapon's yaml rather than this.
+    /// GENERALISED TO ALL 26 ENTRIES ON ONE WEAPON'S READING, ahead of the
+    /// catalog: a measurement contradicting it edits ONE weapon's yaml rather
+    /// than this rule. It asserts the PROPERTY rather than the 26 numbers, so
+    /// it holds for a weapon nobody has entered yet — the fraction with the
+    /// whole evolution ladder installed equals the fraction with none of it,
+    /// and a perk declaring `co_base_excludes_this_evolution` without scoping
+    /// it to its measured form fails HERE.
     ///
-    /// It asserts the PROPERTY rather than the 26 numbers, which is what makes
-    /// it hold for a weapon nobody has entered yet: the fraction with the whole
-    /// evolution ladder installed equals the fraction with none of it. A future
-    /// perk declaring `co_base_excludes_this_evolution` without scoping it to
-    /// the form it was measured on fails HERE — which is exactly the reach the
-    /// Torid's own pair would have had without `co_base_excludes_only_form`.
-    ///
-    /// The flat 1.0 is asserted SEPARATELY and only as a snapshot of today's
-    /// roster: it is what the reserved `co_base_fraction:` slot reads on every
-    /// Multiplying entry, and the day one weapon declares otherwise on evidence
-    /// that half moves while the invariant above does not.
+    /// The flat 1.0 is asserted SEPARATELY, as a snapshot of today's roster:
+    /// the day one weapon declares otherwise on evidence, that half moves while
+    /// the invariant above does not.
     #[test]
     fn no_evolution_dilutes_a_multiplying_co_base() {
         let mut checked = 0;
@@ -7650,48 +7516,26 @@ mod echo_tests {
 
 #[cfg(test)]
 mod url_tests {
-    /// **A WEAPON HAS A URL OF ITS OWN.** `/weapons/<Wiki_Name>` is built from
-    /// the English display name with a parenthesised qualifier stripped — the
+    /// **A WEAPON HAS A URL OF ITS OWN.** `/weapons/<Wiki_Name>` is the
+    /// English display name with a parenthesised qualifier stripped — the
     /// qualifier is OURS rather than the page's ("Larkspur Prime (Atmosphere)"
-    /// is one wiki page with two stat columns and we ship the ground one), so
-    /// it never reaches a URL. `build_site_app.py::wiki_name` and `wikiSlug`
-    /// in app.js do exactly this, and the site PRERENDERS one directory per
-    /// roster weapon from it.
+    /// is one wiki page with two stat columns and we ship the ground one).
     ///
-    /// TWO ENTRIES ON ONE SLUG IS SILENT DATA LOSS, in both directions: the
-    /// route resolves to whichever the lookup finds first, so the other weapon
-    /// is unreachable by link, by bare URL and by crawler — and the prerendered
-    /// `site/weapons/<Wiki_Name>/index.html` of one simply overwrites the
-    /// other's, with its title, description, canonical and OG card.
+    /// TWO ENTRIES ON ONE SLUG IS SILENT DATA LOSS both ways: the route
+    /// resolves to whichever the lookup finds first, and one prerendered
+    /// `index.html` overwrites the other's.
     ///
-    /// It was found by `check_pages`, which reports it as three `WRONG WEAPON`
-    /// lines after fifty-five minutes of browser sweep. This says
-    /// the same thing in a millisecond, which is what makes it a check somebody
-    /// runs.
+    /// TOMBFINGER IS THE FIRST OF A KIND: a kitgun chamber is TWO roster
+    /// entries because the SLOT is the weapon, and the wiki gives a chamber ONE
+    /// page — so the next dual-slot kitgun collides the same way.
     ///
-    /// TOMBFINGER IS THE FIRST OF A KIND, not a one-off: a kitgun chamber is
-    /// TWO roster entries because the SLOT is the weapon (it decides the mod
-    /// pool), and the wiki gives a chamber ONE page. Catchmoon's chamber data
-    /// is already here, so the next dual-slot kitgun to reach the roster
-    /// collides the same way.
-    ///
-    /// SO IT IS A RATCHET RATHER THAN A FLAT ASSERTION. The fix is a URL
-    /// DECISION — which entry keeps the bare name and how the other is spelled
-    /// — and it changes what an already posted link means, which is the
-    /// owner's call and not something a test may guess at. What a test CAN do
-    /// is stop the next one arriving in silence, so the known collision is
-    /// written down and everything else fails.
-    ///
-    /// `KNOWN_URL_CLASHES` MAY ONLY SHRINK, the same way `naming::FROZEN` may
-    /// — an entry removed is a bug fixed, an entry added is the bug spreading,
-    /// so growing it needs the same deliberate act as re-freezing a manifest.
-    /// The non-breaking shape of the fix, for whoever takes it, and it is an
-    /// OBSERVATION rather than a preference: `check_pages` reports the loser by
-    /// name — six lines reading `tombfinger_secondary WRONG WEAPON
-    /// tombfinger_primary`, in both languages — so the bare slug already means
-    /// the PRIMARY. Giving the qualifier to the SECONDARY therefore leaves
-    /// every link already posted meaning exactly what it means today, and makes
-    /// the unreachable entry reachable.
+    /// SO IT IS A RATCHET RATHER THAN A FLAT ASSERTION, since the fix is a URL
+    /// DECISION that changes what an already posted link means.
+    /// `KNOWN_URL_CLASHES` MAY ONLY SHRINK, the way `naming::FROZEN` may. The
+    /// non-breaking shape of that fix is an OBSERVATION: `check_pages` reports
+    /// the loser as `tombfinger_secondary WRONG WEAPON tombfinger_primary`, so
+    /// the bare slug already means the PRIMARY and the qualifier belongs on the
+    /// SECONDARY.
     const KNOWN_URL_CLASHES: &[&str] = &[
         // The kitgun chamber built into both Gunsmith slots. One wiki page,
         // two roster entries, and `/weapons/Tombfinger` can only be one.
