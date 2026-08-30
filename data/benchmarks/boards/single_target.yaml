@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3883
+submissions: 3896
 engine: d05c240129bf367eb006f80a36f5050bef627c0f
 entries:
   - weapon: acceltra_prime
@@ -3401,6 +3401,46 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: coda_bassocyst
     mode: base
+    score: 17.433526853164008
+    fp: 6b1a1a64d2a47e52
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, riven, primed_chilling_grasp, toxic_barrage, blaze]
+    arcanes: [primary_deadhead]
+    valence: magnetic
+    riven:
+      bonuses: [critical_damage, fire_rate, status_chance]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: coda_bassocyst
+    mode: base
+    score: 14.91127470522944
+    fp: 89bf4a9bbfd6de73
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, riven, primed_chilling_grasp, toxic_barrage, blaze]
+    arcanes: [primary_deadhead]
+    valence: magnetic
+    riven:
+      bonuses: [critical_damage, fire_rate, status_chance]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: coda_bassocyst
+    mode: base
+    score: 13.400786261228715
+    fp: ca850db71e66a02f
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_chilling_grasp, toxic_barrage, blaze]
+    arcanes: [primary_deadhead]
+    valence: magnetic
+  - weapon: coda_bassocyst
+    mode: base
+    score: 12.933823414716972
+    fp: 6b1a1a64d2a47e52
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, riven, primed_chilling_grasp, toxic_barrage, blaze]
+    arcanes: [primary_deadhead]
+    valence: heat
+    riven:
+      bonuses: [critical_damage, fire_rate, status_chance]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: coda_bassocyst
+    mode: base
     score: 12.525710505712087
     fp: bd28a820c929f1cb
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, toxic_barrage]
@@ -3421,6 +3461,13 @@ entries:
       bonuses: [critical_damage, fire_rate, status_chance]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: coda_bassocyst
+    mode: base
+    score: 12.33468848297616
+    fp: 3cb2e4eeb77c4a9b
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_chilling_grasp, toxic_barrage]
+    arcanes: [primary_deadhead]
+    valence: heat
   - weapon: coda_bassocyst
     mode: base
     score: 11.778468248272604
@@ -3500,61 +3547,6 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, shotgun_elementalist, incendiary_coat]
     arcanes: [primary_crux]
     valence: magnetic
-  - weapon: coda_bassocyst
-    mode: base
-    score: 7.262532445103579
-    fp: 6e27dc02edb4f9d6
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, riven, incendiary_coat]
-    arcanes: [primary_crux]
-    valence: magnetic
-    riven:
-      bonuses: [critical_damage, fire_rate, status_chance]
-      malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: coda_bassocyst
-    mode: base
-    score: 6.6819739148868305
-    fp: 6d51978d0d5003e9
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, riven, incendiary_coat]
-    arcanes: [primary_deadhead]
-    valence: heat
-    riven:
-      bonuses: [critical_damage, fire_rate, status_chance]
-      malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: coda_bassocyst
-    mode: base
-    score: 6.668120124798374
-    fp: 63f2f6d39469e2f6
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, riven, primed_chilling_grasp, contagious_spread]
-    arcanes: [primary_crux]
-    valence: heat
-    riven:
-      bonuses: [critical_damage, fire_rate, status_chance]
-      malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: coda_bassocyst
-    mode: base
-    score: 6.482492696271317
-    fp: dbfbcba3215973f1
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, riven, primed_charged_shell, contagious_spread]
-    arcanes: [primary_crux]
-    valence: magnetic
-    riven:
-      bonuses: [critical_damage, fire_rate, status_chance]
-      malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: coda_bassocyst
-    mode: base
-    score: 6.366331840212287
-    fp: d6fcd49de2cae864
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, riven, primed_chilling_grasp, toxic_barrage]
-    arcanes: [primary_crux]
-    valence: heat
-    riven:
-      bonuses: [critical_damage, fire_rate, status_chance]
-      malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: coda_bubonico
     mode: base
     score: 20.9404956667639
@@ -11015,6 +11007,17 @@ entries:
     valence: cold
   - weapon: tenet_arca_plasmor
     mode: base
+    score: 0.23288052785156935
+    fp: 5bf7ff1e51824e6e
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, primed_tactical_pump, riven, primed_chilling_grasp, primed_charged_shell]
+    arcanes: [primary_deadhead]
+    valence: toxin
+    riven:
+      bonuses: [critical_chance, damage, fire_rate]
+      malus: status_duration
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: tenet_arca_plasmor
+    mode: base
     score: 0.23071494121018227
     fp: 3b10191f0aad3b5e
     exilus: galvanized_acceleration
@@ -12693,6 +12696,15 @@ entries:
     score: 2.492223352877995
     fp: 34f3aa85efb542cc
     mods: [split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 2.3774755695724736
+    fp: 5f2cb0dbcc7ed167
+    mods: [primed_shred, split_chamber, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
     riven:
       bonuses: [damage, heat, multishot]
       malus: damage_to_infested
