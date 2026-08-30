@@ -1,9 +1,8 @@
 // HOW HARD YOU MEASURE IS A NUMBER SOMEONE CAN SET, in all three modules.
 //
-// A run count used to be three different kinds of thing: the simulator's own
-// setting, a constant the quick calc kept to itself, and a rule the optimizer
-// obeyed without a control. Two of those became settings
-// and the third moved, so this walks all three and asserts the number a reader
+// A run count is three different kinds of thing: the simulator's own setting,
+// a floor the quick calc keeps to itself, and the optimizer's final round. So
+// this walks all three and asserts the number a reader
 // picks is the number the request carries.
 //
 //   the SIMULATOR   defaults to 1000 — the official rulers' count, so a first
@@ -14,11 +13,11 @@
 //   the OPTIMIZER   takes its own for the final round, TYPED, saved by no
 //                   preset and pinned by no ruler
 //
-// The last one is the reason this exists as a check rather than a comment. It
-// used to be a blank box meaning "the fight's own count" — one control with
-// two readings, which is exactly the kind of state that reads as broken and
-// works, or reads as fine and sends 0. It is a preference now, in neither
-// half of the tab and in neither preset, and this asserts all three.
+// The last one is the reason this exists as a check rather than a comment. A
+// blank box meaning "the fight's own count" is one control with two readings,
+// which is exactly the kind of state that reads as broken and works, or reads
+// as fine and sends 0. It is a preference, in neither half of the tab and in
+// neither preset, and this asserts all three.
 //
 //   node scripts/check_run_counts.mjs
 //
@@ -103,11 +102,10 @@ const r = await evaluate(`(async () => {
   };
   const set = async (el,v) => { const n=document.getElementById(el); n.value=String(v); n.dispatchEvent(new Event('input',{bubbles:true})); await sleep(200); };
 
-  // IT IS A PREFERENCE, TYPED, AND IN NEITHER PRESET.
-  // It used to ride the search preset with a BLANK box meaning "the fight's
-  // own count" — one control with two readings, and the wrong home for both:
-  // a run count is not what to search and the fight has never carried one
-  // either. So the assertions moved with the decision.
+  // IT IS A PREFERENCE, TYPED, AND IN NEITHER PRESET. Riding the search preset
+  // with a BLANK box meaning "the fight's own count" is one control with two
+  // readings, and the wrong home for both: a run count is not what to search,
+  // and the fight carries none.
   const setC = async (el,v) => { const n=document.getElementById(el); n.value=String(v); n.dispatchEvent(new Event('change',{bubbles:true})); await sleep(200); };
   const runsBox = document.getElementById('opt-runs');
   out.optOnScreen = !!runsBox;

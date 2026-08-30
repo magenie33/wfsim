@@ -85,9 +85,9 @@ const WASM = !!window.WFSIM_WASM;
 // for the paren-named evolution icons).
 // Art is SAME-ORIGIN in both deployments: the native server reads
 // web/cache/img/, and the static build ships the same files in site/img/
-// (build_site_app.py `ship_art`). It used to hotlink the CDN on the static
-// build, and that CDN 301s to raw.githubusercontent.com — unreliable to
-// blocked from mainland China, which is where the players are.
+// (build_site_app.py `ship_art`). Hotlinking the CDN instead 301s to
+// raw.githubusercontent.com — unreliable to blocked from mainland China, which
+// is where the players are.
 //
 // `wiki:` (data/assets.yaml) marks a file the CDN does not carry; it changes
 // where the BUILD fetches from, not where the page asks — the cache holds it
@@ -193,8 +193,9 @@ const DT = (ty) => {
 // wiki's `Module:DamageTypes/data` (see style.css for the palette and
 // data/assets.yaml for the files).
 //
-// Keyed on the TYPE and never on a row's position: the meter used to colour by
-// index, so Heat was one colour under a direct hit and another under a field. `null` for anything that is not a damage type — a
+// Keyed on the TYPE and never on a row's position: colouring by index makes
+// Heat one colour under a direct hit and another under a field. `null` for
+// anything that is not a damage type — a
 // source row like "Direct hits" is not one, and asking for its colour should
 // return nothing rather than a wrong one.
 const DT_TYPES = new Set(["impact", "puncture", "slash", "cold", "electricity",
@@ -405,9 +406,9 @@ const COMPUTE_DEFAULT_PCT = 50;
 /// THERE IS NO CEILING. 100% means every logical processor
 /// the machine reports, on the desktop build and in a browser alike.
 ///
-/// It used to stop at sixteen, on the reasoning that each lane is a Web Worker
-/// holding its own instance of the wasm module and the last few cost memory
-/// rather than heat. MEASURED, that instance is **48 MB** (0/1/4/8/16 lanes,
+/// NOT capped at sixteen. Each lane is a Web Worker holding its own instance
+/// of the wasm module, so the last few cost memory rather than heat. MEASURED,
+/// that instance is **48 MB** (0/1/4/8/16 lanes,
 /// linear to within 2%) — so a 28-core machine spends 1.3 GB to use all of
 /// itself, about 4% of what such a machine has. A cap was protecting nobody
 /// and taking 43% of the CPU away from precisely the readers who had the most
@@ -581,9 +582,9 @@ function makeLane() {
 
 /// ONE LANE AT A TIME, made when something actually needs it.
 ///
-/// The pool used to be built whole on first use, and first use is the BOOT's
-/// own `/api/meta` — so opening the page fetched a 6 MB wasm module once per
-/// core, all at once, before anything had been drawn. On a 28-thread machine
+/// Building the pool whole on first use means building it on the BOOT's own
+/// `/api/meta` — opening the page then fetches a 6 MB wasm module once per
+/// core, all at once, before anything is drawn. On a 28-thread machine
 /// that is fourteen simultaneous requests for the same large file to answer one
 /// small question, and a single one of them failing took the page down. A plain endpoint call needs ONE worker; a sharded
 /// simulation is the only thing that wants them all, and it says so.
@@ -771,11 +772,11 @@ function loadCheckpoint() {
 // order_exactly`). Each also climbs on its own, so N workers are also N
 // independent hill-climbs, which is the diversity one best-first climb lacks.
 //
-// THE COUNT IS THE TOPBAR'S COMPUTE SHARE, and as of 2026-08-29 it is the
-// whole answer. A search used to be able to override it with a `CPU
-// threads` box in its own preset, on the reasoning that a heavy scope might
-// want more cores than a light one. That is two controls for one fact — the
-// arena's own rule — and it put the override on the one thing most able to
+// THE COUNT IS THE TOPBAR'S COMPUTE SHARE, and it is the whole answer. A `CPU
+// threads` box in a search preset — on the reasoning that a heavy scope might
+// want more cores than a light one — is two controls for one fact, which is
+// the arena's own rule, and it puts the override on the one thing most able
+// to
 // cook a phone, which is the last place a global heat setting should be
 // ignorable. `poolSize()` is the setting; this is now only a name for it.
 const woptWorkerCount = () => poolSize();
@@ -965,8 +966,8 @@ const EXILUS = 8;
 const STANCE = 9;
 let slots = [];
 // 9 × innate polarity name|null — index 8 is the EXILUS slot, which HAS one on
-// most weapons (wiki "Exilus Polarity"). It used to be documented here as
-// "exilus never innate", and the loader sliced it off to match.
+// most weapons (wiki "Exilus Polarity") — never "exilus is never innate",
+// which the loader would then slice off to match.
 let innate = [];
 // ONE ENTRY PER ARCANE POOL the weapon seats, in the weapon's own pool
 // order. Almost always a single entry; an Arch-Gun seats two — one Primary
@@ -1032,10 +1033,10 @@ let assembly = null;
 let valence = { element: "", bonus: 0 };
 // A FRESH scenario, built from the server's defaults and from nothing else.
 //
-// This is what a weapon that has never been opened gets. It used to be
+// This is what a weapon that has never been opened gets. NOT
 // `snapshotScenario()` — the live fight, which at that moment still belongs to
-// the weapon you just left — so opening a new weapon inherited the previous
-// one's level, duration, Tenno and buffs, and saved them as that weapon's
+// the weapon you just left — or opening a new weapon inherits the previous
+// one's level, duration, Tenno and buffs, and saves them as that weapon's
 // "scenario 1". Two weapons' fights are ALLOWED to look alike; they are never
 // allowed to be the same object or to be born from each other.
 //
@@ -1151,8 +1152,8 @@ const simMeterOpen = new Set();
 // (`sim`). Seeded from the current build on weapon change.
 let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 0 };
 let optSeeded = false;
-// (The optimizer used to keep its own scope-wide buff list and config here.
-// It reads the SCENARIO's now — see `renderOptBuffs`.)
+// (The optimizer keeps no scope-wide buff list of its own: it reads the
+// SCENARIO's — see `renderOptBuffs`.)
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
 // HOW THE SEARCH RUNS. `finalists` is the whole of it, and it IS the search's:
@@ -1163,10 +1164,10 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // simulator owns everything in the second and it is read-only here. What sits
 // outside both boxes is in neither preset — which is exactly one thing.
 //
-// THE FINAL ROUND'S RUN COUNT IS THAT THING. It used to
-// ride the search preset, with a blank box meaning "the fight's own count" —
-// two readings of one setting, and the wrong home for both. A run count is not
-// what to search and it is not the fight either: `sim.runs` has never existed,
+// THE FINAL ROUND'S RUN COUNT IS THAT THING. Riding the search preset with a
+// blank box meaning "the fight's own count" is two readings of one setting,
+// and the wrong home for both. A run count is not what to search and it is not
+// the fight either: `sim.runs` does not exist,
 // because "how hard do I want to measure right now" is a fact about the person
 // (see `SIM_RUNS_KEY`). So it is a PREFERENCE with a key of its own, typed
 // rather than defaulted from somewhere else, saved by no preset and pinned by
@@ -1520,10 +1521,10 @@ async function init() {
     optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
     updateOptEstimate();
   });
-  // (The final-round run count and the CPU-thread box used to be wired here.
-  // The count is a PREFERENCE now and draws itself — `renderOptRuns`, outside
-  // both halves because it is in neither preset; threads is gone, because the
-  // topbar's compute picker is the one place that question is answered.)
+  // (The final-round run count is not wired here: it is a PREFERENCE and
+  // draws itself — `renderOptRuns`, outside both halves because it is in
+  // neither preset. There is no CPU-thread box, because the topbar's compute
+  // picker is the one place that question is answered.)
   // BEFORE ANY LIST IS READ: a riven is the FAMILY's as of 2026-08-25, and the
   // lists already on this machine are filed per weapon. It needs `META`, which
   // is why it is called here rather than beside the migrations it belongs with.
@@ -1793,11 +1794,10 @@ const weaponCategory = (w) => (w.assembly ? "kitgun" : (w.slot || ""));
 /// one riven, one wiki page — so its two slot entries are one entry here, and
 /// which one the card opens is settled on the page by the Slot control.
 ///
-/// IT OPENS THE PRIMARY. Which of the two a card lands on
-/// is a real choice, and it used to be made by roster ORDER — which happens to
-/// be alphabetical and happens to put `_primary` before `_secondary`. That is
-/// the right answer arrived at by accident, and an accident stops being right
-/// the day a chamber is named so that it is not.
+/// IT OPENS THE PRIMARY, stated rather than left to roster ORDER — which
+/// happens to be alphabetical and happens to put `_primary` before
+/// `_secondary`. That is the right answer arrived at by accident, and an
+/// accident stops being right the day a chamber is named so that it is not.
 const oneCardPerChamber = (ws) => {
   const best = new Map();
   ws.forEach((w) => {
@@ -2083,10 +2083,10 @@ function renderBenchBoard() {
     const sc = { ...defaultScenario(), ...(cur.scenario || {}) };
     sc.player_at = [...(sc.player_at || [0, 0])];
     sc.target_at = [...(sc.target_at || [0, CONTACT_M])];
-    // THE RULER'S OWN CROWD. These two lines used to be `= []` and `= null`,
-    // written when a benchmark could not have a formation — so the day one did,
-    // the board would have drawn a single body for a 361-body fight while its
-    // rules said otherwise. A picture that contradicts the standard beside it
+    // THE RULER'S OWN CROWD, never `= []` and `= null`: a benchmark CAN have
+    // a formation, and hardcoding its absence draws a single body for a
+    // 361-body fight while the rules beside it say otherwise. A picture that
+    // contradicts the standard beside it
     // is worse than no picture.
     sc.formation = (sc.formation || []).map((f) => ({ ...f, at: [...f.at] }));
     sc.aim_at = sc.aim_at ? [...sc.aim_at] : null;
@@ -2534,9 +2534,9 @@ const eximusField = (en) => {
 ///
 /// THE RULE IS THE ENGINE'S. `engine::scenario::forced_for`
 /// decides and `/api/meta` states the consequence per weapon; this reads it.
-/// The three rules used to be re-derived here from weapon flags — two
-/// implementations of one rule, and a forced field looks identical whoever
-/// forced it, so they could drift without anything going red.
+/// Re-deriving the three rules here from weapon flags is two implementations
+/// of one rule, and a forced field looks identical whoever forced it, so they
+/// drift without anything going red.
 ///
 /// It still has THREE states and not two, which is what the flags could not say: "there is nothing to run out of" and "there is, and you
 /// cannot refill it" force the SAME box to OPPOSITE values. Reading one as the
@@ -2788,8 +2788,8 @@ const RIVEN_SHAPE_DEFAULT = "3+1";
 // suggestion, and the rolls sit at 1.0 because a slider has to be somewhere.
 // FOUR drafts, one per shape, and only the active one is the riven.
 //
-// Switching 3+1 -> 2+1 -> 3+1 used to lose the third stat: the slot was
-// popped and there was nowhere for it to have gone.
+// Without them, switching 3+1 -> 2+1 -> 3+1 loses the third stat: the slot is
+// popped and there is nowhere for it to have gone.
 // Keeping each shape's own stats means a shape switch is a switch, not an
 // edit — you can compare a 2+1 against a 3+1 by clicking between them.
 //
@@ -3234,9 +3234,9 @@ let rivenSaveTimer = null;
 ///
 /// A riven's id IS its name (`riven:<name>`), so renaming one and deleting one
 /// are the same operation seen from a build: the thing a slot points at has
-/// moved or stopped existing. Both used to touch the LIVE build only, which was
-/// already narrow — a weapon's OTHER saved builds kept an id nothing resolves —
-/// and filing rivens by FAMILY widened it across weapons: rename a card on the Burston and the
+/// moved or stopped existing. Touching the LIVE build only is too narrow — a
+/// weapon's OTHER saved builds keep an id nothing resolves — and filing rivens
+/// by FAMILY widens that across weapons: rename a card on the Burston and the
 /// Burston Prime's saved builds lose it with nothing on screen saying so.
 ///
 /// THE SCOPE IS PASSED IN rather than derived here, because the two callers
@@ -3848,9 +3848,9 @@ function mountArenaCanvas(host, s, en, opts) {
   //     answer to "what am I looking at".
   //   · BOTTOM — the read-outs, which are nobody's control.
   //
-  // The card used to float top-right and was BOTH of those things at once: it
-  // named the enemy you were placing and it was the only thing the right-hand
-  // side ever said. One panel doing two jobs is why neither was findable.
+  // A card floating top-right is BOTH of those things at once: it names the
+  // enemy you are placing and it is the only thing the right-hand side says.
+  // One panel doing two jobs is why neither is findable.
   host.innerHTML =
     `<div class="arc-wrap">
        <canvas class="arc-cv"></canvas>
@@ -4213,9 +4213,9 @@ function mountArenaCanvas(host, s, en, opts) {
     // A BODY IS THE UNIT IT WAS PLACED WITH. The brush on
     // the left says what you are ABOUT to place; it does not reach back and
     // rewrite what is already standing on the floor. Placing a Gunner and then
-    // picking a Thrax to place next used to turn every Gunner already down into
-    // a Thrax, because a body carried no unit of its own and the server reads a
-    // blank one as "the aimed body's" — which is the right default for a
+    // picking a Thrax to place next must not turn every Gunner already down
+    // into a Thrax. A body carrying no unit of its own does exactly that: the
+    // server reads a blank one as "the aimed body's" — the right default for a
     // scenario written before a formation existed and the wrong one for a
     // formation you are building unit by unit.
     //
@@ -4436,10 +4436,11 @@ function mountArenaCanvas(host, s, en, opts) {
       if (touches.size === 1) { mode = null; marquee = null; }
     }
     let wrote = mode && mode !== "pan" && mode !== "marquee";
-    // A CLICK ON BARE FLOOR CLEARS THE SELECTION AND NOTHING ELSE. It used to AIM there, on the reasoning that a body is
-    // dragged and a place has nothing to grab — but the aim marker is always on
-    // the floor, so it does have something to grab, and making a bare click
-    // move it meant every miss-click while selecting silently re-aimed the
+    // A CLICK ON BARE FLOOR CLEARS THE SELECTION AND NOTHING ELSE. Aiming
+    // there — on the reasoning that a body is dragged and a place has nothing
+    // to grab — ignores that the aim marker is always on the floor and does
+    // have something to grab, and a bare click that moves it means every
+    // miss-click while selecting silently re-aims the
     // weapon. A fight that moved on a mis-click is a result that was for a
     // fight nobody was in.
     //
@@ -4756,10 +4757,9 @@ function mountArena(host, s, en, opts) {
 ///
 /// `over` is for what a CALLER owns rather than the fight — `replay`, a seed,
 /// and the QUICK CALC'S RUN COUNT, which is a reader's precision rather than an
-/// edit to the fight. It lands LAST, which is the whole of that decoupling: the
-/// count used to be written into the scenario object BEFORE the page's own was
-/// spread over it, so the box silently did nothing while every chip's tooltip
-/// quoted it.
+/// edit to the fight. It lands LAST, which is the whole of that decoupling:
+/// written into the scenario object BEFORE the page's own is spread over it,
+/// the box silently does nothing while every chip's tooltip quotes it.
 function theFight(over) {
   return { ...sim, runs: simRuns(), custom_enemies: customEnemiesFor(sim.enemy),
     buffs: sim.buffs || {}, ...(over || {}) };
@@ -5217,9 +5217,9 @@ const SHARE_V_DEFLATE = "1";
 const SHARE_V_PLAIN = "0";
 /// **v3: THE IDS TRAVEL AS INDICES, AND THE PAYLOAD IS PLAIN TEXT**.
 ///
-/// A link used to spell its ids out and then deflate them, which is why a build
-/// cost ~280 characters: the payload is mostly identifiers, and deflate cannot
-/// know the ones the payload does NOT contain. The same Laetum is 76 characters
+/// Spelling the ids out and then deflating them costs ~280 characters for a
+/// build: the payload is mostly identifiers, and deflate cannot know the ones
+/// the payload does NOT contain. The same Laetum is 76 characters
 /// as indices — and at that length deflate makes it BIGGER (its own header
 /// outweighs what it finds), so v3 goes into the URL as it is.
 ///
@@ -5823,9 +5823,9 @@ async function openSharePanel(bar) {
   // measurement — and planted a scenario preset in the reader's collection.
   //
   // The BUILD link is the default and it is INSTANT: it needs no simulation,
-  // which is the whole reason the panel used to open on a spinner. The claim
-  // is one click away and still costs a run, because a number nobody measured
-  // is not a claim.
+  // so the panel opens on content rather than on a spinner. The claim is one
+  // click away and still costs a run, because a number nobody measured is not
+  // a claim.
   panel.hidden = false;
   const bUrl = await shareUrl();
   panel.innerHTML =
@@ -5846,9 +5846,9 @@ async function openSharePanel(bar) {
 /// THE CARD: a picture of this build's run, to paste into a chat window. Split
 /// out of the panel above so it costs a simulation only when somebody asks.
 ///
-/// THE LINK IS THE SAME BUILD LINK. It used to be a second,
-/// longer one carrying the fight and the measurement — a CLAIM — and that is
-/// gone: a link may plant a build and never a scenario. The measurement still
+/// THE LINK IS THE SAME BUILD LINK, never a second longer one carrying the
+/// fight and the measurement — a CLAIM: a link may plant a build and never a
+/// scenario. The measurement still
 /// travels, as the picture, which is a thing a reader looks at rather than
 /// something that lands in their app.
 async function openShareClaim(panel, url) {
@@ -6376,10 +6376,10 @@ async function drawShareCard(canvas, url) {
 // locals. No count cap — presets live in the user's localStorage, not
 // with us.
 //
-// A preset BELONGS TO ONE WEAPON. The keys used to be
-// weapon-less, so one global list served the whole roster and edits on the
-// Laetum showed up on the Dual Toxocyst — the "cross-weapon apply prunes
-// unknown ids" path existed precisely because of that bleed. The weapon id
+// A preset BELONGS TO ONE WEAPON, so the key carries the weapon. A weapon-less
+// key is one global list serving the whole roster, where edits on the Laetum
+// show up on the Dual Toxocyst — which is the bleed the "cross-weapon apply
+// prunes unknown ids" path exists for. The weapon id
 // now joins the STORAGE key; the domain still names the collection, so DOM
 // ids and labels are untouched:
 //   localStorage  wfsim-presets-<weapon>-<domain>
@@ -7113,9 +7113,10 @@ function snapshotState() {
     // THE PARTS, for the same reason: on a Kitgun they are the stat line, and
     // `null` on everything else, which is what "this weapon has none" means.
     assembly: assembly ? { ...assembly } : null,
-    // NO `sim` FIELD. A build used to carry a snapshot of the fight, which
-    // `restoreState` then applied — so picking a build silently rewrote the
-    // scenario you were working in. The scenario is INDEPENDENT: nothing outside `simulator-scenarios` writes it.
+    // NO `sim` FIELD. A build carrying a snapshot of the fight is a snapshot
+    // `restoreState` then applies, so picking a build silently rewrites the
+    // scenario you are working in. The scenario is INDEPENDENT: nothing
+    // outside `simulator-scenarios` writes it.
     //
     // Nothing is lost. "What this build was last measured under" was never
     // this field's job — `lastResult.key` is that record, it lives outside
@@ -7219,9 +7220,9 @@ function restoreState(st, weapon) {
   // drain, 91/60 in red. The cheapest legal layout is planned on the spot.
   //
   // IT LIVES HERE because TWO callers restore a build — the build bar, and
-  // `initPresets` on boot — and the plan used to live in the bar's `apply()`
-  // only. So landing on a page whose active build was a benchmark build showed
-  // the wrong Forma until you clicked something. Both
+  // `initPresets` on boot — so a plan living in the bar's `apply()` alone
+  // shows the wrong Forma on a page whose active build is a benchmark build,
+  // until you click something. Both
   // callers set the active preset BEFORE restoring, which is what makes
   // the question answerable here.
   //
@@ -7322,11 +7323,11 @@ function presetSources(domain, exceptWeapon) {
 // preset 1"). Restored across reloads.
 let activePreset = null;
 
-// A stored buff config outlives the RULE it was written under. Every stacking
-// buff used to open at full stacks; they open EARNED at zero now, and
-// `syncBuffConfig` only seeds an id it has never seen — so every scenario
-// saved before that change kept the old numbers and the new rule looked
-// broken on exactly the builds that had been tested most.
+// A stored buff config outlives the RULE it was written under. A stacking buff
+// opens EARNED at zero, and `syncBuffConfig` only seeds an id it has never
+// seen — so a scenario saved under an open-at-full-stacks rule keeps the old
+// numbers, and the current rule looks broken on exactly the builds that have
+// been tested most.
 //
 // One-time, and it drops the whole map rather than guessing which entries were
 // deliberate: `{stacks: 3}` on a 3-stack buff is what "never touched" and
@@ -7363,10 +7364,10 @@ function initPresets() {
   // (The old 300-run migration lived here. It rewrote `state.sim.runs` inside
   // BUILD presets — a field nothing reads any more, because a build no longer
   // carries a copy of the fight.)
-  // NOTHING IS AUTO-CREATED. Opening a weapon used to write
-  // a blank "build 1" into storage, and opening the app used to write a
-  // "scenario 1" — so a reader who browsed forty weapons owned forty builds
-  // they had never made. That is fine while the only place they are listed is
+  // NOTHING IS AUTO-CREATED. Writing a blank "build 1" on opening a weapon,
+  // or a "scenario 1" on opening the app, leaves a reader who browsed forty
+  // weapons owning forty builds they never made. That is fine while the only
+  // place they are listed is
   // the bar of the weapon you are on; it stops being fine the moment there is
   // one page listing everything you own, because then the page's whole answer
   // is "everything", which is the same as no answer.
@@ -7424,10 +7425,10 @@ function initPresets() {
     // was simply being written to disk first.
     restoreState((buildNamed(activePreset) || {}).state || blankBuildState(), here);
     if (!activePreset) notePristineBuild();
-    // THE FIGHT, from its own collection. It used to arrive inside the build
-    // preset, which is exactly why picking a build changed the scenario; it
-    // now comes from the active `simulator-scenarios` entry, and this is the
-    // only place the live scenario is seeded on load or on a weapon switch.
+    // THE FIGHT, from its own collection — never from inside the build
+    // preset, which is how picking a build comes to change the scenario. It
+    // comes from the active `simulator-scenarios` entry, and this is the only
+    // place the live scenario is seeded on load or on a weapon switch.
     // The scenario cannot actually reach the fallback — an official ruler is a
     // BUILTIN and there is always one — but it is written the same way so that
     // the two collections have one rule between them rather than one each.
@@ -7939,10 +7940,9 @@ function renderPresetBarIn(bar, cfg) {
     // build" by loading somebody else's, and the bar's count and this handler's
     // disagreed about what a collection contains.
     const ps2 = cfg.load().filter((p) => !p.builtin && p.name !== cfg.active());
-    // EVERY COLLECTION MAY GO TO ZERO. It used to be only
-    // the OPTIONAL ones — the customs — on the reasoning that a module always
-    // has a state and "no build" is not a thing the builder can show. Both
-    // halves of that are still true and neither needs a stored row: nothing is
+    // EVERY COLLECTION MAY GO TO ZERO, not only the OPTIONAL ones. A module
+    // always has a state and "no build" is not a thing the builder can show —
+    // both true, and neither needs a stored row: nothing is
     // auto-created any more (`initPresets`), so the state the builder shows
     // when you own nothing is `cfg.blank()`, and a preset comes back the moment
     // you edit it.
@@ -8021,10 +8021,10 @@ async function loadBoard() {
 /// THE BOARD'S ROWS, as read-only builds you can open.
 ///
 /// RANKED WITHIN A RULER AND A MODE, because that is the only thing a rank is.
-/// `#1` used to be the first row for the weapon across everything the board
-/// held, which was unambiguous exactly while there was one benchmark and one
-/// way to play — two of each turn it into a number that names nothing. So the
-/// grouping is (benchmark, mode) and the chip says which.
+/// `#1` across everything the board holds is unambiguous exactly while there
+/// is one benchmark and one way to play; two of each turn it into a number
+/// that names nothing. So the grouping is (benchmark, mode) and the chip says
+/// which.
 ///
 /// The mode travels IN THE STATE, so opening a board build plays it the way it
 /// was measured. Without that, picking "#1" would show its mods in whatever
@@ -8316,10 +8316,10 @@ function applyScenario(st) {
   DEAD_SCENARIO_FIELDS.forEach((k) => { delete st[k]; });
   // ONTO THE DEFAULTS, NEVER ONTO THE FIGHT YOU ARE LEAVING.
   //
-  // This used to spread over the live `sim`, so any field the incoming
-  // scenario does not mention kept the outgoing one's value — and a benchmark
-  // yaml mentions only what it has an opinion about. Tick Eximus on a copy of
-  // the official ruler, switch back to the official, and the official fight was
+  // Spreading over the live `sim` leaves any field the incoming scenario does
+  // not mention holding the outgoing one's value — and a benchmark yaml
+  // mentions only what it has an opinion about. Tick Eximus on a copy of the
+  // official ruler, switch back to the official, and the official fight is
   // now against an Eximus, because `single_target.yaml` never says `eximus:`. `invisible` did not leak in the same
   // test only because that yaml happens to state it.
   //
@@ -8592,10 +8592,10 @@ function applyWeaponInner(id, presetMods) {
   refreshRivenNames(); // this weapon's rivens, named by the engine
   // The SERVER decides which mods this weapon can equip (`pool_for_weapon`)
   // and sends the id list; the class tables are only where the mod objects
-  // live. This used to be a JS re-implementation of the same rules, and it
-  // went stale the moment the engine learned a new one — Amalgam mods are not
-  // equippable on a sentinel weapon and ammo mods do nothing on an infinite
-  // reserve, and neither reached the builder or the optimizer while the pool
+  // live. A JS re-implementation of the same rules goes stale the moment the
+  // engine learns a new one — Amalgam mods are not equippable on a sentinel
+  // weapon and ammo mods do nothing on an infinite reserve, and neither
+  // reaches the builder or the optimizer while the pool
   // was computed twice.
   const byId = new Map(
     Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]),
@@ -8864,9 +8864,9 @@ function renderMods() {
 // It carries the TENNO as well as the weapon, because half of what a build is
 // worth is a question about the player: a mod gated `while_invisible` pays or
 // does not, and Primary Bulwark is worth +500% or nothing depending on the
-// frame's armor. The panel used to resolve against the NEUTRAL player while
-// the sim resolved against the fight's — so the panel offered a buff card the
-// sim never ran, and hid a contribution the sim was paying. One player, both
+// frame's armor. A panel resolving against the NEUTRAL player while the sim
+// resolves against the fight's offers a buff card the sim never runs, and
+// hides a contribution the sim is paying. One player, both
 // answers. The scenario fields that describe the
 // PLAYER rather than the fight.
 const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_health", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras", "shards"];
@@ -8930,10 +8930,10 @@ function buildPayload() {
     arcane: arcanes,
     arcane_rank: arcaneRanks,
     mods: slots.filter((s) => s.mod).map((s) => s.mod),
-    // HOW IT IS PLAYED, from the BUILD. It used to ride in the scenario as
-    // `form`, which let the fight decide how a weapon was fired — so the
-    // official ruler silently played every Incarnon weapon through its cycle
-    // and "never transmuting" could not be asked for.
+    // HOW IT IS PLAYED, from the BUILD. Riding in the scenario as `form` lets
+    // the FIGHT decide how a weapon is fired, so the official ruler silently
+    // plays every Incarnon weapon through its cycle and "never transmuting"
+    // cannot be asked for.
     mode,
     // THE VALENCE, as two flat fields rather than an object: `base_for` reads
     // them off the request the same way it reads the deployment, and every
@@ -9034,10 +9034,10 @@ const buildKey = () =>
 /// THE PANEL REFRESHES BECAUSE THE BUILD CHANGED, not because a control
 /// remembered to say so.
 ///
-/// Every mutation used to be responsible for calling `refreshPanel`, which is N
-/// places to get right and one of them was wrong for as long as arcanes have
-/// existed: the picker redrew its own slots and the panel — and the sim's buff
-/// bar — kept showing the previous arcane until an unrelated edit happened to
+/// Making every mutation responsible for calling `refreshPanel` is N places to
+/// get right: the picker redraws its own slots while the panel — and the sim's
+/// buff bar — keeps showing the previous arcane until an unrelated edit happens
+/// to
 /// refresh them (reported 2026-08-05). Fixing that one site would have left the
 /// same trap for the next control someone adds.
 ///
@@ -9525,10 +9525,10 @@ const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick"
 // builds its own markup and escapes its own inputs; anything else passed here
 // is an injection the component cannot see.
 // `key` IS THE SCAN'S NAME FOR THIS ROW, and it is what makes the gain chip
-// LIVE. The chip used to be baked into `badge` when the list was registered —
-// which is before the scan that fills it has started, so the rows kept their
-// first answer for ever and a freshly opened list showed none at all. It is computed at RENDER now, like the mod picker's, and the
-// order with it.
+// LIVE. Baking the chip into `badge` when the list is registered puts it
+// before the scan that fills it has started, so the rows keep their first
+// answer for ever and a freshly opened list shows none at all. It is computed
+// at RENDER, like the mod picker's, and the order with it.
 const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key"];
 
 function ddCheck(id, cfg) {
@@ -9691,8 +9691,8 @@ document.addEventListener("click", (e) => {
 }, true);
 /// PUT A POPOVER UNDER ITS ANCHOR — AND INSIDE THE SCREEN.
 ///
-/// It used to be the anchor's left edge and nothing else, which is right on a
-/// desktop and is HORIZONTAL OVERFLOW on a phone. A mod slot's ⋯ sits at x=295
+/// The anchor's left edge and nothing else is right on a desktop and is
+/// HORIZONTAL OVERFLOW on a phone. A mod slot's ⋯ sits at x=295
 /// of a 360px screen, so its 200px menu ran to 495 and the DOCUMENT became 495
 /// wide; the browser then fits 495 into 360, the whole page shrinks, and the
 /// Swap/Remove the reader was reaching for is off the right edge. It was
@@ -9796,10 +9796,10 @@ function renderTools() {
 /// calc now previews the number the search will act on.
 ///
 /// `se` is the server's own spread over those runs (sigma / sqrt(runs)). The
-/// scans used to estimate it by running the reference a SECOND time at another
-/// seed and taking the gap — one sample of a distribution, which on identical
-/// inputs answered anywhere from 0.7% to 11.2%. That single draw decided
-/// whether EVERY chip was suppressed to "about nothing" or none of them was,
+/// A scan estimating it by running the reference a SECOND time at another seed
+/// and taking the gap takes one sample of a distribution, which on identical
+/// inputs answers anywhere from 0.7% to 11.2%. That single draw decides
+/// whether EVERY chip is suppressed to "about nothing" or none of them is,
 /// which is both of the things the quick calc was reported for.
 const readGain = (r, useKills) => {
   if (!r || !r.ok) return null;
@@ -9908,10 +9908,10 @@ let gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, 
 
 /// THE FIGHT A SCAN RUNS UNDER, and there is only one: THE ONE YOU ARE IN.
 ///
-/// This used to be a picker of its own — `gainPrefs.scenario`, persisted, and
-/// therefore STICKY across weapons, scenarios and sessions. Two controls for
-/// one fact, which is how one of them silently undoes the other: build a nine
-/// body Ocucor fight, switch the simulator to it, and the quick calc kept
+/// A picker of its own — `gainPrefs.scenario`, persisted, and therefore STICKY
+/// across weapons, scenarios and sessions — is two controls for one fact, which
+/// is how one silently undoes the other: build a nine-body Ocucor fight, switch
+/// the simulator to it, and the quick calc keeps
 /// ranking every slot under whichever scenario that popover was last left on —
 /// an official single-target ruler, most likely, since that is where the app
 /// lands a first-time visitor. The mods that only pay in a crowd read as worth
@@ -9947,10 +9947,10 @@ let gainAxis = { kind: "mods", idx: 0 };
 // The key is the AXIS, the BUILD and the FIGHT THIS SCAN WILL ACTUALLY RUN —
 // `gainScenario()`'s own output, not a hand-listed copy of some of `sim`.
 //
-// It used to name the scenario fields one by one, and the list had drifted:
-// `buffs` was missing, so raising a buff's starting stacks changed what the
-// scan would measure without changing the key, and the old ranking stayed on
-// screen looking current. `metric` was missing too. Any
+// Naming the scenario fields one by one gives a list that drifts: a missing
+// `buffs` means raising a buff's starting stacks changes what the scan would
+// measure without changing the key, and the old ranking stays on screen looking
+// current. Any
 // hand-maintained list of "the fields that matter" grows a hole the moment a
 // field is added; deriving the key from the payload cannot.
 const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs.on,
@@ -9978,9 +9978,9 @@ function gainCandidates(axis) {
   }
   if (axis.kind === "evo") {
     // Every tier at once, because they are all on screen at once — but only
-    // the tiers the LADDER opens. A locked tier's options used to be scanned
-    // too, so the picker offered (and ranked) an evolution the builder will
-    // not let you click, measured on a build that cannot exist.
+    // the tiers the LADDER opens. Scanning a locked tier's options too makes
+    // the picker offer (and rank) an evolution the builder will not let you
+    // click, measured on a build that cannot exist.
     //
     // Within a tier this is exactly "current vs replacement": the base run is
     // the build as it stands, and each candidate swaps ONE tier's choice and
@@ -10135,9 +10135,9 @@ async function scanGains(axis, onTick) {
   const live = () => gen === gainGen;
   gainAxis = axis;
   const { name, scenario, refine } = gainScenario();
-  // The note is WHICH FIGHT this was measured in. The run counts used to ride
-  // along here too and were dropped: each chip's tooltip states its own count,
-  // which is the only place the number changes how a reading should be taken.
+  // The note is WHICH FIGHT this was measured in, and nothing else: each
+  // chip's tooltip states its own run count, which is the only place the
+  // number changes how a reading should be taken.
   // THE CANDIDATES ARE ENUMERATED BEFORE THE FIRST RUN, so a list drawn while
   // the base fight is still going already knows how many of ITS OWN rows are
   // coming. `gainCandidates` is a pure enumeration and awaits nothing, so this
@@ -10241,10 +10241,10 @@ async function scanGains(axis, onTick) {
 /// leaves every paired difference at zero and lands here as a plain 0: exact,
 /// derived, not asserted.
 ///
-/// It used to ask a PROXY — had the median run's proc count changed? — because
-/// two independent summaries cannot answer the question. The proxy was wrong in
-/// the direction that matters: it says "same fight" whenever the count happens
-/// to coincide, and on the Kuva Nukor all seven progenitor elements report 6079
+/// NOT a PROXY — "did the median run's proc count change?" — which is what two
+/// independent summaries reduce you to. The proxy is wrong in the direction
+/// that matters: it says "same fight" whenever the count happens to coincide,
+/// and on the Kuva Nukor all seven progenitor elements report 6079
 /// while their fights differ by up to 30%. Seven chips claimed an exactness
 /// none of them had, and the ranking between two of them was a coin flip
 /// printed as a fact.
@@ -10755,10 +10755,9 @@ function rankedItems(cfg) {
 
 /// OPEN A RANKED LIST, and start measuring it.
 ///
-/// **THE SCAN FIRES ON OPEN, like the mod and arcane pickers**. The parts, the valence and the evolution tiers used to scan
-/// from their RENDER, and the reason was written down: they were rows of chips,
-/// "all on screen at once … which is why they can afford to answer without
-/// being opened". That stopped being true the day they became cards — the
+/// **THE SCAN FIRES ON OPEN, like the mod and arcane pickers**. Scanning from
+/// RENDER is right for rows of chips, "all on screen at once … which is why
+/// they can afford to answer without being opened", and wrong for cards — the
 /// options live inside a closed list now, so an eager scan spends a fight per
 /// candidate on numbers nobody can see, and does it again on every repaint.
 ///
@@ -11087,10 +11086,10 @@ function renderMenu(slotIdx, query) {
   // slots show their slot number — picking one of those EXCHANGES the two slots.
   // ONE group ahead of the rule: this slot's own mod, because it is the
   // baseline every number below is measured against. Everything else obeys
-  // the sort — including mods sitting in OTHER slots, which used to be pinned
-  // into a band of their own. That band contradicted whichever order was
+  // the sort — including mods sitting in OTHER slots, which are not pinned
+  // into a band of their own. Such a band contradicts whichever order is
   // chosen (eight rows of unsorted drain at the top of a drain sort), and it
-  // was never load-bearing: every placed mod already carries a "slot N" chip
+  // carries nothing: every placed mod already has a "slot N" chip
   // that says where it is.
   const group = (m) => (slots[slotIdx].mod === m.id ? 0 : 1);
   const hits = buildPool()
@@ -11367,10 +11366,9 @@ const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
 // new arcane → max rank, in the slot the picker was opened from
 // EVERY ARCANE MUTATION REFRESHES, because the mutation owns the consequence.
 //
-// Changing an arcane used to redraw the arcane slots and nothing else — the
-// panel, its stat rows and the SIM'S BUFF BAR all kept showing the previous
-// arcane until some unrelated edit happened to call `refreshPanel`. Toggling a
-// mod was the usual accident, which is exactly how it was reported.
+// Redrawing the arcane slots and nothing else leaves the panel, its stat rows
+// and the SIM'S BUFF BAR showing the previous arcane until some unrelated edit
+// happens to call `refreshPanel` — toggling a mod, usually.
 //
 // `refreshPanel` is the funnel — its own comment says "every build change
 // funnels through here" — so the fix is not to add the call at each picker but
@@ -11914,8 +11912,8 @@ function renderAssembly() {
   // about this weapon that IS a choice and is not offered anywhere else: the
   // SLOT.
   //
-  // NO SUMMARY LINE ANY MORE: the card each part draws carries its own stats,
-  // which is what the line under the shut dropdowns used to be for.
+  // NO SUMMARY LINE: the card each part draws carries its own stats, which is
+  // all a line under the shut dropdowns could say.
   const axis = { kind: "assembly", idx: 0 };
   box.innerHTML =
     slotPick +
@@ -12226,9 +12224,9 @@ function renderSimBuild() {
   // edited somewhere that is not the builder.
   //
   // ALWAYS, including a weapon with one way to be fired — the same rule the
-  // builder's block carries ("one mode is stated, not offered"). It used to be
-  // drawn only where there was a choice, which made a summary of the build
-  // silently drop a field the build has.
+  // builder's block carries ("one mode is stated, not offered"). Drawing it
+  // only where there is a choice makes a summary of the build silently drop a
+  // field the build has.
   parts.push(`<div class="sb-h">${tr("Mode")}</div>`);
   parts.push(`<div class="sb-chips"><span class="sb-chip">${
     escHtml(modeLabel(weaponInfo($("weapon").value), mode))}</span></div>`);
@@ -12771,9 +12769,9 @@ function renderScenarioFields(ids, opts = {}) {
         // fight looks like — the panel resolves against the player now, so it
         // has to be asked again. The enemy half changes no panel number.
         if (TENNO_KEYS.includes(k)) refreshPanel();
-        // ONLY the scenario. A sim knob used to dirty the build preset too,
-        // back when a build carried a copy of the fight; it does not, so this
-        // is the scenario's edit and nobody else's.
+        // ONLY the scenario. A build carries no copy of the fight, so a sim
+        // knob does not dirty the build preset: this is the scenario's edit
+        // and nobody else's.
         markScenarioDirty();
         // Whichever tab drew the field, both are looking at this one state.
         if (opts.after) opts.after();
@@ -13055,10 +13053,10 @@ const enemyEffectsNulled = (en) => {
 
 // THE POOLS AT THE FIGHT'S LEVEL, from the engine.
 //
-// The card and the picker used to print each unit's stats at its OWN base
-// level — a Corrupted Heavy Gunner as "700 Health · 500 Armor" — which is a
-// number nobody fights: the scenario runs at 9999 Steel Path, where the same
-// unit is millions of health and the armour figure has stopped meaning what
+// A unit's OWN base level — a Corrupted Heavy Gunner as "700 Health · 500
+// Armor" — is a number nobody fights: the scenario runs at 9999 Steel Path,
+// where the same unit is millions of health and the armour figure has stopped
+// meaning what
 // the raw number suggests. Choosing a target on those is choosing on the wrong
 // axis.
 //
@@ -13269,8 +13267,8 @@ const wfElement = (a) => {
   const p = wfPick(a.id);
   return (p && p.element) || a.element;
 };
-// `DT` is the one place a damage type is named, and it reads the locale — this
-// used to reach into META and print `corrosive` on a Chinese page.
+// `DT` is the one place a damage type is named, and it reads the locale:
+// reaching into META instead prints `corrosive` on a Chinese page.
 const wfElementName = (id) => DT(id);
 
 function wfValueLabel(a) {
@@ -13657,8 +13655,8 @@ function boardPayload() {
     // investment rather than a choice (the same rule that scores every row at
     // full Forma).
     valence: valence.element,
-    // THE EXILUS SLOT'S MOD, as its own field — optional on every ruler as of
-    // 2026-08-25, where it used to be dropped here and never counted.
+    // THE EXILUS SLOT'S MOD, as its own field — optional on every ruler, and
+    // sent rather than dropped here and never counted.
     //
     // IT HAS TO BE ITS OWN FIELD, which is the same reason it was dropped
     // rather than appended before: the payload's `mods` is a flat list with no
@@ -13800,10 +13798,10 @@ async function boardVerdict(body) {
 
 /// **IS THIS BUILD ALREADY A ROW?** — asked of the ENGINE, in one call.
 ///
-/// The page used to answer it with a POINTER: `officialBuildActive()` says
-/// whether the ACTIVE PRESET is a builtin, which is true of a board row opened
-/// from the picker and false of the same build reached any other way. So a
-/// player who copied a board build into a preset of their own, or arrived at it
+/// Answering it with a POINTER fails: `officialBuildActive()` says whether the
+/// ACTIVE PRESET is a builtin, which is true of a board row opened from the
+/// picker and false of the same build reached any other way. So a player who
+/// copies a board build into a preset of their own, or arrives at it
 /// independently, or moved one mod between two slots, was told their run was
 /// being uploaded to a board that already holds it.
 ///
@@ -14007,10 +14005,10 @@ function renderBoardOutcome() {
 function renderBoardConsent() {
   const box = $("board-consent");
   if (!box) return;
-  // TWO REASONS NOTHING IS SENT, and they used to collapse into one silence.
-  // A board ROW explains itself elsewhere ("it is already a row on the board"),
-  // but a player on their OWN fight got no box at all — so someone who built a
-  // scenario, ran it, and watched the board never learn why nothing appeared
+  // TWO REASONS NOTHING IS SENT, and they must not collapse into one silence.
+  // A board ROW explains itself elsewhere ("it is already a row on the
+  // board"); with no box on a player's OWN fight, someone who builds a
+  // scenario, runs it and watches the board never learns why nothing appeared
   // (player report via the owner, 2026-08-10).
   if (officialBuildActive()) { box.hidden = true; return; }
   box.hidden = false;
@@ -14105,9 +14103,10 @@ function lockOfficialBuild() {
   if (!on) return;
   const row = (buildNamed(activePreset) || {}).board || {};
   const bench = (META.benchmarks || []).find((x) => x.id === row.benchmark);
-  // ACTION FIRST. This note used to open with what the build IS and mention
-  // copying as a clause, pointing at a ⧉ chip somewhere else on the page — a
-  // reader who wants to change something needs the VERB and a thing to click. So: what cannot be done here, the one action that
+  // ACTION FIRST. Opening with what the build IS and mentioning copying as a
+  // clause, pointing at a ⧉ chip somewhere else on the page, gives a reader who
+  // wants to change something no VERB and nothing to click. So: what cannot be
+  // done here, the one action that
   // fixes all of it, and a real button — which the scenario's own read-only
   // note has had all along.
   const parts = [
@@ -14253,9 +14252,9 @@ function buffCardName(name) {
   const owner = [...(META.mods || []), ...(META.arcanes || []), ...evos,
     ...Object.values(META.mod_pools || {}).flat()]
     .find((x) => (x.name_en || x.name) === head);
-  // NO OWNER MEANS THE NAME IS OURS. Every card here used to be a mod's, an
-  // arcane's or an evolution's, so a head with no owner could only be a
-  // lookup that had gone stale — and falling through to the English was the
+  // NO OWNER MEANS THE NAME IS OURS. While every card here is a mod's, an
+  // arcane's or an evolution's, a head with no owner can only be a lookup that
+  // has gone stale — and falling through to the English is the
   // right way to notice. A WEAPON PASSIVE has no owner by construction (the
   // sniper's Shot Combo Counter is the weapon's, not a mod's), so its name is
   // an ordinary UI string and belongs in the overlay like every other one.
@@ -14326,8 +14325,8 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
       else if (el.type === "checkbox") c.stacks = el.checked ? 1 : 0;
       else c.stacks = Math.max(0, Number(el.value));
       // A buff belongs to the FIGHT and to nothing else — including settings
-      // for mods this build does not carry. It used to dirty the build too,
-      // back when a build kept a copy of the scenario.
+      // for mods this build does not carry. A build keeps no copy of the
+      // scenario, so this dirties the scenario alone.
       markScenarioDirty();
       // The optimizer shows these read-only, so redraw its copy if it is up.
       if ($("opt-buffs") && !opts.readonly) renderOptBuffs();
@@ -14529,10 +14528,10 @@ async function resultForShare() {
 }
 /// THE RESULT ON SCREEN, held in memory as well as in storage.
 ///
-/// The panel used to redraw itself from localStorage alone, which made every
-/// re-render a bet that the save had worked — and on a full disk it had not, so
-/// clicking a body in the result deleted the result. It is
-/// a RENDER CACHE and nothing else: storage is still where a result persists
+/// Redrawing from localStorage alone makes every re-render a bet that the save
+/// worked — and on a full disk it has not, so clicking a body in the result
+/// deletes the result. This is a RENDER CACHE and nothing else: storage is
+/// still where a result persists
 /// across a reload, and this is only what the current page is showing.
 /// KEYED BY WEAPON AND PRESET, because switching either one asks for a
 /// different result and both are legal to do without re-running.
@@ -14718,10 +14717,10 @@ function speedMarkup(r) {
   return foldBlock("speed", tr("Pace"), tr("what a room-clear is paced by, as opposed to a long fight"), body);
 }
 
-// ---- WHAT USED TO BE HERE ---------------------------------------------
+// ---- WHAT THE COMBAT RECORD REPLACES ----------------------------------
 //
-// "Every hit, sorted" and "The account of one hit" both stood here, and the
-// COMBAT RECORD below replaced them. The account explained
+// "Every hit, sorted" and "The account of one hit" are both gone: the COMBAT
+// RECORD below answers what they did. The account explained
 // two instances of an engagement; the record explains every one. The histogram
 // was the aggregate that existed because the individual hits were not
 // available — it sorted them into six buckets so an impossible number could not
@@ -14759,11 +14758,10 @@ function recordMarkup(r) {
   //
   // The record is fetched by naming the engagement it explains — the median
   // run's own RNG state, which `/api/simulate` started returning the day this
-  // panel landed. A result SAVED before that has no name to give, so the block
-  // used to vanish: a reader coming back to a stored result found the feature
-  // simply absent, with nothing anywhere saying why, and reported it as "the
-  // combat record does not show". An absence
-  // that is not explained reads as a feature that is not there — the same rule
+  // panel landed. A result SAVED before that has no name to give, and the
+  // block must not simply vanish: a reader coming back to a stored result then
+  // finds the feature absent with nothing saying why. An absence that is not
+  // explained reads as a feature that is not there — the same rule
   // this panel already follows about its own caps.
   if (!r.run) {
     return foldBlock("record", tr("Combat record"),
@@ -14771,10 +14769,10 @@ function recordMarkup(r) {
       `<div class="rec-idle"><span class="sim-hint">${escHtml(
         tr("this result was saved before the record existed — run the fight again to read it"))}</span></div>`);
   }
-  // AN EMPTY HOST, filled by `paintRecord` in the same wire pass. It used to
-  // render the table here as well, which built it TWICE on every result — and,
-  // once the record could live in its own window, built it into the wrong
-  // document before the paint moved it out again.
+  // AN EMPTY HOST, filled by `paintRecord` in the same wire pass. Rendering
+  // the table here as well builds it TWICE on every result — and, since the
+  // record can live in its own window, builds it into the wrong document
+  // before the paint moves it out again.
   return foldBlock("record", tr("Combat record"),
     tr("one row per number the game pops, and everything behind it"),
     `<div class="rec" id="rec-host"></div>`);
@@ -14968,8 +14966,8 @@ function paintRecord(r) {
     host.innerHTML = st ? recordBody(st) : recordIdle();
     wireRecord(recordResult, host);
   }
-  // …AND THE PANEL SAYS WHERE IT WENT. An empty block where a table used to be
-  // reads as the feature breaking, which is exactly the report this came from.
+  // …AND THE PANEL SAYS WHERE IT WENT. An empty block where the table belongs
+  // reads as the feature breaking.
   const inline = $("rec-host");
   if (inline && inline !== host) {
     inline.innerHTML = `<div class="rec-idle">`
@@ -15123,10 +15121,10 @@ const REC_POOL = { shield: "on the shield", health: "through to health", overgua
 /// use it: the shooter's buffs and the target's debuffs are the same shape seen
 /// from opposite ends, so they are drawn by one function.
 ///
-/// IT NAMES THEM THE WAY THE REPLAY'S OWN TABLES DO. It used to print `tr(id)`,
-/// which for a roster id is the id — so a Chinese reader got `corrosion`,
-/// `on_kill_multishot` and `arcane:secondary_enervate` in a column whose whole
-/// job is to say what was up, while the chart two blocks down said 腐蚀 and the
+/// IT NAMES THEM THE WAY THE REPLAY'S OWN TABLES DO. `tr(id)` for a roster id
+/// is the id, so a Chinese reader gets `corrosion`, `on_kill_multishot` and
+/// `arcane:secondary_enervate` in a column whose whole job is to say what was
+/// up, while the chart two blocks down says 腐蚀 and the
 /// buff's own card name. Two spellings of one thing, which is the mistake this
 /// panel exists to stop making.
 function recStacks(list, roster, cls, now) {
@@ -15153,9 +15151,9 @@ function recStacks(list, roster, cls, now) {
 /// THE LEDGER, LAYER BY LAYER — and the SHAPE says which mechanic it is.
 ///
 /// A bracket lists its terms and adds them; a snap shows its grid; only a real
-/// multiplicative bracket gets a `×`. That is not decoration: the panel used to
-/// print `×5.706 Condition Overload`, which is a QUOTIENT — the base-damage
-/// bracket divided by itself — with a multiplication sign in front of it, and
+/// multiplicative bracket gets a `×`. That is not decoration: printing
+/// `×5.706 Condition Overload` puts a multiplication sign in front of a
+/// QUOTIENT — the base-damage bracket divided by itself — and
 /// `×4.156 element bracket + quantization`, which is the ratio of a per-element
 /// snap's two totals. Two numbers the game does not have, both looking exactly
 /// like a factor.
@@ -15933,10 +15931,11 @@ function wireReplay(r) {
 // damage and the only view where "one big hit" and "twenty small ones" look
 // different rather than reading the same as an average.
 //
-// THEY ARE THE COMBAT RECORD, REPLAYED — not a second account of it. The engine used to carry a `Replay.pops` buffer beside the
-// record: the same nine damage sites written down twice, into two structures,
-// shipped on two endpoints, capped by two different rules. Both were filled
-// from one `log_damage` call, so they could not disagree about a number they
+// THEY ARE THE COMBAT RECORD, REPLAYED — not a second account of it. A
+// `Replay.pops` buffer beside the record is the same nine damage sites written
+// down twice, into two structures, shipped on two endpoints, capped by two
+// different rules. Both filled from one `log_damage` call, they cannot
+// disagree about a number they
 // both held — but they held DIFFERENT SETS. The overlay kept the twelve
 // biggest of each frame and the table kept the first N of the fight, so a
 // number could float over a body with no row to explain it, and a row could
@@ -16119,10 +16118,10 @@ function popsDraw(rp, i, live) {
   if (more > 0) {
     const chip = document.createElement("span");
     chip.className = "rp-pop p-more";
-    // IN THE CORNER, not above the tallest column. It used to sit one line
-    // above the topmost number, which by construction is the last line that
-    // fits — so the chip itself never did, and the one thing on this layer
-    // whose whole job is to say "there were more" was the thing clipped off
+    // IN THE CORNER, not above the tallest column. One line above the topmost
+    // number is one line above the last line that fits, so the chip itself
+    // never does — and the one thing on this layer whose whole job is to say
+    // "there were more" is the thing clipped off
     // the top. It is a statement about the FRAME rather than
     // about a body, so the frame's own corner is where it belongs.
     // `.rp-pop` is centred on its point, so the corner needs half a chip of
@@ -16138,10 +16137,10 @@ function popsDraw(rp, i, live) {
 
 /// WHAT IS ON SCREEN RIGHT NOW, and the ONLY thing a redraw reads.
 ///
-/// Picking an enemy in the result used to call `renderStoredSimResult`, which
-/// looks the result up in a preset collection — so a pick was a bet that the
-/// SAVE had worked, and every way it could not have took the result off screen
-/// with it. A full disk was one way. A preset that
+/// Picking an enemy in the result must not call `renderStoredSimResult`, which
+/// looks the result up in a preset collection: a pick is then a bet that the
+/// SAVE worked, and every way it could not have takes the result off screen
+/// with it. A full disk is one way. A preset that
 /// is not in the list is another, and `saveSimResult` returns early on it
 /// without storing anywhere. Neither has anything to do with picking an enemy.
 ///
@@ -16417,10 +16416,10 @@ function nChooseK(n, k) {
 // ---- scope mutex helpers -----------------------------------------------
 // A SINGLE-SLOT group (the exilus slot, the arcane slot, one evolution tier)
 // holds either "these are the options" or "it is this one" — never both. The
-// two used to BLOCK each other, and asymmetrically: any pool mark greyed out
-// every req, while a pin still let you click pool.
+// two must not BLOCK each other, which in practice is asymmetric: any pool
+// mark greys out every req, while a pin still lets you click pool.
 //
-// Blocking was the wrong answer to a question that has an obvious one. The
+// Blocking is the wrong answer to a question that has an obvious one. The
 // marks are not in conflict, they are two ways of saying what the slot does,
 // so the LAST click wins and the group is rewritten to mean it: req clears
 // the pools, pool clears the pin. Nothing is refused and the scope never
@@ -16646,10 +16645,9 @@ function orderOptScope() {
 /// the search preset says what to look through, the scenario says what the
 /// fight is, and neither of them has ever had an opinion about precision.
 ///
-/// It is TYPED rather than defaulted from the fight. The
-/// blank box that used to mean "the fight's own count" was one control with
-/// two readings, which is how a reader ends up unable to say what number the
-/// last round actually used.
+/// It is TYPED rather than defaulted from the fight. A blank box meaning "the
+/// fight's own count" is one control with two readings, which is how a reader
+/// ends up unable to say what number the last round actually used.
 function renderOptRuns() {
   const box = $("opt-runs-block");
   if (!box) return;
@@ -16730,10 +16728,10 @@ function renderOpt() {
 // The SCENARIO's buffs, READ-ONLY — the optimizer reads the simulator the way
 // the simulator reads the builder.
 //
-// It used to keep its own: a scope-wide union with its own stack settings,
-// because a candidate carries mods the current build does not. That bought one
-// real thing and cost a worse one — the two modules scored the same fight
-// under different buffs, and "add this winner, then Run Sim" only matched
+// It keeps none of its own. A scope-wide union with its own stack settings —
+// because a candidate carries mods the current build does not — buys one real
+// thing and costs a worse one: the two modules then score the same fight under
+// different buffs, and "add this winner, then Run Sim" only matches
 // because adding a winner secretly copied the search's config into your
 // scenario. One fight, one buff config, and the disagreement cannot exist.
 //
@@ -17275,9 +17273,9 @@ function applyOptState(st) {
   // Mods: ids missing from this weapon's pool drop out.
   opt.mods = {}; opt.exilus = {};
   Object.entries(st.mods || {}).forEach(([id, s]) => { if (modById(id)) opt.mods[id] = norm(s); });
-  // `none` IS THE SLOT'S RANGE and survives, on every axis. It used to be deleted here as the residue of a brief
-  // None-row era; it is the axis's "searched empty" mark now, so dropping it
-  // would silently widen a scope back to 1–1 on every preset load.
+  // `none` IS THE SLOT'S RANGE and survives, on every axis. It is the axis's
+  // "searched empty" mark, so deleting it here would silently widen a scope
+  // back to 1–1 on every preset load.
   Object.entries(st.exilus || {}).forEach(([id, s]) => {
     if (id === "none" || (modById(id) || {}).exilus) opt.exilus[id] = norm(s);
   });
@@ -17868,8 +17866,8 @@ function renderOptProgress(st) {
     <button class="ghost-btn small" id="opt-cancel" ${optCancelling ? "disabled" : ""}>${optCancelling ? "Cancelling…" : "Cancel"}</button>
   </div>`;
   // The 500 ms poll re-renders this whole block — `optCancelling` keeps the
-  // button's cancelling state alive across re-renders (it used to snap back
-  // to a live-looking "Cancel", making cancellation look ignored).
+  // button's cancelling state alive across re-renders, or it snaps back to a
+  // live-looking "Cancel" and cancellation looks ignored.
   $("opt-cancel").addEventListener("click", async () => {
     optCancelling = true;
     $("opt-cancel").disabled = true; $("opt-cancel").textContent = "Cancelling…";
@@ -18141,10 +18139,9 @@ function resultToState(res) {
   autoForma(); // minimum-Forma polarities, same as a hand-loaded build
   st.slots = slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank }));
   slots = live;
-  // NO `sim`. Adding a winner used to copy the optimizer's own buff config
-  // into the scenario so that "add then Run Sim" matched its score. It does
-  // not any more: a result is a BUILD, and a build does not get to rewrite the
-  // fight you are working in. The two configs can still
+  // NO `sim`. Copying the optimizer's own buff config into the scenario so
+  // that "add then Run Sim" matches its score makes a result rewrite the fight
+  // you are working in; a result is a BUILD. The two configs can still
   // disagree — the search's is scope-wide, the scenario's is this build's —
   // and that disagreement is now visible instead of resolved by silently
   // editing a preset the user owns.
@@ -18436,10 +18433,10 @@ function mountDesktopUpdater() {
 
 // THE BOOT IS OVER, one way or the other, and the page must say which.
 //
-// This used to write a failure into `.config-page`, which is hidden on the home
-// page — so a boot that failed there left a blank screen and no reason, which
-// is what two people reported on 2026-08-07. The banner installed in the
-// document head is visible on every page and outlives an app.js that never
+// Writing a failure into `.config-page` puts it where the home page hides it,
+// so a boot that fails there leaves a blank screen and no reason. The banner
+// installed in the document head is visible on every page and outlives an
+// app.js that never
 // parsed; this hands it the reason and clears the placeholder on success.
 init()
   .then(() => {

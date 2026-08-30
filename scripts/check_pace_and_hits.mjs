@@ -7,10 +7,9 @@
 // what the magazine you walked in with was worth, the biggest single number the
 // build can produce — and burst DPS is RECOMPUTED here rather than trusted.
 //
-// IT USED TO CHECK A HISTOGRAM TOO, and does not since 2026-08-27: the six
-// buckets existed because the individual hits were not available, and the
-// combat record makes every one of them a row with its own ledger. What
-// replaced the property — "an impossible number cannot hide in a mean" — is
+// IT DOES NOT CHECK A HISTOGRAM. Six buckets of mean damage summarise what the
+// combat record now gives as a row per hit with its own ledger. The property
+// that matters — "an impossible number cannot hide in a mean" — is
 // `check_combat_record.mjs`, which reads every row and does its arithmetic.
 //
 // AND EVERY BLOCK FOLDS AND REMEMBERS across a re-render and a reload: a panel

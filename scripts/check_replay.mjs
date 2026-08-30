@@ -148,9 +148,10 @@ check("one row per buff, drawn and open by default",
 check("the header states average, uptime and either the ramp or why there is none",
   /[\d.]+\/40/.test(r.rows[0].stat) && /\d+%/.test(r.rows[0].stat) &&
   (/[\d.]+s/.test(r.rows[0].stat) || /full|满层/.test(r.rows[0].stat)), r.rows[0].stat);
-// THE METER IS COLOURED BY DAMAGE TYPE, NOT BY ROW POSITION. It used to take its colour from `(i % 8) + 1`, so the same
-// element was one colour under a direct hit and another under a lingering
-// field — and neither was the element's. DE publishes a colour per type
+// THE METER IS COLOURED BY DAMAGE TYPE, NOT BY ROW POSITION. A colour from
+// `(i % 8) + 1` makes the same element one colour under a direct hit and
+// another under a lingering field — and neither is the element's. DE publishes
+// a colour per type
 // (`Module:DamageTypes/data`), and the point of using it is that it is
 // the SAME everywhere.
 //
@@ -216,9 +217,9 @@ check("the replay BAR sits above everything it drives",
 check("...and the buff CURVES stay down with the other chart",
   r.iRow > r.iMeter && r.iRow < r.iTable, JSON.stringify(r.kids));
 // IT OPENS ON THE FINISHED FIGHT — the cursor is at the LAST frame, which is
-// what this is about. It used to assert "40/40", which is that plus the claim
-// that the buff happened to fill in this particular run: two facts in one
-// assertion, and only one of them is the panel's doing.
+// what this is about. Asserting "40/40" adds the claim that the buff happened
+// to fill in this particular run: two facts in one assertion, and only one of
+// them is the panel's doing.
 check("it opens on the finished fight",
   r.nowAtOpen.length > 0 && r.nowAtOpen.join() === r.nowAtEnd.join(),
   `${r.nowAtOpen} vs ${r.nowAtEnd}`);

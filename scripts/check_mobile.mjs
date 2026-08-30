@@ -182,7 +182,7 @@ for (const [label, w, h, mobile] of SCREENS) {
       slotNos: [...document.querySelectorAll('#mod-slots .slot .slotno')]
         .map((e) => e.textContent.trim()).join(','),
       // THE TOPBAR'S BUDGET, and it is geometry rather than a style opinion:
-      // at 360px the bar used to wrap to two rows and squeeze the weapon
+      // at 360px an unmanaged bar wraps to two rows and squeezes the weapon
       // SEARCH — the site's own navigation — to 29px, which is what the phone
       // menu exists to fix. So this measures the two halves of that claim.
       //
@@ -463,7 +463,7 @@ for (const lang of ["en", "zh"]) {
     const cells = [...tbl.querySelectorAll('tr.rec-dmg > td')];
     o.cells = cells.length;
     o.labelled = cells.filter((el) => el.dataset.label).length;
-    // THE COLUMN THE PANEL EXISTS FOR is the one that used to be off-screen.
+    // THE COLUMN THE PANEL EXISTS FOR is the one most easily left off-screen.
     const calc = tbl.querySelector('tr.rec-dmg .rec-calc');
     o.calcOnScreen = !!calc && calc.getBoundingClientRect().right <= o.vw + 0.5
       && calc.getBoundingClientRect().width > 0;

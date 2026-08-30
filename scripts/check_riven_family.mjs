@@ -129,9 +129,9 @@ const r = await evaluate(`(async () => {
 
   // ---- 6. RENAME AND DELETE REACH EVERY BUILD IN THE FAMILY -------------
   // A riven's id IS its name, so both are the same operation seen from a build.
-  // They used to touch the LIVE build only, which filing by family widened
-  // across weapons: rename a card on the Burston and the Burston Prime's saved
-  // builds lose it silently. Driven through the page's own buttons, so the
+  // Touching the LIVE build only is widened across weapons by filing rivens by
+  // family: rename a card on the Burston and the Burston Prime's saved builds
+  // lose it silently. Driven through the page's own buttons, so the
   // wiring is under test and not just the helper.
   localStorage.clear();
   await go('/weapons/Burston/rivens');

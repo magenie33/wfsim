@@ -38,10 +38,10 @@ const PROBE = `(async () => {
         evolutions: AX.evolutions.map((t) => S(t.options.map((o) => o.id))),
       },
       // THE EXILUS SLOT'S OWN POLARITY. The server sends nine innate slots —
-      // eight main plus the exilus — and the client used to slice the ninth
-      // off and pad a null over it, so a weapon that comes with an exilus
-      // polarity showed an empty one: full drain for the mod in it, and a
-      // Forma charged for something the weapon already has.
+      // eight main plus the exilus — and a client that slices the ninth off
+      // and pads a null over it shows an empty polarity on a weapon that comes
+      // with one: full drain for the mod in it, and a Forma charged for
+      // something the weapon already has.
       innate: { client: innate.slice(), served: (w.innate_polarities || []).slice() },
       // What each module INDEPENDENTLY decides to show.
       shown: {
@@ -107,11 +107,11 @@ const app = await openApp({ base: process.argv[2] });
 
 // ---- AN AXIS DESCRIBES THE WEAPON IT WAS ASKED ABOUT ----------------------
 //
-// `weaponAxes(id)` derives every axis from the `id` it is handed — except that
-// `evolutions` used to read the live `#weapon` select instead, so it could
-// return one weapon's mods and another's evolution tiers. The caller cannot
-// see it: `show("evo-block", AX.evolutions.length > 0)` then draws the block
-// for a weapon with none.
+// `weaponAxes(id)` derives every axis from the `id` it is handed. An axis that
+// reads the live `#weapon` select instead can return one weapon's mods and
+// another's evolution tiers, and the caller cannot see it:
+// `show("evo-block", AX.evolutions.length > 0)` then draws the block for a
+// weapon with none.
 //
 // THAT IS THIS CHECK'S OWN INTERMITTENT FAILURE, demonstrated rather than
 // guessed at: "the builder shows an evolution block for a weapon with none",
@@ -216,9 +216,9 @@ const VIS = await app.evaluate(`(async () => {
     if (!flagged.length) continue;
     history.pushState({}, '', weaponPath(w.id)); route(); await s(900);
     for (const id of flagged) {
-      // THE ROW YOU CHOOSE FROM. A tier is a dropdown now, so the tile this
-      // used to read is a list row — rendered with ddRender, the same function
-      // the popover calls, so this is real markup rather than the registry.
+      // THE ROW YOU CHOOSE FROM. A tier is a dropdown, so what to read is a
+      // list row — rendered with ddRender, the same function the popover
+      // calls, so this is real markup rather than the registry.
       let card = null;
       for (const b of document.querySelectorAll('[data-slot^="dd-evo-"]')) {
         ddRender(b.dataset.slot);

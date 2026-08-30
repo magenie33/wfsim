@@ -1,9 +1,9 @@
 // PRESET INDEPENDENCE: nothing outside a collection writes its state.
 //
-// Exists because picking a build used to change the scenario. A build carried
-// a snapshot of the fight and `restoreState` applied it, so switching builds
-// silently rewrote the fight you were working in — and the scenario bar, whose
-// whole job is to be the one place a fight is edited, moved under you.
+// Picking a build must not change the scenario. A build carrying a snapshot of
+// the fight that `restoreState` applies makes switching builds silently rewrite
+// the fight you are working in — and the scenario bar, whose whole job is to be
+// the one place a fight is edited, moves under you.
 //
 //   node scripts/check_preset_independence.mjs
 //
@@ -157,9 +157,10 @@ check("coming back finds the fight where you left it",
 //
 // The checks above compare fields both scenarios declare, and that is what let
 // this through: a benchmark yaml states only what it has an opinion about, so a
-// field it OMITS used to keep the outgoing scenario's value. Ticking Eximus on
-// a copy of the official ruler and switching back left the official fight
-// against an Eximus — `single_target.yaml` never says `eximus:`. `invisible` survived the same test only because that yaml
+// field it OMITS would otherwise keep the outgoing scenario's value. Ticking
+// Eximus on a copy of the official ruler and switching back then leaves the
+// official fight against an Eximus — `single_target.yaml` never says
+// `eximus:`. `invisible` survives the same test only because that yaml
 // happens to state it, which is why one field is checked and the other is the
 // control.
 const leak = await evaluate(`(async () => {

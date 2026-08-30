@@ -14,9 +14,9 @@
 //
 // Four claims:
 //
-//   · THE ROW IS THERE WITH NOTHING EQUIPPED. That is the whole point: the
-//     row used to appear only once a CO card was on the build, so the one
-//     thing a reader could check was invisible until they had committed to it.
+//   · THE ROW IS THERE WITH NOTHING EQUIPPED. That is the whole point: a row
+//     that appears only once a CO card is on the build hides the one thing a
+//     reader can check until they have already committed to it.
 //   · EVERY BEHAVIOUR IS SPELLED OUT, and the roster exercises all three —
 //     Adding, Multiplying and inert are three different sentences, so a page
 //     that printed one of them for everything would fail here.

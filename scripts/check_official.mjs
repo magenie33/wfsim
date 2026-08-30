@@ -68,8 +68,8 @@ const PROBE = (lang) => `(async () => {
   // builtins), which the later steps here assert.
   bar.querySelector('[data-dd]').click(); await sleep(800);
   // BY ID. A dropdown row's value is the ruler's id, not the translated
-  // sentence it shows — which is the same distinction the active pointer draws,
-  // and the one that used to send the quick calc to the wrong fight.
+  // sentence it shows — the same distinction the active pointer draws, and the
+  // one that sends the quick calc to the wrong fight when it is missed.
   const chip = [...document.querySelectorAll('#dd-menu .opt[data-v]')]
     .find((c) => c.dataset.v === out.id);
   out.chipFound = !!chip;
@@ -169,10 +169,10 @@ const BUILDS_PROBE = `(async () => {
   // AN EMPTY BOARD IS A REAL STATE — a weapon nobody has submitted for shows no
   // chips, which is right rather than a bug to work around.
   //
-  // CONSTRUCTED, not borrowed. This used to read the live board and rely on
-  // Torid having no rows; players submitted some and the check
-  // started failing on the board WORKING. What it means to assert is "empty
-  // board -> no chips", so it empties the board and asks.
+  // CONSTRUCTED, not borrowed. Reading the live board and relying on a weapon
+  // having no rows fails the day players submit some — the check failing on the
+  // board WORKING. What it means to assert is "empty board -> no chips", so it
+  // empties the board and asks.
   BOARD = {};
   out.emptyBoardChips = builtinBuilds().length;
 
@@ -401,10 +401,9 @@ const c = await evaluate(CONSENT_PROBE);
 console.log("");
 console.log("[consent]");
 if (!c.hasNo) console.log("      [diag] " + JSON.stringify({ chipSeen: c.chipSeen, asked: c.askedOnOfficial, html: c.boxHtml }));
-// ONE STORY FOR EVERY FIGHT. This assertion used to be its
-// opposite — the notice was absent under an ordinary scenario, because only the
-// official ruler fed the board. Any fight can contribute now, so the notice is
-// present everywhere and says the same thing: what leaves is the BUILD, and the
+// ONE STORY FOR EVERY FIGHT. Any fight can contribute, so the notice is
+// present everywhere and says the same thing: what leaves is the BUILD, and
+// the
 // board scores it under its own rulers.
 check("the notice is up under an ordinary scenario too", c.askedOffOfficial === true,
   JSON.stringify(c.offOfficialText));

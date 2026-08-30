@@ -167,10 +167,10 @@ def ship_art() -> None:
     """Copy the art cache into `site/img/`, so the static deployment serves
     game art from ITS OWN ORIGIN.
 
-    It used to load straight from the CDN, and that CDN is a redirector:
+    Loading straight from the CDN goes through a redirector:
     `cdn.warframestat.us/img/X.png` answers 301 to raw.githubusercontent.com.
     GitHub is unreliable-to-blocked from mainland China, which is where the
-    players are — so the app's own images were the slowest, least reliable
+    players are — so the app's own images would be the slowest, least reliable
     thing on the page for its actual audience. Same-origin removes the
     question entirely: if wfsim.app loads, its art loads.
 
@@ -239,9 +239,9 @@ def write_board() -> None:
     # rule that already exists twice; carrying it keeps the scorer the only
     # thing that decides.
     #
-    # It also ends a churn: every local site build used to rewrite board.json
-    # WITHOUT this field, so the file came back dirty after each run and a
-    # careless commit could ship it over a fresh rescore.
+    # It also avoids a churn: a local site build that rewrites board.json
+    # WITHOUT this field leaves the file dirty after every run, and a careless
+    # commit ships it over a fresh rescore.
     # A ROW IS FOUND BY ITS BUILD, not by its score. Keying on the number was a
     # proxy for identity and it broke on the thing a proxy always breaks on:
     # 10 of 118 rows had a score one ULP apart between the yaml and the json

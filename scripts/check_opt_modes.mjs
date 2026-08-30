@@ -72,8 +72,8 @@ const r = await evaluate(`(async () => {
   out.picks = picks;
   updateOptEstimate(); renderOptMods(); await sleep(300);
 
-  // The seeded pin travels — this is the bug: the request used to carry no
-  // mode whatsoever, so the server played the weapon's default.
+  // The seeded pin travels: a request carrying no mode whatsoever leaves the
+  // server playing the weapon's default.
   const sent1 = await sendOnce();
   out.sentModes1 = { ...sent1.modes };
   out.dbgMopts = modeOpts(weaponInfo(document.getElementById('weapon').value) || {}).length;

@@ -163,10 +163,9 @@ const r = await evaluate(`(async () => {
   // re-run. The box was redrawn under the new fight's name while every chip
   // beside it still answered the old fight's question.
   //
-  // ON THE EVOLUTION AXIS, THROUGH AN OPEN LIST. It used to rank without
-  // anything being open, which is what made it the axis to test this on; since
-  // 2026-08-24 every ranked axis scans on OPEN (openRanked), so an open list
-  // is the only thing a fight change can make stale — and it is exactly the
+  // ON THE EVOLUTION AXIS, THROUGH AN OPEN LIST. Every ranked axis scans on
+  // OPEN (openRanked), so an open list is the only thing a fight change can
+  // make stale — and it is exactly the
   // path refreshGains takes. Driving it by opening the tier the way a reader
   // does is therefore the same assertion on the surface that now carries it.
   {
