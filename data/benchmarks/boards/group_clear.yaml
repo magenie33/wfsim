@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3896
-engine: d05c240129bf367eb006f80a36f5050bef627c0f
+submissions: 3909
+engine: e302c588ccff589736b043f838e2c4f8e0d5639a
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -6462,6 +6462,17 @@ entries:
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
+    mode: cycle
+    score: 92.42275164267512
+    fp: 8786a69ee8b13861
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [fire_rate, toxin]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: strun_prime
     mode: base
     score: 90.91045456616273
     fp: 2252b00981bff1af
@@ -7374,6 +7385,17 @@ entries:
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
+    score: 259.2135925700956
+    fp: 5131673c32249b88
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: vectis_prime
+    mode: base
     score: 249.97434541007655
     fp: e0e5af461d31d681
     mods: [primary_acuity, galvanized_aptitude, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
@@ -7502,14 +7524,47 @@ entries:
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: cycle
-    score: 46.28524557976509
-    fp: d646e5ceca17a63f
-    mods: [galvanized_chamber, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, riven, hellfire]
+    score: 100.68232021504087
+    fp: 5131673c32249b88
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
     riven:
-      bonuses: [multishot, puncture, toxin]
-      malus: magazine_capacity
+      bonuses: [critical_damage, damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 90.5923939840885
+    fp: 5a21d10f2ed8db2c
+    mods: [galvanized_chamber, galvanized_scope, point_strike, vile_acceleration, vital_sense, riven, malignant_force, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [cold, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 86.6378512133281
+    fp: 9d190beb1a5e9d2e
+    mods: [galvanized_chamber, galvanized_scope, point_strike, vile_acceleration, riven, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 51.49266170226275
+    fp: bd317dd9ff44666c
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, riven, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: cycle
@@ -7541,6 +7596,15 @@ entries:
     score: 0.3232977599925098
     fp: d61fabf02b41378a
     mods: [heavy_caliber, split_chamber, serration, hammer_shot, primed_cryo_rounds, stormbringer, hellfire, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 11.016736342792278
+    fp: dad308fb40446b2f
+    mods: [primed_shred, metal_auger, split_chamber, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
     score: 7.555281017735154
