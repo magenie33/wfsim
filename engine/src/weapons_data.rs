@@ -1888,6 +1888,9 @@ pub struct WeaponSpec {
     /// first of its kind in the roster.
     #[serde(default)]
     pub super_crit_on_status: Option<SuperCritSpec>,
+    /// WEAK-POINT STACKS — the Knell family's "Death Knell".
+    #[serde(default)]
+    pub weakpoint_stacks: Option<WeakpointStacksSpec>,
     /// The Ocucor's tendrils — see [`TendrilSpec`].
     #[serde(default)]
     pub tendrils: Option<TendrilSpec>,
@@ -2585,6 +2588,25 @@ pub fn polarity(name: &str) -> Polarity {
 /// afterwards, which is how Vigilante can carry it to a Tier-4 hit — so the
 /// lock binds the chance, not the ceiling.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct WeakpointStacksSpec {
+    pub max_stacks: u32,
+    /// ONE CLOCK, from the last weak-point hit: when it falls due one stack is
+    /// lost and it restarts for the rest — the Galvanized family's decay.
+    pub duration_seconds: f64,
+    /// Per stack, added to the FINISHED multiplier — the page writes the
+    /// bracket itself: `2 x (1 + Crit Damage Mods) + 0.5 x Number of Stacks`.
+    #[serde(default)]
+    pub crit_multiplier: f64,
+    /// Per stack, added to the FINISHED status chance.
+    #[serde(default)]
+    pub status_chance: f64,
+    /// While ANY stack is up. 1.0 is the round being free.
+    #[serde(default)]
+    pub ammo_efficiency: f64,
+}
+
+/// A status-triggered crit-chance lock — Gotva Prime's.
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct SuperCritSpec {
     /// Per pellet that applied at least one status. Several statuses on one
     /// hit do not raise it (wiki).
@@ -2609,6 +2631,13 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     let Some(s) = spec(weapon) else { return Vec::new() };
     let mut out = Vec::new();
 
+    if let Some(w) = s.weakpoint_stacks {
+        out.push(format!(
+            "A WEAK-POINT HIT grants a stack, up to {}, each lasting {:.0}s from the last one — worth +{:.1}x on the finished crit multiplier and +{:.0}% on the finished status chance apiece{}. Per pellet, so one shot can fill the pile.",
+            w.max_stacks, w.duration_seconds, w.crit_multiplier, w.status_chance * 100.0,
+            if w.ammo_efficiency >= 1.0 { ", and the shot costs no ammo at all" } else { "" },
+        ));
+    }
     if let Some(sc) = s.super_crit_on_status {
         out.push(format!(
             "A Status Effect has a {:.0}% chance to SET the next hit's crit chance to {:.0}% — ignoring every other crit bonus. Rolled per pellet.",
@@ -3649,6 +3678,7 @@ pub fn base_panel_assembled(
         ammo_reserve: s.ammo_max.unwrap_or(0.0),
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         super_crit_on_status: s.super_crit_on_status,
+        weakpoint_stacks: s.weakpoint_stacks,
         tendril_max: s.tendrils.map_or(0, |t| t.max),
         tendril_range_m: s.tendrils.as_ref().map_or(0.0, |t| t.range_m),
         tendril_acquire_deg: s.tendrils.as_ref().map_or(0.0, |t| t.acquire_deg),

@@ -1,8 +1,6 @@
 id: morgha_alt
 name: Morgha
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `morgha`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: morgha
 # THE ALT-FIRE, and `alt_fire` rather than `charged` even though the page calls
 # it a "Charged Shot": it has a Semi-Auto trigger and no charge time, so nothing

@@ -1,8 +1,6 @@
 id: mandonel_uncharged
 name: Mandonel
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `mandonel`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: mandonel
 # THE HORIZONTAL SPREAD — the uncharged shot, and a different weapon in shape:
 # EIGHT projectiles in a wide horizontal line rather than one hit-scan lance.

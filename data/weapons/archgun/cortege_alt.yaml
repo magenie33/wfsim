@@ -1,8 +1,6 @@
 id: cortege_alt
 name: Cortege
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `cortege`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: cortege
 # THE ALT-FIRE, AND IT IS EARNED. "Getting 5 kills with the Cortege's primary
 # fire will unlock an Alternate Fire that releases a trio of grenades" (wiki),

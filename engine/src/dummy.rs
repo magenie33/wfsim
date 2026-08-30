@@ -2959,6 +2959,8 @@ pub struct DummyParams {
     /// modded value and every crit bonus are ignored, because the card says
     /// "Set Critical Chance ignores all other modifiers".
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
+    /// See `loadout::WeaponBase::weakpoint_stacks` — the Knell's Death Knell.
+    pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
     /// Hemorrhage's status-conversion roll (per damage instance, max one).
     pub proc_conversion: Option<crate::loadout::ProcConv>,
     /// The equipped secondary arcane, resolved at its rank from
@@ -4178,6 +4180,7 @@ impl DummyParams {
             headshot_streak: panel.headshot_streak,
             crit_damage_below_status_count: panel.crit_damage_below_status_count,
             super_crit_on_status: panel.super_crit_on_status,
+            weakpoint_stacks: panel.weakpoint_stacks,
             beam_ramp_floor: panel.beam_ramp_floor,
             applies_microwave: panel.applies_microwave,
             independent_procs: panel.independent_procs,
@@ -4483,6 +4486,7 @@ impl Default for DummyParams {
             crit_chance_per_hit_initial_stacks: 0,
             crit_chance_per_hit_held: false,
             super_crit_on_status: None,
+            weakpoint_stacks: None,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             applies_microwave: false,
             independent_procs: &[],
@@ -5386,6 +5390,17 @@ fn reload_draw(capacity: f64, current: f64) -> f64 {
 ///
 /// Charge-backed magazines are outside the ammo economy entirely and take no
 /// efficiency at all, which is why `applies` short-circuits to zero.
+/// Death Knell's ammo half: the efficiency it grants while ANY stack is up.
+fn weakpoint_ammo(
+    spec: Option<crate::weapons_data::WeakpointStacksSpec>,
+    pile: &mut LiveStacks,
+    t: f64,
+) -> f64 {
+    spec.map_or(0.0, |w| {
+        if pile.current(t, w.duration_seconds) > 0 { w.ammo_efficiency } else { 0.0 }
+    })
+}
+
 fn ammo_efficiency(
     applies: bool,
     bar: f64,
@@ -11325,6 +11340,9 @@ pub fn run_once_traced(
         .crit_chance_stack
         .as_ref()
         .map_or(Vec::new(), |s| vec![s.duration; s.initial_stacks as usize]);
+    // DEATH KNELL — the weak-point pile. `LiveStacks`'s default decay is this
+    // buff's: one stack off on the clock, and it restarts for the rest.
+    let mut weakpoint_pile = LiveStacks::default();
 
 
     // Per-phase precomputation: the quantized vector is static per phase
@@ -11786,7 +11804,8 @@ pub fn run_once_traced(
             // at 100%, so this is "exactly free", never "more than free".
             let eff = ammo_efficiency(
                 ap.ammo_efficiency_applies,
-                bar.total_contributions().ammo_efficiency,
+                bar.total_contributions().ammo_efficiency
+                    + weakpoint_ammo(params.weakpoint_stacks, &mut weakpoint_pile, t),
                 params.arcane.ammo_efficiency,
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
                 crate::abilities_data::ammo_efficiency_at(&params.abilities, t),
@@ -12350,9 +12369,11 @@ pub fn run_once_traced(
         // live arcane stacks (Primary Crux). Summed and capped by
         // `ammo_efficiency`, which is also what `next_cost` above reads — one
         // definition, so the two cannot drift apart.
+        // …AND DEATH KNELL'S: on a one-round magazine, the reload not happening.
         let efficiency = ammo_efficiency(
             ap.ammo_efficiency_applies,
-            contribs.ammo_efficiency,
+            contribs.ammo_efficiency
+                + weakpoint_ammo(params.weakpoint_stacks, &mut weakpoint_pile, t),
             params.arcane.ammo_efficiency,
             arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
             crate::abilities_data::ammo_efficiency_at(&params.abilities, t),
@@ -12470,6 +12491,12 @@ pub fn run_once_traced(
         // read the live status chance the same way it reads the live crit one.
         // The pellet loop below re-reads it for its own roll; this is the same
         // number, one scope out.
+        // DEATH KNELL'S TWO NUMBERS, read once per SHOT — every stacking buff
+        // in this loop follows that rule. Both add to the FINISHED value.
+        let (weakpoint_cd, weakpoint_sc) = params.weakpoint_stacks.map_or((0.0, 0.0), |w| {
+            let n = f64::from(weakpoint_pile.current(t, w.duration_seconds));
+            (w.crit_multiplier * n, w.status_chance * n)
+        });
         let sc_arc_shot = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
             + params.sc_per_tendril * f64::from(tendrils)
             // WEEPING WOUNDS, the same sentence on the status side: `Status
@@ -13068,7 +13095,7 @@ pub fn run_once_traced(
                 }
                 _ => 0.0,
             };
-            let cd_abs = debuffs.cold_cd_bonus(t) + spiteful;
+            let cd_abs = debuffs.cold_cd_bonus(t) + spiteful + weakpoint_cd;
             // PRELUDE OF MIGHT is the one perk whose condition is read at the
             // MOMENT OF THE HIT rather than off the arsenal: "With Critical
             // Chance below 40%", plus the wiki's note on the same row —
@@ -13812,7 +13839,9 @@ pub fn run_once_traced(
                     * (match &rad {
                         None => ap.status_chance + ap.base_status_chance * sc_arc,
                         Some(r) => r.status_chance + r.base_status_chance * sc_arc,
-                    } + derived_sc);
+                    } + derived_sc)
+                    // Death Knell's, on the FINISHED number.
+                    + weakpoint_sc;
                 // EACH PART'S OWN. The direct hit reads the attack's list; an
                 // EXPLOSION reads its own, because "Guaranteed Impact proc" is
                 // said of one and not the other on the same weapon (the Scourge
@@ -14474,6 +14503,11 @@ pub fn run_once_traced(
                         // EVERY buff that triggers on a headshot, including
                         // its own chance roll. One line for the family.
                         bump_buffs!(crate::loadout::BuffTrigger::Headshot, t, d.extra);
+                        // DEATH KNELL, per PELLET: "individual Multishot bullets
+                        // can proc Death Knell" (wiki).
+                        if let Some(w) = params.weakpoint_stacks {
+                            weakpoint_pile.bump(t, w.duration_seconds, w.max_stacks);
+                        }
                         // Primary Crux: a weak-point HIT (not a kill), per
                         // PELLET. Bumped here, AFTER this pellet's status
                         // chance was read above — the hit that grants a stack
@@ -27957,6 +27991,65 @@ mod tests {
             "a `multiplies` row is not: x{mul_bare:.2} bare, x{mul_serrated:.2} serrated"
         );
         assert!(mul_bare > 2.0, "and it is worth something at all: x{mul_bare:.2}");
+    }
+
+    /// DEATH KNELL IS ADDED TO THE FINISHED MULTIPLIER, so a crit-damage mod
+    /// does not multiply it: `2 x (1 + Crit Damage Mods) + 0.5 x Stacks`.
+    ///
+    /// Read off the DAMAGE, which at 100% crit chance IS the multiplier, and
+    /// dealt as IMPACT because the pile's other half raises status chance and
+    /// an Impact proc deals no damage.
+    #[test]
+    fn death_knell_adds_its_stacks_to_the_finished_crit_multiplier() {
+        let spec = crate::weapons_data::WeakpointStacksSpec {
+            max_stacks: 3,
+            duration_seconds: 2.0,
+            crit_multiplier: 0.5,
+            status_chance: 0.20,
+            ammo_efficiency: 1.0,
+        };
+        let build = |cd: f64, passive: bool, head: bool| DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            base_crit_chance: 1.0,
+            unmodded_crit_chance: 1.0,
+            crit_multiplier: 2.0 * cd,
+            unmodded_crit_damage: 2.0,
+            crit_tier_upgrade_chance: 0.0,
+            fire_rate: 10.0,
+            magazine_size: 1e9,
+            infinite_reserve: true,
+            weakpoint_stacks: passive.then_some(spec),
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            weakpoint_crit_chance_relative: 0.0,
+            body_parts: vec![BodyPart {
+                name: if head { "head".into() } else { "body".into() },
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: head,
+                crit_bonus: false,
+            }],
+            ..DummyParams::default()
+        };
+        // Damage per shot, which is the multiplier up to the weapon's base.
+        let mult = |p: &DummyParams| {
+            let s = monte_carlo(p, 200, 0x60D5);
+            s.mean_damage / s.mean_shots.max(1.0) / 100.0
+        };
+
+        // Bare: the weapon's own 2.0x, and the pile is worth 3 x 0.5 on top.
+        let off = mult(&build(1.0, false, true));
+        let on = mult(&build(1.0, true, true));
+        assert!((off - 2.0).abs() < 0.02, "control moved: {off}");
+        assert!((on - 3.5).abs() < 0.05, "2.0 + 3 x 0.5 = 3.5, got {on}");
+
+        // A BODY HIT EARNS NOTHING, which is what makes the number above the
+        // pile's rather than something else's.
+        let body = mult(&build(1.0, true, false));
+        assert!((body - 2.0).abs() < 0.02, "a body shot armed it: {body}");
+
+        // …AND A CRIT-DAMAGE MOD DOES NOT MULTIPLY THEM: 4.0 + a flat 1.5.
+        let modded = mult(&build(2.0, true, true));
+        assert!((modded - 5.5).abs() < 0.05, "4.0 + 1.5 = 5.5, got {modded}");
     }
 
     #[test]

@@ -1,8 +1,6 @@
 id: dread_uncharged
 name: Dread
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `dread`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: dread
 form: base
 

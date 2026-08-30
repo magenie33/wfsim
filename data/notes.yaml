@@ -155,6 +155,15 @@ notes:
     The qualifier costs nothing here: this arena has no geometry, so everything
     the ray meets is a body. `infinite` is the spelling; what the engine holds
     is `space::INFINITE_BODY_PUNCH_THROUGH_M`.
+  death_knell_weakpoint_stacks: |
+    DEATH KNELL. A weak-point hit grants a stack: +0.5x on the FINISHED
+    critical multiplier and +20% on the FINISHED status chance apiece, plus
+    100% ammo efficiency while any stack is up — which on a one-round magazine
+    is the reload never happening. Three stacks, 2 s from the last hit, and
+    when the clock falls due ONE is lost and it restarts for the rest. The page
+    writes the crit bracket itself: `2 x (1 + Crit Damage Mods) + 0.5 x Number
+    of Stacks`. PER PELLET — "individual Multishot bullets can proc Death Knell
+    and can generate max stacks instantly from a single shot".
   ballistica_bolt_that_went_through: |
     ONE STACK PER BOLT THAT WENT THROUGH, so a four-bolt shot into a line earns
     four and a lone target earns none — the mechanic, not an admission.
@@ -390,6 +399,10 @@ notes:
     they fired. Before that this line rested on the catalog row alone, and
     the row admitted a reading where the sentence was about the TABLE's
     arithmetic rather than about the game.
+  form_of_its_weapon_inherits: |
+    A FORM OF ITS WEAPON: everything that describes the WEAPON rather than this
+    attack is inherited from the entry named in `inherits:`, and only what
+    DIFFERS is written here. See `weapons_data::INHERITED`.
   form_transformation_releasing_early: |
     A FORM, NOT A TRANSFORMATION: releasing early costs nothing — no gauge,
     no transmute animation, just a shorter press — which is why this entry

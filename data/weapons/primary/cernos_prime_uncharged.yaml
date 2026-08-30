@@ -1,8 +1,6 @@
 id: cernos_prime_uncharged
 name: Cernos Prime
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `cernos_prime`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: cernos_prime
 # THE TAPPED SHOT — the other way a bow is actually played: click instead of
 # hold, half the damage per arrow, but the draw is skipped. `base` is the

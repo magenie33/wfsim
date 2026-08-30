@@ -1,8 +1,6 @@
 id: velocitus_uncharged
 name: Velocitus
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `velocitus`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: velocitus
 # THE UNCHARGED SHOT — the same trigger released early. See `velocitus` for
 # the charged form this weapon is normally played as.

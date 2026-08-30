@@ -1821,6 +1821,8 @@ pub struct WeaponBase {
     /// Gotva Prime's passive: a status-triggered crit-chance SET. See
     /// `weapons_data::SuperCritSpec`.
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
+    /// [`crate::weapons_data::WeaponSpec::weakpoint_stacks`] — no mod moves it.
+    pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
     /// Where this weapon's beam ramp starts (0.20 unless it says otherwise).
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
@@ -3336,6 +3338,8 @@ pub struct ResolvedPanel {
     pub no_resupply: bool,
     /// Untouched by mods — the passive's numbers are the weapon's own.
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
+    /// See [`WeaponBase::weakpoint_stacks`].
+    pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
     /// See `weapons_data::WeaponSpec::beam_ramp_floor`. No mod moves it.
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
@@ -5219,6 +5223,7 @@ pub fn resolve_for(
         has_reserve: base.has_reserve,
         no_resupply: base.no_resupply,
         super_crit_on_status: base.super_crit_on_status,
+        weakpoint_stacks: base.weakpoint_stacks,
         beam_ramp_floor: base.beam_ramp_floor,
         applies_microwave: base.applies_microwave,
         independent_procs: base.independent_procs,

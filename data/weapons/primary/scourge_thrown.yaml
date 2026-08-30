@@ -1,8 +1,6 @@
 id: scourge_thrown
 name: Scourge
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `scourge`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: scourge
 # THE ALT-FIRE — the weapon itself, thrown. "Alternate Fire throws the Scourge,
 # dealing damage and causing a 2 meter Bullet Attractor field on the heads of

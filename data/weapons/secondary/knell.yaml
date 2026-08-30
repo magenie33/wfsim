@@ -31,6 +31,14 @@ reload_seconds: 2
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
+# see notes: death_knell_weakpoint_stacks
+weakpoint_stacks:
+  max_stacks: 3
+  duration_seconds: 2.0
+  crit_multiplier: 0.5
+  status_chance: 0.20
+  ammo_efficiency: 1.0
+
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -50,7 +58,6 @@ attack:
   damage: { impact: 63, puncture: 69, slash: 18 }   # total 150
 
 unmodeled:
-  - "'DEATH KNELL', and it is most of the weapon: a weak-point hit grants 100% ammo efficiency, +0.5x final critical multiplier and +20% final status chance, stacking to 3, each stack lasting 2 seconds and refreshed by the next weak-point hit (wiki). This engine has no headshot-TRIGGERED buff — a crit is rolled for a hit and the body part is drawn beside it — so none of the three is applied, and the ammo half in particular is what makes a one-round magazine playable. Read this number as the weapon with its passive switched off"
   - reason: zoom_steps
 
 source:

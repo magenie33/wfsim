@@ -1,8 +1,6 @@
 id: mausolon_charged
 name: Mausolon
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `mausolon`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: mausolon
 # THE ALT-FIRE — a 0.8 s charge that fires a laser with a large explosion, and
 # a form you EARN rather than one you can simply hold: "Getting 5 kills with

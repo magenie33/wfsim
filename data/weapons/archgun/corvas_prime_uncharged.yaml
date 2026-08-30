@@ -1,8 +1,6 @@
 id: corvas_prime_uncharged
 name: Corvas Prime
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `corvas_prime`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: corvas_prime
 form: base
 transform_group: corvas_prime

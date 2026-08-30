@@ -1,8 +1,6 @@
 id: larkspur_charged
 name: Larkspur
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `larkspur`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: larkspur
 form: charged
 transform_group: larkspur

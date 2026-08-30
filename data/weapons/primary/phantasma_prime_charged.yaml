@@ -1,8 +1,6 @@
 id: phantasma_prime_charged
 name: Phantasma Prime
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `phantasma_prime`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: phantasma_prime
 # THE ALT-FIRE — a one-second charge that throws a plasma bomb instead of the
 # six beams. `charged` is the kind for a shot whose DRAW replaces the fire-rate

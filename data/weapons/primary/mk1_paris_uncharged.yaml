@@ -1,8 +1,6 @@
 id: mk1_paris_uncharged
 name: MK1-Paris
-# A FORM OF ITS WEAPON: everything below that describes the WEAPON
-# rather than this shot is inherited from `mk1_paris`, and only what
-# DIFFERS is written here. See `weapons_data::INHERITED`.
+# see notes: form_of_its_weapon_inherits
 inherits: mk1_paris
 form: base
 
