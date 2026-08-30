@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3851
-engine: 40f9ed2764ef1cf52b910748b642e743bd92f4e2
+submissions: 3872
+engine: d05c240129bf367eb006f80a36f5050bef627c0f
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -2313,6 +2313,16 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cortege
     mode: base
+    score: 611.7671193772783
+    fp: 027950f23e7f8dde
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
     score: 444.9715002540314
     fp: 027950f23e7f8dde
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
@@ -2320,6 +2330,24 @@ entries:
     riven:
       bonuses: [critical_damage, toxin]
       rolls: [1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 433.2124936497483
+    fp: 027950f23e7f8dde
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [damage, toxin]
+      rolls: [1.1, 1.1]
+  - weapon: cortege
+    mode: base
+    score: 431.84812616953656
+    fp: 027950f23e7f8dde
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [fire_rate, toxin]
+      rolls: [0.9, 1.1]
   - weapon: cortege
     mode: base
     score: 352.88615945626776
@@ -2585,6 +2613,20 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: epitaph_prime
     mode: alternate
+    score: 0.3459966929606358
+    fp: b2634797ae6d052c
+    exilus: lethal_momentum
+    mods: [primed_fulmination, amalgam_barrel_diffusion, hornet_strike, primed_expel_orokin, pistol_elementalist, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_merciless]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.22300919207848535
+    fp: e7474072f6aeb080
+    exilus: lethal_momentum
+    mods: [primed_fulmination, hornet_strike, primed_expel_orokin, primed_target_cracker, pistol_elementalist, frostbite, pistol_pestilence, primed_convulsion]
+    arcanes: [secondary_enervate]
+  - weapon: epitaph_prime
+    mode: alternate
     score: 0.21959976652101823
     fp: f697805f7414f10d
     exilus: pistol_ammo_mutation
@@ -2592,17 +2634,24 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: epitaph_prime
     mode: alternate
-    score: 0.17197364193160206
-    fp: a8c9d7692914ca0c
-    exilus: pistol_ammo_mutation
-    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, pathogen_rounds]
+    score: 0.21333067977191508
+    fp: 51abb8c888856b4f
+    exilus: lethal_momentum
+    mods: [primed_fulmination, amalgam_barrel_diffusion, hornet_strike, primed_expel_orokin, pistol_elementalist, frostbite, pistol_pestilence, primed_convulsion]
     arcanes: [secondary_enervate]
   - weapon: epitaph_prime
     mode: alternate
-    score: 0.16691569901957964
-    fp: 3812bea56ed27bb0
-    exilus: pistol_ammo_mutation
-    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, pathogen_rounds]
+    score: 0.2082014856232866
+    fp: 591b7afb6c8b005b
+    exilus: lethal_momentum
+    mods: [primed_fulmination, hornet_strike, primed_expel_orokin, pistol_elementalist, frostbite, pistol_pestilence, primed_convulsion, jolt]
+    arcanes: [secondary_enervate]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.2080406060936486
+    fp: 0dec15b3c6f7101b
+    exilus: lethal_momentum
+    mods: [primed_fulmination, hornet_strike, primed_expel_orokin, perpetual_agony, pistol_elementalist, frostbite, pistol_pestilence, primed_convulsion]
     arcanes: [secondary_enervate]
   - weapon: euphona_prime
     mode: base

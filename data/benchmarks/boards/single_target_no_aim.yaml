@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3851
-engine: 40f9ed2764ef1cf52b910748b642e743bd92f4e2
+submissions: 3872
+engine: d05c240129bf367eb006f80a36f5050bef627c0f
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -1389,6 +1389,34 @@ entries:
       rolls: [1.1, 1.1]
   - weapon: cortege
     mode: base
+    score: 3.3333333333333335
+    fp: 22fe2118fe3c6afb
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 3.3333333333333335
+    fp: 22fe2118fe3c6afb
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [damage, toxin]
+      rolls: [1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 3
+    fp: 22fe2118fe3c6afb
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [fire_rate, toxin]
+      rolls: [1.1, 1.1]
+  - weapon: cortege
+    mode: base
     score: 2.993769968539658
     fp: f474ee7334206d5e
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
@@ -1645,24 +1673,24 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: epitaph_prime
     mode: alternate
+    score: 0.10130513817832514
+    fp: 3b84366951ea1035
+    exilus: lethal_momentum
+    mods: [primed_fulmination, amalgam_barrel_diffusion, hornet_strike, primed_expel_orokin, pistol_elementalist, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_merciless]
+  - weapon: epitaph_prime
+    mode: alternate
     score: 0.0826618181753532
     fp: c6d7d719bcaaf69e
     exilus: pistol_ammo_mutation
     mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, pathogen_rounds]
     arcanes: [secondary_enervate]
   - weapon: epitaph_prime
-    mode: alternate
-    score: 0.0467229424862059
-    fp: 89ad2228a5288667
-    exilus: pistol_ammo_mutation
-    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, pathogen_rounds]
-    arcanes: [secondary_enervate]
-  - weapon: epitaph_prime
-    mode: alternate
-    score: 0.04576025218419122
-    fp: 414c011ddb00b7c5
-    exilus: pistol_ammo_mutation
-    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, pathogen_rounds]
+    mode: base
+    score: 0.04822244813012459
+    fp: af281afa6aad1d0b
+    exilus: lethal_momentum
+    mods: [primed_fulmination, hornet_strike, primed_expel_orokin, pistol_elementalist, sure_shot, frostbite, pistol_pestilence, primed_convulsion]
     arcanes: [secondary_enervate]
   - weapon: epitaph_prime
     mode: base
@@ -2824,6 +2852,14 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 8.795283810083168
+    fp: 60ee26cb7cd981db
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 8.670469446187234
     fp: af0fd6a8dcbc70d9
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -2974,6 +3010,14 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 5.891022930487807
+    fp: c4d324797b8bf73a
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
   - weapon: kuva_nukor
     mode: base
     score: 5.888851406062021
