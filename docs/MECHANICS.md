@@ -3153,21 +3153,29 @@ Each body crossed spends part of the budget; when it runs out the shot stops.
 `space::struck_along` walks the aim ray and returns every body it reaches, in
 the order it meets them.
 
-### What a body costs — 0.5 m, and the table pins it
+### What a body costs — the CHORD the ray actually crossed
 
-`space::BODY_MATERIAL_M = 0.5`, and it is **not** twice `BODY_RADIUS_M`. The
-two are different quantities from different sources, and keeping them apart is
-the decision:
+`space::traverse` walks the aim ray spending the budget body by body, and what
+a body costs is what the ray actually CROSSED: `space::material_at` scales the
+cost by the chord, `BODY_MATERIAL_M · sqrt(r² − perp²) / r` — the published
+figure at dead centre, nothing at the rim. `space::material_through(r, perp)`
+is `2·sqrt(r² − perp²)` and nothing else. `traverse` is ONE walk with two
+readers, `struck_along` and `dissipation_point`.
 
-- **`BODY_RADIUS_M = 0.2` is MEASURED** (M46, the owner's own reading): walking
-  into an enemy stops at 0.4 m centre to centre. It governs spacing, the hit
-  test and blast reach.
-- **`BODY_MATERIAL_M = 0.5` is PUBLISHED**: the punch-through page's "Minimum
-  Mod Ranks for Penetration" table.
+Every scenario aims at a body's CENTRE and that case is the calibration; what
+changes is the body BEHIND, and it changes a lot — a Burston Incarnon with
+2.1 m reaches 5 of six bodies down their centres and all 7 when it clips them
+at 0.9 of a radius, 53,619 DPS against 72,311.
 
-Every one of that table's thirteen humanoid cells is reproduced by a single
-threshold of 0.5 m, and the table brackets the value from both sides — the
-largest rank that FAILS is 0.4 and the smallest that WORKS is 0.5:
+**THERE IS ONE NUMBER, AND IT IS THE RADIUS.** `BODY_RADIUS_M = 0.25` for a
+Tenno and an enemy alike, and `BODY_MATERIAL_M` is DERIVED from it — `2r`,
+because a body is a circle and the material a shot crosses through the middle
+of one IS its width.
+
+The wiki's "Minimum Mod Ranks for Penetration" table brackets a humanoid to
+`(0.4, 0.5]` — 0.4 fails on three independent mods, 0.5 works on Vigilante
+Offense — thirteen cells with no exceptions, asserted by
+`space::tests::a_body_costs_what_the_wiki_table_says`:
 
 | mod | largest ✗ | smallest ✓ |
 |---|---|---|
@@ -3177,22 +3185,19 @@ largest rank that FAILS is 0.4 and the smallest that WORKS is 0.5:
 | Power Throw | 0.3 | 0.7 |
 | Metal Auger / Seeker / Seeking Force | 0.4 | 0.7 |
 
+A radius of 0.2 gives a diameter of 0.4 and is EXCLUDED by that table; 0.25
+gives exactly 0.5. **This AMENDS M47**, which derived 0.2 from walking into an
+enemy and stopping at 0.4 m centre to centre — a step that assumes the stop
+distance is exactly two radii with no push-out margin, which nothing measured.
+The hit test at contact is `r / 2r` for ANY radius, so nothing moved; what
+changes is past contact, where a 2 degree cone reaches one body to about 7 m
+rather than 5.7 m.
+
 The page's other statement agrees from the other side: *"The torso hitbox of
 three butchers combined adds up to over 1.2m of material"* — over 0.4 m each.
-`space::tests::a_body_costs_what_the_wiki_table_says` asserts the whole table.
-
-**Why not raise the radius to 0.25 instead.** It would overwrite an in-game
-measurement with a table whose own note says *"Average data, result will differ
-due to width variances"*, and move every distance-dependent number on the board
-by 0.05 m for the privilege. The property that motivates the question survives
-either way: crossing a body costs 0.5, so **0.5 m of punch through reaches the
-second of two adjacent enemies**, which is exactly what the table says.
-
-A FLAT COST, not a chord: the table publishes one number per enemy type and
-warns the real thing varies with width, so charging a chord would be a geometry
-this engine invented. QUADRUPEDS are out of scope — the table's own rows for
-them disagree with each other (Power Throw's 0.7 penetrates where Vigilante
-Offense's 0.75 does not), which is that caveat showing.
+QUADRUPEDS are out of scope — the table's own rows for them disagree with each
+other (Power Throw's 0.7 penetrates where Vigilante Offense's 0.75 does not),
+which is that caveat showing.
 
 ### A punched body is a DIRECT hit, and it starts its own chain
 
@@ -3256,6 +3261,28 @@ weapons the wiki puts in one group for one mechanic sit on opposite sides of
 another. So the answer is transcribed per ENTRY, which is docs/CATALOGS.md's
 rule generalised once more (the Torid Incarnon was the
 question that found it).
+
+### …and "an AoE attack" is TWO KINDS of attack
+
+The class rule's own sentence opens *"With a very few exceptions"* and never
+says which. `weapons_data::BlastKind` is the type:
+
+- a **`contact`** blast goes off on the first thing it touches, and is the true
+  area-of-effect attack the rule means;
+- a **`terminal`** one goes off where the round DISSIPATES, and takes
+  punch-through mods normally (MEASUREMENTS M53).
+
+**THE BUDGET BUYS MATERIAL.** The round crosses `space::BODY_MATERIAL_M` per
+body and detonates in whichever one it cannot get out of, so in a crowd the
+blast lands DEEPER in the line — a Burston Incarnon with 2.1 m strikes
+`1 + floor(2.1/0.5)` = 5 bodies and detonates on the fifth, 16,566 against
+53,619 DPS on a line of seven. Against a LONE enemy the blast moves back and
+the damage drops (16,584 to 16,358, about 4σ). With no budget the epicentre is
+the contact point.
+
+What is left over when the round clears every body is spent as flight, because
+this arena has no wall. That is the one stand-in in the model, and it is
+bounded by the weapon's own punch through.
 
 ### The exception list is a real catalog, and it has an Arch-Gun section
 
@@ -3445,6 +3472,82 @@ which is the control that says this is the element's mechanic and not the engine
 spreading every DoT it has. The fixture is a weapon with no AoE of its own: the
 Torid was the first one and its lingering cloud reached the neighbours by
 itself, which that control caught.
+
+## A status has THREE models, not two
+
+**A STATUS HAS THREE MODELS, NOT TWO.** Slash and Toxin are PER INSTANCE —
+each stack its own clock, timer and number. Heat is a SINGLETON that every
+proc refreshes and that pays one consolidated tick. Electricity and Gas are
+the third: *"multiple procs on an enemy no longer deal their respective damage
+separately, like current Slash statuses, but once per second, similar to Heat
+status. However, they still maintain each own timer and will not refresh,
+unlike Heat"* (wiki `Damage/Electricity Damage`, **Update 33.6**); Gas is the
+same shape, confirmed in game where the wiki does not say. `push_dot_capped`
+moves a joining instance onto its family's clock and `Ev::Dot` pays every live
+one as ONE instance.
+
+THE CLOCK ALONE IS HALF THE RULE: an instance is the unit attenuation clamps,
+a shield gate multiplies by 5%, and overkill is measured against, so ten small
+ones and one large one differ on any target that has those. The merge is
+tick-count neutral by arithmetic — an instance with `k` ticks joining a clock
+`φ < 1` ahead fires `ceil(k − φ) = k` times.
+
+THE HEAP GOES STALE AND THE SCAN CANNOT: `process_ticks` picks its path by
+live DoT count, and advancing a whole family leaves heap keys for ticks
+already paid. Without the guard a stale key advances its Dot again and BURNS a
+tick, so the damage comes out LOW. A fixture proving it must be dense enough
+to leave the scan path (`TICK_QUEUE_MIN`).
+
+## A DoT’s weak-point rule is per status, and a blast is not a DoT
+
+**A DoT'S WEAK-POINT RULE IS PER STATUS, AND A BLAST IS NOT A DoT**
+(MEASUREMENTS M54). A Toxin tick does NOT inherit the weak point of the hit
+that applied it — measured in game, against a wiki page that says it does — so
+`dot_takes_weakpoint` names Toxin and nothing else. Every other DoT is
+
+UNMEASURED and keeps the wiki's answer. A BLAST goes the other way and was
+measured exactly: ten stacks applied by BODY hits reach a neighbour for 1050,
+by HEAD hits for 3150, **3.000** with no remainder, and `1050 / 10.5 = 100`
+confirms the published 10× between the radial and single-target halves. Four
+mechanics that sound like one family do not share a rule; the only way to know
+is to measure each.
+
+## A volley has an order, and every instance re-reads the target
+
+**A VOLLEY HAS AN ORDER, AND EVERY INSTANCE RE-READS THE TARGET**
+(MEASUREMENTS M62). Pellets leave the muzzle at one instant and do NOT settle
+at one instant: a pellet resolves its own explosion before the next pellet's
+collision, and each of those four instances reads the target as the one before
+it left it. A Laetum forcing a Viral proc on both halves pops
+`200 / 1,200 / 450 / 1,500` — the Viral ladder read at 0 / 1 / 2 / 3 stacks —
+and no other assignment of those numbers to those instances survives the
+arithmetic. `DebuffState::amps` is read inside the STAGE loop; `prune` stays
+once per pellet, because the whole volley is at one instant `t`. AN INSTANCE
+
+DOES NOT AMPLIFY ITSELF: the first collision reads x1.00 because its own
+forced proc lands after it has been settled. The golden test
+`a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target` pins
+the four NUMBERS rather than the rule.
+
+## A condition about the target is simulated; one about the Tenno is assumed
+
+**A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE TENNO IS ASSUMED.**
+`arc_condition` returns a TYPED condition and `Unknown` for anything it has
+not been taught, and a test walks every arcane yaml and refuses an unknown
+one. A data file stating a rule the engine does not apply is worse than one
+that omits it: to anyone auditing, it reads as if the rule were being applied.
+
+A CONDITION IS HONOURED AT RESOLVE OR AT THE HIT, and the test that says so is
+
+DERIVED from the yaml rather than naming arcanes. A Tenno state pays NOTHING
+under `Emergent`, the app's default policy — asserted against
+`ArcaneFx::none()`, not against another policy of the same code, because
+comparing `Emergent` to `BaseOnly` cannot see a guard removed from BOTH. A
+target state sets the gate the sim reads. Both arms are verified to bite.
+Secondary Kinship pays zero under BOTH policies, because a solo fight has no
+allies to buff — the honest answer rather than a broken gate.
+
+---
 
 ## Open questions
 

@@ -190,3 +190,65 @@ per round; no shared memory needed), or (b) wasm threads
 - Determinism: per-job seeds are fixed; serial wasm evaluation must
   reproduce native results bit-for-bit (same seed math, same order).
 - The optimizer only calls the engine (CORE.md §5).
+
+---
+
+## A size claim is made on the wire, not on disk
+
+**Images are SAME-ORIGIN, and the art ships with the site.** `site/img/` holds
+every file `data/assets.yaml` references (`scripts/fetch_images.py` fills
+`web/cache/img/`, `build_site_app.py` copies it and FAILS the build on a
+missing one). Hotlinking `cdn.warframestat.us/img/…` answers **301 →
+raw.githubusercontent.com**, which is unreliable to blocked from mainland
+China. If wfsim.app loads, its art loads.
+
+**A SIZE CLAIM IS MADE ON THE WIRE, NOT ON DISK.** Cloudflare answers `br`, so
+the raw byte count is not a number about any reader: a 6.7 MB wasm is
+**1,336 KB** downloaded. Judge a change by compressing both sides with the
+same brotli. `wasm-opt -Oz` takes 6.74 MB to 5.89 MB, which reads as 13% and
+is **-0.3% on the wire**, because it shrinks CODE and 59% of this binary is
+DATA. Not shipping the 43% of `data/` that is comments (`engine/build.rs`)
+moves it: 1,192 KB to 927 KB, **-22%**. wasm-opt runs anyway, for the 1.5 MB
+it takes off the blob this repo COMMITS every build.
+DE permits this: their Content Policy requires only that use of Warframe
+assets be non-commercial, and the wiki hosts the same files on the same basis.
+What it forbids is their LOGOS, so the only mark here stays ours.
+A `wiki:` prefix in `assets.yaml` means the CDN lacks that file and the FETCHER
+takes it from the wiki; the cached name and the page's URL are the bare name.
+
+## A simulation runs on a worker fleet
+
+**A SIMULATION RUNS ON A WORKER FLEET.** The runs are INDEPENDENT given their
+index, so the page shards them across one worker per core (capped at eight)
+and the shards merge back into exactly what one worker would have produced.
+Measured on the group-clear ruler with the board's #1 Phantasma Prime build:
+**85.7 s → 18.3 s**. THE ENABLER IS THE SEED — each run's dice are a pure
+function of `(seed, index)`. THE MERGE IS IN RUST, so there is one
+implementation of the arithmetic: the page schedules and collects,
+`simulate_merged` computes every field. A `Shard` carries SUMS rather than
+runs — 24 KB at a thousand runs against 8 MB — plus one
+`(effective, rng_state)` per run, because the MEDIAN engagement is what the
+panel shows; the merge ranks those and REPLAYS the winner.
+
+**A JSON NUMBER IN JAVASCRIPT IS A DOUBLE**: the 64-bit RNG state travels as
+two `u32` halves (`RunKey`), or it comes back ROUNDED and the merge replays a
+fight that never happened — every mean matching to the last bit while `score`,
+the one figure taken from the median run, disagrees. Asserted three times: on
+the summary (`eight_shards_are_one_run`), on the whole response
+(`a_fleet_of_shards_reports_what_one_worker_reports`), and ON THE WIRE in
+`check_run_counts`, the only one that could catch the rounding.
+
+A COMPARISON IS TO A PART IN 10^12, not bit for bit: floating-point addition
+is not associative.
+
+## A long sim says how far it has got
+
+**A LONG SIM SAYS HOW FAR IT HAS GOT.** The run count is unbounded and so is
+the cost per run: single-target is about a millisecond, a 361-body fight
+~28 ms. `simulate_progress` is the wasm entry (its own, not a flag on `api`,
+because `/api/simulate` is the one endpoint whose cost is unbounded), the
+worker forwards `{done, total}`, and the panel draws a bar, THE COUNT and a
+time remaining. The count, because "412 / 1000" is a number a reader can act
+on. THE ANSWER IS UNCHANGED — the callback observes and never steers — and the
+throttle is in the WASM layer at one message per percent. The remaining time
+is hidden below a second and before 5%.

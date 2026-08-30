@@ -568,10 +568,30 @@ always did, so the ruler is free for most of the roster.
 > **THE RULER MOVED TO 3 m ON 2026-08-22** and the analysis below is kept as it
 > was measured. It is evidence about SATURATION — which mechanism stops growing
 > at which grid size — and that question is unchanged; what changed is the
-> spacing, and why is in  and MEASUREMENTS
-> M54. The one conclusion here that the move overturns is the last section's:
+> spacing, and why is the section above and MEASUREMENTS M54. The one conclusion here that the move overturns is the last section's:
 > 1.5 m separates all three steps of a radius mod and 3 m does not, which is
 > the cost the move pays on purpose.
+
+### The spacing is the ruler's ANSWER, not its arrangement
+
+**THE SPACING IS THE GROUP RULER'S ANSWER, NOT ITS ARRANGEMENT.** A 5 m Blast
+sphere holds `π·25/spacing²` bodies — 35 at 1.5 m, 5 at 4 m — so the grid's
+spacing decides the whole splash-versus-single-target ordering before a weapon
+is read. Measured on one weapon with one build per element and everything else
+pinned, Blast swings **71×** across 1.5–6 m while Heat is FLAT (58–72),
+because Heat is a DoT on one body. It stands at **3 m**, the near edge of the
+crossover band. IT COSTS SOMETHING REAL: 1.5 m was the only spacing that
+separated all three steps of a radius mod (6/9/13 bodies) and 3 m does not.
+
+AND 3 IS FITTED, NOT MEASURED — it was chosen to make the ORDERING match play,
+which is weaker evidence than measuring the parameter. The quantity to measure
+is not the spacing but what it sets: how many enemies one blast detonation
+actually reaches in a real fight (~9 at 3 m, ~20 at 2 m, ~5 at 4 m).
+
+A RULER'S PROSE QUOTES ITS OWN NUMBERS. The spacing is written three times —
+the field, the ruler's NAME, and the rule sentence — and a test reads the RAW
+yaml (the grid is expanded into 361 positions at load) and asserts the prose
+quotes the field.
 
 ### At 1.5 m, and where each mechanism stops growing
 
@@ -1047,3 +1067,83 @@ discovered under pressure.
 - **The library is the only irreplaceable thing.** Boards are derived, the site
   is generated, the code is in git. Anything that could truncate it needs a
   tripwire before it needs a backup.
+
+---
+
+## The store is a library of BUILDS, and every ruler crosses the whole of it
+
+**THE STORE IS A LIBRARY OF BUILDS, AND EVERY RULER CROSSES THE WHOLE OF IT.**
+A submission carries a BUILD and never a score; the number is produced by the
+scorer under the ruler's own pinned seed. So the ruler a build was measured
+under is provenance, not a gate. ANY FIGHT CAN UPLOAD, and the consent notice
+is ONE story everywhere: what leaves is the BUILD, not the fight, and nothing
+about you — the worker stores no IP, no token, and no time finer than the day,
+and a record expires after a year. From a fight of your own the page asks the
+door about EVERY ruler and reports "2 of 3 boards will take it"; it never
+predicts a SCORE. A new ruler costs no community effort — it is scored from
+the library the day it lands.
+
+## A rescore costs the rows that read what changed
+
+**A RESCORE COSTS THE ROWS THAT READ WHAT CHANGED.**
+`engine::data_fingerprint` hashes what a row actually reads (its ruler, its
+weapon and every form it fires, each mod, arcane and evolution, plus
+everything no entity owns), the board stores it per row, and `--engine` is the
+CODE alone. Measured on 24 real rows: 26.0 s full, **0.075 s** when nothing
+changed, 2 of 24 for a Heavy Caliber edit, **0 of 24** for a whole new weapon.
+The one hand list (`AFFECTS_NO_NUMBER`) can only cost TIME — anything
+unclassified falls into the global bucket every row carries. Comments are
+free, since `build.rs` embeds each file with them stripped.
+
+## The board stays a static file, and says how far behind it is
+
+**THE BOARD STAYS A STATIC FILE, AND SAYS HOW FAR BEHIND IT IS.** Committed to
+the repo and served from the CDN, which is what makes it fast and unblockable.
+`GET /api/board/pending` answers the one fact the file cannot carry about
+itself: how many builds the library holds. A COUNT and nothing else. The
+scorer writes `submissions:` per board and the difference is a footnote,
+
+SILENT when the board is current.
+
+## A fight is one document, and a scenario’s overrides sit behind legality
+
+**A FIGHT IS ONE DOCUMENT, AND A SCENARIO'S OVERRIDES SIT BEHIND LEGALITY.** A
+scenario holds everything a measurement needs — the target, the buffs, the
+wielder — AND what it rules for each weapon CLASS, so any weapon can be tested
+against one file and the official rulers are written in the same language a
+player's own fight is.
+
+THE ENGINE DECIDES WHAT MAY BE RULED ON, derived rather than listed.
+`scenario::Capability::absence()` sorts every capability into two kinds and
+that is the whole guard: a GAME FACT is the game's own rule — a Sentinel
+cannot put a shot on a head — and a HOUSE RULE is ours. A scenario may say
+*"in my fight, Arch-Guns have infinite ammo"* and may not say *"in my fight,
+Sentinels land headshots"*. Exactly one of the four capabilities is a house
+rule today. `overridable_pairs()` derives the legal (class, axis) set from the
+two tables, `/api/meta` serves it, and the page draws exactly what is listed.
+It is pinned as an EXACT set by a test, because the failure to guard against
+is the list GROWING without anyone deciding it.
+The resupply rule lives in the capability, not in `reserve_is_infinite`, which
+takes the RESOLVED answer.
+
+THE DEFAULT IS THE WEAPON IN FRONT OF YOU: the scenario blocks show what
+applies here; the whole-fight panel is where the other classes are edited, and
+a rule that merely AGREES with the capability is pruned rather than stored. A
+
+RULER REFUSES ONE, like every other edit — `sim-whole-fight-body` is in
+`lockOfficialScenario`'s sweep.
+
+## A build the board already holds is not sent to it again
+
+**A BUILD THE BOARD ALREADY HOLDS IS NOT SENT TO IT AGAIN, AND THE PAGE ASKS
+
+THE ENGINE WHICH.** `officialBuildActive()` answers whether the ACTIVE PRESET
+is a builtin, which is true of a board row opened from the picker and false of
+the same build reached any other way. `/api/build/keys` keys a LIST of builds
+through `builds::board_key`, so the build on screen and every row its weapon
+holds are keyed by one engine in one pass. `builds::board_key` is that one
+spelling — `format!("{}#{}", identity(&v), mode)`, defaulting a blank mode to
+`base` — and THE MODE IS PART OF THE KEY, because one build played two ways is
+two entrants. The one order that IS the identity is the elemental one: Torid
+Heat/Cold/Toxin/Electric is Blast+Corrosive at 12,424 DPS against
+Heat/Toxin/Cold/Electric's Gas+Magnetic at 46,583.

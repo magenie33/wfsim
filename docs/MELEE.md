@@ -269,6 +269,30 @@ carries the rule rather than the bucket. `20 x (1 + 1.20)` is 44% on a swing and
 
 ---
 
+## 5b. TENNOKAI — the exilus slot's whole decision
+
+Tennokai is the one melee mechanic that changes what the LOOP does rather than
+what a number is. When its window is open the next swing of a light combo
+becomes a HEAVY ATTACK — the class's multiplier in place of the stance's, times
+a combo multiplier it reads **and does not spend**. A combo build climbs the
+counter to 12x with its swings and fires FREE 12x heavy attacks between them,
+which is why a 15% chance is worth nearly three times the build. The play
+pattern is to use the window the moment it fires.
+
+**A TENNOKAI HEAVY BREAKS THE STANCE CHAIN**, so the next light swing starts
+the combo over, and that decides which swings ever happen: Raging Whirlwind is
+`400/200/300/500` and Discipline's Merit opens the window every FOUR hits,
+which is that combo's length — so under a restarting chain the 500% finisher is
+never reached.
+
+**ALL SEVEN TENNOKAI CARDS ENABLE IT.** Every one opens with the same three
+words on its own card and only then says what else it does, so the mechanic is
+read off the card and not off a list of card names. The negative control is a
+build carrying none of them. The other four melee exilus cards are blocking and
+movement, which this arena has neither of.
+
+---
+
 ## 6. WHAT IS STILL OWED
 
 Each of these is on the page, in both languages, on the entry or the card it

@@ -297,3 +297,38 @@ See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 Intentionally **not** used during development. We will revisit containerized
 builds/packaging only once the simulator is feature-complete. Until then, mise
 is the single source of truth for the toolchain.
+
+---
+
+## Engine cost: `one_fight`
+
+**Engine COST: `cargo run --release --bin one_fight`**, and `-- save` first.
+It diffs a saved baseline and says whether the ANSWER moved — a moved answer
+is a non-zero exit, because an optimisation that changes a number is a bug.
+Read its table ACROSS: the default is four shapes and a change to the inner
+loop rarely moves them together (`target-cpu=native` is −23% / −36% / **+31%**).
+
+IT GRADES ITS OWN COVERAGE — the fourth shape is a Braton Prime, whose 60%
+SLASH is the one thing an elemental mod cannot combine away, and the tool
+FAILS when the whole suite burns nothing. `docs/DEVELOPMENT.md` §5 lists what
+has been tried and what it was worth.
+
+## `one_fight` compares two binaries, not two moments
+
+**`one_fight` COMPARES TWO BINARIES, NOT TWO MOMENTS.** Its baseline is a
+property of the machine on the day, and a day of driving headless browsers
+moves that machine. When a delta matters: `cargo build --release --bin
+one_fight`, copy the exe, `git stash`, build again, run them alternately
+against one baseline. The tool's noise column is measured in seconds and
+cannot see hours.
+
+## Optimizer verification: `wfsim-truth`
+
+**Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
+…`**. A search cannot vouch for itself: the tool exhausts the scope, evaluates
+every job flat, and reports where the production search landed in that
+reference ranking (rank / regret / recall / cost, and whether the reference
+reproduces itself under a second seed). It goes through `parse_optimize`, so
+it grades the app's own fight, and REFUSES a scope it cannot exhaust. Run it
+after ANY change to enumeration, scheduling or scoring. The cheap CI form is
+`optimizer/tests/search_accuracy.rs`. See `docs/OPTIMIZER.md` §Accuracy.

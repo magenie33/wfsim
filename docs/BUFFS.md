@@ -659,3 +659,41 @@ will take effect"* — and the owner asked for it by name for Roar vs Roar
 200%-strength Helminth Roar beats an unbuffed Rhino's, and the page draws the
 loser dimmed with a line saying why. Adding two Roars would be +80% against +50%,
 which is a 20% error nobody spots in a DPS figure.
+
+---
+
+## What the Warframe brings is the FIGHT’s — auras and archon shards
+
+**WHAT THE WARFRAME BRINGS IS THE FIGHT'S.** A squad AURA (`data/auras/`) and
+an ARCHON SHARD (`data/shards/`) belong to neither the weapon nor the build,
+so they ride on the fight's `Tenno` exactly as `data/abilities/` does —
+carried into both modules through `parse_fight` alone, and kept off the BOARD,
+scored under the neutral player.
+
+THEY ARE OFFERED, NEVER TYPED. The Extra stats grid accepts any number into
+any bucket; what it cannot do is say WHERE the number came from. A named shard
+has a source that can be checked against the wiki; a typed +45% has nothing
+behind it.
+
+THE AMP FAMILY DOES NOT SHARE ONE GATE, which is why `AuraDef::pays` is a
+function: Rifle Amp asks a MOD POOL — *"also affects bows, sniper rifles and
+launchers"* — while Dead Eye asks a CLASS and is narrower than any pool:
+*"only affects actual sniper rifles … even though bows and launchers draw from
+the sniper ammo pool, they are not affected"*. The ENGINE decides and
+`/api/meta` states the CONSEQUENCE per weapon (`auras: [id]`), which is
+`evo_forbids`' own pattern.
+
+THE AMPS LAND IN SERRATION'S BUCKET, where their own page puts them: *"adds to
+the base damage as Serration and Heavy Caliber do"*. So an amp is worth LESS
+the more Serration is already in the sum, and a reader wants to see it in
+there.
+
+AN EFFECT IS APPLIED OR IT SAYS WHY NOT, never neither and never both. Twenty
+of the twenty-seven shard effects pay nothing in this arena, and THREE of
+those are real weapon-damage quantities transcribed correctly and still not
+paid, because the bucket they need is narrower than any this engine has.
+`ShardEffect::unmodelled_reason` is the one answer and the page prints it; the
+test that holds it is DERIVED from the roster.
+
+A LOCALE'S TABLES ARE NO LONGER A HAND LIST: `LocaleSpec::merge` is tested by
+serializing the merged spec and asking the question of every field there is.

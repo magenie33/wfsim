@@ -866,3 +866,75 @@ A tag button can put thirty cards in a pool in one click, and the candidate
 count is combinatorial in pool size. `updateOptEstimate` already computes it;
 a batch control that does not put that number next to itself is a button that
 quietly makes the search unfinishable.
+
+---
+
+## The optimizer is the builder, in bulk
+
+**THE OPTIMIZER IS THE BUILDER, IN BULK.** The same claim on the PAGE: every
+axis on the optimizer tab is a question the builder already asks, and the only
+difference is what gets bound — the builder binds a VALUE, the optimizer binds
+a SET. Same axes, same order, same numbers, same names, with the exilus slot
+
+INSIDE Mods because that is where the builder's exilus slot sits.
+
+NOTHING DECLARES THAT ORDER TWICE: `orderOptScope` walks the builder's own
+blocks in DOM order and stamps each heading from that block's `.n` and `<h2>`
+— already translated. `OPT_SCOPE_OF` is the only hand-written half and is
+touched only when an axis is added or removed.
+
+THE SAME ARGUMENT ONE LEVEL DOWN: the `.opt` row is ONE function (`modRow`)
+with the trailing control as its parameter, and those segs are one function
+(`oseg`) that six lists call. A copied row is a comment that stops being true
+in silence. Searching the stance SLOT is a real axis and is still missing; it
+wants the treatment the exilus slot has, in `optimizer/` as well as on the
+page (`docs/OPTIMIZER.md`).
+
+## A ranked row is a build you can re-run
+
+**A RANKED ROW IS A BUILD YOU CAN RE-RUN, AND THE NUMBER ON IT IS THE
+
+SIMULATOR'S.** The row CARRIES a build rather than describing one: `entry()`
+emits `replay`, a complete simulate request written by the same code that
+built the candidate, from the optimize request itself — so every field that
+reaches the optimizer rides along, including ones nobody has invented yet, and
+only the ranged axes are overwritten. POST it and you get the row's number.
+"+ add" applies it through `stateFromBuild`, the inverse of `buildPayload` and
+the ONLY translation between a request and the page; the pair round-trips.
+
+AND THE RANKING REPORTS THE SIMULATOR. Each row is re-run through
+`/api/simulate` and the KPM on screen is what came back, with a ✓. The
+search's own figure keeps one job — ORDERING the list — and the two are
+compared at 4σ of the two standard errors, both of which the server reports,
+so "they disagree" is arithmetic rather than a tolerance somebody picked. A
+row that fails it is marked `≠`.
+
+## A build’s axes are declared once — in the engine
+
+**A BUILD'S AXES ARE DECLARED ONCE — IN THE ENGINE.**
+`engine::builds::BUILD_AXES` is the list, served at `/api/meta.build_axes`.
+The SPELLINGS stay per-protocol (`arcane` on a request, `arcanes` on a board
+record, `arcaneRank` in page state) because renaming them would migrate every
+stored preset; what is shared is the list, and each surface declares which
+axis its own fields carry — `BUILD_STATE_KEYS` and `SHARE_AXES` in `app.js`,
+`axis:` per row in the worker's `AXES`.
+`buildState()` REQUIRES a value for every state key, so the five producers of
+a build state — the live page, "+ new", a board row, a share link, an
+optimizer result — must each name every axis. `undefined` stays a legal value
+meaning "the weapon's own default"; what is not legal is not MENTIONING one.
+`restoreState` fills a missing axis with the weapon's default, which is RIGHT
+— and is why a producer that meant the default and one that never heard of the
+axis hand over the same object.
+
+## The simulator is the truth; the optimizer obeys it
+
+**THE SIMULATOR IS THE TRUTH; THE OPTIMIZER OBEYS IT.** A search's winner is
+replayed under the simulator's fight, so any rule the optimizer applies that
+the simulator does not — or omits that the simulator applies — scores builds
+nobody can reproduce. The optimizer must CALL the simulator's code and add
+only its own scope and budget. `parse_fight` is that shared parse:
+`simulate_json` reads `replay` and nothing else; `parse_optimize` reads
+`build_size`, `build_min`, `finalists`, `final_runs`, `deployment` and nothing
+else. Neither builds a second Tenno. Anything that is a property of the FIGHT
+goes in `parse_fight`. A shared helper is not enough — the DECISIONS around it
+have to be shared too.

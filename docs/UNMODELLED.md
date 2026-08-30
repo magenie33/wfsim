@@ -566,3 +566,16 @@ It is written down now because the observation is cheap to lose and expensive to
 rediscover: every buff card in the roster is currently modelled as paying
 whenever it is up, and that is right for one weapon and wrong for two.
 
+---
+
+## A gap that repeats is a reason, not a sentence
+
+**A GAP THAT REPEATS IS A REASON, NOT A SENTENCE.**
+`data/unmodelled/reasons.yaml` holds each one once, with `{named}` holes, and
+a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. Eleven
+reasons cover 155 of 248 uses; a weapon whose falloff starts at a new distance
+costs ZERO translation. PROSE IS STILL RIGHT for a gap that happens once and
+needs a paragraph — 61 of them are — and a free-text parameter is not allowed,
+since it would carry English into every translation. The i18n counter asks for
+the TEMPLATE, and `trGap` fills the same holes into whichever language the
+reader is in.

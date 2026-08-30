@@ -134,3 +134,26 @@ everywhere also rewrote the checker's own row — `("ms", "multishot")` became
 needing to become itself, 335 of them. `the_table_is_not_a_fixed_point` refuses
 any rule whose two halves are equal, because that failure reads as a codebase
 problem when it is a one-row checker problem.
+
+---
+
+## A name may be long; it may not be vague
+
+**A NAME MAY BE LONG; IT MAY NOT BE VAGUE.** `docs/NAMING.md` is the
+convention and `engine::naming` enforces it. The shape is
+`[scope_]<subject>_<aspect>[_<unit>]` — `falloff_start_m` reads as "the
+falloff's start, in metres" to someone who has never opened the file. Never
+trade information away for brevity.
+
+A UNIT IS PART OF THE NAME and has ONE spelling: `_m`, `_seconds`, `_deg`,
+`_mps`, `_pct`. A dimensionless number declares its ROLE instead — `_chance`,
+`_multiplier`, `_bonus`, `_rate`. Words are not abbreviated (`damage` not
+`dmg`) except where DE abbreviates them on a card (`crit`, `co`, `aoe`, `dps`).
+
+WHAT IS FROZEN IS THE WIRE. A field inside a saved preset, a share link or a
+board record is a durable name and stays as it is — `wf_armor`,
+`wf_energy_pct`, `headshot_pct`, `no_resupply` — the same rule
+`builds::BUILD_AXES` states for axes. `naming::FROZEN` is that list and it may
+only SHRINK.
+The ratchet walks every yaml key and every engine field rather than a list of
+names. A ratchet that cannot fail is not a ratchet; prove it bites.

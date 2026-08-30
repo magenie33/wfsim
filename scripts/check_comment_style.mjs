@@ -175,8 +175,54 @@ check(`comment style essays over ${ESSAY_LIMIT} lines (${essays} ≤ ${ESSAY_CEI
 check(`comment style total comment lines (${commentLines.toLocaleString()} ≤ ${LINE_CEILING.toLocaleString()})`,
   commentLines <= LINE_CEILING, `${commentLines} lines`);
 
+// ---------------------------------------------------------------------------
+// AGENTS.md IS INJECTED INTO EVERY SESSION BEFORE THE AGENT KNOWS ITS TASK.
+//
+// Its cost is not tokens, it is ATTENTION: every rule that does not apply today
+// competes with the ones that do. So the file is the tripwires and the routing
+// table, and a subject that needs explaining goes to `docs/` — which is where
+// this file's own §"Maintaining this file" sends it.
+//
+// Two assertions, because the size and the shape fail differently:
+//
+//   THE SIZE is a RATCHET, set close to the current file on purpose. A ceiling
+//   with slack in it does not bite: adding a tripwire should cost removing one
+//   or moving something out. Lower it when a pass removes some; never raise it.
+//
+//   THE SHAPE is a HARD ZERO. A bullet past eight lines has stopped stating a
+//   constraint and started explaining a subject, and that is the growth this
+//   check exists to catch — a file can creep to twice its size one reasonable
+//   paragraph at a time without any single edit looking wrong.
+const AGENTS_CHAR_CEILING = 14000;
+const AGENTS_ENTRY_LIMIT = 8;
+const agents = readFileSync(resolve(ROOT, "AGENTS.md"), "utf8");
+const agentsLines = agents.split(NL);
+const longEntries = [];
+for (let i = 0; i < agentsLines.length; i += 1) {
+  if (!agentsLines[i].startsWith("- ")) continue;
+  let j = i + 1;
+  while (j < agentsLines.length && agentsLines[j].startsWith("  ")) j += 1;
+  if (j - i > AGENTS_ENTRY_LIMIT) {
+    longEntries.push(`AGENTS.md:${i + 1} (${j - i} lines) ${agentsLines[i].slice(2, 48)}`);
+  }
+  i = j - 1;
+}
+
+check(`comment style AGENTS.md fits its budget (${agents.length.toLocaleString()} ≤ ${AGENTS_CHAR_CEILING.toLocaleString()} chars)`,
+  agents.length <= AGENTS_CHAR_CEILING,
+  `${agents.length - AGENTS_CHAR_CEILING} over — move a subject to docs/, do not raise the ceiling`);
+check(`comment style ...and no entry in it runs past ${AGENTS_ENTRY_LIMIT} lines`,
+  longEntries.length === 0,
+  longEntries.slice(0, 4).join("\n        "));
+
 // A ratchet nobody lowers is a ratchet that stops meaning anything, so a run
 // that is comfortably under says so rather than passing in silence.
+// ~1.5 KB of headroom is deliberate — about twenty lines, enough to add a
+// tripwire without a flag day. Past that the file has shrunk and the ceiling
+// should follow it down.
+if (agents.length < AGENTS_CHAR_CEILING - 2500) {
+  console.log(`  note  AGENTS.md ceiling can drop to ${Math.ceil((agents.length + 1500) / 500) * 500} in scripts/check_comment_style.mjs`);
+}
 if (narrative < NARRATIVE_CEILING) {
   console.log(`  note  ceiling can drop to ${narrative} in scripts/check_comment_style.mjs`);
 }

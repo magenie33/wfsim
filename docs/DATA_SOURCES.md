@@ -1272,3 +1272,20 @@ on the rules alone, and a weapon added tomorrow is approximately right before
 anybody counts cards. The wiki's own sentence is the licence for it —
 *"exceptions exist on a case by case basis"* — and a case-by-case exception is
 data, not a formula.
+
+---
+
+## A mod pool a weapon claims must hold something
+
+**A MOD POOL A WEAPON CLAIMS MUST HOLD SOMETHING.** DE tags a mod PRIMARY,
+Rifle, or narrower — Assault Rifle, Bow, Sniper — and a weapon draws every tag
+that applies to it, which is why `mod_pools:` is a LIST. A pool a weapon
+
+DECLARES and no `data/mods/<pool>/` holds resolves to an empty list, with no
+error anywhere. `scripts/survey_pool_mods.py` works from the ROSTER: every tag
+any weapon claims must map to an export `compatName`, and the script REFUSES
+to run when one does not. Its `data/surveys/pool_mods.yaml` is read by a
+ratchet test that also asserts, per weapon, that each claimed pool holds at
+least one mod. It is the sibling of `survey_weapon_mods.py`, which joins the
+same field against WEAPON NAMES. Adding a mod starts there: run the survey,
+take a row, transcribe it from the WIKI, lower the ceiling.
