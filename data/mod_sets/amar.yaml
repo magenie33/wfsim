@@ -1,0 +1,14 @@
+id: amar
+name: Amar
+# The set bonus is a TELEPORT: the wiki calls it "similar to Rift Strike" — a
+# dash to a nearby enemy on a bullet jump. Movement, which this arena has none
+# of, and no damage payload at all.
+#
+# see notes: modelled_declared_rather_than
+members: 3
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+
+source:
+  url: https://wiki.warframe.com/w/Amar%27s_Set

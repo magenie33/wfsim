@@ -1,0 +1,26 @@
+id: boreals_contempt
+name: Boreal's Contempt
+# ONE OF THREE ARCHON SET CARDS THAT ARE THE SAME MELEE CARD — +90% Melee Damage
+# and a second stat — and are told apart by the SET they belong to. Only this
+# one of each set's three members is a melee mod, so a weapon build reaches one
+# piece of the bonus and no more.
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Boreal/BorealMeleeMod
+description: "+90% Melee Damage / +60% Status Damage"
+
+# Rank 0: +15% Melee Damage / +10% Status Damage
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.15
+    rankMax: 0.9
+  - kind: status_damage_bonus
+    rank0: 0.10
+    rankMax: 0.6
+
+set: boreal
+
+source:
+  url: https://wiki.warframe.com/w/Boreal%27s_Contempt
