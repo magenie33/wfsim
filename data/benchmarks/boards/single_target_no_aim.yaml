@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4031
+submissions: 4039
 engine: c14e2f99fecd0d93c8e8486e1ce263ada54ab430
 entries:
   - weapon: acceltra_prime
@@ -1705,25 +1705,18 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: dual_coda_torxica
     mode: base
-    score: 1.4832825684715896
-    fp: 017e004348ecc5bd
-    mods: [galvanized_diffusion, hornet_strike, magnum_force, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: impact
+    score: 4.5574247862557975
+    fp: b0f0a1a18dcaa7be
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    valence: magnetic
   - weapon: dual_coda_torxica
     mode: base
-    score: 0.9647489402550457
-    fp: f3d308cd3a0fddd6
-    mods: [galvanized_diffusion, hornet_strike, magnum_force, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: impact
-  - weapon: dual_coda_torxica
-    mode: base
-    score: 0.9170018662209511
-    fp: 252df070f7903e54
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: impact
+    score: 2.3259625843481393
+    fp: 950f50a552ea8ccc
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, jolt, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    valence: magnetic
   - weapon: dual_toxocyst
     mode: cycle
     score: 5.861923727733672
@@ -5350,15 +5343,24 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: stug
     mode: cycle
-    score: 5.930432070458673
-    fp: 1566e96f0b03b4dd
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, anemic_agility, creeping_bullseye, riven, pathogen_rounds]
+    score: 13.411424358406467
+    fp: 02e5a8bfd691673a
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
     riven:
-      bonuses: [electricity, magazine_capacity, multishot]
-      malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      bonuses: [critical_chance, multishot]
+      rolls: [1.1, 1.1]
+  - weapon: stug
+    mode: cycle
+    score: 8.262706714634897
+    fp: 51c77e307b3d5d85
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot]
+      rolls: [1.1, 1.1]
   - weapon: stug
     mode: cycle
     score: 5.001910202073572
@@ -5373,17 +5375,6 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, frostbite, primed_convulsion]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_fortifier]
-  - weapon: stug
-    mode: cycle
-    score: 3.958682588514273
-    fp: b06da5e5433b90f3
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, riven, pathogen_rounds]
-    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
-    arcanes: [secondary_deadhead]
-    riven:
-      bonuses: [electricity, magazine_capacity, multishot]
-      malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: stug
     mode: cycle
     score: 3.3963495277993023

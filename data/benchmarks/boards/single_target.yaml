@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 4031
+submissions: 4039
 engine: c14e2f99fecd0d93c8e8486e1ce263ada54ab430
 entries:
   - weapon: acceltra_prime
@@ -4061,6 +4061,20 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: dual_coda_torxica
     mode: base
+    score: 13.409303216970468
+    fp: db4cc860618c70dd
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    valence: magnetic
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 13.11612923889758
+    fp: f6dc1968b3529ca5
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_deadhead]
+    valence: magnetic
+  - weapon: dual_coda_torxica
+    mode: base
     score: 10.061779616660637
     fp: e568bb6bba801a74
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
@@ -4068,23 +4082,16 @@ entries:
     valence: impact
   - weapon: dual_coda_torxica
     mode: base
+    score: 9.48673227890212
+    fp: f2dca351ca8fafd7
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, jolt, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    valence: magnetic
+  - weapon: dual_coda_torxica
+    mode: base
     score: 9.001806575084801
     fp: 177ac687d8cb23ef
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: impact
-  - weapon: dual_coda_torxica
-    mode: base
-    score: 6.686287378192579
-    fp: 33c11e1285d6ea24
-    mods: [galvanized_diffusion, hornet_strike, magnum_force, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: impact
-  - weapon: dual_coda_torxica
-    mode: base
-    score: 5.964117168018026
-    fp: dbd2fa1d660d0c53
-    mods: [galvanized_diffusion, hornet_strike, magnum_force, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: dual_toxocyst
@@ -10998,6 +11005,16 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: stug
     mode: cycle
+    score: 71.58708891069152
+    fp: 8ce392788852c549
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot]
+      rolls: [1.1, 1.1]
+  - weapon: stug
+    mode: cycle
     score: 69.40947393677155
     fp: f1712e1a338f8126
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, riven, pathogen_rounds]
@@ -11007,6 +11024,26 @@ entries:
       bonuses: [electricity, magazine_capacity, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: stug
+    mode: cycle
+    score: 62.84445058656655
+    fp: c168ebd8510d9fe7
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, creeping_bullseye, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot]
+      rolls: [1.1, 1.1]
+  - weapon: stug
+    mode: cycle
+    score: 62.60334092272272
+    fp: 5ba9e26e1b37130a
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot]
+      rolls: [1.1, 1.1]
   - weapon: stug
     mode: cycle
     score: 51.85080641982794
@@ -11062,6 +11099,16 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: stug
     mode: cycle
+    score: 39.5628500785201
+    fp: dae95b8c8cd8bc7c
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot]
+      rolls: [1.1, 1.1]
+  - weapon: stug
+    mode: cycle
     score: 39.214782194721536
     fp: ab32af3b26ff5bd7
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, frostbite, primed_convulsion, primed_heated_charge]
@@ -11072,6 +11119,13 @@ entries:
     score: 31.528982005575855
     fp: 93f9dd0c90d9abad
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+  - weapon: stug
+    mode: cycle
+    score: 30.53568243062051
+    fp: aa4901b9af6cc2cd
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
   - weapon: sybaris_prime
