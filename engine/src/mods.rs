@@ -57,11 +57,25 @@ pub enum Polarity {
 /// direction: a build that fits here fits in game.
 pub const STANCE_CAPACITY_GRANT: u32 = 5;
 
-/// The capacity a stance adds, given the slot it sits in.
+/// The capacity a stance adds, given the slot it sits in — and there are THREE
+/// answers, not two.
+///
+/// The Aura page states the arithmetic a stance shares: *"equipping an Aura
+/// with a matching polarity increases mod capacity … by DOUBLE of the Aura's
+/// 'drain' parameter … In a slot WITHOUT a polarity, the capacity is the same
+/// as the listed drain, and in a slot of a DIFFERENT polarity, the additional
+/// capacity is 80% of listed drain, ROUNDED DOWN (e.g. a drain of 5 generates a
+/// capacity of 4)"*.
+///
+/// So a wrong colour is a PENALTY and not merely the undoubled grant: 10 on a
+/// match, 5 on a bare slot, 4 on a mismatch. It is the grant's mirror of the
+/// +25% a mismatched slot charges a MOD.
 pub fn stance_capacity(mod_polarity: Polarity, slot_polarity: Option<Polarity>) -> u32 {
     match slot_polarity {
-        Some(p) if p == mod_polarity => STANCE_CAPACITY_GRANT * 2,
-        _ => STANCE_CAPACITY_GRANT,
+        // Omni is universal, so it matches whatever is in the slot.
+        Some(p) if p == mod_polarity || p == Polarity::Omni => STANCE_CAPACITY_GRANT * 2,
+        Some(_) => (f64::from(STANCE_CAPACITY_GRANT) * 0.8).floor() as u32,
+        None => STANCE_CAPACITY_GRANT,
     }
 }
 
@@ -699,7 +713,7 @@ mod tests {
             mod_polarity: Polarity::Madurai,
             slot_polarity: Some(Polarity::Vazarin),
         };
-        // 66 drain against rank 30's 60 + the 5 an unpolarized stance grants.
+        // 66 drain against rank 30's 60 + the 4 a mismatched stance grants.
         let small = [
             m(9, Polarity::Naramon), m(9, Polarity::Naramon),
             m(8, Polarity::Naramon), m(8, Polarity::Naramon),
@@ -715,7 +729,7 @@ mod tests {
         // to be worse off.
         let big = [m(16, Polarity::Naramon); 8];
         let f = fit(30, &SLOTS8, &big, Investment::default(), Some(unmatched)).unwrap();
-        assert_eq!(f.capacity, 65, "the slot keeps its own colour: 60 + an undoubled 5");
+        assert_eq!(f.capacity, 64, "the slot keeps its own colour: 60 + a mismatched 4");
         assert_eq!(f.cost.total(), 8, "eight mods, eight Forma, and none on the stance");
     }
 
@@ -723,14 +737,16 @@ mod tests {
     /// MUCH.
     ///
     /// *"All Stances provide a bonus mod capacity of 5 when maxed, doubling it
-    /// to 10 when placed on the matching polarity"* (wiki, Stance) — and a
-    /// polarity that is present and WRONG is not a penalty, it is simply the
-    /// undoubled grant, which is the same rule an Aura slot follows.
+    /// to 10 when placed on the matching polarity"* (wiki, Stance), and the
+    /// Aura page carries the third case: a slot of a DIFFERENT polarity grants
+    /// *"80% of listed drain, rounded down"*, which is 4. A wrong colour costs
+    /// something rather than merely failing to double.
     #[test]
     fn a_stance_grants_capacity_and_a_matching_slot_doubles_it() {
         assert_eq!(stance_capacity(Polarity::Madurai, Some(Polarity::Madurai)), 10);
-        assert_eq!(stance_capacity(Polarity::Madurai, Some(Polarity::Vazarin)), 5);
+        assert_eq!(stance_capacity(Polarity::Madurai, Some(Polarity::Vazarin)), 4);
         assert_eq!(stance_capacity(Polarity::Madurai, None), 5);
+        assert_eq!(stance_capacity(Polarity::Madurai, Some(Polarity::Omni)), 10);
 
         // …AND IT IS CAPACITY THE BUILD CAN SPEND. Three 16-drain mods on rank
         // 30's 60 need one Forma; the ten a matched stance hands back pay for

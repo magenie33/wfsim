@@ -1,9 +1,11 @@
 // A STANCE IS AN AURA: IT HANDS CAPACITY BACK, AND THE PAGE HAS TO SAY SO.
 //
 // "All Stances provide a bonus mod capacity of 5 when maxed, doubling it to 10
-// when placed on the matching polarity" (wiki, Stance) — so the number beside
-// the mod slots is the weapon's own capacity PLUS the grant, and which grant
-// depends on the slot's colour against the stance's.
+// when placed on the matching polarity" (wiki, Stance), and the Aura page's
+// third case: a slot of a DIFFERENT polarity grants "80% of listed drain,
+// rounded down" — 4. So the number beside the mod slots is the weapon's own
+// capacity plus one of THREE grants, and which one is the slot's colour against
+// the stance's.
 //
 // ASSERTED ON SCREEN, because the page owns this arithmetic: it mirrors
 // `engine::mods::stance_capacity` rather than asking for it, so an engine that
@@ -41,9 +43,10 @@ const r = await evaluate(`(async () => {
 })()`);
 
 // The Magistar's stance slot is Vazarin, and rank 30 with a catalyst is 60.
+// Crushing Ruin is Madurai, so it is the mismatched case until a Forma lands.
 check("the stance slot's own polarity reaches the page", r.slotPol === "Vazarin", r.slotPol);
 check("an empty stance slot grants nothing", r.empty === "0 / 60", r.empty);
-check("a mismatched stance grants five", r.mismatched === "0 / 65", r.mismatched);
+check("a mismatched stance grants four", r.mismatched === "0 / 64", r.mismatched);
 check("...and costs no Forma to leave alone", r.mismatchedForma === "0 Forma", r.mismatchedForma);
 check("a matching stance doubles it", r.matched === "0 / 70", r.matched);
 check("...and it is still free", r.matchedForma === "0 Forma", r.matchedForma);

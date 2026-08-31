@@ -4356,7 +4356,7 @@ mod tests {
                 .expect("in the hammer pool")
         };
         assert_eq!(of("shattering_storm"), 10, "Vazarin on a Vazarin slot");
-        assert_eq!(of("crushing_ruin"), 5, "Madurai on a Vazarin slot");
+        assert_eq!(of("crushing_ruin"), 4, "Madurai on a Vazarin slot is 80%, rounded down");
     }
 
 

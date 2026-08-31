@@ -21,6 +21,7 @@ rules:
   - "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body."
   - "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with."
   - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is optional: a row may wear one and a row without one is not a lesser build, so the two sit on the same board and the better number wins."
+  - "The stance slot is optional too, and it is not a discount but a GRANT: a stance hands the weapon 10 mod capacity on a matching polarity, 5 on a bare slot and 4 on the wrong colour. A row without one is not a lesser build; it is a build that spent the capacity elsewhere."
   - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
   - "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve."
   - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."

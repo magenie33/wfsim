@@ -339,14 +339,17 @@ const capOf = (id) => (weaponInfo(id) || {}).capacity || 60;
 // …AND WHAT THE STANCE SLOT HANDS BACK, which is the one slot that ADDS
 // capacity instead of spending it: "All Stances provide a bonus mod capacity of
 // 5 when maxed, doubling it to 10 when placed on the matching polarity" (wiki,
-// Stance). Mirrors `engine::mods::stance_capacity`.
+// Stance), and the Aura page's third case — a slot of a DIFFERENT polarity
+// grants "80% of listed drain, rounded down", which is 4. Mirrors
+// `engine::mods::stance_capacity`.
 const stancePolOf = (id) => (weaponInfo(id) || {}).stance_polarity || null;
 function stanceGrant() {
   const s = slots[STANCE];
   const m = s && s.mod ? modById(s.mod) : null;
   if (!m) return 0;
   const pol = s.pol || stancePolOf($("weapon").value);
-  return pol === m.polarity ? 10 : 5;
+  if (!pol) return 5;
+  return pol === m.polarity || pol === "Omni" ? 10 : 4;
 }
 // The polarizations the weapon owes its own rank ceiling: FIVE on an adversary
 // weapon, none on anyone else. It is a mastery figure, not a capacity one — a

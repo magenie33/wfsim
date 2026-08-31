@@ -33,9 +33,9 @@ accuracy: ~
 disposition: 1.35
 polarities: []
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
-# discount: a stance hands back 5 points, doubled to 10 on a matching slot
-# (`mods::stance_capacity`). Vazarin, so Shattering Storm doubles here and
-# Crushing Ruin does not.
+# discount: 10 on a matching slot, 5 on a bare one, 4 on the wrong colour
+# (`mods::stance_capacity`). Vazarin, so Shattering Storm grants 10 here and
+# Crushing Ruin grants 4 until a Forma says otherwise.
 stance_polarity: vazarin
 introduced: "Update 11.5"
 internal_name: /Lotus/Weapons/Tenno/Melee/Maces/PaladinMace/PaladinMaceWeapon

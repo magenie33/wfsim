@@ -79,6 +79,7 @@ rules:
   - "Every shot is aimed and lands on the weak point. The companion board removes the aim; between them they are the ceiling and the floor."
   - "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one target in 180 seconds scores 0.03 and still ranks."
   - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is optional: a row may wear one and a row without one is not a lesser build, so the two sit on the same board and the better number wins."
+  - "The stance slot is optional too, and it is not a discount but a GRANT: a stance hands the weapon 10 mod capacity on a matching polarity, 5 on a bare slot and 4 on the wrong colour. A row without one is not a lesser build; it is a build that spent the capacity elsewhere."
   - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
   - "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve."
   - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
