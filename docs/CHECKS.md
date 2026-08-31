@@ -248,6 +248,18 @@ and needs no field in the preset, the request or the round trip. An arcane
 costs no capacity and no Forma, so an empty seat can only tie the same build
 with the arcane in it: `an_arcane_seat_marked_none_is_not_a_default`.
 
+## `check_stance_capacity`
+
+A stance is an AURA: it HANDS capacity back instead of spending it — five
+points, ten on a matching slot — so the number beside the mod slots is the
+weapon's own capacity plus the grant. The Magistar's slot is Vazarin, which
+makes Shattering Storm free at 70 and Crushing Ruin 65 unless a Forma is spent
+on the slot, and all four readings are asserted ON SCREEN.
+
+It is a page check rather than an engine one because the page owns this
+arithmetic: `capacityUsed()` and its Forma bill MIRROR `engine::mods`, so an
+engine that is right and a mirror that is not still reads wrong to everyone.
+
 ## `check_build_size`
 
 How full a searched build must be is a RANGE

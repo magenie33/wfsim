@@ -1420,6 +1420,11 @@ pub fn meta_json() -> Value {
                 "innate_polarities": innate_slots_for(&w.id).iter()
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
+                // …AND THE STANCE SLOT'S OWN, which is not one of those nine:
+                // it decides a capacity GRANT rather than a discount, so the
+                // page needs it to answer 5 or 10 (`mods::stance_capacity`).
+                "stance_polarity": wfsim_engine::weapons_data::stance_polarity(&w.id)
+                    .map(|p| format!("{p:?}")),
                 "forms": w.forms.iter()
                     .map(|(id, name, def)| {
                         // THE ENTRY BEHIND THIS FORM, once. Everything below is
@@ -6269,21 +6274,18 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // …AND THE STANCE HANDS CAPACITY BACK rather than taking it, which is why
     // the panel's own bill has to ask for it too: a melee build reads five to
     // ten points of headroom the weapon's rank did not buy.
-    let granted = refs
-        .iter()
-        .find(|m| m.stance.is_some())
-        .map_or(0, |m| {
-            wfsim_engine::mods::stance_capacity(
-                m.polarity,
-                wfsim_engine::weapons_data::stance_polarity(&info.id),
-            )
-        });
+    let stance = refs.iter().find(|m| m.stance.is_some()).map(|m| {
+        wfsim_engine::mods::StanceSlot {
+            mod_polarity: m.polarity,
+            slot_polarity: wfsim_engine::weapons_data::stance_polarity(&info.id),
+        }
+    });
     let forma = match wfsim_engine::mods::fit(
         wspec(&info.id).max_rank,
         &innate_slots_for(&info.id),
         &planned,
         inv,
-        granted,
+        stance,
     ) {
         Ok(f) => json!({
             "legal": true,

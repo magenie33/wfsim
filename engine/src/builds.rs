@@ -905,14 +905,15 @@ pub fn validate_with(
     // slot's own polarity decides whether the grant doubles — so it is added to
     // what the weapon has rather than subtracted from it, and a melee build
     // that carries one fits five to ten points more than its rank allows.
-    let granted = multishot
+    let stance = multishot
         .iter()
         .map(|id| def(id))
         .find(|m| m.stance.is_some())
-        .map_or(0, |m| {
-            crate::mods::stance_capacity(m.polarity, crate::weapons_data::stance_polarity(weapon))
+        .map(|m| crate::mods::StanceSlot {
+            mod_polarity: m.polarity,
+            slot_polarity: crate::weapons_data::stance_polarity(weapon),
         });
-    let plan = crate::mods::fit(spec.max_rank, &innate, &planned, BENCHMARK_INVESTMENT, granted)
+    let plan = crate::mods::fit(spec.max_rank, &innate, &planned, BENCHMARK_INVESTMENT, stance)
         .map_err(|e| format!("does not fit this weapon's capacity even with Forma: {e}"))?;
 
     // ARCANES: one per pool THIS WEAPON seats, and each from that pool.
@@ -1507,10 +1508,10 @@ mod tests {
         let with_it = {
             let mut v = innate.to_vec();
             v.push(Some(exilus));
-            crate::mods::fit(spec.max_rank, &v, &planned, BENCHMARK_INVESTMENT, 0).unwrap()
+            crate::mods::fit(spec.max_rank, &v, &planned, BENCHMARK_INVESTMENT, None).unwrap()
         };
         let without =
-            crate::mods::fit(spec.max_rank, innate.as_ref(), &planned, BENCHMARK_INVESTMENT, 0)
+            crate::mods::fit(spec.max_rank, innate.as_ref(), &planned, BENCHMARK_INVESTMENT, None)
                 .unwrap();
         assert_eq!(
             with_it.cost.total() + 1,

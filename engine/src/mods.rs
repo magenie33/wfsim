@@ -65,6 +65,27 @@ pub fn stance_capacity(mod_polarity: Polarity, slot_polarity: Option<Polarity>) 
     }
 }
 
+/// THE STANCE SLOT AS THE PLANNER SEES IT: what is in it, and what colour it is
+/// before any Forma.
+///
+/// It is a slot the planner can POLARIZE like any other, and the one whose
+/// polarization buys capacity outright instead of halving a drain — five
+/// points, which beats polarizing any mod draining ten or less. That is why it
+/// cannot be settled before planning: which is worth more is what the planner
+/// is for.
+#[derive(Debug, Clone, Copy)]
+pub struct StanceSlot {
+    pub mod_polarity: Polarity,
+    pub slot_polarity: Option<Polarity>,
+}
+
+impl StanceSlot {
+    /// Does the slot already carry the stance's colour?
+    fn matched(self) -> bool {
+        self.slot_polarity == Some(self.mod_polarity)
+    }
+}
+
 pub fn slot_drain(base_drain: u32, mod_polarity: Polarity, slot_polarity: Option<Polarity>) -> u32 {
     match slot_polarity {
         // Omni matches ANY mod except an Umbra one, where it is simply a
@@ -466,9 +487,9 @@ pub fn fit(
     innate_slots: &[Option<Polarity>],
     mods: &[PlannedMod],
     inv: Investment,
-    // WHAT A STANCE HANDS BACK — see [`stance_capacity`]. Zero on every weapon
-    // that has no stance slot, and on a melee build with the slot left empty.
-    granted: u32,
+    // THE STANCE SLOT — see [`StanceSlot`]. `None` on every weapon that has no
+    // stance slot, and on a melee build with the slot left empty.
+    stance: Option<StanceSlot>,
 ) -> Result<Fitted, String> {
     // AS LITTLE UMBRA AS POSSIBLE, BUT NEVER FAIL FOR WANT OF IT. Umbra Forma
     // is the scarce item, so the first attempt does without — and if the build
@@ -479,17 +500,76 @@ pub fn fit(
     // that recursed into `fit` re-entered the same branch and never bottomed
     // out.
     if !inv.use_umbra && mods.iter().any(|m| m.polarity == Polarity::Umbra) {
-        return fit_exactly(base_max_rank, innate_slots, mods, inv, granted).or_else(|_| {
-            fit_exactly(
+        return plan(base_max_rank, innate_slots, mods, inv, stance).or_else(|_| {
+            plan(
                 base_max_rank,
                 innate_slots,
                 mods,
                 Investment { use_umbra: true, ..inv },
-                granted,
+                stance,
             )
         });
     }
-    fit_exactly(base_max_rank, innate_slots, mods, inv, granted)
+    plan(base_max_rank, innate_slots, mods, inv, stance)
+}
+
+/// One attempt, with the stance slot's own question answered inside it.
+fn plan(
+    base_max_rank: u32,
+    innate_slots: &[Option<Polarity>],
+    mods: &[PlannedMod],
+    inv: Investment,
+    stance: Option<StanceSlot>,
+) -> Result<Fitted, String> {
+    match stance {
+        Some(s) => best_stance_plan(base_max_rank, innate_slots, mods, inv, s),
+        None => fit_exactly(base_max_rank, innate_slots, mods, inv, None),
+    }
+}
+
+/// THE TWO ANSWERS A STANCE SLOT HAS, ranked by the same priority the rest of
+/// the planner follows: fewest Forma first, then the most room left over.
+///
+/// Polarizing the slot is worth a flat +5 capacity, and it costs one
+/// polarization — which on a rank-40 weapon is one the build was buying anyway.
+/// Halving the biggest unpolarized mod is what that Forma would otherwise buy,
+/// so the two are compared rather than one being assumed better.
+fn best_stance_plan(
+    base_max_rank: u32,
+    innate_slots: &[Option<Polarity>],
+    mods: &[PlannedMod],
+    inv: Investment,
+    stance: StanceSlot,
+) -> Result<Fitted, String> {
+    let as_is = fit_exactly(base_max_rank, innate_slots, mods, inv, Some(stance));
+    if stance.matched() {
+        return as_is;
+    }
+    let polarized = fit_exactly(
+        base_max_rank,
+        innate_slots,
+        mods,
+        inv,
+        Some(StanceSlot { slot_polarity: Some(stance.mod_polarity), ..stance }),
+    )
+    .map(|mut f| {
+        // THE FORMA IT COSTS, on the bill and against the mastery floor — a
+        // polarization the build owns is a polarization it paid for.
+        f.cost.regular += 1;
+        f
+    });
+    match (as_is, polarized) {
+        (Ok(a), Ok(b)) => Ok(better(a, b)),
+        (Ok(a), Err(_)) => Ok(a),
+        (Err(_), Ok(b)) => Ok(b),
+        (Err(e), Err(_)) => Err(e),
+    }
+}
+
+/// Fewest Forma, then the most capacity left unspent.
+fn better(a: Fitted, b: Fitted) -> Fitted {
+    let key = |f: &Fitted| (f.cost.total(), f.drain as i64 - f.capacity as i64);
+    if key(&b) < key(&a) { b } else { a }
 }
 
 /// [`fit`] with the switches taken literally — no Umbra fallback.
@@ -498,8 +578,10 @@ fn fit_exactly(
     innate_slots: &[Option<Polarity>],
     mods: &[PlannedMod],
     inv: Investment,
-    granted: u32,
+    stance: Option<StanceSlot>,
 ) -> Result<Fitted, String> {
+    let granted =
+        stance.map_or(0, |s| stance_capacity(s.mod_polarity, s.slot_polarity));
     let max_forma = forma_to_max_rank(base_max_rank);
     let plan_at = |forma: u32| -> Result<(u32, u32, FormaPlan), String> {
         let rank = rank_after(base_max_rank, forma);
@@ -600,6 +682,43 @@ mod tests {
 
     /// The Forma bill is THREE numbers because they are three different items:
     /// a player with Forma may still have no Umbra Forma.
+    /// THE STANCE SLOT IS A SLOT THE PLANNER POLARIZES, and it wins the Forma
+    /// when what that Forma would otherwise halve is small.
+    ///
+    /// Polarizing the slot is worth a flat FIVE — the grant doubling — where
+    /// polarizing a mod is worth half its drain. So an 8-drain mod's Forma buys
+    /// 4 and the stance's buys 5, and the planner takes the five: same bill,
+    /// more room left, which is priority 3 in the strategy above.
+    ///
+    /// …AND IT DOES NOT TAKE IT WHEN THE MOD IS BIGGER. A 16-drain mod's Forma
+    /// buys 8, so a build of those fits in FEWER polarizations without touching
+    /// the stance slot — priority 2, which outranks the room.
+    #[test]
+    fn the_planner_polarizes_the_stance_slot_when_that_leaves_more_room() {
+        let unmatched = StanceSlot {
+            mod_polarity: Polarity::Madurai,
+            slot_polarity: Some(Polarity::Vazarin),
+        };
+        // 66 drain against rank 30's 60 + the 5 an unpolarized stance grants.
+        let small = [
+            m(9, Polarity::Naramon), m(9, Polarity::Naramon),
+            m(8, Polarity::Naramon), m(8, Polarity::Naramon),
+            m(8, Polarity::Naramon), m(8, Polarity::Naramon),
+            m(8, Polarity::Naramon), m(8, Polarity::Naramon),
+        ];
+        let f = fit(30, &SLOTS8, &small, Investment::default(), Some(unmatched)).unwrap();
+        assert_eq!(f.cost.total(), 1, "one polarization either way");
+        assert_eq!(f.capacity, 70, "and it went on the stance slot: 60 + a doubled 10");
+
+        // …AND THE OTHER WAY. Eight 16s need eight polarizations whatever the
+        // stance slot does, so buying a ninth for five points is a Forma spent
+        // to be worse off.
+        let big = [m(16, Polarity::Naramon); 8];
+        let f = fit(30, &SLOTS8, &big, Investment::default(), Some(unmatched)).unwrap();
+        assert_eq!(f.capacity, 65, "the slot keeps its own colour: 60 + an undoubled 5");
+        assert_eq!(f.cost.total(), 8, "eight mods, eight Forma, and none on the stance");
+    }
+
     /// A STANCE IS AN AURA: IT HANDS CAPACITY BACK, AND THE SLOT DECIDES HOW
     /// MUCH.
     ///
@@ -622,8 +741,12 @@ mod tests {
             m(16, Polarity::Vazarin),
             m(16, Polarity::Zenurik),
         ];
-        let bare = fit(30, &SLOTS8, &mods, Investment::default(), 0).unwrap();
-        let stanced = fit(30, &SLOTS8, &mods, Investment::default(), 10).unwrap();
+        let bare = fit(30, &SLOTS8, &mods, Investment::default(), None).unwrap();
+        let matched = StanceSlot {
+            mod_polarity: Polarity::Madurai,
+            slot_polarity: Some(Polarity::Madurai),
+        };
+        let stanced = fit(30, &SLOTS8, &mods, Investment::default(), Some(matched)).unwrap();
         assert_eq!(stanced.capacity, bare.capacity + 10, "the grant is capacity");
         assert!(
             stanced.cost.total() < bare.cost.total(),
@@ -751,7 +874,7 @@ mod tests {
         // Room to spare: the Umbra mod pays full drain and no Umbra Forma is
         // bought, which is the thrifty answer and the right one.
         let easy = [m(16, Polarity::Umbra), m(10, Polarity::Madurai)];
-        let f = fit(30, &innate, &easy, Investment::default(), 0).unwrap();
+        let f = fit(30, &innate, &easy, Investment::default(), None).unwrap();
         assert_eq!(f.cost.umbra, 0, "it fits without one, so none is spent");
 
         // Now a build that hangs on exactly this: one Umbra mod at 16 and six
@@ -761,7 +884,7 @@ mod tests {
         // Refusing would invent a rule the game does not have.
         let mut hard = vec![m(16, Polarity::Umbra)];
         hard.extend(std::iter::repeat_n(m(16, Polarity::Madurai), 6));
-        let f = fit(30, &innate, &hard, Investment::default(), 0)
+        let f = fit(30, &innate, &hard, Investment::default(), None)
             .expect("a build that NEEDS Umbra Forma is still a build");
         assert_eq!(f.cost.umbra, 1, "exactly one, and only because it had to");
         assert_eq!(f.drain, 56);
@@ -773,7 +896,7 @@ mod tests {
     #[test]
     fn polarizing_to_max_fixes_the_capacity_first() {
         let mods = [m(16, Polarity::Madurai), m(16, Polarity::Naramon), m(16, Polarity::Vazarin)];
-        let f = fit(40, &SLOTS8, &mods, Investment::default(), 0).unwrap();
+        let f = fit(40, &SLOTS8, &mods, Investment::default(), None).unwrap();
         assert_eq!((f.rank, f.capacity), (40, 80));
         // The five are spent for mastery either way, so they are PUT TO WORK:
         // all three mods halved (48 -> 24) rather than left at full drain
@@ -792,7 +915,7 @@ mod tests {
         let thrifty = Investment { polarize_to_max: false, ..Investment::default() };
         // Comfortably inside rank 30's 60: no Forma, no rank gained.
         let easy = [m(16, Polarity::Madurai), m(16, Polarity::Naramon), m(16, Polarity::Vazarin)];
-        let f = fit(40, &SLOTS8, &easy, thrifty, 0).unwrap();
+        let f = fit(40, &SLOTS8, &easy, thrifty, None).unwrap();
         assert_eq!((f.rank, f.capacity, f.cost.total()), (30, 60, 0));
 
         // Eight 16-drain mods: 128 full, 64 halved. At rank 30 (60) even eight
@@ -803,7 +926,7 @@ mod tests {
         // THEMSELVES buy is what makes it possible, which is the loop this
         // test exists for.
         let heavy = [m(16, Polarity::Madurai); 8];
-        let f = fit(40, &SLOTS8, &heavy, thrifty, 0).unwrap();
+        let f = fit(40, &SLOTS8, &heavy, thrifty, None).unwrap();
         assert_eq!((f.rank, f.capacity), (40, 80), "it had to buy rank to fit");
         assert!(f.drain <= f.capacity, "drain {} cap {}", f.drain, f.capacity);
         // SIX polarizations, and six is not a contradiction: five is the cap on
