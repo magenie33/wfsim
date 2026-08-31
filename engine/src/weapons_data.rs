@@ -4346,7 +4346,19 @@ mod tests {
     /// reads is the anti-pattern this repo names by name.
     #[test]
     fn the_stance_slot_polarity_decides_what_a_stance_grants() {
-        assert_eq!(stance_polarity("magistar"), Some(crate::mods::Polarity::Vazarin));
+        // EVERY FORM CARRIES IT, because the slot belongs to the WEAPON and not
+        // to a way of swinging it — the same inheritance the combo counter's
+        // own clock needs, and the same silence when it is missing.
+        for form in [
+            "magistar", "magistar_forward", "magistar_block", "magistar_block_forward",
+            "magistar_heavy", "magistar_slide", "magistar_heavy_slam",
+        ] {
+            assert_eq!(
+                stance_polarity(form),
+                Some(crate::mods::Polarity::Vazarin),
+                "{form} lost the stance slot's colour",
+            );
+        }
         let slot = stance_polarity("magistar");
         let of = |id: &str| {
             crate::mods_data::pool_for_weapon("magistar")
