@@ -95,8 +95,14 @@ Status Chance = Weapon Status Chance x [1 + Mod Status Bonus + WeepingWounds x (
 
 ### Initial combo is a FLOOR that refills
 
-> *"Heavy attacks spend initial combo, which regenerates at a rate of 40 combo
-> points per second."*
+> *"Initial Combo grants a minimum value of combo points when **idle** or after
+> a combo reset. Heavy attacks spend initial combo, which regenerates at a rate
+> of 40 combo points per second."*
+
+**THE FIGHT OPENS WITH IT FULL.** The 40 a second is what a heavy attack owes
+back, not what a player owes on the way in — so the first heavy of the
+engagement already pays the floor, and a half-second fight (one slam) is the
+only thing that can tell the two rules apart.
 
 It is the whole of the pure-heavy build. The Magistar's Incarnon Form carries
 **+30**, which is back inside **0.75 s** against a **0.8 s** wind-up (1.2 s

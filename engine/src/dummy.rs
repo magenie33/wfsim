@@ -10647,6 +10647,25 @@ mod melee {
         assert_eq!(slam_cycle_seconds(1.2, 0.0, 110.0), 1.5);
     }
 
+    /// THE FIGHT OPENS WITH THE INITIAL-COMBO FLOOR FULL.
+    ///
+    /// *"Initial Combo grants a minimum value of combo points when IDLE"* — so
+    /// the FIRST heavy attack of the engagement already pays it, and the 40
+    /// points a second is what a heavy attack owes back rather than what the
+    /// player owes on the way in.
+    ///
+    /// A HALF-SECOND FIGHT IS ONE SLAM, which is the only way to ask this
+    /// question: every later swing pays the floor whichever rule is in force.
+    #[test]
+    fn the_first_slam_of_a_fight_already_holds_its_initial_combo() {
+        let one = |mods: &[&str]| magistar("magistar_heavy_slam", mods, 0.5, None).mean_damage;
+        let gain = one(&["corrupt_charge"]) / one(&[]);
+        assert!(
+            (1.9..2.1).contains(&gain),
+            "+30 initial combo should open the fight at 2x, not 1x: x{gain:.3}",
+        );
+    }
+
     /// …AND THE WHOLE OF THE MODE'S BUILD IS THAT COUNTER.
     ///
     /// Nothing else the loop does moves: the recovery is a second either way,
@@ -11901,11 +11920,15 @@ pub fn run_once_traced(
     // swing; five seconds on almost every weapon.
     let mut combo_expiry = f64::NEG_INFINITY;
     // WHEN THE COUNTER WAS LAST EMPTIED BY A HEAVY ATTACK, which is what the
-    // initial-combo floor regenerates from. It starts at 0 rather than at
-    // negative infinity because the floor also has to fill at the START of the
-    // fight: a build carrying +30 initial combo does not open with it, it
-    // reaches it 0.75 s in.
-    let mut combo_spent_t = 0.0f64;
+    // initial-combo floor regenerates from.
+    //
+    // THE FIGHT OPENS WITH THE FLOOR FULL: *"Initial Combo grants a minimum
+    // value of combo points when IDLE or after a combo reset. Heavy attacks
+    // spend initial combo, which regenerates at a rate of 40 combo points per
+    // second"* (wiki, Melee Combo). The 40 a second is what a heavy attack owes
+    // back, not what a player walks in owing — so a build carrying +30 opens
+    // its first heavy at 2x rather than reaching it 0.75 s in.
+    let mut combo_spent_t = f64::NEG_INFINITY;
     // WHICH SWING OF THE SCRIPT IS NEXT. A gun leaves the script empty and
     // never reads this.
     let mut swing_idx = 0usize;
