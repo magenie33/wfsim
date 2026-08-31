@@ -1,0 +1,42 @@
+id: sancti_magistar_forward
+name: Sancti Magistar
+# TIDAL FORCE — Crushing Ruin's forward combo, and the only one of the four
+# with no forced proc anywhere in it. 800% over 2.60 s (800 / 307.7).
+inherits: sancti_magistar
+form: forward
+transform_group: sancti_magistar
+co_behavior: additive_with_base_damage
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.3
+  crit_multiplier: 2.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  range_m: 2.6
+  follow_through: 0.4
+  # see notes: class_s_heavy_attack
+  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  damage: { impact: 192, puncture: 36, slash: 12 }
+  # TIDAL FORCE — transcribed from the wiki's own `Module:Stances/data`,
+  # which publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and
+  # `Duration` per combo. The duration is the MODULE's (2.6 s at 1.0x attack
+  # speed), not derived — though deriving it from the rendered table's two
+  # columns gave the same number, which is how the derivation was checked.
+  #
+  # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
+  # the 4 direct swings share the 2.6 s and it lands alongside the last of them.
+  # `Knockback` is Impact's own proc and is transcribed as `impact`.
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 0.65 }
+    - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true }
+    - { multiplier: 2.0, delay_seconds: 0.65 }
+    - { multiplier: 3.0, delay_seconds: 0.65 }
+
+source:
+  url: https://wiki.warframe.com/w/Crushing_Ruin

@@ -1,0 +1,16 @@
+id: sancti_magistar_orokin_reach
+name: Orokin Reach
+weapon: sancti_magistar
+tier: 3
+description: "+1.4 Range."
+selection: choose_one
+
+effects:
+  # from: "+1.4 Range" — METRES, the same quantity Reach and Primed Reach buy.
+  # On a hammer's 2.5 m that is more than half again, and metres are bodies: it
+  # decides how many a swing reaches and therefore what Follow Through is worth.
+  - kind: melee_range_bonus_m
+    value: 1.4
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

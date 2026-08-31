@@ -1,0 +1,15 @@
+id: sancti_magistar_swift_break
+name: Swift Break
+weapon: sancti_magistar
+tier: 3
+description: "+30% Heavy Attack Wind Up Speed."
+selection: choose_one
+
+effects:
+  # from: "+30% Heavy Attack Wind Up Speed" — additive with the Incarnon Form's
+  # own +50%, so the pair take the 1.2 s charge to 0.667 s.
+  - kind: heavy_windup_speed_bonus
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

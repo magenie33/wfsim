@@ -1,0 +1,49 @@
+id: sancti_magistar_heavy
+name: Sancti Magistar
+# CROWD FALL — nothing but heavy attacks.
+#
+# A HAMMER'S HEAVY IS 6x (wiki's per-weapon-type table) whichever hammer it is,
+# delivered as Crushing Ruin's two-move pair: 600% Lifted, then 600% Knockdown. Both are 6x, which is
+# the table's "First Heavy Attack 6x / Second Heavy Attack 6x" — the stance
+# decides the animation and the forced procs, not the multiplier.
+#
+# THE COMBO COUNTER IS SPENT HERE, so this mode is a different BUILD and not a
+# different animation: Blood Rush and Weeping Wounds read a counter that is
+# emptied by the swing that read it, and initial combo is worth everything.
+#
+# THE CADENCE IS THE WIND-UP PLUS THE WAIT. 1.2 s at 1.0x, which attack speed
+# does not shorten, and then however long the counter is worth waiting for —
+# `dummy::heavy_cycle_seconds`, the same decision the heavy slam makes.
+inherits: sancti_magistar
+form: heavy
+transform_group: sancti_magistar
+co_behavior: additive_with_base_damage
+unmodeled:
+  - "ATTACK SPEED PAYS NOTHING IN THIS MODE. The wiki's own sentence is 'Increasing melee attack speed does not reduce the wind-up time; rather, it reduces the interval between heavy attacks' — and nothing published says how long the swing after the charge takes, so this entry carries no animation for attack speed to shorten and the cadence is the wind-up alone. A build on Fury or Berserker reads LOW here"
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.3
+  crit_multiplier: 2.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  range_m: 2.6
+  follow_through: 0.4
+  # see notes: class_s_heavy_attack
+  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  spends_combo: true
+  damage: { impact: 192, puncture: 36, slash: 12 }
+  # THE WIND-UP IS ON THE SWING, not on the attack: the attack-level field is a
+  # one-off delay before the fight's first shot, and a heavy attack pays its
+  # charge before EVERY swing. Attack speed does not shorten it — see
+  # `ComboHit::windup_seconds`.
+  combo_script:
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted] }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown] }
+source:
+  url: https://wiki.warframe.com/w/Sancti_Magistar

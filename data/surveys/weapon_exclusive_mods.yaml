@@ -24,7 +24,7 @@
 # stale and RED. Only this script can clear it, and only on a machine
 # with `vendor/` — which is why the guard is a comparison here rather
 # than a regeneration in CI, where the export does not exist.
-roster: 453
+roster: 454
 mods:
   - name: Acid Shells
     compat: Sobek

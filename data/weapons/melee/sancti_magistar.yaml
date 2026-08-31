@@ -1,0 +1,133 @@
+id: sancti_magistar
+name: Sancti Magistar
+slot: melee
+class: hammer
+# THE STATIONARY COMBO, and the arsenal's own form — so its mode is `base`.
+form: neutral
+default_form: true
+transform_group: sancti_magistar
+mod_pools: [melee, hammer]
+mastery_rank: 8
+max_rank: 30
+
+# THE SYNDICATE MAGISTAR — the same hammer, swung the same seven ways, with
+# every number a step up: 240 base against 210, 30% critical chance against 20%,
+# 20% status against 10%, and 1.0 attack speed against 0.833. Its disposition
+# pays for that (1.25 against 1.35) and so does its mastery rank.
+#
+# THE SEVEN ENTRIES ARE THE MAGISTAR'S SEVEN, and they must stay that way: the
+# stance scripts are Crushing Ruin's, which is a HAMMER stance and knows nothing
+# about which hammer swings it. What differs is the weapon's own numbers.
+#
+# ITS TWO PERKS BOTH HEAL OR DEFEND, and this arena has neither to spend them
+# on — declared below rather than omitted, because a reader comparing the two
+# hammers will look for exactly them.
+#
+# THE RADIAL FIGURES ARE WHAT A BODY TAKES: 480 on a slam and 720 on a heavy
+# slam, 2x and 3x this weapon's own base, which is the class constant the wiki
+# states and MEASUREMENTS M69 confirms on the Magistar. The export's larger
+# `slamAttack` / `heavySlamAttack` pair is a different number for the same
+# attack and is not it.
+accuracy: ~
+disposition: 1.25
+polarities: [madurai]
+# THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
+# discount: 10 on a matching slot, 5 on a bare one, 4 on the wrong colour
+# (`mods::stance_capacity`). Vazarin, so Shattering Storm grants 10 here and
+# Crushing Ruin grants 4 until a Forma says otherwise.
+stance_polarity: vazarin
+introduced: "Update: The Silver Grove 2.0"
+internal_name: /Lotus/Weapons/Syndicates/NewLoka/Melee/NLMagistar
+
+# NO AMMO AT ALL. A melee weapon has no magazine, no reserve and no reload, so
+# the loop tops it up silently and `Capability::HasReserve` is false for it the
+# way it is for a companion weapon — a different reason, the same absence.
+ammo_max: ~
+
+# SECONDS THE COMBO COUNTER SURVIVES untouched. Five is this weapon's, and the
+# wiki names the handful that differ rather than stating a default.
+combo_duration_seconds: 5.0
+
+# No CO catalog row for any of this weapon's attacks, so the ordinary class.
+# ABSENCE MEANS ORDINARY — and it was checked against the PAGE, not against
+# docs/CATALOGS.md, which by construction holds only rows the roster already
+# has.
+co_behavior: additive_with_base_damage
+
+unmodeled:
+  - "the LIFE STEAL this weapon is bought for: a heavy attack grants every attack 5% life steal plus 5% per combo level, permanently and shared with allies within 15 m for the rest of the mission. Nothing damages the Tenno in this arena and there are no allies in it, so what it heals is a number this fight has no use for"
+  - "the 20% chance to RESIST A STATUS EFFECT while it is held: a defence of the wielder, and nothing here shoots back"
+  - "the STANCE SLOT is not modelled: these four ground combos are Crushing Ruin's, transcribed from its published table, and equipping a different hammer stance would script them differently — the engine has no way to hear that yet, so a build on Shattering Storm or Fracturing Wind reads this one's numbers"
+  - "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
+  - "the Tennokai window's WIND-UP SPEED is a stand-in: DE publishes no figure for how much faster a heavy attack charges inside the flash, and this uses +100%. The window itself, its chance, its cadence and everything the seven cards do to it are modelled"
+  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports"
+  - "melee RIVENS are not modelled — there is no melee riven pool yet, so the riven editor offers this weapon nothing"
+
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  # ATTACK SPEED, in the fire-rate bucket — which is what makes Fury and
+  # Berserker ordinary mods here. A stance's swing delays are published at 1.0x,
+  # and `loadout::resolve` divides the whole script by this bucket.
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.3
+  crit_multiplier: 2.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
+  # On the group ruler's 3 m grid that is one body per swing, which is why
+  # Follow Through pays nothing there and a slam pays everything.
+  range_m: 2.6
+  # `FT^(n-1)` — wiki's Follow Through table, Hammer.
+  follow_through: 0.4
+  # see notes: class_s_heavy_attack
+  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  damage: { impact: 192, puncture: 36, slash: 12 }   # total 240
+
+  # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
+  # own multiplier (`Dmg = { 500, 100 }` in the module), so this is the unit it
+  # scales. The standalone slam is the same attack at 200%, which is the 480
+  # this weapon's own attack table prints, and its status chance is 10% rather
+  # than the 20% the swing carries.
+  #
+  # EVERY NUMBER FROM THE WIKI'S OWN ATTACK TABLE: 100% Impact, 9 m, linear
+  # falloff from the point of impact to 50% at the edge, forced Knockdown.
+  slam:
+    damage: { impact: 240 }
+    radius_m: 9.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: []
+    takes_multishot: false
+  # RAGING WHIRLWIND — Crushing Ruin's neutral combo.
+  #
+  #   400% (forced Impact) -> 200% (360deg) -> 300% (360deg) -> 500% (forced Knockdown)
+  #
+  # 1400% over 3.00 s at 1.0x attack speed, which is the wiki's own two columns:
+  # 1400 / 466.7 = 3.000. The trailing 100% radial slam the table lists is NOT
+  # here — see `unmodeled` on the slam pair.
+  # RAGING WHIRLWIND — transcribed from the wiki's own `Module:Stances/data`,
+  # which publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and
+  # `Duration` per combo. The duration is the MODULE's (3.0 s at 1.0x attack
+  # speed), not derived — though deriving it from the rendered table's two
+  # columns gave the same number, which is how the derivation was checked.
+  #
+  # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
+  # the 4 direct swings share the 3.0 s and it lands alongside the last of them.
+  # `Knockback` is Impact's own proc and is transcribed as `impact`.
+  combo_script:
+    - { multiplier: 4.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.75, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 0.75, all_around: true }
+    - { multiplier: 5.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
+
+source:
+  url: https://wiki.warframe.com/w/Sancti_Magistar
+  # The combo table: https://wiki.warframe.com/w/Crushing_Ruin

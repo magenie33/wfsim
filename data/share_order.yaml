@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 3d7d7702393b0da5
-count: 1699
+digest: d7e112af95d97176
+count: 1715
 ids:
   - acceltra
   - acceltra_prime
@@ -1709,3 +1709,19 @@ ids:
   - amars_contempt
   - boreals_contempt
   - niras_contempt
+  - sancti_magistar
+  - sancti_magistar_block
+  - sancti_magistar_block_forward
+  - sancti_magistar_forward
+  - sancti_magistar_heavy
+  - sancti_magistar_heavy_slam
+  - sancti_magistar_slide
+  - sancti_magistar_critical_parallel
+  - sancti_magistar_crushing_verdict
+  - sancti_magistar_edge_of_justice
+  - sancti_magistar_evo1_incarnon_form
+  - sancti_magistar_flashing_bleed
+  - sancti_magistar_orokin_reach
+  - sancti_magistar_seismic_slam
+  - sancti_magistar_subtle_force
+  - sancti_magistar_swift_break

@@ -1,0 +1,33 @@
+id: sancti_magistar_slide
+name: Sancti Magistar
+# HELL'S WAVE — Crushing Ruin's slide attack, on a loop. One 200% spin with a
+# forced Impact, 0.97 s a swing (200 / 206.2).
+#
+# `all_around` is what makes this mode worth anything in a crowd: a spin
+# reaches every body within the weapon's range, where Follow Through only walks
+# a line.
+inherits: sancti_magistar
+form: slide
+transform_group: sancti_magistar
+co_behavior: additive_with_base_damage
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.3
+  crit_multiplier: 2.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  range_m: 2.6
+  follow_through: 0.4
+  # see notes: class_s_heavy_attack
+  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  damage: { impact: 192, puncture: 36, slash: 12 }
+  combo_script:
+    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact] }
+source:
+  url: https://wiki.warframe.com/w/Crushing_Ruin

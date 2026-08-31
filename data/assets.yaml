@@ -266,6 +266,13 @@ weapons:
   magistar_heavy: Magistar.png
   magistar_slide: Magistar.png
   magistar_heavy_slam: Magistar.png
+  sancti_magistar: wiki:SanctiMagistar.png
+  sancti_magistar_forward: wiki:SanctiMagistar.png
+  sancti_magistar_block: wiki:SanctiMagistar.png
+  sancti_magistar_block_forward: wiki:SanctiMagistar.png
+  sancti_magistar_heavy: wiki:SanctiMagistar.png
+  sancti_magistar_slide: wiki:SanctiMagistar.png
+  sancti_magistar_heavy_slam: wiki:SanctiMagistar.png
   magnus: Magnus.png
   magnus_prime: MagnusPrime.png
   mandonel: TnConcreteArchgun.png

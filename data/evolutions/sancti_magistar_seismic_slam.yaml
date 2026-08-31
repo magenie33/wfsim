@@ -1,0 +1,16 @@
+id: sancti_magistar_seismic_slam
+name: Seismic Slam
+weapon: sancti_magistar
+tier: 3
+description: "+100% Slam Radius."
+selection: choose_one
+
+effects:
+  # from: "+100% Slam Radius" — 10 m to 20 m on the heavy slam, which is the one
+  # melee mode that reaches past the 2.5 m a hammer swings. It pays nothing in
+  # the other six, and its own bucket is what says so.
+  - kind: slam_radius_bonus
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

@@ -1,0 +1,49 @@
+id: sancti_magistar_evo1_incarnon_form
+name: Incarnon Form
+weapon: sancti_magistar
+tier: 1
+description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 180 seconds. +100% Melee Damage, +30 Initial Combo, +50% Heavy Attack Wind Up Speed, +10% Sprint Speed, +10% Bullet Jump."
+# A MELEE INCARNON IS NOT A FORM: it does
+# not change the attack animations, it only changes numbers. So this grants no
+# `unlocks_weapon` — there is no second weapon entry to unlock — and the whole
+# Genesis is stat changes on the seven ways the Magistar is already swung.
+#
+# WHY IT IS NOT MODELLED AS A CONDITION. The wiki: *"Reach 6x Combo and then
+# Heavy Attack to activate Incarnon Form"*, lasting *"180 seconds"*, persisting
+# through holstering and removed only on death. The rulers' engagement IS 180
+# seconds and reaching 6x costs a few seconds of light attacks, so a player who
+# wants it has it for effectively the whole fight — which is what this applies.
+# The activation is a PLAY PATTERN (a few seconds of one mode before switching
+# to another), and inventing one is the owner's call rather than the model's:
+# docs/UNMODELLED.md holds that line. The cost is declared below.
+#
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades the Magistar and the Sancti
+# Magistar — and EVO1 is the half they share: the table prints one cell for both
+# weapons here. Where they differ is EVO2's base damage (+20 against +100) and
+# EVO4's Critical Parallel (+12% / +0.2x against +16% / +1x).
+selection: fixed
+
+effects:
+  # from: "+100% Melee Damage" — a BRACKET term beside Pressure Point, not a
+  # flat addition to the weapon's own damage. This is the line that makes a
+  # melee Genesis read differently from a gun's, which says `+14 Base Damage`.
+  - kind: base_damage_bonus
+    value: 1.0
+  # from: "+30 Initial Combo" — the floor the counter returns to, refilling at
+  # 40 points a second. Against this weapon's 0.8s modded heavy wind-up that is
+  # back before the next swing, so a pure-heavy build lands every attack at 2x.
+  - kind: initial_combo
+    value: 30.0
+  # from: "+50% Heavy Attack Wind Up Speed" — its OWN clock, which attack speed
+  # does not touch. It takes the Magistar's 1.2 s charge to 0.8 s, which is what
+  # makes the +30 initial combo above land in time: 30 points refill in 0.75 s.
+  - kind: heavy_windup_speed_bonus
+    value: 0.5
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. This arena has no traversal,
+  # and no amount of work on evolutions will change that.
+  - kind: out_of_scope
+    clause: "+10% Sprint Speed, +10% Bullet Jump"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

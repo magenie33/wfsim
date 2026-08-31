@@ -1,0 +1,19 @@
+id: sancti_magistar_edge_of_justice
+name: Edge Of Justice
+weapon: sancti_magistar
+tier: 2
+description: "Base Damage +20. Attack Speed +40% with a Melee Weapon equipped."
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 20.0
+  # from: "Attack Speed +40%" — the fire-rate bucket, which for melee IS attack
+  # speed: it divides every swing delay in the stance script. The gate is "with
+  # a Melee Weapon equipped", which is unconditionally true of a melee weapon's
+  # own fight.
+  - kind: fire_rate_bonus
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis
