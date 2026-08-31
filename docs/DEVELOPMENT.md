@@ -102,6 +102,30 @@ python scripts/build_site_app.py   # the checks read site/, so build it first
 node scripts/check_parity.mjs      # builder vs optimizer, every weapon
 ```
 
+### THE SLOW STEP GOES LAST
+
+`build_site_app.py` is minutes — wasm, wasm-opt, one prerendered page per
+weapon, the whole image set — and every browser check on top is another one or
+two. Using that loop to find out what to fix next is the expensive mistake
+available here, and it compounds: a change that replaces an assumption running
+through the page has a dozen call sites, and discovering them one slow round
+trip at a time costs an afternoon.
+
+- **Enumerate before editing.** Grep out every call site and fix them in one
+  pass. A riven's identity moving from its name to its own id touched fifteen —
+  the autosave, the undo restore, the board card, the open pointer, the share
+  encode and its import — and each one found the slow way cost a full cycle.
+- **Debug against the dev server.** `cargo build -p wfsim-web` is a couple of
+  seconds. A throwaway probe reaches it with
+  `openApp({ base: "http://127.0.0.1:8799" })`; only the committed checks under
+  `scripts/` read `site/`, because that is what CI has.
+- **Then build `site/` once and run the real checks.** Same order a commit
+  wants anyway.
+
+On Windows the site build sometimes fails with `OSError: Errno 22` writing one
+of the prerendered pages. It is environment flake rather than the code — the
+same write succeeds on its own a second later — so retry it.
+
 **`check_parity.mjs` — the builder and the optimizer must offer the same
 thing.** They are the same question asked twice: the builder fills a weapon's
 slots, the optimizer searches them. The script serves `site/` itself, walks
