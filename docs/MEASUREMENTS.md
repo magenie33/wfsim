@@ -5378,3 +5378,52 @@ condition's white and crit. The Incarnon's readings are pure Heat and match to
 the digit, which is why they carry this entry; the base form's are IPS into a
 target whose resistances the reading does not name. Only the half that is load
 bearing — the number does not move on aim — is used.
+
+## M69 — a heavy slam deals its ARSENAL number, not the radial one ✅ (owner, 2026-08-31)
+
+**Magistar, no mods, the evolution ladder up to Critical Parallel, heavy slam,
+target as close to the point of impact as it goes.**
+
+| reading | value |
+| --- | --- |
+| highest white | **1094** |
+| a critical | **3186** |
+| critical multiplier | **3.0x** — the weapon's 2.0 plus Critical Parallel's +1x |
+
+**THE ENTRY SAID 630, AND 630 IS IMPOSSIBLE.** Falloff only ever REDUCES —
+linear from the point of impact to 70% at the edge — so the value at the
+epicentre is at least the highest white number seen, and 1094 is 74% above the
+figure the wiki's own attack row publishes.
+
+**1050 IS THE NUMBER**, `heavySlamAttack` in the export and five times the
+weapon's 210 base. It is 4% under the reading, which the entry carries as the
+gap it is rather than a number invented to close it: the same slam's
+`heavySlamRadialDamage` is the 630, and what a body at the epicentre takes is
+the first.
+
+### THE CRIT AGREES, AND IT IS THE SECOND READING OF THE SAME NUMBER
+
+`3186 / 3.0 = 1062`, against a highest white of 1094 — two slams at slightly
+different distances into the same falloff, which is the only thing that
+separates them. A pair that agrees through a multiplier neither reading names
+is worth more than either alone: it rules out the crit being a tier-2 hit,
+which a 20% critical chance cannot reach, and it rules out the white being
+anything but the epicentre value.
+
+### …AND THE INCARNON FORM WAS NOT ACTIVE FOR IT
+
+Critical Parallel is tier 4, so the ladder below it is taken — including the
+Incarnon Form's `+100% Melee Damage`, which would have put the white at 2188
+had it been running. It was not: the form is ENTERED by reaching 6x combo and
+heavy attacking, and this reading is of the weapon before that. So the reading
+does not test the +100%, and the engine's own decision to apply it for the whole
+engagement (docs/MELEE.md §7) is neither confirmed nor denied here.
+
+### What this does NOT settle
+
+- **The light slam's own pair.** `slamAttack` 630 against `slamRadialDamage`
+  420 is the same shape one tier down, and no reading covers it — so the
+  weapon's own `slam:` keeps the figure it has.
+- **Whether a distant body takes the 630.** One explosion at 1050 with falloff
+  is what the reading supports and what the entry models; a second, weaker
+  radial for everything past the impact point would need a crowd to see.

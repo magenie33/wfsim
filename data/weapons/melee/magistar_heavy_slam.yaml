@@ -4,11 +4,16 @@ name: Magistar
 # that needs no stance at all: a slam is the same attack whatever is in the
 # slot.
 #
-# IT IS ENTIRELY RADIAL. 630 Blast in a 10 m sphere, linear falloff to 70% at
-# the edge (wiki: "3x for heavy slam ... to 50% (70% for heavy slam) at the
-# edge of its radius"; WFCD's own `attacks[]` agrees: start 0, end 10,
-# reduction 0.3). The direct component is zero, so this entry carries no
-# `damage:` of its own beyond the base vector the swing scales.
+# IT IS ENTIRELY RADIAL. 1050 Blast in a 10 m sphere, linear falloff to 70% at
+# the edge (wiki: "to 50% (70% for heavy slam) at the edge of its radius").
+# The direct component is zero, so this entry carries no `damage:` of its own
+# beyond the base vector the swing scales.
+#
+# 1050 IS MEASURED, and it is the export's `heavySlamAttack` — five times the
+# weapon's 210 base — rather than the 630 `heavySlamRadialDamage` the wiki's
+# attack row publishes. A bare weapon slammed as close to the target as it goes
+# reads 1094 white (MEASUREMENTS M69), and falloff only reduces, so 630 is
+# impossible at the epicentre whatever the table says.
 #
 # THE SPHERE IS CENTRED ON THE WIELDER (`blast_kind: slam`), which is why this
 # mode ignores the 2.5 m reach that leaves every other melee mode hitting one
@@ -38,7 +43,8 @@ attack:
   spends_combo: true
   damage: { impact: 0.0 }
   radial:
-    damage: { blast: 630 }
+    # see MEASUREMENTS M69
+    damage: { blast: 1050 }
     radius_m: 10.0
     blast_kind: slam
     falloff_start_m: 0.0

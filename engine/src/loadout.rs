@@ -7146,10 +7146,10 @@ mod tests {
     /// A SLAM IS A MULTIPLE OF THE NORMAL ATTACK, so a flat base add reaches it
     /// MULTIPLIED — and it reaches it at all.
     ///
-    /// *"Slam attacks do 2x the damage of a normal attack (3x for heavy
-    /// slam)"* (wiki, Melee). The Magistar is 210 base and its heavy slam is
-    /// 630, which is that 3x, so `Base Damage +100` is worth +300 there:
-    /// `3 x (210 + 100)`.
+    /// *"Slam attacks do 2x the damage of a normal attack"* (wiki, Melee), so
+    /// the multiple is read off the entry — the Magistar is 210 base and its
+    /// measured heavy slam is 1050, which is 5x — and `Base Damage +100` is
+    /// worth +500 there: `5 x (210 + 100)`.
     ///
     /// A ZERO DIRECT VECTOR IS NOT AN EMPTY WEAPON. A form whose whole attack
     /// IS its explosion states `damage: {impact: 0}`, so neither the perk path
@@ -7161,8 +7161,8 @@ mod tests {
         let bare = WeaponBase::from_data("magistar_heavy_slam", false, &[]);
         let evolved = WeaponBase::from_data("magistar_heavy_slam", false, &evos);
         let radial = |b: &WeaponBase| b.radial.as_ref().expect("the slam IS the attack").base_vector.total();
-        assert_eq!(radial(&bare), 630.0, "3x a 210 base");
-        assert_eq!(radial(&evolved), 930.0, "…and 3x a 310 one");
+        assert_eq!(radial(&bare), 1050.0, "5x a 210 base (MEASUREMENTS M69)");
+        assert_eq!(radial(&evolved), 1550.0, "…and 5x a 310 one");
 
         // …AND THE WEAPON'S OWN TRAILING SLAM, which a combo ends on: 210 is
         // 1x the base, so the same +100 is worth exactly +100 there.
