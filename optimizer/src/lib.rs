@@ -664,9 +664,9 @@ pub struct Scenario {
     /// Per-buff configured policy applied to every evaluated build (same id
     /// scheme as the web Sim panel). Empty = the emergent default.
     pub buff_cfg: BuffConfig,
-    /// WHAT THE FIGHT NEVER HANDS OUT (`engine::buff_events`), read from the
-    /// scenario like every other term here. Skipping it would rank builds by
-    /// stacks the simulator then refuses them.
+    /// WHAT THE FIGHT NEVER HANDS OUT (`engine::buff_events`), off the scenario
+    /// like every other term here — skipping it would rank builds by stacks the
+    /// simulator then refuses them.
     pub denied_buff_events: Vec<wfsim_engine::buff_events::BuffEvent>,
     /// INFINITE RESERVE — the simulator's own scenario knob, which the
     /// optimizer READS. Ignoring it SEARCHES a weapon with a finite reserve

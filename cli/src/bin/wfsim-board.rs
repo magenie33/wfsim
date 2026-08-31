@@ -1061,9 +1061,8 @@ mod tests {
     fn the_request_names_the_mode_and_not_a_form() {
         let scenario = json!({
             "enemy": "thrax_centurion", "form": "stale",
-            // A RULER'S OWN TERM, which the scorer must carry rather than know
-            // about: this is how a benchmark declares a fight that hands out no
-            // kills and gets a whole board out of it (`engine::buff_events`).
+            // A RULER'S OWN TERM, which the scorer carries rather than knows
+            // about — how a benchmark declares a fight with no kills in it.
             "buff_events_off": ["kill"],
         });
         let v = wfsim_engine::builds::ValidBuild {

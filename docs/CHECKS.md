@@ -455,6 +455,24 @@ No attribution and no dated decision survives in the
 repo's prose, and the narrative phrases that mark a history being retold are
 ratcheted: the count may fall and never rise. `docs/MEASUREMENTS.md` is exempt.
 
+Two more numbers hold the SHAPE of what is left, and they are read differently.
+**Blocks over twenty lines** are the RATCHET — past twenty a block has stopped
+stating a rule and started explaining a subject, which is what `docs/` is for,
+and a subject explained twice is two explanations that drift. The count may fall
+and never rise.
+
+**Comments per line** is the backstop the essay count needs, since splitting one
+essay into two compliant blocks would otherwise pass; splitting produces no new
+comment line. It is a RATIO because comments growing with the code is healthy
+and comments growing faster than the code is not — an absolute count cannot tell
+those apart, and taxes every new module for the size of the old ones. It is a
+LIMIT rather than a ratchet: 0.3, against the 0.269 the repo has sat at since
+the prose pass, so ordinary work never reaches it and only a real turn
+commentward does. A whole-repo average cannot honestly do more than that.
+
+`.md`, `.html` and `.css` are outside both, which is what makes "move the
+subject into `docs/`" an answer rather than a shuffle.
+
 ---
 
 ## A check cleans up after itself

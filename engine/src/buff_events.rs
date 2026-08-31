@@ -1,6 +1,5 @@
-//! WHAT A BUFF ASKS OF THE FIGHT before it can be earned, and the fight's
-//! answer. The subject is `docs/BUFFS.md` §"…AND A FIGHT CAN REFUSE TO HAND
-//! OUT WHAT EARNS IT"; this file is the vocabulary and the two tables.
+//! WHAT A BUFF ASKS OF THE FIGHT before it can be earned. The subject is
+//! `docs/BUFFS.md` §"…AND A FIGHT CAN REFUSE TO HAND OUT WHAT EARNS IT".
 
 use crate::arcanes_data::ArcTrigger;
 use crate::loadout::BuffTrigger;
@@ -8,14 +7,13 @@ use crate::loadout::BuffTrigger;
 /// One thing the fight has to hand you before a buff can be earned.
 ///
 /// THE VOCABULARY IS THE PLAYER'S, not the trigger enum's: `ReloadComplete` and
-/// `ReloadFromEmpty` are two triggers and one thing a player does. A switch per
-/// trigger would ask a reader which of two spellings their card uses.
+/// `ReloadFromEmpty` are two triggers and one thing a player does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BuffEvent {
     /// Something died — the event a fight you walk into cold denies.
     Kill,
-    /// A weak point was hit. Separate from the kill, because hitting heads and
-    /// having been in contact are two different claims.
+    /// A weak point was hit. Separate from the kill: hitting heads and having
+    /// been in contact are two different claims.
     Headshot,
     Hit,
     PunchThrough,
@@ -27,8 +25,8 @@ pub enum BuffEvent {
 }
 
 impl BuffEvent {
-    /// The wire spelling — a scenario, a share link and a benchmark all carry
-    /// it, so a rename loses a term of a fight rather than failing to compile.
+    /// The wire spelling — a scenario, a share link and a benchmark carry it,
+    /// so a rename loses a term of a fight rather than failing to compile.
     pub fn id(self) -> &'static str {
         match self {
             BuffEvent::Kill => "kill",
@@ -66,11 +64,9 @@ impl BuffEvent {
     ];
 }
 
-/// What a data-declared stacking buff asks for.
-///
-/// EXHAUSTIVE ON PURPOSE — no `_` arm, so a trigger added to [`BuffTrigger`]
-/// cannot compile until somebody says what it asks for. A default would exempt
-/// the next card from every switch on the page, silently.
+/// What a data-declared stacking buff asks for. EXHAUSTIVE ON PURPOSE — no
+/// `_` arm, so a trigger added to [`BuffTrigger`] cannot compile until somebody
+/// says what it asks for, where a default would exempt it silently.
 pub fn of_trigger(t: BuffTrigger) -> &'static [BuffEvent] {
     use BuffEvent as E;
     match t {
@@ -108,13 +104,10 @@ pub fn of_arc_trigger(t: ArcTrigger) -> &'static [BuffEvent] {
 }
 
 /// The buffs whose trigger is baked into their IDENTITY: a named field on
-/// `DummyParams`, or a card id `evolutions_data::stacking_card_id` derives FROM
-/// a trigger the card itself does not carry.
-///
-/// A TABLE BECAUSE THERE IS NOTHING TO DERIVE FROM — `on_kill_cd` is a kill
-/// because of what it is. `None` is a failing test
-/// (`every_buff_card_says_what_it_asks_of_the_fight` sweeps the whole roster),
-/// never a buff nothing can deny.
+/// `DummyParams`, or a card id `stacking_card_id` derives FROM a trigger the
+/// card does not carry. `on_kill_cd` is a kill because of what it is, and
+/// there is nowhere else to write that down. `None` is a failing test
+/// (`every_buff_card_says_what_it_asks_of_the_fight`).
 pub fn of_builtin(id: &str) -> Option<&'static [BuffEvent]> {
     use BuffEvent as E;
     Some(match id {
@@ -139,9 +132,8 @@ pub fn of_builtin(id: &str) -> Option<&'static [BuffEvent]> {
         "evo_multishot" => &[],
 
         // …AND THE STACKING CARDS. Written out rather than inverted from
-        // `stacking_card_id` because that mapping is not injective — it has a
-        // catch-all — and a table that guessed would be worse than one the
-        // roster sweep checks.
+        // `stacking_card_id`, whose mapping has a catch-all and is therefore
+        // not invertible.
         "on_firing_fire_rate" | "on_firing_damage" | "on_firing_multishot" => &[E::Firing],
         "on_status_fire_rate" | "on_status_damage" => &[E::Status],
         // Stormburst's: a hit on a target ALREADY carrying the status.
@@ -172,7 +164,7 @@ mod tests {
     }
 
     /// A HEADSHOT IS A HIT, AND THE PAGE MUST NOT HAVE TO KNOW THAT: denying
-    /// hits denies headshot buffs too, which only holds if every trigger
+    /// hits denies headshot buffs too, which holds only if every trigger
     /// wanting a weak point also names the plain hit.
     #[test]
     fn a_trigger_that_wants_a_weak_point_also_wants_the_hit() {

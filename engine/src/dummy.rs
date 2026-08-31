@@ -3537,11 +3537,10 @@ impl DummyParams {
     /// THE FIGHT HANDS YOU NOTHING OF THESE KINDS, so nothing that asks for one
     /// is ever earned — `crate::buff_events`, and `docs/BUFFS.md` for why.
     ///
-    /// **A DENIED BUFF IS REMOVED, NOT ZEROED.** The same argument `NO_TIMEOUT`
-    /// makes: a flag saying "ignore this one" has to be honoured at every read
-    /// site, and this file's history is what happens when one is missed. An
-    /// `Option`'s natural zero is `None`, and nothing downstream learns the
-    /// concept exists. Weapon-scoped: recurses into the cycle's base form.
+    /// **A DENIED BUFF IS REMOVED, NOT ZEROED**, by the argument `NO_TIMEOUT`
+    /// makes: a flag has to be honoured at every read site, an `Option`'s zero
+    /// is `None`, and nothing downstream learns the concept exists.
+    /// Weapon-scoped: recurses into the cycle's base form.
     pub fn deny_buff_events(&mut self, denied: &[crate::buff_events::BuffEvent]) {
         use crate::buff_events::{of_arc_trigger, of_builtin, of_trigger, BuffEvent};
         if denied.is_empty() {
@@ -3549,8 +3548,7 @@ impl DummyParams {
         }
         let hit = |events: &[BuffEvent]| events.iter().any(|e| denied.contains(e));
         // A ROSTERED ID WITH NO ENTRY IS A PANIC, not a buff nothing can deny:
-        // the two look identical from outside, which is the failure this area
-        // keeps producing.
+        // the two look identical from outside.
         let by_id = |id: &str| {
             hit(of_builtin(id).unwrap_or_else(|| panic!("buff `{id}` declares no events — add it to buff_events::of_builtin")))
         };
@@ -3601,8 +3599,7 @@ impl DummyParams {
             self.enervate_stacks = 0;
         }
         // FLAT BASE DAMAGE IS ALREADY IN THE VECTOR, added pro-rata before the
-        // mods, so the damage it bought has to come back out — one ratio, the
-        // same scaling the card's own zero setting uses.
+        // mods, so what it bought has to come back out — one ratio.
         if let Some(bd) = self.evo_base_damage {
             if by_id("evo_reload_damage") {
                 let now = bd.without + bd.full;
@@ -24588,8 +24585,7 @@ mod tests {
     /// so a buff added later is covered without anyone remembering to come
     /// back here.
     /// ONE PARAMS CARRYING EVERY CONFIGURABLE BUFF AT ONCE — shared by the two
-    /// ratchets below, which ask the same question from opposite ends: is every
-    /// card READ, and can every card be DENIED.
+    /// ratchets below: is every card READ, and can every card be DENIED.
     fn every_buff_params() -> DummyParams {
         use crate::loadout::{StackSpec, TimedBuff};
         let stack = |per_stack: f64| StackSpec {
@@ -24690,12 +24686,9 @@ mod tests {
     }
 
     /// …AND EVERY BUFF THE ROSTER OFFERS MUST BE DENIABLE — the mirror of the
-    /// check above. `deny_buff_events` is a WALK over the shapes, so it carries
-    /// the risk every walk does: a shape nobody remembered.
-    ///
-    /// It names no field. Deny EVERY event and the roster must come back
-    /// holding only the buffs that ask for nothing; anything else surviving a
-    /// fight that hands out nothing is a missing arm.
+    /// check above, naming no field. `deny_buff_events` is a WALK over the
+    /// shapes, so deny EVERY event and only the buffs that ask for nothing may
+    /// come back; anything else is a shape nobody remembered.
     #[test]
     fn every_buff_the_roster_offers_can_be_denied() {
         use crate::buff_events::{of_arc_trigger, of_builtin, of_trigger, BuffEvent};
@@ -24703,7 +24696,7 @@ mod tests {
         let before: Vec<String> = params.buff_roster().into_iter().map(|b| b.id).collect();
         assert!(before.len() > 10, "the fixture stopped covering the roster: {before:?}");
 
-        // WHAT MAY SURVIVE, from the same tables the denial reads: a list here
+        // WHAT MAY SURVIVE, from the tables the denial reads — a list here
         // would be a second opinion about which buffs are passive.
         let passive = |id: &str| -> bool {
             if let Some(e) = of_builtin(id) {

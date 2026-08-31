@@ -2491,16 +2491,14 @@ struct BuffMeta {
     /// shows `∞` and the input takes no maximum.
     uncapped: bool,
     /// WHAT THIS CARD ASKS OF THE FIGHT (`engine::buff_events`), so the page
-    /// can grey it under a scenario that hands none of it out. EMPTY IS A REAL
-    /// ANSWER and means "nothing can deny this".
+    /// can grey it. EMPTY means "nothing can deny this".
     events: Vec<&'static str>,
 }
 
 /// What one CARD asks of the fight, by the same tables the run reads.
 ///
-/// `None` = the id resolves to no trigger at all: a card the page could not
-/// grey and a buff the run would not deny. It is a test failure, never a silent
-/// empty list — those are opposite claims.
+/// `None` = the id resolves to no trigger at all — a test failure, never a
+/// silent empty list, because those are opposite claims.
 fn card_events(
     id: &str,
     refs: &[&ModDef],
@@ -2938,7 +2936,6 @@ fn enumerate_buffs(
     // WHAT EACH CARD ASKS OF THE FIGHT, in ONE pass — at the push sites it
     // would be fifteen places to remember, which is how a buff came to be
     // drawn, set and dropped once already (docs/BUFFS.md, "THREE lists").
-    // Unresolved stays empty and fails a test rather than the request.
     for b in out.iter_mut() {
         b.events = card_events(&b.id, refs, arcane).unwrap_or_default();
     }
@@ -4955,10 +4952,9 @@ pub(crate) struct Fight {
     /// `None` = the legacy `assume_max`/`frenzy` knobs; `Some` = per-buff
     /// config, which is what the Sim panel sends.
     pub(crate) buff_cfg: Option<BuffCfg>,
-    /// WHAT THIS FIGHT NEVER HANDS YOU (`engine::buff_events`). Here beside
-    /// `aiming` rather than in `buff_cfg` because it is the ENGAGEMENT's: a
-    /// benchmark states it once, where a per-buff map would have to name ids no
-    /// ruler can know in advance.
+    /// WHAT THIS FIGHT NEVER HANDS YOU (`engine::buff_events`). Beside `aiming`
+    /// rather than in `buff_cfg` because it is the ENGAGEMENT's: a benchmark
+    /// states it once, where a per-buff map would name ids it cannot know.
     pub(crate) denied_buff_events: Vec<wfsim_engine::buff_events::BuffEvent>,
     /// Both actors and how long they are at it.
     pub(crate) arena: wfsim_engine::arena::Arena,
@@ -5874,8 +5870,8 @@ pub fn log_json(v: &Value) -> Value {
     if let Some(cfg) = &buff_cfg {
         params.apply_buff_config(cfg);
     }
-    // AFTER the cards, because the fight has the last word: a card may open an
-    // on-kill buff at five stacks, and a fight with no kills does not owe them.
+    // AFTER the cards: a card may open an on-kill buff at five stacks, and a
+    // fight with no kills does not owe them.
     params.deny_buff_events(&denied_buff_events);
 
     // THE RUN, as two u32 halves — see the `run` key `/api/simulate` answers
@@ -10368,17 +10364,13 @@ mod valence_formation_blocks_attrition {
 mod buff_event_cards {
     use super::*;
 
-    /// EVERY BUFF CARD SAYS WHAT IT ASKS OF THE FIGHT.
-    ///
-    /// The page greys a card whose events a scenario denies and the RUN drops
-    /// the buff by the same tables, so a card resolving to NO trigger would be
-    /// greyed by nothing and denied by nothing — indistinguishable from
-    /// outside, which is the shape of every bug this area has produced.
-    ///
-    /// An EMPTY list is a different claim and is allowed; what is asserted is
-    /// that the id resolved. Swept over the whole roster, because a card comes
-    /// from a mod, an arcane or an evolution and only the roster holds all
-    /// three.
+    /// EVERY BUFF CARD SAYS WHAT IT ASKS OF THE FIGHT. The page greys a card
+    /// whose events a scenario denies and the RUN drops the buff by the same
+    /// tables, so a card resolving to NO trigger would be greyed by nothing and
+    /// denied by nothing — indistinguishable from outside. An EMPTY list is a
+    /// different claim and is allowed; what is asserted is that the id
+    /// RESOLVED. Swept over the whole roster, which is where all three
+    /// sources of a card live.
     #[test]
     fn every_buff_card_says_what_it_asks_of_the_fight() {
         let tenno = wfsim_engine::tenno_data::default_tenno().clone();
@@ -10388,8 +10380,7 @@ mod buff_event_cards {
             let pool = wfsim_engine::mods_data::pool_for_weapon(&info.id);
             let refs: Vec<&ModDef> = pool.iter().collect();
             let base = WeaponBase::from_data(&info.id, true, &[]);
-            // EVERY ARCANE THE WEAPON CAN SEAT, one at a time: a card is keyed
-            // by its own arcane, so merging would hide one behind another.
+            // ONE ARCANE AT A TIME: a card is keyed by its own arcane.
             let mut fxs = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
             for pool_id in &info.arcane_pools {
                 for def in wfsim_engine::arcanes_data::slot_pool(pool_id) {
@@ -10434,9 +10425,8 @@ mod buff_event_cards {
     /// A DENIED CLASS REACHES THE NUMBER, through the ONE parse the simulator
     /// and the optimizer share. Asserted end to end, because "the field parsed"
     /// and "the run obeyed it" are the two halves that keep coming apart here.
-    ///
-    /// A NAME THE SERVER DOES NOT KNOW CHANGES NOTHING — this list travels in
-    /// share links, so a newer vocabulary stays openable rather than refused.
+    /// A NAME THE SERVER DOES NOT KNOW CHANGES NOTHING: this list travels in
+    /// share links, so a newer vocabulary stays openable.
     #[test]
     fn denying_a_class_of_event_moves_the_number() {
         let fight = |off: Value| {
@@ -10460,9 +10450,9 @@ mod buff_event_cards {
         let open = fight(json!([]));
         assert!(score(&open) > 0.0, "the control fight did not run: {open}");
 
-        // …AND IT KILLED ENOUGH TO EARN THEM: a fight whose target never dies
-        // denies on-kill buffs by itself, and this would then pass on an engine
-        // that ignored the switch entirely.
+        // …AND IT KILLED ENOUGH TO EARN THEM: a target that never dies denies
+        // on-kill buffs by itself, and this would pass on an engine that
+        // ignored the switch.
         let no_kills = fight(json!(["kill"]));
         assert!(
             score(&no_kills) > 0.0 && score(&no_kills) < score(&open) * 0.95,
