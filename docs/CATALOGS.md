@@ -614,6 +614,12 @@ Rank ramp (wiki rank table == WFCD `levelStats`, both linear):
 between whole number radius values … a loss of 6.5 meters of radius gives +650%
 Damage and +35.75% Ammo Efficiency."*
 
+**MEASURED end to end (M68).** A rank-1 card on the Burston Prime Incarnon's
+2.0 m explosion prints +96% in the HUD and lands 55 × (1 + 1.65 + 0.96) on the
+target: the radius, the ramp between the two published ranks, and the `Adds`
+bracket in one reading — and the base form beside it, which has no row, does
+not move when aiming.
+
 ### Columns and LEGEND, verbatim
 
 > Weapon | Attack Name | Compression Effectiveness | Stacking Behavior with

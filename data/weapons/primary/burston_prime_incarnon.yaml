@@ -106,6 +106,9 @@ attack:
   # THE RADIAL (AoE) part — "shots exploding in a 2 meter area of effect".
   # Rules in MECHANICS §7, plus the two this entry declares for itself.
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 2.0 m -> +160%, ADDS.
+  # MEASURED at rank 1 (docs/MEASUREMENTS.md M68): +96% at 1.6 m given up, into
+  # the base-damage bucket beside Serration, and paid on the EVOLVED 55 rather
+  # than the 13 the CO term on this same attack reads.
   compression:
     effectiveness: 1.00
     stacking: adds
