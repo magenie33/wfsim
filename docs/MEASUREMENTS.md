@@ -5395,11 +5395,28 @@ linear from the point of impact to 70% at the edge — so the value at the
 epicentre is at least the highest white number seen, and 1094 is 74% above the
 figure the wiki's own attack row publishes.
 
-**1050 IS THE NUMBER**, `heavySlamAttack` in the export and five times the
-weapon's 210 base. It is 4% under the reading, which the entry carries as the
-gap it is rather than a number invented to close it: the same slam's
-`heavySlamRadialDamage` is the 630, and what a body at the epicentre takes is
-the first.
+**1050 IS THE NUMBER**, `heavySlamAttack` in the export. It is 4% under the
+reading, which the entry carries as the gap it is rather than a number invented
+to close it.
+
+### …AND IT IS A DERIVATION, not a transcription the measurement leans on
+
+| field | Magistar | as a multiple of the 210 base |
+| --- | --- | --- |
+| `heavyAttackDamage` | 1260 | **6x** — the hammer's heavy attack multiplier |
+| `heavySlamAttack` | 1050 | **5x** |
+| `heavySlamRadialDamage` | 630 | **3x** |
+| `slamAttack` | 630 | 3x |
+| `slamRadialDamage` | 420 | 2x |
+
+**THE RADIAL FIGURES ARE THE CONSTANT** — 2x for a slam and 3x for a heavy slam,
+with NO exception across the export's melee weapons, which is the wiki's own
+sentence. **The epicentre figures are not**: `heavySlamAttack` is 4x on 86
+weapons, 5x on 64, 3.5x on 10 and 1x on a handful, because it follows that
+weapon's own HEAVY ATTACK rather than a class rule for slams —
+`heavySlamAttack == heavyAttackDamage - base` holds for 118 of them. A hammer's
+heavy is 6x, so its heavy slam is 5x, and the 1050 is what that arithmetic says
+before any reading is taken.
 
 ### THE CRIT AGREES, AND IT IS THE SECOND READING OF THE SAME NUMBER
 

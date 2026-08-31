@@ -9,11 +9,17 @@ name: Magistar
 # The direct component is zero, so this entry carries no `damage:` of its own
 # beyond the base vector the swing scales.
 #
-# 1050 IS MEASURED, and it is the export's `heavySlamAttack` — five times the
-# weapon's 210 base — rather than the 630 `heavySlamRadialDamage` the wiki's
-# attack row publishes. A bare weapon slammed as close to the target as it goes
-# reads 1094 white (MEASUREMENTS M69), and falloff only reduces, so 630 is
-# impossible at the epicentre whatever the table says.
+# 1050 IS MEASURED, and it is the export's `heavySlamAttack` rather than the 630
+# `heavySlamRadialDamage` the wiki's attack row publishes. A bare weapon slammed
+# as close to the target as it goes reads 1094 white (MEASUREMENTS M69), and
+# falloff only reduces, so 630 is impossible at the epicentre.
+#
+# IT IS THIS WEAPON'S HEAVY ATTACK, ONE BASE LIGHTER: 1260 is the hammer's 6x
+# and 1050 is 5x. The relation holds for 118 of the export's melee weapons —
+# `heavySlamAttack == heavyAttackDamage - base` — which is what makes 1050 a
+# derivation rather than a transcription with a measurement leaning on it. The
+# RADIAL pair is the constant the wiki states: 2x for a slam and 3x for a heavy
+# slam, with no exception in the export at all.
 #
 # THE SPHERE IS CENTRED ON THE WIELDER (`blast_kind: slam`), which is why this
 # mode ignores the 2.5 m reach that leaves every other melee mode hitting one
