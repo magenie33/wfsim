@@ -1731,6 +1731,33 @@ fn melee_combo_points(earned: f64, initial: f64, since_spend_seconds: f64) -> f6
     earned.max(floor)
 }
 
+/// HOW OFTEN A HEAVY SLAM LOOP CAN SLAM, in seconds.
+///
+/// The cycle is `climb -> slam -> recover`, and only the recovery is fixed:
+/// *"heavy slams do not have any wind up"* (wiki, Melee), so the slam is
+/// instant and how long the player spends getting airborne is theirs to
+/// choose. This takes the choice most favourable to the mode — the counter it
+/// is about to spend climbs in STEPS (`1 + floor(points / 20)`), so the
+/// candidates are the recovery itself and each rung the floor can still reach,
+/// and waiting past a rung buys nothing.
+///
+/// MULTIPLIER PER SECOND IS THE PROXY, and it UNDER-states a wait: Blood Rush
+/// reads the same counter and is not in it.
+fn slam_cycle_seconds(recovery_seconds: f64, earned: f64, initial: f64) -> f64 {
+    let per_second = |t: f64| melee_combo_multiplier(melee_combo_points(earned, initial, t)) / t;
+    let mut best = recovery_seconds.max(1e-6);
+    let mut best_rate = per_second(best);
+    let rungs = (initial / MELEE_COMBO_POINTS_PER_TIER).floor().max(0.0) as u32;
+    for k in 1..=rungs {
+        let t = f64::from(k) * MELEE_COMBO_POINTS_PER_TIER / INITIAL_COMBO_REGEN_PER_SECOND;
+        if t > best && per_second(t) > best_rate {
+            best_rate = per_second(t);
+            best = t;
+        }
+    }
+    best
+}
+
 /// The +100%/+25% ten-stack amp curve shared by Disrupt and Virus.
 fn ten_stack_amp(stacks: usize) -> f64 {
     if stacks == 0 {
@@ -3556,15 +3583,6 @@ impl DummyParams {
         if self.frenzy && by_id("frenzy") {
             self.frenzy = false;
         }
-        if self.co_stack.is_some() && by_id("condition_overload") {
-            self.co_stack = None;
-        }
-        if self.multishot_stack.is_some() && by_id("on_kill_multishot") {
-            self.multishot_stack = None;
-        }
-        if self.crit_chance_stack.is_some() && by_id("on_headshot_kill_cc") {
-            self.crit_chance_stack = None;
-        }
         if self.headshot_streak.is_some() && by_id("evo_headshot_streak") {
             self.headshot_streak = None;
         }
@@ -3614,8 +3632,25 @@ impl DummyParams {
                 self.evo_base_damage = None;
             }
         }
-        // …AND THE TWO FAMILIES THAT DECLARE THEIR OWN TRIGGER, where a card
+        // A KILL'S PAYLOAD IS DENIED; A KILL'S ECONOMY IS NOT. These three are
+        // payloads a card the BUILD carries hands over on a kill — a magazine
+        // back (Sentient Surge), a reload for free (Exact Penance), armour off
+        // a radius (Jahu Canticle) — and none has a buff card, which is the
+        // only reason they survived the ratchets below. What is NOT here is
+        // what the fight does with the corpse: affinity, ammo on the floor, an
+        // Incarnon gauge. The run still kills, so those still happen.
+        if hit(Some("kill")) {
+            self.magazine_refill_on_kill = 0.0;
+            self.instant_reload_on_kill = None;
+            self.strip_on_kill_in_range = None;
+        }
+        // …AND THE THREE FAMILIES THAT DECLARE THEIR OWN TRIGGER, where a card
         // the data adds tomorrow is classified by nobody.
+        for spec in [&mut self.co_stack, &mut self.multishot_stack, &mut self.crit_chance_stack] {
+            if spec.as_ref().is_some_and(|s| hit(s.earned_on)) {
+                *spec = None;
+            }
+        }
         self.stacking_buffs.retain(|b| !hit(Some(trigger_id(b.trigger))));
         self.arcane.buffs.retain(|b| !hit(arc_trigger_id(b.trigger)));
         if let Some(cy) = self.cycle.as_mut() {
@@ -3734,11 +3769,17 @@ impl DummyParams {
     /// the precedent: `injected_elements` takes the identical line from
     /// frenzy.yaml for the identical reason.
     pub fn ability_element_at(&self, ty: DamageType, t: f64) -> f64 {
-        crate::abilities_data::added_elements_at(&self.abilities, t)
-            .iter()
-            .filter(|(e, _)| *e == ty)
-            .map(|(_, v)| v)
-            .sum()
+        // …AND AN ARCANE'S, which is the same kind of term in the same
+        // bracket: `ArcaneFx::added_elements` is held for the whole
+        // engagement, so it has no `t` to be read at.
+        let arcane: f64 =
+            self.arcane.added_elements.iter().filter(|(e, _)| *e == ty).map(|(_, v)| v).sum();
+        arcane
+            + crate::abilities_data::added_elements_at(&self.abilities, t)
+                .iter()
+                .filter(|(e, _)| *e == ty)
+                .map(|(_, v)| v)
+                .sum::<f64>()
     }
 
     /// The finished vector with the ability elements ON TOP — never through
@@ -3749,7 +3790,13 @@ impl DummyParams {
     /// mods are a percentage of the explosion's own base (MECHANICS §7), and
     /// an ability sized "additive with elemental mods" is sized the same way.
     fn with_ability_elements(&self, qvec: DamageVector, stage_mb: f64, t: f64) -> DamageVector {
-        let added = crate::abilities_data::added_elements_at(&self.abilities, t);
+        let mut added = crate::abilities_data::added_elements_at(&self.abilities, t);
+        for &(ty, v) in &self.arcane.added_elements {
+            match added.iter_mut().find(|(t2, _)| *t2 == ty) {
+                Some(slot) => slot.1 += v,
+                None => added.push((ty, v)),
+            }
+        }
         if added.is_empty() {
             return qvec;
         }
@@ -10482,10 +10529,13 @@ mod melee {
         }
         // …AND A CADENCE BEATS THE ROLL. `every 4 melee hits` is 25% against
         // the base 15%, so the two together are worth more than either alone.
+        // THE MARGIN IS THINNER THAN THE TWO CHANCES SUGGEST, because a heavy
+        // attack earns no combo points: a build that converts one swing in four
+        // climbs the counter Blood Rush reads more slowly.
         let roll = dps(&["mentors_legacy"]);
         let both = dps(&["mentors_legacy", "disciplines_merit"]);
         assert!(
-            both > roll * 1.2,
+            both > roll * 1.1,
             "every-4-hits bought nothing over the 15% roll: {roll:.0} -> {both:.0}",
         );
     }
@@ -10574,6 +10624,81 @@ mod melee {
         }
         let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
         monte_carlo(&p, 24, 909)
+    }
+
+    /// A HEAVY SLAM WAITS FOR THE RUNG IT CAN REACH, AND NOT A MOMENT PAST IT.
+    ///
+    /// The climb is the player's own time and the counter pays in STEPS, so the
+    /// most favourable cycle is a rung boundary or the bare recovery — never
+    /// the full refill, which is what a build with a deep initial combo would
+    /// wait for if the wait were priced linearly.
+    #[test]
+    fn a_slam_waits_for_a_rung_and_never_for_the_full_refill() {
+        // Nothing to wait for: the cycle is the recovery.
+        assert_eq!(slam_cycle_seconds(0.7, 0.0, 0.0), 0.7);
+        // The recovery already carries the counter past 2x, so it waits none.
+        assert_eq!(slam_cycle_seconds(0.7, 0.0, 30.0), 0.7);
+        // A tenth of a second short of 2x, and 2x is worth the tenth.
+        assert_eq!(slam_cycle_seconds(0.4, 0.0, 30.0), 0.5);
+        // 110 initial combo is 6x after 2.75 s of refill, and taking it would
+        // be 2.18 multiplier-seconds against the 4.00 this stops at.
+        assert_eq!(slam_cycle_seconds(0.4, 0.0, 110.0), 0.5);
+        // …and a longer recovery moves which rung that is, not the rule.
+        assert_eq!(slam_cycle_seconds(1.2, 0.0, 110.0), 1.5);
+    }
+
+    /// …AND THE WHOLE OF THE MODE'S BUILD IS THAT COUNTER.
+    ///
+    /// Nothing else the loop does moves: the recovery is a second either way,
+    /// and Corrupt Charge's +30 initial combo is back inside it. So the mode
+    /// slams as often and hits twice as hard, which is what a floor that
+    /// refills faster than the cycle is worth.
+    /// MELEE EXPOSURE IS HELD FOR THE WHOLE ENGAGEMENT, and it is the melee
+    /// pool's one card that pays a slam.
+    ///
+    /// *"On Ability Cast: Gain 60% Corrosive Damage on Melee strikes for 25s.
+    /// Stacks up to 240%"* — a Warframe cast is a thing this arena cannot do,
+    /// so the choice is the cap or nothing, and the cap is what a melee player
+    /// holds. It lands in the elemental-mod bracket, which is why it pays the
+    /// EXPLOSION: Condition Overload does not, and a slam build's whole
+    /// question is which cards reach the radial at all.
+    #[test]
+    fn melee_exposure_holds_its_stacks_and_pays_the_explosion() {
+        let base = crate::loadout::WeaponBase::from_data("magistar_heavy_slam", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let arena = crate::arena::Arena::training(60.0);
+        let card = crate::arcanes_data::pool_for_weapon("magistar_heavy_slam", "melee")
+            .into_iter()
+            .find(|a| a.id == "melee_exposure")
+            .expect("the melee pool seats it");
+        let fx = card.fx(
+            card.max_rank,
+            crate::loadout::StackPolicy::Emergent,
+            &[],
+            crate::tenno_data::default_tenno(),
+        );
+        // FOUR STACKS OF 60%, and EMERGENT is the policy the board runs: a card
+        // whose stacks are assumed must not be assumed only under assumed-max.
+        assert_eq!(fx.added_elements, vec![(DamageType::Corrosive, 2.4)]);
+        let bare = monte_carlo(&DummyParams::from_panel(&panel, &arena, &ArcaneFx::none()), 30, 3);
+        let with = monte_carlo(&DummyParams::from_panel(&panel, &arena, &fx), 30, 3);
+        let gain = with.dps / bare.dps;
+        assert!(
+            gain > 2.0,
+            "+240% in the elemental bracket should more than double a bare slam: x{gain:.2}",
+        );
+    }
+
+    #[test]
+    fn initial_combo_doubles_a_heavy_slam_loop_and_costs_it_no_time() {
+        let bare = magistar("magistar_heavy_slam", &[], 60.0, None).mean_damage;
+        let charged = magistar("magistar_heavy_slam", &["corrupt_charge"], 60.0, None).mean_damage;
+        let gain = charged / bare;
+        assert!(
+            (1.8..2.2).contains(&gain),
+            "+30 initial combo should be 1x -> 2x on every slam: x{gain:.3}",
+        );
     }
 
     /// **THE SEVEN MODES ARE SEVEN BUILDS**, which is the claim the whole
@@ -15449,7 +15574,13 @@ pub fn run_once_traced(
                     tennokai_hits = 0;
                 }
             }
-            if landed > 0.0 {
+            // A HEAVY ATTACK EARNS NOTHING. *"connecting with a heavy attack
+            // does not add to the combo counter"* (wiki, Melee), and it is the
+            // swing's KIND that says so rather than the form: a Tennokai heavy
+            // on a light combo is one too. On a spending form it is visible
+            // only through Melee Combo Efficiency, which is the share of the
+            // counter the swing does NOT empty.
+            if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
                 combo_points += h.multiplier * landed;
                 // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
                 // extra combo points on hit/block additively"* — ONE point, per
@@ -15466,6 +15597,8 @@ pub fn run_once_traced(
                         }
                     }
                 }
+            }
+            if landed > 0.0 {
                 combo_expiry = t + ap.combo_duration_seconds;
             }
             // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the
@@ -15594,7 +15727,19 @@ pub fn run_once_traced(
                 } else {
                     swing_idx += 1;
                 }
-                (w + d / rate.max(1e-9)).max(1e-6)
+                let cycle = (w + d / rate.max(1e-9)).max(1e-6);
+                // …AND A HEAVY SLAM'S CLIMB IS FREE. A slam is launched from
+                // mid-air, so the interval is the landing recovery plus
+                // whatever ascent the player chooses — see
+                // `slam_cycle_seconds`, which chooses it. Derived from the two
+                // facts that make the choice worth anything (the explosion is
+                // centred on the wielder, the swing spends the counter) rather
+                // than declared per entry.
+                if is_slam && ap.spends_combo {
+                    slam_cycle_seconds(cycle, combo_points, ap.initial_combo)
+                } else {
+                    cycle
+                }
             }
             None => match ap.burst {
                 Some(b) if b.count > 1 => {
@@ -24589,11 +24734,12 @@ mod tests {
     /// ratchets below: is every card READ, and can every card be DENIED.
     fn every_buff_params() -> DummyParams {
         use crate::loadout::{StackSpec, TimedBuff};
-        let stack = |per_stack: f64| StackSpec {
+        let stack = |per_stack: f64, earned_on: &'static str| StackSpec {
             per_stack,
             max_stacks: 3,
             duration: 6.0,
             initial_stacks: 0,
+            earned_on: Some(earned_on),
         };
         let timed = |value: f64| TimedBuff {
             value,
@@ -24601,9 +24747,9 @@ mod tests {
             initial_active: false,
         };
         DummyParams {
-            co_stack: Some(stack(0.2)),
-            multishot_stack: Some(stack(0.3)),
-            crit_chance_stack: Some(stack(0.1)),
+            co_stack: Some(stack(0.2, "kill")),
+            multishot_stack: Some(stack(0.3, "kill")),
+            crit_chance_stack: Some(stack(0.1, "headshot_kill")),
             stacking_buffs: vec![crate::loadout::StackingBuff {
                 id: "on_plain_hit_damage",
                 trigger: crate::loadout::BuffTrigger::PlainHit,
@@ -24703,6 +24849,15 @@ mod tests {
             if let Some(t) = of_builtin(id) {
                 return t.is_none();
             }
+            // A CARD BUILT FROM A `StackSpec` names its trigger on the spec.
+            if let Some(s) = match id {
+                "condition_overload" => params.co_stack,
+                "on_kill_multishot" => params.multishot_stack,
+                "on_headshot_kill_cc" => params.crit_chance_stack,
+                _ => None,
+            } {
+                return s.earned_on.is_none();
+            }
             params
                 .stacking_buffs
                 .iter()
@@ -24727,6 +24882,48 @@ mod tests {
             after, want,
             "a fight where nothing triggers still grants these — deny_buff_triggers has no arm for them"
         );
+    }
+
+    /// THE GALVANIZED FAMILY IS EARNED ON A KILL, Condition Overload payload
+    /// included — the half of that card a fight denying kills has to take away.
+    ///
+    /// Its id is shared with MELEE's Condition Overload, which is unconditional
+    /// and which no switch may reach, so the two are here together: one id, two
+    /// mechanics, and the answer comes off the spec rather than off the id.
+    #[test]
+    fn a_kill_denied_takes_the_galvanized_co_and_leaves_melees() {
+        let spec = |earned_on| crate::loadout::StackSpec {
+            per_stack: 0.4,
+            max_stacks: 3,
+            duration: 14.0,
+            initial_stacks: 0,
+            earned_on,
+        };
+        let mut galvanized = DummyParams { co_stack: Some(spec(Some("kill"))), ..Default::default() };
+        galvanized.deny_buff_triggers(&["kill".to_string()]);
+        assert_eq!(galvanized.co_stack, None, "Galvanized Shot's payload needs a kill");
+
+        let mut melee = DummyParams { co_stack: Some(spec(None)), ..Default::default() };
+        melee.deny_buff_triggers(&["kill".to_string(), "hit_enemy_with_status".to_string()]);
+        assert!(melee.co_stack.is_some(), "melee's Condition Overload is earned by nothing");
+    }
+
+    /// A KILL BUYS MORE THAN BUFFS, and none of these has a card to be greyed
+    /// — Sentient Surge's magazine, Exact Penance's free reload and Jahu
+    /// Canticle's armour strip reached the fight for free under a ruler that
+    /// hands out no kills.
+    #[test]
+    fn a_kill_denied_takes_the_refill_the_reload_and_the_strip() {
+        let mut p = DummyParams {
+            magazine_refill_on_kill: 0.2,
+            instant_reload_on_kill: Some(0.5),
+            strip_on_kill_in_range: Some((0.5, 20.0)),
+            ..Default::default()
+        };
+        p.deny_buff_triggers(&["kill".to_string()]);
+        assert_eq!(p.magazine_refill_on_kill, 0.0);
+        assert_eq!(p.instant_reload_on_kill, None);
+        assert_eq!(p.strip_on_kill_in_range, None);
     }
 
     #[test]
@@ -26217,6 +26414,7 @@ mod tests {
             max_stacks: 2,
             duration: 100.0,
             initial_stacks: 0,
+            earned_on: Some("kill"),
         };
         let p = DummyParams {
             multishot_stack: Some(spec),
@@ -27100,6 +27298,7 @@ mod tests {
                 max_stacks: 5,
                 duration: 12.0,
                 initial_stacks: 5,
+                earned_on: Some("headshot_kill"),
             }),
             arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
@@ -28726,11 +28925,12 @@ mod replay_reads_every_buff_tests {
     #[test]
     fn no_rostered_buff_draws_a_flat_zero_it_did_not_earn() {
         use crate::loadout::{StackSpec, StackingBuff, TimedBuff};
-        let stack = |per_stack: f64| StackSpec {
+        let stack = |per_stack: f64, earned_on: &'static str| StackSpec {
             per_stack,
             max_stacks: 3,
             duration: 6.0,
             initial_stacks: 0,
+            earned_on: Some(earned_on),
         };
         let timed = |value: f64| TimedBuff { value, duration: 4.0, initial_active: false };
         let buff = |id: &'static str, grant, trigger| StackingBuff {
@@ -28749,9 +28949,9 @@ mod replay_reads_every_buff_tests {
             card_opens_full: false,
         };
         let mut params = DummyParams {
-            co_stack: Some(stack(0.2)),
-            multishot_stack: Some(stack(0.3)),
-            crit_chance_stack: Some(stack(0.1)),
+            co_stack: Some(stack(0.2, "kill")),
+            multishot_stack: Some(stack(0.3, "kill")),
+            crit_chance_stack: Some(stack(0.1, "headshot_kill")),
             stacking_buffs: vec![
                 buff("on_plain_hit_damage", crate::loadout::BuffGrant::BaseDamage,
                      crate::loadout::BuffTrigger::PlainHit),

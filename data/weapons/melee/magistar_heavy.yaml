@@ -19,8 +19,6 @@ inherits: magistar
 form: heavy
 transform_group: magistar
 co_behavior: additive_with_base_damage
-unmodeled:
-  - "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode"
 attack:
   # see notes: swing_trigger_pull_engine
   trigger: melee

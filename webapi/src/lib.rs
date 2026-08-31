@@ -2524,17 +2524,21 @@ fn card_trigger(
             .find(|b| if b.owner.is_empty() { arcane_id } else { &b.owner } == owner)
             .map(|b| arc_trigger_id(b.trigger));
     }
-    // A MOD-DECLARED STACKING BUFF, named by the trigger its data states.
-    refs.iter()
-        .flat_map(|m| m.effects.iter())
-        .find_map(|e| match e {
-            ModEffect::GrantsStackingBuff(b) if b.id == id => Some(Some(trigger_id(b.trigger))),
-            ModEffect::WhileTenno(_, inner) => match &**inner {
-                ModEffect::GrantsStackingBuff(b) if b.id == id => Some(Some(trigger_id(b.trigger))),
-                _ => None,
-            },
-            _ => None,
-        })
+    // A MOD-DECLARED BUFF, named by the trigger its data states. Condition
+    // Overload is the id that NEEDS this: melee's card is unconditional and the
+    // Galvanized family earns the same payload on a kill, so the mod answers
+    // and no table here does.
+    let declared = |e: &ModEffect| match e {
+        ModEffect::GrantsStackingBuff(b) if b.id == id => Some(Some(trigger_id(b.trigger))),
+        ModEffect::ConditionOverload { earned_on, .. } if id == "condition_overload" => {
+            Some(*earned_on)
+        }
+        _ => None,
+    };
+    refs.iter().flat_map(|m| m.effects.iter()).find_map(|e| match e {
+        ModEffect::WhileTenno(_, inner) => declared(inner),
+        _ => declared(e),
+    })
 }
 
 fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
@@ -10422,6 +10426,25 @@ mod buff_event_cards {
              `engine::buff_events::of_builtin`, or give the data a trigger:\n  {}",
             orphans.join("\n  ")
         );
+    }
+
+    /// …AND THE ONE ID THAT ANSWERS TWICE. `condition_overload` is a card on a
+    /// pistol carrying Galvanized Shot and a card on a melee carrying the
+    /// original, and the page has to grey the first under a kill-less fight
+    /// and never grey the second — which is exactly what the run does.
+    #[test]
+    fn condition_overloads_card_says_what_that_weapons_mod_says() {
+        let of = |weapon: &str| {
+            let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
+            let refs: Vec<&ModDef> = pool.iter().collect();
+            card_trigger(
+                "condition_overload",
+                &refs,
+                &wfsim_engine::arcanes_data::ArcaneFx::none(),
+            )
+        };
+        assert_eq!(of("lex_prime"), Some(Some("kill")), "Galvanized Shot earns it on a kill");
+        assert_eq!(of("magistar"), Some(None), "melee's Condition Overload earns it by nothing");
     }
 
     /// ONE CARD, ONE ANSWER: an arcane's specs must all want the same thing.

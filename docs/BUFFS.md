@@ -437,6 +437,30 @@ FROM a trigger the card does not carry — which is what `of_builtin` holds.
 `trigger_id` is exhaustive with no `_` arm, so a trigger added to `BuffTrigger`
 cannot compile until it is named and listed.
 
+**ONE CARD ID IS NOT ALWAYS ONE MECHANIC**, and Condition Overload is the case:
+melee's card is the original and is earned by NOTHING — it reads the target's
+status count on every swing — while Galvanized Shot, Aptitude and Savvy spell the
+same payload as a buff earned ON A KILL. A hand-written answer for that id is
+wrong for one of them whichever it names, so the mod carries it
+(`StackSpec::earned_on`) and both the page's greying and the run's denial read
+that. A fight denying kills takes the Galvanized half of the CO bracket with it —
+about a third of a Braton Prime's damage on a Galvanized Aptitude build — and
+leaves melee's alone.
+
+**A KILL'S PAYLOAD IS DENIED; A KILL'S ECONOMY IS NOT.** Three cards hand over
+something that is not a buff and has no card to be greyed — a magazine back
+(Sentient Surge), a free reload (Exact Penance), armour off a radius (Jahu
+Canticle) — and a fight that grants nothing for a kill grants none of them. What
+stays is what the fight does with the corpse: affinity, ammo on the floor, an
+Incarnon gauge filling. The run still kills, so those still happen.
+
+**ONE ON-KILL GRANT IS STILL OUT OF REACH**: an INDIRECT one, where the trigger
+is dropped at load and the value is folded into a panel number before the fight
+exists. Galvanized Acceleration is the whole of it today — its on-kill
+projectile speed and beam range are read at assumed max (the mod's own comment
+argues why) and no switch can take them back. Reaching them means handing the
+denied set to `loadout::resolve`, which is where a mod bucket is still a bucket.
+
 **IT IS THE FIGHT'S, NOT THE BUILD'S**, so it rides the scenario as
 `buff_triggers_off: [headshot_kill]` beside `aiming` and `headshot_pct` — which is what
 lets `data/benchmarks/*.yaml` state it once and rank the whole submission

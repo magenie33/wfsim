@@ -84,6 +84,12 @@ pub const ALL: &[(&str, &str)] = &[
 /// `DummyParams`, or a card id `evolutions_data::stacking_card_id` derives FROM
 /// a trigger the card itself does not carry.
 ///
+/// CONDITION OVERLOAD IS NOT HERE, because its id is not one mechanic: it is
+/// unconditional on a melee mod and earned on a KILL on a Galvanized one, so a
+/// single hand-written answer is wrong for one of them whichever it names.
+/// `StackSpec::earned_on` carries what that mod declared, and the page reads
+/// the same field.
+///
 /// `Some(None)` is a buff nothing can deny — permanent stacks, no in-sim
 /// trigger. `None` is an id this table has never heard of, which is a failing
 /// test (`every_buff_card_says_what_triggers_it`) and never a silent pass.
@@ -91,8 +97,8 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
     Some(Some(match id {
         // Dual Toxocyst's passive: 3 s off a weak-point hit.
         "frenzy" => "headshot",
-        // Condition Overload counts the statuses ON THE TARGET.
-        "condition_overload" | "on_status_multishot" => "hit_enemy_with_status",
+        // An evolution's CO-shaped multishot counts the statuses ON THE TARGET.
+        "on_status_multishot" => "hit_enemy_with_status",
         "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" | "tendrils" => "kill",
         "on_headshot_kill_cc" => "headshot_kill",
         // An Eximus weak point is a weak point.
@@ -167,7 +173,7 @@ mod tests {
     /// the buff the run drops are the same claim.
     #[test]
     fn every_builtin_names_a_listed_trigger() {
-        for id in ["frenzy", "condition_overload", "on_kill_multishot", "tendrils",
+        for id in ["frenzy", "on_status_multishot", "on_kill_multishot", "tendrils",
                    "on_headshot_kill_cc", "sniper_combo", "evo_reload_damage"] {
             let t = of_builtin(id).unwrap_or_else(|| panic!("{id} is not in the table"));
             let t = t.unwrap_or_else(|| panic!("{id} claims no trigger"));

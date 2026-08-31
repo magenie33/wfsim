@@ -317,13 +317,14 @@ pub enum ModEffect {
         per_stack: f64,
         max_stacks: u32,
         duration: f64,
-        /// Does it open at full stacks?
+        /// WHICH SWITCH GRANTS IT (`buff_events::ALL`), and `None` when
+        /// nothing does.
         ///
-        /// TRUE FOR MELEE'S CONDITION OVERLOAD, which is the original and is
-        /// unconditional; false for the Galvanized family, which earns the same
-        /// payload on a kill. The difference is a trigger, and a card with none
-        /// that waits for one pays nothing for the whole fight.
-        starts_full: bool,
+        /// `None` IS MELEE'S CONDITION OVERLOAD, which is the original and is
+        /// unconditional — nothing to earn, so it opens full and no fight can
+        /// take it away. The Galvanized family earns the same payload on a
+        /// KILL, so a fight that hands out no kills hands out none of this.
+        earned_on: Option<&'static str>,
     },
     /// Galvanized Crosshairs' single refreshable buff: on HEADSHOT,
     /// +bonus relative crit chance (while aiming) for `duration`.
@@ -1205,7 +1206,7 @@ impl ModEffect {
             // TWO SENTENCES FOR TWO CARDS, because they are two mechanics that
             // share a payload: melee's Condition Overload is unconditional and
             // the Galvanized family earns the same term on a kill.
-            ConditionOverload { per_stack, max_stacks, starts_full: true, .. } => format!(
+            ConditionOverload { per_stack, max_stacks, earned_on: None, .. } => format!(
                 "{} Damage per status type on the target, on direct hits{}",
                 pct(per_stack * f64::from(max_stacks)),
                 ""
@@ -1432,6 +1433,14 @@ pub struct StackSpec {
     /// Stacks at t = 0 (user setting: full by default, 0 for a cold
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
+    /// WHICH SWITCH GRANTS THESE STACKS (`buff_events::ALL`), `None` when
+    /// nothing does — the answer `DummyParams::deny_buff_triggers` reads and
+    /// the same one the card is greyed by, so the page and the run cannot
+    /// disagree. It travels on the spec because the data states it and the
+    /// engine has no business classifying it a second time: melee's Condition
+    /// Overload and Galvanized Shot share this shape and one is earned on a
+    /// kill while the other is earned by nothing.
+    pub earned_on: Option<&'static str>,
 }
 
 /// WHAT A STANCE PUBLISHES: `(form id, its swings)`.
@@ -3681,6 +3690,22 @@ pub struct ProcConv {
     pub low_rate_multiplier: f64,
 }
 
+/// HOW MUCH BIGGER A SLAM IS FOR HAVING BEEN DROPPED FROM HEIGHT.
+///
+/// *"Slam radius is determined from the height at which the slam attack is
+/// used, with the radius scaling up to 150% of the listed value, achieved by
+/// slamming from a height of at least 15 meters"* (wiki, Melee).
+///
+/// A SLAM MODE'S LOOP IS `climb -> slam -> recover`, and the climb is the
+/// player's own time — the same freedom [`crate::dummy::slam_cycle_seconds`]
+/// spends on the combo counter — so it reaches the 15 m that sentence names.
+/// The climb itself is not charged, which is the model's declared gap.
+///
+/// IT PAYS A COMBO'S TRAILING SLAM NOTHING: that one is swung on the ground at
+/// the end of a ground combo, which is why this multiplies the attack's own
+/// `radial` and not every explosion whose epicentre is the wielder.
+const SLAM_HEIGHT_RADIUS_SCALE: f64 = 1.5;
+
 /// Resolve a mod set in slot order against a weapon base.
 /// Resolve a build for the NEUTRAL Tenno (`data/tenno/default.yaml`): aiming,
 /// no frame chosen, no ability running. The panel's and the optimizer's
@@ -4182,6 +4207,7 @@ pub fn resolve_for(
                             max_stacks,
                             duration,
                             initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
+                            earned_on: Some("kill"),
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -4190,7 +4216,7 @@ pub fn resolve_for(
                     per_stack,
                     max_stacks,
                     duration,
-                    starts_full,
+                    earned_on,
                 } => match policy {
                     StackPolicy::AssumedMax => co += per_stack * max_stacks as f64,
                     StackPolicy::Emergent => {
@@ -4199,23 +4225,19 @@ pub fn resolve_for(
                             max_stacks,
                             duration,
                             // EARNED — docs/BUFFS.md §Activation policy — UNLESS
-                            // the card has nothing to earn.
-                            //
-                            // MELEE'S CONDITION OVERLOAD IS THE ORIGINAL and it
-                            // is unconditional: no kill, no stacks, no clock,
-                            // just the target's status count read on every
-                            // swing. The Galvanized family spells the same
-                            // PAYLOAD as a buff earned on a kill, and routing
-                            // melee's through that made it pay nothing at all —
-                            // it waited for a trigger it does not have, in all
-                            // seven modes.
+                            // the card has nothing to earn, which is what
+                            // `earned_on` states and melee's Condition Overload
+                            // is: routing it through the Galvanized family's
+                            // earned-on-a-kill path made it pay nothing at all,
+                            // in all seven modes.
                             //
                             // NOT DERIVED FROM `duration == NO_TIMEOUT`, which
                             // would have been the cheap test and is wrong:
                             // LOCKING a buff card writes exactly that duration,
                             // and locking "removes the expiry and nothing else
                             // — the count still starts where the card sets it".
-                            initial_stacks: if starts_full { max_stacks } else { 0 },
+                            initial_stacks: if earned_on.is_none() { max_stacks } else { 0 },
+                            earned_on,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -4248,6 +4270,7 @@ pub fn resolve_for(
                             max_stacks,
                             duration,
                             initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
+                            earned_on: Some("headshot_kill"),
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -4714,7 +4737,12 @@ pub fn resolve_for(
             co_base_fraction: r.co_base_fraction(),
         }
     };
-    let radial = base.radial.as_ref().map(&a_resolved);
+    let radial = base.radial.as_ref().map(&a_resolved).map(|mut r| {
+        if r.blast_kind == crate::weapons_data::BlastKind::Slam {
+            r.radius_m *= SLAM_HEIGHT_RADIUS_SCALE;
+        }
+        r
+    });
     // THE WEAPON'S OWN SLAM, through the same buckets — it is the same attack
     // part seen from a different swing, and a combo that ends on one should not
     // read a different Serration from the swing it ends.
@@ -6843,7 +6871,7 @@ mod tests {
                         per_stack: 0.40,
                         max_stacks: 3,
                         duration: 14.0,
-                        starts_full: false,
+                        earned_on: Some("kill"),
                     },
                 ],
             ),

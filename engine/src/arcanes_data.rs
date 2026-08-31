@@ -265,6 +265,15 @@ pub struct ArcaneFx {
     /// `loadout::resolve_for` spends them and the panel carries the answer.
     pub compression_damage_per_m: f64,
     pub compression_effectiveness_per_m: f64,
+    /// AN ELEMENT THIS ARCANE ADDS, as a fraction of ModifiedBase — the shape
+    /// `abilities_data::AddElement` already has, and it lands in the same
+    /// bracket for the same reason: *"additive with elemental mods"*, so it
+    /// raises that element's DoT tick as well as the hit.
+    ///
+    /// IT DOES NOT COMBINE. A weapon whose mods make Viral and an arcane
+    /// adding Corrosive deals Viral AND Corrosive, which is what the ability
+    /// path already does with Volt's Electricity.
+    pub added_elements: Vec<(crate::damage::DamageType, f64)>,
 }
 
 impl Default for ArcaneFx {
@@ -293,6 +302,7 @@ impl Default for ArcaneFx {
             ammo_efficiency: 0.0,
             compression_damage_per_m: 0.0,
             compression_effectiveness_per_m: 0.0,
+            added_elements: Vec::new(),
         }
     }
 }
@@ -381,6 +391,15 @@ impl ArcaneFx {
                     out.ammo_efficiency += a.ammo_efficiency;
                     out.compression_damage_per_m += a.compression_damage_per_m;
                     out.compression_effectiveness_per_m += a.compression_effectiveness_per_m;
+                    // TWO ARCANES ADDING ONE ELEMENT ADD, because each is
+                    // additive with elemental mods and therefore with the
+                    // other — `added_elements_at` says the same for abilities.
+                    for &(t, v) in &a.added_elements {
+                        match out.added_elements.iter_mut().find(|(t2, _)| *t2 == t) {
+                            Some(slot) => slot.1 += v,
+                            None => out.added_elements.push((t, v)),
+                        }
+                    }
                     out.final_multiplier *= a.final_multiplier;
                     // One arcane grants it and a weapon seats at most one of
                     // any arcane, so this is a max rather than a sum — summing
@@ -550,6 +569,9 @@ enum ArcEffect {
     HeadshotMultiplier { value: f64, unlocks_at: u32 },
     ReloadSpeed { value: f64, unlocks_at: u32 },
     PerColdDamage { scale: Scale, max_stacks: u32 },
+    /// AN ADDED ELEMENT, at every stack it can hold — see
+    /// [`ArcaneFx::added_elements`].
+    AddedElement { element: crate::damage::DamageType, scale: Scale, max_stacks: u32 },
     FlatDamageOnStatus(Scale),
     EncumberChance(Scale),
     ColdBurst { scale: Scale, radius0: f64, radius1: f64 },
@@ -771,6 +793,11 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             scale: scale(v),
             max_stacks: u(v, "max_stacks"),
         },
+        "added_element" => ArcEffect::AddedElement {
+            element: crate::damage::DamageType::from_name(s(v, "element")?)?,
+            scale: scale(v),
+            max_stacks: u(v, "max_stacks").max(1),
+        },
         "flat_damage_on_status" => ArcEffect::FlatDamageOnStatus(scale(v)),
         "proc_conversion" => ArcEffect::EncumberChance(scale(v)),
         "proc_burst" => ArcEffect::ColdBurst {
@@ -977,6 +1004,19 @@ impl ArcaneDef {
                         fx.weakpoint_crit_chance_relative += sc.at(rank, self.max_rank);
                     }
                 }
+                ArcEffect::AddedElement { element, scale, max_stacks } => {
+                    // NOT GATED ON `assumed`, and that is the owner's call
+                    // rather than a reading of the card: the trigger is a
+                    // Warframe cast, which this arena has no way to perform, so
+                    // the alternative to holding every stack is paying nothing
+                    // at all. A melee player casts, so this is held for the
+                    // whole engagement and the card's timer never runs out.
+                    let v = scale.at(rank, self.max_rank) * f64::from(*max_stacks);
+                    match fx.added_elements.iter_mut().find(|(t, _)| t == element) {
+                        Some(slot) => slot.1 += v,
+                        None => fx.added_elements.push((*element, v)),
+                    }
+                }
                 ArcEffect::Debilitate(sc) => {
                     // NOT gated on `assumed`: the roll is per damage instance
                     // and the sim rolls it, so this is emergent either way.
@@ -1093,6 +1133,7 @@ impl ArcaneDef {
                 | ArcEffect::CondCritDamageStacked { scale, .. }
                 | ArcEffect::WeakpointCritChance(scale)
                 | ArcEffect::PerColdDamage { scale, .. }
+                | ArcEffect::AddedElement { scale, .. }
                 | ArcEffect::RechargeableMagazine { scale }
                 | ArcEffect::FlatDamageOnStatus(scale)
                 | ArcEffect::EncumberChance(scale)
@@ -1256,6 +1297,10 @@ impl ArcaneDef {
                 }
                 ArcEffect::PerColdDamage { scale, max_stacks } => out.push(format!(
                     "{} Damage per Cold status on the target (×{max_stacks})",
+                    pct(at(scale))
+                )),
+                ArcEffect::AddedElement { element, scale, max_stacks } => out.push(format!(
+                    "{} {element:?} per Ability Cast (×{max_stacks}), held all fight",
                     pct(at(scale))
                 )),
                 ArcEffect::FlatDamageOnStatus(sc) => out.push(format!(

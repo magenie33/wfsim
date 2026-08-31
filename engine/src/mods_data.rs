@@ -327,10 +327,10 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             per_stack: max("rankMax"),
             max_stacks: 1,
             duration: crate::loadout::NO_TIMEOUT,
-            // NOTHING TO EARN, so it opens full. Routing it through the
-            // Galvanized family's earned-on-a-kill path made it pay zero in all
-            // seven melee modes.
-            starts_full: true,
+            // NOTHING TO EARN, so it opens full and no switch can deny it.
+            // Routing it through the Galvanized family's earned-on-a-kill path
+            // made it pay zero in all seven melee modes.
+            earned_on: None,
         },
         "melee_combo_duration_bonus" => ModEffect::MeleeComboDuration(max("rankMax")),
         "initial_combo" => ModEffect::InitialCombo(max("rankMax")),
@@ -490,9 +490,11 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 }
                 ("on_kill", "condition_overload") => {
                     // THE GALVANIZED FAMILY EARNS IT on a kill, so it opens at
-                    // zero — the difference from melee's own card one screen up.
+                    // zero and a fight that denies kills denies it — the
+                    // difference from melee's own card one screen up.
                     ModEffect::ConditionOverload {
-                        per_stack: per, max_stacks: stacks, duration: dur, starts_full: false,
+                        per_stack: per, max_stacks: stacks, duration: dur,
+                        earned_on: Some("kill"),
                     }
                 }
                 ("on_headshot", "crit_chance") => {
@@ -1869,7 +1871,13 @@ mod tests {
         assert!(by("frostbite").effects.iter().any(|e| matches!(e, ModEffect::Element(DamageType::Cold, v) if (*v - 0.60).abs() < 1e-9)));
         assert!(by("magnetic_might").effects.iter().any(|e| matches!(e, ModEffect::CombinedElement(DamageType::Magnetic, v) if (*v - 0.60).abs() < 1e-9)));
         // Conditional families.
-        assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, .. } if (*per_stack - 0.40).abs() < 1e-9)));
+        // …AND WHAT EARNS IT, because the two cards sharing this variant differ
+        // by nothing else: the Galvanized one waits for a kill and melee's own
+        // waits for nothing, which is the whole of what a fight can deny.
+        assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, earned_on: Some("kill"), .. } if (*per_stack - 0.40).abs() < 1e-9)));
+        let melee = pool_for_weapon("magistar");
+        let melee_co = melee.iter().find(|m| m.id == "condition_overload").expect("melee CO");
+        assert!(melee_co.effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { earned_on: None, .. })));
         assert!(by("galvanized_diffusion").effects.iter().any(|e| matches!(e, ModEffect::OnKillMultishot { per_stack, max_stacks: 4, .. } if (*per_stack - 0.30).abs() < 1e-9)));
         // Galvanized Crosshairs is AIM-GATED, so its buffs arrive WRAPPED -
         // asserting the bare variant would pass on a build where the gate had

@@ -123,6 +123,34 @@ and what has refilled, which is what makes "spend it and it comes back" and
   function. It is why a slam ignores the 2.5 m reach that decides every other
   melee mode.
 
+### …and the heavy slam LOOP, which is the only cadence a player chooses
+
+`climb -> slam -> recover`, and **only the recovery is a fixed cost**:
+
+- **The slam is instant.** *"Heavy slams do not have any wind up"* — so the
+  1.2 s charge that sets the pure-heavy mode's whole cadence is not paid here,
+  and no wind-up card pays anything in this mode.
+- **The climb is free.** A slam is launched from mid-air and nothing bounds how
+  long the player spends getting there, so the interval is the recovery plus
+  whatever ascent is worth waiting through.
+- **…so the wait is priced against the counter.** A heavy slam SPENDS the
+  counter and the counter climbs in steps — `1 + floor(points / 20)`, refilling
+  at 40 initial-combo points a second — so `slam_cycle_seconds` takes the
+  recovery itself or a rung boundary, whichever pays more multiplier per second,
+  and never waits past a rung. Waiting for the FULL refill is the intuitive rule
+  and is usually worse: 110 initial combo is 6x after 2.75 s, which is 2.18
+  multiplier-seconds against the 4.00 the 2x at 0.5 s already pays.
+
+Both facts are DERIVED from what the entry already says — the explosion is a
+`Slam` and the swing spends the counter — rather than declared per weapon, so
+the next slam weapon gets the loop for free.
+
+**A HEAVY ATTACK EARNS NO COMBO POINTS.** *"Connecting with a heavy attack does
+not add to the combo counter"*, and it is the swing's kind that says so rather
+than the mode: a Tennokai heavy on a light combo is one too, which is why a
+build converting one swing in four climbs the counter Blood Rush reads more
+slowly than its two chances suggest.
+
 ### Condition Overload (melee)
 
 `Total = Base x [1 + Damage Mods + (CO x n)] x (1 + Elemental Mods)`, +80% per
@@ -216,10 +244,18 @@ engine tests — the golden values among them — are unchanged.
 ## 5. THE ARCANE SLOT, AND ONE BUG THE AUDIT FOUND
 
 A melee weapon seats a MELEE arcane, and `arcane_pools` already answered
-`["melee"]` before there was a pool behind it. All twelve are in now. **Two of
-them pay and ten declare**, which is an honest ratio for a family whose triggers
-are a Warframe casting, a Warframe's shields breaking, a roll, a finisher and a
-knockdown:
+`["melee"]` before there was a pool behind it. All twelve are in now. **Three of
+them pay and nine declare**, which is an honest ratio for a family whose triggers
+are a Warframe's shields breaking, a roll, a finisher and a knockdown:
+
+- **Melee Exposure** is the pool's biggest number and the one card that reaches
+  a slam: *"On Ability Cast: Gain 60% Corrosive Damage on Melee strikes for 25s.
+  Stacks up to 240%"*. The trigger is a cast this arena cannot perform, so the
+  choice was the cap or nothing — and the cap is what a melee player holds, so
+  every stack is held for the whole engagement. It lands in the ELEMENTAL-MOD
+  bracket (`ArcaneFx::added_elements`, the shape an ability's added element
+  already had), which is why it pays the explosion where Condition Overload
+  cannot, and why it does not combine with what the mods make.
 
 - **Melee Retaliation** reads a PLAYER stat — `+30% Melee Damage per 200 current
   Shields` — the way Primary Bulwark reads armour, through `tenno_scaled`. The
@@ -327,6 +363,10 @@ applies to.
   does. Every slam forces a knockdown, so on a slam build this decides whether
   Condition Overload reads one more type between slams — 80% of a base-damage
   bucket either way.
+- **A HEAVY SLAM'S LANDING RECOVERY is a stand-in.** Nothing publishes it, and
+  it is the whole of that mode's cadence now that the wind-up is gone. It stands
+  at **1.0 s** at 1.0x attack speed — uncancellable, and attack speed shortens
+  it, which is what `delay_seconds` means everywhere else.
 - **`TENNOKAI_WINDUP_SPEED` is the other.** *"Performing a Heavy Attack or
   Heavy Slam during this flash increases its Wind Up Speed"*, and DE publishes
   no figure. It stands at +100% (half the charge) and is bounded either way: at
