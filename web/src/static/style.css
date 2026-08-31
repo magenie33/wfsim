@@ -693,6 +693,9 @@ label.check input{width:auto}
    grid gives it the full row because it is a set rather than a field. */
 .bev-h{font-size:11px;color:var(--muted);margin:6px 0 6px;grid-column:1/-1}
 .bev-row{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1}
+/* THE SENTENCE THAT STOPS THE MISREADING. A row of ticked kinds reads as a
+   fight where those things do not happen; they do, and they still score. */
+.bev-why{font-size:11px;color:var(--muted);margin:6px 0 0;grid-column:1/-1;line-height:1.5}
 .bev{display:flex;flex-direction:row;align-items:center;gap:5px;font-size:12px;
   color:var(--text-2);border:1px solid var(--line);border-radius:8px;
   padding:4px 9px;background:var(--panel2);cursor:pointer}

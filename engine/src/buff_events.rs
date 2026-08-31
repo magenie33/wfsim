@@ -1,5 +1,6 @@
 //! WHAT A BUFF ASKS OF THE FIGHT before it can be earned. The subject is
-//! `docs/BUFFS.md` §"…AND A FIGHT CAN REFUSE TO HAND OUT WHAT EARNS IT".
+//! `docs/BUFFS.md` §"…AND A FIGHT CAN SWITCH OFF A TRIGGER" — which is what
+//! this does: the events still happen and still score, the buff does not.
 
 use crate::arcanes_data::ArcTrigger;
 use crate::loadout::BuffTrigger;

@@ -401,18 +401,24 @@ sets one roster id at a time and asserts the params CHANGED, so a buff added
 later is covered without anyone remembering this note. The one exemption is
 `frenzy`, applied outside these params (the api builds a `locked_buffs` entry).
 
-### …AND A FIGHT CAN REFUSE TO HAND OUT WHAT EARNS IT
+### …AND A FIGHT CAN SWITCH OFF A TRIGGER
 
 "Earned, at zero" describes a player who has been in contact and is between
-bursts. It does not describe the other engagement anybody can name: the one you
-walk into cold — the enemies arrive already on you, nothing has died yet, and an
-on-kill build is worth what it is worth *before the first kill*. The app scored
-that fight as if the stacks were coming.
+bursts, banking every trigger the build carries. It does not describe the other
+engagement anybody can name: the one where the enemies arrive already on you and
+have to die *now*, where a build is worth what it is worth without a stack of
+anything. The app scored that fight as if the stacks were always coming.
 
-**`engine::buff_events` is the vocabulary of what a fight can refuse.** Seven
-events, each one thing a player does — `kill`, `headshot`, `hit`,
-`punch_through`, `status`, `reload`, `firing` — and a buff names every event it
-needs. Secondary Deadhead wants a headshot AND a kill, so either switch denies
+**IT SWITCHES OFF A TRIGGER, NOT AN EVENT — and reading it the other way is the
+mistake the first wording invited.** The run still kills, still hits weak points,
+still procs and still reloads; the score still counts every kill. What stops is
+the BUFF those would have granted. A ruler that suppressed the events themselves
+would be a different arena and a number nobody could compare; this one is the
+same fight, scored without the ramp.
+
+**`engine::buff_events` is the vocabulary.** Seven events, each one thing a
+player does — `kill`, `headshot`, `hit`, `punch_through`, `status`, `reload`,
+`firing` — and a buff names every event it needs. Secondary Deadhead wants a headshot AND a kill, so either switch denies
 it; a Warframe-scaled arcane wants nothing, so no switch can touch it.
 
 **MEMBERSHIP IS DERIVED.** A mod's or an evolution's buff is classified by the
