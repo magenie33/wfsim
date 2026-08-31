@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4052
-engine: 62f76c68d481cf078f1a0a9ba83711509b4143e2
+submissions: 4055
+engine: 19133fbb96f1c5e4557f12fd6dcde4fc9b1a2b46
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -733,6 +733,17 @@ entries:
     mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_frostbite]
+  - weapon: boar_prime
+    mode: base
+    score: 5.667784049561481
+    fp: 260087372f3d872f
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_charged_shell, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     score: 5.222616204596837
