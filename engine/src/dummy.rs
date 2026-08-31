@@ -10693,9 +10693,9 @@ mod melee {
 
     /// …AND THE WHOLE OF THE MODE'S BUILD IS THAT COUNTER.
     ///
-    /// Nothing else the loop does moves: the recovery is a second either way,
-    /// and Corrupt Charge's +30 initial combo is back inside it. So the mode
-    /// slams as often and hits twice as hard, which is what a floor that
+    /// Nothing else the loop does moves: the recovery is the same either way,
+    /// and Corrupt Charge's +30 initial combo is back well inside it. So the
+    /// mode slams as often and hits twice as hard, which is what a floor that
     /// refills faster than the cycle is worth.
     /// MELEE EXPOSURE IS HELD FOR THE WHOLE ENGAGEMENT, and it is the melee
     /// pool's one card that pays a slam.

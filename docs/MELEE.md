@@ -386,7 +386,7 @@ applies to.
   bucket either way.
 - **A HEAVY SLAM'S LANDING RECOVERY is a stand-in.** Nothing publishes it, and
   it is the whole of that mode's cadence now that the wind-up is gone. It stands
-  at **1.0 s** at 1.0x attack speed — uncancellable, and attack speed shortens
+  at **2.0 s** at 1.0x attack speed — uncancellable, and attack speed shortens
   it, which is what `delay_seconds` means everywhere else.
 - **`TENNOKAI_WINDUP_SPEED` is the other.** *"Performing a Heavy Attack or
   Heavy Slam during this flash increases its Wind Up Speed"*, and DE publishes

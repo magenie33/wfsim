@@ -51,11 +51,11 @@ attack:
   # is the player's own time, which `dummy::heavy_cycle_seconds` spends the way
   # that pays this mode best.
   #
-  # ONE SECOND IS A STAND-IN for the landing recovery. Nothing publishes it; it
+  # TWO SECONDS IS A STAND-IN for the landing recovery. Nothing publishes it; it
   # is uncancellable and attack speed shortens it, which is exactly what
   # `delay_seconds` already means. Declared in docs/MELEE.md until it is
   # measured in game.
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 1.0, forced_procs: [lifted] }
+    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted] }
 source:
   url: https://wiki.warframe.com/w/Magistar
