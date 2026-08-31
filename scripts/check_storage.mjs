@@ -139,69 +139,65 @@ check("…without throwing the measurement away with them",
   r.reclaimKeptTheResult === true, JSON.stringify(r.reclaimKeptTheResult));
 
 // ---------------------------------------------------------------------------
-// A RIVEN YOU MADE IS STILL THERE AFTER A RELOAD.
+// A RIVEN IS ADDRESSED BY WHAT IT IS AND FILTERED BY WHAT IT IS ABOUT.
 //
-// It was not. `mergeRivenFamilyLists` runs on every load and matched the key it
-// writes as well as the one it reads: `<family>-<class>` came back through
-// `rivenScope`, which slugs an id the roster does not know, so `burston-rifle`
-// became `burston_rifle` and the good list was moved onto a key nothing
-// computes — and the original deleted. Every saved riven vanished on the first
-// reload after it was made.
+// One list, each card carrying its own `scope`. What is asserted is the FOLD,
+// because it is the only part that can still lose work — and it is asked of
+// every key shape this app has ever written, at once:
 //
-// THREE CLAIMS, because a fix for the first alone would leave the ones already
-// lost lost, and a recovery that guessed would eat lists it has no business
-// touching.
+//   burston_prime   the pre-family shape, a weapon id
+//   burston-rifle   the family shape
+//   burston_rifle   the shape the bug produced by slugging the family one
+//   laetum-pistol   a second family holding a card of the SAME NAME
+//   not_a_scope     a token nothing answers to
+const card = (n, r) => ({ name: n, state: { bonuses: ["damage"], malus: null, rolls: [r] } });
 const riven = await evaluate(`(async () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const look = () => ({
-    keys: Object.keys(localStorage).filter(k => k.includes('-rivens')).sort(),
-    list: loadPresetList('rivens').map(p => p.name),
-  });
-  const out = {};
-
-  // A card made now, then the migration run again exactly as a reload runs it.
+  const go = async (p) => { history.pushState({}, '', p); route(); await sleep(2500);
+    presetParseCache.clear(); return loadPresetList('rivens').map(x => x.name).sort(); };
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Burston_Prime'); route(); await sleep(3500);
-  const ps = loadPresetList('rivens');
-  ps.push({ name: 'mine', state: { bonuses: ['damage'], malus: null, rolls: [0.9] } });
-  storePresetList('rivens', ps);
-  mergeRivenFamilyLists();
+  await go('/weapons/Burston_Prime');
+  const put = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  put('wfsim-customs-burston_prime-rivens', [${JSON.stringify(card("from the prime", 0.1))}]);
+  put('wfsim-customs-burston-rifle-rivens', [${JSON.stringify(card("family card", 0.2))}]);
+  put('wfsim-customs-burston_rifle-rivens', [
+    ${JSON.stringify(card("stranded", 0.3))}, ${JSON.stringify(card("family card", 0.2))}]);
+  put('wfsim-customs-not_a_scope-rivens', [${JSON.stringify(card("nobody's", 0.4))}]);
+  put('wfsim-customs-rivens', [{ scope: 'laetum-pistol', ...${JSON.stringify(card("family card", 0.9))} }]);
+  foldRivensIntoOneList();
   presetParseCache.clear();
-  out.survives = look();
-
-  // A list the old bug stranded, beside a card built since under one name.
-  localStorage.clear();
-  localStorage.setItem('wfsim-customs-burston_rifle-rivens', JSON.stringify([
-    { name: 'lost', state: { bonuses: ['damage'], malus: null, rolls: [0.9] } },
-    { name: 'clash', state: { bonuses: ['multishot'], malus: null, rolls: [0.5] } },
-  ]));
-  localStorage.setItem('wfsim-customs-burston-rifle-rivens', JSON.stringify([
-    { name: 'clash', state: { bonuses: ['crit_chance'], malus: null, rolls: [0.1] } },
-  ]));
-  mergeRivenFamilyLists();
-  presetParseCache.clear();
-  out.recovered = look();
-
-  // …and a key that is nobody's scope is not swept up with them.
-  localStorage.clear();
-  localStorage.setItem('wfsim-customs-not_a_scope_at_all-rivens', '[{"name":"x"}]');
-  mergeRivenFamilyLists();
-  out.stranger = look().keys;
-  return out;
+  return {
+    keys: Object.keys(localStorage).filter(k => k.includes('riven')).sort(),
+    whole: loadPresetWhole('rivens').map(x => (x.scope || '?') + ' / ' + x.name).sort(),
+    onPrime: await go('/weapons/Burston_Prime'),
+    onBurston: await go('/weapons/Burston'),
+    onLaetum: await go('/weapons/Laetum'),
+    onTorid: await go('/weapons/Torid'),
+  };
 })()`);
 
-check("a riven survives the migration that runs on every load",
-  riven.survives.list.join() === "mine"
-    && riven.survives.keys.join() === "wfsim-customs-burston-rifle-rivens",
-  JSON.stringify(riven.survives));
-// MERGED, NOT OVERWRITTEN: somebody who kept using the app after losing theirs
-// has been building cards in the live list ever since.
-check("…the ones already stranded come back, merged with what is live",
-  riven.recovered.list.join() === "clash,lost,clash 2"
-    && riven.recovered.keys.join() === "wfsim-customs-burston-rifle-rivens",
-  JSON.stringify(riven.recovered));
-check("…and a key that is nobody's scope is left alone",
-  riven.stranger.join() === "wfsim-customs-not_a_scope_at_all-rivens",
-  JSON.stringify(riven.stranger));
+check("every riven list this app has written folds into one",
+  riven.keys.join() === "wfsim-customs-rivens", riven.keys.join(" "));
+// THE PRE-FAMILY SHAPE AND THE SLUGGED ONE BOTH RESOLVE, and the card the two
+// old keys held twice is one card — a player who built the Burston's and the
+// Prime's separately built one riven.
+check("…every shape resolves, duplicates collapse, and a stranger is kept",
+  riven.whole.join("|") === [
+    "burston-rifle / family card",
+    "burston-rifle / from the prime",
+    "burston-rifle / stranded",
+    "laetum-pistol / family card",
+    "not_a_scope / nobody's",
+  ].join("|"), riven.whole.join(" | "));
+// A NAME IS NOT AN ADDRESS: two families each holding a "family card" is two
+// cards, and the pool only ever offers one weapon's, so they never meet.
+check("…a family sees its own, and a variant sees the same",
+  riven.onPrime.join() === "family card,from the prime,stranded"
+    && riven.onBurston.join() === riven.onPrime.join(),
+  `${riven.onPrime.join(" ")} / ${riven.onBurston.join(" ")}`);
+check("…another family sees only its own", riven.onLaetum.join() === "family card",
+  riven.onLaetum.join(" "));
+check("…and a weapon with no cards sees none", riven.onTorid.join() === "",
+  riven.onTorid.join(" "));
 
 await finish("storage is bounded by the summary, not by how hard you measured");

@@ -108,11 +108,12 @@ const r = await evaluate(`(async () => {
   localStorage.setItem('wfsim-customs-burston_prime-rivens', JSON.stringify([card('b')]));
   localStorage.setItem('wfsim-presets-burston_prime-builder-builds', JSON.stringify(
     [{ name: 'b1', state: { slots: [{ mod: 'riven:riven 1', pol: null }] } }]));
-  mergeRivenFamilyLists();
+  foldRivensIntoOneList();
   const read = (k) => {
     try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; }
   };
-  out.merged = (read('wfsim-customs-' + out.scopes.burston + '-rivens') || [])
+  out.merged = (read('wfsim-customs-rivens') || [])
+    .filter((p) => (p.scope || '') === out.scopes.burston)
     .map((p) => ({ name: p.name, roll: ((p.state.bonuses || [])[0] || {}).roll }));
   out.oldKeysGone = ['wfsim-customs-burston-rivens', 'wfsim-customs-burston_prime-rivens']
     .filter((k) => localStorage.getItem(k) !== null);

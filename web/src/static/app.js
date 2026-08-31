@@ -1494,7 +1494,7 @@ async function init() {
   // BEFORE ANY LIST IS READ: a riven is the FAMILY's as of 2026-08-25, and the
   // lists already on this machine are filed per weapon. It needs `META`, which
   // is why it is called here rather than beside the migrations it belongs with.
-  mergeRivenFamilyLists();
+  foldRivensIntoOneList();
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
   $("auto-forma").addEventListener("click", () => { autoForma(); renderMods(); });
@@ -3182,11 +3182,8 @@ let rivenSaveTimer = null;
 /// weapon's OTHER saved builds keep an id nothing resolves — and filing rivens
 /// by FAMILY widens that across weapons.
 ///
-/// THE SCOPE IS PASSED IN rather than derived here, because the two callers
-/// mean different things by it and both are right: rename and delete pass the
-/// FAMILY's members, while `mergeRivenFamilyLists` passes the ONE weapon whose
-/// list it is moving — a family-wide sweep there would rewrite the OTHER
-/// variant's builds, which point at their own card of the same name.
+/// THE SCOPE IS PASSED IN rather than derived here: rename and delete pass the
+/// FAMILY's members, which is every weapon whose pool offers this card.
 ///
 /// A SLOT IS RECOGNISED BY ITS `mod` and everything else by the exact string.
 /// Clearing drops the RANK with it, which a blind string walk cannot do, while
@@ -6314,7 +6311,16 @@ const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 // not: an enemy you built has no opinion about what is shooting it. Same
 // consequence — one list for the whole roster, and no "⇤ import", because
 // there is no other weapon to import from.
-const SHARED_DOMAINS = new Set(["simulator-scenarios", "enemies"]);
+
+/// …and a RIVEN, which is ABOUT a family and not FILED under one.
+///
+/// A STORE IS ADDRESSED BY WHAT IT IS AND FILTERED BY WHAT IT IS ABOUT.
+/// Content data has no business being a storage address: a key computed from
+/// `riven_family` and the mod class makes correcting either one MOVE everybody's
+/// saved cards to an address the page no longer computes. So the store is one
+/// list, the card carries its own `scope`, and changing a family does exactly
+/// what it says — it changes which weapons the card appears under.
+const SHARED_DOMAINS = new Set(["simulator-scenarios", "enemies", "rivens"]);
 const isSharedDomain = (d) => SHARED_DOMAINS.has(d);
 
 /// WHOSE RIVEN THIS IS — the weapon FAMILY, never the entry: *"Riven mods can
@@ -6353,8 +6359,7 @@ const rivenScopes = () =>
 
 const domainScope = (d, w) => {
   if (isSharedDomain(d)) return "";
-  const weapon = w ?? presetWeapon();
-  return (d === RIVENS ? rivenScope(weapon) : weapon) + "-";
+  return (w ?? presetWeapon()) + "-";
 };
 const presetListKey = (d, w) =>
   (isCustomDomain(d) ? "wfsim-customs-" : "wfsim-presets-") + domainScope(d, w) + d;
@@ -6415,136 +6420,78 @@ const presetActiveKey = (d, w) =>
     localStorage.removeItem(from);
   });
 })();
-/// ONE-TIME MOVE of every per-weapon riven list into its FAMILY's — the storage
-/// half of "a riven is the family's" (see `rivenScope`). A player who
-/// built a Burston riven before this must not have to build it again, and the
-/// Prime's copy of the same card must not vanish either, so the lists are
-/// ADDITIVE: nothing is dropped and nothing is overwritten.
+/// ONE-TIME FOLD of every riven list this app has ever written into the ONE
+/// list, tagging each card with the scope it was filed under. It RUNS AFTER
+/// `META`, because a scope is something only the roster knows.
 ///
-/// IT RUNS AFTER `META`, unlike the other migrations beside it. A family is
-/// something only the roster knows, and asking before the fetch would file
-/// every riven under its own weapon id and then report the job done — the
-/// worst outcome available, because a one-time migration only gets one go.
-///
-/// A RIVEN IS IDENTIFIED BY ITS NAME and a build references it as
-/// `riven:<name>`, so a collision inside one family — two variants each
-/// carrying a "riven 1" — cannot just be renamed on the way in: the surviving
-/// name is the one a build is still pointing at, and that build would silently
-/// equip the OTHER variant's card. Every rename therefore rewrites that
-/// weapon's own builds in the same pass.
-function mergeRivenFamilyLists() {
-  const per = [];
+/// A NAME IS UNIQUE WITHIN A SCOPE, and only there. Two FAMILIES each holding a
+/// "riven 1" never meet, because a pool only offers the current weapon's cards.
+/// Two VARIANTS of one family do: their lists resolve to one scope, and a build
+/// references a card as `riven:<name>`, so the one that gives way is renamed and
+/// that weapon's builds are rewritten in the same pass — left alone, the build
+/// would come back equipping the OTHER variant's card and say nothing.
+function foldRivensIntoOneList() {
+  const KEY = "wfsim-customs-rivens";
+  const olds = [];
   for (let i = 0; i < localStorage.length; i++) {
-    const m = /^wfsim-customs-(.+)-rivens$/.exec(localStorage.key(i) || "");
-    if (m) per.push(m[1]);
+    const k = localStorage.key(i) || "";
+    const m = /^wfsim-customs-(.+)-rivens$/.exec(k);
+    if (m) olds.push(m[1]);
   }
-  // A SCOPE IS NOT A WEAPON ID, and this ran on both.
-  //
-  // The key it writes is `<family>-<class>`, which this same pattern matches on
-  // the NEXT load — and `rivenScope` falls back to slugging an id it does not
-  // know, so `burston-rifle` came back as `burston_rifle` and the migration
-  // moved the good list onto a key nothing reads, deleting the good one. Every
-  // saved riven disappeared on the first reload after it was made.
-  //
-  // Asking the ROSTER is the guard, and it is the same reason `rivenScope`
-  // refuses `weaponInfo`: only a weapon has a weapon's id.
-  const roster = new Set(((META && META.weapons) || []).map((w) => w.id));
-  for (const weapon of per.filter((x) => roster.has(x))) {
-    const fam = rivenScope(weapon);
-    if (!fam || fam === weapon) continue;          // already filed under it
-    const from = `wfsim-customs-${weapon}-rivens`;
-    const to = `wfsim-customs-${fam}-rivens`;
-    const read = (k) => {
-      try { return JSON.parse(localStorage.getItem(k) || "[]") || []; } catch (_) { return []; }
-    };
-    const mine = read(from), theirs = read(to);
-    const renames = [];
-    for (const p of mine) {
-      // THE SAME CARD MADE TWICE COLLAPSES, exactly as the scenario merge does:
-      // a player who built one riven per variant built ONE riven, and carrying
-      // both across turns a migration into a mess they have to clean up.
-      const sig = JSON.stringify(p.state);
-      const twin = theirs.find((q) => JSON.stringify(q.state) === sig);
-      if (twin) {
-        if (twin.name !== p.name) renames.push([p.name, twin.name]);
-        continue;
-      }
-      let name = p.name;
-      if (theirs.some((q) => q.name === name)) {
-        name = `${name} (${weapon})`;
-        renames.push([p.name, name]);
-      }
-      theirs.push({ ...p, name });
-    }
-    if (theirs.length) localStorage.setItem(to, JSON.stringify(theirs));
-    localStorage.removeItem(from);
-    // WHICH ONE IS OPEN is the weapon's own state and does not merge: the
-    // family key keeps whatever it already had, and a weapon arriving with an
-    // open card only fills a blank.
-    const openKey = `wfsim-custom-open-${weapon}-rivens`;
-    const open = localStorage.getItem(openKey);
-    const famOpen = `wfsim-custom-open-${fam}-rivens`;
-    if (open !== null && localStorage.getItem(famOpen) === null) {
-      const hit = renames.find(([a]) => a === open);
-      localStorage.setItem(famOpen, hit ? hit[1] : open);
-    }
-    localStorage.removeItem(openKey);
-    // ONE WEAPON, not the family: before this migration a riven was per weapon,
-    // so nobody else can have referenced it — and the other variant's builds
-    // point at their OWN card of the same name.
-    renames.forEach(([a, b]) => repointRivenInBuilds([weapon], a, b));
-  }
-  recoverOrphanedRivens();
-}
-
-/// THE LISTS THE BUG ABOVE STRANDED, brought back.
-///
-/// It renamed `<family>-<class>` to `<family>_<class>` and deleted the
-/// original, so the cards were never destroyed — they sat under a key the page
-/// no longer computes. The mapping back is EXACT rather than a guess: the
-/// stranded name is `rivenSlug` of the real one, so a scope whose slug matches
-/// is the scope it came from, and a key matching none is left alone.
-///
-/// It MERGES rather than overwrites, because a player who kept using the app
-/// after losing them has been building cards in the live list since.
-function recoverOrphanedRivens() {
+  if (!olds.length) return;
   const live = rivenScopes();
-  if (!live.size) return;
+  const roster = new Set(((META && META.weapons) || []).map((w) => w.id));
   const bySlug = new Map();
-  for (const scope of live) bySlug.set(rivenSlug(scope), scope);
+  for (const sc of live) bySlug.set(rivenSlug(sc), sc);
+  // THE TOKEN IS LOOKED UP, NOT PARSED. Three key shapes have existed and no
+  // pattern can tell them apart — a migration that tried matched the key it
+  // WROTE as well as the one it read, moved every good list onto a dead key and
+  // deleted the original. A token nothing answers to keeps its cards.
+  const resolve = (token) => {
+    if (live.has(token)) return token;                 // already a scope
+    if (roster.has(token)) return rivenScope(token);   // the pre-family shape
+    return bySlug.get(token) || token;                 // the slugged one, or itself
+  };
   const read = (k) => {
     try { return JSON.parse(localStorage.getItem(k) || "[]") || []; } catch (_) { return []; }
   };
-  const orphans = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const m = /^wfsim-customs-(.+)-rivens$/.exec(localStorage.key(i) || "");
-    if (m && !live.has(m[1]) && bySlug.has(m[1])) orphans.push(m[1]);
-  }
-  for (const orphan of orphans) {
-    const scope = bySlug.get(orphan);
-    const from = `wfsim-customs-${orphan}-rivens`;
-    const to = `wfsim-customs-${scope}-rivens`;
-    const mine = read(from), theirs = read(to);
-    for (const p of mine) {
-      // THE SAME CARD ON BOTH SIDES IS ONE CARD: the stranded list is what the
-      // live one was before it was stranded, so an identical spec is the same
-      // riven and not a second copy to hand back.
-      if (theirs.some((q) => JSON.stringify(q.state) === JSON.stringify(p.state))) continue;
-      // A NAME COLLISION KEEPS THE LIVE CARD'S, because a build already points
-      // at it — the same rule the family merge follows.
+  const all = read(KEY);
+  const same = (p, q) => q.name === p.name
+    && JSON.stringify(q.state) === JSON.stringify(p.state);
+  // WHOSE BUILDS A RENAME HAS TO FOLLOW: the one weapon whose list is moving
+  // when the token names one, and otherwise the family it resolves to.
+  const owners = (token, scope) => (roster.has(token)
+    ? [token]
+    : ((META && META.weapons) || []).filter((w) => rivenScope(w.id) === scope).map((w) => w.id));
+  for (const token of olds) {
+    const scope = resolve(token);
+    for (const p of read(`wfsim-customs-${token}-rivens`)) {
+      // THE SAME CARD FROM TWO OLD KEYS IS ONE CARD: a player who built the
+      // Burston's and the Prime's separately built one riven, and both keys
+      // resolve to the same scope now.
+      if (all.some((q) => (q.scope || "") === scope && same(p, q))) continue;
       let name = p.name;
-      for (let n = 2; theirs.some((q) => q.name === name); n++) name = `${p.name} ${n}`;
-      theirs.push({ ...p, name });
+      if (all.some((q) => (q.scope || "") === scope && q.name === name)) {
+        name = `${p.name} (${token})`;
+        for (let n = 2; all.some((q) => (q.scope || "") === scope && q.name === name); n++) {
+          name = `${p.name} (${token}) ${n}`;
+        }
+        repointRivenInBuilds(owners(token, scope), p.name, name);
+      }
+      all.push({ ...p, name, scope });
     }
-    if (theirs.length) localStorage.setItem(to, JSON.stringify(theirs));
-    localStorage.removeItem(from);
-    const openFrom = `wfsim-custom-open-${orphan}-rivens`;
-    if (localStorage.getItem(`wfsim-custom-open-${scope}-rivens`) === null) {
-      const open = localStorage.getItem(openFrom);
-      if (open !== null) localStorage.setItem(`wfsim-custom-open-${scope}-rivens`, open);
+    localStorage.removeItem(`wfsim-customs-${token}-rivens`);
+    // WHICH CARD IS OPEN stays scoped, and it is the one thing here that may
+    // safely miss: the worst a stale pointer does is open nothing.
+    const from = `wfsim-custom-open-${token}-rivens`;
+    const to = `wfsim-custom-open-${scope}-rivens`;
+    const open = localStorage.getItem(from);
+    if (open !== null && from !== to) {
+      if (localStorage.getItem(to) === null) localStorage.setItem(to, open);
+      localStorage.removeItem(from);
     }
-    localStorage.removeItem(openFrom);
   }
+  localStorage.setItem(KEY, JSON.stringify(all));
 }
 
 // Parsed lists, memoised on the RAW STRING. The stored text IS the
@@ -6552,7 +6499,7 @@ function recoverOrphanedRivens() {
 // Worth having because `gainKey()` resolves a whole scenario and is called
 // from a sort comparator, i.e. O(n log n) times per picker render.
 const presetParseCache = new Map();
-const loadPresetList = (d, w) => {
+const loadPresetWhole = (d, w) => {
   const k = presetListKey(d, w);
   let raw;
   try { raw = localStorage.getItem(k); } catch (_) { return []; }
@@ -6562,6 +6509,16 @@ const loadPresetList = (d, w) => {
   try { const p = JSON.parse(raw); if (Array.isArray(p)) list = p; } catch (_) { /* empty */ }
   presetParseCache.set(k, { raw, list });
   return list;
+};
+/// WHAT THIS WEAPON CAN SEE. Every other collection is a whole key; a riven's
+/// store holds the roster's and the QUERY is what makes it this weapon's, which
+/// is the whole point of filing it by what it IS. Callers are unchanged: they
+/// asked for "this weapon's list" before and they still get one.
+const loadPresetList = (d, w) => {
+  const list = loadPresetWhole(d, w);
+  if (d !== RIVENS) return list;
+  const scope = rivenScope(w ?? presetWeapon());
+  return list.filter((p) => (p.scope || "") === scope);
 };
 // The first "<thing> N" this collection does not already hold. Shared by both
 // kinds — naming a new item is the same problem whatever it is called.
@@ -6653,6 +6610,16 @@ function noteInline(msg) {
 const storePresetList = (d, ps, w) => {
   const weapon = w ?? presetWeapon();
   const key = presetListKey(d, weapon);
+  // A RIVEN WRITE IS A REPLACEMENT OF THIS SCOPE'S SLICE, not of the file: the
+  // caller was handed this weapon's cards and hands them back, and every other
+  // family's sit in the same list untouched. The tag is re-applied on the way
+  // in so a card copied from another weapon lands under the one it is being
+  // saved for.
+  if (d === RIVENS) {
+    const scope = rivenScope(weapon);
+    ps = loadPresetWhole(d, weapon).filter((p) => (p.scope || "") !== scope)
+      .concat(ps.map((p) => ({ ...p, scope })));
+  }
   const isQuota = (e) => !!e && (e.name === "QuotaExceededError"
     || e.name === "NS_ERROR_DOM_QUOTA_REACHED" || e.code === 22 || e.code === 1014);
   // The REPLAY never travels. `ps` itself keeps it, because the caller and
