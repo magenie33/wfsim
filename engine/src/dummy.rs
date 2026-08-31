@@ -4066,6 +4066,7 @@ impl DummyParams {
                 &picks,
                 ability_strength + panel.ability_strength_bonus,
                 panel.class,
+                panel.slot,
             )
         } else {
             abilities
@@ -12965,7 +12966,11 @@ pub fn run_once_traced(
         // Puncture's Weakened, which the wiki excludes from AoE by name.
         //
         // Absolute, shared by every stage:
-        let flat_crit = contribs.flat_crit_chance;
+        // …AND A WARFRAME'S. Wrathful Advance is *"a flat value applied AFTER
+        // mods"*, which is this bucket exactly: it lands on every attack part
+        // and is never multiplied by a crit-chance card.
+        let flat_crit = contribs.flat_crit_chance
+            + crate::abilities_data::flat_crit_at(&params.abilities, t);
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
         // Relative, shared by every stage: Crosshairs' on-headshot buff and
         // its per-stack-expiry kill stacks (assumes constant aiming), plus the
@@ -26421,6 +26426,7 @@ mod tests {
                 }],
                 1.0,
                 "",
+                "melee",
             ),
             ..bare(DamageType::Blast)
         };
@@ -29577,7 +29583,7 @@ mod warframe_ability_tests {
                 is_head: false,
                 crit_bonus: false,
             }],
-            abilities: resolve(&picks, strength, ""),
+            abilities: resolve(&picks, strength, "", "melee"),
             ..DummyParams::default()
         }
     }
@@ -30175,7 +30181,7 @@ mod warframe_ability_tests {
             ..params(&[], 1.0)
         };
         let mut with_empty = bare.clone();
-        with_empty.abilities = resolve(&[], 3.0, "");
+        with_empty.abilities = resolve(&[], 3.0, "", "melee");
         assert_eq!(direct(&bare), direct(&with_empty));
     }
 }

@@ -1859,6 +1859,7 @@ pub fn meta_json() -> Value {
                     AE::FinalDamage(v) => ("final_damage", v, None),
                     AE::AddElement(t, v, _) => ("add_element", v, Some(t.name())),
                     AE::AmmoEfficiency(v) => ("ammo_efficiency", v, None),
+                    AE::FlatCritChance(v) => ("flat_crit_chance", v, None),
                     AE::ExtraHit { element, fraction, .. } => ("extra_hit", fraction, Some(element.name())),
                 };
                 json!({ "kind": kind, "value": v, "element": element })
@@ -5459,7 +5460,12 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // Resupply is 20/30/40/50% on Sniper Rifles. `resolve` is the one function
     // handed both the ability and the weapon, so nothing downstream has to know
     // what a sniper is.
-    let abilities = wfsim_engine::abilities_data::resolve(&picks, strength, wfsim_engine::weapons_data::spec(&info.id).map_or("", |s| s.class.as_str()));
+    let abilities = wfsim_engine::abilities_data::resolve(
+        &picks,
+        strength,
+        wfsim_engine::weapons_data::spec(&info.id).map_or("", |s| s.class.as_str()),
+        wfsim_engine::weapons_data::spec(&info.id).map_or("", |s| s.slot.as_str()),
+    );
 
     // The published roster PLUS whatever this request brought with it. A
     // custom shadows nothing (`custom_enemies` refuses a published id), so the

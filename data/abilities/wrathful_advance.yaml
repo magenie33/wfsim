@@ -1,0 +1,39 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
+#
+# see notes: mod_arcane_weapon_perk
+
+# A FLAT CRITICAL CHANCE, AND THE CARD SAYS WHERE IT LANDS. VERBATIM (wiki,
+# Wrathful Advance):
+#
+#   The final critical chance applied to melee weapons is a flat value applied
+#   after mods (e.g. a melee weapon with 25% critical chance becomes 225% when
+#   a rank 3 Wrathful Advance is active).
+#
+# So it is neither a bucket term nor a multiplier: +200% is +2.00 added to the
+# finished number, which is worth more the WORSE the weapon's own crit is — the
+# opposite of every crit card in the mod pool.
+#
+# MELEE ONLY, which `requires_slot` enforces rather than a comment: the card
+# says "melee final critical chance" and a gun sees none of it.
+id: wrathful_advance
+name: Wrathful Advance
+frame: Kullervo
+# see notes: which_buffs_replace_each
+family: wrathful_advance
+helminth: false
+requires_slot: melee
+
+# see notes: at_max_rank_100
+value: 2.0
+# see notes: max_rank_at_100
+duration_seconds: 10
+
+effect:
+  kind: flat_crit_chance
+
+unmodelled:
+  - "the TELEPORT and its heavy attack: the ability swaps to melee, charges a heavy attack and strikes the target it jumps to, and this arena has no traversal and no cast to schedule — so what is modelled is the buff the cast leaves behind"
+  - "Kullervo's own passive, which is +75% Heavy Attack Efficiency and +100% Heavy Attack Wind Up speed: a Warframe passive rather than the ability, and this fight has no frame behind it"
+
+source:
+  url: https://wiki.warframe.com/w/Wrathful_Advance

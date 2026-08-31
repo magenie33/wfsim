@@ -37,6 +37,11 @@ pub enum AbilityEffect {
     /// Its own multiplicative bucket, applied ONCE — to the hit and to the
     /// status payload alike, never squared.
     FinalDamage(f64),
+    /// A FLAT CRITICAL CHANCE, added AFTER the mods rather than into their
+    /// bracket — Wrathful Advance's own sentence: *"The final critical chance
+    /// applied to melee weapons is a flat value applied after mods (e.g. a
+    /// melee weapon with 25% critical chance becomes 225%)"*.
+    FlatCritChance(f64),
     /// `+x of ModifiedBase` as this element, NOT entering the elemental
     /// hierarchy. Additive with elemental mods in SIZE, separate from them in
     /// PLACEMENT.
@@ -97,6 +102,12 @@ pub struct AbilityDef {
     /// stack; the buff with the highest Ability Strength will take effect").
     pub family: &'static str,
     pub helminth: bool,
+    /// THE SLOT THIS ABILITY CAN BUFF AT ALL, when its card names one.
+    ///
+    /// Wrathful Advance is *"melee final critical chance"* and pays a gun
+    /// nothing — so a weapon it does not name never sees it, rather than the
+    /// buff being declared unmodelled on the ability and quietly paid anyway.
+    pub requires_slot: Option<&'static str>,
     /// At max rank and 100% Ability Strength.
     pub value: f64,
     /// At max rank and 100% Ability Duration, in seconds.
@@ -181,6 +192,9 @@ struct AbilityFile {
     name: String,
     frame: String,
     family: String,
+    /// See [`AbilityDef::requires_slot`].
+    #[serde(default)]
+    requires_slot: Option<String>,
     #[serde(default)]
     helminth: bool,
     value: f64,
@@ -302,6 +316,7 @@ pub fn all() -> &'static [AbilityDef] {
                         "add_element" => AbilityEffect::AddElement(
                             element("add_element"), v, ef.forced_status),
                         "ammo_efficiency" => AbilityEffect::AmmoEfficiency(v),
+                        "flat_crit_chance" => AbilityEffect::FlatCritChance(v),
                         "extra_hit" => AbilityEffect::ExtraHit {
                             element: element("extra_hit"),
                             fraction: v,
@@ -322,6 +337,7 @@ pub fn all() -> &'static [AbilityDef] {
                 frame: leak(f.frame),
                 family: leak(f.family),
                 helminth: f.helminth,
+                requires_slot: f.requires_slot.map(leak),
                 value: f.value,
                 duration_seconds: f.duration_seconds,
                 effects,
@@ -382,10 +398,16 @@ pub fn resolve(
     picks: &[AbilityPick<'_>],
     strength: f64,
     weapon_class: &str,
+    weapon_slot: &str,
 ) -> Vec<ActiveAbility> {
     let mut best: Vec<(&'static str, f64, ActiveAbility)> = Vec::new();
     for p in picks {
         let Some(def) = get(p.id) else { continue };
+        // AN ABILITY THAT NAMES A SLOT PAYS NO OTHER. Wrathful Advance buys
+        // "melee final critical chance" and a gun sees none of it.
+        if def.requires_slot.is_some_and(|s| s != weapon_slot) {
+            continue;
+        }
         // THE STRENGTH KNOB, applied once per effect and skipped entirely by an
         // ability whose card carries no Strength icon. `value` (the headline)
         // still decides the family contest below, so a buff that ignores
@@ -419,6 +441,7 @@ pub fn resolve(
                     AbilityEffect::AddElement(picked(t), scale(v), f)
                 }
                 AbilityEffect::AmmoEfficiency(v) => AbilityEffect::AmmoEfficiency(scale(v)),
+                AbilityEffect::FlatCritChance(v) => AbilityEffect::FlatCritChance(scale(v)),
                 AbilityEffect::ExtraHit { element, fraction, forced_status } => {
                     AbilityEffect::ExtraHit {
                         element: picked(element),
@@ -470,6 +493,19 @@ pub fn final_mult_at(list: &[ActiveAbility], t: f64) -> f64 {
             _ => None,
         })
         .product()
+}
+
+/// FLAT CRITICAL CHANCE running at `t` — added after the mods, never into
+/// their bracket. Two sources would add, the way two of anything here do.
+pub fn flat_crit_at(list: &[ActiveAbility], t: f64) -> f64 {
+    list.iter()
+        .filter(|a| a.live_at(t))
+        .flat_map(|a| a.effects.iter())
+        .filter_map(|e| match *e {
+            AbilityEffect::FlatCritChance(v) => Some(v),
+            _ => None,
+        })
+        .sum()
 }
 
 /// Which of the ADD-ELEMENT buffs are running at `t`, as (element, fraction of
@@ -617,7 +653,7 @@ mod tests {
             AbilityPick { id: "roar_helminth", duration_seconds: None, element: None },
             AbilityPick { id: "roar", duration_seconds: None, element: None },
         ];
-        let live = resolve(&picks, 1.0, "");
+        let live = resolve(&picks, 1.0, "", "melee");
         assert_eq!(live.len(), 1);
         assert_eq!(live[0].id, "roar");
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
@@ -627,7 +663,7 @@ mod tests {
         // a 200%-strength Helminth Roar (0.60) beats a 100% Rhino's (0.50).
         // Same call, different strengths, is the closest this can get to two
         // players — and it is what the field means.
-        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_seconds: None, element: None }], 2.0, "");
+        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_seconds: None, element: None }], 2.0, "", "melee");
         assert!(faction_bonus_at(&solo, 0.0) > 0.5);
     }
 
@@ -642,7 +678,7 @@ mod tests {
             AbilityPick { id: "freeze_force", duration_seconds: None, element: None },
             AbilityPick { id: "xatas_whisper", duration_seconds: None, element: None },
         ];
-        let live = resolve(&picks, 1.0, "");
+        let live = resolve(&picks, 1.0, "", "melee");
         assert_eq!(live.len(), 5);
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
         assert!((final_mult_at(&live, 0.0) - 3.0).abs() < 1e-9);
@@ -706,6 +742,41 @@ mod tests {
 
     /// A DURATION IS A DURATION. The buff bar is not consulted; these start at
     /// the first shot and stop, which is what the page's control means.
+    /// WRATHFUL ADVANCE IS A FLAT CRITICAL CHANCE, AND A GUN NEVER SEES IT.
+    ///
+    /// *"The final critical chance applied to melee weapons is a flat value
+    /// applied AFTER mods (e.g. a melee weapon with 25% critical chance becomes
+    /// 225% when a rank 3 Wrathful Advance is active)"* — so +200% is +2.00 on
+    /// the finished number, and the subsumed version is half of it: *"melee
+    /// critical chance bonus reduced to 25% / 50% / 75% / 100%"*.
+    ///
+    /// THE SLOT IS THE GATE. The card says MELEE, so a rifle resolves the pick
+    /// to nothing at all rather than the buff being declared and paid anyway.
+    #[test]
+    fn wrathful_advance_is_flat_melee_crit_and_a_gun_resolves_none_of_it() {
+        let at = |id: &'static str, slot: &str| {
+            let picks = [AbilityPick { id, duration_seconds: None, element: None }];
+            flat_crit_at(&resolve(&picks, 1.0, "hammer", slot), 0.0)
+        };
+        assert_eq!(at("wrathful_advance", "melee"), 2.0, "Kullervo's own is +200%");
+        assert_eq!(at("wrathful_advance_helminth", "melee"), 1.0, "subsumed is half");
+        assert_eq!(at("wrathful_advance", "primary"), 0.0, "a gun is not what the card names");
+
+        // …AND ABILITY STRENGTH MOVES IT, the way it moves every other value
+        // whose card carries the Strength icon.
+        let picks = [AbilityPick { id: "wrathful_advance", duration_seconds: None, element: None }];
+        assert_eq!(flat_crit_at(&resolve(&picks, 1.5, "hammer", "melee"), 0.0), 3.0);
+        // …and it ends when the buff does. An unset duration is the page's
+        // WHOLE FIGHT, so the ten seconds the card states have to be asked for.
+        let ten = [AbilityPick {
+            id: "wrathful_advance",
+            duration_seconds: Some(10.0),
+            element: None,
+        }];
+        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee"), 9.0), 2.0);
+        assert_eq!(flat_crit_at(&resolve(&ten, 1.0, "hammer", "melee"), 11.0), 0.0);
+    }
+
     #[test]
     fn a_duration_ends_the_buff_and_whole_fight_never_does() {
         let live = resolve(
@@ -715,6 +786,7 @@ mod tests {
             ],
             1.0,
             "",
+            "melee",
         );
         assert_eq!(faction_bonus_at(&live, 29.9), 0.5);
         assert_eq!(faction_bonus_at(&live, 30.0), 0.0);
@@ -766,7 +838,7 @@ mod tests {
         assert_eq!(def.elements.len(), 10, "four primaries and six combinations");
         let pick = |e: Option<&'static str>| {
             let live =
-                resolve(&[AbilityPick { id: "valence_formation", duration_seconds: None, element: e }], 1.0, "rifle");
+                resolve(&[AbilityPick { id: "valence_formation", duration_seconds: None, element: e }], 1.0, "rifle", "melee");
             added_elements_at(&live, 0.0)
         };
         // A COMBINATION SURVIVES THE PICK. Gas is the measured case and is not
@@ -789,12 +861,13 @@ mod tests {
             &[AbilityPick { id: "valence_formation", duration_seconds: None, element: Some("gas") }],
             2.5,
             "rifle",
+            "melee",
         );
         assert_eq!(added_elements_at(&strong, 0.0), vec![(DamageType::Gas, 2.0)]);
         // …AND THE CONTROL, because an assertion that a number did not move
         // passes just as well on a build where the knob is wired to nothing:
         // Roar's row DOES carry the Strength icon, and 50% x 2.5 is 125%.
-        let roar = resolve(&[AbilityPick { id: "roar", duration_seconds: None, element: None }], 2.5, "rifle");
+        let roar = resolve(&[AbilityPick { id: "roar", duration_seconds: None, element: None }], 2.5, "rifle", "melee");
         assert!((faction_bonus_at(&roar, 0.0) - 1.25).abs() < 1e-9, "{}", faction_bonus_at(&roar, 0.0));
     }
 }
@@ -833,12 +906,13 @@ mod tests {
         //    that predates the picker.
         let def = get("resupply").expect("resupply");
         assert_eq!(def.elements.len(), 10, "the gear wheel");
-        let dflt = resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "rifle");
+        let dflt = resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "rifle", "melee");
         assert_eq!(extra_hits_at(&dflt, 0.0)[0].element, DamageType::Heat, "the first choice");
         let cold = resolve(
             &[AbilityPick { id: "resupply", duration_seconds: None, element: Some("cold") }],
             1.0,
             "rifle",
+            "melee",
         );
         assert_eq!(extra_hits_at(&cold, 0.0)[0].element, DamageType::Cold);
         // …and a chosen element is ignored where the ability fixes one.
@@ -846,13 +920,14 @@ mod tests {
             &[AbilityPick { id: "xatas_whisper", duration_seconds: None, element: Some("cold") }],
             1.0,
             "rifle",
+            "melee",
         );
         assert_eq!(extra_hits_at(&fixed, 0.0)[0].element, DamageType::Void);
 
         // 2. A WEAPON CLASS that doubles it: 25% on a rifle, 50% on a sniper.
         let rifle = extra_hits_at(&dflt, 0.0)[0].fraction;
         let sniper = extra_hits_at(
-            &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "sniper"),
+            &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "sniper", "melee"),
             0.0,
         )[0]
         .fraction;
@@ -863,7 +938,7 @@ mod tests {
         //    (Toxin status chance)" and Resupply grants "the selected Elemental
         //    Damage and Status Effect"; Xata's rolls.
         for (id, forced) in [("toxic_lash", true), ("resupply", true), ("xatas_whisper", false)] {
-            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], 1.0, "rifle");
+            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], 1.0, "rifle", "melee");
             assert_eq!(extra_hits_at(&live, 0.0)[0].forced_status, forced, "{id}");
         }
 
