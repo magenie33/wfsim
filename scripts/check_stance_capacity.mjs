@@ -39,6 +39,17 @@ const r = await evaluate(`(async () => {
   renderMods(); await sleep(400);
   out.polarized = cap();
   out.polarizedForma = forma();
+  // …AND THE AUTO PLAN SPENDS THE GRANT. Two Umbra mods in a build that fits
+  // without an Umbra Forma: planning against the weapon's capacity alone buys
+  // polarizations it does not need and reaches for the scarce item to do it.
+  const build = ['sacrificial_steel', 'sacrificial_pressure', 'killing_blow', 'organ_shatter',
+                 'seismic_wave', 'corrupt_charge', 'gladiator_might', 'primed_fever_strike'];
+  build.forEach((id, i) => { slots[i].mod = id; });
+  slots[STANCE].mod = 'shattering_storm'; slots[STANCE].pol = null;
+  renderMods(); await sleep(400);
+  autoForma(); renderMods(); await sleep(400);
+  out.autoCap = cap();
+  out.autoForma = forma();
   return out;
 })()`);
 
@@ -52,5 +63,11 @@ check("a matching stance doubles it", r.matched === "0 / 70", r.matched);
 check("...and it is still free", r.matchedForma === "0 Forma", r.matchedForma);
 check("polarizing the slot buys the double", r.polarized === "0 / 70", r.polarized);
 check("...for exactly one Forma", r.polarizedForma === "1 Forma", r.polarizedForma);
+
+// …AND THE AUTO PLAN AGREES WITH THE ENGINE, which answers 5 regular Forma and
+// no Umbra for this build at a capacity of 70. Planning against 60 needs seven
+// polarizations and spends an Umbra Forma on one of them.
+check("the auto plan spends the stance's capacity", r.autoCap === "68 / 70", r.autoCap);
+check("...and no Umbra Forma it does not need", r.autoForma === "5 Forma", r.autoForma);
 
 process.exit(0);

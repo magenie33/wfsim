@@ -1,19 +1,22 @@
 id: sacrifice
 name: Sacrificial
-# THE SET BONUS IS OUT OF SCOPE, and that is a statement about the ARENA rather
-# than about the mods. The two Sacrificial cards each carry their own
-# `x1.33 Damage to Sentients`, and the SET bonus on top of them is "+X% Damage
-# to Sentients" per equipped member — so every part of the bonus is conditional
-# on a faction no target in this roster belongs to.
+# THE SET ENHANCES ITS OWN MEMBERS, which no other set here does. VERBATIM
+# (wiki, Sacrificial Set):
 #
-# It is declared rather than omitted for the reason `data/README.md` gives: a
-# set the loader cannot find is an error, and a set it finds and cannot pay is
-# a fact a reader can check. `kind` falls through to `SetBonusKind::Unmodeled`,
-# which is the honest arm — there is nothing here to compute.
+#   The Sacrificial Set enhances all equipped mods within the set.
+#   Increases the effects of both mods by 25% when both are equipped together.
+#
+# COMPLETION, NOT PER MEMBER: one card alone is worth its face, and the pair are
+# worth 25% more EACH — Sacrificial Steel's +220% critical chance becomes +275%
+# and Sacrificial Pressure's +110% melee damage becomes +137.5%.
+#
+# THE `x1.33 Damage to Sentients` ON EACH CARD IS NOT THIS. It is the mods' own
+# second stat, out of scope because no target in this roster is a Sentient, and
+# reading it as the set bonus is what left the pair paying each other nothing.
 members: 2
 bonus:
-  kind: damage_to_sentients
-  per_mod: 0.0
+  kind: enhances_own_mods
+  per_mod: 0.25
 
 source:
   url: https://wiki.warframe.com/w/Sacrificial_Set

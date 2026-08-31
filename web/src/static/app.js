@@ -8764,7 +8764,10 @@ function formaCount() {
 // biggest mods still unmatched instead of leaving them unspent.
 function autoForma() {
   const w = $("weapon").value;
-  const cap = capOf(w);
+  // …INCLUDING WHAT THE STANCE HANDS BACK. Planning against the weapon's own
+  // capacity alone buys polarizations the build does not need — and reaches for
+  // an Umbra Forma to do it, which is the one item this plan is meant to spare.
+  const cap = capOf(w) + stanceGrant();
   const filled = [];
   // …AND NOT THE STANCE SLOT, which buys CAPACITY rather than a discount: its
   // Forma is `engine::mods::best_stance_plan`'s decision, and clearing its
@@ -8777,12 +8780,26 @@ function autoForma() {
   const matched = new Set(), free = new Set();
   for (const { i, m } of order) { const k = pool.indexOf(m.polarity); if (k >= 0) { pool.splice(k, 1); matched.add(i); free.add(i); } }
   const drainOf = () => filled.reduce((s, x) => s + (matched.has(x.i) ? Math.ceil(bd(x) / 2) : bd(x)), 0);
-  const polarize = () => { const next = order.find(({ i }) => !matched.has(i)); if (!next) return false; matched.add(next.i); return true; };
-  while (drainOf() > cap) { if (!polarize()) break; }
+  // AS LITTLE UMBRA AS POSSIBLE, BUT NEVER FAIL FOR WANT OF IT — the rule
+  // `engine::mods::fit` follows, and the page has to follow it too or the two
+  // answer differently on the same build. Umbra Forma is the scarce item, so a
+  // pass that fits without one is taken over a cheaper-looking one that spends
+  // it: an Umbra mod simply pays full drain until nothing else will do.
+  const polarize = (umbra) => {
+    const next = order.find(({ i, m }) => !matched.has(i) && (umbra || m.polarity !== "Umbra"));
+    if (!next) return false;
+    matched.add(next.i);
+    return true;
+  };
+  while (drainOf() > cap) { if (!polarize(false)) break; }
+  while (drainOf() > cap) { if (!polarize(true)) break; }
   // The innate pool is FREE, so only the slots this plan had to BUY count
   // against the floor — the same order the engine works in, where the pool is
-  // spent before `at_least` is looked at.
-  while (matched.size - free.size < formaMin(w)) { if (!polarize()) break; }
+  // spent before `at_least` is looked at. It spends REGULAR polarizations by
+  // preference for the same reason the fit above does.
+  while (matched.size - free.size < formaMin(w)) {
+    if (!polarize(false) && !polarize(true)) break;
+  }
   for (const { i, m } of filled) slots[i].pol = matched.has(i) ? m.polarity : null;
   // Innate polarities are never destroyed by the auto plan (blanking one
   // costs a Forma): leftovers go back onto mod-less slots — preferring

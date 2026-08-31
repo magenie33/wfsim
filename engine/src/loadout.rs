@@ -2412,6 +2412,35 @@ pub enum BuffGrant {
     InitialCombo,
 }
 
+impl ModEffect {
+    /// WHAT A SET THAT ENHANCES ITS OWN MEMBERS DOES TO ONE OF THEM.
+    ///
+    /// *"Increases the effects of both mods by 25% when both are equipped
+    /// together"* (wiki, Sacrificial Set) — so the card's own numbers grow and
+    /// nothing else about it moves.
+    ///
+    /// `None` IS THE LOUD ANSWER: a kind this cannot scale is a member whose
+    /// bonus would silently go unpaid, and `every_self_scaling_member_can_be_
+    /// scaled` refuses one rather than letting the set pay it nothing.
+    #[must_use]
+    pub fn scaled(&self, k: f64) -> Option<ModEffect> {
+        use ModEffect::*;
+        Some(match self {
+            BaseDamage(v) => BaseDamage(*v * k),
+            CritChance(v) => CritChance(*v * k),
+            CritChanceHeavyDoubled(v) => CritChanceHeavyDoubled(*v * k),
+            CritDamage(v) => CritDamage(*v * k),
+            StatusChance(v) => StatusChance(*v * k),
+            Multishot(v) => Multishot(*v * k),
+            FireRate(v) => FireRate(*v * k),
+            // …AND THE FACTION HALF, because the set says BOTH mods' effects
+            // and a card's second stat is one of its effects.
+            FactionDamage(f, v) => FactionDamage(*f, *v * k),
+            _ => return None,
+        })
+    }
+}
+
 impl BuffGrant {
     /// The `disables:` key this grant feeds — the SAME vocabulary a locking
     /// mod writes ("multishot", "fire_rate"). Derived rather than listed: a
@@ -4076,7 +4105,18 @@ pub fn resolve_for(
                 disabled.push(d);
             }
         }
+        // …AND A SET THAT ENHANCES ITS OWN MEMBERS scales what this one grants.
+        // Completion, not per member: the Sacrificial pair is worth 25% more
+        // EACH once both are in, and one alone is worth its face.
+        let self_scale = crate::mod_sets_data::self_scale_for(m, mods);
         for e in &m.effects {
+            let boosted;
+            let e = if self_scale > 1.0 {
+                boosted = e.scaled(self_scale);
+                boosted.as_ref().unwrap_or(e)
+            } else {
+                e
+            };
             // Unwrap the player gates HERE so no arm below has to know about
             // them: a gated effect either becomes its inner effect or vanishes.
             // `aiming` is the older, bare form of the same idea; the Tenno one
@@ -7129,6 +7169,62 @@ mod tests {
     /// same `(combo - 1)` scaling and the same bracket the mod buys, at 10% a
     /// piece. THREE of the six members are Warframe mods, so 30% is the ceiling
     /// a weapon build can reach here and the set file says so.
+    /// A SET THAT ENHANCES ITS OWN MEMBERS PAYS ON COMPLETION, and one card
+    /// alone is worth its face.
+    ///
+    /// *"The Sacrificial Set enhances all equipped mods within the set …
+    /// Increases the effects of both mods by 25% when both are equipped
+    /// together"* (wiki). So Sacrificial Steel's +220% critical chance is
+    /// +275% beside Sacrificial Pressure, whose +110% melee damage is +137.5%
+    /// — each grown by the other's presence and by nothing else.
+    #[test]
+    fn the_sacrificial_pair_enhance_each_other_and_neither_alone() {
+        let pool = crate::mods_data::pool_for_weapon("magistar");
+        let pick = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
+        let base = WeaponBase::from_data("magistar", false, &[]);
+        let of = |mods: &[&ModDef]| {
+            let p = resolve(&base, mods, StackPolicy::Emergent);
+            (p.crit_chance / p.base_crit_chance - 1.0, p.base_damage_bonus)
+        };
+        let (cc_alone, _) = of(&[pick("sacrificial_steel")]);
+        let (_, bd_alone) = of(&[pick("sacrificial_pressure")]);
+        assert!((cc_alone - 2.2).abs() < 1e-9, "alone it is its face: {cc_alone}");
+        assert!((bd_alone - 1.1).abs() < 1e-9, "alone it is its face: {bd_alone}");
+
+        let (cc_pair, bd_pair) = of(&[pick("sacrificial_steel"), pick("sacrificial_pressure")]);
+        assert!((cc_pair - 2.75).abs() < 1e-9, "+220% becomes +275%: {cc_pair}");
+        assert!((bd_pair - 1.375).abs() < 1e-9, "+110% becomes +137.5%: {bd_pair}");
+    }
+
+    /// …AND EVERY MEMBER OF SUCH A SET HAS EFFECTS THE SCALING CAN REACH.
+    ///
+    /// `ModEffect::scaled` answers `None` for a kind it cannot grow, and a
+    /// member carrying one would have that half of its card silently unpaid by
+    /// the set — which is the failure this whole family of bugs is made of.
+    #[test]
+    fn every_self_scaling_member_can_be_scaled() {
+        for set in crate::mod_sets_data::sets() {
+            if set.kind != crate::mod_sets_data::SetBonusKind::SelfScaling {
+                continue;
+            }
+            for w in crate::weapons_data::all() {
+                for m in crate::mods_data::pool_for_weapon(&w.id) {
+                    if m.set != Some(set.id) {
+                        continue;
+                    }
+                    for e in &m.effects {
+                        assert!(
+                            e.scaled(1.25).is_some(),
+                            "{} carries {e:?}, which {} cannot enhance",
+                            m.id,
+                            set.id,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     /// A FLAT BASE ADD REACHES A SLAM AT ALL, which is the half that was
     /// missing, and it reaches it ONCE.
     ///

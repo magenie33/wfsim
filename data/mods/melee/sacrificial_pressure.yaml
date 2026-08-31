@@ -13,8 +13,15 @@ effects:
   - kind: base_damage_bonus
     rank0: 0.1
     rankMax: 1.1
-  # x1.33 Damage to Sentients — no target in this roster is one.
-  - kind: out_of_scope
+  # x1.33 DAMAGE TO SENTIENTS — a condition about the TARGET, so it is
+  # SIMULATED rather than declared: `Faction::Sentient` is a faction this engine
+  # already resolves, and the bonus pays whatever the fight's target is. No
+  # ruler's body is a Sentient today, so it pays zero there and would pay 33%
+  # the day one is fought.
+  - kind: faction_damage_bonus
+    faction: sentient
+    rank0: 0.03
+    rankMax: 0.33
 
 family: pressure_point
 

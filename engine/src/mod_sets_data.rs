@@ -25,6 +25,13 @@ pub enum SetBonusKind {
     /// own bracket and its own `(combo - 1)` scaling, bought with set pieces
     /// instead of a mod slot.
     CritChancePerCombo,
+    /// A SET THAT ENHANCES ITS OWN MEMBERS (Sacrificial): *"The Sacrificial Set
+    /// enhances all equipped mods within the set … Increases the effects of
+    /// both mods by 25% when both are equipped together"* (wiki).
+    ///
+    /// COMPLETION, NOT PER MEMBER — one card alone is worth its face and
+    /// nothing more, which is the opposite shape of every other set here.
+    SelfScaling,
     /// Parsed but not modeled — the mod set still loads.
     Unmodeled,
 }
@@ -69,6 +76,7 @@ fn all() -> &'static [ModSetDef] {
                 kind: match f.bonus.kind.as_str() {
                     "crit_tier_upgrade_chance" => SetBonusKind::CritTierUpgrade,
                     "crit_chance_per_combo" => SetBonusKind::CritChancePerCombo,
+                    "enhances_own_mods" => SetBonusKind::SelfScaling,
                     _ => SetBonusKind::Unmodeled,
                 },
                 per_mod: f.bonus.per_mod,
@@ -77,6 +85,21 @@ fn all() -> &'static [ModSetDef] {
         out.sort_by_key(|s| s.id);
         out
     })
+}
+
+/// THE FACTOR A SELF-SCALING SET APPLIES TO ONE OF ITS OWN MEMBERS, given the
+/// whole equipped list — 1.0 when the mod is in no such set, or the set is not
+/// complete.
+///
+/// COMPLETION IS THE CONDITION, and it is what makes this set's shape different
+/// from every other one here: *"when both are equipped together"*.
+pub fn self_scale_for(m: &crate::loadout::ModDef, equipped: &[&crate::loadout::ModDef]) -> f64 {
+    let Some(set) = m.set.and_then(set_def) else { return 1.0 };
+    if set.kind != SetBonusKind::SelfScaling {
+        return 1.0;
+    }
+    let have = equipped.iter().filter(|x| x.set == Some(set.id)).count();
+    if have >= set.members as usize { 1.0 + set.per_mod } else { 1.0 }
 }
 
 /// Every set in the data, by id.

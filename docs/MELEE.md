@@ -198,6 +198,25 @@ than the mode: a Tennokai heavy on a light combo is one too, which is why a
 build converting one swing in four climbs the counter Blood Rush reads more
 slowly than its two chances suggest.
 
+### The Sacrificial pair enhance each other
+
+*"The Sacrificial Set enhances all equipped mods within the set. Increases the
+effects of both mods by 25% when both are equipped together"* — a SET that grows
+its own members, which no other set in the data does. It is COMPLETION and not
+per member: one card alone is worth its face, and the pair are worth 25% more
+each (Sacrificial Steel's +220% crit chance becomes +275%, Sacrificial
+Pressure's +110% melee damage becomes +137.5%).
+
+`ModEffect::scaled` is what grows a card's numbers, and it answers `None` for a
+kind it cannot reach — a member carrying one would have that half silently
+unpaid, so a test walks every self-scaling set's members and refuses it.
+
+**AND THE `x1.33 DAMAGE TO SENTIENTS` ON EACH CARD IS SIMULATED**, not declared:
+`Faction::Sentient` is a faction this engine already resolves, so the bonus pays
+whatever the fight's target is — zero against every body in the roster today,
+and 33% the day a Sentient is fought. A condition about the TARGET is simulated;
+reading it as the set bonus is what left the pair paying each other nothing.
+
 ### Condition Overload (melee)
 
 `Total = Base x [1 + Damage Mods + (CO x n)] x (1 + Elemental Mods)`, +80% per

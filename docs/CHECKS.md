@@ -260,6 +260,12 @@ It is a page check rather than an engine one because the page owns this
 arithmetic: `capacityUsed()` and its Forma bill MIRROR `engine::mods`, so an
 engine that is right and a mirror that is not still reads wrong to everyone.
 
+It also asserts the AUTO PLAN, because that mirror drifted the same way twice:
+planning against the weapon's own capacity and not the stance's grant buys
+polarizations the build does not need, and reaches for an UMBRA FORMA to do it —
+the one item `engine::mods::fit` is written to spare. The engine answers five
+regular Forma and no Umbra for that build; the page has to say the same.
+
 ## `check_build_size`
 
 How full a searched build must be is a RANGE
