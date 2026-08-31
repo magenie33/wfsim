@@ -10422,6 +10422,52 @@ mod buff_event_cards {
         );
     }
 
+    /// ONE CARD, ONE ANSWER: an arcane's specs must all want the same thing.
+    ///
+    /// A card is one per ARCANE — Primary Frostbite's crit damage and multishot
+    /// come off the same Cold proc and are one count by construction — so its
+    /// events are read off one spec. An arcane whose parts wanted DIFFERENT
+    /// things would break that: the run drops each part on its own trigger,
+    /// while the card can only be greyed or not, so half of it would keep
+    /// working under a badge saying it does not.
+    ///
+    /// No arcane is shaped that way today. This is what makes that a fact
+    /// rather than a coincidence — and the fix, when it fails, is a second card
+    /// rather than a wider event list, because a wider list would grey a card
+    /// whose other half still fires.
+    #[test]
+    fn an_arcanes_buffs_all_want_the_same_thing() {
+        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
+        let mut split: Vec<String> = Vec::new();
+        for info in weapons() {
+            let base = WeaponBase::from_data(&info.id, true, &[]);
+            for pool_id in &info.arcane_pools {
+                for def in wfsim_engine::arcanes_data::slot_pool(pool_id) {
+                    let fx = def.fx(def.max_rank, StackPolicy::Emergent, base.traits, &tenno);
+                    let mut by_owner: std::collections::BTreeMap<&str, Vec<_>> = Default::default();
+                    for b in &fx.buffs {
+                        let owner = if b.owner.is_empty() { fx.id.as_str() } else { &b.owner };
+                        by_owner.entry(owner).or_default().push(b.trigger);
+                    }
+                    for (arcane_id, trigs) in by_owner {
+                        if trigs.windows(2).any(|w| w[0] != w[1]) {
+                            split.push(format!("{arcane_id}: {trigs:?}"));
+                        }
+                    }
+                }
+            }
+        }
+        split.sort();
+        split.dedup();
+        assert!(
+            split.is_empty(),
+            "these arcanes grant buffs on different triggers under one card —              give each trigger its own card:
+  {}",
+            split.join("
+  ")
+        );
+    }
+
     /// A DENIED CLASS REACHES THE NUMBER, through the ONE parse the simulator
     /// and the optimizer share. Asserted end to end, because "the field parsed"
     /// and "the run obeyed it" are the two halves that keep coming apart here.
