@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 4151
+submissions: 4182
 engine: 18644c914fcb877cd4d13daa63221d734c68b381
 entries:
   - weapon: acceltra_prime
@@ -119,6 +119,12 @@ entries:
     exilus: trick_mag
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, accelerated_isotope, magnetic_might, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
+    score: 5.516748268864722
+    fp: 129bf17553a01a56
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
   - weapon: akarius_prime
     mode: base
     score: 5.417864639294261
@@ -6433,15 +6439,15 @@ entries:
   - weapon: kuva_grattler
     mode: base
     score: 12.666666666666666
-    fp: 897046163b29d90e
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    fp: 508dd3a0150ac842
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     valence: heat
   - weapon: kuva_grattler
     mode: base
     score: 12.666666666666666
-    fp: 508dd3a0150ac842
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    fp: 897046163b29d90e
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     valence: heat
   - weapon: kuva_grattler
@@ -8600,6 +8606,16 @@ entries:
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
+    score: 14.385612756632412
+    fp: 31ea538c2b855054
+    mods: [primed_dual_rounds, modified_munitions, magnetized_cycle, zodiac_shred, riven, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: larkspur_prime
+    mode: base
     score: 14.385316185994297
     fp: 41580aa8d5af2831
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, hypothermic_shell, venomous_clip, primed_combustion_rounds]
@@ -9871,6 +9887,18 @@ entries:
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: perigale_prime
+    mode: base
+    score: 1.7092196164579838
+    fp: 5e30d240f8729ab3
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, rime_rounds, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: perigale_prime
+    mode: base
+    score: 1.2631459500615052
+    fp: 7954870222e073cf
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vile_acceleration, vital_sense, stormbringer, hellfire]
+    arcanes: [fractalized_reset]
   - weapon: phaedra
     mode: base
     score: 24.56807185139574
@@ -10618,6 +10646,26 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
+    score: 25.2304363254384
+    fp: 183aa8d8816c21f6
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 23.666666666666668
+    fp: 57341754fba3ef46
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, accelerated_isotope, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
     score: 22.86153321624092
     fp: 3865cbf029ddc590
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, magnetic_might, primed_heated_charge]
@@ -10630,6 +10678,26 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_encumber]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 21.07096105466248
+    fp: ae64d8937e04d1d2
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, accelerated_isotope, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_encumber]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 16.264298513478646
+    fp: d7a0eaba91718102
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: prisma_dual_decurions
     mode: base
     score: 17.759013664478974

@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 4151
+submissions: 4182
 engine: 18644c914fcb877cd4d13daa63221d734c68b381
 entries:
   - weapon: acceltra_prime
@@ -5053,6 +5053,16 @@ entries:
       malus: critical_chance
       rolls: [1.1, 1.1, 0.9]
   - weapon: larkspur_prime
+    mode: base
+    score: 29.333333333333332
+    fp: ccb82772a1aa90cc
+    mods: [primed_dual_rounds, modified_munitions, magnetized_cycle, zodiac_shred, riven, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: larkspur_prime
     mode: alternate
     score: 27.21523617032388
     fp: d169b3e449de642f
@@ -5760,6 +5770,12 @@ entries:
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: perigale_prime
+    mode: base
+    score: 20.90403240155337
+    fp: 076c41d60cecb5eb
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, rime_rounds, thermite_rounds]
+    arcanes: [primary_crux]
   - weapon: phaedra
     mode: base
     score: 73.05836178653144
@@ -6314,6 +6330,26 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
+    score: 25.25036388989161
+    fp: 99776d07a25f9f3e
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 23.72812178470051
+    fp: fa9559f165a599fe
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, accelerated_isotope, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
     score: 22.86153321624092
     fp: c942c3bc6d047fb8
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, magnetic_might, primed_heated_charge]
@@ -6326,6 +6362,26 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_encumber]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 21.021149701079626
+    fp: 3115b2bf61834dda
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, accelerated_isotope, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_encumber]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 16.317994902602315
+    fp: d1ec67ad15bd396a
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: prisma_dual_decurions
     mode: base
     score: 62.92420114756653

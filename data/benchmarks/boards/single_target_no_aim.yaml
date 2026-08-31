@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4151
+submissions: 4182
 engine: 18644c914fcb877cd4d13daa63221d734c68b381
 entries:
   - weapon: acceltra_prime
@@ -1179,6 +1179,16 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 3.179627354871041
+    fp: a9efd5a4aba4945b
+    mods: [galvanized_chamber, serration, vital_sense, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [critical_chance, multishot]
+      rolls: [1.1, 1.1]
   - weapon: burston_prime
     mode: cycle
     score: 1.930073022672166
@@ -3621,6 +3631,13 @@ entries:
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
+    mode: cycle
+    score: 3.5815232520660407
+    fp: 7ac121c4c0771701
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, jolt, pathogen_rounds, scorch]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+  - weapon: laetum
     mode: base
     score: 3.581478594249574
     fp: 38d1f39bfac05d7c
@@ -4014,6 +4031,16 @@ entries:
     fp: f812e529c3a2e994
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, secondary_fortifier]
+  - weapon: larkspur_prime
+    mode: base
+    score: 1.981103908870168
+    fp: 839f3651131e4949
+    mods: [primed_dual_rounds, modified_munitions, magnetized_cycle, zodiac_shred, riven, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: lato_prime
     mode: cycle
     score: 0.2860111023484903
@@ -4500,6 +4527,18 @@ entries:
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: perigale_prime
+    mode: base
+    score: 0.12628968682565447
+    fp: 8826891eb1408922
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vile_acceleration, vital_sense, stormbringer, hellfire]
+    arcanes: [fractalized_reset]
+  - weapon: perigale_prime
+    mode: base
+    score: 0.0635814688910118
+    fp: 4ae2ed4a14af74a2
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, rime_rounds, thermite_rounds]
+    arcanes: [primary_crux]
   - weapon: phaedra
     mode: base
     score: 4.949862605389908
@@ -4984,11 +5023,41 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: prisma_angstrum
     mode: cycle
+    score: 6.233407238881812
+    fp: 1ab8f71f453853d5
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, accelerated_isotope, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_encumber]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 5.662379127058285
+    fp: fc7f61f73f0476e7
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, riven, jolt, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: prisma_angstrum
+    mode: cycle
     score: 4.958565370028997
     fp: a28afd0197c27eee
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [cascadia_flare]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 4.094549353322771
+    fp: 6ffc2496808d15fb
+    mods: [galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, riven, jolt, pistol_pestilence, primed_heated_charge]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, reload_speed]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: prisma_dual_decurions
     mode: base
     score: 2.676499035606708
@@ -6413,6 +6482,16 @@ entries:
       bonuses: [critical_chance, critical_damage, damage]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 4.6416593413676175
+    fp: aff4e12f9c2147d2
+    mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, magnetic_capacity, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [critical_chance, critical_damage, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: torid
     mode: cycle
     score: 4.623372357136033
