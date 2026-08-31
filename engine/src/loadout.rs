@@ -4903,16 +4903,6 @@ pub fn resolve_for(
         .filter(|s| s.kind == crate::mod_sets_data::SetBonusKind::CritChancePerCombo)
         .map(|s| s.per_mod)
         .sum();
-    // …AND NIRA'S SET IS A SLAM MULTIPLIER, in Seismic Wave's own bucket:
-    // *"Nira's Set bonus is additive to Seismic Wave"* (wiki). Two of its three
-    // members are Warframe mods, so a weapon build reaches one piece.
-    let set_slam_damage: f64 = mods
-        .iter()
-        .filter_map(|m| m.set)
-        .filter_map(crate::mod_sets_data::set_def)
-        .filter(|s| s.kind == crate::mod_sets_data::SetBonusKind::SlamDamage)
-        .map(|s| s.per_mod)
-        .sum();
 
     // DAMAGE FALLOFF, with Projectile Speed moving the whole window — see
     // [`Falloff`] for the two wiki lines that make this the one bucket
@@ -5114,6 +5104,11 @@ pub fn resolve_for(
         // five, and Corrupt Charge halves what you have. The wiki's floor is
         // applied last — *"Melee Combo duration cannot be reduced below 0.1
         // seconds"* — so a build stacking penalties still has a counter.
+        // ZERO IS ITS OWN RULE, and nothing in the roster reaches it: *"A zero or
+        // negative combo duration PREVENTS INCREASING the combo counter"*, which
+        // is a harder stop than a 0.1 s clock. Only a melee RIVEN rolls the
+        // negative that gets there, and there is no melee riven pool yet — so
+        // the floor is the whole of what this build can produce.
         combo_duration_seconds: ((base.combo_duration_seconds + combo_duration_add)
             * combo_duration_mult)
             .max(0.1),
@@ -5139,7 +5134,7 @@ pub fn resolve_for(
         combo_count_chance_on_lifted,
         status_chance_on_lifted,
         heavy_attack_damage: heavy_damage,
-        slam_damage: slam_damage + set_slam_damage,
+        slam_damage,
         no_magazine: base.no_magazine,
         // THE ORB'S GEOMETRY, MODDED — and one of the three distances is NOT.
         //

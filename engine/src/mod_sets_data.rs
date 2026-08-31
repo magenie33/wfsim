@@ -25,11 +25,6 @@ pub enum SetBonusKind {
     /// own bracket and its own `(combo - 1)` scaling, bought with set pieces
     /// instead of a mod slot.
     CritChancePerCombo,
-    /// Slam damage per equipped member (Nira): *"Increase damage from Slam
-    /// Attack by X%"*, and it is ADDITIVE with Seismic Wave rather than a
-    /// second multiplier — *"Nira's Set bonus is additive to Seismic Wave"*
-    /// (wiki, Seismic Wave), which is what puts it in that card's own bucket.
-    SlamDamage,
     /// Parsed but not modeled — the mod set still loads.
     Unmodeled,
 }
@@ -74,7 +69,6 @@ fn all() -> &'static [ModSetDef] {
                 kind: match f.bonus.kind.as_str() {
                     "crit_tier_upgrade_chance" => SetBonusKind::CritTierUpgrade,
                     "crit_chance_per_combo" => SetBonusKind::CritChancePerCombo,
-                    "slam_damage_per_mod" => SetBonusKind::SlamDamage,
                     _ => SetBonusKind::Unmodeled,
                 },
                 per_mod: f.bonus.per_mod,

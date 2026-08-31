@@ -2061,11 +2061,16 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-const INHERITED: [&str; 21] = [
+const INHERITED: [&str; 22] = [
     "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy",
     "disposition", "polarities", "exilus_polarity", "stance_polarity", "riven_family",
     "internal_name", "noise", "magazine", "reload_seconds", "ammo_type",
     "ammo_max", "ammo_pickup", "traits", "deployment", "no_resupply",
+    // THE COMBO COUNTER'S CLOCK IS THE WEAPON'S, not a way of swinging it —
+    // five seconds on almost every melee. A form that does not inherit it reads
+    // ZERO and is floored at 0.1 s, which kills the counter between every pair
+    // of swings: six of the Magistar's seven modes had no counter at all.
+    "combo_duration_seconds",
 ];
 
 /// ...and `deployments` and `valence`, which are MAPS and would need a deep

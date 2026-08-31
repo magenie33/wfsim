@@ -1726,9 +1726,18 @@ fn melee_combo_multiplier(points: f64) -> f64 {
 /// heavy attack emptied the counter — so it is a FLOOR rather than a second
 /// pool, which is what makes "spend it and it comes back" and "build on top of
 /// it" the same number.
-fn melee_combo_points(earned: f64, initial: f64, since_spend_seconds: f64) -> f64 {
-    let floor = initial.min(since_spend_seconds.max(0.0) * INITIAL_COMBO_REGEN_PER_SECOND);
-    earned.max(floor)
+fn melee_combo_points(held: f64, initial: f64, since_spend_seconds: f64) -> f64 {
+    // IT REGENERATES FROM WHAT IS THERE, not from zero: *"Heavy attacks spend
+    // initial combo, which REGENERATES at a rate of 40 combo points per
+    // second"*. Heavy Attack Efficiency is what makes the difference visible —
+    // it leaves points behind, and 40 a second climbs from those toward the
+    // floor rather than racing them from nothing.
+    //
+    // ABOVE THE FLOOR IT ONLY WAITS. Points earned past the initial-combo value
+    // are not regeneration's business; they stand until the counter's own clock
+    // takes them.
+    let regen = since_spend_seconds.max(0.0) * INITIAL_COMBO_REGEN_PER_SECOND;
+    held.max(initial.min(held + regen))
 }
 
 /// KILLING BLOW'S BRACKET — what a `+X% Melee Damage on Heavy Attack` card is
@@ -10748,6 +10757,54 @@ mod melee {
         assert!(flat > 1.1, "the control has to move too: x{flat:.3}");
     }
 
+    /// A FORM INHERITS THE COMBO COUNTER'S CLOCK, and six of seven modes had
+    /// none.
+    ///
+    /// `combo_duration_seconds` is the WEAPON's — five seconds on almost every
+    /// melee — and a form that does not inherit it reads zero, floored at the
+    /// 0.1 s the wiki names. That is a counter that dies between every pair of
+    /// swings: Blood Rush and Weeping Wounds climb nothing, and Heavy Attack
+    /// Efficiency keeps points that are gone before the next one.
+    #[test]
+    fn every_melee_form_carries_the_weapons_combo_clock() {
+        for form in [
+            "magistar", "magistar_forward", "magistar_block", "magistar_block_forward",
+            "magistar_heavy", "magistar_slide", "magistar_heavy_slam",
+        ] {
+            let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let p = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            assert_eq!(p.combo_duration_seconds, 5.0, "{form} lost the counter's clock");
+        }
+    }
+
+    /// HEAVY ATTACK EFFICIENCY SPENDS LESS OF THE COUNTER, and the counter
+    /// regenerates from what is left.
+    ///
+    /// *"40% heavy attack efficiency will change the amount spent to 60% combo
+    /// points … capped at 90%"*, and *"Heavy attacks spend initial combo, which
+    /// REGENERATES at a rate of 40 combo points per second"*. Two rules, one
+    /// number: 90% of a 140-point counter is 126, and 40 a second climbs the
+    /// remaining 14 back inside a fifth of a second.
+    ///
+    /// A HEAVY MODE EARNS NO POINTS, so spending only the earned half spent
+    /// nothing and left the counter at zero — efficiency bought exactly nothing
+    /// in the one family of modes whose cards sell it.
+    #[test]
+    fn heavy_attack_efficiency_keeps_the_counter_and_it_regenerates_from_there() {
+        // Nothing held: the floor fills from zero, which is every build without
+        // an efficiency card.
+        assert_eq!(melee_combo_points(0.0, 140.0, 0.5), 20.0);
+        assert_eq!(melee_combo_points(0.0, 140.0, 3.5), 140.0);
+        // …and 90% efficiency leaves 126 of 140, which is back at the floor in
+        // 0.35 s rather than the 3.5 s a restart would take.
+        assert_eq!(melee_combo_points(126.0, 140.0, 0.35), 140.0);
+        assert_eq!(melee_combo_points(126.0, 140.0, 0.0), 126.0);
+        // ABOVE THE FLOOR IT ONLY WAITS: points earned past the initial-combo
+        // value are not regeneration's business.
+        assert_eq!(melee_combo_points(200.0, 140.0, 5.0), 200.0);
+    }
+
     /// A LIFTED GATE IS SIMULATED, AND WHAT DECIDES IT IS THE CADENCE.
     ///
     /// Enduring Affliction is *"+100% Status Chance on Lifted enemies"* and
@@ -15850,7 +15907,14 @@ pub fn run_once_traced(
             // Counter"* — which on a HEAVY mode is the whole of what the window
             // buys, and on a light one is what makes a free 12x heavy free.
             if ap.spends_combo && !tennokai {
-                combo_points *= ap.heavy_attack_efficiency;
+                // …AND IT SPENDS WHAT THE SWING READ, floor included. The
+                // counter is ONE number: *"40% heavy attack efficiency will
+                // change the amount spent to 60% combo points"*, and the points
+                // an initial-combo floor put there are points like any other.
+                // Spending only the EARNED half left a heavy mode at zero after
+                // every swing — it earns none — so efficiency bought nothing at
+                // all in the one family of modes whose cards sell it.
+                combo_points = combo_now * ap.heavy_attack_efficiency;
                 combo_spent_t = t;
             }
         }

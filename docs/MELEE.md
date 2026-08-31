@@ -105,6 +105,26 @@ did until the two sums became one.
 > a combo reset. Heavy attacks spend initial combo, which regenerates at a rate
 > of 40 combo points per second."*
 
+**THE CLOCK IS THE WEAPON'S, AND A FORM INHERITS IT.** `combo_duration_seconds`
+is five seconds on almost every melee and sits on the weapon entry, so a form
+that does not inherit it reads zero and is floored at the 0.1 s the wiki names —
+a counter that dies between every pair of swings. Six of the Magistar's seven
+modes were in that state: Blood Rush and Weeping Wounds climbed nothing, and
+Heavy Attack Efficiency kept points that were gone before the next swing.
+
+**IT SPENDS WHAT THE SWING READ, AND REGENERATES FROM WHAT IS LEFT.** *"40%
+heavy attack efficiency will change the amount spent to 60% combo points …
+capped at 90%"* and *"Heavy attacks spend initial combo, which REGENERATES at a
+rate of 40 combo points per second"* — so 90% of a 140-point counter is 126, and
+the missing 14 are back in 0.35 s. Spending only the EARNED half spent nothing
+at all in a heavy mode, which earns none: the card sold in that family of modes
+paid zero there. With it, a crowd build carrying Galvanized Reflex's +80 holds
+**8x** between slams instead of 4x.
+
+**A ZERO OR NEGATIVE DURATION IS ITS OWN RULE** — *"prevents increasing the
+combo counter"* — and nothing in the roster reaches it: only a melee riven rolls
+the negative that would, and there is no melee riven pool yet.
+
 **THE FIGHT OPENS WITH IT FULL.** The 40 a second is what a heavy attack owes
 back, not what a player owes on the way in — so the first heavy of the
 engagement already pays the floor, and a half-second fight (one slam) is the
