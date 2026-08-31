@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 4072
+submissions: 4082
 engine: d444fea2de59c78923f7c9c6a39c22f21f45ea6a
 entries:
   - weapon: acceltra_prime
@@ -4821,6 +4821,16 @@ entries:
     score: 26.56706996062563
     fp: 15e453829a5c1eca
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, containment_breach, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: larkspur_prime
+    mode: base
+    score: 24.82599961390115
+    fp: 3ba349c79f6c1b39
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, containment_breach, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
       bonuses: [critical_damage, fire_rate]
