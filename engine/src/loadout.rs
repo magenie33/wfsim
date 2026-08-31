@@ -3697,7 +3697,7 @@ pub struct ProcConv {
 /// slamming from a height of at least 15 meters"* (wiki, Melee).
 ///
 /// A SLAM MODE'S LOOP IS `climb -> slam -> recover`, and the climb is the
-/// player's own time — the same freedom [`crate::dummy::slam_cycle_seconds`]
+/// player's own time — the same freedom [`crate::dummy::heavy_cycle_seconds`]
 /// spends on the combo counter — so it reaches the 15 m that sentence names.
 /// The climb itself is not charged, which is the model's declared gap.
 ///

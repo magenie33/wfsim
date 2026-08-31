@@ -139,17 +139,32 @@ and what has refilled, which is what makes "spend it and it comes back" and
 - **The climb is free.** A slam is launched from mid-air and nothing bounds how
   long the player spends getting there, so the interval is the recovery plus
   whatever ascent is worth waiting through.
-- **…so the wait is priced against the counter.** A heavy slam SPENDS the
-  counter and the counter climbs in steps — `1 + floor(points / 20)`, refilling
-  at 40 initial-combo points a second — so `slam_cycle_seconds` takes the
-  recovery itself or a rung boundary, whichever pays more multiplier per second,
-  and never waits past a rung. Waiting for the FULL refill is the intuitive rule
-  and is usually worse: 110 initial combo is 6x after 2.75 s, which is 2.18
-  multiplier-seconds against the 4.00 the 2x at 0.5 s already pays.
+- **…so the wait is priced against the counter.** See below: the wait is the
+  same decision every heavy mode makes, and here it costs nothing at all,
+  because the climb was the player's own time anyway.
 
-Both facts are DERIVED from what the entry already says — the explosion is a
-`Slam` and the swing spends the counter — rather than declared per weapon, so
-the next slam weapon gets the loop for free.
+The climb and the 150% radius are DERIVED from what the entry already says —
+the explosion is a `Slam` — rather than declared per weapon, so the next slam
+weapon gets the loop for free.
+
+### A HEAVY MODE SWINGS WHEN THE COUNTER IS WORTH SPENDING
+
+Not when the animation allows, which is the same rule for a standing heavy and
+for a slam — `heavy_cycle_seconds`, gated on the swing SPENDING the counter and
+on nothing about the mode.
+
+The counter climbs in STEPS (`1 + floor(points / 20)`, the initial-combo floor
+refilling at 40 a second), so the candidates are the animation's own floor and
+each rung that floor can still reach, ranked by multiplier per second. **Waiting
+for the FULL refill is the intuitive rule and the wrong one**: 110 initial combo
+is 6x after 2.75 s, which is 2.18 multiplier-seconds against the 4.00 that the
+2x at 0.5 s already pays.
+
+It decides real builds in both modes. Three wind-up cards take the Magistar's
+standing heavy to 0.43 s, which is SHORT of the first rung — 17 points is still
+1x, so Corrupt Charge's +30 buys **nothing at all** if the swing goes the moment
+it can, and **x1.7** if it waits the extra 0.07 s. The proxy is multiplier per
+second and it UNDER-states a wait, since Blood Rush reads the same counter.
 
 **A HEAVY ATTACK EARNS NO COMBO POINTS.** *"Connecting with a heavy attack does
 not add to the combo counter"*, and it is the swing's kind that says so rather

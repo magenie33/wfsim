@@ -48,7 +48,7 @@ attack:
   # THE LOOP IS `CLIMB -> SLAM -> RECOVER`, and only the last of the three is a
   # fixed cost. *"Heavy slams do not have any wind up"* (wiki, Melee) — so this
   # swing carries none, unlike the standing heavy attack's 1.2 s — and the climb
-  # is the player's own time, which `dummy::slam_cycle_seconds` spends the way
+  # is the player's own time, which `dummy::heavy_cycle_seconds` spends the way
   # that pays this mode best.
   #
   # ONE SECOND IS A STAND-IN for the landing recovery. Nothing publishes it; it

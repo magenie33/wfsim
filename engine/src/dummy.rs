@@ -1731,21 +1731,25 @@ fn melee_combo_points(earned: f64, initial: f64, since_spend_seconds: f64) -> f6
     earned.max(floor)
 }
 
-/// HOW OFTEN A HEAVY SLAM LOOP CAN SLAM, in seconds.
+/// HOW OFTEN A HEAVY MODE SWINGS, in seconds — and it is not always as soon as
+/// it can.
 ///
-/// The cycle is `climb -> slam -> recover`, and only the recovery is fixed:
-/// *"heavy slams do not have any wind up"* (wiki, Melee), so the slam is
-/// instant and how long the player spends getting airborne is theirs to
-/// choose. This takes the choice most favourable to the mode — the counter it
-/// is about to spend climbs in STEPS (`1 + floor(points / 20)`), so the
-/// candidates are the recovery itself and each rung the floor can still reach,
-/// and waiting past a rung buys nothing.
+/// A HEAVY ATTACK SPENDS THE COUNTER, so the swing is worth waiting for when
+/// the counter is about to be worth more. The counter climbs in STEPS
+/// (`1 + floor(points / 20)`, refilling at 40 a second), so the candidates are
+/// the animation's own floor and each rung the initial-combo floor can still
+/// reach — and waiting PAST a rung buys nothing, which is why "wait for the
+/// full refill" is the intuitive rule and the wrong one.
+///
+/// IT IS DERIVED FROM SPENDING THE COUNTER, not from the mode: a heavy slam
+/// pays nothing for the wait because its climb was free time anyway, and a
+/// standing heavy pays it as idle seconds. Both are the same decision.
 ///
 /// MULTIPLIER PER SECOND IS THE PROXY, and it UNDER-states a wait: Blood Rush
 /// reads the same counter and is not in it.
-fn slam_cycle_seconds(recovery_seconds: f64, earned: f64, initial: f64) -> f64 {
+fn heavy_cycle_seconds(floor_seconds: f64, earned: f64, initial: f64) -> f64 {
     let per_second = |t: f64| melee_combo_multiplier(melee_combo_points(earned, initial, t)) / t;
-    let mut best = recovery_seconds.max(1e-6);
+    let mut best = floor_seconds.max(1e-6);
     let mut best_rate = per_second(best);
     let rungs = (initial / MELEE_COMBO_POINTS_PER_TIER).floor().max(0.0) as u32;
     for k in 1..=rungs {
@@ -10626,25 +10630,25 @@ mod melee {
         monte_carlo(&p, 24, 909)
     }
 
-    /// A HEAVY SLAM WAITS FOR THE RUNG IT CAN REACH, AND NOT A MOMENT PAST IT.
+    /// A HEAVY WAITS FOR THE RUNG IT CAN REACH, AND NOT A MOMENT PAST IT.
     ///
-    /// The climb is the player's own time and the counter pays in STEPS, so the
-    /// most favourable cycle is a rung boundary or the bare recovery — never
-    /// the full refill, which is what a build with a deep initial combo would
-    /// wait for if the wait were priced linearly.
+    /// The counter pays in STEPS, so the most favourable cycle is a rung
+    /// boundary or the animation's own floor — never the full refill, which is
+    /// what a build with a deep initial combo would wait for if the wait were
+    /// priced linearly.
     #[test]
-    fn a_slam_waits_for_a_rung_and_never_for_the_full_refill() {
+    fn a_heavy_waits_for_a_rung_and_never_for_the_full_refill() {
         // Nothing to wait for: the cycle is the recovery.
-        assert_eq!(slam_cycle_seconds(0.7, 0.0, 0.0), 0.7);
+        assert_eq!(heavy_cycle_seconds(0.7, 0.0, 0.0), 0.7);
         // The recovery already carries the counter past 2x, so it waits none.
-        assert_eq!(slam_cycle_seconds(0.7, 0.0, 30.0), 0.7);
+        assert_eq!(heavy_cycle_seconds(0.7, 0.0, 30.0), 0.7);
         // A tenth of a second short of 2x, and 2x is worth the tenth.
-        assert_eq!(slam_cycle_seconds(0.4, 0.0, 30.0), 0.5);
+        assert_eq!(heavy_cycle_seconds(0.4, 0.0, 30.0), 0.5);
         // 110 initial combo is 6x after 2.75 s of refill, and taking it would
         // be 2.18 multiplier-seconds against the 4.00 this stops at.
-        assert_eq!(slam_cycle_seconds(0.4, 0.0, 110.0), 0.5);
+        assert_eq!(heavy_cycle_seconds(0.4, 0.0, 110.0), 0.5);
         // …and a longer recovery moves which rung that is, not the rule.
-        assert_eq!(slam_cycle_seconds(1.2, 0.0, 110.0), 1.5);
+        assert_eq!(heavy_cycle_seconds(1.2, 0.0, 110.0), 1.5);
     }
 
     /// THE FIGHT OPENS WITH THE INITIAL-COMBO FLOOR FULL.
@@ -10663,6 +10667,27 @@ mod melee {
         assert!(
             (1.9..2.1).contains(&gain),
             "+30 initial combo should open the fight at 2x, not 1x: x{gain:.3}",
+        );
+    }
+
+    /// A STANDING HEAVY WAITS TOO, and that is what makes the rule the SWING's
+    /// rather than the slam's.
+    ///
+    /// Three wind-up cards take this weapon's 1.2 s charge to 0.43 s, which is
+    /// SHORT OF THE FIRST RUNG: 17 points is still 1x, so Corrupt Charge's +30
+    /// initial combo buys nothing at all if the swing goes the moment it can.
+    /// Waiting the extra 0.07 s to 20 points buys 2x for a seventh of the
+    /// cadence, and the mode takes it.
+    #[test]
+    fn a_standing_heavy_waits_the_seventh_of_a_second_that_buys_a_tier() {
+        let fast = ["killing_blow", "amalgam_organ_shatter", "melee_elementalist"];
+        let dps = |mods: &[&str]| magistar("magistar_heavy", mods, 60.0, None).mean_damage;
+        let bare = dps(&fast);
+        let charged = dps(&[fast.as_slice(), &["corrupt_charge"]].concat());
+        let gain = charged / bare;
+        assert!(
+            (1.4..2.0).contains(&gain),
+            "the wait should buy 2x at a seventh of the cadence: x{gain:.3}",
         );
     }
 
@@ -15751,15 +15776,14 @@ pub fn run_once_traced(
                     swing_idx += 1;
                 }
                 let cycle = (w + d / rate.max(1e-9)).max(1e-6);
-                // …AND A HEAVY SLAM'S CLIMB IS FREE. A slam is launched from
-                // mid-air, so the interval is the landing recovery plus
-                // whatever ascent the player chooses — see
-                // `slam_cycle_seconds`, which chooses it. Derived from the two
-                // facts that make the choice worth anything (the explosion is
-                // centred on the wielder, the swing spends the counter) rather
-                // than declared per entry.
-                if is_slam && ap.spends_combo {
-                    slam_cycle_seconds(cycle, combo_points, ap.initial_combo)
+                // …AND A HEAVY MODE SWINGS WHEN THE COUNTER IS WORTH SPENDING,
+                // which is not always as soon as the animation allows — see
+                // `heavy_cycle_seconds`. Derived from the swing SPENDING the
+                // counter rather than from the mode, so a standing heavy and a
+                // heavy slam make the same decision and the next weapon needs
+                // no field.
+                if ap.spends_combo {
+                    heavy_cycle_seconds(cycle, combo_points, ap.initial_combo)
                 } else {
                     cycle
                 }
