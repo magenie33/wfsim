@@ -265,9 +265,9 @@ body.on-enemies [data-module="builder"]{display:none}
 /* Sized to its content, not to the bar: it sits beside a label and a copy
    button, and a full-width control there would read as the bar itself. */
 .bench-bar .dd{height:26px;min-width:150px;max-width:min(360px,60vw)}
-/* A RANK WITH NOTHING TO PICK. The number is information even when it is
-   the only one, so it keeps a chip's shape without a chip's affordance. */
-.bench-bar .prank{font-size:12px;color:var(--text-2);border:1px solid var(--line);
+/* A RANK OR A MODE WITH NOTHING TO PICK. The value is information even when
+   it is the only one, so it keeps a chip's shape without a chip's affordance. */
+.bench-bar .prank,.bench-bar .pmode{font-size:12px;color:var(--text-2);border:1px solid var(--line);
   border-radius:7px;padding:4px 9px;background:var(--plane)}
 /* TWO CONTROLS, TWO SIZES. The first holds a ruler's whole sentence; the
    second holds "#7". Giving them the same 150px floor made a rank read as a
@@ -1491,8 +1491,9 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .brow .brank{flex:0 0 44px;color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
 .brow .bimg{flex:0 0 auto;width:34px;height:34px;object-fit:contain}
 .brow .bname{flex:1 1 auto;font-size:13px}
-/* Only drawn where the weapon HAS a second way to be played — a lone "base"
-   tag on a weapon with one form is noise about a choice nobody has. */
+/* ON EVERY ROW, including a weapon with one way to be played. A tag that
+   appears on the neighbour and not here reads as "no mode" rather than as
+   "one mode", and this is the page where weapons are compared. */
 .brow .bmode{margin-left:6px;padding:1px 6px;border:1px solid var(--line);border-radius:6px;
   color:var(--text-2);font-size:11px;white-space:nowrap}
 /* A weapon the sim knows it does not fully model, marked where weapons are

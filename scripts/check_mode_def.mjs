@@ -61,8 +61,11 @@ const grab = (weapon) => `(async () => {
 //   Ballistica Prime  TWO CYCLES — a weapon whose gauge can be filled by
 //             either of two shots has two of everything, and both pairs
 //             share a form name
+//   Ocucor    ONE mode, which is most of the roster and the case every
+//             "only where there is a choice" short-circuit was written for
 const WEAPONS = [
   "Mausolon", "Torid", "Cortege", "Lex", "Kuva_Hind", "Magistar", "Ballistica_Prime",
+  "Ocucor",
 ];
 
 for (const lang of ["en", "zh"]) {
@@ -132,5 +135,73 @@ for (const lang of ["en", "zh"]) {
       lang === "zh" ? cjk : !cjk, (r.lines[0] || "").slice(0, 60));
   }
 }
+
+// ---------------------------------------------------------------------------
+// A MODE IS NAMED WHEREVER A BUILD IS, INCLUDING ON A WEAPON THAT HAS ONE.
+//
+// Four surfaces drew the mode only where the weapon offered a second one, so a
+// single-mode weapon's row, link, picker bar and share card each said nothing
+// about how it is played — and a blank beside a neighbour that names its mode
+// reads as "no mode", not as "one mode". The builder's own block and the
+// simulator's build card had already reached the other conclusion; this is what
+// keeps the rest with them.
+//
+// ASSERTED ON A WEAPON WITH ONE MODE AND ONE WITH FOUR, because either alone
+// passes on the bug: the short-circuit is invisible on the weapon that has a
+// choice, and "always drawn" is trivially true on a page with one row.
+const surfaces = (weapon) => `(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  history.pushState({}, '', '/weapons/${weapon}'); route(); await sleep(4000);
+  const bar = document.getElementById('bench-bar-builder-builds');
+  const dd = bar && bar.querySelector('[id^=dd-bench-mode-]');
+  const chip = bar && bar.querySelector('.pmode');
+  return {
+    modes: (weaponInfo('${weapon}'.toLowerCase()) || {}).modes || [],
+    // THE BAR NAMES IT, as a control where there is a choice and as a value
+    // where there is not. Either counts; neither does not.
+    barHidden: !bar || bar.hidden,
+    named: !!(dd || chip),
+    namedText: ((dd || chip || {}).textContent || '').trim(),
+    // …AND SO DOES THE NAME OF THE ROW ITSELF, which travels to the simulator
+    // tab and onto a shared card, where there is no list to infer it from.
+    rowNames: builtinBuilds().slice(0, 6).map(p => p.name),
+  };
+})()`;
+
+for (const w of ["Ocucor", "Ballistica_Prime"]) {
+  const r = await evaluate(surfaces(w));
+  if (r.barHidden) {
+    // Nobody has submitted a build for this weapon, which is ordinary — there
+    // is no bar to assert about, and saying so beats a green tick that means
+    // the check found nothing.
+    check(`${w}: the benchmark bar is absent (no submissions)`, true, "skipped");
+  } else {
+    check(`${w}: the benchmark bar names the mode (${r.modes.length} mode(s))`,
+      r.named === true, r.namedText || "nothing drawn");
+    check(`${w}: ...and every row name carries it`,
+      r.rowNames.length > 0 && r.rowNames.every((n) => / · /.test(n)),
+      r.rowNames.join(" | "));
+  }
+}
+
+// THE BOARD PAGE, where weapons are COMPARED and a missing term is the one
+// difference a reader cannot check. Every row, not a sample: the bug was a
+// conditional, so the rows that still had the tag would have carried a sample.
+const board = await evaluate(`(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  history.pushState({}, '', '/benchmark'); route(); await sleep(4500);
+  const rows = [...document.querySelectorAll('.bench-rows .brow')];
+  return {
+    total: rows.length,
+    noTag: rows.filter(a => !a.querySelector('.bmode')).length,
+    noParam: rows.filter(a => !/[?&]mode=/.test(a.getAttribute('href') || '')).length,
+    sample: rows.slice(0, 3).map(a => a.getAttribute('href')),
+  };
+})()`);
+check("the board lists rows at all", board.total > 50, `${board.total} rows`);
+check("every board row names its mode", board.noTag === 0,
+  `${board.noTag} of ${board.total} without a tag`);
+check("...and every link carries it", board.noParam === 0,
+  `${board.noParam} of ${board.total} without &mode=: ${(board.sample || []).join(" ")}`);
 
 await app.finish("what each mode is, on the page, in both languages");

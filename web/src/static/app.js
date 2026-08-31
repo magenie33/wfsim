@@ -2073,16 +2073,23 @@ function renderBenchBoard() {
         // STATED EITHER WAY (`riven=1` / `riven=0`) rather than only when
         // there is one, so an ABSENT parameter keeps meaning what it always
         // meant: a link written before this existed, which lands on whichever
-        // row leads.
-        `?bench=${encodeURIComponent(cur.id)}${
-          (w.modes || []).length > 1 ? `&mode=${encodeURIComponent(mode)}` : ""
-        }${row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
+        // row leads. The MODE is stated on the same terms and for the same
+        // reason — a row is one weapon in one mode whether or not it has a
+        // second, and omitting the term for weapons with one made the link
+        // say less than the row it opens.
+        `?bench=${encodeURIComponent(cur.id)}&mode=${encodeURIComponent(mode)}${
+          row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}${
-          (w.modes || []).length > 1
-            ? ` <span class="bmode">${escHtml(modeLabel(w, mode))}</span>`
-            : ""}${
+          // ALWAYS NAMED, including a weapon with one way to be fired — the
+          // rule the simulator's build card and the builder's own Mode block
+          // already carry. A board that prints the mode on some rows and not
+          // others makes the blank read as "no mode" rather than as "one
+          // mode", and this is where weapons are COMPARED: a term that appears
+          // on the neighbour and not on this one is the one difference a
+          // reader cannot check.
+          ` <span class="bmode">${escHtml(modeLabel(w, mode))}</span>`}${
           // THE BOARD IS WHERE WEAPONS ARE COMPARED, so it is the one place a
           // weapon with unmodelled parts must not look like one without them.
           // A Stug row is four admissions deep and a Torid row is exact; side
@@ -6206,8 +6213,11 @@ async function drawShareCard(canvas, url) {
     // and a card listing eleven of them would say nothing.
     // The mode is the BUILD's now, so the card reads it there. Still on the
     // card: it changes the number as much as the enemy does, and a share that
-    // omitted it would be a claim nobody could reproduce.
-    const formLabel = (w.modes || []).length > 1 ? modeLabel(w, mode) : "";
+    // omitted it would be a claim nobody could reproduce — which is also why
+    // a weapon with one way to be fired states it. A card is read away from
+    // the app, where "no mode printed" cannot be told from "the mode was left
+    // out", and every other term of the claim is printed unconditionally.
+    const formLabel = modeLabel(w, mode);
     g.fillText([
       en.name || sim.enemy,
       `Lv ${sim.level}${sim.steel_path ? " SP" : ""}`,
@@ -7561,8 +7571,13 @@ function renderBenchmarkBarIn(bar, cfg) {
         if (first) pickPreset(cfg, presetId(first));
       },
     }) +
-    // HOW IT IS PLAYED. Absent where the weapon has one mode, which is most of
-    // the roster — a control with one item is not a control.
+    // HOW IT IS PLAYED — a control where there is a choice, and the NAME where
+    // there is not. The same conclusion the rank below reached: "a control
+    // with one item is not a control" is true and is not a reason to say
+    // nothing. A build is played exactly one way whether or not the weapon
+    // offers a second, and a bar that names the ruler, the riven and the rank
+    // while silently dropping the mode reads as a build with no mode rather
+    // than as a weapon with one.
     (modes.length > 1
       ? ddButton(`dd-bench-mode-${cfg.domain}`, {
         value: curMode,
@@ -7575,7 +7590,8 @@ function renderBenchmarkBarIn(bar, cfg) {
           if (first) pickPreset(cfg, presetId(first));
         },
       })
-      : "") +
+      : `<span class="pmode" title="${escHtml(cfg.rowHintTitle || "")}">${
+          escHtml((modes[0] || {}).label || curMode)}</span>`) +
     // WHICH OF THE TWO RANKINGS. Absent where the weapon has only one kind in
     // this mode, which is most of them.
     (kinds.length > 1
@@ -7936,7 +7952,6 @@ const builtinBuilds = () => {
       // it here is what makes `#1` the leader rather than a bet on the scorer's
       // write order.
       || (b.score || 0) - (a.score || 0));
-  const many = ((w.modes || []).length > 1);
   const rank = {};
   return rows.map((row) => {
     const mode = row.mode || "base";
@@ -7953,7 +7968,12 @@ const builtinBuilds = () => {
     // and the group above it is already dot-separated; "Incarnon cycle (riven)"
     // reads as the same mode, narrowed — which is what it is, and what makes
     // the plain group next to it obviously the rest.
-    const m = many ? modeLabel(w, mode) : "";
+    // THE MODE IS ALWAYS PART OF THE NAME. This label travels away from the
+    // control that picked it — "testing build: …" on the simulator tab and the
+    // header of a shared card — where a reader has no list to infer the
+    // missing term from. It was omitted for a weapon with one mode, which made
+    // the name of a build differ in SHAPE from weapon to weapon.
+    const m = modeLabel(w, mode);
     const label = m && kind ? `${m}（${kind}）` : (m || kind);
     return {
       name: label ? `#${n} · ${label}` : `#${n}`,
