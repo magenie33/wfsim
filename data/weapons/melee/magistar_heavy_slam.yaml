@@ -4,22 +4,17 @@ name: Magistar
 # that needs no stance at all: a slam is the same attack whatever is in the
 # slot.
 #
-# IT IS ENTIRELY RADIAL. 1050 Blast in a 10 m sphere, linear falloff to 70% at
-# the edge (wiki: "to 50% (70% for heavy slam) at the edge of its radius").
-# The direct component is zero, so this entry carries no `damage:` of its own
-# beyond the base vector the swing scales.
+# IT IS ENTIRELY RADIAL. 630 Blast in a 10 m sphere, linear falloff to 70% at
+# the edge (wiki: "3x for heavy slam ... to 50% (70% for heavy slam) at the
+# edge of its radius"). The direct component is zero, so this entry carries no
+# `damage:` of its own beyond the base vector the swing scales.
 #
-# 1050 IS MEASURED, and it is the export's `heavySlamAttack` rather than the 630
-# `heavySlamRadialDamage` the wiki's attack row publishes. A bare weapon slammed
-# as close to the target as it goes reads 1094 white (MEASUREMENTS M69), and
-# falloff only reduces, so 630 is impossible at the epicentre.
-#
-# IT IS THIS WEAPON'S HEAVY ATTACK, ONE BASE LIGHTER: 1260 is the hammer's 6x
-# and 1050 is 5x. The relation holds for 118 of the export's melee weapons —
-# `heavySlamAttack == heavyAttackDamage - base` — which is what makes 1050 a
-# derivation rather than a transcription with a measurement leaning on it. The
-# RADIAL pair is the constant the wiki states: 2x for a slam and 3x for a heavy
-# slam, with no exception in the export at all.
+# 630 IS 3x THE WEAPON'S BASE AND IT IS MEASURED — the class constant the wiki
+# states, with no exception anywhere in the export. A build carrying `Base
+# Damage +100` reads 1095 on an Infested Deimos target, which is `(630 + 100) x
+# 1.5` to the digit: Blast is x1.5 there and the flat add lands ONCE
+# (MEASUREMENTS M69). The export's `heavySlamAttack` of 1050 is a bigger number
+# for the same attack and is NOT what a body takes.
 #
 # THE SPHERE IS CENTRED ON THE WIELDER (`blast_kind: slam`), which is why this
 # mode ignores the 2.5 m reach that leaves every other melee mode hitting one
@@ -50,7 +45,7 @@ attack:
   damage: { impact: 0.0 }
   radial:
     # see MEASUREMENTS M69
-    damage: { blast: 1050 }
+    damage: { blast: 630 }
     radius_m: 10.0
     blast_kind: slam
     falloff_start_m: 0.0
