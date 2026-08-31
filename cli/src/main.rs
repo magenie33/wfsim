@@ -32,6 +32,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         initial_combo: 0.0,
         heavy_attack_efficiency: 0.0,
         crit_chance_per_combo: 0.0,
+        combo_count_chance_on_lifted: 0.0,
+        status_chance_on_lifted: 0.0,
         status_chance_per_combo: 0.0,
         combo_count_chance: 0.0,
         heavy_attack_damage: 0.0,

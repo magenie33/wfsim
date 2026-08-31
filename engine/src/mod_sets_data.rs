@@ -21,6 +21,10 @@ pub enum SetBonusKind {
     /// Chance to raise a critical hit's TIER by one (Vigilante). Only a hit
     /// that already crit can be promoted.
     CritTierUpgrade,
+    /// Crit chance PER COMBO MULTIPLIER for melee (Gladiator): Blood Rush's
+    /// own bracket and its own `(combo - 1)` scaling, bought with set pieces
+    /// instead of a mod slot.
+    CritChancePerCombo,
     /// Parsed but not modeled — the mod set still loads.
     Unmodeled,
 }
@@ -64,6 +68,7 @@ fn all() -> &'static [ModSetDef] {
                 members: f.members,
                 kind: match f.bonus.kind.as_str() {
                     "crit_tier_upgrade_chance" => SetBonusKind::CritTierUpgrade,
+                    "crit_chance_per_combo" => SetBonusKind::CritChancePerCombo,
                     _ => SetBonusKind::Unmodeled,
                 },
                 per_mod: f.bonus.per_mod,

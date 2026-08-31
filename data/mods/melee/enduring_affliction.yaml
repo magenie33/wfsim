@@ -9,8 +9,12 @@ description: "+100% Status Chance on Lifted enemies"
 
 # Rank 0: +16.7% Status Chance on Lifted enemies
 effects:
-  # +100% Status Chance ON LIFTED ENEMIES - the engine has no gate for 'the target is carrying this independent proc', so the bonus is not paid rather than paid unconditionally
-  - kind: unmodeled
+  # +100% Status Chance ON LIFTED ENEMIES, in the bracket Weeping Wounds is in.
+  # The same simulated gate: a heavy slam forces `Lifted` every time, so from
+  # the second slam on the target is carrying it.
+  - kind: status_chance_on_lifted
+    rank0: 0.167
+    rankMax: 1.00
 
 source:
   url: https://wiki.warframe.com/w/Enduring_Affliction

@@ -1731,6 +1731,22 @@ fn melee_combo_points(earned: f64, initial: f64, since_spend_seconds: f64) -> f6
     earned.max(floor)
 }
 
+/// KILLING BLOW'S BRACKET — what a `+X% Melee Damage on Heavy Attack` card is
+/// worth, as a term in the BASE-DAMAGE bucket.
+///
+/// *"Damage bonus is additive to mods such as Pressure Point"* (wiki, Killing
+/// Blow), so it is diluted by everything else in that bucket rather than
+/// multiplying the finished swing. SEISMIC WAVE IS THE CONTRAST and the reason
+/// the two cannot share a line: *"Slam damage bonus is multiplicative to base
+/// damage (e.g. Pressure Point)"* (wiki, Seismic Wave). Both cards read "+X%
+/// Melee Damage on <kind of attack>" and they land in different places.
+///
+/// Zero on every mode that does not spend the counter, which is what "heavy
+/// attack" means here.
+fn heavy_attack_base_damage(ap: &DummyParams) -> f64 {
+    if ap.spends_combo { ap.heavy_attack_damage } else { 0.0 }
+}
+
 /// HOW OFTEN A HEAVY MODE SWINGS, in seconds — and it is not always as soon as
 /// it can.
 ///
@@ -2872,6 +2888,12 @@ pub struct DummyParams {
     /// Punishment, Enduring Strike). Above 1.0 it is a guaranteed point plus a
     /// roll for the next.
     pub combo_count_chance: f64,
+    /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike), plus the status
+    /// bracket's own Lifted card (Enduring Affliction). A CONDITION ABOUT THE
+    /// TARGET IS SIMULATED: `Lifted` is a status this engine tracks, forced by
+    /// every heavy slam and by a heavy attack.
+    pub combo_count_chance_on_lifted: f64,
+    pub status_chance_on_lifted: f64,
     /// `+X%` on a HEAVY attack alone (Killing Blow). Read only where
     /// `spends_combo` is true, which is what "heavy attack" means here.
     pub heavy_attack_damage: f64,
@@ -4309,6 +4331,8 @@ impl DummyParams {
             crit_chance_per_combo: panel.crit_chance_per_combo,
             status_chance_per_combo: panel.status_chance_per_combo,
             combo_count_chance: panel.combo_count_chance,
+            combo_count_chance_on_lifted: panel.combo_count_chance_on_lifted,
+            status_chance_on_lifted: panel.status_chance_on_lifted,
             heavy_attack_damage: panel.heavy_attack_damage,
             slam_damage: panel.slam_damage,
             // A fight in contact has not built a pile; the card moves it.
@@ -4624,6 +4648,8 @@ impl Default for DummyParams {
             crit_chance_per_combo: 0.0,
             status_chance_per_combo: 0.0,
             combo_count_chance: 0.0,
+            combo_count_chance_on_lifted: 0.0,
+            status_chance_on_lifted: 0.0,
             heavy_attack_damage: 0.0,
             slam_damage: 0.0,
             crit_chance_per_hit_initial_stacks: 0,
@@ -7065,7 +7091,8 @@ fn spread_hit(
     by: SpreadBy,
 ) {
     let base_damage = ap.base_damage_bonus;
-    let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t);
+    let arcane_base_damage =
+        arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) + heavy_attack_base_damage(ap);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     let half_hp = if spec.params.max_health() > 0.0
         && foe.state.health < 0.5 * spec.params.max_health()
@@ -8825,7 +8852,9 @@ fn field_tick(
     // Damage buckets: the same live base-damage additions the direct hit reads,
     // then the GunCO bracket off the target's CURRENT status count.
     let base_damage = ap.base_damage_bonus;
-    let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) + ctx.base_damage_add_mods;
+    let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at)
+        + ctx.base_damage_add_mods
+        + heavy_attack_base_damage(ap);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     // CO on an AoE part is the EXCEPTION, not the default. What the mods say is
     // direct hits only — which is why the radial path never takes it — and the
@@ -10680,6 +10709,11 @@ mod melee {
     /// cadence, and the mode takes it.
     #[test]
     fn a_standing_heavy_waits_the_seventh_of_a_second_that_buys_a_tier() {
+        for m in ["weeping_wounds", "melee_prowess", "galvanized_elementalist"] {
+            let a = magistar("magistar", &[], 60.0, None).mean_procs;
+            let b = magistar("magistar", &[m], 60.0, None).mean_procs;
+            println!("SC {m}: {a:.2} -> {b:.2}");
+        }
         let fast = ["killing_blow", "amalgam_organ_shatter", "melee_elementalist"];
         let dps = |mods: &[&str]| magistar("magistar_heavy", mods, 60.0, None).mean_damage;
         let bare = dps(&fast);
@@ -10688,6 +10722,88 @@ mod melee {
         assert!(
             (1.4..2.0).contains(&gain),
             "the wait should buy 2x at a seventh of the cadence: x{gain:.3}",
+        );
+    }
+
+    /// WEEPING WOUNDS ROLLS, and the counter it reads is live.
+    ///
+    /// `Status Chance = Weapon Status Chance x [1 + Mod Status Bonus + Weeping
+    /// Wounds Bonus x (Combo Multi - 1)]` (wiki, verbatim) — so the term is in
+    /// the bracket the ROLL reads, not merely in the one a derived-crit card
+    /// reads. ONE BRACKET, ONE SUM: a second sum over the same bracket is a
+    /// second answer, and the cards that land only in the unread one pay
+    /// nothing while the panel shows them paying.
+    ///
+    /// A NEUTRAL COMBO IS THE FIXTURE because it is where the counter climbs:
+    /// a heavy mode empties it with the swing that read it.
+    #[test]
+    fn weeping_wounds_reaches_the_roll_and_not_only_the_panel() {
+        let procs = |mods: &[&str]| magistar("magistar", mods, 60.0, None).mean_procs;
+        let bare = procs(&[]);
+        let weeping = procs(&["weeping_wounds"]) / bare;
+        // …AND AN ORDINARY STATUS MOD IS THE CONTROL, so a fixture that cannot
+        // see status at all cannot pass this by accident.
+        let flat = procs(&["melee_prowess"]) / bare;
+        assert!(weeping > 1.3, "a live counter should roll far more status: x{weeping:.3}");
+        assert!(flat > 1.1, "the control has to move too: x{flat:.3}");
+    }
+
+    /// A LIFTED GATE IS SIMULATED, AND WHAT DECIDES IT IS THE CADENCE.
+    ///
+    /// Enduring Affliction is *"+100% Status Chance on Lifted enemies"* and
+    /// `Lifted` is a status this engine tracks, not a Tenno state it assumes —
+    /// so the card pays exactly when a swing lands while a PREVIOUS swing's
+    /// Lift is still standing. The swing that lifts never amplifies itself.
+    ///
+    /// THREE WIND-UP CARDS MAKE IT PAY. They take the standing heavy to 0.43 s,
+    /// inside `LIFTED_SECONDS`, so every swing after the first sees the Lift.
+    /// The neutral combo forces Impact and Knockdown and never a Lift, so the
+    /// same card is worth nothing there — and a gate that only says yes is
+    /// indistinguishable from no gate at all, which is why both halves are
+    /// asserted.
+    #[test]
+    fn enduring_affliction_pays_where_a_lift_is_still_standing() {
+        let procs = |form: &str, mods: &[&str]| magistar(form, mods, 60.0, None).mean_procs;
+        let fast = ["killing_blow", "amalgam_organ_shatter", "melee_elementalist"];
+        let with_card = [fast.as_slice(), &["enduring_affliction"]].concat();
+        let heavy = procs("magistar_heavy", &with_card) / procs("magistar_heavy", &fast);
+        let light = procs("magistar", &["enduring_affliction"]) / procs("magistar", &[]);
+        assert!(
+            heavy > 1.3,
+            "a swing inside the Lift should roll far more status: x{heavy:.3}",
+        );
+        assert!(
+            (light - 1.0).abs() < 1e-9,
+            "a neutral combo lifts nothing, so the same card pays nothing: x{light:.3}",
+        );
+    }
+
+    /// KILLING BLOW IS ADDITIVE WITH PRESSURE POINT, AND SEISMIC WAVE IS NOT.
+    ///
+    /// Two cards that read the same on their faces — `+X% Melee Damage on
+    /// <kind of attack>` — and their own pages put them in different places:
+    /// *"Damage bonus is additive to mods such as Pressure Point"* (Killing
+    /// Blow) against *"Slam damage bonus is multiplicative to base damage
+    /// (e.g. Pressure Point)"* (Seismic Wave).
+    ///
+    /// SO THE ARITHMETIC IS THE ASSERTION. Against Primed Pressure Point's
+    /// +165%, Killing Blow's +120% is `(1 + 1.65 + 1.20) / (1 + 1.65)` = x1.453
+    /// and Seismic Wave's +200% is a flat x3. A heavy SLAM is the fixture
+    /// because its cadence cannot move: it has no wind-up for Killing Blow's
+    /// other half to shorten.
+    #[test]
+    fn killing_blow_joins_the_bucket_and_seismic_wave_multiplies_it() {
+        let dps = |mods: &[&str]| magistar("magistar_heavy_slam", mods, 60.0, None).mean_damage;
+        let base = dps(&["primed_pressure_point"]);
+        let killing = dps(&["primed_pressure_point", "killing_blow"]) / base;
+        let seismic = dps(&["primed_pressure_point", "seismic_wave"]) / base;
+        assert!(
+            (1.43..1.48).contains(&killing),
+            "additive with the bucket is x1.453, multiplicative would be x2.2: x{killing:.3}",
+        );
+        assert!(
+            (2.9..3.1).contains(&seismic),
+            "a slam multiplier is its own x3: x{seismic:.3}",
         );
     }
 
@@ -12577,11 +12693,10 @@ pub fn run_once_traced(
         if tennokai {
             tennokai_until = f64::NEG_INFINITY;
         }
-        // KILLING BLOW AND SEISMIC WAVE, which pay in some modes and not
-        // others. Both are *"+X% Melee Damage on <kind of attack>"* cards, so
-        // they multiply the swing the way the stance multiplier does rather
-        // than joining the base-damage bracket — a bracket term would pay on
-        // every mode, which is the one thing these two cards say they do not.
+        // SEISMIC WAVE IS A MULTIPLIER OF ITS OWN: *"Slam damage bonus is
+        // multiplicative to base damage (e.g. Pressure Point)"* (wiki). Killing
+        // Blow's `+X% on Heavy Attack` reads the same on the card and lands in
+        // the base-damage BUCKET instead — `heavy_attack_base_damage`.
         //
         // A SLAM IS A FORM WHOSE EXPLOSION IS A SLAM. Reading the form rather
         // than a flag is what keeps this true for the next slam weapon.
@@ -12589,8 +12704,7 @@ pub fn run_once_traced(
             .radial
             .as_ref()
             .is_some_and(|r| r.blast_kind == crate::weapons_data::BlastKind::Slam);
-        let mode_damage = (1.0 + if ap.spends_combo { ap.heavy_attack_damage } else { 0.0 })
-            * (1.0 + if is_slam { ap.slam_damage } else { 0.0 });
+        let mode_damage = 1.0 + if is_slam { ap.slam_damage } else { 0.0 };
         // …AND WHAT THE SWING IS WORTH.
         //
         // A TENNOKAI SWING IS A HEAVY ATTACK: the class multiplier in place of
@@ -12603,7 +12717,13 @@ pub fn run_once_traced(
         let swing_mult = if tennokai_heavy {
             ap.heavy.map_or(1.0, |h| h.multiplier)
                 * combo_mult
-                * (1.0 + ap.heavy_attack_damage)
+                // KILLING BLOW ON A LIGHT FORM'S FREE HEAVY. The card's bucket
+                // is the base-damage one, so what it is worth here is the
+                // RATIO that bucket grows by — `heavy_attack_base_damage` reads
+                // zero on a form that does not spend the counter, which this
+                // one is.
+                * (1.0 + ap.base_damage_bonus + ap.heavy_attack_damage)
+                / (1.0 + ap.base_damage_bonus)
                 * (1.0 + ap.tennokai.damage)
         } else {
             swing.as_ref().map_or(1.0, |h| h.multiplier)
@@ -12857,6 +12977,10 @@ pub fn run_once_traced(
             // because that is this loop's name for "relative status the panel
             // could not fold in", which is exactly what a live counter is.
             + ap.status_chance_per_combo * (combo_mult - 1.0)
+            // ENDURING AFFLICTION, whose gate is a status the engine tracks:
+            // every heavy slam forces `Lifted`, so from the second slam on the
+            // target is carrying it and the card pays.
+            + if debuffs.lifted.is_some_and(|e| e > t) { ap.status_chance_on_lifted } else { 0.0 }
             // …AND AN ON-KILL STATUS BUFF (Galvanized Elementalist), which is
             // relative like every other card in this bracket.
             + buff_total!(ap, crate::loadout::BuffGrant::StatusChance, t);
@@ -13506,7 +13630,10 @@ pub fn run_once_traced(
                 // share of this bucket its flat number is worth — so it lands
                 // here and NOT diluted, which is the whole point of the
                 // conversion.
-                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t);
+                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t)
+                // …AND KILLING BLOW, which is a term in this bucket and not a
+                // multiplier — see `heavy_attack_base_damage`.
+                + heavy_attack_base_damage(ap);
             // FEIGNED RETREAT / SWIFT CONCLUSION: a condition on the TARGET,
             // evaluated per instance because the target's health is falling
             // while the shot is being resolved.
@@ -14167,8 +14294,13 @@ pub fn run_once_traced(
                 // for the same reason ("Additive to other ... status chance
                 // mods"). Summed with the arcane's before either is spent, so
                 // the two cannot end up multiplying each other.
-                let sc_arc = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
-                    + params.sc_per_tendril * f64::from(tendrils);
+                // …AND IT IS THE SHOT'S OWN SUM, not a second one. Two sums
+                // over one bracket is two answers: this one carried the arcane
+                // and Sentient Surge and left out everything LIVE that lands in
+                // the same place — Weeping Wounds' `(combo - 1)`, an on-kill
+                // status buff, Enduring Affliction's Lifted gate — so those
+                // cards rolled nothing at all while the panel showed them.
+                let sc_arc = sc_arc_shot;
                 // WISEMAN'S REGARD, LIVE: "30% of CURRENT Critical Chance",
                 // and current means at this shot. The row names Secondary
                 // Outburst, Cascadia Overcharge, Secondary Enervate and
@@ -15681,11 +15813,20 @@ pub fn run_once_traced(
                 // Quickening worth so much less on a 400% swing than on a 100%
                 // one. Above 100% it is a guaranteed point plus a roll for the
                 // next, the way every other over-100% chance here behaves.
-                if ap.combo_count_chance > 0.0 {
+                // …AND ENDURING STRIKE, which adds to the same chance while the
+                // target is LIFTED — a status this engine tracks rather than a
+                // state it has to assume.
+                let chance_now = ap.combo_count_chance
+                    + if debuffs.lifted.is_some_and(|e| e > t) {
+                        ap.combo_count_chance_on_lifted
+                    } else {
+                        0.0
+                    };
+                if chance_now > 0.0 {
                     for _ in 0..(landed as u32) {
-                        let whole = ap.combo_count_chance.floor();
+                        let whole = chance_now.floor();
                         combo_points += whole;
-                        if d.spine.chance(ap.combo_count_chance - whole) {
+                        if d.spine.chance(chance_now - whole) {
                             combo_points += 1.0;
                         }
                     }

@@ -335,6 +335,10 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         },
         "melee_combo_duration_bonus" => ModEffect::MeleeComboDuration(max("rankMax")),
         "initial_combo" => ModEffect::InitialCombo(max("rankMax")),
+        // THE TWO LIFTED CARDS. `Lifted` is a status this engine tracks, so the
+        // gate is simulated rather than assumed — a condition about the TARGET.
+        "combo_count_chance_on_lifted" => ModEffect::ComboCountChanceOnLifted(max("rankMax")),
+        "status_chance_on_lifted" => ModEffect::StatusChanceOnLifted(max("rankMax")),
         "heavy_attack_efficiency" => ModEffect::HeavyAttackEfficiency(max("rankMax")),
         "melee_combo_duration_multiplier" => {
             ModEffect::MeleeComboDurationMultiplier(max("rankMax"))

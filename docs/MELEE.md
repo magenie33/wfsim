@@ -93,6 +93,12 @@ Crit Chance   = Weapon Crit Chance   x [1 + Mod Crit Bonus   + BloodRush     x (
 Status Chance = Weapon Status Chance x [1 + Mod Status Bonus + WeepingWounds x (Combo - 1)]
 ```
 
+**ONE BRACKET IS ONE SUM.** The status line above is assembled once and read by
+the ROLL; a second sum over the same bracket is a second answer, and a card that
+lands only in the unread one pays nothing while the panel shows it paying —
+which is what Weeping Wounds, an on-kill status buff and Enduring Affliction all
+did until the two sums became one.
+
 ### Initial combo is a FLOOR that refills
 
 > *"Initial Combo grants a minimum value of combo points when **idle** or after
@@ -371,12 +377,23 @@ applies to.
 6. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
    drain is a `u32`, so it is held at zero — the conservative direction: a build
    that fits here fits in game.
-7. **Five cards that name a state this arena has not got**: Enduring Strike and
-   Enduring Affliction want "the target is Lifted", Relentless Combination wants
-   a combo point when a Slash DoT ticks, Spring-Loaded Blade wants a stacking
-   reach buff, and Shattering Impact wants a flat armour strip per Impact hit.
+7. **Three cards that name a state this arena has not got**: Relentless
+   Combination wants a combo point when a Slash DoT ticks, Spring-Loaded Blade
+   wants a stacking reach buff, and Shattering Impact wants a flat armour strip
+   per Impact hit.
 
-   **Galvanized Reflex is off that list**, and it was the biggest thing on it:
+   **THE TWO LIFTED CARDS ARE OFF IT.** `Lifted` is a status this engine
+   tracks, so Enduring Strike's combo-point chance and Enduring Affliction's
+   status chance are SIMULATED gates — a condition about the target, which this
+   repo simulates rather than assumes. What decides them is the CADENCE, since
+   the swing that lifts never amplifies itself: `LIFTED_SECONDS` is 1.0 s, so a
+   heavy slam on a 2 s recovery lets every Lift lapse and pays nothing, while
+   three wind-up cards on the standing heavy bring the cycle to 0.43 s and
+   double the rolls. That makes `LIFTED_SECONDS` — a stand-in DE publishes no
+   figure for, and which the wiki says grows with the combo multiplier — the
+   number those two cards are worth.
+
+   **Galvanized Reflex is off that list too**, and it was the biggest thing on it:
    *"On Melee Kill: +20 Initial Combo for 20s. Stacks up to 4x"* is COMBO
    POINTS, so four stacks raise the floor a heavy mode returns to by +80 — four
    tiers — and it is worth **x2.83** on a slam loop that gets kills. It cost no

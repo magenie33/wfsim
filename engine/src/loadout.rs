@@ -548,6 +548,15 @@ pub enum ModEffect {
     /// the next, which is how every other over-100% chance in this engine
     /// behaves.
     ComboCountChance(f64),
+    /// …AND THE SAME CHANCE, PAID ONLY ON A LIFTED TARGET (Enduring Strike).
+    ///
+    /// A CONDITION ABOUT THE TARGET IS SIMULATED: `Lifted` is a status this
+    /// engine tracks, forced by every heavy slam and by a heavy attack, so the
+    /// gate is read at the swing rather than assumed.
+    ComboCountChanceOnLifted(f64),
+    /// RELATIVE STATUS CHANCE on a Lifted target (Enduring Affliction), in the
+    /// same bracket Weeping Wounds lands in — and gated the same way.
+    StatusChanceOnLifted(f64),
     /// ...and that refill: a fraction of the magazine back on every kill,
     /// drawn from the reserve ("This mod does not generate ammo").
     MagazineRefillOnKill(f64),
@@ -1139,6 +1148,11 @@ impl ModEffect {
             ComboCountChance(v) => format!(
                 "+{} chance of an extra melee combo point per landed hit", pct(v)
             ),
+            ComboCountChanceOnLifted(v) => format!(
+                "+{} chance of an extra melee combo point per hit on a LIFTED target",
+                pct(v)
+            ),
+            StatusChanceOnLifted(v) => format!("+{} status chance on a LIFTED target", pct(v)),
             Tennokai { enabled, chance, every_n_hits, window_seconds, damage, crit_damage, status_chance } => {
                 let mut parts: Vec<String> = Vec::new();
                 if enabled {
@@ -3292,6 +3306,11 @@ pub struct ResolvedPanel {
     /// Chance of an EXTRA combo point per landed hit (Quickening, True
     /// Punishment). Above 1.0 it is a guaranteed point plus a roll for another.
     pub combo_count_chance: f64,
+    /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike).
+    pub combo_count_chance_on_lifted: f64,
+    /// Relative status chance a LIFTED target adds (Enduring Affliction) — the
+    /// bracket Weeping Wounds is in.
+    pub status_chance_on_lifted: f64,
     /// `+X%` damage on a heavy attack alone (Killing Blow).
     pub heavy_attack_damage: f64,
     /// `+X%` damage on a slam alone (Seismic Wave).
@@ -3948,6 +3967,8 @@ pub fn resolve_for(
     let mut slam_damage = 0.0f64;
     let mut heavy_damage = 0.0f64;
     let mut combo_count_chance = 0.0f64;
+    let mut combo_count_chance_on_lifted = 0.0f64;
+    let mut status_chance_on_lifted = 0.0f64;
     let mut windup_speed = 0.0f64;
     // TENNOKAI: off until a card says otherwise, and every knob a sum.
     let mut tk = Tennokai::default();
@@ -4113,6 +4134,8 @@ pub fn resolve_for(
                 ModEffect::SlamDamage(v) => slam_damage += v,
                 ModEffect::HeavyAttackDamage(v) => heavy_damage += v,
                 ModEffect::ComboCountChance(v) => combo_count_chance += v,
+                ModEffect::ComboCountChanceOnLifted(v) => combo_count_chance_on_lifted += v,
+                ModEffect::StatusChanceOnLifted(v) => status_chance_on_lifted += v,
                 ModEffect::HeavyWindUpSpeed(v) => windup_speed += v,
                 ModEffect::Tennokai {
                     enabled, chance, every_n_hits, window_seconds, damage, crit_damage,
@@ -4854,6 +4877,18 @@ pub fn resolve_for(
         .filter(|s| s.kind == crate::mod_sets_data::SetBonusKind::CritTierUpgrade)
         .map(|s| s.per_mod)
         .sum();
+    // …AND THE GLADIATOR SET READS THE COMBO COUNTER, into Blood Rush's own
+    // bracket: `base_cc x [1 + mods + this x (combo - 1)]`. Three of its six
+    // members are Warframe mods, so a weapon build alone reaches 30% here and
+    // the ceiling is stated in `data/mod_sets/gladiator.yaml` rather than
+    // pretended away — the same disclosure the Vigilante set carries.
+    let set_crit_per_combo: f64 = mods
+        .iter()
+        .filter_map(|m| m.set)
+        .filter_map(crate::mod_sets_data::set_def)
+        .filter(|s| s.kind == crate::mod_sets_data::SetBonusKind::CritChancePerCombo)
+        .map(|s| s.per_mod)
+        .sum();
 
     // DAMAGE FALLOFF, with Projectile Speed moving the whole window — see
     // [`Falloff`] for the two wiki lines that make this the one bucket
@@ -5074,9 +5109,11 @@ pub fn resolve_for(
             ..h
         }),
         tennokai: tk,
-        crit_chance_per_combo: cc_per_combo,
+        crit_chance_per_combo: cc_per_combo + set_crit_per_combo,
         status_chance_per_combo: sc_per_combo,
         combo_count_chance,
+        combo_count_chance_on_lifted,
+        status_chance_on_lifted,
         heavy_attack_damage: heavy_damage,
         slam_damage,
         no_magazine: base.no_magazine,
@@ -7064,6 +7101,35 @@ mod tests {
         // A non-member contributes nothing, set or no set.
         assert!(
             (chance(&[pick("vigilante_armaments"), pick("serration")]) - 0.05).abs() < 1e-12
+        );
+    }
+
+    /// …AND THE GLADIATOR SET PAYS INTO BLOOD RUSH'S BRACKET, per piece.
+    ///
+    /// *"+X% Critical Chance for Melee Weapons per Combo Multiplier"* — the
+    /// same `(combo - 1)` scaling and the same bracket the mod buys, at 10% a
+    /// piece. THREE of the six members are Warframe mods, so 30% is the ceiling
+    /// a weapon build can reach here and the set file says so.
+    #[test]
+    fn each_gladiator_member_adds_its_share_to_the_combo_crit_bracket() {
+        let pool = crate::mods_data::pool_for_weapon("magistar");
+        let pick = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
+        let base = WeaponBase::from_data("magistar", false, &[]);
+        let per_combo =
+            |mods: &[&ModDef]| resolve(&base, mods, StackPolicy::Emergent).crit_chance_per_combo;
+
+        assert_eq!(per_combo(&[]), 0.0);
+        assert!((per_combo(&[pick("gladiator_might")]) - 0.10).abs() < 1e-12);
+        assert!(
+            (per_combo(&[pick("gladiator_might"), pick("gladiator_rush"), pick("gladiator_vice")])
+                - 0.30)
+                .abs()
+                < 1e-12,
+            "three weapon members is the ceiling this engine can equip",
+        );
+        // …AND IT SHARES THE BRACKET WITH THE MOD rather than replacing it.
+        assert!(
+            (per_combo(&[pick("gladiator_might"), pick("blood_rush")]) - 0.10 - 0.40).abs() < 1e-12
         );
     }
 

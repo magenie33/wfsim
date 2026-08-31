@@ -5,13 +5,15 @@ name: Gladiator
 # It is Blood Rush's own bracket and its own scaling, bought with set pieces
 # instead of a mod slot.
 #
-# IT IS NOT MODELLED, and the reason is the same one the Vigilante set states
-# about its own last two members: THREE of the six Gladiator pieces are WARFRAME
-# mods (Aegis, Finesse, Resolve), and this engine has no Warframe loadout — so
-# the count a weapon build alone can reach is three, and the bonus that count
-# buys would be a number nobody can check against their own build.
+# IT SCALES PER EQUIPPED MEMBER with no threshold, so one piece already pays its
+# 10% — and THREE of the six are WARFRAME mods (Aegis, Finesse, Resolve), which
+# this engine has no loadout for. A weapon build alone therefore reaches 30%
+# here against 60% in game, which is the same ceiling the Vigilante set
+# discloses about its own two Warframe members.
 #
-# `kind` falls through to `SetBonusKind::Unmodeled`, which is the honest arm.
+# IT PAYS ALMOST NOTHING IN A HEAVY MODE, and that is the counter's doing rather
+# than the set's: the swing that reads the multiplier is the swing that empties
+# it, exactly as it is for Blood Rush.
 members: 6
 bonus:
   kind: crit_chance_per_combo

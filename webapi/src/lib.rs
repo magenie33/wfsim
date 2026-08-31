@@ -3675,6 +3675,12 @@ pub fn panel_json(v: &Value) -> Value {
                 ComboCountChance(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "extra combo points per hit — what they are worth depends on what reads                             the counter, which is Blood Rush and Weeping Wounds in a combo mode                             and the heavy multiplier in a heavy one"})),
+                ComboCountChanceOnLifted(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "its gate is a status this fight tracks: every heavy slam forces Lifted, and                             a light combo forces none — so what it pays is decided by the mode                             rather than assumed"})),
+                StatusChanceOnLifted(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "its gate is a status this fight tracks: every heavy slam forces Lifted, so from                             the second slam on the target is carrying it"})),
                 CritChancePerCombo(v) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": format!(
