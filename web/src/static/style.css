@@ -689,10 +689,10 @@ label.check input{width:auto}
 .buff-card.denied .bn{text-decoration:line-through;text-decoration-color:var(--muted)}
 .buff-card .bnot.bdenied{color:var(--gold);text-decoration:none}
 
-/* WHAT THE FIGHT NEVER HANDS OUT. Above the cards, because it overrules them:
-   a card says where the run OPENS and this says what it can EARN. */
-.bev-h{font-size:11px;color:var(--muted);margin:0 0 6px}
-.bev-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+/* WHAT THE FIGHT NEVER HANDS OUT — in LIMITS, beside Infinite ammo, and the
+   grid gives it the full row because it is a set rather than a field. */
+.bev-h{font-size:11px;color:var(--muted);margin:6px 0 6px;grid-column:1/-1}
+.bev-row{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1}
 .bev{display:flex;flex-direction:row;align-items:center;gap:5px;font-size:12px;
   color:var(--text-2);border:1px solid var(--line);border-radius:8px;
   padding:4px 9px;background:var(--panel2);cursor:pointer}
