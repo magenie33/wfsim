@@ -401,6 +401,47 @@ sets one roster id at a time and asserts the params CHANGED, so a buff added
 later is covered without anyone remembering this note. The one exemption is
 `frenzy`, applied outside these params (the api builds a `locked_buffs` entry).
 
+### …AND A FIGHT CAN REFUSE TO HAND OUT WHAT EARNS IT
+
+"Earned, at zero" describes a player who has been in contact and is between
+bursts. It does not describe the other engagement anybody can name: the one you
+walk into cold — the enemies arrive already on you, nothing has died yet, and an
+on-kill build is worth what it is worth *before the first kill*. The app scored
+that fight as if the stacks were coming.
+
+**`engine::buff_events` is the vocabulary of what a fight can refuse.** Seven
+events, each one thing a player does — `kill`, `headshot`, `hit`,
+`punch_through`, `status`, `reload`, `firing` — and a buff names every event it
+needs. Secondary Deadhead wants a headshot AND a kill, so either switch denies
+it; a Warframe-scaled arcane wants nothing, so no switch can touch it.
+
+**MEMBERSHIP IS DERIVED.** A mod's or an evolution's buff is classified by the
+`BuffTrigger` its data already declares (`of_trigger`), an arcane's by its
+`ArcTrigger` (`of_arc_trigger`), and only the buffs whose trigger is baked into
+their IDENTITY — a named field on `DummyParams` — need the table
+(`of_builtin`). `of_trigger` is exhaustive with no `_` arm, so a new trigger
+cannot compile until somebody says what it asks for.
+
+**IT IS THE FIGHT'S, NOT THE BUILD'S**, so it rides the scenario as
+`buff_events_off: [kill]` beside `aiming` and `headshot_pct` — which is what
+lets `data/benchmarks/*.yaml` state it once and rank the whole submission
+library under a new ruler on the day it lands (`docs/BOARD.md`). A per-buff map
+could not: a ruler cannot name buff ids for weapons it has never seen.
+
+**A DENIED BUFF IS REMOVED, NOT ZEROED.** `DummyParams::deny_buff_events` sets
+each `Option` to `None` — the same argument `NO_TIMEOUT` makes one section up:
+a flag saying "ignore this one" has to be honoured at every read site, and this
+file records what happened the last time one was missed at three of them.
+Nothing downstream learns the concept exists. It runs AFTER the cards, because
+the cards say where a run OPENS and this says what it can EARN.
+
+Two generic ratchets, both run against the broken code:
+`every_buff_the_roster_offers_can_be_denied` denies every event and asserts the
+roster comes back holding only the buffs that ask for nothing, and
+`every_buff_card_says_what_it_asks_of_the_fight` sweeps the whole roster for a
+card that resolves to no trigger — one the page could not grey and the run would
+not deny, which are opposite claims that look identical from outside.
+
 ### Every timed buff starts EARNED, at zero
 
 **A buff starts full only if it is neither timed NOR consumable. Everything

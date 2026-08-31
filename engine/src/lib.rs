@@ -24,6 +24,7 @@ pub mod arcanes_data;
 // Both ride on the fight's Tenno, so `parse_fight` carries them into the
 // simulator and the optimizer alike.
 pub mod auras_data;
+pub mod buff_events;
 pub mod buffs;
 pub mod chain;
 pub mod formation;

@@ -709,6 +709,15 @@ ui:
   "none — this target dispels them": 无 —— 这个目标会驱散它们
   "none": 无
   "not equipped": 未装备
+  "this fight hands out no": 本场交战不会给你
+  "weak-point hits": 弱点命中
+  hits: 命中
+  "status effects": 异常状态
+  reloads: 装填
+  "shots fired": 开火
+  "not in this fight": 本场不生效
+  "nothing that has to be earned this way is earned at all — the buffs below that ask for it are off for the whole run": 任何需要靠这种方式积累的东西都积累不到 —— 下面凡是依赖它的增益，整场都不会生效
+  "this fight hands out none of what earns it, so it is off for the whole run": 本场交战不会给出任何能积累它的事件，所以它整场都不生效
   "not measured": 尚未测量
   "not modeled": 未建模
   "not modelled on this weapon — the numbers below are a floor, not its full output": 这把武器有尚未建模的部分 —— 下面的数字是下限，不是它的完整输出

@@ -681,6 +681,23 @@ label.check input{width:auto}
 .buff-card .block-lock{flex:0 0 auto;flex-direction:row;align-items:center;gap:5px;font-size:12px;color:var(--text-2);border-left:1px solid var(--line);padding-left:10px}
 .buff-card .block-lock input{width:auto;accent-color:var(--gold)}
 .buff-card.info{opacity:.75}
+/* A CARD THE FIGHT DENIES IS SHOWN, NOT HIDDEN — dropping it would make "this
+   weapon has no such buff" and "this fight will not pay it" look the same, and
+   telling those apart is the whole reason the switches exist. Dimmer than
+   `.off` (not equipped), because this one is a statement about the RUN. */
+.buff-card.denied{opacity:.5}
+.buff-card.denied .bn{text-decoration:line-through;text-decoration-color:var(--muted)}
+.buff-card .bnot.bdenied{color:var(--gold);text-decoration:none}
+
+/* WHAT THE FIGHT NEVER HANDS OUT. Above the cards, because it overrules them:
+   a card says where the run OPENS and this says what it can EARN. */
+.bev-h{font-size:11px;color:var(--muted);margin:0 0 6px}
+.bev-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.bev{display:flex;flex-direction:row;align-items:center;gap:5px;font-size:12px;
+  color:var(--text-2);border:1px solid var(--line);border-radius:8px;
+  padding:4px 9px;background:var(--panel2);cursor:pointer}
+.bev input{width:auto;accent-color:var(--gold)}
+.bev.on{color:var(--gold);border-color:var(--gold)}
 
 /* ---- Optimizer: mod scope (rich searchable list) + results ---- */
 .opt-mods-head{display:flex;gap:10px;align-items:flex-end;margin-bottom:8px}

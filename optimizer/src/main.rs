@@ -122,6 +122,7 @@ fn main() {
         frenzy_lock: LockMode::Permanent,
         // CLI: no per-buff configured policy (the emergent default).
         buff_cfg: wfsim_engine::dummy::BuffConfig::new(),
+        denied_buff_events: Vec::new(),
     };
     println!(
         "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, {} s, REAL incarnon cycle",

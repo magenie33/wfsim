@@ -3534,6 +3534,97 @@ impl DummyParams {
         }
     }
 
+    /// THE FIGHT HANDS YOU NOTHING OF THESE KINDS, so nothing that asks for one
+    /// is ever earned — `crate::buff_events`, and `docs/BUFFS.md` for why.
+    ///
+    /// **A DENIED BUFF IS REMOVED, NOT ZEROED.** The same argument `NO_TIMEOUT`
+    /// makes: a flag saying "ignore this one" has to be honoured at every read
+    /// site, and this file's history is what happens when one is missed. An
+    /// `Option`'s natural zero is `None`, and nothing downstream learns the
+    /// concept exists. Weapon-scoped: recurses into the cycle's base form.
+    pub fn deny_buff_events(&mut self, denied: &[crate::buff_events::BuffEvent]) {
+        use crate::buff_events::{of_arc_trigger, of_builtin, of_trigger, BuffEvent};
+        if denied.is_empty() {
+            return;
+        }
+        let hit = |events: &[BuffEvent]| events.iter().any(|e| denied.contains(e));
+        // A ROSTERED ID WITH NO ENTRY IS A PANIC, not a buff nothing can deny:
+        // the two look identical from outside, which is the failure this area
+        // keeps producing.
+        let by_id = |id: &str| {
+            hit(of_builtin(id).unwrap_or_else(|| panic!("buff `{id}` declares no events — add it to buff_events::of_builtin")))
+        };
+        if self.frenzy && by_id("frenzy") {
+            self.frenzy = false;
+        }
+        if self.co_stack.is_some() && by_id("condition_overload") {
+            self.co_stack = None;
+        }
+        if self.multishot_stack.is_some() && by_id("on_kill_multishot") {
+            self.multishot_stack = None;
+        }
+        if self.crit_chance_stack.is_some() && by_id("on_headshot_kill_cc") {
+            self.crit_chance_stack = None;
+        }
+        if self.headshot_streak.is_some() && by_id("evo_headshot_streak") {
+            self.headshot_streak = None;
+        }
+        if self.crit_chance_on_headshot.is_some() && by_id("on_headshot_cc") {
+            self.crit_chance_on_headshot = None;
+        }
+        if self.crit_damage_on_kill.is_some() && by_id("on_kill_cd") {
+            self.crit_damage_on_kill = None;
+        }
+        if self.fire_rate_on_reload.is_some() && by_id("on_reload_fr") {
+            self.fire_rate_on_reload = None;
+        }
+        if self.base_damage_on_reload.is_some() && by_id("on_reload_bd") {
+            self.base_damage_on_reload = None;
+        }
+        if self.base_damage_on_eximus_weakpoint.is_some() && by_id("on_eximus_weakpoint_bd") {
+            self.base_damage_on_eximus_weakpoint = None;
+        }
+        if self.crit_chance_per_hit.is_some() && by_id("crit_per_hit") {
+            self.crit_chance_per_hit = None;
+            self.crit_chance_per_hit_initial_stacks = 0;
+        }
+        if self.sniper_combo.is_some() && by_id("sniper_combo") {
+            self.sniper_combo = None;
+            self.combo_initial = 0;
+        }
+        if self.tendril_max > 0 && by_id("tendrils") {
+            self.tendril_max = 0;
+            self.tendrils_initial = 0;
+        }
+        if self.arcane.enervate_rank.is_some() && by_id("arcane:secondary_enervate") {
+            self.arcane.enervate_rank = None;
+            self.enervate_stacks = 0;
+        }
+        // FLAT BASE DAMAGE IS ALREADY IN THE VECTOR, added pro-rata before the
+        // mods, so the damage it bought has to come back out — one ratio, the
+        // same scaling the card's own zero setting uses.
+        if let Some(bd) = self.evo_base_damage {
+            if by_id("evo_reload_damage") {
+                let now = bd.without + bd.full;
+                if now > 0.0 {
+                    let k = bd.without / now;
+                    self.damage = self.damage.scale(k);
+                    if let Some(d) = self.dot_modified_base.as_mut() {
+                        *d *= k;
+                    }
+                }
+                self.evo_base_damage = None;
+            }
+        }
+        // …AND THE TWO FAMILIES THAT DECLARE THEIR OWN TRIGGER, where a card
+        // the data adds tomorrow is classified by nobody.
+        self.stacking_buffs.retain(|b| !hit(of_trigger(b.trigger)));
+        self.arcane.buffs.retain(|b| !hit(of_arc_trigger(b.trigger)));
+        if let Some(cy) = self.cycle.as_mut() {
+            cy.base_form.deny_buff_events(denied);
+        }
+    }
+
     /// A generic humanoid: body 1x, head 3x (headshot-triggering, crit-bonus
     /// eligible), aimed at 50/50.
     pub fn humanoid_parts() -> Vec<BodyPart> {
@@ -24496,8 +24587,10 @@ mod tests {
     /// writes into — it sets one id at a time and asserts the params CHANGED,
     /// so a buff added later is covered without anyone remembering to come
     /// back here.
-    #[test]
-    fn every_buff_the_roster_offers_is_actually_read() {
+    /// ONE PARAMS CARRYING EVERY CONFIGURABLE BUFF AT ONCE — shared by the two
+    /// ratchets below, which ask the same question from opposite ends: is every
+    /// card READ, and can every card be DENIED.
+    fn every_buff_params() -> DummyParams {
         use crate::loadout::{StackSpec, TimedBuff};
         let stack = |per_stack: f64| StackSpec {
             per_stack,
@@ -24510,8 +24603,7 @@ mod tests {
             duration: 4.0,
             initial_active: false,
         };
-        // One params carrying every configurable buff at once.
-        let params = DummyParams {
+        DummyParams {
             co_stack: Some(stack(0.2)),
             multishot_stack: Some(stack(0.3)),
             crit_chance_stack: Some(stack(0.1)),
@@ -24553,7 +24645,26 @@ mod tests {
             tendril_max: 4,
             crit_chance_per_tendril: 0.1,
             ..DummyParams::default()
-        };
+        }
+    }
+
+    /// EVERY buff the roster offers must be READ by `apply_buff_config`.
+    ///
+    /// A card whose setting reaches nothing is the failure mode this whole
+    /// area keeps producing: `buff_roster` (what exists), `enumerate_buffs`
+    /// (what is drawn) and `apply_buff_config` (what is obeyed) are three
+    /// lists, and Deadly Efficiency was in the first two and missing from the
+    /// third — so its card was drawn, set, and dropped, for as long as it has
+    /// existed. Nothing about the UI could reveal that: a knob that does
+    /// nothing looks exactly like a knob whose buff is not up.
+    ///
+    /// The check is generic on purpose. It does not name the fields a buff
+    /// writes into — it sets one id at a time and asserts the params CHANGED,
+    /// so a buff added later is covered without anyone remembering to come
+    /// back here.
+    #[test]
+    fn every_buff_the_roster_offers_is_actually_read() {
+        let params = every_buff_params();
 
         // Applied OUTSIDE this function, deliberately — the weapon passive is
         // a `locked_buffs` entry built by the api (`frenzy_apply`), not a
@@ -24576,6 +24687,48 @@ mod tests {
                 "the card for '{id}' is drawn but nothing reads it"
             );
         }
+    }
+
+    /// …AND EVERY BUFF THE ROSTER OFFERS MUST BE DENIABLE — the mirror of the
+    /// check above. `deny_buff_events` is a WALK over the shapes, so it carries
+    /// the risk every walk does: a shape nobody remembered.
+    ///
+    /// It names no field. Deny EVERY event and the roster must come back
+    /// holding only the buffs that ask for nothing; anything else surviving a
+    /// fight that hands out nothing is a missing arm.
+    #[test]
+    fn every_buff_the_roster_offers_can_be_denied() {
+        use crate::buff_events::{of_arc_trigger, of_builtin, of_trigger, BuffEvent};
+        let params = every_buff_params();
+        let before: Vec<String> = params.buff_roster().into_iter().map(|b| b.id).collect();
+        assert!(before.len() > 10, "the fixture stopped covering the roster: {before:?}");
+
+        // WHAT MAY SURVIVE, from the same tables the denial reads: a list here
+        // would be a second opinion about which buffs are passive.
+        let passive = |id: &str| -> bool {
+            if let Some(e) = of_builtin(id) {
+                return e.is_empty();
+            }
+            params
+                .stacking_buffs
+                .iter()
+                .find(|b| b.id == id)
+                .map(|b| of_trigger(b.trigger).is_empty())
+                .or_else(|| {
+                    params.arcane.buffs.iter().find(|b| format!("arcane:{}", b.owner) == id)
+                        .map(|b| of_arc_trigger(b.trigger).is_empty())
+                })
+                .unwrap_or_else(|| panic!("`{id}` is rostered and declares no events"))
+        };
+        let want: Vec<String> = before.iter().filter(|id| passive(id)).cloned().collect();
+
+        let mut denied = params.clone();
+        denied.deny_buff_events(&BuffEvent::ALL);
+        let after: Vec<String> = denied.buff_roster().into_iter().map(|b| b.id).collect();
+        assert_eq!(
+            after, want,
+            "a fight that hands out nothing still grants these — \n             deny_buff_events has no arm for them"
+        );
     }
 
     #[test]

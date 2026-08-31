@@ -139,16 +139,11 @@ for (const lang of ["en", "zh"]) {
 // ---------------------------------------------------------------------------
 // A MODE IS NAMED WHEREVER A BUILD IS, INCLUDING ON A WEAPON THAT HAS ONE.
 //
-// Four surfaces drew the mode only where the weapon offered a second one, so a
-// single-mode weapon's row, link, picker bar and share card each said nothing
-// about how it is played — and a blank beside a neighbour that names its mode
-// reads as "no mode", not as "one mode". The builder's own block and the
-// simulator's build card had already reached the other conclusion; this is what
-// keeps the rest with them.
+// Four surfaces drew it only where the weapon offered a second, so a blank
+// beside a neighbour that names its mode read as "no mode", not "one mode".
 //
 // ASSERTED ON A WEAPON WITH ONE MODE AND ONE WITH FOUR, because either alone
-// passes on the bug: the short-circuit is invisible on the weapon that has a
-// choice, and "always drawn" is trivially true on a page with one row.
+// passes on the bug.
 const surfaces = (weapon) => `(async () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   history.pushState({}, '', '/weapons/${weapon}'); route(); await sleep(4000);
@@ -157,13 +152,12 @@ const surfaces = (weapon) => `(async () => {
   const chip = bar && bar.querySelector('.pmode');
   return {
     modes: (weaponInfo('${weapon}'.toLowerCase()) || {}).modes || [],
-    // THE BAR NAMES IT, as a control where there is a choice and as a value
-    // where there is not. Either counts; neither does not.
+    // THE BAR NAMES IT — a control where there is a choice, a value where
+    // there is not. Either counts; neither does not.
     barHidden: !bar || bar.hidden,
     named: !!(dd || chip),
     namedText: ((dd || chip || {}).textContent || '').trim(),
-    // …AND SO DOES THE NAME OF THE ROW ITSELF, which travels to the simulator
-    // tab and onto a shared card, where there is no list to infer it from.
+    // …AND SO DOES THE ROW'S OWN NAME, which travels to the simulator tab.
     rowNames: builtinBuilds().slice(0, 6).map(p => p.name),
   };
 })()`;
@@ -184,9 +178,8 @@ for (const w of ["Ocucor", "Ballistica_Prime"]) {
   }
 }
 
-// THE BOARD PAGE, where weapons are COMPARED and a missing term is the one
-// difference a reader cannot check. Every row, not a sample: the bug was a
-// conditional, so the rows that still had the tag would have carried a sample.
+// THE BOARD PAGE, where weapons are COMPARED. Every row, not a sample: the bug
+// was a conditional, so a sample would have hit the rows that still had it.
 const board = await evaluate(`(async () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   history.pushState({}, '', '/benchmark'); route(); await sleep(4500);

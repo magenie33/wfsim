@@ -1960,6 +1960,12 @@ pub fn meta_json() -> Value {
         // axis-list bug this file guards against: two declarations of one fact,
         // and the day one moves the other is silently wrong.
         "max_bodies": wfsim_engine::formation::MAX_BODIES,
+        // WHAT A FIGHT CAN REFUSE TO HAND OUT (`engine::buff_events`), as a
+        // vocabulary rather than a list on the page — two declarations of one
+        // set is one that goes stale.
+        "buff_events": wfsim_engine::buff_events::BuffEvent::ALL.iter()
+            .map(|e| json!({ "id": e.id() }))
+            .collect::<Vec<_>>(),
         "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
             "request_field": a.request_field,
@@ -2484,6 +2490,52 @@ struct BuffMeta {
     /// wipes the pile, so `max_stacks` has nothing honest to hold — the card
     /// shows `∞` and the input takes no maximum.
     uncapped: bool,
+    /// WHAT THIS CARD ASKS OF THE FIGHT (`engine::buff_events`), so the page
+    /// can grey it under a scenario that hands none of it out. EMPTY IS A REAL
+    /// ANSWER and means "nothing can deny this".
+    events: Vec<&'static str>,
+}
+
+/// What one CARD asks of the fight, by the same tables the run reads.
+///
+/// `None` = the id resolves to no trigger at all: a card the page could not
+/// grey and a buff the run would not deny. It is a test failure, never a silent
+/// empty list — those are opposite claims.
+fn card_events(
+    id: &str,
+    refs: &[&ModDef],
+    arcane: &wfsim_engine::arcanes_data::ArcaneFx,
+) -> Option<Vec<&'static str>> {
+    use wfsim_engine::buff_events::{of_arc_trigger, of_builtin, of_trigger};
+    let ids = |e: &[wfsim_engine::buff_events::BuffEvent]| {
+        e.iter().map(|x| x.id()).collect::<Vec<_>>()
+    };
+    if let Some(e) = of_builtin(id) {
+        return Some(ids(e));
+    }
+    if let Some(owner) = id.strip_prefix("arcane:") {
+        let arcane_id = arcane.id.as_str();
+        return arcane
+            .buffs
+            .iter()
+            .find(|b| if b.owner.is_empty() { arcane_id } else { &b.owner } == owner)
+            .map(|b| ids(of_arc_trigger(b.trigger)));
+    }
+    // A MOD-DECLARED STACKING BUFF, classified by the trigger its data states.
+    refs.iter()
+        .flat_map(|m| m.effects.iter())
+        .find_map(|e| match e {
+            ModEffect::GrantsStackingBuff(b) if b.id == id => {
+                Some(ids(of_trigger(b.trigger)))
+            }
+            ModEffect::WhileTenno(_, inner) => match &**inner {
+                ModEffect::GrantsStackingBuff(b) if b.id == id => {
+                    Some(ids(of_trigger(b.trigger)))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
 }
 
 fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
@@ -2547,6 +2599,7 @@ fn enumerate_buffs(
             default_locked: false,
             permanent: false,
             uncapped: false,
+            events: Vec::new(),
         });
     }
     // THE SHOT COMBO COUNTER, the second weapon passive with a card — and the
@@ -2580,6 +2633,7 @@ fn enumerate_buffs(
                 // No ceiling: the wiki's tiers keep climbing (the eighth is
                 // 11025 hits) and inventing a maximum would be inventing data.
                 uncapped: true,
+                events: Vec::new(),
             });
         }
     }
@@ -2629,6 +2683,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                     uncapped: false,
+                    events: Vec::new(),
                 }),
                 OnKillMultishot { max_stacks, .. } if !locked("multishot") => push(BuffMeta {
                     id: "on_kill_multishot".into(),
@@ -2640,6 +2695,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 uncapped: false,
+                events: Vec::new(),
                 }),
                 ConditionOverload { max_stacks, .. } => push(BuffMeta {
                     id: "condition_overload".into(),
@@ -2651,6 +2707,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 uncapped: false,
+                events: Vec::new(),
                 }),
                 OnHeadshotCritChance { .. } => push(BuffMeta {
                     id: "on_headshot_cc".into(),
@@ -2662,6 +2719,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 uncapped: false,
+                events: Vec::new(),
                 }),
                 OnHeadshotKillCritChance { max_stacks, .. } => push(BuffMeta {
                     id: "on_headshot_kill_cc".into(),
@@ -2673,6 +2731,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 uncapped: false,
+                events: Vec::new(),
                 }),
                 OnKillCritDamage { .. } => push(BuffMeta {
                     id: "on_kill_cd".into(),
@@ -2684,6 +2743,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 uncapped: false,
+                events: Vec::new(),
                 }),
                 // EXIMUS ADVANTAGE. A toggle like the other windows, and the
                 // card is worth more here than for most of them: whether it can
@@ -2700,6 +2760,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                     uncapped: false,
+                    events: Vec::new(),
                 }),
                 // HATA-SATYA's pile. Its cap is the MOD's (500% / the rate),
                 // not the weapon's, so unlike the tendrils it needs no lookup —
@@ -2720,6 +2781,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                     uncapped: false,
+                    events: Vec::new(),
                 }),
                 OnReloadDamage { .. } => push(BuffMeta {
                     id: "on_reload_bd".into(),
@@ -2731,6 +2793,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 uncapped: false,
+                events: Vec::new(),
                 }),
                 // SENTIENT SURGE reads the Ocucor's TENDRILS, and the count is
                 // a buff like any other: gained on a kill, cleared by a
@@ -2765,6 +2828,7 @@ fn enumerate_buffs(
                             default_locked: false,
                             permanent: false,
                             uncapped: false,
+                            events: Vec::new(),
                         });
                     }
                 }
@@ -2778,6 +2842,7 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 uncapped: false,
+                events: Vec::new(),
                 }),
                 _ => {}
             }
@@ -2800,6 +2865,7 @@ fn enumerate_buffs(
             default_locked: false,
             permanent: false,
             uncapped: true,
+            events: Vec::new(),
         });
     }
     // Arcane buffs — ONE CARD PER ARCANE, not per grant.
@@ -2865,8 +2931,16 @@ fn enumerate_buffs(
                 default_locked: false,
                 permanent: false,
                 uncapped: false,
+                events: Vec::new(),
             });
         }
+    }
+    // WHAT EACH CARD ASKS OF THE FIGHT, in ONE pass — at the push sites it
+    // would be fifteen places to remember, which is how a buff came to be
+    // drawn, set and dropped once already (docs/BUFFS.md, "THREE lists").
+    // Unresolved stays empty and fails a test rather than the request.
+    for b in out.iter_mut() {
+        b.events = card_events(&b.id, refs, arcane).unwrap_or_default();
     }
     out
 }
@@ -2902,6 +2976,10 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
                 default_locked: false,
                 permanent: c.permanent,
                 uncapped: false,
+                // An evolution's card ids are the engine's own, so the table
+                // answers all of them with no pool and no arcane.
+                events: card_events(c.id, &[], &wfsim_engine::arcanes_data::ArcaneFx::none())
+                    .unwrap_or_default(),
             })
         })
         .collect()
@@ -2916,6 +2994,8 @@ fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
                 "default_stacks": b.default_stacks, "default_locked": b.default_locked,
                 "permanent": b.permanent,
                 "uncapped": b.uncapped,
+                // Empty means nothing can deny it — a claim, not a gap.
+                "events": b.events,
             })
         })
         .collect()
@@ -4875,6 +4955,11 @@ pub(crate) struct Fight {
     /// `None` = the legacy `assume_max`/`frenzy` knobs; `Some` = per-buff
     /// config, which is what the Sim panel sends.
     pub(crate) buff_cfg: Option<BuffCfg>,
+    /// WHAT THIS FIGHT NEVER HANDS YOU (`engine::buff_events`). Here beside
+    /// `aiming` rather than in `buff_cfg` because it is the ENGAGEMENT's: a
+    /// benchmark states it once, where a per-buff map would have to name ids no
+    /// ruler can know in advance.
+    pub(crate) denied_buff_events: Vec<wfsim_engine::buff_events::BuffEvent>,
     /// Both actors and how long they are at it.
     pub(crate) arena: wfsim_engine::arena::Arena,
     /// After the ladder is applied AND the form's own unlock is implied.
@@ -5014,6 +5099,18 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the
     // legacy `assume_max`/`frenzy` knobs (byte-for-byte with the old path).
     let buff_cfg = parse_buff_config(v);
+    // AN UNKNOWN NAME IS DROPPED, not refused: this list travels in share links,
+    // so a fight written against a newer vocabulary has to stay openable.
+    let denied_buff_events: Vec<wfsim_engine::buff_events::BuffEvent> = v
+        .get("buff_events_off")
+        .and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .filter_map(Value::as_str)
+                .filter_map(wfsim_engine::buff_events::BuffEvent::from_id)
+                .collect()
+        })
+        .unwrap_or_default();
     let assume_max = get_bool(v, "assume_max", false);
     let policy = if info.sentinel {
         StackPolicy::BaseOnly
@@ -5566,6 +5663,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         info,
         policy,
         buff_cfg,
+        denied_buff_events,
         arena,
         evos,
         cycle_from,
@@ -5753,7 +5851,8 @@ pub fn log_json(v: &Value) -> Value {
         Err(e) => return e,
     };
     let Fight {
-        info, policy, buff_cfg, arena, evos, cycle_from, single_form, tenno,
+        info, policy, buff_cfg, denied_buff_events, arena, evos, cycle_from,
+        single_form, tenno,
         infinite_ammo, frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
@@ -5775,6 +5874,9 @@ pub fn log_json(v: &Value) -> Value {
     if let Some(cfg) = &buff_cfg {
         params.apply_buff_config(cfg);
     }
+    // AFTER the cards, because the fight has the last word: a card may open an
+    // on-kill buff at five stacks, and a fight with no kills does not owe them.
+    params.deny_buff_events(&denied_buff_events);
 
     // THE RUN, as two u32 halves — see the `run` key `/api/simulate` answers
     // with. A caller that sends none gets the run that state 0 produces, which
@@ -6081,7 +6183,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         Err(e) => return e,
     };
     let Fight {
-        info, policy, buff_cfg, arena, evos, cycle_from, single_form,
+        info, policy, buff_cfg, denied_buff_events, arena, evos, cycle_from, single_form,
         enemy_name, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
         frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
@@ -6208,6 +6310,9 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     if let Some(cfg) = &buff_cfg {
         params.apply_buff_config(cfg);
     }
+    // …then what the fight refuses to hand out: the cards say where a run
+    // OPENS, this says what it can EARN.
+    params.deny_buff_events(&denied_buff_events);
     let report_panel = &report_panel;
 
     // ---- run ----
@@ -7428,6 +7533,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // structural rather than a thing to keep checking.
     let scenario = Scenario {
         arena: fight.arena,
+        denied_buff_events: fight.denied_buff_events.clone(),
         frenzy: fight.has_frenzy,
         // ANY mode in the scope that cycles turns this on; a candidate that is
         // not cycling has no second form, and `evaluate` reads the PAIR
@@ -10254,6 +10360,122 @@ mod valence_formation_blocks_attrition {
             plain, perked,
             "a guaranteed status leaves no plain hit for Overwhelming Attrition to \
              arm on, so the perk must change nothing at all"
+        );
+    }
+}
+
+#[cfg(test)]
+mod buff_event_cards {
+    use super::*;
+
+    /// EVERY BUFF CARD SAYS WHAT IT ASKS OF THE FIGHT.
+    ///
+    /// The page greys a card whose events a scenario denies and the RUN drops
+    /// the buff by the same tables, so a card resolving to NO trigger would be
+    /// greyed by nothing and denied by nothing — indistinguishable from
+    /// outside, which is the shape of every bug this area has produced.
+    ///
+    /// An EMPTY list is a different claim and is allowed; what is asserted is
+    /// that the id resolved. Swept over the whole roster, because a card comes
+    /// from a mod, an arcane or an evolution and only the roster holds all
+    /// three.
+    #[test]
+    fn every_buff_card_says_what_it_asks_of_the_fight() {
+        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
+        let mut checked = 0usize;
+        let mut orphans: Vec<String> = Vec::new();
+        for info in weapons() {
+            let pool = wfsim_engine::mods_data::pool_for_weapon(&info.id);
+            let refs: Vec<&ModDef> = pool.iter().collect();
+            let base = WeaponBase::from_data(&info.id, true, &[]);
+            // EVERY ARCANE THE WEAPON CAN SEAT, one at a time: a card is keyed
+            // by its own arcane, so merging would hide one behind another.
+            let mut fxs = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+            for pool_id in &info.arcane_pools {
+                for def in wfsim_engine::arcanes_data::slot_pool(pool_id) {
+                    fxs.push(def.fx(def.max_rank, StackPolicy::Emergent, base.traits, &tenno));
+                }
+            }
+            for fx in &fxs {
+                for b in enumerate_buffs(&refs, &[], fx, info, &tenno) {
+                    checked += 1;
+                    if card_events(&b.id, &refs, fx).is_none() {
+                        orphans.push(format!("{} on {}", b.id, info.id));
+                    }
+                }
+            }
+            // …AND THE EVOLUTIONS, whose cards never touch the mod pool.
+            let group = evo_group(info);
+            let evo_ids: Vec<String> = (1..=wfsim_engine::evolutions_data::tier_count(group))
+                .flat_map(|t| wfsim_engine::evolutions_data::options(group, t))
+                .map(|d| d.id.clone())
+                .collect();
+            for b in evo_buffs(&evo_ids) {
+                checked += 1;
+                if b.events.is_empty()
+                    && card_events(&b.id, &[], &wfsim_engine::arcanes_data::ArcaneFx::none())
+                        .is_none()
+                {
+                    orphans.push(format!("{} on {}", b.id, info.id));
+                }
+            }
+        }
+        assert!(checked > 200, "the sweep found almost no cards: {checked}");
+        orphans.sort();
+        orphans.dedup();
+        assert!(
+            orphans.is_empty(),
+            "these cards resolve to no trigger — add them to \
+             `engine::buff_events::of_builtin`, or give the data a trigger:\n  {}",
+            orphans.join("\n  ")
+        );
+    }
+
+    /// A DENIED CLASS REACHES THE NUMBER, through the ONE parse the simulator
+    /// and the optimizer share. Asserted end to end, because "the field parsed"
+    /// and "the run obeyed it" are the two halves that keep coming apart here.
+    ///
+    /// A NAME THE SERVER DOES NOT KNOW CHANGES NOTHING — this list travels in
+    /// share links, so a newer vocabulary stays openable rather than refused.
+    #[test]
+    fn denying_a_class_of_event_moves_the_number() {
+        let fight = |off: Value| {
+            simulate_json(&json!({
+                "weapon": "laetum",
+                "mode": "base",
+                // AN ON-KILL BUILD, so the class under test is most of it.
+                "mods": ["galvanized_diffusion", "galvanized_shot", "primed_pistol_gambit"],
+                "arcane": ["secondary_merciless"],
+                "enemy": "crewman", "level": 10, "steel_path": false,
+                "duration": 30, "runs": 12, "seed": 7, "metric": "kpm",
+                "headshot_pct": 100, "aiming": true, "infinite_ammo": true,
+                // The map PRESENT means the emergent sim, the path a player is
+                // on; empty means every card at its default.
+                "buffs": {},
+                "buff_events_off": off,
+            }))
+        };
+        let score = |v: &Value| v.get("score").and_then(Value::as_f64).unwrap_or(-1.0);
+
+        let open = fight(json!([]));
+        assert!(score(&open) > 0.0, "the control fight did not run: {open}");
+
+        // …AND IT KILLED ENOUGH TO EARN THEM: a fight whose target never dies
+        // denies on-kill buffs by itself, and this would then pass on an engine
+        // that ignored the switch entirely.
+        let no_kills = fight(json!(["kill"]));
+        assert!(
+            score(&no_kills) > 0.0 && score(&no_kills) < score(&open) * 0.95,
+            "denying kills moved the number by less than 5%, so either the switch              is ignored or this fight earns no kills to deny: {} vs {}",
+            score(&no_kills),
+            score(&open)
+        );
+
+        let unknown = fight(json!(["a_class_this_build_never_heard_of"]));
+        assert_eq!(
+            score(&unknown),
+            score(&open),
+            "an unknown class must be dropped, not obeyed and not refused"
         );
     }
 }

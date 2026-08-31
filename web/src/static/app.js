@@ -1037,6 +1037,9 @@ function defaultScenario() {
     aim_at: d.aim_at ? [...d.aim_at] : null,
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
     channeling: !!d.channeling, solo_weapon: !!d.solo_weapon,
+    // KEPT WHOLE, unknown names included: the server drops what it does not
+    // know, and an older page must not strip a newer fight's terms.
+    buff_events_off: [...(d.buff_events_off || [])],
     frame: d.frame || "",
     // ABSENT MEANS THE FLOOR. Only a key that is really there is an override,
     // so these are copied only when the saved scenario had them.
@@ -1091,6 +1094,9 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // which is the fight the board is scored under and what every clause about
   // the other slots has always been answered with.
   solo_weapon: false,
+  // WHAT THIS FIGHT NEVER HANDS OUT, as event ids (`/api/meta.buff_events`).
+  // Empty is the engagement this app has always run. See `renderBuffEvents`.
+  buff_events_off: [],
   frame: "",
   // NO `form`, AND NO `mode`. How the weapon is played is part of the BUILD;
   // a fight that carried it could decide how the weapon was fired, which is
@@ -2072,23 +2078,17 @@ function renderBenchBoard() {
         //
         // STATED EITHER WAY (`riven=1` / `riven=0`) rather than only when
         // there is one, so an ABSENT parameter keeps meaning what it always
-        // meant: a link written before this existed, which lands on whichever
-        // row leads. The MODE is stated on the same terms and for the same
-        // reason — a row is one weapon in one mode whether or not it has a
-        // second, and omitting the term for weapons with one made the link
-        // say less than the row it opens.
+        // meant. The MODE is stated on the same terms: a row is one weapon in
+        // one mode whether or not it has a second.
         `?bench=${encodeURIComponent(cur.id)}&mode=${encodeURIComponent(mode)}${
           row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}${
           // ALWAYS NAMED, including a weapon with one way to be fired — the
-          // rule the simulator's build card and the builder's own Mode block
-          // already carry. A board that prints the mode on some rows and not
-          // others makes the blank read as "no mode" rather than as "one
-          // mode", and this is where weapons are COMPARED: a term that appears
-          // on the neighbour and not on this one is the one difference a
-          // reader cannot check.
+          // rule the simulator's build card already carries. A blank beside a
+          // neighbour that names its mode reads as "no mode", and this is where
+          // weapons are COMPARED.
           ` <span class="bmode">${escHtml(modeLabel(w, mode))}</span>`}${
           // THE BOARD IS WHERE WEAPONS ARE COMPARED, so it is the one place a
           // weapon with unmodelled parts must not look like one without them.
@@ -7571,13 +7571,9 @@ function renderBenchmarkBarIn(bar, cfg) {
         if (first) pickPreset(cfg, presetId(first));
       },
     }) +
-    // HOW IT IS PLAYED — a control where there is a choice, and the NAME where
-    // there is not. The same conclusion the rank below reached: "a control
-    // with one item is not a control" is true and is not a reason to say
-    // nothing. A build is played exactly one way whether or not the weapon
-    // offers a second, and a bar that names the ruler, the riven and the rank
-    // while silently dropping the mode reads as a build with no mode rather
-    // than as a weapon with one.
+    // HOW IT IS PLAYED — a control where there is a choice, the NAME where
+    // there is not. The conclusion the rank below reached: "a control with one
+    // item is not a control" is true and is not a reason to say nothing.
     (modes.length > 1
       ? ddButton(`dd-bench-mode-${cfg.domain}`, {
         value: curMode,
@@ -7969,10 +7965,8 @@ const builtinBuilds = () => {
     // reads as the same mode, narrowed — which is what it is, and what makes
     // the plain group next to it obviously the rest.
     // THE MODE IS ALWAYS PART OF THE NAME. This label travels away from the
-    // control that picked it — "testing build: …" on the simulator tab and the
-    // header of a shared card — where a reader has no list to infer the
-    // missing term from. It was omitted for a weapon with one mode, which made
-    // the name of a build differ in SHAPE from weapon to weapon.
+    // control that picked it — the simulator tab, a shared card — where there
+    // is no list to infer the missing term from.
     const m = modeLabel(w, mode);
     const label = m && kind ? `${m}（${kind}）` : (m || kind);
     return {
@@ -14054,11 +14048,20 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     // In the WIDER view, a buff the build does not carry is still settable —
     // it just says so, so the panel never reads as "this is active now".
     const off = have && !have.has(b.id);
+    // …AND A BUFF THE FIGHT DENIES IS SHOWN, NOT HIDDEN: dropping the card
+    // would make "no such buff" and "this fight will not pay it" identical,
+    // which is the one thing a reader is here to tell apart.
+    const denied = buffDenied(b);
     // What one stack count buys, when the source grants more than one thing
     // off the same trigger — they are the same count by construction.
     const grants = b.grants ? `<small class="bgr">${escHtml(tf(b.grants))}</small>` : "";
-    return `<div class="buff-card${off ? " off" : ""}">
-      <span class="bn">${escHtml(buffCardName(b.name))}${grants}${off ? ` <small class="bnot">${escHtml(tr("not equipped"))}</small>` : ""}</span>
+    const why = denied
+      ? ` <small class="bnot bdenied" title="${escHtml(
+          tr("this fight hands out none of what earns it, so it is off for the whole run"))}">${
+          escHtml(tr("not in this fight"))}</small>`
+      : "";
+    return `<div class="buff-card${off ? " off" : ""}${denied ? " denied" : ""}">
+      <span class="bn">${escHtml(buffCardName(b.name))}${grants}${off ? ` <small class="bnot">${escHtml(tr("not equipped"))}</small>` : ""}${why}</span>
       <span class="bctl">${ctl}</span>
       ${lock}
     </div>`;
@@ -14075,6 +14078,16 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     });
     return;
   }
+  // A DENIED CARD'S KNOBS ARE DEAD, and say why — a control that cannot move
+  // the number is worse than none, because it looks like one that can.
+  const byId = new Map(list.map((b) => [b.id, b]));
+  box.querySelectorAll("[data-b]").forEach((el) => {
+    const b = byId.get(el.dataset.b);
+    if (b && buffDenied(b)) {
+      el.disabled = true;
+      el.title = tr("this fight hands out none of what earns it, so it is off for the whole run");
+    }
+  });
   box.querySelectorAll("[data-b]").forEach((el) => {
     el.addEventListener("change", () => {
       const id = el.dataset.b, f = el.dataset.f, c = cfg[id];
@@ -14124,7 +14137,69 @@ async function fetchAllBuffs() {
   return allBuffList;
 }
 
+/// WHAT A FIGHT CAN REFUSE TO HAND OUT, one switch per kind — the subject is
+/// docs/BUFFS.md, and the vocabulary is `/api/meta.buff_events`.
+///
+/// ONLY THE KINDS THIS WEAPON ASKS FOR: a switch for a trigger no card here
+/// uses moves no number. A kind already switched off is kept whatever the
+/// weapon carries, so swapping weapons cannot drop a term of the fight.
+const BUFF_EVENT_NAME = {
+  kill: "kills",
+  headshot: "weak-point hits",
+  hit: "hits",
+  punch_through: "punch through",
+  status: "status effects",
+  reload: "reloads",
+  firing: "shots fired",
+};
+
+/// The events the cards on screen actually ask for, in the vocabulary's order.
+function buffEventsHere(list) {
+  const asked = new Set((list || []).flatMap((b) => b.events || []));
+  const off = new Set(sim.buff_events_off || []);
+  return (META.buff_events || [])
+    .map((e) => e.id)
+    .filter((id) => asked.has(id) || off.has(id));
+}
+
+/// Is this card denied by the fight? The RUN answers the same question from
+/// the same table server-side, which keeps the grey and the number together.
+const buffDenied = (b) =>
+  (b.events || []).some((e) => (sim.buff_events_off || []).includes(e));
+
+function renderBuffEvents() {
+  const box = $("sim-buff-events");
+  if (!box) return;
+  const ids = buffEventsHere(simBuffsAll && allBuffList ? allBuffList : buffList);
+  box.hidden = !ids.length;
+  if (!ids.length) { box.innerHTML = ""; return; }
+  const off = new Set(sim.buff_events_off || []);
+  box.innerHTML = `<div class="bev-h">${escHtml(
+    tr("this fight hands out no"))}</div><div class="bev-row">${
+    ids.map((id) => `<label class="bev${off.has(id) ? " on" : ""}" title="${escHtml(
+      tr("nothing that has to be earned this way is earned at all — the buffs below that ask for it are off for the whole run"))}"><input type="checkbox" data-bev="${
+      escHtml(id)}"${off.has(id) ? " checked" : ""}> ${
+      escHtml(tr(BUFF_EVENT_NAME[id] || id))}</label>`).join("")}</div>`;
+  box.querySelectorAll("[data-bev]").forEach((el) => {
+    el.addEventListener("change", () => {
+      const id = el.dataset.bev;
+      const set = new Set(sim.buff_events_off || []);
+      if (el.checked) set.add(id); else set.delete(id);
+      // THE VOCABULARY'S ORDER, not click order: this travels in a share link,
+      // and two spellings of one fight compare as two fights.
+      sim.buff_events_off = (META.buff_events || [])
+        .map((e) => e.id).filter((x) => set.has(x))
+        .concat([...set].filter((x) => !(META.buff_events || []).some((e) => e.id === x)));
+      // A fight, like every other buff setting here — see `renderBuffCards`.
+      markScenarioDirty();
+      renderSimBuffs();
+      if ($("opt-buffs")) renderOptBuffs();
+    });
+  });
+}
+
 function renderSimBuffs() {
+  renderBuffEvents();
   const btn = $("sim-buffs-all");
   const list = simBuffsAll && allBuffList ? allBuffList : buffList;
   if (btn) {

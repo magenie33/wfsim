@@ -318,19 +318,13 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
 
 /// THE RULER'S TERMS PLUS THE ENTRANT, as the request the simulator answers.
 ///
-/// **IT NAMES THE MODE, NEVER THE FORM THE MODE RESOLVES TO.** A form is not a
-/// mode: `WeaponPlayMode::form()` maps every cycle to the single policy word
-/// `gauge_cycle`, which says "fill a gauge, spend it, come back" and does NOT
-/// say in which half the gauge is filled. A weapon that can fill it in either
-/// of two forms has two cycles, and both send `gauge_cycle` — so `parse_fight`
-/// fell back to the arsenal's own form and scored them identically. Every
-/// `alternate_cycle` row on the board was a `cycle` score under another name,
-/// 172.0 where the mode asked for is worth 183.1.
+/// **IT NAMES THE MODE, NEVER THE FORM THE MODE RESOLVES TO.** `form()` maps
+/// every cycle onto the one policy word `gauge_cycle`, which does not say in
+/// which half the gauge is filled — so a weapon with two cycles sent one
+/// request for both and `parse_fight` fell back to the arsenal's own form.
 ///
 /// Extracted so the assertion can be made on the REQUEST: a decision taken
-/// inline in a scoring loop is one no test can reach, and this one is the
-/// boundary AGENTS.md names — the simulator is the truth and the scorer must
-/// ask it the same question the page does.
+/// inline in a scoring loop is one no test can reach.
 fn simulate_request(
     scenario: &Value,
     v: &wfsim_engine::builds::ValidBuild,
@@ -1015,20 +1009,12 @@ fn wfsim_engine_webapi_simulate(v: &Value) -> Value {
 mod tests {
     use super::*;
 
-    /// THE SCORER ASKS FOR A MODE, AND TWO MODES ARE TWO QUESTIONS.
+    /// THE SCORER ASKS FOR A MODE, AND TWO MODES ARE TWO QUESTIONS. A weapon
+    /// that can fill its gauge either way sent one request for both cycles, so
+    /// the two modes scored to the last digit.
     ///
-    /// The request named the FORM the mode resolves to, and `form()` maps every
-    /// cycle onto the single policy word `gauge_cycle` — which says a gauge is
-    /// filled and spent and does NOT say in which half it is filled. So a
-    /// weapon that can fill it either way sent one request for both of its
-    /// cycles, `parse_fight` fell back to the arsenal's own form, and the two
-    /// modes scored to the last digit: the Ballistica Prime's whole
-    /// `alternate_cycle` group was its `cycle` numbers under another name.
-    ///
-    /// DERIVED, NOT LISTED. Every weapon, every pair of its modes: if two share
-    /// a form, the requests must still differ. That is the property — a mode is
-    /// what a row IS — and it keeps holding for the next weapon with two ways
-    /// to fill one gauge, which no list here would know about.
+    /// DERIVED, NOT LISTED: every weapon, every pair of its modes, and two
+    /// sharing a form must still differ.
     #[test]
     fn two_modes_sharing_one_form_are_two_requests() {
         let scenario = json!({ "enemy": "thrax_centurion", "level": 9999 });
@@ -1064,20 +1050,22 @@ mod tests {
                 }
             }
         }
-        // …AND THE CASE EXISTS. An assertion that no pair collides passes
-        // vacuously on a roster where no two modes share a form, which is what
-        // this looked like until the Ballistica Prime's second cycle landed.
+        // …AND THE CASE EXISTS: "no pair collides" passes vacuously on a
+        // roster where no two modes share a form.
         assert!(shared > 0, "no weapon has two modes sharing one form: the case is untested");
     }
 
-    /// …AND IT NAMES THE MODE RATHER THAN THE FORM. The assertion above is
-    /// satisfied by any two requests that differ; this says WHICH field carries
-    /// the difference, because `form` is the field a request falls back to when
-    /// it names no mode and two spellings of one fact is how the loser goes
-    /// silent.
+    /// …AND IT NAMES THE MODE RATHER THAN THE FORM. The assertion above is met
+    /// by any two requests that differ; this says WHICH field carries it.
     #[test]
     fn the_request_names_the_mode_and_not_a_form() {
-        let scenario = json!({ "enemy": "thrax_centurion", "form": "stale" });
+        let scenario = json!({
+            "enemy": "thrax_centurion", "form": "stale",
+            // A RULER'S OWN TERM, which the scorer must carry rather than know
+            // about: this is how a benchmark declares a fight that hands out no
+            // kills and gets a whole board out of it (`engine::buff_events`).
+            "buff_events_off": ["kill"],
+        });
         let v = wfsim_engine::builds::ValidBuild {
             weapon: "ballistica_prime".to_string(),
             mods: vec![],
@@ -1094,6 +1082,7 @@ mod tests {
         let req = simulate_request(&scenario, &v, *m);
         assert_eq!(req.get("mode").and_then(Value::as_str), Some("alternate_cycle"));
         assert_eq!(req.get("form"), None, "a stale `form` survived beside the mode");
+        assert_eq!(req["buff_events_off"], json!(["kill"]), "the ruler's own term was dropped");
     }
 
     fn row(weapon: &str, mode: &str, score: f64) -> Row {
