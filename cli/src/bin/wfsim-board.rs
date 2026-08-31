@@ -316,6 +316,65 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
     Ok(out)
 }
 
+/// THE RULER'S TERMS PLUS THE ENTRANT, as the request the simulator answers.
+///
+/// **IT NAMES THE MODE, NEVER THE FORM THE MODE RESOLVES TO.** A form is not a
+/// mode: `WeaponPlayMode::form()` maps every cycle to the single policy word
+/// `gauge_cycle`, which says "fill a gauge, spend it, come back" and does NOT
+/// say in which half the gauge is filled. A weapon that can fill it in either
+/// of two forms has two cycles, and both send `gauge_cycle` — so `parse_fight`
+/// fell back to the arsenal's own form and scored them identically. Every
+/// `alternate_cycle` row on the board was a `cycle` score under another name,
+/// 172.0 where the mode asked for is worth 183.1.
+///
+/// Extracted so the assertion can be made on the REQUEST: a decision taken
+/// inline in a scoring loop is one no test can reach, and this one is the
+/// boundary AGENTS.md names — the simulator is the truth and the scorer must
+/// ask it the same question the page does.
+fn simulate_request(
+    scenario: &Value,
+    v: &wfsim_engine::builds::ValidBuild,
+    played: wfsim_engine::weapons_data::WeaponPlayMode,
+) -> Value {
+    let mut req = scenario.clone();
+    let Some(o) = req.as_object_mut() else { return req };
+    o.insert("weapon".into(), json!(v.weapon));
+    // THE RIVEN'S SLOT IS SPELLED DIFFERENTLY ON THE WIRE. A record carries the
+    // bare `riven` because the endpoint's ids are `[a-z0-9_]`; a simulate
+    // request names the riven ITEM, which is `riven:<name>`. The translation is
+    // one line and lives here so neither protocol has to bend for the other.
+    o.insert(
+        "mods".into(),
+        json!(v
+            .mods
+            .iter()
+            .map(|m| if m == wfsim_engine::builds::RIVEN_SLOT {
+                RIVEN_ITEM.to_string()
+            } else {
+                m.clone()
+            })
+            .chain(v.exilus.iter().cloned())
+            .collect::<Vec<_>>()),
+    );
+    o.insert("evolutions".into(), json!(v.evolutions));
+    o.insert("arcane".into(), json!(v.arcanes));
+    // THE VALENCE, at the ruler's own terms: the element the entrant named, and
+    // the roll's MAXIMUM whatever they said it was. Every player can fuse to
+    // 60%, so ranking a lower roll would be ranking how many duplicates someone
+    // farmed — the same reason every row here is scored at full Forma.
+    if !v.valence.is_empty() {
+        o.insert("valence_element".into(), json!(v.valence));
+        let max = wfsim_engine::weapons_data::valence_of(&v.weapon).map_or(0.0, |s| s.max);
+        o.insert("valence_bonus".into(), json!(max));
+    }
+    o.insert("mode".into(), json!(played.id));
+    // ONE SPELLING OF ONE FACT. `form` is what a request carries when it names
+    // no mode, and a ruler that carried both would be two answers to one
+    // question with the loser silent.
+    o.remove("form");
+    req
+}
+
 fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!("usage: wfsim-board <benchmark-id> [board.json] [--shard i/n] \
@@ -557,43 +616,7 @@ fn main() {
             continue;
         }
 
-        // THE RIVEN'S SLOT IS SPELLED DIFFERENTLY ON THE WIRE. A record carries
-        // the bare `riven` because the endpoint's ids are `[a-z0-9_]`; a
-        // simulate request names the riven ITEM, which is `riven:<name>`. The
-        // translation is one line and lives here so neither protocol has to
-        // bend for the other.
-        let mut req = scenario.clone();
-        if let Some(o) = req.as_object_mut() {
-            o.insert("weapon".into(), json!(v.weapon));
-            o.insert(
-                "mods".into(),
-                json!(v
-                    .mods
-                    .iter()
-                    .map(|m| if m == wfsim_engine::builds::RIVEN_SLOT {
-                        RIVEN_ITEM.to_string()
-                    } else {
-                        m.clone()
-                    })
-                    .chain(v.exilus.iter().cloned())
-                    .collect::<Vec<_>>()),
-            );
-            o.insert("evolutions".into(), json!(v.evolutions));
-            o.insert("arcane".into(), json!(v.arcanes));
-            // THE VALENCE, at the ruler's own terms: the element the entrant
-            // named, and the roll's MAXIMUM whatever they said it was. Every
-            // player can fuse to 60%, so ranking a lower roll would be ranking
-            // how many duplicates someone farmed — the same reason every row
-            // here is scored at full Forma.
-            if !v.valence.is_empty() {
-                o.insert("valence_element".into(), json!(v.valence));
-                let max = wfsim_engine::weapons_data::valence_of(&v.weapon)
-                    .map_or(0.0, |s| s.max);
-                o.insert("valence_bonus".into(), json!(max));
-            }
-            // The one place a MODE becomes a FORM.
-            o.insert("form".into(), json!(played.form()));
-        }
+        let mut req = simulate_request(&scenario, &v, played);
         // ONE ROW PER BUILD, and the identity is computed BEFORE the fight
         // because it decides whether there is one to run at all, rather than
         // being computed afterwards for dedup alone.
@@ -991,6 +1014,87 @@ fn wfsim_engine_webapi_simulate(v: &Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE SCORER ASKS FOR A MODE, AND TWO MODES ARE TWO QUESTIONS.
+    ///
+    /// The request named the FORM the mode resolves to, and `form()` maps every
+    /// cycle onto the single policy word `gauge_cycle` — which says a gauge is
+    /// filled and spent and does NOT say in which half it is filled. So a
+    /// weapon that can fill it either way sent one request for both of its
+    /// cycles, `parse_fight` fell back to the arsenal's own form, and the two
+    /// modes scored to the last digit: the Ballistica Prime's whole
+    /// `alternate_cycle` group was its `cycle` numbers under another name.
+    ///
+    /// DERIVED, NOT LISTED. Every weapon, every pair of its modes: if two share
+    /// a form, the requests must still differ. That is the property — a mode is
+    /// what a row IS — and it keeps holding for the next weapon with two ways
+    /// to fill one gauge, which no list here would know about.
+    #[test]
+    fn two_modes_sharing_one_form_are_two_requests() {
+        let scenario = json!({ "enemy": "thrax_centurion", "level": 9999 });
+        let build = |id: &str| wfsim_engine::builds::ValidBuild {
+            weapon: id.to_string(),
+            mods: vec![],
+            evolutions: vec![],
+            arcanes: vec![],
+            valence: String::new(),
+            exilus: None,
+            riven: None,
+            forma: 0,
+            drain: 0,
+        };
+        let mut shared = 0usize;
+        for w in wfsim_engine::weapons_data::roster() {
+            let modes = wfsim_engine::weapons_data::play_modes(&w.id);
+            let v = build(&w.id);
+            for (i, a) in modes.iter().enumerate() {
+                for b in modes.iter().skip(i + 1) {
+                    let (ra, rb) = (
+                        simulate_request(&scenario, &v, *a),
+                        simulate_request(&scenario, &v, *b),
+                    );
+                    if a.form() == b.form() {
+                        shared += 1;
+                    }
+                    assert_ne!(
+                        ra, rb,
+                        "{}: `{}` and `{}` ask the simulator the same question",
+                        w.id, a.id, b.id
+                    );
+                }
+            }
+        }
+        // …AND THE CASE EXISTS. An assertion that no pair collides passes
+        // vacuously on a roster where no two modes share a form, which is what
+        // this looked like until the Ballistica Prime's second cycle landed.
+        assert!(shared > 0, "no weapon has two modes sharing one form: the case is untested");
+    }
+
+    /// …AND IT NAMES THE MODE RATHER THAN THE FORM. The assertion above is
+    /// satisfied by any two requests that differ; this says WHICH field carries
+    /// the difference, because `form` is the field a request falls back to when
+    /// it names no mode and two spellings of one fact is how the loser goes
+    /// silent.
+    #[test]
+    fn the_request_names_the_mode_and_not_a_form() {
+        let scenario = json!({ "enemy": "thrax_centurion", "form": "stale" });
+        let v = wfsim_engine::builds::ValidBuild {
+            weapon: "ballistica_prime".to_string(),
+            mods: vec![],
+            evolutions: vec![],
+            arcanes: vec![],
+            valence: String::new(),
+            exilus: None,
+            riven: None,
+            forma: 0,
+            drain: 0,
+        };
+        let modes = wfsim_engine::weapons_data::play_modes("ballistica_prime");
+        let m = modes.iter().find(|m| m.id == "alternate_cycle").expect("alternate_cycle");
+        let req = simulate_request(&scenario, &v, *m);
+        assert_eq!(req.get("mode").and_then(Value::as_str), Some("alternate_cycle"));
+        assert_eq!(req.get("form"), None, "a stale `form` survived beside the mode");
+    }
 
     fn row(weapon: &str, mode: &str, score: f64) -> Row {
         Row {
