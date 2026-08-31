@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4098
-engine: c2b9dd6613ce22bd33d356b722917e3b6add9aeb
+submissions: 4105
+engine: b4662a054030ff0bd1793a2123dfcf58bd5719b4
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -965,6 +965,17 @@ entries:
     arcanes: [primary_merciless]
   - weapon: braton_prime
     mode: cycle
+    score: 0.3287215957326165
+    fp: 14c475f94e85dd89
+    mods: [galvanized_chamber, galvanized_aptitude, point_strike, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [braton_prime_evo1_incarnon_form, braton_prime_munitions_grit, braton_prime_mercenary_chamber, braton_prime_prelude_of_might]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [damage, toxin]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: braton_prime
+    mode: cycle
     score: 0.31314263457918506
     fp: 6bd8739dbb5d7c76
     mods: [galvanized_chamber, galvanized_aptitude, point_strike, vile_acceleration, vital_sense, riven, primed_cryo_rounds, infected_clip]
@@ -1064,6 +1075,16 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 4.894610515679011
+    fp: 78c972451ca68910
+    mods: [galvanized_chamber, vital_sense, gilded_truth, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
     score: 3.9694349931684143
     fp: b14a8fcd59d29b82
     mods: [galvanized_chamber, serration, hammer_shot, gilded_truth, magnetic_capacity, rime_rounds, riven, hellfire]
@@ -1083,17 +1104,6 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: burston_prime
-    mode: cycle
-    score: 2.3465735676815385
-    fp: 91acb18045a5726f
-    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, riven]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_merciless]
-    riven:
-      bonuses: [critical_damage, damage, heat]
-      malus: slash
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -6292,6 +6302,18 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 4.3124464167748275
+    fp: d92bf11b0d3bd823
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, speed_trigger, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     score: 4.298326352080347
