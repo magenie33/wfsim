@@ -587,6 +587,15 @@
         </span>
       </div>
       <div class="bb">
+        <!-- THE STANCE SLOT COMES FIRST, because it PAYS: it is the one slot
+             that hands capacity to the weapon instead of spending it, and the
+             game seats it ahead of the eight for the same reason. A weapon
+             without one shows NOTHING here, rather than a slot-shaped apology. -->
+        <div id="stance-block">
+          <div class="exlabel" data-i18n>Stance</div>
+          <div id="stance" class="slots"></div>
+          <div class="exhint" data-i18n>A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It also GRANTS capacity instead of costing it — 10 on a slot of its own polarity, 5 on a bare one, 4 on the wrong colour.</div>
+        </div>
         <div id="mod-slots" class="slots"></div>
         <!-- One block, label included: a weapon that has no exilus slot shows
              NOTHING here, rather than a slot-shaped apology. -->
@@ -598,14 +607,6 @@
                assumes it, so it is stated where the slot is rather than left in
                docs/INVESTMENT.md. -->
           <div class="exhint" data-i18n>A polarity can be swapped between this slot and a main one — the slot stays Exilus. So its polarity counts toward any build, even one that leaves it empty.</div>
-        </div>
-        <!-- THE STANCE SLOT, on a melee weapon and nowhere else. Same rule as
-             the exilus block above: a weapon without one shows NOTHING here,
-             rather than a slot-shaped apology. -->
-        <div id="stance-block">
-          <div class="exlabel" data-i18n>Stance</div>
-          <div id="stance" class="slots"></div>
-          <div class="exhint" data-i18n>A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It grants capacity rather than costing it, which this page does not model — so a build that fits here fits in game.</div>
         </div>
       </div>
     </section>
@@ -991,7 +992,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">755d9091+ · 2026-08-31 16:06Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">0ca5d644+ · 2026-08-31 16:22Z</span>
     </div>
   </footer>
 
