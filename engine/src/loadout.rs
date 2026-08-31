@@ -1834,6 +1834,15 @@ pub struct WeaponBase {
     /// See [`crate::weapons_data::AttackSpec::slam`] — the weapon's own slam,
     /// unmodded, fired by a combo swing that ends on one.
     pub slam: Option<RadialBase>,
+    /// THE BASE A SLAM IS A MULTIPLE OF — the WEAPON's own, not this form's.
+    ///
+    /// *"Slam attacks do 2x the damage of a normal attack (3x for heavy
+    /// slam)"* (wiki, Melee), so a flat base add reaches a slam multiplied by
+    /// that ratio. A form whose whole attack IS its explosion states
+    /// `damage: {impact: 0}` and has no base of its own to read the ratio
+    /// against, so this carries the group's default form's — without it the
+    /// add is divided by zero and dropped, which is what happened.
+    pub slam_base_total: f64,
     /// See [`crate::weapons_data::AttackSpec::heavy`] — the class's heavy
     /// attack, stated on every melee form because Tennokai turns a LIGHT swing
     /// into one.
@@ -3137,31 +3146,55 @@ impl WeaponBase {
     /// a bool on purpose: a build carrying two flat-damage perks that disagree
     /// contributes part of its total, and a bool cannot say that.
     pub fn add_flat_base_damage(&mut self, flat: f64, into_co: f64) {
-        let original_total = self.base_vector.total();
-        if flat <= 0.0 || original_total <= 0.0 {
+        if flat <= 0.0 {
             return;
         }
-        let evolved = original_total + flat;
-        self.base_vector = self.base_vector.scale(evolved / original_total);
-        self.co_base += into_co;
-        if let Some(r) = self.radial.as_mut() {
+        let original_total = self.base_vector.total();
+        // A DIRECT VECTOR OF ZERO IS A FORM WHOSE WHOLE ATTACK IS ITS EXPLOSION
+        // — the heavy slam states exactly that — so this cannot return early on
+        // it: the add still has an explosion to reach.
+        if original_total > 0.0 {
+            let evolved = original_total + flat;
+            self.base_vector = self.base_vector.scale(evolved / original_total);
+            self.co_base += into_co;
+        }
+        // A SLAM IS A MULTIPLE OF THE NORMAL ATTACK, so a flat base add reaches
+        // it MULTIPLIED: *"Slam attacks do 2x the damage of a normal attack (3x
+        // for heavy slam)"* (wiki, Melee). The Magistar's heavy slam is 630
+        // against a 210 base — exactly 3x — so `+100 Base Damage` is worth
+        // +300 there and not +100. An explosion that is NOT a slam is a stat of
+        // its own beside the shot's, and takes the same absolute add it always
+        // did, which nothing has measured either way.
+        let slam_scaled = |base_total: f64, r: &mut RadialBase| {
             let rad_original = r.base_vector.total();
-            if rad_original > 0.0 {
-                // THE EXPLOSION TAKES THE SAME ABSOLUTE ADD, not a pro-rata
-                // share of it.
-                r.base_vector = r.base_vector.scale((rad_original + flat) / rad_original);
-                // …AND ITS CO BASE DOES NOT GROW, EVER. That is the behaviour
-                // this refactor preserved rather than chose: the old code set
-                // the radial's fraction to `original / evolved` unconditionally
-                // while the direct hit's followed the perk's flag, so the two
-                // parts of one weapon could disagree about the same +42. They
-                // agree for every `Adding` entry now that its default excludes,
-                // and differ only on a `Multiplying` entry with an explosion,
-                // where nothing has been measured either way. Written as
-                // `+= 0.0` so the day a measurement arrives there is one line
-                // to change and it is this one.
-                r.co_base += 0.0;
+            if rad_original <= 0.0 {
+                return;
             }
+            let add = if r.blast_kind == crate::weapons_data::BlastKind::Slam {
+                flat * rad_original / base_total.max(1e-9)
+            } else {
+                flat
+            };
+            r.base_vector = r.base_vector.scale((rad_original + add) / rad_original);
+            // …AND ITS CO BASE DOES NOT GROW, EVER. That is the behaviour this
+            // refactor preserved rather than chose: the old code set the
+            // radial's fraction to `original / evolved` unconditionally while
+            // the direct hit's followed the perk's flag, so the two parts of one
+            // weapon could disagree about the same +42. Written as `+= 0.0` so
+            // the day a measurement arrives there is one line to change.
+            r.co_base += 0.0;
+        };
+        // THE RATIO IS AGAINST THE WEAPON'S OWN BASE — see `slam_base_total`,
+        // which is this form's when it has one and the group default's when the
+        // whole attack is the explosion.
+        let reference = self.slam_base_total;
+        if let Some(r) = self.radial.as_mut() {
+            slam_scaled(reference, r);
+        }
+        // …AND THE WEAPON'S OWN SLAM, which a combo ends on. It is the same
+        // attack seen from a different swing and was taking no flat add at all.
+        if let Some(sl) = self.slam.as_mut() {
+            slam_scaled(reference, sl);
         }
     }
 
@@ -7110,6 +7143,34 @@ mod tests {
     /// same `(combo - 1)` scaling and the same bracket the mod buys, at 10% a
     /// piece. THREE of the six members are Warframe mods, so 30% is the ceiling
     /// a weapon build can reach here and the set file says so.
+    /// A SLAM IS A MULTIPLE OF THE NORMAL ATTACK, so a flat base add reaches it
+    /// MULTIPLIED — and it reaches it at all.
+    ///
+    /// *"Slam attacks do 2x the damage of a normal attack (3x for heavy
+    /// slam)"* (wiki, Melee). The Magistar is 210 base and its heavy slam is
+    /// 630, which is that 3x, so `Base Damage +100` is worth +300 there:
+    /// `3 x (210 + 100)`.
+    ///
+    /// A ZERO DIRECT VECTOR IS NOT AN EMPTY WEAPON. A form whose whole attack
+    /// IS its explosion states `damage: {impact: 0}`, so neither the perk path
+    /// nor the fold may return early on it: the mode with all of its damage in
+    /// the explosion is the one the add most has to reach.
+    #[test]
+    fn a_flat_base_add_reaches_a_slam_at_the_slam_s_own_multiple() {
+        let evos = ["magistar_evo1_incarnon_form", "magistar_edge_of_justice"];
+        let bare = WeaponBase::from_data("magistar_heavy_slam", false, &[]);
+        let evolved = WeaponBase::from_data("magistar_heavy_slam", false, &evos);
+        let radial = |b: &WeaponBase| b.radial.as_ref().expect("the slam IS the attack").base_vector.total();
+        assert_eq!(radial(&bare), 630.0, "3x a 210 base");
+        assert_eq!(radial(&evolved), 930.0, "…and 3x a 310 one");
+
+        // …AND THE WEAPON'S OWN TRAILING SLAM, which a combo ends on: 210 is
+        // 1x the base, so the same +100 is worth exactly +100 there.
+        let combo = WeaponBase::from_data("magistar", false, &evos);
+        assert_eq!(combo.base_vector.total(), 310.0);
+        assert_eq!(combo.slam.as_ref().expect("Crushing Ruin ends on one").base_vector.total(), 310.0);
+    }
+
     #[test]
     fn each_gladiator_member_adds_its_share_to_the_combo_crit_bracket() {
         let pool = crate::mods_data::pool_for_weapon("magistar");

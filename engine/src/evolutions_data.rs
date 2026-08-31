@@ -2350,7 +2350,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
             half_hp_rate
         };
     }
-    if flat > 0.0 && original_total > 0.0 {
+    // NOT GATED ON THE DIRECT VECTOR. A form whose whole attack is its explosion
+    // states `damage: {impact: 0}` — the heavy slam does — and an
+    // `original_total > 0` here dropped the add before it could reach that
+    // explosion, which is where all of its damage is.
+    if flat > 0.0 {
         // THE FOLD ITSELF LIVES ON `WeaponBase`, because a flat base-damage add
         // reaches this weapon by two routes — a plain perk here, and a perk the
         // player's state gates, which cannot be resolved until `resolve_for` has

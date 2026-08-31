@@ -2294,6 +2294,20 @@ impl WeaponSpec {
 /// is the view that reads them back as ONE weapon with several modes. A
 /// weapon with a single entry has exactly one form — that is the common case,
 /// and it is a real registration (`form: base`), not an absence.
+/// THE BASE A SLAM IS A MULTIPLE OF — see [`crate::loadout::WeaponBase::
+/// slam_base_total`]. This form's own when it has one; otherwise the group's
+/// DEFAULT form, which is the weapon a slam-only entry is a way of swinging.
+fn slam_base_total(s: &WeaponSpec, own: f64) -> f64 {
+    if own > 0.0 {
+        return own;
+    }
+    forms_of(&s.id)
+        .iter()
+        .find(|f| f.is_default)
+        .and_then(|f| spec(f.weapon_id))
+        .map_or(0.0, |d| d.attack.damage.values().sum())
+}
+
 pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
     let Some(spec) = spec(weapon_id) else { return Vec::new() };
     let group = spec.group();
@@ -3609,6 +3623,7 @@ pub fn base_panel_assembled(
         indirect: Vec::new(),
         reload_damage_buff: 0.0,
         base_vector: vector,
+        slam_base_total: slam_base_total(s, vector.total()),
         base_crit_chance: s.attack.crit_chance,
         base_crit_damage: s.attack.crit_multiplier,
         base_status_chance: s.attack.status_chance,
