@@ -64,7 +64,7 @@ const r = await evaluate(`(async () => {
   await go('/weapons/Burston/rivens');
   await mk();
   out.picked = await pick('0', 'damage');
-  out.name = activeRivenName();
+  out.name = activeRivenId();
   out.burstonStat = firstStat();
   out.burstonDisposition = weaponInfo('burston').disposition;
   out.scopes = {
@@ -96,16 +96,19 @@ const r = await evaluate(`(async () => {
   out.kitScopes = kit.map((w) => rivenScope(w.id));
   out.kitClasses = kit.map((w) => w.riven_class || w.mod_class);
 
-  // ---- 5. THE MIGRATION KEEPS WHAT IS ALREADY THERE ---------------------
-  // Two variants of one family, each with a card called 'riven 1' — the
-  // collision that cannot simply be renamed, because the Prime's BUILD is
-  // pointing at that name and would silently equip the other one's card.
+  // ---- 5. THE FOLD GIVES EACH CARD AN IDENTITY -------------------------
+  // Two variants of one family, each with a card called 'riven 1', and each
+  // weapon's build pointing at that NAME. Before identities the only way out
+  // was to rename one and rewrite its builds; now both keep the name and the
+  // two builds follow two different cards, which is what they always meant.
   localStorage.clear();
   const card = (which) => ({ name: 'riven 1', state: {
     shape: '2', rank: 8, polarity: 'madurai',
     bonuses: [{ id: 'damage', roll: which === 'a' ? 0.9 : 0.4 }], malus: null } });
   localStorage.setItem('wfsim-customs-burston-rivens', JSON.stringify([card('a')]));
   localStorage.setItem('wfsim-customs-burston_prime-rivens', JSON.stringify([card('b')]));
+  localStorage.setItem('wfsim-presets-burston-builder-builds', JSON.stringify(
+    [{ name: 'b1', state: { slots: [{ mod: 'riven:riven 1', pol: null }] } }]));
   localStorage.setItem('wfsim-presets-burston_prime-builder-builds', JSON.stringify(
     [{ name: 'b1', state: { slots: [{ mod: 'riven:riven 1', pol: null }] } }]));
   foldRivensIntoOneList();
@@ -114,10 +117,11 @@ const r = await evaluate(`(async () => {
   };
   out.merged = (read('wfsim-customs-rivens') || [])
     .filter((p) => (p.scope || '') === out.scopes.burston)
-    .map((p) => ({ name: p.name, roll: ((p.state.bonuses || [])[0] || {}).roll }));
+    .map((p) => ({ id: p.id, name: p.name, roll: ((p.state.bonuses || [])[0] || {}).roll }));
+  out.burstonPoints = read('wfsim-presets-burston-builder-builds')[0].state.slots[0].mod;
   out.oldKeysGone = ['wfsim-customs-burston-rivens', 'wfsim-customs-burston_prime-rivens']
     .filter((k) => localStorage.getItem(k) !== null);
-  out.buildPoints = JSON.stringify(read('wfsim-presets-burston_prime-builder-builds'));
+  out.buildPoints = read('wfsim-presets-burston_prime-builder-builds')[0].state.slots[0].mod;
 
   // ---- 6. RENAME AND DELETE REACH EVERY BUILD IN THE FAMILY -------------
   // A riven's id IS its name, so both are the same operation seen from a build.
@@ -128,7 +132,7 @@ const r = await evaluate(`(async () => {
   localStorage.clear();
   await go('/weapons/Burston/rivens');
   await mk();
-  out.rn = activeRivenName();
+  out.rn = activeRivenId();
   const equipped = () => JSON.stringify([{ name: 'b1', state: { slots: [
     { mod: 'riven:' + out.rn, rank: 3, pol: null }] } }]);
   localStorage.setItem('wfsim-presets-burston_prime-builder-builds', equipped());
@@ -147,8 +151,9 @@ const r = await evaluate(`(async () => {
     await sleep(1000);
     return true;
   };
-  out.renamed = await renameTo(out.rn + ' x');
-  out.nameAfter = activeRivenName();
+  out.renamed = await renameTo('a new label');
+  out.idAfter = activeRivenId();
+  out.labelAfter = (loadPresetList('rivens').find((p) => p.id === out.rn) || {}).name;
   out.primeAfterRename = localStorage.getItem('wfsim-presets-burston_prime-builder-builds');
   out.bratonAfterRename = localStorage.getItem('wfsim-presets-braton-builder-builds');
 
@@ -167,7 +172,7 @@ const r = await evaluate(`(async () => {
   await go('/weapons/Burston/rivens');
   await mk();
   await pick('0', 'damage');
-  const nm = activeRivenName();
+  const nm = activeRivenId();
   await go('/weapons/Burston_Prime');
   slots[0].mod = 'riven:' + nm;
   renderMods(); refreshPanel(); markPresetDirty(); await sleep(1400);
@@ -245,32 +250,35 @@ check("a Kitgun's primary and secondary are two cards, not one",
 
 check("both variants' existing cards survive the move",
   (r.merged || []).length === 2, JSON.stringify(r.merged));
-check("...the colliding name was renamed rather than overwritten",
-  new Set((r.merged || []).map((x) => x.name)).size === 2
+// A NAME IS A LABEL NOW. Two cards keeping one name is not a collision to
+// settle — it is two cards, told apart by the identity a build points at.
+check("...both keep the name they had, and each got its own identity",
+  new Set((r.merged || []).map((x) => x.name)).size === 1
+    && new Set((r.merged || []).map((x) => x.id)).size === 2
     && new Set((r.merged || []).map((x) => x.roll)).size === 2,
   JSON.stringify(r.merged));
 check("...the old per-weapon keys are gone", (r.oldKeysGone || []).length === 0,
   JSON.stringify(r.oldKeysGone));
-// THE ONE THAT CAN LOSE WORK SILENTLY: a build equipping the renamed card must
-// follow it. Left alone it keeps the old name, which the OTHER variant's card
-// now owns — so the build comes back equipping a riven the player never put on
-// it, with nothing on screen saying so.
-check("...and the build that equipped the renamed card follows it",
-  /riven:riven 1 \(burston_prime\)/.test(r.buildPoints || ""),
-  r.buildPoints);
+// THE ONE THAT CAN LOSE WORK SILENTLY: each build named the card in ITS OWN
+// list, and only the key it came from says which. Point them both at the same
+// identity and one player comes back wearing a riven they never put on.
+check("...and each weapon's build followed ITS OWN card",
+  /^riven:/.test(r.buildPoints || "") && /^riven:/.test(r.burstonPoints || "")
+    && r.buildPoints !== r.burstonPoints,
+  `${r.burstonPoints} vs ${r.buildPoints}`);
 
 // ---- a rename and a delete reach every build that names the card -----------
 
 check("the riven was renamed through the page's own control",
-  r.renamed === true && r.nameAfter === r.rn + " x",
-  `${r.rn} -> ${r.nameAfter}`);
-// THE ONE THE OWNER'S QUESTION FOUND. Both operations touched the LIVE build
-// only — already narrow for a weapon's other saved builds, and filing by family
-// widened it across weapons.
-check("...and a SAVED build on the other variant followed it",
-  new RegExp("riven:" + r.rn + " x").test(r.primeAfterRename || ""),
-  r.primeAfterRename);
-check("...while another family's build with the same name did NOT move",
+  r.renamed === true && r.labelAfter === "a new label",
+  `${r.rn} -> ${r.labelAfter}`);
+// A RENAME IS A LABEL EDIT AND MOVES NOTHING. A build points at the card's
+// identity, so the reference a rename once had to chase across a whole family
+// is the one thing that cannot come loose.
+check("...and the card kept its identity, so every build stayed pointed at it",
+  r.idAfter === r.rn && new RegExp("riven:" + r.rn + "\"").test(r.primeAfterRename || ""),
+  `${r.idAfter} / ${r.primeAfterRename}`);
+check("...including another family's build, which was never this card's",
   new RegExp("riven:" + r.rn + "\"").test(r.bratonAfterRename || ""),
   r.bratonAfterRename);
 check("deleting it clears that saved build's slot rather than orphaning it",

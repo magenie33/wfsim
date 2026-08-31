@@ -809,7 +809,13 @@ fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
         .map(|a| {
             a.iter()
                 .filter_map(|r| {
-                    let name = r.get("name")?.as_str()?;
+                    // THE ITEM ID IS BUILT FROM `id`, and from `name` only when
+                    // there is none. A card's identity is its own key, not its
+                    // label — a rename must not move what a build points at —
+                    // and a share link written before identities existed
+                    // carries the label alone, so both still open.
+                    let name = r.get("id").and_then(Value::as_str)
+                        .or_else(|| r.get("name").and_then(Value::as_str))?;
                     let s = r.get("spec")?;
                     let spec = RivenSpec {
                         class: class.clone(),

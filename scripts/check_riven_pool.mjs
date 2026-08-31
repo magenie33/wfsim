@@ -102,4 +102,59 @@ for (const [i, [wiki]] of CASES.entries()) {
     `${r[i].slots["0"].length} stats`);
 }
 
+// ---------------------------------------------------------------------------
+// THE LIST SHOWS A CARD'S NUMBERS THE MOMENT THE CARD EXISTS.
+//
+// Its values are the ENGINE's — a roll against this weapon's disposition, asked
+// for over `/api/riven` — and they were keyed by NAME and fetched only at boot.
+// So a card that had just been copied, or one whose name had just changed, had
+// no entry: the row drew its shape and its capacity and no stats at all, until
+// something else happened to refresh. Dragging a value was doing that
+// invisibly, which is why it looked like the numbers needed a nudge.
+//
+// Copying is the case worth seeding rather than fetching: an identical spec
+// cannot answer differently, so the copy shows the original's numbers with no
+// round trip at all.
+const shown = await evaluate(`(async () => {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  const rows = () => [...document.querySelectorAll('#riven-all .rv-all')]
+    .map(el => el.textContent.replace(/\\s+/g, ' ').trim());
+  const press = async (sel) => { const b = document.querySelector(sel); if (b) b.click(); await s(1800); };
+  localStorage.clear();
+  // A card with stats, so the list has numbers it can get wrong.
+  localStorage.setItem('wfsim-customs-rivens', JSON.stringify([{
+    id: 'seed1', name: 'seeded', scope: rivenScope('burston_prime'),
+    state: { shape: '2', rank: 8, polarity: 'madurai',
+      bonuses: [{ id: 'damage', roll: 0.9 }], malus: null } }]));
+  history.pushState({}, '', '/weapons/Burston_Prime/rivens'); route(); await s(5000);
+  const out = { atStart: rows() };
+  // OPENED THE WAY A READER OPENS IT — clicking the row, which is also the
+  // path that has to keep working now that a row is addressed by identity.
+  await press('#riven-all [data-open="seed1"]');
+  out.opened = activeRivenId();
+  await press('.cu-dup');
+  out.afterCopy = rows();
+  document.querySelector('.cu-ren').click(); await s(400);
+  const inp = document.querySelector('.cu-name');
+  inp.value = 'a new label';
+  inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  await s(1200);
+  out.afterRename = rows();
+  return out;
+})()`);
+
+const hasStats = (rows) => rows.length > 0 && rows.every((t) => /%/.test(t));
+check("a saved riven's row shows its numbers", hasStats(shown.atStart),
+  JSON.stringify(shown.atStart));
+check("...and clicking it opens that card", shown.opened === "seed1", shown.opened);
+check("...a COPY shows them the moment it appears, with no round trip",
+  shown.afterCopy.length === 2 && hasStats(shown.afterCopy),
+  JSON.stringify(shown.afterCopy));
+// A RENAME CANNOT LOSE THEM, because the values are keyed by the card and a
+// name is not the card.
+check("...and a RENAME keeps them", shown.afterRename.length === 2
+  && hasStats(shown.afterRename)
+  && shown.afterRename.some((t) => t.includes("a new label")),
+  JSON.stringify(shown.afterRename));
+
 await app.finish("a riven editor offers the stats that weapon's rivens roll");

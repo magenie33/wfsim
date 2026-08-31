@@ -2312,6 +2312,22 @@ function renderSupport() {
 // is a mod that does nothing, which is an ordinary thing for a build to
 // contain and not worth refusing.
 const RIVEN_PREFIX = "riven:";
+/// A CARD'S IDENTITY, WHICH IS NOT ITS NAME.
+///
+/// A build references a riven as `riven:<id>`. While that id was the NAME, a
+/// rename had to chase every saved build that pointed at the card, two cards
+/// could not share a label, and a collision had to be settled by renaming
+/// somebody's riven. A name is something a player edits; an identity is not.
+///
+/// Opaque and never shown. `Date.now()` orders them and the suffix separates
+/// two made in the same millisecond — uniqueness is checked against the store
+/// either way, because that is the only thing this has to be.
+const newRivenId = (all) => {
+  for (;;) {
+    const id = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    if (!all.some((p) => p.id === id)) return id;
+  }
+};
 const isRivenId = (id) => typeof id === "string" && id.startsWith(RIVEN_PREFIX);
 let rivenModCache = { key: null, list: [] };
 
@@ -2325,10 +2341,10 @@ function rivenMods() {
   const list = raw.map((p) => {
     const st = p.state || {};
     const stats = (st.bonuses || st.positives || []).concat(st.malus || st.curse || []);
-    const lines = (rivenNames[p.name] || {}).lines || [];
-    const official = (rivenNames[p.name] || {}).name || "";
+    const lines = (rivenNames[p.id] || {}).lines || [];
+    const official = (rivenNames[p.id] || {}).name || "";
     return {
-      id: RIVEN_PREFIX + p.name,
+      id: RIVEN_PREFIX + p.id,
       // DE's own riven card — the game draws every riven the same, so one
       // image serves them all (`data/assets.yaml` mods.riven).
       image: META.riven_image || null,
@@ -2368,7 +2384,7 @@ async function refreshRivenNames() {
   for (const p of ps) {
     try {
       const r = await api("/api/riven", { weapon: $("weapon").value, ...(p.state || {}) });
-      out[p.name] = { name: r.name || "", lines: (r.stats || []).map((s) => s.text) };
+      out[p.id] = { name: r.name || "", lines: (r.stats || []).map((s) => s.text) };
     } catch (_) { /* a name is a nicety; the riven still equips */ }
   }
   rivenNames = out;
@@ -2655,8 +2671,12 @@ function defaultMode(weaponId, want) {
 }
 
 /// The rivens a request must carry for its `riven:` ids to mean anything.
+///
+/// `id` is what the item id is built from; `name` rides along because it is
+/// what a share link written before ids carried, and the server still reads it
+/// when there is no id.
 const rivenPayload = () =>
-  loadPresetList(RIVENS).map((p) => ({ name: p.name, spec: p.state || {} }));
+  loadPresetList(RIVENS).map((p) => ({ id: p.id, name: p.name, spec: p.state || {} }));
 
 // ---- Rivens ------------------------------------------------------------
 // A CONSTRUCTOR, not a roller. Every control is bounded by the formula, so
@@ -2830,23 +2850,25 @@ async function resolveRiven(pending) {
 // standing in for "no riven" is a claim the visitor never made, and it put a
 // phantom legendary in every weapon's mod pool. Custom enemies will be the
 // same shape when they arrive.
-// The stored list, with a stale "open" pointer cleared. It does NOT open
-// anything: closing the last file is a state, and re-opening one behind the
-// user's back would make "← all rivens" a button that does nothing.
+// The stored list. It does NOT open anything: closing the last file is a
+// state, and re-opening one behind the user's back would make "← all rivens" a
+// button that does nothing.
+//
+// AND IT NO LONGER DELETES THE POINTER ON A MISS. It did, which made every
+// reason the card was momentarily not in this list — a render that lands
+// before the weapon switch completes, a family whose scope has moved — a
+// silent forget of which card was open. A pointer at nothing opens nothing,
+// which is the whole behaviour that was wanted; throwing it away as well is
+// the part that could only lose something.
 function ensureRivenList() {
-  const ps = loadPresetList(RIVENS);
-  if (activeRivenName() && !ps.some((p) => p.name === activeRivenName())) {
-    activeRiven = "";
-    localStorage.removeItem(presetActiveKey(RIVENS));
-  }
-  return ps;
+  return loadPresetList(RIVENS);
 }
 
 function renderRivens() {
   if (!META || !$("riven-block")) return;
   const w = weaponInfo($("weapon").value);
   const ps = ensureRivenList();
-  const open = ps.find((p) => p.name === activeRivenName());
+  const open = ps.find((p) => p.id === activeRivenId());
   // The weapon and its disposition, and nothing else: that the values below
   // are scaled by it is what a disposition IS, so saying it was noise.
   //
@@ -3055,16 +3077,16 @@ function renderRivenAll() {
   const box = $("riven-all");
   if (!box) return;
   const ps = loadPresetList(RIVENS);
-  const active = activeRivenName();
+  const active = activeRivenId();
   const cap = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
   box.innerHTML = ps.length
     ? ps.map((p) => {
         const st = p.state || {};
-        const meta = rivenNames[p.name] || {};
+        const meta = rivenNames[p.id] || {};
         const lines = meta.lines || [];
         const shape = st.shape || `${(st.bonuses || st.positives || []).length}${st.malus || st.curse ? "+1" : ""}`;
         const nBonus = (st.bonuses || st.positives || []).length;
-        return `<div class="rv-all ${p.name === active ? "sel" : ""}" data-open="${escHtml(p.name)}">
+        return `<div class="rv-all ${p.id === active ? "sel" : ""}" data-open="${escHtml(p.id)}">
           <div class="rv-all-h">
             ${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
             <b>${escHtml(p.name)}</b>
@@ -3082,9 +3104,9 @@ function renderRivenAll() {
   // Clicking one opens it, the same as clicking its chip in the bar.
   // Clicking a card OPENS it — the list is the folder, this is the file.
   box.querySelectorAll("[data-open]").forEach((el) => el.onclick = () => {
-    const p = loadPresetList(RIVENS).find((x) => x.name === el.dataset.open);
+    const p = loadPresetList(RIVENS).find((x) => x.id === el.dataset.open);
     if (!p) return;
-    activeRiven = p.name;
+    activeRiven = p.id;
     localStorage.setItem(presetActiveKey(RIVENS), activeRiven);
     riven = null;   // renderRivens re-reads the file it is being asked to open
     renderRivens();
@@ -3240,8 +3262,8 @@ function saveRivenSoon() {
   clearTimeout(rivenSaveTimer);
   rivenSaveTimer = setTimeout(() => {
     const ps = loadPresetList(RIVENS);
-    const name = activeRivenName();
-    const i = ps.findIndex((p) => p.name === name);
+    const open = activeRivenId();
+    const i = ps.findIndex((p) => p.id === open);
     if (i >= 0) {
       ps[i].state = snapshotRiven();
       storePresetList(RIVENS, ps);
@@ -3260,7 +3282,9 @@ const snapshotRiven = () => ({
   shape: riven.shape, drafts: riven.drafts,
 });
 let activeRiven = null;
-const activeRivenName = () => activeRiven || localStorage.getItem(presetActiveKey(RIVENS)) || "";
+/// WHICH CARD IS OPEN, by id — two cards may share a name now, so a name could
+/// not say which.
+const activeRivenId = () => activeRiven || localStorage.getItem(presetActiveKey(RIVENS)) || "";
 
 // A custom is a FILE, and the tools strip says which of two modes you are in:
 // LIST, nothing open — a real state rather than an empty editor, since most
@@ -4951,8 +4975,8 @@ function renderRivenTools() {
   const box = $("riven-tools");
   if (!box) return;
   const ps = loadPresetList(RIVENS);
-  const open = activeRivenName();
-  const cur = ps.find((x) => x.name === open);
+  const open = activeRivenId();
+  const cur = ps.find((x) => x.id === open);
   const impAvailable = presetSources(RIVENS, presetWeapon()).length > 0;
   const impBtn = impAvailable
     ? `<button class="cu-btn cu-imp" title="${escHtml(tr("copy a riven from another weapon"))}">⇤ ${escHtml(tr("import"))}</button>`
@@ -4963,7 +4987,7 @@ function renderRivenTools() {
       `<span class="cu-ops">${undoButtons(RIVENS)}</span>` +
       `<div class="cu-import" hidden></div>`;
   } else {
-    const official = (rivenNames[cur.name] || {}).name || "";
+    const official = (rivenNames[cur.id] || {}).name || "";
     box.innerHTML =
       `<button class="cu-btn cu-back">← ${escHtml(tr("all rivens"))}</button>` +
       `<span class="cu-open"><b>${escHtml(cur.name)}</b>${
@@ -4977,9 +5001,9 @@ function renderRivenTools() {
   }
   wireUndoButtons(box, RIVENS);
   const q = (s) => box.querySelector(s);
-  const openIt = (name) => {
-    activeRiven = name;
-    if (name) localStorage.setItem(presetActiveKey(RIVENS), name);
+  const openIt = (id) => {
+    activeRiven = id;
+    if (id) localStorage.setItem(presetActiveKey(RIVENS), id);
     else localStorage.removeItem(presetActiveKey(RIVENS));
     riven = null;
     renderRivens();
@@ -4989,21 +5013,35 @@ function renderRivenTools() {
   click(".cu-new", () => {
     const ps2 = loadPresetList(RIVENS);
     const name = freeName(ps2, (n) => "riven " + n);
+    const id = newRivenId(loadPresetWhole(RIVENS));
     riven = { ...withDrafts(blankRiven()), __weapon: $("weapon").value };
-    ps2.push({ name, savedAt: Date.now(), state: snapshotRiven() });
+    ps2.push({ id, name, savedAt: Date.now(), state: snapshotRiven() });
     storePresetList(RIVENS, ps2);
-    openIt(name);
+    openIt(id);
+    // THE LIST SHOWS NUMBERS, and they are the engine's — so a card that has
+    // just appeared has to ask for them. Without this the row is blank until
+    // something else happens to refresh it, which is what dragging a value was
+    // secretly doing.
+    refreshRivenNames();
   });
   click(".cu-back", () => openIt(""));
   click(".cu-dup", () => {
     const ps2 = loadPresetList(RIVENS);
-    const name = freeName(ps2, (n) => open + " copy" + (n > 1 ? " " + n : ""));
-    ps2.push({ name, savedAt: Date.now(), state: snapshotRiven() });
+    const from = ps2.find((x) => x.id === open) || {};
+    const name = freeName(ps2, (n) => (from.name || "riven") + " copy" + (n > 1 ? " " + n : ""));
+    const id = newRivenId(loadPresetWhole(RIVENS));
+    ps2.push({ id, name, savedAt: Date.now(), state: snapshotRiven() });
+    // THE COPY IS WORTH WHAT THE ORIGINAL IS, so the list can say so at once.
+    // Its printed values come from `/api/riven`, which is a round trip away —
+    // and a copy of an identical spec cannot answer differently, so seeding it
+    // is not an optimistic guess, it is the same answer.
+    if (rivenNames[open]) rivenNames[id] = rivenNames[open];
     storePresetList(RIVENS, ps2);
-    openIt(name);
+    openIt(id);
+    refreshRivenNames();
   });
   click(".cu-del", () => {
-    storePresetList(RIVENS, loadPresetList(RIVENS).filter((x) => x.name !== open));
+    storePresetList(RIVENS, loadPresetList(RIVENS).filter((x) => x.id !== open));
     // …AND EVERY SAVED BUILD IN THE FAMILY LETS IT GO. `pruneDanglingRivens`
     // below clears the LIVE build; these are the ones nobody has open, which
     // would otherwise come back holding an id nothing resolves.
@@ -5017,7 +5055,8 @@ function renderRivenTools() {
   // browser blocks. Enter commits, Esc cancels.
   click(".cu-ren", () => {
     const host = q(".cu-open");
-    host.innerHTML = `<input class="cu-name" type="text" maxlength="24" value="${escHtml(open)}">`;
+    host.innerHTML = `<input class="cu-name" type="text" maxlength="24" value="${
+      escHtml((loadPresetList(RIVENS).find((x) => x.id === open) || {}).name || "")}">`;
     const inp = q(".cu-name");
     inp.focus(); inp.select();
     let done = false;
@@ -5025,21 +5064,15 @@ function renderRivenTools() {
       if (done) return;
       done = true;
       const want = (inp.value || "").trim();
-      if (!ok || !want || want === open) return renderRivenTools();
       const ps2 = loadPresetList(RIVENS);
-      if (ps2.some((x) => x.name === want)) return renderRivenTools();
-      const at = ps2.findIndex((x) => x.name === open);
-      if (at < 0) return renderRivenTools();
+      const at = ps2.findIndex((x) => x.id === open);
+      if (!ok || !want || at < 0 || want === ps2[at].name) return renderRivenTools();
+      // A LABEL EDIT AND NOTHING ELSE. A build points at the card's id, so
+      // nothing has to be chased and two cards may carry one name — which they
+      // may genuinely deserve to, and which is not the app's business.
       ps2[at] = { ...ps2[at], name: want };
       storePresetList(RIVENS, ps2);
-      // The id a slot holds is `riven:<name>`, so a rename moves the item the
-      // builder is pointing at — follow it rather than orphan the slot. The
-      // LIVE build first, since it is in memory and not in storage…
-      slots.forEach((s) => { if (s.mod === RIVEN_PREFIX + open) s.mod = RIVEN_PREFIX + want; });
-      // …and then every SAVED build that can name this card, which is every
-      // one in the family now that a riven is the family's.
-      repointRivenInBuilds(rivenKinWeapons(), open, want);
-      openIt(want);
+      openIt(open);
       renderMods(); refreshPanel();
     };
     inp.onkeydown = (ev) => {
@@ -5063,13 +5096,18 @@ function renderRivenTools() {
       if (!from) return;
       const ps2 = loadPresetList(RIVENS);
       const name = freeName(ps2, (n) => el.dataset.name + (n > 1 ? " " + n : ""));
+      const id = newRivenId(loadPresetWhole(RIVENS));
       // A riven's VALUES are its weapon's disposition applied to a roll, so
       // the copy is the roll — the numbers re-derive here, which is the whole
       // reason importing one is useful.
       riven = { ...withDrafts(from.state), __weapon: $("weapon").value };
-      ps2.push({ name, savedAt: Date.now(), state: snapshotRiven() });
+      ps2.push({ id, name, savedAt: Date.now(), state: snapshotRiven() });
       storePresetList(RIVENS, ps2);
-      openIt(name);
+      openIt(id);
+      // AN IMPORT CANNOT BE SEEDED the way a copy is: the same roll against a
+      // different disposition is a different number, which is the whole reason
+      // importing one is useful.
+      refreshRivenNames();
     });
   });
 }
@@ -5384,8 +5422,12 @@ function sharePayload() {
   // line showing up in the wire format: a preset is a state both sides can
   // hold, a custom is a thing only one of them made. Only the ACTIVE shape
   // goes: the other three drafts are scratch paper.
-  const byName = new Map(loadPresetList(RIVENS).map((x) => [x.name, x]));
-  const rivens = rivenOrder.map((n) => byName.get(n)).filter(Boolean)
+  // BY THE CARD, because that is what a slot names. The wire keeps carrying the
+  // NAME as the entry's first field: a card's identity is local — the recipient
+  // is being handed a copy and gives it one of their own — so a share format
+  // that carried it would be exporting a private key for no reader.
+  const byId = new Map(loadPresetList(RIVENS).map((x) => [x.id, x]));
+  const rivens = rivenOrder.map((n) => byId.get(n)).filter(Boolean)
     .map((x) => {
       const s = x.state || {};
       return [x.name, s.shape || "", s.rank ?? 8, POL_LETTER[cap1(s.polarity)] || "M",
@@ -5589,16 +5631,18 @@ async function importShare(code) {
 
   switchWeapon(w.id);
 
-  // 1. The RIVENS first: the build's slots point at them by name, and the
-  //    name may already be taken here, so the map from old name to new is
-  //    what the slots are rewritten with.
-  const renamed = {};
+  // 1. The RIVENS first: the slots point at them by the wire's own key, and the
+  //    copy made here is a card of the recipient's with an identity of its
+  //    own — so what the slots are rewritten with is the map from that key to
+  //    the new id.
+  const imported = {};
   if ((data.rivens || []).length) {
     const ps = loadPresetList(RIVENS);
     data.rivens.forEach((x) => {
       const name = freeName(ps, (n) => x.n + (n > 1 ? " " + n : ""));
-      renamed[x.n] = name;
-      ps.push({ name, savedAt: Date.now(), state: withDrafts(x.s) });
+      const id = newRivenId(loadPresetWhole(RIVENS).concat(ps));
+      imported[x.n] = id;
+      ps.push({ id, name, savedAt: Date.now(), state: withDrafts(x.s) });
     });
     storePresetList(RIVENS, ps);
     refreshRivenNames();
@@ -5635,12 +5679,12 @@ async function importShare(code) {
     // imported, whatever that copy had to be renamed to.
     if (/^~\d+$/.test(s.mod)) {
       const src = (data.rivens || [])[Number(s.mod.slice(1))];
-      const nm = src && (renamed[src.n] || src.n);
+      const nm = src && (imported[src.n] || src.n);
       return nm ? { ...s, mod: RIVEN_PREFIX + nm } : { mod: null, pol: s.pol, rank: null };
     }
     if (isRivenId(s.mod)) {                       // v1 links
       const was = String(s.mod).slice(RIVEN_PREFIX.length);
-      return { ...s, mod: RIVEN_PREFIX + (renamed[was] || was) };
+      return { ...s, mod: RIVEN_PREFIX + (imported[was] || was) };
     }
     if (!modById(s.mod)) { dropped.push(s.mod); return { mod: null, pol: s.pol, rank: null }; }
     return s;
@@ -6363,8 +6407,17 @@ const domainScope = (d, w) => {
 };
 const presetListKey = (d, w) =>
   (isCustomDomain(d) ? "wfsim-customs-" : "wfsim-presets-") + domainScope(d, w) + d;
+/// …AND WHICH ONE IS OPEN IS THE FOLDER'S, even where the store is not.
+///
+/// A riven's cards live in one list, but "the card I am looking at" is a
+/// property of the weapon in front of you — leaving Burston Prime and coming
+/// back should find the same one open, and going to a Laetum should not. This
+/// is the ONE riven key still built from the scope, and it is the one place
+/// that is safe: a scope that moves loses a pointer, and the worst a lost
+/// pointer does is open nothing.
 const presetActiveKey = (d, w) =>
-  (isCustomDomain(d) ? "wfsim-custom-open-" : "wfsim-preset-active-") + domainScope(d, w) + d;
+  (isCustomDomain(d) ? "wfsim-custom-open-" : "wfsim-preset-active-")
+  + (d === RIVENS ? `${rivenScope(w ?? presetWeapon())}-` : domainScope(d, w)) + d;
 
 // ONE-TIME MERGE of every weapon's scenario list into the shared one. A player
 // who made a fight on the Torid must not have to make it again — and the lists
@@ -6424,12 +6477,11 @@ const presetActiveKey = (d, w) =>
 /// list, tagging each card with the scope it was filed under. It RUNS AFTER
 /// `META`, because a scope is something only the roster knows.
 ///
-/// A NAME IS UNIQUE WITHIN A SCOPE, and only there. Two FAMILIES each holding a
-/// "riven 1" never meet, because a pool only offers the current weapon's cards.
-/// Two VARIANTS of one family do: their lists resolve to one scope, and a build
-/// references a card as `riven:<name>`, so the one that gives way is renamed and
-/// that weapon's builds are rewritten in the same pass — left alone, the build
-/// would come back equipping the OTHER variant's card and say nothing.
+/// IT ALSO GIVES EVERY CARD ITS IDENTITY. A build referenced a riven by NAME
+/// once, so this is where `riven:<name>` becomes `riven:<id>` — resolved per
+/// old key, which is what makes it unambiguous: two variants of one family
+/// could each hold a "riven 1", and only the key says whose build meant which.
+/// After this a name is a label and nothing points at it.
 function foldRivensIntoOneList() {
   const KEY = "wfsim-customs-rivens";
   const olds = [];
@@ -6438,7 +6490,6 @@ function foldRivensIntoOneList() {
     const m = /^wfsim-customs-(.+)-rivens$/.exec(k);
     if (m) olds.push(m[1]);
   }
-  if (!olds.length) return;
   const live = rivenScopes();
   const roster = new Set(((META && META.weapons) || []).map((w) => w.id));
   const bySlug = new Map();
@@ -6456,10 +6507,11 @@ function foldRivensIntoOneList() {
     try { return JSON.parse(localStorage.getItem(k) || "[]") || []; } catch (_) { return []; }
   };
   const all = read(KEY);
+  let touched = olds.length > 0;
   const same = (p, q) => q.name === p.name
     && JSON.stringify(q.state) === JSON.stringify(p.state);
-  // WHOSE BUILDS A RENAME HAS TO FOLLOW: the one weapon whose list is moving
-  // when the token names one, and otherwise the family it resolves to.
+  // WHOSE BUILDS POINTED AT THIS CARD BY NAME: the one weapon whose list is
+  // moving when the token names one, and otherwise the family it resolves to.
   const owners = (token, scope) => (roster.has(token)
     ? [token]
     : ((META && META.weapons) || []).filter((w) => rivenScope(w.id) === scope).map((w) => w.id));
@@ -6469,16 +6521,14 @@ function foldRivensIntoOneList() {
       // THE SAME CARD FROM TWO OLD KEYS IS ONE CARD: a player who built the
       // Burston's and the Prime's separately built one riven, and both keys
       // resolve to the same scope now.
-      if (all.some((q) => (q.scope || "") === scope && same(p, q))) continue;
-      let name = p.name;
-      if (all.some((q) => (q.scope || "") === scope && q.name === name)) {
-        name = `${p.name} (${token})`;
-        for (let n = 2; all.some((q) => (q.scope || "") === scope && q.name === name); n++) {
-          name = `${p.name} (${token}) ${n}`;
-        }
-        repointRivenInBuilds(owners(token, scope), p.name, name);
+      const twin = all.find((q) => (q.scope || "") === scope && same(p, q));
+      if (twin) {
+        if (twin.id) repointRivenInBuilds(owners(token, scope), p.name, twin.id);
+        continue;
       }
-      all.push({ ...p, name, scope });
+      const id = p.id || newRivenId(all);
+      if (!p.id) repointRivenInBuilds(owners(token, scope), p.name, id);
+      all.push({ ...p, id, scope });
     }
     localStorage.removeItem(`wfsim-customs-${token}-rivens`);
     // WHICH CARD IS OPEN stays scoped, and it is the one thing here that may
@@ -6491,7 +6541,16 @@ function foldRivensIntoOneList() {
       localStorage.removeItem(from);
     }
   }
-  localStorage.setItem(KEY, JSON.stringify(all));
+  // …AND THE CARDS ALREADY IN THE ONE LIST, which is every card once the loop
+  // above has run and the whole store on a second visit. A card with no id
+  // predates identities and its scope's builds still name it.
+  for (const p of all) {
+    if (p.id) continue;
+    p.id = newRivenId(all);
+    repointRivenInBuilds(owners("", p.scope || ""), p.name, p.id);
+    touched = true;
+  }
+  if (touched) localStorage.setItem(KEY, JSON.stringify(all));
 }
 
 // Parsed lists, memoised on the RAW STRING. The stored text IS the
@@ -6751,9 +6810,12 @@ function restorePresetSnapshot(s) {
     if (s.weapon !== presetWeapon()) return;
     const doc = presetDoc(s.domain);
     const list = JSON.parse(s.list || "[]");
-    const active = list.find((p) => p.name === s.active) || list[0];
+    // WHAT NAMES AN ENTRY is its name in every collection but one: a riven's
+    // identity is its own id, because its name is a label a player edits.
+    const key = (p) => (s.domain === RIVENS ? p && p.id : p && p.name) || "";
+    const active = list.find((p) => key(p) === s.active) || list[0];
     if (!doc || !active) return;
-    doc.setActive(active.name);
+    doc.setActive(key(active));
     whileApplying(() => doc.apply(active.state));   // a restore is not an edit
     doc.rerender();
   } finally {
@@ -7031,9 +7093,14 @@ function materialiseBoardRivens(st) {
   const ps = loadPresetList(RIVENS);
   let added = 0;
   for (const id of want) {
-    const name = id.slice(RIVEN_PREFIX.length);
-    if (ps.some((p) => p.name === name)) continue;
-    ps.push({ name, savedAt: Date.now(), state: boardRivenState(boardRivenDefs[id]) });
+    // THE BOARD ROW'S RIVEN KEEPS THE IDENTITY THE BUILD ALREADY NAMES. Its id
+    // is derived from the SHAPE (`boardRivenName`), so it is deterministic —
+    // which is what makes taking the same row twice reuse the first copy, and
+    // what lets the slot the build arrived with go on resolving.
+    const key = id.slice(RIVEN_PREFIX.length);
+    if (ps.some((p) => p.id === key)) continue;
+    ps.push({ id: key, name: key, savedAt: Date.now(),
+      state: boardRivenState(boardRivenDefs[id]) });
     added++;
   }
   if (!added) return;
@@ -13384,7 +13451,7 @@ function boardRivenShape() {
   const slot = mainSlots().find((s) => isRivenId(s.mod));
   if (!slot) return { riven_pos: [], riven_neg: "" };
   const st = (loadPresetList(RIVENS).find(
-    (p) => RIVEN_PREFIX + p.name === slot.mod) || {}).state || {};
+    (p) => RIVEN_PREFIX + p.id === slot.mod) || {}).state || {};
   const ids = (xs) => (xs || []).map((x) => x && x.id).filter(Boolean);
   return {
     // SORTED, because a riven's stats do not combine with each other — two
