@@ -689,10 +689,18 @@ label.check input{width:auto}
 .buff-card.denied .bn{text-decoration:line-through;text-decoration-color:var(--muted)}
 .buff-card .bnot.bdenied{color:var(--gold);text-decoration:none}
 
-/* WHAT THE FIGHT NEVER HANDS OUT — in LIMITS, beside Infinite ammo, and the
-   grid gives it the full row because it is a set rather than a field. */
-.bev-h{font-size:11px;color:var(--muted);margin:6px 0 6px;grid-column:1/-1}
-.bev-row{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1}
+/* WHICH TRIGGERS FIRE NO BUFF — in LIMITS, beside Infinite ammo, and the grid
+   gives it the full row because it is a set rather than a field. NINETEEN of
+   them, so they are GROUPED: a header ticks its members and the row indents
+   under it. */
+.bev-h{font-size:11px;color:var(--muted);margin:6px 0 4px;grid-column:1/-1}
+.bevg{grid-column:1/-1;margin-bottom:4px}
+.bevg-h{display:flex;flex-direction:row;align-items:center;gap:6px;font-size:12px;
+  font-weight:600;color:var(--text-2);cursor:pointer;padding:2px 0}
+.bevg-h.on{color:var(--gold)}
+.bevg-h input{width:auto;accent-color:var(--gold)}
+.bevg-h small{font-weight:400;color:var(--muted)}
+.bev-row{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1;padding:2px 0 4px 18px}
 /* THE SENTENCE THAT STOPS THE MISREADING. A row of ticked kinds reads as a
    fight where those things do not happen; they do, and they still score. */
 .bev-why{font-size:11px;color:var(--muted);margin:6px 0 0;grid-column:1/-1;line-height:1.5}

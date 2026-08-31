@@ -664,10 +664,10 @@ pub struct Scenario {
     /// Per-buff configured policy applied to every evaluated build (same id
     /// scheme as the web Sim panel). Empty = the emergent default.
     pub buff_cfg: BuffConfig,
-    /// WHAT THE FIGHT NEVER HANDS OUT (`engine::buff_events`), off the scenario
-    /// like every other term here — skipping it would rank builds by stacks the
-    /// simulator then refuses them.
-    pub denied_buff_events: Vec<wfsim_engine::buff_events::BuffEvent>,
+    /// WHICH TRIGGERS FIRE NO BUFF HERE (`engine::buff_events`), off the
+    /// scenario like every other term — skipping it would rank builds by stacks
+    /// the simulator then refuses them.
+    pub denied_buff_triggers: Vec<String>,
     /// INFINITE RESERVE — the simulator's own scenario knob, which the
     /// optimizer READS. Ignoring it SEARCHES a weapon with a finite reserve
     /// (Larkspur Prime) running dry while the simulator replays it resupplied,
@@ -731,7 +731,7 @@ pub fn evaluate(
     }
     // …then what the fight refuses, in the order the simulator applies them:
     // the cards say where a run OPENS, this says what it can EARN.
-    params.deny_buff_events(&s.denied_buff_events);
+    params.deny_buff_triggers(&s.denied_buff_triggers);
     monte_carlo(&params, runs, seed)
 }
 
@@ -1504,7 +1504,7 @@ mod tests {
             frenzy_locks: Vec::new(),
             frenzy: false,
             buff_cfg: Default::default(),
-            denied_buff_events: Vec::new(),
+            denied_buff_triggers: Vec::new(),
             infinite_ammo: true,
             policy: StackPolicy::Emergent,
         };

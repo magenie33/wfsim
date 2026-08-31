@@ -710,6 +710,28 @@ ui:
   "none": 无
   "not equipped": 未装备
   "no buff is triggered by": 以下行为不再触发任何增益
+  "any kill": 任何击杀
+  "any hit": 任何命中
+  "a completed reload": 完成一次装填
+  "a round leaving the barrel": 打出一发（不论是否命中）
+  "weak-point kills": 弱点击杀
+  "melee kills": 近战击杀
+  "hits that neither crit nor proc": 既不暴击也不触发状态的命中
+  "weak-point hits, counted per pellet": 弱点命中（按弹丸计）
+  "weak-point hits in a row": 连续弱点命中
+  "punch through into a second body": 穿透打到第二个身体
+  "a status landing": 造成一次异常状态
+  "hitting a target that already carries a status": 命中已带异常状态的目标
+  "a Heat status landing": 造成一次火焰异常
+  "an Electricity status landing": 造成一次电击异常
+  "a Toxin status landing": 造成一次毒素异常
+  "a Cold status landing": 造成一次冰冻异常
+  "reloads from empty": 空弹匣装填
+  "a burst landing whole": 一整段连射全部命中
+  killing: 击杀
+  hitting: 命中
+  reloading: 装填
+  firing: 开火
   "the run still does all of these and the score still counts them — only the buffs they would trigger are off": 这些行为照样会发生、照样计分 —— 只是它们本该触发的增益不再触发
   "not triggered here": 本场不触发
   "what would trigger it triggers no buff in this fight, so it stays at zero all run": 本场里能触发它的那种行为不再触发任何增益，所以它整场停在 0 层

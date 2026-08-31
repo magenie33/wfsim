@@ -312,45 +312,59 @@ check("...while an ordinary earned buff beside it still opens at zero",
   gal && gal.stacks === "0", JSON.stringify(r.havoc));
 
 // ---------------------------------------------------------------------------
-// WHAT THE FIGHT NEVER HANDS OUT, in LIMITS — and it is drawn on EVERY weapon.
+// WHICH TRIGGERS FIRE NO BUFF, in LIMITS — every one, on every weapon.
 //
-// It first shipped in the Buffs block and filtered to the kinds the build in
-// hand asked for, so a weapon with nothing equipped drew nothing at all and the
-// control could not be found. It is a scenario term: it belongs beside Infinite
-// ammo, which is the same kind of statement, and a ruler does not change shape
-// between weapons.
+// It first shipped in the Buffs block, filtered to the kinds the build in hand
+// asked for, so a weapon with nothing equipped drew nothing and the control
+// could not be found. It is a scenario term: it belongs beside Infinite ammo,
+// and a ruler does not change shape between weapons.
 //
 // THE OCUCOR IS THE CASE, because it has ONE mode and, bare, no buff cards —
-// everything about it that could hide a control is true at once.
+// everything that could hide a control is true of it at once.
+//
+// AND A GROUP IS PRESENTATION. The header ticks its members and stores nothing,
+// so ticking `killing` and then unticking `kill` has to leave the OTHER two —
+// which is the whole reason the vocabulary is the data's triggers and not a
+// coarse set: a weak-point kill is not a kill.
 const bev = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   history.pushState({},'','/weapons/Ocucor'); route(); await sleep(3500);
-  const at = (box) => [...document.querySelectorAll('#'+box+' [data-bev]')].map(x => x.dataset.bev);
+  const at = (box, k) => [...document.querySelectorAll('#'+box+' ['+k+']')].map(x => x.dataset[k === 'data-bev' ? 'bev' : 'bevg']);
   const out = {
-    vocab: (META.buff_events || []).map(e => e.id),
-    limits: at('sim-limits'),
-    // The official ruler is not editable, like every other field in this block.
+    vocab: (META.buff_triggers || []).map(t => t.id),
+    groups: [...new Set((META.buff_triggers || []).map(t => t.group))],
+    limits: at('sim-limits', 'data-bev'),
+    headers: at('sim-limits', 'data-bevg'),
     lockedUnderOfficial: [...document.querySelectorAll('#sim-limits [data-bev]')].every(x => x.disabled),
     optReadOnly: [...document.querySelectorAll('#opt-limits [data-bev]')].every(x => x.disabled),
   };
   const dup = document.querySelector('#bench-bar-simulator-scenarios .pop.dup');
   if (dup) { dup.click(); await sleep(1200); }
-  const kill = document.querySelector('#sim-limits [data-bev="kill"]');
-  if (kill) { kill.click(); await sleep(700); }
-  out.stored = (sim.buff_events_off || []).slice();
-  out.sent = (theFight() || {}).buff_events_off;
+  const grp = document.querySelector('#sim-limits [data-bevg="kill"]');
+  if (grp) { grp.click(); await sleep(700); }
+  out.afterGroup = (sim.buff_triggers_off || []).slice();
+  const one = document.querySelector('#sim-limits [data-bev="kill"]');
+  if (one) { one.click(); await sleep(700); }
+  out.afterOne = (sim.buff_triggers_off || []).slice();
+  out.sent = (theFight() || {}).buff_triggers_off;
   return out;
 })()`);
 
-check("every buff event has a switch in Limits, on a weapon with no buffs",
-  bev.vocab.length > 0 && bev.limits.join() === bev.vocab.join(),
-  `${bev.limits.join(" ")} vs ${bev.vocab.join(" ")}`);
+check("every trigger has a switch in Limits, on a weapon with no buffs",
+  bev.vocab.length > 10 && bev.limits.join() === bev.vocab.join(),
+  `${bev.limits.length} switches for ${bev.vocab.length} triggers`);
+check("...one header per group", bev.headers.join() === bev.groups.join(),
+  `${bev.headers.join(" ")} vs ${bev.groups.join(" ")}`);
 check("...the official ruler's copy is not editable", bev.lockedUnderOfficial === true);
 check("...nor the optimizer's", bev.optReadOnly === true);
-// AND IT REACHES THE REQUEST. A switch that stores nothing looks exactly like a
-// fight that denies nothing.
-check("...and a copy of that scenario stores the switch and sends it",
-  bev.stored.join() === "kill" && (bev.sent || []).join() === "kill",
-  `stored ${JSON.stringify(bev.stored)} sent ${JSON.stringify(bev.sent)}`);
+// A GROUP TICKS ITS MEMBERS AND NOTHING ELSE.
+check("...a group header ticks exactly its own",
+  bev.afterGroup.join() === "kill,headshot_kill,melee_kill", bev.afterGroup.join(" "));
+// AND THE ONE THE COARSE VOCABULARY COULD NOT SAY: a weak-point kill switched
+// off while ordinary kills still trigger.
+check("...and one member can come back out of the group",
+  bev.afterOne.join() === "headshot_kill,melee_kill", bev.afterOne.join(" "));
+check("...and it reaches the request",
+  (bev.sent || []).join() === "headshot_kill,melee_kill", JSON.stringify(bev.sent));
 
 await app.finish("the buff cards read right in Chinese");

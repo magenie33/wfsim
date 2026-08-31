@@ -80,7 +80,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
         frenzy_locks: Vec::new(),
         frenzy: false,
         buff_cfg: BuffConfig::new(),
-        denied_buff_events: Vec::new(),
+        denied_buff_triggers: Vec::new(),
         infinite_ammo: true,
         policy: StackPolicy::BaseOnly, // sentinel: nothing on the field triggers its conditionals
     }

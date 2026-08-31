@@ -3534,23 +3534,24 @@ impl DummyParams {
         }
     }
 
-    /// THE FIGHT HANDS YOU NOTHING OF THESE KINDS, so nothing that asks for one
-    /// is ever earned — `crate::buff_events`, and `docs/BUFFS.md` for why.
+    /// NONE OF THESE TRIGGERS FIRES A BUFF HERE — `crate::buff_events`, and
+    /// `docs/BUFFS.md` for why. The events still happen and still score.
     ///
     /// **A DENIED BUFF IS REMOVED, NOT ZEROED**, by the argument `NO_TIMEOUT`
     /// makes: a flag has to be honoured at every read site, an `Option`'s zero
     /// is `None`, and nothing downstream learns the concept exists.
     /// Weapon-scoped: recurses into the cycle's base form.
-    pub fn deny_buff_events(&mut self, denied: &[crate::buff_events::BuffEvent]) {
-        use crate::buff_events::{of_arc_trigger, of_builtin, of_trigger, BuffEvent};
+    pub fn deny_buff_triggers(&mut self, denied: &[String]) {
+        use crate::buff_events::{arc_trigger_id, of_builtin, trigger_id};
         if denied.is_empty() {
             return;
         }
-        let hit = |events: &[BuffEvent]| events.iter().any(|e| denied.contains(e));
+        let hit = |t: Option<&str>| t.is_some_and(|x| denied.iter().any(|d| d == x));
         // A ROSTERED ID WITH NO ENTRY IS A PANIC, not a buff nothing can deny:
         // the two look identical from outside.
         let by_id = |id: &str| {
-            hit(of_builtin(id).unwrap_or_else(|| panic!("buff `{id}` declares no events — add it to buff_events::of_builtin")))
+            hit(of_builtin(id)
+                .unwrap_or_else(|| panic!("buff `{id}` names no trigger — add it to buff_events::of_builtin")))
         };
         if self.frenzy && by_id("frenzy") {
             self.frenzy = false;
@@ -3615,10 +3616,10 @@ impl DummyParams {
         }
         // …AND THE TWO FAMILIES THAT DECLARE THEIR OWN TRIGGER, where a card
         // the data adds tomorrow is classified by nobody.
-        self.stacking_buffs.retain(|b| !hit(of_trigger(b.trigger)));
-        self.arcane.buffs.retain(|b| !hit(of_arc_trigger(b.trigger)));
+        self.stacking_buffs.retain(|b| !hit(Some(trigger_id(b.trigger))));
+        self.arcane.buffs.retain(|b| !hit(arc_trigger_id(b.trigger)));
         if let Some(cy) = self.cycle.as_mut() {
-            cy.base_form.deny_buff_events(denied);
+            cy.base_form.deny_buff_triggers(denied);
         }
     }
 
@@ -24686,12 +24687,12 @@ mod tests {
     }
 
     /// …AND EVERY BUFF THE ROSTER OFFERS MUST BE DENIABLE — the mirror of the
-    /// check above, naming no field. `deny_buff_events` is a WALK over the
+    /// check above, naming no field. `deny_buff_triggers` is a WALK over the
     /// shapes, so deny EVERY event and only the buffs that ask for nothing may
     /// come back; anything else is a shape nobody remembered.
     #[test]
     fn every_buff_the_roster_offers_can_be_denied() {
-        use crate::buff_events::{of_arc_trigger, of_builtin, of_trigger, BuffEvent};
+        use crate::buff_events::{arc_trigger_id, of_builtin, trigger_id, ALL};
         let params = every_buff_params();
         let before: Vec<String> = params.buff_roster().into_iter().map(|b| b.id).collect();
         assert!(before.len() > 10, "the fixture stopped covering the roster: {before:?}");
@@ -24699,28 +24700,32 @@ mod tests {
         // WHAT MAY SURVIVE, from the tables the denial reads — a list here
         // would be a second opinion about which buffs are passive.
         let passive = |id: &str| -> bool {
-            if let Some(e) = of_builtin(id) {
-                return e.is_empty();
+            if let Some(t) = of_builtin(id) {
+                return t.is_none();
             }
             params
                 .stacking_buffs
                 .iter()
                 .find(|b| b.id == id)
-                .map(|b| of_trigger(b.trigger).is_empty())
+                .map(|_| false)
                 .or_else(|| {
                     params.arcane.buffs.iter().find(|b| format!("arcane:{}", b.owner) == id)
-                        .map(|b| of_arc_trigger(b.trigger).is_empty())
+                        .map(|b| arc_trigger_id(b.trigger).is_none())
                 })
-                .unwrap_or_else(|| panic!("`{id}` is rostered and declares no events"))
+                .unwrap_or_else(|| panic!("`{id}` is rostered and names no trigger"))
         };
         let want: Vec<String> = before.iter().filter(|id| passive(id)).cloned().collect();
 
         let mut denied = params.clone();
-        denied.deny_buff_events(&BuffEvent::ALL);
+        let every: Vec<String> = ALL.iter().map(|(id, _)| (*id).to_string()).collect();
+        denied.deny_buff_triggers(&every);
+        // The sweep above is over the LIST; a trigger the enums spell and the
+        // list forgot is `the_switch_list_and_the_triggers_agree`, not here.
+        let _ = trigger_id;
         let after: Vec<String> = denied.buff_roster().into_iter().map(|b| b.id).collect();
         assert_eq!(
             after, want,
-            "a fight that hands out nothing still grants these — \n             deny_buff_events has no arm for them"
+            "a fight where nothing triggers still grants these — deny_buff_triggers has no arm for them"
         );
     }
 

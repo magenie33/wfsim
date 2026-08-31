@@ -416,25 +416,34 @@ the BUFF those would have granted. A ruler that suppressed the events themselves
 would be a different arena and a number nobody could compare; this one is the
 same fight, scored without the ramp.
 
-**`engine::buff_events` is the vocabulary.** Seven events, each one thing a
-player does — `kill`, `headshot`, `hit`, `punch_through`, `status`, `reload`,
-`firing` — and a buff names every event it needs. Secondary Deadhead wants a headshot AND a kill, so either switch denies
-it; a Warframe-scaled arcane wants nothing, so no switch can touch it.
+**THE VOCABULARY IS THE DATA'S OWN, one switch per TRIGGER.** A buff already
+declares what fires it, so nothing has to be classified and nothing can be
+conflated. A coarse set of seven came first and collapsed exactly the
+distinctions the data draws: `on_headshot` and `on_headshot_kill` became one
+"weak-point" event, and there was no way to switch off Galvanized Scope's kill
+half while its hit half kept paying.
 
-**MEMBERSHIP IS DERIVED.** A mod's or an evolution's buff is classified by the
-`BuffTrigger` its data already declares (`of_trigger`), an arcane's by its
-`ArcTrigger` (`of_arc_trigger`), and only the buffs whose trigger is baked into
-their IDENTITY — a named field on `DummyParams` — need the table
-(`of_builtin`). `of_trigger` is exhaustive with no `_` arm, so a new trigger
-cannot compile until somebody says what it asks for.
+Nineteen, in `engine::buff_events::ALL`, each with the GROUP the panel draws it
+under — killing, hitting, status effects, reloading, firing. **A group is
+presentation and the switches are the truth**: a header ticks its members and
+stores nothing of its own, so a ruler says `kill`, or names `headshot_kill`
+alone. Measured on a Braton Prime carrying Galvanized Scope and Galvanized
+Chamber: 514.0 kpm open, 287.1 with `kill` off, 403.1 with `headshot_kill` off,
+224.6 with the whole killing group off.
+
+**NOTHING IS CLASSIFIED BY HAND** except the buffs whose trigger is baked into
+their IDENTITY — a named field on `DummyParams`, or a card id the engine derives
+FROM a trigger the card does not carry — which is what `of_builtin` holds.
+`trigger_id` is exhaustive with no `_` arm, so a trigger added to `BuffTrigger`
+cannot compile until it is named and listed.
 
 **IT IS THE FIGHT'S, NOT THE BUILD'S**, so it rides the scenario as
-`buff_events_off: [kill]` beside `aiming` and `headshot_pct` — which is what
+`buff_triggers_off: [headshot_kill]` beside `aiming` and `headshot_pct` — which is what
 lets `data/benchmarks/*.yaml` state it once and rank the whole submission
 library under a new ruler on the day it lands (`docs/BOARD.md`). A per-buff map
 could not: a ruler cannot name buff ids for weapons it has never seen.
 
-**A DENIED BUFF IS REMOVED, NOT ZEROED.** `DummyParams::deny_buff_events` sets
+**A DENIED BUFF IS REMOVED, NOT ZEROED.** `DummyParams::deny_buff_triggers` sets
 each `Option` to `None` — the same argument `NO_TIMEOUT` makes one section up:
 a flag saying "ignore this one" has to be honoured at every read site, and this
 file records what happened the last time one was missed at three of them.
@@ -442,10 +451,10 @@ Nothing downstream learns the concept exists. It runs AFTER the cards, because
 the cards say where a run OPENS and this says what it can EARN.
 
 Two generic ratchets, both run against the broken code:
-`every_buff_the_roster_offers_can_be_denied` denies every event and asserts the
+`every_buff_the_roster_offers_can_be_denied` denies every trigger and asserts the
 roster comes back holding only the buffs that ask for nothing, and
-`every_buff_card_says_what_it_asks_of_the_fight` sweeps the whole roster for a
-card that resolves to no trigger — one the page could not grey and the run would
+`every_buff_card_says_what_triggers_it` sweeps the whole roster for a card that
+resolves to no trigger — one the page could not grey and the run would
 not deny, which are opposite claims that look identical from outside.
 
 ### Every timed buff starts EARNED, at zero

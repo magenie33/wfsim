@@ -1063,7 +1063,7 @@ mod tests {
             "enemy": "thrax_centurion", "form": "stale",
             // A RULER'S OWN TERM, which the scorer carries rather than knows
             // about — how a benchmark declares a fight with no kills in it.
-            "buff_events_off": ["kill"],
+            "buff_triggers_off": ["headshot_kill"],
         });
         let v = wfsim_engine::builds::ValidBuild {
             weapon: "ballistica_prime".to_string(),
@@ -1081,7 +1081,8 @@ mod tests {
         let req = simulate_request(&scenario, &v, *m);
         assert_eq!(req.get("mode").and_then(Value::as_str), Some("alternate_cycle"));
         assert_eq!(req.get("form"), None, "a stale `form` survived beside the mode");
-        assert_eq!(req["buff_events_off"], json!(["kill"]), "the ruler's own term was dropped");
+        assert_eq!(req["buff_triggers_off"], json!(["headshot_kill"]),
+            "the ruler's own term was dropped");
     }
 
     fn row(weapon: &str, mode: &str, score: f64) -> Row {

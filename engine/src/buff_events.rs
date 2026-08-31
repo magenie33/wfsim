@@ -1,191 +1,179 @@
-//! WHAT A BUFF ASKS OF THE FIGHT before it can be earned. The subject is
-//! `docs/BUFFS.md` §"…AND A FIGHT CAN SWITCH OFF A TRIGGER" — which is what
-//! this does: the events still happen and still score, the buff does not.
+//! WHICH TRIGGER A FIGHT SWITCHES OFF. The subject is `docs/BUFFS.md`
+//! §"…AND A FIGHT CAN SWITCH OFF A TRIGGER" — the events still happen and
+//! still score, the buff does not.
+//!
+//! THE VOCABULARY IS THE DATA'S OWN. A buff already declares what fires it, so
+//! a switch per trigger needs no classification and cannot conflate two things
+//! the data tells apart — a weak-point KILL is not a kill, and the coarse
+//! vocabulary this replaced collapsed exactly those.
 
 use crate::arcanes_data::ArcTrigger;
 use crate::loadout::BuffTrigger;
 
-/// One thing the fight has to hand you before a buff can be earned.
+/// The wire id of a data-declared trigger — what a scenario, a share link and a
+/// benchmark carry.
 ///
-/// THE VOCABULARY IS THE PLAYER'S, not the trigger enum's: `ReloadComplete` and
-/// `ReloadFromEmpty` are two triggers and one thing a player does.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BuffEvent {
-    /// Something died — the event a fight you walk into cold denies.
-    Kill,
-    /// A weak point was hit. Separate from the kill: hitting heads and having
-    /// been in contact are two different claims.
-    Headshot,
-    Hit,
-    PunchThrough,
-    /// A status landed, or the target already carried one.
-    Status,
-    Reload,
-    /// A round left the barrel, whatever it did afterwards.
-    Firing,
-}
-
-impl BuffEvent {
-    /// The wire spelling — a scenario, a share link and a benchmark carry it,
-    /// so a rename loses a term of a fight rather than failing to compile.
-    pub fn id(self) -> &'static str {
-        match self {
-            BuffEvent::Kill => "kill",
-            BuffEvent::Headshot => "headshot",
-            BuffEvent::Hit => "hit",
-            BuffEvent::PunchThrough => "punch_through",
-            BuffEvent::Status => "status",
-            BuffEvent::Reload => "reload",
-            BuffEvent::Firing => "firing",
-        }
-    }
-
-    pub fn from_id(s: &str) -> Option<Self> {
-        Some(match s {
-            "kill" => BuffEvent::Kill,
-            "headshot" => BuffEvent::Headshot,
-            "hit" => BuffEvent::Hit,
-            "punch_through" => BuffEvent::PunchThrough,
-            "status" => BuffEvent::Status,
-            "reload" => BuffEvent::Reload,
-            "firing" => BuffEvent::Firing,
-            _ => return None,
-        })
-    }
-
-    /// Every event, for the api to publish and the page to draw a switch per.
-    pub const ALL: [BuffEvent; 7] = [
-        BuffEvent::Kill,
-        BuffEvent::Headshot,
-        BuffEvent::Hit,
-        BuffEvent::PunchThrough,
-        BuffEvent::Status,
-        BuffEvent::Reload,
-        BuffEvent::Firing,
-    ];
-}
-
-/// What a data-declared stacking buff asks for. EXHAUSTIVE ON PURPOSE — no
-/// `_` arm, so a trigger added to [`BuffTrigger`] cannot compile until somebody
-/// says what it asks for, where a default would exempt it silently.
-pub fn of_trigger(t: BuffTrigger) -> &'static [BuffEvent] {
-    use BuffEvent as E;
+/// EXHAUSTIVE ON PURPOSE — no `_` arm, so a trigger added to [`BuffTrigger`]
+/// cannot compile until it is named here, where a default would leave the next
+/// card with no switch and nothing to notice it by.
+pub fn trigger_id(t: BuffTrigger) -> &'static str {
     match t {
-        BuffTrigger::PlainHit | BuffTrigger::Hit => &[E::Hit],
-        BuffTrigger::Headshot | BuffTrigger::ConsecutiveHeadshot => &[E::Headshot, E::Hit],
-        BuffTrigger::PunchThrough => &[E::PunchThrough, E::Hit],
-        // The condition is on the TARGET, which must already carry the status.
-        BuffTrigger::HitEnemyWithStatus(_) => &[E::Status, E::Hit],
-        BuffTrigger::StatusApplied => &[E::Status],
-        BuffTrigger::ReloadComplete | BuffTrigger::ReloadFromEmpty => &[E::Reload],
-        // A completed burst is rounds leaving the barrel AND landing.
-        BuffTrigger::FullBurst => &[E::Firing, E::Hit],
-        BuffTrigger::Kill => &[E::Kill],
-        BuffTrigger::Firing => &[E::Firing],
+        BuffTrigger::Kill => "kill",
+        BuffTrigger::Hit => "hit",
+        BuffTrigger::PlainHit => "plain_hit",
+        BuffTrigger::Headshot => "headshot",
+        BuffTrigger::ConsecutiveHeadshot => "consecutive_headshot",
+        BuffTrigger::PunchThrough => "punch_through",
+        BuffTrigger::StatusApplied => "status_applied",
+        // The element is not part of the id: the condition is "the target
+        // already carries this status", and a fight handing out none of them
+        // hands out none of any type.
+        BuffTrigger::HitEnemyWithStatus(_) => "hit_enemy_with_status",
+        BuffTrigger::ReloadComplete => "reload_complete",
+        BuffTrigger::ReloadFromEmpty => "reload_from_empty",
+        BuffTrigger::FullBurst => "full_burst",
+        BuffTrigger::Firing => "firing",
     }
 }
 
-/// The same question for an arcane, whose triggers are their own vocabulary.
-pub fn of_arc_trigger(t: ArcTrigger) -> &'static [BuffEvent] {
-    use BuffEvent as E;
-    match t {
-        ArcTrigger::Kill | ArcTrigger::MeleeKill => &[E::Kill],
-        // BOTH, and either switch denies it: a precision kill is a kill you
-        // also had to aim.
-        ArcTrigger::HeadshotKill => &[E::Kill, E::Headshot, E::Hit],
-        ArcTrigger::WeakpointHit => &[E::Headshot, E::Hit],
-        ArcTrigger::HeatStatus
-        | ArcTrigger::ElectricityStatus
-        | ArcTrigger::ToxinStatus
-        | ArcTrigger::ColdStatus => &[E::Status],
-        // NOTHING GRANTS IT — a Warframe stat does not become unavailable
-        // because the fight is short, so no switch may touch it.
-        ArcTrigger::Passive => &[],
-    }
+/// The same for an arcane's own vocabulary. `None` for [`ArcTrigger::Passive`]:
+/// nothing grants it, so no switch may take it away.
+pub fn arc_trigger_id(t: ArcTrigger) -> Option<&'static str> {
+    Some(match t {
+        ArcTrigger::Kill => "kill",
+        ArcTrigger::HeadshotKill => "headshot_kill",
+        ArcTrigger::MeleeKill => "melee_kill",
+        ArcTrigger::WeakpointHit => "weakpoint_hit",
+        ArcTrigger::HeatStatus => "heat_status",
+        ArcTrigger::ElectricityStatus => "electricity_status",
+        ArcTrigger::ToxinStatus => "toxin_status",
+        ArcTrigger::ColdStatus => "cold_status",
+        ArcTrigger::Passive => return None,
+    })
 }
+
+/// EVERY TRIGGER, IN THE ORDER THE PAGE DRAWS THEM, with the group each sits
+/// under. The order is the wire's and the panel's, so it lives in one place.
+///
+/// A GROUP IS PRESENTATION AND THE SWITCHES ARE THE TRUTH: a ruler says `kill`,
+/// or names `headshot_kill` on its own, and the group header is a way to tick
+/// several at once rather than a value anything stores.
+pub const ALL: &[(&str, &str)] = &[
+    ("kill", "kill"),
+    ("headshot_kill", "kill"),
+    ("melee_kill", "kill"),
+    ("hit", "hit"),
+    ("plain_hit", "hit"),
+    ("headshot", "hit"),
+    ("weakpoint_hit", "hit"),
+    ("consecutive_headshot", "hit"),
+    ("punch_through", "hit"),
+    ("status_applied", "status"),
+    ("hit_enemy_with_status", "status"),
+    ("heat_status", "status"),
+    ("electricity_status", "status"),
+    ("toxin_status", "status"),
+    ("cold_status", "status"),
+    ("reload_complete", "reload"),
+    ("reload_from_empty", "reload"),
+    ("firing", "firing"),
+    ("full_burst", "firing"),
+];
 
 /// The buffs whose trigger is baked into their IDENTITY: a named field on
-/// `DummyParams`, or a card id `stacking_card_id` derives FROM a trigger the
-/// card does not carry. `on_kill_cd` is a kill because of what it is, and
-/// there is nowhere else to write that down. `None` is a failing test
-/// (`every_buff_card_says_what_it_asks_of_the_fight`).
-pub fn of_builtin(id: &str) -> Option<&'static [BuffEvent]> {
-    use BuffEvent as E;
-    Some(match id {
+/// `DummyParams`, or a card id `evolutions_data::stacking_card_id` derives FROM
+/// a trigger the card itself does not carry.
+///
+/// `Some(None)` is a buff nothing can deny — permanent stacks, no in-sim
+/// trigger. `None` is an id this table has never heard of, which is a failing
+/// test (`every_buff_card_says_what_triggers_it`) and never a silent pass.
+pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
+    Some(Some(match id {
         // Dual Toxocyst's passive: 3 s off a weak-point hit.
-        "frenzy" => &[E::Headshot, E::Hit],
+        "frenzy" => "headshot",
         // Condition Overload counts the statuses ON THE TARGET.
-        "condition_overload" => &[E::Status],
-        "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" => &[E::Kill],
-        "on_headshot_kill_cc" => &[E::Kill, E::Headshot, E::Hit],
-        // A headshot streak and an Eximus weak point are weak points.
-        "on_headshot_cc" | "evo_headshot_streak" | "on_eximus_weakpoint_bd" => {
-            &[E::Headshot, E::Hit]
-        }
-        "on_reload_fr" | "on_reload_bd" | "evo_reload_damage" => &[E::Reload],
+        "condition_overload" | "on_status_multishot" => "hit_enemy_with_status",
+        "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" | "tendrils" => "kill",
+        "on_headshot_kill_cc" => "headshot_kill",
+        // An Eximus weak point is a weak point.
+        "on_headshot_cc" | "on_eximus_weakpoint_bd" | "on_headshot_fire_rate"
+        | "on_headshot_damage" | "on_headshot_reload_speed" => "headshot",
+        "evo_headshot_streak" | "on_weakpoint_streak_damage"
+        | "on_weakpoint_streak_headshot_damage" => "consecutive_headshot",
         // A landing hit, whatever it lands on: the shot combo counter,
         // Hata-Satya's pile, Secondary Enervate's.
-        "sniper_combo" | "crit_per_hit" | "arcane:secondary_enervate" => &[E::Hit],
-        // The Ocucor's tendrils cost a kill.
-        "tendrils" => &[E::Kill],
+        "sniper_combo" | "crit_per_hit" | "arcane:secondary_enervate" | "on_hit_damage" => "hit",
+        "on_plain_hit_damage" => "plain_hit",
+        "on_punch_through_crit_chance" => "punch_through",
+        "on_reload_fr" | "on_reload_bd" | "on_reload_damage" | "on_reload_fire_rate"
+        | "per_shell_fire_rate" => "reload_complete",
+        "evo_reload_damage" | "on_empty_reload_damage"
+        | "on_empty_reload_crit_damage" => "reload_from_empty",
+        "on_firing_fire_rate" | "on_firing_damage" | "on_firing_multishot" => "firing",
+        "on_status_fire_rate" | "on_status_damage" => "status_applied",
         // Fevered Frenzy: permanent stacks, no in-sim trigger — the answer
         // `ArcTrigger::Passive` gets, for the same reason.
-        "evo_multishot" => &[],
-
-        // …AND THE STACKING CARDS. Written out rather than inverted from
-        // `stacking_card_id`, whose mapping has a catch-all and is therefore
-        // not invertible.
-        "on_firing_fire_rate" | "on_firing_damage" | "on_firing_multishot" => &[E::Firing],
-        "on_status_fire_rate" | "on_status_damage" => &[E::Status],
-        // Stormburst's: a hit on a target ALREADY carrying the status.
-        "on_status_multishot" => &[E::Status, E::Hit],
-        "on_headshot_fire_rate" | "on_headshot_damage" | "on_headshot_reload_speed"
-        | "on_weakpoint_streak_damage" | "on_weakpoint_streak_headshot_damage" => {
-            &[E::Headshot, E::Hit]
-        }
-        "on_hit_damage" | "on_plain_hit_damage" => &[E::Hit],
-        "on_punch_through_crit_chance" => &[E::PunchThrough, E::Hit],
-        "on_reload_damage" | "on_reload_fire_rate" | "per_shell_fire_rate"
-        | "on_empty_reload_damage" | "on_empty_reload_crit_damage" => &[E::Reload],
+        "evo_multishot" => return Some(None),
         _ => return None,
-    })
+    }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// THE WIRE SPELLING ROUND-TRIPS — see [`BuffEvent::id`].
+    /// EVERY TRIGGER THE ENUMS SPELL HAS A SWITCH, AND EVERY SWITCH IS SPELLED.
+    /// A trigger with no entry in [`ALL`] is a buff no scenario can reach; an
+    /// entry nothing produces is a control that moves no number.
     #[test]
-    fn every_event_round_trips_through_its_id() {
-        for e in BuffEvent::ALL {
-            assert_eq!(BuffEvent::from_id(e.id()), Some(e), "{}", e.id());
-        }
-        assert_eq!(BuffEvent::from_id("nonsense"), None);
-    }
-
-    /// A HEADSHOT IS A HIT, AND THE PAGE MUST NOT HAVE TO KNOW THAT: denying
-    /// hits denies headshot buffs too, which holds only if every trigger
-    /// wanting a weak point also names the plain hit.
-    #[test]
-    fn a_trigger_that_wants_a_weak_point_also_wants_the_hit() {
+    fn the_switch_list_and_the_triggers_agree() {
+        let mut spelled: Vec<&str> = Vec::new();
         for t in [
-            BuffTrigger::Headshot,
-            BuffTrigger::ConsecutiveHeadshot,
-            BuffTrigger::PunchThrough,
+            BuffTrigger::Kill, BuffTrigger::Hit, BuffTrigger::PlainHit,
+            BuffTrigger::Headshot, BuffTrigger::ConsecutiveHeadshot,
+            BuffTrigger::PunchThrough, BuffTrigger::StatusApplied,
+            BuffTrigger::HitEnemyWithStatus(crate::damage::DamageType::Heat),
+            BuffTrigger::ReloadComplete, BuffTrigger::ReloadFromEmpty,
+            BuffTrigger::FullBurst, BuffTrigger::Firing,
         ] {
-            let e = of_trigger(t);
-            assert!(e.contains(&BuffEvent::Hit), "{t:?} names no hit: {e:?}");
+            spelled.push(trigger_id(t));
         }
-        assert!(of_arc_trigger(ArcTrigger::HeadshotKill).contains(&BuffEvent::Hit));
-        assert!(of_arc_trigger(ArcTrigger::WeakpointHit).contains(&BuffEvent::Hit));
+        for t in [
+            ArcTrigger::Kill, ArcTrigger::HeadshotKill, ArcTrigger::MeleeKill,
+            ArcTrigger::WeakpointHit, ArcTrigger::HeatStatus,
+            ArcTrigger::ElectricityStatus, ArcTrigger::ToxinStatus, ArcTrigger::ColdStatus,
+        ] {
+            spelled.push(arc_trigger_id(t).expect("only Passive has none"));
+        }
+        assert_eq!(arc_trigger_id(ArcTrigger::Passive), None);
+        spelled.sort_unstable();
+        spelled.dedup();
+        let mut listed: Vec<&str> = ALL.iter().map(|(id, _)| *id).collect();
+        listed.sort_unstable();
+        assert_eq!(spelled, listed, "the switch list and the trigger enums disagree");
     }
 
-    /// A PASSIVE IS DENIED BY NOTHING — it reads a Warframe stat a short fight
-    /// does not take away.
+    /// A GROUP IS A GROUP OF SOMETHING, and the groups are CONTIGUOUS — the
+    /// page draws [`ALL`] in order and a group appearing twice would be two
+    /// headers over one set.
     #[test]
-    fn nothing_denies_a_passive() {
-        assert!(of_arc_trigger(ArcTrigger::Passive).is_empty());
-        assert_eq!(of_builtin("evo_multishot"), Some(&[][..]));
+    fn every_group_is_contiguous_and_holds_a_switch() {
+        let mut groups: Vec<&str> = ALL.iter().map(|(_, g)| *g).collect();
+        groups.dedup();
+        assert_eq!(groups, ["kill", "hit", "status", "reload", "firing"]);
+    }
+
+    /// A BUILTIN NAMES A TRIGGER THE LIST KNOWS, so the card the page greys and
+    /// the buff the run drops are the same claim.
+    #[test]
+    fn every_builtin_names_a_listed_trigger() {
+        for id in ["frenzy", "condition_overload", "on_kill_multishot", "tendrils",
+                   "on_headshot_kill_cc", "sniper_combo", "evo_reload_damage"] {
+            let t = of_builtin(id).unwrap_or_else(|| panic!("{id} is not in the table"));
+            let t = t.unwrap_or_else(|| panic!("{id} claims no trigger"));
+            assert!(ALL.iter().any(|(x, _)| *x == t), "{id} names `{t}`, not a switch");
+        }
+        assert_eq!(of_builtin("evo_multishot"), Some(None));
+        assert_eq!(of_builtin("nothing_of_the_sort"), None);
     }
 }
