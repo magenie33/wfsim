@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4082
-engine: d444fea2de59c78923f7c9c6a39c22f21f45ea6a
+submissions: 4098
+engine: c2b9dd6613ce22bd33d356b722917e3b6add9aeb
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -5286,6 +5286,17 @@ entries:
       bonuses: [critical_damage, multishot]
       malus: impact
       rolls: [1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
+    score: 5.148944222088646
+    fp: b94202d639056bce
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     score: 4.915752309929859

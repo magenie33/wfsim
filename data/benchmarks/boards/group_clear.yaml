@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 4082
-engine: d444fea2de59c78923f7c9c6a39c22f21f45ea6a
+submissions: 4098
+engine: c2b9dd6613ce22bd33d356b722917e3b6add9aeb
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -6527,6 +6527,17 @@ entries:
       rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
+    score: 142.23806393972802
+    fp: ad29a3f89e4fe139
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
     score: 116.94682571686032
     fp: 30c591efe223e7eb
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
@@ -6571,6 +6582,17 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
+    score: 75.33418834270512
+    fp: 54cd3f02beee3c43
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
     score: 65.69068877189717
     fp: f99e0195860e2ede
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
@@ -6591,17 +6613,6 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
     arcanes: [primary_compression]
-  - weapon: strun_prime
-    mode: cycle
-    score: 61.51259670316403
-    fp: 1698eeae1696625d
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-    riven:
-      bonuses: [critical_damage, heat, status_chance]
-      malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     score: 56.98913672526203
@@ -7116,6 +7127,16 @@ entries:
       bonuses: [damage, fire_rate, multishot]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 181.78957130894105
+    fp: beaa678d20a27371
+    mods: [galvanized_chamber, primed_firestorm, galvanized_scope, vital_sense, magnetic_capacity, riven, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [cold, critical_damage, multishot]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: torid
     mode: cycle
     score: 85.69880788478987
