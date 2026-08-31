@@ -138,4 +138,70 @@ check(`the boot reclaims replays written under the old rule (${Math.round(r.free
 check("…without throwing the measurement away with them",
   r.reclaimKeptTheResult === true, JSON.stringify(r.reclaimKeptTheResult));
 
+// ---------------------------------------------------------------------------
+// A RIVEN YOU MADE IS STILL THERE AFTER A RELOAD.
+//
+// It was not. `mergeRivenFamilyLists` runs on every load and matched the key it
+// writes as well as the one it reads: `<family>-<class>` came back through
+// `rivenScope`, which slugs an id the roster does not know, so `burston-rifle`
+// became `burston_rifle` and the good list was moved onto a key nothing
+// computes — and the original deleted. Every saved riven vanished on the first
+// reload after it was made.
+//
+// THREE CLAIMS, because a fix for the first alone would leave the ones already
+// lost lost, and a recovery that guessed would eat lists it has no business
+// touching.
+const riven = await evaluate(`(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const look = () => ({
+    keys: Object.keys(localStorage).filter(k => k.includes('-rivens')).sort(),
+    list: loadPresetList('rivens').map(p => p.name),
+  });
+  const out = {};
+
+  // A card made now, then the migration run again exactly as a reload runs it.
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Burston_Prime'); route(); await sleep(3500);
+  const ps = loadPresetList('rivens');
+  ps.push({ name: 'mine', state: { bonuses: ['damage'], malus: null, rolls: [0.9] } });
+  storePresetList('rivens', ps);
+  mergeRivenFamilyLists();
+  presetParseCache.clear();
+  out.survives = look();
+
+  // A list the old bug stranded, beside a card built since under one name.
+  localStorage.clear();
+  localStorage.setItem('wfsim-customs-burston_rifle-rivens', JSON.stringify([
+    { name: 'lost', state: { bonuses: ['damage'], malus: null, rolls: [0.9] } },
+    { name: 'clash', state: { bonuses: ['multishot'], malus: null, rolls: [0.5] } },
+  ]));
+  localStorage.setItem('wfsim-customs-burston-rifle-rivens', JSON.stringify([
+    { name: 'clash', state: { bonuses: ['crit_chance'], malus: null, rolls: [0.1] } },
+  ]));
+  mergeRivenFamilyLists();
+  presetParseCache.clear();
+  out.recovered = look();
+
+  // …and a key that is nobody's scope is not swept up with them.
+  localStorage.clear();
+  localStorage.setItem('wfsim-customs-not_a_scope_at_all-rivens', '[{"name":"x"}]');
+  mergeRivenFamilyLists();
+  out.stranger = look().keys;
+  return out;
+})()`);
+
+check("a riven survives the migration that runs on every load",
+  riven.survives.list.join() === "mine"
+    && riven.survives.keys.join() === "wfsim-customs-burston-rifle-rivens",
+  JSON.stringify(riven.survives));
+// MERGED, NOT OVERWRITTEN: somebody who kept using the app after losing theirs
+// has been building cards in the live list ever since.
+check("…the ones already stranded come back, merged with what is live",
+  riven.recovered.list.join() === "clash,lost,clash 2"
+    && riven.recovered.keys.join() === "wfsim-customs-burston-rifle-rivens",
+  JSON.stringify(riven.recovered));
+check("…and a key that is nobody's scope is left alone",
+  riven.stranger.join() === "wfsim-customs-not_a_scope_at_all-rivens",
+  JSON.stringify(riven.stranger));
+
 await finish("storage is bounded by the summary, not by how hard you measured");
