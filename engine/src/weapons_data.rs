@@ -1860,6 +1860,12 @@ pub struct WeaponSpec {
     pub polarities: Vec<String>,
     #[serde(default)]
     pub exilus_polarity: Option<String>,
+    /// THE STANCE SLOT'S OWN POLARITY, which decides what a stance GRANTS: a
+    /// stance is an Aura, not a cost — *"All Stances provide a bonus mod
+    /// capacity of 5 when maxed, doubling it to 10 when placed on the matching
+    /// polarity"* (wiki, Stance). See [`crate::mods::stance_capacity`].
+    #[serde(default)]
+    pub stance_polarity: Option<String>,
     #[serde(default)]
     pub magazine: Option<f64>,
     /// Reserve rounds outside the magazine — the wiki's "Ammo Max".
@@ -2055,9 +2061,9 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-const INHERITED: [&str; 20] = [
+const INHERITED: [&str; 21] = [
     "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy",
-    "disposition", "polarities", "exilus_polarity", "riven_family",
+    "disposition", "polarities", "exilus_polarity", "stance_polarity", "riven_family",
     "internal_name", "noise", "magazine", "reload_seconds", "ammo_type",
     "ammo_max", "ammo_pickup", "traits", "deployment", "no_resupply",
 ];
@@ -3177,6 +3183,11 @@ pub fn innate_slots(id: &str) -> [Option<Polarity>; 8] {
 /// "Exilus Polarity"; Dual Toxocyst: Naramon).
 pub fn exilus_polarity(id: &str) -> Option<Polarity> {
     spec(id)?.exilus_polarity.as_deref().map(polarity)
+}
+
+/// …AND THE STANCE SLOT'S, which is a capacity GRANT rather than a discount.
+pub fn stance_polarity(id: &str) -> Option<Polarity> {
+    spec(id)?.stance_polarity.as_deref().map(polarity)
 }
 
 /// Weapon behavior traits consumed by arcane/mod `requires` gates. Traits
@@ -4321,6 +4332,28 @@ mod tests {
         assert!(orphans.is_empty(), "the survey names entries the roster lost: {orphans:?}");
         assert_eq!(stated, resolved.len(), "survey row count vs entries that state a key");
     }
+
+    /// THE STANCE SLOT'S POLARITY IS READ, and it decides a capacity GRANT
+    /// rather than a discount — see `mods::stance_capacity`.
+    ///
+    /// The Magistar's slot is Vazarin, so Shattering Storm doubles its grant
+    /// there and Crushing Ruin, which is Madurai, does not. A field nobody
+    /// reads is the anti-pattern this repo names by name.
+    #[test]
+    fn the_stance_slot_polarity_decides_what_a_stance_grants() {
+        assert_eq!(stance_polarity("magistar"), Some(crate::mods::Polarity::Vazarin));
+        let slot = stance_polarity("magistar");
+        let of = |id: &str| {
+            crate::mods_data::pool_for_weapon("magistar")
+                .iter()
+                .find(|m| m.id == id)
+                .map(|m| crate::mods::stance_capacity(m.polarity, slot))
+                .expect("in the hammer pool")
+        };
+        assert_eq!(of("shattering_storm"), 10, "Vazarin on a Vazarin slot");
+        assert_eq!(of("crushing_ruin"), 5, "Madurai on a Vazarin slot");
+    }
+
 
     #[test]
     fn every_entry_has_had_its_range_page_opened() {

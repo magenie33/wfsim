@@ -6266,11 +6266,24 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // for the rule (docs/INVESTMENT.md). `fit` owns the whole question: the
     // rank the Forma buy, the capacity that gives, and the bill by item.
     let inv = wfsim_engine::mods::Investment::default();
+    // …AND THE STANCE HANDS CAPACITY BACK rather than taking it, which is why
+    // the panel's own bill has to ask for it too: a melee build reads five to
+    // ten points of headroom the weapon's rank did not buy.
+    let granted = refs
+        .iter()
+        .find(|m| m.stance.is_some())
+        .map_or(0, |m| {
+            wfsim_engine::mods::stance_capacity(
+                m.polarity,
+                wfsim_engine::weapons_data::stance_polarity(&info.id),
+            )
+        });
     let forma = match wfsim_engine::mods::fit(
         wspec(&info.id).max_rank,
         &innate_slots_for(&info.id),
         &planned,
         inv,
+        granted,
     ) {
         Ok(f) => json!({
             "legal": true,

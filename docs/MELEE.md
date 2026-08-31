@@ -374,9 +374,12 @@ applies to.
 5. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
    sweep is a wide arc and a thrust is not, and nothing published gives either
    an angle.
-6. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
-   drain is a `u32`, so it is held at zero — the conservative direction: a build
-   that fits here fits in game.
+6. **Forma on the stance SLOT.** The grant itself is modelled — a stance is an
+   Aura, not a cost, and hands back 5 points or 10 on a matching slot
+   (`mods::stance_capacity`, and the slot's polarity is the weapon's own). What
+   is not planned is REPOLARIZING that slot to buy the double, which the wiki
+   says a Forma can do, so a build that would spend one reads five capacity low
+   here — the conservative direction: a build that fits here fits in game.
 7. **Three cards that name a state this arena has not got**: Relentless
    Combination wants a combo point when a Slash DoT ticks, Spring-Loaded Blade
    wants a stacking reach buff, and Shattering Impact wants a flat armour strip
