@@ -1619,6 +1619,45 @@ mod tests {
         );
     }
 
+    /// A GALVANIZED CARD IS ITS PARENT'S VARIANT, and the two are one family.
+    ///
+    /// *"Galvanized Steel is the Galvanized variant of True Steel"* is the
+    /// wiki's own first sentence, and Reflex Coil and Melee Elementalist have
+    /// the same one — so a build holds ONE of each family.
+    ///
+    /// FOCUS ENERGY IS THE CONTROL: it buys Heavy Attack Efficiency as Reflex
+    /// Coil does and is a different card, which the wiki states by arithmetic —
+    /// *"with both Focus Energy and Reflex Coil, 10% of the combo counter will
+    /// still be consumed"*.
+    #[test]
+    fn a_galvanized_card_collides_with_the_card_it_is_a_variant_of() {
+        let legal = |a: &str, b: &str| {
+            validate_with(
+                "magistar",
+                &[a.to_string(), b.to_string()],
+                &[],
+                &[],
+                "",
+                None,
+                None,
+            )
+            .is_ok()
+        };
+        for (a, b) in [
+            ("galvanized_steel", "true_steel"),
+            ("galvanized_steel", "sacrificial_steel"),
+            ("galvanized_reflex", "reflex_coil"),
+            ("galvanized_elementalist", "melee_elementalist"),
+        ] {
+            assert!(!legal(a, b), "{a} and {b} are one family and both were accepted");
+        }
+        assert!(
+            legal("focus_energy", "reflex_coil"),
+            "two different cards that both buy efficiency stack in game",
+        );
+    }
+
+
     /// THE REPRESENTATIVE: what differs is kept, what does not is not.
     ///
     /// Measured on the Torid: three elementals in slots

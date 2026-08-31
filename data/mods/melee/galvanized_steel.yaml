@@ -27,5 +27,9 @@ effects:
     max_stacks: 4
     duration: 20.0
 
+# THE GALVANIZED VARIANT OF TRUE STEEL (wiki's own first sentence), so the
+# three crit-chance cards are one family and a build holds one of them.
+family: true_steel
+
 source:
   url: https://wiki.warframe.com/w/Galvanized_Steel

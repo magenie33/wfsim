@@ -3192,8 +3192,27 @@ pub fn panel_json(v: &Value) -> Value {
                 .collect()
         })
         .unwrap_or_default();
-    if mod_ids.len() > 9 {
+    // EIGHT MAIN, ONE EXILUS — AND A STANCE BESIDE THEM, which is a slot of its
+    // own and not one of the nine. A melee build sends ten ids and every one of
+    // them is legal; counting the flat list refused the full build outright.
+    // `builds::validate_with` has subtracted the stances before comparing since
+    // the slot landed, and this is the same subtraction.
+    let stance_pool = wfsim_engine::mods_data::pool_for_weapon(&info.id);
+    let stances = mod_ids
+        .iter()
+        .filter(|id| {
+            stance_pool.iter().any(|m| m.id == id.as_str() && m.stance.is_some())
+        })
+        .count();
+    if mod_ids.len() - stances > 9 {
         return err_json("at most 8 slots + 1 exilus");
+    }
+    // …AND ONE STANCE, because there is one slot for it. Two in a list is a
+    // build nobody can hold, and admitting it would resolve two combo scripts
+    // with only the first ever read — the same refusal `builds::validate_with`
+    // has made since the slot landed.
+    if stances > 1 {
+        return err_json(format!("{stances} stances, and there is one stance slot"));
     }
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return err_json(e);
@@ -3236,6 +3255,32 @@ pub fn panel_json(v: &Value) -> Value {
     let mut conditionals: Vec<Value> = Vec::new(); // lines that never merge into a bucket
     for m in &refs {
         let name = m.name.to_string();
+        // A SET THAT ENHANCES ITS OWN MEMBERS SAYS SO ON THE CARD. What the mod
+        // is worth depends on what is beside it, which is exactly what this
+        // list is for — and the row is drawn dim when the set is short, so a
+        // reader can see the 25% they are one card away from.
+        let self_scale = wfsim_engine::mod_sets_data::self_scale_for(m, &refs);
+        if let Some(set) = m.set.and_then(wfsim_engine::mod_sets_data::set_def) {
+            if set.kind == wfsim_engine::mod_sets_data::SetBonusKind::SelfScaling {
+                let have = refs.iter().filter(|x| x.set == Some(set.id)).count();
+                conditionals.push(json!({
+                    "mod": name,
+                    "desc": format!(
+                        "{} set — every member is worth {} more once all {} are equipped",
+                        set.name,
+                        wfsim_engine::loadout::pct(set.per_mod),
+                        set.members,
+                    ),
+                    "active": self_scale > 1.0,
+                    "why": if self_scale > 1.0 {
+                        format!("all {} equipped, so this card's own numbers are {} higher",
+                            set.members, wfsim_engine::loadout::pct(set.per_mod))
+                    } else {
+                        format!("{have} of {} equipped, so this card is worth its face", set.members)
+                    },
+                }));
+            }
+        }
         for e in &m.effects {
             use ModEffect::*;
             let before = src.len();
@@ -9407,6 +9452,64 @@ mod form_tests {
     /// weaker, it is unreachable, so its orphans are dropped rather than
     /// priced. Commodore's Fortune (tier 4, +20% base crit) shows it: alone it
     /// must change nothing, and only the full 1-2-3-4 chain may pay out.
+    /// A MELEE BUILD IS TEN IDS, AND ALL TEN ARE LEGAL.
+    ///
+    /// Eight main slots, one exilus and a STANCE beside them — the stance is a
+    /// slot of its own, so counting the flat list refused the full build
+    /// outright. `builds::validate_with` has subtracted the stances before
+    /// comparing since the slot landed, and the panel does the same
+    /// subtraction now.
+    ///
+    /// …AND ONE STANCE, because there is one slot: two is a build nobody can
+    /// hold, and it is refused rather than resolved with the second ignored.
+    #[test]
+    fn a_stance_is_not_one_of_the_nine_and_two_are_refused() {
+        let ok = |mods: &[&str]| panel_json(&json!({ "weapon": "magistar", "mods": mods }))["ok"] == true;
+        let eight = [
+            "sacrificial_steel", "sacrificial_pressure", "killing_blow", "organ_shatter",
+            "seismic_wave", "corrupt_charge", "gladiator_might", "primed_fever_strike",
+        ];
+        let with = |extra: &[&'static str]| -> Vec<&'static str> {
+            [eight.as_slice(), extra].concat()
+        };
+        assert!(ok(&with(&[])), "eight is a build");
+        assert!(ok(&with(&["motus_impact", "shattering_storm"])), "…and so is eight, exilus, stance");
+        assert!(
+            !ok(&with(&["motus_impact", "shattering_storm", "crushing_ruin"])),
+            "two stances is one slot too many",
+        );
+    }
+
+    /// A SET THAT ENHANCES ITS OWN MEMBERS SAYS SO ON THE CARD, and says it
+    /// while the set is still SHORT.
+    ///
+    /// What a Sacrificial mod is worth depends on what is beside it, which is
+    /// the one question this list exists to answer. Drawn dim at one card — the
+    /// reader can see the 25% they are one card away from — and lit on both,
+    /// on BOTH rows, because the set enhances every member and not the newcomer.
+    #[test]
+    fn a_self_scaling_set_states_itself_on_every_member() {
+        let row = |mods: &[&str]| -> Vec<(String, bool)> {
+            let p = panel_json(&json!({ "weapon": "magistar", "mods": mods }));
+            p["conditionals"]
+                .as_array()
+                .expect("conditionals")
+                .iter()
+                .filter(|c| c["desc"].as_str().is_some_and(|d| d.contains("Sacrificial set")))
+                .map(|c| {
+                    (c["mod"].as_str().unwrap_or_default().to_string(), c["active"] == true)
+                })
+                .collect()
+        };
+        let alone = row(&["sacrificial_steel"]);
+        assert_eq!(alone.len(), 1, "the one card still states the set: {alone:?}");
+        assert!(!alone[0].1, "…and states that it is not paying yet");
+
+        let pair = row(&["sacrificial_steel", "sacrificial_pressure"]);
+        assert_eq!(pair.len(), 2, "both members carry the row: {pair:?}");
+        assert!(pair.iter().all(|(_, on)| *on), "…and both are paying: {pair:?}");
+    }
+
     #[test]
     fn an_evolution_tier_needs_the_one_below_it() {
         let with = |evos: Value| {

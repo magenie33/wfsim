@@ -13,5 +13,8 @@ effects:
     rank0: 0.1
     rankMax: 0.6
 
+# THE FAMILY'S OWN NAME, so its Galvanized variant collides with it.
+family: reflex_coil
+
 source:
   url: https://wiki.warframe.com/w/Reflex_Coil

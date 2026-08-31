@@ -16,5 +16,8 @@ effects:
     rank0: 0.1
     rankMax: 0.6
 
+# THE FAMILY'S OWN NAME, so its Galvanized variant collides with it.
+family: melee_elementalist
+
 source:
   url: https://wiki.warframe.com/w/Melee_Elementalist

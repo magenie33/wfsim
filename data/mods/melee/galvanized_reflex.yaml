@@ -23,5 +23,9 @@ effects:
     max_stacks: 4
     duration: 20.0
 
+# THE GALVANIZED VARIANT OF REFLEX COIL (wiki), so the two cannot be equipped
+# together — Focus Energy is a DIFFERENT card and stacks with either.
+family: reflex_coil
+
 source:
   url: https://wiki.warframe.com/w/Galvanized_Reflex

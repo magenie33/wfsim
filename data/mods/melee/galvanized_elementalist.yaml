@@ -21,5 +21,8 @@ effects:
     max_stacks: 4
     duration: 20.0
 
+# THE GALVANIZED VARIANT OF MELEE ELEMENTALIST (wiki).
+family: melee_elementalist
+
 source:
   url: https://wiki.warframe.com/w/Galvanized_Elementalist
