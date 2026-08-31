@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4055
-engine: 19133fbb96f1c5e4557f12fd6dcde4fc9b1a2b46
+submissions: 4072
+engine: d444fea2de59c78923f7c9c6a39c22f21f45ea6a
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -176,6 +176,12 @@ entries:
     fp: 3483c6c2b77f8916
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_fortifier]
+  - weapon: arbucep
+    mode: base
+    score: 4.109340865091491
+    fp: 3ace1f8211360d9d
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
+    arcanes: [primary_overcharge, secondary_enervate]
   - weapon: artax
     mode: base
     score: 0.1935909902625215
@@ -3883,6 +3889,16 @@ entries:
     arcanes: [primary_overcharge, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 2.6666666666666665
+    fp: e58faf11441baab9
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, containment_breach, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 0.9, 0.9]
+  - weapon: larkspur_prime
+    mode: base
     score: 2.3382845961491885
     fp: c7ef2d65cffc421f
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
@@ -4199,6 +4215,12 @@ entries:
     arcanes: [secondary_irradiate]
   - weapon: mausolon
     mode: base
+    score: 2.6666666666666665
+    fp: f095fe1a2b306077
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
+    arcanes: [primary_overcharge, cascadia_flare]
+  - weapon: mausolon
+    mode: base
     score: 2.3036589900814333
     fp: 6b453659a9361039
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
@@ -4221,12 +4243,6 @@ entries:
     fp: 4049ef970046e173
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, parallax_scope, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_encumber]
-  - weapon: mausolon
-    mode: base
-    score: 1.286943122034051
-    fp: e0587a18ca8a4399
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
-    arcanes: [primary_crux, secondary_deadhead]
   - weapon: mausolon
     mode: base
     score: 0.5307780753069548
@@ -4933,6 +4949,12 @@ entries:
     arcanes: [primary_crux]
   - weapon: scourge_prime
     mode: base
+    score: 0.5149851971215395
+    fp: b6133ab9e85d308c
+    mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    arcanes: [primary_merciless]
+  - weapon: scourge_prime
+    mode: base
     score: 0.31478816659206976
     fp: b022fa762e13df6e
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, rime_rounds, high_voltage, hellfire]
@@ -5578,6 +5600,13 @@ entries:
     valence: magnetic
   - weapon: tenet_glaxion
     mode: base
+    score: 1.830512820552848
+    fp: 4dbf5b2709679e32
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
+  - weapon: tenet_glaxion
+    mode: base
     score: 1.6886787373597134
     fp: 73ba2cebc7e08ee1
     mods: [amalgam_serration, galvanized_chamber, primed_shred, hammer_shot, rifle_elementalist, riven, hellfire, thermite_rounds]
@@ -5587,6 +5616,13 @@ entries:
       bonuses: [cold, reload_speed, toxin]
       malus: damage
       rolls: [0.9, 0.9, 0.9, 0.9]
+  - weapon: tenet_glaxion
+    mode: base
+    score: 1.6848984735585948
+    fp: 26447f2de99dfa55
+    mods: [heavy_caliber, primed_shred, split_chamber, rifle_elementalist, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
   - weapon: tenet_glaxion
     mode: base
     score: 1.666976164351941

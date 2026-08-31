@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 4055
-engine: 19133fbb96f1c5e4557f12fd6dcde4fc9b1a2b46
+submissions: 4072
+engine: d444fea2de59c78923f7c9c6a39c22f21f45ea6a
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -2727,6 +2727,17 @@ entries:
       bonuses: [multishot, status_chance, toxin]
       malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 51.73393050999428
+    fp: af1dd397cab4d2e8
+    mods: [amalgam_serration, heavy_caliber, primary_acuity, vile_acceleration, gilded_truth, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: slash
+      rolls: [1.1, 1.1, 1.1]
   - weapon: burston_prime
     mode: cycle
     score: 51.61916240087387
@@ -8321,6 +8332,16 @@ entries:
     fp: 4d60388cdbf1a6db
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    score: 13.90040458263858
+    fp: 2d42a5e76e53ff4c
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, containment_breach, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     score: 13.839137015878151

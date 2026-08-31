@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 4055
-engine: 19133fbb96f1c5e4557f12fd6dcde4fc9b1a2b46
+submissions: 4072
+engine: d444fea2de59c78923f7c9c6a39c22f21f45ea6a
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -4817,6 +4817,16 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
+    mode: base
+    score: 26.56706996062563
+    fp: 15e453829a5c1eca
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, containment_breach, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: larkspur_prime
     mode: alternate
     score: 24.693400838431117
     fp: fb34f08a0ff16247
@@ -6933,6 +6943,13 @@ entries:
       rolls: [0.9, 0.9, 0.9, 0.9]
   - weapon: tenet_glaxion
     mode: base
+    score: 17.469387598981438
+    fp: ec055da863e1fc78
+    mods: [heavy_caliber, primed_shred, split_chamber, rifle_elementalist, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
+  - weapon: tenet_glaxion
+    mode: base
     score: 15.824118055253782
     fp: 18410c06e5b67b67
     mods: [heavy_caliber, primed_shred, split_chamber, serration, rime_rounds, malignant_force, hellfire, thermite_rounds]
@@ -7020,13 +7037,6 @@ entries:
     mods: [primed_shred, spectral_serration, split_chamber, critical_delay, rifle_elementalist, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_overcharge]
     valence: magnetic
-  - weapon: tenet_glaxion
-    mode: base
-    score: 8.110834019581699
-    fp: 5c1ad6116a81b1c4
-    mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, infected_clip]
-    arcanes: [primary_deadhead]
-    valence: electricity
   - weapon: tenet_plinx
     mode: base
     score: 2.9642434193726364
