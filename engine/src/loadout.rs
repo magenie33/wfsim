@@ -2388,6 +2388,14 @@ pub enum BuffGrant {
     /// Primary Deadhead and Lingering Judgement land in, since the wiki lists
     /// every innate headshot source there but Cernos Prime's.
     HeadshotDamage,
+    /// Galvanized Reflex: *"On Melee Kill: +20 Initial Combo for 20s. Stacks
+    /// up to 4x"* — COMBO POINTS, not a percentage of anything.
+    ///
+    /// It raises the FLOOR the counter returns to, so on a heavy mode it is
+    /// the build: four stacks are +80 points, which is four tiers of heavy
+    /// attack that cost nothing to hold and refill at 40 a second after every
+    /// swing that spends them.
+    InitialCombo,
 }
 
 impl BuffGrant {
@@ -2411,6 +2419,7 @@ impl BuffGrant {
             BuffGrant::CritChance => "crit_chance",
             BuffGrant::StatusChance => "status_chance",
             BuffGrant::HeadshotDamage => "headshot_damage",
+            BuffGrant::InitialCombo => "initial_combo",
         }
     }
 
@@ -2432,6 +2441,7 @@ impl BuffGrant {
             BuffGrant::CritChance => "Crit Chance",
             BuffGrant::StatusChance => "Status Chance",
             BuffGrant::HeadshotDamage => "Headshot Damage",
+            BuffGrant::InitialCombo => "Initial Combo",
         }
     }
 }

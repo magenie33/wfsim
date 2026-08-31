@@ -10691,6 +10691,44 @@ mod melee {
         );
     }
 
+    /// GALVANIZED REFLEX EARNS THE FLOOR ITSELF, which on a heavy mode is the
+    /// half of the card that carries the build.
+    ///
+    /// *"On Melee Kill: +20 Initial Combo for 20s. Stacks up to 4x"* — combo
+    /// POINTS, so four stacks are +80 and the counter a heavy mode returns to
+    /// after every swing is four tiers higher. It needs a target that DIES,
+    /// which the training dummy never does, so this one fights a Thrax at level
+    /// one: the same body the ruler uses, at a level a slam can clear.
+    #[test]
+    fn galvanized_reflex_earns_initial_combo_and_a_heavy_mode_keeps_it() {
+        let killing = |mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("magistar_heavy_slam", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("magistar_heavy_slam");
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(60.0);
+            let spec = crate::enemy_data::EnemySpec::load(std::path::Path::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../data/enemies/thrax_centurion.yaml"
+            )))
+            .expect("the ruler's own body");
+            arena.target = spec
+                .target_params(1, false, false, TargetMode::InstantRespawn)
+                .expect("level 1");
+            let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            monte_carlo(&p, 30, 3)
+        };
+        let bare = killing(&[]);
+        let earned = killing(&["galvanized_reflex"]);
+        assert!(bare.mean_kills > 2.0, "the fixture has to kill: {}", bare.mean_kills);
+        let gain = earned.mean_damage / bare.mean_damage;
+        assert!(
+            gain > 1.5,
+            "kills should buy tiers the counter keeps: x{gain:.3}",
+        );
+    }
+
     /// …AND THE WHOLE OF THE MODE'S BUILD IS THAT COUNTER.
     ///
     /// Nothing else the loop does moves: the recovery is the same either way,
@@ -12505,7 +12543,14 @@ pub fn run_once_traced(
             // this does and is therefore UNDER-reported here.
             combo_points = 0.0;
         }
-        let combo_now = melee_combo_points(combo_points, ap.initial_combo, t - combo_spent_t);
+        // …AND THE FLOOR IS LIVE. Galvanized Reflex earns +20 initial combo per
+        // melee kill to four stacks, so the number the counter returns to moves
+        // during the fight — read here rather than at resolve, which is where
+        // it was a static build-time value and the card's whole second half
+        // went unpaid.
+        let initial_now =
+            ap.initial_combo + buff_total!(ap, crate::loadout::BuffGrant::InitialCombo, t);
+        let combo_now = melee_combo_points(combo_points, initial_now, t - combo_spent_t);
         let combo_mult = melee_combo_multiplier(combo_now);
         // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
         // takes the combo multiplier on top of it.
@@ -15783,7 +15828,7 @@ pub fn run_once_traced(
                 // heavy slam make the same decision and the next weapon needs
                 // no field.
                 if ap.spends_combo {
-                    heavy_cycle_seconds(cycle, combo_points, ap.initial_combo)
+                    heavy_cycle_seconds(cycle, combo_points, initial_now)
                 } else {
                     cycle
                 }

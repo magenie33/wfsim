@@ -12,8 +12,16 @@ effects:
   - kind: heavy_attack_efficiency
     rank0: 0.045455
     rankMax: 0.5
-  # On Melee Kill: +20 Initial Combo for 20s, four stacks - initial combo is resolved once at build time and has no stacking buff behind it
-  - kind: unmodeled
+  # On Melee Kill: +20 Initial Combo for 20s, four stacks — COMBO POINTS rather
+  # than a percentage, so it raises the floor the counter returns to. On a heavy
+  # mode that is the build: +80 points is four tiers that cost nothing to hold.
+  - kind: stacking_buff
+    trigger: on_kill
+    grants: initial_combo
+    rank0: 2.0
+    rankMax: 20.0
+    max_stacks: 4
+    duration: 20.0
 
 source:
   url: https://wiki.warframe.com/w/Galvanized_Reflex

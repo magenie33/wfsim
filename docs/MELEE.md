@@ -371,11 +371,20 @@ applies to.
 6. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
    drain is a `u32`, so it is held at zero — the conservative direction: a build
    that fits here fits in game.
-7. **Six cards that name a state this arena has not got**: Enduring Strike and
+7. **Five cards that name a state this arena has not got**: Enduring Strike and
    Enduring Affliction want "the target is Lifted", Relentless Combination wants
    a combo point when a Slash DoT ticks, Spring-Loaded Blade wants a stacking
-   reach buff, Galvanized Reflex wants stacking initial combo, and Shattering
-   Impact wants a flat armour strip per Impact hit.
+   reach buff, and Shattering Impact wants a flat armour strip per Impact hit.
+
+   **Galvanized Reflex is off that list**, and it was the biggest thing on it:
+   *"On Melee Kill: +20 Initial Combo for 20s. Stacks up to 4x"* is COMBO
+   POINTS, so four stacks raise the floor a heavy mode returns to by +80 — four
+   tiers — and it is worth **x2.83** on a slam loop that gets kills. It cost no
+   engine code beyond one `BuffGrant`: `ModEffect::GrantsStackingBuff` is the
+   door for exactly this, a trigger and a grant that are both already words.
+   What DID have to move is where the floor is read: it was a build-time
+   constant, and a floor that is earned during the fight has to be read at the
+   swing.
 
 ### …and two numbers that need measuring
 
