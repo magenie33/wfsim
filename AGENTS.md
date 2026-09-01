@@ -182,7 +182,8 @@ Each of these fails silently. That is why it is here and not in a document.
   check is another, so running that loop to DISCOVER the next thing to fix is
   how an afternoon goes. Enumerate the call sites by READING first, debug
   against the dev server (`openApp({base})`), regenerate `site/` once, then run
-  the checks — `docs/DEVELOPMENT.md`.
+  the checks — `docs/DEVELOPMENT.md`. **The dev server 404s on `/board.json`**,
+  so a board-dependent check passes VACUOUSLY there: batch every edit first.
 - Run the checks a change touches — `docs/CHECKS.md` lists what each asserts.
   They drive headless Chrome over CDP through `scripts/cdp.mjs`.
 - **Engine cost**: `cargo run --release --bin one_fight` (`-- save` first). A
