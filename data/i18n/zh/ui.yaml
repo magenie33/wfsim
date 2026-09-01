@@ -233,7 +233,6 @@ ui:
   "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total": 单独一击的动作长度没有任何公开来源：wiki 只给了每套连段在 1.0x 攻速下的总均伤每秒，所以连段的**总时长**是精确的（倍率之和 ÷ 该速率），而各击之间是平均分配的。这只会让一次触发的起始时间在连段内偏移零点几秒，不改变任何总量
   "the Tennokai window's WIND-UP SPEED is a stand-in: DE publishes no figure for how much faster a heavy attack charges inside the flash, and this uses +100%. The window itself, its chance, its cadence and everything the seven cards do to it are modelled": 天能界窗口的**蓄力加速**是代用值：DE 没有公布在闪光窗口内重击蓄力快多少，这里取 +100%。窗口本身、它的触发概率、节奏，以及七张卡对它做的一切都已建模
   "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports": 「能量尖峰」的连击部分衰减是战甲被动，尚未建模：这里的计数器一到时间就直接归零，所以带该被动的配装实际保留的连击远多于此处所报
-  "melee RIVENS are not modelled — there is no melee riven pool yet, so the riven editor offers this weapon nothing": 近战**紫卡**尚未建模——目前没有近战紫卡池，所以紫卡编辑器对这把武器什么都不提供
   "attack speed shortens this mode's whole cadence, and in game it should not: the 1.2s heavy wind-up is fixed and only the interval BETWEEN heavy attacks is shortened. The swing delay here is one number covering both, so an attack-speed build reads HIGH in this mode": 攻速在这里缩短了整个循环，而游戏里不该如此：1.2 秒的重击蓄力是固定的，被缩短的只是两次重击**之间**的间隔。此处的出手间隔是一个数字同时代表了这两者，所以攻速流派在这个模式下读数偏高
   "THE CLIMB IS NOT CHARGED: this loop takes the 150% radius a slam dropped from 15 m gets, and the seconds spent getting up there are free. A player who hops instead trades that radius back down towards the 2.5 m / listed radius floor, and this arena has no vertical axis to tell the two apart": "**爬升的时间没有计费**：这个循环吃的是从 15 米落下所得的 150% 半径，而爬上去花掉的那几秒是白送的。改成小跳的玩家会把这份半径一路交还到 2.5m/面板半径 的下限，而这个竞技场没有垂直轴，分不出这两者"
   "Condition Overload does not apply to slams, heavy slams or radial attacks (the mod's own words), and this entry does not yet exempt it — a build carrying Condition Overload therefore reads HIGH in this mode": 异常状态过载不作用于捶地、重击捶地和径向攻击（mod 卡面原话），而本条目尚未做这个豁免——所以带异常状态过载的配装在这个模式下读数偏高
@@ -1598,6 +1597,21 @@ effect_phrases:
   - ['\bRange\b', '射程']
   - ['\bZoom\b', '变焦']
   - ['\(aiming\)', '（瞄准时）']
+  # MELEE'S OWN, every one of them DE's client wording -- from the card of the
+  # mod that grants the same stat (Pressure Point, Fury, Body Count, Corrupt
+  # Charge, Reflex Coil, Maiming Strike, True Punishment, Quickening, Finishing
+  # Touch, True Steel). Before the generic rows below, which would otherwise
+  # take 'Damage' and 'Critical Chance' out of the middle of these.
+  - ['Melee Damage', '近战伤害']
+  - ['Finisher Damage', '处决伤害']
+  - ['Critical Chance for Slide Attack', '滑行攻击暴击几率']
+  - ['\(x2 for Heavy Attacks\)', '（重击时 x2）']
+  - ['Heavy Attack Efficiency', '重击效率']
+  - ['Attack Speed', '攻击速度']
+  - ['Combo Duration', '连击持续时间']
+  - ['Initial Combo', '初始连击']
+  - ['Additional Combo Count Chance', '额外连击数几率']
+  - ['Chance to Gain Combo Count', '连击数几率']
   - ['Status Duration', '触发持续时间']
   - ['Critical Chance', '暴击几率']
   - ['Critical Damage', '暴击伤害']

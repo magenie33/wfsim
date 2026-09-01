@@ -9,6 +9,8 @@
 #
 # see notes: malus_false_wiki_listed
 #
+# see notes: bonus_false_malus_only
+#
 # see notes: order_de_s_own
 class: pistol
 stats:
@@ -16,16 +18,16 @@ stats:
     tag: WeaponAmmoMaxMod
     order: 12
     base: 0.0099999998
-    prefix: ampi
-    suffix: bin
+    prefix: "ampi"
+    suffix: "bin"
     text: "|val|% Ammo Maximum"
     kind: ammo_max_bonus
   - id: cold
     tag: WeaponFreezeDamageMod
     order: 6
     base: 0.0099999998
-    prefix: geli
-    suffix: do
+    prefix: "geli"
+    suffix: "do"
     text: "|val|% Cold"
     kind: elemental_damage_bonus
     arg: cold
@@ -34,32 +36,32 @@ stats:
     tag: WeaponCritChanceMod
     order: 1
     base: 0.016666001
-    prefix: crita
-    suffix: cron
+    prefix: "crita"
+    suffix: "cron"
     text: "|val|% Critical Chance"
     kind: crit_chance_bonus
   - id: critical_damage
     tag: WeaponCritDamageMod
     order: 2
     base: 0.0099999998
-    prefix: acri
-    suffix: tis
+    prefix: "acri"
+    suffix: "tis"
     text: "|val|% Critical Damage"
     kind: crit_damage_bonus
   - id: damage
     tag: WeaponDamageAmountMod
     order: 14
     base: 0.0244
-    prefix: visi
-    suffix: ata
+    prefix: "visi"
+    suffix: "ata"
     text: "|val|% Damage"
     kind: base_damage_bonus
   - id: damage_to_corpus
     tag: WeaponFactionDamageCorpus
     order: 20
     base: 0.0049999999
-    prefix: manti
-    suffix: tron
+    prefix: "manti"
+    suffix: "tron"
     text: "|val| Damage to Corpus"
     kind: faction_damage_bonus
     arg: corpus
@@ -67,8 +69,8 @@ stats:
     tag: WeaponFactionDamageGrineer
     order: 21
     base: 0.0049999999
-    prefix: argi
-    suffix: con
+    prefix: "argi"
+    suffix: "con"
     text: "|val| Damage to Grineer"
     kind: faction_damage_bonus
     arg: grineer
@@ -76,8 +78,8 @@ stats:
     tag: WeaponFactionDamageInfested
     order: 22
     base: 0.0049999999
-    prefix: pura
-    suffix: ada
+    prefix: "pura"
+    suffix: "ada"
     text: "|val| Damage to Infested"
     kind: faction_damage_bonus
     arg: infested
@@ -85,8 +87,8 @@ stats:
     tag: WeaponElectricityDamageMod
     order: 3
     base: 0.0099999998
-    prefix: vexi
-    suffix: tio
+    prefix: "vexi"
+    suffix: "tio"
     text: "|val|% Electricity"
     kind: elemental_damage_bonus
     arg: electricity
@@ -95,16 +97,16 @@ stats:
     tag: WeaponFireRateMod
     order: 5
     base: 0.0082999999
-    prefix: croni
-    suffix: dra
+    prefix: "croni"
+    suffix: "dra"
     text: "|val|% Fire Rate"
     kind: fire_rate_bonus
   - id: heat
     tag: WeaponFireDamageMod
     order: 4
     base: 0.0099999998
-    prefix: igni
-    suffix: pha
+    prefix: "igni"
+    suffix: "pha"
     text: "|val|% Heat"
     kind: elemental_damage_bonus
     arg: heat
@@ -113,8 +115,8 @@ stats:
     tag: WeaponImpactDamageMod
     order: 7
     base: 0.013333
-    prefix: magna
-    suffix: ton
+    prefix: "magna"
+    suffix: "ton"
     text: "|val|% Impact"
     kind: physical_damage_bonus
     arg: impact
@@ -122,32 +124,32 @@ stats:
     tag: WeaponClipMaxMod
     order: 13
     base: 0.0055550002
-    prefix: arma
-    suffix: tin
+    prefix: "arma"
+    suffix: "tin"
     text: "|val|% Magazine Capacity"
     kind: magazine_capacity_bonus
   - id: multishot
     tag: WeaponFireIterationsMod
     order: 15
     base: 0.0133
-    prefix: sati
-    suffix: can
+    prefix: "sati"
+    suffix: "can"
     text: "|val|% Multishot"
     kind: multishot_bonus
   - id: projectile_speed
     tag: WeaponProjectileSpeedMod
     order: 16
     base: 0.0099999998
-    prefix: conci
-    suffix: nak
+    prefix: "conci"
+    suffix: "nak"
     text: "|val|% Projectile Speed"
     kind: projectile_speed_bonus
   - id: punch_through
     tag: WeaponPunctureDepthMod
     order: 17
     base: 0.029999999
-    prefix: lexi
-    suffix: nok
+    prefix: "lexi"
+    suffix: "nok"
     text: "|val| Punch Through"
     kind: punch_through_bonus
     malus: false
@@ -155,8 +157,8 @@ stats:
     tag: WeaponArmorPiercingDamageMod
     order: 0
     base: 0.01333
-    prefix: insi
-    suffix: cak
+    prefix: "insi"
+    suffix: "cak"
     text: "|val|% Puncture"
     kind: physical_damage_bonus
     arg: puncture
@@ -164,16 +166,16 @@ stats:
     tag: WeaponReloadSpeedMod
     order: 19
     base: 0.0055550002
-    prefix: feva
-    suffix: tak
+    prefix: "feva"
+    suffix: "tak"
     text: "|val|% Reload Speed"
     kind: reload_speed_bonus
   - id: slash
     tag: WeaponSlashDamageMod
     order: 9
     base: 0.013333
-    prefix: sci
-    suffix: sus
+    prefix: "sci"
+    suffix: "sus"
     text: "|val|% Slash"
     kind: physical_damage_bonus
     arg: slash
@@ -181,24 +183,24 @@ stats:
     tag: WeaponStunChanceMod
     order: 10
     base: 0.0099999998
-    prefix: hexa
-    suffix: dex
+    prefix: "hexa"
+    suffix: "dex"
     text: "|val|% Status Chance"
     kind: status_chance_bonus
   - id: status_duration
     tag: WeaponProcTimeMod
     order: 8
     base: 0.01111
-    prefix: deci
-    suffix: des
+    prefix: "deci"
+    suffix: "des"
     text: "|val|% Status Duration"
     kind: status_duration_bonus
   - id: toxin
     tag: WeaponToxinDamageMod
     order: 11
     base: 0.0099999998
-    prefix: toxi
-    suffix: tox
+    prefix: "toxi"
+    suffix: "tox"
     text: "|val|% Toxin"
     kind: elemental_damage_bonus
     arg: toxin
@@ -207,15 +209,15 @@ stats:
     tag: WeaponRecoilReductionMod
     order: 18
     base: -0.0099999998
-    prefix: zeti
-    suffix: mag
+    prefix: "zeti"
+    suffix: "mag"
     text: "|val|% Weapon Recoil"
     kind: recoil_reduction
   - id: zoom
     tag: WeaponZoomFovMod
     order: 23
     base: 0.0088999998
-    prefix: hera
-    suffix: lis
+    prefix: "hera"
+    suffix: "lis"
     text: "|val|% Zoom"
     kind: zoom_bonus

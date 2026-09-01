@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 50f5abcfdfcbb571
-count: 1737
+digest: a0141620ee332caf
+count: 1747
 ids:
   - acceltra
   - acceltra_prime
@@ -1747,3 +1747,13 @@ ids:
   - praedos_universal_readiness
   - praedos_vaulting_leap
   - praedos_whirling_flurry
+  - additional_combo_count_chance
+  - attack_speed
+  - chance_to_gain_combo_count
+  - combo_duration
+  - critical_chance_for_slide_attack
+  - finisher_damage
+  - heavy_attack_efficiency
+  - initial_combo
+  - melee_damage
+  - range

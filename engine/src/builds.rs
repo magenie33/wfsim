@@ -1271,24 +1271,39 @@ mod tests {
                 continue;
             }
             let excluded = crate::rivens_data::excluded_for(&w.id);
-            let offered: Vec<String> = crate::rivens_data::pool(class)
+            let offered: Vec<&crate::rivens_data::RivenStat> = crate::rivens_data::pool(class)
                 .iter()
                 .filter(|x| !excluded.iter().any(|e| *e == x.id))
-                .map(|x| x.id.clone())
                 .collect();
             assert!(!offered.is_empty(), "{}: the editor offers nothing at all", w.id);
-            for id in &offered {
+            // PER SLOT, because the picker offers per slot: five stats are
+            // bonus-only and one melee stat is malus-only, so "offered" is two
+            // lists and a stat asked for in the wrong one is refused by both
+            // surfaces rather than by one.
+            let bonuses: Vec<&String> = offered.iter().filter(|x| x.bonus).map(|x| &x.id).collect();
+            assert!(bonuses.len() >= 2, "{}: fewer than two bonus stats", w.id);
+            for id in offered.iter() {
                 // THE SMALLEST LEGAL SHAPE that carries the stat — a riven has
-                // two or three bonuses, so the partner is another OFFERED one
+                // two or three bonuses, so the partners are other OFFERED ones
                 // and a refusal can still only be about the stat under test.
-                let partner = offered.iter().find(|x| *x != id).expect("a second stat");
-                let shape = crate::rivens_data::RivenShape {
-                    bonuses: vec![id.clone(), partner.clone()],
-                    malus: None,
+                let mut partners = bonuses.iter().filter(|x| **x != &id.id);
+                let shape = if id.bonus {
+                    crate::rivens_data::RivenShape {
+                        bonuses: vec![id.id.clone(), partners.next().expect("a second stat").to_string()],
+                        malus: None,
+                    }
+                } else {
+                    crate::rivens_data::RivenShape {
+                        bonuses: vec![
+                            partners.next().expect("a second stat").to_string(),
+                            partners.next().expect("a third stat").to_string(),
+                        ],
+                        malus: Some(id.id.clone()),
+                    }
                 };
                 let r = super::check_riven_shape(&w.id, &shape);
-                assert!(r.is_ok(), "{} / {id}: offered by the picker, refused by the board — {}",
-                    w.id, r.unwrap_err());
+                assert!(r.is_ok(), "{} / {}: offered by the picker, refused by the board — {}",
+                    w.id, id.id, r.unwrap_err());
                 checked += 1;
             }
         }

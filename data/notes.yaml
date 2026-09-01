@@ -62,6 +62,11 @@ notes:
     "BASE Magazine Capacity", so a magazine mod multiplies every stack —
     `resolve` scales the per-stack value before the sim ever sees it, the same
     units conversion a flat base-damage grant takes.
+  bonus_false_malus_only: |
+    `bonus: false` = malus-only, and the base already carries the sign. Weapon
+    Recoil's base is negative because its BONUS is ("-90% Weapon Recoil" is the
+    good one) and flips positive in the malus slot; this one is negative
+    because it IS the malus, and stays negative there.
   blazing_barrel_two_clauses: |
     BLAZING BARREL. Two clauses on the card and ONE mechanic: the stack cap
     belongs to the grant above it, and the bulk intake filed it as an effect of

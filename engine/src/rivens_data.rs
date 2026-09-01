@@ -103,6 +103,11 @@ pub struct RivenStat {
     /// May this stat be the MALUS? Wiki lists five that are bonus-only.
     #[serde(default = "yes")]
     pub malus: bool,
+    /// May this stat be a BONUS? One melee stat cannot: DE ships the pair
+    /// "Additional Combo Count Chance" and "Chance to Gain Combo Count" as two
+    /// entries, and the second exists only to be the negative.
+    #[serde(default = "yes")]
+    pub bonus: bool,
 }
 
 fn yes() -> bool {
@@ -331,14 +336,20 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
 pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
     let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
     let mut out = derived_for(weapon_id);
-    let Some(fam) = s.riven_family.as_deref() else { return out };
-    let ex = exceptions(fam);
-    out.retain(|id| !ex.rolls.contains(id));
-    for id in &ex.never {
-        if !out.contains(id) {
-            out.push(*id);
+    if let Some(fam) = s.riven_family.as_deref() {
+        let ex = exceptions(fam);
+        out.retain(|id| !ex.rolls.contains(id));
+        for id in &ex.never {
+            if !out.contains(id) {
+                out.push(*id);
+            }
         }
     }
+    // NOT NARROWED TO THE CLASS POOL, and the Boar is why: its exception says
+    // `never: [zoom]` and the shotgun pool has no Zoom row, so a stat named
+    // here need not be one the class rolls. Both the survey and the exceptions
+    // speak in the market's stat vocabulary rather than in one class's, and
+    // every caller intersects with the pool anyway.
     out
 }
 
@@ -562,6 +573,14 @@ impl RivenSpec {
                 }
             }
         }
+        // ...AND THE OTHER DIRECTION, which melee is the first pool to need.
+        for s in &self.bonuses {
+            if let Some(def) = p.iter().find(|x| x.id == s.id) {
+                if !def.bonus {
+                    out.push(format!("{} is malus-only and can never be a bonus", def.id));
+                }
+            }
+        }
         out
     }
 
@@ -609,10 +628,23 @@ impl RivenSpec {
 
     /// The value a stat SHOWS, sign included. `bonus = false` applies the
     /// malus multiplier, which is negative and flips the stat.
+    ///
+    /// EXCEPT ON A MALUS-ONLY STAT, where DE's base already carries the sign
+    /// and only the multiplier's SIZE applies. The two negative bases in the
+    /// data say different things: Weapon Recoil is negative because its BONUS
+    /// reads "-90% Weapon Recoil", so the malus slot flips it to a positive
+    /// +67.5%; Chance to Gain Combo Count is negative because it IS the malus,
+    /// and flipping it would print a card that reads as a gift. Live listings
+    /// settle it — a 3+1 Magistar card (disposition 1.35) reads -102.7%, and
+    /// `0.01165 x 90 x 1.35 x 0.75` is 106% at roll 1.0.
     pub fn value_of(&self, stat: &RivenStat, roll: f64, bonus: bool, disposition: f64) -> f64 {
         let rank_scale = PER_RANK * (self.rank + 1) as f64;
         let shape = self.shape();
-        let cfg = if bonus { shape.bonus_mult() } else { shape.malus_mult() };
+        let cfg = match (bonus, stat.bonus) {
+            (true, _) => shape.bonus_mult(),
+            (false, true) => shape.malus_mult(),
+            (false, false) => shape.malus_mult().abs(),
+        };
         stat.base * rank_scale * disposition * cfg * roll
     }
 
@@ -740,8 +772,12 @@ impl RivenSpec {
             // A riven fits whatever its family fits; it is never written for
             // one weapon the way an augment is.
             exclusive_to: &[],
-            // A riven is generated from stats we model; nothing about it is out
-            // of scope, so there is nothing to disclose.
+            // PER STAT, NOT PER CARD. A riven's stats are DE's and one of them
+            // is a finisher this arena has no concept of, so the admission goes
+            // where the stat is — `/api/riven` marks each `modeled`, and the
+            // editor and the mod list both say which line pays nothing. A flag
+            // here would print "not modelled yet" over a card whose other two
+            // stats are the build.
             unmodeled: false,
             out_of_scope: false,
             id,
@@ -807,6 +843,17 @@ fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
         "recoil_reduction" => ModEffect::Indirect(IndirectStat::Recoil, v),
         "projectile_speed_bonus" => ModEffect::Indirect(IndirectStat::ProjectileSpeed, v),
         "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, v),
+        // MELEE'S OWN, each landing in the bucket its MOD already lands in —
+        // the riven's Critical Chance card carries True Steel's "(x2 for Heavy
+        // Attacks)" and so does its effect, its Range is Reach's flat metres,
+        // and its Combo Duration is Body Count's flat seconds.
+        "crit_chance_bonus_heavy_doubled" => ModEffect::CritChanceHeavyDoubled(v),
+        "crit_chance_on_slide" => ModEffect::CritChanceOnSlide(v),
+        "melee_combo_duration_bonus" => ModEffect::MeleeComboDuration(v),
+        "melee_range_bonus_m" => ModEffect::MeleeRange(v),
+        "heavy_attack_efficiency" => ModEffect::HeavyAttackEfficiency(v),
+        "initial_combo" => ModEffect::InitialCombo(v),
+        "combo_count_chance" => ModEffect::ComboCountChance(v),
         _ => return None,
     })
 }
@@ -1113,7 +1160,129 @@ fn an_element_is_never_a_malus() {
     fn both_pools_load() {
         assert_eq!(pool("rifle").len(), 24);
         assert_eq!(pool("pistol").len(), 24);
+        assert_eq!(pool("melee").len(), 24);
         assert!(pool("nonexistent").is_empty());
+    }
+
+    /// A MELEE WEAPON ROLLS THE MELEE POOL, and the pool is a different item
+    /// rather than the rifle's with a few rows crossed out: eleven of its
+    /// stats exist in no gun pool and eight gun stats exist in none of it.
+    #[test]
+    fn a_melee_weapon_rolls_a_pool_of_its_own() {
+        assert_eq!(class_for_weapon("magistar"), Some("melee"));
+        let ids = |c: &str| {
+            pool(c).iter().map(|s| s.id.as_str()).collect::<std::collections::BTreeSet<_>>()
+        };
+        let (m, r) = (ids("melee"), ids("rifle"));
+        for id in ["combo_duration", "initial_combo", "heavy_attack_efficiency", "range"] {
+            assert!(m.contains(id) && !r.contains(id), "{id} is melee's own");
+        }
+        for id in ["multishot", "magazine_capacity", "reload_speed", "ammo_maximum", "zoom"] {
+            assert!(!m.contains(id) && r.contains(id), "{id} is a gun's own");
+        }
+    }
+
+    /// …AND THE WIKI'S MELEE COLUMN AGREES, on the same ugly entries the rifle
+    /// check uses: 164.7 and 73.44 are not round, and 24.5 is not a percentage
+    /// at all.
+    #[test]
+    fn the_wikis_melee_base_column_agrees() {
+        let by = |id: &str| pool("melee").iter().find(|x| x.id == id).unwrap();
+        for (id, wiki) in [
+            ("melee_damage", 164.70),
+            ("critical_chance", 180.00),
+            ("critical_damage", 90.00),
+            ("attack_speed", 54.90),
+            ("heavy_attack_efficiency", 73.44),
+            ("critical_chance_for_slide_attack", 120.00),
+            ("additional_combo_count_chance", 58.77),
+        ] {
+            let ours = by(id).base * 90.0 * 100.0;
+            assert!((ours - wiki).abs() < 0.01, "{id}: DE base x 90 = {ours:.4}, wiki publishes {wiki}");
+        }
+        // The three the wiki prints in the stat's OWN unit rather than as a
+        // percentage — seconds, metres and combo points.
+        for (id, wiki) in [("combo_duration", 8.1), ("range", 1.94), ("initial_combo", 24.5)] {
+            let ours = by(id).base * 90.0;
+            assert!((ours - wiki).abs() < 0.005, "{id}: DE base x 90 = {ours:.4}, wiki publishes {wiki}");
+        }
+    }
+
+    /// A MALUS-ONLY STAT KEEPS THE SIGN DE GAVE IT, and Weapon Recoil is the
+    /// contrast that makes the rule visible: both bases are negative and only
+    /// one of them flips in the malus slot.
+    ///
+    /// The band comes from live Magistar listings (disposition 1.35, rank 8,
+    /// three bonuses and a malus), which read -96.8 to -112.4 across eight
+    /// cards — `0.01165 x 90 x 1.35 x 0.75` is 106.2% at roll 1.0, so the
+    /// whole 0.9-1.1 band is 95.6 to 116.8 and every card sits inside it.
+    #[test]
+    fn a_malus_only_stat_is_negative_where_recoil_turns_positive() {
+        let melee = |id: &str| pool("melee").iter().find(|x| x.id == id).unwrap();
+        let s = RivenSpec {
+            class: "melee".into(),
+            ..spec(&["melee_damage", "critical_chance", "critical_damage"],
+                   Some("chance_to_gain_combo_count"), 8)
+        };
+        let v = s.value_of(melee("chance_to_gain_combo_count"), 1.0, false, 1.35);
+        assert!((v + 1.0616).abs() < 5e-4, "the malus reads {v:.4}, the cards read -0.968 to -1.124");
+
+        // …AND THE OTHER NEGATIVE BASE DOES FLIP. Its bonus is the good one, so
+        // the malus slot is where it turns into recoil the weapon gains.
+        let r = spec(&["damage", "critical_chance", "multishot"], Some("weapon_recoil"), 8);
+        let rec = pool("rifle").iter().find(|x| x.id == "weapon_recoil").unwrap();
+        assert!(r.value_of(rec, 1.0, true, 1.0) < 0.0, "the bonus reads -90% recoil");
+        assert!(r.value_of(rec, 1.0, false, 1.0) > 0.0, "the malus reads +67.5% recoil");
+    }
+
+    /// …AND IT CANNOT BE A BONUS, which is the other half of the same fact.
+    /// Its partner stat is the bonus-only one, so the pair covers both refusals.
+    #[test]
+    fn the_combo_count_pair_rolls_one_slot_each() {
+        let bonus_slot = RivenSpec {
+            class: "melee".into(),
+            ..spec(&["chance_to_gain_combo_count", "critical_chance"], None, 8)
+        };
+        assert!(
+            bonus_slot.illegal().iter().any(|x| x.contains("malus-only")),
+            "{:?}", bonus_slot.illegal()
+        );
+        let malus_slot = RivenSpec {
+            class: "melee".into(),
+            ..spec(&["melee_damage", "critical_chance"], Some("additional_combo_count_chance"), 8)
+        };
+        assert!(
+            malus_slot.illegal().iter().any(|x| x.contains("bonus-only")),
+            "{:?}", malus_slot.illegal()
+        );
+    }
+
+    /// EVERY MELEE STAT LANDS IN THE BUCKET ITS MOD ALREADY LANDS IN — the
+    /// riven's Critical Chance carries True Steel's "(x2 for Heavy Attacks)",
+    /// its Range is Reach's flat metres, and its Finisher Damage pays nothing
+    /// because a finisher is an animation this arena has none of.
+    #[test]
+    fn a_melee_rivens_stats_reach_the_melee_buckets() {
+        let by = |id: &str| pool("melee").iter().find(|x| x.id == id).unwrap();
+        assert!(matches!(effect_of(by("critical_chance"), 1.0), Some(ModEffect::CritChanceHeavyDoubled(_))));
+        assert!(matches!(effect_of(by("critical_chance_for_slide_attack"), 1.0), Some(ModEffect::CritChanceOnSlide(_))));
+        assert!(matches!(effect_of(by("range"), 1.94), Some(ModEffect::MeleeRange(_))));
+        assert!(matches!(effect_of(by("combo_duration"), 8.1), Some(ModEffect::MeleeComboDuration(_))));
+        assert!(matches!(effect_of(by("initial_combo"), 24.5), Some(ModEffect::InitialCombo(_))));
+        assert!(matches!(effect_of(by("heavy_attack_efficiency"), 0.73), Some(ModEffect::HeavyAttackEfficiency(_))));
+        assert!(matches!(effect_of(by("additional_combo_count_chance"), 0.58), Some(ModEffect::ComboCountChance(_))));
+        assert!(effect_of(by("finisher_damage"), 1.2).is_none(), "a finisher is out of this arena");
+    }
+
+    /// A MELEE CARD PRINTS ITS OWN UNITS. Combo Duration is seconds and Range
+    /// is metres, so neither may be printed as a percentage — and the unit
+    /// sits between the hole and the name, which is what `|val|s` means.
+    #[test]
+    fn a_melee_card_prints_seconds_and_metres() {
+        let by = |id: &str| pool("melee").iter().find(|x| x.id == id).unwrap();
+        assert_eq!(by("combo_duration").print(8.1), "+8.1s Combo Duration");
+        assert_eq!(by("range").print(1.94), "+1.9 Range");
+        assert_eq!(by("melee_damage").print(1.647), "+164.7% Melee Damage");
     }
 
     /// The scale is 90 at rank 8, and TWO sources say so. DE's export gives

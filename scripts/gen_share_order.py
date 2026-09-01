@@ -44,7 +44,7 @@ FAMILIES = ["weapons", "mods", "arcanes", "evolutions"]
 # with one `- id:` per stat rather than one file per stat, so the sweep above
 # would find nothing in it. A riven shape names its stats and a share link
 # carries the shape, so they have to be frozen like everything else.
-RIVEN_POOLS = ["pistol", "rifle", "shotgun", "archgun"]
+RIVEN_POOLS = ["pistol", "rifle", "shotgun", "archgun", "melee"]
 
 
 def ids_under(rel):
