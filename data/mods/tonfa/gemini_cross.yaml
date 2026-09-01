@@ -20,7 +20,7 @@ description: "A style exhibiting sweeping slash attacks and swift jabs."
 #
 # `Sweep` IS NOT `360`. Blind Tormentor marks two swings `Types = { "Sweep" }`,
 # which is a wide forward arc rather than a spin — the engine models the forward
-# half-plane for it, the same as an unmarked swing, so it is not transcribed as
+# 90-degree arc for it, the same as an unmarked swing, so it is not written as
 # `all_around`.
 combos:
   # see notes: combo_clock_is_the_input

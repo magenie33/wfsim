@@ -1104,9 +1104,9 @@ pub struct ComboHit {
     ///
     /// THE MODULE HAS FIVE TYPES AND THIS MODELS TWO OF THEM. `"360"` is here;
     /// `"Sweep"`, `"Thrust"` and the empty string all become the forward
-    /// half-plane, which is a wide arc for the first and too wide for the other
-    /// two; `"Ranged"` and `"Slam"` are different mechanics and have their own
-    /// fields. Declared on every melee entry.
+    /// 90-degree arc (`dummy::MELEE_ARC_DEG`), which is wide for a thrust and
+    /// narrow for a sweep; `"Ranged"` and `"Slam"` are different mechanics and
+    /// have their own fields. Declared on every melee entry.
     #[serde(default)]
     pub all_around: bool,
     /// HOW MANY TIMES THIS SWING LANDS.

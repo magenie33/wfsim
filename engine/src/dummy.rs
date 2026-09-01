@@ -1692,6 +1692,15 @@ const FROZEN_RESET_STACKS: usize = 3;
 const HEAT_STRIP_DECAY: [f64; 5] = [0.50, 0.40, 0.30, 0.15, 0.0];
 const HEAT_STRIP_DECAY_INTERVAL: f64 = 1.5;
 
+/// THE ARC A SWING SWEEPS in front of the wielder, degrees, centred on the aim.
+///
+/// A STAND-IN, and the only invented number in [`DummyParams::melee_struck`]:
+/// the game publishes an arc for no stance, and the real answer is per ATTACK
+/// INPUT — each animation covers its own wedge. Ninety degrees stands in for
+/// all of them until those are measured. A `360deg` swing is published and
+/// bypasses this; it is not an approximation of anything.
+const MELEE_ARC_DEG: f64 = 90.0;
+
 /// Live target-side damage-taken modifiers at one instant (the tick-time
 /// mitigation pipeline — defender-side, evaluated per hit/tick).
 struct Mitigation {
@@ -3982,18 +3991,12 @@ impl DummyParams {
 
     /// WHO A MELEE SWING REACHES, nearest first, the aimed body always first.
     ///
-    /// A swing has a REACH rather than a cone: a body either stands inside the
-    /// weapon's range or it does not, and everything inside takes the hit with
+    /// A swing has a REACH and an ARC: a body inside both takes the hit, with
     /// Follow Through's geometric decay in the order the swing got to them.
     ///
     /// TWO SHAPES, because a stance's own table marks them. A `360deg` swing is
     /// a spin and reaches everything within range; an ordinary one sweeps in
-    /// FRONT of the wielder, which is modelled as the forward half-plane. That
-    /// half-plane is the one invented number in this function — the game
-    /// publishes an arc for no stance — and it is declared on every melee
-    /// entry. It is bounded: the alternative readings are "everything within
-    /// range" (which is the 360deg case, already available) and "the aimed body
-    /// alone" (which is what the roster did before Follow Through existed).
+    /// FRONT of the wielder, across [`MELEE_ARC_DEG`].
     ///
     /// STATIC FOR THE ENGAGEMENT like `struck_bodies`, and computed per swing
     /// anyway because a combo alternates the two shapes and the list is short.
@@ -4007,18 +4010,16 @@ impl DummyParams {
         }
         // WHICH WAY THE SWING FACES — the same line the shot leaves on.
         let aim = self.aim_point();
-        let facing = crate::space::Vec2::new(aim.x - self.player_at.x, aim.y - self.player_at.y);
         let mut out: Vec<(usize, f64)> = vec![(0, crate::space::gap(self.player_at, self.target_at))];
         for (i, f) in self.others.iter().enumerate() {
             let gap = crate::space::gap(self.player_at, f.at);
             if gap > reach {
                 continue;
             }
-            if !all_around {
-                let to = crate::space::Vec2::new(f.at.x - self.player_at.x, f.at.y - self.player_at.y);
-                if to.x * facing.x + to.y * facing.y <= 0.0 {
-                    continue;
-                }
+            if !all_around
+                && crate::space::off_axis_deg(self.player_at, aim, f.at) > MELEE_ARC_DEG / 2.0
+            {
+                continue;
             }
             out.push((i + 1, gap));
         }
@@ -11544,6 +11545,50 @@ mod melee {
             "a sweep reached {sweep} bodies and a spin {spin} — the forward test did nothing",
         );
         assert!(sweep >= 2, "a sweep reached only {sweep} — it should still get the front");
+    }
+
+    /// A SWING SWEEPS AN ARC, and `MELEE_ARC_DEG` is what decides who is in it.
+    ///
+    /// The bodies stand at KNOWN angles off the aim line and at the SAME
+    /// distance, so the reach decides nothing and neither sits on the boundary:
+    /// 30 degrees is inside a 90-degree arc, 60 is outside, and a half-plane
+    /// would take both.
+    ///
+    /// It is the one invented number in this geometry — the game publishes an
+    /// arc for no stance — so it is the one that needs a test saying which
+    /// reading the model holds.
+    #[test]
+    fn a_swing_sweeps_an_arc_rather_than_everything_in_front() {
+        // …the aim is +y (`Arena::training`), so an angle off it is measured
+        // from there and both signs are the same claim.
+        let body_at = |off_deg: f64| {
+            let a = (90.0 - off_deg).to_radians();
+            crate::formation::FoeSpec {
+                id: format!("e{off_deg}"),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                // 2.8 m centre to centre is a 2.3 m gap against a 2.5 m reach:
+                // comfortably inside, and not the knife edge 3.0 would be.
+                at: crate::space::Vec2::new(2.8 * a.cos(), 2.8 * a.sin()),
+            }
+        };
+        let base = crate::loadout::WeaponBase::from_data("magistar", false, &[]);
+        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(1.0);
+        arena.others = vec![body_at(30.0), body_at(60.0)];
+        let p = DummyParams::for_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none(), || {
+            panel.clone()
+        });
+        assert_eq!(
+            p.melee_struck(false),
+            vec![0, 1],
+            "a 90-degree sweep takes the aimed body and the one 30 degrees off it, and nothing at 60",
+        );
+        assert_eq!(
+            p.melee_struck(true),
+            vec![0, 1, 2],
+            "a spin takes everything in range whatever angle it stands at",
+        );
     }
 }
 

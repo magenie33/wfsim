@@ -327,8 +327,8 @@ The module's whole vocabulary, for whoever transcribes the next stance:
 
 - `Types`: `360` (a spin, reaching everything in range), `Sweep`, `Thrust`,
   `Slam`, `Ranged`. Two are modelled — `360` and the slam — and `Sweep`,
-  `Thrust` and the empty string all become the forward half-plane, which is the
-  one invented number in the model and is declared.
+  `Thrust` and the empty string all become the forward 90-degree arc, which is
+  the one invented number in the model and is declared.
 - `ImpactMultiplier` / `SlashMultiplier`: a bonus to that PHYSICAL component
   alone. Both are exact rather than approximations — neither type enters the
   elemental hierarchy, so nothing can have consumed it on the way.
@@ -482,9 +482,10 @@ applies to.
    DURATION and one entry per input, and nothing inside an entry, so the INPUTS
    share it evenly and an entry's rows land together. It moves a status tick's
    start by fractions of a second and moves no total.
-5. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
-   sweep is a wide arc and a thrust is not, and nothing published gives either
-   an angle.
+5. **`Sweep` and `Thrust` are one shape here** — a 90-degree arc in front,
+   `dummy::MELEE_ARC_DEG`. A sweep is wider than that and a thrust is
+   narrower, the real answer is per attack INPUT, and nothing published gives
+   any of them an angle.
 6. **Forma on the stance SLOT.** The grant itself is modelled — a stance is an
    Aura, not a cost, and hands back 5 points or 10 on a matching slot
    (`mods::stance_capacity`, and the slot's polarity is the weapon's own). What
