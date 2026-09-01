@@ -68,6 +68,17 @@ const r = await evaluate(`(async () => {
     break;
   }
 
+  // …AND THE SCENARIO BAR ASKS ONE QUESTION, not four. It shares this
+  // renderer, and an official scenario is one per ruler — a mode, a riven-ness
+  // and a rank there are three controls answering nothing and a fourth
+  // repeating the first, which is what a shared shape costs when the two
+  // collections do not ask the same thing.
+  await open('Ballistica_Prime');
+  const sbar = document.getElementById('bench-bar-simulator-scenarios');
+  out.scenarioShape = sbar
+    ? Array.from(sbar.querySelectorAll('button.dd')).map((d) => d.id.replace(/-simulator-scenarios$/, ''))
+    : [];
+
   // THE THREE STATES OF "WHAT IS OPEN". Landing on a weapon page opens NONE of
   // the board's rows — the bar shows the leader because that is where its
   // controls default, and the build on the page is an unsaved one. That gap is
@@ -134,6 +145,12 @@ check(
   "...a copy of it says it is your own",
   /your own|你自己/.test(r.lineOwn),
   r.lineOwn,
+);
+
+check(
+  "the SCENARIO bar asks one question, not the build bar's four",
+  JSON.stringify(r.scenarioShape) === JSON.stringify(["dd-bench"]),
+  JSON.stringify(r.scenarioShape),
 );
 
 // LANDING ON A WEAPON OPENS NO ROW, and the bar cannot say so: its controls

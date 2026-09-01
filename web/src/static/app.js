@@ -7675,6 +7675,15 @@ function renderBenchmarkBarIn(bar, cfg) {
   // weapon whose board has a single row would have no reachable entry point at
   // all if "nothing to choose between" meant "nothing to click".
   //
+  // …AND THE FOUR ARE THE BUILD BAR'S QUESTIONS, not every bar's. This renders
+  // the official SCENARIOS too, and those are one per ruler: picking the ruler
+  // IS picking the scenario, so a mode, a riven-ness and a rank there are three
+  // controls answering nothing and a fourth repeating the first. A domain
+  // DECLARES its axes; the shape is fixed per bar, which is what a retriever
+  // needs, rather than fixed across bars that ask different questions.
+  const axes = cfg.axes || ["ruler", "mode", "kind", "row"];
+  const asks = (a) => axes.includes(a);
+  //
   // EVERY LIST IS STRONGEST-FIRST, and so is its default: the entries arrive in
   // that order from `builtinBuilds`, so a reader who touches nothing is looking
   // at this board's leader.
@@ -7732,7 +7741,7 @@ function renderBenchmarkBarIn(bar, cfg) {
       },
     }) +
     // HOW IT IS PLAYED.
-    ddButton(`dd-bench-mode-${cfg.domain}`, {
+    (!asks("mode") ? "" : ddButton(`dd-bench-mode-${cfg.domain}`, {
       value: curMode,
       disabled: modes.length === 0,
       title: hint,
@@ -7743,9 +7752,9 @@ function renderBenchmarkBarIn(bar, cfg) {
         const first = inRuler.find((p) => modeOf(p) === v);
         if (first) pickPreset(cfg, presetId(first));
       },
-    }) +
+    })) +
     // WHICH OF THE TWO RANKINGS.
-    ddButton(`dd-bench-kind-${cfg.domain}`, {
+    (!asks("kind") ? "" : ddButton(`dd-bench-kind-${cfg.domain}`, {
       value: curKind,
       disabled: kinds.length === 0,
       title: hint,
@@ -7757,11 +7766,11 @@ function renderBenchmarkBarIn(bar, cfg) {
         const first = inMode.find((p) => kindOf(p) === v);
         if (first) pickPreset(cfg, presetId(first));
       },
-    }) +
+    })) +
     // …AND WHICH ROW. A FLAT LIST OF NUMBERS: the ruler, the mode and which of
     // the two rankings are each answered by a control to its left, so a rank
     // here is a rank again.
-    ddButton(`dd-bench-row-${cfg.domain}`, {
+    (!asks("row") ? "" : ddButton(`dd-bench-row-${cfg.domain}`, {
       value: sel ? presetId(sel) : (inKind[0] ? presetId(inKind[0]) : ""),
       search: inKind.length > 1,
       disabled: inKind.length === 0,
@@ -7772,7 +7781,7 @@ function renderBenchmarkBarIn(bar, cfg) {
         hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
       })),
       onPick: (v) => pickPreset(cfg, v),
-    }) +
+    })) +
     (sel
       ? `<button class="pop dup" title="${escHtml(
           tr("copy it into a {thing} of your own — the official one cannot be edited")
@@ -8497,7 +8506,9 @@ const copyActiveScenario = () => copyActivePreset(scenarioBarCfg());
 
 function renderScenarioBar() {
   const scenariosCfg = scenarioBarCfg();
-  renderBenchmarkBarIn($("bench-bar-simulator-scenarios"), { ...scenariosCfg, benchLabel: tr("Benchmark scenarios"), benchHint: tr("the official rulers — the same fight on every weapon") });
+  // ONE QUESTION: WHICH RULER. An official scenario is one per ruler, so the
+  // other three axes would be controls answering nothing.
+  renderBenchmarkBarIn($("bench-bar-simulator-scenarios"), { ...scenariosCfg, axes: ["ruler"], benchLabel: tr("Benchmark scenarios"), benchHint: tr("the official rulers — the same fight on every weapon") });
   renderPresetBarIn($("preset-bar-simulator-scenarios"), scenariosCfg);
 }
 

@@ -114,10 +114,16 @@ env:
   # schedules them in waves the wall time will not fall as far as the division
   # says. Read the next run's spread before raising it again.
   #
-  # THE NEXT WALL IS NOT THIS NUMBER. `submissions` reads KV in ONE unsharded
-  # job and now costs 9 of the 20 available minutes, up from the 3m43s recorded
-  # above; no shard count touches it. When 128 stops being enough, that job is
-  # what has to change, not this line.
+  # THE NEXT WALL IS NOT THIS NUMBER, and it is no longer `submissions` either.
+  # That job read KV one request per stored build — O(the store) against an
+  # input of O(what is new) — and `scripts/fetch_submissions.sh` now keeps
+  # `library.json` between runs: the keys are LISTED in three requests and only
+  # what is missing is fetched, so a quiet run pays almost nothing and no shard
+  # count was ever going to touch it either way.
+  #
+  # WHAT TO WATCH IS THE SPREAD. The makespan is the slowest shard, and the
+  # scorer packs by measured cost now rather than by row index — read
+  # `accounted:` and the shard spread on the next run before touching this line.
   SHARDS: 128
 
 jobs:
