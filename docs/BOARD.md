@@ -29,6 +29,20 @@ number**. Everything else follows from it:
   where a build happens to be good somewhere its submitter never tried it.
   `transformed` and its kind are still refused: a gauge you must fill and run
   dry is not a way to play for three hundred seconds;
+- **A ROW IS SCREENED BEFORE IT IS MEASURED.** Most of what the mode fan-out
+  adds is a build in a mode nobody tuned it for, and paying the ruler's full
+  1000 runs to rediscover that every hour is the cost that grows fastest. So a
+  row is probed at 100 runs first, and the full measurement is skipped only
+  where it reads under a QUARTER of its group's leader — `PROBE_MARGIN x FLOOR`,
+  a 2x margin on top of a floor that is itself half the leader. A probe is the
+  same fight at a tenth of the precision, so its error is about 3x larger and
+  4x is far outside it. It is the same two-decision structure the riven search
+  already uses to cost 2.6x a plain row instead of 16x: **search cheaply, then
+  measure the winner.** A screened row is RECORDED (`probe: true`) and never
+  published and never reused as a score — a probe is not a measurement — so the
+  board still holds nothing but full ones. Riven rows are not screened: their
+  riven is chosen by the search that follows, so a probe before it would measure
+  the build without the thing it is built around;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
   pinned seed. Measured 2026-08-04: wasm and native agree to the last digit

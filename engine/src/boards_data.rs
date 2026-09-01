@@ -45,6 +45,16 @@ pub struct BoardEntry {
     /// DEFAULT TRUE, so every row written before this existed is what it was.
     #[serde(default = "listed")]
     pub listed: bool,
+    /// WAS THIS SCREENED RATHER THAN MEASURED?
+    ///
+    /// A PROBE IS NOT A MEASUREMENT. It is the same fight at a tenth of the
+    /// ruler's runs, run to decide whether the full one is worth paying for —
+    /// so a row carrying this is recorded and never published, and never reused
+    /// as a score. What it says is "this build reads a quarter of its group's
+    /// leader, so it was not measured this run", which is a different claim
+    /// from a number the board stands behind.
+    #[serde(default)]
+    pub probe: bool,
     /// SECONDS THIS ROW TOOK TO SIMULATE, as the run that measured it found.
     ///
     /// NOT PART OF THE ANSWER — it is scheduling data, and the score does not
