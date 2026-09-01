@@ -23,7 +23,8 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check } = app;
 
-// weapon -> [stat, must it be offered, why]
+// weapon -> [stat, must it be offered, why]. `[bonus, malus]` where the two
+// slots differ, which is what a bonus-only or malus-only stat means.
 const CASES = [
   // A REAL CARD beats everything. The Furis is hit-scan in both forms, so the
   // rules refuse flight speed, and the survey's 13-of-500 is inside the band
@@ -44,6 +45,17 @@ const CASES = [
   ["Latron", "projectile_speed", false, "0 of 500 cards despite the Incarnon form"],
   ["Lex Prime", "projectile_speed", false, "4 of 500 cards"],
   ["Atomos", "projectile_speed", false, "0 of 500 cards"],
+  // MELEE, where the pool is a different item rather than the rifle's with
+  // rows crossed out. The 25% rule reads the same on a hammer: 80% Impact, 5%
+  // Slash.
+  ["Magistar", "impact", true, "80% of its damage"],
+  ["Magistar", "slash", false, "5% of its damage"],
+  // …AND THE TWO SLOTS ARE DIFFERENT LISTS, which melee is the first pool to
+  // prove in both directions. DE ships the combo-count stat as two entries and
+  // only one of them can be the negative.
+  ["Magistar", "chance_to_gain_combo_count", [false, true], "DE's malus-only half of the pair"],
+  ["Magistar", "additional_combo_count_chance", [true, false], "and the bonus-only half"],
+  ["Magistar", "heat", [true, false], "an element is never the malus"],
 ];
 
 const r = await evaluate(`(async () => {
@@ -85,15 +97,16 @@ const r = await evaluate(`(async () => {
 
 for (const [i, [wiki, stat, want, why]] of CASES.entries()) {
   const got = r[i];
+  const [wantBonus, wantMalus] = Array.isArray(want) ? want : [want, want];
   check(`${wiki}: the editor drew both slots`,
     Array.isArray(got.slots["0"]) && Array.isArray(got.slots.malus),
     JSON.stringify(Object.keys(got.slots)));
   const bonus = got.slots["0"].includes(stat);
   const malus = got.slots.malus.includes(stat);
-  check(`${wiki}: ${stat} is ${want ? "offered" : "refused"} as a BONUS (${why})`,
-    bonus === want, `${got.slots["0"].length} stats offered`);
-  check(`${wiki}: ${stat} is ${want ? "offered" : "refused"} as the MALUS (${why})`,
-    malus === want, `${got.slots.malus.length} stats offered`);
+  check(`${wiki}: ${stat} is ${wantBonus ? "offered" : "refused"} as a BONUS (${why})`,
+    bonus === wantBonus, `${got.slots["0"].length} stats offered`);
+  check(`${wiki}: ${stat} is ${wantMalus ? "offered" : "refused"} as the MALUS (${why})`,
+    malus === wantMalus, `${got.slots.malus.length} stats offered`);
 }
 
 // A pool that narrowed to nothing would pass every "is refused" line above.

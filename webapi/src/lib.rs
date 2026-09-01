@@ -8980,12 +8980,11 @@ mod asset_tests {
     /// editor renders a riven with NOTHING to roll, which is how the Larkspur
     /// Prime shipped until `data/rivens/archgun.yaml` existed. The next class added lands here instead of in the UI.
     ///
-    /// EXCEPT A WEAPON THIS APP CANNOT MOD AT ALL. The Deconstructor pair takes
-    /// MELEE and thrown-melee mods, and a melee riven rolls melee stats — so a
-    /// weapon with no mod pool here has no riven pool here either, and both
-    /// absences are the same fact rather than two bugs. The exemption is keyed
-    /// on the empty pool rather than on the two ids, so it covers the next
-    /// melee weapon and stops covering these two the day a melee pool exists.
+    /// EXCEPT A WEAPON THIS APP CANNOT MOD AT ALL. The Deconstructor pair
+    /// declares no mod pool, and a weapon with no mod pool reaches no riven
+    /// pool either — one absence rather than two bugs. The exemption is keyed
+    /// on that empty pool rather than on the two ids, so the next unmoddable
+    /// weapon needs no list here.
     #[test]
     fn every_weapon_reaches_a_riven_stat_pool() {
         let mut orphans: Vec<String> = Vec::new();
@@ -8996,25 +8995,6 @@ mod asset_tests {
             let unmoddable = wfsim_engine::weapons_data::spec(&w.id)
                 .is_some_and(|s| s.mod_pools.is_empty());
             if unmoddable {
-                continue;
-            }
-            // …AND A MELEE WEAPON, until there is a melee riven pool.
-            //
-            // A riven CLASS is derived from the mod pools (`class_for_weapon`
-            // takes the narrowest one that has a riven file behind it), and
-            // `data/rivens/` holds rifle, shotgun, pistol and archgun. Melee is
-            // a whole family of stats nobody has surveyed — a card rolls Range,
-            // Attack Speed, Combo Duration and Heavy Attack Efficiency, none of
-            // which any existing pool contains — so an empty answer here is the
-            // truth rather than a wiring fault.
-            //
-            // IT IS SAID ON THE PAGE, not only here: every melee entry carries
-            // "melee RIVENS are not modelled" in its `unmodeled:` list, so a
-            // reader finding the riven editor empty is told why. The skip is
-            // keyed on the SLOT, so it stops covering melee the day
-            // `data/rivens/melee.yaml` lands and every melee weapon is asked
-            // this question again.
-            if wfsim_engine::weapons_data::spec(&w.id).is_some_and(|s| s.slot == "melee") {
                 continue;
             }
             let class = riven_class(w);

@@ -2388,6 +2388,7 @@ function rivenMods() {
       // Every printed value is searchable, which is how you find the riven
       // with the crit damage on it without remembering what you called it.
       effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
+      unmodeled_effects: (rivenNames[p.id] || {}).unmodeled || [],
       __spec: st,
     };
   });
@@ -2404,7 +2405,15 @@ async function refreshRivenNames() {
   for (const p of ps) {
     try {
       const r = await api("/api/riven", { weapon: $("weapon").value, ...(p.state || {}) });
-      out[p.id] = { name: r.name || "", lines: (r.stats || []).map((s) => s.text) };
+      out[p.id] = {
+        name: r.name || "",
+        lines: (r.stats || []).map((s) => s.text),
+        // …AND WHICH OF THEM PAY NOTHING. A riven's stats are DE's rather than
+        // ours, so a card can carry one this engine does not model — a melee
+        // card's Finisher Damage — and it gets the same "partly modelled" line
+        // a mod with a dead clause gets, naming the line that is dead.
+        unmodeled: (r.stats || []).filter((s) => !s.modeled).map((s) => s.text),
+      };
     } catch (_) { /* a name is a nicety; the riven still equips */ }
   }
   rivenNames = out;
@@ -2745,8 +2754,10 @@ const rivenStat = (id) => rivenPoolAll().find((s) => s.id === id);
 // effect_phrases, which are the official client's words (data/i18n). There is
 // nothing riven-specific to translate: "+150% Critical Chance" reads the same
 // on a riven as on Point Strike.
+// The unit sits between the hole and the name — `%` on most, `s` on Combo
+// Duration — and is not part of what the stat is called.
 const rivenStatNameEn = (s) =>
-  s.text.replace("|val|", "").replace(/^\s*%\s*/, "").replace(/\s+/g, " ").trim();
+  s.text.replace("|val|", "").replace(/^\s*[%s]\s*/, "").replace(/\s+/g, " ").trim();
 const rivenStatName = (s) => tf(rivenStatNameEn(s));
 
 // The shape, in the notation everyone already uses: 2, 3, 2+1, 3+1 — the
@@ -3034,7 +3045,10 @@ function openRivenPicker(anchor, slot) {
     menu.innerHTML = rivenPool()
       // A stat cannot appear twice on one riven, and five are bonus-only
       // and can never be the malus.
-      .filter((x) => (!used.has(x.id) || x.id === at.id) && (slot !== "malus" || x.malus))
+      // A MALUS IS NOT ANY STAT and neither is a bonus: five roll as a bonus
+      // only, and one melee stat rolls as the malus only.
+      .filter((x) => (!used.has(x.id) || x.id === at.id)
+        && (slot === "malus" ? x.malus : x.bonus !== false))
       // Both languages match, exactly as the mod picker does.
       .filter((x) => !f || `${rivenStatNameEn(x)} ${rivenStatName(x)}`.toLowerCase().includes(f))
       .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-rvid="${x.id}">
