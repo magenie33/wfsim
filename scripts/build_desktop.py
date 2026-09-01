@@ -72,6 +72,15 @@ def run(*cmd: str, **kw) -> subprocess.CompletedProcess:
 
 
 def main() -> None:
+    # THIS SCRIPT PRINTS A CHINESE FILENAME, and a Windows stdout that is not a
+    # console defaults to the ANSI code page — cp1252 on a GitHub runner, where
+    # `使用说明.txt` is not encodable. It built the whole 37.9 MB executable and
+    # then died on the last line of its own summary, which reads from outside
+    # as a release that failed to build.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     today = datetime.date.today()
     # Windows wants MAJOR.MINOR.PATCH with each part under 65536, so the date
     # goes in as year.month.day rather than as one number.
