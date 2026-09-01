@@ -48,6 +48,10 @@ dot:
   # dead host's radius for the remaining duration (explicit on this page;
   # matches the Damage-page note).
   persists_after_host_death: true
+  # ...AND A KILL IT LANDS IS STILL THE WEAPON'S. An entity with its own
+  # radius that outlives its host reads like something that kills on its own
+  # account; it is not, and every on-kill grant fires off a cloud tick
+  # (MEASUREMENTS M70). The wiki does not cover attribution either way.
   chain_hits:
     # Same as Tesla Chain: the cloud registers body parts by itself at a
     # 1x headshot multiplier, boostable by headshot-damage bonuses

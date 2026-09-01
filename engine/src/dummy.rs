@@ -9403,6 +9403,10 @@ fn process_ticks(
             // Status-proc kills grant Galvanized stacks too (GS rules),
             // and count for on-kill arcanes (Merciless — NOT Deadhead,
             // whose precision boundary excludes status-proc kills).
+            // GAS TOO, and it is the one that had to be asked: the cloud is an
+            // entity with a radius that outlives its host, so "the cloud's kill
+            // rather than the weapon's" is a reading the shape invites and the
+            // game refuses (MEASUREMENTS M70).
             gal.bump_on_kill(params, now);
             arc.on_kill(params, now);
             // Fresh individual: clean DebuffBar.
@@ -19834,6 +19838,60 @@ mod tests {
         assert!(dot_with.mean_shots > dot_bare.mean_shots,
             "a DoT kill triggers it too — {} shots against {}, on {} kills",
             dot_with.mean_shots, dot_bare.mean_shots, dot_bare.mean_kills);
+    }
+
+    /// A GAS CLOUD'S KILL IS THE WEAPON'S — MEASUREMENTS M70.
+    ///
+    /// The cloud is its own entity: it has a radius of its own, and it keeps
+    /// ticking on the bodies around a host that has already died. Reading that
+    /// as "the cloud killed it, not the gun" is the carve-out this test
+    /// refuses — Galvanized's stacks and the Merciless family are bumped at
+    /// each site a kill can happen rather than read off the counter, so a
+    /// gas-only kill is exactly the one a missing call site loses.
+    ///
+    /// ONE SHOT IS FIRED AND IT CANNOT KILL, both asserted: 4 damage into 10
+    /// health, then a reload that outlasts the fight. Every kill here is a
+    /// cloud tick's.
+    #[test]
+    fn a_gas_cloud_kill_earns_the_on_kill_stacks() {
+        let spec = crate::loadout::StackSpec {
+            per_stack: 0.1,
+            max_stacks: 5,
+            duration: 4.0,
+            initial_stacks: 0,
+            earned_on: Some("kill"),
+        };
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Gas, 4.0),
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            magazine_size: 1.0,
+            reload_seconds: 100.0,
+            fire_rate: 1.0,
+            duration_seconds: 30.0,
+            multishot_stack: Some(spec),
+            target: TargetParams {
+                base_health: 10.0,
+                ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
+            },
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 4, 11);
+        assert!((s.mean_shots - 1.0).abs() < 1e-9,
+            "the magazine holds one and the reload outlasts the fight: {} shots",
+            s.mean_shots);
+        assert!(
+            p.damage.total() * (1.0 + spec.per_stack * f64::from(spec.max_stacks))
+                < p.target.base_health,
+            "and that one shot cannot kill: {} against {}",
+            p.damage.total(), p.target.base_health);
+        assert!(s.mean_kills > 0.0, "the cloud has to kill something: {}", s.mean_kills);
+        let trace = replay(&p, Rng::new(11).state(), 1200);
+        let i = trace.buffs.iter().position(|x| x.id == "on_kill_multishot").expect("roster");
+        let peak = trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0);
+        assert!(peak > 0,
+            "a gas kill is the weapon's — {} kills and the pile never moved",
+            s.mean_kills);
     }
 
     /// RESONANT RESTORE: the magazine GROWS, up to the cap, and it does not
