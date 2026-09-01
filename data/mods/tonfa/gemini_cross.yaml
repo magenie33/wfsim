@@ -1,0 +1,73 @@
+id: gemini_cross
+name: Gemini Cross
+rarity: uncommon
+polarity: madurai
+# see notes: stance_grants_capacity
+base_drain: 0
+max_rank: 0
+internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
+description: "A style exhibiting sweeping slash attacks and swift jabs."
+
+# THE MATCHING STANCE ON A PRAEDOS, which is the only thing that separates the
+# two Tonfa cards before their combos are compared: the slot is Madurai, so this
+# grants the full 10 capacity where Sovereign Outcast grants 4
+# (`mods::stance_capacity`).
+#
+# LONGER AND FLATTER THAN SOVEREIGN OUTCAST. Vagrant Blight is 11 swings over
+# 4.6 s against Rogue Edict's 7 over 2.85, and most of them are 100% — so it
+# earns more COMBO POINTS per second and less damage, which is exactly the trade
+# a heavy build wants and a light build does not.
+#
+# `Sweep` IS NOT `360`. Blind Tormentor marks two swings `Types = { "Sweep" }`,
+# which is a wide forward arc rather than a spin — the engine models the forward
+# half-plane for it, the same as an unmarked swing, so it is not transcribed as
+# `all_around`.
+combos:
+  # Vagrant Blight — 4.60 s at 1.0x, 11 swings
+  neutral:
+    - { multiplier: 2.0, delay_seconds: 0.4182, hits: 2 }
+    - { multiplier: 0.5, delay_seconds: 0.4182, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.4182 }
+    - { multiplier: 0.5, delay_seconds: 0.4182, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.4182, forced_procs: [slash] }
+    - { multiplier: 1.0, delay_seconds: 0.4182 }
+    - { multiplier: 1.0, delay_seconds: 0.4182, hits: 2 }
+    - { multiplier: 0.5, delay_seconds: 0.4182, hits: 3 }
+    - { multiplier: 2.0, delay_seconds: 0.4182, hits: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.4182, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.4182, forced_procs: [slash, knockdown] }
+  # Cold Vendetta — 1.20 s at 1.0x, 3 swings
+  forward:
+    - { multiplier: 1.0, delay_seconds: 0.4 }
+    - { multiplier: 1.0, delay_seconds: 0.4 }
+    - { multiplier: 2.0, delay_seconds: 0.4 }
+  # Blind Tormentor — 2.85 s at 1.0x, 5 swings, ending on the weapon's own slam
+  block:
+    - { multiplier: 1.0, delay_seconds: 0.57, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.57, hits: 2, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.57, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.57, hits: 2, forced_procs: [slash] }
+    - { multiplier: 3.0, delay_seconds: 0.57, hits: 2, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact] }
+  # Baleful Sin — 2.30 s at 1.0x, 7 swings
+  block_forward:
+    - { multiplier: 3.0, delay_seconds: 0.3286 }
+    - { multiplier: 1.0, delay_seconds: 0.3286 }
+    - { multiplier: 2.0, delay_seconds: 0.3286 }
+    - { multiplier: 1.0, delay_seconds: 0.3286, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.3286 }
+    - { multiplier: 2.0, delay_seconds: 0.3286 }
+    - { multiplier: 2.0, delay_seconds: 0.3286 }
+  # see notes: tonfa_heavy_and_slide
+  heavy:
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }
+  slide:
+    - { multiplier: 2.0, delay_seconds: 0.74, hits: 2, all_around: true }
+
+effects:
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Gemini_Cross
+  # The combo data: https://wiki.warframe.com/w/Module:Stances/data

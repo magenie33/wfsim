@@ -1,0 +1,16 @@
+id: praedos_drifting_grace
+name: Drifting Grace
+weapon: praedos
+tier: 2
+description: "+20% Sprint Speed, +20% Slide."
+selection: choose_one
+
+effects:
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. This arena has no traversal,
+  # and no amount of work on evolutions will change that.
+  - kind: out_of_scope
+    clause: "+20% Sprint Speed, +20% Slide"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

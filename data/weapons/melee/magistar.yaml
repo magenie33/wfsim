@@ -56,7 +56,6 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "the STANCE SLOT is not modelled: these four ground combos are Crushing Ruin's, transcribed from its published table, and equipping a different hammer stance would script them differently — the engine has no way to hear that yet, so a build on Shattering Storm or Fracturing Wind reads this one's numbers"
   - "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
   - "the Tennokai window's WIND-UP SPEED is a stand-in: DE publishes no figure for how much faster a heavy attack charges inside the flash, and this uses +100%. The window itself, its chance, its cadence and everything the seven cards do to it are modelled"
   - "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports"
@@ -103,13 +102,6 @@ attack:
     falloff_reduction: 0.5
     forced_procs: []
     takes_multishot: false
-  # RAGING WHIRLWIND — Crushing Ruin's neutral combo.
-  #
-  #   400% (forced Impact) -> 200% (360deg) -> 300% (360deg) -> 500% (forced Knockdown)
-  #
-  # 1400% over 3.00 s at 1.0x attack speed, which is the wiki's own two columns:
-  # 1400 / 466.7 = 3.000. The trailing 100% radial slam the table lists is NOT
-  # here — see `unmodeled` on the slam pair.
   # RAGING WHIRLWIND — transcribed from the wiki's own `Module:Stances/data`,
   # which publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and
   # `Duration` per combo. The duration is the MODULE's (3.0 s at 1.0x attack

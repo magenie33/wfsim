@@ -1,0 +1,22 @@
+id: praedos_adept_reflexes
+name: Adept Reflexes
+weapon: praedos
+tier: 3
+description: "+20 Initial Combo."
+selection: choose_one
+
+effects:
+  # from: "+20 Initial Combo" — the floor the counter returns to, refilling at 40
+  # points a second. Twenty points is exactly 2x, which is what DE said it was
+  # for: *"the goal with the change was to ensure that the perk can provide at
+  # least a full 2x damage"* (Update 39.0, raising it from 15).
+  #
+  # AGAINST THIS WEAPON'S 0.7 s WIND-UP the floor is back before the next heavy
+  # swing lands, so a pure-heavy build reads 2x on every attack — and with
+  # Corrupt Charge's +30 on top it reads 3x, which is what makes Swift Transmute
+  # a passive transform.
+  - kind: initial_combo
+    value: 20.0
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

@@ -1,0 +1,14 @@
+id: praedos_vaulting_leap
+name: Vaulting Leap
+weapon: praedos
+tier: 4
+description: "Increase Double Jump strength by +100%."
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "Increase Double Jump strength by +100%"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

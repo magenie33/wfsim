@@ -1,0 +1,20 @@
+id: praedos_transfigured_momentum
+name: Transfigured Momentum
+weapon: praedos
+tier: 5
+description: "On Slide Kill: +50% Heavy Attack Efficiency for 30s."
+selection: choose_one
+
+effects:
+  # from: "On Slide Kill: +50% Heavy Attack Efficiency for 30s".
+  #
+  # ITS TRIGGER IS A MODE THIS ONE IS NOT. A heavy-slam loop performs no slide
+  # attacks, so the buff never arms there; a slide loop arms it and then has no
+  # heavy attack to spend it on. The two modes are separate builds in this repo
+  # and neither can hold both halves, which is a fact about the card rather than
+  # a gap in the engine.
+  - kind: unmodelled_on_slide_kill_heavy_attack_efficiency_for_30s
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

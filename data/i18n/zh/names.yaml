@@ -433,6 +433,13 @@ weapons:
   sancti_magistar_heavy: 圣洁·执法者
   sancti_magistar_slide: 圣洁·执法者
   sancti_magistar_heavy_slam: 圣洁·执法者
+  praedos: 双雄
+  praedos_forward: 双雄
+  praedos_block: 双雄
+  praedos_block_forward: 双雄
+  praedos_heavy: 双雄
+  praedos_slide: 双雄
+  praedos_heavy_slam: 双雄
   magnus: 麦格努斯
   marelok: 玛瑞火枪
   nukor: 努寇微波枪
@@ -963,6 +970,7 @@ mods:
   true_punishment: 真实惩罚
   carnis_mandible: 肉碾虫 巨颚
   crushing_ruin: 月落乌啼
+  gemini_cross: 纵横双子
   enduring_affliction: 长时苦难
   energy_channel: 能量导引
   finishing_touch: 画龙点睛
@@ -986,6 +994,7 @@ mods:
   saxum_thorax: 重岩者 胸腔
   shattering_impact: 碎裂冲击
   shattering_storm: 云暴山碎
+  sovereign_outcast: 至尊浪人
   smite_corpus: 毁灭 Corpus
   smite_infested: 毁灭 Infested
   smite_orokin: 毁灭奥罗金

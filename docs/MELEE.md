@@ -34,6 +34,19 @@ seven different builds being ranked, which is what the board is for.
 | `slide` | slide | Hell's Wave | 200% (360deg, forced Impact) |
 | `heavy_slam` | heavy, airborne | — | 630 Blast, 10 m sphere |
 
+**THE ROSTER HOLDS TWO CLASSES**, and the second one is what proves the first
+was not hard-coded. A Tonfa (the Praedos) differs from a hammer in every number
+the class owns — 1.17 attack speed against 0.833, a **4x** heavy against 6x,
+0.6 Follow Through against 0.4, a 0.7 s wind-up against 1.2 — and it needed no
+engine change to say so. Its stances are two more cards in a pool of their own.
+
+**THE TONFA HEAVY IS THE ONE NUMBER TWO WIKI SOURCES DISAGREE ON.**
+`Module:Stances/data` prints `Dmg = { 250 }, Hits = { 2 }` for Discord Sewn,
+which reads as 500%; DE's export says 4x on all six Tonfas in the game (Boltace
+704/176, Kronen 520/130, Kronen Prime 848/212, Ohma 896/224, Telos Boltace
+840/210, Praedos 800/200). Six weapons agreeing beat one row, so the entries
+take the module's HIT COUNT and the export's TOTAL: two hits of 200%.
+
 **A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT**. The id
 is the INPUT — `neutral`, `block_forward` — and so is what a reader sees;
 swapping the stance changes what `neutral` is WORTH and never what it is called.
@@ -198,6 +211,26 @@ than the mode: a Tennokai heavy on a light combo is one too, which is why a
 build converting one swing in four climbs the counter Blood Rush reads more
 slowly than its two chances suggest.
 
+### …WITH ONE EXCEPTION, AND IT IS THE PRAEDOS'S
+
+Shockwave Synergy — *"for each enemy hit by Slam radius, gain 4 Combo Count"* —
+is the only card in the game that earns combo on a heavy mode, and it is what
+makes the Praedos's heavy slam a different weapon in a crowd from what it is
+solo. Every other heavy build can only spend what its floor regenerates between
+swings; this one is paid four points a body, so nine bodies is 36 points and the
+counter climbs while it is being emptied.
+
+**IT IS GRANTED AFTER THE SPEND, not before.** The heavy attack empties the
+counter and the slam lands after it, so a grant written on the earning side
+would be overwritten and the perk would be worth exactly nothing in the mode it
+is bought for. `shockwave_synergy_is_paid_by_the_crowd` asserts the gain SCALES
+with the crowd rather than asserting a value, because that is the whole of what
+the card is.
+
+**COMBO COUNT CHANCE SCALES IT rather than rolling for it**: *"True Punishment
+affects Shockwave Synergy, effectively doubling the Combo Count gain from 4 to
+8"* — True Punishment is +100% chance, so the grant is `4 x (1 + chance)`.
+
 ### The Sacrificial pair enhance each other
 
 *"The Sacrificial Set enhances all equipped mods within the set. Increases the
@@ -279,6 +312,9 @@ The module's whole vocabulary, for whoever transcribes the next stance:
   `Slam`, `Ranged`. Two are modelled — `360` and the slam — and `Sweep`,
   `Thrust` and the empty string all become the forward half-plane, which is the
   one invented number in the model and is declared.
+- `ImpactMultiplier` / `SlashMultiplier`: a bonus to that PHYSICAL component
+  alone. Both are exact rather than approximations — neither type enters the
+  elemental hierarchy, so nothing can have consumed it on the way.
 - `Procs`: `Knockback` (Impact's own), `Bleed` (Slash's), `Puncture`,
   `Knockdown`, `Lifted`, plus `Ragdoll`, `Stun`, `Impair`, `Stagger`,
   `Finisher`, `Detonate` — all crowd control with no damage payload here.
@@ -290,7 +326,8 @@ The module's whole vocabulary, for whoever transcribes the next stance:
 | piece | where |
 | --- | --- |
 | seven melee `FormKind`s, each its own mode | `weapons_data::FormKind`, `play_modes` |
-| the combo script — a swing with its own multiplier, delay, wind-up, hit count, Impact bonus, 360deg flag, forced procs and trailing slam | `weapons_data::ComboHit` |
+| the combo script — a swing with its own multiplier, delay, wind-up, hit count, Impact and Slash bonuses, 360deg flag, forced procs and trailing slam | `weapons_data::ComboHit` |
+| combo points a SLAM grants per body (Shockwave Synergy) | `EvoEffect::ComboCountOnSlamHit`, granted after the spend |
 | a STANCE as a mod that supplies those scripts | `loadout::ModDef::stance`, `resolve` |
 | the combo counter, its ladder and its refilling floor | `dummy::melee_combo_multiplier`, `melee_combo_points` |
 | Blood Rush / Weeping Wounds | one `(combo - 1)` term in each of two existing brackets |

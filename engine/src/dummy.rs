@@ -2902,6 +2902,9 @@ pub struct DummyParams {
     /// TARGET IS SIMULATED: `Lifted` is a status this engine tracks, forced by
     /// every heavy slam and by a heavy attack.
     pub combo_count_chance_on_lifted: f64,
+    /// COMBO POINTS PER BODY THE SLAM REACHED (Shockwave Synergy), before the
+    /// combo count chance that scales them. Zero on every other weapon.
+    pub combo_count_on_slam_hit: f64,
     pub status_chance_on_lifted: f64,
     /// `+X%` on a HEAVY attack alone (Killing Blow). Read only where
     /// `spends_combo` is true, which is what "heavy attack" means here.
@@ -4342,6 +4345,7 @@ impl DummyParams {
             status_chance_per_combo: panel.status_chance_per_combo,
             combo_count_chance: panel.combo_count_chance,
             combo_count_chance_on_lifted: panel.combo_count_chance_on_lifted,
+            combo_count_on_slam_hit: panel.combo_count_on_slam_hit,
             status_chance_on_lifted: panel.status_chance_on_lifted,
             heavy_attack_damage: panel.heavy_attack_damage,
             slam_damage: panel.slam_damage,
@@ -4659,6 +4663,7 @@ impl Default for DummyParams {
             status_chance_per_combo: 0.0,
             combo_count_chance: 0.0,
             combo_count_chance_on_lifted: 0.0,
+            combo_count_on_slam_hit: 0.0,
             status_chance_on_lifted: 0.0,
             heavy_attack_damage: 0.0,
             slam_damage: 0.0,
@@ -10643,7 +10648,19 @@ mod melee {
     }
 
     fn magistar(form: &str, mods: &[&str], duration: f64, spacing: Option<f64>) -> Summary {
-        let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+        melee_fight(form, &[], mods, duration, spacing)
+    }
+
+    /// The same fixture with EVOLUTIONS, which the Praedos needs and no hammer
+    /// does: its five tiers ship with the weapon rather than with an adapter.
+    fn melee_fight(
+        form: &str,
+        evos: &[&str],
+        mods: &[&str],
+        duration: f64,
+        spacing: Option<f64>,
+    ) -> Summary {
+        let base = crate::loadout::WeaponBase::from_data(form, false, evos);
         let pool = crate::mods_data::pool_for_weapon(form);
         let refs: Vec<&crate::loadout::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
@@ -10667,6 +10684,45 @@ mod melee {
         }
         let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
         monte_carlo(&p, 24, 909)
+    }
+
+    /// **SHOCKWAVE SYNERGY IS PAID BY THE CROWD**, and it is the only card in
+    /// the game that earns combo points on a heavy mode.
+    ///
+    /// *"For each enemy hit by Slam radius, gain 4 Combo Count"* (wiki,
+    /// Praedos). Every other heavy build in this roster earns nothing — a heavy
+    /// attack adds no points — so its counter can only hold what the
+    /// initial-combo floor regenerates between swings. This one climbs with the
+    /// bodies in the sphere.
+    ///
+    /// ASSERTED ON THE GAIN'S DEPENDENCE ON THE CROWD rather than on a value,
+    /// because that is the whole of what the perk is: the same card on one body
+    /// pays four points a slam, and on nine pays thirty-six.
+    #[test]
+    fn shockwave_synergy_is_paid_by_the_crowd() {
+        let solo_off = melee_fight("praedos_heavy_slam", &[], &[], 60.0, None).mean_damage;
+        let solo_on =
+            melee_fight("praedos_heavy_slam", &["praedos_shockwave_synergy"], &[], 60.0, None)
+                .mean_damage;
+        let crowd_off = melee_fight("praedos_heavy_slam", &[], &[], 60.0, Some(3.0)).mean_damage;
+        let crowd_on = melee_fight(
+            "praedos_heavy_slam",
+            &["praedos_shockwave_synergy"],
+            &[],
+            60.0,
+            Some(3.0),
+        )
+        .mean_damage;
+        assert!(
+            crowd_on > crowd_off,
+            "the perk paid nothing in a crowd: {crowd_off:.0} -> {crowd_on:.0}"
+        );
+        assert!(
+            crowd_on / crowd_off > solo_on / solo_off,
+            "the gain did not scale with the crowd: solo {:.3}x, crowd {:.3}x",
+            solo_on / solo_off,
+            crowd_on / crowd_off
+        );
     }
 
     /// A HEAVY WAITS FOR THE RUNG IT CAN REACH, AND NOT A MOMENT PAST IT.
@@ -12863,26 +12919,30 @@ pub fn run_once_traced(
         // two.
         let (swing_forced_types, swing_forced_independent) =
             swing.as_ref().map_or_else(|| (Vec::new(), Vec::new()), |h| h.split_forced());
-        // …AND THE IMPACT BONUS SOME SWINGS CARRY. `ImpactMultiplier = { 1.5 }`
-        // in the wiki's own module — three of Crushing Ruin's swings have one,
-        // and it is a different thing from the forced Knockback proc several of
-        // the same swings ALSO carry.
+        // …AND THE PHYSICAL BONUS SOME SWINGS CARRY. `ImpactMultiplier = { 1.5 }`
+        // on three of Crushing Ruin's swings, `SlashMultiplier = { 1.25 }` on one
+        // of Sovereign Outcast's — the wiki's own module, and a different thing
+        // from the forced proc several of the same swings ALSO carry.
         //
         // SCALING THE FINISHED VECTOR IS EXACT here, not an approximation:
-        // Impact never enters the elemental hierarchy, so nothing can have
+        // neither type enters the elemental hierarchy, so nothing can have
         // consumed it on the way and `Base x 1.5` on the component is the same
         // number as `Base x 1.5` before the mods that multiply the whole thing.
-        let impact_bonus = swing.as_ref().map_or(1.0, |h| h.impact_multiplier);
+        let physical_bonus = [
+            (DamageType::Impact, swing.as_ref().map_or(1.0, |h| h.impact_multiplier)),
+            (DamageType::Slash, swing.as_ref().map_or(1.0, |h| h.slash_multiplier)),
+        ];
+        let any_physical = physical_bonus.iter().any(|(_, b)| (b - 1.0).abs() > 1e-12);
         let swung;
-        let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12
-            || (impact_bonus - 1.0).abs() > 1e-12
-        {
+        let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12 || any_physical {
             let mut v = qvec.scale(swing_mult);
-            if (impact_bonus - 1.0).abs() > 1e-12 {
-                let extra = v.get(DamageType::Impact) * (impact_bonus - 1.0);
-                v.add(DamageType::Impact, extra);
+            for (ty, bonus) in physical_bonus {
+                if (bonus - 1.0).abs() > 1e-12 {
+                    let extra = v.get(ty) * (bonus - 1.0);
+                    v.add(ty, extra);
+                }
             }
-            let mb = modded_base * swing_mult * if (impact_bonus - 1.0).abs() > 1e-12 {
+            let mb = modded_base * swing_mult * if any_physical {
                 // The ModifiedBase grows by the same share the vector did, so
                 // the quantization grid stays proportional to what is on it.
                 let before = qvec.total() * swing_mult;
@@ -15982,6 +16042,57 @@ pub fn run_once_traced(
                 // all in the one family of modes whose cards sell it.
                 combo_points = combo_now * ap.heavy_attack_efficiency;
                 combo_spent_t = t;
+            }
+            // SHOCKWAVE SYNERGY — THE ONE THING THAT EARNS COMBO ON A HEAVY
+            // MODE, and it is AFTER the spend on purpose: the heavy attack
+            // empties the counter and the slam lands after it, so a grant
+            // written above would be overwritten and the perk would be worth
+            // exactly nothing on the mode it is bought for.
+            //
+            // *"For each enemy hit by Slam radius, gain 4 Combo Count"*, scaled
+            // by combo count chance: *"True Punishment affects Shockwave
+            // Synergy, effectively doubling the Combo Count gain from 4 to 8"*
+            // (wiki, Praedos). A crowd is what pays it, which is why the count
+            // is over the bodies the sphere actually reached.
+            if ap.combo_count_on_slam_hit > 0.0 {
+                let slam_rad = match (h.slam_multiplier, ap.slam) {
+                    (Some(_), Some(s)) => Some(s),
+                    _ => ap.radial.filter(|r| {
+                        r.blast_kind == crate::weapons_data::BlastKind::Slam
+                    }),
+                };
+                if let Some(rad) = slam_rad {
+                    // A SLAM GOES OFF AT THE WIELDER'S OWN FEET — the same
+                    // epicentre the explosion itself used, so the count and the
+                    // damage agree on who was in it.
+                    let det = crate::space::Detonation {
+                        at: params.player_at,
+                        height_m: 0.0,
+                    };
+                    let reached = (target.health > 0.0
+                        && crate::space::caught_by_blast(
+                            det.distance_to(params.target_at),
+                            rad.radius_m,
+                        )) as u32
+                        + params
+                            .others
+                            .iter()
+                            .enumerate()
+                            .filter(|(i, spec)| {
+                                others[*i].state.health > 0.0
+                                    && crate::space::caught_by_blast(
+                                        det.distance_to(spec.at),
+                                        rad.radius_m,
+                                    )
+                            })
+                            .count() as u32;
+                    if reached > 0 {
+                        combo_points += ap.combo_count_on_slam_hit
+                            * f64::from(reached)
+                            * (1.0 + ap.combo_count_chance);
+                        combo_expiry = t + ap.combo_duration_seconds;
+                    }
+                }
             }
         }
 

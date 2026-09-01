@@ -1,0 +1,73 @@
+id: praedos_heavy
+name: Praedos
+# DISCORD SEWN — nothing but heavy attacks.
+#
+# A TONFA'S HEAVY IS 4x, delivered as a pair of swings that each land TWICE at
+# 200% — the module's hit count and the export's total, reconciled in
+# `notes: tonfa_heavy_and_slide`. Two instances is not cosmetic: each one rolls
+# its own crit and its own status.
+#
+# THE COMBO COUNTER IS SPENT HERE, so this mode is a different BUILD and not a
+# different animation: Blood Rush and Weeping Wounds read a counter that is
+# emptied by the swing that read it, and initial combo is worth everything.
+#
+# 0.7 s OF WIND-UP, the shortest in the roster, and attack speed does not
+# shorten it — Kinetic Harmony's +100% takes it to 0.35 s.
+inherits: praedos
+form: heavy
+transform_group: praedos
+co_behavior: additive_with_base_damage
+unmodeled:
+  - "ATTACK SPEED PAYS NOTHING IN THIS MODE. The wiki's own sentence is 'Increasing melee attack speed does not reduce the wind-up time; rather, it reduces the interval between heavy attacks' — and nothing published says how long the swing after the charge takes, so this entry carries no animation for attack speed to shorten and the cadence is the wind-up alone. A build on Fury or Berserker reads LOW here"
+  - "the INCARNON IS A BUFF HERE AND ITS ENTRY IS NOT SIMULATED: the Praedos is an INNATE Incarnon rather than a Genesis, and its form changes numbers rather than attacks, so the numbers are applied for the whole fight. Arming it takes 5x combo and then a heavy attack — 3x with Swift Transmute — and the 90 s it then lasts is HALF the 180 s engagement, which is the one place this weapon differs from a Genesis melee and the one place this model is generous"
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  # ATTACK SPEED, in the fire-rate bucket. 1.17 is fast for a melee weapon and
+  # it is the whole reason a Tonfa reaches a combo tier a hammer cannot.
+  fire_rate: 1.17
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
+  # Incarnon Form adds 3 m to it, which is the largest reach bonus in the
+  # roster and the only thing that makes a light Praedos mode reach a crowd.
+  range_m: 2.5
+  # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
+  follow_through: 0.6
+  # see notes: tonfa_heavy_and_slide
+  heavy: { multiplier: 4.0, windup_seconds: 0.7 }
+  damage: { impact: 20, puncture: 20, slash: 160 }   # total 200
+
+  # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
+  # own multiplier (`Dmg = { 200, 100 }` in the module), so this is the unit it
+  # scales. The standalone slam is the same attack at 200%, which is the 400
+  # this weapon's own attack table prints, and its status chance is 10% rather
+  # than the 20% the swing carries.
+  #
+  # EVERY NUMBER FROM THE WIKI'S OWN ATTACK TABLE: 100% Impact, 8 m, linear
+  # falloff from the point of impact to 50% at the edge, forced Impact.
+  slam:
+    damage: { impact: 200 }
+    radius_m: 8.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: [impact]
+    takes_multishot: false
+  spends_combo: true
+  # THE WIND-UP IS ON THE SWING, not on the attack: the attack-level field is a
+  # one-off delay before the fight's first shot, and a heavy attack pays its
+  # charge before EVERY swing.
+  combo_script:
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

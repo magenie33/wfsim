@@ -2,15 +2,7 @@ id: shattering_storm
 name: Shattering Storm
 rarity: uncommon
 polarity: vazarin
-# A STANCE GRANTS CAPACITY RATHER THAN COSTING IT — the export carries
-# `baseDrain: -2` — so the drain here is ZERO and the grant is
-# `mods::STANCE_CAPACITY_GRANT`, which the wiki states once for every stance
-# rather than per card: 5 at max rank, 10 on a matching slot.
-#
-# RANK 0 FOR THE SAME REASON. A stance's ranks buy capacity and nothing else —
-# the combo table is identical at every rank — so the ladder would say nothing
-# the grant does not, and a `max_rank` here would make the card ask for drain it
-# does not cost (`ModDef.base_drain` is `base + max_rank`).
+# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerCmbOneMeleeTree

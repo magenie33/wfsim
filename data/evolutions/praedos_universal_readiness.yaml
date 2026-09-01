@@ -1,0 +1,16 @@
+id: praedos_universal_readiness
+name: Universal Readiness
+weapon: praedos
+tier: 5
+description: "Collecting ammo grants 5 Melee Combo counter."
+selection: choose_one
+
+effects:
+  # AMMO PICKUPS ARE NOT IN THIS ARENA — no drops, no floor, nothing to collect
+  # — so the trigger cannot fire. The standing admission rather than a gap.
+  - kind: out_of_scope
+    clause: "Collecting ammo grants 5 Melee Combo counter"
+    reason: infinite_ammo
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

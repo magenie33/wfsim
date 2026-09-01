@@ -1,0 +1,118 @@
+id: praedos
+name: Praedos
+slot: melee
+class: tonfa
+# THE STATIONARY COMBO, and the arsenal's own form — so its mode is `base`.
+form: neutral
+default_form: true
+transform_group: praedos
+mod_pools: [melee, tonfa]
+mastery_rank: 14
+max_rank: 30
+
+# THE FIRST TONFA IN THE ROSTER, and the class differs from the hammer in three
+# ways that all matter: 1.17 attack speed against 0.833, a 4x heavy against 6x,
+# and 0.6 Follow Through against 0.4 — so it reaches a combo tier faster, pays
+# less for each heavy attack it spends there, and keeps more of a swing for the
+# second body.
+#
+# THE CLASS HEAVY IS 4x AND THE STANCE MODULE DISAGREES — see
+# `notes: tonfa_heavy_and_slide`, where the six-weapon check that settles it is
+# written out. It is the one number on this weapon that two wiki sources state
+# differently.
+#
+# ITS EVOLUTIONS ARE INNATE. There is no Genesis to buy: five tiers ship with
+# the weapon, and one of them (Shockwave Synergy) is the only card in the game
+# that earns combo points on a HEAVY mode.
+accuracy: ~
+disposition: 0.6
+polarities: [madurai, naramon]
+# THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
+# discount: 10 on a matching slot, 5 on a bare one, 4 on the wrong colour
+# (`mods::stance_capacity`). Madurai, so Gemini Cross grants 10 here and
+# Sovereign Outcast grants 4 until a Forma says otherwise.
+stance_polarity: madurai
+introduced: "Update 31.5"
+internal_name: /Lotus/Weapons/Tenno/Zariman/Melee/Tonfas/ZarimanTonfaWeapon
+
+# NO AMMO AT ALL. A melee weapon has no magazine, no reserve and no reload, so
+# the loop tops it up silently and `Capability::HasReserve` is false for it the
+# way it is for a companion weapon — a different reason, the same absence.
+ammo_max: ~
+
+# SECONDS THE COMBO COUNTER SURVIVES untouched. Five is this weapon's, and the
+# wiki names the handful that differ rather than stating a default.
+combo_duration_seconds: 5.0
+
+# No CO catalog row for any of this weapon's attacks, so the ordinary class.
+# ABSENCE MEANS ORDINARY — and it was checked against the PAGE, not against
+# docs/CATALOGS.md, which by construction holds only rows the roster already
+# has.
+co_behavior: additive_with_base_damage
+
+unmodeled:
+  - "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
+  - "the Tennokai window's WIND-UP SPEED is a stand-in: DE publishes no figure for how much faster a heavy attack charges inside the flash, and this uses +100%. The window itself, its chance, its cadence and everything the seven cards do to it are modelled"
+  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports"
+  - "melee RIVENS are not modelled — there is no melee riven pool yet, so the riven editor offers this weapon nothing"
+
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  # ATTACK SPEED, in the fire-rate bucket. 1.17 is fast for a melee weapon and
+  # it is the whole reason a Tonfa reaches a combo tier a hammer cannot.
+  fire_rate: 1.17
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
+  # Incarnon Form adds 3 m to it, which is the largest reach bonus in the
+  # roster and the only thing that makes a light Praedos mode reach a crowd.
+  range_m: 2.5
+  # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
+  follow_through: 0.6
+  # see notes: tonfa_heavy_and_slide
+  heavy: { multiplier: 4.0, windup_seconds: 0.7 }
+  damage: { impact: 20, puncture: 20, slash: 160 }   # total 200
+
+  # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
+  # own multiplier (`Dmg = { 200, 100 }` in the module), so this is the unit it
+  # scales. The standalone slam is the same attack at 200%, which is the 400
+  # this weapon's own attack table prints, and its status chance is 10% rather
+  # than the 20% the swing carries.
+  #
+  # EVERY NUMBER FROM THE WIKI'S OWN ATTACK TABLE: 100% Impact, 8 m, linear
+  # falloff from the point of impact to 50% at the edge, forced Impact.
+  slam:
+    damage: { impact: 200 }
+    radius_m: 8.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: [impact]
+    takes_multishot: false
+  # ROGUE EDICT — Sovereign Outcast's neutral combo, transcribed from
+  # `Module:Stances/data`. 2200% over 2.85 s at 1.0x attack speed, which checks
+  # against the rendered table's other column: 2200 / 2.85 = 771.9%/s.
+  #
+  # THE ENTRY CARRIES A STANCE'S SCRIPT because the stanceless Tonfa block
+  # publishes no duration for its ground combos, so there is nothing to time
+  # them with. Installing either Tonfa card replaces this.
+  combo_script:
+    - { multiplier: 2.0, delay_seconds: 0.4071 }
+    - { multiplier: 0.5, delay_seconds: 0.4071, hits: 5 }
+    - { multiplier: 2.0, delay_seconds: 0.4071 }
+    - { multiplier: 0.5, delay_seconds: 0.4071 }
+    - { multiplier: 3.0, delay_seconds: 0.4071, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.4071, hits: 4, forced_procs: [slash] }
+    - { multiplier: 2.0, delay_seconds: 0.4071, hits: 2, forced_procs: [knockdown] }
+
+source:
+  url: https://wiki.warframe.com/w/Praedos
+  # The combo table: https://wiki.warframe.com/w/Sovereign_Outcast

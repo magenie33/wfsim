@@ -273,6 +273,13 @@ weapons:
   sancti_magistar_heavy: wiki:SanctiMagistar.png
   sancti_magistar_slide: wiki:SanctiMagistar.png
   sancti_magistar_heavy_slam: wiki:SanctiMagistar.png
+  praedos: wiki:Praedos.png
+  praedos_forward: wiki:Praedos.png
+  praedos_block: wiki:Praedos.png
+  praedos_block_forward: wiki:Praedos.png
+  praedos_heavy: wiki:Praedos.png
+  praedos_slide: wiki:Praedos.png
+  praedos_heavy_slam: wiki:Praedos.png
   magnus: Magnus.png
   magnus_prime: MagnusPrime.png
   mandonel: TnConcreteArchgun.png
@@ -755,6 +762,7 @@ mods:
   galvanized_scope: CritChanceWhileAimingRifleSPMod.jpg
   galvanized_shot: WeaponStatusChanceSPModMods.jpg
   galvanized_steel: WeaponCritChanceSPMod.jpg
+  gemini_cross: TonfaCombo1a.jpg
   gilded_truth: BurstonPrime.jpg
   gladiator_might: GladiatorMight.jpg
   gladiator_rush: GladiatorRush.jpg
@@ -981,6 +989,7 @@ mods:
   smite_the_murmur: WeaponMeleeFactionDamageMurmurs.jpg
   snap_shot: FasterMovementWhileAimingShotgun.jpg
   soft_hands: PvPWeaponSwapSpeedShotgun.jpg
+  sovereign_outcast: TonfaB.jpg
   spectral_serration: WeaponDamageAmountInvisibleMod.jpg
   speed_trigger: RifleFireRateMod.jpg
   split_chamber: RifleFireIterationsMod.jpg

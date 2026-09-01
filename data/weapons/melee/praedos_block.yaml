@@ -1,0 +1,60 @@
+id: praedos_block
+name: Praedos
+# SCOUT COMMAND — the blocking combo, standing still. 900% over 1.25 s at
+# 1.0x, which is the rendered table's 720.0%/s and the highest of this stance's
+# four.
+#
+# RAGDOLL IS NOT TRANSCRIBED on the last swing — nothing in this engine reads
+# one, so writing it would state a rule that is never applied.
+inherits: praedos
+form: block
+transform_group: praedos
+co_behavior: additive_with_base_damage
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  # ATTACK SPEED, in the fire-rate bucket. 1.17 is fast for a melee weapon and
+  # it is the whole reason a Tonfa reaches a combo tier a hammer cannot.
+  fire_rate: 1.17
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
+  # Incarnon Form adds 3 m to it, which is the largest reach bonus in the
+  # roster and the only thing that makes a light Praedos mode reach a crowd.
+  range_m: 2.5
+  # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
+  follow_through: 0.6
+  # see notes: tonfa_heavy_and_slide
+  heavy: { multiplier: 4.0, windup_seconds: 0.7 }
+  damage: { impact: 20, puncture: 20, slash: 160 }   # total 200
+
+  # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
+  # own multiplier (`Dmg = { 200, 100 }` in the module), so this is the unit it
+  # scales. The standalone slam is the same attack at 200%, which is the 400
+  # this weapon's own attack table prints, and its status chance is 10% rather
+  # than the 20% the swing carries.
+  #
+  # EVERY NUMBER FROM THE WIKI'S OWN ATTACK TABLE: 100% Impact, 8 m, linear
+  # falloff from the point of impact to 50% at the edge, forced Impact.
+  slam:
+    damage: { impact: 200 }
+    radius_m: 8.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: [impact]
+    takes_multishot: false
+  combo_script:
+    - { multiplier: 4.0, delay_seconds: 0.4167, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.4167 }
+    - { multiplier: 3.0, delay_seconds: 0.4167 }
+
+source:
+  url: https://wiki.warframe.com/w/Sovereign_Outcast

@@ -247,6 +247,26 @@ notes:
     the 200-round cap.
     - "Charges build individually on multishot bullets."
     - A full gauge is NOT required to transmute.
+  stance_grants_capacity: |
+    A STANCE GRANTS CAPACITY RATHER THAN COSTING IT — the export carries
+    `baseDrain: -2` — so the drain here is ZERO and the grant is
+    `mods::STANCE_CAPACITY_GRANT`, which the wiki states once for every stance
+    rather than per card: 5 at max rank, 10 on a matching slot.
+
+    RANK 0 FOR THE SAME REASON. A stance's ranks buy capacity and nothing else —
+    the combo table is identical at every rank — so the ladder would say nothing
+    the grant does not, and a `max_rank` here would make the card ask for drain
+    it does not cost (`ModDef.base_drain` is `base + max_rank`).
+  tonfa_heavy_and_slide: |
+    DISCORD SEWN AND FEUDING BLOOD — the Tonfa's own heavy and slide, identical
+    on both stances because they are the CLASS's rather than the card's.
+
+    THE HEAVY IS 4x, NOT THE MODULE'S 5x. `Module:Stances/data` prints
+    `Dmg = { 250 }, Hits = { 2 }`, which reads as 500%; DE's export says 4x on
+    all six Tonfas in the game (Boltace 704/176, Kronen 520/130, Kronen Prime
+    848/212, Ohma 896/224, Telos Boltace 840/210, Praedos 800/200), and it is
+    unanimous where the module is one row. The HIT COUNT is the module's and the
+    TOTAL is the export's, so each of the two hits is 200%.
   class_s_heavy_attack: |
     THE CLASS'S HEAVY ATTACK — 6x with a 1.2 s charge, from the wiki's
     per-weapon-type table. Stated on EVERY form including the light ones,

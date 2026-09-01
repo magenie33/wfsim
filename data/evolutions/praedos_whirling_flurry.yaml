@@ -1,0 +1,15 @@
+id: praedos_whirling_flurry
+name: Whirling Flurry
+weapon: praedos
+tier: 2
+description: "+20% Attack Speed."
+selection: choose_one
+
+effects:
+  # from: "+20% Attack Speed" — the fire-rate bucket, stacking additively with
+  # Incarnon Form's own +40% and with Fury.
+  - kind: fire_rate_bonus
+    value: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

@@ -2112,6 +2112,9 @@ pub struct WeaponBase {
     pub evo_base_damage_bonus: f64,
     /// Points the melee combo counter opens at, from an evolution.
     pub evo_initial_combo: f64,
+    /// Combo points per body a slam reached, from an evolution (Shockwave
+    /// Synergy). Zero everywhere else.
+    pub evo_combo_count_on_slam_hit: f64,
     /// Metres of melee reach, from an evolution (Orokin Reach).
     pub evo_melee_range_m: f64,
     /// A relative change to Follow Through, from an evolution.
@@ -3355,6 +3358,9 @@ pub struct ResolvedPanel {
     pub combo_count_chance: f64,
     /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike).
     pub combo_count_chance_on_lifted: f64,
+    /// COMBO POINTS PER BODY THE SLAM REACHED (Shockwave Synergy), before the
+    /// combo count chance that scales them.
+    pub combo_count_on_slam_hit: f64,
     /// Relative status chance a LIFTED target adds (Enduring Affliction) — the
     /// bracket Weeping Wounds is in.
     pub status_chance_on_lifted: f64,
@@ -5176,6 +5182,7 @@ pub fn resolve_for(
         status_chance_per_combo: sc_per_combo,
         combo_count_chance,
         combo_count_chance_on_lifted,
+        combo_count_on_slam_hit: base.evo_combo_count_on_slam_hit,
         status_chance_on_lifted,
         heavy_attack_damage: heavy_damage,
         slam_damage,

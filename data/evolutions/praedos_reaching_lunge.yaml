@@ -1,0 +1,17 @@
+id: praedos_reaching_lunge
+name: Reaching Lunge
+weapon: praedos
+tier: 3
+description: "+1.5m Slide Attack Range."
+selection: choose_one
+
+effects:
+  # from: "+1.5m Slide Attack Range" — a bonus to ONE mode's reach, and the
+  # engine's melee range is a property of the weapon rather than of the swing.
+  # Modelling it would take a per-form range, which nothing else in the roster
+  # needs; declaring it is the honest half.
+  - kind: unmodelled_slide_attack_range_metres
+    value: 1.5
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

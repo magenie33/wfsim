@@ -1130,6 +1130,15 @@ pub struct ComboHit {
     /// consumed it on the way.
     #[serde(default = "one")]
     pub impact_multiplier: f64,
+    /// A BONUS TO THE SLASH COMPONENT of this swing alone.
+    ///
+    /// `SlashMultiplier = { 1.25 }` in the module — Sovereign Outcast marks one
+    /// swing of Villain Rule — and it is the same mechanism as the Impact bonus
+    /// above on the other physical type. Exact for the same reason: Slash never
+    /// combines into an element either, so nothing can have consumed it on the
+    /// way.
+    #[serde(default = "one")]
+    pub slash_multiplier: f64,
     /// …AND THE SLAM SOME COMBOS END ON, as a multiple of the weapon's own.
     ///
     /// `Types = { "", "Slam" }` with `Dmg = { 500, 100 }`: the last attack of
@@ -3795,6 +3804,7 @@ pub fn base_panel_assembled(
         heavy: s.attack.heavy,
         // A GENESIS FILLS THESE IN, and an entry states none of them.
         evo_base_damage_bonus: 0.0,
+        evo_combo_count_on_slam_hit: 0.0,
         evo_initial_combo: 0.0,
         evo_melee_range_m: 0.0,
         evo_follow_through_bonus: 0.0,

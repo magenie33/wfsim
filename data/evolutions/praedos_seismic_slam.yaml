@@ -1,0 +1,20 @@
+id: praedos_seismic_slam
+name: Seismic Slam
+weapon: praedos
+tier: 2
+description: "+50% Slam Radius."
+selection: choose_one
+
+effects:
+  # from: "+50% Slam Radius" — 9 m to 13.5 m on the heavy slam, which is the one
+  # mode that reaches past the 2.5 m a Tonfa swings. It pays nothing in the other
+  # six, and its own bucket is what says so.
+  #
+  # IT IS ALSO THE OTHER HALF OF SHOCKWAVE SYNERGY: that perk pays per body the
+  # sphere reached, so a bigger sphere is more combo points as well as more
+  # damage. The two are on different tiers and can be taken together.
+  - kind: slam_radius_bonus
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

@@ -1,0 +1,20 @@
+id: praedos_kinetic_harmony
+name: Kinetic Harmony
+weapon: praedos
+tier: 5
+description: "+100% Heavy Attack Wind Up Speed."
+selection: choose_one
+
+effects:
+  # from: "+100% Heavy Attack Wind Up Speed" — its OWN clock, which attack speed
+  # does not touch. It takes this weapon's 0.7 s charge to 0.35 s, the shortest
+  # in the roster.
+  #
+  # IT PAYS NOTHING ON THE HEAVY SLAM: *"heavy slams do not have any wind up"*
+  # (wiki, Melee), so the mode this weapon is built for is the one mode this
+  # card cannot reach.
+  - kind: heavy_windup_speed_bonus
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

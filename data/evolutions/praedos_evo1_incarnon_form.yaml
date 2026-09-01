@@ -1,0 +1,30 @@
+id: praedos_evo1_incarnon_form
+name: Incarnon Form
+weapon: praedos
+tier: 1
+description: "Reach 5x Combo and then Heavy Attack to activate Incarnon Form for 90 seconds. +3 Range, +40% Attack Speed."
+# AN INNATE INCARNON, not a Genesis: the Praedos ships with its five tiers and
+# there is no adapter to buy. A melee Incarnon is not a FORM either — it does not
+# change the attack animations, only numbers — so this grants no
+# `unlocks_weapon`, the same shape the Magistar's Genesis has.
+#
+# NINETY SECONDS AGAINST A 180 s ENGAGEMENT, which is where this weapon differs
+# from every Genesis melee in the roster: those last the whole fight, this lasts
+# half of it. Applying it for the whole engagement is therefore GENEROUS rather
+# than neutral, and the weapon entries say so in `unmodeled` rather than here.
+selection: fixed
+
+effects:
+  # from: "+3 Range" — the largest melee reach bonus in the roster, and on a
+  # 2.5 m weapon it is more than double. It is what lets a light Praedos mode
+  # reach a second body on the group ruler's 3 m grid.
+  - kind: melee_range_bonus_m
+    value: 3.0
+  # from: "+40% Attack Speed" — the fire-rate bucket, which for melee IS attack
+  # speed: it divides every swing delay in the stance script, and on the heavy
+  # slam it divides the landing recovery.
+  - kind: fire_rate_bonus
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

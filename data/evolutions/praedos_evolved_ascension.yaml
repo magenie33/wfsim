@@ -1,0 +1,14 @@
+id: praedos_evolved_ascension
+name: Evolved Ascension
+weapon: praedos
+tier: 4
+description: "+30% Parkour Velocity."
+selection: choose_one
+
+effects:
+  - kind: out_of_scope
+    clause: "+30% Parkour Velocity"
+    reason: no_movement
+
+source:
+  url: https://wiki.warframe.com/w/Praedos

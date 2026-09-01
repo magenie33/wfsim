@@ -264,6 +264,7 @@ resolved:
   phenmor:                       /Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle
   plinx:                         /Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon
   pox:                           /Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars
+  praedos:                       /Lotus/Weapons/Tenno/Zariman/Melee/Tonfas/ZarimanTonfaWeapon
   prime_laser_rifle:             /Lotus/Types/Sentinels/SentinelWeapons/PrimeLaserRifle
   prisma_angstrum:               /Lotus/Weapons/Corpus/Pistols/CrpHandRL/PrismaAngstrum
   prisma_burst_laser:            /Lotus/Types/Sentinels/SentinelWeapons/PrismaBurstLaserPistol

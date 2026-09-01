@@ -1,0 +1,25 @@
+id: praedos_shockwave_synergy
+name: Shockwave Synergy
+weapon: praedos
+tier: 3
+description: "For each enemy hit by Slam radius, gain 4 Combo Count."
+# THE ONLY CARD IN THE GAME THAT EARNS COMBO ON A HEAVY MODE. A heavy attack
+# adds nothing to the counter, so every other heavy build in the roster can only
+# spend what its initial-combo floor regenerates at 40 points a second. This one
+# is paid by the crowd: four points a body, on the same swing that emptied the
+# counter, which is why the engine grants it AFTER the spend
+# (`dummy.rs`, the Shockwave Synergy block) rather than before.
+selection: choose_one
+
+effects:
+  # from: "For each enemy hit by Slam radius, gain 4 Combo Count".
+  #
+  # COMBO COUNT CHANCE SCALES IT rather than rolling for it: *"True Punishment
+  # affects Shockwave Synergy, effectively doubling the Combo Count gain from 4
+  # to 8 per enemy hit by the Slam radius"* (wiki, Praedos) — True Punishment is
+  # +100% combo count chance, so the grant is `4 x (1 + chance)`.
+  - kind: combo_count_on_slam_hit
+    value: 4.0
+
+source:
+  url: https://wiki.warframe.com/w/Praedos
