@@ -253,6 +253,19 @@ notes:
     the 200-round cap.
     - "Charges build individually on multishot bullets."
     - A full gauge is NOT required to transmute.
+  slide_ignores_follow_through: |
+    A SLIDE ATTACK TAKES NO FOLLOW THROUGH, so every body in reach takes the
+    FULL swing: *"Follow Through: when hit multiple targets in one strike, the
+    part of damage remaining after each target (excludes Slam Attacks and Slide
+    Attacks)"* (wiki, Melee). The section below it says the same from the other
+    side — the stat does not affect *"any attack that ... deals AoE"* — and a
+    slide is the 360-degree spin the stance module marks `Types = { "360" }`.
+
+    WRITTEN AS 1.0 RATHER THAN OMITTED, because the two are different claims:
+    `FT^(n-1)` at 1.0 is the wiki's own bottom row, every target at 100%, while
+    a form carrying NO follow through reaches the aimed body ALONE. That is the
+    right answer for a slam, whose damage is its radial, and the wrong one for
+    a spin.
   combo_clock_is_the_input: |
     A COMBO'S CLOCK IS ITS INPUTS, NOT ITS DAMAGE ROWS. `Module:Stances/data`
     holds one `Attacks` entry per attack the player makes — the stance table

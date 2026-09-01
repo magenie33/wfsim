@@ -11782,6 +11782,41 @@ mod melee {
         assert!(ratio > 1.2, "eight bodies in reach added only {ratio:.2}x");
     }
 
+    /// **A SLIDE ATTACK TAKES NO FOLLOW THROUGH**, so a ring of bodies takes
+    /// one number rather than a decaying series.
+    ///
+    /// *"Follow Through … (excludes Slam Attacks and Slide Attacks)"* (wiki,
+    /// Melee), which is `FT = 1.0` — the wiki's own bottom row, every target at
+    /// 100% — and NOT an absent stat, which would reach the aimed body alone.
+    /// Asserted as EQUALITY across the ring: at 0.4 the ninth body took 0.4^8,
+    /// which is 0.07% of the first, so nothing but equality can tell the two
+    /// readings apart.
+    ///
+    /// A COMBO SWING IS THE CONTROL beside it. Hell's Wave and Raging Whirlwind
+    /// are the same weapon at the same reach, and only one of them decays — so
+    /// this cannot pass by the crowd being unreachable or by the decay being
+    /// switched off everywhere.
+    #[test]
+    fn a_slide_attack_pays_every_body_in_reach_in_full_and_a_swing_does_not() {
+        let ring = |form: &str| {
+            let r = magistar(form, &[], 20.0, Some(2.6));
+            let hit: Vec<f64> =
+                r.mean_damage_by_body.0.iter().copied().filter(|d| *d > 0.0).collect();
+            (hit.first().copied().unwrap_or(0.0), hit.last().copied().unwrap_or(0.0), hit.len())
+        };
+        let (first, last, n) = ring("magistar_slide");
+        assert_eq!(n, 9, "a spin reaches the aimed body and all eight around it");
+        assert!(
+            (last - first).abs() < first * 0.02,
+            "the ring decayed on a slide attack: {first:.0} -> {last:.0}",
+        );
+        let (s_first, s_last, _) = ring("magistar");
+        assert!(
+            s_last < s_first * 0.2,
+            "a hammer's 0.4 follow through did not decay a combo swing: {s_first:.0} -> {s_last:.0}",
+        );
+    }
+
     /// A SLAM IGNORES THE REACH THAT DECIDES EVERY OTHER MELEE MODE.
     ///
     /// A hammer swings 2.5 m; its heavy slam is a 10 m sphere centred on the

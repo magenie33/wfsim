@@ -157,7 +157,21 @@ and what has refilled, which is what makes "spend it and it comes back" and
 
 > *"Proportion of weapon damage = FT^(n-1)"*, and *"Follow Through does not
 > affect: (Heavy) Slam Attacks, Any attack that shoots projectiles or deals
-> AoE."* A Hammer is **0.4**.
+> AoE."* A Hammer is **0.4** and a Tonfa **0.6**.
+
+**AND A SLIDE ATTACK, which that list omits and the page's own stat glossary
+does not**: *"Follow Through: when hit multiple targets in one strike, the part
+of damage remaining after each target (excludes Slam Attacks **and Slide
+Attacks**)"*. The two agree once a spin is read as the AoE the second bullet
+means — the stance module marks every slide combo `Types = { "360" }` — and the
+glossary is the half that names the case.
+
+**IT IS `1.0`, NOT ABSENT** (`notes: slide_ignores_follow_through`). The two are
+different claims in this model: 1.0 is the wiki's own bottom row, every target
+at 100%, while a form carrying NO follow through reaches the aimed body ALONE.
+That is right for a SLAM, whose damage is its radial and whose sphere is what
+reaches the room, and wrong for a spin. The Praedos's slam form carried 0.6
+where the two hammers carried nothing; it now carries nothing either.
 
 ### Slams
 

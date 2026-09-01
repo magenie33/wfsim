@@ -28,8 +28,8 @@ attack:
   # Incarnon Form adds 3 m to it, which is the largest reach bonus in the
   # roster and the only thing that makes a light Praedos mode reach a crowd.
   range_m: 2.5
-  # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
-  follow_through: 0.6
+  # see notes: slide_ignores_follow_through
+  follow_through: 1.0
   # see notes: tonfa_heavy_and_slide
   heavy: { multiplier: 4.0, windup_seconds: 0.7 }
   damage: { impact: 20, puncture: 20, slash: 160 }   # total 200

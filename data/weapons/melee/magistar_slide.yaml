@@ -23,7 +23,8 @@ attack:
   status_chance: 0.1
   punch_through_m: 0.0
   range_m: 2.5
-  follow_through: 0.4
+  # see notes: slide_ignores_follow_through
+  follow_through: 1.0
   # see notes: class_s_heavy_attack
   heavy: { multiplier: 6.0, windup_seconds: 1.2 }
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }

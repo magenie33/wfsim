@@ -46,8 +46,9 @@ attack:
   # Incarnon Form adds 3 m to it, which is the largest reach bonus in the
   # roster and the only thing that makes a light Praedos mode reach a crowd.
   range_m: 2.5
-  # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
-  follow_through: 0.6
+  # NO FOLLOW THROUGH ON A SLAM: *"Follow Through does not affect (Heavy)
+  # Slam Attacks"* (wiki, Melee). A slam's damage is its radial, and the
+  # radial reaches the room through the sphere rather than through a swing.
   # see notes: tonfa_heavy_and_slide
   heavy: { multiplier: 4.0, windup_seconds: 0.7 }
   spends_combo: true
