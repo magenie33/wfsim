@@ -24,10 +24,20 @@
 # no native client and no Proton equivalent, a Mac user cannot play Warframe at
 # all, and Gatekeeper plus $99/yr notarisation is a high price for an audience
 # that does not exist.
+#
+# IT IS OPT-IN ALL THE SAME. `release` needs `build`, so one failing leg of the
+# matrix publishes NOTHING — the Windows binary is built, checked, uploaded as
+# an artifact, and then no release is cut. A platform nobody is waiting for
+# must not be able to sink the one they are.
 name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      linux:
+        description: "Also build and publish the Linux AppImage"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -39,11 +49,7 @@ jobs:
       # hide whether Windows is fine.
       fail-fast: false
       matrix:
-        include:
-          - os: windows-latest
-            artifact: WFSim.exe
-          - os: ubuntu-latest
-            artifact: WFSim.AppImage
+        include: ${{ fromJSON(inputs.linux && '[{"os":"windows-latest","artifact":"WFSim.exe"},{"os":"ubuntu-latest","artifact":"WFSim.AppImage"}]' || '[{"os":"windows-latest","artifact":"WFSim.exe"}]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -132,19 +138,62 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      # THE NOTES NAME WHAT THE RELEASE ACTUALLY CARRIES. The Linux leg is
+      # opt-in, so a table row or a checksum for an asset that is not attached
+      # would be a broken promise in the one place a reader goes to check one.
+      # Written to a file rather than inlined below, because that is where the
+      # condition can live.
       - name: Collect the release notes
         id: notes
         run: |
           cd artifacts
-          WIN=$(sha256sum WFSim.exe | cut -d' ' -f1)
-          LIN=$(sha256sum WFSim.AppImage | cut -d' ' -f1)
-          TAG="$(date -u +%Y-%m-%d)-$(git -C .. rev-parse --short=7 HEAD)"
-          {
-            echo "tag=$TAG"
-            echo "win=$WIN"
-            echo "lin=$LIN"
-          } >> "$GITHUB_OUTPUT"
+          echo "tag=$(date -u +%Y-%m-%d)-$(git -C .. rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          cat > notes.md <<'MD'
+          **Download one file and run it.** No installer, no unpacking — the
+          whole app is inside the executable. It updates itself afterwards, so
+          this download is a starting point rather than something to come back
+          for.
 
+          | | |
+          |---|---|
+          | Windows | `WFSim.exe` — double-click |
+          MD
+          if [ -f WFSim.AppImage ]; then
+            echo '| Linux | `WFSim.AppImage` — `chmod +x` it, then double-click |' >> notes.md
+          fi
+          cat >> notes.md <<'MD'
+
+          Windows shows its blue "protected your PC" notice on first run: this
+          build is not code-signed (a certificate costs more per year than a
+          free tool justifies). Choose **More info → Run anyway**.
+          MD
+          if [ -f WFSim.AppImage ]; then
+            cat >> notes.md <<'MD'
+
+          The AppImage carries its own WebKitGTK, so no packages are needed. A
+          Release asset arrives without the execute bit — that is what the
+          `chmod +x` is for, not a quirk of this build.
+          MD
+          fi
+          {
+            echo
+            echo '```'
+            sha256sum WFSim.exe
+            if [ -f WFSim.AppImage ]; then sha256sum WFSim.AppImage; fi
+            echo '```'
+          } >> notes.md
+          cat >> notes.md <<'MD'
+
+          `source.zip` is the corresponding source AGPL-3.0 asks to be offered
+          alongside the binary. Nothing needs it to run the app.
+
+          Also on Quark (faster inside mainland China):
+          https://pan.quark.cn/s/dc8fe9046d6a
+          · Web version: https://wfsim.app
+          MD
+
+      # `WFSim.AppImage` is listed and may not exist: the action does not fail
+      # on an unmatched pattern, so one list serves both shapes of release.
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.notes.outputs.tag }}
@@ -153,33 +202,4 @@ jobs:
             artifacts/WFSim.exe
             artifacts/WFSim.AppImage
             artifacts/source.zip
-          body: |
-            **Download one file and run it.** No installer, no unpacking — the
-            whole app is inside the executable. It updates itself afterwards, so
-            this download is a starting point rather than something to come back
-            for.
-
-            | | |
-            |---|---|
-            | Windows | `WFSim.exe` — double-click |
-            | Linux | `WFSim.AppImage` — `chmod +x` it, then double-click |
-
-            Windows shows its blue "protected your PC" notice on first run:
-            this build is not code-signed (a certificate costs more per year
-            than a free tool justifies). Choose **More info → Run anyway**.
-
-            The AppImage carries its own WebKitGTK, so no packages are needed.
-            A Release asset arrives without the execute bit — that is what the
-            `chmod +x` is for, not a quirk of this build.
-
-            ```
-            WFSim.exe       ${{ steps.notes.outputs.win }}
-            WFSim.AppImage  ${{ steps.notes.outputs.lin }}
-            ```
-
-            `source.zip` is the corresponding source AGPL-3.0 asks to be offered
-            alongside the binary. Nothing needs it to run the app.
-
-            Also on Quark (faster inside mainland China):
-            https://pan.quark.cn/s/dc8fe9046d6a
-            · Web version: https://wfsim.app
+          body_path: artifacts/notes.md
