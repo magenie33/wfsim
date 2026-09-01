@@ -155,6 +155,22 @@ rather than keeping a second copy.
 ## Releasing
 
 ```
+python scripts/ship.py                    # the whole of it, and it verifies
+python scripts/ship.py --verify           # do the channel and site/ agree now?
+```
+
+**THE CLIENT IS THE SITE — same files, same bugs — and one command is what makes
+that true.** `ship.py` builds `site/`, rebuilds the payload that declares what
+the client gets, publishes the channel, commits, pushes, and then fetches the
+manifest it just published and hashes every file it names against `site/`. A
+mirror that is only promised drifts: pushing `main` deploys `site/` on its own,
+so a channel published by hand is a channel published when somebody remembers.
+It refuses a tree that is dirty outside `site/`, because what ships has to be a
+tree that can be checked out again.
+
+The three steps it runs, for when one of them has to be run alone:
+
+```
 python scripts/build_site_app.py          # site/
 cargo build --manifest-path desktop/Cargo.toml
 python scripts/release_desktop.py         # blobs + source.zip + signed manifest

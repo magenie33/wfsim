@@ -81,6 +81,10 @@ Each of these fails silently. That is why it is here and not in a document.
   scripts/build_site_app.py`, and commit the regenerated `site/`. It also
   prerenders one page per weapon plus `sitemap.xml` — without them every URL is
   a soft 404 to a crawler. wasm-bindgen-cli must match Cargo.lock.
+- **SHIPPING IS `python scripts/ship.py`, not a push.** A push deploys `site/`
+  and NOTHING reaches the desktop client, whose content channel is published
+  separately; the two then drift silently, and the client is the site — same
+  files, same bugs. `--verify` asks whether they agree right now.
 - **CI is `cargo clippy --workspace --all-targets -- -D warnings` + `cargo test
   --workspace`.** Run both before pushing. Deploy = push to `main`; Cloudflare
   picks up `site/` in 1–2 minutes and there is no deploy step in CI.
