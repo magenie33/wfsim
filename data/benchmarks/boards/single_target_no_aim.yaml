@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4195
-engine: 18644c914fcb877cd4d13daa63221d734c68b381
+submissions: 4197
+engine: 50160a03ae3c19da308ec79625191dc08c541d02
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -4364,6 +4364,13 @@ entries:
     arcanes: [secondary_merciless]
   - weapon: magistar
     mode: heavy_slam
+    score: 1.161944726572968
+    fp: ba3e31ef872b1151
+    mods: [sacrificial_pressure, sacrificial_steel, galvanized_reflex, gladiator_might, organ_shatter, seismic_wave, corrupt_charge, shattering_storm, volcanic_edge]
+    evolutions: [magistar_evo1_incarnon_form, magistar_edge_of_justice, magistar_seismic_slam, magistar_critical_parallel]
+    arcanes: [melee_exposure]
+  - weapon: magistar
+    mode: heavy_slam
     score: 0.9913370943620146
     fp: 183911daa27989d3
     mods: [sacrificial_steel, primed_pressure_point, galvanized_reflex, gladiator_might, organ_shatter, seismic_wave, corrupt_charge, molten_impact]
@@ -5200,6 +5207,13 @@ entries:
     fp: fc3b6f4471ddc26c
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
+  - weapon: sancti_magistar
+    mode: heavy_slam
+    score: 1.2438008285983422
+    fp: 34bd274b077968ec
+    mods: [sacrificial_pressure, sacrificial_steel, galvanized_reflex, gladiator_might, organ_shatter, seismic_wave, corrupt_charge, shattering_storm, volcanic_edge]
+    evolutions: [sancti_magistar_evo1_incarnon_form, sancti_magistar_edge_of_justice, sancti_magistar_seismic_slam, sancti_magistar_critical_parallel]
+    arcanes: [melee_exposure]
   - weapon: scourge_prime
     mode: base
     score: 0.5149851971215395
