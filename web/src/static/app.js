@@ -8288,6 +8288,50 @@ function buildBarCfg() {
 /// wearing one row is what made "which of these am I looking at" unanswerable,
 /// and no rearrangement of the bar could have fixed it: the missing sentence
 /// was never one the bar was in a position to say.
+/// A BUILD'S CONTENTS, IN ONE LINE — every axis it varies on and no other.
+///
+/// ONE COMPONENT, TWO SURFACES: the simulator says what is OPEN and the
+/// optimizer says what it FOUND, which is the same sentence about different
+/// builds. `engine::builds::BUILD_AXES` declares what a build consists of, so
+/// a describer that omits one is wrong in both places at once — on an adversary
+/// weapon, a ranking that cannot say which ELEMENT it scored.
+/// docs/CHECKS.md `check_opt_row_axes`.
+///
+/// IT TAKES A DESCRIPTOR RATHER THAN READING STATE: the two callers hold their
+/// build in different shapes, the page's live slots and a result off the wire.
+function buildContentsHtml(b) {
+  const modName = (id) => (modById(id) || { name: null }).name || prettify(id);
+  const bits = [];
+  // THE MODE FIRST, because it decides what every number after it means.
+  if (b.modeLabel) bits.push(`<span class="bl-mode">${escHtml(b.modeLabel)}</span>`);
+  // …AND THE ELEMENT, on the weapons that have one. It is part of what the
+  // build IS — two Kuva Nukors differing only in progenitor are two builds
+  // with two scores — so a line that omits it describes neither.
+  if (b.valence) {
+    bits.push(`<span class="bl-valence">${escHtml(tr(prettify(b.valence)))}</span>`);
+  }
+  // THE PARTS, where the assembly IS the stat line (a Kitgun).
+  const parts = b.assembly && Object.values(b.assembly).filter(Boolean);
+  if (parts && parts.length) {
+    bits.push(escHtml(parts.map((x) => prettify(x)).join(" + ")));
+  }
+  const arcs = (b.arcanes || [])
+    .map((id, i) => (id && id !== "none"
+      ? `${arcName(id)}${b.arcaneRanks && b.arcaneRanks[i] != null ? ` r${b.arcaneRanks[i]}` : ""}`
+      : ""))
+    .filter(Boolean);
+  bits.push(`<b>${escHtml(arcs.join(" + ") || tr("no arcane"))}</b>`);
+  const evos = (b.evolutions || []).map(evoName).filter(Boolean);
+  if (evos.length) bits.push(escHtml(evos.join(" · ")));
+  // THE RIVEN IS A MOD and rides in the mod list, but a line that leaves it
+  // unnamed cannot tell a riven build from the plain one beside it.
+  if (b.riven) bits.push(`<span class="bl-riven">${escHtml(tr("With riven"))}</span>`);
+  const mods = (b.mods || []).map(modName).join(", ")
+    + (b.exilus && b.exilus !== "none" ? `, ${modName(b.exilus)} (exilus)` : "");
+  return `<div class="opt-detail">${bits.join(" · ")}</div>`
+    + `<div class="opt-mods">${escHtml(mods)}</div>`;
+}
+
 function renderCurrentBuild() {
   const box = $("build-current");
   if (!box) return;
@@ -8312,7 +8356,22 @@ function renderCurrentBuild() {
     what = `<b>${escHtml(tr("an unsaved build"))}</b><span class="bc-note">${
       escHtml(tr("save it to keep it, or send it to the board"))}</span>`;
   }
-  box.innerHTML = `<span class="bc-k">${escHtml(tr("Open now"))}</span>${what}`;
+  // …AND WHAT IT ACTUALLY IS. The sentence above names the build's SOURCE — a
+  // board row, one of yours, an unsaved one — and a reader looking at a page
+  // full of controls still has to reconstruct its contents from them. The same
+  // describer the optimizer's rows use answers it once.
+  const contents = buildContentsHtml({
+    mods: slots.slice(0, boardBuildMods()).map((s) => s.mod).filter(Boolean),
+    exilus: (slots[EXILUS] || {}).mod || "",
+    arcanes,
+    arcaneRanks,
+    evolutions: Object.values(evoSel || {}).filter(Boolean),
+    modeLabel: modeLabel(weaponInfo($("weapon").value) || {}, mode),
+    valence: Object.entries(valence || {}).find(([, v]) => v && v !== "off")?.[0] || "",
+    assembly,
+    riven: slots.some((s) => s.mod === "riven"),
+  });
+  box.innerHTML = `<span class="bc-k">${escHtml(tr("Open now"))}</span>${what}${contents}`;
 }
 
 function renderPresetBar() {
@@ -18143,26 +18202,29 @@ let optLast = null;
 
 function renderOptResults(r) {
   optLast = r;
-  const modName = (id) => (modById(id) || { name: null }).name || prettify(id);
   const rows = (r.results || []).map((res) => {
-    const ex = res.exilus && res.exilus !== "none" ? `, ${modName(res.exilus)} (exilus)` : "";
-    const mods = res.mods.map(modName).join(", ") + ex;
-    // One id per slot: name the ones that are filled, or say there are none.
-    const arcNames = asArcaneList(res.arcane, (res.arcane || []).length)
-      .map((id, i) => (id && id !== "none"
-        ? `${arcName(id)} r${asArcaneList(res.arcane_rank, i + 1)[i] ?? ""}`
-        : ""))
-      .filter(Boolean);
-    const arc = arcNames.join(" + ") || tr("no arcane");
-    const evos = (res.evolutions || []).map(evoName).join(" · ") || "—";
     // HOW THIS ROW WAS PLAYED, drawn only when the search RANGED over modes —
     // otherwise every row would repeat the one answer the scope already
     // states. A ranking that mixes them has to say which is which: two rows
     // with the same mods and different modes are two different builds.
     const modes = new Set((r.results || []).map((x) => x.mode).filter(Boolean));
-    const md = modes.size > 1 && res.mode
-      ? `<span class="opt-mode">${escHtml(modeLabel(weaponInfo($("weapon").value) || {}, res.mode))}</span>`
-      : "";
+    // …AND THE SAME RULE FOR THE ELEMENT. A search that pinned one says it in
+    // its scope; one that ranged over several has to name the winner's, or a
+    // ranking of adversary builds is a list of rows nobody can reproduce.
+    const valences = new Set((r.results || []).map((x) => x.valence).filter(Boolean));
+    const detail = buildContentsHtml({
+      mods: res.mods,
+      exilus: res.exilus,
+      arcanes: asArcaneList(res.arcane, (res.arcane || []).length),
+      arcaneRanks: asArcaneList(res.arcane_rank, (res.arcane || []).length),
+      evolutions: res.evolutions,
+      modeLabel: modes.size > 1 && res.mode
+        ? modeLabel(weaponInfo($("weapon").value) || {}, res.mode)
+        : "",
+      valence: valences.size > 1 ? res.valence : "",
+      assembly: res.assembly,
+      riven: (res.mods || []).includes("riven"),
+    });
     return `<div class="opt-row">
       <div class="opt-head">
         <span class="opt-rank">#${res.rank}</span>
@@ -18175,8 +18237,7 @@ function renderOptResults(r) {
         <span class="forma-badge legal">${res.forma.used} Forma</span>
         <button class="ghost-btn small opt-add" title="${escHtml(tr("save as a new build"))}" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
-      <div class="opt-detail">${md}<b>${arc}</b> · ${evos}</div>
-      <div class="opt-mods">${mods}</div>
+      ${detail}
     </div>`;
   }).join("");
   // WHAT THE SEARCH COVERED, whenever it did not cover everything. This is not
