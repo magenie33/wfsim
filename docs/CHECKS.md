@@ -266,6 +266,43 @@ polarizations the build does not need, and reaches for an UMBRA FORMA to do it �
 the one item `engine::mods::fit` is written to spare. The engine answers five
 regular Forma and no Umbra for that build; the page has to say the same.
 
+## `check_opt_upload`
+
+**EVERY FINALIST GOES TO THE BOARD.** A path to the store that runs off a
+simulator run alone takes one build at a time, so a search ranking twenty
+uploads none of them. Two properties are asserted, and the second is the one that is easy to get
+wrong — the payload comes off the ROW (its mods, arcanes, mode, valence, exilus)
+and not off the page, which holds a different build; and **nothing is
+pre-filtered here**, because how full a build must be is the searcher's own
+setting and `/api/board/check` is `validate_for_board` rather than a copy of it.
+The check hands it a two-mod build and asserts the REFUSAL came from the door.
+
+Consent still gates it, and with uploading off the line says so rather than
+staying blank.
+
+## `check_opt_row_axes`
+
+**A RESULT ROW STATES EVERY AXIS THE SEARCH VARIED.** `engine::builds::BUILD_AXES`
+declares what a build consists of, and a ranking row that omits one cannot be
+reproduced. The case that earned the check is the VALENCE: an adversary weapon's
+progenitor element is part of what the build IS — two Kuva Nukors differing only
+in it are two builds with two scores — and the rows drew mods, arcanes,
+evolutions and mode but not that, so a search ranging over three elements
+printed three rows that read identically. Assembly and the riven were missing
+the same way.
+
+**IT ASSERTS THE DESCRIBER, not a search.** `buildContentsHtml` is the one
+component the optimizer's rows and the simulator's "open now" line both use, so
+a missing axis is missing in both at once — and driving a real search would
+spend minutes to exercise a pure function. It is handed one build varying on
+every axis at once, which is not a realistic build and is the point: a realistic
+one leaves axes empty, and an empty axis and an unrendered axis look the same.
+
+**AND ENGLISH IS PINNED.** Every name on that line is translated, so a check
+whose needles are English reads a Chinese page as eight missing axes — the same
+picture a genuinely missing axis makes. `LANG` is read at boot, so the switch is
+a reload.
+
 ## `check_build_retriever`
 
 **A RETRIEVER'S SHAPE DOES NOT MOVE.** The benchmark bar is four controls —

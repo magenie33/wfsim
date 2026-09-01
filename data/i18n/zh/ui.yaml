@@ -1213,6 +1213,11 @@ ui:
   # The board page FILTERS a list; the benchmark bar PICKS one of two rankings.
   "Without riven": "无裂罅"
   "With riven": "有裂罅"
+  "board upload is off, so these were not sent": "榜单上传已关闭，这些没有发送"
+  "sending {n} finalists to the board…": "正在把 {n} 个决赛配装发送到榜单……"
+  "{n} of {of} finalists uploaded": "{of} 个决赛配装中已上传 {n} 个"
+  "{n} could not be sent": "{n} 个发送失败"
+  "refused": "被拒绝"
   "Open now": 当前打开
   "a board row, so nothing here can be edited — copy it to open everything up": 榜单行，因此这里不能编辑——复制一份即可全部解锁
   "one of your own builds": 你自己的配装

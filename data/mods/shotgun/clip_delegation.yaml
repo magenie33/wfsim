@@ -1,0 +1,71 @@
+id: clip_delegation
+name: Clip Delegation
+rarity: rare
+polarity: vazarin
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Nightwave/SobekNightwaveMod
+# DE's own card, from the export's `levelStats` at rank 5.
+description: "On Reload: Next Magazine has Status Chance and Multishot increased by X% per shot landed with current Magazine. Max 15 stacks."
+
+# "exclusive to the Sobek and Kuva Sobek", and the roster has both.
+exclusive_to: [sobek, kuva_sobek]
+
+#   Rank | per shot | at 15 stacks | Cost
+#     0  |    5%    |      75%     |  2
+#     1  |    7%    |     105%     |  3
+#     2  |    9%    |     135%     |  4
+#     3  |   11%    |     165%     |  5
+#     4  |   13%    |     195%     |  6
+#     5  |   15%    |     225%     |  7
+
+effects:
+  # ONE PILE, TWO BRACKETS. The card says "Status Chance and Multishot" in one
+  # sentence off one count, so the two buffs share the mod's id and therefore
+  # one card on the panel — set its stacks and both move together.
+  #
+  # A STACK IS A SHELL, which is what `per_shell` counts — and the two readings
+  # are the same number rather than an approximation of it: a reload loads
+  # exactly the rounds the magazine spent, and one trigger pull spends one
+  # shell. So "per shot landed with current Magazine" is the draw the next
+  # reload makes, and a partial magazine pays for what it fired.
+  #
+  # PELLETS DO NOT COUNT: "Individual pellets from Multishot or Punch Through
+  # hitting multiple targets do not grant additional stacks." A shell is the
+  # unit here, so that holds by construction.
+  #
+  # LANDED, and this arena has no misses (docs/UNMODELLED.md) — every round
+  # fired reaches the target, so a fired shell is a landed one. A player who
+  # misses half a magazine holds half these stacks and this app says so
+  # nowhere.
+  #
+  # THE NEXT MAGAZINE IS THE WHOLE CARD: `cleared_by: magazine_refilled` takes
+  # the pile at the reload that then rebuilds it, so a magazine's shots are
+  # worth exactly the magazine after it and never the one they were fired from.
+  # Nothing times out — the count is a magazine's, not a clock's.
+  - kind: stacking_buff
+    trigger: on_reload
+    grants: status_chance
+    per_shell: true
+    cleared_by: magazine_refilled
+    rank0: 0.05
+    rankMax: 0.15
+    max_stacks: 15
+  - kind: stacking_buff
+    trigger: on_reload
+    grants: multishot
+    per_shell: true
+    cleared_by: magazine_refilled
+    rank0: 0.05
+    rankMax: 0.15
+    max_stacks: 15
+
+  # THE SOBEK'S OWN AUGMENT IS UNMOVED BY THIS ONE: "For Acid Shells builds,
+  # the increased Multishot and Status Chance ... will have no effect on the
+  # area of effect explosions." The explosion here reads neither bracket — it
+  # is a flat number plus a share of the body's health — so that already holds.
+
+source:
+  url: https://wiki.warframe.com/w/Clip_Delegation
+  # Rank table and Notes. WFCD cross-check on `uniqueName`: vazarin, Rare,
+  # baseDrain 2, fusionLimit 5, compatName Sobek — agrees on every field.

@@ -676,6 +676,7 @@ mods:
   charged_shell: ShotgunElectricityDamageMod.jpg
   chilling_grasp: ShotgunFreezeDamageMod.jpg
   chilling_reload: ColdDmgReloadSpeedMod.jpg
+  clip_delegation: SobekNightwaveMod.jpg
   cleanse_corpus: ShotgunDamageCorpus.jpg
   cleanse_grineer: ShotgunDamageGrineer.jpg
   cleanse_infested: ShotgunDamageInfested.jpg
@@ -967,6 +968,7 @@ mods:
   sharpened_bullets: CritDamageWhileAimingMods.jpg
   shattering_impact: WeaponMeleeArmorShatterMod.jpg
   shattering_storm: HammerCombo1a.jpg
+  shattering_justice: Sobek.jpg
   shell_compression: ShotgunAmmoMaxMod.jpg
   shell_rush: ArchwingRifleChargeSpeedMod.jpg
   shell_shock: ElectEventShotgunMod.jpg

@@ -635,6 +635,7 @@ mods:
   charged_shell: 充电弹头
   chilling_grasp: 急冻控场
   chilling_reload: 激冷装填
+  clip_delegation: 弹能过继
   cleanse_corpus: 净化 Corpus
   cleanse_grineer: 净化 Grineer
   cleanse_infested: 净化 Infested
@@ -994,6 +995,7 @@ mods:
   saxum_thorax: 重岩者 胸腔
   shattering_impact: 碎裂冲击
   shattering_storm: 云暴山碎
+  shattering_justice: 破碎正义
   sovereign_outcast: 至尊浪人
   smite_corpus: 毁灭 Corpus
   smite_infested: 毁灭 Infested

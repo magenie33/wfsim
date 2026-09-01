@@ -1,0 +1,43 @@
+id: shattering_justice
+name: Shattering Justice
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/SobekMod
+description: "+X% Status Chance\n+X Justice"
+
+# A SYNDICATE AUGMENT (Steel Meridian, rank Protector, 25,000 standing).
+# "exclusive to the Sobek and Kuva Sobek", and the roster has both.
+exclusive_to: [sobek, kuva_sobek]
+
+#   Rank | Status Chance | Justice | Cost
+#     0  |     22.5%     |  0.25   |  4
+#     1  |      45%      |  0.5    |  5
+#     2  |     67.5%     |  0.75   |  6
+#     3  |      90%      |  1      |  7
+
+effects:
+  # THE SAME BUCKET EVERY OTHER STATUS CARD WRITES INTO: "Stacks additively
+  # with other status chance mods like Shotgun Savvy". That is what
+  # `status_chance_bonus` is, so nothing here says it twice.
+  #
+  # It is NOT the post-mod addition the card once was — "+20 Additive to base
+  # Status Chance", which multiplied by nothing and was worth a fifth of this.
+  - kind: status_chance_bonus
+    rank0: 0.225
+    rankMax: 0.90
+
+  # THE SYNDICATE RADIAL — payload in data/syndicates/justice.yaml, and the
+  # half of this card that pays a number rather than a bracket.
+  - kind: syndicate_radial
+    syndicate: justice
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Shattering_Justice
+  # Rank table and Notes; the Justice effect's own numbers from
+  # https://wiki.warframe.com/w/Justice. WFCD cross-check on `uniqueName`:
+  # naramon, Rare, baseDrain 4, fusionLimit 3, compatName Sobek — agrees on
+  # every field.

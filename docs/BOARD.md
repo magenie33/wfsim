@@ -43,6 +43,20 @@ number**. Everything else follows from it:
   board still holds nothing but full ones. Riven rows are not screened: their
   riven is chosen by the search that follows, so a probe before it would measure
   the build without the thing it is built around;
+- **EVERY FINALIST OF A SEARCH IS UPLOADED**, not just the build somebody ran in
+  the simulator. A path to the store that runs off a simulator run alone takes
+  one build at a time, so a search ranking twenty sends none of them and the
+  strongest thing this app produces reaches the board only when a player copies
+  a row into the builder by hand and runs it again. There is no cap: the
+  finalist count is the searcher's own setting, they are all real builds, and
+  the store is keyed by identity, so twenty submissions of which twelve are
+  already held collapse onto twelve rows. **Nothing is pre-filtered on the
+  page**: how full a build must be is the searcher's setting too, so a
+  seven-mod scope produces seven-mod winners — and those are refused by
+  `/api/board/check`, which IS `validate_for_board` rather than a copy of it,
+  because a second implementation is a second answer. The panel reports the run
+  in aggregate ("7 of 10 uploaded · 3 × needs 8 mods"), since twenty rows off
+  one search differ in their mods and not in why the board would not take them;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
   pinned seed. Measured 2026-08-04: wasm and native agree to the last digit
