@@ -26,6 +26,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import yaml
@@ -39,6 +40,25 @@ STATIC = ROOT / "web" / "src" / "static"
 APP = ROOT / "site"
 WASM = ROOT / "target" / "wasm32-unknown-unknown" / "release" / "wfsim_wasm.wasm"
 SITE = "https://wfsim.app"
+
+
+def past_the_scanner(do):
+    """Do one file write, past a real-time scanner holding the file.
+
+    THIS SCRIPT WRITES ~1,200 FILES IN TWO BURSTS — the art, then a page per
+    weapon — and Windows real-time scanning takes a handle on what was just
+    written. The collision surfaces as `EINVAL` out of `open`, at a DIFFERENT
+    file every run, and the same path succeeds a moment later. Retrying is the
+    whole fix; without it a build dies two thirds of the way through and the
+    wasm rebuild goes with it.
+    """
+    for attempt in range(6):
+        try:
+            return do()
+        except OSError:
+            if attempt == 5:
+                raise
+            time.sleep(0.2 * (attempt + 1))
 
 
 def roster() -> list[dict]:
@@ -159,7 +179,7 @@ def og_card(out: Path, name: str, cn: str | None, facts: str, stats: str) -> boo
     d.text((72, 548), "wfsim.app · builder · simulator · optimizer",
            font=card_font(26), fill=CARD_MUTED)
     out.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out, "PNG", optimize=True)
+    past_the_scanner(lambda: img.save(out, "PNG", optimize=True))
     return True
 
 
@@ -218,7 +238,7 @@ def ship_art() -> None:
     out = APP / "img"
     out.mkdir(parents=True, exist_ok=True)
     for name in sorted(want):
-        shutil.copy2(cache / name, out / name)
+        past_the_scanner(lambda: shutil.copy2(cache / name, out / name))
     size = sum((out / n).stat().st_size for n in want)
     print(f"art: {len(want)} images -> site/img/ ({size / 1e6:.1f} MB)")
 
@@ -498,9 +518,8 @@ def prerender(flagged: str) -> None:
         )
         out = APP / wiki_path(name).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(
-            shell(flagged, title, desc, url, og_img, seo), encoding="utf-8", newline="\n"
-        )
+        page = shell(flagged, title, desc, url, og_img, seo)
+        past_the_scanner(lambda: out.write_text(page, encoding="utf-8", newline="\n"))
 
     # /support — a URL people paste, so it gets the same treatment. Its OG
     # description says what the page IS (running costs, nothing sold); a link
