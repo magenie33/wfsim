@@ -8764,6 +8764,24 @@ function formaCount() {
 // biggest mods still unmatched instead of leaving them unspent.
 function autoForma() {
   const w = $("weapon").value;
+  // THE STANCE SLOT GOES FIRST WHEN ANY FORMA IS SPENT AT ALL, which is the
+  // rule `engine::mods::best_stance_plan` follows and the way the slot is
+  // actually used: five points of capacity is more than polarizing any mod
+  // draining ten or less. A build that fits for FREE keeps its zero, so the
+  // choice is made by running the plan once with the slot as it is.
+  const st = slots[STANCE].mod ? modById(slots[STANCE].mod) : null;
+  if (st) {
+    slots[STANCE].pol = stancePolOf(w);
+    autoFormaWith(w);
+    if (formaCount().regular + formaCount().umbra + formaCount().omni > 0) {
+      slots[STANCE].pol = st.polarity;
+    }
+  }
+  autoFormaWith(w);
+}
+
+// The plan itself, with the stance slot's colour already decided.
+function autoFormaWith(w) {
   // …INCLUDING WHAT THE STANCE HANDS BACK. Planning against the weapon's own
   // capacity alone buys polarizations the build does not need — and reaches for
   // an Umbra Forma to do it, which is the one item this plan is meant to spare.

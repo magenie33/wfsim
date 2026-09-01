@@ -10806,6 +10806,67 @@ mod melee {
         assert_eq!(melee_combo_points(200.0, 140.0, 5.0), 200.0);
     }
 
+    /// A SLAM'S TOXIN BYPASSES A SHIELD AND ITS BLAST DOES NOT — on a mode
+    /// whose WHOLE attack is the explosion.
+    ///
+    /// The heavy slam is the one melee mode with no direct hit at all, so it is
+    /// the only one that can show whether the shield split is derived per
+    /// STAGE rather than off a direct vector this mode does not have. Its own
+    /// vector is pure Blast, and a Toxin mod buys the share that goes STRAIGHT
+    /// TO HEALTH — which is why a build that clears a Corpus line needs one.
+    ///
+    /// ASSERTED ON THE LEDGER, because effective damage cannot see it: a shield
+    /// applies no reduction, so bypassing it changes WHERE a hit lands and not
+    /// how big it is. What it buys is kill speed, and what proves it is a row
+    /// that says `health` while the shield is still standing.
+    ///
+    /// TOXIN DOES NOT BYPASS OVERGUARD, which is why the ruler's own body
+    /// cannot ask this: a Thrax Centurion's pool is overguard, and an Eximus
+    /// Crewman's is too — hence the plain one here.
+    #[test]
+    fn a_slams_toxin_reaches_health_through_a_shield() {
+        let pools = |mods: &[&str]| -> Vec<(crate::dummy::Pool, DamageType)> {
+            let base = crate::loadout::WeaponBase::from_data("magistar_heavy_slam", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("magistar_heavy_slam");
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let spec = crate::enemy_data::EnemySpec::load(std::path::Path::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../data/enemies/crewman.yaml"
+            )))
+            .expect("a body with shields");
+            let mut arena = crate::arena::Arena::training(6.0);
+            arena.target = spec
+                .target_params(500, false, false, TargetMode::InstantRespawn)
+                .expect("level 500, and NOT an Eximus: overguard is neutral");
+            let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            record(&p, 7, 0.0, 6.0, 40, 0)
+                .events()
+                .iter()
+                .filter_map(|e| match &e.kind {
+                    crate::record::Kind::Damage(d) => Some((d.pool, d.dtype)),
+                    _ => None,
+                })
+                .collect()
+        };
+        let blast = pools(&[]);
+        assert!(!blast.is_empty(), "the fixture has to land something");
+        assert!(
+            blast.iter().all(|(p, _)| *p == crate::dummy::Pool::Shield),
+            "pure Blast has nothing that bypasses: {blast:?}",
+        );
+        let toxic = pools(&["primed_fever_strike"]);
+        assert!(
+            toxic.iter().any(|(p, t)| *p == crate::dummy::Pool::Health && *t == DamageType::Toxin),
+            "the Toxin share should reach health past the shield: {toxic:?}",
+        );
+        assert!(
+            toxic.iter().any(|(p, _)| *p == crate::dummy::Pool::Shield),
+            "…and the rest of the same hit should still be spent on the shield",
+        );
+    }
+
     /// A LIFTED GATE IS SIMULATED, AND WHAT DECIDES IT IS THE CADENCE.
     ///
     /// Enduring Affliction is *"+100% Status Chance on Lifted enemies"* and

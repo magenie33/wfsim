@@ -541,13 +541,13 @@ fn plan(
     }
 }
 
-/// THE TWO ANSWERS A STANCE SLOT HAS, ranked by the same priority the rest of
-/// the planner follows: fewest Forma first, then the most room left over.
+/// THE TWO ANSWERS A STANCE SLOT HAS, and the polarized one is PREFERRED.
 ///
-/// Polarizing the slot is worth a flat +5 capacity, and it costs one
-/// polarization — which on a rank-40 weapon is one the build was buying anyway.
-/// Halving the biggest unpolarized mod is what that Forma would otherwise buy,
-/// so the two are compared rather than one being assumed better.
+/// It is worth a flat +5 capacity — more than polarizing any mod draining ten
+/// or less — and it is where a player who has decided to Forma this weapon
+/// starts. So a build that is buying Forma anyway buys this one first, even
+/// where a mod-only plan would have fitted in one fewer. A build that already
+/// fits for FREE keeps its zero.
 fn best_stance_plan(
     base_max_rank: u32,
     innate_slots: &[Option<Polarity>],
@@ -573,17 +573,21 @@ fn best_stance_plan(
         f
     });
     match (as_is, polarized) {
-        (Ok(a), Ok(b)) => Ok(better(a, b)),
+        // THE STANCE SLOT GOES FIRST WHEN ANY FORMA IS BEING SPENT AT ALL.
+        //
+        // It is the owner's rule and it is how the slot is actually used: five
+        // points of capacity is more than polarizing any mod draining ten or
+        // less, and a player who has decided to Forma this weapon starts there.
+        // It is not always the fewest-Forma answer and is taken anyway.
+        //
+        // A BUILD THAT ALREADY FITS FOR FREE STAYS FREE, which is the one line
+        // the preference does not cross: buying a polarization for a build that
+        // needs none is a Forma spent to be no better off.
+        (Ok(a), Ok(b)) => Ok(if a.cost.total() == 0 { a } else { b }),
         (Ok(a), Err(_)) => Ok(a),
         (Err(_), Ok(b)) => Ok(b),
         (Err(e), Err(_)) => Err(e),
     }
-}
-
-/// Fewest Forma, then the most capacity left unspent.
-fn better(a: Fitted, b: Fitted) -> Fitted {
-    let key = |f: &Fitted| (f.cost.total(), f.drain as i64 - f.capacity as i64);
-    if key(&b) < key(&a) { b } else { a }
 }
 
 /// [`fit`] with the switches taken literally — no Umbra fallback.
@@ -696,19 +700,18 @@ mod tests {
 
     /// The Forma bill is THREE numbers because they are three different items:
     /// a player with Forma may still have no Umbra Forma.
-    /// THE STANCE SLOT IS A SLOT THE PLANNER POLARIZES, and it wins the Forma
-    /// when what that Forma would otherwise halve is small.
+    /// THE STANCE SLOT IS THE FIRST THING A FORMA IS SPENT ON.
     ///
-    /// Polarizing the slot is worth a flat FIVE — the grant doubling — where
-    /// polarizing a mod is worth half its drain. So an 8-drain mod's Forma buys
-    /// 4 and the stance's buys 5, and the planner takes the five: same bill,
-    /// more room left, which is priority 3 in the strategy above.
+    /// It is worth a flat FIVE — the grant doubling — where polarizing a mod is
+    /// worth half its drain, so an 8-drain mod's Forma buys 4 and the stance's
+    /// buys 5. It is PREFERRED rather than compared: a player who has decided
+    /// to Forma this weapon starts there, and the plan follows, even where a
+    /// mod-only answer would have fitted in one fewer polarization.
     ///
-    /// …AND IT DOES NOT TAKE IT WHEN THE MOD IS BIGGER. A 16-drain mod's Forma
-    /// buys 8, so a build of those fits in FEWER polarizations without touching
-    /// the stance slot — priority 2, which outranks the room.
+    /// A BUILD THAT ALREADY FITS FOR FREE KEEPS ITS ZERO, which is the one line
+    /// the preference does not cross.
     #[test]
-    fn the_planner_polarizes_the_stance_slot_when_that_leaves_more_room() {
+    fn the_stance_slot_is_the_first_forma_a_build_spends() {
         let unmatched = StanceSlot {
             mod_polarity: Polarity::Madurai,
             slot_polarity: Some(Polarity::Vazarin),
@@ -724,13 +727,20 @@ mod tests {
         assert_eq!(f.cost.total(), 1, "one polarization either way");
         assert_eq!(f.capacity, 70, "and it went on the stance slot: 60 + a doubled 10");
 
-        // …AND THE OTHER WAY. Eight 16s need eight polarizations whatever the
-        // stance slot does, so buying a ninth for five points is a Forma spent
-        // to be worse off.
+        // …AND IT STILL GOES THERE when a mod-only plan would be cheaper. Eight
+        // 16s need eight polarizations whatever the stance slot does, so this
+        // is the ninth — bought on purpose, for the five points of room.
         let big = [m(16, Polarity::Naramon); 8];
         let f = fit(30, &SLOTS8, &big, Investment::default(), Some(unmatched)).unwrap();
-        assert_eq!(f.capacity, 64, "the slot keeps its own colour: 60 + a mismatched 4");
-        assert_eq!(f.cost.total(), 8, "eight mods, eight Forma, and none on the stance");
+        assert_eq!(f.capacity, 70, "the slot took the Forma");
+        assert_eq!(f.cost.total(), 9, "eight mods and the stance slot");
+
+        // …BUT NOT ON A BUILD THAT FITS FOR NOTHING. Three 8s are 24 against 64
+        // and no Forma is being spent, so none is spent here either.
+        let easy = [m(8, Polarity::Naramon); 3];
+        let f = fit(30, &SLOTS8, &easy, Investment::default(), Some(unmatched)).unwrap();
+        assert_eq!(f.cost.total(), 0, "a free build stays free");
+        assert_eq!(f.capacity, 64, "…and the slot keeps its own colour");
     }
 
     /// A STANCE IS AN AURA: IT HANDS CAPACITY BACK, AND THE SLOT DECIDES HOW
