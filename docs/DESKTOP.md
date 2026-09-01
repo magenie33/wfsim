@@ -198,11 +198,21 @@ needs a version field for its own bookkeeping, so it comes from the build date;
 what identifies a build for a bug report is the **commit**, which the page
 footer already shows.
 
-**The download is always `WFSim.exe`, and the notes carry no date.** A share
-link is tied to the filename, so renaming invalidates every link already
-posted. And a date would say something untrue: a file stamped August, read in
-December, looks stale, when in fact any copy updates itself to current on its
-first run. The SHA-256 tells two builds apart, and does it precisely.
+**On the network drive the download is always `WFSim.exe`, and the notes carry
+no date.** A share link is tied to the filename, so renaming invalidates every
+link already posted. And a date would say something untrue: a file stamped
+August, read in December, looks stale, when in fact any copy updates itself to
+current on its first run. The SHA-256 tells two builds apart, and does it
+precisely.
+
+**THE RELEASE PAGE IS THE OPPOSITE CASE, and carries a versioned zip.** Its
+whole purpose is the history the share link cannot keep, so an asset there has
+to say which release it is; nothing links to it by filename. It is a zip rather
+than the executable because a browser refuses or buries an unsigned `.exe`
+before the reader ever reaches Windows' own notice, and this build cannot be
+signed. `使用说明.txt` does not travel with it: that file says which of two
+files to download and what SmartScreen will do, and a release page answers both
+in its own body.
 
 ### The network drive
 
@@ -237,8 +247,10 @@ who has not yet seen the tool work, which is the worst moment to ask them to run
 an unsigned executable; the people who want the client are the ones already
 using the site.
 
-**Windows only.** The release workflow still cuts `WFSim.AppImage` and the
-GitHub release page still lists it; the offer is not about it.
+**Windows only.** The release workflow can cut `WFSim.AppImage` too — a
+`workflow_dispatch` box, off by default, because `release` needs `build` and a
+platform nobody is waiting for must not be able to sink the one they are. The
+offer on this page is not about it either way.
 
 **The source is named beside the button.** This site does not host the
 executable — it is on a Quark network drive — and a reader about to run a

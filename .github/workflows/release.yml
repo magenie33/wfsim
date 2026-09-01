@@ -117,15 +117,14 @@ jobs:
           path: dist/${{ matrix.artifact }}
           if-no-files-found: error
 
-      # Only one of the two needs to carry these; Windows is the one whose
-      # notes file exists.
+      # THE NOTES FILE IS THE NETWORK DRIVE'S, not a release asset: it says
+      # which of two files to download and what SmartScreen will do, and a
+      # release page answers both in its own body. Only the source travels.
       - uses: actions/upload-artifact@v4
         if: matrix.os == 'windows-latest'
         with:
           name: extras
-          path: |
-            dist/source.zip
-            dist/使用说明.txt
+          path: dist/source.zip
           if-no-files-found: error
 
   release:
@@ -147,17 +146,30 @@ jobs:
         id: notes
         run: |
           cd artifacts
-          echo "tag=$(date -u +%Y-%m-%d)-$(git -C .. rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          TAG="$(date -u +%Y-%m-%d)-$(git -C .. rev-parse --short=7 HEAD)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          # A ZIP, NOT THE BARE EXECUTABLE. Browsers refuse or bury an unsigned
+          # `.exe` before the reader ever reaches Windows' own notice, and this
+          # build cannot be signed — a certificate costs more per year than a
+          # free tool justifies. A zip downloads without an argument. It is also
+          # where the version belongs: this page is the HISTORY of what was
+          # released, so the asset names which one it is, while the network
+          # drive's copy keeps the fixed `WFSim.exe` its share links point at.
+          EXE_SHA=$(sha256sum WFSim.exe | cut -d' ' -f1)
+          zip -q "WFSim-$TAG.zip" WFSim.exe
+          ZIP_SHA=$(sha256sum "WFSim-$TAG.zip" | cut -d' ' -f1)
+
           cat > notes.md <<'MD'
-          **Download one file and run it.** No installer, no unpacking — the
-          whole app is inside the executable. It updates itself afterwards, so
-          this download is a starting point rather than something to come back
-          for.
+          **Download one file and run it.** No installer — the whole app is
+          inside the executable, unpacked on first run. It updates itself
+          afterwards, so this download is a starting point rather than
+          something to come back for.
 
           | | |
           |---|---|
-          | Windows | `WFSim.exe` — double-click |
           MD
+          echo "| Windows | \`WFSim-$TAG.zip\` — unzip, then double-click \`WFSim.exe\` |" >> notes.md
           if [ -f WFSim.AppImage ]; then
             echo '| Linux | `WFSim.AppImage` — `chmod +x` it, then double-click |' >> notes.md
           fi
@@ -175,11 +187,17 @@ jobs:
           `chmod +x` is for, not a quirk of this build.
           MD
           fi
+          # HASH FIRST, which is `sha256sum`'s own layout: the names differ in
+          # length and the hashes do not, so this is the column that lines up —
+          # and it is the form that can be pasted into `sha256sum -c`.
           {
             echo
             echo '```'
-            sha256sum WFSim.exe
-            if [ -f WFSim.AppImage ]; then sha256sum WFSim.AppImage; fi
+            echo "$ZIP_SHA  WFSim-$TAG.zip"
+            echo "$EXE_SHA  WFSim.exe (inside it)"
+            if [ -f WFSim.AppImage ]; then
+              sha256sum WFSim.AppImage
+            fi
             echo '```'
           } >> notes.md
           cat >> notes.md <<'MD'
@@ -193,13 +211,14 @@ jobs:
           MD
 
       # `WFSim.AppImage` is listed and may not exist: the action does not fail
-      # on an unmatched pattern, so one list serves both shapes of release.
+      # on an unmatched pattern, so one list serves both shapes of release. The
+      # bare `WFSim.exe` is deliberately NOT here — it is what the zip holds.
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.notes.outputs.tag }}
           name: WFSim ${{ steps.notes.outputs.tag }}
           files: |
-            artifacts/WFSim.exe
+            artifacts/WFSim-*.zip
             artifacts/WFSim.AppImage
             artifacts/source.zip
           body_path: artifacts/notes.md
