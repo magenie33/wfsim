@@ -420,6 +420,12 @@ body.on-enemies [data-module="builder"]{display:none}
 .slot .info{min-width:0;flex:1}
 .slot .mn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .dr{font-size:11px;color:var(--muted)}
+/* THE THREE ANSWERS A SLOT'S COLOUR GIVES, in the colours the arsenal uses. */
+.slot .dr.matched{color:var(--good-text)}
+.slot .dr.mismatched{color:var(--critical)}
+.slot .dr .mpol{display:inline-flex;vertical-align:-1px;margin-right:4px}
+.slot .dr .mpol .pol{width:12px;height:12px}
+.slot .dr .mpol .pol-txt{width:12px;height:12px;font-size:9px}
 /* THE DRAIN AND THE RANK ARE ONE LINE. They were two — a block `.dr` above an
    inline-flex `.rank` — which is a whole row per card for two short facts, and
    a card is eight rows deep on a phone before the eighth one is reached: the

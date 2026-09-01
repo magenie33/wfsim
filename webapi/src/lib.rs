@@ -917,9 +917,15 @@ fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModD
 // the UI's 9th slot, carrying ITS innate polarity too (wiki "Exilus Polarity").
 // Same model as autoForma and the optimizer — without the 9th slot a 9-mod
 // build trips plan_forma's mods≤slots assert.
+//
+// AND NOT ON A WEAPON THAT HAS NO SUCH SLOT: the LENGTH of this list is the
+// weapon's slot count, which is what decides where a leftover innate colour can
+// sit for free.
 fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
     let mut v = wfsim_engine::weapons_data::innate_slots(id).to_vec();
-    v.push(wfsim_engine::weapons_data::exilus_polarity(id));
+    if wfsim_engine::weapons_data::has_exilus_slot(id) {
+        v.push(wfsim_engine::weapons_data::exilus_polarity(id));
+    }
     v
 }
 
@@ -7776,7 +7782,11 @@ pub fn grade_optimize(
     } = plan;
     wfsim_optimizer::set_worker_threads(threads);
     let info = weapon(&weapon_id);
-    let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
+    // THE WEAPON'S OWN SLOTS, exilus included: a polarity belongs to the weapon
+    // and not to the slot it sits on, so the exilus one is in the pool whether or
+    // not a candidate seats an exilus mod (docs/INVESTMENT.md). The search read
+    // the eight main slots alone and charged a Forma the board did not.
+    let innate = innate_slots_for(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
     // THE VALENCE IS PER VARIANT, so this takes it rather than capturing one:
     // a scope searching three progenitor elements builds three different
@@ -8109,7 +8119,11 @@ pub fn run_optimize_resumable(
     // How many screened jobs survive the search into the funnel. The search
     // holds a heap this size, so memory is O(SCREEN_KEEP) whatever the scope.
     const SCREEN_KEEP: usize = 65_536;
-    let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
+    // THE WEAPON'S OWN SLOTS, exilus included: a polarity belongs to the weapon
+    // and not to the slot it sits on, so the exilus one is in the pool whether or
+    // not a candidate seats an exilus mod (docs/INVESTMENT.md). The search read
+    // the eight main slots alone and charged a Forma the board did not.
+    let innate = innate_slots_for(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
     // The form(s) an evolution set resolves to, decided once in
     // `parse_optimize`. A single-form weapon has NO second panel — handing

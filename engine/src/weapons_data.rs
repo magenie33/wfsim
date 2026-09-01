@@ -3199,6 +3199,19 @@ pub fn exilus_polarity(id: &str) -> Option<Polarity> {
     spec(id)?.exilus_polarity.as_deref().map(polarity)
 }
 
+/// Does the weapon HAVE an exilus slot? The adapter fits "a Primary, Secondary
+/// or Melee weapon" (wiki, Exilus Weapon Adapter), so an Arch-Gun and a robotic
+/// weapon have none.
+///
+/// It is the slot COUNT that needs this, not the polarity: a leftover innate
+/// colour sits harmlessly on a mod-less slot, so counting a slot the weapon
+/// does not have hides a mismatch the player would really be paying
+/// (`mods::plan_forma`).
+pub fn has_exilus_slot(id: &str) -> bool {
+    let Some(s) = spec(id) else { return false };
+    !s.class.contains("sentinel") && matches!(s.slot.as_str(), "primary" | "secondary" | "melee")
+}
+
 /// …AND THE STANCE SLOT'S, which is a capacity GRANT rather than a discount.
 pub fn stance_polarity(id: &str) -> Option<Polarity> {
     spec(id)?.stance_polarity.as_deref().map(polarity)

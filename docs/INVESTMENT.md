@@ -38,6 +38,28 @@ mod, and that constraint is about how many mods fit, never about which polarity
 goes where. So it does not reach the planner: nine polarities, eight or nine
 mods, and the eligibility rule lives in the slot check.
 
+## A COLOUR CANNOT BE PUT IN A DRAWER
+
+The pool is nine colours over nine slots, not a bag with a lid: a colour no mod
+wants still sits somewhere. It goes on a MOD-LESS slot, where it costs nothing
+and changes no number, or on a modded one at +25% — unless a Forma spent
+elsewhere overwrites it, and each one BOUGHT erases one unwanted colour for
+free, because the bill is `max(added, removed)`.
+
+So the count that has to sit on a mod is `pool − matched − mod-less slots`, and
+it goes on the SMALLEST drains there are. Two rules follow, and they are the
+whole of the policy:
+
+- **Never pay a Forma to blank a slot.** The same Forma spent on the mod's own
+  colour halves it instead of shedding a quarter, so blanking is never the best
+  use of one.
+- **Keep a leftover colour only where it is free or where dropping it would
+  cost a Forma.** A mismatched slot is worse than a blank one (125% against
+  100%), so "more polarities" is not worth anything on its own.
+
+`plan_forma` and the page's `autoFormaWith` both implement it, and
+`check_forma_plan` holds them to it.
+
 ## The mechanics, verified (wiki)
 
 | fact | the wiki's own words |

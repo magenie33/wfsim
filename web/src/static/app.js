@@ -347,7 +347,10 @@ function stanceGrant() {
   const s = slots[STANCE];
   const m = s && s.mod ? modById(s.mod) : null;
   if (!m) return 0;
-  const pol = s.pol || stancePolOf($("weapon").value);
+  // NULL IS NO POLARITY, not "whatever the weapon was born with": the slot
+  // draws blank, and `engine::mods::stance_capacity` answers 5 for it. Reading
+  // the factory colour here made a blanked slot grant 4 while showing nothing.
+  const pol = s.pol;
   if (!pol) return 5;
   return pol === m.polarity || pol === "Omni" ? 10 : 4;
 }
@@ -8782,8 +8785,11 @@ function formaCount() {
   // …AND REPOLARIZING THE STANCE SLOT COSTS ONE. "As with Aura slots, Stance
   // slots can be repolarized using Forma" (wiki), and what it buys is the
   // doubled grant rather than a smaller drain.
-  const stancePol = slots[STANCE] && slots[STANCE].pol;
-  const stanceForma = stancePol && stancePol !== stancePolOf($("weapon").value) ? 1 : 0;
+  const stancePol = (slots[STANCE] && slots[STANCE].pol) || null;
+  // BLANKING IT COSTS ONE TOO. The stance slot is not in the pool, so a colour
+  // the weapon was born with cannot be swapped away — removing it is a Forma
+  // like any other change to that slot.
+  const stanceForma = stancePol !== (stancePolOf($("weapon").value) || null) ? 1 : 0;
   const regular = Math.max(added, removed) + stanceForma;
   const floor = Math.max(0, formaMin($("weapon").value) - regular - umbra - omni);
   return { regular: regular + floor, umbra, omni };
@@ -8791,7 +8797,8 @@ function formaCount() {
 
 // Auto-assign polarities for MINIMUM Forma-to-fit (mirrors engine plan_forma):
 // spend the innate pool on the biggest matching mods, then Forma the biggest
-// unmatched until it fits; unmatched slots left blank. Overwrites polarities.
+// unmatched until it fits. Overwrites polarities: what an unmatched slot ends
+// up with is a leftover innate colour that had nowhere free to sit, or nothing.
 //
 // ...with a FLOOR under it on an adversary weapon (`plan_forma_spending`'s
 // `at_least`). Those five polarizations are what put the weapon at rank 40,
@@ -8830,11 +8837,28 @@ function autoFormaWith(w) {
   slots.forEach((s, i) => { const m = modById(s.mod); if (m && i !== STANCE) filled.push({ i, m }); });
   slots.forEach((s, i) => { if (i !== STANCE) s.pol = null; });
   const pool = innate.slice(0, 9).filter(Boolean);
+  const poolSize = pool.length;
+  // THE WEAPON'S OWN SLOTS, which is how many places a colour can sit — eight,
+  // nine where there is an exilus slot, and the stance slot is not one of them.
+  const slotCount = 8 + (weaponAxes().hasExilus ? 1 : 0);
+  const spareSlots = Math.max(0, slotCount - filled.length);
   const bd = ({ i, m }) => modDrain(m, slots[i].rank);
   const order = filled.slice().sort((a, b) => bd(b) - bd(a));
   const matched = new Set(), free = new Set();
   for (const { i, m } of order) { const k = pool.indexOf(m.polarity); if (k >= 0) { pool.splice(k, 1); matched.add(i); free.add(i); } }
-  const drainOf = () => filled.reduce((s, x) => s + (matched.has(x.i) ? Math.ceil(bd(x) / 2) : bd(x)), 0);
+  // A COLOUR CANNOT BE PUT IN A DRAWER. Every innate colour sits on one of the
+  // weapon's slots, so one no mod wants is not simply absent: it goes on a
+  // mod-less slot (free) or on a modded one (+25%) — unless a Forma spent
+  // elsewhere overwrites it, which each one bought does for nothing because the
+  // bill is `max(added, removed)`. So this many are STUCK on a mod, and they go
+  // on the smallest drains there are. Mirrors `engine::mods::plan_forma`.
+  const stuck = () => order.slice().reverse().filter(({ i }) => !matched.has(i))
+    .slice(0, Math.max(0, poolSize - matched.size - spareSlots));
+  const drainOf = () => {
+    const stick = new Set(stuck().map((x) => x.i));
+    return filled.reduce((s, x) => s + (matched.has(x.i) ? Math.ceil(bd(x) / 2)
+      : stick.has(x.i) ? Math.round(bd(x) * 1.25) : bd(x)), 0);
+  };
   // AS LITTLE UMBRA AS POSSIBLE, BUT NEVER FAIL FOR WANT OF IT — the rule
   // `engine::mods::fit` follows, and the page has to follow it too or the two
   // answer differently on the same build. Umbra Forma is the scarce item, so a
@@ -8856,19 +8880,21 @@ function autoFormaWith(w) {
     if (!polarize(false) && !polarize(true)) break;
   }
   for (const { i, m } of filled) slots[i].pol = matched.has(i) ? m.polarity : null;
-  // Innate polarities are never destroyed by the auto plan (blanking one
-  // costs a Forma): leftovers go back onto mod-less slots — preferring
-  // their original position — else sit on an unmatched modded slot
-  // (+25% mismatch drain beats paying a Forma to remove them). An empty
-  // build therefore reports 0 Forma.
-  const spare = (f) => slots.findIndex((s, i) => i !== STANCE && f(s, i));
-  for (const p of pool) {
-    let k = spare((s, i) => !s.mod && !s.pol && innate[i] === p);
-    if (k < 0) k = spare((s) => !s.mod && !s.pol);
-    if (k < 0) k = spare((s) => !s.pol);
-    if (k < 0) break;
-    slots[k].pol = p;
+  // WHERE THE LEFTOVER COLOURS LAND. A mod-less slot first, at the position the
+  // weapon was born with it where that is free — nothing there can mismatch, so
+  // keeping the colour costs the reader nothing. What is left over from THAT is
+  // the `stuck` set above; anything past both is overwritten by a Forma this
+  // plan is spending anyway. An empty build therefore reports 0 Forma.
+  const left = pool.slice();
+  const emptyAt = (f) => slots.findIndex((s, i) => i < slotCount && !s.mod && !s.pol && f(s, i));
+  for (const home of [true, false]) {
+    for (let n = 0; n < left.length;) {
+      const k = emptyAt((s, i) => !home || innate[i] === left[n]);
+      if (k < 0) { n++; continue; }
+      slots[k].pol = left[n]; left.splice(n, 1);
+    }
   }
+  stuck().forEach((x, n) => { slots[x.i].pol = left[n] || null; });
 }
 
 // ---- render mods ----
@@ -9505,8 +9531,16 @@ function buildSlot(i) {
     // The configured mod shows its CURRENT description (values at the
     // slot's rank), exactly like the in-game card.
     const desc = m.desc_ranks || officialDesc(m, r) ? cardLines(m, r) : null;
+    // WHAT THE SLOT'S COLOUR DID TO THIS MOD, said the way the arsenal says it:
+    // the mod's OWN polarity next to the number, and the number coloured for
+    // the three answers — matched halves it, a different colour adds 25%, an
+    // unpolarized slot is neither. The card carried the SLOT's colour and not
+    // the mod's, so there was nothing on screen to compare it against and a
+    // +25% surcharge read as an ordinary drain.
+    const matchedPol = s.pol === m.polarity || (s.pol === "Omni" && m.polarity !== "Umbra");
+    const fit = !s.pol ? "" : matchedPol ? " matched" : " mismatched";
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
-      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
+      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr${fit}"><span class="mpol" title="${escHtml(polCap(m.polarity))}">${polGlyph(m.polarity)}</span>${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openModSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {

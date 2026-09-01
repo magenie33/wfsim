@@ -526,8 +526,12 @@
     <!-- BENCHMARK BUILDS: the board's rows, in a bar of their own. Read-only
          and not yours, which is why they are not chips in the bar below —
          see renderBenchmarkBarIn. Hidden when the weapon has no rows. -->
-    <div class="preset-bar bench-bar" id="bench-bar-builder-builds" hidden></div>
+    <div class="preset-bar bench-bar" id="bench-bar-builder-builds"></div>
     <div class="preset-bar" id="preset-bar-builder-builds"></div>
+    <!-- WHAT IS OPEN, as its own line. The two bars above are RETRIEVERS —
+         what you are browsing — and a reader could not tell which of the two
+         described the build on the page. See renderCurrentBuild. -->
+    <div class="build-current" id="build-current"></div>
 
     <!-- QUICK CALC settings: what every "what would this slot be worth as X"
          answer below is measured with. Page level, above the mods, because it
@@ -991,7 +995,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">e6f7f4b3+ · 2026-09-01 04:30Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">c05d0d95+ · 36d17a8f</span>
     </div>
   </footer>
 

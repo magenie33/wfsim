@@ -27,7 +27,7 @@ const r = await evaluate(`(async () => {
   const forma = () => document.getElementById('forma').textContent;
   const out = { slotPol: stancePolOf(document.getElementById('weapon').value) };
   out.empty = cap();
-  slots[STANCE].mod = 'crushing_ruin'; slots[STANCE].pol = null;
+  slots[STANCE].mod = 'crushing_ruin'; slots[STANCE].pol = out.slotPol;
   renderMods(); await sleep(400);
   out.mismatched = cap();
   out.mismatchedForma = forma();
@@ -35,6 +35,13 @@ const r = await evaluate(`(async () => {
   renderMods(); await sleep(400);
   out.matched = cap();
   out.matchedForma = forma();
+  // …AND BLANK IS ITS OWN ANSWER, not a synonym for the colour the weapon was
+  // born with: the slot draws nothing, grants the bare five, and getting there
+  // took the Forma that removed the Vazarin.
+  slots[STANCE].pol = null;
+  renderMods(); await sleep(400);
+  out.blanked = cap();
+  out.blankedForma = forma();
   slots[STANCE].mod = 'crushing_ruin'; slots[STANCE].pol = 'Madurai';
   renderMods(); await sleep(400);
   out.polarized = cap();
@@ -61,6 +68,8 @@ check("a mismatched stance grants four", r.mismatched === "0 / 64", r.mismatched
 check("...and costs no Forma to leave alone", r.mismatchedForma === "0 Forma", r.mismatchedForma);
 check("a matching stance doubles it", r.matched === "0 / 70", r.matched);
 check("...and it is still free", r.matchedForma === "0 Forma", r.matchedForma);
+check("a BLANKED slot grants the bare five", r.blanked === "0 / 65", r.blanked);
+check("...and removing the colour cost a Forma", r.blankedForma === "1 Forma", r.blankedForma);
 check("polarizing the slot buys the double", r.polarized === "0 / 70", r.polarized);
 check("...for exactly one Forma", r.polarizedForma === "1 Forma", r.polarizedForma);
 

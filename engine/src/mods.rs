@@ -233,6 +233,10 @@ pub struct PlannedMod {
 pub struct FormaPlan {
     /// Polarity on each slot after planning (index-aligned with mods; the
     /// mod at index i sits in slot i). `None` = blank slot.
+    ///
+    /// A colour here that does NOT match the mod is a leftover innate polarity
+    /// with nowhere harmless to go — see [`plan_forma`]. The mod-less slots are
+    /// not reported: what parks on them is free and changes no number.
     pub slots: Vec<Option<Polarity>>,
     /// Total polarizations the BUILD needs. `cost.total()`.
     pub forma_used: u32,
@@ -242,10 +246,19 @@ pub struct FormaPlan {
 }
 
 /// Auto-forma: fit one mod per slot into `cap`, starting from the weapon's
-/// innate polarity pool, using as few Forma as possible. Mismatches are
-/// never beneficial (blanks are strictly better), so the planner only ever
-/// matches or leaves blank; innate polarities can be freely rearranged
-/// among slots (Forma allows repositioning), so they form a POOL.
+/// innate polarity pool, using as few Forma as possible. Innate polarities can
+/// be freely rearranged among slots (Forma allows repositioning), so they form
+/// a POOL.
+///
+/// **A COLOUR CANNOT BE PUT IN A DRAWER.** The weapon has `innate_slots.len()`
+/// slots and every innate colour sits on one of them, so a colour no mod wants
+/// is not simply absent: it sits on a MOD-LESS slot (free, and it changes no
+/// number) or on a modded one (+25%), unless a Forma spent elsewhere overwrites
+/// it. Each polarization BOUGHT erases one unwanted colour for nothing, because
+/// the bill is `max(added, removed)` — so what is forced onto a modded slot is
+/// `pool − matched − mod-less slots`, and it goes on the SMALLEST-drain mods.
+/// Planning as though a leftover colour vanished under-reported the drain and
+/// handed back layouts that do not fit at the Forma the plan claims.
 pub fn plan_forma(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -292,8 +305,10 @@ fn plan_forma_spending(
     assert!(mods.len() <= innate_slots.len(), "more mods than slots");
     let mut matched = vec![false; mods.len()];
     let mut cost = FormaCost::default();
-    // What polarity a Forma'd slot ends up carrying, which is what the plan
-    // reports back and what the UI draws.
+    // What polarity a BOUGHT slot ends up carrying, which is what the plan
+    // reports back and what the UI draws. A slot matched out of the innate pool
+    // keeps the colour it was born with — reporting Omni there would bill an
+    // Omni Forma for a polarity the weapon came with.
     let placed = |m: &PlannedMod| {
         if inv.use_omni && m.polarity != Polarity::Umbra {
             Polarity::Omni
@@ -307,24 +322,52 @@ fn plan_forma_spending(
     order.sort_by(|&a, &b| mods[b].base_drain.cmp(&mods[a].base_drain));
 
     // 1. Spend the innate polarity pool on the biggest matching mods.
+    let pool_size = innate_slots.iter().flatten().count();
     let mut pool: Vec<Polarity> = innate_slots.iter().flatten().copied().collect();
+    let mut innate_match = vec![false; mods.len()];
     for &i in &order {
         if let Some(pos) = pool.iter().position(|&p| p == mods[i].polarity) {
             pool.remove(pos);
             matched[i] = true;
+            innate_match[i] = true;
         }
     }
+    // `pool` now holds the LEFTOVERS, and none of them matches an unmatched mod
+    // — step 1 would have taken it — so every placement below is a real
+    // mismatch. `spare_slots` is where a leftover goes for free.
+    let spare_slots = innate_slots.len() - mods.len();
+
+    // The layout a matched-set implies, leftover colours included.
+    let layout = |matched: &[bool]| -> Vec<Option<Polarity>> {
+        let taken = matched.iter().filter(|&&x| x).count();
+        // Each polarization bought overwrites one unwanted colour for free, so
+        // only this many leftovers have nowhere to go but a modded slot.
+        let forced = pool_size.saturating_sub(taken + spare_slots);
+        let mut victims: Vec<usize> = (0..mods.len()).filter(|&i| !matched[i]).collect();
+        // The smallest drain pays the smallest 25%.
+        victims.sort_by_key(|&i| mods[i].base_drain);
+        victims.truncate(forced);
+        let mut out: Vec<Option<Polarity>> = (0..mods.len())
+            .map(|i| match (matched[i], innate_match[i]) {
+                (false, _) => None,
+                (true, true) => Some(mods[i].polarity),
+                (true, false) => Some(placed(&mods[i])),
+            })
+            .collect();
+        for (n, &i) in victims.iter().enumerate() {
+            debug_assert_ne!(
+                pool[n], mods[i].polarity,
+                "a leftover colour that matches an unmatched mod is not a leftover"
+            );
+            out[i] = Some(pool[n]);
+        }
+        out
+    };
 
     let drain = |matched: &[bool]| -> u32 {
         mods.iter()
-            .zip(matched)
-            .map(|(m, &ok)| {
-                if ok {
-                    m.base_drain.div_ceil(2)
-                } else {
-                    m.base_drain
-                }
-            })
+            .zip(layout(matched))
+            .map(|(m, slot)| slot_drain(m.base_drain, m.polarity, slot))
             .sum()
     };
 
@@ -381,16 +424,12 @@ fn plan_forma_spending(
         }
     }
 
-    let slots = mods
-        .iter()
-        .zip(&matched)
-        .map(|(m, &ok)| if ok { Some(placed(m)) } else { None })
-        .collect();
+    let total_drain = drain(&matched);
     Ok(FormaPlan {
-        slots,
+        slots: layout(&matched),
         forma_used: cost.total(),
         cost,
-        total_drain: drain(&matched),
+        total_drain,
     })
 }
 
@@ -1083,6 +1122,69 @@ mod tests {
         // Total: 7+7+7+6+6+11+7+7 = 58 <= 60.
         assert_eq!(plan.forma_used, 4, "plan: {plan:?}");
         assert_eq!(plan.total_drain, 58);
+    }
+
+    /// The nine-mod shape, where a leftover colour has nowhere harmless to sit.
+    ///
+    /// Ballistica Prime's pool is [Naramon, Madurai, Madurai, Naramon] over
+    /// nine slots. Eight Madurai mods and one Naramon take three of the four,
+    /// and the fourth cannot be put in a drawer: it sits on a modded slot at
+    /// +25%, and it goes on the SMALLEST drain there is.
+    fn nine_over_a_two_colour_pool() -> ([PlannedMod; 9], [Option<Polarity>; 9]) {
+        use Polarity::*;
+        let m = |d, p| PlannedMod { base_drain: d, polarity: p };
+        (
+            [
+                m(16, Madurai),
+                m(14, Madurai),
+                m(12, Madurai),
+                m(10, Madurai),
+                m(8, Madurai),
+                m(6, Madurai),
+                m(4, Madurai),
+                m(2, Madurai),
+                m(9, Naramon),
+            ],
+            [
+                Some(Naramon),
+                Some(Madurai),
+                Some(Madurai),
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(Naramon),
+            ],
+        )
+    }
+
+    #[test]
+    fn a_leftover_innate_colour_sits_on_the_cheapest_mod() {
+        let (mods, innate) = nine_over_a_two_colour_pool();
+        // 8 + 7 free from the two Madurai, 5 free from one Naramon; the other
+        // Naramon lands on the 2-drain mod, which pays 3 rather than 2.
+        let plan = plan_forma(63, &innate, &mods).unwrap();
+        assert_eq!(plan.forma_used, 0, "it fits for nothing: {plan:?}");
+        assert_eq!(plan.slots[7], Some(Polarity::Naramon), "{plan:?}");
+        assert_eq!(plan.total_drain, 63, "the +25% is IN the total: {plan:?}");
+    }
+
+    #[test]
+    fn a_bought_polarization_erases_the_leftover_it_overwrites() {
+        let (mods, innate) = nine_over_a_two_colour_pool();
+        // One point short, so the plan buys — and the bill is max(added,
+        // removed), so the Forma that halves the 12 also takes the unwanted
+        // Naramon off the 2 for nothing.
+        let plan = plan_forma(62, &innate, &mods).unwrap();
+        assert_eq!(plan.forma_used, 1, "{plan:?}");
+        assert_eq!(plan.total_drain, 56, "{plan:?}");
+        for (i, (m, slot)) in mods.iter().zip(&plan.slots).enumerate() {
+            assert!(
+                slot.is_none_or(|p| p == m.polarity),
+                "slot {i} wears a colour its mod does not want: {plan:?}"
+            );
+        }
     }
 
     #[test]

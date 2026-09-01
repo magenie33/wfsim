@@ -265,14 +265,25 @@ body.on-enemies [data-module="builder"]{display:none}
 /* Sized to its content, not to the bar: it sits beside a label and a copy
    button, and a full-width control there would read as the bar itself. */
 .bench-bar .dd{height:26px;min-width:150px;max-width:min(360px,60vw)}
-/* A RANK OR A MODE WITH NOTHING TO PICK. The value is information even when
-   it is the only one, so it keeps a chip's shape without a chip's affordance. */
-.bench-bar .prank,.bench-bar .pmode{font-size:12px;color:var(--text-2);border:1px solid var(--line);
-  border-radius:7px;padding:4px 9px;background:var(--plane)}
+/* A CONTROL WITH NOTHING TO PICK. It stays in the row — the SHAPE of this bar
+   is what says it is a retriever, so a question that had one answer must still
+   look asked — and loses only its affordance: no caret hover, no pointer, and
+   the value in the same place a live one puts it. */
+.bench-bar .dd[disabled]{cursor:default;opacity:.72}
+.bench-bar .dd[disabled]:hover{border-color:var(--line)}
+.bench-bar .dd[disabled] .dd-c{opacity:.35}
 /* TWO CONTROLS, TWO SIZES. The first holds a ruler's whole sentence; the
    second holds "#7". Giving them the same 150px floor made a rank read as a
    control with something missing from it. */
 .bench-bar .dd[id*="-row-"]{min-width:76px;flex:0 0 auto}
+/* WHAT IS OPEN. Not a bar: the two above are things you operate, and this is a
+   sentence about the page, so it carries no box of its own and sits under them
+   in the reading order the question arrives in — "what am I looking at" comes
+   after "what can I pick". */
+.build-current{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin:-4px 0 12px;padding:0 12px;font-size:12px}
+.build-current .bc-k{color:var(--text-2)}
+.build-current b{color:var(--text);font-weight:600}
+.build-current .bc-note{color:var(--muted)}
 .preset-bar .plabel{font-size:12px;color:var(--text-2)}
 .preset-bar .plabel.bench{color:var(--gold)}
 .preset-bar .plabel b{color:var(--gold)}
@@ -409,6 +420,12 @@ body.on-enemies [data-module="builder"]{display:none}
 .slot .info{min-width:0;flex:1}
 .slot .mn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .dr{font-size:11px;color:var(--muted)}
+/* THE THREE ANSWERS A SLOT'S COLOUR GIVES, in the colours the arsenal uses. */
+.slot .dr.matched{color:var(--good-text)}
+.slot .dr.mismatched{color:var(--critical)}
+.slot .dr .mpol{display:inline-flex;vertical-align:-1px;margin-right:4px}
+.slot .dr .mpol .pol{width:12px;height:12px}
+.slot .dr .mpol .pol-txt{width:12px;height:12px;font-size:9px}
 /* THE DRAIN AND THE RANK ARE ONE LINE. They were two — a block `.dr` above an
    inline-flex `.rank` — which is a whole row per card for two short facts, and
    a card is eight rows deep on a phone before the eighth one is reached: the

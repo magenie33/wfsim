@@ -476,23 +476,18 @@ fn expand_subset(
                 continue;
             }
         }
-        // The exilus option is a 9th planned mod in an extra unpolarized
-        // slot (matching the web UI's exilus model); its drain counts
-        // against the cap like any other (game rule).
+        // The exilus option is a 9th planned mod in the weapon's 9th slot
+        // (matching the web UI's exilus model); its drain counts against the
+        // cap like any other (game rule).
         let mut planned = base_planned.clone();
-        let mut slots_vec;
-        let slots: &[Option<Polarity>] = match xopt {
-            Some(x) => {
-                planned.push(PlannedMod {
-                    base_drain: x.base_drain,
-                    polarity: x.polarity,
-                });
-                slots_vec = innate.to_vec();
-                slots_vec.push(None);
-                &slots_vec
-            }
-            None => innate,
-        };
+        if let Some(x) = xopt {
+            planned.push(PlannedMod {
+                base_drain: x.base_drain,
+                polarity: x.polarity,
+            });
+        }
+        let mut slots_vec = Vec::new();
+        let slots: &[Option<Polarity>] = padded(innate, planned.len(), &mut slots_vec);
         let Ok(plan) = plan_forma(cap, slots, &planned) else {
             stats.illegal += 1;
             continue;
@@ -597,16 +592,11 @@ pub fn rebuild_candidate(
         .iter()
         .map(|&i| PlannedMod { base_drain: pool[i].base_drain, polarity: pool[i].polarity })
         .collect();
-    let mut slots_vec;
-    let slots: &[Option<Polarity>] = match xopt {
-        Some(x) => {
-            planned.push(PlannedMod { base_drain: x.base_drain, polarity: x.polarity });
-            slots_vec = innate.to_vec();
-            slots_vec.push(None);
-            &slots_vec
-        }
-        None => innate,
-    };
+    if let Some(x) = xopt {
+        planned.push(PlannedMod { base_drain: x.base_drain, polarity: x.polarity });
+    }
+    let mut slots_vec = Vec::new();
+    let slots: &[Option<Polarity>] = padded(innate, planned.len(), &mut slots_vec);
     let plan = plan_forma(cap, slots, &planned).ok()?;
     let mut refs: Vec<&ModDef> = ordered.iter().map(|&i| &pool[i]).collect();
     if let Some(x) = xopt {
@@ -620,6 +610,25 @@ pub fn rebuild_candidate(
         variant,
         exilus,
     })
+}
+
+/// The slot list one candidate is planned against.
+///
+/// THE CALLER'S LIST IS THE WEAPON'S SLOT COUNT, and that length decides where a
+/// leftover innate colour can sit for free (`engine::mods::plan_forma`). Padding
+/// is the assert's floor and nothing else: a caller handing over fewer slots
+/// than the build has mods gets blank ones rather than a panic.
+fn padded<'a>(
+    innate: &'a [Option<Polarity>],
+    mods: usize,
+    buf: &'a mut Vec<Option<Polarity>>,
+) -> &'a [Option<Polarity>] {
+    if innate.len() >= mods {
+        return innate;
+    }
+    *buf = innate.to_vec();
+    buf.resize(mods, None);
+    buf
 }
 
 fn permutations(rest: &[DamageType], acc: &mut Vec<DamageType>, out: &mut Vec<Vec<DamageType>>) {

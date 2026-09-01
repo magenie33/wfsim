@@ -490,6 +490,26 @@ channels (an entry with no url draws nothing) and the supporter line (silent
 while its store is unconfigured). It FORCES English rather than inheriting it,
 since the app boots into the browser's language.
 
+## `check_forma_plan`
+
+**A COLOUR CANNOT BE PUT IN A DRAWER.** The weapon has nine slots and every
+innate polarity sits on one of them, so a colour no mod wants lands on a
+mod-less slot (free) or on a modded one (+25%) — unless a Forma spent elsewhere
+overwrites it, which each one bought does for nothing, because the bill is
+`max(added, removed)`.
+
+Ballistica Prime is the shape that exposes it: four colours over nine slots, so
+a nine-mod build has no mod-less slot to park anything on. The check walks every
+all-Madurai window of its pool and asserts the two ways the plan had it wrong —
+a red slot that could have been shed for FREE (25% of that mod paid for
+nothing), and a plan that measured the drain it would have had if the colour
+vanished, declared a fit and left the panel printing 64 / 60.
+
+It also pins the two things the reader sees: the bill is a STATE and not a
+history, so a polarity off and back on lands on the number it started from; and
+the page's bill is the engine's, because the plan is MIRRORED in JS rather than
+asked for.
+
 ## `check_comment_style`
 
 No attribution and no dated decision survives in the
