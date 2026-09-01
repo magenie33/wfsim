@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: a0141620ee332caf
-count: 1747
+digest: a229088e8f0df063
+count: 1749
 ids:
   - acceltra
   - acceltra_prime
@@ -1757,3 +1757,5 @@ ids:
   - initial_combo
   - melee_damage
   - range
+  - clip_delegation
+  - shattering_justice
