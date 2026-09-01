@@ -18361,6 +18361,15 @@ function downloadFor(ua) {
 function renderDownloads() {
   const host = document.getElementById("hero-dl");
   if (!host) return;
+  // ALREADY RUNNING IT. A line inviting the reader to install what they are
+  // already inside reads as a page that does not know where it is — and the
+  // same index.html serves both, so the element is here either way. It is
+  // decided HERE, in the function that decides what the hero offers, rather
+  // than by whoever else happens to run in the client.
+  if (window.__WFSIM_DESKTOP__) {
+    host.hidden = true;
+    return;
+  }
   const mine = downloadFor(navigator.userAgent);
   if (mine === null) {
     host.hidden = true;
