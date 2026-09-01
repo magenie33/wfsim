@@ -36,6 +36,10 @@ fn family(id: &str) -> &str {
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
+    /// SECONDS THIS ROW TOOK TO SIMULATE, or what the last run measured for it
+    /// when this run reused the score. Written to the yaml and read back by the
+    /// NEXT run to pack the shards — see `load`.
+    cost_seconds: f64,
     /// THE BUILD THIS ROW IS, without the mode — `builds::identity`.
     ///
     /// Carried so the run can prove every validated build ended up somewhere:
@@ -160,6 +164,16 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
 /// THERE IS NO CEILING, so a group whose builds are close keeps all of them.
 const FLOOR: f64 = 0.5;
 
+/// WHAT A ROW IS ASSUMED TO COST when nothing has measured it — a new build, or
+/// a board written before costs were recorded.
+///
+/// ONE SECOND is the median row, which is the right guess precisely because it
+/// is wrong about the tail: the packing only has to keep the monsters apart,
+/// and a monster is measured the first time it runs. A board with no costs at
+/// all charges every row the same and the split degenerates to round-robin,
+/// which is what it was.
+const DEFAULT_ROW_SECONDS: f64 = 1.0;
+
 /// Best first, then everything within `FLOOR` of each WEAPON AND MODE's own
 /// leader. Returns the rows to publish and how many the floor took.
 ///
@@ -212,6 +226,30 @@ fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, Vec<Row>) {
     (kept, below)
 }
 
+/// WHICH SHARD PAYS FOR THIS ROW — the least loaded one — and the load is
+/// charged to it.
+///
+/// LIST SCHEDULING, and it is the whole of the packing. Every shard walks the
+/// same rows in the same order and keeps the same array, so they agree on the
+/// answer without talking to each other: a decision, not a negotiation. That is
+/// the property `row_idx % shards` had and the reason this could replace it in
+/// place rather than needing a planning pass over the whole board first.
+///
+/// IT IS NOT OPTIMAL AND DOES NOT NEED TO BE. The makespan it produces is
+/// within 2x of the best possible split; what it has to do is keep the few
+/// monster rows apart, which a modulo leaves to luck — a board is walked weapon
+/// by weapon, so expensive rows arrive in runs and a stride sharing a factor
+/// with the shard count puts them all on one worker.
+fn charge(load: &mut [f64], cost: f64) -> usize {
+    let mine = load
+        .iter()
+        .enumerate()
+        .min_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
+        .map_or(0, |(i, _)| i);
+    load[mine] += cost;
+    mine
+}
+
 /// A flag's value, `--name value` anywhere after the positionals.
 fn flag(name: &str) -> Option<String> {
     let a: Vec<String> = std::env::args().collect();
@@ -230,9 +268,15 @@ fn flag(name: &str) -> Option<String> {
 /// between shards of ONE run — every shard built from one commit. Persisting it
 /// across runs would publish yesterday's numbers under today's engine, which is
 /// exactly the failure the board exists to prevent.
-fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMap<String, f64> {
+type ScoreMap = std::collections::HashMap<String, f64>;
+
+fn load_scores(spec: Option<String>, bench_id: &str) -> (ScoreMap, ScoreMap) {
     let mut out = std::collections::HashMap::new();
-    let Some(spec) = spec else { return out };
+    // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
+    // the same reason as the score: the publish process computes almost
+    // nothing, so it has no figure of its own to write into the board.
+    let mut cost = std::collections::HashMap::new();
+    let Some(spec) = spec else { return (out, cost) };
     let mut files: Vec<std::path::PathBuf> = Vec::new();
     let p = std::path::Path::new(&spec);
     if p.is_dir() {
@@ -264,6 +308,13 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMa
         if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
             continue;
         }
+        if let Some(cs) = file.get("costs").and_then(Value::as_object) {
+            for (k, v) in cs {
+                if let Some(n) = v.as_f64() {
+                    cost.insert(k.clone(), n);
+                }
+            }
+        }
         let Some(scores) = file.get("scores").and_then(Value::as_object) else {
             continue;
         };
@@ -273,7 +324,7 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMa
             }
         }
     }
-    out
+    (out, cost)
 }
 
 /// The prior board's scores, keyed the way this run keys them — but only if it
@@ -294,6 +345,11 @@ struct Prior {
     /// case, a reused riven row would have come back with no rolls — and a
     /// riven row with no rolls loses its whole riven block.
     rolls: std::collections::HashMap<String, Vec<f64>>,
+    /// WHAT EACH ROW COST THE RUN THAT MEASURED IT, carried forward so the next
+    /// one can pack its shards by work rather than by count. Read back even for
+    /// a STALE row: the fight has to be redone, but how long it takes is a
+    /// property of the build and the ruler, and those did not move.
+    costs: std::collections::HashMap<String, f64>,
     /// Rows whose OWN data moved. Printed rather than counted silently: it is
     /// the number that says how much a change actually cost.
     stale: usize,
@@ -347,11 +403,18 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
             &v.evolutions,
             v.exilus.as_deref(),
         );
+        // THE COST IS READ BEFORE THE STALENESS CHECK, and that is the point.
+        // A stale row has to be fought again, so it is exactly the row whose
+        // cost the packing needs — throwing the figure away with the score
+        // would blind the split to the very work it is about to schedule.
+        let key = wfsim_engine::builds::board_key(&v, &e.mode);
+        if e.cost > 0.0 {
+            out.costs.insert(key.clone(), e.cost);
+        }
         if e.fp != want {
             out.stale += 1;
             continue;
         }
-        let key = wfsim_engine::builds::board_key(&v, &e.mode);
         if let Some(rv) = &e.riven {
             if !rv.rolls.is_empty() {
                 out.rolls.insert(key.clone(), rv.rolls.clone());
@@ -461,16 +524,19 @@ fn main() {
     // numbers that could not have moved. The data half is asked PER ROW, from
     // the files that row actually reads.
     let engine_fp = flag("--engine").unwrap_or_default();
-    let mut known = load_scores(flag("--scores"), &bench_id);
+    let (mut known, known_costs) = load_scores(flag("--scores"), &bench_id);
     let mut reused = 0usize;
     let mut stale = 0usize;
     let mut prior_rolls: std::collections::HashMap<String, Vec<f64>> = Default::default();
+    // WHAT THE LAST RUN MEASURED, per row — the input to the shard packing.
+    let mut prior_costs: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
         match reuse_prior(&path, &engine_fp, &bench_id) {
             Ok(p) => {
                 reused = p.scores.len();
                 stale = p.stale;
                 prior_rolls = p.rolls;
+                prior_costs = p.costs;
                 // The shards' own scores win: they were computed by THIS run.
                 for (k, v) in p.scores {
                     known.entry(k).or_insert(v);
@@ -481,6 +547,8 @@ fn main() {
     }
     let emit_to = flag("--emit-scores");
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
+    // …AND WHAT EACH ONE COST, travelling with it — see the emit block.
+    let mut costs: std::collections::HashMap<String, f64> = Default::default();
     // THE ROLLS TRAVEL BESIDE THE SCORE, keyed the same way and reused on the
     // same terms.
     //
@@ -529,9 +597,10 @@ fn main() {
     let mut rows: Vec<Row> = Vec::new();
     let (mut seen, mut refused) = (0usize, 0usize);
     // …AND THE ROWS, counted separately from the submissions because one
-    // submission is now one row per mode. It is what the shard slice is taken
-    // from — see below.
-    let mut row_idx = 0usize;
+    // submission is now one row per mode.
+    // WHAT EACH SHARD IS CARRYING, in seconds of measured work — the input and
+    // the output of `charge`, which decides whose row each one is.
+    let mut load = vec![0.0f64; shards];
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
     // EVERY BUILD THAT PASSED THE DOOR, by identity. The accounting below
     // partitions this set; anything left over is a build the library holds and
@@ -707,14 +776,10 @@ fn main() {
             if !seen_ids.insert(key.clone()) {
                 continue;
             }
-            // THE SHARD IS TAKEN FROM THE ROW, not from the submission it came
-            // from. A melee weapon is seven rows off one record, and slicing by
-            // submission would hand all seven to one worker — the fan-out's
-            // efficiency is set by its SLOWEST shard, which the note below
-            // measured at 18%. Every shard walks this same sequence and skips
-            // only the SIMULATION, so the counter stays in step across them.
-            let this_row = row_idx;
-            row_idx += 1;
+            // THE SHARD IS A PROPERTY OF THE ROW, not of the submission it came
+            // from: a melee weapon is seven rows off one record. `charge`
+            // decides which, below, and every shard walks this same sequence
+            // and skips only the SIMULATION — so they stay in step.
             // THE ROLLS THIS ENGINE SETTLED ON, filled in by the search below. A row
             // that was REUSED keeps whatever the last run found, which is correct:
             // reuse only happens when the fingerprint says nothing that could move
@@ -726,15 +791,30 @@ fn main() {
                     rolls: r.clone(),
                 })
             });
+            // WHAT THIS ROW COST THIS RUN, when this run is the one that paid.
+            // `None` where the score came from a sibling shard or from the prior
+            // board — those carry their own figure, resolved below.
+            let mut measured: Option<f64> = None;
             let score = match known.get(&key) {
                 // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
                 // map only ever travels between processes built from one commit.
                 Some(&s) => s,
                 None => {
+                    // WHOSE ROW IS THIS. Charged to the least-loaded shard at
+                    // the cost the last run measured — an unmeasured row (a new
+                    // build, or a board written before costs were recorded)
+                    // takes the neutral default, which makes this degrade to
+                    // round-robin rather than to anything worse.
+                    //
+                    // It is decided HERE, inside the `None` arm, because a row
+                    // whose score is already known costs nothing to publish and
+                    // must not be charged to anybody.
+                    let cost = prior_costs.get(&key).copied().unwrap_or(DEFAULT_ROW_SECONDS);
+                    let mine = charge(&mut load, cost);
                     // Not this shard's slice: another one is simulating it right
                     // now, and publishing a row for it here would mean scoring it
                     // twice and ranking it once.
-                    if shards > 1 && this_row % shards != shard {
+                    if shards > 1 && mine != shard {
                         continue;
                     }
                     // WHAT THIS ROW COST, when it cost enough to matter.
@@ -823,10 +903,12 @@ fn main() {
                         _ => raw * 60.0 / duration,
                     };
                     computed.insert(key.clone(), s);
+                    costs.insert(key.clone(), began.elapsed().as_secs_f64());
                     // THIRTY SECONDS is a row worth naming: the median row is under
                     // one, so this prints the tail and nothing else — a line per
                     // slow row rather than 2,474 lines nobody reads.
                     let took = began.elapsed().as_secs_f64();
+                    measured = Some(took);
                     if took >= 30.0 {
                         eprintln!(
                             "slow row: {:7.1}s  {}  key={key}  riven={}  evos={}  arcanes={}",
@@ -853,6 +935,15 @@ fn main() {
             );
             let exilus_for_row = v.exilus.clone().unwrap_or_default();
             rows.push(Row {
+                // MEASURED HERE, else what a sibling shard measured, else what
+                // the last run did, else the default. The chain matters: the
+                // publish process computes almost nothing, so without the
+                // shards' own figures every cost would decay to the default
+                // one run after it was measured.
+                cost_seconds: measured
+                    .or_else(|| known_costs.get(&key).copied())
+                    .or_else(|| prior_costs.get(&key).copied())
+                    .unwrap_or(DEFAULT_ROW_SECONDS),
                 identity: wfsim_engine::builds::identity(&v),
                 weapon: v.weapon,
                 mode: played.id.to_string(),
@@ -881,9 +972,9 @@ fn main() {
     // run that reuses everything and a run that scored everything look
     // identical from the outside, and the difference is an hour.
     //
-    // AND HOW MANY THE FLOOR TOOK — which is now a number you can go and READ,
-    // because those rows are in the yaml carrying `listed: false`. It used to
-    // be a count in a log nobody keeps.
+    // AND HOW MANY THE FLOOR TOOK. It is a number you can go and READ rather
+    // than a count in a log nobody keeps: those rows are in the yaml, carrying
+    // `listed: false`.
     eprintln!(
         "{seen} submissions, {refused} refused, {} rows ({reused} reused, {stale} rescored for a data change, {} scored here, {} below the floor)",
         kept.len(),
@@ -946,6 +1037,11 @@ fn main() {
         let text = serde_json::to_string(&serde_json::json!({
             "benchmark": bench_id,
             "scores": computed,
+            // WHAT EACH ONE COST, so the publish step can write it into the
+            // board and the NEXT run can pack the shards with it. Without this
+            // the figure survives exactly one run: publish measures almost
+            // nothing, so it would write the default over every real number.
+            "costs": costs,
             // Only the rows this shard actually searched; a plain build has no
             // entry, so an ordinary board's shard file is what it always was.
             "rolls": computed
@@ -1020,22 +1116,14 @@ fn main() {
     }
     println!("entries:");
     // KEPT FIRST, THEN THE ONES THE FLOOR HELD BACK. Two populations in one
-    // file, told apart by `listed:` — and the file is BOTH the record and the
-    // next run's reuse cache, which is why the second population belongs in it:
+    // file, told apart by `listed:`, because the file is BOTH the record and
+    // the next run's reuse cache and the second population belongs in each: a
+    // scored row absent from it is indistinguishable from a lost one, and it
+    // has no cached score, so it is re-fought every run to be discarded again.
     //
-    //   THE RECORD. A build scored and not listed reads, from the submitter's
-    //   side, exactly like one that was lost. Now it is in the file, with its
-    //   number, and the question is answerable.
-    //
-    //   THE CACHE. `--reuse` reads this file. A row missing from it has no
-    //   cached score, so it was re-simulated from scratch every run, for ever,
-    //   to be discarded again — and the mode fan-out multiplied that
-    //   population. Caching it cannot freeze a wrong number: reuse is gated on
-    //   the engine fingerprint (a code change voids the whole file) and on the
-    //   row's own `fp` (a data change voids the rows that read it).
-    //
-    // `site/board.json` is written from `kept` alone, above, so the page is
-    // unchanged and no visitor downloads a byte more.
+    // CACHING A LOW ROW CANNOT FREEZE A WRONG NUMBER — reuse is gated on the
+    // engine fingerprint and on the row's own `fp`. `site/board.json` is
+    // written from `kept` alone, so the page is unchanged.
     // TWO POPULATIONS, WALKED SEPARATELY. Not one pass over a set of ids: the
     // same BUILD can be listed in one mode and held below the floor in another,
     // so the flag is a property of the ROW and only the loop it came from knows
@@ -1059,6 +1147,13 @@ fn main() {
             // correction cost the rows carrying that mod instead of the board.
             if !r.fp.is_empty() {
                 println!("    fp: {}", r.fp);
+            }
+            // WHAT IT COST, to the millisecond — enough to tell a monster from
+            // the median and no more. It is scheduling data rather than part of
+            // the answer, so it is written where it survives (the board is what
+            // carries between runs) and rounded where it stops being useful.
+            if r.cost_seconds > 0.0 {
+                println!("    cost: {:.3}", r.cost_seconds);
             }
             if !r.exilus.is_empty() {
                 println!("    exilus: {}", r.exilus);
@@ -1319,12 +1414,63 @@ mod tests {
         );
     }
 
+    /// **THE SPLIT IS BY WORK, NOT BY COUNT**, and the case that says so is the
+    /// one the board actually has: a few monster rows among many cheap ones.
+    ///
+    /// THE COST DISTRIBUTION IS SKEWED: the median row is under a second and
+    /// the tail runs to minutes, so the makespan is decided by where the
+    /// monsters land rather than by how many rows each worker holds.
+    ///
+    /// ASSERTED AGAINST ROUND-ROBIN rather than against a constant, because the
+    /// claim is comparative: a modulo on the same input is the number to beat.
+    #[test]
+    fn the_shards_are_packed_by_cost_and_beat_round_robin() {
+        const SHARDS: usize = 8;
+        // Four monsters in a crowd of cheap rows, at a stride that SHARES A
+        // FACTOR with the shard count — which is the case that bites and is not
+        // exotic: a board is walked weapon by weapon, so expensive rows arrive
+        // in runs rather than at random. A stride coprime to the count spreads
+        // them by luck, and luck is what this replaces.
+        let costs: Vec<f64> = (0..100)
+            .map(|i| if i % 8 == 0 && i < 32 { 100.0 } else { 1.0 })
+            .collect();
+
+        let mut packed = vec![0.0f64; SHARDS];
+        for &c in &costs {
+            charge(&mut packed, c);
+        }
+        let mut robin = vec![0.0f64; SHARDS];
+        for (i, &c) in costs.iter().enumerate() {
+            robin[i % SHARDS] += c;
+        }
+        let worst = |v: &[f64]| v.iter().cloned().fold(0.0f64, f64::max);
+        let total: f64 = costs.iter().sum();
+        // ROUND-ROBIN PUT ALL FOUR ON ONE WORKER: every monster index is 0 mod
+        // 8, so `i % SHARDS` is 0 for all of them.
+        assert!(
+            worst(&robin) > worst(&packed),
+            "packing did not beat round-robin: {} vs {}",
+            worst(&robin),
+            worst(&packed)
+        );
+        // …AND IT IS NEAR THE FLOOR. No split can beat `total / shards`, and no
+        // split can break a single row up, so the best possible makespan is the
+        // larger of those two.
+        let floor = (total / SHARDS as f64).max(100.0);
+        assert!(
+            worst(&packed) <= 1.05 * floor,
+            "packed makespan {} against a floor of {floor}",
+            worst(&packed)
+        );
+    }
+
     fn row(weapon: &str, mode: &str, score: f64) -> Row {
         Row {
             // DISTINCT PER ROW, because the accounting partitions on it: a
             // fixture where every row shared one identity would make the
             // "everything was ranked" assertion pass on a single build.
             identity: format!("{weapon}|{mode}|{score}"),
+            cost_seconds: 0.0,
             weapon: weapon.into(),
             mode: mode.into(),
             score,
@@ -1450,8 +1596,8 @@ mod tests {
         .unwrap();
 
         let spec = Some(d.to_string_lossy().into_owned());
-        let aimed = load_scores(spec.clone(), "single_target");
-        let no_aim = load_scores(spec.clone(), "single_target_no_aim");
+        let (aimed, _) = load_scores(spec.clone(), "single_target");
+        let (no_aim, _) = load_scores(spec.clone(), "single_target_no_aim");
         assert_eq!(aimed.get(key).copied(), Some(28.44229348067104));
         assert_eq!(no_aim.get(key).copied(), Some(0.17033484369504454));
         // The sharp one: neither board may see the other's, in EITHER direction
@@ -1465,7 +1611,7 @@ mod tests {
 
         // A ruler with no file of its own reuses nothing rather than reusing
         // whatever else is in the directory.
-        assert!(load_scores(spec, "group_clear").is_empty());
+        assert!(load_scores(spec, "group_clear").0.is_empty());
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -1483,7 +1629,7 @@ mod tests {
             r#"{"benchmark":"single_target","scores":{"b#base":2.0}}"#,
         )
         .unwrap();
-        let got = load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
+        let (got, _) = load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
         assert_eq!(got.len(), 2);
         assert_eq!(got.get("a#base").copied(), Some(1.0));
         assert_eq!(got.get("b#base").copied(), Some(2.0));
@@ -1538,6 +1684,7 @@ mod page_row_tests {
     fn row(riven: Option<RowRiven>) -> Row {
         Row {
             identity: "dual_toxocyst|cycle".into(),
+            cost_seconds: 0.0,
             weapon: "dual_toxocyst".into(),
             mode: "cycle".into(),
             score: 139.28,

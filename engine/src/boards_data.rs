@@ -39,12 +39,21 @@ pub struct BoardEntry {
     /// is written from the listed rows alone — but it is kept here because the
     /// file is also the next run's REUSE CACHE, and a scored row missing from
     /// it is one that gets re-simulated from scratch every run for ever, to be
-    /// discarded again. It is a record too: "scored and not listed" and "lost"
-    /// used to read the same from the submitter's side.
+    /// discarded again. It is a record too: without it, "scored and not listed"
+    /// and "lost" read the same from the submitter's side.
     ///
     /// DEFAULT TRUE, so every row written before this existed is what it was.
     #[serde(default = "listed")]
     pub listed: bool,
+    /// SECONDS THIS ROW TOOK TO SIMULATE, as the run that measured it found.
+    ///
+    /// NOT PART OF THE ANSWER — it is scheduling data, and the score does not
+    /// depend on it. It rides the board because the board is what survives
+    /// between runs, and the next one packs its shards by measured work rather
+    /// than by row count: the makespan is set by the slowest shard, and a
+    /// modulo cannot see which rows are the monsters. Zero = never measured.
+    #[serde(default)]
+    pub cost: f64,
     /// The benchmark's metric, as this engine computed it. Deterministic —
     /// re-running the same build under the same benchmark reproduces it to the
     /// last digit, in the browser as well as natively.
