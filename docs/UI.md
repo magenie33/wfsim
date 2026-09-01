@@ -396,11 +396,21 @@ same as what is already there being fixed.
 on the reader's screen are two different things, and without a version on the
 page neither side of a bug report can tell "still broken" from "still holding
 the old file". `build_site_app.py` stamps the footer with the commit, a `+`
-for a dirty tree, and the UTC minute it generated `site/` — the commit alone
-is not enough, because `site/` is built from a WORKING TREE. The dev server
-ships the `dev` placeholder. The same stamp goes into `app.js` as `BUILD_ID`,
-so a browser holding an old page with a new script can say so
+for a dirty tree, and a DIGEST of the two sources the guard is about — the
+commit alone is not enough, because `site/` is built from a WORKING TREE. The
+dev server ships the `dev` placeholder. The same stamp goes into `app.js` as
+`BUILD_ID`, so a browser holding an old page with a new script can say so
 (`checkBuildMatches`).
+
+**IT IS A CONTENT HASH AND NOT A CLOCK.** The question the guard asks is "is
+this the same script"; a timestamp answers "was this the same minute", which is
+a different question with two costs. It rewrote one line in all 386 prerendered
+weapon pages on every run, burying every real diff; and because the stamp was
+substituted by TWO calls to a function reading the clock, a build that crossed
+a minute boundary between them shipped a page and a script that disagreed by
+construction — every visitor told the page was stale, reloading, and told
+again. `stamp_once` computes it once, and the digest changes exactly when the
+guard needs to fire.
 
 ## A measurement costs its summary, not its replay
 
