@@ -303,8 +303,12 @@ component alone (`ImpactMultiplier = { 1.5 }`, which is a different thing from
 the forced Knockback proc several of the same swings also carry), and the SLAM
 three of Crushing Ruin's four combos end on. It also confirmed the durations
 that had been DERIVED from the rendered table's two columns — 3.00 / 2.60 / 2.25
-/ 4.25 — exactly, which is what makes the derivation trustworthy for Shattering
-Storm, whose entry is past the point the module fetch truncates at.
+/ 4.25 — exactly, which is what makes the derivation trustworthy anywhere.
+
+**FETCH THE MODULE WITH `curl`, not through a summariser.** It is 222 KB and
+arrives whole (`?action=raw`), which is how all four Tonfa and hammer stances
+were transcribed; a summarising fetch cuts it off alphabetically and the reader
+invents plausible numbers past the cut.
 
 The module's whole vocabulary, for whoever transcribes the next stance:
 
