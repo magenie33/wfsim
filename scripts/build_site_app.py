@@ -673,8 +673,6 @@ def build_stamp() -> str:
         except Exception:
             return ""
 
-    sha = git("rev-parse", "--short=8", "HEAD") or "nogit"
-    dirty = "+" if git("status", "--porcelain") else ""
     # THE SOURCES THE GUARD IS ABOUT: the script and the markup it expects.
     # `STATIC`, never `APP` — the copies under `site/` already carry a
     # substituted `BUILD_ID`, so hashing those would hash the answer into the
@@ -682,7 +680,34 @@ def build_stamp() -> str:
     h = hashlib.sha256()
     for name in ("app.js", "index.html"):
         h.update((STATIC / name).read_bytes())
-    return f"{sha}{dirty} · {h.hexdigest()[:8]}"
+    return h.hexdigest()[:8]
+
+
+def build_sha() -> str:
+    """WHICH COMMIT this `site/` was generated from, for a human to quote.
+
+    NOT PART OF THE STAMP the pages carry, and that is the whole point: it moves
+    on every commit, including the ones that touch nothing a page serves, so
+    putting it in the HTML rewrote all 386 prerendered pages every time anybody
+    committed anything. It goes into `app.js` alone, and the footer is drawn
+    from both at boot.
+    """
+    import subprocess
+
+    def git(*a: str) -> str:
+        try:
+            return subprocess.run(
+                ("git", *a), capture_output=True, text=True, check=True
+            ).stdout.strip()
+        except Exception:
+            return ""
+
+    sha = git("rev-parse", "--short=8", "HEAD") or "nogit"
+    # A DIRTY TREE, ALWAYS. `site/` is written before this is asked, so the
+    # build has already dirtied the tree it is measuring — the marker says
+    # "generated from a working tree", which is true of every build there is.
+    dirty = "+" if git("status", "--porcelain") else ""
+    return f"{sha}{dirty}"
 
 
 _STAMP: "str | None" = None
@@ -801,7 +826,11 @@ def main() -> None:
     # …AND WHAT THE REPOSITORY HOLDS, for the one page that asks for something.
     # Same rule as the stamp: the dev server keeps the placeholder, because a
     # page that was not generated from a working tree has nothing to count.
-    counted = marked.replace("const PROJECT_FACTS = null;",
+    shaed = marked.replace('const BUILD_SHA = "dev";',
+                           f'const BUILD_SHA = "{build_sha()}";', 1)
+    if shaed == marked:
+        sys.exit("app.js: BUILD_SHA placeholder not found")
+    counted = shaed.replace("const PROJECT_FACTS = null;",
                              f"const PROJECT_FACTS = {json.dumps(project_facts())};", 1)
     if counted == marked:
         sys.exit("app.js: PROJECT_FACTS placeholder not found")

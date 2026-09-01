@@ -5,7 +5,19 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
+//
+// IT IS A DIGEST OF THE SERVED SOURCES AND NOTHING ELSE — no commit, no clock.
+// The question `checkBuildMatches` asks is "is this page's markup the markup
+// this script expects", so the token has to move when `app.js` or `index.html`
+// moves and STAY STILL otherwise. It is stamped into all 386 prerendered pages,
+// and anything volatile in it rewrites every one of them on every build: a
+// clock did it once per run, a commit sha does it once per commit, and both
+// bury the diffs that matter under 386 identical one-line changes.
 const BUILD_ID = "dev";
+// …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
+// guard and never goes into the HTML: it changes on every commit, including the
+// ones that touch nothing this page serves. Drawn at boot instead.
+const BUILD_SHA = "dev";
 
 /// WHAT THIS REPOSITORY HOLDS, COUNTED BY THE BUILD.
 ///
@@ -1446,6 +1458,12 @@ async function init() {
   // BEFORE ANYTHING TOUCHES THE DOM: a page from another build has markup
   // this file does not know, and the failure that produces is unreadable.
   checkBuildMatches();
+  // …AND THEN THE FOOTER SAYS THE WHOLE THING. After the guard, never before:
+  // the guard reads the token the page was SERVED with, and this overwrites it.
+  {
+    const el = $("build-stamp");
+    if (el && BUILD_SHA !== "dev") el.textContent = `${BUILD_SHA} · ${BUILD_ID}`;
+  }
   META = await api("/api/meta");
   {
     let all = null;
