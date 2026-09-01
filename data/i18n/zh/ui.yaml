@@ -825,7 +825,7 @@ ui:
   "selected": "个已选中"
   "self-stagger is not modelled — the wiki notes an explosion at your feet can interrupt the 2-round burst so only one rocket leaves, and nothing damages the player in this fight": 自身踉跄尚未建模 —— wiki 提到脚下的爆炸会打断这个 2 发点射、让只有一发火箭射出，而这场战斗里没有任何东西会伤到玩家
   "semi-auto": 半自动
-  "sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40": 已上传——榜单每 20 分钟重算一次，所以大约 20 分钟内会出现，最多 40 分钟
+  "uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. The board re-scores every 20 minutes, so rows appear within about 20, at most 40": 已上传——投稿是一套**配装**，所以它会在这把武器能用的每一个模式下、以及每一块收它的榜上评分。榜单每 20 分钟重算一次，所以大约 20 分钟内出现，最多 40 分钟
   "sentinels cannot equip arcanes": 守护武器无法装备赋能
   "share of the engagement": 整场交战的占比
   "share": 分享

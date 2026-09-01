@@ -471,15 +471,13 @@ fn main() {
     );
 
     let mut rows: Vec<Row> = Vec::new();
-    // …and how many arrived with NO mode. Those are records written before the
-    // endpoint stored one, and they are read by the fallback below rather than
-    // by their submitter's choice — so the count is how much of this board is
-    // still a guess. It goes to zero on its own as players resubmit; printing
-    // it is what makes that visible instead of permanent.
-    let mut legacy = 0usize;
     let (mut seen, mut refused) = (0usize, 0usize);
+    // …AND THE ROWS, counted separately from the submissions because one
+    // submission is now one row per mode. It is what the shard slice is taken
+    // from — see below.
+    let mut row_idx = 0usize;
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
-    for (idx, s) in subs.iter().enumerate() {
+    for s in subs {
         // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER.
         //
         // A submission has never carried a score — it carries a BUILD, and the
@@ -574,199 +572,206 @@ fn main() {
             }
         };
 
-        // THE MODE THIS ENTRY WAS SUBMITTED FOR, and the fight it implies.
+        // EVERY MODE THIS WEAPON CAN BE PLAYED IN, and not the one the
+        // submitter happened to try.
         //
-        // A submission with no mode is played the way the arsenal plays it,
-        // so a row carrying no mode keeps its score to the last digit while
-        // gaining the dimension.
-        let modes = wfsim_engine::weapons_data::play_modes(&v.weapon);
-        let want = s.get("mode").and_then(Value::as_str);
-        let played = match want {
-            Some(id) => match modes.iter().find(|m| m.id == id) {
-                Some(m) => *m,
-                None => {
-                    eprintln!("refused {weapon}: it has no `{id}` mode");
-                    refused += 1;
-                    continue;
-                }
-            },
-            // No mode named: however this weapon is normally played — the cycle
-            // where there is one, its arsenal form where there is not.
-            None => {
-                legacy += 1;
-                *modes
-                    .iter()
-                    .find(|m| m.mode == wfsim_engine::weapons_data::PlayMode::Cycle)
-                    .or_else(|| modes.first())
-                    .expect("every weapon has a base mode")
-            }
-        };
-        if !played.sustainable {
-            // "Always Incarnon" is not a way to play for three hundred seconds,
-            // and a board may not rank a fight nobody can hold. Derived, so no
-            // benchmark has to carry a list of what it will not take.
-            eprintln!("refused {weapon}: `{}` cannot be sustained for an engagement", played.id);
+        // THE MODE WAS NEVER A PROPERTY OF THE RECORD, for the same reason the
+        // ruler was not: a submission carries a BUILD. Mods are equipped on the
+        // WEAPON and a mode is how it is fired, so every mode of that weapon is
+        // a fight this same build can answer — nothing about it can become
+        // illegal by being played differently. Some of what it carries pays
+        // nothing in some of them; that costs a low row, which the floor and
+        // the per-mode dedup drop.
+        //
+        // A FORM'S UNLOCKING EVOLUTION IS IMPLIED, not required of the
+        // submitter — `webapi`'s `form_unlock_evo` already decides that, and it
+        // carries no stat: tier 1 of an Incarnon ladder is `fixed`, so the form
+        // and the evolution are two controls for one fact.
+        //
+        // AN UNSUSTAINABLE MODE IS STILL REFUSED. "Always Incarnon" is not a
+        // way to play for three hundred seconds, and a board may not rank a
+        // fight nobody can hold — derived from the mode, so no benchmark has to
+        // carry a list of what it will not take.
+        let modes: Vec<wfsim_engine::weapons_data::WeaponPlayMode> =
+            wfsim_engine::weapons_data::play_modes(&v.weapon)
+                .into_iter()
+                .filter(|m| m.sustainable)
+                .collect();
+        if modes.is_empty() {
+            eprintln!("refused {weapon}: it has no mode that can be sustained for an engagement");
             refused += 1;
             continue;
         }
-
-        let mut req = simulate_request(&scenario, &v, played);
-        // ONE ROW PER BUILD, and the identity is computed BEFORE the fight
-        // because it decides whether there is one to run at all, rather than
-        // being computed afterwards for dedup alone.
-        //
-        // The endpoint stores what was submitted, verbatim — it has no mod pool
-        // and cannot tell an elemental mod from any other — so two spellings of
-        // one fight arrive as two records and are collapsed HERE, where
-        // `validate` has already put both into the same canonical form. The
-        // MODE is part of that identity: one build played two ways is two
-        // entrants, and collapsing them would keep whichever arrived first.
-        let key = wfsim_engine::builds::board_key(&v, played.id);
-        if !seen_ids.insert(key.clone()) {
-            continue;
-        }
-        // THE ROLLS THIS ENGINE SETTLED ON, filled in by the search below. A row
-        // that was REUSED keeps whatever the last run found, which is correct:
-        // reuse only happens when the fingerprint says nothing that could move
-        // the answer has changed.
-        let mut row_riven: Option<RowRiven> = v.riven.as_ref().and_then(|shape| {
-            rolls.get(&key).map(|r| RowRiven {
-                bonuses: shape.bonuses.clone(),
-                malus: shape.malus.clone(),
-                rolls: r.clone(),
-            })
-        });
-        let score = match known.get(&key) {
-            // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
-            // map only ever travels between processes built from one commit.
-            Some(&s) => s,
-            None => {
-                // Not this shard's slice: another one is simulating it right
-                // now, and publishing a row for it here would mean scoring it
-                // twice and ranking it once.
-                if shards > 1 && idx % shards != shard {
-                    continue;
-                }
-                // WHAT THIS ROW COST, when it cost enough to matter.
-                //
-                // The fan-out's efficiency is set by its SLOWEST shard, not by
-                // its total: measured on 2026-08-26 at 128 shards, 824
-                // shard-minutes of work finished in 35.5 because one shard took
-                // that alone — 6.4 minutes of mean work against a 35.5 minute
-                // makespan, **18% efficiency**. Raising the shard count barely
-                // touched it (32 -> 128 shards moved the worst shard only 52.9
-                // -> 35.5), which is the signature of a few very expensive ROWS
-                // rather than of a split that is too coarse.
-                //
-                // Balancing the deal needs to know what a row costs, and
-                // nothing here has ever measured that. This is the measurement,
-                // and it is a `eprintln` rather than a stored column on purpose:
-                // the question it answers — is the tail one row or twenty — is
-                // asked once, and a schema for it before that answer is known
-                // would be a guess wearing a table.
-                let began = std::time::Instant::now();
-                // A RIVEN ROW IS SCORED AT ITS SHAPE'S CEILING, and finding
-                // that ceiling is a search: every corner of the roll band, at a
-                // CHEAP run count, then the winner measured properly at the
-                // ruler's own. Sixteen probes and one real measurement rather
-                // than sixteen real ones — the same "search cheaply, then
-                // measure the winner" the optimizer's `finalists x final_runs`
-                // is built on, and here it takes the cost of a riven row from
-                // 16x a plain one to about 2.6x.
-                //
-                // The corners are far apart, so picking between them does not
-                // need the precision the published number does.
-                if let Some(shape) = &v.riven {
-                    let cls = wfsim_engine::rivens_data::class_for_weapon(&v.weapon)
-                        .unwrap_or("");
-                    let best = wfsim_engine::rivens_data::perfect(shape, cls, |sp| {
-                        let mut probe = req.clone();
-                        if let Some(o) = probe.as_object_mut() {
-                            o.insert("rivens".into(), riven_request(sp));
-                            o.insert("runs".into(), json!(PROBE_RUNS));
-                        }
-                        wfsim_engine_webapi_simulate(&probe)
-                            .get("score")
-                            .and_then(Value::as_f64)
-                            .unwrap_or(0.0)
-                    });
-                    row_riven = Some(RowRiven {
-                        bonuses: shape.bonuses.clone(),
-                        malus: shape.malus.clone(),
-                        rolls: best
-                            .bonuses
-                            .iter()
-                            .map(|b| b.roll)
-                            .chain(best.malus.iter().map(|m| m.roll))
-                            .collect(),
-                    });
-                    if let Some(o) = req.as_object_mut() {
-                        o.insert("rivens".into(), riven_request(&best));
-                    }
-                    if let Some(rv) = &row_riven {
-                        rolls.insert(key.clone(), rv.rolls.clone());
-                    }
-                }
-                let out = wfsim_engine_webapi_simulate(&req);
-                let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
-                let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
-                if !ok || raw <= 0.0 {
-                    eprintln!(
-                        "refused {weapon}: did not simulate ({})",
-                        out.get("error").and_then(Value::as_str).unwrap_or("scored zero")
-                    );
-                    refused += 1;
-                    continue;
-                }
-                // IN THE BENCHMARK'S OWN METRIC. `score` off the wire is kill
-                // PROGRESS — kills plus the fraction of the current target
-                // depleted — over the whole engagement. The benchmark says
-                // `metric: kpm`, so publishing the raw figure labelled "kill
-                // rate" overstated every row by the length of the fight: 55.26
-                // on screen for a build that kills 11.05 a minute over 300 s. Ranking is unaffected either way — this
-                // is a linear rescale — but the number people read is not a
-                // ranking.
-                let s = match metric.as_str() {
-                    "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
-                    _ => raw * 60.0 / duration,
-                };
-                computed.insert(key.clone(), s);
-                // THIRTY SECONDS is a row worth naming: the median row is under
-                // one, so this prints the tail and nothing else — a line per
-                // slow row rather than 2,474 lines nobody reads.
-                let took = began.elapsed().as_secs_f64();
-                if took >= 30.0 {
-                    eprintln!(
-                        "slow row: {:7.1}s  {}  key={key}  riven={}  evos={}  arcanes={}",
-                        took,
-                        v.weapon,
-                        v.riven.is_some(),
-                        v.evolutions.len(),
-                        v.arcanes.len(),
-                    );
-                }
-                s
+        for played in modes {
+            // ONE BUILD, SCORED ONCE PER MODE. The clone is the row's own copy:
+            // `Row` takes the vectors by value and there is a row per mode.
+            let v = v.clone();
+            let mut req = simulate_request(&scenario, &v, played);
+            // ONE ROW PER BUILD, and the identity is computed BEFORE the fight
+            // because it decides whether there is one to run at all, rather than
+            // being computed afterwards for dedup alone.
+            //
+            // The endpoint stores what was submitted, verbatim — it has no mod pool
+            // and cannot tell an elemental mod from any other — so two spellings of
+            // one fight arrive as two records and are collapsed HERE, where
+            // `validate` has already put both into the same canonical form. The
+            // MODE is part of that identity: one build played two ways is two
+            // entrants, and collapsing them would keep whichever arrived first.
+            let key = wfsim_engine::builds::board_key(&v, played.id);
+            if !seen_ids.insert(key.clone()) {
+                continue;
             }
-        };
-        // WHAT THIS ROW READS, hashed from the CANONICAL build rather than from
-        // the submission — the same object `identity` is taken from, so the
-        // next run recomputes the identical hash off its own stored row.
-        let fp = wfsim_engine::data_fingerprint::row_fingerprint(
-            &bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions, v.exilus.as_deref(),
-        );
-        let exilus_for_row = v.exilus.clone().unwrap_or_default();
-        rows.push(Row {
-            weapon: v.weapon,
-            mode: played.id.to_string(),
-            score,
-            mods: v.mods,
-            evolutions: v.evolutions,
-            arcanes: v.arcanes,
-            valence: v.valence,
-            exilus: exilus_for_row,
-            riven: row_riven,
-            fp,
-        });
+            // THE SHARD IS TAKEN FROM THE ROW, not from the submission it came
+            // from. A melee weapon is seven rows off one record, and slicing by
+            // submission would hand all seven to one worker — the fan-out's
+            // efficiency is set by its SLOWEST shard, which the note below
+            // measured at 18%. Every shard walks this same sequence and skips
+            // only the SIMULATION, so the counter stays in step across them.
+            let this_row = row_idx;
+            row_idx += 1;
+            // THE ROLLS THIS ENGINE SETTLED ON, filled in by the search below. A row
+            // that was REUSED keeps whatever the last run found, which is correct:
+            // reuse only happens when the fingerprint says nothing that could move
+            // the answer has changed.
+            let mut row_riven: Option<RowRiven> = v.riven.as_ref().and_then(|shape| {
+                rolls.get(&key).map(|r| RowRiven {
+                    bonuses: shape.bonuses.clone(),
+                    malus: shape.malus.clone(),
+                    rolls: r.clone(),
+                })
+            });
+            let score = match known.get(&key) {
+                // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
+                // map only ever travels between processes built from one commit.
+                Some(&s) => s,
+                None => {
+                    // Not this shard's slice: another one is simulating it right
+                    // now, and publishing a row for it here would mean scoring it
+                    // twice and ranking it once.
+                    if shards > 1 && this_row % shards != shard {
+                        continue;
+                    }
+                    // WHAT THIS ROW COST, when it cost enough to matter.
+                    //
+                    // The fan-out's efficiency is set by its SLOWEST shard, not by
+                    // its total: measured on 2026-08-26 at 128 shards, 824
+                    // shard-minutes of work finished in 35.5 because one shard took
+                    // that alone — 6.4 minutes of mean work against a 35.5 minute
+                    // makespan, **18% efficiency**. Raising the shard count barely
+                    // touched it (32 -> 128 shards moved the worst shard only 52.9
+                    // -> 35.5), which is the signature of a few very expensive ROWS
+                    // rather than of a split that is too coarse.
+                    //
+                    // Balancing the deal needs to know what a row costs, and
+                    // nothing here has ever measured that. This is the measurement,
+                    // and it is a `eprintln` rather than a stored column on purpose:
+                    // the question it answers — is the tail one row or twenty — is
+                    // asked once, and a schema for it before that answer is known
+                    // would be a guess wearing a table.
+                    let began = std::time::Instant::now();
+                    // A RIVEN ROW IS SCORED AT ITS SHAPE'S CEILING, and finding
+                    // that ceiling is a search: every corner of the roll band, at a
+                    // CHEAP run count, then the winner measured properly at the
+                    // ruler's own. Sixteen probes and one real measurement rather
+                    // than sixteen real ones — the same "search cheaply, then
+                    // measure the winner" the optimizer's `finalists x final_runs`
+                    // is built on, and here it takes the cost of a riven row from
+                    // 16x a plain one to about 2.6x.
+                    //
+                    // The corners are far apart, so picking between them does not
+                    // need the precision the published number does.
+                    if let Some(shape) = &v.riven {
+                        let cls = wfsim_engine::rivens_data::class_for_weapon(&v.weapon)
+                            .unwrap_or("");
+                        let best = wfsim_engine::rivens_data::perfect(shape, cls, |sp| {
+                            let mut probe = req.clone();
+                            if let Some(o) = probe.as_object_mut() {
+                                o.insert("rivens".into(), riven_request(sp));
+                                o.insert("runs".into(), json!(PROBE_RUNS));
+                            }
+                            wfsim_engine_webapi_simulate(&probe)
+                                .get("score")
+                                .and_then(Value::as_f64)
+                                .unwrap_or(0.0)
+                        });
+                        row_riven = Some(RowRiven {
+                            bonuses: shape.bonuses.clone(),
+                            malus: shape.malus.clone(),
+                            rolls: best
+                                .bonuses
+                                .iter()
+                                .map(|b| b.roll)
+                                .chain(best.malus.iter().map(|m| m.roll))
+                                .collect(),
+                        });
+                        if let Some(o) = req.as_object_mut() {
+                            o.insert("rivens".into(), riven_request(&best));
+                        }
+                        if let Some(rv) = &row_riven {
+                            rolls.insert(key.clone(), rv.rolls.clone());
+                        }
+                    }
+                    let out = wfsim_engine_webapi_simulate(&req);
+                    let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
+                    let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
+                    if !ok || raw <= 0.0 {
+                        eprintln!(
+                            "refused {weapon}: did not simulate ({})",
+                            out.get("error").and_then(Value::as_str).unwrap_or("scored zero")
+                        );
+                        refused += 1;
+                        continue;
+                    }
+                    // IN THE BENCHMARK'S OWN METRIC. `score` off the wire is kill
+                    // PROGRESS — kills plus the fraction of the current target
+                    // depleted — over the whole engagement. The benchmark says
+                    // `metric: kpm`, so publishing the raw figure labelled "kill
+                    // rate" overstated every row by the length of the fight: 55.26
+                    // on screen for a build that kills 11.05 a minute over 300 s. Ranking is unaffected either way — this
+                    // is a linear rescale — but the number people read is not a
+                    // ranking.
+                    let s = match metric.as_str() {
+                        "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
+                        _ => raw * 60.0 / duration,
+                    };
+                    computed.insert(key.clone(), s);
+                    // THIRTY SECONDS is a row worth naming: the median row is under
+                    // one, so this prints the tail and nothing else — a line per
+                    // slow row rather than 2,474 lines nobody reads.
+                    let took = began.elapsed().as_secs_f64();
+                    if took >= 30.0 {
+                        eprintln!(
+                            "slow row: {:7.1}s  {}  key={key}  riven={}  evos={}  arcanes={}",
+                            took,
+                            v.weapon,
+                            v.riven.is_some(),
+                            v.evolutions.len(),
+                            v.arcanes.len(),
+                        );
+                    }
+                    s
+                }
+            };
+            // WHAT THIS ROW READS, hashed from the CANONICAL build rather than from
+            // the submission — the same object `identity` is taken from, so the
+            // next run recomputes the identical hash off its own stored row.
+            let fp = wfsim_engine::data_fingerprint::row_fingerprint(
+                &bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions, v.exilus.as_deref(),
+            );
+            let exilus_for_row = v.exilus.clone().unwrap_or_default();
+            rows.push(Row {
+                weapon: v.weapon,
+                mode: played.id.to_string(),
+                score,
+                mods: v.mods,
+                evolutions: v.evolutions,
+                arcanes: v.arcanes,
+                valence: v.valence,
+                exilus: exilus_for_row,
+                riven: row_riven,
+                fp,
+            });
+        }
     }
 
     let (mut kept, below) = keep_above_floor(rows);
@@ -786,18 +791,9 @@ fn main() {
     // for twice. This log is the maintainer's half of saying so; the panel
     // that states the rule to the player is the other.
     eprintln!(
-        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {stale} rescored for a data change, {} scored here, {below} below the floor){}",
+        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {stale} rescored for a data change, {} scored here, {below} below the floor)",
         kept.len(),
         computed.len(),
-        // ONLY WHEN THERE ARE ANY. A board whose every row carries its
-        // submitter's own choice should say nothing here — the line exists to
-        // report a migration in progress, and a zero printed forever is noise
-        // that trains you to skip the line that matters.
-        if legacy > 0 {
-            format!(" ({legacy} with no mode — read by the fallback)")
-        } else {
-            String::new()
-        }
     );
 
     // The runtime copy, keyed by weapon because that is how the page asks.
@@ -1053,6 +1049,53 @@ mod tests {
         // …AND THE CASE EXISTS: "no pair collides" passes vacuously on a
         // roster where no two modes share a form.
         assert!(shared > 0, "no weapon has two modes sharing one form: the case is untested");
+    }
+
+    /// **ONE SUBMISSION IS ONE ROW PER MODE**, so the keys those rows are
+    /// deduped by must differ — otherwise `seen_ids` keeps the first and the
+    /// fan-out silently scores nothing extra at all.
+    ///
+    /// THE FAILURE IS INVISIBLE FROM THE OUTPUT: a board with one row per build
+    /// and a board with one row per build-and-mode look identical unless you
+    /// know which weapon should have had four. So it is asserted on the KEY,
+    /// which is the thing that would collapse them.
+    ///
+    /// DERIVED, NOT LISTED: every weapon in the roster, and the case has to
+    /// exist — a roster where no weapon has two sustainable modes would pass
+    /// this vacuously.
+    #[test]
+    fn one_build_is_a_distinct_row_in_every_mode_it_can_be_played() {
+        let mut multi = 0usize;
+        for w in wfsim_engine::weapons_data::roster() {
+            let v = wfsim_engine::builds::ValidBuild {
+                weapon: w.id.clone(),
+                mods: vec![],
+                evolutions: vec![],
+                arcanes: vec![],
+                valence: String::new(),
+                exilus: None,
+                riven: None,
+                forma: 0,
+                drain: 0,
+            };
+            let modes: Vec<_> = wfsim_engine::weapons_data::play_modes(&w.id)
+                .into_iter()
+                .filter(|m| m.sustainable)
+                .collect();
+            if modes.len() > 1 {
+                multi += 1;
+            }
+            let mut keys = std::collections::HashSet::new();
+            for m in &modes {
+                assert!(
+                    keys.insert(wfsim_engine::builds::board_key(&v, m.id)),
+                    "{}: `{}` shares a board key with another of its modes, so the                      fan-out would publish one row for both",
+                    w.id,
+                    m.id
+                );
+            }
+        }
+        assert!(multi > 0, "no weapon has two sustainable modes: the fan-out is untested");
     }
 
     /// …AND IT NAMES THE MODE RATHER THAN THE FORM. The assertion above is met

@@ -18,6 +18,17 @@ number**. Everything else follows from it:
   is scored from the library the day it lands rather than waiting for anyone to
   resubmit. Measured on the first run after it landed: group_clear went from 106
   published rows to 551, single_target_no_aim from 113 to 498;
+- **…AND EVERY MODE OF THE WEAPON IS SCORED FROM IT.** The mode a build was
+  tuned for was never a property of the record either — mods are equipped on the
+  WEAPON and a mode is how it is fired, so nothing about a build can become
+  illegal by being played differently. One submission is now one row per
+  sustainable mode: a Ballistica Prime build sent from its Incarnon cycle also
+  answers `base`, `alternate` and `alternate_cycle`, and a melee build answers
+  all seven. What it carries that pays nothing in a mode costs a low row, which
+  the floor and the per-mode dedup drop — so the fan-out only ever ADDS the rows
+  where a build happens to be good somewhere its submitter never tried it.
+  `transformed` and its kind are still refused: a gauge you must fill and run
+  dry is not a way to play for three hundred seconds;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
   pinned seed. Measured 2026-08-04: wasm and native agree to the last digit

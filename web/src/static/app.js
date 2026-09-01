@@ -13917,13 +13917,20 @@ function boardRunOutcome() {
     // does not say whether it will be RANKED anywhere, which is the question a
     // submitter actually has — and from a fight of your own it is the only
     // thing the page can honestly answer, since the SCORE is the scorer's.
+    //
+    // IT SAYS "A BUILD" AND NOT "THIS RUN", because that is what was stored: no
+    // submission carries a name, a score or the mode it was tuned for, so the
+    // scorer plays it in every mode the weapon has and every ruler crosses the
+    // whole library. A sentence about "your run on this mode" would describe a
+    // record that does not exist and leave the reader looking for one row when
+    // there may be four.
     const b = boardBoards;
     const where = b && b.of > 1
       ? " " + tr("({n} of {of} boards will take it)")
         .replace("{n}", b.n).replace("{of}", b.of)
       : "";
     return { kind: "sent",
-      text: tr("sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40") + where };
+      text: tr("uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. The board re-scores every 20 minutes, so rows appear within about 20, at most 40") + where };
   }
   // NOT YET ANSWERED. `offerBoardSubmit` runs after the result is drawn, so
   // this is the state the first paint is in and it has to say so rather than
