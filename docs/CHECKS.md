@@ -266,6 +266,20 @@ polarizations the build does not need, and reaches for an UMBRA FORMA to do it â
 the one item `engine::mods::fit` is written to spare. The engine answers five
 regular Forma and no Umbra for that build; the page has to say the same.
 
+## `check_opt_upload`
+
+**EVERY FINALIST GOES TO THE BOARD.** A path to the store that runs off a
+simulator run alone takes one build at a time, so a search ranking twenty
+uploads none of them. Two properties are asserted, and the second is the one that is easy to get
+wrong â€” the payload comes off the ROW (its mods, arcanes, mode, valence, exilus)
+and not off the page, which holds a different build; and **nothing is
+pre-filtered here**, because how full a build must be is the searcher's own
+setting and `/api/board/check` is `validate_for_board` rather than a copy of it.
+The check hands it a two-mod build and asserts the REFUSAL came from the door.
+
+Consent still gates it, and with uploading off the line says so rather than
+staying blank.
+
 ## `check_opt_row_axes`
 
 **A RESULT ROW STATES EVERY AXIS THE SEARCH VARIED.** `engine::builds::BUILD_AXES`

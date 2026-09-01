@@ -13791,6 +13791,103 @@ function boardPayload() {
   };
 }
 
+/// THE SAME PAYLOAD, FROM A SEARCH RESULT rather than from the page.
+///
+/// A FINALIST IS A BUILD AND THE BOARD TAKES BUILDS. A search that ranks twenty
+/// of them uploaded NONE: the only path to the store ran off a simulator run,
+/// one build at a time, so the strongest thing this app produces reached the
+/// board only if a player copied a row into the builder by hand and ran it
+/// again. Every axis below comes off the ROW — mods, arcanes, evolutions, mode,
+/// valence, exilus — because the page's own state is a different build.
+///
+/// THE RIVEN AND THE ASSEMBLY COME FROM THE PAGE, and that is not an
+/// inconsistency: the search was handed the riven the player defined and the
+/// weapon they assembled, so those are the row's too. It has no separate answer
+/// to give.
+function boardPayloadFromResult(res) {
+  const bench = (scenarioNamed(activeScenario) || {}).builtin;
+  const arcs = asArcaneList(res.arcane, (res.arcane || []).length)
+    .filter((a) => a && a !== "none");
+  return {
+    benchmark: bench || undefined,
+    weapon: $("weapon").value,
+    mode: res.mode || mode,
+    // AS RANKED, not sorted — the order pairs the elementals, and a sorted list
+    // is a build the search never measured. The same rule `boardPayload` states.
+    mods: (res.mods || []).map((m) => (isRivenId(m) ? BOARD_RIVEN_SLOT : m)),
+    riven_pos: boardRivenShape().riven_pos,
+    riven_neg: boardRivenShape().riven_neg,
+    evolutions: (res.evolutions || []).slice(),
+    arcanes: arcs,
+    valence: res.valence || valence.element,
+    exilus: res.exilus && res.exilus !== "none" ? res.exilus : undefined,
+    grip: (assembly && assembly.grip) || "",
+    loader: (assembly && assembly.loader) || "",
+  };
+}
+
+/// EVERY FINALIST, THROUGH THE BOARD'S OWN DOOR.
+///
+/// NO CLIENT-SIDE PRE-FILTER. `buildIsComplete()` guards the SIMULATOR's path
+/// because the default build there is empty and a default-on setting would fire
+/// a request on every first visit. A search result is never accidental — but it
+/// can be short, because how full a build must be is the searcher's own setting
+/// and a seven-mod scope produces seven-mod winners. Those are refused, and the
+/// refusal has to come from `/api/board/check`, which IS `validate_for_board`
+/// rather than a copy of it: a second implementation is a second answer, and
+/// the player has to be given the board's.
+///
+/// NO CAP ON HOW MANY. The finalist count is the searcher's setting, they are
+/// all real builds, and the store is keyed by identity — so twenty submissions
+/// of which twelve are already held collapse onto twelve rows.
+async function offerOptBoardSubmit(r) {
+  const box = $("opt-board");
+  if (!box) return;
+  const rows = (r.results || []).filter((x) => x && (x.mods || []).length);
+  if (!rows.length) return;
+  if (boardConsent() !== "yes") {
+    box.innerHTML = `<span class="ob-off">${escHtml(
+      tr("board upload is off, so these were not sent"))}</span>`;
+    return;
+  }
+  box.innerHTML = `<span class="ob-run">${escHtml(
+    tr("sending {n} finalists to the board…").replace("{n}", rows.length))}</span>`;
+  let sent = 0;
+  const refused = new Map();
+  let failed = 0;
+  // ONE AT A TIME. The door is a real request and so is the store's; a search
+  // with fifty finalists firing fifty of each at once is a burst nobody asked
+  // for, and nothing here is waiting on the answer.
+  for (const res of rows) {
+    const body = boardPayloadFromResult(res);
+    try {
+      const verdict = await boardVerdict(body);
+      if (verdict && verdict.ok && verdict.accepted === false) {
+        const why = verdict.reason || tr("refused");
+        refused.set(why, (refused.get(why) || 0) + 1);
+        continue;
+      }
+      const ok = await fetch("/api/board/submit", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }).then((x) => x.ok).catch(() => false);
+      if (ok) sent += 1; else failed += 1;
+    } catch (_) {
+      failed += 1;
+    }
+  }
+  // AGGREGATE, because the reader asked one question and got twenty answers.
+  // The REASONS are counted rather than listed: twenty rows off one search
+  // differ in mods and not in why the board would not take them.
+  const parts = [tr("{n} of {of} finalists uploaded")
+    .replace("{n}", sent).replace("{of}", rows.length)];
+  for (const [why, n] of refused) parts.push(`${n} × ${why}`);
+  if (failed) parts.push(tr("{n} could not be sent").replace("{n}", failed));
+  box.innerHTML = `<span class="${sent ? "ob-sent" : "ob-off"}">${
+    escHtml(parts.join(" · "))}</span>`;
+}
+
 let boardState = "";   // "" | "sent" | "failed" | "onboard"
 /// THE ROW THIS BUILD ALREADY IS, when it is one — a `builtinBuilds()` entry,
 /// so it can be NAMED ("#1 · Incarnon cycle") rather than merely asserted.
@@ -18067,6 +18164,9 @@ async function pollOptimize() {
     optFinish();
     if (st.result && st.result.results && st.result.results.length) {
       renderOptResults(st.result);
+      // …AND EVERY FINALIST GOES TO THE BOARD. After the results are drawn, so
+      // a slow door never delays the answer the reader asked for.
+      offerOptBoardSubmit(st.result);
       // A cancel is not necessarily the end of the search — the run stopped,
       // but its resume point is still on disk. Offer it under the results.
       if (st.phase === "cancelled") appendResumeOffer();
@@ -18259,7 +18359,7 @@ function renderOptResults(r) {
           .replace("{n}", (r.searched || 0).toLocaleString())
           .replace("{total}", Math.round(r.space || 0).toLocaleString())}</span> · `
       : "");
-  $("opt-results").innerHTML = `<div class="opt-meta">${cov}${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
+  $("opt-results").innerHTML = `<div class="opt-board" id="opt-board"></div><div class="opt-meta">${cov}${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
     el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
   verifyOptRows(r);

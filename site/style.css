@@ -284,6 +284,13 @@ body.on-enemies [data-module="builder"]{display:none}
 .build-current .bc-k{color:var(--text-2)}
 .build-current b{color:var(--text);font-weight:600}
 .build-current .bc-note{color:var(--muted)}
+/* WHAT WENT TO THE BOARD, above the ranking rather than under it: it is a fact
+   about the whole run, and a line under twenty rows is a line nobody scrolls
+   to. Quiet by default — uploading is the expected outcome, and only a refusal
+   or a failure is news. */
+.opt-board{font-size:12px;margin:0 0 6px}
+.opt-board .ob-sent{color:var(--muted)}
+.opt-board .ob-off,.opt-board .ob-run{color:var(--text-2)}
 /* THE CONTENTS, on their own lines under the sentence. They reuse the
    optimizer row's two classes because they ARE the optimizer row's two lines —
    one describer, one look, so a build reads the same wherever it is shown. */
