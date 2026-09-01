@@ -380,9 +380,9 @@ engine tests — the golden values among them — are unchanged.
 ## 5. THE ARCANE SLOT, AND ONE BUG THE AUDIT FOUND
 
 A melee weapon seats a MELEE arcane, and `arcane_pools` already answered
-`["melee"]` before there was a pool behind it. All twelve are in now. **Three of
-them pay and nine declare**, which is an honest ratio for a family whose triggers
-are a Warframe's shields breaking, a roll, a finisher and a knockdown:
+`["melee"]` before there was a pool behind it. All twelve are in now. **Four of
+them pay and eight declare**, which is an honest ratio for a family whose
+triggers are a Warframe's shields breaking, a roll, a finisher and a knockdown:
 
 - **Melee Exposure** is the pool's biggest number and the one card that reaches
   a slam: *"On Ability Cast: Gain 60% Corrosive Damage on Melee strikes for 25s.
@@ -406,10 +406,25 @@ are a Warframe's shields breaking, a roll, a finisher and a knockdown:
   PERCENTAGE and an element; this one repeats the instance off a crit roll,
   which is a trigger nothing here has. Approximating it would be most of the
   weapon.
-- **Melee Influence** is the meta card and it is entirely a CROWD effect: an
-  Electricity status spreads this weapon's elemental statuses to everything
-  within 20 m. Against one target it is worth nothing, which is why the arena
-  that would show its value is the group ruler.
+- **Melee Influence** is the meta card, it is entirely a CROWD effect, and it
+  is the fourth that pays. An Electricity status opens an 18 s window that
+  *cannot be refreshed while it runs*; inside it, every spreadable elemental
+  status the swing applies lands again on everything within 20 m of the body it
+  struck, each of them dealt that element's own damage from the hit.
+  `dummy::spread_from_influence` is the mechanic and docs/EXTRA_HIT.md is where
+  its two odd clauses are argued — its Condition Overload is the STRUCK body's,
+  and its status burns off the swing's base rather than its own.
+
+  **IT SPREADS FROM EVERY BODY THE SWING STRUCK**, not from the aimed one
+  alone: *"Melee Influence only triggers from direct melee strikes"*, and a
+  swing reaching past the first body at `FT^(n-1)` is one of those — so a
+  Follow Through instance reports what it landed and seeds a spread of its own.
+  Against ONE target it is worth exactly nothing, which is asserted rather than
+  described: the copies have nowhere to go, so the number must not move at all.
+
+  **A ONE-HIT KILL SEEDS NOTHING.** *"Hits that one-hit-kill enemies cannot
+  trigger nor benefit from Melee Influence"* — the wiki files it under Bugs and
+  it is the behaviour all the same, so a body the swing killed spreads nothing.
 
 ### …and the bug
 

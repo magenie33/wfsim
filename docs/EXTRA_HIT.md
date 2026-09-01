@@ -96,6 +96,7 @@ has none.
 | Uriel's Demonium Rune | 30% | Heat | ? | — |
 | Reconifex Active Reload | 25% | Heat | ? | — |
 | Melee Duplicate | 100% | — | — | out of scope (melee) |
+| **Melee Influence** | the element's own share | the status that landed | **guaranteed** | `data/arcanes/melee/melee_influence.yaml` ✅ |
 
 ### The three things a member may differ in, and nothing else
 
@@ -119,6 +120,41 @@ they needed exactly three fields and no new mechanism:
 The three unimplemented ability sources are `kind: extra_hit` entries in
 `data/abilities/` and nothing else — the machinery is `dummy::fire_extra_hits`,
 and it reads the list rather than any weapon or ability name.
+
+## …and the one that is not a percentage
+
+**Melee Influence** is a member by its faction ladder and by nothing else, and
+that is exactly what makes it worth writing down. It takes an eligible
+elemental status the swing applied and lands it again on every body within its
+radius of the one that took it, each of them dealt *"damage equal to that
+element's damage from the original attack"*.
+
+The wiki settles its depth twice over:
+
+> *"Due to the nature of Faction Damage Bonuses, they are applied **twice** on
+> damage done by Melee Influence and **thrice** on damaging status procs caused
+> by it."*
+
+and then from the other side, with a worked example: a 100-base melee with
+Shocking Touch and +55% faction deals **294** on the hit, its ordinary
+Electricity proc ticks **228**, and the SPREAD proc ticks **353**. 353 / 228 is
+1.547, which is one more faction multiplier and nothing else. So `DEPTH_PROC`
+on the spread instance and `DEPTH_DERIVED_PROC` on the status it leaves, with
+nothing invented.
+
+**TWO CLAUSES ARE ITS OWN**, and both come off the same page:
+
+- **Its Condition Overload is the STRUCK body's.** *"Condition Overload's
+  damage bonus is based on the number of status effects on the target directly
+  struck by the attack … the number of status effects on the enemies receiving
+  Melee Influence damage is not part of the calculation."* Every other spread in
+  `dummy` divides the aimed body's CO bucket out and multiplies the receiver's
+  in; this one must not, which is why it is not a `SpreadBy` arm.
+- **Its status burns off the SWING's base, not the spread instance's.** An
+  ordinary Extra Hit replaces the base its status reads because it is a
+  percentage of something else. This one applies the *same status the swing
+  applied*, one derivation further out — so the scale arrives from the hit and
+  only the faction rung differs, which is what the 353 / 228 above measures.
 
 ## Rules the page states that we do and do not model
 

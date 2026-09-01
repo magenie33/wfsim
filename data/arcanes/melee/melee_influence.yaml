@@ -7,15 +7,24 @@ description: "On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for 
 
 # Rank 0: On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for elemental Melee Status Effects to apply to enemies within 10m for 3s. Cannot refresh while active.
 effects:
-  # THE META ONE, and it is entirely a CROWD effect: an Electricity status
-  # spreads this weapon's elemental statuses to everything within 20 m for
-  # 18 s. Against one target it is worth nothing at all, which is why the
-  # arena that would show its value is the group ruler.
+  # TWO MECHANICS ON ONE CARD, and they are separate: a ROLL on an Electricity
+  # status opens a clock, and while that clock runs every elemental status this
+  # weapon applies lands on everything within the radius too, each of them
+  # taking *"damage equal to that element's damage from the original attack"*.
+  # `dummy::spread_from_influence` is the second half; see docs/EXTRA_HIT.md for
+  # why it is one of those and where its faction rungs come from.
   #
-  # `status_spread_chance` exists as an IndirectStat on the mod side and is
-  # REPORTED rather than applied; there is no arcane arm for it and no
-  # spreading machinery behind it either.
-  - kind: unmodeled
+  # THE CHANCE IS FLAT AT EVERY RANK — 20% on all six rows of the wiki's own
+  # table, which no other arcane in this pool does. What the ranks buy is the
+  # RADIUS (10 -> 20 m) and the CLOCK (3 -> 18 s), both linear in the rank, so
+  # the ladder is exact rather than interpolated: 12/14/16/18 and 6/9/12/15.
+  - kind: status_spread
+    rank0: 0.20
+    rankMax: 0.20
+    radius_rank0: 10
+    radius_rankMax: 20
+    duration_rank0: 3
+    duration_rankMax: 18
 
 source:
   url: https://wiki.warframe.com/w/Melee_Influence

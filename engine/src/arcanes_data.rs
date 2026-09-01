@@ -274,6 +274,15 @@ pub struct ArcaneFx {
     /// adding Corrosive deals Viral AND Corrosive, which is what the ability
     /// path already does with Volt's Electricity.
     pub added_elements: Vec<(crate::damage::DamageType, f64)>,
+    /// MELEE INFLUENCE — the chance a melee Electricity status opens the window
+    /// in which this weapon's elemental statuses spread. Zero = not equipped.
+    ///
+    /// THREE NUMBERS AND NOT ONE, because the card is two mechanics: a ROLL
+    /// that opens a clock, and a RADIUS that the clock makes matter. See
+    /// `dummy::spread_from_influence`.
+    pub influence_chance: f64,
+    pub influence_radius_m: f64,
+    pub influence_seconds: f64,
 }
 
 impl Default for ArcaneFx {
@@ -303,6 +312,9 @@ impl Default for ArcaneFx {
             compression_damage_per_m: 0.0,
             compression_effectiveness_per_m: 0.0,
             added_elements: Vec::new(),
+            influence_chance: 0.0,
+            influence_radius_m: 0.0,
+            influence_seconds: 0.0,
         }
     }
 }
@@ -590,6 +602,14 @@ enum ArcEffect {
     /// Irradiate: % of the hit damage echoed in a radius — AoE, inert in
     /// the single-target sim; values render in the description.
     AoeEcho { scale: Scale, radius0: f64, radius1: f64, needs_radiation: u32 },
+    /// Melee Influence: a chance, on a melee Electricity STATUS, to open a
+    /// window in which every elemental status this weapon applies is applied
+    /// again to everything within `radius` of the body it struck.
+    ///
+    /// Three ramps rather than one. The chance is flat at every rank — the one
+    /// arcane in the pool whose headline number does not climb — and what the
+    /// ranks buy is the RADIUS and the CLOCK.
+    StatusSpread { scale: Scale, radius0: f64, radius1: f64, seconds0: f64, seconds1: f64 },
     /// `kind: unmodeled` — an effect whose payload is OUT OF THE SIM'S WORLD
     /// (Warframe armor/energy, enemy behaviour, a mechanic still to be built).
     /// No sim payload, but it OWNS a description `X`: its per-rank value still
@@ -817,6 +837,13 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 Some(ArcCondition::TargetRadiationStacks(n)) => n,
                 _ => 0,
             },
+        },
+        "status_spread" => ArcEffect::StatusSpread {
+            scale: scale(v),
+            radius0: f(v, "radius_rank0").unwrap_or(0.0),
+            radius1: f(v, "radius_rankMax").unwrap_or(0.0),
+            seconds0: f(v, "duration_rank0").unwrap_or(0.0),
+            seconds1: f(v, "duration_rankMax").unwrap_or(0.0),
         },
         "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
         "ammo_efficiency" => ArcEffect::AmmoEfficiency(scale(v)),
@@ -1088,6 +1115,23 @@ impl ArcaneDef {
                                 rank as f64 / self.max_rank as f64
                             };
                 }
+                // …AND SO DOES A SPREAD. Melee Influence is worth exactly
+                // nothing against one body — the statuses it copies have
+                // nowhere to go — so the ruler that can see it is the group
+                // one, the same as the echo above.
+                ArcEffect::StatusSpread { scale, radius0, radius1, seconds0, seconds1 } => {
+                    let lerp = |a: f64, b: f64| {
+                        a + (b - a)
+                            * if self.max_rank == 0 {
+                                1.0
+                            } else {
+                                rank as f64 / self.max_rank as f64
+                            }
+                    };
+                    fx.influence_chance = scale.at(rank, self.max_rank);
+                    fx.influence_radius_m = lerp(*radius0, *radius1);
+                    fx.influence_seconds = lerp(*seconds0, *seconds1);
+                }
                 ArcEffect::OverguardDamage(sc) => {
                     fx.overguard_multiplier = 1.0 + sc.at(rank, self.max_rank);
                 }
@@ -1166,7 +1210,10 @@ impl ArcaneDef {
                     vals.push(at(scale));
                     vals.push(lerp(*radius0, *radius1));
                 }
-                ArcEffect::HeadshotMultiplier { .. }
+                // NO `X` TO FILL: this card's text carries its numbers
+                // literally, the way every melee arcane's does.
+                ArcEffect::StatusSpread { .. }
+                | ArcEffect::HeadshotMultiplier { .. }
                 | ArcEffect::ReloadSpeed { .. }
                 | ArcEffect::Inert(_) | ArcEffect::Elsewhere(_) => {}
             }
@@ -1335,6 +1382,21 @@ impl ArcaneDef {
                 } else {
                     format!("{} of the hit damage echoed to nearby enemies (AoE)", pct(at(scale)))
                 }),
+                // THE THREE NUMBERS THE CARD IS, in the order they happen:
+                // the roll, the clock it opens and the radius that clock makes
+                // matter. A line printing only the chance would read as a
+                // damage bonus, which is the one thing this card is not.
+                ArcEffect::StatusSpread { scale, radius0, radius1, seconds0, seconds1 } => {
+                    let ramp = |a: f64, b: f64| {
+                        a + (b - a) * f64::from(rank) / f64::from(self.max_rank.max(1))
+                    };
+                    out.push(format!(
+                        "on a melee Electricity status: {} chance that elemental statuses also land on everything within {:.0} m, for {:.0} s",
+                        pct(at(scale)),
+                        ramp(*radius0, *radius1),
+                        ramp(*seconds0, *seconds1),
+                    ));
+                }
                 // DE PRINTS THE EXTRA, and so does this: "x8 Extra Damage to
                 // Overguard" is the card, ×9 is what it does (M38). Printing
                 // the total here would put a number on the panel that appears

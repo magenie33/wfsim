@@ -107,6 +107,14 @@ pub enum Origin {
     Field,
     /// An EXTRA HIT — a second damage instance beside a hit (docs/EXTRA_HIT.md).
     ExtraHit,
+    /// MELEE INFLUENCE — a status this swing left on one body, arriving on
+    /// everything standing around it.
+    ///
+    /// Its own row rather than `ExtraHit`'s, though it is one: a reader laying
+    /// the panel beside the game is asking WHY this body was hit, and "a swing
+    /// three rooms of enemies away procced Electricity" is not an answer any
+    /// other origin gives.
+    Influence,
     /// An arcane's or a syndicate's own instance.
     Arcane,
 }
@@ -126,6 +134,7 @@ impl Origin {
             Origin::Orb => "orb",
             Origin::Field => "field",
             Origin::ExtraHit => "extra_hit",
+            Origin::Influence => "influence",
             Origin::Arcane => "arcane",
         }
     }

@@ -672,6 +672,13 @@ impl TypeShares {
         self.0[DamageType::Toxin as usize]
     }
 
+    /// ONE TYPE'S SHARE of the instance — what Melee Influence copies, since
+    /// it spreads *"that element's damage from the original attack"* and not
+    /// the attack.
+    pub fn share(&self, t: DamageType) -> f64 {
+        self.0[t as usize]
+    }
+
     /// Does this instance have a shape at all? A shapeless one (nothing but
     /// zeros) is treated as one untyped, neutral lump rather than as damage
     /// that vanishes — the shares are bookkeeping, never a gate on damage.
@@ -7182,6 +7189,191 @@ impl SpreadBy {
     }
 }
 
+/// WHAT ONE INSTANCE LEFT ON A BODY, for the one mechanism that has to know.
+///
+/// Melee Influence spreads from every body a SWING struck rather than from the
+/// aimed one alone, so a Follow Through instance has to report what it applied
+/// and what it was worth. Every other caller of [`spread_hit`] drops it.
+#[derive(Debug, Default, Clone)]
+struct Landed {
+    procs: Vec<DamageType>,
+    /// The instance's own damage before mitigation — what a share of it is
+    /// taken from.
+    raw: f64,
+    killed: bool,
+}
+
+/// CAN MELEE INFLUENCE CARRY THIS STATUS?
+///
+/// The wiki lists both halves, and they partition the elements exactly: the
+/// four primaries (*"Cold, Electricity, Heat, Toxin"*) and the six combinations
+/// (*"Blast, Corrosive, Gas, Magnetic, Radiation, Viral"*) spread; *"Physical
+/// (Impact, Puncture, Slash), Void, Tau, Knockdown, Stagger, Ragdoll, Lifted,
+/// and Microwave"* do not.
+///
+/// WRITTEN AS THE PAGE'S OWN LIST rather than as "not physical", because the
+/// exclusions include types this engine has (`Void`, `Tau`) and states it
+/// tracks outside the proc list — so a negative test would let the next
+/// `DamageType` in silently.
+fn influence_can_spread(ty: DamageType) -> bool {
+    matches!(
+        ty,
+        DamageType::Cold
+            | DamageType::Electricity
+            | DamageType::Heat
+            | DamageType::Toxin
+            | DamageType::Blast
+            | DamageType::Corrosive
+            | DamageType::Gas
+            | DamageType::Magnetic
+            | DamageType::Radiation
+            | DamageType::Viral
+    )
+}
+
+/// MELEE INFLUENCE — one swing's statuses arriving on the whole room.
+///
+/// Every spreadable status the swing applied lands again on each body within
+/// the arcane's radius of the one that took it, dealt *"damage equal to that
+/// element's damage from the original attack"*. The epicentre is a BODY:
+/// *"spread radius extends from the position of the enemy hit"*.
+///
+/// AN EXTRA HIT PER BODY, with two clauses of its own: its Condition Overload
+/// is the STRUCK body's rather than the receiver's, and its status burns off
+/// the swing's own base rather than this instance's — which is why it is not a
+/// `SpreadBy` arm. Both are the page's, and both are argued in
+/// docs/EXTRA_HIT.md §"…and the one that is not a percentage".
+#[allow(clippy::too_many_arguments)]
+fn spread_from_influence(
+    others: &mut [SpreadFoe],
+    target: &mut TargetState,
+    debuffs: &mut DebuffState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    // WHICH BODY IT SPREADS FROM — 0 is the aimed one, `i + 1` is `others[i]`,
+    // the numbering `RunResult::damage_by_body` uses.
+    from: usize,
+    // WHAT THAT BODY TOOK, per spreadable element: the element's share of the
+    // instance's damage, with the struck body's own Condition Overload and
+    // crit already inside it.
+    landed: &[(DamageType, f64)],
+    // The scale the STRUCK body's own statuses were settled at.
+    scale: InstanceScale,
+    radius_m: f64,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    if landed.is_empty() || radius_m <= 0.0 {
+        return;
+    }
+    let mut bodies = Vec::with_capacity(params.others.len() + 1);
+    bodies.push(params.target_at);
+    bodies.extend(params.others.iter().map(|f| f.at));
+    let Some(&epicentre) = bodies.get(from) else { return };
+    // ONE MORE RUNG THAN THE HIT ALREADY CARRIES. `raw` came out of an
+    // instance that was multiplied by `f` once, so this takes it to `f^2` —
+    // `faction_at(f, DEPTH_PROC) / faction_at(f, DEPTH_HIT)`, said as the one
+    // factor that is missing.
+    let f = params.faction_at_time(t);
+    let status_damage = params.status_duration_multiplier;
+    for (b, at) in bodies.iter().copied().enumerate() {
+        if b == from {
+            continue;
+        }
+        // ANY PART OF A BODY TOUCHING IS ENOUGH — the rule every sphere in
+        // this engine uses.
+        if !crate::space::caught_by_blast(epicentre.distance(at), radius_m) {
+            continue;
+        }
+        let (state, dbf, tparams) = match b.checked_sub(1) {
+            None => (&mut *target, &mut *debuffs, &params.target),
+            Some(i) => match (others.get_mut(i), params.others.get(i)) {
+                (Some(foe), Some(spec)) => (&mut foe.state, &mut foe.debuffs, &spec.params),
+                _ => continue,
+            },
+        };
+        for &(ty, elem_raw) in landed {
+            let raw = elem_raw * f;
+            if raw <= 0.0 {
+                continue;
+            }
+            let mit = dbf.mitigation(
+                t,
+                status_damage,
+                params.armor_strip_per_puncture,
+                params.squad.enemy_armor_multiplier,
+            );
+            let mut breakdown = Breakdown::default();
+            let settled = state.apply(
+                raw,
+                TypeShares::single(ty),
+                // A SPREAD LANDS ON A BODY. Melee puts nothing on a head
+                // anywhere, and this is further from one than a swing is.
+                false,
+                t,
+                tparams,
+                false,
+                &mit,
+                watching(rec, &mut breakdown),
+            );
+            let (eff, killed) = (settled.effective, settled.killed);
+            r.sources.extra_hit += eff;
+            r.sources.extra_hit_by_type[ty as usize] += eff;
+            ledger::settle(
+                r, rec, t, b, ty, PopKind::Extra, &breakdown, settled, Some(dbf),
+                ledger::Clock::Hit,
+                || Instance {
+                    origin: crate::record::Origin::Influence,
+                    // THE STRUCK BODY'S OWN NUMBER IN THIS ELEMENT, which is
+                    // what the arcane copies — its Condition Overload included,
+                    // and this body's excluded.
+                    base: elem_raw,
+                    layers: mul_layers(elem_raw, &[(crate::record::Factor::Faction, f)]),
+                    head: false,
+                    ..Instance::default()
+                },
+            );
+            r.note_kills(u32::from(killed), t);
+            if killed {
+                continue;
+            }
+            // …AND THE STATUS ITSELF, which is the half the card is named for.
+            // Forced: the arcane does not roll, it copies what landed.
+            let forced = std::slice::from_ref(&ty);
+            let procs = crate::status::procs_for_hit(
+                forced,
+                0.0,
+                &DamageVector::new().with(ty, raw),
+                &tparams.status_immunities,
+                &mut d.status,
+            );
+            settle_procs(
+                procs,
+                t,
+                scale,
+                dbf,
+                gal,
+                arc,
+                state,
+                params,
+                ap,
+                &mit,
+                r,
+                rec,
+                &mut d.status,
+                tparams,
+                // ONE DERIVATION PAST THE HIT'S OWN STATUS, which is the whole
+                // of *"thrice on damaging status procs caused by it"*.
+                DEPTH_DERIVED_PROC,
+            );
+        }
+    }
+}
+
 /// ONE CHAIN OR SPLASH INSTANCE LANDING ON A BODY OTHER THAN THE AIMED ONE.
 ///
 /// It is the SAME hit the aimed body took, scaled — a chain hop is *"a beam
@@ -7226,7 +7418,7 @@ fn spread_hit(
     // WHICH MECHANISM PUT IT HERE — see [`SpreadBy`]. The only thing it
     // changes is which kills spawn another tendril.
     by: SpreadBy,
-) {
+) -> Landed {
     let base_damage = ap.base_damage_bonus;
     let arcane_base_damage =
         arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) + heavy_attack_base_damage(ap);
@@ -7256,7 +7448,7 @@ fn spread_hit(
     // every mechanism but the ricochet, so this changes nothing anywhere else.
     let raw = raw_per_bucket * bucket.bucket * inst.share * inst.part_factor;
     if raw <= 0.0 {
-        return;
+        return Landed::default();
     }
     let status_damage = params.status_duration_multiplier;
     let mit = foe.debuffs.mitigation(t, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
@@ -7362,6 +7554,9 @@ fn spread_hit(
         &spec.params.status_immunities,
         &mut d.status,
     );
+    // WHAT THIS INSTANCE LEFT, for Melee Influence — see [`Landed`]. Taken
+    // before `settle_procs` consumes the list.
+    let landed = Landed { procs: procs.clone(), raw, killed };
     settle_procs(
         procs,
         t,
@@ -7394,6 +7589,7 @@ fn spread_hit(
         &spec.params,
         DEPTH_PROC,
     );
+    landed
 }
 
 /// ONE SHOT'S FACTORS, carried out of the pellet loop so the radius-caught
@@ -7450,6 +7646,9 @@ fn spread_from_follow_through(
     params: &DummyParams,
     ap: &DummyParams,
     struck: &[usize],
+    // WHAT EACH BODY TOOK, appended. Melee Influence spreads from every body a
+    // SWING struck, and these are the ones the aimed path never sees.
+    seeds: &mut Vec<(usize, Landed)>,
     follow_through: f64,
     raw_per_bucket: f64,
     shares: TypeShares,
@@ -7481,11 +7680,12 @@ fn spread_from_follow_through(
             part_factor: 1.0,
         };
         let foe = &mut others[idx];
-        spread_hit(
+        let landed = spread_hit(
             &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition,
             modded_base, status_chance, forced, vector, params, ap, gal, arc, r, rec, d, t,
             SpreadBy::FollowThrough,
         );
+        seeds.push((sidx, landed));
     }
 }
 
@@ -10951,15 +11151,17 @@ mod melee {
     }
 
     fn magistar(form: &str, mods: &[&str], duration: f64, spacing: Option<f64>) -> Summary {
-        melee_fight(form, &[], mods, duration, spacing)
+        melee_fight(form, &[], mods, None, duration, spacing)
     }
 
     /// The same fixture with EVOLUTIONS, which the Praedos needs and no hammer
-    /// does: its five tiers ship with the weapon rather than with an adapter.
+    /// does: its five tiers ship with the weapon rather than with an adapter —
+    /// and with an ARCANE, which is where a crowd card lives.
     fn melee_fight(
         form: &str,
         evos: &[&str],
         mods: &[&str],
+        arcane: Option<&str>,
         duration: f64,
         spacing: Option<f64>,
     ) -> Summary {
@@ -10989,7 +11191,22 @@ mod melee {
         // Incarnon is the weapon resolved twice, so the fixture resolves it
         // twice too. Calling `from_panel` here would measure the Genesis on for
         // the whole engagement, which is a build nobody can produce.
-        let p = DummyParams::for_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none(), || {
+        //
+        // AT ITS MAX RANK, which is the only rank a board row is ever built
+        // at and the one the card's own numbers are printed for.
+        let fx = arcane.map_or_else(crate::arcanes_data::ArcaneFx::none, |id| {
+            let card = crate::arcanes_data::pool_for_weapon(form, "melee")
+                .into_iter()
+                .find(|a| a.id == id)
+                .unwrap_or_else(|| panic!("the melee pool seats {id}"));
+            card.fx(
+                card.max_rank,
+                crate::loadout::StackPolicy::Emergent,
+                &[],
+                crate::tenno_data::default_tenno(),
+            )
+        });
+        let p = DummyParams::for_panel(&panel, &arena, &fx, || {
             let unarmed: Vec<&str> = evos
                 .iter()
                 .copied()
@@ -11026,7 +11243,7 @@ mod melee {
         // counter does not multiply a normal swing, so a build with nothing
         // reading it pays exactly the same at 1x and at 12x.
         let at = |form: &str, evos: &[&str], gap: Option<f64>| {
-            melee_fight(form, evos, &["blood_rush"], 60.0, gap).mean_damage
+            melee_fight(form, evos, &["blood_rush"], None, 60.0, gap).mean_damage
         };
         let perk = ["praedos_shockwave_synergy"];
         let solo_off = at("praedos_block_forward", &[], None);
@@ -11545,6 +11762,112 @@ mod melee {
             "a sweep reached {sweep} bodies and a spin {spin} — the forward test did nothing",
         );
         assert!(sweep >= 2, "a sweep reached only {sweep} — it should still get the front");
+    }
+
+    /// **MELEE INFLUENCE REACHES WHAT THE SWING CANNOT**, and that is the whole
+    /// card: a 2.5 m Tonfa against a crowd standing 3.5 m away hits one body,
+    /// and the arcane puts that body's statuses — and that element's damage —
+    /// on all eight.
+    ///
+    /// THE FIXTURE IS THE SAME ONE `only_the_slam_reaches_a_crowd_a_swing_cannot`
+    /// uses, for the same reason: at 4.0 m the ring is outside every melee
+    /// reach in the roster and comfortably inside a 20 m spread, so a crowd
+    /// taking anything at all can only have taken it from here.
+    ///
+    /// SHOCKING TOUCH IS THE PRICE OF ENTRY. The card is *"On Melee Electricity
+    /// Status"* and a Praedos is Impact/Puncture/Slash, so a build with no
+    /// Electricity in its vector can never open the window — which is asserted
+    /// beside it, because an arcane that fires unconditionally would pass the
+    /// first claim and fail the game.
+    #[test]
+    fn melee_influence_carries_a_swings_statuses_to_a_crowd_out_of_reach() {
+        let crowd = |mods: &[&str], arcane: Option<&str>| {
+            let r = melee_fight("praedos", &[], mods, arcane, 60.0, Some(4.0));
+            r.mean_damage_by_body.0.iter().skip(1).sum::<f64>()
+        };
+        let bare = crowd(&["shocking_touch"], None);
+        let with = crowd(&["shocking_touch"], Some("melee_influence"));
+        assert!(
+            bare < 1.0,
+            "a 2.5 m swing found a crowd 3.5 m away without the arcane: {bare:.1}",
+        );
+        assert!(
+            with > 1000.0,
+            "the arcane put nothing on a crowd it reaches by 16 metres: {with:.1}",
+        );
+        // …AND NOT WITHOUT AN ELECTRICITY STATUS TO OPEN THE WINDOW. Molten
+        // Impact is the sharp control rather than a bare weapon: Heat SPREADS,
+        // so a build carrying it has everything the second half of the card
+        // needs and nothing the first half does. A bare Praedos would pass this
+        // even with the trigger deleted, because Impact and Slash cannot
+        // spread either.
+        let heat = crowd(&["molten_impact"], Some("melee_influence"));
+        assert!(
+            heat < 1.0,
+            "a weapon with no Electricity in its vector opened the window: {heat:.1}",
+        );
+    }
+
+    /// …AND WHICH STATUSES IT CARRIES IS THE PAGE'S OWN LIST.
+    ///
+    /// Ten spread and everything else does not, which partitions `DamageType`
+    /// exactly — so this is written out rather than asserted as "not physical",
+    /// the reading that would let the next type in silently.
+    #[test]
+    fn melee_influence_carries_the_ten_elements_and_nothing_else() {
+        for ty in [
+            DamageType::Cold, DamageType::Electricity, DamageType::Heat, DamageType::Toxin,
+            DamageType::Blast, DamageType::Corrosive, DamageType::Gas, DamageType::Magnetic,
+            DamageType::Radiation, DamageType::Viral,
+        ] {
+            assert!(influence_can_spread(ty), "{ty:?} is on the wiki's spreadable list");
+        }
+        for ty in [
+            DamageType::Impact, DamageType::Puncture, DamageType::Slash,
+            DamageType::Void, DamageType::Tau, DamageType::True, DamageType::Cinematic,
+        ] {
+            assert!(!influence_can_spread(ty), "{ty:?} is not");
+        }
+    }
+
+    /// …AND IT STOPS AT THE ARCANE'S OWN RADIUS, which is the card's and not
+    /// the weapon's: 20 m at rank 5 against a 2.5 m reach.
+    ///
+    /// The ring is placed either side of it with the aimed body's own metre of
+    /// standoff already inside the margin — 15 m is in from every angle, 23 m
+    /// is out from every angle — because a fixture that lands on the boundary
+    /// tests the floating point rather than the rule.
+    #[test]
+    fn melee_influence_stops_at_the_arcanes_own_radius() {
+        let crowd = |gap: f64| {
+            let r = melee_fight(
+                "praedos", &[], &["shocking_touch"], Some("melee_influence"), 60.0, Some(gap),
+            );
+            r.mean_damage_by_body.0.iter().skip(1).sum::<f64>()
+        };
+        assert!(crowd(15.0) > 1000.0, "a 20 m spread missed a ring at 15 m");
+        let far = crowd(23.0);
+        assert!(far < 1.0, "a 20 m spread reached a ring at 23 m: {far:.1}");
+    }
+
+    /// …AND IT IS WORTH EXACTLY NOTHING AGAINST ONE BODY.
+    ///
+    /// The statuses it copies have nowhere to go, so the aimed body's own
+    /// number must not move by a single digit — not "not much", exactly none.
+    /// It is the claim that separates a spread from a damage bonus, and the
+    /// cheapest way for the implementation to be wrong is for the copy to land
+    /// back on the body it came from.
+    #[test]
+    fn melee_influence_pays_nothing_at_all_against_a_lone_target() {
+        let lone = |arcane: Option<&str>| {
+            melee_fight("praedos", &[], &["shocking_touch"], arcane, 60.0, None).mean_damage
+        };
+        let bare = lone(None);
+        let with = lone(Some("melee_influence"));
+        assert!(
+            (with - bare).abs() < 1e-9,
+            "a spread with nobody to spread to moved the number: {bare:.4} -> {with:.4}",
+        );
     }
 
     /// A SWING SWEEPS AN ARC, and `MELEE_ARC_DEG` is what decides who is in it.
@@ -12691,6 +13014,11 @@ pub fn run_once_traced(
     // load-bearing).
     let mut tennokai_until = f64::NEG_INFINITY;
     let mut tennokai_hits = 0u32;
+    // MELEE INFLUENCE'S WINDOW. One number, and the clause that makes it one:
+    // *"Cannot refresh while active"* — so a roll that lands while it is open
+    // buys nothing at all, and the arcane's real uptime is a fraction of the
+    // fight rather than the 18 s its card names.
+    let mut influence_until = f64::NEG_INFINITY;
     // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool_due`. That one
     // is when the next shot was DUE, so the interval is already inside it and
     // the difference is zero on every ordinary pull — right for a spool, which
@@ -15226,6 +15554,11 @@ pub fn run_once_traced(
                         );
                     }
                 }
+                // WHAT THIS PELLET LEFT ON EVERY BODY IT STRUCK — the aimed
+                // one and each body the swing followed through to. Melee
+                // Influence spreads from all of them, so they are gathered here
+                // and fired once the aimed body's own statuses have landed.
+                let mut influence_seeds: Vec<(usize, Landed)> = Vec::new();
                 if direct && !others.is_empty() {
                     // …and the SHOT's own factors, kept for the half that fires
                     // once rather than per pellet — recorded on a MISS too, so
@@ -15308,6 +15641,7 @@ pub fn run_once_traced(
                             params,
                             ap,
                             &melee_struck,
+                            &mut influence_seeds,
                             ft,
                             raw / bucket,
                             shares,
@@ -15968,6 +16302,15 @@ pub fn run_once_traced(
                 // …AND THE ORDINARY END OF A PELLET, which does get to name
                 // what it applied.
                 log_this_pellet!(procs.clone());
+                // …AND WHAT MELEE INFLUENCE WILL COPY, taken before
+                // `settle_procs` consumes the list. Cloned only when the arcane
+                // is equipped: this is the hot loop and every other build pays
+                // an empty `Vec`.
+                let aimed_procs = if params.arcane.influence_chance > 0.0 {
+                    procs.clone()
+                } else {
+                    Vec::new()
+                };
                 settle_procs(
                     procs,
                     t,
@@ -16005,6 +16348,82 @@ pub fn run_once_traced(
                     &params.target,
                     DEPTH_PROC,
                 );
+                // MELEE INFLUENCE — every eligible status this swing applied,
+                // arriving on everything standing around the body that took it.
+                //
+                // THE WHOLE SWING SEEDS IT, aimed body and Follow Through
+                // alike: *"Melee Influence only triggers from direct melee
+                // strikes"*, and a swing reaching past the first body is one of
+                // those. A body the swing KILLED seeds nothing — *"hits that
+                // one-hit-kill enemies cannot trigger nor benefit"*, which the
+                // wiki files under Bugs and which is the behaviour all the same.
+                if params.arcane.influence_chance > 0.0 {
+                    influence_seeds.push((0, Landed { procs: aimed_procs, raw, killed: false }));
+                    // THE SPREAD READS THE WINDOW THIS SWING FOUND OPEN, and the
+                    // grant below is rolled after: the buff is what an
+                    // Electricity status GRANTS, so the swing that grants it has
+                    // already resolved. Nothing published says the granting hit
+                    // also spreads, and assuming it would invent a copy of the
+                    // swing.
+                    let open = t < influence_until;
+                    let scale = InstanceScale {
+                        // THE STATUS IS THE SWING'S OWN, one derivation further
+                        // out — so it burns off the base the swing's statuses
+                        // burn off, and only the faction rung differs. The wiki
+                        // checks it from that side: an ordinary Electricity proc
+                        // of 228 spreads as 353, and 353 / 228 is exactly one
+                        // more faction multiplier.
+                        mb_live,
+                        crit_multiplier,
+                        part_factor,
+                        attrition,
+                        xh_bracket: ap.extra_hit_bracket(t),
+                    };
+                    if open {
+                        for (from, landed) in &influence_seeds {
+                            if landed.killed {
+                                continue;
+                            }
+                            let carried: Vec<(DamageType, f64)> = landed
+                                .procs
+                                .iter()
+                                .copied()
+                                .filter(|ty| influence_can_spread(*ty))
+                                .map(|ty| (ty, landed.raw * shares.share(ty)))
+                                .collect();
+                            spread_from_influence(
+                                &mut others,
+                                &mut target,
+                                &mut debuffs,
+                                params,
+                                ap,
+                                *from,
+                                &carried,
+                                scale,
+                                params.arcane.influence_radius_m,
+                                &mut gal,
+                                &mut arc,
+                                &mut r,
+                                rec,
+                                d,
+                                t,
+                            );
+                        }
+                    }
+                    // …AND THE ROLL THAT OPENS IT, off any Electricity status
+                    // this swing landed. One roll for the swing rather than one
+                    // per body: the card is *"On Melee Electricity Status"* and
+                    // a window that is already open cannot be refreshed, so a
+                    // second success in the same instant buys nothing anyway.
+                    if !open
+                        && influence_seeds.iter().any(|(_, l)| {
+                            !l.killed && l.procs.contains(&DamageType::Electricity)
+                        })
+                        && d.extra.chance(params.arcane.influence_chance)
+                    {
+                        influence_until = t + params.arcane.influence_seconds;
+                    }
+                }
             }
         }
 
