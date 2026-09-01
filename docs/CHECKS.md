@@ -266,6 +266,29 @@ polarizations the build does not need, and reaches for an UMBRA FORMA to do it �
 the one item `engine::mods::fit` is written to spare. The engine answers five
 regular Forma and no Umbra for that build; the page has to say the same.
 
+## `check_build_retriever`
+
+**A RETRIEVER'S SHAPE DOES NOT MOVE.** The benchmark bar is four controls —
+ruler, mode, riven, rank — and it draws all four on every weapon: with a hundred
+board rows or with none, and whether or not any of the four has a second answer
+to offer. It grew and shrank before, dropping the riven control entirely wherever
+a mode had one ranking, which taught the reader to read its SHAPE as information
+— and then "no riven control" and "no riven" were the same picture. A dead
+control says "asked, and there was one answer" where an absent one said nothing.
+
+**…AND WHAT IS OPEN IS SAID SOMEWHERE ELSE.** The bar's controls fall back to the
+board's leader whenever nothing official is loaded, so a reader on their own
+build was shown a ruler, a mode and a rank belonging to a build that was NOT on
+the page — including on a freshly opened weapon, which opens no row at all. That
+is a sentence the bar was never in a position to say, so `#build-current` says
+it, in each of its three states: a board row (read-only), one of your own, and
+the unsaved build the page starts on.
+
+**IT MUST RUN AGAINST `site/`.** `board.json` is FETCHED at runtime and the
+native dev server does not serve it, so a run pointed at 8787/8799 sees an empty
+board and every assertion passes on placeholder text. The first check asserts the
+weapon under test has rows, which is what makes that loud instead of green.
+
 ## `check_build_size`
 
 How full a searched build must be is a RANGE

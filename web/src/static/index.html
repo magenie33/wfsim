@@ -519,8 +519,12 @@
     <!-- BENCHMARK BUILDS: the board's rows, in a bar of their own. Read-only
          and not yours, which is why they are not chips in the bar below —
          see renderBenchmarkBarIn. Hidden when the weapon has no rows. -->
-    <div class="preset-bar bench-bar" id="bench-bar-builder-builds" hidden></div>
+    <div class="preset-bar bench-bar" id="bench-bar-builder-builds"></div>
     <div class="preset-bar" id="preset-bar-builder-builds"></div>
+    <!-- WHAT IS OPEN, as its own line. The two bars above are RETRIEVERS —
+         what you are browsing — and a reader could not tell which of the two
+         described the build on the page. See renderCurrentBuild. -->
+    <div class="build-current" id="build-current"></div>
 
     <!-- QUICK CALC settings: what every "what would this slot be worth as X"
          answer below is measured with. Page level, above the mods, because it

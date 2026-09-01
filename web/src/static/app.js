@@ -7625,40 +7625,33 @@ function renderBenchmarkBarIn(bar, cfg) {
   if (!bar) return;
   const ps = cfg.load().filter((p) => p.builtin);
   const active = cfg.active();
-  bar.hidden = !ps.length;
-  if (!ps.length) { bar.innerHTML = ""; return; }
   const noun = cfg.noun || "preset";
-  // ONE PICK PER QUESTION, AND A RANK IS NOT ONE OF THEM. A chip row
-  // was right while a weapon had ten official builds under one ruler; one
-  // dropdown holding rulers x modes x kinds x ranks was right while that was
-  // forty rows. The board is designed for a hundred rulers with a hundred rows
-  // each, and at that size a
-  // single list is not a list — you cannot scan it, and searching it means
-  // knowing what a rank is a rank ON before you can ask.
+  // ONE PICK PER QUESTION: WHICH RULER, WHICH MODE, WHICH KIND, then WHICH ROW.
+  // A single list holding rulers x modes x kinds x ranks cannot be scanned, and
+  // searching it means knowing what a rank is a rank ON before you can ask.
   //
-  // So: WHICH RULER, WHICH MODE, WHICH KIND, then WHICH ROW. Each list stays
-  // the size of one question, and each appears only where the one before it
-  // leaves a choice — the official SCENARIOS are one per ruler, so picking the
-  // ruler IS picking the scenario and a control for it would hold one item.
+  // THE SHAPE NEVER MOVES — four controls, always, even where one holds a
+  // single item and even on a weapon with no rows. That is what makes this a
+  // RETRIEVER rather than a description of the page, and what is OPEN is said
+  // by `renderCurrentBuild` instead. docs/CHECKS.md `check_build_retriever`.
   //
   // EVERY LIST IS STRONGEST-FIRST, and so is its default: the entries arrive in
-  // that order from `builtinBuilds`, so a reader who touches nothing is on this
-  // board's leading build — the mode that wins, with a riven if the winner
-  // has one.
+  // that order from `builtinBuilds`, so a reader who touches nothing is looking
+  // at this board's leader.
   const ruler = (p) => p.benchmark || p.builtin;
   const sel = ps.find((p) => presetId(p) === active) || null;
   const rulers = [];
   for (const p of ps) {
     if (!rulers.some((r) => r.id === ruler(p))) rulers.push({ id: ruler(p), label: p.group || p.name });
   }
-  const curRuler = sel ? ruler(sel) : rulers[0].id;
+  const curRuler = sel ? ruler(sel) : (rulers[0] || {}).id;
   const inRuler = ps.filter((p) => ruler(p) === curRuler);
   // THEN HOW THE WEAPON IS PLAYED, and it is a CONTROL rather than a header
   // inside the row list: a rank only means something within one way of
   // playing, so the Torid's Incarnon rows and its base rows are two rankings
   // and a reader after one of them should not scroll through the other.
   const modeOf = (p) => p.mode || "base";
-  const curMode = sel ? modeOf(sel) : modeOf(inRuler[0]);
+  const curMode = sel ? modeOf(sel) : (inRuler[0] ? modeOf(inRuler[0]) : "");
   const modes = [];
   for (const p of inRuler) {
     if (!modes.some((m) => m.id === modeOf(p))) modes.push({ id: modeOf(p), label: p.modeName || modeOf(p) });
@@ -7670,19 +7663,25 @@ function renderBenchmarkBarIn(bar, cfg) {
   // RATHER THAN A LONGER LABEL, as with the ruler: each list stays the size of
   // ONE question, and the number at the end goes back to being a number.
   const kindOf = (p) => (p.riven ? "riven" : "plain");
-  const curKind = sel ? kindOf(sel) : kindOf(inMode[0]);
-  // IN THE ORDER THE ROWS COME IN, which is the stronger kind first. Derived,
-  // so a mode with only one kind offers no choice.
+  const curKind = sel ? kindOf(sel) : (inMode[0] ? kindOf(inMode[0]) : "");
+  // IN THE ORDER THE ROWS COME IN, which is the stronger kind first.
   const kinds = [];
   for (const p of inMode) if (!kinds.includes(kindOf(p))) kinds.push(kindOf(p));
   const inKind = inMode.filter((p) => kindOf(p) === curKind);
+  const kindLabel = (k) => tr(k === "riven" ? "With riven" : "Without riven");
+  // A DEAD CONTROL STILL SAYS WHAT IT IS FOR. `title` carries the hint on every
+  // one of the four, enabled or not, because the disabled ones are exactly the
+  // ones a reader has no other way to interrogate.
+  const hint = cfg.rowHintTitle || "";
+  bar.hidden = false;
   bar.innerHTML =
     `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${ps.length}</b></span>` +
     // THE RULER. Searched, because this list is the one designed to reach a
     // hundred, and every row of the board hangs off which one you are reading.
     ddButton(`dd-bench-${cfg.domain}`, {
       value: curRuler,
-      search: true,
+      search: rulers.length > 1,
+      disabled: rulers.length <= 1,
       title: cfg.benchHint || "",
       items: rulers.map((r) => ({ value: r.id, label: r.label })),
       // Picking a ruler lands on its FIRST row, which is its leader — the same
@@ -7692,66 +7691,48 @@ function renderBenchmarkBarIn(bar, cfg) {
         if (first) pickPreset(cfg, presetId(first));
       },
     }) +
-    // HOW IT IS PLAYED — a control where there is a choice, the NAME where
-    // there is not. The conclusion the rank below reached: "a control with one
-    // item is not a control" is true and is not a reason to say nothing.
-    (modes.length > 1
-      ? ddButton(`dd-bench-mode-${cfg.domain}`, {
-        value: curMode,
-        title: cfg.rowHintTitle || "",
-        items: modes.map((m) => ({ value: m.id, label: m.label })),
-        // Picking a mode lands on ITS leader, the same way picking a ruler
-        // lands on the ruler's.
-        onPick: (v) => {
-          const first = inRuler.find((p) => modeOf(p) === v);
-          if (first) pickPreset(cfg, presetId(first));
-        },
-      })
-      : `<span class="pmode" title="${escHtml(cfg.rowHintTitle || "")}">${
-          escHtml((modes[0] || {}).label || curMode)}</span>`) +
-    // WHICH OF THE TWO RANKINGS. Absent where the weapon has only one kind in
-    // this mode, which is most of them.
-    (kinds.length > 1
-      ? ddButton(`dd-bench-kind-${cfg.domain}`, {
-        value: curKind,
-        title: cfg.rowHintTitle || "",
-        // SAID AS A PROPERTY OF THE BUILD, not as a filter over a list: this
-        // control picks one of two rankings, where the board page's own
-        // three-way filter narrows one — so "riven only" stays over there.
-        items: kinds.map((k) => ({
-          value: k,
-          label: tr(k === "riven" ? "With riven" : "Without riven"),
-        })),
-        onPick: (v) => {
-          const first = inMode.find((p) => kindOf(p) === v);
-          if (first) pickPreset(cfg, presetId(first));
-        },
-      })
-      : "") +
-    (inKind.length > 1
-      ? ddButton(`dd-bench-row-${cfg.domain}`, {
-        value: presetId(sel || inKind[0]),
-        search: true,
-        title: cfg.rowHintTitle || "",
-        // A FLAT LIST OF NUMBERS. The ruler, the mode and which of the two
-        // rankings are each answered by a control to its left, so a rank here
-        // is a rank again.
-        items: inKind.map((p) => ({
-          value: presetId(p),
-          label: p.rank != null ? `#${p.rank}` : p.name,
-          hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
-        })),
-        onPick: (v) => pickPreset(cfg, v),
-      })
-      // ONE ROW STILL SHOWS ITS NUMBER. The control was
-      // omitted here because "a control with one item is not a control", which
-      // is true and was the wrong conclusion: the NUMBER is information even
-      // when there is nothing to pick — "#1" says this is the leader, and a
-      // reader who sees no rank cannot tell whether they are looking at the
-      // best build on the board or the only one anybody sent. So the control
-      // goes and the label stays, as a static chip.
-      : `<span class="prank" title="${escHtml(cfg.rowHintTitle || "")}">${
-          escHtml(inKind[0].rank != null ? `#${inKind[0].rank}` : presetLabel(inKind[0]))}</span>`) +
+    // HOW IT IS PLAYED.
+    ddButton(`dd-bench-mode-${cfg.domain}`, {
+      value: curMode,
+      disabled: modes.length <= 1,
+      title: hint,
+      items: modes.map((m) => ({ value: m.id, label: m.label })),
+      // Picking a mode lands on ITS leader, the same way picking a ruler
+      // lands on the ruler's.
+      onPick: (v) => {
+        const first = inRuler.find((p) => modeOf(p) === v);
+        if (first) pickPreset(cfg, presetId(first));
+      },
+    }) +
+    // WHICH OF THE TWO RANKINGS.
+    ddButton(`dd-bench-kind-${cfg.domain}`, {
+      value: curKind,
+      disabled: kinds.length <= 1,
+      title: hint,
+      // SAID AS A PROPERTY OF THE BUILD, not as a filter over a list: this
+      // control picks one of two rankings, where the board page's own
+      // three-way filter narrows one — so "riven only" stays over there.
+      items: kinds.map((k) => ({ value: k, label: kindLabel(k) })),
+      onPick: (v) => {
+        const first = inMode.find((p) => kindOf(p) === v);
+        if (first) pickPreset(cfg, presetId(first));
+      },
+    }) +
+    // …AND WHICH ROW. A FLAT LIST OF NUMBERS: the ruler, the mode and which of
+    // the two rankings are each answered by a control to its left, so a rank
+    // here is a rank again.
+    ddButton(`dd-bench-row-${cfg.domain}`, {
+      value: sel ? presetId(sel) : (inKind[0] ? presetId(inKind[0]) : ""),
+      search: inKind.length > 1,
+      disabled: inKind.length <= 1,
+      title: hint,
+      items: inKind.map((p) => ({
+        value: presetId(p),
+        label: p.rank != null ? `#${p.rank}` : p.name,
+        hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
+      })),
+      onPick: (v) => pickPreset(cfg, v),
+    }) +
     (sel
       ? `<button class="pop dup" title="${escHtml(
           tr("copy it into a {thing} of your own — the official one cannot be edited")
@@ -8249,6 +8230,42 @@ function buildBarCfg() {
   };
 }
 
+/// WHAT IS OPEN ON THIS PAGE, said in one line and in one place.
+///
+/// THE BARS ABOVE ARE RETRIEVERS. Their controls say what you are BROWSING, and
+/// picking in one loads a build — but a reader on their own preset was still
+/// shown a ruler, a mode and a rank up there, because the benchmark bar falls
+/// back to the board's leader whenever nothing official is loaded. Two facts
+/// wearing one row is what made "which of these am I looking at" unanswerable,
+/// and no rearrangement of the bar could have fixed it: the missing sentence
+/// was never one the bar was in a position to say.
+function renderCurrentBuild() {
+  const box = $("build-current");
+  if (!box) return;
+  const p = buildNamed(activePreset);
+  let what;
+  if (p && p.builtin) {
+    // NAMED THE WAY THE BAR NAMES IT — ruler, mode, riven, rank — so the reader
+    // can carry the sentence back up to the controls and find it.
+    const bits = [p.group || benchmarkName(p.benchmark || p.builtin)];
+    if (p.modeName) bits.push(p.modeName);
+    bits.push(tr(p.riven ? "With riven" : "Without riven"));
+    if (p.rank != null) bits.push(`#${p.rank}`);
+    what = `<b>${escHtml(bits.join(" · "))}</b><span class="bc-note">${
+      escHtml(tr("a board row, so nothing here can be edited — copy it to open everything up"))}</span>`;
+  } else if (p) {
+    what = `<b>${escHtml(presetLabel(p))}</b><span class="bc-note">${
+      escHtml(tr("one of your own builds"))}</span>`;
+  } else {
+    // THE THIRD STATE IS A STATE. A build nobody has saved is what the page
+    // opens on and what every edit returns you to, and saying nothing there
+    // left the line blank exactly when the reader had least context.
+    what = `<b>${escHtml(tr("an unsaved build"))}</b><span class="bc-note">${
+      escHtml(tr("save it to keep it, or send it to the board"))}</span>`;
+  }
+  box.innerHTML = `<span class="bc-k">${escHtml(tr("Open now"))}</span>${what}`;
+}
+
 function renderPresetBar() {
   // TWO BARS, ONE CONFIG. The benchmark bar and the player's bar are handed
   // the same `cfg` — same load, same active, same apply — so a chip in either
@@ -8257,6 +8274,7 @@ function renderPresetBar() {
   const buildsCfg = buildBarCfg();
   renderBenchmarkBarIn($("bench-bar-builder-builds"), { ...buildsCfg, benchLabel: tr("Benchmark builds"), benchHint: tr("submitted by players, scored here — read-only") });
   renderPresetBarIn($("preset-bar-builder-builds"), buildsCfg);
+  renderCurrentBuild();
 }
 
 // A scenario is the `sim` object, BUFF CONFIG INCLUDED.

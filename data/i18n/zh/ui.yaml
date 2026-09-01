@@ -1216,6 +1216,11 @@ ui:
   # The board page FILTERS a list; the benchmark bar PICKS one of two rankings.
   "Without riven": "无裂罅"
   "With riven": "有裂罅"
+  "Open now": 当前打开
+  "a board row, so nothing here can be edited — copy it to open everything up": 榜单行，因此这里不能编辑——复制一份即可全部解锁
+  "one of your own builds": 你自己的配装
+  "an unsaved build": 尚未保存的配装
+  "save it to keep it, or send it to the board": 保存它，或者上传到榜单
   "board": "榜单"
   # THE KITGUN FAMILY, off the CN wiki's own page (`组合枪`, reached through its
   # MediaWiki API — DATA_SOURCES §"The CN wiki is reachable through its API").
