@@ -135,8 +135,11 @@ paid zero there. With it, a crowd build carrying Galvanized Reflex's +80 holds
 **8x** between slams instead of 4x.
 
 **A ZERO OR NEGATIVE DURATION IS ITS OWN RULE** — *"prevents increasing the
-combo counter"* — and nothing in the roster reaches it: only a melee riven rolls
-the negative that would, and there is no melee riven pool yet.
+combo counter"* — which is a harder stop than the 0.1 s floor, and a MELEE RIVEN
+is what reaches it: Combo Duration's malus is -8.2 s at disposition 1.35 against
+a five-second weapon. `ResolvedWeapon::combo_frozen` carries it and the counter
+is cleared where it is read, so no swing has to remember; the initial-combo
+floor still pays, because a floor is not an increase.
 
 **THE FIGHT OPENS WITH IT FULL.** The 40 a second is what a heavy attack owes
 back, not what a player owes on the way in — so the first heavy of the
@@ -211,21 +214,21 @@ than the mode: a Tennokai heavy on a light combo is one too, which is why a
 build converting one swing in four climbs the counter Blood Rush reads more
 slowly than its two chances suggest.
 
-### …WITH ONE EXCEPTION, AND IT IS THE PRAEDOS'S
+### …AND THE ONE CARD THAT PAYS A SLAM, WHICH IS NOT THE HEAVY ONE
 
 Shockwave Synergy — *"for each enemy hit by Slam radius, gain 4 Combo Count"* —
-is the only card in the game that earns combo on a heavy mode, and it is what
-makes the Praedos's heavy slam a different weapon in a crowd from what it is
-solo. Every other heavy build can only spend what its floor regenerates between
-swings; this one is paid four points a body, so nine bodies is 36 points and the
-counter climbs while it is being emptied.
+pays the ORDINARY slam and pays a HEAVY slam nothing (owner, 2026-09-01). So it
+is the trailing slam of a combo that earns it: the Praedos's `block_forward`
+ends in one, nine bodies in the sphere is 36 points, and Blood Rush is what
+turns those into damage.
 
-**IT IS GRANTED AFTER THE SPEND, not before.** The heavy attack empties the
-counter and the slam lands after it, so a grant written on the earning side
-would be overwritten and the perk would be worth exactly nothing in the mode it
-is bought for. `shockwave_synergy_is_paid_by_the_crowd` asserts the gain SCALES
-with the crowd rather than asserting a value, because that is the whole of what
-the card is.
+**THE GATE IS THE GENERAL RULE, not a carve-out for this card.** A swing that
+SPENDS the counter adds nothing to it, and the perk reads the same
+`spends_combo` flag every other combo earner reads — so the heavy slam and the
+heavy attack are one answer rather than two.
+`shockwave_synergy_is_paid_by_the_crowd` asserts the gain SCALES with the crowd
+on the combo that slams, and asserts the heavy slam FLAT beside it, which is
+what makes the gate checkable at all.
 
 **COMBO COUNT CHANCE SCALES IT rather than rolling for it**: *"True Punishment
 affects Shockwave Synergy, effectively doubling the Combo Count gain from 4 to
@@ -331,7 +334,7 @@ The module's whole vocabulary, for whoever transcribes the next stance:
 | --- | --- |
 | seven melee `FormKind`s, each its own mode | `weapons_data::FormKind`, `play_modes` |
 | the combo script — a swing with its own multiplier, delay, wind-up, hit count, Impact and Slash bonuses, 360deg flag, forced procs and trailing slam | `weapons_data::ComboHit` |
-| combo points a SLAM grants per body (Shockwave Synergy) | `EvoEffect::ComboCountOnSlamHit`, granted after the spend |
+| combo points an ORDINARY slam grants per body (Shockwave Synergy) | `EvoEffect::ComboCountOnSlamHit`, gated off a swing that spends the counter |
 | a STANCE as a mod that supplies those scripts | `loadout::ModDef::stance`, `resolve` |
 | the combo counter, its ladder and its refilling floor | `dummy::melee_combo_multiplier`, `melee_combo_points` |
 | Blood Rush / Weeping Wounds | one `(combo - 1)` term in each of two existing brackets |
@@ -342,6 +345,22 @@ The module's whole vocabulary, for whoever transcribes the next stance:
 | melee has no ammo, aims at nothing, puts nothing on a head | `scenario::Capability` |
 | eleven mod effect kinds | crit/status per combo, combo duration as seconds and as a multiplier, initial combo, heavy efficiency, heavy damage, slam damage, melee reach in metres, combo count chance, wind-up speed, crit chance on a slide |
 | six evolution effect kinds | relative base damage, initial combo, melee reach, follow through, slam radius, wind-up speed, proc conversion |
+| the melee riven pool, and the counter it can STOP | `data/rivens/melee.yaml`, `ResolvedWeapon::combo_frozen` |
+
+**THE RIVEN POOL IS A DIFFERENT ITEM, not the rifle's with rows crossed out.**
+`PlayerMeleeWeaponRandomModRare` is 24 stats sharing twelve with a gun's: no
+Multishot, Magazine, Reload, Ammo, Zoom, Recoil, Punch Through or Projectile
+Speed, and eleven of its own — Attack Speed, Combo Duration, Initial Combo,
+Heavy Attack Efficiency, Range, Finisher Damage, Critical Chance for Slide
+Attack and the combo-count pair. Every one lands in the bucket its MOD already
+lands in, so the riven's Critical Chance carries True Steel's `(x2 for Heavy
+Attacks)` and its Range is Reach's flat metres.
+
+Two shapes are new with it. **A stat can be malus-only** (`bonus: false`),
+which makes "what the picker offers" two lists rather than one — DE ships
+Additional Combo Count Chance and Chance to Gain Combo Count as separate
+entries, one for each slot. And **a malus-only stat keeps DE's sign** rather
+than being flipped into one, which is the whole of MEASUREMENTS M71.
 
 **Nothing else moved.** Every new field is empty or zero on a gun, and all 824
 engine tests — the golden values among them — are unchanged.
@@ -443,9 +462,10 @@ applies to.
 
 1. **Melee Duplicate**, and the eight other arcanes whose triggers this arena
    has not got — see §5.
-2. **Melee rivens.** No pool has been surveyed; a melee card rolls Range, Attack
-   Speed, Combo Duration and Heavy Attack Efficiency, none of which any existing
-   riven pool contains.
+2. **Finisher Damage on a melee riven.** It rolls, it occupies a slot and it
+   names the card, and a finisher is an animation this arena has none of — the
+   same answer Finishing Touch already gets. The editor and the mod list both
+   say which line pays nothing.
 3. **Power Spike's partial combo decay** — a Warframe passive, so the counter
    here drops to zero where a real build keeps most of it.
 4. **A swing's own animation length.** The module publishes a combo's DURATION

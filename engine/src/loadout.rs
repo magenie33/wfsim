@@ -3343,6 +3343,12 @@ pub struct ResolvedPanel {
     pub spends_combo: bool,
     /// Seconds the combo counter survives untouched, mods included.
     pub combo_duration_seconds: f64,
+    /// …AND WHETHER THE COUNTER IS STOPPED ALTOGETHER. *"A zero or negative
+    /// combo duration prevents increasing the combo counter"* (wiki), which is
+    /// a harder stop than the 0.1 s floor beside it: the clock is not short,
+    /// the counter never rises. It is its own field because the floor has
+    /// already been applied by the time anyone reads the seconds.
+    pub combo_frozen: bool,
     /// The floor the counter returns to, in points, mods and evolutions
     /// included.
     pub initial_combo: f64,
@@ -5154,14 +5160,16 @@ pub fn resolve_for(
         // five, and Corrupt Charge halves what you have. The wiki's floor is
         // applied last — *"Melee Combo duration cannot be reduced below 0.1
         // seconds"* — so a build stacking penalties still has a counter.
-        // ZERO IS ITS OWN RULE, and nothing in the roster reaches it: *"A zero or
-        // negative combo duration PREVENTS INCREASING the combo counter"*, which
-        // is a harder stop than a 0.1 s clock. Only a melee RIVEN rolls the
-        // negative that gets there, and there is no melee riven pool yet — so
-        // the floor is the whole of what this build can produce.
+        // ZERO IS ITS OWN RULE: *"A zero or negative combo duration PREVENTS
+        // INCREASING the combo counter"*, which is a harder stop than a 0.1 s
+        // clock and is reported beside it in `combo_frozen`. A melee riven's
+        // Combo Duration malus is what reaches it — -8.2 s at disposition 1.35
+        // against a five-second weapon.
         combo_duration_seconds: ((base.combo_duration_seconds + combo_duration_add)
             * combo_duration_mult)
             .max(0.1),
+        combo_frozen: (base.combo_duration_seconds + combo_duration_add) * combo_duration_mult
+            <= 0.0,
         // …PLUS WHAT A GENESIS OPENS THE COUNTER AT. The Magistar's Incarnon
         // Form is +30, which is 0.75 s of refill against a 0.8 s wind-up.
         initial_combo: initial_combo + base.evo_initial_combo,

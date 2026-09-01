@@ -2870,6 +2870,9 @@ pub struct DummyParams {
     /// every melee weapon; the wiki names the handful that differ (Guandao
     /// Prime 6, Pulmonars 9, Vitrica 10) and the mods that extend it.
     pub combo_duration_seconds: f64,
+    /// …AND WHETHER IT IS STOPPED ALTOGETHER — see
+    /// [`crate::loadout::ResolvedWeapon::combo_frozen`].
+    pub combo_frozen: bool,
     /// THE FLOOR THE COUNTER RETURNS TO, in points.
     ///
     /// *"Heavy attacks spend initial combo, which regenerates at a rate of 40
@@ -4339,6 +4342,7 @@ impl DummyParams {
             tennokai: panel.tennokai,
             spends_combo: panel.spends_combo,
             combo_duration_seconds: panel.combo_duration_seconds,
+            combo_frozen: panel.combo_frozen,
             initial_combo: panel.initial_combo,
             heavy_attack_efficiency: panel.heavy_attack_efficiency,
             crit_chance_per_combo: panel.crit_chance_per_combo,
@@ -4657,6 +4661,7 @@ impl Default for DummyParams {
             tennokai: crate::loadout::Tennokai::default(),
             spends_combo: false,
             combo_duration_seconds: 0.0,
+            combo_frozen: false,
             initial_combo: 0.0,
             heavy_attack_efficiency: 0.0,
             crit_chance_per_combo: 0.0,
@@ -10357,6 +10362,59 @@ mod melee {
         );
     }
 
+    /// **A COMBO DURATION MALUS STOPS THE COUNTER, it does not shorten it** —
+    /// *"A zero or negative combo duration prevents increasing the combo
+    /// counter"*, which is a harder stop than the 0.1 s floor beside it.
+    ///
+    /// Nothing in the mod pool reaches it and a melee RIVEN does: Combo
+    /// Duration's malus is -8.2 s at the Magistar's 1.35 disposition, against a
+    /// weapon whose own clock is five seconds. So the rule is asserted where it
+    /// is visible — Blood Rush reads the counter and nothing else, so a build
+    /// carrying it pays exactly the same as one that does not.
+    #[test]
+    fn a_zero_combo_clock_stops_the_counter_rather_than_shortening_it() {
+        let riven = |malus: &str| crate::rivens_data::RivenSpec {
+            class: "melee".to_string(),
+            bonuses: vec![crate::rivens_data::RolledStat { id: "melee_damage".into(), roll: 1.0 }],
+            malus: Some(crate::rivens_data::RolledStat { id: malus.to_string(), roll: 1.0 }),
+            rank: 8,
+            polarity: crate::mods::Polarity::Madurai,
+        };
+        let fight = |malus: &str, mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("magistar", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("magistar");
+            let rv = riven(malus).to_mod_def("riven:test", 1.35);
+            let mut refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            refs.push(&rv);
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let arena = crate::arena::Arena::training(30.0);
+            let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            (panel.combo_frozen, panel.combo_duration_seconds, monte_carlo(&p, 24, 909).mean_damage)
+        };
+
+        // -8.2 s on a 5 s weapon: the seconds floor at 0.1 and the COUNTER is
+        // the thing that stops.
+        let (frozen, clock, with_rush) = fight("combo_duration", &["blood_rush"]);
+        assert!(frozen, "a -8.2 s malus on a 5 s clock must freeze the counter");
+        assert!((clock - 0.1).abs() < 1e-9, "the seconds still floor at 0.1, got {clock}");
+        let (_, _, without) = fight("combo_duration", &[]);
+        assert!(
+            (with_rush - without).abs() < 1e-9,
+            "Blood Rush reads a counter that never rises: {with_rush} vs {without}"
+        );
+
+        // …AND THE CHECK BITES ONLY ON THIS MALUS. The same card with any other
+        // negative leaves the clock alone, and then Blood Rush is worth real
+        // damage — so the assertion above is about the freeze and not about the
+        // fixture being unable to tell two builds apart.
+        let (still, clock, rushed) = fight("attack_speed", &["blood_rush"]);
+        assert!(!still && (clock - 5.0).abs() < 1e-9, "an unrelated malus leaves the clock at 5 s");
+        let (_, _, plain) = fight("attack_speed", &[]);
+        assert!(rushed > plain * 1.05, "Blood Rush pays on a live counter: {rushed} vs {plain}");
+    }
+
     /// AN EXTRA COMBO POINT PER HIT IS WORTH WHAT READS THE COUNTER.
     ///
     /// Quickening's `+20% Combo Count Chance` is one point on a fifth of the
@@ -10702,21 +10760,26 @@ mod melee {
     /// ASSERTED ON THE GAIN'S DEPENDENCE ON THE CROWD rather than on a value,
     /// because that is the whole of what the perk is: the same card on one body
     /// pays four points a slam, and on nine pays thirty-six.
+    ///
+    /// …AND IT IS THE ORDINARY SLAM THAT PAYS. A HEAVY slam earns nothing
+    /// (owner, 2026-09-01), which is the general rule rather than a carve-out:
+    /// a swing that spends the counter adds nothing to it. So the mode under
+    /// test is the combo that ENDS in a slam — `block_forward`, whose trailing
+    /// hit is `slam_multiplier: 1.0` — and the heavy slam is asserted flat
+    /// beside it, which is what makes the gate checkable at all.
     #[test]
     fn shockwave_synergy_is_paid_by_the_crowd() {
-        let solo_off = melee_fight("praedos_heavy_slam", &[], &[], 60.0, None).mean_damage;
-        let solo_on =
-            melee_fight("praedos_heavy_slam", &["praedos_shockwave_synergy"], &[], 60.0, None)
-                .mean_damage;
-        let crowd_off = melee_fight("praedos_heavy_slam", &[], &[], 60.0, Some(3.0)).mean_damage;
-        let crowd_on = melee_fight(
-            "praedos_heavy_slam",
-            &["praedos_shockwave_synergy"],
-            &[],
-            60.0,
-            Some(3.0),
-        )
-        .mean_damage;
+        // BLOOD RUSH IS WHAT MAKES THE POINTS VISIBLE on a light combo: the
+        // counter does not multiply a normal swing, so a build with nothing
+        // reading it pays exactly the same at 1x and at 12x.
+        let at = |form: &str, evos: &[&str], gap: Option<f64>| {
+            melee_fight(form, evos, &["blood_rush"], 60.0, gap).mean_damage
+        };
+        let perk = ["praedos_shockwave_synergy"];
+        let solo_off = at("praedos_block_forward", &[], None);
+        let solo_on = at("praedos_block_forward", &perk, None);
+        let crowd_off = at("praedos_block_forward", &[], Some(3.0));
+        let crowd_on = at("praedos_block_forward", &perk, Some(3.0));
         assert!(
             crowd_on > crowd_off,
             "the perk paid nothing in a crowd: {crowd_off:.0} -> {crowd_on:.0}"
@@ -10726,6 +10789,12 @@ mod melee {
             "the gain did not scale with the crowd: solo {:.3}x, crowd {:.3}x",
             solo_on / solo_off,
             crowd_on / crowd_off
+        );
+        // THE HEAVY SLAM IS THE SAME PERK ON THE SAME CROWD AND PAYS NOTHING.
+        assert_eq!(
+            at("praedos_heavy_slam", &perk, Some(3.0)),
+            at("praedos_heavy_slam", &[], Some(3.0)),
+            "a heavy slam spends the counter, so it cannot earn into it"
         );
     }
 
@@ -12831,7 +12900,11 @@ pub fn run_once_traced(
         // empties it, so the multiplier it pays is the one that was standing
         // when the trigger went down — the same rule the game states by
         // spending "all or part of the combo counter" as part of the attack.
-        if t > combo_expiry {
+        // …OR THE CLOCK RAN OUT ZERO. *"A zero or negative combo duration
+        // prevents increasing the combo counter"* — so the counter is cleared
+        // HERE, upstream of the one place it is read, rather than by each of
+        // the four swings that earn into it remembering to ask.
+        if t > combo_expiry || ap.combo_frozen {
             // *"Melee Combo resets after this time"*. Power Spike's partial
             // decay is a WARFRAME passive and is not modelled — declared,
             // because a build running it keeps far more of the counter than
@@ -16058,7 +16131,12 @@ pub fn run_once_traced(
             // Synergy, effectively doubling the Combo Count gain from 4 to 8"*
             // (wiki, Praedos). A crowd is what pays it, which is why the count
             // is over the bodies the sphere actually reached.
-            if ap.combo_count_on_slam_hit > 0.0 {
+            //
+            // …AND A HEAVY SLAM EARNS NOTHING FROM IT (owner, 2026-09-01). The
+            // same rule the stance points above obey — a swing that SPENDS the
+            // counter adds nothing to it — read off the same flag, so the perk
+            // and every other earner cannot disagree about what a heavy is.
+            if ap.combo_count_on_slam_hit > 0.0 && !(ap.spends_combo || tennokai_heavy) {
                 let slam_rad = match (h.slam_multiplier, ap.slam) {
                     (Some(_), Some(s)) => Some(s),
                     _ => ap.radial.filter(|r| {

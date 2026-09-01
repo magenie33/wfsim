@@ -29,6 +29,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         tennokai: wfsim_engine::loadout::Tennokai::default(),
         spends_combo: false,
         combo_duration_seconds: 0.0,
+        combo_frozen: false,
         initial_combo: 0.0,
         heavy_attack_efficiency: 0.0,
         crit_chance_per_combo: 0.0,
