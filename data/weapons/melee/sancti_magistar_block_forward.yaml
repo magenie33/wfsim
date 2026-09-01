@@ -50,13 +50,13 @@ attack:
   # the 6 direct swings share the 4.25 s and it lands alongside the last of them.
   # `Knockback` is Impact's own proc and is transcribed as `impact`.
   combo_script:
-    - { multiplier: 3.0, delay_seconds: 0.7083 }
-    - { multiplier: 0.5, delay_seconds: 0.7083, hits: 2, all_around: true }
-    - { multiplier: 3.0, delay_seconds: 0.7083 }
-    - { multiplier: 0.5, delay_seconds: 0.7083, hits: 2, all_around: true }
-    - { multiplier: 4.0, delay_seconds: 0.7083, impact_multiplier: 1.5, all_around: true, forced_procs: [impact] }
-    - { multiplier: 5.0, delay_seconds: 0.7083 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [knockdown] }
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true }
+    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact] }
+    - { multiplier: 5.0, delay_seconds: 0.0 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown] }
 
 source:
   url: https://wiki.warframe.com/w/Crushing_Ruin

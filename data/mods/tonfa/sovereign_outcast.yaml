@@ -24,32 +24,34 @@ description: "An outlandish style with sweeping attacks."
 # Enduring Strike reads lifted. Nothing reads a ragdoll, so writing it would
 # state a rule that is never applied.
 combos:
-  # Rogue Edict — 2.85 s at 1.0x, 7 swings
+  # see notes: combo_clock_is_the_input
+  # Rogue Edict — 2.85 s at 1.0x, 4 inputs of 0.7125 s
   neutral:
-    - { multiplier: 2.0, delay_seconds: 0.4071 }
-    - { multiplier: 0.5, delay_seconds: 0.4071, hits: 5 }
-    - { multiplier: 2.0, delay_seconds: 0.4071 }
-    - { multiplier: 0.5, delay_seconds: 0.4071 }
-    - { multiplier: 3.0, delay_seconds: 0.4071, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.4071, hits: 4, forced_procs: [slash] }
-    - { multiplier: 2.0, delay_seconds: 0.4071, hits: 2, forced_procs: [knockdown] }
-  # Vagrant Behest — 1.75 s at 1.0x, 3 swings
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 0.7125, hits: 5 }
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 0.0 }
+    - { multiplier: 3.0, delay_seconds: 0.7125, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 4, forced_procs: [slash] }
+    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 2, forced_procs: [knockdown] }
+  # Vagrant Behest — 1.75 s at 1.0x, 3 inputs of 0.5833 s
   forward:
     - { multiplier: 1.0, delay_seconds: 0.5833 }
     - { multiplier: 1.0, delay_seconds: 0.5833, hits: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.5833, hits: 6, all_around: true }
-  # Scout Command — 1.25 s at 1.0x, 3 swings
+    - { multiplier: 1.0, delay_seconds: 0.5834, hits: 6, all_around: true }
+  # Scout Command — 1.25 s at 1.0x, 2 inputs of 0.625 s
   block:
-    - { multiplier: 4.0, delay_seconds: 0.4167, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.4167 }
-    - { multiplier: 3.0, delay_seconds: 0.4167 }
-  # Villain Rule — 3.00 s at 1.0x, 4 swings, ending on the weapon's own slam
+    - { multiplier: 4.0, delay_seconds: 0.625, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 3.0, delay_seconds: 0.625 }
+  # Villain Rule — 3.00 s at 1.0x, 4 inputs of 0.75 s, the last of them ending
+  # on the weapon's own slam
   block_forward:
     - { multiplier: 0.5, delay_seconds: 0.75, hits: 6 }
     - { multiplier: 3.0, delay_seconds: 0.75, slash_multiplier: 1.25 }
     - { multiplier: 2.0, delay_seconds: 0.75, hits: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.75, hits: 2, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.75, forced_procs: [impact] }
   # see notes: tonfa_heavy_and_slide
   heavy:
     - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }

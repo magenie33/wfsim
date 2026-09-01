@@ -13,8 +13,8 @@ description: "A style exhibiting sweeping slash attacks and swift jabs."
 # grants the full 10 capacity where Sovereign Outcast grants 4
 # (`mods::stance_capacity`).
 #
-# LONGER AND FLATTER THAN SOVEREIGN OUTCAST. Vagrant Blight is 11 swings over
-# 4.6 s against Rogue Edict's 7 over 2.85, and most of them are 100% — so it
+# LONGER AND FLATTER THAN SOVEREIGN OUTCAST. Vagrant Blight is 5 inputs over
+# 4.6 s against Rogue Edict's 4 over 2.85, and most of its rows are 100% — so it
 # earns more COMBO POINTS per second and less damage, which is exactly the trade
 # a heavy build wants and a light build does not.
 #
@@ -23,41 +23,43 @@ description: "A style exhibiting sweeping slash attacks and swift jabs."
 # half-plane for it, the same as an unmarked swing, so it is not transcribed as
 # `all_around`.
 combos:
-  # Vagrant Blight — 4.60 s at 1.0x, 11 swings
+  # see notes: combo_clock_is_the_input
+  # Vagrant Blight — 4.60 s at 1.0x, 5 inputs of 0.92 s
   neutral:
-    - { multiplier: 2.0, delay_seconds: 0.4182, hits: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.4182, hits: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.4182 }
-    - { multiplier: 0.5, delay_seconds: 0.4182, hits: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.4182, forced_procs: [slash] }
-    - { multiplier: 1.0, delay_seconds: 0.4182 }
-    - { multiplier: 1.0, delay_seconds: 0.4182, hits: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.4182, hits: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.4182, hits: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.4182, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.4182, forced_procs: [slash, knockdown] }
-  # Cold Vendetta — 1.20 s at 1.0x, 3 swings
+    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2 }
+    - { multiplier: 0.5, delay_seconds: 0.92, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 0.0, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [slash] }
+    - { multiplier: 1.0, delay_seconds: 0.92 }
+    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2 }
+    - { multiplier: 0.5, delay_seconds: 0.92, hits: 3 }
+    - { multiplier: 2.0, delay_seconds: 0.92, hits: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.92, forced_procs: [slash, knockdown] }
+  # Cold Vendetta — 1.20 s at 1.0x, 3 inputs of 0.4 s
   forward:
     - { multiplier: 1.0, delay_seconds: 0.4 }
     - { multiplier: 1.0, delay_seconds: 0.4 }
     - { multiplier: 2.0, delay_seconds: 0.4 }
-  # Blind Tormentor — 2.85 s at 1.0x, 5 swings, ending on the weapon's own slam
+  # Blind Tormentor — 2.85 s at 1.0x, 2 inputs of 1.425 s, the second ending on
+  # the weapon's own slam
   block:
-    - { multiplier: 1.0, delay_seconds: 0.57, hits: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.57, hits: 2, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.57, hits: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.57, hits: 2, forced_procs: [slash] }
-    - { multiplier: 3.0, delay_seconds: 0.57, hits: 2, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact] }
-  # Baleful Sin — 2.30 s at 1.0x, 7 swings
+    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 1.425, hits: 2, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, forced_procs: [slash] }
+    - { multiplier: 3.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.425, forced_procs: [impact] }
+  # Baleful Sin — 2.30 s at 1.0x, 4 inputs of 0.575 s
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.3286 }
-    - { multiplier: 1.0, delay_seconds: 0.3286 }
-    - { multiplier: 2.0, delay_seconds: 0.3286 }
-    - { multiplier: 1.0, delay_seconds: 0.3286, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.3286 }
-    - { multiplier: 2.0, delay_seconds: 0.3286 }
-    - { multiplier: 2.0, delay_seconds: 0.3286 }
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 1.0, delay_seconds: 0.0 }
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 1.0, delay_seconds: 0.575, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.575 }
+    - { multiplier: 2.0, delay_seconds: 0.575 }
+    - { multiplier: 2.0, delay_seconds: 0.575 }
   # see notes: tonfa_heavy_and_slide
   heavy:
     - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }

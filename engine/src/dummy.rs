@@ -10259,8 +10259,9 @@ mod melee {
     /// Every other card changes what a weapon fires WITH. A stance publishes a
     /// combo per form and installing one replaces the entry's own script, so
     /// the same Magistar in the same mode is a different sequence of swings
-    /// under Crushing Ruin (Raging Whirlwind: 400/200/300/500 over 3.00 s) and
-    /// under Shattering Storm (Falling Rock: 400/300/400/200 over 3.03 s).
+    /// under Crushing Ruin (Raging Whirlwind: 1400% over 3.00 s in three
+    /// inputs) and under Shattering Storm (Falling Rock: 2100% over 4.90 s in
+    /// four, each of them ending on a slam).
     ///
     /// IT NEEDS NO SLOT OF ITS OWN, and that is what made it cheap: a stance is
     /// legal in the stance slot and nowhere else, so a flat mod list can say

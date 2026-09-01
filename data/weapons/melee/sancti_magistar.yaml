@@ -57,7 +57,7 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "the LIFE STEAL this weapon is bought for: a heavy attack grants every attack 5% life steal plus 5% per combo level, permanently and shared with allies within 15 m for the rest of the mission. Nothing damages the Tenno in this arena and there are no allies in it, so what it heals is a number this fight has no use for"
   - "the 20% chance to RESIST A STATUS EFFECT while it is held: a defence of the wielder, and nothing here shoots back"
-  - "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
+  - "one attack input's own animation length is not published anywhere: the wiki gives a combo's total duration at 1.0x attack speed and one entry per input, so the combo's DURATION is exact and the split between its INPUTS is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
   - "the Tennokai window's WIND-UP SPEED is a stand-in: DE publishes no figure for how much faster a heavy attack charges inside the flash, and this uses +100%. The window itself, its chance, its cadence and everything the seven cards do to it are modelled"
   - "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports"
 
@@ -113,11 +113,11 @@ attack:
   # the 4 direct swings share the 3.0 s and it lands alongside the last of them.
   # `Knockback` is Impact's own proc and is transcribed as `impact`.
   combo_script:
-    - { multiplier: 4.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.75, all_around: true }
-    - { multiplier: 3.0, delay_seconds: 0.75, all_around: true }
-    - { multiplier: 5.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
+    - { multiplier: 4.0, delay_seconds: 1.0, impact_multiplier: 1.5, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 1.0, all_around: true }
+    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0 }
 
 source:
   url: https://wiki.warframe.com/w/Sancti_Magistar

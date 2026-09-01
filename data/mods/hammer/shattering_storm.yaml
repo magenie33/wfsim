@@ -26,36 +26,45 @@ description: "A Stance of crushing blows and shattering impacts."
 # block, where it belongs: it is documentation for whoever transcribes the next
 # stance, not a label the app draws.
 #
-# THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
-# the direct swings share the published duration.
+# see notes: combo_clock_is_the_input
+#
+# THIS STANCE SLAMS FOUR TIMES IN ITS NEUTRAL COMBO — every input ends on one,
+# which no other combo in the roster does and which is the whole reason to carry
+# it on a hammer: `Types = { "Slam" }` on the trailing row of all four entries.
 combos:
-  # Falling Rock — 3.0331 s at 1.0x, 4 swings
+  # Falling Rock — 4.9 s at 1.0x, 4 inputs of 1.225 s
   neutral:
-    - { multiplier: 4.0, delay_seconds: 0.7583, impact_multiplier: 1.5, forced_procs: [impact] }
-    - { multiplier: 3.0, delay_seconds: 0.7583, impact_multiplier: 1.5, forced_procs: [impact] }
-    - { multiplier: 4.0, delay_seconds: 0.7583 }
-    - { multiplier: 2.0, delay_seconds: 0.7583, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
-  # Pounding Smite — 2.6 s at 1.0x, 4 swings
+    - { multiplier: 4.0, delay_seconds: 0.0, forced_procs: [impact] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225 }
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225 }
+    - { multiplier: 4.0, delay_seconds: 0.0, impact_multiplier: 1.5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225 }
+    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [knockdown] }
+    - { multiplier: 5.0, delay_seconds: 0.0 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, forced_procs: [knockdown] }
+  # Pounding Smite — 2.6 s at 1.0x, 4 inputs of 0.65 s
   forward:
     - { multiplier: 2.0, delay_seconds: 0.65, forced_procs: [impact] }
     - { multiplier: 2.0, delay_seconds: 0.65 }
     - { multiplier: 2.0, delay_seconds: 0.65, impact_multiplier: 1.5 }
     - { multiplier: 3.0, delay_seconds: 0.65, impact_multiplier: 1.5, forced_procs: [lifted] }
-  # Rising Thunder — 3.3 s at 1.0x, 3 swings
+  # Rising Thunder — 3.3 s at 1.0x, 2 inputs of 1.65 s
   block:
-    - { multiplier: 3.0, delay_seconds: 1.1 }
-    - { multiplier: 3.0, delay_seconds: 1.1, forced_procs: [lifted] }
-    - { multiplier: 5.0, delay_seconds: 1.1, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
-  # Smashing Fury — 3.1558 s at 1.0x, 5 swings
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 3.0, delay_seconds: 1.65, forced_procs: [lifted] }
+    - { multiplier: 5.0, delay_seconds: 0.0 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.65, forced_procs: [knockdown] }
+  # Smashing Fury — 3.55 s at 1.0x, 3 inputs of 1.1833 s
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.6312 }
-    - { multiplier: 2.0, delay_seconds: 0.6312 }
-    - { multiplier: 4.0, delay_seconds: 0.6312, all_around: true }
-    - { multiplier: 2.0, delay_seconds: 0.6312 }
-    - { multiplier: 5.0, delay_seconds: 0.6312, impact_multiplier: 1.5, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 2.0, delay_seconds: 1.1833 }
+    - { multiplier: 4.0, delay_seconds: 0.0 }
+    - { multiplier: 2.0, delay_seconds: 1.1833, all_around: true }
+    - { multiplier: 2.0, delay_seconds: 0.0, impact_multiplier: 1.5 }
+    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.1834, forced_procs: [knockdown] }
   # Crowd Fall — the heavy attack. IDENTICAL ON BOTH HAMMER STANCES, which is
   # worth stating: a hammer's heavy is its class multiplier (6x) delivered as an
   # alternating pair, and the stance decides only the animation and the procs.

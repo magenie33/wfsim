@@ -56,8 +56,8 @@ attack:
     - { multiplier: 0.5, delay_seconds: 0.75, hits: 6 }
     - { multiplier: 3.0, delay_seconds: 0.75, slash_multiplier: 1.25 }
     - { multiplier: 2.0, delay_seconds: 0.75, hits: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.75, hits: 2, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.75, forced_procs: [impact] }
 
 source:
   url: https://wiki.warframe.com/w/Sovereign_Outcast

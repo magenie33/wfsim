@@ -268,9 +268,9 @@ attacks, and the status a hit applies does not amplify that same hit.
 Every other card in this app changes what a weapon fires WITH. A stance
 publishes a combo per FORM, and installing one replaces the weapon entry's own
 script — so the same Magistar in the same mode is a different sequence of swings
-under Crushing Ruin (Raging Whirlwind: 400/200/300/500 over 3.00 s) and under
-Shattering Storm (Falling Rock: 400/300/400/200 over 3.03 s), measured in the
-shipping build at 1,275 and 1,162 DPS.
+under Crushing Ruin (Raging Whirlwind: 1400% over 3.00 s, three inputs) and
+under Shattering Storm (Falling Rock: 2100% over 4.90 s, four inputs each
+ending on a slam) — 466.7%/s against 428.6%/s, the wiki's own column.
 
 **IT NEEDS NO FIELD OF ITS OWN ON THE WIRE**, and that is what made it cheap. A
 stance mod is legal in the stance slot and NOWHERE else, so a flat mod list can
@@ -304,9 +304,19 @@ combo. It was found only after the first transcription, and it corrected three
 things: a swing that lands TWICE (`Hits = { 1, 2 }`), a bonus to the Impact
 component alone (`ImpactMultiplier = { 1.5 }`, which is a different thing from
 the forced Knockback proc several of the same swings also carry), and the SLAM
-three of Crushing Ruin's four combos end on. It also confirmed the durations
-that had been DERIVED from the rendered table's two columns — 3.00 / 2.60 / 2.25
-/ 4.25 — exactly, which is what makes the derivation trustworthy anywhere.
+three of Crushing Ruin's four combos end on.
+
+**TAKE `Duration` FROM THE MODULE, NEVER FROM THE RENDERED TABLE'S TWO
+COLUMNS.** Deriving it as `total damage / the printed %/s` is right only if
+every damage row was transcribed, and a transcription that DROPS one lands on a
+duration that is wrong by exactly the same fraction — silently, because the
+derived figure still divides out to the printed rate. That is how Falling Rock
+shipped as 3.03 s against its published 4.90, and Smashing Fury as 3.16 against
+3.55.
+
+**ONE `Attacks` ENTRY IS ONE ATTACK INPUT**, which is what the table's columns
+are (`Module:Stances` draws one icon per entry) and what the combo's clock is
+divided by — `notes: combo_clock_is_the_input`.
 
 **FETCH THE MODULE WITH `curl`, not through a summariser.** It is 222 KB and
 arrives whole (`?action=raw`), which is how all four Tonfa and hammer stances
@@ -468,9 +478,10 @@ applies to.
    say which line pays nothing.
 3. **Power Spike's partial combo decay** — a Warframe passive, so the counter
    here drops to zero where a real build keeps most of it.
-4. **A swing's own animation length.** The module publishes a combo's DURATION
-   and not a per-swing split, so the swings share it evenly. It moves a status
-   tick's start by fractions of a second and moves no total.
+4. **One attack input's own animation length.** The module publishes a combo's
+   DURATION and one entry per input, and nothing inside an entry, so the INPUTS
+   share it evenly and an entry's rows land together. It moves a status tick's
+   start by fractions of a second and moves no total.
 5. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
    sweep is a wide arc and a thrust is not, and nothing published gives either
    an angle.

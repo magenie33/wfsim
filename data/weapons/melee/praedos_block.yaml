@@ -52,9 +52,9 @@ attack:
     forced_procs: [impact]
     takes_multishot: false
   combo_script:
-    - { multiplier: 4.0, delay_seconds: 0.4167, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.4167 }
-    - { multiplier: 3.0, delay_seconds: 0.4167 }
+    - { multiplier: 4.0, delay_seconds: 0.625, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 3.0, delay_seconds: 0.625 }
 
 source:
   url: https://wiki.warframe.com/w/Sovereign_Outcast

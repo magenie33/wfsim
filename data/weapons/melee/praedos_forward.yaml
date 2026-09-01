@@ -55,7 +55,7 @@ attack:
   combo_script:
     - { multiplier: 1.0, delay_seconds: 0.5833 }
     - { multiplier: 1.0, delay_seconds: 0.5833, hits: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.5833, hits: 6, all_around: true }
+    - { multiplier: 1.0, delay_seconds: 0.5834, hits: 6, all_around: true }
 
 source:
   url: https://wiki.warframe.com/w/Sovereign_Outcast

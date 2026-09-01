@@ -26,37 +26,38 @@ description: "Wielders of this Stance thrust in strong whirlwind attacks."
 # block, where it belongs: it is documentation for whoever transcribes the next
 # stance, not a label the app draws.
 #
-# THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
-# the direct swings share the published duration.
+# see notes: combo_clock_is_the_input
 combos:
-  # Raging Whirlwind — 3.0 s at 1.0x, 4 swings
+  # Raging Whirlwind — 3.0 s at 1.0x, 3 inputs of 1.0 s
   neutral:
-    - { multiplier: 4.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.75, all_around: true }
-    - { multiplier: 3.0, delay_seconds: 0.75, all_around: true }
-    - { multiplier: 5.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
-  # Tidal Force — 2.6 s at 1.0x, 4 swings
+    - { multiplier: 4.0, delay_seconds: 1.0, impact_multiplier: 1.5, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 1.0, all_around: true }
+    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0 }
+  # Tidal Force — 2.6 s at 1.0x, 4 inputs of 0.65 s
   forward:
     - { multiplier: 1.0, delay_seconds: 0.65 }
     - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true }
     - { multiplier: 2.0, delay_seconds: 0.65 }
     - { multiplier: 3.0, delay_seconds: 0.65 }
-  # Winding Temper — 2.25 s at 1.0x, 3 swings
+  # Winding Temper — 2.25 s at 1.0x, ONE input. The stance's whole block combo
+  # is a single attack that lands four times, which is what makes it 400%/s off
+  # a hammer's cadence.
   block:
-    - { multiplier: 3.0, delay_seconds: 0.75 }
-    - { multiplier: 2.0, delay_seconds: 0.75 }
-    - { multiplier: 4.0, delay_seconds: 0.75 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [knockdown] }
-  # Shattered Village — 4.25 s at 1.0x, 6 swings
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 4.0, delay_seconds: 0.0 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 2.25, forced_procs: [knockdown] }
+  # Shattered Village — 4.25 s at 1.0x, 4 inputs of 1.0625 s
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.7083 }
-    - { multiplier: 0.5, delay_seconds: 0.7083, hits: 2, all_around: true }
-    - { multiplier: 3.0, delay_seconds: 0.7083 }
-    - { multiplier: 0.5, delay_seconds: 0.7083, hits: 2, all_around: true }
-    - { multiplier: 4.0, delay_seconds: 0.7083, impact_multiplier: 1.5, all_around: true, forced_procs: [impact] }
-    - { multiplier: 5.0, delay_seconds: 0.7083 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [knockdown] }
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true }
+    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact] }
+    - { multiplier: 5.0, delay_seconds: 0.0 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown] }
   # Crowd Fall — the heavy attack. IDENTICAL ON BOTH HAMMER STANCES, which is
   # worth stating: a hammer's heavy is its class multiplier (6x) delivered as an
   # alternating pair, and the stance decides only the animation and the procs.

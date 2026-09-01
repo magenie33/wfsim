@@ -51,7 +51,7 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
+  - "one attack input's own animation length is not published anywhere: the wiki gives a combo's total duration at 1.0x attack speed and one entry per input, so the combo's DURATION is exact and the split between its INPUTS is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
   - "the Tennokai window's WIND-UP SPEED is a stand-in: DE publishes no figure for how much faster a heavy attack charges inside the flash, and this uses +100%. The window itself, its chance, its cadence and everything the seven cards do to it are modelled"
   - "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports"
 
@@ -103,14 +103,16 @@ attack:
   # THE ENTRY CARRIES A STANCE'S SCRIPT because the stanceless Tonfa block
   # publishes no duration for its ground combos, so there is nothing to time
   # them with. Installing either Tonfa card replaces this.
+  #
+  # see notes: combo_clock_is_the_input — four inputs of 0.7125 s
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.4071 }
-    - { multiplier: 0.5, delay_seconds: 0.4071, hits: 5 }
-    - { multiplier: 2.0, delay_seconds: 0.4071 }
-    - { multiplier: 0.5, delay_seconds: 0.4071 }
-    - { multiplier: 3.0, delay_seconds: 0.4071, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.4071, hits: 4, forced_procs: [slash] }
-    - { multiplier: 2.0, delay_seconds: 0.4071, hits: 2, forced_procs: [knockdown] }
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 0.7125, hits: 5 }
+    - { multiplier: 2.0, delay_seconds: 0.0 }
+    - { multiplier: 0.5, delay_seconds: 0.0 }
+    - { multiplier: 3.0, delay_seconds: 0.7125, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 4, forced_procs: [slash] }
+    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 2, forced_procs: [knockdown] }
 
 source:
   url: https://wiki.warframe.com/w/Praedos

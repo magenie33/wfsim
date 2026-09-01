@@ -253,6 +253,21 @@ notes:
     the 200-round cap.
     - "Charges build individually on multishot bullets."
     - A full gauge is NOT required to transmute.
+  combo_clock_is_the_input: |
+    A COMBO'S CLOCK IS ITS INPUTS, NOT ITS DAMAGE ROWS. `Module:Stances/data`
+    holds one `Attacks` entry per attack the player makes — the stance table
+    draws one icon per entry — and the `Dmg` rows under one entry are what that
+    single animation lands. So the published `Duration` is split evenly across
+    the ENTRIES, every row of one entry lands together, and the whole slice sits
+    on the last row of each.
+
+    IT IS THE RULE `Hits` ALREADY STATES. `Hits = { 5 }` is five instances at
+    one instant, so `Dmg = { 200, 50 }` is two more of them and not two moments.
+    Rogue Edict is four inputs over 2.85 s rather than seven rows over it, which
+    bunches 2200% into four events — and a swing is when the PLAYER acts.
+
+    THE EVEN SPLIT IS THE APPROXIMATION, declared on every melee entry: nothing
+    published states one input's animation length.
   stance_grants_capacity: |
     A STANCE GRANTS CAPACITY RATHER THAN COSTING IT — the export carries
     `baseDrain: -2` — so the drain here is ZERO and the grant is
