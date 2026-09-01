@@ -7,12 +7,12 @@ deploys `site/` by itself while the channel waits for a command run by hand, so
 a week of pushes reached the web and none of them reached an installed client.
 
 So there is ONE command. It builds `site/`, rebuilds the payload that declares
-what the client gets, publishes the channel, commits and pushes — and then
+what the client gets, commits, pushes, publishes the channel — and then
 VERIFIES, by fetching the manifest it just published and hashing every file it
 names against `site/`. A mirror that is only promised drifts; this one is read
 back.
 
-    python scripts/ship.py              # build, publish, commit, push, verify
+    python scripts/ship.py              # build, commit, push, publish, verify
     python scripts/ship.py --dry-run    # every build, neither publish
     python scripts/ship.py --verify     # only: do the two agree right now?
     python scripts/ship.py --no-push    # publish the channel, leave git alone
@@ -119,20 +119,24 @@ def main() -> None:
         sys.exit(f"ship: {BUILT_MANIFEST} was not written — the shell did not build")
 
     release = [sys.executable, str(ROOT / "scripts" / "release_desktop.py")]
-    run(*release, *(["--dry-run"] if args.dry_run else []))
-
     if args.dry_run:
+        run(*release, "--dry-run")
         print("\n[DRY RUN] site/ built, payload rebuilt, nothing published or committed")
         return
 
-    if git("status", "--porcelain", "--", "site"):
-        run("git", "add", "site")
-        run("git", "commit", "-m", "site: regenerate, and the desktop channel with it")
-    else:
-        print("\nsite/ is unchanged — nothing to commit")
+    # GIT GOES FIRST, and the publish only follows a push that landed. A
+    # parallel push rejects this one, and a channel published before that is a
+    # channel ahead of the repository — the divergence this script exists to
+    # end, arrived at from the other side.
     if not args.no_push:
+        if git("status", "--porcelain", "--", "site"):
+            run("git", "add", "site")
+            run("git", "commit", "-m", "site: regenerate, and the desktop channel with it")
+        else:
+            print("\nsite/ is unchanged — nothing to commit")
         run("git", "push")
 
+    run(*release)
     sys.exit(verify())
 
 
