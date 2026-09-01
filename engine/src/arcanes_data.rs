@@ -1011,6 +1011,10 @@ impl ArcaneDef {
                     // the alternative to holding every stack is paying nothing
                     // at all. A melee player casts, so this is held for the
                     // whole engagement and the card's timer never runs out.
+                    //
+                    // The pile expires WHOLE in game, so holding the cap costs
+                    // four casts a window rather than one — which makes this
+                    // generous rather than neutral, and the data file says so.
                     let v = scale.at(rank, self.max_rank) * f64::from(*max_stacks);
                     match fx.added_elements.iter_mut().find(|(t, _)| t == element) {
                         Some(slot) => slot.1 += v,
