@@ -3615,6 +3615,9 @@ pub fn base_panel_assembled(
     });
 
     WeaponBase {
+        // FILLED IN BY THE EVOLUTIONS, and by nothing else: a melee Incarnon is
+        // a Genesis tier rather than a weapon stat.
+        melee_incarnon: None,
         // LEAKED ONCE so the panel can answer "what is this" and "what does it
         // draw" without a lookup — the two questions the Amp auras ask.
         class: Box::leak(s.class.clone().into_boxed_str()),
@@ -6016,7 +6019,10 @@ mod laetum_tests {
             d
         };
         let cycle_charges = |d: &DummyParams| {
-            d.cycle.as_ref().expect("the incarnon cycle").charges_to_fill
+            match d.cycle.as_ref().expect("the incarnon cycle").arms {
+                crate::dummy::Arms::Gauge { charges_to_fill, .. } => charges_to_fill,
+                other => panic!("a gun Incarnon fills a gauge, not {other:?}"),
+            }
         };
 
         let off = params(&["laetum_evo1_incarnon_form"], false);

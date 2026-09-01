@@ -3,7 +3,7 @@ name: Shockwave Synergy
 weapon: praedos
 tier: 3
 description: "For each enemy hit by Slam radius, gain 4 Combo Count."
-# THE ORDINARY SLAM PAYS IT AND A HEAVY SLAM DOES NOT (owner, 2026-09-01) --
+# THE ORDINARY SLAM PAYS IT AND A HEAVY SLAM DOES NOT --
 # so it is the trailing slam of a combo that earns, and the heavy-slam mode
 # earns nothing. That is the general rule rather than a carve-out: a swing that
 # SPENDS the counter adds nothing to it, and the engine reads the same flag here

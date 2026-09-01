@@ -5,13 +5,13 @@ tier: 4
 description: "Reach 3x Combo and Heavy Attack to activate Incarnon Form."
 selection: choose_one
 
-# A CHEAPER ACTIVATION AND NOTHING ELSE, so this perk applies no effect — the
-# same shape the Magistar's Genesis uses for its own activation clause. The
-# weapon entries apply Incarnon Form for the whole engagement and declare that
-# assumption in `unmodeled`; this card lowers what the assumption costs (3x
-# instead of 5x, which Adept Reflexes plus Corrupt Charge holds passively) and
-# changes no number inside the fight.
-effects: []
+# A CHEAPER ACTIVATION AND NOTHING ELSE: it states the arming and no window, so
+# the merge takes the LOWEST arming any selected tier asks for and leaves the 90
+# seconds where tier 1 states them.
+effects:
+  # from: "Reach 3x Combo and Heavy Attack to activate Incarnon Form"
+  - kind: incarnon_window
+    arm_at_combo: 3.0
 
 source:
   url: https://wiki.warframe.com/w/Praedos

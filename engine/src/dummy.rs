@@ -233,6 +233,42 @@ impl ArcRuntime {
     }
 }
 
+/// WHAT ARMS THE SECOND SET OF NUMBERS — the one thing a gun's Incarnon and a
+/// melee's genuinely disagree about, said as data instead of as two mechanisms.
+///
+/// A melee Incarnon is NOT A FORM and this does not make it one: it unlocks no
+/// weapon entry and changes no animation (`unlocks_weapon` stays absent on
+/// every melee Genesis). What it changes is NUMBERS, part-way through the
+/// fight — which is what [`IncarnonCycle`] already is, and the second panel
+/// here is the same weapon resolved twice rather than a second entry.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Arms {
+    /// A GAUGE, filled by hits of one kind (Zariman: weak-point; Torid: any
+    /// direct hit). The gun Incarnon's.
+    Gauge {
+        charge_on: crate::loadout::ChargeOn,
+        /// Hits of `charge_on` to fill it (Dual Toxocyst 9, Torid 5).
+        charges_to_fill: u32,
+    },
+    /// A HEAVY ATTACK TAKEN AT OR ABOVE A COMBO MULTIPLIER — *"Reach 6x Combo
+    /// and then Heavy Attack to activate Incarnon Form"*. The melee Incarnon's,
+    /// and it needs no gauge because the counter it reads is one the fight
+    /// already keeps.
+    HeavyAtCombo(f64),
+}
+
+/// …AND WHAT ENDS IT.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Ends {
+    /// The CHARGE MAGAZINE runs dry. The gun Incarnon's, and the reason its
+    /// cycle is written around a magazine at all.
+    ChargeMagazine,
+    /// A CLOCK, from the moment it armed. The melee Incarnon's — and the whole
+    /// of what separates a Genesis worth the engagement (180 s) from one worth
+    /// half of it (the Praedos's 90 s).
+    After(f64),
+}
+
 /// The real Incarnon combat cycle: the run STARTS IN THE BASE FORM WITH AN
 /// EMPTY GAUGE and earns its way in — weakpoint hits (each multishot pellet
 /// counts) fill it, transmute (`transmute_seconds`), spend the charge
@@ -245,11 +281,10 @@ pub struct IncarnonCycle {
     /// The base form's full engagement params (its own panel; target/aim/
     /// duration fields are ignored — the outer params' are shared).
     pub base_form: Box<DummyParams>,
-    /// WHICH hits fill the gauge — weapon data (Zariman: weak-point; Torid:
-    /// any direct hit).
-    pub charge_on: crate::loadout::ChargeOn,
-    /// Hits of `charge_on` to fill the gauge (Dual Toxocyst 9, Torid 5).
-    pub charges_to_fill: u32,
+    /// WHAT PUTS THE WEAPON IN ITS SECOND SET OF NUMBERS.
+    pub arms: Arms,
+    /// …AND WHAT TAKES IT BACK OUT.
+    pub ends: Ends,
     /// Incarnon → base transition (already reload-speed scaled).
     pub transmute_out_seconds: f64,
     /// Base → Incarnon transition (already reload-speed scaled).
@@ -3384,6 +3419,12 @@ impl DummyParams {
         // Incarnon panel's — `incarnon_cycle_from_panels` builds it that way —
         // so a counter declared on the base form is invisible from here, and
         // the Vectis Prime's card was missing for exactly that reason.
+        // A MELEE INCARNON IS A BUFF AND IS DRAWN AS ONE — docs/MELEE.md §7.
+        // Told apart by how it ENDS, which is what makes it one: a clock is a
+        // buff's way out and a charge magazine is a form's.
+        if self.cycle.as_ref().is_some_and(|c| matches!(c.ends, Ends::After(_))) {
+            push!("melee_incarnon", 1);
+        }
         if self.sniper_combo.is_some()
             || self.cycle.as_ref().is_some_and(|c| c.base_form.sniper_combo.is_some())
         {
@@ -3554,6 +3595,19 @@ impl DummyParams {
             if let Some(&(stacks, locked)) = cfg.get(b.id) {
                 b.initial_stacks = stacks.min(b.max_stacks);
                 b.duration = clock(b.duration, locked);
+            }
+        }
+        // A MELEE INCARNON TAKES THE SAME TWO KNOBS, and they land where the
+        // rule says they land (docs/BUFFS.md): STACKS is what the run opens
+        // with — you walked in with it up, which the game allows because the
+        // window survives holstering — and NO TIMEOUT is the DURATION, so a
+        // locked window simply never closes.
+        if let Some(cy) = self.cycle.as_mut() {
+            if let Ends::After(seconds) = cy.ends {
+                if let Some(&(stacks, locked)) = cfg.get("melee_incarnon") {
+                    cy.starts_primed = stacks >= 1;
+                    cy.ends = Ends::After(clock(seconds, locked));
+                }
             }
         }
         if let Some(b) = self.crit_chance_on_headshot.as_mut() {
@@ -4415,6 +4469,67 @@ impl DummyParams {
         }
     }
 
+    /// THE FIGHT THIS PANEL DESCRIBES, un-armed half included.
+    ///
+    /// **THE DECISION LIVES HERE AND NOWHERE ELSE.** "Does a stated window mean
+    /// a two-panel fight?" has exactly one answer, and a caller that asked
+    /// `from_panel` directly would silently run a melee Incarnon as if it were
+    /// on for the whole engagement — which is what every surface did before the
+    /// window was simulated, and is a build no player can produce.
+    ///
+    /// `unarmed` is a closure because building it means RESOLVING THE SAME
+    /// WEAPON AGAIN without the tiers that state the window, and only the
+    /// caller knows how to resolve. It is never called on a gun.
+    pub fn for_panel(
+        panel: &crate::loadout::ResolvedPanel,
+        arena: &crate::arena::Arena,
+        arcane: &ArcaneFx,
+        unarmed: impl FnOnce() -> crate::loadout::ResolvedPanel,
+    ) -> Self {
+        match panel.melee_incarnon {
+            Some(window) => {
+                Self::melee_incarnon_from_panels(panel, &unarmed(), window, arena, arcane)
+            }
+            None => Self::from_panel(panel, arena, arcane),
+        }
+    }
+
+    /// A MELEE INCARNON, from the same weapon resolved twice: once with the
+    /// Genesis tier that states the window and once without it.
+    ///
+    /// It is the same machinery the gun cycle uses and that is the point — one
+    /// concept for "the numbers change part-way through the fight", with the
+    /// two things that actually differ said as data. No stat needs a live
+    /// bucket of its own to be part of it, which is what a buff-shaped answer
+    /// would have cost: the next Genesis grants something nobody made live, and
+    /// the card pays nothing while the panel shows it paying.
+    ///
+    /// NO ANIMATION AND NO MAGAZINE. A melee Incarnon changes numbers, not
+    /// attacks, so both transitions are instant and there is no charge
+    /// magazine to spend — [`Ends::After`] is the clock instead.
+    pub fn melee_incarnon_from_panels(
+        armed: &crate::loadout::ResolvedPanel,
+        unarmed: &crate::loadout::ResolvedPanel,
+        window: crate::loadout::MeleeIncarnon,
+        arena: &crate::arena::Arena,
+        arcane: &ArcaneFx,
+    ) -> Self {
+        Self {
+            cycle: Some(IncarnonCycle {
+                // EARNED, like every other consumable here: the fight opens
+                // un-armed and buys the window with a heavy attack.
+                starts_primed: false,
+                base_form: Box::new(Self::from_panel(unarmed, arena, arcane)),
+                arms: Arms::HeavyAtCombo(window.arm_at_combo),
+                ends: Ends::After(window.seconds),
+                transmute_out_seconds: 0.0,
+                transmute_seconds: 0.0,
+                reload_bucket: 0.0,
+            }),
+            ..Self::from_panel(armed, arena, arcane)
+        }
+    }
+
     /// The REAL Incarnon cycle engagement from both forms' resolved panels. It
     /// OPENS IN THE BASE FORM WITH AN EMPTY GAUGE (`starts_primed: false`, and
     /// the rule is on that field), rebuilds the gauge on weakpoint hits (Frenzy
@@ -4466,12 +4581,13 @@ impl DummyParams {
                 // scale by the reload formula. An evolution that speeds up
                 // charge building (Incarnon Efficiency: +50%) divides the
                 // hits needed — 12 becomes 8.
-                charge_on: inc_form
-                    .map(|f| f.charge_on)
-                    .unwrap_or_default(),
-                charges_to_fill: inc_form
-                    .map(|f| (f.charges_to_fill / (1.0 + f.charge_rate)).ceil() as u32)
-                    .unwrap_or(9),
+                arms: Arms::Gauge {
+                    charge_on: inc_form.map(|f| f.charge_on).unwrap_or_default(),
+                    charges_to_fill: inc_form
+                        .map(|f| (f.charges_to_fill / (1.0 + f.charge_rate)).ceil() as u32)
+                        .unwrap_or(9),
+                },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: inc_form.map_or(1.0, |f| f.transmute_out) / rl,
                 transmute_seconds: inc_form.map_or(2.35, |f| f.transmute_in) / rl,
                 reload_bucket: rl - 1.0,
@@ -9602,6 +9718,9 @@ fn sample_stacks(
     crit_chance_hit_stacks: u32,
     bar: &BuffBar,
     combo: u32,
+    // When a melee Incarnon's window closes; 0.0 before it is ever armed, so
+    // "up" is `now < this` and needs no second flag.
+    incarnon_until: f64,
 ) -> Vec<(u16, f64)> {
     // u16, not u8: the Shot Combo Counter runs into the hundreds and a
     // capped curve would be a chart that lies about the fight it draws.
@@ -9649,6 +9768,10 @@ fn sample_stacks(
             // ...and the same for the combo, which is why the frame series is
             // u16: this is the first buff whose honest count runs past 255.
             "sniper_combo" => (cap(combo), unknown),
+            // Off the loop's own clock, like the windows around it: the fight
+            // is the only thing that knows when the heavy attack that armed it
+            // went down.
+            "melee_incarnon" => (live(now < incarnon_until), until(now < incarnon_until, incarnon_until)),
             "on_headshot_cc" => (live(now < ch_buff_expiry), until(now < ch_buff_expiry, ch_buff_expiry)),
             "on_kill_cd" => {
                 let e = arc.crit_damage_kill_expiry_seconds();
@@ -10077,11 +10200,56 @@ mod melee {
 
 
     fn magistar_evo(form: &str, evos: &[&str]) -> Summary {
+        magistar_evo_with(form, evos, &[])
+    }
+
+    /// …AND WITH THE WINDOW HELD OPEN, which is what the card's "no timeout"
+    /// knob means (docs/BUFFS.md): the run opens with the Incarnon up and it
+    /// never closes. It is how a test asks what the Genesis is WORTH without
+    /// also asking whether this mode can arm it — two questions, two tests.
+    fn magistar_evo_armed(form: &str, evos: &[&str], mods: &[&str]) -> Summary {
+        magistar_params(form, evos, mods, &[("melee_incarnon", (1, true))])
+    }
+
+    /// …AND WITH MODS, which a melee Incarnon needs: arming it is a heavy
+    /// attack at 6x combo, and a heavy mode earns no points of its own.
+    fn magistar_evo_with(form: &str, evos: &[&str], mods: &[&str]) -> Summary {
+        magistar_params(form, evos, mods, &[])
+    }
+
+    /// `cfg` is the buff CARDS, by id — the configured policy, which is how a
+    /// test says "this player holds four stacks" without asking the arena to
+    /// produce the kills that earn them.
+    fn magistar_params(
+        form: &str,
+        evos: &[&str],
+        mods: &[&str],
+        cfg: &[(&str, (u32, bool))],
+    ) -> Summary {
         let base = crate::loadout::WeaponBase::from_data(form, true, evos);
-        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let pool = crate::mods_data::pool_for_weapon(form);
+        let refs: Vec<&crate::loadout::ModDef> =
+            mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
         let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
         let arena = crate::arena::Arena::training(60.0);
-        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        // The same decision the page makes — see `melee_fight`.
+        let p = DummyParams::for_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none(), || {
+            let unarmed: Vec<&str> = evos
+                .iter()
+                .copied()
+                .filter(|id| !crate::evolutions_data::states_incarnon_window(id))
+                .collect();
+            let b = crate::loadout::WeaponBase::from_data(form, true, &unarmed);
+            crate::loadout::resolve(&b, &refs, crate::loadout::StackPolicy::Emergent)
+        });
+        let mut p = p;
+        if !cfg.is_empty() {
+            let mut c = BuffConfig::new();
+            for (id, v) in cfg {
+                c.insert((*id).into(), *v);
+            }
+            p.apply_buff_config(&c);
+        }
         monte_carlo(&p, 30, 3)
     }
 
@@ -10155,11 +10323,81 @@ mod melee {
     /// `FlatBaseDamage`.
     #[test]
     fn the_incarnon_form_is_a_hundred_per_cent_in_the_pressure_point_bucket() {
-        let bare = magistar_evo("magistar", &[]).mean_damage;
-        let form = magistar_evo("magistar", &["magistar_evo1_incarnon_form"]).mean_damage;
+        let bare = magistar_evo_armed("magistar", &[], &[]).mean_damage;
+        let form =
+            magistar_evo_armed("magistar", &["magistar_evo1_incarnon_form"], &[]).mean_damage;
         assert!(
             (form / bare - 2.0).abs() < 0.02,
             "+100% in an empty bucket should be exactly 2x: {bare:.0} -> {form:.0}",
+        );
+    }
+
+    /// **A MELEE INCARNON IS EARNED, AND WHAT EARNS IT IS A HEAVY ATTACK.**
+    ///
+    /// *"Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 180
+    /// seconds"* — and the heavy attack is the whole of the condition:
+    /// a stationary heavy, a heavy slam, or a TENNOKAI heavy, which is what
+    /// gives a light combo mode any way in at all, since its loop performs no
+    /// heavy of its own.
+    ///
+    /// The three cases are the three answers, and they are asserted together
+    /// because each one alone reads as a bug:
+    ///
+    /// 1. A BARE HEAVY BUILD CANNOT ARM IT. A heavy attack earns no combo
+    ///    points, so its counter is the initial-combo FLOOR and nothing else —
+    ///    zero without a card, which is 1x, which is not 6x. Installing the
+    ///    Genesis on that build changes not one number.
+    /// 2. …AND A FLOOR THAT REACHES 6x DOES. Corrupt Charge's +30 and
+    ///    Galvanized Reflex's earned +80 are 110 points, and 6x is 100.
+    /// 3. A LIGHT COMBO MODE ARMS IT THROUGH TENNOKAI, whose free heavy is a
+    ///    heavy attack like any other.
+    #[test]
+    fn a_melee_incarnon_is_earned_and_a_heavy_attack_is_what_earns_it() {
+        let evo = ["magistar_evo1_incarnon_form"];
+        // 1. Nothing to arm it with.
+        let bare = magistar_evo_with("magistar_heavy", &[], &[]).mean_damage;
+        let bare_evo = magistar_evo_with("magistar_heavy", &evo, &[]).mean_damage;
+        assert_eq!(
+            bare, bare_evo,
+            "a heavy build with no combo floor cannot reach 6x, so the Genesis pays nothing"
+        );
+        // 2. …and a floor that gets there. Corrupt Charge's +30 alone is 2x, so
+        //    the four earned stacks of Galvanized Reflex are what closes it —
+        //    HELD rather than earned, because this fixture's target does not
+        //    die and a card's stack count is exactly the knob for that.
+        let floor = ["corrupt_charge", "galvanized_reflex"];
+        let held = [("galvanized_reflex", (4, true))];
+        let off = magistar_params("magistar_heavy", &[], &floor, &held).mean_damage;
+        let on = magistar_params("magistar_heavy", &evo, &floor, &held).mean_damage;
+        assert!(
+            on > off * 1.5,
+            "a floor of 110 points is 6x and must arm it: {off:.0} -> {on:.0}"
+        );
+        // …AND CORRUPT CHARGE ALONE IS NOT ENOUGH: +30 is 2x, and 6x is 100
+        // points, so the same Genesis on the same mode pays nothing.
+        let thin = magistar_params("magistar_heavy", &[], &["corrupt_charge"], &[]).mean_damage;
+        let thin_evo =
+            magistar_params("magistar_heavy", &evo, &["corrupt_charge"], &[]).mean_damage;
+        assert_eq!(thin, thin_evo, "+30 initial combo is 2x, which is not 6x");
+        // 3. …and a light combo mode, through Tennokai's free heavy.
+        let tk = ["disciplines_merit"];
+        let light_off = magistar_evo_with("magistar", &[], &tk).mean_damage;
+        let light_on = magistar_evo_with("magistar", &evo, &tk).mean_damage;
+        // BELOW THE HELD 2x ON PURPOSE: the fight opens un-armed and spends the
+        // first seconds climbing to 6x and waiting on a Tennokai flash, so the
+        // Genesis is worth less than the ceiling `magistar_evo_armed` measures.
+        // That gap IS the window being earned.
+        assert!(
+            (1.3..1.9).contains(&(light_on / light_off)),
+            "a Tennokai heavy is a heavy attack and must arm it, part-way in: {light_off:.0} -> {light_on:.0}"
+        );
+        // …AND WITHOUT ONE IT STAYS SHUT, which is what makes the line above a
+        // statement about Tennokai rather than about the light mode.
+        let plain_off = magistar_evo_with("magistar", &[], &[]).mean_damage;
+        let plain_on = magistar_evo_with("magistar", &evo, &[]).mean_damage;
+        assert_eq!(
+            plain_off, plain_on,
+            "a light combo loop performs no heavy attack, so it never arms it"
         );
     }
 
@@ -10176,8 +10414,8 @@ mod melee {
     /// or 75.
     #[test]
     fn the_incarnon_form_pays_a_heavy_build_three_ways() {
-        let bare = magistar_evo("magistar_heavy", &[]);
-        let form = magistar_evo("magistar_heavy", &["magistar_evo1_incarnon_form"]);
+        let bare = magistar_evo_armed("magistar_heavy", &[], &[]);
+        let form = magistar_evo_armed("magistar_heavy", &["magistar_evo1_incarnon_form"], &[]);
         assert!(
             (form.mean_shots / bare.mean_shots - 1.5).abs() < 0.05,
             "a 1.2 s wind-up at +50% speed is 0.8 s, so 1.5x the swings: {:.0} -> {:.0}",
@@ -10190,9 +10428,10 @@ mod melee {
         );
         // …AND SWIFT BREAK IS ADDITIVE WITH IT, in the same bucket: 1.2 / 1.8
         // is 0.667 s, which is another fifth of a swing per second.
-        let swift = magistar_evo(
+        let swift = magistar_evo_armed(
             "magistar_heavy",
             &["magistar_evo1_incarnon_form", "magistar_swift_break"],
+            &[],
         );
         assert!(
             swift.mean_shots > form.mean_shots * 1.15,
@@ -10744,7 +10983,19 @@ mod melee {
                 })
                 .collect();
         }
-        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        // THE SAME DECISION THE PAGE MAKES (`DummyParams::for_panel`): a melee
+        // Incarnon is the weapon resolved twice, so the fixture resolves it
+        // twice too. Calling `from_panel` here would measure the Genesis on for
+        // the whole engagement, which is a build nobody can produce.
+        let p = DummyParams::for_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none(), || {
+            let unarmed: Vec<&str> = evos
+                .iter()
+                .copied()
+                .filter(|id| !crate::evolutions_data::states_incarnon_window(id))
+                .collect();
+            let b = crate::loadout::WeaponBase::from_data(form, false, &unarmed);
+            crate::loadout::resolve(&b, &refs, crate::loadout::StackPolicy::Emergent)
+        });
         monte_carlo(&p, 24, 909)
     }
 
@@ -10762,7 +11013,7 @@ mod melee {
     /// pays four points a slam, and on nine pays thirty-six.
     ///
     /// …AND IT IS THE ORDINARY SLAM THAT PAYS. A HEAVY slam earns nothing
-    /// (owner, 2026-09-01), which is the general rule rather than a carve-out:
+    /// which is the general rule rather than a carve-out:
     /// a swing that spends the counter adds nothing to it. So the mode under
     /// test is the combo that ENDS in a slam — `block_forward`, whose trailing
     /// hit is `slam_multiplier: 1.0` — and the heavy slam is asserted flat
@@ -12189,6 +12440,15 @@ pub fn run_once_traced(
     // its way in — see `IncarnonCycle::starts_primed` for why, and for the
     // reading that opens transformed.
     let mut in_base_form = params.cycle.as_ref().is_some_and(|c| !c.starts_primed);
+    // When a CLOCK-ended Incarnon falls out of its window (`Ends::After`).
+    // Unread by a gauge cycle, whose way out is a magazine.
+    //
+    // A RUN THAT OPENS WITH IT UP OPENS ITS CLOCK TOO — the card's `stacks`
+    // knob is "you walked in with it", not "it is up and already expired".
+    let mut incarnon_until = match params.cycle.as_ref().map(|c| (c.starts_primed, c.ends)) {
+        Some((true, Ends::After(seconds))) => seconds,
+        _ => 0.0,
+    };
     // READY RETALIATION IS ARMED BY THE EMPTY MAGAZINE, not by the reload.
     //
     // The owner's evidence is the transmute: empty the magazine
@@ -12239,8 +12499,15 @@ pub fn run_once_traced(
                             // the one column a reader opens this panel to
                             // check. The gauge decides it; `charges` can run
                             // past the fill mark, so the share is clamped.
-                            let share = if cy.charges_to_fill > 0 {
-                                (f64::from(charges) / f64::from(cy.charges_to_fill)).min(1.0)
+                            let to_fill = match cy.arms {
+                                Arms::Gauge { charges_to_fill, .. } => charges_to_fill,
+                                // A melee Incarnon has no gauge, and this
+                                // column is never drawn for one: melee has no
+                                // magazine either.
+                                Arms::HeavyAtCombo(_) => 0,
+                            };
+                            let share = if to_fill > 0 {
+                                (f64::from(charges) / f64::from(to_fill)).min(1.0)
                             } else {
                                 0.0
                             };
@@ -12255,7 +12522,13 @@ pub fn run_once_traced(
                     // ruler grants it, and a column reading "1e9" is a column a
                     // reader has to decode.
                     reserve: (!params.infinite_reserve).then_some(reserve),
-                    gauge: params.cycle.as_ref().map(|cy| (charges, cy.charges_to_fill)),
+                    // …AND ONLY A GAUGE IS DRAWN AS ONE. A melee Incarnon's
+                    // way in is a swing, so there is no bar to fill and the
+                    // column is absent rather than pinned at zero.
+                    gauge: params.cycle.as_ref().and_then(|cy| match cy.arms {
+                        Arms::Gauge { charges_to_fill, .. } => Some((charges, charges_to_fill)),
+                        Arms::HeavyAtCombo(_) => None,
+                    }),
                 });
             }
         };
@@ -12393,6 +12666,7 @@ pub fn run_once_traced(
                         base_damage_eximus_expiry_seconds, streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
                         combo_at(combo_spec, params.combo_held, combo_count,
                             combo_last_hit, next_frame),
+                        incarnon_until,
                     );
                     rep.frames.push(Frame {
                         t: next_frame,
@@ -12702,7 +12976,20 @@ pub fn run_once_traced(
         if params.no_magazine {
             magazine = mag_cap;
         }
+        // …AND A CLOCK ENDS THE OTHER KIND, before the magazine block below,
+        // which is entirely about a magazine a melee weapon does not have.
+        // *"activate Incarnon Form for 90 seconds"* — the window runs from the
+        // swing that armed it, is not refreshed by anything, and re-arms the
+        // same way it armed the first time.
         if let Some(cy) = &params.cycle {
+            if let Ends::After(_) = cy.ends {
+                if !in_base_form && t >= incarnon_until {
+                    in_base_form = true;
+                    weapon_now!();
+                }
+            }
+        }
+        if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine) {
             if !in_base_form && magazine < 1e-9 {
                 // Charge magazine spent: revert to the base form. The swap
                 // fully reloads the base magazine (wiki side effect). The
@@ -13481,6 +13768,7 @@ pub fn run_once_traced(
                 base_damage_reload_expiry_seconds, base_damage_eximus_expiry_seconds,
                 streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
                 combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
+                incarnon_until,
             );
             rec.set_stacks(stacks);
             rec.begin_shot(t, n_pellets);
@@ -14362,6 +14650,7 @@ pub fn run_once_traced(
                         base_damage_reload_expiry_seconds, base_damage_eximus_expiry_seconds,
                         streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
                         combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
+                        incarnon_until,
                     );
                     rec.set_stacks(stacks);
                 }
@@ -15905,7 +16194,18 @@ pub fn run_once_traced(
 
         // Gauge charging (base phase): every weakpoint PELLET builds one
         // charge (charge_rules); a full gauge transmutes back immediately.
-        if let Some(cy) = &params.cycle {
+        //
+        // A GAUGE IS ONE OF TWO WAYS IN, so the whole block is the GUN's. A
+        // melee Incarnon arms on the swing itself (`Arms::HeavyAtCombo`, below
+        // beside the combo counter it reads) and skips every line of this: it
+        // has no gauge to fill, no charge magazine to fill, and no transmute
+        // animation to spend.
+        if let Some((cy, charge_on, charges_to_fill)) =
+            params.cycle.as_ref().and_then(|cy| match cy.arms {
+                Arms::Gauge { charge_on, charges_to_fill } => Some((cy, charge_on, charges_to_fill)),
+                Arms::HeavyAtCombo(_) => None,
+            })
+        {
             // KILLS ADVANCE THEIR MARK IN EITHER FORM, and the two halves are
             // separate on purpose. A hit is bounded by the shot that caused it,
             // so `_before` is exact for one; a kill is not — a status tick
@@ -15922,7 +16222,7 @@ pub fn run_once_traced(
                 // the Mausolon. A field or radial instance is neither of the
                 // first two, so neither can charge those — but it CAN kill,
                 // which is the whole difference the third one makes.
-                charges += match cy.charge_on {
+                charges += match charge_on {
                     crate::loadout::ChargeOn::WeakpointHits => r.headshots - headshots_before,
                     crate::loadout::ChargeOn::DirectHits => r.pellets - pellets_before,
                     crate::loadout::ChargeOn::Kills => fresh_kills,
@@ -15938,7 +16238,7 @@ pub fn run_once_traced(
                 // 7-pellet shot into a 30-charge gauge arrives at 35 on the
                 // fifth shot, never at 30, so the comparison is `>=` and the
                 // shot that crosses it is fired in the BASE form.
-                if charges >= cy.charges_to_fill {
+                if charges >= charges_to_fill {
                     // BOTH DIRECTIONS TAKE IT. The wiki says Ready
                     // Retaliation "can affect transition INTO Incarnon form
                     // with a well-timed manual reload" and not the way back;
@@ -16120,6 +16420,34 @@ pub fn run_once_traced(
                 combo_points = combo_now * ap.heavy_attack_efficiency;
                 combo_spent_t = t;
             }
+            // …AND A HEAVY SWING IS WHAT ARMS A MELEE INCARNON.
+            //
+            // *"Reach 6x Combo and then Heavy Attack to activate Incarnon Form
+            // for 180 seconds"* — so the number read is the multiplier the
+            // swing WENT DOWN with, which is the one it was paid at, taken
+            // before the spend above emptied the counter. A Tennokai heavy is a
+            // heavy attack and arms it too.
+            //
+            // IT IS A BUFF AND NOT A TRANSFORM, so nothing is announced and
+            // nothing is counted: a melee Incarnon changes numbers rather than
+            // attacks, there is no animation to play and none to bill, and the
+            // reader sees it where the other windows are — the `melee_incarnon`
+            // series in the buff roster. `transforms` counts transmutes into a
+            // second WEAPON, which this is not.
+            //
+            // A TENNOKAI HEAVY ARMS IT TOO: the heavy attack is the
+            // condition, and a Tennokai swing is a heavy attack — which is what
+            // gives a light combo mode any way in at all, since its loop
+            // performs no heavy of its own.
+            if let Some(cy) = &params.cycle {
+                if let (Arms::HeavyAtCombo(at), Ends::After(window)) = (cy.arms, cy.ends) {
+                    if in_base_form && (ap.spends_combo || tennokai_heavy) && combo_mult >= at {
+                        in_base_form = false;
+                        incarnon_until = t + window;
+                        weapon_now!();
+                    }
+                }
+            }
             // SHOCKWAVE SYNERGY — THE ONE THING THAT EARNS COMBO ON A HEAVY
             // MODE, and it is AFTER the spend on purpose: the heavy attack
             // empties the counter and the slam lands after it, so a grant
@@ -16132,7 +16460,7 @@ pub fn run_once_traced(
             // (wiki, Praedos). A crowd is what pays it, which is why the count
             // is over the bodies the sphere actually reached.
             //
-            // …AND A HEAVY SLAM EARNS NOTHING FROM IT (owner, 2026-09-01). The
+            // …AND A HEAVY SLAM EARNS NOTHING FROM IT. The
             // same rule the stance points above obey — a swing that SPENDS the
             // counter adds nothing to it — read off the same flag, so the perk
             // and every other earner cannot disagree about what a heavy is.
@@ -19494,8 +19822,8 @@ mod tests {
                 cycle: Some(IncarnonCycle {
                     starts_primed: true,
                     base_form: Box::new(base_form),
-                    charge_on: crate::loadout::ChargeOn::WeakpointHits,
-                    charges_to_fill: 1_000_000,
+                    arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 1_000_000 },
+                    ends: Ends::ChargeMagazine,
                     transmute_out_seconds: 0.5,
                     transmute_seconds: 1.0,
                     reload_bucket: 0.0,
@@ -19609,8 +19937,8 @@ mod tests {
             cycle: Some(IncarnonCycle {
                 starts_primed: false,
                 base_form: Box::new(base_form),
-                charge_on: crate::loadout::ChargeOn::WeakpointHits,
-                charges_to_fill: 2,
+                arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
                 reload_bucket: 0.0,
@@ -21103,8 +21431,8 @@ mod tests {
                 cycle: Some(IncarnonCycle {
                     starts_primed: false,
                     base_form: Box::new(base_form),
-                    charge_on: crate::loadout::ChargeOn::DirectHits,
-                    charges_to_fill: 2,
+                    arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::DirectHits, charges_to_fill: 2 },
+                    ends: Ends::ChargeMagazine,
                     // LONG animations, so the difference between running them at
                     // one speed and at double shows up in whole transforms
                     // rather than in rounding.
@@ -24607,8 +24935,12 @@ mod tests {
             cycle: Some(IncarnonCycle {
                 starts_primed: true,        // open IN the form…
                 base_form: Box::new(base_form.clone()),
-                charge_on: crate::loadout::ChargeOn::WeakpointHits,
-                charges_to_fill: 1_000_000, // …and never earn it back
+                // …and never earn it back
+                arms: Arms::Gauge {
+                    charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                    charges_to_fill: 1_000_000,
+                },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
                 reload_bucket: 0.0,
@@ -26828,8 +27160,8 @@ mod tests {
                 // These fixtures test the EARNED cycle, which is the standard one.
                 starts_primed: false,
                 base_form: Box::new(base_form),
-                charge_on: crate::loadout::ChargeOn::WeakpointHits,
-                charges_to_fill: 2,
+                arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
                 reload_bucket: 0.0,
@@ -26885,8 +27217,8 @@ mod tests {
                 // These fixtures test the EARNED cycle, which is the standard one.
                 starts_primed: false,
                 base_form: Box::new(base_form.clone()),
-                charge_on,
-                charges_to_fill: 2,
+                arms: Arms::Gauge { charge_on, charges_to_fill: 2 },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
                 reload_bucket: 0.0,
@@ -26945,8 +27277,8 @@ mod tests {
             cycle: Some(IncarnonCycle {
                 starts_primed: false,
                 base_form: Box::new(base_form.clone()),
-                charge_on: crate::loadout::ChargeOn::WeakpointHits,
-                charges_to_fill: 2,
+                arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
                 reload_bucket: 0.0,
@@ -29262,7 +29594,15 @@ mod headshot_buff_wiring_tests {
                     &[e.id.as_str()],
                 );
                 let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
-                let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
+                let arena = crate::arena::Arena::training(30.0);
+                // `for_panel`, NOT `from_panel` — the same decision every real
+                // surface makes. A melee Incarnon's card is backed by a fight
+                // built from two panels, and asking the one-panel constructor
+                // here would fail a card that works.
+                let params = DummyParams::for_panel(&p, &arena, &ArcaneFx::none(), || {
+                    let b = crate::loadout::WeaponBase::from_data(&e.weapon, true, &[]);
+                    crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent)
+                });
                 let listed = params.buff_roster().into_iter().any(|b| b.id == card.id);
                 assert!(
                     listed,
@@ -30531,8 +30871,8 @@ mod incarnon_reload_route_tests {
             cycle: Some(IncarnonCycle {
                 starts_primed: false,
                 base_form: Box::new(base_form),
-                charge_on: crate::loadout::ChargeOn::WeakpointHits,
-                charges_to_fill: 2,
+                arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 2 },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
                 reload_bucket: 0.0,
@@ -30610,8 +30950,8 @@ mod incarnon_reload_route_tests {
             cycle: Some(IncarnonCycle {
                 starts_primed: false,
                 base_form: Box::new(base_form),
-                charge_on: crate::loadout::ChargeOn::WeakpointHits,
-                charges_to_fill: 30,
+                arms: Arms::Gauge { charge_on: crate::loadout::ChargeOn::WeakpointHits, charges_to_fill: 30 },
+                ends: Ends::ChargeMagazine,
                 transmute_out_seconds: 0.0,
                 transmute_seconds: 0.0,
                 reload_bucket: 0.0,
@@ -30627,7 +30967,13 @@ mod incarnon_reload_route_tests {
         let run = |gauge: u32, secs: f64| {
             let q = DummyParams {
                 duration_seconds: secs,
-                cycle: Some(IncarnonCycle { charges_to_fill: gauge, ..p.cycle.clone().unwrap() }),
+                cycle: Some(IncarnonCycle {
+                    arms: Arms::Gauge {
+                        charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                        charges_to_fill: gauge,
+                    },
+                    ..p.cycle.clone().unwrap()
+                }),
                 ..p.clone()
             };
             let r = run_once(&q, &mut Rng::new(9));

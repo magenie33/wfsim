@@ -120,6 +120,12 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         // Fevered Frenzy: permanent stacks, no in-sim trigger — the answer
         // `ArcTrigger::Passive` gets, for the same reason.
         "evo_multishot" => return Some(None),
+        // A MELEE INCARNON IS ARMED BY A HEAVY ATTACK, and that is the MODE's
+        // business rather than the fight's: whether the loop contains one is a
+        // build axis already, so there is no scenario switch that could take it
+        // away. A ruler cannot say "no heavy attacks happen" the way it can say
+        // "nothing dies".
+        "melee_incarnon" => return Some(None),
         _ => return None,
     }))
 }

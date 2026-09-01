@@ -10,11 +10,17 @@ description: "Reach 5x Combo and then Heavy Attack to activate Incarnon Form for
 #
 # NINETY SECONDS AGAINST A 180 s ENGAGEMENT, which is where this weapon differs
 # from every Genesis melee in the roster: those last the whole fight, this lasts
-# half of it. Applying it for the whole engagement is therefore GENEROUS rather
-# than neutral, and the weapon entries say so in `unmodeled` rather than here.
+# half of it. The window is SIMULATED (`incarnon_window` below): the fight opens
+# un-armed, a heavy attack at 5x combo turns it on, and it turns itself off
+# ninety seconds later.
 selection: fixed
 
 effects:
+  # from: "Reach 5x Combo and then Heavy Attack to activate Incarnon Form for 90
+  # seconds". It carries no stat: it says WHEN the three below are on.
+  - kind: incarnon_window
+    arm_at_combo: 5.0
+    seconds: 90.0
   # from: "+3 Range" — the largest melee reach bonus in the roster, and on a
   # 2.5 m weapon it is more than double. It is what lets a light Praedos mode
   # reach a second body on the group ruler's 3 m grid.

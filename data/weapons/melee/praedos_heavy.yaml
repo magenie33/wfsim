@@ -19,7 +19,6 @@ transform_group: praedos
 co_behavior: additive_with_base_damage
 unmodeled:
   - "ATTACK SPEED PAYS NOTHING IN THIS MODE. The wiki's own sentence is 'Increasing melee attack speed does not reduce the wind-up time; rather, it reduces the interval between heavy attacks' — and nothing published says how long the swing after the charge takes, so this entry carries no animation for attack speed to shorten and the cadence is the wind-up alone. A build on Fury or Berserker reads LOW here"
-  - "the INCARNON IS A BUFF HERE AND ITS ENTRY IS NOT SIMULATED: the Praedos is an INNATE Incarnon rather than a Genesis, and its form changes numbers rather than attacks, so the numbers are applied for the whole fight. Arming it takes 5x combo and then a heavy attack — 3x with Swift Transmute — and the 90 s it then lasts is HALF the 180 s engagement, which is the one place this weapon differs from a Genesis melee and the one place this model is generous"
 attack:
   # see notes: swing_trigger_pull_engine
   trigger: melee

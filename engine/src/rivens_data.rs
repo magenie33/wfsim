@@ -1788,16 +1788,6 @@ fn an_element_is_never_a_malus() {
     /// `is_adapter_form` filter moves 25 weapons, seven of which would gain a
     /// PHYSICAL stat the survey records **zero** times:
     ///
-    /// | family | stat the Incarnon form would unlock | cards carrying it |
-    /// | --- | --- | --- |
-    /// | Boltor | Slash | 0 of 500 |
-    /// | Latron | Impact | 0 of 500 |
-    /// | Atomos | Impact | 0 of 500 |
-    /// | Lex | Impact | 0 of 500 |
-    /// | Dual Toxocyst | Slash | 0 of 500 |
-    /// | Kunai | Slash | 0 of 430 |
-    /// | Bronco | Slash | 0 of 309 |
-    ///
     /// About 3,200 listings, not one carrying a stat the wider rule would
     /// offer — the same evidence the flight rule rests on, so it is one finding
     /// on both halves of the derivation rather than two arguments.
@@ -1810,6 +1800,18 @@ fn an_element_is_never_a_malus() {
     /// with a price tag rather than a one-line edit that reddens nothing.
     #[test]
     fn an_incarnon_form_does_not_widen_the_physical_pool() {
+        // THE SEVEN, AND WHAT COUNTING THEM FOUND:
+        //
+        // | family | stat the Incarnon form would unlock | cards carrying it |
+        // | --- | --- | --- |
+        // | Boltor | Slash | 0 of 500 |
+        // | Latron | Impact | 0 of 500 |
+        // | Atomos | Impact | 0 of 500 |
+        // | Lex | Impact | 0 of 500 |
+        // | Dual Toxocyst | Slash | 0 of 500 |
+        // | Kunai | Slash | 0 of 430 |
+        // | Bronco | Slash | 0 of 309 |
+        //
         // Each pair is (weapon, the stat its Incarnon form would unlock). The
         // assertion is that the stat is still EXCLUDED — that is, that the
         // gauge-switched form was not counted.

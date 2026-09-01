@@ -5899,7 +5899,21 @@ fn sim_params(
         (incarnon_panel, params)
     } else {
         let panel = panel_of(single_form);
-        let mut d = DummyParams::from_panel(&panel, arena, &arcane_fx);
+        // A MELEE INCARNON IS THE SAME WEAPON RESOLVED TWICE, and the second
+        // resolve is this one without the tiers that turn it on. It is not a
+        // form and unlocks no entry — `single_form` is unchanged — but the
+        // numbers it grants are TIMED, so the fight needs both halves.
+        //
+        // The tiers are found by what they SAY (`states_incarnon_window`) and
+        // not by id, so the next Genesis needs no edit here.
+        let mut d = DummyParams::for_panel(&panel, arena, &arcane_fx, || {
+            let unarmed: Vec<&str> = evo_refs
+                .iter()
+                .copied()
+                .filter(|id| !wfsim_engine::evolutions_data::states_incarnon_window(id))
+                .collect();
+            resolve_for(&base_for(v, single_form, &unarmed), refs, policy, tenno)
+        });
         d.infinite_reserve = panel.reserve_is_infinite(infinite_ammo);
         // Frenzy is the WEAPON's passive: it persists across its forms, so it rides whichever one is fired.
         d.frenzy = frenzy_single;

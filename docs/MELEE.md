@@ -217,7 +217,7 @@ slowly than its two chances suggest.
 ### …AND THE ONE CARD THAT PAYS A SLAM, WHICH IS NOT THE HEAVY ONE
 
 Shockwave Synergy — *"for each enemy hit by Slam radius, gain 4 Combo Count"* —
-pays the ORDINARY slam and pays a HEAVY slam nothing (owner, 2026-09-01). So it
+pays the ORDINARY slam and pays a HEAVY slam nothing. So it
 is the trailing slam of a combo that earns it: the Praedos's `block_forward`
 ends in one, nine bodies in the sphere is 36 points, and Blood Rush is what
 turns those into damage.
@@ -530,21 +530,56 @@ applies to.
 
 ---
 
-## 7. THE INCARNON, WHICH IS NOT A FORM
-
-The Magistar's Genesis is **not** modelled as an Incarnon form and must not be:
+## 7. THE INCARNON, WHICH IS A BUFF AND NOT A FORM
 
 > *"Reach **6x** Combo and then Heavy Attack to activate Incarnon Form"*,
 > lasting **180 seconds**, persisting through holstering and removed only on
 > death.
 
-There is no gauge to spend, no way back, and the duration is the whole
-engagement. Every evolution it grants is a stat — EVO1 is `+100% Melee Damage,
-+30 Initial Combo, +50% Heavy Attack Wind Up Speed` — so it is a **triggered
-buff**, the shape `on_reload_bd` and the Ocucor's tendrils already have. It is
-NOT yet in the roster; when it lands it is a buff with an entry condition, and
-the one thing to confirm in game first is that the form really does only change
-numbers rather than swapping in a new set of attacks.
+**A FORM IS A DIFFERENT WEAPON; A BUFF IS DIFFERENT NUMBERS ON THE SAME ONE.**
+That is the whole of the split, and the data already answered it: a gun's
+Incarnon unlocks a weapon entry with its own attack and its own charge
+magazine, and no melee Genesis grants `unlocks_weapon` because there is nothing
+to unlock. A melee Incarnon changes numbers on the swings the weapon already
+has, so it is drawn as a buff (`melee_incarnon` in the roster, a card with the
+usual two knobs) and never as a transform — no animation is played, nothing is
+billed, and `transforms` counts none of it.
+
+**UNDERNEATH IT IS THE SAME MACHINERY, and that is deliberate.** The engine has
+exactly one concept for "the numbers change part-way through the fight" — two
+resolved panels and a rule for which one you are in — and the melee one is the
+same weapon resolved twice, once with the tier that states the window and once
+without (`DummyParams::for_panel`, which is where the DECISION lives so no
+surface can skip it). Only two things differ, and both are data:
+
+| | arms | ends |
+| --- | --- | --- |
+| gun | `Gauge { charge_on, charges_to_fill }` | `ChargeMagazine` |
+| melee | `HeavyAtCombo(x)` | `After(seconds)` |
+
+The alternative was a buff carrying a set of grants, and it was rejected for a
+reason that would have rotted: every grant needs a LIVE bucket, the Magistar's
+wind-up speed and the Praedos's reach have none, and the next Genesis grants
+something nobody made live — a card paying nothing while the panel shows it
+paying. Two panels make every stat live at once and for good.
+
+**A HEAVY ATTACK IS THE WHOLE OF THE CONDITION**: a stationary heavy, a
+heavy slam, or a **Tennokai** heavy, which is what gives a light combo mode any
+way in at all — its loop performs no heavy of its own. Three consequences the
+sim reports rather than assumes away:
+
+- a **light combo mode with no Tennokai card never arms it**, and the Genesis
+  is worth exactly zero there;
+- a **pure-heavy mode** earns no combo points, so it arms it only off the
+  initial-combo FLOOR — Corrupt Charge's +30 is 2x and 6x needs 100, so it
+  takes Galvanized Reflex's earned +80 as well, and against a target that never
+  dies it takes the card's stack knob;
+- the **Praedos's 90 s is half a 180 s engagement**, where a Genesis's 180 s is
+  all of it. That gap is a number here rather than a declared generosity.
+
+`a_melee_incarnon_is_earned_and_a_heavy_attack_is_what_earns_it` pins all three,
+and `magistar_evo_armed` holds the window open where a test means to ask what
+the Genesis is WORTH rather than whether the mode can arm it.
 
 ---
 

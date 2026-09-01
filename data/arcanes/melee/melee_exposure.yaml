@@ -15,7 +15,7 @@ effects:
   # holding every stack and paying nothing at all, and a melee player casts. So
   # the 25 s timer never runs out here and the card is worth its cap.
   #
-  # THE WHOLE PILE EXPIRES TOGETHER (owner, 2026-09-01) rather than shedding one
+  # THE WHOLE PILE EXPIRES TOGETHER rather than shedding one
   # stack at a time, which is what makes the assumption above GENEROUS rather
   # than neutral: holding 240% needs four casts inside one 25 s window and then
   # a refresh of all four, where a one-at-a-time decay would hold it on one cast

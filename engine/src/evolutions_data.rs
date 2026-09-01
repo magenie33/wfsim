@@ -107,6 +107,16 @@ enum EvoEffect {
     ComboCountOnSlamHit(f64),
     /// METRES OF MELEE REACH (Orokin Reach's `+1.4 Range`).
     MeleeRange(f64),
+    /// THE WINDOW A MELEE INCARNON IS ON FOR, and what opens it — *"Reach 6x
+    /// Combo and then Heavy Attack to activate Incarnon Form for 180 seconds"*.
+    ///
+    /// It carries no stat of its own: the tier that states it also states the
+    /// numbers, and this is what makes those numbers TIMED rather than the
+    /// weapon's. Both halves are optional because two cards can speak — the
+    /// Praedos's Swift Transmute lowers the arming to 3x and states no window —
+    /// and the merge is the obvious one: the LOWEST arming any selected
+    /// evolution asks for, and the window whichever one names it.
+    IncarnonWindow { arm_at_combo: Option<f64>, seconds: Option<f64> },
     /// A RELATIVE change to FOLLOW THROUGH — what a second body in the same
     /// swing takes (Crushing Verdict's `+40% Follow Through`).
     FollowThroughBonus(f64),
@@ -784,9 +794,29 @@ impl EvolutionDef {
                 // THE MELEE FIVE. Unconditional stat changes — no trigger, no
                 // stacks, nothing to configure — so no card, the same answer
                 // `FlatBaseDamage` and its siblings get one arm down.
+                // A MELEE INCARNON IS A BUFF AND GETS A BUFF'S CARD. It is
+                // entered by a heavy attack rather than by an animation, it is
+                // on for a stated number of seconds, and it changes numbers on
+                // swings the weapon already has — so it belongs where the
+                // reader looks for a window, and the two knobs mean what they
+                // mean everywhere else (docs/BUFFS.md): STACKS is "you walked
+                // in with it up", NO TIMEOUT is the window never closing.
+                //
+                // ONLY THE TIER THAT STATES THE WINDOW draws it. A card that
+                // only lowers the arming — the Praedos's Swift Transmute —
+                // states no seconds and is not a second buff.
+                EvoEffect::IncarnonWindow { seconds: Some(_), .. } => Some(EvoBuffCard {
+                    id: "melee_incarnon",
+                    max_stacks: 1,
+                    // EARNED, like every other timed buff: the fight opens
+                    // un-armed and buys the window with a heavy attack.
+                    permanent: false,
+                    opens_at: CardOpens::Zero,
+                }),
                 EvoEffect::BaseDamageBonus(_)
                 | EvoEffect::InitialCombo(_)
                 | EvoEffect::ComboCountOnSlamHit(_)
+                | EvoEffect::IncarnonWindow { .. }
                 | EvoEffect::MeleeRange(_)
                 | EvoEffect::FollowThroughBonus(_)
                 | EvoEffect::SlamRadiusBonus(_)
@@ -1086,6 +1116,14 @@ impl EvolutionDef {
                 EvoEffect::InitialCombo(v) => format!(
                     "the melee combo counter opens at +{v:.0} and returns to it, regenerating 40                      points a second — which is what a heavy build spends"
                 ),
+                EvoEffect::IncarnonWindow { arm_at_combo, seconds } => match (arm_at_combo, seconds) {
+                    (Some(a), Some(s)) => format!(
+                        "on for {s:.0}s from the heavy attack that arms it, which needs {a:.0}x combo"
+                    ),
+                    (Some(a), None) => format!("arms at {a:.0}x combo instead"),
+                    (None, Some(s)) => format!("on for {s:.0}s from the heavy attack that arms it"),
+                    (None, None) => String::new(),
+                },
                 EvoEffect::ComboCountOnSlamHit(v) => format!(
                     "+{v:.0} combo points for every body the slam reached, scaled by combo                      count chance — the only thing that earns combo on a heavy mode"
                 ),
@@ -1427,6 +1465,10 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // …AND THE RELATIVE ONE, which is how a MELEE Genesis is written.
         "base_damage_bonus" => EvoEffect::BaseDamageBonus(f(v, "value").unwrap_or(0.0)),
         "initial_combo" => EvoEffect::InitialCombo(f(v, "value").unwrap_or(0.0)),
+        "incarnon_window" => EvoEffect::IncarnonWindow {
+            arm_at_combo: f(v, "arm_at_combo"),
+            seconds: f(v, "seconds"),
+        },
         "combo_count_on_slam_hit" => {
             EvoEffect::ComboCountOnSlamHit(f(v, "value").unwrap_or(0.0))
         }
@@ -1998,6 +2040,18 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::InitialCombo(v) => base.evo_initial_combo += v,
                 EvoEffect::ComboCountOnSlamHit(v) => base.evo_combo_count_on_slam_hit += v,
                 EvoEffect::MeleeRange(v) => base.evo_melee_range_m += v,
+                EvoEffect::IncarnonWindow { arm_at_combo, seconds } => {
+                    let w = base.melee_incarnon.get_or_insert(crate::loadout::MeleeIncarnon {
+                        arm_at_combo: f64::INFINITY,
+                        seconds: 0.0,
+                    });
+                    if let Some(a) = arm_at_combo {
+                        w.arm_at_combo = w.arm_at_combo.min(*a);
+                    }
+                    if let Some(s) = seconds {
+                        w.seconds = *s;
+                    }
+                }
                 EvoEffect::FollowThroughBonus(v) => base.evo_follow_through_bonus += v,
                 EvoEffect::SlamRadiusBonus(v) => base.evo_slam_radius_bonus += v,
                 EvoEffect::HeavyWindUpSpeed(v) => base.evo_heavy_windup_speed += v,
@@ -2653,6 +2707,18 @@ impl EvolutionDef {
             _ => None,
         })
     }
+}
+
+/// Does this evolution state a MELEE INCARNON WINDOW?
+///
+/// Asked by whoever has to build the UN-ARMED half of the fight: the same
+/// weapon, resolved again without the tiers that turn the Incarnon on. It is a
+/// predicate over the DATA rather than a list of ids, so the next Genesis is
+/// covered by writing its yaml and nothing else.
+pub fn states_incarnon_window(id: &str) -> bool {
+    get(id).is_some_and(|e| {
+        e.effects.iter().any(|x| matches!(x, EvoEffect::IncarnonWindow { .. }))
+    })
 }
 
 pub fn get(id: &str) -> Option<&'static EvolutionDef> {

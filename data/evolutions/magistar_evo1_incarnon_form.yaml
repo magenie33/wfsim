@@ -8,14 +8,12 @@ description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for
 # `unlocks_weapon` — there is no second weapon entry to unlock — and the whole
 # Genesis is stat changes on the seven ways the Magistar is already swung.
 #
-# WHY IT IS NOT MODELLED AS A CONDITION. The wiki: *"Reach 6x Combo and then
-# Heavy Attack to activate Incarnon Form"*, lasting *"180 seconds"*, persisting
-# through holstering and removed only on death. The rulers' engagement IS 180
-# seconds and reaching 6x costs a few seconds of light attacks, so a player who
-# wants it has it for effectively the whole fight — which is what this applies.
-# The activation is a PLAY PATTERN (a few seconds of one mode before switching
-# to another), and inventing one is the owner's call rather than the model's:
-# docs/UNMODELLED.md holds that line. The cost is declared below.
+# THE WINDOW IS SIMULATED. The wiki: *"Reach 6x Combo and then Heavy Attack to
+# activate Incarnon Form"*, lasting *"180 seconds"*, persisting through
+# holstering and removed only on death. The fight opens un-armed and buys it
+# with a heavy attack at 6x, exactly as a player does — and because 180 s IS the
+# rulers' engagement, a build that gets there early holds it to the end. What
+# the fight earns is what it gets, and the mode that cannot earn it says so.
 #
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades the Magistar and the Sancti
 # Magistar — and every value below is the MAGISTAR's column. The Sancti's are
@@ -24,6 +22,13 @@ description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for
 selection: fixed
 
 effects:
+  # from: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for
+  # 180 seconds". It carries no stat: it says WHEN the ones below are on. 180 s
+  # IS the rulers' engagement, so a build that arms it early holds it to the
+  # end — earned, not assumed.
+  - kind: incarnon_window
+    arm_at_combo: 6.0
+    seconds: 180.0
   # from: "+100% Melee Damage" — a BRACKET term beside Pressure Point, not a
   # flat addition to the weapon's own damage. This is the line that makes a
   # melee Genesis read differently from a gun's, which says `+14 Base Damage`.

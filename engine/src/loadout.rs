@@ -1751,6 +1751,22 @@ pub enum GatedGrant {
     FlatBaseMagazine,
 }
 
+/// A MELEE INCARNON FORM: what opens it, and how long it is on for.
+///
+/// It is NOT A FORM in this repo's sense and does not become one — no weapon
+/// entry is unlocked and no animation changes. It is the same weapon resolved
+/// twice, and this is the rule for which of the two you are in
+/// (`dummy::Arms::HeavyAtCombo`, `dummy::Ends::After`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MeleeIncarnon {
+    /// The combo MULTIPLIER a heavy attack must go down at — 6x on the
+    /// Magistar, 5x on the Praedos, 3x with Swift Transmute.
+    pub arm_at_combo: f64,
+    /// Seconds it is on for. 180 on a Genesis, which is the whole engagement;
+    /// 90 on the Praedos, which is half of one.
+    pub seconds: f64,
+}
+
 /// A weapon's unmodded panel (fixed evolutions folded in — they alter the
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
@@ -2117,6 +2133,12 @@ pub struct WeaponBase {
     pub evo_combo_count_on_slam_hit: f64,
     /// Metres of melee reach, from an evolution (Orokin Reach).
     pub evo_melee_range_m: f64,
+    /// THE WINDOW THIS BUILD'S MELEE INCARNON IS ON FOR, when one is installed.
+    ///
+    /// `None` on every gun and on a melee weapon with no Genesis. A GUN's
+    /// Incarnon is not this: it is a second weapon entry with its own attack,
+    /// and it ends when its charge magazine does.
+    pub melee_incarnon: Option<MeleeIncarnon>,
     /// A relative change to Follow Through, from an evolution.
     pub evo_follow_through_bonus: f64,
     /// A relative change to a slam's radius, from an evolution.
@@ -3343,6 +3365,9 @@ pub struct ResolvedPanel {
     pub spends_combo: bool,
     /// Seconds the combo counter survives untouched, mods included.
     pub combo_duration_seconds: f64,
+    /// THE WINDOW THIS BUILD'S MELEE INCARNON IS ON FOR — see
+    /// [`WeaponBase::melee_incarnon`]. `None` on everything without a Genesis.
+    pub melee_incarnon: Option<MeleeIncarnon>,
     /// …AND WHETHER THE COUNTER IS STOPPED ALTOGETHER. *"A zero or negative
     /// combo duration prevents increasing the combo counter"* (wiki), which is
     /// a harder stop than the 0.1 s floor beside it: the clock is not short,
@@ -5170,6 +5195,10 @@ pub fn resolve_for(
             .max(0.1),
         combo_frozen: (base.combo_duration_seconds + combo_duration_add) * combo_duration_mult
             <= 0.0,
+        // STRAIGHT THROUGH: no mod touches it, and the caller is what needs it
+        // — resolving the same weapon a second time without the tier that
+        // states it is how the un-armed half of the fight is built.
+        melee_incarnon: base.melee_incarnon,
         // …PLUS WHAT A GENESIS OPENS THE COUNTER AT. The Magistar's Incarnon
         // Form is +30, which is 0.75 s of refill against a 0.8 s wind-up.
         initial_combo: initial_combo + base.evo_initial_combo,

@@ -24,7 +24,6 @@ form: heavy_slam
 transform_group: magistar
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "the INCARNON IS A BUFF HERE AND ITS ENTRY IS NOT SIMULATED: a melee Genesis changes numbers rather than attacks, and the numbers are applied for the whole fight. Arming it takes 6x combo and then a heavy attack, which on this mode has to come off the initial-combo FLOOR, since a heavy attack earns no combo points — Galvanized Reflex's earned +80 and Corrupt Charge's +30 are 110 points, which is 6x, and a build with neither has to spend a few seconds in a light combo first. Neither is charged against the 180 s the buff then lasts, which is the whole engagement"
   - "THE CLIMB IS NOT CHARGED: this loop takes the 150% radius a slam dropped from 15 m gets, and the seconds spent getting up there are free. A player who hops instead trades that radius back down towards the 2.5 m / listed radius floor, and this arena has no vertical axis to tell the two apart"
 attack:
   # see notes: swing_trigger_pull_engine
