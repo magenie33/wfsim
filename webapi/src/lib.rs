@@ -1938,7 +1938,11 @@ pub fn meta_json() -> Value {
                                 "si": wfsim_engine::share_order::index_of(&s.id),
                                 "text": s.text, "base": s.base,
                                 "prefix": s.prefix, "suffix": s.suffix,
-                                "malus": s.malus, "modeled": s.kind != "unmodeled",
+                                // BOTH DIRECTIONS. The picker draws two lists
+                                // out of one pool: `malus` false = bonus-only,
+                                // `bonus` false = malus-only.
+                                "malus": s.malus, "bonus": s.bonus,
+                                "modeled": s.kind != "unmodeled",
                             }))
                             .collect::<Vec<_>>()),
                     )

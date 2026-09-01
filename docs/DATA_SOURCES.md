@@ -620,6 +620,14 @@ None of that makes the count an AUTHORITY — see §"Riven pools: the rules deci
 the survey checks" below, which is where the counts go now. Full reasoning and
 the corrections: `docs/MEASUREMENTS.md` M35.
 
+**A CLASS's pool is a different question and DE answers it.** Which stats exist
+at all, their bases, their name fragments and their display templates are
+`upgradeEntries` on the riven ITEM, so `scripts/gen_rivens.py` reads the
+committed export and nothing is scraped: five files today, rifle through melee.
+Listings settle only what the export leaves ambiguous — a base's SIGN means one
+thing on a stat that can be either slot and another on a stat that can only be
+the malus (M71).
+
 ### Open SOURCE-SPLIT: the Torid Incarnon's beam geometry
 
 The official wiki's raw wikitext (`?action=raw`) reads, with markup:

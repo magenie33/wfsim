@@ -66,7 +66,8 @@ notes:
     `bonus: false` = malus-only, and the base already carries the sign. Weapon
     Recoil's base is negative because its BONUS is ("-90% Weapon Recoil" is the
     good one) and flips positive in the malus slot; this one is negative
-    because it IS the malus, and stays negative there.
+    because it IS the malus, and flipping it would print a negative slot that
+    reads as a gift.
   blazing_barrel_two_clauses: |
     BLAZING BARREL. Two clauses on the card and ONE mechanic: the stack cap
     belongs to the grant above it, and the bulk intake filed it as an effect of

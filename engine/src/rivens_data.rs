@@ -634,9 +634,8 @@ impl RivenSpec {
     /// data say different things: Weapon Recoil is negative because its BONUS
     /// reads "-90% Weapon Recoil", so the malus slot flips it to a positive
     /// +67.5%; Chance to Gain Combo Count is negative because it IS the malus,
-    /// and flipping it would print a card that reads as a gift. Live listings
-    /// settle it — a 3+1 Magistar card (disposition 1.35) reads -102.7%, and
-    /// `0.01165 x 90 x 1.35 x 0.75` is 106% at roll 1.0.
+    /// and flipping it would print a negative slot that reads as a gift.
+    /// MEASUREMENTS M71.
     pub fn value_of(&self, stat: &RivenStat, roll: f64, bonus: bool, disposition: f64) -> f64 {
         let rank_scale = PER_RANK * (self.rank + 1) as f64;
         let shape = self.shape();

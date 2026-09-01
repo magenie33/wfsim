@@ -313,6 +313,9 @@ overrides it per riven FAMILY with the evidence in each entry, and
 `data/rivens/pools.yaml` (from `scripts/survey_riven_pools.py`) is read by a
 TEST and by nothing else. See DATA_SOURCES §"Riven pools" (MEASUREMENTS M35).
 
+THE TWO SLOTS ARE DIFFERENT LISTS, which is why a case may state one answer per
+slot: five stats are bonus-only and one melee stat is malus-only.
+
 ## `check_riven_family`
 
 A riven is a card for a weapon FAMILY, not an entry:
