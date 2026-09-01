@@ -243,7 +243,11 @@ enum EvoEffect {
     ConditionOverload { per_type: f64, min_sprint: f64 },
     /// Fire-rate bonus in the ORDINARY additive bucket — the same one the
     /// fire-rate mods feed, so it SUMS with them (Rapid Wrath).
-    FireRateBonus { value: f64, min_sprint: f64 },
+    /// A FIRE-RATE (melee: ATTACK SPEED) bonus, with the two conditions the
+    /// roster's cards state: a sprint floor, and whether the melee weapon has
+    /// to be DRAWN — *"With Melee Weapon Equipped"*, which a quick-melee swing
+    /// does not satisfy.
+    FireRateBonus { value: f64, min_sprint: f64, needs_melee_equipped: bool },
     /// "+X% Damage to enemies below half Health" — a bucket bonus with a
     /// condition on the TARGET rather than on the weapon or the player.
     /// "+X% Damage to enemies below half Health". `excludes_own_flat` is the
@@ -1241,11 +1245,13 @@ impl EvolutionDef {
                     "+{:.0}% damage while the target is under half health",
                     v * 100.0
                 ),
-                EvoEffect::FireRateBonus { value, min_sprint } => format!(
+                EvoEffect::FireRateBonus { value, min_sprint, needs_melee_equipped } => format!(
                     "+{:.0}% fire rate{}",
                     value * 100.0,
                     if *min_sprint > 0.0 {
                         format!(" at sprint speed {min_sprint} or higher")
+                    } else if *needs_melee_equipped {
+                        " with the melee weapon drawn".to_string()
                     } else {
                         String::new()
                     }
@@ -1703,6 +1709,13 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             // for "this perk asks about the player", so the second grant to
             // need it did not invent a second spelling.
             min_sprint: sprint_condition(v),
+            // …AND THE ONE THAT ASKS WHETHER THE WEAPON IS DRAWN. *"With Melee
+            // Weapon Equipped"* is not satisfied by a quick-melee swing, and
+            // the arena's default is drawn.
+            needs_melee_equipped: v
+                .get("condition")
+                .and_then(Value::as_str)
+                .is_some_and(|c| c == "with_melee_equipped"),
         },
         // The CONDITION is the only thing that varies between the roster's
         // three copies, and it is read rather than assumed: absent means any
@@ -2153,15 +2166,19 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         half_hp_rate_own += rate * e.flat_base_damage();
                     }
                 }
-                EvoEffect::FireRateBonus { value, min_sprint } => {
-                    if *min_sprint > 0.0 {
-                        base.gated.push((
-                            crate::loadout::TennoGate::SprintAtLeast(*min_sprint),
-                            crate::loadout::GatedGrant::FireRate,
-                            *value,
-                        ));
+                EvoEffect::FireRateBonus { value, min_sprint, needs_melee_equipped } => {
+                    let gate = if *min_sprint > 0.0 {
+                        Some(crate::loadout::TennoGate::SprintAtLeast(*min_sprint))
+                    } else if *needs_melee_equipped {
+                        Some(crate::loadout::TennoGate::MeleeEquipped)
                     } else {
-                        base.evo_fire_rate_bonus += value;
+                        None
+                    };
+                    match gate {
+                        Some(g) => {
+                            base.gated.push((g, crate::loadout::GatedGrant::FireRate, *value));
+                        }
+                        None => base.evo_fire_rate_bonus += value,
                     }
                 }
                 EvoEffect::ReloadSpeedBonus(v) => base.evo_reload_bonus += v,
@@ -3519,7 +3536,9 @@ mod after_mods_layer_tests {
                     EvoEffect::GatedByTenno { .. } | EvoEffect::Inert(_) => true,
                     // The condition IS the variant: "on empty reload".
                     EvoEffect::ReloadSpeedOnEmptyReload { .. } => true,
-                    EvoEffect::FireRateBonus { min_sprint, .. } => *min_sprint > 0.0,
+                    EvoEffect::FireRateBonus { min_sprint, needs_melee_equipped, .. } => {
+                        *min_sprint > 0.0 || *needs_melee_equipped
+                    }
                     EvoEffect::ConditionOverload { min_sprint, .. } => *min_sprint > 0.0,
                     EvoEffect::InstantReloadOnHeadshot { needs_kill, .. } => *needs_kill,
                     _ => false,

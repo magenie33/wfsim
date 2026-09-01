@@ -120,6 +120,10 @@ state:
   aiming: true
   invisible: false
   airborne: false
+  # FULLY SWITCHED TO THE MELEE WEAPON rather than quick-melee, which is what
+  # "With Melee Weapon Equipped" asks and what a melee build is played as. It
+  # reads TRUE for a gun too and costs nothing there: no gun's card names it.
+  melee_equipped: true
   # CURRENT energy as a fraction of the pool above. Full, because a build
   # calculator is asked what the gun does, not what it does eleven casts in.
   energy_pct: 1.0

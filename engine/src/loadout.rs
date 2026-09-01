@@ -1642,6 +1642,8 @@ pub enum TennoGate {
     /// active". A yes/no, and its definition is the card's own note: the
     /// ability must be DRAINING ENERGY over time.
     ChannelingAbility,
+    /// *"With Melee Weapon Equipped"* — the weapon DRAWN, not quick-melee.
+    MeleeEquipped,
     /// `solo_weapon` — the Vasto's Lone Gun: "With No Primary Equipped".
     ///
     /// The first gate that asks about the LOADOUT rather than about the frame
@@ -1687,6 +1689,7 @@ impl TennoGate {
             TennoGate::EnergyMaxAtLeast(x) => tenno.energy >= x,
             TennoGate::HasOvershields => tenno.state.overshields,
             TennoGate::ChannelingAbility => tenno.state.channeling,
+            TennoGate::MeleeEquipped => tenno.state.melee_equipped,
             TennoGate::SoloWeapon => tenno.state.solo_weapon,
         }
     }
@@ -1701,6 +1704,7 @@ impl TennoGate {
             TennoGate::HasOvershields => "with overshields".to_string(),
             TennoGate::ChannelingAbility => "with a channeled ability active".to_string(),
             TennoGate::SoloWeapon => "with no other weapon equipped".to_string(),
+            TennoGate::MeleeEquipped => "with the melee weapon drawn".to_string(),
         }
     }
 }
@@ -7169,6 +7173,41 @@ mod tests {
     /// same `(combo - 1)` scaling and the same bracket the mod buys, at 10% a
     /// piece. THREE of the six members are Warframe mods, so 30% is the ceiling
     /// a weapon build can reach here and the set file says so.
+    /// "WITH MELEE WEAPON EQUIPPED" MEANS DRAWN, and a quick-melee swing does
+    /// not satisfy it.
+    ///
+    /// Edge of Justice is `Base Damage +20/+100. Attack Speed +40% with a Melee
+    /// Weapon equipped`, and the second half is a state of the WIELDER rather
+    /// than a property of the build — so it is a gate the fight answers, not a
+    /// bonus the panel folds in. Every ruler runs it drawn; the simulator can
+    /// ask the other question.
+    ///
+    /// THE FLAT BASE DAMAGE IS NOT GATED, because the card gates only the half
+    /// that names a condition — which is the whole reason the two halves are
+    /// two effects.
+    #[test]
+    fn attack_speed_with_the_melee_weapon_equipped_is_a_gate_and_the_base_damage_is_not() {
+        let speed = |drawn: bool| {
+            let mut tenno = crate::tenno_data::default_tenno().clone();
+            tenno.state.melee_equipped = drawn;
+            let base = WeaponBase::from_data(
+                "magistar_heavy_slam",
+                false,
+                &["magistar_evo1_incarnon_form", "magistar_edge_of_justice"],
+            );
+            let p = resolve_for(&base, &[], StackPolicy::Emergent, &tenno);
+            (p.fire_rate, p.radial.as_ref().expect("the slam IS the attack").damage.total())
+        };
+        let (drawn, radial_drawn) = speed(true);
+        let (quick, radial_quick) = speed(false);
+        // 0.833 base, +40% drawn.
+        assert!((drawn / quick - 1.4).abs() < 1e-9, "{drawn} against {quick}");
+        assert!(
+            (radial_drawn - radial_quick).abs() < 1e-9,
+            "the +100 lands either way: {radial_drawn} against {radial_quick}",
+        );
+    }
+
     /// A SET THAT ENHANCES ITS OWN MEMBERS PAYS ON COMPLETION, and one card
     /// alone is worth its face.
     ///

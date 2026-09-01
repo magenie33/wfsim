@@ -270,6 +270,14 @@ pub struct TennoState {
     /// player ticks it for an ability that would not qualify.
     #[serde(default)]
     pub channeling: bool,
+    /// FULLY SWITCHED TO THE MELEE WEAPON, rather than quick-melee.
+    ///
+    /// *"With Melee Weapon Equipped"* is a card's own wording and it means the
+    /// weapon is DRAWN — a quick-melee swing from a gun does not satisfy it.
+    /// Defaults TRUE, which is what every ruler runs and what a melee build is
+    /// played as; a scenario may turn it off to ask what the same build is
+    /// worth swung out of a rifle.
+    pub melee_equipped: bool,
     /// THIS WEAPON IS THE ONLY ONE EQUIPPED — the Vasto's Lone Gun, *"With No
     /// Primary Equipped"*.
     ///
@@ -366,6 +374,9 @@ impl Default for TennoState {
             airborne: false,
             overshields: false,
             channeling: false,
+            // TRUE, because a melee build is played with the melee weapon out —
+            // and every ruler runs it that way.
+            melee_equipped: true,
             solo_weapon: false,
             energy_pct: 1.0,
         }

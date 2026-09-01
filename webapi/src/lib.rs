@@ -384,6 +384,9 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // Daring Reverie, Hunter's Mantra: "With Channeled Ability active". The
     // card's note defines it — the ability must be DRAINING ENERGY over time.
     t.state.channeling = get_bool(v, "channeling", t.state.channeling);
+    // DRAWN unless the scenario says otherwise: *"With Melee Weapon Equipped"*
+    // is not satisfied by a quick-melee swing, and every ruler runs it drawn.
+    t.state.melee_equipped = get_bool(v, "melee_equipped", t.state.melee_equipped);
     // THE LOADOUT — the Vasto's Lone Gun, "With No Primary Equipped". FALSE by
     // default, which is the fight every stored scenario and every board row was
     // measured under: the Tenno walks in carrying everything. A SENTINEL weapon
@@ -2058,6 +2061,7 @@ pub fn meta_json() -> Value {
             "airborne": false,
             "overshields": false,
             "channeling": false,
+            "melee_equipped": true,
             // The LOADOUT: false = a full one, which is the standing ruling and
             // the fight the board is scored under.
             "solo_weapon": false,

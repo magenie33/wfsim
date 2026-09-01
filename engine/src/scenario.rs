@@ -73,6 +73,12 @@ pub enum Capability {
     ///
     /// False only for a ground Arch-Gun, which is removed when empty.
     CanResupply,
+    /// It can be swung WITHOUT being drawn — a quick-melee strike out of a gun.
+    ///
+    /// True of every melee weapon and of nothing else, which is what makes
+    /// "with the melee weapon DRAWN" a question worth asking of a build: a card
+    /// that says *"With Melee Weapon Equipped"* pays on one and not the other.
+    CanQuickMelee,
 }
 
 impl Capability {
@@ -81,9 +87,12 @@ impl Capability {
         match self {
             // A Sentinel really does aim, really does never aim at a head, and
             // really has no reserve. None of the three is a simplification.
-            Capability::ChoosesAim | Capability::AimsAtHead | Capability::HasReserve => {
-                Absence::GameFact
-            }
+            Capability::ChoosesAim
+            | Capability::AimsAtHead
+            | Capability::HasReserve
+            // A gun really cannot be quick-melee'd with, and a melee weapon
+            // really can be swung without being drawn.
+            | Capability::CanQuickMelee => Absence::GameFact,
             // …but whether an unrefillable reserve should be SCORED as running
             // dry is our question, not the game's: the game removes the weapon
             // and the sim has no pickups either way. A scenario may pick.
@@ -110,6 +119,7 @@ impl Capability {
             // whether the game gives any way to refill it.
             Capability::HasReserve => spec.ammo_max.is_some_and(|a| a > 0.0),
             Capability::CanResupply => !spec.no_resupply,
+            Capability::CanQuickMelee => spec.slot == "melee",
         }
     }
 
@@ -148,6 +158,9 @@ impl Capability {
             }
             Capability::HasReserve if melee => "a melee weapon has no ammo at all",
             Capability::HasReserve => "this weapon has no ammo reserve to run out of",
+            Capability::CanQuickMelee => {
+                "only a melee weapon can be swung without being drawn, so this weapon is always the one in your hands"
+            }
             Capability::CanResupply => {
                 "this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for"
             }
@@ -279,6 +292,15 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     ScenarioAxis { id: "overshields", kind: AxisKind::Flag, group: Group::Wielder, requires: FREE },
     ScenarioAxis { id: "channeling", kind: AxisKind::Flag, group: Group::Wielder, requires: FREE },
     ScenarioAxis { id: "solo_weapon", kind: AxisKind::Flag, group: Group::Wielder, requires: FREE },
+    // DRAWN, OR SWUNG OUT OF A GUN. Absent on anything but a melee weapon, and
+    // TRUE there — a gun is never quick-melee'd with itself, so the state it
+    // cannot have is the one that costs nothing.
+    ScenarioAxis {
+        id: "melee_equipped",
+        kind: AxisKind::Flag,
+        group: Group::Wielder,
+        requires: &[Requirement { cap: Capability::CanQuickMelee, absent: AxisValue::Flag(true) }],
+    },
     ScenarioAxis { id: "frame", kind: AxisKind::Id, group: Group::Wielder, requires: FREE },
     // THE FOUR OVERRIDES. Absent means the floor, which is why none of them
     // carries a default here: a default would BE an override.

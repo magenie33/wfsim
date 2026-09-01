@@ -44,6 +44,7 @@ rules:
   - "The stance slot is optional too, and it is not a discount but a GRANT: a stance hands the weapon 10 mod capacity on a matching polarity, 5 on a bare slot and 4 on the wrong colour. A row without one is not a lesser build; it is a build that spent the capacity elsewhere."
   - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
   - "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve."
+  - "The melee weapon is DRAWN, not quick-melee: a card that says \"With Melee Weapon Equipped\" pays here. A build swung out of a gun is a different fight and the simulator has a switch for it; the ruler does not."
   - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
   - "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today."
   - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo."
@@ -118,6 +119,7 @@ scenario:
   airborne: false
   overshields: false
   channeling: false
+  melee_equipped: true
   solo_weapon: false
   # THE WIELDER IS NOT NAMED HERE, and that is the exception this block states
   # rather than hides. Every other field is pinned so the

@@ -1052,7 +1052,8 @@ function defaultScenario() {
     // meaning what it meant. Drag the marker and it becomes a place of its own.
     aim_at: d.aim_at ? [...d.aim_at] : null,
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
-    channeling: !!d.channeling, solo_weapon: !!d.solo_weapon,
+    channeling: !!d.channeling, melee_equipped: d.melee_equipped !== false,
+    solo_weapon: !!d.solo_weapon,
     // KEPT WHOLE, unknown names included: an older page must not strip a
     // newer fight's terms.
     buff_triggers_off: [...(d.buff_triggers_off || [])],
@@ -1106,6 +1107,9 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   player_at: [0, 0.5 - 0.5],
   target_at: [0, 0.5],
   invisible: false, airborne: false, overshields: false, channeling: false,
+  // DRAWN by default — what "With Melee Weapon Equipped" asks, and what every
+  // ruler runs. Quick-melee is the OTHER answer and the reason it is a knob.
+  melee_equipped: true,
   // THE LOADOUT, not what the wielder is doing: false = carrying a full one,
   // which is the fight the board is scored under and what every clause about
   // the other slots has always been answered with.
@@ -6291,6 +6295,7 @@ async function drawShareCard(canvas, url) {
       ...(sim.airborne ? [tr("Airborne")] : []),
       ...(sim.overshields ? [tr("Overshields")] : []),
       ...(sim.channeling ? [tr("Channeled ability")] : []),
+      ...(sim.melee_equipped === false ? [tr("quick-melee")] : []),
       ...(sim.solo_weapon ? [tr("Only this weapon")] : []),
       sim.infinite_ammo === false ? tr("finite ammo") : null,
     ].filter(Boolean).join(" · "), 36, y + 25);
@@ -8912,7 +8917,7 @@ function renderMods() {
 // hides a contribution the sim is paying. One player, both
 // answers. The scenario fields that describe the
 // PLAYER rather than the fight.
-const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_health", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras", "shards"];
+const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "melee_equipped", "solo_weapon", "frame", "wf_health", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras", "shards"];
 
 // THE FIGHT'S OWN STAT BONUSES: what this weapon is handed by something that is
 // not its build — a squad buff, a Warframe ability, an arcane on another weapon.
@@ -12573,6 +12578,7 @@ function renderScenarioFields(ids, opts = {}) {
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Overshields\". Nothing here takes them away, so it is a declaration"))}"><input type="checkbox" data-k="overshields"${sim.overshields ? " checked" : ""}> ${escHtml(tr("Overshields"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Channeled Ability active\". The ability must DRAIN ENERGY over time — Desecrate, Haven and an empty Gloom do not count"))}"><input type="checkbox" data-k="channeling"${sim.channeling ? " checked" : ""}> ${escHtml(tr("Channeled ability"))}</label>
+      <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Melee Weapon Equipped\". It means the weapon is DRAWN — a quick-melee swing out of a gun does not satisfy it. Every ruler runs it drawn"))}"><input type="checkbox" data-k="melee_equipped"${sim.melee_equipped !== false ? " checked" : ""}> ${escHtml(tr("Melee drawn"))}</label>
       <label class="check" title="${escHtml(tr("the LOADOUT, not what the wielder is doing: off means a full one, which is what the board is scored under. On, this weapon is the only one carried — the Vasto's Lone Gun pays its \"With No Primary Equipped\" half, and every \"On Equip from Primary\" or \"while Holstered\" clause becomes impossible rather than merely unmodelled"))}"><input type="checkbox" data-k="solo_weapon"${sim.solo_weapon ? " checked" : ""}> ${escHtml(tr("Only this weapon"))}</label>
       <label title="${escHtml(tr("picking a frame fills armor, max energy and sprint speed below — the roster is UNMODDED, so a built frame carries more and the numbers stay editable"))}">${escHtml(tr("Warframe"))} ${ddButton("sim-frame", {
         value: sim.frame || "",

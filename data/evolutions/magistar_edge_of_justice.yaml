@@ -9,11 +9,13 @@ effects:
   - kind: flat_base_damage
     value: 100.0
   # from: "Attack Speed +40%" — the fire-rate bucket, which for melee IS attack
-  # speed: it divides every swing delay in the stance script. The gate is "with
-  # a Melee Weapon equipped", which is unconditionally true of a melee weapon's
-  # own fight.
+  # speed: it divides every swing delay in the stance script.
   - kind: fire_rate_bonus
     value: 0.4
+    # "With a Melee Weapon equipped" means the weapon is DRAWN — a quick-melee
+    # swing out of a gun does not satisfy it. The arena's default is drawn, so
+    # this pays on every ruler; a scenario that says otherwise turns it off.
+    condition: with_melee_equipped
 
 source:
   url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

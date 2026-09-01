@@ -62,6 +62,9 @@ state:
   aiming: true
   invisible: false
   airborne: false
+  # A SENTINEL HOLDS NO MELEE WEAPON AT ALL, and nothing it can carry names
+  # the state — so the value is the one that costs nothing either way.
+  melee_equipped: true
   energy_pct: 1.0
 
 source:
