@@ -1896,10 +1896,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .dtup-x{border:0;background:transparent;color:var(--muted);font-size:17px;line-height:1;
   padding:2px 4px;cursor:pointer}
 .dtup-x:hover{color:var(--text)}
-/* A LENGTH, not a spinner: a download of a known size can say how far it is,
-   and "45%" is a number a reader can decide to wait for. */
-.dtup-bar{flex:1;min-width:80px;height:4px;border-radius:2px;background:var(--panel2);overflow:hidden}
-.dtup-bar i{display:block;height:100%;background:var(--gold);transition:width .2s}
 
 /* THE DESKTOP DOWNLOAD, on the home page under the hero. Gold-outlined rather
    than filled: it is an offer, not the thing the page is for — someone who came
