@@ -214,7 +214,7 @@ pub fn all() -> &'static [Benchmark] {
     static B: OnceLock<Vec<Benchmark>> = OnceLock::new();
     B.get_or_init(|| {
         let mut v: Vec<Benchmark> = crate::data::files_under("benchmarks/")
-            // THIS level only. `benchmarks/boards/` holds the measured results
+            // THIS level only. `boards/` at the root holds the measured results
             // and is a different shape entirely — a prefix scan would try to
             // parse a board as a benchmark and fail on a missing `id`.
             .filter(|(p, _)| p.ends_with(".yaml") && !p["benchmarks/".len()..].contains('/'))

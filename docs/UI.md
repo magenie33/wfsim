@@ -402,15 +402,20 @@ dev server ships the `dev` placeholder. The same stamp goes into `app.js` as
 `BUILD_ID`, so a browser holding an old page with a new script can say so
 (`checkBuildMatches`).
 
-**IT IS A CONTENT HASH AND NOT A CLOCK.** The question the guard asks is "is
-this the same script"; a timestamp answers "was this the same minute", which is
-a different question with two costs. It rewrote one line in all 386 prerendered
-weapon pages on every run, burying every real diff; and because the stamp was
-substituted by TWO calls to a function reading the clock, a build that crossed
-a minute boundary between them shipped a page and a script that disagreed by
-construction — every visitor told the page was stale, reloading, and told
-again. `stamp_once` computes it once, and the digest changes exactly when the
-guard needs to fire.
+**IT IS A CONTENT HASH AND NOTHING ELSE.** The question the guard asks is "is
+this the same script", so the token has to move when `app.js` or `index.html`
+moves and stay still otherwise. Anything volatile in it rewrites all 386
+prerendered pages on every build and buries the diffs that matter: a clock did
+that once per run, a commit sha once per commit. So the pages carry the DIGEST
+alone, `stamp_once` computes it once (two calls to a clock could disagree, and
+a page and a script that disagree tell every visitor they are stale), and a
+rebuild of unchanged sources is a byte-for-byte no-op.
+
+**THE COMMIT GOES IN `app.js`, NOT IN THE PAGE.** A human reading the footer
+wants it, and the guard does not; `BUILD_SHA` is substituted into the script
+alone and the footer is drawn from both at boot — after `checkBuildMatches`,
+which reads the token the page was SERVED with and would otherwise be reading
+what this line just wrote over it.
 
 ## A measurement costs its summary, not its replay
 

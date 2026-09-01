@@ -1,7 +1,7 @@
 // THE OFFICIAL THINGS ARE READ-ONLY, AND NOTHING CAN WRITE TO THEM.
 //
 // Two of them, one contract: the official SCENARIO (data/benchmarks/) and the
-// official BUILDS (data/benchmarks/boards/). Neither is a preset — no weapon
+// official BUILDS (boards/). Neither is a preset — no weapon
 // owns them, nothing stores them, nobody edits them — and both sit in the bar
 // that already holds their kind, marked, selectable, copyable. Three claims,
 // each failing in its own way:
