@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 4214
+submissions: 4254
 engine: e600947bb542034c83de8cdaf2530fcbf3dc237a
 entries:
   - weapon: acceltra_prime
@@ -426,6 +426,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
+    score: 3188.7443069705105
+    fp: 1a47825c9e1666d4
+    exilus: lethal_momentum
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      rolls: [0.9, 1.1, 1.1]
+  - weapon: ballistica_prime
+    mode: cycle
     score: 3137.2054067788117
     fp: 7db726fdad6f2b51
     mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, riven, primed_heated_charge]
@@ -478,6 +489,17 @@ entries:
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 2380.227179896894
+    fp: ec2d6c05ef0dbdf8
+    exilus: lethal_momentum
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: cycle
     score: 2379.538740112145
@@ -4795,6 +4817,16 @@ entries:
       rolls: [0.9, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
+    score: 37.66815459447012
+    fp: 73e90b953597a217
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: kuva_nukor
+    mode: base
     score: 35.01946412854693
     fp: a90fde750a6121ad
     exilus: trick_mag
@@ -5306,6 +5338,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 696.341322764271
+    fp: ed86fd1b98e2b08b
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, electricity, fire_rate]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 649.9754254253914
     fp: e09a998db30ae010
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, riven]
@@ -5435,6 +5478,13 @@ entries:
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 215.4752001622094
+    fp: 9a8a5db7cc75e96d
+    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
   - weapon: latron_prime
     mode: cycle
     score: 165.05989536930682

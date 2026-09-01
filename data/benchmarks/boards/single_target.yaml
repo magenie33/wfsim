@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 4214
+submissions: 4254
 engine: e600947bb542034c83de8cdaf2530fcbf3dc237a
 entries:
   - weapon: acceltra_prime
@@ -43,6 +43,12 @@ entries:
     fp: 84d8fbfb1a405280
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, hammer_shot, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: aeolak
+    mode: base
+    score: 4.665619442662092
+    fp: 1041117c79863ad7
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
     arcanes: [primary_crux]
   - weapon: afentis_prime
     mode: base
@@ -208,6 +214,28 @@ entries:
       rolls: [1.1, 1.1, 0.9, 1.1]
   - weapon: atomos
     mode: base
+    score: 18.10923041261211
+    fp: d41964dfc746a6dd
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 17.80039229116762
+    fp: 8b74c6c395e651ba
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
     score: 17.698486927000335
     fp: ca3913c3b0b3713c
     mods: [galvanized_diffusion, galvanized_shot, anemic_agility, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
@@ -228,6 +256,61 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: critical_chance
       rolls: [1.1, 1.1, 0.9, 1.1]
+  - weapon: atomos
+    mode: base
+    score: 17.01378619379266
+    fp: 0e01a32c153782dd
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, riven]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 16.981301798229588
+    fp: 248521037f33424a
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 16.76356521581923
+    fp: 8b74c6c395e651ba
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge, riven]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 16.683639357887987
+    fp: 8b74c6c395e651ba
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [damage, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 16.418277702181154
+    fp: 8b74c6c395e651ba
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 0.9]
   - weapon: atomos
     mode: cycle
     score: 14.727874533749842
@@ -291,6 +374,17 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
     arcanes: [secondary_enervate]
+  - weapon: atomos
+    mode: base
+    score: 12.878286591393495
+    fp: d9be63e5d87a6f1f
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: atomos
     mode: base
     score: 11.666666666666666
@@ -2802,6 +2896,16 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 63.30665517538366
+    fp: 91b426cec930c051
+    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, punch_through]
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 63.2054067788118
     fp: 4ee4b96833ea33ec
     exilus: stabilizer
@@ -2945,6 +3049,16 @@ entries:
     mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 54.15266138152517
+    fp: 3c0a6010bc72da22
+    mods: [primary_acuity, serration, critical_delay, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, punch_through]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     score: 54.056360205118025
@@ -3125,6 +3239,20 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 46.37498215277984
+    fp: 92b4c6937b24611f
+    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 46.34389176372602
+    fp: a1b1a4768cfdc01e
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 45.74681540069892
     fp: b2c82ce53afc2028
     mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, malignant_force]
@@ -3136,6 +3264,13 @@ entries:
     fp: 14f4535d1a5af3cf
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 45.56198131214948
+    fp: bc1d2a2a1d16883f
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -3222,6 +3357,13 @@ entries:
     fp: fc3bfaaed0d9f644
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 42.68539056122499
+    fp: 3a9c2dfc82f6af40
+    mods: [primary_acuity, serration, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -3425,6 +3567,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 36.27599538779705
+    fp: 62c595f6c271b796
+    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, stormbringer, infected_clip, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 35.6763041052214
     fp: b6d53cbbf6653e55
     mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
@@ -3559,6 +3708,13 @@ entries:
     fp: 2103c8a0e5e6381c
     mods: [primary_acuity, serration, galvanized_scope, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 31.245755774395175
+    fp: d7a0b5b7e2a407a4
+    mods: [primary_acuity, serration, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, stormbringer, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -5182,6 +5338,13 @@ entries:
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_crux]
   - weapon: felarx
+    mode: cycle
+    score: 25.650337764624226
+    fp: e05ccd4048916010
+    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, tactical_pump, incendiary_coat, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
     mode: base
     score: 25.443452993762833
     fp: abbbbbcbee395017
@@ -6759,6 +6922,16 @@ entries:
     valence: heat
   - weapon: kuva_nukor
     mode: base
+    score: 24.56556544176097
+    fp: ec96e63a8020e0c7
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [0.9, 1.1, 0.9]
+  - weapon: kuva_nukor
+    mode: base
     score: 24.237843333105623
     fp: ec96e63a8020e0c7
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
@@ -6840,6 +7013,17 @@ entries:
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: kuva_nukor
     mode: base
+    score: 21.374374646119556
+    fp: 9a0b18c4c7b183be
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_nukor
+    mode: base
     score: 20.27053513496965
     fp: 07e0c1f2cb137dec
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_heated_charge]
@@ -6887,6 +7071,17 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 19.089769699984533
+    fp: 9a0b18c4c7b183be
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 19.049719900328153
@@ -7002,6 +7197,20 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 17.454560874961864
+    fp: c4826916d70e6cfd
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 17.44303560042911
+    fp: f276dfe093e0a6a8
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: heat
   - weapon: kuva_nukor
     mode: base
     score: 17.34361767821846
@@ -7562,6 +7771,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
+    score: 53.558059434953705
+    fp: 7af546f64d64f3ad
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
     score: 53.31685049478698
     fp: d22ba840c2e0018f
     exilus: primed_steady_hands
@@ -7609,6 +7825,13 @@ entries:
     score: 53.15691978769411
     fp: 4cd3ddb1c41bb1a8
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
+    score: 52.39278596877077
+    fp: 5497f565bd74d0f2
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
@@ -8007,6 +8230,13 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
+    score: 41.99724502038109
+    fp: ea99e14279c27007
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [secondary_deadhead]
+  - weapon: laetum
+    mode: cycle
     score: 41.91075076043501
     fp: af943fa247862515
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pistol_pestilence, primed_heated_charge]
@@ -8320,6 +8550,13 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, hollow_point, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
+    score: 34.75453759381379
+    fp: b98314da0bb993f0
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: cycle
     score: 34.58981905360734
@@ -9057,6 +9294,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 132.60860440847574
+    fp: 1b9a296df57fad3b
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, electricity, fire_rate]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 130.64898546101966
     fp: 145ce410c36bcbec
     mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, riven, primed_cryo_rounds, malignant_force]
@@ -9233,6 +9481,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 102.6397768409782
+    fp: d2661631cd7758ac
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, vital_sense, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, electricity, fire_rate]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 102.55399817858856
     fp: 89e308537ab4acf7
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, vile_acceleration, radiated_reload, riven, primed_cryo_rounds, malignant_force]
@@ -9399,6 +9658,13 @@ entries:
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
     arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 50.746163436093
+    fp: 6566bf309465569d
+    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
   - weapon: latron_prime
     mode: cycle
     score: 47.29018298916242
@@ -11986,6 +12252,18 @@ entries:
     fp: 0442d424cfdc6ccc
     mods: [primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, riven, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
+    valence: magnetic
+    riven:
+      bonuses: [damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_detron
+    mode: alternate
+    score: 15.254221907243137
+    fp: 379e96b6730f5c76
+    exilus: primed_steady_hands
+    mods: [hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
     valence: magnetic
     riven:
       bonuses: [damage, multishot]
