@@ -1482,7 +1482,24 @@ pub struct Tennokai {
     pub damage: f64,
     pub crit_damage: f64,
     pub status_chance: f64,
+    /// THE CHARGE BEFORE A TENNOKAI ATTACK, seconds, and it is the class's own
+    /// divided by [`TENNOKAI_WINDUP_SPEED`] AND BY NOTHING ELSE.
+    ///
+    /// *"The Wind-Up Speed of Tennokai attacks is not affected by Wind-Up Speed
+    /// bonuses from other sources"* (wiki, Tennokai) — so it is resolved here,
+    /// away from the bucket every other wind-up reads, and a heavy build
+    /// carrying three wind-up cards charges a Tennokai attack SLOWER than its
+    /// ordinary one. That is the card's own clause, not a modelling artefact.
+    pub windup_seconds: f64,
 }
+
+/// HOW MUCH FASTER A TENNOKAI ATTACK CHARGES — *"increases its Wind Up Speed"*,
+/// and DE publishes no figure for how much.
+///
+/// A STAND-IN AT +100%, declared on every melee entry. It is the one number in
+/// the mechanic that is not sourced; the window, its chance, its cadence and
+/// everything the seven cards do to it are.
+pub const TENNOKAI_WINDUP_SPEED: f64 = 1.0;
 
 /// HATA-SATYA's pile: a rate per hit and the CEILING ON WHAT IT IS WORTH.
 ///
@@ -5214,7 +5231,15 @@ pub fn resolve_for(
                 / (1.0 + windup_speed + base.evo_heavy_windup_speed).max(1e-9),
             ..h
         }),
-        tennokai: tk,
+        tennokai: Tennokai {
+            // …AND ITS CHARGE IS THE CLASS'S OWN, NOT THE BUILD'S. Read off
+            // `base` rather than off the `heavy` two lines up, which has
+            // already taken the wind-up bucket that this one may not.
+            windup_seconds: base.heavy.map_or(0.0, |h| {
+                h.windup_seconds / (1.0 + TENNOKAI_WINDUP_SPEED)
+            }),
+            ..tk
+        },
         crit_chance_per_combo: cc_per_combo + set_crit_per_combo,
         status_chance_per_combo: sc_per_combo,
         combo_count_chance,

@@ -7189,6 +7189,21 @@ impl SpreadBy {
     }
 }
 
+/// HOW MANY TIMES ONE SWING LANDS — the stance row's count, or ONE where the
+/// Tennokai window has replaced the swing with a heavy attack.
+///
+/// *"Performing a Heavy Attack or Heavy Slam during this flash"* is what the
+/// window buys, so the light swing does not happen: a heavy attack's multiplier
+/// is the CLASS's whole total, and multiplying it by a stance row's hit count
+/// would pay the same swing five times over on a Rogue Edict spin.
+fn swing_instances(hits: u32, tennokai_heavy: bool) -> u32 {
+    if tennokai_heavy {
+        1
+    } else {
+        hits.max(1)
+    }
+}
+
 /// WHAT ONE INSTANCE LEFT ON A BODY, for the one mechanism that has to know.
 ///
 /// Melee Influence spreads from every body a SWING struck rather than from the
@@ -11091,6 +11106,64 @@ mod melee {
         );
     }
 
+    /// **A TENNOKAI SWING LANDS ONCE**, however many the swing it replaced
+    /// landed — the window does not buff a light swing, it substitutes a heavy
+    /// attack for it.
+    ///
+    /// ASSERTED ON THE RULE AND NOT ON A FIGHT, which is the honest place for
+    /// it: the window also costs a wind-up the light swing did not pay, and
+    /// that alone moves every total the other way — so a fight-level assertion
+    /// passes with the rule deleted, on the strength of the slower cadence.
+    /// Rogue Edict is what makes the rule bite at all: its rows land 5, 4 and 2
+    /// times, where every row of Raging Whirlwind lands once.
+    #[test]
+    fn a_tennokai_swing_lands_once_however_many_the_swing_it_replaced_landed() {
+        assert_eq!(swing_instances(5, true), 1, "a converted spin is one heavy attack");
+        assert_eq!(swing_instances(5, false), 5, "…and an ordinary one is five swings");
+        assert_eq!(swing_instances(1, true), 1);
+        // A ROW THAT NEVER SAYS SO STILL LANDS: `hits` defaults to 1 and a 0
+        // would be a row that does nothing at all.
+        assert_eq!(swing_instances(0, false), 1);
+    }
+
+    /// **A TENNOKAI ATTACK CHARGES AT ITS OWN SPEED**, and no card touches it.
+    ///
+    /// *"The Wind-Up Speed of Tennokai attacks is not affected by Wind-Up Speed
+    /// bonuses from other sources"* — so the two clocks are resolved apart, and
+    /// a build carrying both wind-up cards moves ONE of them. On this weapon it
+    /// moves the ordinary heavy the right way past the Tennokai one, which is
+    /// the card's own clause and not an artefact: the window is a speed-up of
+    /// the CLASS's charge, and a heavy build has already bought a bigger one.
+    #[test]
+    fn a_tennokai_attacks_wind_up_ignores_every_card_that_buys_wind_up() {
+        let panel = |mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("praedos_heavy", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("praedos_heavy");
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            assert_eq!(refs.len(), mods.len(), "every named mod is in this weapon's pool");
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent)
+        };
+        let cards = ["killing_blow", "amalgam_organ_shatter", "mentors_legacy"];
+        let bare = panel(&["mentors_legacy"]);
+        let rushed = panel(&cards);
+        // A TONFA CHARGES 0.7 s, so the window's +100% is 0.35 either way.
+        for p in [&bare, &rushed] {
+            assert!(
+                (p.tennokai.windup_seconds - 0.35).abs() < 1e-9,
+                "the window's charge moved: {}",
+                p.tennokai.windup_seconds,
+            );
+        }
+        // …WHILE THE ORDINARY ONE DID MOVE, which is what makes the first
+        // assertion a claim rather than two constants agreeing.
+        let (b, r) = (
+            bare.heavy.expect("a tonfa has a heavy").windup_seconds,
+            rushed.heavy.expect("a tonfa has a heavy").windup_seconds,
+        );
+        assert!(r < b * 0.8, "two wind-up cards bought nothing at all: {b} -> {r}");
+    }
+
     /// MASTER'S EDGE PAYS THE WINDOW'S SWING AND NO OTHER.
     ///
     /// `+60% Tennokai damage`, on a build where the window is most of the
@@ -14189,9 +14262,11 @@ pub fn run_once_traced(
         // It rides the pellet loop because that loop already means "this many
         // instances of this attack", which is the same thing multishot means.
         // Melee has no multishot mod in its pool, so the two can never compete.
+        // …AND A TENNOKAI SWING LANDS ONCE — see `swing_instances`.
         if let Some(h) = &swing {
-            if h.hits > 1 {
-                n_pellets = n_pellets.saturating_mul(h.hits);
+            let n = swing_instances(h.hits, tennokai_heavy);
+            if n > 1 {
+                n_pellets = n_pellets.saturating_mul(n);
             }
         }
         if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
@@ -17057,9 +17132,19 @@ pub fn run_once_traced(
                 // script was resolved, and the animation after it is divided by
                 // the live attack speed here. A light swing carries no wind-up
                 // and is unaffected by the split.
-                let (w, d) = swing
+                let (mut w, d) = swing
                     .as_ref()
                     .map_or((0.0, 0.0), |h| (h.windup_seconds, h.delay_seconds));
+                // …AND A TENNOKAI ATTACK CHARGES AT ITS OWN SPEED, which is the
+                // class's divided by the window's bonus and by nothing else:
+                // *"the Wind-Up Speed of Tennokai attacks is not affected by
+                // Wind-Up Speed bonuses from other sources"*. On a LIGHT form
+                // it is a charge the swing did not have; on a HEAVY one it
+                // REPLACES the build's, which a heavy build stacking wind-up
+                // cards feels as a swing that is slower than its ordinary one.
+                if tennokai && (tennokai_heavy || ap.spends_combo) {
+                    w = ap.tennokai.windup_seconds;
+                }
                 // A HEAVY ATTACK BREAKS THE CHAIN, so the next light swing
                 // starts the combo over (owner — the wiki says
                 // nothing about a stance chain's position, so this is his

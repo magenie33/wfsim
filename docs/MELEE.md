@@ -472,6 +472,23 @@ the combo over, and that decides which swings ever happen: Raging Whirlwind is
 which is that combo's length — so under a restarting chain the 500% finisher is
 never reached.
 
+**A TENNOKAI SWING LANDS ONCE.** The window does not buff a light swing, it
+SUBSTITUTES a heavy attack for it — and a heavy attack's multiplier is the
+class's whole total, so a Rogue Edict row that lands a 50% spin five times is
+one 4x heavy when the flash converts it, not five. `swing_instances` is the
+rule and it is asserted on the rule rather than on a fight: the window also
+costs a wind-up the light swing did not pay, and that alone moves every total
+the other way, so a fight-level assertion passes with the rule deleted.
+
+**AND IT CHARGES AT ITS OWN SPEED.** *"The Wind-Up Speed of Tennokai attacks is
+not affected by Wind-Up Speed bonuses from other sources"* — so
+`Tennokai::windup_seconds` is resolved apart from the bucket every other
+wind-up reads, off the CLASS's charge. A heavy build carrying both wind-up
+cards therefore charges a Tennokai attack SLOWER than its ordinary one, which
+is the card's own clause and not an artefact. The window's own speed-up is
+**+100%** and it is the one number in the mechanic DE publishes nothing for —
+`loadout::TENNOKAI_WINDUP_SPEED`, declared on every melee entry.
+
 **ALL SEVEN TENNOKAI CARDS ENABLE IT.** Every one opens with the same three
 words on its own card and only then says what else it does, so the mechanic is
 read off the card and not off a list of card names. The negative control is a
