@@ -33,6 +33,18 @@ pub struct BoardEntry {
     /// `base` by the same fallback the scorer uses.
     #[serde(default)]
     pub mode: String,
+    /// IS THIS ROW PUBLISHED, or is it the record of one the floor held back?
+    ///
+    /// The file carries BOTH. A row below the floor is not shown — `board.json`
+    /// is written from the listed rows alone — but it is kept here because the
+    /// file is also the next run's REUSE CACHE, and a scored row missing from
+    /// it is one that gets re-simulated from scratch every run for ever, to be
+    /// discarded again. It is a record too: "scored and not listed" and "lost"
+    /// used to read the same from the submitter's side.
+    ///
+    /// DEFAULT TRUE, so every row written before this existed is what it was.
+    #[serde(default = "listed")]
+    pub listed: bool,
     /// The benchmark's metric, as this engine computed it. Deterministic —
     /// re-running the same build under the same benchmark reproduces it to the
     /// last digit, in the browser as well as natively.
@@ -162,6 +174,10 @@ pub struct Board {
 /// arithmetic — `wfsim-board` writes the formatted string beside the number and
 /// the page prints it. The number stays exact in the record; only what is shown
 /// is rounded, so two rows that tie on screen are still ordered underneath.
+fn listed() -> bool {
+    true
+}
+
 pub fn format_score(v: f64) -> String {
     let mag = if v.is_normal() { v.abs().log10().floor() as i32 } else { 0 };
     // Four significant figures need `3 - mag` decimals; four decimals is the

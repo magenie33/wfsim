@@ -7,7 +7,9 @@
 use std::path::Path;
 use wfsim_engine::arcanes_data::ArcaneFx;
 use wfsim_engine::damage::{DamageType, DamageVector};
-use wfsim_engine::dummy::{monte_carlo, BuffLock, DummyParams, LockedBuff, TargetMode, TargetParams};
+use wfsim_engine::dummy::{
+    monte_carlo, BuffLock, DummyParams, LockedBuff, TargetMode, TargetParams,
+};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::CoBehavior;
 use wfsim_engine::scaling;

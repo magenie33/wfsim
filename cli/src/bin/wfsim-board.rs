@@ -36,6 +36,13 @@ fn family(id: &str) -> &str {
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
+    /// THE BUILD THIS ROW IS, without the mode — `builds::identity`.
+    ///
+    /// Carried so the run can prove every validated build ended up somewhere:
+    /// listed, or held below the floor. It is NOT written to the yaml, which
+    /// states the build itself and from which the identity is recomputed — a
+    /// stored copy of a derived fact is the one that goes stale.
+    identity: String,
     /// HOW the weapon was played — `base`, `cycle`, `alternate`. Part of the
     /// entrant's identity, not of the fight: a Torid through its Incarnon
     /// cycle and a Torid that never transmutes are two things to hold, and a
@@ -165,11 +172,23 @@ const FLOOR: f64 = 0.5;
 ///
 /// A group's leader is the FIRST row of it this loop meets, because the sort is
 /// descending and global.
-fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, usize) {
-    rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, Vec<Row>) {
+    rows.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     let mut leader: std::collections::BTreeMap<(String, String, bool), f64> = Default::default();
     let mut kept = Vec::new();
-    let mut below = 0usize;
+    // THE ROWS THE FLOOR TOOK, RETURNED RATHER THAN COUNTED.
+    //
+    // They were dropped here, and dropping them cost twice. A build scored and
+    // not listed is indistinguishable from one that was LOST, which is the
+    // failure this repo has already paid for; and the published yaml is what
+    // the next run REUSES, so a row missing from it has no cached score and is
+    // re-simulated from scratch every hour, for ever, to be discarded again.
+    // The fan-out multiplied that population. They go in the record now.
+    let mut below = Vec::new();
     for r in rows {
         // …AND PER RIVEN-NESS, for the reason it is per mode: a riven build and
         // a plain one compete with each other for nothing, and a shared
@@ -187,7 +206,7 @@ fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, usize) {
         if r.score >= FLOOR * top {
             kept.push(r);
         } else {
-            below += 1;
+            below.push(r);
         }
     }
     (kept, below)
@@ -196,7 +215,9 @@ fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, usize) {
 /// A flag's value, `--name value` anywhere after the positionals.
 fn flag(name: &str) -> Option<String> {
     let a: Vec<String> = std::env::args().collect();
-    a.iter().position(|x| x == name).and_then(|i| a.get(i + 1).cloned())
+    a.iter()
+        .position(|x| x == name)
+        .and_then(|i| a.get(i + 1).cloned())
 }
 
 /// SCORING IS THE WHOLE COST — 67 minutes of a 71-minute run at the rulers'
@@ -216,17 +237,23 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMa
     let p = std::path::Path::new(&spec);
     if p.is_dir() {
         if let Ok(rd) = std::fs::read_dir(p) {
-            files.extend(rd.flatten().map(|e| e.path()).filter(|f| {
-                f.extension().is_some_and(|e| e == "json")
-            }));
+            files.extend(
+                rd.flatten()
+                    .map(|e| e.path())
+                    .filter(|f| f.extension().is_some_and(|e| e == "json")),
+            );
         }
     } else {
         files.push(p.to_path_buf());
     }
     files.sort();
     for f in files {
-        let Ok(text) = std::fs::read_to_string(&f) else { continue };
-        let Ok(file) = serde_json::from_str::<Value>(&text) else { continue };
+        let Ok(text) = std::fs::read_to_string(&f) else {
+            continue;
+        };
+        let Ok(file) = serde_json::from_str::<Value>(&text) else {
+            continue;
+        };
         // A FILE SAYS WHICH BOARD IT IS, and another board's is refused rather
         // than merged. The key is `identity#mode` and carries no benchmark, so
         // two boards scoring the same build produce the SAME key with different
@@ -237,7 +264,9 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMa
         if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
             continue;
         }
-        let Some(scores) = file.get("scores").and_then(Value::as_object) else { continue };
+        let Some(scores) = file.get("scores").and_then(Value::as_object) else {
+            continue;
+        };
         for (k, v) in scores {
             if let Some(n) = v.as_f64() {
                 out.insert(k.clone(), n);
@@ -279,7 +308,11 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
     if prior.engine != code_fp {
         return Err(format!(
             "engine code moved ({} -> {code_fp})",
-            if prior.engine.is_empty() { "unrecorded" } else { &prior.engine }
+            if prior.engine.is_empty() {
+                "unrecorded"
+            } else {
+                &prior.engine
+            }
         ));
     }
     if family(&prior.benchmark) != family(bench_id) {
@@ -288,8 +321,16 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
     let mut out = Prior::default();
     for e in &prior.entries {
         let Ok(v) = wfsim_engine::builds::validate_for_board_with(
-            bench_id, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
-            e.riven.as_ref().map(wfsim_engine::boards_data::BoardRiven::shape).as_ref(),
+            bench_id,
+            &e.weapon,
+            &e.mods,
+            &e.evolutions,
+            &e.arcanes,
+            &e.valence,
+            e.riven
+                .as_ref()
+                .map(wfsim_engine::boards_data::BoardRiven::shape)
+                .as_ref(),
             Some(e.exilus.as_str()).filter(|x| !x.is_empty()),
         ) else {
             continue;
@@ -299,7 +340,12 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
         // before per-row fingerprints existed carries an empty one and is
         // rescored, which is the safe direction and the only one available.
         let want = wfsim_engine::data_fingerprint::row_fingerprint(
-            bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions, v.exilus.as_deref(),
+            bench_id,
+            &v.weapon,
+            &v.mods,
+            &v.arcanes,
+            &v.evolutions,
+            v.exilus.as_deref(),
         );
         if e.fp != want {
             out.stale += 1;
@@ -331,7 +377,9 @@ fn simulate_request(
     played: wfsim_engine::weapons_data::WeaponPlayMode,
 ) -> Value {
     let mut req = scenario.clone();
-    let Some(o) = req.as_object_mut() else { return req };
+    let Some(o) = req.as_object_mut() else {
+        return req;
+    };
     o.insert("weapon".into(), json!(v.weapon));
     // THE RIVEN'S SLOT IS SPELLED DIFFERENTLY ON THE WIRE. A record carries the
     // bare `riven` because the endpoint's ids are `[a-z0-9_]`; a simulate
@@ -371,8 +419,10 @@ fn simulate_request(
 
 fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("usage: wfsim-board <benchmark-id> [board.json] [--shard i/n] \
-                   [--scores <file|dir>] [--emit-scores <file>]  (submissions on stdin)");
+        eprintln!(
+            "usage: wfsim-board <benchmark-id> [board.json] [--shard i/n] \
+                   [--scores <file|dir>] [--emit-scores <file>]  (submissions on stdin)"
+        );
         std::process::exit(2);
     });
     // WHICH SLICE OF THE SUBMISSIONS THIS PROCESS SIMULATES. By INDEX in the
@@ -384,7 +434,10 @@ fn main() {
     let (shard, shards) = match flag("--shard") {
         Some(s) => {
             let (i, n) = s.split_once('/').unwrap_or(("0", "1"));
-            (i.parse::<usize>().unwrap_or(0), n.parse::<usize>().unwrap_or(1).max(1))
+            (
+                i.parse::<usize>().unwrap_or(0),
+                n.parse::<usize>().unwrap_or(1).max(1),
+            )
         }
         None => (0, 1),
     };
@@ -464,7 +517,10 @@ fn main() {
         .and_then(Value::as_str)
         .unwrap_or("kpm")
         .to_string();
-    let duration = scenario.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
+    let duration = scenario
+        .get("duration")
+        .and_then(Value::as_f64)
+        .unwrap_or(300.0);
     assert!(
         matches!(metric.as_str(), "kpm" | "dps"),
         "unknown benchmark metric {metric:?} — a row published in units nobody          named is worse than no row"
@@ -477,6 +533,10 @@ fn main() {
     // from — see below.
     let mut row_idx = 0usize;
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
+    // EVERY BUILD THAT PASSED THE DOOR, by identity. The accounting below
+    // partitions this set; anything left over is a build the library holds and
+    // this board silently did not rank.
+    let mut scored_ids: std::collections::BTreeSet<String> = Default::default();
     for s in subs {
         // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER.
         //
@@ -497,11 +557,20 @@ fn main() {
         // scored from the library the day it lands, rather than waiting for
         // players to resubmit everything under it.
         seen += 1;
-        let weapon = s.get("weapon").and_then(Value::as_str).unwrap_or("").to_string();
+        let weapon = s
+            .get("weapon")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
         let get = |k: &str| -> Vec<String> {
             s.get(k)
                 .and_then(Value::as_array)
-                .map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(Value::as_str)
+                        .map(String::from)
+                        .collect()
+                })
                 .unwrap_or_default()
         };
         let (mods, evos, arcs) = (get("mods"), get("evolutions"), get("arcanes"));
@@ -532,7 +601,10 @@ fn main() {
         // best corner for this fight, below.
         let shape = {
             let bonuses = get("riven_pos");
-            let malus = s.get("riven_neg").and_then(Value::as_str).filter(|x| !x.is_empty());
+            let malus = s
+                .get("riven_neg")
+                .and_then(Value::as_str)
+                .filter(|x| !x.is_empty());
             (!bonuses.is_empty()).then(|| wfsim_engine::rivens_data::RivenShape {
                 bonuses: {
                     let mut b = bonuses;
@@ -546,9 +618,19 @@ fn main() {
         // `benchmarks_data::BuildRequirement::allows_exilus` — and its own
         // field on the wire because a flat `mods` list cannot say which entry
         // came out of the exilus slot.
-        let exilus = s.get("exilus").and_then(Value::as_str).filter(|x| !x.is_empty());
+        let exilus = s
+            .get("exilus")
+            .and_then(Value::as_str)
+            .filter(|x| !x.is_empty());
         let v = match wfsim_engine::builds::validate_for_board_with(
-            &bench_id, &weapon, &mods, &evos, &arcs, valence, shape.as_ref(), exilus,
+            &bench_id,
+            &weapon,
+            &mods,
+            &evos,
+            &arcs,
+            valence,
+            shape.as_ref(),
+            exilus,
         ) {
             Ok(v) => v,
             Err(e) => {
@@ -572,6 +654,10 @@ fn main() {
             }
         };
 
+        // IT PASSED THE DOOR, so it owes a row somewhere. Recorded before the
+        // modes are enumerated, because what has to be provable is that a
+        // VALIDATED build was ranked — not that some particular mode of it was.
+        scored_ids.insert(wfsim_engine::builds::identity(&v));
         // EVERY MODE THIS WEAPON CAN BE PLAYED IN, and not the one the
         // submitter happened to try.
         //
@@ -681,8 +767,8 @@ fn main() {
                     // The corners are far apart, so picking between them does not
                     // need the precision the published number does.
                     if let Some(shape) = &v.riven {
-                        let cls = wfsim_engine::rivens_data::class_for_weapon(&v.weapon)
-                            .unwrap_or("");
+                        let cls =
+                            wfsim_engine::rivens_data::class_for_weapon(&v.weapon).unwrap_or("");
                         let best = wfsim_engine::rivens_data::perfect(shape, cls, |sp| {
                             let mut probe = req.clone();
                             if let Some(o) = probe.as_object_mut() {
@@ -717,7 +803,9 @@ fn main() {
                     if !ok || raw <= 0.0 {
                         eprintln!(
                             "refused {weapon}: did not simulate ({})",
-                            out.get("error").and_then(Value::as_str).unwrap_or("scored zero")
+                            out.get("error")
+                                .and_then(Value::as_str)
+                                .unwrap_or("scored zero")
                         );
                         refused += 1;
                         continue;
@@ -756,10 +844,16 @@ fn main() {
             // the submission — the same object `identity` is taken from, so the
             // next run recomputes the identical hash off its own stored row.
             let fp = wfsim_engine::data_fingerprint::row_fingerprint(
-                &bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions, v.exilus.as_deref(),
+                &bench_id,
+                &v.weapon,
+                &v.mods,
+                &v.arcanes,
+                &v.evolutions,
+                v.exilus.as_deref(),
             );
             let exilus_for_row = v.exilus.clone().unwrap_or_default();
             rows.push(Row {
+                identity: wfsim_engine::builds::identity(&v),
                 weapon: v.weapon,
                 mode: played.id.to_string(),
                 score,
@@ -776,24 +870,58 @@ fn main() {
 
     let (mut kept, below) = keep_above_floor(rows);
     kept.sort_by(|a, b| {
-        a.weapon
-            .cmp(&b.weapon)
-            .then(b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal))
+        a.weapon.cmp(&b.weapon).then(
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal),
+        )
     });
 
     // HOW MUCH OF THIS BOARD WAS KEPT rather than recomputed, said out loud. A
     // run that reuses everything and a run that scored everything look
     // identical from the outside, and the difference is an hour.
     //
-    // AND HOW MANY THE FLOOR TOOK. A build below the line is stored, scored and
-    // then not listed, which from the submitter's side is indistinguishable
-    // from a submission that was lost — the failure this repo has already paid
-    // for twice. This log is the maintainer's half of saying so; the panel
-    // that states the rule to the player is the other.
+    // AND HOW MANY THE FLOOR TOOK — which is now a number you can go and READ,
+    // because those rows are in the yaml carrying `listed: false`. It used to
+    // be a count in a log nobody keeps.
     eprintln!(
-        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {stale} rescored for a data change, {} scored here, {below} below the floor)",
+        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {stale} rescored for a data change, {} scored here, {} below the floor)",
         kept.len(),
         computed.len(),
+        below.len(),
+    );
+    // EVERY STORED SUBMISSION IS ACCOUNTED FOR, and the run says so rather than
+    // being trusted. Three outcomes and no fourth: refused at the door, listed,
+    // or scored and held below the floor. A build that fell out of all three
+    // would be one the library holds and this board never looked at — the
+    // failure mode that has to be impossible rather than unlikely, because from
+    // the submitter's side it is indistinguishable from the other two.
+    //
+    // KEYED BY IDENTITY, not by submission: two players sending the same build
+    // are ONE build, collapsed by `seen_ids`, and counting them as two would
+    // make this fire on the healthy case.
+    // A SHARD CANNOT ASK THIS. It skips every row that is not its slice, so its
+    // own `kept` covers a fraction by construction — the question "did every
+    // build get ranked" is only meaningful where every row was in scope, which
+    // is the unsharded PUBLISH run.
+    let listed: std::collections::BTreeSet<&str> =
+        kept.iter().map(|r| r.identity.as_str()).collect();
+    let held: std::collections::BTreeSet<&str> =
+        below.iter().map(|r| r.identity.as_str()).collect();
+    let unaccounted: Vec<&String> = scored_ids
+        .iter()
+        .filter(|id| !listed.contains(id.as_str()) && !held.contains(id.as_str()))
+        .collect();
+    assert!(
+        shards > 1 || unaccounted.is_empty(),
+        "{} validated build(s) produced no row at all — neither listed nor below the              floor. The library holds them and this board never looked at them: {:?}",
+        unaccounted.len(),
+        &unaccounted[..unaccounted.len().min(5)],
+    );
+    eprintln!(
+        "accounted: {} listed, {} held below the floor, {refused} refused at the door",
+        listed.len(),
+        held.len(),
     );
 
     // The runtime copy, keyed by weapon because that is how the page asks.
@@ -827,7 +955,10 @@ fn main() {
         }))
         .expect("scores");
         std::fs::write(path, text).unwrap_or_else(|e| panic!("write {path}: {e}"));
-        eprintln!("shard {shard}/{shards}: scored {} rows -> {path}", computed.len());
+        eprintln!(
+            "shard {shard}/{shards}: scored {} rows -> {path}",
+            computed.len()
+        );
     }
 
     if let Some(path) = std::env::args().nth(2).filter(|p| !p.starts_with("--")) {
@@ -840,7 +971,8 @@ fn main() {
                         .map(|a| {
                             a.iter()
                                 .filter(|r| {
-                                    let b = r.get("benchmark").and_then(Value::as_str).unwrap_or("");
+                                    let b =
+                                        r.get("benchmark").and_then(Value::as_str).unwrap_or("");
                                     family(b) != family(&bench_id)
                                 })
                                 .cloned()
@@ -854,7 +986,10 @@ fn main() {
             }
         }
         for r in &kept {
-            by_weapon.entry(r.weapon.clone()).or_default().push(page_row(&bench_id, r));
+            by_weapon
+                .entry(r.weapon.clone())
+                .or_default()
+                .push(page_row(&bench_id, r));
         }
         std::fs::write(&path, serde_json::to_string(&by_weapon).expect("json"))
             .unwrap_or_else(|e| panic!("{path}: {e}"));
@@ -884,69 +1019,106 @@ fn main() {
         println!("engine: {engine_fp}");
     }
     println!("entries:");
-    for r in kept {
-        println!("  - weapon: {}", r.weapon);
-        println!("    mode: {}", r.mode);
-        // FULL PRECISION in the record. `{}` on an f64 is the shortest string
-        // that reads back as the same number, so the yaml is the measurement
-        // rather than a rounding of it — the published figure is rounded at the
-        // point it is SHOWN, and two rows that tie on screen still rank.
-        println!("    score: {}", r.score);
-        // WHAT THIS SCORE DEPENDS ON. The next run recomputes it from the row
-        // and reuses the number only if it matches, which is what makes a mod
-        // correction cost the rows carrying that mod instead of the board.
-        if !r.fp.is_empty() {
-            println!("    fp: {}", r.fp);
-        }
-        if !r.exilus.is_empty() {
-            println!("    exilus: {}", r.exilus);
-        }
-        println!("    mods: [{}]", r.mods.join(", "));
-        if !r.evolutions.is_empty() {
-            println!("    evolutions: [{}]", r.evolutions.join(", "));
-        }
-        if r.arcanes.iter().any(|a| a != "none") {
-            println!("    arcanes: [{}]", r.arcanes.join(", "));
-        }
-        // Written only where there is one, the same rule the two lines above
-        // follow — a board of ordinary weapons is byte-for-byte what it was.
-        if !r.valence.is_empty() {
-            println!("    valence: {}", r.valence);
-        }
-        // THE RIVEN, where there is one — and both halves of it. The SHAPE is
-        // what a player acts on ("roll this weapon for these stats"); the ROLLS
-        // are what the number rests on, and what lets opening this row build
-        // the riven on the reader's own machine.
-        if let Some(rv) = &r.riven {
-            println!("    riven:");
-            println!("      bonuses: [{}]", rv.bonuses.join(", "));
-            if let Some(m) = &rv.malus {
-                println!("      malus: {m}");
+    // KEPT FIRST, THEN THE ONES THE FLOOR HELD BACK. Two populations in one
+    // file, told apart by `listed:` — and the file is BOTH the record and the
+    // next run's reuse cache, which is why the second population belongs in it:
+    //
+    //   THE RECORD. A build scored and not listed reads, from the submitter's
+    //   side, exactly like one that was lost. Now it is in the file, with its
+    //   number, and the question is answerable.
+    //
+    //   THE CACHE. `--reuse` reads this file. A row missing from it has no
+    //   cached score, so it was re-simulated from scratch every run, for ever,
+    //   to be discarded again — and the mode fan-out multiplied that
+    //   population. Caching it cannot freeze a wrong number: reuse is gated on
+    //   the engine fingerprint (a code change voids the whole file) and on the
+    //   row's own `fp` (a data change voids the rows that read it).
+    //
+    // `site/board.json` is written from `kept` alone, above, so the page is
+    // unchanged and no visitor downloads a byte more.
+    // TWO POPULATIONS, WALKED SEPARATELY. Not one pass over a set of ids: the
+    // same BUILD can be listed in one mode and held below the floor in another,
+    // so the flag is a property of the ROW and only the loop it came from knows
+    // it.
+    for (group, listed_here) in [(&kept, true), (&below, false)] {
+        for r in group.iter() {
+            println!("  - weapon: {}", r.weapon);
+            println!("    mode: {}", r.mode);
+            // WRITTEN ONLY WHERE IT IS FALSE, so a board of listed rows is
+            // byte-for-byte what it was and the default carries the common case.
+            if !listed_here {
+                println!("    listed: false");
             }
-            println!(
-                "      rolls: [{}]",
-                rv.rolls.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ")
-            );
+            // FULL PRECISION in the record. `{}` on an f64 is the shortest string
+            // that reads back as the same number, so the yaml is the measurement
+            // rather than a rounding of it — the published figure is rounded at the
+            // point it is SHOWN, and two rows that tie on screen still rank.
+            println!("    score: {}", r.score);
+            // WHAT THIS SCORE DEPENDS ON. The next run recomputes it from the row
+            // and reuses the number only if it matches, which is what makes a mod
+            // correction cost the rows carrying that mod instead of the board.
+            if !r.fp.is_empty() {
+                println!("    fp: {}", r.fp);
+            }
+            if !r.exilus.is_empty() {
+                println!("    exilus: {}", r.exilus);
+            }
+            println!("    mods: [{}]", r.mods.join(", "));
+            if !r.evolutions.is_empty() {
+                println!("    evolutions: [{}]", r.evolutions.join(", "));
+            }
+            if r.arcanes.iter().any(|a| a != "none") {
+                println!("    arcanes: [{}]", r.arcanes.join(", "));
+            }
+            // Written only where there is one, the same rule the two lines above
+            // follow — a board of ordinary weapons is byte-for-byte what it was.
+            if !r.valence.is_empty() {
+                println!("    valence: {}", r.valence);
+            }
+            // THE RIVEN, where there is one — and both halves of it. The SHAPE is
+            // what a player acts on ("roll this weapon for these stats"); the ROLLS
+            // are what the number rests on, and what lets opening this row build
+            // the riven on the reader's own machine.
+            if let Some(rv) = &r.riven {
+                println!("    riven:");
+                println!("      bonuses: [{}]", rv.bonuses.join(", "));
+                if let Some(m) = &rv.malus {
+                    println!("      malus: {m}");
+                }
+                println!(
+                    "      rolls: [{}]",
+                    rv.rolls
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
         }
     }
 }
 
 /// The ROLLS a previous pass settled on, from the same shard files
 /// [`load_scores`] reads. Same key, same benchmark guard, same merge rule.
-fn load_rolls(
-    spec: Option<String>,
-    bench_id: &str,
-) -> std::collections::HashMap<String, Vec<f64>> {
+fn load_rolls(spec: Option<String>, bench_id: &str) -> std::collections::HashMap<String, Vec<f64>> {
     let mut out: std::collections::HashMap<String, Vec<f64>> = Default::default();
     let Some(dir) = spec else { return out };
-    let Ok(entries) = std::fs::read_dir(&dir) else { return out };
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return out;
+    };
     for e in entries.flatten() {
-        let Ok(text) = std::fs::read_to_string(e.path()) else { continue };
-        let Ok(file) = serde_json::from_str::<Value>(&text) else { continue };
+        let Ok(text) = std::fs::read_to_string(e.path()) else {
+            continue;
+        };
+        let Ok(file) = serde_json::from_str::<Value>(&text) else {
+            continue;
+        };
         if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
             continue;
         }
-        let Some(rolls) = file.get("rolls").and_then(Value::as_object) else { continue };
+        let Some(rolls) = file.get("rolls").and_then(Value::as_object) else {
+            continue;
+        };
         for (k, v) in rolls {
             let Some(a) = v.as_array() else { continue };
             out.insert(k.clone(), a.iter().filter_map(Value::as_f64).collect());
@@ -1048,7 +1220,10 @@ mod tests {
         }
         // …AND THE CASE EXISTS: "no pair collides" passes vacuously on a
         // roster where no two modes share a form.
-        assert!(shared > 0, "no weapon has two modes sharing one form: the case is untested");
+        assert!(
+            shared > 0,
+            "no weapon has two modes sharing one form: the case is untested"
+        );
     }
 
     /// **ONE SUBMISSION IS ONE ROW PER MODE**, so the keys those rows are
@@ -1095,7 +1270,10 @@ mod tests {
                 );
             }
         }
-        assert!(multi > 0, "no weapon has two sustainable modes: the fan-out is untested");
+        assert!(
+            multi > 0,
+            "no weapon has two sustainable modes: the fan-out is untested"
+        );
     }
 
     /// …AND IT NAMES THE MODE RATHER THAN THE FORM. The assertion above is met
@@ -1120,16 +1298,33 @@ mod tests {
             drain: 0,
         };
         let modes = wfsim_engine::weapons_data::play_modes("ballistica_prime");
-        let m = modes.iter().find(|m| m.id == "alternate_cycle").expect("alternate_cycle");
+        let m = modes
+            .iter()
+            .find(|m| m.id == "alternate_cycle")
+            .expect("alternate_cycle");
         let req = simulate_request(&scenario, &v, *m);
-        assert_eq!(req.get("mode").and_then(Value::as_str), Some("alternate_cycle"));
-        assert_eq!(req.get("form"), None, "a stale `form` survived beside the mode");
-        assert_eq!(req["buff_triggers_off"], json!(["headshot_kill"]),
-            "the ruler's own term was dropped");
+        assert_eq!(
+            req.get("mode").and_then(Value::as_str),
+            Some("alternate_cycle")
+        );
+        assert_eq!(
+            req.get("form"),
+            None,
+            "a stale `form` survived beside the mode"
+        );
+        assert_eq!(
+            req["buff_triggers_off"],
+            json!(["headshot_kill"]),
+            "the ruler's own term was dropped"
+        );
     }
 
     fn row(weapon: &str, mode: &str, score: f64) -> Row {
         Row {
+            // DISTINCT PER ROW, because the accounting partitions on it: a
+            // fixture where every row shared one identity would make the
+            // "everything was ranked" assertion pass on a single build.
+            identity: format!("{weapon}|{mode}|{score}"),
             weapon: weapon.into(),
             mode: mode.into(),
             score,
@@ -1175,7 +1370,7 @@ mod tests {
             row("torid", "cycle", 1.0),
         ]);
         assert_eq!(scores(&kept, "torid", "cycle"), vec![80.0, 40.0]);
-        assert_eq!(below, 2);
+        assert_eq!(below.len(), 2);
     }
 
     /// PER WEAPON AND MODE, so a strong group cannot decide what a weak one may
@@ -1194,17 +1389,19 @@ mod tests {
         ]);
         assert_eq!(scores(&kept, "torid", "base"), vec![30.0, 20.0]);
         assert_eq!(scores(&kept, "lex", "base"), vec![10.0, 9.0]);
-        assert_eq!(below, 0);
+        assert_eq!(below.len(), 0);
     }
 
     /// THERE IS NO CEILING. The count this replaced was a hundred; a group whose
     /// builds are genuinely close keeps every one of them, however many arrive.
     #[test]
     fn a_close_group_keeps_everything() {
-        let rows: Vec<Row> = (0..250).map(|i| row("furis", "cycle", 100.0 - i as f64 * 0.1)).collect();
+        let rows: Vec<Row> = (0..250)
+            .map(|i| row("furis", "cycle", 100.0 - i as f64 * 0.1))
+            .collect();
         let (kept, below) = keep_above_floor(rows);
         assert_eq!(kept.len(), 250);
-        assert_eq!(below, 0);
+        assert_eq!(below.len(), 0);
     }
 
     /// A LEADER OF ZERO SEPARATES NOTHING. Every row ties it, so the group is
@@ -1213,12 +1410,10 @@ mod tests {
     /// read as a weapon nobody had tried.
     #[test]
     fn a_group_that_scored_nothing_is_not_emptied() {
-        let (kept, below) = keep_above_floor(vec![
-            row("stug", "base", 0.0),
-            row("stug", "base", 0.0),
-        ]);
+        let (kept, below) =
+            keep_above_floor(vec![row("stug", "base", 0.0), row("stug", "base", 0.0)]);
         assert_eq!(kept.len(), 2);
-        assert_eq!(below, 0);
+        assert_eq!(below.len(), 0);
     }
 
     fn tmpdir(tag: &str) -> std::path::PathBuf {
@@ -1262,7 +1457,11 @@ mod tests {
         // The sharp one: neither board may see the other's, in EITHER direction
         // — the file order decides which one wins, and it is a sort over names.
         assert_eq!(aimed.len(), 1, "the aimed board read another ruler's file");
-        assert_eq!(no_aim.len(), 1, "the no-aim board read another ruler's file");
+        assert_eq!(
+            no_aim.len(),
+            1,
+            "the no-aim board read another ruler's file"
+        );
 
         // A ruler with no file of its own reuses nothing rather than reusing
         // whatever else is in the directory.
@@ -1310,7 +1509,7 @@ mod tests {
             row("torid", "cycle", 12.0),
             row("torid", "cycle", 11.0), // 55% of the PLAIN leader, and 11% of the riven one
         ]);
-        assert_eq!(below, 1, "only the riven row under half its own leader");
+        assert_eq!(below.len(), 1, "only the riven row under half its own leader");
         assert_eq!(kept.len(), 5);
         assert_eq!(kept.iter().filter(|r| r.riven.is_some()).count(), 2);
         assert_eq!(kept.iter().filter(|r| r.riven.is_none()).count(), 3);
@@ -1330,7 +1529,6 @@ mod tests {
         ]);
         assert_eq!(kept.len(), 3);
     }
-
 }
 
 #[cfg(test)]
@@ -1339,6 +1537,7 @@ mod page_row_tests {
 
     fn row(riven: Option<RowRiven>) -> Row {
         Row {
+            identity: "dual_toxocyst|cycle".into(),
             weapon: "dual_toxocyst".into(),
             mode: "cycle".into(),
             score: 139.28,
@@ -1360,11 +1559,14 @@ mod page_row_tests {
     /// riven build landed, and then three unrelated-looking things were.
     #[test]
     fn a_riven_row_carries_its_riven_to_the_page() {
-        let v = page_row("single_target", &row(Some(RowRiven {
-            bonuses: vec!["critical_chance".into(), "multishot".into()],
-            malus: Some("zoom".into()),
-            rolls: vec![1.1, 1.1, 0.9],
-        })));
+        let v = page_row(
+            "single_target",
+            &row(Some(RowRiven {
+                bonuses: vec!["critical_chance".into(), "multishot".into()],
+                malus: Some("zoom".into()),
+                rolls: vec![1.1, 1.1, 0.9],
+            })),
+        );
         let rv = v.get("riven").expect("the riven reaches the page");
         assert_eq!(rv["bonuses"], json!(["critical_chance", "multishot"]));
         assert_eq!(rv["malus"], json!("zoom"));
@@ -1386,8 +1588,17 @@ mod page_row_tests {
         assert!(v.get("riven").is_none(), "{v}");
         // …and the fields a page reads by name are all still there, so the
         // extraction did not quietly drop one of the other nine.
-        for k in ["benchmark", "mode", "source", "score", "shown", "mods",
-                  "evolutions", "arcanes", "valence"] {
+        for k in [
+            "benchmark",
+            "mode",
+            "source",
+            "score",
+            "shown",
+            "mods",
+            "evolutions",
+            "arcanes",
+            "valence",
+        ] {
             assert!(v.get(k).is_some(), "{k} is missing");
         }
     }
