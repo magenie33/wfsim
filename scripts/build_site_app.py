@@ -637,14 +637,32 @@ def check_data_parses() -> None:
 
 
 def build_stamp() -> str:
-    """The commit this `site/` was generated from, plus when — UTC.
+    """The commit this `site/` was generated from, plus WHAT was generated.
 
     The commit alone is not enough: `site/` is generated from a WORKING TREE,
-    which may carry changes that are not in any commit, so the timestamp is
-    what tells two builds of one commit apart. A `+` marks a dirty tree for
-    the same reason.
+    which may carry changes that are not in any commit. A `+` marks a dirty
+    tree, and the digest after it is what tells two builds of one commit apart.
+
+    IT IS A CONTENT HASH AND NOT A CLOCK, and the difference is not cosmetic.
+    `checkBuildMatches` compares this value in the HTML against the one compiled
+    into `app.js`, to catch a cached page paired with a newer script — so the
+    question it has to answer is "is this the same script", and a timestamp
+    answers "was this the same minute". Two builds of identical sources got
+    different stamps, which
+      1. rewrote all 386 prerendered pages on every run, changing one line in
+         each and burying every real diff in the noise; and
+      2. sent a reader holding the older HTML through a needless forced reload
+         against a byte-identical script.
+    A digest of the sources the guard is ABOUT changes exactly when the guard
+    needs to fire, and not once otherwise.
+
+    CACHED, because it is substituted in two places — the HTML and `app.js` —
+    and those two must be one value. They were two calls to a function reading
+    the clock, so a build that crossed a minute boundary between them shipped a
+    page and a script that disagreed BY CONSTRUCTION: every visitor would be
+    told the page was stale, reload, and be told again.
     """
-    import datetime
+    import hashlib
     import subprocess
 
     def git(*a: str) -> str:
@@ -657,8 +675,25 @@ def build_stamp() -> str:
 
     sha = git("rev-parse", "--short=8", "HEAD") or "nogit"
     dirty = "+" if git("status", "--porcelain") else ""
-    when = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M")
-    return f"{sha}{dirty} · {when}Z"
+    # THE SOURCES THE GUARD IS ABOUT: the script and the markup it expects.
+    # `STATIC`, never `APP` — the copies under `site/` already carry a
+    # substituted `BUILD_ID`, so hashing those would hash the answer into the
+    # question and give a value that moved every run for no reason.
+    h = hashlib.sha256()
+    for name in ("app.js", "index.html"):
+        h.update((STATIC / name).read_bytes())
+    return f"{sha}{dirty} · {h.hexdigest()[:8]}"
+
+
+_STAMP: "str | None" = None
+
+
+def stamp_once() -> str:
+    """[`build_stamp`], computed once per run — see its CACHED paragraph."""
+    global _STAMP
+    if _STAMP is None:
+        _STAMP = build_stamp()
+    return _STAMP
 
 
 def project_facts() -> dict:
@@ -748,7 +783,7 @@ def main() -> None:
     stamped = flagged.replace(
         '<span class="build-stamp" id="build-stamp" title="which build this page is">dev</span>',
         f'<span class="build-stamp" id="build-stamp" '
-        f'title="which build this page is">{build_stamp()}</span>',
+        f'title="which build this page is">{stamp_once()}</span>',
     )
     if stamped == flagged:
         sys.exit("index.html: build-stamp placeholder not found")
@@ -760,7 +795,7 @@ def main() -> None:
     # an element added ten days earlier). `checkBuildMatches` is the reader.
     app_js = (APP / "app.js").read_text(encoding="utf-8")
     marked = app_js.replace('const BUILD_ID = "dev";',
-                            f'const BUILD_ID = "{build_stamp()}";', 1)
+                            f'const BUILD_ID = "{stamp_once()}";', 1)
     if marked == app_js:
         sys.exit("app.js: BUILD_ID placeholder not found")
     # …AND WHAT THE REPOSITORY HOLDS, for the one page that asks for something.
