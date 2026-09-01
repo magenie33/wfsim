@@ -67,6 +67,15 @@ Everything that moves a number is content. So the path that runs weekly is a
 directory swap, and the path that means downloading 34 MB again runs almost
 never. **Keeping the shell thin is the update strategy**, not tidiness.
 
+**THE CONTENT UPDATE FETCHES ITSELF, and the reader is asked one question: when
+to restart.** Whether to spend twelve megabytes on a calculator they already
+have open is not a decision they have anything to decide it with, and asking it
+put the update behind a button most people never pressed. So the notice appears
+when there is something a click can finish. A failure still interrupts,
+unasked — a client that cannot update is frozen for good, and silence there
+reads exactly like being up to date. `next/` is discarded at boot, so an update
+downloaded and never restarted into is fetched again next launch.
+
 **There is no installer**. The whole app is an
 `include_bytes!` inside the executable, so the file cargo produces is the
 product: double-click to run, delete to uninstall, no registry, no

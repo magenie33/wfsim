@@ -58,7 +58,6 @@ ui:
   "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
   "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.":
     一个数字。这里买到的东西不会让任何结果动一位小数——能改变引擎行为的只有游戏内实测，没有第二样。
-  "A new version is available": "有新版本"
   "A run appears on the board within about 20 minutes, at most 40 — it is re-scored on a schedule, not the instant you send it.": 一次跑分大约 20 分钟内会出现在榜上，最多 40 分钟——榜单是按固定节奏重算的，不是你一提交就立刻更新。
   "A sentinel weapon scores the same on both boards. Its companion picks its own targets and never aims for a head, so neither term is the player's to set — and none of that weapon is your aim.": 守护型武器在两个榜上分数完全相同。它的守护自己选目标、从不瞄头，所以这两个条件都不归玩家管——这把武器里没有一分是你的瞄准。
   "Ability Strength %": 技能强度 %
@@ -295,10 +294,8 @@ ui:
   "Necrophagic Vigor, the Synapse family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Necrophagic Vigor」，Synapse 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Restart now": "立即重启"
   "The same calculator on your own machine — opens instantly, works offline, and updates itself.": "同一个计算器，跑在你自己的电脑上 —— 秒开、可离线、自动更新。"
-  "Update": "更新"
   "Update failed": "更新失败"
   "Update ready — restart to finish": "更新已就绪，重启后生效"
-  "Updating": "正在更新"
   "source": "源码"
   "the launcher-exclusive Adhesive Blast is outside the pools this roster loads — it sticks the rocket to what it hits, which changes where the explosion goes off and is a placement this arena has no room to be wrong about": "发射器专属的**粘附爆破**不在本 roster 加载的 mod 池里 — 它把火箭黏在命中物上，这会改变爆炸发生的**位置**，而位置是本战场输不起的一个变量"
   "No matches": 无匹配
