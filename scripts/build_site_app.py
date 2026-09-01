@@ -315,7 +315,7 @@ def write_board() -> None:
             pass  # unreadable or an older shape: fall through and omit `shown`
 
     out: dict = {}
-    for f in sorted((ROOT / "data" / "benchmarks" / "boards").glob("*.yaml")):
+    for f in sorted((ROOT / "boards").glob("*.yaml")):
         b = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
         for e in b.get("entries") or []:
             # **EVERY FIELD THE SCORER WROTE, not a list of the ones somebody

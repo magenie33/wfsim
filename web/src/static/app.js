@@ -7652,6 +7652,11 @@ function renderBenchmarkBarIn(bar, cfg) {
   // RETRIEVER rather than a description of the page, and what is OPEN is said
   // by `renderCurrentBuild` instead. docs/CHECKS.md `check_build_retriever`.
   //
+  // ONLY AN EMPTY LIST IS DISABLED. A control holding one item is still the way
+  // that item is OPENED — picking in this bar is what loads a build — so a
+  // weapon whose board has a single row would have no reachable entry point at
+  // all if "nothing to choose between" meant "nothing to click".
+  //
   // EVERY LIST IS STRONGEST-FIRST, and so is its default: the entries arrive in
   // that order from `builtinBuilds`, so a reader who touches nothing is looking
   // at this board's leader.
@@ -7698,7 +7703,7 @@ function renderBenchmarkBarIn(bar, cfg) {
     ddButton(`dd-bench-${cfg.domain}`, {
       value: curRuler,
       search: rulers.length > 1,
-      disabled: rulers.length <= 1,
+      disabled: rulers.length === 0,
       title: cfg.benchHint || "",
       items: rulers.map((r) => ({ value: r.id, label: r.label })),
       // Picking a ruler lands on its FIRST row, which is its leader — the same
@@ -7711,7 +7716,7 @@ function renderBenchmarkBarIn(bar, cfg) {
     // HOW IT IS PLAYED.
     ddButton(`dd-bench-mode-${cfg.domain}`, {
       value: curMode,
-      disabled: modes.length <= 1,
+      disabled: modes.length === 0,
       title: hint,
       items: modes.map((m) => ({ value: m.id, label: m.label })),
       // Picking a mode lands on ITS leader, the same way picking a ruler
@@ -7724,7 +7729,7 @@ function renderBenchmarkBarIn(bar, cfg) {
     // WHICH OF THE TWO RANKINGS.
     ddButton(`dd-bench-kind-${cfg.domain}`, {
       value: curKind,
-      disabled: kinds.length <= 1,
+      disabled: kinds.length === 0,
       title: hint,
       // SAID AS A PROPERTY OF THE BUILD, not as a filter over a list: this
       // control picks one of two rankings, where the board page's own
@@ -7741,7 +7746,7 @@ function renderBenchmarkBarIn(bar, cfg) {
     ddButton(`dd-bench-row-${cfg.domain}`, {
       value: sel ? presetId(sel) : (inKind[0] ? presetId(inKind[0]) : ""),
       search: inKind.length > 1,
-      disabled: inKind.length <= 1,
+      disabled: inKind.length === 0,
       title: hint,
       items: inKind.map((p) => ({
         value: presetId(p),

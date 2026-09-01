@@ -1,21 +1,21 @@
-//! THE BOARD — `data/benchmarks/boards/*.yaml`, one file per benchmark.
+//! THE BOARD — `boards/*.yaml` at the repository root, one file per benchmark.
 //!
-//! What a board holds is BUILDS, never scores that anyone reported. A score
-//! here was produced by running this engine over that build under that
-//! benchmark, with the benchmark's own pinned seed, so anyone with the repo can
-//! reproduce any row exactly. That is the whole reason the board lives in the
-//! repo rather than in a database: reproducible stops being a claim and becomes
-//! a property.
+//! OUTSIDE `data/` DELIBERATELY. Everything under `data/` is compiled into the
+//! binary, and a board is generated output rather than game data: embedding it
+//! put every row of every board into the wasm each visitor downloads, to serve
+//! three integers. Those integers are `data/board_state.yaml`; the rows are
+//! read from DISK, by the scorer that writes them and by the site build.
 //!
-//! It also means a change to the ENGINE or to `data/` invalidates every row at
-//! once, and re-scoring is the answer rather than migration — the builds are
-//! still builds. Nobody is asked to resubmit, because nobody ever submitted a
-//! number.
+//! What a board holds is BUILDS, never scores anyone reported: a score here was
+//! produced by running this engine over that build under that benchmark's own
+//! pinned seed, so anyone with the repo reproduces any row exactly. That is why
+//! the board lives in the repo rather than in a database — reproducible stops
+//! being a claim and becomes a property — and why a change to the ENGINE or to
+//! `data/` re-scores every row rather than migrating it. Nobody is asked to
+//! resubmit, because nobody ever submitted a number.
 //!
-//! THEY ARE READ-ONLY PRESETS RATHER THAN A PAGE OF THEIR OWN, because a board
-//! entry's OUTPUT is a build and the builder is what consumes one — the riven
-//! editor's relationship with mods. So it is a chip in the build bar you can
-//! select and copy but not edit, like the official scenario in its own bar.
+//! THEY ARE READ-ONLY PRESETS RATHER THAN A PAGE OF THEIR OWN: a board entry's
+//! OUTPUT is a build, and the builder is what consumes one.
 
 use std::sync::OnceLock;
 
@@ -204,38 +204,79 @@ pub fn parse(text: &str) -> Result<Board, String> {
     serde_norway::from_str::<Board>(text).map_err(|e| e.to_string())
 }
 
-pub fn all() -> &'static [Board] {
-    static B: OnceLock<Vec<Board>> = OnceLock::new();
-    B.get_or_init(|| {
-        crate::data::files_under("benchmarks/boards/")
-            .filter(|(p, _)| p.ends_with(".yaml"))
+/// WHAT THE RUNTIME KNOWS ABOUT A BOARD, which is everything except the rows.
+///
+/// THE ROWS ARE NOT EMBEDDED, and that is the whole reason this type exists.
+/// `data/` is compiled into the binary, so a board archive living there put
+/// every row of every board into the wasm every visitor downloads — measured at
+/// 1.47 MB of a 6.36 MB module, to serve one integer per benchmark. The archive
+/// is `boards/*.yaml` at the repository root, read from DISK by the scorer that
+/// writes it; this file is the handful of scalars the page actually asks for.
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct BoardState {
+    /// HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. The library reports
+    /// its own size at `/api/board/pending`; the difference is what has arrived
+    /// since, which is the one thing a static file cannot say about itself.
+    pub submissions: usize,
+    /// Rows published — what `board.json` carries and the page can rank.
+    #[serde(default)]
+    pub listed: usize,
+    /// …AND ROWS SCORED AND HELD BACK by the floor. Reported beside `listed`
+    /// rather than folded into it: the two answer different questions, and a
+    /// board that says only how many it shows cannot say how much it looked at.
+    #[serde(default)]
+    pub held: usize,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+struct BoardStates {
+    #[serde(default)]
+    boards: std::collections::BTreeMap<String, BoardState>,
+}
+
+/// One benchmark's board state, by id.
+pub fn of(benchmark: &str) -> Option<&'static BoardState> {
+    static S: OnceLock<std::collections::BTreeMap<String, BoardState>> = OnceLock::new();
+    S.get_or_init(|| {
+        // NOT UNDER `benchmarks/`. That directory's own loader parses every
+        // yaml at its top level as a RULER definition, so a state file there is
+        // a benchmark with no `id`.
+        crate::data::files_under("board_state")
+            .next()
             .map(|(p, text)| {
-                serde_norway::from_str::<Board>(text).unwrap_or_else(|e| panic!("{p}: {e}"))
+                serde_norway::from_str::<BoardStates>(text)
+                    .unwrap_or_else(|e| panic!("{p}: {e}"))
+                    .boards
             })
-            .collect()
+            .unwrap_or_default()
     })
-}
-
-/// One benchmark's board, by id.
-pub fn of(benchmark: &str) -> Option<&'static Board> {
-    all().iter().find(|b| b.benchmark == benchmark)
-}
-
-/// This weapon's rows on this benchmark's board, best first.
-pub fn for_weapon(benchmark: &str, weapon: &str) -> Vec<&'static BoardEntry> {
-    let mut rows: Vec<&BoardEntry> = all()
-        .iter()
-        .filter(|b| b.benchmark == benchmark)
-        .flat_map(|b| b.entries.iter())
-        .filter(|e| e.weapon == weapon)
-        .collect();
-    rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
-    rows
+    .get(benchmark)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE ARCHIVE, READ FROM DISK. It is `boards/*.yaml` at the repository
+    /// root and deliberately outside `data/`, so it is not embedded and there
+    /// is nothing for a test to reach through the binary — which is the point:
+    /// the rows are a CI artifact, not something the browser carries.
+    fn archive() -> Vec<Board> {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../boards");
+        let mut out: Vec<Board> = std::fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
+            .map(|p| {
+                let text = std::fs::read_to_string(&p).expect("read board");
+                parse(&text).unwrap_or_else(|e| panic!("{}: {e}", p.display()))
+            })
+            .collect();
+        out.sort_by(|a, b| a.benchmark.cmp(&b.benchmark));
+        assert!(!out.is_empty(), "no board archive under boards/");
+        out
+    }
 
     /// EVERY ROW IS A BUILD SOMEONE COULD EQUIP. A board is public and copyable,
     /// so a row that cannot be built is worse than a missing row — it is an
@@ -243,7 +284,7 @@ mod tests {
     /// check a submission will face, run here against what is already published.
     #[test]
     fn every_published_row_is_a_legal_build() {
-        for b in all() {
+        for b in archive() {
             assert!(
                 crate::benchmarks_data::get(&b.benchmark).is_some(),
                 "board names benchmark {}, which does not exist",
@@ -293,9 +334,17 @@ mod tests {
     /// board has.
     #[test]
     fn a_weapons_rows_are_ranked() {
-        for b in all() {
+        for b in archive() {
             for w in ["torid", "boar_prime", "laetum"] {
-                let rows = for_weapon(&b.benchmark, w);
+                // THE LISTED ROWS ONLY. The archive also carries what the floor
+                // held back, and those are appended after the ranking rather
+                // than woven into it — `board.json`, which is what the page
+                // ranks, is written from the listed set alone.
+                let rows: Vec<&BoardEntry> = b
+                    .entries
+                    .iter()
+                    .filter(|e| e.listed && e.weapon == w)
+                    .collect();
                 for pair in rows.windows(2) {
                     assert!(pair[0].score >= pair[1].score, "{w} out of order");
                 }

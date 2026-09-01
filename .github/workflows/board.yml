@@ -202,7 +202,7 @@ jobs:
         id: floor
         run: |
           set -euo pipefail
-          n=$(grep -h '^submissions:' data/benchmarks/boards/*.yaml 2>/dev/null \
+          n=$(grep -h '^submissions:' boards/*.yaml 2>/dev/null \
                 | awk '{print $2}' | sort -n | tail -1 || echo 0)
           n=${n:-0}
           echo "floor=$(( n * 9 / 10 ))" >> "$GITHUB_OUTPUT"
@@ -276,7 +276,7 @@ jobs:
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             prior=""
-            [ "${{ inputs.full }}" = "true" ] || prior="--reuse data/benchmarks/boards/$id.yaml"
+            [ "${{ inputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior \
               --shard "${{ matrix.shard }}/${SHARDS}" \
@@ -345,16 +345,16 @@ jobs:
             # scoring step above does not have the problem: it
             # passes the path straight to the binary, which treats an
             # unreadable prior as "full rescore" and carries on.
-            if [ "${{ inputs.full }}" != "true" ]                && [ -f "data/benchmarks/boards/$id.yaml" ]; then
+            if [ "${{ inputs.full }}" != "true" ]                && [ -f "boards/$id.yaml" ]; then
               # Read the board BEFORE it is overwritten: the loop writes in
               # place, so a copy is what the reuse actually reads.
-              cp "data/benchmarks/boards/$id.yaml" "/tmp/$id-prior.yaml"
+              cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
               prior="--reuse /tmp/$id-prior.yaml"
             fi
             ./target/release/wfsim-board "$id" site/board.json \
               --engine "${{ needs.submissions.outputs.engine }}" $prior \
               --scores scores \
-              < submissions.json > "data/benchmarks/boards/$id.yaml"
+              < submissions.json > "boards/$id.yaml"
           done
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
@@ -371,24 +371,24 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/benchmarks/boards site/board.json; then
+          if git diff --quiet -- boards data/board_state.yaml site/board.json; then
             echo "board unchanged — nothing to commit"
             exit 0
           fi
           for attempt in 1 2 3; do
             # Hold the generated files, take whatever main is now, put them back.
             mkdir -p /tmp/out
-            cp -r data/benchmarks/boards /tmp/out/
+            cp -r boards /tmp/out/
             cp site/board.json /tmp/out/
             git fetch origin main
             git reset --hard origin/main
             cp -r /tmp/out/boards data/benchmarks/
             cp /tmp/out/board.json site/
-            if git diff --quiet -- data/benchmarks/boards site/board.json; then
+            if git diff --quiet -- boards data/board_state.yaml site/board.json; then
               echo "board already current on main — nothing to commit"
               exit 0
             fi
-            git add data/benchmarks/boards site/board.json
+            git add boards data/board_state.yaml site/board.json
             # THE TIME, not just the date. Three runs an hour means a day of
             # "board: rescore 2026-08-09" is a wall of identical subjects, and the
             # one thing you want from this line is WHICH rescore you are looking
