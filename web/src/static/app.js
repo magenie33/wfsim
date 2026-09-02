@@ -10004,7 +10004,8 @@ function openPicker(slotIdx, anchor) {
   renderMenu(slotIdx, "");
   // Sorted by EFFECT by default — which means computing it.
   ensureGains({ kind: "mods", idx: slotIdx },
-    () => { if (!$("mod-popover").hidden) renderMenu(pickerSlot, $("mod-search").value); });
+    () => { if (!$("mod-popover").hidden) renderMenu(pickerSlot, $("mod-search").value); },
+    true);
   search.focus();
 }
 
@@ -11045,7 +11046,7 @@ function openRanked(id, anchor) {
     // REPAINT THE OPEN LIST, and only while it is open — the mod picker's own
     // rule. A closed list has nobody reading it, and its next open re-renders.
     if (!$("dd-popover").hidden) ddRender(id, $("dd-search").value);
-  });
+  }, true);
 }
 
 /// The ⋯ menu a `rankedSlot` opens — Swap, and Remove where the axis has one.
@@ -11210,7 +11211,11 @@ function renderQuickCalc() {
 /// IT IS COLLAPSED UNTIL IT HAS SOMETHING TO SAY. A panel that is always there
 /// is furniture; this one opens while a scan is running and stays open after
 /// one that failed, which are the two moments a reader wants it.
-let calcStatusOpen = false;
+/// OPEN UNTIL SOMEBODY CLOSES IT. A tab is what a reader does not notice, and
+/// not noticing is the whole failure this panel exists to end — the report was
+/// "the quick calc stopped and there is no indication of anything". Collapsing
+/// is remembered, so the reader who does not want it says so once.
+let calcStatusOpen = localStorage.getItem("wfsim-calc-status") !== "closed";
 function renderCalcStatus() {
   const box = $("calc-status");
   if (!box) return;
@@ -11255,7 +11260,13 @@ function renderCalcStatus() {
       `</div>`;
   }
   const tab = $("cs-tab");
-  if (tab) tab.onclick = () => { calcStatusOpen = !calcStatusOpen; renderCalcStatus(); };
+  if (tab) tab.onclick = () => {
+    calcStatusOpen = !calcStatusOpen;
+    try {
+      localStorage.setItem("wfsim-calc-status", calcStatusOpen ? "open" : "closed");
+    } catch (_) { /* a browser with storage off still gets the panel */ }
+    renderCalcStatus();
+  };
   const reset = $("cs-reset");
   if (reset) reset.onclick = () => {
     resetPool();
@@ -11325,7 +11336,10 @@ function refreshGains() {
 /// Compute this axis position's ranking, unless it is already on screen.
 /// `gainKey` covers the axis, the build, the scenario and the settings, so
 /// re-opening the same picker costs nothing and any edit invalidates it.
-function ensureGains(axis, repaint) {
+/// `user` — a person opened this list, rather than a repaint asking again for
+/// one already on screen. It is the difference between preempting and queueing;
+/// see the comment on the queue below.
+function ensureGains(axis, repaint, user) {
   // Nothing to measure against yet. The evolution rows scan without being
   // opened, so on a cold load they can fire before `initPresets` has seeded
   // the scenario library — and a scan with no named scenario is one nobody
@@ -11349,7 +11363,23 @@ function ensureGains(axis, repaint) {
   // ends in `renderEvo`), so "the newest request wins" makes the two cancel
   // each other on every repaint and neither ever finishes. Which axis is asking
   // is not a staleness signal; the fight moving is.
-  if (gainScan.running && JSON.stringify(gainScan.axis) !== JSON.stringify(axis)) {
+  // A PERSON ASKING PREEMPTS; A REPAINT WAITS ITS TURN.
+  //
+  // The two are not the same request and were treated as one. Opening a slot is
+  // a decision — the reader has stopped caring about the list they were looking
+  // at — and queueing it behind a scan that is 87 melee engagements deep means
+  // minutes before the list they just opened says anything, which reads as the
+  // calculator being stuck. A REPAINT is not a decision: the mod picker and the
+  // evolution rows both re-ask on every refresh, and letting those preempt each
+  // other is what made the two cancel each other for ever and neither finish.
+  //
+  // So the queue stays, for the case it was built for, and a user request goes
+  // straight past it. `scanGains` bumps the generation, so whatever was running
+  // stands down at its next await — bounded to one outstanding simulation per
+  // lane rather than the whole queue.
+  if (user && gainScan.running) gainPending = null;
+  if (!user && gainScan.running
+      && JSON.stringify(gainScan.axis) !== JSON.stringify(axis)) {
     // …BUT IT IS NOT FORGOTTEN. Dropping it silently is what made a player have
     // to click between two evolutions until the numbers appeared (report,
     // 2026-08-13): the evolution rows ask on EVERY refresh while a picker asks
@@ -11828,7 +11858,8 @@ function openArcanePicker(anchor, i = 0) {
   renderArcaneMenu("");
   search.focus();
   ensureGains({ kind: "arcane", idx: i },
-    () => { if (!$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value); });
+    () => { if (!$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value); },
+    true);
 }
 
 // Search matches NAME or any EFFECT line (like the mod picker). "None" always

@@ -7354,6 +7354,14 @@ fn spread_from_influence(
             );
             r.note_kills(u32::from(killed), t);
             if killed {
+                // A SPREAD KILL IS THE WEAPON'S KILL. The host is the melee
+                // weapon that swung: Influence copies its number into the
+                // neighbours, so a body that dies to the copy died to that
+                // swing. Every on-kill grant fires — the same rule the gas
+                // cloud states (MEASUREMENTS M70), for the same reason, and it
+                // was counted here without firing anything.
+                gal.bump_on_kill(params, t);
+                arc.on_kill(params, t);
                 continue;
             }
             // …AND THE STATUS ITSELF, which is the half the card is named for.
@@ -7555,6 +7563,14 @@ fn spread_hit(
         r.note_kills(u32::from(killed), t);
     } else {
         r.note_tendril_kills(u32::from(killed), t);
+    }
+    // …AND IT IS STILL THE WEAPON'S KILL, whichever mechanism carried it there.
+    // A chain, a blast and a spread all deal the weapon's own number to a
+    // second body, so a kill by one is a kill by the weapon and every on-kill
+    // grant fires. This counted them and fired nothing.
+    if killed {
+        gal.bump_on_kill(params, t);
+        arc.on_kill(params, t);
     }
 
     // …AND ITS OWN STATUS ROLL, at FULL chance. The share scales the damage and
