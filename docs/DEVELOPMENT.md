@@ -202,6 +202,7 @@ So one number multiplies out:
 | Simulator | `runs × ms/run` |
 | Board / benchmark | `runs × ms/run`, on a runner |
 | Optimizer | **`sims × ms/run`**, and `sims` is what `wfsim-truth` reports |
+| Quick calc | `candidates × (setup + runs × ms/run)` — see below, the setup is NOT 0.0007 ms |
 
 That last row is the split worth remembering. `one_fight` answers **what one
 simulation costs**; it cannot see the funnel — enumeration, culling, sharding —
@@ -256,6 +257,57 @@ Beyond that there is no hot spot to take: the cost is spread across the
 per-shot and per-tick work, which is what a tight inner loop looks like. The
 room is in **how many runs get spent**, not in what one costs — see
 docs/OPTIMIZER.md.
+
+### The quick calc pays a different fixed cost
+
+`gainScan` measures every candidate for one slot, and unlike the optimizer —
+which resolves a candidate against an already-parsed arena — it pays a whole
+`parse_fight` per candidate, 361 bodies and all. That is the setup column here,
+measured through the shipping build on the Praedos, 28 cores / 14 lanes:
+
+| fight | bodies | build | ms/run | setup per call | one full scan |
+| --- | --- | --- | --- | --- | --- |
+| default | 1 | empty | 1.1 | 2.1 ms | 289 ms |
+| group ruler | 361 | empty | 9.4 | 24.3 ms | 1.3 s |
+| group ruler | 361 | 7 mods + Influence | 14.6 | 15.5 ms | 1.5 s |
+
+Two things follow, and both have been mistaken for something else:
+
+- **A scan that takes minutes is broken, not slow.** The heaviest fight in the
+  product is a second and a half here, and Influence across the crowd is a
+  fifth of it rather than the disaster it is assumed to be. Every report of the
+  quick calc hanging has been a POOL fault; `scripts/check_calc_recovers.mjs`
+  holds that line.
+- **Batching the candidates into one call buys about a tenth** — the setup
+  column against a ten-run candidate — and costs splitting `simulate_from`,
+  which the simulator and the board share. The lane count buys more of it for
+  nothing: the default share is half the machine's cores.
+
+### What a gain propagates to
+
+ONE COPY, so an improvement reaches every module: `monte_carlo` (the fight),
+`DummyParams::*_from_panel[s]` (its parameters), `loadout::resolve_for` (mods to
+a panel), `webapi::parse_fight` (json to a fight — five call sites, including
+`optimize_json`), `builds::BUILD_AXES` (what a build is).
+
+WRITTEN TWICE, so a change has to be made twice:
+
+| | Rust | the page |
+| --- | --- | --- |
+| reading a score off a `Summary` | `by_kills` in `optimizer::evaluate_batch` | `readGain` |
+| the funnel — screen cheap, refine the top | `run_funnel`'s rounds | `GAIN_REFINE_TOP` |
+| giving work to the next free worker | `evaluate_batch`'s chunking | the lane pool's cursor |
+
+The first of those is one quantity under three names — `mean_kill_progress` in
+the engine, `score_mean` on the wire, `r.score_mean` on the page — and it is the
+one that has already cost a bug.
+
+ENUMERATION IS NOT ON THAT LIST AND MUST NOT JOIN IT. The optimizer samples a
+space too large to enumerate; the quick calc enumerates a small one exactly and
+needs a number for every member. A sampler pointed at 81 candidates drops
+answers for no reason. The paired estimator the page needs for that
+(`gainOver`, a ratio SE over the run series) has no counterpart in the search,
+which ranks but never says what a candidate is worth.
 
 ### …and the two tools that close its gaps
 
