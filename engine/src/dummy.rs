@@ -7260,6 +7260,10 @@ fn influence_can_spread(ty: DamageType) -> bool {
 /// docs/EXTRA_HIT.md §"…and the one that is not a percentage".
 #[allow(clippy::too_many_arguments)]
 fn spread_from_influence(
+    // WHERE EVERY BODY STANDS, built once for the fight rather than per landed
+    // hit — Influence spreads 20 m across a 361-body formation, so that was the
+    // allocation this engine could least afford.
+    bodies: &[crate::space::Vec2],
     others: &mut [SpreadFoe],
     target: &mut TargetState,
     debuffs: &mut DebuffState,
@@ -7285,9 +7289,6 @@ fn spread_from_influence(
     if landed.is_empty() || radius_m <= 0.0 {
         return;
     }
-    let mut bodies = Vec::with_capacity(params.others.len() + 1);
-    bodies.push(params.target_at);
-    bodies.extend(params.others.iter().map(|f| f.at));
     let Some(&epicentre) = bodies.get(from) else { return };
     // ONE MORE RUNG THAN THE HIT ALREADY CARRIES. `raw` came out of an
     // instance that was multiplied by `f` once, so this takes it to `f^2` —
@@ -12384,13 +12385,17 @@ pub fn run_once_traced(
     // WHO IS NEAR WHOM, for the three AREA status effects (gas, the Tesla
     // chain, a Blast detonation). Static like the chain's, and for the same
     // reason: nothing in this arena moves.
+    // WHERE EVERY BODY STANDS, once. Static for the same reason the index is,
+    // and hoisted because MELEE INFLUENCE rebuilt this list on every landed hit
+    // — a 361-element allocation per proc per swing, in the mechanic this
+    // engine is least willing to be slow at.
+    let body_at: Vec<crate::space::Vec2> = std::iter::once(params.target_at)
+        .chain(params.others.iter().map(|f| f.at))
+        .collect();
     let area_near = if params.others.is_empty() {
         crate::space::Neighbours::default()
     } else {
-        let mut bodies = Vec::with_capacity(params.others.len() + 1);
-        bodies.push(params.target_at);
-        bodies.extend(params.others.iter().map(|f| f.at));
-        crate::space::Neighbours::build(&bodies)
+        crate::space::Neighbours::build(&body_at)
     };
     // WHERE A BOUNCE GOES, precomputed for the same reason the chain's is:
     // nothing in this arena moves, so "which body is nearest to this one" is a
@@ -16527,6 +16532,7 @@ pub fn run_once_traced(
                                 .map(|ty| (ty, landed.raw * shares.share(ty)))
                                 .collect();
                             spread_from_influence(
+                                &body_at,
                                 &mut others,
                                 &mut target,
                                 &mut debuffs,

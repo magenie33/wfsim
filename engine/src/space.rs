@@ -396,12 +396,16 @@ pub const BODY_RADIUS_M: f64 = 0.25;
 /// against one derivation that needed an assumption to get to 0.2.
 pub const BODY_MATERIAL_M: f64 = 2.0 * BODY_RADIUS_M;
 
-/// THE FURTHEST ANY AREA EFFECT REACHES — a gas cloud at full stacks (6 m) plus
+/// THE FURTHEST AN *AREA PROC* REACHES — a gas cloud at full stacks (6 m) plus
 /// a body radius, which is more than the Tesla chain's 3 m and the Blast
 /// detonation's 5 m.
 ///
-/// It is the truncation for [`Neighbours`]: past it no mechanic in this engine
-/// can hand anything to anybody, so the list stops there.
+/// It is the truncation for [`Neighbours`], and it is NOT the furthest anything
+/// in this engine reaches. MELEE INFLUENCE SPREADS TWENTY METRES — three times
+/// this — and it deliberately does not use the index: a lookup here would drop
+/// every body between 6.5 m and 20 m silently, which is the shape of wrong that
+/// nothing catches. Anything reaching past an area proc scans the formation, or
+/// raises this and pays for the longer lists.
 pub const AREA_MAX_M: f64 = 6.0 + BODY_RADIUS_M;
 
 /// WHO IS NEAR WHOM — computed once, because nothing in this arena moves.
