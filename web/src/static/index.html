@@ -993,5 +993,11 @@
   </footer>
 
   <script src="/app.js"></script>
+<!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
+     answering. Page level and fixed, because a worker dying is not a property
+     of whatever block happens to be on screen — and it was invisible, which is
+     what let one bad minute read as "the quick calc is broken". See
+     renderCalcStatus. -->
+<div class="calc-status" id="calc-status" hidden></div>
 </body>
 </html>

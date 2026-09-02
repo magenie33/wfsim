@@ -303,6 +303,28 @@ whose needles are English reads a Chinese page as eight missing axes — the sam
 picture a genuinely missing axis makes. `LANG` is read at boot, so the switch is
 a reload.
 
+## `check_calc_recovers`
+
+**THE QUICK CALC SURVIVES LOSING ITS WORKERS.** Reported by the owner and by
+players: it stops producing numbers and stays stopped, and a reload does not
+help. Three faults compounded, each permanent on its own:
+
+- `laneAt` returned a DEAD lane rather than replacing it, and `freeLane` fell
+  back to `laneAt(0)` — so once every worker had died, every later call went to
+  a corpse. A reload rebuilt the same pool the same way, because the lane count
+  is a stored preference and the trigger is deterministic;
+- `laneAsk` recognised `cancelled` and not `worker_dead`, so a worker whose
+  module never loaded returned a failure the scan read as an empty measurement:
+  the counter advanced and the chip never appeared;
+- the fight's key was stamped when a scan STARTED, so a scan that died half way
+  left the page believing that fight was answered and nothing ever re-asked.
+
+**IT KILLS THE POOL**, which is the only honest way to test a recovery path, and
+asserts the calculator reaches a COMPLETE answer anyway — completion being the
+key, which is now stamped only by a scan that measured everything. On the old
+behaviour it reports `86 of 87 could not be measured`, which is the bug as the
+reader met it.
+
 ## `check_build_retriever`
 
 **A RETRIEVER'S SHAPE DOES NOT MOVE.** The benchmark bar is four controls —

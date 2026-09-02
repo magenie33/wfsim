@@ -2237,3 +2237,26 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 /* The shield-gate window, which nothing this app fires takes — drawn so the
    claim can be checked the day melee lands (MEASUREMENTS M61). */
 .rec-gate{color:var(--s1)}
+
+/* THE CALCULATOR'S OWN STATUS, bottom right and out of the way. It is a TAB
+   until it is opened: the reader wants it in two moments — while a scan runs
+   and after one that failed — and furniture the rest of the time is what makes
+   a warning invisible when it finally matters. */
+.calc-status{position:fixed;right:12px;bottom:12px;z-index:60;font-size:12px;
+  display:flex;flex-direction:column;align-items:flex-end;gap:0}
+.calc-status .cs-tab{font:inherit;font-size:12px;padding:5px 10px;cursor:pointer;
+  border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text-2)}
+.calc-status .cs-tab:hover{border-color:var(--accent)}
+/* A LOSS IS GOLD, NOT RED. It is not an error — the pool rebuilds on the next
+   question — it is a fact the reader could not previously see at all. */
+.calc-status.bad .cs-tab{border-color:var(--gold);color:var(--gold)}
+.calc-status .cs-lost{color:var(--gold);font-variant-numeric:tabular-nums}
+.calc-status.open .cs-tab{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.calc-status .cs-body{width:min(280px,80vw);padding:8px 10px;background:var(--panel2);
+  border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;
+  display:flex;flex-direction:column;gap:5px}
+.calc-status .cs-row{display:flex;justify-content:space-between;gap:10px}
+.calc-status .cs-row span{color:var(--text-2)}
+.calc-status .cs-row b{color:var(--text);font-weight:600;text-align:right;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
+.calc-status .cs-why{color:var(--gold);line-height:1.35}
