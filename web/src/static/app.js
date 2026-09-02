@@ -14521,6 +14521,11 @@ function boardPayload() {
 /// inconsistency: the search was handed the riven the player defined and the
 /// weapon they assembled, so those are the row's too. It has no separate answer
 /// to give.
+/// WHICH MOD CAME OUT OF THE EXILUS SLOT, said once for the two places that
+/// need it — the list it must leave and the key it must arrive in.
+const exilusOf = (res) =>
+  (res && res.exilus && res.exilus !== "none" ? res.exilus : undefined);
+
 function boardPayloadFromResult(res) {
   const bench = (scenarioNamed(activeScenario) || {}).builtin;
   const arcs = asArcaneList(res.arcane, (res.arcane || []).length)
@@ -14531,13 +14536,21 @@ function boardPayloadFromResult(res) {
     mode: res.mode || mode,
     // AS RANKED, not sorted — the order pairs the elementals, and a sorted list
     // is a build the search never measured. The same rule `boardPayload` states.
-    mods: (res.mods || []).map((m) => (isRivenId(m) ? BOARD_RIVEN_SLOT : m)),
+    // THE EIGHT MAIN SLOTS, and the exilus one is DROPPED — the same rule
+    // `boardPayload` states above, and it has to be stated twice because this
+    // path builds its list from a RESULT rather than from the slots. A flat
+    // list has no positions and an exilus-eligible mod is legal in a main slot,
+    // so the endpoint reads a ninth entry as a ninth MAIN mod and refuses the
+    // build for having nine. Which one it is, is `exilus` below.
+    mods: (res.mods || [])
+      .filter((m) => !exilusOf(res) || m !== exilusOf(res))
+      .map((m) => (isRivenId(m) ? BOARD_RIVEN_SLOT : m)),
     riven_pos: boardRivenShape().riven_pos,
     riven_neg: boardRivenShape().riven_neg,
     evolutions: (res.evolutions || []).slice(),
     arcanes: arcs,
     valence: res.valence || valence.element,
-    exilus: res.exilus && res.exilus !== "none" ? res.exilus : undefined,
+    exilus: exilusOf(res),
     grip: (assembly && assembly.grip) || "",
     loader: (assembly && assembly.loader) || "",
   };

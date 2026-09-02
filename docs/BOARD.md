@@ -411,6 +411,31 @@ fingerprint, because they *are* its argmax.
 
 *(The exilus slot is on the board — see below.)*
 
+## What a row has to be
+
+A ruler that wants a complete build wants exactly this, and the four rows are
+the whole rule:
+
+| | |
+| --- | --- |
+| the 8 main slots | **FULL** |
+| every arcane seat | **FULL** |
+| every evolution tier | **FULL** |
+| the stance, the exilus | **OPTIONAL**, each on its own |
+
+Full where the game gives no reason to leave a slot empty, optional where it
+does. `validate_for_board_with` is the rule and
+`the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots` is
+the table above, asserted.
+
+**A STANCE IS NOT A NINTH MOD AND NEITHER IS AN EXILUS.** Both have slots of
+their own, so a full melee build is TEN mods against nine planned slots — and
+counting either among the eight refuses the very builds a board exists to rank.
+The stance rides inside `mods` because a stance mod is legal in the stance slot
+and nowhere else; the exilus needs `exilus` as its own key, because an
+exilus-eligible mod is legal in a main slot too and a flat list cannot say which
+one came out of which.
+
 ## The exilus slot is OPTIONAL
 
 A row MAY wear an exilus mod, and a row without one is not a lesser build. Both

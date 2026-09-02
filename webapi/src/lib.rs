@@ -8875,20 +8875,6 @@ mod asset_tests {
         same(&strip(merged), &strip(whole), "");
     }
 
-    /// THE GROUP-CLEAR RULER RUNS, AND IT MEASURES THE CROWD.
-    ///
-    /// A benchmark is a yaml the engine never type-checks — its `scenario` is a
-    /// free-form map on purpose, so a field added to scenarios needs no second
-    /// definition — which means the only thing that can say a ruler is WELL
-    /// FORMED is running it. This does, through the same `simulate_json` every
-    /// module goes through, and it asserts the two claims the file makes:
-    ///
-    ///   · the crowd is REAL — 361 bodies, expanded from three numbers;
-    ///   · and it is what is being measured — a chaining weapon scores far
-    ///     higher here than under the single-target ruler, on the same build.
-    ///
-    /// Cheap terms (a short fight, few runs), because the claim is about the
-    /// SHAPE of the fight and not about the board's precision.
     /// A MELEE WITH EVERY SLOT FILLED SIMULATES — eight mains, an exilus and a
     /// stance, which is TEN mods against the nine innate slots a weapon has.
     ///
@@ -8922,6 +8908,20 @@ mod asset_tests {
         );
     }
 
+    /// THE GROUP-CLEAR RULER RUNS, AND IT MEASURES THE CROWD.
+    ///
+    /// A benchmark is a yaml the engine never type-checks — its `scenario` is a
+    /// free-form map on purpose, so a field added to scenarios needs no second
+    /// definition — which means the only thing that can say a ruler is WELL
+    /// FORMED is running it. This does, through the same `simulate_json` every
+    /// module goes through, and it asserts the two claims the file makes:
+    ///
+    ///   · the crowd is REAL — 361 bodies, expanded from three numbers;
+    ///   · and it is what is being measured — a chaining weapon scores far
+    ///     higher here than under the single-target ruler, on the same build.
+    ///
+    /// Cheap terms (a short fight, few runs), because the claim is about the
+    /// SHAPE of the fight and not about the board's precision.
     #[test]
     fn the_group_clear_ruler_runs_and_measures_the_crowd() {
         let bench = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler exists");

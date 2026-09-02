@@ -887,12 +887,16 @@ pub fn validate_with(
     let mut innate: Vec<Option<crate::mods::Polarity>> =
         crate::weapons_data::innate_slots(weapon).to_vec();
     innate.push(crate::weapons_data::exilus_polarity(weapon));
+    // THE STANCE IS NOT ONE OF THE NINE. It has a slot of its own — which is the
+    // whole reason it hands capacity back below rather than taking it — so
+    // pricing it here billed it twice and made a FULL melee build, eight mains
+    // and an exilus and a stance, ten mods for nine slots. The board refused
+    // exactly the builds it exists to rank.
     let mut planned: Vec<PlannedMod> = multishot
         .iter()
-        .map(|id| {
-            let m = def(id);
-            PlannedMod { base_drain: m.base_drain, polarity: m.polarity }
-        })
+        .map(|id| def(id))
+        .filter(|m| m.stance.is_none())
+        .map(|m| PlannedMod { base_drain: m.base_drain, polarity: m.polarity })
         .collect();
     // …AND THE EXILUS MOD IS PRICED WITH THEM. Its slot's polarity was already
     // in `innate` above, for the reason written there: a polarity belongs to
@@ -2024,6 +2028,65 @@ mod tests {
         // layer down: the same build with no element is refused.
         let e = validate_for_board("single_target", "kuva_nukor", &mods, &[], &arc, "").unwrap_err();
         assert!(e.contains("Valence"), "{e}");
+    }
+
+    /// THE BOARD'S ENTRY STANDARD, STATED AS A TABLE.
+    ///
+    /// Eight main slots FULL, every arcane seat and every evolution tier FULL,
+    /// and the two slots the game itself makes optional — the stance and the
+    /// exilus — optional here too. A ruler may still narrow it; this is the
+    /// shape a ruler that wants a complete build is asking for.
+    ///
+    /// THE FOURTH ROW IS WHY THIS EXISTS. A full melee build carries all three
+    /// — eight mains, a stance and an exilus — and that is TEN mods against the
+    /// nine slots the capacity planner counts, because the stance was priced
+    /// among them while also handing its capacity back. The board refused
+    /// exactly the builds it exists to rank, and said "does not fit this
+    /// weapon's capacity even with Forma".
+    #[test]
+    fn the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots() {
+        let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<String>>();
+        const MAINS: [&str; 8] = [
+            "primed_pressure_point", "sacrificial_steel", "organ_shatter", "primed_reach",
+            "primed_fever_strike", "north_wind", "shocking_touch", "weeping_wounds",
+        ];
+        const EVOS: [&str; 5] = [
+            "praedos_evo1_incarnon_form", "praedos_seismic_slam", "praedos_adept_reflexes",
+            "praedos_evolved_ascension", "praedos_universal_readiness",
+        ];
+        let go = |mods: Vec<String>, evos: Vec<String>, arcs: Vec<String>, ex: Option<&str>| {
+            validate_for_board_with(
+                "group_clear", "praedos", &mods, &evos, &arcs, "", None, ex,
+            )
+        };
+        let arc = || s(&["melee_influence"]);
+        let stance = || s(&[&MAINS[..], &["sovereign_outcast"]].concat());
+
+        // THE FOUR SHAPES THAT ARE A COMPLETE BUILD.
+        for (what, mods, ex) in [
+            ("eight mains", s(&MAINS), None),
+            ("…and a stance", stance(), None),
+            ("…and an exilus", s(&MAINS), Some("conditions_perfection")),
+            ("…and both", stance(), Some("conditions_perfection")),
+            // AN EXILUS-ELIGIBLE MOD IN A MAIN SLOT IS A MAIN MOD. What is
+            // optional is the SLOT, not the mod: the game lets one of these sit
+            // anywhere, and a build that spends a main slot on it has eight
+            // mains like any other.
+            ("…with an exilus-eligible mod among the mains",
+             s(&["primed_pressure_point", "sacrificial_steel", "organ_shatter",
+                 "primed_reach", "primed_fever_strike", "north_wind",
+                 "shocking_touch", "conditions_perfection"]), None),
+        ] {
+            assert!(go(mods, s(&EVOS), arc(), ex).is_ok(), "{what} is a complete build");
+        }
+
+        // …AND WHAT IS NOT COMPLETE IS REFUSED, each for its own reason.
+        let short = go(s(&MAINS[..7]), s(&EVOS), arc(), None).unwrap_err();
+        assert!(short.contains("main slots"), "seven mains: {short}");
+        let no_arc = go(s(&MAINS), s(&EVOS), vec![], None).unwrap_err();
+        assert!(no_arc.contains("arcane"), "no arcane: {no_arc}");
+        let no_evo = go(s(&MAINS), s(&EVOS[..3]), arc(), None).unwrap_err();
+        assert!(no_evo.contains("evolution"), "three tiers: {no_evo}");
     }
 
     /// An unknown benchmark admits nothing: a number published against a ruler
