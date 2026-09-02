@@ -89,9 +89,9 @@ for (const v of (desk.slotIdx >= 0 ? [desk, phone] : [])) {
     `slot ${v.lines.length}, picker ${v.cardLines}`,
   );
   // THE ROLL, NOT THE STAT'S NAME. The printed values arrive from `/api/riven`
-  // after the first render, and nothing used to redraw the slots when they did
-  // — so this read "critical damage / multishot" with no numbers on it, which
-  // is the half of the card a player is not building around.
+  // AFTER the first render, so the slots are redrawn when they land. A slot
+  // that is not redrawn keeps the fallback — "critical damage / multishot" with
+  // no numbers on it, which is the half of the card a player builds around.
   check(
     `…and each line carries its rolled value — ${v.label}`,
     v.lines.length > 0 && v.lines.every((x) => /[0-9]/.test(x)),

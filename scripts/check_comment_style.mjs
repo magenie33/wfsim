@@ -131,9 +131,14 @@ check("comment style ...and no note outlives its last use",
 // UP when one essay is split into two well-sized comments, which is the
 // improvement, so it is a metric a fix can fail.
 //
-//   ESSAYS — blocks over twenty lines. Past twenty a block has stopped stating
-//   a rule and started explaining a subject, which is what `docs/` is for, and
-//   an explanation in two places is two explanations that drift.
+//   ESSAYS — blocks over twenty lines, EXCEPT A FILE'S OWN FIRST BLOCK. Past
+//   twenty a block has stopped stating a rule and started explaining a subject,
+//   which is what `docs/` is for, and an explanation in two places is two
+//   explanations that drift. A header is the exception because it explains THIS
+//   FILE and has nowhere else to go: every check script opens with what it
+//   asserts and why, which is the house style, so counting those made the
+//   number rise on every check added and the ratchet stopped meaning anything.
+//   Twenty-seven of the fifty-two it counted were headers.
 //
 //   COMMENTS PER LINE — the share of this repo's code that is comment. It
 //   cannot be gamed by splitting either (splitting produces no new comment
@@ -163,7 +168,7 @@ check("comment style ...and no note outlives its last use",
 // `.md`, `.html` and `.css` are outside both counts, which is what makes
 // "move the subject to docs/" an answer rather than a shuffle.
 const ESSAY_LIMIT = 20;
-const ESSAY_CEILING = 49;
+const ESSAY_CEILING = 25;
 const RATIO_CEILING = 0.3;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
 let essays = 0;
@@ -184,7 +189,12 @@ for (const rel of files) {
       commentLines += 1;
       continue;
     }
-    if (run > ESSAY_LIMIT) { essays += 1; worst.push(`${rel}:${start} (${run})`); }
+    // `start > 1` is the header exemption: a block the file opens with is the
+    // file explaining itself, and `docs/` is not where that goes.
+    if (run > ESSAY_LIMIT && start > 1) {
+      essays += 1;
+      worst.push(`${rel}:${start} (${run})`);
+    }
     run = 0;
   }
 }

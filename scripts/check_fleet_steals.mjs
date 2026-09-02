@@ -1,15 +1,14 @@
 // A SIMULATION DOES NOT WAIT FOR THE ONE LANE THAT IS BUSY.
 //
-// The runs used to be split `runs / lanes` once, before anything was known. A
-// lane that was slow — throttled, or holding somebody else's work — then held
-// the whole answer, and there was nothing to hand its share to. On the fight
-// this matters for (Melee Influence across the 361-body formation, ~29 ms a
-// run) that is the difference between an answer and a stall.
+// A simulation's runs are a QUEUE a lane pulls from, not a split decided before
+// anything is known. A split gives a fixed share to a lane that may be slow —
+// throttled, or holding somebody else's work — and there is then nothing to
+// hand its remainder to, so one lane holds the whole answer. On the fight this
+// matters for (Melee Influence across the 361-body formation, ~29 ms a run)
+// that is the difference between an answer and a stall.
 //
-// Now the runs are a queue and a lane takes the next piece when free, sized
-// from a one-run probe. This asserts the property that buys: with one lane
-// occupied by a long job, the simulation finishes on the others rather than
-// waiting for it.
+// This asserts the property the queue buys: with one lane occupied by a long
+// job, the simulation finishes on the others rather than waiting for it.
 //
 // IT BITES, and it caught the first attempt at the fix. A lane that claimed a
 // piece BEFORE knowing it was free took a run out of the pool that nobody else

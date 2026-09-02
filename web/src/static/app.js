@@ -909,9 +909,9 @@ async function simulateFleet(body, onProgress, opts) {
         (d) => { live.set(k, d); tick(); });
       // A LOST LANE'S PIECE IS RE-ASKED ONCE, on a fresh worker, over the SAME
       // runs — a retry over a different range is a different answer wearing the
-      // same name. One reclaimed worker used to fail the whole simulation, and
-      // for the quick calc this call is the baseline every candidate is
-      // measured against.
+      // same name. Without the retry one reclaimed worker fails the whole
+      // simulation, and for the quick calc this call is the baseline every
+      // candidate is measured against.
       if (r && r.worker_dead) {
         r = await freeLane().send({ kind: "shard", body, from, count },
           (d) => { live.set(k, d); tick(); });
@@ -11641,12 +11641,12 @@ function renderCalcStatus() {
   const busy = gainScan.running;
   // NEVER HIDDEN, because the way out lives in here.
   //
-  // This used to disappear whenever there was nothing to report, which put the
+  // A panel that disappears whenever there is nothing to report puts the
   // rebuild button behind the very condition it exists for: a calculator wedged
-  // in a state that is neither busy nor failed showed no surface at all, and a
-  // reader with a list that will not produce numbers had a reload and nothing
-  // else. IDLE COLLAPSES TO THE TAB rather than vanishing — the panel is one
-  // click away at all times and costs a tab's worth of corner when quiet.
+  // in a state that is neither busy nor failed shows no surface at all, and the
+  // reader whose list will not produce numbers has a reload and nothing else.
+  // IDLE COLLAPSES TO THE TAB instead — the panel is one click away at all
+  // times and costs a tab's worth of corner when quiet.
   box.hidden = false;
   const idle = !busy && !lost && !gainScan.failed;
   const open = idle ? calcStatusPeek : calcStatusOpen;
