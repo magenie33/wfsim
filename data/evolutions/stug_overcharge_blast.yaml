@@ -19,9 +19,9 @@ effects:
   # at the required Energy Max the clause grants nothing measurable in a
   # one-target fight, so declaring the radius is the honest statement and the
   # condition would be a second sentence about a payout of zero.
-  - kind: out_of_scope
-    clause: "With Energy Max above 700: +50% Blast Radius"
-    reason: one_target
+  # see notes: one_target_is_not_an_edge
+  # from: "With Energy Max above 700: +50% Blast Radius"
+  - kind: unmodelled_blast_radius_gated_on_energy_max
 
 source:
   url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis

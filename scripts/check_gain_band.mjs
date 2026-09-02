@@ -101,14 +101,17 @@ check("every gain carries a width", r.gains.length > 0 && r.gains.every((g) => t
 
 // ---- 3. no chip collapses to "about nothing" ---------------------------
 check("some chips were drawn", r.chips.length > 0, `${r.chips.length}`);
-// NEITHER shape of nothing: not the censored "≈0%" that hid an unmeasured
-// gain, and not the bare "+0.00%" that hid a mod this fight cannot use.
-const zeroish = (c) => /^≈?[+−-]?0(\.0+)?%$/.test(c.text);
-check("NO chip reads ≈0% or +0.00%", !r.chips.some(zeroish),
-  r.chips.filter(zeroish).map((c) => c.text).join(", "));
-const noEffect = r.chips.filter((c) => /no effect here|无效果/.test(c.text));
-check("...a measured zero says so in words instead", noEffect.length > 0,
-  `${noEffect.length} of ${r.chips.length}`);
+// THE CENSORED SHAPE IS THE ONE THAT IS WRONG: "≈0%" hid an unmeasured gain
+// behind a number. A MEASURED zero is a measurement and prints as one — it used
+// to read "no effect here", which is a verdict about the reader's fight rather
+// than a reading of it, and the same card is worth nothing against one standing
+// target and a great deal in a crowd.
+const censored = (c) => /^≈[+−-]?0(\.0+)?%$/.test(c.text);
+check("NO chip reads ≈0%", !r.chips.some(censored),
+  r.chips.filter(censored).map((c) => c.text).join(", "));
+const measuredZero = r.chips.filter((c) => /^[+−-]0(\.0+)?%$/.test(c.text));
+check("...a measured zero prints the number it measured", measuredZero.length > 0,
+  `${measuredZero.length} of ${r.chips.length}`);
 // EVERY GAIN CARRIES ITS OWN WIDTH, and the width is the PAIRED one — the
 // spread of `c_i − ratio·b_i` over the runs, which is the error of the number
 // actually printed.
@@ -120,17 +123,17 @@ check("...a measured zero says so in words instead", noEffect.length > 0,
 // exactness none of them had and the order between two of them was a coin flip
 // printed as a fact.
 //
-// So a bare number now means ONE thing: the runs were identical, which under
-// the kill-rate metric is the same finding as "no effect here". The two sets
-// are asserted to be the same set, because that is what makes this a statement
-// about the code rather than a count that happens to be positive.
+// So a bare number means ONE thing: the runs were identical, which under the
+// kill-rate metric is exactly what a measured zero is. Every measured zero is
+// therefore bare, and that is what makes this a statement about the code rather
+// than a count that happens to be positive.
 const banded = r.chips.filter((c) => /±/.test(c.text));
 const bare = r.chips.filter((c) => !/±/.test(c.text));
-const worded = r.chips.filter((c) => /no effect here|无效果/.test(c.text));
 check("an unresolved chip states its width", banded.length > 0,
   `${banded.length} banded of ${r.chips.length}`);
-check("...and a bare one does not", bare.length > 0 && worded.length > 0,
-  `${bare.length} bare, ${worded.length} of them a worded zero`);
+check("...and a bare one does not", bare.length > 0
+  && measuredZero.every((c) => !/±/.test(c.text)),
+  `${bare.length} bare, ${measuredZero.length} of them a measured zero`);
 check("a banded chip explains the width in its tooltip",
   banded.every((c) => /±/.test(c.title)), banded[0] && banded[0].title);
 

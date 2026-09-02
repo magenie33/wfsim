@@ -2586,9 +2586,14 @@ fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
 /// closed set, so a new gap either fits a reason already written down or is a
 /// reason nobody has thought about yet (which that file says is itself worth
 /// knowing).
+///
+/// EVERY MEMBER IS A PROPERTY OF THE ARENA and none is a property of the FIGHT
+/// ON SCREEN — a reason a reader can invalidate by editing their own scenario
+/// does not belong in this set. There is no `one_target` among them for exactly
+/// that reason: the arena holds a formation, so a clause about a second body is
+/// either computed or is work (`notes: one_target_is_not_an_edge`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Scope {
-    OneTarget,
     NoDistance,
     NoMovement,
     NoHolster,
@@ -2600,7 +2605,6 @@ pub enum Scope {
 impl Scope {
     fn parse(s: &str) -> Option<Scope> {
         Some(match s {
-            "one_target" => Scope::OneTarget,
             "no_distance" => Scope::NoDistance,
             "no_movement" => Scope::NoMovement,
             "no_holster" => Scope::NoHolster,
@@ -2615,7 +2619,6 @@ impl Scope {
     /// translates it like any other UI string.
     pub fn why(self) -> &'static str {
         match self {
-            Scope::OneTarget => "the fight has one target, so this pays nothing",
             Scope::NoDistance => "every shot lands at point blank, so distance changes nothing",
             Scope::NoMovement => "the player does not move or aim by hand here",
             Scope::NoHolster => "this weapon is never holstered during the fight",
@@ -3355,13 +3358,22 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        // SEVEN, AND THE LAST TWO ARE THE PRAEDOS'S. Both are per-MODE facts
-        // this engine has no shape for: Reaching Lunge's `+1.5 m Slide Attack
-        // Range` is a reach bonus for one form of seven, and Transfigured
-        // Momentum's trigger (a slide kill) and payoff (heavy attack
-        // efficiency) belong to different modes, which are different BUILDS
-        // here. A per-form evolution effect would retire both at once.
-        const CEILING: usize = 7;
+        // TWO OF THEM ARE THE PRAEDOS'S, and both are per-MODE facts this
+        // engine has no shape for: Reaching Lunge's `+1.5 m Slide Attack Range`
+        // is a reach bonus for one form of seven, and Transfigured Momentum's
+        // trigger (a slide kill) and payoff (heavy attack efficiency) belong to
+        // different modes, which are different BUILDS here. A per-form
+        // evolution effect would retire both at once.
+        //
+        // …AND EIGHT CAME FROM RETIRING `one_target`, which is the one raise this
+        // line has taken that added no gap. Those clauses were filed as EDGES
+        // that could never pay out because the fight had one body; the arena
+        // holds a formation, so they were work all along and the count was
+        // hiding it (`notes: one_target_is_not_an_edge`). Eight of the sixteen
+        // are computed now — a punch-through gate the Boltor Prime already had
+        // — and these are what is left: a window a KILL opens, a trigger that
+        // reads a punch-through hit, and two radius clauses.
+        const CEILING: usize = 15;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

@@ -10406,17 +10406,16 @@ const gainChip = (g, why, tied) => {
     : "";
   const band = gainBand(g);
   if (!band) {
-    // MEASURED AND MOVED NOTHING, which is a FINDING and not a number. A third
-    // of this weapon's pool lands here against one standing target — ammo and
-    // magazine mods (nothing runs dry), Firestorm (no distance), punch-through
-    // (one target), recoil and zoom (nobody is aiming by hand), Cautious Shot
-    // (nobody shoots back), a Bane of the wrong faction. Printing "+0.00%" 38
-    // times says the scan is broken; saying it has no effect HERE points at the
-    // row's own disclosure line, which states which of those reasons it is.
+    // MEASURED AND MOVED NOTHING — which is a NUMBER, and the number is what
+    // is printed. A worded verdict here would be about the reader's own fight
+    // rather than a measurement of it: the same card is worth nothing against
+    // one standing target and a great deal in a crowd, or the moment a build
+    // finally kills something an on-kill trigger is waiting for. The app states
+    // what it MEASURED and marks only what it does not MODEL.
     if (g.pct === 0) {
       return `<span class="gainchip flat" title="${escHtml(
-        `${tr("measured, and it moved nothing in this fight — see what this option's own line says it does not cover")} · ${why}`
-      )}">${tr("no effect here")}</span>`;
+        `${tr("this option did not re-roll the fight — run for run it scaled the same engagement, so this comparison is exact")} · ${why}`
+      )}">${gainPct(g.pct)}</span>`;
     }
     // Paired exactly — the fight did not re-roll, so this is not an estimate.
     return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(

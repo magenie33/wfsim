@@ -8,10 +8,9 @@ base_form_only: true
 selection: choose_one
 
 effects:
-  # see notes: edge_gap_see_docs
-  - kind: out_of_scope
-    clause: "Hold charged shot for 1 second to increase area of effect"
-    reason: one_target
+  # see notes: one_target_is_not_an_edge
+  # from: "Hold charged shot for 1 second to increase area of effect"
+  - kind: unmodelled_area_of_effect_on_a_held_charge
 
 source:
   url: https://wiki.warframe.com/w/Miter_Incarnon_Genesis

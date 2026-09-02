@@ -669,7 +669,6 @@ ui:
   "no Warframe ability is cast during the fight": 战斗中不释放任何战甲技能
   "no crit": 未暴击
   "no damage dealt": 未造成伤害
-  "no effect here": 此战斗中无效果
   "no effect": 无效果
   "no enemy matches": 没有匹配的目标
   "no mods equipped": 未安装 MOD
@@ -979,7 +978,6 @@ ui:
   "the extra hit off a lingering FIELD tick (Torid's cloud): neither wiki says whether a cloud tick triggers one, so it does not here — MEASUREMENTS M40": 持续伤害力场每一跳（如 Torid 的毒云）是否也会触发附加伤害：两个 wiki 都没有说，所以这里不触发——见 MEASUREMENTS M40
   "the fan has a 'very wide spread' (wiki) and the module gives this attack a cone of ZERO, which cannot both be true — the module's figure is transcribed rather than a number invented for the sentence, so every knife lands on the reticle here": "扇形投掷「散布非常宽」（维基），而模块给这次攻击的散布是零，两者不可能同时成立 —— 这里录入的是模块的数字，而不是为了让句子成立而编出来的数字，所以每一把刀都落在准星上"
   "the field is DISABLED OUTRIGHT against some enemies and the page states it as a bug: \"For enemies with both Shield and Armor, or with Overguard, the Attraction Field is completely disabled, including damage and traction effects\". Against such a target the 2,250 above is zero": "对某些敌人这个力场会被「完全禁用」，页面把它列为一个 bug：「对同时拥有护盾与护甲的敌人，或拥有超宏护盾的敌人，吸引力场会被完全禁用，包括伤害与牵引效果」。对这类目标，上面那 2250 点就是零"
-  "the fight has one target, so this pays nothing": 战斗只有一个目标，所以这一条毫无收益
   "the fight these numbers are measured in — the quick calc runs the Simulator's own scenario, so switch it there and every chip follows": 这些数字是在哪场战斗里测出来的 —— 快速计算跑的就是模拟器当前的场景，去那边切换，每个标签都会跟着变
   "the fight": "这场仗"
   "the fight's": 跟随这场仗

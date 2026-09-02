@@ -203,6 +203,17 @@ notes:
     (M67), so the omission is the list's. Written as a number the sim can hold,
     and the BODIES-only qualifier costs nothing here: this arena has no
     geometry, so everything the ray meets is a body.
+  one_target_is_not_an_edge: |
+    ONE TARGET IS A SCENARIO, NOT AN EDGE. `out_of_scope` says a clause can
+    NEVER pay out here; these said it because the fight had one body, and the
+    arena has held a formation since. So they are either COMPUTED — punch
+    through crosses bodies (`space::struck_along`) and a Tenno gate reads the
+    frame's own armour — or they are WORK nobody has done, which the kind's own
+    name declares.
+
+    NEVER A VERDICT ABOUT THE READER'S FIGHT. What a card is worth in the
+    scenario on screen is the number beside it; the only things worth marking
+    are a gap in the MODEL and a figure we ESTIMATED.
   channeled_gate_both_halves_pay: |
     BOTH HALVES PAY NOW, on one gate. The clause was filed `one_target` when a
     shot could only reach the body it hit and nothing could miss; the arena has

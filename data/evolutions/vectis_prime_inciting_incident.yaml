@@ -10,10 +10,11 @@ effects:
   # from: "Increase Base Damage by +200"
   - kind: flat_base_damage
     value: 200.0
-  # see notes: edge_gap_see_docs
-  - kind: out_of_scope
-    clause: "With Channeled Ability Active: +2 Punch Through"
-    reason: one_target
+  # see notes: one_target_is_not_an_edge
+  # from: "With Channeled Ability Active: +2 Punch Through"
+  - kind: punch_through_bonus
+    value: 2.0
+    condition: channeling
 
 source:
   url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

@@ -16,9 +16,9 @@ effects:
   #
   # The SHAPE is recorded in the clause so nothing is lost: a 7-second window
   # opened by a kill, worth 3 m.
-  - kind: out_of_scope
-    clause: "On Kill: +3m Punch Through for 7 seconds"
-    reason: one_target
+  # see notes: one_target_is_not_an_edge
+  # from: "On Kill: +3m Punch Through for 7 seconds"
+  - kind: unmodelled_punch_through_on_kill_for_a_window
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
