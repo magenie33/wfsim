@@ -10452,6 +10452,15 @@ function gainStop(why) {
   gainScan.failed = !!why;
   renderQuickCalc();
   renderCalcStatus();
+  // THE LIST THAT ASKED IS REPAINTED, and this is the only place that can do
+  // it: `repaint` belongs to the caller and the two renders above do not reach
+  // it. Ticks are throttled to 250 ms, so a scan whose last candidate lands
+  // inside that window drew its final frame one short — the counter froze at
+  // 67/68 with every answer present, which reads as one option that never
+  // finishes. The same missing frame stranded the QUEUE, whose turn is taken
+  // in the tick's `!running` branch, so the request waiting behind this scan
+  // was never started either.
+  if (gainScan.tick) { try { gainScan.tick(gainScan); } catch (_) { /* a list that went away */ } }
 }
 
 async function scanGains(axis, onTick) {
@@ -10474,7 +10483,7 @@ async function scanGains(axis, onTick) {
   // only when the scan actually finished; `want` is what a live scan is FOR,
   // which is what the interrupt check compares against.
   gainScan = { key: null, want: gainKey(), axis, running: true, base: 0, floor: 0,
-    phase: "", by: {}, done: 0,
+    phase: "", by: {}, done: 0, tick: onTick,
     total: cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0),
     ids: new Set(cands.map((c) => c.id)), note: name, metric: "", lanesLost: 0 };
   // THE BAR APPEARS WHEN THE WORK STARTS, not when the first candidate lands.
