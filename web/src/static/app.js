@@ -10566,7 +10566,7 @@ async function scanGains(axis, repaint) {
   // only when the scan actually finished; `want` is what a live scan is FOR,
   // which is what the interrupt check compares against.
   gainScan = { key: null, want: gainKey(), axis, running: true, base: 0, floor: 0,
-    phase: "", by: {}, done: 0, repaint, beat: Date.now(),
+    phase: "", by: {}, refused: {}, done: 0, repaint, beat: Date.now(),
     total: cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0),
     ids: new Set(cands.map((c) => c.id)), note: name, metric: "", lanesLost: 0 };
   // THE BAR APPEARS WHEN THE WORK STARTS, not when the first candidate lands.
@@ -10652,6 +10652,18 @@ async function scanGains(axis, repaint) {
       gainScan.done++;
       if (g) {
         gainScan.by[c.id] = { ...gainOver(g, base), runs: scenario.runs };
+      } else if (r.error) {
+        // THE ENGINE ANSWERED, AND THE ANSWER IS NO — which is not a failure.
+        //
+        // A mod the weapon cannot take with these evolutions ("it needs the
+        // same trigger on every firing mode") was counted as a HOLE, so the
+        // scan could never be complete, never stamped its key, and re-ran on
+        // every request for the life of the page. One legal refusal in eighty
+        // was enough: the Torid's list never settled.
+        //
+        // Recorded rather than dropped, because the reader asked what this
+        // option is worth and "you cannot equip it" is the answer.
+        gainScan.refused[c.id] = String(r.error);
       }
       calcDirty();
     }
@@ -10702,7 +10714,7 @@ async function scanGains(axis, repaint) {
   // somewhere to run; ONCE, because a second refusal means the pool is not
   // coming back and a loop against that is a hang rather than a recovery.
   if (gainScan.lanesLost) {
-    for (const c of cands.filter((x) => !gainScan.by[x.id])) {
+    for (const c of cands.filter((x) => !gainScan.by[x.id] && !gainScan.refused[x.id])) {
       if (!live()) return;
       const r = await laneAsk(freeLane(), "/api/simulate",
         { ...buildPayload(), ...scenario, ...c.payload }, live);
@@ -10710,16 +10722,24 @@ async function scanGains(axis, repaint) {
       if (r === null) break;             // still gone: stop rather than spin
       const g = readGain(r, useKills);
       if (g) gainScan.by[c.id] = { ...gainOver(g, base), runs: scenario.runs };
+      else if (r.error) gainScan.refused[c.id] = String(r.error);
       calcDirty();
     }
   }
   // A SCAN WITH HOLES IS NOT AN ANSWER, so the key stays null and the next
   // request re-asks. The reader is told how many are missing rather than shown
   // a ranking that is quietly short.
-  const holes = cands.filter((c) => !gainScan.by[c.id]).length;
+  // AN ANSWER OF "NO" IS STILL AN ANSWER, so a refused option is not a hole.
+  // Only a candidate nobody ever heard back about is.
+  const holes = cands.filter((c) => !gainScan.by[c.id] && !gainScan.refused[c.id]).length;
   if (holes) {
-    gainStop(tr("{n} of {total} could not be measured — the calculator lost a worker")
-      .replace("{n}", holes).replace("{total}", cands.length));
+    // …AND THE REASON GIVEN IS THE REASON. Blaming a lost worker when none was
+    // lost sends the reader to rebuild a pool that was never the problem.
+    gainStop(gainScan.lanesLost
+      ? tr("{n} of {total} could not be measured — the calculator lost a worker")
+        .replace("{n}", holes).replace("{total}", cands.length)
+      : tr("{n} of {total} could not be measured")
+        .replace("{n}", holes).replace("{total}", cands.length));
     return;
   }
   // FINISHED, so the fight it answers is recorded — and only now.
@@ -10889,6 +10909,14 @@ const gainChipFor = (id, where) => {
   // The scan already counts itself; it just said so nowhere near the list being
   // read. `gainOf` has checked the key, so this only marks rows on the axis
   // actually being measured.
+  // REFUSED, AND THE ROW SAYS WHY. A row with no chip reads as one nobody got
+  // to; this one was measured and cannot be equipped, which is a different
+  // thing and the only one the reader can act on.
+  const no = gainAbout() === gainKey() ? (gainScan.refused || {})[id] : null;
+  if (no) {
+    return `<span class="gainchip no" title="${escHtml(no)}">${
+      escHtml(tr("cannot equip"))}</span>`;
+  }
   if (!g) {
     return gainScan.running && gainScan.want === gainKey()
       ? `<span class="gainchip pend" title="${escHtml(

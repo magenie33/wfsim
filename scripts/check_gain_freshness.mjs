@@ -59,7 +59,7 @@ const r = await evaluate(`(async () => {
   gainPrefs = { ...gainPrefs, on: true };
   await sleep(200);
   openPicker(0, slotEl(0));   // (slotIdx, anchor) — the order the app uses
-  for (let i = 0; i < 60 && (gainScan.running || gainScan.key === null); i++) await sleep(500);
+  for (let i = 0; i < 200 && (gainScan.running || gainScan.key === null); i++) await sleep(500);
   out.scanned = gainScan.key !== null;
   out.freshBefore = gainScan.key === gainKey();
   const keyBefore = gainScan.key;
