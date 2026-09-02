@@ -9814,7 +9814,12 @@ const cardLines = (o, r, fallback) =>
 
 // One slot card (regular or exilus) with its polarity / rank / menu wiring.
 function buildSlot(i) {
-  const s = slots[i];
+  // AN INDEX WITH NO ENTRY IS AN EMPTY SLOT, and this has to be total over the
+  // nine of them. `slots` starts empty and is filled while a weapon is applied,
+  // so anything that redraws the build during that window — the riven names
+  // arriving, say — asked for a slot that did not exist yet and took the whole
+  // page down with it, at boot, for everyone.
+  const s = slots[i] || {};
   const el = document.createElement("div");
   const m = s.mod ? modById(s.mod) : null;
   // THE SLOT'S NUMBER, because the picker already speaks it and the grid did
