@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 4883
+submissions: 4887
 engine: 8d17981e30023c55e9af4d645931ef3125398725
 entries:
   - weapon: acceltra_prime
@@ -30427,7 +30427,7 @@ entries:
     listed: false
     score: 40.437345634153544
     fp: cf01a67b6b261a79
-    cost: 42.161
+    cost: 42.284
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, high_voltage, riven, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -31869,7 +31869,7 @@ entries:
     listed: false
     score: 35.87207344547847
     fp: 32e703a811766928
-    cost: 58.258
+    cost: 60.320
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, riven, malignant_force, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_merciless]
@@ -32609,7 +32609,7 @@ entries:
     listed: false
     score: 34.240214705316255
     fp: aa49c50563b39c1e
-    cost: 36.337
+    cost: 36.939
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, high_voltage, riven, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -32869,7 +32869,7 @@ entries:
     listed: false
     score: 33.472230940568814
     fp: 98733218a17b720b
-    cost: 28.556
+    cost: 28.681
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, high_voltage, malignant_force, primed_cryo_rounds, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_merciless]
@@ -34531,7 +34531,7 @@ entries:
     listed: false
     score: 29.914015073907084
     fp: 283fe55e8ee61773
-    cost: 48.758
+    cost: 37.923
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, high_voltage, malignant_force, primed_cryo_rounds, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -34630,6 +34630,19 @@ entries:
     cost: 23.512
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, hypothermic_shell, venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 29.666666666666668
+    fp: 9121574aaf1107ed
+    cost: 25.964
+    mods: [amalgam_serration, galvanized_chamber, heavy_caliber, critical_delay, vital_sense, high_voltage, riven, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -37006,6 +37019,19 @@ entries:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 25.991559164496685
+    fp: b235de7d9395f35f
+    cost: 50.141
+    mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, high_voltage, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [cold, critical_chance, critical_damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -37309,7 +37335,7 @@ entries:
     listed: false
     score: 25.64418171636872
     fp: 02b89e313dc85c56
-    cost: 41.002
+    cost: 41.516
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, high_voltage, malignant_force, primed_cryo_rounds, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -39132,7 +39158,7 @@ entries:
     listed: false
     score: 22.935939265671763
     fp: 83d28a0e99fb561c
-    cost: 41.263
+    cost: 31.012
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, high_voltage, malignant_force, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -39189,6 +39215,19 @@ entries:
     riven:
       bonuses: [damage, heat, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 22.848002559409395
+    fp: 239d4e2301e54262
+    cost: 41.929
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, high_voltage, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [cold, critical_chance, critical_damage]
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
@@ -40014,6 +40053,19 @@ entries:
     riven:
       bonuses: [damage, heat, multishot]
       malus: projectile_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 21.73414775369508
+    fp: 5416d164662c5b9b
+    cost: 28.880
+    mods: [amalgam_serration, galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, high_voltage, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [cold, critical_chance, critical_damage]
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -43892,7 +43944,7 @@ entries:
     listed: false
     score: 16.967843418166062
     fp: aa49c50563b39c1e
-    cost: 37.198
+    cost: 34.123
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, primed_cryo_rounds, riven, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -46445,7 +46497,7 @@ entries:
     listed: false
     score: 13.905904799346493
     fp: 02b89e313dc85c56
-    cost: 57.215
+    cost: 45.083
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, primed_cryo_rounds, riven, malignant_force, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -58331,7 +58383,7 @@ entries:
     listed: false
     score: 4.972028977872463
     fp: aa49c50563b39c1e
-    cost: 56.431
+    cost: 56.300
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, primed_cryo_rounds, high_voltage, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -58794,6 +58846,19 @@ entries:
     arcanes: [secondary_enervate]
     riven:
       bonuses: [critical_chance, multishot, status_chance]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 4.614956527686638
+    fp: b235de7d9395f35f
+    cost: 137.941
+    mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, high_voltage, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [cold, critical_chance, critical_damage]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
@@ -59775,7 +59840,7 @@ entries:
     listed: false
     score: 3.91877920372684
     fp: cf01a67b6b261a79
-    cost: 114.741
+    cost: 102.182
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, high_voltage, riven, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -61148,7 +61213,7 @@ entries:
     listed: false
     score: 2.9007526631075273
     fp: aa49c50563b39c1e
-    cost: 69.048
+    cost: 71.277
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, high_voltage, riven, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -62057,6 +62122,19 @@ entries:
       bonuses: [damage, impact, multishot]
       malus: reload_speed
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 2.569215513359824
+    fp: 9121574aaf1107ed
+    cost: 62.751
+    mods: [amalgam_serration, galvanized_chamber, heavy_caliber, critical_delay, vital_sense, high_voltage, riven, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ocucor
     mode: base
     listed: false
@@ -62096,6 +62174,19 @@ entries:
       bonuses: [critical_chance, multishot]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 2.5400926691220467
+    fp: 5416d164662c5b9b
+    cost: 60.714
+    mods: [amalgam_serration, galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, high_voltage, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [cold, critical_chance, critical_damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
     listed: false
@@ -62177,7 +62268,7 @@ entries:
     listed: false
     score: 2.5111540879853713
     fp: 283fe55e8ee61773
-    cost: 127.966
+    cost: 129.234
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, high_voltage, malignant_force, primed_cryo_rounds, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -62720,6 +62811,19 @@ entries:
   - weapon: torid
     mode: base
     listed: false
+    score: 2.291252450241903
+    fp: 239d4e2301e54262
+    cost: 81.115
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, high_voltage, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [cold, critical_chance, critical_damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    listed: false
     score: 2.28852079981654
     fp: 30df33d9143455de
     cost: 13.645
@@ -63047,7 +63151,7 @@ entries:
     listed: false
     score: 2.21185134754609
     fp: 02b89e313dc85c56
-    cost: 106.949
+    cost: 107.909
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, high_voltage, malignant_force, primed_cryo_rounds, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -64078,7 +64182,7 @@ entries:
     listed: false
     score: 1.9287906756030673
     fp: 83d28a0e99fb561c
-    cost: 58.316
+    cost: 81.131
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, high_voltage, malignant_force, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -66022,7 +66126,7 @@ entries:
     listed: false
     score: 1.2875997231476728
     fp: 83e4f74b265a4bb7
-    cost: 15.152
+    cost: 11.655
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, magnetic_might, sentient_surge, riven, primed_convulsion, pathogen_rounds]
     arcanes: [secondary_enervate]
     riven:
@@ -66076,7 +66180,7 @@ entries:
     listed: false
     score: 1.2700453540252483
     fp: 8d9582d110ad58ec
-    cost: 20.592
+    cost: 20.563
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, riven, primed_convulsion, pathogen_rounds]
     arcanes: [secondary_enervate]
     riven:
@@ -66088,7 +66192,7 @@ entries:
     listed: false
     score: 1.268543907660661
     fp: 98733218a17b720b
-    cost: 88.607
+    cost: 86.183
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, high_voltage, malignant_force, primed_cryo_rounds, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_merciless]
@@ -66911,7 +67015,7 @@ entries:
     listed: false
     score: 1.0178600346684734
     fp: 32e703a811766928
-    cost: 95.202
+    cost: 74.106
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, riven, malignant_force, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_merciless]
@@ -66948,7 +67052,7 @@ entries:
     listed: false
     score: 1.00734458107408
     fp: aa49c50563b39c1e
-    cost: 53.196
+    cost: 67.179
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, primed_cryo_rounds, riven, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -67706,7 +67810,7 @@ entries:
     listed: false
     score: 0.9049018542311688
     fp: 02b89e313dc85c56
-    cost: 65.592
+    cost: 82.035
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, primed_cryo_rounds, riven, malignant_force, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
@@ -69502,7 +69606,7 @@ entries:
     listed: false
     score: 0.5661851864261546
     fp: aa49c50563b39c1e
-    cost: 62.499
+    cost: 76.432
     mods: [amalgam_serration, galvanized_chamber, primed_shred, critical_delay, vital_sense, primed_cryo_rounds, high_voltage, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
