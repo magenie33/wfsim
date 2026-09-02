@@ -10769,10 +10769,19 @@ mod melee {
             r.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count()
         };
         assert_eq!(reached(&[]), 1, "a 2.5 m swing should find only the body at contact");
-        assert!(
-            reached(&["primed_reach"]) > 1,
-            "a 5.5 m swing found nobody 3.5 m away",
-        );
+        // REACH IS THE WEDGE'S RADIUS, NOT ITS ANGLE, and the two combos show
+        // both halves on the same ring. Raging Whirlwind spins twice
+        // (`Types = { "360" }`), so once the radius covers the ring it takes all
+        // nine; Winding Temper is all sweeps, so it takes the aimed body and the
+        // three inside `MELEE_ARC_DEG` — the ring stands at 45-degree steps, and
+        // a 90-degree wedge holds the one in front and one either side.
+        let sweep = |mods: &[&str]| {
+            let r = magistar("magistar_block", mods, 20.0, Some(4.0));
+            r.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count()
+        };
+        assert_eq!(reached(&["primed_reach"]), 9, "a 5.5 m spin should take the whole ring");
+        assert_eq!(sweep(&[]), 1, "a 2.5 m sweep should find only the body at contact");
+        assert_eq!(sweep(&["primed_reach"]), 4, "a 5.5 m sweep takes its wedge and no more");
     }
 
     /// **CORRUPT CHARGE IS A TRADE, AND BOTH HALVES REACH THE FIGHT** — but
