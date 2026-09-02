@@ -10386,7 +10386,7 @@ async function scanGains(axis, onTick) {
   // only when the scan actually finished; `want` is what a live scan is FOR,
   // which is what the interrupt check compares against.
   gainScan = { key: null, want: gainKey(), axis, running: true, base: 0, floor: 0,
-    by: {}, done: 0,
+    phase: "", by: {}, done: 0,
     total: cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0),
     ids: new Set(cands.map((c) => c.id)), note: name, metric: "", lanesLost: 0 };
   // THE BAR APPEARS WHEN THE WORK STARTS, not when the first candidate lands.
@@ -10400,14 +10400,33 @@ async function scanGains(axis, onTick) {
   // buying; DPS is the fallback for a target this build cannot kill at all,
   // where the ratio has no denominator. The SCENARIO decides which.
   let useKills = (scenario.metric || "kpm") !== "dps";
-  const run = async (override) => {
-    const r = await api("/api/simulate", { ...buildPayload(), ...scenario, ...override });
+  // THE BASELINE IS SHARDED, like every other simulation the page runs.
+  //
+  // It went through `api`, which takes ONE lane — so the step every candidate
+  // waits on ran single-threaded while the rest of the pool idled, and the
+  // candidates that follow it use the whole machine. On a crowd at a real run
+  // count that is tens of seconds of a fifteen-core machine doing nothing, and
+  // it is the whole of what "stuck at 0/77" was.
+  //
+  // `simulateFleet` falls back to one call where sharding would not pay, and
+  // the merge is `simulate_merged` — exactly what one worker would have
+  // produced — so this is the same answer, sooner.
+  const run = async (override, phase) => {
+    gainScan.phase = phase || "";
+    if (onTick) onTick(gainScan);
+    const r = await simulateFleet({ ...buildPayload(), ...scenario, ...override });
     if (!r || !r.ok) return null;
     return readGain(r, useKills);
   };
-  let base = await run({});
+  let base = await run({}, tr("measuring the baseline"));
   if (!live()) return;
-  if (!base?.v && useKills) { useKills = false; base = await run({}); if (!live()) return; }
+  // NOTHING DIED, so the ratio has no denominator and the question becomes DPS
+  // — a SECOND full baseline, and the reader is told rather than left at 0.
+  if (!base?.v && useKills) {
+    useKills = false;
+    base = await run({}, tr("nothing died — measuring the baseline again in DPS"));
+    if (!live()) return;
+  }
   if (!base?.v) { gainStop("the base fight did not measure"); return; }
   gainScan.base = base.v;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
@@ -10415,6 +10434,8 @@ async function scanGains(axis, onTick) {
   // server measured across the runs it was already paid for, not a second run
   // at another seed. See `readGain`.
   gainScan.floor = base.se / base.v;
+  // …AND THE CANDIDATES ARE THE COUNTER'S OWN, so the phase line steps aside.
+  gainScan.phase = "";
   // One shared cursor, every lane pulling the next candidate as it frees up —
   // so a slow candidate delays itself and nothing else. `live()` is checked
   // after each await, which is what bounds an interrupted scan to one
@@ -10447,11 +10468,15 @@ async function scanGains(axis, onTick) {
   // which is all a position near the bottom needs to be right about.
   if (refine) {
     const deep = { ...scenario, runs: refine };
+    // …AND THE SECOND PASS IS SHARDED FOR THE SAME REASON, at a HIGHER run
+    // count than the first: one lane there is the slowest call in the scan.
     const runDeep = async (override) => {
-      const r = await api("/api/simulate", { ...buildPayload(), ...deep, ...override });
+      const r = await simulateFleet({ ...buildPayload(), ...deep, ...override });
       if (!r || !r.ok) return null;
       return readGain(r, useKills);
     };
+    gainScan.phase = tr("re-measuring the leaders");
+    if (onTick) onTick(gainScan);
     const deepBase = await runDeep({});
     if (!live()) return;
     gainScan.done++;
@@ -11226,8 +11251,16 @@ function renderCalcStatus() {
   // NOTHING TO SAY: no scan, no losses, nothing failed.
   if (!busy && !lost && !gainScan.failed) { box.hidden = true; return; }
   box.hidden = false;
+  // THE PHASE, WHERE THERE IS ONE. `0/77` is not a stall — it is the BASELINE
+  // being measured, which every candidate is compared against and which runs
+  // before any of them. It can be two of them, when nothing died under the
+  // ruler's own metric and the question falls back to DPS. A counter that only
+  // counts candidates has nothing to say through either, and the reader reads
+  // the silence as a hang.
   const head = busy
-    ? `${escHtml(tr("calculating"))} ${gainScan.done}/${gainScan.total}`
+    ? (gainScan.phase
+        ? escHtml(gainScan.phase)
+        : `${escHtml(tr("calculating"))} ${gainScan.done}/${gainScan.total}`)
     : (gainScan.failed ? escHtml(tr("the last calculation did not finish"))
                        : escHtml(tr("calculator")));
   if (!calcStatusOpen) {
@@ -11245,6 +11278,13 @@ function renderCalcStatus() {
         escHtml(gainScenario().name)}</b></div>` +
       `<div class="cs-row"><span>${escHtml(tr("measuring"))}</span><b>${
         escHtml(gainScan.note && !gainScan.failed ? gainScan.note : "—")}</b></div>` +
+      // WHAT STEP, AND HOW FAR THROUGH IT. Two facts, because the counter is
+      // only meaningful during the candidate pass and the phase is only
+      // meaningful outside it.
+      `<div class="cs-row"><span>${escHtml(tr("step"))}</span><b>${
+        escHtml(gainScan.phase || tr("ranking the options"))}</b></div>` +
+      `<div class="cs-row"><span>${escHtml(tr("ranked"))}</span><b>${
+        gainScan.done} / ${gainScan.total}</b></div>` +
       // THE ONE FACT THAT WAS MISSING. Workers alive against workers made: a
       // pool that has lost half of itself is the difference between slow and
       // broken, and nothing said it.

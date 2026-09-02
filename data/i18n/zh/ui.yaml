@@ -1211,6 +1211,12 @@ ui:
   # The board page FILTERS a list; the benchmark bar PICKS one of two rankings.
   "Without riven": "无裂罅"
   "With riven": "有裂罅"
+  "measuring the baseline": "正在测基准配装"
+  "nothing died — measuring the baseline again in DPS": "没有击杀——改用 DPS 重测基准"
+  "re-measuring the leaders": "正在复测领先的几个"
+  "ranking the options": "正在给选项排序"
+  "step": "当前步骤"
+  "ranked": "已排序"
   "calculating": "计算中"
   "the last calculation did not finish": "上一次计算没有跑完"
   "calculator": "计算器"
