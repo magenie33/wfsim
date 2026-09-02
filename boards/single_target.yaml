@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 4869
+submissions: 4870
 engine: 8d17981e30023c55e9af4d645931ef3125398725
 entries:
   - weapon: acceltra_prime
@@ -13018,6 +13018,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 74.02508209103672
+    fp: 81a808c501bc4e0f
+    cost: 13.217
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 73.35658342567288
     fp: c7130dc78ab85e6b
     cost: 13.684
@@ -13908,6 +13921,19 @@ entries:
     score: 20.88210524189049
     fp: cb75a07bd5ecb19f
     cost: 42.451
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: base
+    score: 20.88210524189049
+    fp: 81a808c501bc4e0f
+    cost: 42.818
+    exilus: primed_steady_hands
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds, riven]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_enervate]
@@ -71269,7 +71295,7 @@ entries:
     probe: true
     score: 0.9066847214584638
     fp: e13ad0e83c377adc
-    cost: 0.193
+    cost: 0.190
     mods: [heavy_caliber, split_chamber, serration, speed_trigger, vital_sense, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_deadhead]
   - weapon: aeolak
@@ -71278,7 +71304,7 @@ entries:
     probe: true
     score: 0.156293670201759
     fp: e13ad0e83c377adc
-    cost: 0.039
+    cost: 0.040
     mods: [heavy_caliber, split_chamber, serration, speed_trigger, vital_sense, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_deadhead]
   - weapon: aeolak
@@ -71287,7 +71313,7 @@ entries:
     probe: true
     score: 1.0155632869784192
     fp: 9a7d1b36ce88db68
-    cost: 0.156
+    cost: 0.154
     mods: [heavy_caliber, split_chamber, serration, bane_of_grineer, rifle_aptitude, vital_sense, hellfire, wildfire]
     arcanes: [primary_deadhead]
   - weapon: aeolak
@@ -71305,7 +71331,7 @@ entries:
     probe: true
     score: 5.385715309209356
     fp: bf845c2fc4c8f97a
-    cost: 0.315
+    cost: 0.294
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, rifle_elementalist, speed_trigger, vital_sense, hellfire]
     arcanes: [primary_crux]
     valence: impact
@@ -71315,7 +71341,7 @@ entries:
     probe: true
     score: 0.9465262944334604
     fp: ea83a56a803d97d9
-    cost: 0.537
+    cost: 0.545
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71326,7 +71352,7 @@ entries:
     probe: true
     score: 6.583589118382759
     fp: ea83a56a803d97d9
-    cost: 0.231
+    cost: 0.221
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71337,7 +71363,7 @@ entries:
     probe: true
     score: 1.08659288399098
     fp: 561dd8cf0ac9bd9c
-    cost: 0.796
+    cost: 0.813
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71348,7 +71374,7 @@ entries:
     probe: true
     score: 1.0210200694681288
     fp: d5e9b1ae61ee8889
-    cost: 0.252
+    cost: 0.247
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, hammer_shot, rifle_elementalist, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71359,7 +71385,7 @@ entries:
     probe: true
     score: 5.833384061310063
     fp: d5e9b1ae61ee8889
-    cost: 0.144
+    cost: 0.137
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, hammer_shot, rifle_elementalist, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71370,7 +71396,7 @@ entries:
     probe: true
     score: 0.37542799101026075
     fp: e2c7aeff89090c4a
-    cost: 0.420
+    cost: 0.423
     exilus: terminal_velocity
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
@@ -71381,7 +71407,7 @@ entries:
     probe: true
     score: 2.3074431860427866
     fp: e2c7aeff89090c4a
-    cost: 0.257
+    cost: 0.248
     exilus: terminal_velocity
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
