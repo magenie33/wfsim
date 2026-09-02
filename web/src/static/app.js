@@ -10396,10 +10396,21 @@ async function scanGains(axis, onTick) {
   // sat silent through exactly the wait the strip exists to explain, and the
   // bar turned up only once there was already an answer to show.
   if (onTick) onTick(gainScan);
-  // Kill progress is the optimizer's metric and the one a player is actually
-  // buying; DPS is the fallback for a target this build cannot kill at all,
-  // where the ratio has no denominator. The SCENARIO decides which.
-  let useKills = (scenario.metric || "kpm") !== "dps";
+  // THE SCENARIO'S OWN METRIC, AND NOTHING ELSE.
+  //
+  // There is no fallback to another one, and there must not be: a ruler
+  // declares what it measures, and a ranking quietly produced in a different
+  // unit answers a question nobody asked. It cost a second full baseline to do
+  // it, and the day a ruler measures something that is neither — how fast a
+  // build applies status TYPES, say — a hard-coded pair is not a fallback, it
+  // is a wrong answer.
+  //
+  // IT NEVER HAD ANYTHING TO FALL BACK FOR. Kill progress is not a kill COUNT:
+  // it is "kills plus the depleted fraction of the current target's pool", so a
+  // build that kills nothing still scores what it drained. Zero means the build
+  // dealt no damage at all — and a build that deals no damage has no DPS
+  // either, so the second baseline measured the same nothing.
+  const useKills = (scenario.metric || "kpm") !== "dps";
   // THE BASELINE IS SHARDED, like every other simulation the page runs.
   //
   // It went through `api`, which takes ONE lane — so the step every candidate
@@ -10420,13 +10431,6 @@ async function scanGains(axis, onTick) {
   };
   let base = await run({}, tr("measuring the baseline"));
   if (!live()) return;
-  // NOTHING DIED, so the ratio has no denominator and the question becomes DPS
-  // — a SECOND full baseline, and the reader is told rather than left at 0.
-  if (!base?.v && useKills) {
-    useKills = false;
-    base = await run({}, tr("nothing died — measuring the baseline again in DPS"));
-    if (!live()) return;
-  }
   if (!base?.v) { gainStop("the base fight did not measure"); return; }
   gainScan.base = base.v;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
