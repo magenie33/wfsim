@@ -7724,7 +7724,11 @@ function renderBenchmarkBarIn(bar, cfg) {
   const hint = cfg.rowHintTitle || "";
   bar.hidden = false;
   bar.innerHTML =
-    `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${ps.length}</b></span>` +
+    // HOW MANY, BY THE DOMAIN'S OWN RECKONING. An official scenario is one per
+    // ruler and the count is the list; a board BUILD appears once per cell it
+    // was ranked in, and the label says "builds".
+    `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${
+      cfg.count ? cfg.count(ps) : ps.length}</b></span>` +
     // THE RULER. Searched, because this list is the one designed to reach a
     // hundred, and every row of the board hangs off which one you are reading.
     ddButton(`dd-bench-${cfg.domain}`, {
@@ -8053,6 +8057,33 @@ async function loadBoard() {
 /// mode you happened to be in and quietly report a different number than the
 /// board does — the same shape as the scenario leak, and worse, because this
 /// one has a published figure sitting next to it.
+
+/// A BOARD ROW'S BUILD, WITHOUT THE CELL IT WAS RANKED IN.
+///
+/// A CELL IS ONE BENCHMARK, ONE MODE AND ONE RIVEN-NESS, and a build is scored
+/// in every one its weapon has — so counting ROWS counts it up to
+/// `benchmarks x modes` times, by a multiple that is the weapon's mode count.
+/// That makes a row count not merely large but INCOMPARABLE between weapons.
+///
+/// DERIVED BY EXCLUSION, never by listing the axes — the rule
+/// `build_site_app.py`'s `_ident` states, because a hand-written list is the
+/// copy that drops the next axis in silence. Out comes the cell, the
+/// measurement and the presentation.
+///
+/// …AND A RIVEN IS ITS SHAPE: each cell searches its own best corner, so the
+/// rolls differ per cell and are a measurement like the score.
+const BOARD_CELL_KEYS = ["benchmark", "mode", "score", "rank", "shown", "source"];
+function boardRowIdentity(row) {
+  const build = {};
+  for (const k of Object.keys(row || {}).sort()) {
+    if (BOARD_CELL_KEYS.includes(k)) continue;
+    build[k] = k === "riven" && row[k] && typeof row[k] === "object"
+      ? { bonuses: row[k].bonuses || [], malus: row[k].malus || "" }
+      : row[k];
+  }
+  return JSON.stringify(build);
+}
+
 const builtinBuilds = () => {
   const w = weaponInfo($("weapon").value) || {};
   // IN THE RULERS' OWN ORDER, which puts the PRIMARY one first — the same
@@ -8380,7 +8411,14 @@ function renderPresetBar() {
   // one selects the same way and a ⧉ copies the same way. What differs is only
   // which entries each draws and which operations it offers.
   const buildsCfg = buildBarCfg();
-  renderBenchmarkBarIn($("bench-bar-builder-builds"), { ...buildsCfg, benchLabel: tr("Benchmark builds"), benchHint: tr("submitted by players, scored here — read-only") });
+  renderBenchmarkBarIn($("bench-bar-builder-builds"), {
+    ...buildsCfg,
+    benchLabel: tr("Benchmark builds"),
+    benchHint: tr("submitted by players, scored here — read-only"),
+    // DISTINCT BUILDS, not rows: a build is ranked in every cell its weapon
+    // has, and the label says what it counts. See `boardRowIdentity`.
+    count: (ps) => new Set(ps.map((p) => boardRowIdentity(p.board || {}))).size,
+  });
   renderPresetBarIn($("preset-bar-builder-builds"), buildsCfg);
   renderCurrentBuild();
 }
