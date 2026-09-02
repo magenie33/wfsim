@@ -73179,7 +73179,7 @@ entries:
     probe: true
     score: 5.629220504797295
     fp: e61181db8e5f301f
-    cost: 0.315
+    cost: 0.321
     mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
@@ -73189,7 +73189,7 @@ entries:
     probe: true
     score: 18.37880951658978
     fp: e61181db8e5f301f
-    cost: 2.763
+    cost: 2.429
     mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
