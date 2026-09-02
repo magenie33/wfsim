@@ -99,4 +99,31 @@ for (const v of (desk.slotIdx >= 0 ? [desk, phone] : [])) {
   );
 }
 
+// …AND THE SAME PAGE RELOADED WITH THAT RIVEN ALREADY IN STORAGE.
+//
+// A DIFFERENT PATH, not a second opinion: with a riven saved,
+// `refreshRivenNames` awaits the engine and whatever it redraws lands after
+// `applyWeapon` has finished, where with none it runs straight through. Both
+// orders have to draw a build. Whether the page BOOTED is not asked here —
+// `cdp.mjs` asks it of every evaluate now, so a crash on either path fails this
+// check without it carrying a rule of its own.
+await send("Page.navigate", { url: `${BASE}/weapons/Ballistica_Prime` });
+await sleep(14000);
+
+const boot = await evaluate(`(() => ({
+  saved: loadPresetList(RIVENS).length,
+  drew: document.querySelectorAll('#mod-slots > .slot').length,
+}))()`);
+
+check(
+  "the reload really had a riven in storage",
+  boot.saved > 0,
+  `saved ${boot.saved}`,
+);
+check(
+  "…and the build is drawn on that path too",
+  boot.drew === 8,
+  `drew ${boot.drew}`,
+);
+
 process.exit(0);

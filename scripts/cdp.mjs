@@ -246,6 +246,30 @@ export async function openApp(o = {}) {
           `never wrote, look for a backtick or \${ inside the page-side body ` +
           `of ${process.argv[1]} — it ends the template literal early.`);
       }
+      // A PAGE THAT DID NOT BOOT FAILS THE CHECK THAT IS STANDING ON IT.
+      //
+      // The boot guard in `index.html` puts up `#boot-note` for a window error,
+      // an unhandled rejection, or twenty seconds of silence — and a check can
+      // read a perfectly good DOM through all three, because the app draws
+      // enough to answer before it gives up. A crash on cold load shipped and
+      // not ONE check went red, so this is asked here rather than in any of
+      // them: `evaluate` is the one thing every check does, always after a load.
+      //
+      // LATCHED, and it never throws. One loud line and one failure, so a
+      // broken boot cannot cascade into fifty confusing assertion failures and
+      // cannot be mistaken for the check's own subject.
+      if (!app.bootBroken) {
+        const b = await send("Runtime.evaluate", {
+          expression: "(()=>{var e=document.getElementById('boot-note');"
+            + "return e?e.textContent.slice(0,200):''})()",
+          returnByValue: true, awaitPromise: false,
+        });
+        const note = b.result?.result?.value;
+        if (note) {
+          app.bootBroken = true;
+          app.check("the page booted", false, note.replace(/\s+/g, " ").trim());
+        }
+      }
       return r.result?.result?.value;
     },
 
