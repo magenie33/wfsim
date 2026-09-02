@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 4891
+submissions: 4892
 engine: 8d17981e30023c55e9af4d645931ef3125398725
 entries:
   - weapon: acceltra_prime
@@ -73173,3 +73173,23 @@ entries:
     cost: 3.032
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage]
     arcanes: [primary_debilitate]
+  - weapon: laetum
+    mode: base
+    listed: false
+    probe: true
+    score: 5.629220504797295
+    fp: e61181db8e5f301f
+    cost: 0.314
+    mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    probe: true
+    score: 18.37880951658978
+    fp: e61181db8e5f301f
+    cost: 2.744
+    mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]

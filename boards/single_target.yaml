@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 4891
+submissions: 4892
 engine: 8d17981e30023c55e9af4d645931ef3125398725
 entries:
   - weapon: acceltra_prime
@@ -36326,6 +36326,15 @@ entries:
     mods: [pistol_acuity, merciless_gunfight, seeker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
     arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 18.401497204311667
+    fp: 0085154420db156f
+    cost: 6.281
+    mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -51427,6 +51436,15 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, rime_rounds, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_debilitate]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 5.646772880046985
+    fp: 0085154420db156f
+    cost: 1.210
+    mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
   - weapon: torid
     mode: cycle
     listed: false
@@ -71894,7 +71912,7 @@ entries:
     probe: true
     score: 5.385715309209356
     fp: bf845c2fc4c8f97a
-    cost: 0.292
+    cost: 0.303
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, rifle_elementalist, speed_trigger, vital_sense, hellfire]
     arcanes: [primary_crux]
     valence: impact
