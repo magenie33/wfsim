@@ -73346,7 +73346,7 @@ entries:
     probe: true
     score: 0.058734344895310604
     fp: 6d68e9bd2f9bdcb0
-    cost: 0.167
+    cost: 0.183
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_crux]
@@ -73356,7 +73356,7 @@ entries:
     probe: true
     score: 0.05769470198651623
     fp: 8e7a6c3995e63322
-    cost: 0.166
+    cost: 0.181
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, thermite_rounds]
     arcanes: [primary_crux]
@@ -73366,7 +73366,7 @@ entries:
     probe: true
     score: 0.04248925556819649
     fp: bf1a786b7b77d70c
-    cost: 0.169
+    cost: 0.185
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, wildfire]
     arcanes: [primary_crux]
@@ -73376,7 +73376,7 @@ entries:
     probe: true
     score: 0.06670025330971223
     fp: ad668dd0321b9dee
-    cost: 0.172
+    cost: 0.188
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, malignant_force, wildfire]
     arcanes: [primary_crux]
@@ -73386,7 +73386,7 @@ entries:
     probe: true
     score: 0.06670025330971223
     fp: 70dda35c243124d9
-    cost: 0.172
+    cost: 0.188
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, rime_rounds, infected_clip, wildfire]
     arcanes: [primary_crux]
@@ -73396,7 +73396,7 @@ entries:
     probe: true
     score: 0.02562579843473289
     fp: d0eadbe1021321c6
-    cost: 0.253
+    cost: 0.259
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_crux]
@@ -73406,7 +73406,7 @@ entries:
     probe: true
     score: 0.1693744466126899
     fp: 961a8c21a287ed9b
-    cost: 0.261
+    cost: 0.273
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_deadhead]
     valence: impact
@@ -73416,7 +73416,7 @@ entries:
     probe: true
     score: 0.36275814553956565
     fp: defb2067100b8aa2
-    cost: 0.069
+    cost: 0.068
     mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
@@ -73426,7 +73426,7 @@ entries:
     probe: true
     score: 0.36275814553956565
     fp: defb2067100b8aa2
-    cost: 0.069
+    cost: 0.070
     mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, hollow_point, primed_convulsion, primed_heated_charge, deep_freeze, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
