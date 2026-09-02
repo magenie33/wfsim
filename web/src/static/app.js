@@ -10744,6 +10744,22 @@ async function scanGains(axis, repaint) {
   if (!base?.v) { gainStop("the base fight did not measure"); return; }
   gainScan.base = base.v;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
+  // HOW LONG THE REST WILL TAKE, from the rate this scan is actually going.
+  //
+  // NOT FROM THE BASELINE, which is the first real fight of the page and pays
+  // for wasm tiering up on a hot numeric loop — measured at about 4x, so an
+  // estimate built on it over-predicts fivefold. Nor from a model of the pool:
+  // throughput already contains the lane count, the machine, the fight and
+  // whatever else the browser is doing, and it corrects itself as any of them
+  // change.
+  //
+  // AFTER A FEW, because one candidate's wall time is mostly the round trip.
+  const candAt = Date.now();
+  const reckon = () => {
+    if (gainScan.done < 3) return;
+    const per = (Date.now() - candAt) / gainScan.done;
+    gainScan.etaMs = Math.round(per * Math.max(0, gainScan.total - gainScan.done));
+  };
   // ...and how far this same build moves on luck alone — the RESOLUTION the
   // server measured across the runs it was already paid for, not a second run
   // at another seed. See `readGain`.
@@ -10774,6 +10790,7 @@ async function scanGains(axis, repaint) {
       if (r === null) { gainScan.lanesLost++; return; }
       const g = readGain(r, useKills);
       gainScan.done++;
+      reckon();
       if (g) {
         gainScan.by[c.id] = { ...gainOver(g, base), runs: scenario.runs };
       } else if (r.error) {
@@ -11639,6 +11656,11 @@ function renderCalcStatus() {
   // ruler's own metric and the question falls back to DPS. A counter that only
   // counts candidates has nothing to say through either, and the reader reads
   // the silence as a hang.
+  // HOW LONG THIS WILL TAKE, from what the baseline actually cost — shown only
+  // while it is still true, and only when it is long enough to be worth
+  // reading. A number under a couple of seconds is noise a reader has to
+  // dismiss; a minute is the one they wanted before they started.
+  const left = busy && gainScan.etaMs ? Math.round(gainScan.etaMs / 1000) : 0;
   const head = busy
     ? (gainScan.phase
         ? escHtml(gainScan.phase)
@@ -11672,6 +11694,10 @@ function renderCalcStatus() {
       // broken, and nothing said it.
       `<div class="cs-row"><span>${escHtml(tr("workers"))}</span><b>${alive} / ${
         made.length || poolSize()}${lost ? ` — ${lost} ${escHtml(tr("lost"))}` : ""}</b></div>` +
+      (left > 2
+        ? `<div class="cs-row"><span>${escHtml(tr("about"))}</span><b>${
+          escHtml(tr("{s}s left").replace("{s}", left))}</b></div>`
+        : "") +
       (gainScan.failed
         ? `<div class="cs-why">${escHtml(gainScan.note || tr("unknown"))}</div>` : "") +
       // A WAY OUT THAT IS NOT A RELOAD. A reload rebuilds the same pool the

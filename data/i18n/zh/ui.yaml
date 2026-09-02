@@ -1225,6 +1225,8 @@ ui:
   "lost": "已失效"
   "unknown": "原因不明"
   "rebuild the calculator": "重建计算器"
+  "about": "预计"
+  "{s}s left": "还需 {s} 秒"
   "cannot equip": "无法装配"
   "{n} of {total} could not be measured": "{total} 项中有 {n} 项无法测算"
   "all {n} measured — none of them changes this fight": "{n} 项已全部测算 —— 没有一项会改变这场战斗"
