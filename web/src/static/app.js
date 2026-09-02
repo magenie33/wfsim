@@ -494,11 +494,55 @@ function setComputePct(pct) {
   renderComputePicker();
 }
 
+/// HOW LONG A LANE MAY SAY NOTHING before it is presumed gone, in ms.
+///
+/// Generous on purpose: a false kill costs one rebuilt worker, and the window
+/// only has to be shorter than "for ever". `loading` covers the wait before a
+/// worker's first word, which is a multi-megabyte module DOWNLOAD; `stall`
+/// covers a worker that has already spoken, which beats once a run.
+///
+/// Lowered by `check_calc_recovers.mjs`, which has to wedge a worker and then
+/// outlive the window to prove the recovery happens at all.
+const LANE_WATCHDOG = { loading: 90000, stall: 45000 };
+
 function makeLane() {
   const w = new Worker("/worker.js");
   const pending = new Map();
   const progress = new Map();
   let seq = 0, dead = false, busy = 0, warm = false, warming = null;
+  // WHEN THIS WORKER LAST SAID ANYTHING ABOUT A REQUEST — id to timestamp.
+  //
+  // A WORKER THAT NEITHER ANSWERS NOR FAILS was the one hang nothing caught.
+  // `onerror` covers a module that will not load and `abandon` covers a stop,
+  // and both SETTLE their waiters; a worker the browser reclaims mid-fight, or
+  // one whose wasm traps, does neither — so `lane.call` never settled, the
+  // scan's await never returned, `running` stayed true and `ensureGains`
+  // refused that list for the life of the page. No error, so the catch that
+  // exists for this never ran.
+  //
+  // The fix is to make SILENCE a bounded outcome rather than an infinite wait:
+  // a simulate beats once a run (see `worker.js`), so a lane that says nothing
+  // for the window below is presumed gone and settled like any other dead one.
+  const beat = new Map();
+  let dog = null;
+  const disarm = () => { if (dog) { clearInterval(dog); dog = null; } };
+  let spoke = false;
+  const perish = (why) => {
+    dead = true;
+    pending.forEach((res) => res({ ok: false, error: why, worker_dead: true }));
+    pending.clear(); progress.clear(); beat.clear(); busy = 0; disarm();
+  };
+  const arm = () => {
+    if (dog) return;
+    dog = setInterval(() => {
+      const cap = spoke ? LANE_WATCHDOG.stall : LANE_WATCHDOG.loading;
+      const now = Date.now();
+      let quiet = false;
+      beat.forEach((at) => { if (now - at > cap) quiet = true; });
+      if (quiet) perish("worker stopped answering");
+      else if (!beat.size) disarm();
+    }, 5000);
+  };
   // A LANE THAT CANNOT LOAD IS A LANE, NOT A DEAD PAGE.
   //
   // `worker.js` fetches a ~6 MB wasm module, and a fetch can fail — a flaky
@@ -517,11 +561,13 @@ function makeLane() {
   w.onerror = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     dead = true;
-    const why = String((e && e.message) || "worker failed to load");
-    pending.forEach((res) => res({ ok: false, error: why, worker_dead: true }));
-    pending.clear(); progress.clear(); busy = 0;
+    perish(String((e && e.message) || "worker failed to load"));
   };
   w.onmessage = (e) => {
+    // ANY word from the worker is proof of life, including one about a request
+    // whose progress nobody asked to see.
+    spoke = true;
+    if (beat.has(e.data.id)) beat.set(e.data.id, Date.now());
     if (e.data.kind === "progress") {
       const f = progress.get(e.data.id);
       if (f) f(e.data.done, e.data.total);
@@ -531,6 +577,8 @@ function makeLane() {
     if (r) {
       pending.delete(e.data.id);
       progress.delete(e.data.id);
+      beat.delete(e.data.id);
+      if (!beat.size) disarm();
       busy = Math.max(0, busy - 1);
       r(e.data.payload);
     }
@@ -553,6 +601,8 @@ function makeLane() {
       pending.forEach((res) => res({ ok: false, cancelled: true }));
       pending.clear();
       progress.clear();
+      beat.clear();
+      disarm();
       busy = 0;
     },
     send(msg, onProgress) {
@@ -560,6 +610,8 @@ function makeLane() {
         if (dead) { res({ ok: false, cancelled: true }); return; }
         const id = ++seq;
         pending.set(id, res);
+        beat.set(id, Date.now());
+        arm();
         busy += 1;
         if (onProgress) progress.set(id, onProgress);
         w.postMessage({ ...msg, id });
@@ -724,14 +776,37 @@ async function simulateFleet(body, onProgress) {
     if (onProgress) onProgress(done.reduce((a, b) => a + b, 0), total);
   };
   let at = 0;
-  const shards = await Promise.all(ls.map((lane, k) => {
+  // THE SLICES ARE KEPT, because a shard that has to be re-asked has to be
+  // re-asked for the SAME runs — a retry over a different range is a different
+  // answer wearing the same name.
+  const slice = ls.map((_, k) => {
     const count = Math.floor(runs / ls.length) + (k < runs % ls.length ? 1 : 0);
     const from = at;
     at += count;
-    return lane.send({ kind: "shard", body, from, count }, (d) => { done[k] = d; tick(); });
-  }));
+    return { from, count };
+  });
+  const shards = await Promise.all(ls.map((lane, k) => lane.send(
+    { kind: "shard", body, from: slice[k].from, count: slice[k].count },
+    (d) => { done[k] = d; tick(); })));
   // A CANCELLED SHARD CANCELS THE SIMULATION — there is no answer to merge from
   // an eighth of the runs, and the reader asked for it to stop.
+  if (shards.some((s) => s && s.cancelled)) return { ok: false, cancelled: true };
+  // A LOST LANE IS RE-ASKED ONCE, on a fresh worker.
+  //
+  // One reclaimed worker used to fail the WHOLE simulation, and for the quick
+  // calc this call is the BASELINE — so a single bad lane took a list whose
+  // other thirteen lanes were healthy and showed it nothing at all, which is
+  // indistinguishable from the calculator never having run. `laneAsk` has had
+  // this rule for a candidate all along; the one call every candidate is
+  // measured against cannot afford it less. ONCE, because a second refusal
+  // means the pool is not coming back and a loop against that is a hang.
+  for (let k = 0; k < shards.length; k++) {
+    const s = shards[k];
+    if (s && !s.worker_dead && !s.error) continue;
+    shards[k] = await freeLane().send(
+      { kind: "shard", body, from: slice[k].from, count: slice[k].count },
+      (d) => { done[k] = d; tick(); });
+  }
   if (shards.some((s) => s && s.cancelled)) return { ok: false, cancelled: true };
   if (shards.some((s) => !s || s.error)) {
     return shards.find((s) => s && s.error) || { ok: false, error: "a shard failed" };
@@ -740,7 +815,10 @@ async function simulateFleet(body, onProgress) {
   // reporting, so the bar completes here rather than sitting at 97% while the
   // last lane's answer is added up.
   if (onProgress) onProgress(total, total);
-  return ls[0].send({ kind: "merge", body, shards });
+  // NOT `ls[0]`, WHICH MAY BE THE LANE THAT DIED. Every run is in and the merge
+  // is arithmetic over sums — losing it to a corpse throws away the whole
+  // simulation at the last step, and `freeLane` never hands back one.
+  return freeLane().send({ kind: "merge", body, shards });
 }
 
 /// STOP EVERY WASM CALL IN FLIGHT, which is the only way to interrupt one: it
@@ -972,15 +1050,25 @@ async function api(path, body, onProgress) {
   if (path === "/api/optimize") return woptStart(body, body && body.__resume);
   if (path === "/api/optimize/status") return woptStatus();
   if (path === "/api/optimize/cancel") return woptCancel();
-  const r = await freeLane().call(path, body, onProgress);
-  // A LANE THAT DIED MID-CALL GETS ONE RETRY on a new one. The failure this is
-  // for is a transport failure — the module did not download — and those are
-  // usually not the second time. Once, because a retry loop against a genuinely
-  // broken deployment is a hang rather than a recovery.
-  if (r && r.worker_dead) {
+  // A LANE THAT DIED MID-CALL IS DROPPED AND THE CALL RE-ASKED ON A FRESH ONE.
+  //
+  // ONCE WAS NOT ENOUGH, and the assumption behind once was wrong: a refusal
+  // was read as "the deployment is broken, and it will be broken again", which
+  // is true of a module that will not download and false of a WORKER the
+  // browser reclaimed. Reclaims are not surgical — the renderer takes several
+  // at a time — so two dead lanes in a row is the ordinary shape of it, and a
+  // single retry handed the caller a failure with twelve healthy lanes idle.
+  // For the quick calc that caller is the BASELINE, and a failed baseline shows
+  // the reader an empty list.
+  //
+  // STILL BOUNDED, and low: each attempt costs the watchdog's window, and a
+  // pool that is genuinely gone must end in an answer rather than a loop.
+  let r = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    r = await freeLane().call(path, body, onProgress);
+    if (!r || !r.worker_dead) return r;
     const i = pool.findIndex((l) => l && l.dead);
     if (i >= 0) pool[i] = null;
-    return freeLane().call(path, body, onProgress);
   }
   return r;
 }
@@ -10636,11 +10724,27 @@ const gainTied = (g) => {
 // It draws NOTHING when nothing is running, so a finished list is a finished
 // list: a bar sitting at 100% would be one more thing to read and dismiss.
 function scanStrip(st, axis, rows) {
-  if (!st || !st.running) return "";
+  if (!st) return "";
   // AN AXIS ONLY SHOWS ITS OWN. Two lists can be open at once (a picker over
   // the evolution rows), and the scan belongs to exactly one of them — showing
   // it on both would say the other one is being measured when it is waiting.
   if (axis && JSON.stringify(st.axis) !== JSON.stringify(axis)) return "";
+  if (!st.running) {
+    // …EXCEPT WHEN EVERY ANSWER WAS ZERO, which is a FINDING and not a bar at
+    // 100%. A list of "+0.00%" and a list nobody measured are the same picture,
+    // and the reader who opens the exilus slot under a single-target ruler gets
+    // the first and reads the second — reported as the calculator being stuck
+    // when it had measured all eleven correctly. Said only on a COMPLETE scan,
+    // so a run with holes in it cannot claim nothing mattered.
+    const own = rows && st.ids ? rows.filter((k) => k && st.ids.has(k)) : null;
+    const got = (own || Object.keys(st.by || {}))
+      .map((k) => (st.by || {})[k]).filter(Boolean);
+    if (!st.key || !got.length || got.some((g) => g.pct !== 0)) return "";
+    return `<div class="scan-strip flat" role="status">` +
+      `<span class="scan-txt">${escHtml(
+        tr("all {n} measured — none of them changes this fight")
+          .replace("{n}", got.length))}</span></div>`;
+  }
   // THE COUNT IS THE LIST'S OWN, and it is DERIVED FROM THE ROWS ON SCREEN. `st.total` is how many SIMULATIONS this scan will run,
   // which is a different number from how many options the reader is looking at
   // — it carries the refine pass, and on an axis whose candidates are split
@@ -11245,6 +11349,10 @@ function renderQuickCalc() {
 /// "the quick calc stopped and there is no indication of anything". Collapsing
 /// is remembered, so the reader who does not want it says so once.
 let calcStatusOpen = localStorage.getItem("wfsim-calc-status") !== "closed";
+/// Opened while there is NOTHING to report — the reader going looking for the
+/// rebuild button. Not persisted: an idle panel left open for ever is the
+/// clutter collapsing exists to avoid.
+let calcStatusPeek = false;
 function renderCalcStatus() {
   const box = $("calc-status");
   if (!box) return;
@@ -11252,9 +11360,17 @@ function renderCalcStatus() {
   const alive = made.filter((l) => !l.dead).length;
   const lost = made.length - alive;
   const busy = gainScan.running;
-  // NOTHING TO SAY: no scan, no losses, nothing failed.
-  if (!busy && !lost && !gainScan.failed) { box.hidden = true; return; }
+  // NEVER HIDDEN, because the way out lives in here.
+  //
+  // This used to disappear whenever there was nothing to report, which put the
+  // rebuild button behind the very condition it exists for: a calculator wedged
+  // in a state that is neither busy nor failed showed no surface at all, and a
+  // reader with a list that will not produce numbers had a reload and nothing
+  // else. IDLE COLLAPSES TO THE TAB rather than vanishing — the panel is one
+  // click away at all times and costs a tab's worth of corner when quiet.
   box.hidden = false;
+  const idle = !busy && !lost && !gainScan.failed;
+  const open = idle ? calcStatusPeek : calcStatusOpen;
   // THE PHASE, WHERE THERE IS ONE. `0/77` is not a stall — it is the BASELINE
   // being measured, which every candidate is compared against and which runs
   // before any of them. It can be two of them, when nothing died under the
@@ -11267,7 +11383,7 @@ function renderCalcStatus() {
         : `${escHtml(tr("calculating"))} ${gainScan.done}/${gainScan.total}`)
     : (gainScan.failed ? escHtml(tr("the last calculation did not finish"))
                        : escHtml(tr("calculator")));
-  if (!calcStatusOpen) {
+  if (!open) {
     box.className = `calc-status${gainScan.failed ? " bad" : ""}`;
     box.innerHTML = `<button class="cs-tab" id="cs-tab">⚡ ${head}${
       lost ? ` <span class="cs-lost">${lost}</span>` : ""}</button>`;
@@ -11305,6 +11421,7 @@ function renderCalcStatus() {
   }
   const tab = $("cs-tab");
   if (tab) tab.onclick = () => {
+    if (idle) { calcStatusPeek = !calcStatusPeek; renderCalcStatus(); return; }
     calcStatusOpen = !calcStatusOpen;
     try {
       localStorage.setItem("wfsim-calc-status", calcStatusOpen ? "open" : "closed");
@@ -11313,9 +11430,20 @@ function renderCalcStatus() {
   };
   const reset = $("cs-reset");
   if (reset) reset.onclick = () => {
+    // THE MOVE THAT ALWAYS WORKS, so it has to leave nothing behind.
+    //
+    // THE GENERATION IS BUMPED FIRST. A scan still in flight is `live()` until
+    // something else bumps it, so a rebuild that only replaced the state left
+    // the old scan free to finish into the NEW one and stamp its key —
+    // registering a ranking of a fight nobody is looking at as complete, which
+    // is worse than the hang it was pressed to end. Bumping strands every scan
+    // that exists before a single worker is touched.
+    gainGen += 1;
+    gainPending = null;
     resetPool();
     gainScan = { key: null, want: null, running: false, base: 0, floor: 0, by: {},
       done: 0, total: 0, note: "", metric: "", failed: false, lanesLost: 0 };
+    calcStatusPeek = false;
     renderCalcStatus();
     refreshGains();
   };

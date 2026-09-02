@@ -29,13 +29,16 @@ onmessage = async (e) => {
       JSON.stringify(msg.body ?? {}), JSON.stringify(msg.shards ?? []));
     postMessage({ id: msg.id, payload: JSON.parse(out) });
   } else if (msg.kind === "api") {
-    // A SIMULATE SAYS HOW FAR IT HAS GOT, and nothing else does. It is the one
-    // endpoint whose cost is unbounded — a 361-body fight at the rulers' 1000
-    // runs is a minute — and a button that says "Simulating…" for a minute
-    // reads as a hang. Asked for only when the caller
-    // wants it, so every other call keeps the plain path.
+    // A SIMULATE SAYS HOW FAR IT HAS GOT — ALWAYS, whether or not anyone asked
+    // to see it. It is the one endpoint whose cost is unbounded (a 361-body
+    // fight at the rulers' 1000 runs is a minute), and the wasm call BLOCKS
+    // this thread, so from the page a worker deep in a fight and a worker that
+    // has stopped existing look exactly alike. The beat is what tells them
+    // apart: `makeLane` gives up on a lane that goes quiet, and a lane the page
+    // cannot give up on is a list that never produces a number again. The page
+    // forwards the numbers only to a caller that wanted them.
     const body = JSON.stringify(msg.body ?? {});
-    const out = msg.progress && msg.path === "/api/simulate"
+    const out = msg.path === "/api/simulate"
       ? wasm_bindgen.simulate_progress(body, (done, total) =>
           postMessage({ id: msg.id, kind: "progress", done, total }))
       : wasm_bindgen.api(msg.path, body);

@@ -112,4 +112,115 @@ check(
   `seen ${s.sawStatus}`,
 );
 
+// A WORKER THAT NEITHER ANSWERS NOR FAILS — the fourth fault, and the only one
+// that produced no error at all. `abandon` settles its waiters and `onerror`
+// settles its waiters; a worker the browser reclaims mid-fight does neither, so
+// the scan awaited an answer that could not come, `running` stayed true, and
+// `ensureGains` refused that same list for the life of the page.
+//
+// WEDGED BY DROPPING postMessage, which is what silence looks like from here:
+// the worker is alive, un-abandoned, and will never reply. Only the first two
+// are wedged, so the pool has somewhere to recover TO.
+const w = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  LANE_WATCHDOG.loading = 1500;
+  LANE_WATCHDOG.stall = 1500;
+  const Real = window.Worker;
+  let made = 0;
+  out.dropped = 0;
+  window.Worker = function (u) {
+    const ww = new Real(u);
+    made += 1;
+    if (made <= 2) ww.postMessage = () => { out.dropped += 1; };
+    return ww;
+  };
+  resetPool();
+  gainScan = { key: null, want: null, running: false, base: 0, floor: 0, by: {},
+    done: 0, total: 0, note: '', metric: '', failed: false, lanesLost: 0 };
+  gainPrefs = { ...gainPrefs, on: true };
+  openPicker(0, document.querySelector('.slot') || document.body);
+  for (let i = 0; i < 90; i++) {
+    if (gainScan.key !== null) break;
+    await sleep(500);
+  }
+  window.Worker = Real;
+  out.recovered = gainScan.key !== null;
+  out.ranked = Object.keys(gainScan.by).length;
+  out.running = gainScan.running;
+  out.wedgedLanes = pool.filter((l) => l && l.dead).length;
+  return out;
+})()`);
+
+check(
+  "a wedged worker really did swallow its requests",
+  w.dropped > 0,
+  `dropped ${w.dropped}`,
+);
+check(
+  "…and a lane that goes SILENT is given up on rather than waited on for ever",
+  w.recovered === true && w.running === false,
+  `key stamped ${w.recovered}, running ${w.running}, ranked ${w.ranked}`,
+);
+check(
+  "…producing a real ranking on the workers that were left",
+  w.ranked > 0,
+  `ranked ${w.ranked}`,
+);
+
+// THE MOVE THAT ALWAYS WORKS. Everything above is the calculator recovering on
+// its own; this is the reader's guarantee for the case nobody predicted, and a
+// guarantee with no check behind it is a claim. Asserted from the worst state
+// there is: a scan latched running against a pool that will never answer.
+const f = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  LANE_WATCHDOG.loading = 1500;
+  LANE_WATCHDOG.stall = 1500;
+  // WEDGED BY HAND into the exact shape the fixes above are for: a scan that
+  // believes it is running, over a fight the page still wants.
+  resetPool();
+  gainPrefs = { ...gainPrefs, on: true };
+  gainAxis = { kind: 'mods', idx: 0 };
+  gainScan = { key: null, want: gainKey(), axis: { kind: 'mods', idx: 0 },
+    running: true, base: 0, floor: 0, by: {}, done: 3, total: 40, phase: '',
+    note: '', metric: '', failed: false, lanesLost: 0, ids: new Set() };
+  gainPending = { axis: { kind: 'mods', idx: 3 }, repaint: () => {} };
+  renderCalcStatus();
+  // THE SURFACE IS REACHABLE AT ALL, which is half of the guarantee.
+  out.boxShown = !document.getElementById('calc-status').hidden;
+  const tab = document.getElementById('cs-tab');
+  if (tab && !document.getElementById('cs-reset')) tab.click();
+  const btn = document.getElementById('cs-reset');
+  out.buttonThere = !!btn;
+  if (btn) btn.click();
+  out.clearedPending = gainPending === null;
+  await sleep(500);
+  // …AND THE CALCULATOR ANSWERS AGAIN AFTERWARDS.
+  openPicker(0, document.querySelector('.slot') || document.body);
+  for (let i = 0; i < 80; i++) {
+    if (gainScan.key !== null) break;
+    await sleep(500);
+  }
+  out.answersAgain = gainScan.key !== null;
+  out.ranked = Object.keys(gainScan.by).length;
+  return out;
+})()`);
+
+check(
+  "the status surface is reachable even with nothing to report",
+  f.boxShown === true && f.buttonThere === true,
+  `box ${f.boxShown}, button ${f.buttonThere}`,
+);
+check(
+  "…and rebuilding strands the queued request rather than carrying it over",
+  f.clearedPending === true,
+  `pending cleared ${f.clearedPending}`,
+);
+check(
+  "…and the calculator produces a complete answer after the rebuild",
+  f.answersAgain === true && f.ranked > 0,
+  `key stamped ${f.answersAgain}, ranked ${f.ranked}`,
+);
+
 process.exit(0);

@@ -1225,6 +1225,7 @@ ui:
   "lost": "已失效"
   "unknown": "原因不明"
   "rebuild the calculator": "重建计算器"
+  "all {n} measured — none of them changes this fight": "{n} 项已全部测算 —— 没有一项会改变这场战斗"
   "the calculator stopped": "计算器中断"
   "the base fight did not measure": "基准场景没能测出结果"
   "{n} of {total} could not be measured — the calculator lost a worker": "{total} 个里有 {n} 个没测出来——计算器丢了工作线程"
