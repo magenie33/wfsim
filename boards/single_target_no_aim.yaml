@@ -72819,7 +72819,7 @@ entries:
     probe: true
     score: 0.07756809513656766
     fp: 3d1431fd653c2b5f
-    cost: 0.039
+    cost: 0.031
     mods: [heavy_caliber, split_chamber, serration, speed_trigger, vital_sense, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_deadhead]
   - weapon: ax_52
@@ -72828,7 +72828,7 @@ entries:
     probe: true
     score: 0.058734344895310604
     fp: 6d68e9bd2f9bdcb0
-    cost: 0.154
+    cost: 0.121
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_crux]
@@ -72838,7 +72838,7 @@ entries:
     probe: true
     score: 0.05769470198651623
     fp: 8e7a6c3995e63322
-    cost: 0.156
+    cost: 0.124
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, thermite_rounds]
     arcanes: [primary_crux]
@@ -72848,7 +72848,7 @@ entries:
     probe: true
     score: 0.04248925556819649
     fp: bf1a786b7b77d70c
-    cost: 0.160
+    cost: 0.126
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, wildfire]
     arcanes: [primary_crux]
@@ -72858,7 +72858,7 @@ entries:
     probe: true
     score: 0.06670025330971223
     fp: ad668dd0321b9dee
-    cost: 0.162
+    cost: 0.129
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, malignant_force, wildfire]
     arcanes: [primary_crux]
@@ -72868,7 +72868,7 @@ entries:
     probe: true
     score: 0.06670025330971223
     fp: 70dda35c243124d9
-    cost: 0.162
+    cost: 0.129
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, rime_rounds, infected_clip, wildfire]
     arcanes: [primary_crux]
@@ -72878,7 +72878,7 @@ entries:
     probe: true
     score: 0.1693744466126899
     fp: 961a8c21a287ed9b
-    cost: 0.254
+    cost: 0.205
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_deadhead]
     valence: impact
@@ -72888,7 +72888,7 @@ entries:
     probe: true
     score: 0.8128366890675841
     fp: 7e44c76d62748fa6
-    cost: 0.191
+    cost: 0.159
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -72899,7 +72899,7 @@ entries:
     probe: true
     score: 0.1923530985837017
     fp: d4b29ee6dec29853
-    cost: 0.382
+    cost: 0.296
     exilus: terminal_velocity
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
@@ -72910,7 +72910,7 @@ entries:
     probe: true
     score: 0.3432386001383204
     fp: d4b29ee6dec29853
-    cost: 0.227
+    cost: 0.192
     exilus: terminal_velocity
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
