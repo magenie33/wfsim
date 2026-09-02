@@ -260,6 +260,106 @@ the summary (`eight_shards_are_one_run`), on the whole response
 A COMPARISON IS TO A PART IN 10^12, not bit for bit: floating-point addition
 is not associative.
 
+## Planned: one executor, sized from what the machine measures
+
+**THE FLEET IS SHARED AND NOTHING SHARES IT.** Three consumers want the same
+cores — the simulator, the quick calc, the search — and today the first two
+each take the WHOLE pool without knowing the other exists, while the third
+builds a second fleet of its own. Every failure this has produced is the same
+failure: work that cannot see other work.
+
+  * A quick-calc request posted to a lane already running a simulate shard hears
+    nothing until that shard is answered, because a worker runs its messages one
+    at a time and the wasm call blocks the thread. The stall watchdog read that
+    silence as death and killed the lane — taking the shard with it. Fixed by
+    making silence the WORKER'S rather than a request's, but the queue that
+    caused it is still there.
+  * A shard is a fourteenth of the runs, decided once. One slow lane holds the
+    whole answer, and there is nothing to hand its remainder to.
+  * A cancel terminates workers, which is the only interrupt a blocking wasm
+    call has — and it throws away every heap those workers had grown.
+
+**AND NOTHING IS SIZED FROM MEASUREMENT.** The lane count is a share of the
+cores, the screen is ten runs, the shard is `runs / lanes` — all fixed, on a
+per-run cost that spans **1.1 ms to 29 ms** (single target; a 361-body
+formation with Melee Influence at Lv 9999 Steel Path, where ~1,885 statuses a
+run land on ~140 bodies each). The same numbers cannot be right at both ends.
+
+### The measurement is already free
+
+A scan measures its BASELINE before any candidate, and every simulate reports
+progress per run. So the page can know `ms_per_run` **for this fight, on this
+machine, right now** before committing to the bulk of the work — no probe, no
+guess, no hardware detection. Everything below is derived from that one number,
+which is what makes the design adaptive rather than tuned.
+
+### Stage 1 — chunks, and lanes that pull
+
+Replace the static split with a queue of CHUNKS whose size comes from the
+measured cost: enough runs that a chunk is a few hundred milliseconds, so the
+per-message overhead stays negligible while the tail does not. A lane that
+finishes takes the next chunk. A slow lane then delays itself and nothing else,
+and an uneven machine needs no detection.
+
+*Proved by*: one lane artificially slowed, and total time that does not scale
+with it. The answer is already gated — `eight_shards_are_one_run` and
+`a_fleet_of_shards_reports_what_one_worker_reports` say a re-split merges the
+same, and `check_run_counts` says it on the wire.
+
+### Stage 2 — one executor, with priorities
+
+Both consumers submit to one queue instead of grabbing the pool. A job is its
+chunks; a lane pulls the highest-priority chunk it can. A person's simulate
+outranks a background scan, and because chunks are bounded it starts within one
+chunk rather than after the scan. Cancelling drops the remaining chunks, so it
+no longer needs to terminate a worker and lose its heap. The watchdog lives
+here, once, for every consumer.
+
+Two classes of bug become impossible rather than fixed: a request cannot queue
+behind another on a busy worker, and no surface can hold the pool against
+another.
+
+*Proved by*: `check_lane_queue.mjs` generalised — a simulate submitted during a
+scan answers in about a chunk, and the scan still completes.
+
+### Stage 3 — budgets, from the same number
+
+With `ms_per_run` known, the page can say what an answer will COST before it
+spends it, and choose:
+
+  * the screen's run count — a cheap fight can afford more runs and a better
+    ranking; an expensive one cannot, and today both get ten;
+  * an honest estimate before the work, not only a bar during it;
+  * an admission when the answer will take longer than a reader will wait, with
+    the run count that would fit instead. THE ANSWER IS NEVER SILENTLY
+    DEGRADED — the reader is told what a shorter one buys and chooses.
+
+### Stage 4 — memory as a budget too
+
+A lane is a wasm instance whose heap grows to what its fight needs and never
+shrinks. Fourteen of them on a 361-body Influence fight is where a browser
+starts reclaiming workers, which arrives as the pool dying under a scan. So
+CONCURRENCY IS A BUDGET, not a constant: past a measured cost per run, run
+fewer chunks at once rather than every lane at once. Fewer lanes fully used
+beats more lanes reclaimed.
+
+*Proved by*: a heavy fight that does not grow the pool past the cap, and no
+lane lost to a reclaim across a full scan.
+
+### What is deliberately NOT in this
+
+**The search keeps its own fleet, for now.** Its jobs are minutes long,
+resumable and checkpointed, which is a different lifecycle from a chunk; it
+should end up on the executor, but after the two consumers that share a pool
+today.
+
+**No engine micro-optimisation.** Influence's cost is the work itself —
+~1,885 statuses a run applied to ~140 bodies each. Precomputing the 20 m
+adjacency was tried and MEASURED: identical answers, 5% SLOWER, because the
+table costs more to build per run than the scan it saves; amortised across a
+fight its ceiling is about 4%. The room is in how many runs get spent and in
+how they are scheduled, not in what one costs.
+
 ## A long sim says how far it has got
 
 **A LONG SIM SAYS HOW FAR IT HAS GOT.** The run count is unbounded and so is
