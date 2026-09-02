@@ -20,6 +20,7 @@ Prereqs: rustup target add wasm32-unknown-unknown;
          cargo install wasm-bindgen-cli --version <matching Cargo.lock>.
 """
 
+import hashlib
 import html as html_mod
 import json
 import re
@@ -30,6 +31,20 @@ import time
 from pathlib import Path
 
 import yaml
+
+# THE C LOADER WHERE THERE IS ONE — measured 9.3x on this tree's own yaml, and
+# `data/` is parsed several times a build: every weapon for the roster, every
+# file again for the parse check, the board on top of that. It is the same
+# parser behind the identical safe subset, so what it refuses and what it
+# produces are unchanged; a Python built without libyaml falls back and is
+# merely slower.
+YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
+def yload(text: str):
+    """`yaml.safe_load`, through whichever loader this Python has."""
+    return yaml.load(text, Loader=YAML_LOADER)
+
 
 # Same question, one answer: the fetcher decides what counts as an image and
 # this gate refuses anything it would have rejected.
@@ -82,7 +97,7 @@ def roster() -> list[dict]:
     )
     specs = {}
     for f in sorted((ROOT / "data" / "weapons").rglob("*.yaml")):
-        spec = yaml.safe_load(f.read_text(encoding="utf-8"))
+        spec = yload(f.read_text(encoding="utf-8"))
         specs[spec["id"]] = spec
     out = []
     for spec in specs.values():
@@ -136,6 +151,11 @@ def card_font(size: int):
     return ImageFont.load_default(size)
 
 
+# WHAT DRAWING A CARD DEPENDS ON BESIDES ITS ARGUMENTS. Bumped by hand when
+# `og_card` changes what it paints: the digest below cannot see the code.
+CARD_SIG = "card-v1"
+
+
 def og_card(out: Path, name: str, cn: str | None, facts: str, stats: str) -> bool:
     """Draw the link-preview image for one weapon — OUR art, not DE's.
 
@@ -179,7 +199,26 @@ def og_card(out: Path, name: str, cn: str | None, facts: str, stats: str) -> boo
     d.text((72, 548), "wfsim.app · builder · simulator · optimizer",
            font=card_font(26), fill=CARD_MUTED)
     out.parent.mkdir(parents=True, exist_ok=True)
+    # DRAWN ONCE PER SET OF INPUTS. `img.save(..., optimize=True)` is 36 ms and
+    # there are 387 of them — FOURTEEN SECONDS of a build, spent redrawing
+    # pictures whose every input was what it was last time. The card is a pure
+    # function of the arguments above plus the code that paints it, so a digest
+    # of those answers "would this come out identical" exactly.
+    #
+    # THE CODE IS IN THE DIGEST TOO, as `CARD_SIG`: a card redrawn only when its
+    # text moves is a card that never picks up a new layout.
+    key = hashlib.sha256(
+        "\x00".join([CARD_SIG, name, cn or "", facts, stats]).encode("utf-8")
+    ).hexdigest()[:16]
+    # THE SIGNATURE LIVES UNDER `target/`, not beside the card. `site/` is
+    # committed, and 387 sidecar files nobody reads is noise in every diff; a
+    # fresh clone has no signatures and redraws, which is the safe direction.
+    sig = ROOT / "target" / "og-sigs" / (out.stem + ".sig")
+    sig.parent.mkdir(parents=True, exist_ok=True)
+    if out.exists() and sig.exists() and sig.read_text(encoding="utf-8").strip() == key:
+        return True
     past_the_scanner(lambda: img.save(out, "PNG", optimize=True))
+    sig.write_text(key, encoding="utf-8")
     return True
 
 
@@ -203,7 +242,7 @@ def ship_art() -> None:
     this script rewrites on every build).
     """
     cache = ROOT / "web" / "cache" / "img"
-    assets = yaml.safe_load((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
+    assets = yload((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
     # `wiki:` says where the BUILD fetches it from; the cached file is bare.
     want = {
         v[5:] if str(v).startswith("wiki:") else v
@@ -217,7 +256,7 @@ def ship_art() -> None:
         spec[field]
         for rel, field in (("evolutions", "icon"), ("enemies", "image"))
         for f in (ROOT / "data" / rel).rglob("*.yaml")
-        for spec in [yaml.safe_load(f.read_text(encoding="utf-8"))]
+        for spec in [yload(f.read_text(encoding="utf-8"))]
         if spec.get(field)
     }
     # EXISTS is not the question — IS AN IMAGE is. `Special:FilePath` answers a
@@ -316,7 +355,7 @@ def write_board() -> None:
 
     out: dict = {}
     for f in sorted((ROOT / "boards").glob("*.yaml")):
-        b = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        b = yload(f.read_text(encoding="utf-8")) or {}
         for e in b.get("entries") or []:
             # **EVERY FIELD THE SCORER WROTE, not a list of the ones somebody
             # remembered.** This function's whole job is to be a NO-OP against
@@ -472,8 +511,8 @@ def prerender(flagged: str) -> None:
          moment the app boots. Not cloaking: the text says exactly what the
          app renders, and the visitor sees the app.
     """
-    assets = yaml.safe_load((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
-    zh = yaml.safe_load((ROOT / "data" / "i18n" / "zh" / "names.yaml").read_text(encoding="utf-8"))
+    assets = yload((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
+    zh = yload((ROOT / "data" / "i18n" / "zh" / "names.yaml").read_text(encoding="utf-8"))
     zh_names = zh.get("weapons", {})
 
     for spec in roster():
@@ -519,7 +558,7 @@ def prerender(flagged: str) -> None:
         out = APP / wiki_path(name).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo)
-        past_the_scanner(lambda: out.write_text(page, encoding="utf-8", newline="\n"))
+        past_the_scanner(lambda: put(out, page))
 
     # /support — a URL people paste, so it gets the same treatment. Its OG
     # description says what the page IS (running costs, nothing sold); a link
@@ -577,22 +616,46 @@ def prerender(flagged: str) -> None:
     urls = [SITE + "/", SITE + "/support", SITE + "/download"] + [
         SITE + wiki_path(s["name"]) for s in roster()
     ]
-    (APP / "sitemap.xml").write_text(
+    put(
+        APP / "sitemap.xml",
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls)
         + "</urlset>\n",
-        encoding="utf-8",
-        newline="\n",
     )
     # Without this file the SPA fallback answered /robots.txt with HTML and a
     # 200, which is a soft 404 for every crawler that asks.
-    (APP / "robots.txt").write_text(
-        f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    print(f"prerendered {len(urls) - 3} weapon pages + /support + /download + sitemap.xml + robots.txt")
+    put(APP / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n")
+    print(f"prerendered {len(urls) - 3} weapon pages + /support + /download + "
+          f"sitemap.xml + robots.txt — {WROTE[0]} written, {WROTE[1]} already current")
+
+
+WROTE = [0, 0]  # [written, already current]
+
+
+def put(path, text: str) -> None:
+    """Write `text` to `path`, but only if that is not already what is there.
+
+    A BUILD THAT CHANGES NOTHING SHOULD COST NOTHING. This rewrites 387
+    prerendered pages every run, and since the build stamp became a digest of
+    the served sources those pages are byte-identical whenever `app.js` and
+    `index.html` have not moved — so the run spent eighteen seconds producing
+    files it already had, and touched every one of their mtimes doing it.
+
+    COMPARED ON CONTENT, never on a timestamp: an mtime is a claim about when,
+    and the question is whether the bytes differ. Reading a file back is cheaper
+    than writing it, and far cheaper than what a spurious rewrite costs
+    everything that watches this tree.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if path.read_text(encoding="utf-8") == text:
+            WROTE[1] += 1
+            return
+    except (OSError, UnicodeDecodeError):
+        pass
+    path.write_text(text, encoding="utf-8", newline="\n")
+    WROTE[0] += 1
 
 
 def run(*cmd: str) -> None:
@@ -626,7 +689,7 @@ def check_data_parses() -> None:
     bad: list[str] = []
     for f in sorted(Path("data").rglob("*.yaml")):
         try:
-            yaml.safe_load(f.read_text(encoding="utf-8"))
+            yload(f.read_text(encoding="utf-8"))
         except Exception as e:                # noqa: BLE001 - report every one
             bad.append(f"{f}: {str(e).splitlines()[0]}")
     if bad:
@@ -773,15 +836,38 @@ def main() -> None:
     check_data_parses()
     run("cargo", "build", "--release", "-p", "wfsim-wasm", "--target", "wasm32-unknown-unknown")
     APP.mkdir(parents=True, exist_ok=True)
-    run("wasm-bindgen", str(WASM), "--target", "no-modules", "--no-typescript",
-        "--out-dir", str(APP / "pkg"))
-
-    # Optional size pass — the app works without it.
-    if shutil.which("wasm-opt"):
-        bg = APP / "pkg" / "wfsim_wasm_bg.wasm"
-        run("wasm-opt", "-Oz", "-o", str(bg), str(bg))
+    # BINDGEN AND THE SIZE PASS ARE SKIPPED WHEN THE MODULE DID NOT MOVE.
+    #
+    # `wasm-opt -Oz` is TWENTY-ONE SECONDS of a forty-five second build, and
+    # `cargo` is incremental: a run that changed only `app.js` returns in a
+    # tenth of a second with a byte-identical `wfsim_wasm.wasm`, and this then
+    # spent twenty-one more producing an output it already had.
+    #
+    # GATED ON THE INPUT'S DIGEST, never on an mtime. Cargo may rewrite the file
+    # whether or not its contents changed, so a timestamp answers "was it built
+    # again" where the question is "is it the same module".
+    #
+    # THE STAMP LIVES UNDER `target/`, which is not committed — so a fresh clone
+    # has no stamp and does the full pass, and the only direction this can be
+    # wrong in is doing the work unnecessarily.
+    bg = APP / "pkg" / "wfsim_wasm_bg.wasm"
+    stamp = ROOT / "target" / ".wasm-opt-stamp"
+    want = hashlib.sha256(WASM.read_bytes()).hexdigest()
+    have = stamp.read_text(encoding="utf-8").strip() if stamp.exists() else ""
+    if want == have and bg.exists():
+        print(f"+ wasm unchanged ({want[:8]}) — bindgen and wasm-opt skipped")
     else:
-        print("(wasm-opt not found — skipping the size pass)")
+        run("wasm-bindgen", str(WASM), "--target", "no-modules", "--no-typescript",
+            "--out-dir", str(APP / "pkg"))
+        # Optional size pass — the app works without it.
+        if shutil.which("wasm-opt"):
+            run("wasm-opt", "-Oz", "-o", str(bg), str(bg))
+        else:
+            print("(wasm-opt not found — skipping the size pass)")
+        # WRITTEN LAST, so a run that dies half way leaves no stamp claiming an
+        # output it never produced.
+        stamp.parent.mkdir(parents=True, exist_ok=True)
+        stamp.write_text(want, encoding="utf-8")
 
     for name in ("app.js", "style.css", "worker.js", "logo.svg"):
         shutil.copy2(STATIC / name, APP / name)
