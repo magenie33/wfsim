@@ -324,15 +324,19 @@ scan answers in about a chunk, and the scan still completes.
 
 ### Stage 3 — budgets, from the same number
 
-With `ms_per_run` known, the page can say what an answer will COST before it
-spends it, and choose:
+**THE RUN COUNT IS NOT ONE OF THE THINGS THAT ADAPT, AND NEVER WILL BE.**
+Adaptation is a property of the SCHEDULER — how the work is cut up, which lane
+takes it, what waits for what. How many runs an answer is measured over decides
+the ANSWER, and an answer that depends on the machine reading it is not a
+measurement: the same build would score differently on a phone and a
+workstation, and no two board rows would be comparable. A slow machine waits
+longer for the same number. It does not get a cheaper one.
 
-  * the screen's run count — a cheap fight can afford more runs and a better
-    ranking; an expensive one cannot, and today both get ten;
+So what a known cost buys is what to SAY, never what to compute:
+
   * an honest estimate before the work, not only a bar during it;
-  * an admission when the answer will take longer than a reader will wait, with
-    the run count that would fit instead. THE ANSWER IS NEVER SILENTLY
-    DEGRADED — the reader is told what a shorter one buys and chooses.
+  * an admission when the answer will take longer than a reader will wait —
+    stated, so they can stop or change the fight themselves.
 
 ### Stage 4 — memory as a budget too
 
