@@ -71295,7 +71295,7 @@ entries:
     probe: true
     score: 0.9066847214584638
     fp: e13ad0e83c377adc
-    cost: 0.190
+    cost: 0.184
     mods: [heavy_caliber, split_chamber, serration, speed_trigger, vital_sense, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_deadhead]
   - weapon: aeolak
@@ -71304,7 +71304,7 @@ entries:
     probe: true
     score: 0.156293670201759
     fp: e13ad0e83c377adc
-    cost: 0.040
+    cost: 0.038
     mods: [heavy_caliber, split_chamber, serration, speed_trigger, vital_sense, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_deadhead]
   - weapon: aeolak
@@ -71313,7 +71313,7 @@ entries:
     probe: true
     score: 1.0155632869784192
     fp: 9a7d1b36ce88db68
-    cost: 0.154
+    cost: 0.150
     mods: [heavy_caliber, split_chamber, serration, bane_of_grineer, rifle_aptitude, vital_sense, hellfire, wildfire]
     arcanes: [primary_deadhead]
   - weapon: aeolak
@@ -71322,7 +71322,7 @@ entries:
     probe: true
     score: 0.4566810710286485
     fp: 9a7d1b36ce88db68
-    cost: 0.033
+    cost: 0.032
     mods: [heavy_caliber, split_chamber, serration, bane_of_grineer, rifle_aptitude, vital_sense, hellfire, wildfire]
     arcanes: [primary_deadhead]
   - weapon: coda_synapse
@@ -71331,7 +71331,7 @@ entries:
     probe: true
     score: 5.385715309209356
     fp: bf845c2fc4c8f97a
-    cost: 0.294
+    cost: 0.289
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, rifle_elementalist, speed_trigger, vital_sense, hellfire]
     arcanes: [primary_crux]
     valence: impact
@@ -71341,7 +71341,7 @@ entries:
     probe: true
     score: 0.9465262944334604
     fp: ea83a56a803d97d9
-    cost: 0.545
+    cost: 0.551
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71352,7 +71352,7 @@ entries:
     probe: true
     score: 6.583589118382759
     fp: ea83a56a803d97d9
-    cost: 0.221
+    cost: 0.218
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71363,7 +71363,7 @@ entries:
     probe: true
     score: 1.08659288399098
     fp: 561dd8cf0ac9bd9c
-    cost: 0.813
+    cost: 0.817
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71374,7 +71374,7 @@ entries:
     probe: true
     score: 1.0210200694681288
     fp: d5e9b1ae61ee8889
-    cost: 0.247
+    cost: 0.251
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, hammer_shot, rifle_elementalist, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71385,7 +71385,7 @@ entries:
     probe: true
     score: 5.833384061310063
     fp: d5e9b1ae61ee8889
-    cost: 0.137
+    cost: 0.135
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, hammer_shot, rifle_elementalist, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -71396,7 +71396,7 @@ entries:
     probe: true
     score: 0.37542799101026075
     fp: e2c7aeff89090c4a
-    cost: 0.423
+    cost: 0.427
     exilus: terminal_velocity
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
@@ -71407,7 +71407,7 @@ entries:
     probe: true
     score: 2.3074431860427866
     fp: e2c7aeff89090c4a
-    cost: 0.248
+    cost: 0.246
     exilus: terminal_velocity
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
