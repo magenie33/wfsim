@@ -302,7 +302,15 @@ fn plan_forma_spending(
     inv: Investment,
     at_least: u32,
 ) -> Result<FormaPlan, String> {
-    assert!(mods.len() <= innate_slots.len(), "more mods than slots");
+    // MORE MODS THAN SLOTS IS AN ANSWER, NOT A CRASH. This returns a `Result`
+    // and every caller reads it, so a panic here bought nothing and cost
+    // everything: in wasm it takes the worker down mid-fight with no message,
+    // and the page waits for a reply that is never coming.
+    if mods.len() > innate_slots.len() {
+        return Err(format!(
+            "{} mods for {} slots", mods.len(), innate_slots.len()
+        ));
+    }
     let mut matched = vec![false; mods.len()];
     let mut cost = FormaCost::default();
     // What polarity a BOUGHT slot ends up carrying, which is what the plan

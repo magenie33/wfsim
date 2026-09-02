@@ -6338,8 +6338,16 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     );
 
     // ---- forma legality (order-independent; needs only the mod multiset) ----
+    // THE STANCE IS NOT ONE OF THE NINE. It has a slot of its own — that is the
+    // whole reason it hands capacity back rather than taking it — so counting
+    // it here billed it twice: once for a slot it does not occupy and once as
+    // the grant below. A full melee build is eight mains, an exilus and a
+    // stance, which is ten against nine innate slots, and the planner refused
+    // it. The refusal was an `assert!`, so in the browser it was a worker that
+    // died mid-fight without a word.
     let planned: Vec<PlannedMod> = refs
         .iter()
+        .filter(|m| m.stance.is_none())
         .map(|m| PlannedMod {
             base_drain: m.base_drain,
             polarity: m.polarity,
@@ -8881,6 +8889,39 @@ mod asset_tests {
     ///
     /// Cheap terms (a short fight, few runs), because the claim is about the
     /// SHAPE of the fight and not about the board's precision.
+    /// A MELEE WITH EVERY SLOT FILLED SIMULATES — eight mains, an exilus and a
+    /// stance, which is TEN mods against the nine innate slots a weapon has.
+    ///
+    /// The stance is not one of the nine; it has a slot of its own and hands
+    /// capacity back rather than taking it. Counted among them, the Forma
+    /// planner refused the build — and refused it with an `assert!`, so in the
+    /// browser this was a worker that died mid-fight without a word and a quick
+    /// calc that sat on "measuring the baseline" for ever. It needed the LAST
+    /// main slot and an exilus to reach ten, which is why a build one mod short
+    /// of full never found it.
+    #[test]
+    fn a_melee_with_every_slot_filled_simulates() {
+        let out = simulate_json(&serde_json::json!({
+            "weapon": "praedos",
+            "mods": [
+                "primed_pressure_point", "sacrificial_steel", "organ_shatter",
+                "voltaic_strike", "shocking_touch", "condition_overload",
+                "primed_fury", "molten_impact",   // eight mains
+                "conditions_perfection",          // the exilus
+                "sovereign_outcast",              // and the stance
+            ],
+            "enemy": "thrax_centurion",
+            "level": 150,
+            "duration": 8,
+            "runs": 1,
+        }));
+        assert!(out.get("error").is_none(), "a legal melee build must simulate: {out}");
+        assert!(
+            out.get("shots").and_then(serde_json::Value::as_f64).unwrap_or(0.0) > 0.0,
+            "…and swing: {out}"
+        );
+    }
+
     #[test]
     fn the_group_clear_ruler_runs_and_measures_the_crowd() {
         let bench = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler exists");
