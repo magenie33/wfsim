@@ -518,27 +518,34 @@ const LANE_WATCHDOG = { loading: 90000, stall: 45000 };
 /// posts at about 4 Hz, so being slow and being gone are told apart by what the
 /// worker SAYS rather than by how long it is taking.
 function watchSilence(giveUp) {
-  const beat = new Map();
-  let dog = null, spoke = false;
+  // SILENCE IS THE WORKER'S, NOT A REQUEST'S — one clock, not one per id.
+  //
+  // A clock per request declared the whole lane dead as soon as ANY id went
+  // quiet, and a queued request is quiet by definition: a worker runs its
+  // messages one at a time and the wasm call blocks, so a scan request sitting
+  // behind a long simulate shard hears nothing until that shard is done. Past
+  // the window the lane was killed — taking the shard with it — while the
+  // worker was demonstrably alive and reporting progress on the very job that
+  // was making it wait. That is both surfaces dying together under exactly the
+  // load they are worth having: a heavy fight, few lanes, a simulate and a scan
+  // wanting the same pool.
+  //
+  // A worker that is talking is alive, whatever it is talking about.
+  let owed = 0, last = 0, dog = null, spoke = false;
   const disarm = () => { if (dog) { clearInterval(dog); dog = null; } };
-  const clear = () => { beat.clear(); disarm(); };
+  const clear = () => { owed = 0; disarm(); };
   return {
     clear,
-    /// This worker said something — about `id`, or at all.
-    heard(id) { spoke = true; if (beat.has(id)) beat.set(id, Date.now()); },
-    /// Answered, so it is no longer owed one.
-    done(id) { beat.delete(id); if (!beat.size) disarm(); },
-    /// One request is now outstanding.
-    start(id) {
-      beat.set(id, Date.now());
+    heard() { spoke = true; last = Date.now(); },
+    done() { owed = Math.max(0, owed - 1); last = Date.now(); if (!owed) disarm(); },
+    start() {
+      owed += 1;
+      last = Date.now();
       if (dog) return;
       dog = setInterval(() => {
         const cap = spoke ? LANE_WATCHDOG.stall : LANE_WATCHDOG.loading;
-        const now = Date.now();
-        let quiet = false;
-        beat.forEach((at) => { if (now - at > cap) quiet = true; });
-        if (quiet) { clear(); giveUp(); }
-        else if (!beat.size) disarm();
+        if (!owed) { disarm(); return; }
+        if (Date.now() - last > cap) { clear(); giveUp(); }
       }, 5000);
     },
   };
@@ -591,7 +598,7 @@ function makeLane() {
   w.onmessage = (e) => {
     // ANY word from the worker is proof of life, including one about a request
     // whose progress nobody asked to see.
-    wd.heard(e.data.id);
+    wd.heard();
     if (e.data.kind === "progress") {
       const f = progress.get(e.data.id);
       if (f) f(e.data.done, e.data.total);
@@ -601,7 +608,7 @@ function makeLane() {
     if (r) {
       pending.delete(e.data.id);
       progress.delete(e.data.id);
-      wd.done(e.data.id);
+      wd.done();
       busy = Math.max(0, busy - 1);
       r(e.data.payload);
     }
@@ -632,7 +639,7 @@ function makeLane() {
         if (dead) { res({ ok: false, cancelled: true }); return; }
         const id = ++seq;
         pending.set(id, res);
-        wd.start(id);
+        wd.start();
         busy += 1;
         if (onProgress) progress.set(id, onProgress);
         w.postMessage({ ...msg, id });
@@ -1009,7 +1016,7 @@ function woptStart(body, checkpoint) {
     // progress bar that has stopped and no way to tell it from a slow one.
     const wd = watchSilence(() => gone("worker stopped answering"));
     w.onmessage = (e) => {
-      wd.heard(0);
+      wd.heard();
       if (e.data.kind === "progress") { job.statuses[i] = e.data.payload; job.status = rollup(); }
       if (e.data.kind === "board") { job.boards[i] = e.data.payload; job.board = woptMerge(job.boards.filter(Boolean)); }
       if (e.data.kind === "checkpoint") {
@@ -1019,7 +1026,7 @@ function woptStart(body, checkpoint) {
         if (shards === 1) saveCheckpoint(body, cp, board || job.board);
       }
       if (e.data.kind === "result") {
-        wd.done(0);
+        wd.done();
         job.parts[i] = e.data.payload;
         w.terminate();
         job.workers[i] = null;
@@ -1045,7 +1052,7 @@ function woptStart(body, checkpoint) {
       body: { ...body, shard: i, shards },
       checkpoint: checkpoint || null,
     });
-    wd.start(0);
+    wd.start();
   }
   wopt = job;
   return { ok: true, job_id: job.id };
