@@ -8057,29 +8057,21 @@ async function loadBoard() {
 /// mode you happened to be in and quietly report a different number than the
 /// board does — the same shape as the scenario leak, and worse, because this
 /// one has a published figure sitting next to it.
+
 /// A BOARD ROW'S BUILD, WITHOUT THE CELL IT WAS RANKED IN.
 ///
-/// THE BOARD RANKS PER CELL AND THE CELL IS NOT THE BUILD. A cell is one
-/// benchmark, one mode and one riven-ness, and a build is scored in every one
-/// its weapon has — so counting ROWS counts the same build up to `benchmarks x
-/// modes` times. On the Ballistica Prime that is 517 rows over 86 builds, and
-/// the multiple is the weapon's mode count: 4.9x there against 1.8x on the
-/// Torid, which makes the row count not merely large but INCOMPARABLE between
-/// weapons. It ranked the Ballistica above the Torid, 517 to 447, where the
-/// builds run 86 to 246.
+/// A CELL IS ONE BENCHMARK, ONE MODE AND ONE RIVEN-NESS, and a build is scored
+/// in every one its weapon has — so counting ROWS counts it up to
+/// `benchmarks x modes` times, by a multiple that is the weapon's mode count.
+/// That makes a row count not merely large but INCOMPARABLE between weapons.
 ///
-/// DERIVED BY EXCLUSION, never by listing the axes. The same rule
-/// `build_site_app.py`'s own `_ident` states: everything the scorer writes
-/// about the BUILD is identity, and a hand-written list is the copy that drops
-/// the next axis in silence. What is excluded is the cell (`benchmark`,
-/// `mode`), the measurement (`score`), and the presentation (`rank`, `shown`,
-/// `source`).
+/// DERIVED BY EXCLUSION, never by listing the axes — the rule
+/// `build_site_app.py`'s `_ident` states, because a hand-written list is the
+/// copy that drops the next axis in silence. Out comes the cell, the
+/// measurement and the presentation.
 ///
-/// …AND A RIVEN IS ITS SHAPE. The rolls beside it are what THIS engine settled
-/// on for that cell — each cell searches its own best corner — so two cells of
-/// one riven build carry different rolls and would count as two builds. The
-/// board's own rule is that a row states a shape and the shape is scored at its
-/// ceiling; the rolls are a measurement, like the score.
+/// …AND A RIVEN IS ITS SHAPE: each cell searches its own best corner, so the
+/// rolls differ per cell and are a measurement like the score.
 const BOARD_CELL_KEYS = ["benchmark", "mode", "score", "rank", "shown", "source"];
 function boardRowIdentity(row) {
   const build = {};
