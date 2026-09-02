@@ -388,7 +388,7 @@ jobs:
             cp site/board.json /tmp/out/
             git fetch origin main
             git reset --hard origin/main
-            cp -r /tmp/out/boards data/benchmarks/
+            cp -r /tmp/out/boards .
             cp /tmp/out/board.json site/
             if git diff --quiet -- boards data/board_state.yaml site/board.json; then
               echo "board already current on main — nothing to commit"

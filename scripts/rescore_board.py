@@ -40,7 +40,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-BOARDS = ROOT / "data" / "benchmarks" / "boards"
+BOARDS = ROOT / "boards"
 SCORER = ROOT / "target" / "release" / ("wfsim-board.exe" if sys.platform == "win32" else "wfsim-board")
 
 # The fields a SUBMISSION carries. A submission never carries a score — that is
