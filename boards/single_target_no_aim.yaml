@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 4887
+submissions: 4891
 engine: 8d17981e30023c55e9af4d645931ef3125398725
 entries:
   - weapon: acceltra_prime
@@ -2540,6 +2540,42 @@ entries:
       bonuses: [critical_damage, multishot, toxin]
       rolls: [1.1, 1.1, 1.1]
   - weapon: boar_prime
+    mode: base
+    score: 11.33797465414734
+    fp: 884f128d0e44c2da
+    cost: 37.233
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    score: 11.235105030468382
+    fp: 4813f7c9c30945a5
+    cost: 25.228
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    score: 11.235105030468382
+    fp: ac8f87980aa36bd6
+    cost: 35.799
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
     mode: cycle
     score: 10.80946578511299
     fp: b8ce2f3c1f5712d5
@@ -2597,6 +2633,42 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 9.336698133306896
+    fp: 884f128d0e44c2da
+    cost: 54.608
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 9.319277612857476
+    fp: 4813f7c9c30945a5
+    cost: 37.388
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 9.319277612857476
+    fp: ac8f87980aa36bd6
+    cost: 28.591
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
@@ -17139,6 +17211,19 @@ entries:
   - weapon: boar_prime
     mode: base
     listed: false
+    score: 8
+    fp: ed4d39bf47011e14
+    cost: 70.428
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    listed: false
     score: 7.977012783933626
     fp: 0a82f6e4890fcdca
     cost: 46.773
@@ -17181,6 +17266,19 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    score: 7.148831496464838
+    fp: ed4d39bf47011e14
+    cost: 57.863
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -73248,7 +73346,7 @@ entries:
     probe: true
     score: 0.058734344895310604
     fp: 6d68e9bd2f9bdcb0
-    cost: 0.175
+    cost: 0.170
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_crux]
@@ -73258,7 +73356,7 @@ entries:
     probe: true
     score: 0.05769470198651623
     fp: 8e7a6c3995e63322
-    cost: 0.174
+    cost: 0.166
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, thermite_rounds]
     arcanes: [primary_crux]
@@ -73268,7 +73366,7 @@ entries:
     probe: true
     score: 0.04248925556819649
     fp: bf1a786b7b77d70c
-    cost: 0.177
+    cost: 0.170
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, wildfire]
     arcanes: [primary_crux]
@@ -73278,7 +73376,7 @@ entries:
     probe: true
     score: 0.06670025330971223
     fp: ad668dd0321b9dee
-    cost: 0.181
+    cost: 0.173
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, malignant_force, wildfire]
     arcanes: [primary_crux]
@@ -73288,7 +73386,7 @@ entries:
     probe: true
     score: 0.06670025330971223
     fp: 70dda35c243124d9
-    cost: 0.181
+    cost: 0.173
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, rime_rounds, infected_clip, wildfire]
     arcanes: [primary_crux]
@@ -73298,7 +73396,7 @@ entries:
     probe: true
     score: 0.02562579843473289
     fp: d0eadbe1021321c6
-    cost: 0.265
+    cost: 0.253
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_crux]
@@ -73308,7 +73406,7 @@ entries:
     probe: true
     score: 0.1693744466126899
     fp: 961a8c21a287ed9b
-    cost: 0.283
+    cost: 0.260
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_deadhead]
     valence: impact
