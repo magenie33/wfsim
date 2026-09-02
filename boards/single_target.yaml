@@ -71797,7 +71797,7 @@ entries:
     probe: true
     score: 5.385715309209356
     fp: bf845c2fc4c8f97a
-    cost: 0.307
+    cost: 0.309
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, rifle_elementalist, speed_trigger, vital_sense, hellfire]
     arcanes: [primary_crux]
     valence: impact
