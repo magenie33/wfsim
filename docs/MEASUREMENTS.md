@@ -18,6 +18,25 @@ General setup:
 
 ---
 
+## The queue — what is waiting on a session
+
+Entries believed and never checked in game. This is the inbox of this file:
+an item leaves it ONE way, by becoming an M-number below, run and written up.
+
+Being listed here is **not** an admission that a number is wrong. A gap the
+model KNOWS it has is stated where the model is — `unmodeled:` in the weapon's
+own yaml, or `data/unmodelled/reasons.yaml` — and a rule believed off the wiki
+carries **Status: unverified** beside itself in `docs/MECHANICS.md`. This list
+is only the order to measure them in.
+
+| entry | what one session would settle |
+| --- | --- |
+| **Onos** (`onos`, `onos_incarnon`) | The held beam's ramp: the yaml admits the damage climbs to ×2.5 over a hold and models none of it. Read the beam tick at trigger-down, mid-hold and at the top — is ×2.5 the end of a ramp or a step, what clock walks it, and does it survive letting go? Separately, the Incarnon form's charged arm-cannon shot is a second attack with its own explosion and has no entry at all. |
+| **Opticor** (`opticor`, `opticor_quick`) | Whether M66's charge law is this weapon's too. M66 measured `multiplier = 1 + progress`, and a full charge worth TWICE the published charged damage, on the Ballistica Prime, and says explicitly that it is one weapon and not a class. Here the two forms carry their published figures instead, so read direct and radial at no charge, half bar and full: if the full charge reads ~2× the panel, the law generalises and both figures are half what they should be. |
+| **Opticor Vandal** (`opticor_vandal`, `opticor_vandal_quick`) | The same reading, and it is the discriminator rather than a repeat: the Vandal charges in 0.6 s against the Opticor's 2 s. If the multiplier tracks the BAR it lands identically on both; if it tracks the clock, only the 2 s weapon reaches it. |
+
+---
+
 ## M1 — Is Toxin's shield-bypass damage reduced by the enemy shield gate?
 
 **Question.** When an enemy's shields break, a 0.1 s gate lets only 5% of

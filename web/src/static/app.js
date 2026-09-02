@@ -505,6 +505,45 @@ function setComputePct(pct) {
 /// outlive the window to prove the recovery happens at all.
 const LANE_WATCHDOG = { loading: 90000, stall: 45000 };
 
+/// A WORKER THAT NEITHER ANSWERS NOR FAILS, watched — ONE implementation, used
+/// by both fleets.
+///
+/// `onerror` settles its waiters and a terminate settles its waiters; a worker
+/// the browser reclaims mid-call does neither, so whatever waited on it waited
+/// for ever, with no error to catch. Silence is made a BOUNDED outcome instead:
+/// a request starts a clock, any word from the worker resets it, and a worker
+/// past its window is handed to `giveUp` and settled like any other dead one.
+///
+/// BOTH FLEETS BEAT. A simulate reports progress once a run and the optimizer
+/// posts at about 4 Hz, so being slow and being gone are told apart by what the
+/// worker SAYS rather than by how long it is taking.
+function watchSilence(giveUp) {
+  const beat = new Map();
+  let dog = null, spoke = false;
+  const disarm = () => { if (dog) { clearInterval(dog); dog = null; } };
+  const clear = () => { beat.clear(); disarm(); };
+  return {
+    clear,
+    /// This worker said something — about `id`, or at all.
+    heard(id) { spoke = true; if (beat.has(id)) beat.set(id, Date.now()); },
+    /// Answered, so it is no longer owed one.
+    done(id) { beat.delete(id); if (!beat.size) disarm(); },
+    /// One request is now outstanding.
+    start(id) {
+      beat.set(id, Date.now());
+      if (dog) return;
+      dog = setInterval(() => {
+        const cap = spoke ? LANE_WATCHDOG.stall : LANE_WATCHDOG.loading;
+        const now = Date.now();
+        let quiet = false;
+        beat.forEach((at) => { if (now - at > cap) quiet = true; });
+        if (quiet) { clear(); giveUp(); }
+        else if (!beat.size) disarm();
+      }, 5000);
+    },
+  };
+}
+
 function makeLane() {
   const w = new Worker("/worker.js");
   const pending = new Map();
@@ -523,26 +562,12 @@ function makeLane() {
   // The fix is to make SILENCE a bounded outcome rather than an infinite wait:
   // a simulate beats once a run (see `worker.js`), so a lane that says nothing
   // for the window below is presumed gone and settled like any other dead one.
-  const beat = new Map();
-  let dog = null;
-  const disarm = () => { if (dog) { clearInterval(dog); dog = null; } };
-  let spoke = false;
   const perish = (why) => {
     dead = true;
     pending.forEach((res) => res({ ok: false, error: why, worker_dead: true }));
-    pending.clear(); progress.clear(); beat.clear(); busy = 0; disarm();
+    pending.clear(); progress.clear(); wd.clear(); busy = 0;
   };
-  const arm = () => {
-    if (dog) return;
-    dog = setInterval(() => {
-      const cap = spoke ? LANE_WATCHDOG.stall : LANE_WATCHDOG.loading;
-      const now = Date.now();
-      let quiet = false;
-      beat.forEach((at) => { if (now - at > cap) quiet = true; });
-      if (quiet) perish("worker stopped answering");
-      else if (!beat.size) disarm();
-    }, 5000);
-  };
+  const wd = watchSilence(() => perish("worker stopped answering"));
   // A LANE THAT CANNOT LOAD IS A LANE, NOT A DEAD PAGE.
   //
   // `worker.js` fetches a ~6 MB wasm module, and a fetch can fail — a flaky
@@ -566,8 +591,7 @@ function makeLane() {
   w.onmessage = (e) => {
     // ANY word from the worker is proof of life, including one about a request
     // whose progress nobody asked to see.
-    spoke = true;
-    if (beat.has(e.data.id)) beat.set(e.data.id, Date.now());
+    wd.heard(e.data.id);
     if (e.data.kind === "progress") {
       const f = progress.get(e.data.id);
       if (f) f(e.data.done, e.data.total);
@@ -577,8 +601,7 @@ function makeLane() {
     if (r) {
       pending.delete(e.data.id);
       progress.delete(e.data.id);
-      beat.delete(e.data.id);
-      if (!beat.size) disarm();
+      wd.done(e.data.id);
       busy = Math.max(0, busy - 1);
       r(e.data.payload);
     }
@@ -601,8 +624,7 @@ function makeLane() {
       pending.forEach((res) => res({ ok: false, cancelled: true }));
       pending.clear();
       progress.clear();
-      beat.clear();
-      disarm();
+      wd.clear();
       busy = 0;
     },
     send(msg, onProgress) {
@@ -610,8 +632,7 @@ function makeLane() {
         if (dead) { res({ ok: false, cancelled: true }); return; }
         const id = ++seq;
         pending.set(id, res);
-        beat.set(id, Date.now());
-        arm();
+        wd.start(id);
         busy += 1;
         if (onProgress) progress.set(id, onProgress);
         w.postMessage({ ...msg, id });
@@ -981,7 +1002,14 @@ function woptStart(body, checkpoint) {
   for (let i = 0; i < shards; i++) {
     const w = new Worker("/worker.js");
     job.workers.push(w);
+    // THE SEARCH'S WORKERS ARE WATCHED TOO. They are not lanes — they are made
+    // here and run one long call — but the failure is the same: a reclaimed
+    // worker neither answers nor errors, and this fleet had only `onerror`. A
+    // search that can never finish and can never fail leaves the reader with a
+    // progress bar that has stopped and no way to tell it from a slow one.
+    const wd = watchSilence(() => gone("worker stopped answering"));
     w.onmessage = (e) => {
+      wd.heard(0);
       if (e.data.kind === "progress") { job.statuses[i] = e.data.payload; job.status = rollup(); }
       if (e.data.kind === "board") { job.boards[i] = e.data.payload; job.board = woptMerge(job.boards.filter(Boolean)); }
       if (e.data.kind === "checkpoint") {
@@ -991,6 +1019,7 @@ function woptStart(body, checkpoint) {
         if (shards === 1) saveCheckpoint(body, cp, board || job.board);
       }
       if (e.data.kind === "result") {
+        wd.done(0);
         job.parts[i] = e.data.payload;
         w.terminate();
         job.workers[i] = null;
@@ -1001,16 +1030,22 @@ function woptStart(body, checkpoint) {
         }
       }
     };
-    w.onerror = (e) => {
-      job.parts[i] = { ok: false, error: String((e && e.message) || "worker error") };
+    // ONE WAY A SHARD ENDS BADLY, however it went bad: it has an answer that
+    // says so, its worker is let go, and the run completes on what it has.
+    const gone = (why) => {
+      wd.clear();
+      if (job.parts[i]) return;
+      job.parts[i] = { ok: false, error: why };
       if (job.workers[i]) { job.workers[i].terminate(); job.workers[i] = null; }
       if (job.parts.every(Boolean)) { job.result = woptMerge(job.parts); job.workers = []; }
     };
+    w.onerror = (e) => gone(String((e && e.message) || "worker error"));
     w.postMessage({
       kind: "optimize",
       body: { ...body, shard: i, shards },
       checkpoint: checkpoint || null,
     });
+    wd.start(0);
   }
   wopt = job;
   return { ok: true, job_id: job.id };
@@ -11377,7 +11412,11 @@ function renderQuickCalc() {
     // A stale ranking must not outlive the switch, and "提升" must not stay
     // selected with nothing behind it.
     if (!gainPrefs.on) {
-      gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
+      // OFF MEANS STOP, not "stop asking for more". A scan already in flight
+      // kept its workers and its right to write, so switching off and back on —
+      // the first thing anyone does to something that looks stuck — resumed
+      // into the state it was stuck in. Now it is the rebuild button.
+      restartCalc();
       if (pickerPrefs.sort === "gain") { pickerPrefs.sort = "drain"; savePickerPrefs(); }
     }
     saveGainPrefs();
@@ -11500,23 +11539,31 @@ function renderCalcStatus() {
   };
   const reset = $("cs-reset");
   if (reset) reset.onclick = () => {
-    // THE MOVE THAT ALWAYS WORKS, so it has to leave nothing behind.
-    //
-    // THE GENERATION IS BUMPED FIRST. A scan still in flight is `live()` until
-    // something else bumps it, so a rebuild that only replaced the state left
-    // the old scan free to finish into the NEW one and stamp its key —
-    // registering a ranking of a fight nobody is looking at as complete, which
-    // is worse than the hang it was pressed to end. Bumping strands every scan
-    // that exists before a single worker is touched.
-    gainGen += 1;
-    gainPending = null;
-    resetPool();
-    gainScan = { key: null, want: null, running: false, base: 0, floor: 0, by: {},
-      done: 0, total: 0, note: "", metric: "", failed: false, lanesLost: 0 };
+    restartCalc();
     calcStatusPeek = false;
     renderCalcStatus();
     refreshGains();
   };
+}
+
+/// STOP EVERYTHING THE QUICK CALC IS DOING, and leave nothing that can write.
+///
+/// THE GENERATION IS BUMPED FIRST, before a worker is touched. A scan in flight
+/// is `live()` until something bumps it, so a restart that only replaced the
+/// state left the old scan free to finish into the NEW one and stamp its key —
+/// filing a ranking of a fight nobody is looking at as complete, which is worse
+/// than the stall it was asked to end.
+///
+/// BOTH WAYS OUT ARE THIS ONE FUNCTION: the rebuild button, and switching the
+/// quick calc off. A reader flicks that switch when it looks stuck, so it has
+/// to mean what the button means — anything less makes the obvious gesture the
+/// one that does not work.
+function restartCalc() {
+  gainGen += 1;
+  gainPending = null;
+  resetPool();
+  gainScan = { key: null, want: null, running: false, base: 0, floor: 0, by: {},
+    done: 0, total: 0, note: "", metric: "", failed: false, lanesLost: 0 };
 }
 
 /// DROP EVERY WORKER, so the next question builds fresh ones.

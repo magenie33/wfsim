@@ -223,4 +223,45 @@ check(
   `key stamped ${f.answersAgain}, ranked ${f.ranked}`,
 );
 
+// THE SWITCH IS THE OTHER WAY OUT. It is the first thing anyone does to
+// something that looks stuck, so off has to MEAN off — a scan that kept its
+// workers and its right to write would resume into the state it was stuck in.
+const s2 = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  // THE WINDOWS BACK TO NORMAL. The wedge cases above lower them to make a
+  // silent worker cheap to prove; a real scan measured under 1.5 s of patience
+  // is killed on its own baseline.
+  LANE_WATCHDOG.loading = 90000;
+  LANE_WATCHDOG.stall = 45000;
+  const box = document.getElementById('gp-on');
+  out.switchThere = !!box;
+  if (!box) return out;
+  // LATCHED, and with something queued behind it.
+  gainAxis = { kind: 'mods', idx: 0 };
+  gainScan = { key: null, want: gainKey(), axis: { kind: 'mods', idx: 0 },
+    running: true, base: 0, floor: 0, by: {}, done: 5, total: 60, phase: '',
+    note: '', metric: '', failed: false, lanesLost: 0, ids: new Set() };
+  gainPending = { axis: { kind: 'mods', idx: 4 }, repaint: () => {} };
+  laneAt(0);
+  out.hadWorkers = pool.filter(Boolean).length > 0;
+  box.checked = false;
+  box.dispatchEvent(new Event('change'));
+  await sleep(200);
+  out.stopped = gainScan.running === false;
+  out.pendingCleared = gainPending === null;
+  out.workersDropped = pool.filter(Boolean).length === 0;
+  return out;
+})()`);
+
+check(
+  "the quick-calc switch is on the page to be found",
+  s2.switchThere === true,
+  `found ${s2.switchThere}`,
+);
+check(
+  "…switching it OFF stops the scan, drops the workers and strands the queue",
+  s2.stopped === true && s2.pendingCleared === true && s2.workersDropped === true,
+  `stopped ${s2.stopped}, pending cleared ${s2.pendingCleared}, workers dropped ${s2.workersDropped} (had ${s2.hadWorkers})`,
+);
 process.exit(0);
