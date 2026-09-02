@@ -42,6 +42,14 @@ const r = await evaluate(`(async () => {
   await open('Ballistica_Prime');
   out.richRows = ((typeof BOARD !== 'undefined' && BOARD) ? (BOARD['ballistica_prime'] || []) : []).length;
   out.richHidden = !!bar().hidden;
+  // THE COUNT IS BUILDS, NOT ROWS. A build is ranked once per cell — one
+  // benchmark, one mode, one riven-ness — so counting rows counts it up to
+  // benchmarks x modes times, and by a multiple that differs per weapon.
+  out.rowCount2 = ((typeof BOARD !== 'undefined' && BOARD) ? (BOARD['ballistica_prime'] || []) : []).length;
+  out.shown = parseInt((bar().querySelector('.plabel b') || {}).textContent || '0', 10);
+  out.distinct = new Set(
+    ((typeof BOARD !== 'undefined' && BOARD) ? (BOARD['ballistica_prime'] || []) : [])
+      .map((r) => boardRowIdentity(r))).size;
   out.richShape = shape();
   out.richValues = values();
   out.richLine = line();
@@ -107,6 +115,11 @@ check(
   `${r.richRows} rows — is this running against site/?`,
 );
 check("the retriever is drawn on a weapon that has rows", r.richHidden === false);
+check(
+  "…and the count is DISTINCT BUILDS, not the rows they were ranked in",
+  r.shown === r.distinct && r.shown < r.rowCount2,
+  `shown ${r.shown}, distinct ${r.distinct}, rows ${r.rowCount2}`,
+);
 check(
   "...as four controls, in one order",
   same(r.richShape, FOUR),
