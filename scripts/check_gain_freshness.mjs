@@ -90,7 +90,7 @@ const r = await evaluate(`(async () => {
   // THE SCAN RUNS WIDE. ~80 candidates x 10 runs is ~800 engagements, and they
   // all went down ONE worker until 2026-08-03 while the optimizer next door ran
   // a fleet — which is why a rich build made the quick calc feel like a search.
-  const lanes = gainLanes();
+  const lanes = await gainLanes();
   out.laneCount = lanes.length;
 
   // ...and it is INTERRUPTIBLE. Forced down a single lane so the scan is slow
@@ -117,7 +117,11 @@ const r = await evaluate(`(async () => {
     out.caughtMidScan = gainScan.running && gainScan.done > 0;
     out.abandonedAt = gainScan.done;
     out.staleTotal = gainScan.total;
-    const staleKey = gainScan.key;
+    // WHAT A LIVE SCAN IS FOR, which is want. The key is stamped on COMPLETION
+    // — that is what stops a scan that died half way being filed as answered —
+    // so mid-flight it is null for the old scan and null for the new one, and
+    // comparing it here asked whether nothing had changed into nothing.
+    const staleWant = gainScan.want;
 
     // The fight moves. Straight into the LIVE fight, which is the only place
     // one is edited: theFight() reads sim and nothing else, so the key moves
@@ -128,7 +132,7 @@ const r = await evaluate(`(async () => {
     const t0 = Date.now();
     const p2 = scanGains(axis, () => {});          // ...and B takes over at once
     out.supersedeMs = Date.now() - t0;
-    out.supersededKey = gainScan.key !== staleKey;
+    out.supersededKey = gainScan.want !== staleWant;
     await Promise.all([p1, p2]);
     // B finished as itself: a superseded A that kept writing would push its done
     // past B's total and scribble A's answers into B's table.

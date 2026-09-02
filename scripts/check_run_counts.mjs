@@ -64,9 +64,15 @@ const r = await evaluate(`(async () => {
   gainPrefs = { ...gainPrefs, runs: 30 };
   const seen = [];
   const realApi = api;
+  // BOTH SEAMS, which simulateFleet's own comment demands: a run wide enough to
+  // shard never touches api, so on a machine with lanes to spare this saw
+  // nothing at all and reported the scan as posting no count.
+  const realFleet = simulateFleet;
   window.api = async (p, b) => { if (p === '/api/simulate') seen.push(b); return realApi(p, b); };
+  window.simulateFleet = async (b, onP) => { seen.push(b); return realFleet(b, onP); };
   try { await scanGains({ kind: 'mods', idx: 0 }, null); } catch (_) {}
   window.api = realApi;
+  window.simulateFleet = realFleet;
   out.qcPosted = seen.length ? seen[0].runs : null;
   out.qcPostedIsNotTheSim = seen.length ? seen[0].runs !== simRuns() : null;
   gainPrefs = { ...gainPrefs, runs: 10 };
@@ -237,7 +243,7 @@ const r = await evaluate(`(async () => {
       // THE PAGE'S ONE POOL. The simulator had a fleet of its own until
       // 2026-08-18, beside the quick calc's lanes and the single rpc worker;
       // they are one pool now and this reads it by its new name.
-      out.fleetLanes = lanes().length;
+      out.fleetLanes = (await lanes()).length;
       const fleet = await simulateFleet(body, () => {});
       const solo = await api('/api/simulate', body);
       out.fleetDiff = ['score', 'score_mean', 'dps', 'burst_dps', 'max_hit', 'procs', 'kills_std']
