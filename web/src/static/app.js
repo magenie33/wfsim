@@ -2613,6 +2613,13 @@ async function refreshRivenNames() {
   rivenModCache = { key: null, list: [] };
   // The lists that show a riven's printed values may already have rendered
   // with only its stat ids — this arrives afterwards, so they get redrawn.
+  //
+  // THE BUILD'S OWN SLOTS ARE ONE OF THEM. An equipped riven prints its roll in
+  // its slot like any other card, and that text comes from here — so a slot
+  // drawn before this returned showed the fallback, four bare stat NAMES with
+  // no values on them, and nothing ever came back to correct it. It was
+  // invisible while the slot printed nothing at all.
+  if ($("mod-slots")) renderMods();
   if (typeof renderOptModList === "function" && $("opt-mods") && !$("opt-block").hidden) renderOptModList();
   if ($("riven-all") && !$("riven-block").hidden) renderRivenAll();
   if ($("mod-popover") && !$("mod-popover").hidden && rivenPickerSlot != null) renderMenu(rivenPickerSlot, $("mod-search").value || "");
@@ -9833,7 +9840,16 @@ function buildSlot(i) {
       : "";
     // The configured mod shows its CURRENT description (values at the
     // slot's rank), exactly like the in-game card.
-    const desc = m.desc_ranks || officialDesc(m, r) ? cardLines(m, r) : null;
+    //
+    // ASKED THE WAY THE PICKER ASKS IT. This required a `desc_ranks` or an
+    // official description, which a RIVEN has neither of — its card text is its
+    // rolled stats, printed by the engine and carried on `effects`. So the same
+    // riven listed its lines in the picker and lost them the moment it was
+    // equipped, which is the one place a player reads them while building.
+    // `cardLines` already falls back to `effects`; the gate was the only thing
+    // in the way, and dropping it makes the slot agree with the list it came
+    // from rather than adding a second rule about what a card may say.
+    const desc = cardLines(m, r);
     // WHAT THE SLOT'S COLOUR DID TO THIS MOD, said the way the arsenal says it:
     // the mod's OWN polarity next to the number, and the number coloured for
     // the three answers — matched halves it, a different colour adds 25%, an
@@ -9843,7 +9859,7 @@ function buildSlot(i) {
     const matchedPol = s.pol === m.polarity || (s.pol === "Omni" && m.polarity !== "Umbra");
     const fit = !s.pol ? "" : matchedPol ? " matched" : " mismatched";
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
-      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr${fit}"><span class="mpol" title="${escHtml(polCap(m.polarity))}">${polGlyph(m.polarity)}</span>${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
+      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc.length ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr${fit}"><span class="mpol" title="${escHtml(polCap(m.polarity))}">${polGlyph(m.polarity)}</span>${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openModSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
