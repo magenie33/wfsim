@@ -1019,9 +1019,57 @@ off a record that is not an identity axis (not `at`, not `benchmark`).
 2. **The board file holds every row.** 2,185 today across three rulers. It is
    committed on every update, so the repo grows with the community, and `site/`
    is regenerated and redeployed with it.
-3. **Full rescores are O(store) and unavoidable** — a code change really does
-   change every number. 128 shards buys a constant factor; the ceiling is
-   GitHub's 256-job matrix.
+3. **Full rescores are O(store)**, and 128 shards buys only a constant factor —
+   the ceiling is GitHub's 256-job matrix. A code change is no longer assumed to
+   change every number (§"When the code moved"), and what a full rescore does
+   pay for is bounded by the screen below.
+
+### Where the 132 hours go, measured
+
+Every row records what it cost, so the bill can be read straight off the boards
+rather than estimated. Across the three:
+
+| ruler | rows | total | median row | worst row |
+| --- | --- | --- | --- | --- |
+| `group_clear` | 7,493 | **6,153 min** | 20.0 s | **121 min** |
+| `single_target` | 7,493 | 999 min | 3.6 s | 4.2 min |
+| `single_target_no_aim` | 7,493 | 759 min | 2.6 s | 1.7 min |
+
+**`group_clear` is 78% of it**, and inside that a handful of rows are the tail:
+the top 100 rows of 7,493 are 31% of that ruler's bill, and thirteen of the
+top fifteen are one weapon (Phantasma, a status beam against 361 bodies for
+180 s). That is not a pathology to hunt — the cost of a row is how much the
+build actually DOES, so the most expensive rows are the strongest builds on the
+biggest ruler. It is the makespan floor: one row is one indivisible unit, so no
+row-wise fan-out goes below the biggest row.
+
+**RIVEN ROWS ARE 58% of the `group_clear` bill on 33% of its rows** (mean 86 s
+against 31 s), which is the corner search: sixteen probes at `PROBE_RUNS` plus
+one real measurement, ~2.6x a plain row.
+
+### Not paying for rows that cannot be listed
+
+A third of the bill goes on rows scoring under a quarter of their group's
+leader — rows the floor will never list. The screen exists for exactly this and
+turns two things on:
+
+- **It needs a group LEADER**, which comes from the last board. A prior board
+  whose scores are unusable is still READ for its leaders and its per-row costs,
+  so a full rescore is screened like any other run. Without that, a full rescore
+  screens nothing at all: measured, ZERO rows of 22,479. The `screen:` line in
+  the log says how many thresholds a run had, because "0 screened" and "nothing
+  deserved screening" are otherwise the same sentence.
+- **A riven row is screened on the corner search's own best probe.** It cannot
+  be screened before that — its riven is not chosen yet — but the search already
+  prices every corner, so the best of them is a number already paid for. If it
+  reads under the cut, no corner of that shape can be listed and the full
+  measurement buys nothing: 38% off every riven row that is not going to place.
+  This is sounder than the plain-row screen, since what is judged is the corner
+  that would have been measured.
+
+Measured on a real group, full rescore, published rows and every score
+identical: 12.4 s → 7.5 s over 61 plain rows, and 16 of 41 rows screened where
+none had been.
 
 ### What this system actually is
 

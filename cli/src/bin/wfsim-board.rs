@@ -397,6 +397,9 @@ struct Prior {
     /// Rows whose OWN data moved. Printed rather than counted silently: it is
     /// the number that says how much a change actually cost.
     stale: usize,
+    /// WHY THE SCORES ARE EMPTY, when they are. The costs and the leaders are
+    /// still here: a prior board that cannot be REUSED can still be READ.
+    dropped: Option<String>,
 }
 
 /// `across_code` = READ THE PRIOR BOARD DESPITE A FINGERPRINT DIFFERENCE, which
@@ -411,20 +414,30 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> 
     }
     let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
     let prior = wfsim_engine::boards_data::parse(&text).map_err(|e| format!("{path}: {e}"))?;
-    if !across_code && prior.engine != code_fp {
-        return Err(format!(
-            "engine code moved ({} -> {code_fp})",
-            if prior.engine.is_empty() {
-                "unrecorded"
-            } else {
-                &prior.engine
-            }
-        ));
-    }
+    // A PRIOR BOARD THAT CANNOT BE REUSED CAN STILL BE READ.
+    //
+    // Returning here turns the probe screen off on exactly the runs that need
+    // it. The screen's threshold is the group's LEADER from the last board and
+    // its packing input is each row's measured COST, both of which the walk
+    // below reads before the per-row staleness check, deliberately, "because a
+    // stale group still had a leader". Dropping them with the scores makes a
+    // full rescore run blind: measured across the three boards, ZERO rows
+    // screened out of 22,479 while 36% of the 132-hour bill went on rows
+    // scoring under a quarter of their group's leader.
+    //
+    // A STALE LEADER IS A FINE THRESHOLD. It does not decide what is published;
+    // it decides whether a row is worth 1000 runs rather than 100, under a 2x
+    // margin on top of a floor that is itself half the leader.
+    let dropped = (!across_code && prior.engine != code_fp).then(|| {
+        format!(
+            "engine code moved ({} -> {code_fp}) — scores dropped, leaders and costs kept",
+            if prior.engine.is_empty() { "unrecorded" } else { &prior.engine }
+        )
+    });
     if family(&prior.benchmark) != family(bench_id) {
         return Err(format!("{path} is {}'s board", prior.benchmark));
     }
-    let mut out = Prior::default();
+    let mut out = Prior { dropped, ..Default::default() };
     for e in &prior.entries {
         let Ok(v) = wfsim_engine::builds::validate_for_board_with(
             bench_id,
@@ -478,6 +491,10 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> 
         }
         if e.fp != want {
             out.stale += 1;
+            continue;
+        }
+        // THE SCORES, AND ONLY THEY, ARE WHAT A CODE CHANGE INVALIDATES.
+        if out.dropped.is_some() {
             continue;
         }
         if let Some(rv) = &e.riven {
@@ -623,6 +640,9 @@ fn main() {
                 prior_rolls = p.rolls;
                 prior_costs = p.costs;
                 prior_leaders = p.leaders;
+                if let Some(why) = &p.dropped {
+                    eprintln!("full rescore: {why}");
+                }
                 if verify {
                     // NOT into `known`: a verify run has to MEASURE the sample,
                     // and a seeded score is a row that is never fought.
@@ -938,20 +958,18 @@ fn main() {
                     // expensive: most of what it adds is a build in a mode it
                     // was never tuned for.
                     //
-                    // NOT ON A RIVEN ROW. Its riven is not chosen yet — the
-                    // corner search below picks it — so a probe here measures
-                    // the build without the thing it is built around and would
-                    // screen out the strongest rows on the board. Those already
-                    // have their own two-decision structure and cost 2.6x
-                    // rather than 16x because of it.
-                    let cut = (!v.riven.is_some())
-                        .then(|| {
-                            prior_leaders
-                                .get(&(v.weapon.clone(), played.id.to_string(), false))
-                                .map(|top| PROBE_MARGIN * FLOOR * top)
-                        })
-                        .flatten();
-                    if let Some(cut) = cut {
+                    // A RIVEN ROW IS SCREENED TOO, and against ITS OWN group's
+                    // leader: a riven group and a plain one are different
+                    // populations of the same weapon and each has its own top.
+                    //
+                    // NOT HERE, THOUGH. Its riven is not chosen yet, so a probe
+                    // at this point measures the build without the thing it is
+                    // built around. The corner search below picks the riven AND
+                    // prices it, so that is where its screen goes.
+                    let cut = prior_leaders
+                        .get(&(v.weapon.clone(), played.id.to_string(), v.riven.is_some()))
+                        .map(|top| PROBE_MARGIN * FLOOR * top);
+                    if let (Some(cut), None) = (cut, v.riven.as_ref()) {
                         let mut probe = req.clone();
                         if let Some(o) = probe.as_object_mut() {
                             o.insert("runs".into(), json!(PROBE_RUNS));
@@ -1005,17 +1023,67 @@ fn main() {
                     if let Some(shape) = &v.riven {
                         let cls =
                             wfsim_engine::rivens_data::class_for_weapon(&v.weapon).unwrap_or("");
+                        // THE BEST CORNER'S OWN PROBE SCORE, kept rather than
+                        // thrown away: it is the screen, and it is already paid
+                        // for. IN THE BOARD'S OWN METRIC, so it can be compared
+                        // with the cut without a second conversion — which for
+                        // `kpm` is a positive linear rescale of what this
+                        // returned before, so the corner it picks, and every
+                        // number published, are unchanged.
+                        let top_probe = std::cell::Cell::new(f64::NEG_INFINITY);
                         let best = wfsim_engine::rivens_data::perfect(shape, cls, |sp| {
                             let mut probe = req.clone();
                             if let Some(o) = probe.as_object_mut() {
                                 o.insert("rivens".into(), riven_request(sp));
                                 o.insert("runs".into(), json!(PROBE_RUNS));
                             }
-                            wfsim_engine_webapi_simulate(&probe)
-                                .get("score")
-                                .and_then(Value::as_f64)
-                                .unwrap_or(0.0)
+                            let out = wfsim_engine_webapi_simulate(&probe);
+                            let s = match metric.as_str() {
+                                "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
+                                _ => out.get("score").and_then(Value::as_f64).unwrap_or(0.0)
+                                    * 60.0
+                                    / duration,
+                            };
+                            top_probe.set(top_probe.get().max(s));
+                            s
                         });
+                        // …AND THE SCREEN, ON A NUMBER THAT COST NOTHING EXTRA.
+                        //
+                        // A riven row is sixteen probes and one real measurement.
+                        // If the BEST of the sixteen reads under a quarter of its
+                        // group's leader, no corner of this shape can be listed
+                        // and the measurement buys nothing — so the row costs 16
+                        // probes rather than 16 + 10 probe-equivalents, which is
+                        // 38% off every riven row that is not going to place —
+                        // and riven rows are 58% of the group-clear bill.
+                        //
+                        // SOUNDER THAN THE PLAIN-ROW SCREEN, not weaker: what is
+                        // judged is the very corner that would have been measured.
+                        if let Some(cut) = cut {
+                            if top_probe.get() < cut {
+                                let took = began.elapsed().as_secs_f64();
+                                costs.insert(key.clone(), took);
+                                probed.push(Row {
+                                    probe: true,
+                                    cost_seconds: took,
+                                    identity: wfsim_engine::builds::identity(&v),
+                                    weapon: v.weapon.clone(),
+                                    mode: played.id.to_string(),
+                                    score: top_probe.get(),
+                                    mods: v.mods.clone(),
+                                    evolutions: v.evolutions.clone(),
+                                    arcanes: v.arcanes.clone(),
+                                    valence: v.valence.clone(),
+                                    exilus: v.exilus.clone().unwrap_or_default(),
+                                    riven: None,
+                                    fp: wfsim_engine::data_fingerprint::row_fingerprint(
+                                        &bench_id, &v.weapon, &v.mods, &v.arcanes,
+                                        &v.evolutions, v.exilus.as_deref(),
+                                    ),
+                                });
+                                continue;
+                            }
+                        }
                         row_riven = Some(RowRiven {
                             bonuses: shape.bonuses.clone(),
                             malus: shape.malus.clone(),
@@ -1179,6 +1247,22 @@ fn main() {
         held.len(),
         screened.len(),
     );
+    // HOW MANY GROUPS THE SCREEN COULD EVEN JUDGE. It needs a leader to measure
+    // against, and when it has none it silently passes everything — which it
+    // does whenever the prior board is unreadable. "0 screened" is
+    // indistinguishable from
+    // "nothing deserved screening", so the number of THRESHOLDS is printed
+    // beside it and a run with none says so.
+    if prior_leaders.is_empty() {
+        eprintln!(
+            "screen: NO group leaders — nothing can be screened this run, so every                  row pays the ruler's full precision"
+        );
+    } else {
+        eprintln!(
+            "screen: {} group leaders available",
+            prior_leaders.len()
+        );
+    }
 
     // ---- THE VERDICT, and nothing is written on this path -------------
     //
