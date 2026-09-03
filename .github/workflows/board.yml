@@ -7,26 +7,20 @@
 # that changes what a score MEANS.
 #
 # Two triggers, two scopes:
-#   schedule  — score what is new. quiet hours produce no commit at all.
-#   push      - engine or data changed. A CODE change re-scores every stored
-#               build; a DATA change re-scores only the rows that read the
-#               file that moved, which is most pushes and nearly free.
+#   schedule  — score what is NEW, and only while the code has not moved.
+#               quiet hours produce no commit at all.
+#   push      - engine or data changed, and this run OWNS that rescore. A CODE
+#               change re-scores every stored build; a DATA change re-scores
+#               only the rows that read the file that moved, which is most
+#               pushes and nearly free.
 #
 # The second is not an optimisation of the first, it is the correctness rule:
 # a board whose rows were measured by different engine versions is not a board.
 #
-# IT IS SHARDED, and it had to be. Measured on the run that raised
-# the rulers to 1000 runs: 24 s to build, 3m43s to read submissions out of KV,
-# **1h07m to score**, 2 s to commit. Meanwhile the schedule fires every twenty
-# minutes and `concurrency` keeps only ONE pending run — so every queued run was
-# cancelled by the next trigger and the board stopped updating entirely. Five
-# consecutive `cancelled` runs, and one that scored for 83 minutes and then
-# threw the result away on a merge conflict.
-#
 # Scoring is embarrassingly parallel — every row is an independent fight — so it
-# splits N ways by submission index and a merge job assembles the board from the
-# scores. 67 minutes becomes ~9, which is shorter than the interval that was
-# starving it.
+# splits `SHARDS` ways and a merge job assembles the board from the scores. What
+# that can and cannot buy is measured in docs/BOARD.md §"Two ceilings, and
+# neither is the shard count".
 name: board
 
 on:
@@ -68,73 +62,34 @@ on:
         type: boolean
         default: false
 
-# ONE AT A TIME **PER TRIGGER**, which is two workloads and always was. A
-# scheduled run scores what is NEW — a handful of builds, reusing every stored
-# score — while a push that moves `engine/` makes every row stale and scores the
-# whole library. They differ by three orders of magnitude and they shared one
-# concurrency group, so the cheap one queued behind the expensive one and was
-# then thrown away: GitHub keeps a single PENDING run per group, so each
-# scheduled trigger cancelled the one before it and the board moved about once
-# an hour instead of three times.
+# ONE AT A TIME **PER TRIGGER**, which is two workloads. A scheduled run scores
+# what is NEW — a handful of builds, reusing every stored score — while a push
+# that moves `engine/` makes every row stale and scores the whole library. They
+# differ by three orders of magnitude, and in one group GitHub's single PENDING
+# slot lets the expensive one cancel the cheap one.
 #
-# Splitting the group is safe because `publish` was already written for it — it
-# takes whatever `main` is now, writes the generated files on top and retries
-# three times. Two runs landing a board is last-writer-wins BY DESIGN: there is
-# no sense in which two versions of a generated file both hold something worth
-# keeping, which is the same reasoning that made it refuse to rebase.
+# SEPARATE GROUPS ARE NOT PERMISSION TO RUN AT ONCE: forty jobs is the account's
+# whole ceiling, so two rescores would halve each other. `rescore` above is what
+# prevents it — the schedule stands down while the code is moving.
+#
+# Splitting is safe because `publish` takes whatever `main` is now, writes the
+# generated files on top and retries three times: two runs landing a board is
+# last-writer-wins BY DESIGN, the same reasoning that made it refuse to rebase.
 concurrency:
   group: board-${{ github.event_name }}
   cancel-in-progress: false
 
 env:
-  # HOW MANY WAYS THE SCORING SPLITS. Actions minutes are not metered on a
-  # public repo, so the only cost of a wider fan-out is the fixed ~30 s each job
-  # spends checking out and restoring the cache.
+  # HOW MANY WAYS THE SCORING SPLITS, and it is sized against the account's
+  # concurrency ceiling rather than against the schedule. Forty jobs run at
+  # once whatever this says, so every shard past the fortieth pays a checkout
+  # and a cache restore and buys no parallelism — and one 121-minute row is a
+  # floor no split goes under. Both are measured in docs/BOARD.md §"Two
+  # ceilings, and neither is the shard count", which also says why raising this
+  # is not the answer a fourth time.
   #
-  # EIGHT STARVED THE BOARD AGAIN, the same way and for a new
-  # reason. Eight was measured when 67 minutes of scoring became ~9 a shard;
-  # the roster then doubled — 556 entries, 773 stored rows — and shards came in
-  # at 15 to 35 minutes with one at 55. The schedule fires every TWENTY, and a
-  # concurrency group keeps only one PENDING run, so any run slower than the
-  # interval has its successor discarded and the board stops moving. The board
-  # had not updated for hours and the owner noticed before any check did.
-  #
-  # It gets worse before it gets better: a reflecting bounce reaches 361 bodies
-  # on the group-clear ruler where the old walk reached 30, and that ruler's
-  # rows are the expensive ones.
-  #
-  # 32 is chosen against the INTERVAL rather than against the old figure — the
-  # run has to finish inside twenty minutes or it starves itself, and four times
-  # the fan-out puts the worst shard at ~14. The ceiling is GitHub's 256-job
-  # matrix, so there is room to raise it again when the roster doubles again.
-  #
-  # AND IT DID, THE SAME WAY, A THIRD TIME. What doubled this time
-  # was not the roster but the STORE: the library model landed on 2026-08-25 and
-  # every ruler now crosses the whole of it, so the boards went from ~900 rows to
-  # 2,185 and the store to 2,447 builds. Measured on the last run that finished:
-  # `submissions` 9m, the 32 shards 9.3 / 21.8 / **52.9** minutes
-  # (min/median/max, 712 minutes of work), `publish` 1m — 63 minutes of wall
-  # against a twenty-minute schedule, so every queued run was cancelled by its
-  # successor and the board updated about once an hour. The owner noticed the
-  # same way as last time: a build submitted and not showing up.
-  #
-  # 128 is again sized against the interval: 712/128 is 5.6 minutes a shard, and
-  # the worst/mean ratio measured at 32 (2.4x) puts the worst at about 13. It is
-  # A BET TO BE MEASURED, not arithmetic — 32 jobs were observed starting within
-  # two seconds of each other, but nothing here has yet run 128, and if GitHub
-  # schedules them in waves the wall time will not fall as far as the division
-  # says. Read the next run's spread before raising it again.
-  #
-  # THE NEXT WALL IS NOT THIS NUMBER, and it is no longer `submissions` either.
-  # That job read KV one request per stored build — O(the store) against an
-  # input of O(what is new) — and `scripts/fetch_submissions.sh` now keeps
-  # `library.json` between runs: the keys are LISTED in three requests and only
-  # what is missing is fetched, so a quiet run pays almost nothing and no shard
-  # count was ever going to touch it either way.
-  #
-  # WHAT TO WATCH IS THE SPREAD. The makespan is the slowest shard, and the
-  # scorer packs by measured cost now rather than by row index — read
-  # `accounted:` and the shard spread on the next run before touching this line.
+  # It is left ABOVE forty on purpose: the extra shards are the tail, and
+  # dealing the long rows out early is what keeps the last wave short.
   SHARDS: 128
 
   # HOW MANY WAYS THE PROBE SPLITS. It reproduces one published row per
@@ -160,6 +115,7 @@ jobs:
       probe: ${{ steps.shards.outputs.probe }}
       full: ${{ steps.full.outputs.yes }}
       moved: ${{ steps.fp.outputs.moved }}
+      rescore: ${{ steps.rescore.outputs.yes }}
     steps:
       - uses: actions/checkout@v4
 
@@ -220,6 +176,25 @@ jobs:
             echo "yes=true" >> "$GITHUB_OUTPUT"; echo "FULL rescore"
           else
             echo "yes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # THE PUSH OWNS THE RESCORE; THE SCHEDULE ONLY SCORES WHAT IS NEW.
+      #
+      # A rescore is 8,071 CPU minutes against a 40-job ceiling, so it cannot
+      # finish inside any schedule interval and two of them cannot run at once
+      # without halving each other. When the code has moved, the push that moved
+      # it is already scoring that generation and a scheduled run can only
+      # compete for the same forty slots — while its own new submissions could
+      # not be published anyway, since the generation they would join is not
+      # complete. So it exits, and quiet polling costs one job instead of forty.
+      - id: rescore
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ] \
+             || [ "${{ steps.fp.outputs.moved }}" != "true" ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::code moved — the push for it owns this rescore"
           fi
 
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
@@ -309,6 +284,7 @@ jobs:
   verify:
     needs: submissions
     if: needs.submissions.outputs.wired == 'true'
+      && needs.submissions.outputs.rescore == 'true'
       && needs.submissions.outputs.full != 'true'
       && needs.submissions.outputs.moved == 'true'
     runs-on: ubuntu-latest
@@ -406,6 +382,7 @@ jobs:
   score:
     needs: [submissions, decide]
     if: needs.submissions.outputs.wired == 'true'
+      && needs.submissions.outputs.rescore == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -470,6 +447,7 @@ jobs:
   publish:
     needs: [submissions, decide, score]
     if: needs.submissions.outputs.wired == 'true'
+      && needs.submissions.outputs.rescore == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
