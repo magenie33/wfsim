@@ -54,7 +54,14 @@ crit_chance_effects:
     # note: >-
     # ONLY the original target is stunned (standing upright, ~3 s);
     # chained enemies take damage without the stun. Status Duration mods
-    # do NOT extend the stun. Immune: Ospreys, Bosses, Tenno.
+    # do NOT extend the stun. Immune: Ospreys, Bosses, Tenno — and anything
+    # holding Overguard.
+    #
+    # IT CANNOT BE RE-APPLIED WHILE IT RUNS: the stun has to
+    # END before another can start, so a stream of Electricity procs leaves a
+    # GAP between stuns rather than holding one. That is the opposite of Heat,
+    # whose note says re-procs re-trigger the panic — the two are not one rule
+    # with two durations.
 
 # on_kill_cosmetic: bodies covered in blue electricity, lines to each afflicted
 
