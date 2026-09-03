@@ -522,6 +522,35 @@ jobs:
       # happened on 2026-08-11, throwing away 83 minutes of completed scoring at
       # the last step. The run that just scored holds the newest numbers; it
       # takes whatever base is current and writes them on top.
+      # THE BOARD DOES NOT PUBLISH NUMBERS FROM CODE THAT FAILED ITS TESTS.
+      #
+      # CI ran red for two days and thirty-five pushes on a real defect — a
+      # geometric boundary decided by the host's `acos`, so the runner swept one
+      # body fewer than the rule says — and every hour of that the board went on
+      # publishing melee numbers computed with it. Nothing connected the two:
+      # scoring is hours, CI is minutes, and by publish time the answer has been
+      # sitting there unread.
+      #
+      # KNOWN RED REFUSES; ANYTHING ELSE PROCEEDS. An API that will not answer,
+      # a renamed workflow, a CI still running — none of those is evidence the
+      # code is wrong, and stopping the board on infrastructure would trade a
+      # loud problem for a silent one. A board held here says so in the log, and
+      # the staleness arm of `audit.yml` says so again a day later.
+      - name: did this commit's tests pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runs=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${{ github.sha }}&per_page=50" \
+                 --jq '[.workflow_runs[] | select(.name == "CI") | .conclusion // "running"] | join(",")' \
+                 2>/dev/null || echo "")
+          echo "CI for ${{ github.sha }}: ${runs:-unknown}"
+          case ",$runs," in
+            *,failure,*|*,timed_out,*)
+              echo "::error::CI failed for this commit — the board will not publish numbers from it"
+              exit 1 ;;
+          esac
+
       - name: commit if the board moved
         run: |
           set -euo pipefail
