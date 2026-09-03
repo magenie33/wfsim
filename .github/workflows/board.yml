@@ -448,6 +448,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # NAMING ONE PERMISSION SETS EVERY OTHER TO NONE, so the CI check below
+      # needs its own line or the API answers 403, the check reads "unknown",
+      # and a guard that fails open never fires at all.
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -541,10 +545,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          runs=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${{ github.sha }}&per_page=50" \
-                 --jq '[.workflow_runs[] | select(.name == "CI") | .conclusion // "running"] | join(",")' \
-                 2>/dev/null || echo "")
-          echo "CI for ${{ github.sha }}: ${runs:-unknown}"
+          # THE TWO WAYS THIS LEARNS NOTHING ARE DIFFERENT FACTS. "No CI run for
+          # this sha" is ordinary; "the API would not answer" means the guard is
+          # not working, and a fail-open check that cannot say which has quietly
+          # stopped being a check.
+          if ! runs=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${{ github.sha }}&per_page=50" \
+                      --jq '[.workflow_runs[] | select(.name == "CI") | .conclusion // "running"] | join(",")' 2>&1); then
+            echo "::warning::could not read CI for ${{ github.sha }} — publishing without that check"
+            printf '%s\n' "$runs" | head -3
+            exit 0
+          fi
+          echo "CI for ${{ github.sha }}: ${runs:-none}"
           case ",$runs," in
             *,failure,*|*,timed_out,*)
               echo "::error::CI failed for this commit — the board will not publish numbers from it"
