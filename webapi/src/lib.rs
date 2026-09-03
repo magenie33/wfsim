@@ -2891,6 +2891,28 @@ fn enumerate_buffs(
             trigger: None,
         });
     }
+    // MELEE INFLUENCE IS A WINDOW, NOT A GRANT, so the arcane loop below — which
+    // walks `ArcBuffSpec`s — never saw it either. It is the one thing on a
+    // melee build a reader most wants to hold still: an Electricity status
+    // opens an 18 s clock and cannot refresh while it runs, so a fight's
+    // average is not what the card is worth WHILE IT IS OPEN. A toggle says
+    // which of the two is being read.
+    if arcane.influence_chance > 0.0 {
+        push(BuffMeta {
+            id: "arcane:melee_influence".into(),
+            name: wfsim_engine::arcanes_data::secondary("melee_influence")
+                .map(|d| d.name.clone())
+                .unwrap_or_else(|| prettify("melee_influence")),
+            grants: String::new(),
+            max_stacks: 1,
+            kind: "toggle",
+            default_stacks: 0,
+            default_locked: false,
+            permanent: false,
+            uncapped: false,
+            trigger: None,
+        });
+    }
     // Arcane buffs — ONE CARD PER ARCANE, not per grant.
     //
     // Frostbite grants crit damage AND multishot off the same Cold proc, and
@@ -8873,6 +8895,65 @@ mod asset_tests {
             }
         }
         same(&strip(merged), &strip(whole), "");
+    }
+
+    /// MELEE INFLUENCE IS ON THE BUFF BAR, and locking it open changes the
+    /// answer.
+    ///
+    /// It is a WINDOW rather than a grant, so neither the arcane loop nor the
+    /// perk case above saw it and the one arcane a melee build is built around
+    /// had no control at all. A fight's average is not what the card is worth
+    /// while the window is open, and the reader has to be able to ask for
+    /// either.
+    #[test]
+    fn melee_influence_is_a_buff_a_reader_can_hold_open() {
+        // THE RULER'S OWN CROWD, at a level things die at: the window is worth
+        // what it spreads, so a fight too small or too short to spread in
+        // cannot tell the two apart.
+        let req = |buffs: serde_json::Value| {
+            let b = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler");
+            let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
+            let o = m.as_object_mut().expect("a mapping");
+            o.insert("weapon".into(), serde_json::json!("praedos"));
+            o.insert("mods".into(), serde_json::json!([
+                "primed_pressure_point", "sacrificial_steel", "organ_shatter",
+                "voltaic_strike", "shocking_touch", "condition_overload"]));
+            o.insert("arcane".into(), serde_json::json!(["melee_influence"]));
+            o.insert("arcane_rank".into(), serde_json::json!([5]));
+            o.insert("level".into(), serde_json::json!(60));
+            o.insert("steel_path".into(), serde_json::json!(false));
+            o.insert("runs".into(), serde_json::json!(12));
+            if !buffs.is_null() { o.insert("buffs".into(), buffs); }
+            m
+        };
+        let listed: Vec<String> = panel_json(&req(Value::Null))
+            .get("buffs")
+            .and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(|b| b.get("id").and_then(Value::as_str))
+                    .map(String::from)
+                    .collect()
+            })
+            .unwrap_or_default();
+        assert!(
+            listed.iter().any(|id| id == "arcane:melee_influence"),
+            "the window has no card: {listed:?}"
+        );
+
+        let score = |v: &Value| v.get("score").and_then(Value::as_f64).unwrap_or(f64::NAN);
+        let earned = simulate_json(&req(Value::Null));
+        let held = simulate_json(&req(serde_json::json!({
+            "arcane:melee_influence": { "stacks": 1, "locked": true }
+        })));
+        assert!(earned.get("error").is_none(), "{earned}");
+        assert!(held.get("error").is_none(), "{held}");
+        assert!(
+            score(&held) > score(&earned),
+            "holding the window open bought nothing: {} against {}",
+            score(&held),
+            score(&earned),
+        );
     }
 
     /// A MELEE WITH EVERY SLOT FILLED SIMULATES — eight mains, an exilus and a

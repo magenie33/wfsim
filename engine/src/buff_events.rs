@@ -117,6 +117,10 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         | "on_empty_reload_crit_damage" => "reload_from_empty",
         "on_firing_fire_rate" | "on_firing_damage" | "on_firing_multishot" => "firing",
         "on_status_fire_rate" | "on_status_damage" => "status_applied",
+        // MELEE INFLUENCE OPENS ON AN ELECTRICITY STATUS, and it is the
+        // narrowest trigger on this list: the roll is only taken while the
+        // window is SHUT, which is the card's "cannot refresh while active".
+        "arcane:melee_influence" => "status_applied",
         // Fevered Frenzy: permanent stacks, no in-sim trigger — the answer
         // `ArcTrigger::Passive` gets, for the same reason.
         "evo_multishot" => return Some(None),

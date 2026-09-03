@@ -70,6 +70,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         weakpoint_stacks: None,
         spawn_on_kill: None,
         enervate_stacks: 0,
+        influence_open: None,
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         // The historical calibration profile is a point-blank fight, and this
         // weapon lists no falloff to notice a range with anyway.

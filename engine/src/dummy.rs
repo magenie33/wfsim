@@ -3129,6 +3129,10 @@ pub struct DummyParams {
     /// big crit wipes the pile. There is no maximum to clamp to and inventing
     /// one would be the model disagreeing with the card.
     pub enervate_stacks: u32,
+    /// MELEE INFLUENCE'S WINDOW, when the reader has set it rather than earned
+    /// it — `Some(end)` opens it at the start of the fight, and infinity is the
+    /// lock. `None` leaves the roll to do its own work.
+    pub influence_open: Option<f64>,
     pub body_parts: Vec<BodyPart>,
     /// The TARGET — one of the fight's two actors.
     pub target: TargetParams,
@@ -3412,6 +3416,13 @@ impl DummyParams {
         if self.arcane.enervate_rank.is_some() {
             push!("arcane:secondary_enervate", 0);
         }
+        // MELEE INFLUENCE'S WINDOW, as a control. It is EARNED — a roll on an
+        // Electricity status opens a clock — so a reader who wants to see what
+        // the arcane is worth while it is open has to be able to say so, the
+        // way every other earned buff on this bar can be said.
+        if self.arcane.influence_chance > 0.0 {
+            push!("arcane:melee_influence", 1);
+        }
         if let Some(s) = &self.co_stack {
             push!("condition_overload", s.max_stacks);
         }
@@ -3560,6 +3571,20 @@ impl DummyParams {
         if self.arcane.enervate_rank.is_some() {
             if let Some(&(stacks, _)) = cfg.get("arcane:secondary_enervate") {
                 self.enervate_stacks = stacks;
+            }
+        }
+        if self.arcane.influence_chance > 0.0 {
+            if let Some(&(stacks, locked)) = cfg.get("arcane:melee_influence") {
+                // OPEN AT THE START, and LOCKED means it never shuts — which is
+                // the arcane's ceiling rather than its average, and the reader
+                // asked for it by locking it.
+                self.influence_open = if locked {
+                    Some(f64::INFINITY)
+                } else if stacks > 0 {
+                    Some(self.arcane.influence_seconds)
+                } else {
+                    None
+                };
             }
         }
         if let Some(base_damage) = self.evo_base_damage {
@@ -4469,6 +4494,7 @@ impl DummyParams {
             magazine_refill_on_kill: panel.magazine_refill_on_kill,
             proc_conversion: panel.proc_conversion,
             enervate_stacks: 0,
+            influence_open: None,
             body_parts,
             target,
             duration_seconds,
@@ -4690,6 +4716,7 @@ impl Default for DummyParams {
             // A FIXTURE BRINGS NO WARFRAME: no auras, no shards.
             squad: crate::tenno_data::SquadEffects::default(),
             enervate_stacks: 0,
+            influence_open: None,
             target_id: "e1".to_string(),
             // NO PUNCH THROUGH by default, so the fixture fires the one-body
             // shot every golden value was calibrated against.
@@ -13259,7 +13286,8 @@ pub fn run_once_traced(
     // *"Cannot refresh while active"* — so a roll that lands while it is open
     // buys nothing at all, and the arcane's real uptime is a fraction of the
     // fight rather than the 18 s its card names.
-    let mut influence_until = f64::NEG_INFINITY;
+    // OPEN IF THE READER SAID SO, otherwise shut until a roll opens it.
+    let mut influence_until = params.influence_open.unwrap_or(f64::NEG_INFINITY);
     // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool_due`. That one
     // is when the next shot was DUE, so the interval is already inside it and
     // the difference is zero on every ordinary pull — right for a spool, which
