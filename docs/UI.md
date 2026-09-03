@@ -4,14 +4,34 @@ What sets wfsim apart from predecessor calculators (Overframe-style form
 pages): besides a build/config UI, there is a **live 2D top-down view of
 the fight**.
 
-## Kill score is reported as a RATE (KPM)
+## Every scenario has ONE core metric, and nothing on the page names it
+
+What a run is judged by is a term of the SCENARIO. The metrics are declared
+once, in `engine::metrics::ALL` — an id, the response field it reads, whether
+that field is a total to turn into a per-minute rate, and its unit — and served
+at `/api/meta.metrics`. The Measure control, the headline number and its unit,
+the picker's and the optimizer's gain scans, the board strip and the scorer all
+resolve an id against that table.
+
+**NOTHING ASKS "IS IT DPS".** Written as `metric === "dps" ? … : KPM`, a third
+metric is drawn as kills per minute — silently, in the units of a different
+question — and that fork was in eight places. Adding a metric is now an entry in
+`ALL`: `check_metrics.mjs` drives itself off the table, so it covers the new one
+without being edited, and a temporary third entry reached the control, the
+headline and its unit with no page change at all. An id the engine does not
+declare is refused by `parse_fight`, which is where a share link arrives.
+
+One literal survives on the page (`METRIC_FALLBACK`), because a scenario
+constant is evaluated before `/api/meta` has been fetched.
+
+### The kill score is reported as a RATE
 
 The kill score — whole kills plus the fraction of the current target's pool
 already drained — grows with the engagement, so two runs of different length
-could not be compared at a glance. The headline is now **KPM**, score per
-minute, and the score itself sits beside it as the engagement total. That is
-the same shape the damage numbers already had: a rate to compare with, a total
-to read.
+could not be compared at a glance. Under the default metric the headline is
+**KPM**, score per minute, and the score itself sits beside it as the
+engagement total. That is the same shape the damage numbers already had: a rate
+to compare with, a total to read.
 
 Simulator: `1.20 KPM · 2.40 kill score in 120s · …`
 Optimizer row: `#1 · 1.20 KPM · 552,523 DPS · 2.40 kill score / 120s`

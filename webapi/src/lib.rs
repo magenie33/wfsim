@@ -1992,6 +1992,13 @@ pub fn meta_json() -> Value {
         "buff_triggers": wfsim_engine::buff_events::ALL.iter()
             .map(|(id, group)| json!({ "id": id, "group": group }))
             .collect::<Vec<_>>(),
+        // WHAT A RUN CAN BE JUDGED BY, from the one table that declares it
+        // (`engine::metrics`). A vocabulary rather than a list on the page:
+        // the Measure control, the headline's unit and the gain scan's label
+        // all resolve an id against this, so a metric added here reaches every
+        // surface without any of them naming it.
+        "metrics": wfsim_engine::metrics::ALL,
+        "metric_default": wfsim_engine::metrics::DEFAULT,
         "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
             "request_field": a.request_field,
@@ -2104,12 +2111,12 @@ pub fn meta_json() -> Value {
             // in their own yaml and the SCORER still uses it, which is what
             // makes a board row reproducible; the page measures at whatever
             // the reader set, and the box says so.
-            // WHAT THE RUN IS JUDGED BY. KPM is the default because it is
-            // what a build is for; DPS is the other honest answer and some
-            // targets cannot be killed at all. The scenario carries it, so
-            // whatever ranks — the headline number, the picker's gain scan —
-            // ranks by the same thing.
-            "metric": "kpm",
+            // WHAT THE RUN IS JUDGED BY. EVERY scenario carries one, so
+            // whatever ranks — the headline number, the picker's gain scan, a
+            // ruler's published row — ranks by the same thing. The default is
+            // the table's, not a literal: `engine::metrics` is where a metric
+            // is declared and where the first one is chosen.
+            "metric": wfsim_engine::metrics::DEFAULT,
             // 180 s, the same length as the official rulers. A default that disagreed with the board made every
             // first comparison a puzzle, and on a build that compounds the gap
             // is not small — the Felarx's board score moved 30% on this number
@@ -5189,6 +5196,26 @@ pub fn pairings_json(v: &Value) -> Value {
 
 pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // ---- parse inputs ----
+    // EVERY SCENARIO HAS ONE CORE METRIC, and it has to be one this build
+    // declares. Nothing here reads it — what a run is JUDGED by is the ranking
+    // surfaces' question, not the fight's — but this is the door every fight
+    // comes through, and a scenario naming a metric nobody declares would reach
+    // those surfaces and be drawn in the units of a different question.
+    //
+    // REFUSED, not defaulted. A share link or a saved scenario from a newer
+    // build is exactly where this arrives, and answering it with kills per
+    // minute is a number the reader cannot tell from a right one.
+    let metric = get_str(v, "metric", "");
+    if !metric.is_empty() && wfsim_engine::metrics::get(metric).is_none() {
+        return Err(err_json(format!(
+            "unknown metric: {metric} — a scenario is judged by one of {}",
+            wfsim_engine::metrics::ALL
+                .iter()
+                .map(|m| m.id)
+                .collect::<Vec<_>>()
+                .join(", ")
+        )));
+    }
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the

@@ -46,6 +46,7 @@ pub mod i18n_data;
 pub mod kitguns_data;
 pub mod loadout;
 pub mod mercy;
+pub mod metrics;
 pub mod mod_sets_data;
 pub mod mods;
 pub mod mods_data;

@@ -1308,6 +1308,13 @@ let valence = { element: "", bonus: 0 };
 // silently becomes `undefined` — which is how `infinite_ammo` once vanished
 // from state while the declaration below set it. The server owns every
 // default; this copies them.
+/// THE ONE METRIC LITERAL ON THIS PAGE, and it exists because a DEFAULT has to
+/// be nameable before `/api/meta` has been fetched — a scenario constant is
+/// evaluated while the script is, when there is no table to resolve against.
+/// Everything after boot goes through `metricOf`, which reads the engine's own
+/// table and falls back to this.
+const METRIC_FALLBACK =
+  { id: "kpm", field: "score", per_minute: true, label: "KPM", hint: "kills per minute" };
 function defaultScenario() {
   const d = META.defaults || {};
   return {
@@ -1348,7 +1355,7 @@ function defaultScenario() {
     ...(d.wf_armor === undefined ? {} : { wf_armor: d.wf_armor }),
     ...(d.wf_energy === undefined ? {} : { wf_energy: d.wf_energy }),
     ...(d.wf_sprint === undefined ? {} : { wf_sprint: d.wf_sprint }),
-    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
+    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || METRIC_FALLBACK.id,
     // NO `form`: how the weapon is played belongs to the build.
     duration: d.duration, buffs: {},
     // WARFRAME ABILITY BUFFS. A fraction, not a percent — 1 is 100% Ability
@@ -1411,7 +1418,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // 180 s: the same length the official rulers run, so a player's first
   // comparison against the board is not a puzzle. Only the
   // DEFAULT — a saved scenario carries its own duration and keeps it.
-  infinite_ammo: true, metric: "kpm", duration: 180, buffs: {},
+  infinite_ammo: true, metric: METRIC_FALLBACK.id, duration: 180, buffs: {},
   ability_strength: 1, abilities: [], extra_stats: {}, auras: [], shards: [] };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
@@ -2394,7 +2401,7 @@ function renderBenchBoard() {
   // (`scenario.metric`), and a second ruler may answer differently. Unmeasured
   // weapons sort last whatever the metric: a zero is not a low score, it is no
   // score, and putting it among the low ones would read as one.
-  const metric = ((cur.scenario || {}).metric || "kpm").toUpperCase();
+  const metric = metricLabel(metricOf((cur.scenario || {}).metric));
   const rows = entries
     .slice()
     .sort((a, b) => (b.row ? b.row.score : -1) - (a.row ? a.row.score : -1));
@@ -6605,11 +6612,12 @@ async function drawShareCard(canvas, url) {
   g.beginPath(); g.moveTo(36, y); g.lineTo(lineEnd, y); g.stroke();
   y += 46;
   if (r) {
-    const byDps = sim.metric === "dps";
+    const met = metricOf(sim.metric);
+    const v = metricValue(met, r);
     g.fillStyle = gold; g.font = F(40, "600");
-    g.fillText(byDps
-      ? Math.round(r.dps || 0).toLocaleString() + " DPS"
-      : sig2(kpm(r.score, r.duration)) + " KPM", 36, y);
+    g.fillText(
+      (met.per_minute ? sig2(v) : Math.round(v).toLocaleString())
+        + " " + metricLabel(met), 36, y);
     g.fillStyle = dim; g.font = F(15);
     const en = allEnemies().find((e) => e.id === sim.enemy) || {};
     // The fight AND the technique. Which form, how often
@@ -7562,6 +7570,34 @@ function restoreState(st, weapon) {
 // dividing by the clock is what makes two runs of different length
 // comparable, exactly as DPS does for damage.
 const kpm = (score, duration) => (duration > 0 ? ((score || 0) * 60) / duration : 0);
+
+/// WHAT A SCENARIO IS JUDGED BY — resolved against the table `/api/meta`
+/// publishes (`engine::metrics`), never asked as "is it dps".
+///
+/// THAT QUESTION IS THE FAILURE MODE. `metric === "dps" ? … : KPM` reads a
+/// third metric as kills per minute — silently, in the units of a different
+/// question — and it was written eight times across this file. A metric added
+/// to the engine's table reaches the Measure control, the headline's unit, the
+/// gain scan's label and the board strip without any of them naming it.
+///
+/// AN UNKNOWN ID FALLS BACK TO THE DEFAULT rather than to nothing, because this
+/// runs while drawing: `parse_fight` refuses one at the door, so anything that
+/// reaches here is a metric this build knows or a scenario that cannot run.
+const metricOf = (id) => {
+  const all = META.metrics || [];
+  return all.find((m) => m.id === (id || META.metric_default))
+    || all.find((m) => m.id === META.metric_default)
+    || METRIC_FALLBACK;
+};
+/// The run's number IN THAT METRIC. `score` off the wire is kill PROGRESS over
+/// the whole engagement, so a per-minute metric turns it into a rate; a metric
+/// that is already a rate reads its own field and is left alone.
+const metricValue = (m, r) => {
+  const raw = (r || {})[m.field] || 0;
+  return m.per_minute ? kpm(raw, (r || {}).duration) : raw;
+};
+/// Its unit, translated. The label is the engine's; the translation is ours.
+const metricLabel = (m) => tr(m.label);
 
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -10754,7 +10790,10 @@ async function scanGains(axis, repaint) {
   // build that kills nothing still scores what it drained. Zero means the build
   // dealt no damage at all — and a build that deals no damage has no DPS
   // either, so the second baseline measured the same nothing.
-  const useKills = (scenario.metric || "kpm") !== "dps";
+  // BY THE SCENARIO'S OWN METRIC, whatever it is. `per_minute` is the question
+  // that decides which baseline is read — a rate over the engagement against a
+  // field the run reports directly — and it is the metric's to answer.
+  const useKills = metricOf(scenario.metric).per_minute;
   // THE BASELINE IS SHARDED, like every other simulation the page runs.
   //
   // It went through `api`, which takes ONE lane — so the step every candidate
@@ -11284,7 +11323,10 @@ async function scanOptGains(onTick) {
   if (!pr || !pr.ok) { optGain.running = false; if (onTick) onTick(optGain); return; }
   const orders = pr.sets.map((x) => x.orders);
 
-  const useKills = (scenario.metric || "kpm") !== "dps";
+  // BY THE SCENARIO'S OWN METRIC, whatever it is. `per_minute` is the question
+  // that decides which baseline is read — a rate over the engagement against a
+  // field the run reports directly — and it is the metric's to answer.
+  const useKills = metricOf(scenario.metric).per_minute;
   const read = (r) => readGain(r, useKills)?.v ?? null;
   const seOf = (r) => readGain(r, useKills)?.se ?? 0;
   // The runs behind each number, so the winner of a candidate set pairs against
@@ -13569,8 +13611,12 @@ function renderScenarioFields(ids, opts = {}) {
         ddButton("dd-metric", {
           value: sim.metric,
           dataK: "metric",
-          items: [{ value: "kpm", label: tr("KPM"), hint: tr("kills per minute") },
-                  { value: "dps", label: tr("DPS"), hint: tr("damage per second") }],
+          // FROM THE ENGINE'S TABLE, so a metric it declares is offered here
+          // without this list being edited — two declarations of one set is
+          // one that goes stale.
+          items: (META.metrics || []).map((m) => ({
+            value: m.id, label: tr(m.label), hint: tr(m.hint),
+          })),
         })}</label>`;
   }
 
@@ -15100,7 +15146,7 @@ function lockOfficialBuild() {
     // benchmark would have read "kill rate" here, and a kill-progress figure
     // read as a kill RATE overstated every row by the length of the fight
     // until 2026-08-04.
-    const unit = ((bench || {}).scenario || {}).metric === "dps" ? tr("DPS") : tr("kill rate");
+    const unit = metricLabel(metricOf(((bench || {}).scenario || {}).metric));
     // `shown` is FORMATTED BY THE SCORER (`boards_data::format_score`): at
     // least four significant figures and at least four decimals. The rule is
     // not reimplemented here — the page prints what the record says, so a
@@ -16779,9 +16825,13 @@ function replayApply(rp, i) {
     const left = (rp.og[i] || 0) + (rp.hp[i] || 0) + (rp.sh[i] || 0);
     const progress = (rp.kills[i] || 0) + (pool0 > 0 ? 1 - left / pool0 : 0);
     const mins = rp.t[i] / 60;
-    const v = hero.dataset.hero === "dps"
-      ? n((rp.kpi && rp.kpi.dps ? rp.kpi.dps[i] : 0))
-      : (mins > 0 ? progress / mins : 0).toFixed(2);
+    // THE SAME METRIC THE HEADLINE WAS DRAWN IN, read back by id rather than
+    // asked "is it dps": the ticker has to agree with the number it replaces.
+    // The replay's own series is what it reads, so the field is looked up on it.
+    const hm = metricOf(hero.dataset.hero);
+    const v = hm.per_minute
+      ? (mins > 0 ? progress / mins : 0).toFixed(2)
+      : n((rp.kpi && rp.kpi[hm.field] ? rp.kpi[hm.field][i] : 0));
     const unit = hero.querySelector(".hero-unit");
     hero.textContent = v;
     if (unit) hero.appendChild(unit);
@@ -17260,12 +17310,12 @@ function renderResults(r, testedAt) {
   // run and a 120-second one produce comparable numbers.
   // The score itself is the total over the engagement and stays beside it,
   // the same way total damage sits beside DPS.
-  const byDps = sim.metric === "dps";
-  const heroNum = byDps ? n0(r.dps) : n2(kpm(r.score, r.duration));
+  const met = metricOf(sim.metric);
+  const heroNum = met.per_minute ? n2(metricValue(met, r)) : n0(metricValue(met, r));
   // The UNIT belongs beside the number, not under it: "5.29" on one line and
   // "KPM · …" starting the next read as two facts. Set
   // small and spaced away, so it labels the figure without competing with it.
-  const heroUnit = byDps ? "DPS" : "KPM";
+  const heroUnit = metricLabel(met);
   // HOW FIRM THE NUMBER IS, said beside the number.
   //
   // A mean with no spread invites a reader to compare two builds that differ by
@@ -17278,7 +17328,15 @@ function renderResults(r, testedAt) {
   const spread = killed && (r.runs || 0) > 1 && r.kills_max > r.kills_min
     ? ` · ${n0(r.kills_min)}–${n0(r.kills_max)} over ${n0(r.runs)} runs (±${sig2(r.kills_std)})`
     : "";
-  const heroSub = (byDps ? `${n2(kpm(r.score, r.duration))} KPM · ` : ``) +
+  // …AND THE DEFAULT MEASURE BESIDE IT, when the headline is not it. What a
+  // build is FOR is the kill rate, so a reader judging by anything else still
+  // wants it — named by the table rather than by the word "KPM", so a third
+  // metric borrows the sentence instead of needing a new one.
+  const alt = met.id === metricOf().id ? "" : (() => {
+    const d = metricOf();
+    return `${d.per_minute ? n2(metricValue(d, r)) : n0(metricValue(d, r))} ${metricLabel(d)} · `;
+  })();
+  const heroSub = alt +
     `${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
     ? `${n0(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
     : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`)
@@ -17454,7 +17512,7 @@ function renderResults(r, testedAt) {
          act on. Its own block, above the thing it is not part of. -->
     <div id="sim-board-outcome" class="board-outcome"></div>
     <div class="results">
-      <div class="hero"><div><div class="hero-num" data-hero="${byDps ? "dps" : "kpm"}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
+      <div class="hero"><div><div class="hero-num" data-hero="${met.id}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       ${replayBar}
       <div class="kpi-row">${kpis}</div>
       ${foldBlock("meter", tr("Damage by source"), "",
@@ -18767,9 +18825,14 @@ function updateOptEstimate() {
     // The scenario's Measure is the SIMULATOR's; the funnel still ranks by
     // kills whatever it says, so say so rather than letting the shared state
     // imply a DPS search that does not exist yet.
-    const measured = sim.metric === "dps"
-      ? ` · <span class="warn">${escHtml(tr("the search ranks by kills — the scenario's DPS measure applies to the simulator"))}</span>`
-      : "";
+    // THE SEARCH RANKS BY KILLS whatever the scenario measures by, so any
+    // metric that is not the kill rate is a mismatch worth saying — named, so
+    // the sentence stays true when a third one lands.
+    const met = metricOf(sim.metric);
+    const measured = met.per_minute
+      ? ""
+      : ` · <span class="warn">${escHtml(tr("the search ranks by kills — the scenario's {m} measure applies to the simulator")
+          .replace("{m}", metricLabel(met)))}</span>`;
     scenario = `<div class="opt-scn">each build vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""}${sim.distance > 0 ? ` · ${sim.distance} m` : ""} · ${sim.headshot_pct}% headshots${sim.aiming ? "" : " · hip-fire"} · ${sim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)${measured}</div>`;
   }
   // ONE total, no decomposition — "×N arcanes" leaked a search-internal

@@ -132,6 +132,7 @@ ui:
   "Ctrl+Z undoes the last change": Ctrl+Z 撤销上一步改动
   "DPS over time": DPS 曲线
   "DPS": DPS
+  "damage per second": 每秒伤害
   "Damage (combined)": 伤害（合成后）
   "Damage Falloff": 距离衰减
   "Damage by source": 伤害构成
@@ -640,6 +641,7 @@ ui:
   "join via QQ": 通过 QQ 加群
   "keep two bodies out of the same ground - the engine's own contact rule": "不让两个身体占同一块地 —— 这是引擎自己的接触规则"
   "kill rate": 击杀速度
+  "kills per minute": 每分钟击杀
   "kills leave an EXTRA CORPSE, which the page names as a synergy with Nekros' Desecrate — a loot mechanic with nothing to drop into here": "击杀会多留下一具尸体，页面把它列为与 Nekros「亵渎」的联动——这是一条掉落机制，而本场没有任何可掉落的东西"
   "kills": 击杀
   "last tested": 上次测试于
@@ -1043,7 +1045,7 @@ ui:
   "the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑：点它标签上的 ⧉ 复制成一份你自己的场景。
   "the sawblade is DEPLOYED six metres in front of the wielder and stays there — it is not a beam fired at a target, and this engine models it as one, so a fight where the enemy is not standing on that spot is overstated here": "锯刃是部署在持有者前方六米处的，而且就停在那里 —— 它不是一道朝目标发射的光束，而本引擎把它当成了光束，所以敌人没有正好站在那个点上的战斗在这里被高估了"
   "the scenario the simulator is set to": 模拟器当前选中的场景
-  "the search ranks by kills — the scenario's DPS measure applies to the simulator": 搜索按击杀排名——场景里的 DPS 指标只作用于模拟器
+  "the search ranks by kills — the scenario's {m} measure applies to the simulator": 搜索按击杀排名——场景里的 {m} 指标只作用于模拟器
   "the second INNATE POLARITY the wiki publishes for this weapon is an AURA one, and no weapon mod carries an Aura polarity — so this entry gives that slot no colour at all, which costs a build the discount a matching slot would have paid. Capacity here is therefore a FLOOR: whatever that slot does in game, it cannot be worse than unpolarised": "维基为这把武器公布的第二个固有极性是「光环」极性，而没有任何武器 MOD 带光环极性 —— 所以本条目干脆不给那个槽位任何颜色，这让配装少拿了一个对位槽本该给的折扣。因此这里的容量是一个下限：无论那个槽在游戏里做什么，都不会比无极性更差"
   "the self-stagger on its own explosion is not modelled — the grenade staggers the firer at close range and deals them no damage, and nothing in this arena can be inconvenienced": 自身被爆炸踉跄的效果尚未建模 —— 近距离开火时榴弹会让射手踉跄但不造成伤害，而这个战场里没有任何东西会被影响
   "the semi-auto mode is entered by DEPLOYING A DISC that 'lasts until the Zenith is reloaded, highlighting enemy heads within 20 meters through walls' (wiki). The highlight is an aiming aid this sim cannot use, and the disc's lifetime is a reload clock this engine does not run — so this mode is available here from the first shot": "半自动模式是通过部署一个圆盘进入的，那个圆盘「会持续到 Zenith 装填为止，并透过墙壁高亮 20 米内敌人的头部」（维基）。高亮是本模拟用不上的瞄准辅助，而圆盘的存续时间是一个本引擎不运行的装填时钟 —— 所以这个模式在这里从第一发就可用"

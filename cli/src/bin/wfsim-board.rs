@@ -696,19 +696,36 @@ fn main() {
     let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
     // The benchmark's own terms, read once — the metric it is measured in and
     // the length that metric is over.
-    let metric = scenario
-        .get("metric")
-        .and_then(Value::as_str)
-        .unwrap_or("kpm")
-        .to_string();
+    // WHAT THIS RULER JUDGES BY, resolved against the one table that declares
+    // the metrics (`engine::metrics`). Not a match on "dps" with everything
+    // else falling through to kills per minute: a ruler naming a metric this
+    // build has never heard of would then publish a number in the units of a
+    // different question.
+    let metric = wfsim_engine::metrics::get(
+        scenario
+            .get("metric")
+            .and_then(Value::as_str)
+            .unwrap_or(wfsim_engine::metrics::DEFAULT),
+    );
     let duration = scenario
         .get("duration")
         .and_then(Value::as_f64)
         .unwrap_or(300.0);
-    assert!(
-        matches!(metric.as_str(), "kpm" | "dps"),
-        "unknown benchmark metric {metric:?} — a row published in units nobody          named is worse than no row"
-    );
+    let metric = metric.unwrap_or_else(|| {
+        panic!(
+            "unknown benchmark metric — a row published in units nobody named is              worse than no row; the metrics are in `engine::metrics::ALL`"
+        )
+    });
+    // THE ROW'S NUMBER IN THE RULER'S OWN UNITS, said once. `score` off the
+    // wire is kill PROGRESS over the whole engagement — kills plus the fraction
+    // of the current target depleted — so a `kpm` ruler turns it into a rate
+    // and a `dps` one reads a different field entirely.
+    let score_in = |out: &Value| -> f64 {
+        metric.of(
+            out.get(metric.field).and_then(Value::as_f64).unwrap_or(0.0),
+            duration,
+        )
+    };
 
     let mut rows: Vec<Row> = Vec::new();
     let (mut seen, mut refused) = (0usize, 0usize);
@@ -975,11 +992,7 @@ fn main() {
                             o.insert("runs".into(), json!(PROBE_RUNS));
                         }
                         let out = wfsim_engine_webapi_simulate(&probe);
-                        let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
-                        let s = match metric.as_str() {
-                            "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
-                            _ => raw * 60.0 / duration,
-                        };
+                        let s = score_in(&out);
                         if out.get("ok").and_then(Value::as_bool).unwrap_or(false) && s < cut {
                             let took = began.elapsed().as_secs_f64();
                             costs.insert(key.clone(), took);
@@ -1037,13 +1050,7 @@ fn main() {
                                 o.insert("rivens".into(), riven_request(sp));
                                 o.insert("runs".into(), json!(PROBE_RUNS));
                             }
-                            let out = wfsim_engine_webapi_simulate(&probe);
-                            let s = match metric.as_str() {
-                                "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
-                                _ => out.get("score").and_then(Value::as_f64).unwrap_or(0.0)
-                                    * 60.0
-                                    / duration,
-                            };
+                            let s = score_in(&wfsim_engine_webapi_simulate(&probe));
                             top_probe.set(top_probe.get().max(s));
                             s
                         });
@@ -1135,18 +1142,13 @@ fn main() {
                         refused += 1;
                         continue;
                     }
-                    // IN THE BENCHMARK'S OWN METRIC. `score` off the wire is kill
-                    // PROGRESS — kills plus the fraction of the current target
-                    // depleted — over the whole engagement. The benchmark says
-                    // `metric: kpm`, so publishing the raw figure labelled "kill
-                    // rate" overstated every row by the length of the fight: 55.26
-                    // on screen for a build that kills 11.05 a minute over 300 s. Ranking is unaffected either way — this
-                    // is a linear rescale — but the number people read is not a
-                    // ranking.
-                    let s = match metric.as_str() {
-                        "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
-                        _ => raw * 60.0 / duration,
-                    };
+                    // IN THE RULER'S OWN METRIC — `score_in`, the same
+                    // conversion the two probes above use. Publishing the raw
+                    // figure under a `kpm` ruler labels a 180-second total as a
+                    // per-minute rate: 55.26 on screen for a build that kills
+                    // 11.05 a minute over 300 s. The RANKING survives either way,
+                    // being a linear rescale; the number people read does not.
+                    let s = score_in(&out);
                     computed.insert(key.clone(), s);
                     costs.insert(key.clone(), began.elapsed().as_secs_f64());
                     // THIRTY SECONDS is a row worth naming: the median row is under

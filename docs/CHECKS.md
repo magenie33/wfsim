@@ -25,6 +25,16 @@ Plain node against a KV stub, no browser. Every key
 table knows how to keep; every key survives into storage; two builds differing
 in any one axis are two records.
 
+## `check_metrics`
+
+Every metric `engine::metrics::ALL` declares reaches the page, and the check
+does not know what they are either: it reads `/api/meta.metrics`, asserts each
+is offered by the Measure control, and picks each one to see ITS unit and ITS
+number on the headline. So a metric added to the engine is covered without this
+being edited — proven by adding a third entry, which reached the control and
+the headline with no page change. It also asserts that an id the engine does
+not declare is REFUSED rather than drawn in the default's units.
+
 ## `check_mobile`
 
 GEOMETRY, not DOM: the page fits the screen at 360–1280px,
