@@ -63,8 +63,12 @@ number**. Everything else follows from it:
   one search differ in their mods and not in why the board would not take them;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
-  pinned seed. Measured 2026-08-04: wasm and native agree to the last digit
-  (`0.9647804061510868` both ways).
+  pinned seed. Measured: wasm and native agree to the last digit on one host
+  (`0.9647804061510868` both ways). ACROSS hosts the last bits are the host's,
+  not this repository's: the runner writes `1.1070976928071057` where another
+  machine computes `1.1070976928071055` for the same build under the same code.
+  A rank cannot turn on two ULP, but "to the last digit" is a claim about one
+  platform — see §"The audit", which is built around the distinction.
 
 ## The pieces
 
@@ -216,6 +220,39 @@ both too slow and too fast at once.
 **The manual button is the escape hatch.** Actions → board → Run workflow with
 `full` ticked ignores the fingerprint and rescores every row — for when
 something outside the hash changed, or when you simply want to see it done.
+
+### The audit: does the FILE still say what the code computes
+
+The probe above runs when the code MOVED. `audit.yml` is the same machinery
+pointed at the hour it did not, which is a different question and the only one
+that catches a score reused when it should not have been. It publishes nothing
+and gates nothing: one job out of the account's forty, hourly, in its own
+concurrency group so it can never cancel a board run.
+
+`board_sample.py --crossing N --bucket k` cuts a board into N slices of equal
+WORK — by `cost` and not by count, since the rows differ by four orders of
+magnitude — so `CROSSING` is both the budget and the number the audit is judged
+by: how many runs it takes to read the whole board. Slices are ordered by `fp`,
+a hash, so each interleaves cheap and expensive rows and the cut is the same
+every run.
+
+**THE ALARM IS `beyond`, NOT `moved`.** A score is deterministic within a
+platform and only within one: the runner writes `1.1070976928071057` where
+another host computes `1.1070976928071055` for the same build under the same
+code — two ULP, from the host's libm. Exact inequality would therefore report
+every row the day a runner image moves, which is the shape of alarm nobody reads
+twice. `PLATFORM_NOISE` in the scorer is four orders above that noise and many
+below any change a build can make; the exact count is published beside it.
+
+**AND IT ANSWERS THE QUESTION NO CHECK ASKED**: a board that has not moved in
+`STALE_HOURS` fails the run. That state has been found by a reader wondering
+where their build went, never by anything watching.
+
+Two things it cannot audit, and both are stated rather than papered over: a
+riven row, whose stored number is the argmax of a search rather than a
+measurement, and a row whose DATA fingerprint moved, which carries no number
+under the current generation yet — reported as `stale`, so "nothing to audit"
+cannot read as "nothing was wrong".
 
 ### Why it is sharded
 
@@ -1251,9 +1288,9 @@ the edge; CPU-bound work goes on the box.
 
 ### The order to move in, when each becomes the binding constraint
 
-Cost-based packing is in place and has reached its own floor (§"Two ceilings").
-What follows is what is left, and each step is independently useful. The
-lettering is not the order: **F is the safety net for A, so F lands first.**
+Cost-based packing is in place and has reached its own floor (§"Two ceilings"),
+and so is F — the audit runs, which is what makes A safe to be wrong about.
+What follows is what is left, and each step is independently useful.
 
 **A. A ROW'S CODE DEPENDENCY IS MEASURED, NOT ASSUMED.** *(the lever, and the
 only step that changes the bill rather than who waits for it)* The data half of
@@ -1310,17 +1347,14 @@ should: the rows a group lists are verified on every generation, and rows under
 the screen — a third of the bill, and read by nobody — are spot-checked. This is
 the screen's own ordering applied to a second question.
 
-**F. A TRICKLE AUDIT, PERMANENTLY AT THE BOTTOM OF THE PRIORITY ORDER.** One
-worker that takes a cached fact, recomputes it from nothing, and compares. It
-publishes no board and holds up no reader: it takes only capacity that no
-submission and no backfill wants, so it is preempted the moment a push lands and
-resumes when the backlog drains. Its output is a counter when the two agree and
-an alarm naming the row, both numbers and the key when they do not — which is
-how a unit attributed under A to a family too narrow to hold it, or a
-determinism regression anywhere, is found in hours by a machine. **The full rescore is the backstop this replaces**,
-and continuously auditing a slice beats a weekly rebuild on both counts: it is
-never a spike that starves everything else, and it reports coverage constantly
-rather than once. Coverage period is the number to watch as the store grows.
+**F. A TRICKLE AUDIT, PERMANENTLY AT THE BOTTOM OF THE PRIORITY ORDER.** *(it
+runs — §"The audit")* It is what finds a unit attributed under A to a family too
+narrow to hold it, or a determinism regression anywhere, in hours and by a
+machine. **The full rescore is the backstop it replaces**, and auditing a slice
+for ever beats a weekly rebuild on both counts: never a spike that starves
+everything else, and a coverage figure reported constantly rather than once.
+What is left here is to make it read the FACTS rather than the published file
+once B lands, so a row is audited whether or not it was listed.
 
 **G. A PERSISTENT SCORER, ONLY IF THE CEILINGS BIND.** In rough order of cost:
 **Oracle Cloud Always Free** (4 ARM cores, 24 GB), then a **EUR 4/month
