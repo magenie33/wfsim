@@ -318,6 +318,22 @@ def ship_art() -> None:
     print(f"art: {len(want)} images -> site/img/ ({size / 1e6:.1f} MB)")
 
 
+# WHAT THE SCORER WRITES ABOUT ITS OWN RUN RATHER THAN ABOUT THE BUILD, and
+# therefore the only fields this file may drop. `page_row` — the Rust writer of
+# the same file — emits none of them, and the two have to agree byte for byte or
+# every local build leaves board.json dirty.
+#
+#   `weapon`  the map KEY this row is filed under.
+#   `fp`      the reuse key: which data files this row's score depends on.
+#   `cost`    what the row took to simulate, the input to the shard packing.
+#   `listed`  and `probe` decide whether the row belongs on this page at all,
+#             and the ones that do not have already been dropped.
+#
+# Naming the set is what makes the assertion below able to hold: a field the
+# scorer adds is kept unless it is declared here, with its reason.
+BOOKKEEPING = ("weapon", "fp", "cost", "listed", "probe")
+
+
 def write_board() -> None:
     """`site/board.json` — the board the PAGE fetches, from the canonical yaml.
 
@@ -393,6 +409,16 @@ def write_board() -> None:
     for f in sorted((ROOT / "boards").glob("*.yaml")):
         b = yload(f.read_text(encoding="utf-8")) or {}
         for e in b.get("entries") or []:
+            # THE YAML IS THE ARCHIVE AND THIS FILE IS THE BOARD. Every row the
+            # run scored is in the yaml — listed, held under the floor, and
+            # screened without being measured — while the Rust writer of this
+            # same file emits `kept`, which is the listed ones alone. Taking
+            # every entry made a local build write 22,695 rows over the 7,571
+            # the scorer wrote: three times the page's fetch, and every row the
+            # floor decided not to show, published by whoever ran the site
+            # build last. `listed` defaults TRUE, the same as the scorer's.
+            if not e.get("listed", True) or e.get("probe"):
+                continue
             # **EVERY FIELD THE SCORER WROTE, not a list of the ones somebody
             # remembered.** This function's whole job is to be a NO-OP against
             # the scorer's own output, and it was a hand list of seven keys —
@@ -421,7 +447,7 @@ def write_board() -> None:
             # was dropped from all 118 rows, and the page fell back to rounding
             # `score` itself. The `missing` assertion below has always named
             # `weapon` as legitimately absent, which is the intent this restores.
-            row = {k: v for k, v in e.items() if k not in ("fp", "weapon")}
+            row = {k: v for k, v in e.items() if k not in BOOKKEEPING}
             row["benchmark"] = b.get("benchmark")
             row["source"] = b.get("source", "")
             # FLOAT, always: the yaml writes a whole score as `10` and the
@@ -467,7 +493,7 @@ def write_board() -> None:
             # is what keeps it true, because the two times it broke the code
             # LOOKED right and the field was simply not in the list. A build
             # that would ship a lesser board fails instead.
-            missing = [k for k in e if k not in row and k not in ("weapon", "fp")]
+            missing = [k for k in e if k not in row and k not in BOOKKEEPING]
             if missing:
                 raise SystemExit(
                     f"board.json would drop {missing} from {e['weapon']} — "
