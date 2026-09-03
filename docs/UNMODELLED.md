@@ -282,6 +282,32 @@ rather than observed, because this arena fires one weapon and casts nothing:
 
 ---
 
+## MELEE INFLUENCE SPREADS FROM THINGS IT SHOULD NOT
+
+The arcane is modelled — the roll, the window, the ten spreadable elements, the
+radius, the faction rungs, the damage on the body it came from — and **two of
+its RESTRICTIONS are not applied**. Both make the model too generous rather than
+too mean, and both are TODOs rather than edges: each is a check with a known
+answer, waiting on something the roster does not have yet.
+
+**It does not work on Glaive-type weapons** (wiki: Nepheri, Hate Incarnon
+Genesis, Ceramic Dagger Incarnon Genesis, Syam's projectiles). Nothing in the
+engine refuses it there. It costs nothing today because the roster carries no
+Glaive, and it will be wrong on the day one arrives — which is the failure mode
+worth writing down, since a weapon intake would not think to look here.
+
+**It triggers only on DIRECT melee strikes.** *"Secondary melee effects such as
+Magnetic's breakage effect and Dual Ichor Incarnon's toxin fields cannot trigger
+Melee Influence."* The engine spreads from any qualifying status the swing
+applied, so a build whose statuses come from a field or a breakage would spread
+where the game does not. The roster has no such source on a melee today.
+
+Neither is `kind: unmodeled` in the data, because an arcane's admissions are
+DERIVED from the effects its loader built and there is no effect to mark: what
+is missing is a condition on one that works. That is why they are written here
+instead of on the card, and it is the shape to watch for — a restriction is
+easier to lose than a clause, because nothing goes silent when it is gone.
+
 ## A SHOT THAT CROSSES NOBODY LEAVES NO SPHERE
 
 Aim is a place (MECHANICS §11), and pointing at bare floor is a legal shot that

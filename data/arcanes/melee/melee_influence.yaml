@@ -26,5 +26,13 @@ effects:
     duration_rank0: 3
     duration_rankMax: 18
 
+# TWO OF ITS RESTRICTIONS ARE NOT APPLIED, and both make this too generous: it
+# does not work on Glaive-type weapons, and it triggers only on DIRECT melee
+# strikes (not on Magnetic's breakage or a toxin field). Neither costs a number
+# today — the roster has no Glaive and no such melee source — and neither can be
+# a `kind: unmodeled` here, because an arcane's admissions are derived from the
+# effects its loader built and what is missing is a CONDITION on one that works.
+# docs/UNMODELLED.md carries them.
+
 source:
   url: https://wiki.warframe.com/w/Melee_Influence
