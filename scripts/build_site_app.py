@@ -20,6 +20,7 @@ Prereqs: rustup target add wasm32-unknown-unknown;
          cargo install wasm-bindgen-cli --version <matching Cargo.lock>.
 """
 
+import functools
 import hashlib
 import html as html_mod
 import json
@@ -125,10 +126,45 @@ def wiki_name(name: str) -> str:
     return name.split(" (")[0]
 
 
-def wiki_path(name: str) -> str:
-    """The URL a weapon lives at — the English wiki page name, spaces to
-    underscores (AGENTS.md: URLs mirror wiki page names; ids never appear)."""
-    return "/weapons/" + wiki_name(name).replace(" ", "_")
+def wiki_slug(name: str) -> str:
+    """The wiki page name as a path segment."""
+    return wiki_name(name).replace(" ", "_")
+
+
+@functools.lru_cache(maxsize=1)
+def _slug_owner() -> dict:
+    """For each wiki slug, the LOWEST id that answers to it."""
+    own: dict = {}
+    for s in roster():
+        g = wiki_slug(s["name"])
+        if g not in own or s["id"] < own[g]:
+            own[g] = s["id"]
+    return own
+
+
+def url_slug(spec: dict) -> str:
+    """THE PATH SEGMENT A WEAPON LIVES AT — the wiki page name, and the ID
+    where that name is not this weapon's alone.
+
+    URLs mirror wiki page names (AGENTS.md) and ids never appear, which holds
+    for every weapon whose display name is its own. Two Kitgun slots are ONE
+    wiki page and two roster entries, so the rule maps them onto one address
+    and the loser of that collision has NO URL AT ALL — no prerendered page,
+    no sitemap row, nothing to link. An id is uglier than a wiki name and it
+    is reachable, which beats correct-looking and absent.
+
+    THE LOWEST ID KEEPS THE WIKI NAME, so `/weapons/Tombfinger` is a stable
+    address rather than one that follows roster order — and it stays the one
+    the Slot control swaps INSIDE, which is what makes a Kitgun one page.
+    `urlSlug` in app.js is the same rule and has to stay it.
+    """
+    g = wiki_slug(spec["name"])
+    return g if _slug_owner().get(g) == spec["id"] else spec["id"]
+
+
+def wiki_path(spec: dict) -> str:
+    """The URL a weapon lives at."""
+    return "/weapons/" + url_slug(spec)
 
 
 # The app's dark palette (style.css `prefers-color-scheme: dark`), so a card
@@ -541,10 +577,10 @@ def prerender(flagged: str) -> None:
             "Build it, simulate the fight, and optimize the mods — "
             "true to in-game numbers."
         )
-        card = f"/og/{wiki_name(name).replace(' ', '_')}.png"
+        card = f"/og/{url_slug(spec)}.png"
         drew = og_card(APP / card.lstrip("/"), name, cn, facts, stats)
         og_img = SITE + card if drew else f"{SITE}/logo.svg"
-        url = SITE + wiki_path(name)
+        url = SITE + wiki_path(spec)
 
         # The crawler-visible body, removed as soon as the app takes over.
         seo = (
@@ -555,7 +591,7 @@ def prerender(flagged: str) -> None:
             "    <p>Build, simulate and optimize this weapon at "
             f'<a href="{SITE}/">wfsim.app</a>.</p>\n'
         )
-        out = APP / wiki_path(name).lstrip("/") / "index.html"
+        out = APP / wiki_path(spec).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo)
         past_the_scanner(lambda: put(out, page))
@@ -614,7 +650,7 @@ def prerender(flagged: str) -> None:
     )
 
     urls = [SITE + "/", SITE + "/support", SITE + "/download"] + [
-        SITE + wiki_path(s["name"]) for s in roster()
+        SITE + wiki_path(s) for s in roster()
     ]
     put(
         APP / "sitemap.xml",

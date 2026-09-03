@@ -82,10 +82,9 @@ binds a value). 600 assemblies per slot is a small scope beside a mod pool, and
 "which loader" is exactly the question a player cannot answer by reading.
 
 **3. What is a Kitgun's NAME?** Players name theirs. A URL mirrors an English
-wiki page name and internal ids never appear in URLs — but a custom has no wiki
-page. Either the editor lives at a fixed `/kitguns` and an assembly is addressed
-by its parts, or a named Kitgun gets a slug and the rule about URLs gains an
-exception. The first needs no exception.
+wiki page name — but a custom has no wiki page. Either the editor lives at a
+fixed `/kitguns` and an assembly is addressed by its parts, or a named Kitgun
+gets a slug of its own. The first invents no names.
 
 ## THE EXCLUSIVE ARCANES
 

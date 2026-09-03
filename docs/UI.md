@@ -477,7 +477,11 @@ label) derives from the domain. A preset belongs to ONE WEAPON, so the storage
 key also carries it (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels
 stay weapon-free, and copying a preset across weapons is the explicit "⇤
 import" action, which drops per axis what the target cannot hold. URLs mirror
-English wiki page names (spaces → `_`); internal ids never appear in URLs.
+English wiki page names (spaces → `_`); an internal id appears in a URL only
+where the wiki name is not one weapon's alone — two Kitgun slots are one wiki
+page and two roster entries, so the lowest id keeps the wiki name and the other
+lives at its id rather than at nothing (`urlSlug`, and `url_slug` in
+`build_site_app.py`, which must stay the same rule).
 
 ---
 

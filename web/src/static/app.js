@@ -1854,7 +1854,8 @@ async function init() {
 // current build); '/weapons/<Wiki_Name>/optimizer' = the OPTIMIZER — one
 // tab per module (the page's three modules, "Simulator
 // sits in the middle"). URLs mirror wiki page names
-// (display name, spaces → '_'); internal weapon ids never appear in URLs.
+// (display name, spaces → '_'); an id appears only where that name is shared
+// by two weapons — see `urlSlug`.
 // The weapon <select> stays the internal source of truth; the home grid
 // and the path just drive it.
 // The WIKI PAGE name behind a weapon's display name. A parenthesised
@@ -1863,9 +1864,38 @@ async function init() {
 // `build_site_app.py`'s `wiki_name` splits on the same " (".
 const wikiWeaponName = (w) => (w.name_en || w.name).split(" (")[0];
 const wikiSlug = (w) => wikiWeaponName(w).replace(/ /g, "_");
+
+/// THE PATH SEGMENT A WEAPON LIVES AT — the wiki page name, and the ID where
+/// that name is not this weapon's alone.
+///
+/// URLs mirror wiki page names and ids never appear, which holds for every
+/// weapon whose display name is its own. Two Kitgun slots are ONE wiki page
+/// and two roster entries, so the rule maps them onto one address and the
+/// loser of that collision has NO URL AT ALL — nothing to link, nothing to
+/// prerender. An id is uglier than a wiki name and it is reachable.
+///
+/// THE LOWEST ID KEEPS THE WIKI NAME, so `/weapons/Tombfinger` is a stable
+/// address rather than one that follows roster order, and it stays the one the
+/// Slot control swaps INSIDE — switching slots does not navigate, which is
+/// what makes a Kitgun one page. `url_slug` in `build_site_app.py` is the same
+/// rule and has to stay it, or a link points at a page that was never written.
+let SLUG_OWNER = null;
+const urlSlug = (w) => {
+  // NOT CACHED BEFORE THE ROSTER LANDS: an empty `META.weapons` would freeze an
+  // empty map, after which every weapon's path is its id forever.
+  if (!SLUG_OWNER && (META.weapons || []).length) {
+    SLUG_OWNER = new Map();
+    for (const x of META.weapons || []) {
+      const g = wikiSlug(x);
+      if (!SLUG_OWNER.has(g) || x.id < SLUG_OWNER.get(g)) SLUG_OWNER.set(g, x.id);
+    }
+  }
+  const g = wikiSlug(w);
+  return !SLUG_OWNER || SLUG_OWNER.get(g) === w.id ? g : w.id;
+};
 const weaponPath = (id) => {
   const w = (META.weapons || []).find((x) => x.id === id);
-  return "/weapons/" + (w ? wikiSlug(w) : id);
+  return "/weapons/" + (w ? urlSlug(w) : id);
 };
 function nav(path) {
   const moved = location.pathname !== path;
@@ -1929,9 +1959,11 @@ function route() {
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
   // to the home grid — which reads as "the site sent me somewhere else".
   const slug = m && decodeURIComponent(m[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
-  const w = slug && (META.weapons || []).find(
-    (x) => wikiSlug(x).toLowerCase() === slug || x.id === slug
-  );
+  // AN ID ANSWERS FIRST. `/weapons/tombfinger_secondary` is that weapon's own
+  // address; matching the wiki slug first would hand it to the entry that owns
+  // the shared name and the second slot would be unreachable again.
+  const w = slug && ((META.weapons || []).find((x) => x.id === slug)
+    || (META.weapons || []).find((x) => wikiSlug(x).toLowerCase() === slug));
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
   document.body.classList.toggle("on-home", !w && !support && !bench && !dl);
@@ -2097,7 +2129,7 @@ function renderHome() {
       w.uses_evo2 ? `<span class="tag">Incarnon</span>` : "",
       w.sentinel ? `<span class="tag">Sentinel</span>` : "",
     ].join("");
-    return `<a class="wcard" href="/weapons/${wikiSlug(w)}">
+    return `<a class="wcard" href="/weapons/${urlSlug(w)}">
       ${imgTag(IMG(w.image), "wc-img")}
       <div class="wc-info">
         <div class="wc-name">${w.name}</div>
@@ -2373,7 +2405,7 @@ function renderBenchBoard() {
         .replace("{n}", measured).replace("{t}", rows.length).replace("{m}", metric))}${
       benchPendingNote(cur)}</div>
     <div class="bench-rows">${rows.map(({ w, mode, row }, i) => `
-      <a class="brow${row ? "" : " none"}" href="/weapons/${wikiSlug(w)}${
+      <a class="brow${row ? "" : " none"}" href="/weapons/${urlSlug(w)}${
         // WHICH RULER YOU CAME FROM, not just how the weapon is played:
         // without it the link lands on whatever official build is first, and
         // the two boards' leaders are both called "#1 · Incarnon cycle". It
@@ -12658,7 +12690,9 @@ const assemblySpec = (id) => (weaponInfo(id) || {}).assembly || null;
 /// which mods it may hold and that is a question with a static answer. Those
 /// two facts meet here: `/weapons/Tombfinger` resolves to one entry and the
 /// Slot control moves to the other WITHOUT changing the address, which is what
-/// makes the two a page rather than two pages that happen to share a name.
+/// makes the two a page rather than two pages that happen to share a name. The
+/// second entry still needs an address of its OWN to be linkable at all, and
+/// `urlSlug` gives it one; nothing on the page navigates to it.
 ///
 /// Switching is switching WEAPONS in every other sense — its own build, its own
 /// riven slots, its own board rows — which is exactly what "nothing crosses
