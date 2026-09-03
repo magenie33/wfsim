@@ -37,8 +37,8 @@ seven different builds being ranked, which is what the board is for.
 **THE ROSTER HOLDS TWO CLASSES**, and the second one is what proves the first
 was not hard-coded. A Tonfa (the Praedos) differs from a hammer in every number
 the class owns — 1.17 attack speed against 0.833, a **4x** heavy against 6x,
-0.6 Follow Through against 0.4, a 0.7 s wind-up against 1.2 — and it needed no
-engine change to say so. Its stances are two more cards in a pool of their own.
+0.6 Follow Through against 0.4, a 0.4 s heavy CHARGE against the hammer's
+published 1.2 — and it needed no engine change to say so. Its stances are two more cards in a pool of their own.
 
 **THE TONFA HEAVY IS THE ONE NUMBER TWO WIKI SOURCES DISAGREE ON.**
 `Module:Stances/data` prints `Dmg = { 250 }, Hits = { 2 }` for Discord Sewn,
