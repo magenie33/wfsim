@@ -37,12 +37,15 @@ const PROBE = `(async () => {
         arcanes: AX.arcanes.map((a) => S(a.options.map((x) => x.id))),
         evolutions: AX.evolutions.map((t) => S(t.options.map((o) => o.id))),
       },
-      // THE EXILUS SLOT'S OWN POLARITY. The server sends nine innate slots —
-      // eight main plus the exilus — and a client that slices the ninth off
-      // and pads a null over it shows an empty polarity on a weapon that comes
-      // with one: full drain for the mod in it, and a Forma charged for
-      // something the weapon already has.
-      innate: { client: innate.slice(), served: (w.innate_polarities || []).slice() },
+      // THE EXILUS SLOT'S OWN POLARITY, and the STANCE'S. A client that slices
+      // one off and pads a null over it shows an empty polarity on a weapon
+      // that comes with one: full drain for the mod in it, and a Forma charged
+      // for something the weapon already has.
+      innate: {
+        client: innate.slice(),
+        served: (w.innate_polarities || []).slice(),
+        stance: w.stance_polarity || null,
+      },
       // What each module INDEPENDENTLY decides to show.
       shown: {
         builder: { exilus: AX.hasExilus, arcanes: AX.arcanes.length > 0,
@@ -182,9 +185,21 @@ const settled = async (id) => {
       if (has !== shownBuilder[k]) diffs.push(`${k}: has options ${has} but builder shows ${shownBuilder[k]}`);
     }
     // Nothing the server said about polarities may be lost on the way in.
-    const { client, served } = r.innate;
-    if (JSON.stringify(client) !== JSON.stringify(served)) {
-      diffs.push(`innate polarities: client ${JSON.stringify(client)} vs served ${JSON.stringify(served)}`);
+    //
+    // PER INDEX, NOT WHOLE ARRAYS. The client's is fixed at ten — eight main,
+    // the exilus, and the STANCE, whose polarity is a field of its own rather
+    // than an entry in `innate_polarities` — while the server's LENGTH is the
+    // weapon's slot count. Comparing the two whole would assert how the client
+    // pads, which is not a property, and it reported every sentinel as a
+    // mismatch for having eight served against ten held.
+    const { client, served, stance } = r.innate;
+    served.forEach((p, i) => {
+      if ((client[i] ?? null) !== (p ?? null)) {
+        diffs.push(`innate polarity ${i}: client ${client[i] ?? "—"} vs served ${p ?? "—"}`);
+      }
+    });
+    if ((client[9] ?? null) !== (stance ?? null)) {
+      diffs.push(`stance polarity: client ${client[9] ?? "—"} vs served ${stance ?? "—"}`);
     }
     notes.push(`exilus pol ${client[8] || "—"}`);
     console.log(`${r.weapon.padEnd(20)} ${notes.join("  ").padEnd(66)} ${diffs.length ? "MISMATCH" : "ok"}`);
