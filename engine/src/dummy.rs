@@ -127,6 +127,18 @@ struct ArcRuntime {
     /// multiply its stacks. A field tick and a syndicate blast each open their
     /// own, because they are their own instances at their own times.
     instance: u64,
+    /// WHEN A BLAST WENT OFF, and ONCE PER MOMENT however many stacks did.
+    ///
+    /// A Blast fuse pays out a damage number, and what an arcane counting
+    /// "hits" sees is the MOMENT, not the pile: nine stacks expiring one at a
+    /// time are nine, and any number expiring together are one. Kept here
+    /// because the three functions that fire fuses already carry this and the
+    /// perk that reads them lives a level up.
+    ///
+    /// A MAX-STACK DETONATION IS NOT IN HERE. It is fired where the tenth stack
+    /// is applied rather than by a fuse, so it never reaches this — which is
+    /// also what the wiki says of it.
+    blast_pops: Vec<f64>,
 }
 
 impl ArcRuntime {
@@ -151,6 +163,7 @@ impl ArcRuntime {
                 .crit_damage_on_kill
                 .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
             instance: 0,
+            blast_pops: Vec::new(),
         }
     }
 
@@ -5473,6 +5486,13 @@ pub struct RunResult {
     pub pellets: u32,    // multishot instances (>= shots)
     pub crits: u32,      // tier >= 1, counted per pellet
     pub big_crits: u32,  // tier >= 2
+    /// HOW MANY MOMENTS A BLAST WENT OFF IN — not how many stacks did.
+    ///
+    /// Nine expiring one at a time are nine; any number expiring together are
+    /// one, and a max-stack detonation is none of them because it is fired
+    /// where the tenth stack lands rather than by a fuse. It is what an arcane
+    /// counting hits sees, so it is counted where that is decided.
+    pub blast_pops: u32,
     /// Sum of every DIRECT pellet's crit TIER, normal hits included as 0.
     ///
     /// Its mean is the number `crits / pellets` stops being once a build
@@ -9675,6 +9695,14 @@ fn process_ticks(
             }
             Ev::Blast(i) => {
                 seeded_by = u32::MAX;
+                // ONE MOMENT, HOWEVER MANY STACKS SHARE IT. Two applied by the
+                // same shot carry the same fuse and go off together; an arcane
+                // counting hits sees one, the same way it sees one for a
+                // shotgun's pellets.
+                if arc.blast_pops.last() != Some(&now) {
+                    arc.blast_pops.push(now);
+                    r.blast_pops += 1;
+                }
                 let b = debuffs.blast.remove(*i);
                 (
                     b.value,
@@ -16791,6 +16819,28 @@ pub fn run_once_traced(
             headshot: any_head,
             target_alive: true,
         });
+        // A BLAST THAT WENT OFF SINCE THE LAST SHOT IS A HIT TOO — one per
+        // MOMENT, however many stacks shared it, which is what the pile records.
+        //
+        // A fuse paying out is a damage number at a moment, and that is what an
+        // arcane counting hits sees: nine stacks expiring one at a time are
+        // nine, ten going off together are one. AND BLAST NEVER CRITS, so a pop
+        // only ever BUILDS the ramp — it can never fill the big-crit counter
+        // that resets it, which is why `big_crit` is false here and not read
+        // from anything.
+        //
+        // Fed at the pop's own time and before this shot's, because both are
+        // true: the arcane is rate-limited, and the ramp this shot fires under
+        // is the one the pops left behind.
+        for pop in arc.blast_pops.drain(..) {
+            if let Some(en) = enervate.as_mut() {
+                en.on_event(
+                    &Event::Hit(Hit { big_crit: false, headshot: false, target_alive: true }),
+                    pop,
+                    &mut bar,
+                );
+            }
+        }
         if let Some(en) = enervate.as_mut() {
             en.on_event(&hit, t, &mut bar);
         }
@@ -19134,6 +19184,51 @@ mod tests {
         // is Blast's own mechanic rather than any full stack bar detonating.
         let imp = run_once(&build(vec![DamageType::Impact]), &mut Rng::new(0x5EED));
         assert_eq!(imp.spread.touched(), 1, "{:?}", &imp.spread.by_body().0[..3]);
+    }
+
+    /// A BLAST GOING OFF IS ONE HIT PER MOMENT, NOT PER STACK.
+    ///
+    /// What an arcane counting hits sees is the damage NUMBER at a moment. Two
+    /// stacks applied by the same shot carry the same fuse and go off together,
+    /// so they are one — the same rule that makes a shotgun's pellets one hit.
+    /// Measured in game: nine stacks left to expire on their own build nine,
+    /// two applied at once build one, and reaching ten builds one.
+    ///
+    /// AND THE TENTH IS NOT A FUSE AT ALL. A full pile detonates where the
+    /// stack lands rather than on its clock, so it is not one of these — which
+    /// is what the wiki says of it, and why the fast case below counts fewer.
+    #[test]
+    fn a_blast_is_one_hit_per_moment_however_many_stacks_share_it() {
+        let build = |forced: Vec<DamageType>, rate: f64| {
+            let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let arena = crate::arena::Arena::training(10.0);
+            let mut p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.status_chance = 1.0;
+            p.forced_procs = forced;
+            p.fire_rate = rate;
+            p
+        };
+        let pops = |forced: Vec<DamageType>, rate: f64| {
+            run_once(&build(forced, rate), &mut Rng::new(0x5EED)).blast_pops
+        };
+        // SLOW ENOUGH THAT NOTHING REACHES TEN, so every detonation is a fuse.
+        let one = pops(vec![DamageType::Blast], 0.2);
+        assert!(one > 0, "the fixture has to detonate something");
+        for n in 2..=3 {
+            let many = pops(vec![DamageType::Blast; n], 0.2);
+            assert_eq!(
+                many, one,
+                "{n} stacks a shot are {n} times the stacks and the SAME moments"
+            );
+        }
+        // …AND A PILE THAT REACHES TEN COUNTS FEWER, because the detonation it
+        // fires is not a fuse. Same weapon, same procs, only the rate moved.
+        assert!(
+            pops(vec![DamageType::Blast, DamageType::Blast], 10.0) < one,
+            "a max-stack detonation is not a moment a hit is counted in"
+        );
     }
 
     /// A GAS CLOUD OUTLIVES ITS HOST; EVERY OTHER DoT DIES WITH IT.
