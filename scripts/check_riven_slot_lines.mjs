@@ -14,7 +14,7 @@
 // Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
-const app = await openApp({ boot: 12000 });
+const app = await openApp({ boot: 12000, base: process.env.WFSIM_BASE });
 const { evaluate, check, send, sleep, BASE } = app;
 
 await evaluate("localStorage.clear(); localStorage.setItem('wfsim-lang', 'en')");
@@ -47,6 +47,10 @@ const read = async (label, w, h) => {
       : document.querySelectorAll('#mod-slots > .slot')[at];
     out.cellFound = !!cell;
     if (!cell) return out;
+    // …AND WHERE ITS NAME POINTS. A riven's name is invented by the drop, so a
+    // URL built from it 404s; the mechanic's page is what a click is for.
+    const a = cell.querySelector('.mn a');
+    out.href = a ? a.getAttribute('href') : null;
     const me = cell.querySelector('.me');
     out.hasBlock = !!me;
     out.lines = me ? Array.from(me.children).map((d) => d.textContent.trim()).filter(Boolean) : [];
@@ -65,6 +69,11 @@ check(
   "a riven really is equipped in the build",
   desk.slotIdx >= 0,
   `slot ${desk.slotIdx}, id ${desk.modId}`,
+);
+check(
+  "the riven's name links to the mechanic, not to a page named after the roll",
+  desk.href === "https://wiki.warframe.com/w/Riven_Mods",
+  `href ${desk.href}`,
 );
 check(
   "the engine printed lines for it at all",
@@ -126,4 +135,4 @@ check(
   `drew ${boot.drew}`,
 );
 
-process.exit(0);
+await app.finish("an equipped riven prints its roll and links to the mechanic");

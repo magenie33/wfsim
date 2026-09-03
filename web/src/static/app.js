@@ -9773,6 +9773,15 @@ const wikiUrl = (name) => "https://wiki.warframe.com/w/" + encodeURIComponent(na
 // English literals only.
 const wl = (text, url) => `<a class="wl" href="${url || wikiUrl(text)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${text}</a>`;
 
+/// THE WIKI PAGE BEHIND A MOD CARD — and a RIVEN'S IS THE MECHANIC'S.
+///
+/// Every other mod is one published card with one page. A riven is generated:
+/// "Argon Critacan" is a name a drop invented, the wiki has no page by it, and
+/// building the URL from the name the way the rest do gives a link that always
+/// 404s. What a reader clicking a riven wants is the mechanic — disposition,
+/// rolling, the stat pools — which is `Riven Mods`.
+const modWikiUrl = (m) => (m.riven ? wikiUrl("Riven Mods") : wikiUrl(m.name_en || m.name));
+
 // Description lines at a rank: the verbatim in-game text with the
 // rank-varying numbers filled server-side (mods and arcanes alike). Null
 // when the pool has no yaml description (hardcoded rifle pool) — callers
@@ -9961,7 +9970,7 @@ function buildSlot(i) {
     const matchedPol = s.pol === m.polarity || (s.pol === "Omni" && m.polarity !== "Umbra");
     const fit = !s.pol ? "" : matchedPol ? " matched" : " mismatched";
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
-      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc.length ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr${fit}"><span class="mpol" title="${escHtml(polCap(m.polarity))}">${polGlyph(m.polarity)}</span>${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
+      `<div class="info"><div class="mn">${wl(m.name, modWikiUrl(m))}</div>${desc.length ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr${fit}"><span class="mpol" title="${escHtml(polCap(m.polarity))}">${polGlyph(m.polarity)}</span>${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openModSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -11915,7 +11924,7 @@ const modRow = (m, { cls = "", title = "", attrs = "", chips = "", note = "",
   `<div class="opt ${cls} ${m.rarity ? "rar-" + m.rarity : ""}" ${attrs} title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${
-    m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${
+    wl(m.name, modWikiUrl(m))}${
     exilusChip && m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}${chips}</div><div class="me">${
     cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div>${note}</div>${trailing}</div>`;
 
