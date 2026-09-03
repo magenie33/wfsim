@@ -129,6 +129,28 @@ pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     }
 }
 
+/// HOW A TIE AT A GEOMETRIC BOUNDARY IS DECIDED — by this rule, and never by
+/// the last bit of a square root.
+///
+/// A body sitting EXACTLY on a limit is not an edge case here, it is what a
+/// laid-out fight produces: a formation on a grid puts bodies at 45 degrees off
+/// the aim line, which is exactly half of `MELEE_ARC_DEG`. Every gate that
+/// includes its boundary — `gap <= reach`, `off_axis <= half the arc` — then
+/// asks whether `acos` or `hypot` rounded up or down, and the two answers are a
+/// WHOLE BODY apart rather than an ULP apart. Measured: one ring of nine, four
+/// bodies swept on one host and three on another, from the same code.
+///
+/// The margin is far above that rounding and far below any distance or angle
+/// this model tells apart, so it changes no answer that was not already a coin
+/// toss. What decides a tie is the gate's own rule: the boundary is inside.
+const GEOMETRY_TIE: f64 = 1e-9;
+
+/// Is `value` within `limit`, with a tie counting as inside — see
+/// [`GEOMETRY_TIE`].
+pub fn within(value: f64, limit: f64) -> bool {
+    value <= limit + GEOMETRY_TIE
+}
+
 /// HOW FAR OFF THE AIM LINE A BODY SITS, in degrees, seen from the muzzle.
 ///
 /// ZERO when the weapon is pointed straight at it, which is the fight this
@@ -1036,6 +1058,28 @@ mod tests {
         let bodies = [Vec2::new(2.0, 8.0), Vec2::new(1.0, 4.2), Vec2::new(-9.0, 1.0)];
         let first = first_hit(muzzle, dir, &bodies).map(|(i, _)| i);
         assert_eq!(struck_along(muzzle, dir, &bodies, 0.0, 0.0).first().copied(), first);
+    }
+
+    /// A TIE AT A BOUNDARY IS DECIDED BY THE RULE, NOT BY `acos`.
+    ///
+    /// The 45-degree case is the one a grid actually produces, and it is the one
+    /// whose computed angle straddles the limit: `acos` need not return exactly
+    /// 45 for a body geometrically at 45, and the two answers differ by a whole
+    /// body swept rather than by an ULP. Asserted here on the value AND on the
+    /// gate, since a host where `acos` happens to round the friendly way would
+    /// pass a test that only looked at the angle.
+    #[test]
+    fn a_body_exactly_on_the_boundary_is_inside_it() {
+        let m = Vec2::ORIGIN;
+        let corner = off_axis_deg(m, Vec2::new(0.0, 10.0), Vec2::new(10.0, 10.0));
+        assert!((corner - 45.0).abs() < 1e-9, "a grid corner is 45 degrees off, got {corner}");
+        assert!(within(corner, 45.0), "{corner} is the boundary and the boundary is inside");
+        // A hair past it is outside, so the margin decides ties and nothing else.
+        assert!(!within(45.0 + 1e-6, 45.0));
+        // And a distance limit answers the same way, since a grid puts bodies at
+        // exactly the reach a card grants as readily as it puts them at 45.
+        assert!(within(5.5, 5.5));
+        assert!(!within(5.5 + 1e-6, 5.5));
     }
 
     /// POINTING SOMEWHERE ELSE IS A REAL ANGLE, and pointing AT a body is zero

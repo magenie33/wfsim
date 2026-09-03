@@ -4111,11 +4111,14 @@ impl DummyParams {
         let mut out: Vec<(usize, f64)> = vec![(0, crate::space::gap(self.player_at, self.target_at))];
         for (i, f) in self.others.iter().enumerate() {
             let gap = crate::space::gap(self.player_at, f.at);
-            if gap > reach {
+            if !crate::space::within(gap, reach) {
                 continue;
             }
             if !all_around
-                && crate::space::off_axis_deg(self.player_at, aim, f.at) > MELEE_ARC_DEG / 2.0
+                && !crate::space::within(
+                    crate::space::off_axis_deg(self.player_at, aim, f.at),
+                    MELEE_ARC_DEG / 2.0,
+                )
             {
                 continue;
             }
@@ -8185,11 +8188,11 @@ fn spread_from_tendrils(
         .iter()
         .enumerate()
         .filter_map(|(i, f)| {
-            if f.at.distance(params.player_at) > params.tendril_range_m {
+            if !crate::space::within(f.at.distance(params.player_at), params.tendril_range_m) {
                 return None;
             }
             let off = crate::space::off_axis_deg(muzzle, aim, f.at);
-            (off <= params.tendril_acquire_deg).then_some((off, i))
+            crate::space::within(off, params.tendril_acquire_deg).then_some((off, i))
         })
         .collect();
     cand.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
