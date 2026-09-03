@@ -10031,6 +10031,10 @@ fn sample_stacks(
     // When a melee Incarnon's window closes; 0.0 before it is ever armed, so
     // "up" is `now < this` and needs no second flag.
     incarnon_until: f64,
+    // MELEE INFLUENCE'S WINDOW, read the same way — and it is the one buff on a
+    // melee build whose COVERAGE is the whole question, since the card is an
+    // 18 s clock a roll opens rather than something a swing keeps up.
+    influence_until: f64,
 ) -> Vec<(u16, f64)> {
     // u16, not u8: the Shot Combo Counter runs into the hundreds and a
     // capped curve would be a chart that lies about the fight it draws.
@@ -10082,6 +10086,10 @@ fn sample_stacks(
             // is the only thing that knows when the heavy attack that armed it
             // went down.
             "melee_incarnon" => (live(now < incarnon_until), until(now < incarnon_until, incarnon_until)),
+            "arcane:melee_influence" => (
+                live(now < influence_until),
+                until(now < influence_until, influence_until),
+            ),
             "on_headshot_cc" => (live(now < ch_buff_expiry), until(now < ch_buff_expiry, ch_buff_expiry)),
             "on_kill_cd" => {
                 let e = arc.crit_damage_kill_expiry_seconds();
@@ -13310,6 +13318,7 @@ pub fn run_once_traced(
                         combo_at(combo_spec, params.combo_held, combo_count,
                             combo_last_hit, next_frame),
                         incarnon_until,
+                influence_until,
                     );
                     rep.frames.push(Frame {
                         t: next_frame,
@@ -14412,6 +14421,7 @@ pub fn run_once_traced(
                 streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
                 combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
                 incarnon_until,
+                influence_until,
             );
             rec.set_stacks(stacks);
             rec.begin_shot(t, n_pellets);
@@ -15296,6 +15306,7 @@ pub fn run_once_traced(
                         streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
                         combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
                         incarnon_until,
+                influence_until,
                     );
                     rec.set_stacks(stacks);
                 }

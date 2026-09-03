@@ -8954,6 +8954,28 @@ mod asset_tests {
             score(&held),
             score(&earned),
         );
+
+        // …AND ITS COVERAGE IS READ FROM THE FIGHT, not left at zero. The card
+        // is a CLOCK, so how much of the engagement it was up for is the whole
+        // question a reader brings to it — and a series nothing samples reads
+        // as an arcane that never fired.
+        let coverage = |v: &Value| {
+            let rp = v.get("replay")?;
+            let i = rp.get("buffs")?.as_array()?.iter().position(|b| {
+                b.get("id").and_then(Value::as_str) == Some("arcane:melee_influence")
+            })?;
+            let frames = rp.get("stacks")?.as_array()?.get(i)?.as_array()?;
+            let live = frames.iter().filter(|f| f.as_u64().unwrap_or(0) > 0).count();
+            Some(100.0 * live as f64 / frames.len().max(1) as f64)
+        };
+        let mut with_replay = req(Value::Null);
+        with_replay
+            .as_object_mut()
+            .expect("map")
+            .insert("replay".into(), serde_json::json!(true));
+        let replayed = simulate_json(&with_replay);
+        let up = coverage(&replayed).expect("the window has a series");
+        assert!(up > 1.0, "the window's coverage read {up:.1}%");
     }
 
     /// A MELEE WITH EVERY SLOT FILLED SIMULATES — eight mains, an exilus and a
