@@ -7316,10 +7316,15 @@ fn spread_from_influence(
     // factor that is missing.
     let f = params.faction_at_time(t);
     let status_damage = params.status_duration_multiplier;
+    // THE BODY THAT WAS STRUCK TAKES IT TOO, and the epicentre is zero metres
+    // from itself so it is always in range.
+    //
+    // The arcane is one instance dealt to everything within the radius, and the
+    // one that was hit is inside it — the wiki's example counts "every other
+    // enemy" because that is what its sentence is about, not because the host
+    // is excluded. Measured by the owner: the number lands on the host as well,
+    // and it force-procs there like everywhere else.
     for (b, at) in bodies.iter().copied().enumerate() {
-        if b == from {
-            continue;
-        }
         // ANY PART OF A BODY TOUCHING IS ENOUGH — the rule every sphere in
         // this engine uses.
         if !crate::space::caught_by_blast(epicentre.distance(at), radius_m) {
@@ -12015,23 +12020,35 @@ mod melee {
         assert!(far < 1.0, "a 20 m spread reached a ring at 23 m: {far:.1}");
     }
 
-    /// …AND IT IS WORTH EXACTLY NOTHING AGAINST ONE BODY.
+    /// …AND IT PAYS ON ONE BODY TOO, because the body that was struck is
+    /// inside the radius it is the centre of.
     ///
-    /// The statuses it copies have nowhere to go, so the aimed body's own
-    /// number must not move by a single digit — not "not much", exactly none.
-    /// It is the claim that separates a spread from a damage bonus, and the
-    /// cheapest way for the implementation to be wrong is for the copy to land
-    /// back on the body it came from.
+    /// MEASURED BY THE OWNER, and it replaces the opposite claim. The arcane is
+    /// one instance dealt to everything within reach, and zero metres is within
+    /// reach: the host takes the element's damage again and it force-procs
+    /// there like anywhere else. The wiki's example counts "every other enemy"
+    /// because that is the half of it the sentence is about — it is not a
+    /// statement that the host is skipped.
+    ///
+    /// It matters most where it is least visible: a single-target ruler reads
+    /// this arcane as worth nothing at all if the host is excluded, and that is
+    /// the shape of the board it would publish.
     #[test]
-    fn melee_influence_pays_nothing_at_all_against_a_lone_target() {
+    fn melee_influence_pays_on_the_body_it_came_from() {
         let lone = |arcane: Option<&str>| {
             melee_fight("praedos", &[], &["shocking_touch"], arcane, 60.0, None).mean_damage
         };
         let bare = lone(None);
         let with = lone(Some("melee_influence"));
         assert!(
-            (with - bare).abs() < 1e-9,
-            "a spread with nobody to spread to moved the number: {bare:.4} -> {with:.4}",
+            with > bare,
+            "the host took no copy of its own status: {bare:.4} -> {with:.4}",
+        );
+        // …AND IT IS THE ELEMENT'S OWN NUMBER, not a rounding: an Electricity
+        // build spreading Electricity moves the aimed body by a real share.
+        assert!(
+            with > bare * 1.05,
+            "the copy landed but paid almost nothing: {bare:.4} -> {with:.4}",
         );
     }
 
