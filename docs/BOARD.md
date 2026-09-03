@@ -1311,8 +1311,22 @@ classified rescores the whole board: forgetting one costs time and is never
 wrong. Keying on the units a fight was OBSERVED to execute would be more precise
 and is the wrong trade — a build that starts reaching code it did not reach
 before has a recorded set that predates the change, and reuse under it is silent
-and wrong. Precision here is worth nothing, since the win is already 98.6% at
-the coarsest useful granularity: no gun row reaches melee under any attribution.
+and wrong.
+
+**WHAT A UNIT CANNOT BE IS A FILE, AND THAT IS WHAT THIS STEP COSTS.** Measured
+over two days of pushes that moved the fingerprint: every melee commit touches
+`engine/src/dummy.rs`, which is 32,146 lines of the engine's 78,003 and holds
+the gun logic too — so a file-level attribution puts it in the global bucket and
+buys NOTHING for the case worth 98.6%. Two cheaper readings of the same idea
+were measured and are also empty or nearly so: no commit in that window changed
+only comments, which is what makes the data half's comment stripping free, and
+only 2 of 24 fell entirely inside `#[cfg(test)]`. Melee-only FUNCTIONS do exist
+— `melee_combo_multiplier`, `combo_points_for`, `spread_from_influence`,
+`heavy_cycle_seconds` — so an item-level hash reaches part of it, while a melee
+change that touches the shared fight loop stays global.
+
+So this step begins with moving the melee mechanics out of `dummy.rs` and not
+with a hash. That is the honest sequence, and the 98.6% is what it is worth.
 
 **B. A SCORE IS WRITTEN WHERE IT IS COMPUTED.** *(the architectural one)* A
 score keyed by `(identity, ruler, data fingerprint, code units)` is a fact that
