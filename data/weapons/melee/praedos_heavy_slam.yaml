@@ -50,7 +50,7 @@ attack:
   # Slam Attacks"* (wiki, Melee). A slam's damage is its radial, and the
   # radial reaches the room through the sphere rather than through a swing.
   # see notes: tonfa_heavy_and_slide
-  heavy: { multiplier: 4.0, windup_seconds: 0.7 }
+  heavy: { multiplier: 4.0, windup_seconds: 0.4 }
   spends_combo: true
   damage: { impact: 0.0 }
   radial:

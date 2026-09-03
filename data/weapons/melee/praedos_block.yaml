@@ -31,7 +31,7 @@ attack:
   # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
   follow_through: 0.6
   # see notes: tonfa_heavy_and_slide
-  heavy: { multiplier: 4.0, windup_seconds: 0.7 }
+  heavy: { multiplier: 4.0, windup_seconds: 0.4 }
   damage: { impact: 20, puncture: 20, slash: 160 }   # total 200
 
   # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its

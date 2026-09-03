@@ -312,6 +312,16 @@ notes:
     848/212, Ohma 896/224, Telos Boltace 840/210, Praedos 800/200), and it is
     unanimous where the module is one row. The HIT COUNT is the module's and the
     TOTAL is the export's, so each of the two hits is 200%.
+  tonfa_heavy_timing: |
+    A HEAVY IS TWO CLOCKS AND EACH HAS ITS OWN BUCKET. Measured on a Tonfa at
+    1.0x attack speed: the CHARGE is 0.4 s and the swing after it 0.8 s, 1.2 s
+    in all. Only wind-up speed shortens the first and only attack speed the
+    second — at 180% wind-up the charge measured 0.14 s, which is 0.4/2.8, while
+    the swing stayed at 0.80.
+
+    THE PUBLISHED FIGURE IS THE SUM, NOT THE CHARGE. Reading it as charge alone
+    makes a wind-up build far faster than it is: 1.2/2.8 is 0.43 s against the
+    0.94 s that was measured.
   class_s_heavy_attack: |
     THE CLASS'S HEAVY ATTACK — 6x with a 1.2 s charge, from the wiki's
     per-weapon-type table. Stated on EVERY form including the light ones,

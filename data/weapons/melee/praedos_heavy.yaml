@@ -40,7 +40,7 @@ attack:
   # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
   follow_through: 0.6
   # see notes: tonfa_heavy_and_slide
-  heavy: { multiplier: 4.0, windup_seconds: 0.7 }
+  heavy: { multiplier: 4.0, windup_seconds: 0.4 }
   damage: { impact: 20, puncture: 20, slash: 160 }   # total 200
 
   # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
@@ -64,9 +64,14 @@ attack:
   # THE WIND-UP IS ON THE SWING, not on the attack: the attack-level field is a
   # one-off delay before the fight's first shot, and a heavy attack pays its
   # charge before EVERY swing.
+  #
+  # TWO CLOCKS AND TWO BUCKETS: the CHARGE is 0.4 s and only wind-up speed
+  # shortens it; the swing after it is 0.8 s and only attack speed does. A heavy
+  # is 1.2 s at 1.0x of both.
+  # see notes: tonfa_heavy_timing
   combo_script:
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown] }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown] }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown] }
 
 source:
   url: https://wiki.warframe.com/w/Praedos

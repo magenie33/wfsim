@@ -11201,11 +11201,14 @@ mod melee {
         let cards = ["killing_blow", "amalgam_organ_shatter", "mentors_legacy"];
         let bare = panel(&["mentors_legacy"]);
         let rushed = panel(&cards);
-        // A TONFA CHARGES 0.7 s, so the window's +100% is 0.35 either way.
+        // THE WINDOW'S SWING HAS NO CHARGE AT ALL — measured, see
+        // `notes: tonfa_heavy_timing`. Zero whatever the build bought, which is
+        // both halves of *"not affected by Wind-Up Speed bonuses from other
+        // sources"* and the thing the mechanic is for.
         for p in [&bare, &rushed] {
-            assert!(
-                (p.tennokai.windup_seconds - 0.35).abs() < 1e-9,
-                "the window's charge moved: {}",
+            assert_eq!(
+                p.tennokai.windup_seconds, 0.0,
+                "the window's swing charges: {}",
                 p.tennokai.windup_seconds,
             );
         }
