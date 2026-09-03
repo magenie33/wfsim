@@ -1075,7 +1075,28 @@ fn main() {
                                     arcanes: v.arcanes.clone(),
                                     valence: v.valence.clone(),
                                     exilus: v.exilus.clone().unwrap_or_default(),
-                                    riven: None,
+                                    // THE SHAPE, EVEN THOUGH THE ROW IS NOT
+                                    // PUBLISHED. `mods` carries the riven SLOT,
+                                    // so a row stating one and naming no riven
+                                    // is refused when the next run reads it back
+                                    // — and what that run wanted from it was its
+                                    // COST, which is the input to the packing for
+                                    // exactly the rows that are expensive.
+                                    //
+                                    // THE ROLLS ARE THE WINNING CORNER'S, which
+                                    // is what was probed. They are never read as
+                                    // a measurement: `reuse_prior` takes the cost
+                                    // and then skips a probe row.
+                                    riven: Some(RowRiven {
+                                        bonuses: shape.bonuses.clone(),
+                                        malus: shape.malus.clone(),
+                                        rolls: best
+                                            .bonuses
+                                            .iter()
+                                            .map(|b| b.roll)
+                                            .chain(best.malus.iter().map(|m| m.roll))
+                                            .collect(),
+                                    }),
                                     fp: wfsim_engine::data_fingerprint::row_fingerprint(
                                         &bench_id, &v.weapon, &v.mods, &v.arcanes,
                                         &v.evolutions, v.exilus.as_deref(),
