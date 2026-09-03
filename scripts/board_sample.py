@@ -51,25 +51,97 @@ SUBMISSION_FIELDS = ("weapon", "mode", "mods", "arcanes", "evolutions", "exilus"
                      "valence", "grip", "loader", "arcane_rank")
 
 
+def plain_rows(board: dict) -> list[dict]:
+    """Every published row a re-score can reproduce without searching.
+
+    A PROBE ROW IS NOT A CLAIM. Its number is the same fight at a tenth of the
+    ruler's runs, recorded to say the build was looked at and never published,
+    so measuring it at full precision and calling the difference a disagreement
+    would be an alarm the board never asked for.
+    """
+    return [e for e in (board.get("entries") or [])
+            if not e.get("riven") and not e.get("probe")]
+
+
+def as_submission(entry: dict, bench: str) -> dict:
+    s = {k: v for k, v in entry.items() if k in SUBMISSION_FIELDS}
+    s["benchmark"] = bench
+    return s
+
+
+def buckets_of(rows: list[dict], budget_s: float) -> list[list[dict]]:
+    """The board cut into runs of roughly equal WORK, deterministically.
+
+    BY COST AND NOT BY COUNT, because the rows differ by four orders of
+    magnitude: `group_clear`'s median row is 20 s and its worst is 121 minutes,
+    so equal counts would give one bucket a two-hour job and the next a
+    two-minute one. A row costing more than the whole budget becomes a bucket of
+    its own — the tail is audited rarely, which is the correct frequency for the
+    rows that cost the most to check.
+
+    ORDERED BY `fp`, which is a hash, so the walk interleaves cheap and
+    expensive rows instead of following the board's weapon-by-weapon order —
+    and it is stable, so the same board cuts the same way in every run and a
+    bucket index means the same thing twice.
+    """
+    out: list[list[dict]] = []
+    cur: list[dict] = []
+    spent = 0.0
+    for e in sorted(rows, key=lambda e: str(e.get("fp") or "")):
+        cost = float(e.get("cost") or 0.0)
+        if cur and spent + cost > budget_s:
+            out.append(cur)
+            cur, spent = [], 0.0
+        cur.append(e)
+        spent += cost
+    if cur:
+        out.append(cur)
+    return out
+
+
 def main() -> int:
-    if len(sys.argv) < 2:
-        print("usage: board_sample.py <board.yaml>", file=sys.stderr)
+    args = sys.argv[1:]
+    if not args:
+        print("usage: board_sample.py <board.yaml> [--budget <seconds> --bucket <k>]",
+              file=sys.stderr)
         return 2
-    path = Path(sys.argv[1])
+    path = Path(args[0])
+
+    def flag(name: str) -> str | None:
+        return args[args.index(name) + 1] if name in args[:-1] else None
+
     board = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     bench = board.get("benchmark") or path.stem
+
+    # THE ROTATING SLICE, for the audit. The probe asks "did this code change
+    # move a number", so it wants one row per weapon and the same rows every
+    # time; the audit asks "does the board still say what this code computes",
+    # which is a question about EVERY row and is answered a slice at a time.
+    #
+    # THE KNOB IS THE CROSSING, not a budget in seconds. Each board is cut into
+    # the number of runs it should take to audit all of it, so every board
+    # finishes its lap together and the expensive one is not still on its first
+    # while the cheap ones have been re-read a dozen times. It also states the
+    # number the audit is judged by — how long it takes to cross the store.
+    crossing = flag("--crossing")
+    if crossing is not None:
+        rows = plain_rows(board)
+        total = sum(float(e.get("cost") or 0.0) for e in rows)
+        buckets = buckets_of(rows, total / max(int(crossing), 1))
+        k = int(flag("--bucket") or 0) % max(len(buckets), 1)
+        chosen = buckets[k] if buckets else []
+        json.dump([as_submission(e, bench) for e in chosen], sys.stdout)
+        spent = sum(float(e.get("cost") or 0.0) for e in chosen)
+        print(f"{path.name}: bucket {k} of {len(buckets)}, {len(chosen)} rows, "
+              f"{spent / 60:.1f} min of measured work", file=sys.stderr)
+        return 0
+
     best: dict[str, dict] = {}
-    for e in board.get("entries") or []:
-        if e.get("riven"):
-            continue
+    for e in plain_rows(board):
         w = e.get("weapon")
         if w and (w not in best or (e.get("score") or 0) > (best[w].get("score") or 0)):
             best[w] = e
-    subs = []
-    for w in sorted(best):
-        s = {k: v for k, v in best[w].items() if k in SUBMISSION_FIELDS}
-        s["benchmark"] = bench
-        subs.append(s)
+    subs = [as_submission(best[w], bench) for w in sorted(best)]
     json.dump(subs, sys.stdout)
     print(f"{path.name}: {len(subs)} weapons sampled", file=sys.stderr)
     return 0

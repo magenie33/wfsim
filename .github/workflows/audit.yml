@@ -1,0 +1,154 @@
+# DOES THE BOARD STILL SAY WHAT THIS CODE COMPUTES?
+#
+# The board publishes numbers nobody re-derives. Every other check here asks
+# whether the code is right; this one asks whether the FILE still agrees with
+# the code, which is a different question and the only one that catches a score
+# reused when it should not have been.
+#
+# It is the backstop that the weekly full rescore was, in the shape a backstop
+# should have: a slice at a time, for ever, taking one job out of the account's
+# forty rather than all of them for an afternoon. `--crossing` says how many
+# runs it takes to read the whole board, so the number this is judged by —
+# how long the audit needs to cross the store — is the knob itself.
+#
+# IT PUBLISHES NOTHING and gates nothing. Its only outputs are a count when the
+# numbers agree and a failure when they do not.
+name: audit
+
+on:
+  schedule:
+    - cron: "35 * * * *"
+  workflow_dispatch:
+
+# ONE AUDIT AT A TIME, and a queued one is worth nothing: the next run reads the
+# next slice anyway, so cancelling is losing a slice rather than losing work.
+# Its own group, because it must never be what cancels a board run.
+concurrency:
+  group: audit
+  cancel-in-progress: true
+
+env:
+  # HOW MANY RUNS IT TAKES TO READ THE WHOLE BOARD. Hourly against 84 puts a
+  # full crossing at three and a half days and each run at about 38 minutes of
+  # measured work — one job, so 2.5% of the concurrency ceiling and under 2% of
+  # a day's free CPU. Lower it to cross faster; the cost is linear and the
+  # ceiling it eats into is stated in docs/BOARD.md §"Two ceilings".
+  CROSSING: 84
+
+  # HOW LONG THE BOARD MAY GO WITHOUT MOVING before that is itself the finding.
+  # A rescore is hours, not days, so a day of silence means the pipeline stopped
+  # rather than that nothing was submitted — the state that has gone unnoticed
+  # every time it happened, because the only thing watching was a reader
+  # wondering where their build went.
+  STALE_HOURS: 24
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      # DEEP ENOUGH TO FIND THE LAST BOARD COMMIT, and no deeper. A board that
+      # has not moved inside two hundred commits is stale by any reading, so a
+      # search that comes back empty answers the question rather than failing to.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 200
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      - run: cargo build --release --bin wfsim-board
+      - run: pip install --quiet pyyaml
+
+      # HOW FAR BEHIND THE BOARD IS, which is worth reporting whether or not the
+      # audit can run. `engine:` is the code that scored it, so a board that
+      # does not carry the current fingerprint is a generation behind — and
+      # during ordinary work it usually is, which is why that alone is not the
+      # alarm. Silence for a day is.
+      - name: how far behind is the board
+        id: age
+        run: |
+          set -euo pipefail
+          fp=$(bash scripts/engine_fingerprint.sh)
+          was=$(grep -h '^engine:' boards/*.yaml | awk '{print $2}' | sort -u)
+          echo "current=$fp" >> "$GITHUB_OUTPUT"
+          if [ "$(printf '%s' "$was" | wc -l)" = "0" ] && [ "$was" = "$fp" ]; then
+            echo "generation=current" >> "$GITHUB_OUTPUT"
+          else
+            echo "generation=behind" >> "$GITHUB_OUTPUT"
+            echo "::notice::the board was scored by ${was:-unrecorded}, the code is $fp"
+          fi
+          last=$(git log -1 --format=%ct -- boards || true)
+          hours=$(( ( $(date +%s) - ${last:-0} ) / 3600 ))
+          echo "the last board commit was ${hours}h ago"
+          if [ "$hours" -ge "$STALE_HOURS" ]; then
+            echo "::error::the board has not moved in ${hours}h — the pipeline stopped, or nothing it scored was publishable"
+            exit 1
+          fi
+
+      # THE SLICE, and only when there is something to compare against. Auditing
+      # a board scored by other code compares two generations and reports every
+      # row moved, which is true and says nothing.
+      - name: read this run's slice of the board
+        if: steps.age.outputs.generation == 'current'
+        run: |
+          set -euo pipefail
+          : > result.txt
+          for f in boards/*.yaml; do
+            id=$(basename "$f" .yaml)
+            python3 scripts/board_sample.py "$f" \
+              --crossing "$CROSSING" --bucket "${{ github.run_number }}" > sample.json
+            # `--verify-min 0`: the floor is applied ONCE, over the three boards,
+            # in the step below — a board whose slice held four rows proves
+            # little alone and the three together prove what they prove.
+            set +e
+            ./target/release/wfsim-board "$id" \
+              --engine "${{ steps.age.outputs.current }}" \
+              --reuse "$f" --verify --verify-min 0 \
+              < sample.json > /dev/null 2> verify.log
+            set -e
+            grep -o 'verify-result: .*' verify.log >> result.txt || true
+            grep -o 'verify: .* -> .*' verify.log | head -3 || true
+          done
+          cat result.txt
+
+      # WHAT IT FOUND. `beyond` and not `moved` is the alarm, because a score is
+      # reproducible bit for bit only within a platform and a runner image bump
+      # would otherwise report every row as a finding — see `PLATFORM_NOISE` in
+      # `cli/src/bin/wfsim-board.rs`. Both counts are reported: the exact one is
+      # what a reader checks after an image moves, the other is the alarm.
+      - name: the verdict
+        if: steps.age.outputs.generation == 'current'
+        run: |
+          set -euo pipefail
+          sum() { awk -v k="$1" '{ for (i = 1; i <= NF; i++)
+                                     if (index($i, k "=") == 1) n += substr($i, length(k) + 2) }
+                                   END { print n + 0 }' result.txt; }
+          compared=$(sum compared); moved=$(sum moved)
+          beyond=$(sum beyond); stale=$(sum stale)
+          echo "audited $compared rows: $moved differ, $beyond beyond the platform's noise"
+          # NOTHING TO AUDIT IS NOT A FINDING. A row whose DATA fingerprint moved
+          # carries no number under this generation, so it is not a claim yet —
+          # which is the state right after a data change and until the backfill
+          # reaches those rows.
+          if [ "$compared" -eq 0 ] && [ "$stale" -gt 0 ]; then
+            echo "::notice::$stale rows in this slice have no score under the current data yet"
+            exit 0
+          fi
+          # AN EMPTY SLICE WITH NOTHING STALE IS THE SAMPLER, and an audit that
+          # cannot fail is worse than none. Twenty is the floor the probe uses
+          # per shard; three boards' slices clear it easily unless the sampler
+          # or the board changed shape underneath.
+          if [ "$compared" -lt 20 ]; then
+            echo "::error::only $compared rows compared and $stale stale — the slice is empty, so this run audited nothing"
+            exit 1
+          fi
+          if [ "$beyond" -gt 0 ]; then
+            echo "::error::$beyond of $compared published rows are not what this code computes"
+            exit 1
+          fi
+          echo "::notice::$compared rows agree with the board (crossing every $CROSSING runs)"
