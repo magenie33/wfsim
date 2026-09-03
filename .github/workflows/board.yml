@@ -385,6 +385,14 @@ jobs:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.submissions.outputs.shards) }}
+      # LEAVE THE MACHINE ROOM FOR THE CHECKS. Forty jobs is the account's whole
+      # ceiling (docs/BOARD.md §"Two ceilings"), so a rescore that fans out to
+      # all of it starves EVERY other workflow — CI queued behind a board run is
+      # how a red build went two days unseen. The board is a background job and
+      # CI is the one a person is waiting on, so eight slots stay free: a
+      # rescore is a quarter longer against hours it already takes, and the
+      # checks keep running while it does.
+      max-parallel: 32
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
