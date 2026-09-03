@@ -334,7 +334,10 @@ const CONSENT_PROBE = `(async () => {
   }
   markPresetDirty(); renderMods(); renderEvo(); renderArcanes(); refreshPanel(); await sleep(1500);
   out.modCountAfter = slots.filter((s) => s.mod).length;
-  out.shortfalls = buildShortfalls();
+  // WHAT THE BOARD SAYS, not what the page thinks. The page kept a second copy
+  // of admission and this check read that copy, so the two could agree with
+  // each other and both be wrong about the door.
+  out.shortfalls = (await boardVerdict(boardPayload())).reason || null;
 
   // AN EXILUS MOD ON TOP. The build is complete at 8 main slots; filling the
   // exilus slot must not make it "9 mods" — the most thoroughly built players
@@ -347,7 +350,7 @@ const CONSENT_PROBE = `(async () => {
   const exi = pool.find((id) => modById(id) && modById(id).exilus && !slots.some((s) => s.mod === id));
   if (exi) { slots[8].mod = exi; slots[8].rank = modById(exi).max_rank; markPresetDirty(); renderMods(); await sleep(900); }
   out.exilusEquipped = !!exi && !!slots[8].mod;
-  out.stillComplete = buildIsComplete();
+  out.stillComplete = (await boardVerdict(boardPayload())).accepted === true;
 
   // A complete build under the default DOES go — that is the change.
   await offerBoardSubmit(); await sleep(800);

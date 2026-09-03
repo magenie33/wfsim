@@ -19,7 +19,12 @@
 // the same build produce ONE row, with no dedup pass and no counting.
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
-const MAX_MODS = 9;            // an OUTER BOUND, not the rule — see below
+// AN OUTER BOUND, NOT THE RULE — see below. It is `MAIN_SLOTS + 1`: eight main
+// slots and the STANCE, which is the one extra card that rides `mods` (the
+// exilus has a key of its own). EXPORTED so `check_board_submit.mjs` can hold
+// it against the engine's own constant — this file has no game data and cannot
+// derive it, so the only thing keeping the two in step is that assertion.
+export const MAX_MODS = 9;
 const ID = /^[a-z0-9_]{1,64}$/;
 
 /// WHAT A BUILD IS, declared ONCE. Three things are derived from it — the shape

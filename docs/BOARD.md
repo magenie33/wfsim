@@ -51,10 +51,14 @@ number**. Everything else follows from it:
   finalist count is the searcher's own setting, they are all real builds, and
   the store is keyed by identity, so twenty submissions of which twelve are
   already held collapse onto twelve rows. **Nothing is pre-filtered on the
-  page**: how full a build must be is the searcher's setting too, so a
-  seven-mod scope produces seven-mod winners — and those are refused by
-  `/api/board/check`, which IS `validate_for_board` rather than a copy of it,
-  because a second implementation is a second answer. The panel reports the run
+  page, from any path**: how full a build must be is the searcher's setting
+  too, so a seven-mod scope produces seven-mod winners — and those are refused
+  by `/api/board/check`, which IS `validate_for_board` rather than a copy of
+  it, because a second implementation is a second answer. The SIMULATOR's path
+  kept such a copy — its own count of mods, tiers and seats, and a capacity
+  floor that ignored the capacity a stance hands back — so a melee build that
+  fits could be refused by the page and never reach the door. There is one
+  rule, it is the engine's, and the page ASKS it (`boardDoor`). The panel reports the run
   in aggregate ("7 of 10 uploaded · 3 × needs 8 mods"), since twenty rows off
   one search differ in their mods and not in why the board would not take them;
 - every row is reproducible by anyone with the repo, since the score was
@@ -537,6 +541,16 @@ assets, and until the board there was no script at all. Two consequences:
    ```jsonc
    "kv_namespaces": [{ "binding": "SUBMISSIONS", "id": "<namespace id>" }]
    ```
+
+   **A PUSH DOES NOT DEPLOY THE WORKER.** A push deploys `site/`; the endpoint
+   is deployed by `npx wrangler deploy` and by nothing else, so the code in
+   `worker/index.js` can be right while wfsim.app runs an older one — and the
+   failure that shape produces is a legal build refused at the one hop neither
+   the engine nor the page is watching. `check_board_submit.mjs` asks the
+   DEPLOYED endpoint whether it takes `MAX_MODS` ids and refuses one more,
+   without writing anything: the shape pass stops at the first bad field, so a
+   payload with a full mod list and a deliberately malformed arcane answers
+   "bad mods" from a stale worker and "bad arcanes" from a current one.
 
    **In the file, not in the dashboard.** wfsim.app is a WORKER (static assets),
    deployed by `npx wrangler deploy`, and a deploy REPLACES the worker's

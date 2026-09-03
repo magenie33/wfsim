@@ -163,7 +163,11 @@ const r = await evaluate(`(async () => {
       out.otherOpenedWeapon = document.getElementById('weapon').value;
       out.otherOpenedMode = mode;
       out.otherOpenedRuler = activeScenario;
-      out.otherOpenedMods = slots.filter(x => x.mod).map(x => x.mod);
+      // A RIVEN'S SLOT ID IS ITS LOCAL NAME, and a board row carries the bare
+      // word - the same normalisation boardPayload does, because a riven's
+      // name is what ONE player called their own item and cannot travel.
+      out.otherOpenedMods = slots.filter(x => x.mod)
+        .map(x => (isRivenId(x.mod) ? BOARD_RIVEN_SLOT : x.mod));
       out.otherWantMods = have.mods || [];
     }
   }

@@ -19,7 +19,7 @@
 // this without anyone remembering to come back.
 //
 //   node scripts/check_board_submit.mjs
-import worker, { AXES } from "../worker/index.js";
+import worker, { AXES, MAX_MODS } from "../worker/index.js";
 import fs from "node:fs";
 
 let failures = 0;
@@ -344,9 +344,72 @@ console.log("the board's submission endpoint\n");
     kv.rows.size === 1, String(kv.rows.size));
 }
 
+// ---- THE LIMIT IS THE ENGINE'S, and this file cannot derive it ----------
+//
+// `MAX_MODS` is `MAIN_SLOTS + 1`: eight main slots and the STANCE, the one card
+// that rides `mods` rather than a key of its own. The worker has no game data,
+// so nothing but this line stops the two drifting — and a worker one short
+// refuses every full MELEE build with "bad mods", which is a legal build lost
+// at the one hop neither the engine nor the page is watching.
+{
+  const src = fs.readFileSync(new URL("../engine/src/builds.rs", import.meta.url), "utf8");
+  const m = src.match(/pub const MAIN_SLOTS: usize = (\d+);/);
+  const mainSlots = m ? Number(m[1]) : NaN;
+  check("the engine's MAIN_SLOTS is readable", Number.isFinite(mainSlots), String(mainSlots));
+  check(
+    "the worker's mod limit is the engine's main slots plus the stance",
+    MAX_MODS === mainSlots + 1,
+    `worker ${MAX_MODS}, engine ${mainSlots} + 1`,
+  );
+}
+
+// ---- ...AND THE DEPLOYED ONE IS THIS ONE --------------------------------
+//
+// `site/` deploys on a push and the worker does NOT, so the code above can be
+// right while wfsim.app runs last month's. Probed WITHOUT WRITING: the shape
+// pass walks `AXES` in order and stops at the first bad field, so a payload
+// carrying a full mod list AND a deliberately malformed arcane answers "bad
+// mods" from a worker whose limit is too low and "bad arcanes" from one that
+// agrees with this file. Nothing is stored either way.
+//
+// SKIPPED WHEN THE NETWORK IS NOT THERE. It is a fact about the DEPLOYMENT,
+// not about the tree, so an offline run must not fail on it.
+if (process.env.WFSIM_SKIP_LIVE !== "1") {
+  const ids = Array.from({ length: MAX_MODS }, (_, i) => `probe_mod_${i}`);
+  const ask = async (mods) => {
+    const r = await fetch("https://wfsim.app/api/board/submit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ weapon: "praedos", mods, arcanes: ["NOT A VALID ID"] }),
+    });
+    return (await r.json()).error;
+  };
+  try {
+    const full = await ask(ids);
+    const over = await ask([...ids, "probe_mod_over"]);
+    check(
+      `the deployed worker takes ${MAX_MODS} mods`,
+      full === "bad arcanes",
+      `answered ${JSON.stringify(full)} - a worker limited below ${MAX_MODS} says "bad mods"`,
+    );
+    check(
+      `...and refuses ${MAX_MODS + 1}`,
+      over === "bad mods",
+      `answered ${JSON.stringify(over)}`,
+    );
+  } catch (e) {
+    console.log(`  --   the deployed worker was unreachable (${e.message}) - not asked`);
+  }
+}
+
 console.log(
   failures
     ? `\n${failures} failed`
     : "\nevery axis a build has survives the hop into storage",
 );
-process.exit(failures ? 1 : 0);
+// EXIT CODE, NOT `process.exit`. The live probe above leaves a keep-alive
+// socket in fetch's pool, and tearing the process down on top of it aborts node
+// with a libuv assertion — a check that CRASHES on a clean run reports 127,
+// which reads as a failure of the thing it was checking. Setting the code lets
+// the loop drain and exit on its own.
+process.exitCode = failures ? 1 : 0;
