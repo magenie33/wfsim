@@ -143,6 +143,16 @@ pub struct ValidBuild {
     /// of the build: an elemental riven pairs with the build's other elementals
     /// and where it sits decides what it pairs with.
     pub riven: Option<crate::rivens_data::RivenShape>,
+    /// THE PARTS A MODULAR WEAPON IS ASSEMBLED FROM. `None` on everything that
+    /// takes none, which is all but the Kitguns.
+    ///
+    /// IT IS THE BUILD, not a setting beside it: a grip sets damage, fire rate
+    /// and the charge, and a loader sets the magazine, the reload and three
+    /// deltas that can be negative. Two assemblies of one chamber are two
+    /// builds with two answers, so an identity that could not tell them apart
+    /// would file the second under the first's number — the same failure the
+    /// valence and the exilus slot each had before they were part of it.
+    pub assembly: Option<crate::kitguns_data::Assembly>,
     /// Forma the cheapest legal polarity layout needs. Not a legality term —
     /// two builds that are the same FIGHT can cost different amounts to reach,
     /// and the board should show the cheaper one.
@@ -601,7 +611,7 @@ pub fn validate_for_board(
     arcanes: &[String],
     valence: &str,
 ) -> Result<ValidBuild, String> {
-    validate_for_board_with(benchmark, weapon, mods, evolutions, arcanes, valence, None, None)
+    validate_for_board_with(benchmark, weapon, mods, evolutions, arcanes, valence, None, None, None)
 }
 
 /// [`validate_for_board`], for a build carrying a riven of known SHAPE.
@@ -625,8 +635,9 @@ pub fn validate_for_board_with(
     valence: &str,
     riven: Option<&crate::rivens_data::RivenShape>,
     exilus: Option<&str>,
+    assembly: Option<&crate::kitguns_data::Assembly>,
 ) -> Result<ValidBuild, String> {
-    let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven, exilus)?;
+    let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven, exilus, assembly)?;
     let req = match crate::benchmarks_data::get(benchmark) {
         Some(bm) => bm.build.clone(),
         // An unknown benchmark admits nothing: scoring a build against a ruler
@@ -723,7 +734,7 @@ pub fn validate(
     arcanes: &[String],
     valence: &str,
 ) -> Result<ValidBuild, String> {
-    validate_with(weapon, mods, evolutions, arcanes, valence, None, None)
+    validate_with(weapon, mods, evolutions, arcanes, valence, None, None, None)
 }
 
 /// [`validate`], for a build carrying a riven of known SHAPE.
@@ -731,6 +742,12 @@ pub fn validate(
 /// The riven rides in `mods` as [`RIVEN_SLOT`] so its POSITION is kept, and the
 /// shape says what that slot actually holds — which pool it must be rollable
 /// from, what it drains, and which elements it brings to the pairing.
+// EIGHT ARGUMENTS, AND EACH IS A DISTINCT BUILD AXIS — the same reason
+// `validate_for_board_with` carries nine. Bundling them into a struct would
+// satisfy the lint and hide the property that matters: every caller has to NAME
+// every axis, which is what turned "the scorer silently drops the assembly"
+// into six compiler errors instead of one wrong number.
+#[allow(clippy::too_many_arguments)]
 pub fn validate_with(
     weapon: &str,
     mods: &[String],
@@ -742,6 +759,10 @@ pub fn validate_with(
     // reason `ValidBuild::exilus` is its own field: nothing downstream could
     // tell a ninth entry in `mods` from a main-slot one.
     exilus: Option<&str>,
+    // THE PARTS, on a weapon that takes them. Its own argument for the same
+    // reason: the parts are not mods, nothing in `mods` could stand for them,
+    // and a build scored with a different grip is a different weapon.
+    assembly: Option<&crate::kitguns_data::Assembly>,
 ) -> Result<ValidBuild, String> {
     let spec = crate::weapons_data::spec(weapon)
         .ok_or_else(|| format!("unknown weapon: {weapon}"))?;
@@ -988,6 +1009,30 @@ pub fn validate_with(
         }
     };
 
+    // THE PARTS MUST COMPOSE, and a weapon that takes none must be given none.
+    // A REFUSAL rather than a repair: `assembly_of` repairs a stale link for a
+    // FIGHT, where there has to be something to draw; a board record is a
+    // statement about one build, and quietly scoring a different assembly is
+    // exactly the divergence a record exists to prevent.
+    let asm = match (spec.kitgun.as_deref(), assembly) {
+        (None, None) => None,
+        (None, Some(_)) => {
+            return Err(format!("{} is not assembled from parts", spec.name));
+        }
+        // NAMED NOTHING? THE WEAPON'S OWN DEFAULT, which is what an arsenal
+        // slot holds before anyone touches it — a Kitgun is never unassembled.
+        (Some(record), None) => crate::kitguns_data::default_assembly(record),
+        (Some(_), Some(a)) => {
+            if crate::weapons_data::spec_assembled(spec, Some(a)).is_none() {
+                return Err(format!(
+                    "{} and {} do not make a {}",
+                    a.grip, a.loader, spec.name
+                ));
+            }
+            Some(a.clone())
+        }
+    };
+
     Ok(ValidBuild {
         weapon: weapon.to_string(),
         exilus: exilus_id.map(|m| m.id.to_string()),
@@ -998,6 +1043,7 @@ pub fn validate_with(
         drain: plan.drain,
         valence: val,
         riven: riven.cloned(),
+        assembly: asm,
     })
 }
 
@@ -1126,9 +1172,17 @@ pub fn identity(b: &ValidBuild) -> String {
     // build without it and the score that survived was whichever arrived first.
     // Caught by scoring two Atomos builds differing only in `ruinous_extension`
     // and getting one row.
-    match &b.exilus {
+    let key = match &b.exilus {
         None => key,
         Some(x) => format!("{key}|x:{x}"),
+    };
+    // THE ASSEMBLY, appended for the reason the three above were: a build that
+    // takes no parts is keyed byte for byte as it was, so the board is not
+    // re-keyed by a feature almost none of it uses. The CHAMBER is not here —
+    // it is the weapon, and `b.weapon` already carries it.
+    match &b.assembly {
+        None => key,
+        Some(a) => format!("{key}|a:{}+{}", a.grip, a.loader),
     }
 }
 
@@ -1659,6 +1713,7 @@ mod tests {
                 "",
                 None,
                 None,
+                None,
             )
             .is_ok()
         };
@@ -1674,6 +1729,118 @@ mod tests {
             legal("focus_energy", "reflex_coil"),
             "two different cards that both buy efficiency stack in game",
         );
+    }
+
+    /// TWO ASSEMBLIES OF ONE CHAMBER ARE TWO BUILDS, and the identity says so.
+    ///
+    /// A grip sets damage, fire rate and the charge; a loader sets the magazine,
+    /// the reload and three deltas that can be negative. An identity that could
+    /// not tell them apart files the second under the first's number — the same
+    /// failure the valence and the exilus slot each had before they were part
+    /// of it, and the one that survives longest, because a board holding one
+    /// modular row cannot show it.
+    #[test]
+    fn two_assemblies_of_one_chamber_are_two_rows() {
+        let Some(w) = crate::weapons_data::roster().find(|w| w.kitgun.is_some()) else {
+            return; // no modular weapon in the roster: nothing to key apart
+        };
+        let record = w.kitgun.clone().unwrap();
+        let default = crate::kitguns_data::default_assembly(&record).expect("a default");
+        // ANOTHER LEGAL GRIP for this slot, whichever it is.
+        let other = crate::kitguns_data::grips()
+            .iter()
+            .find(|g| {
+                g.id != default.grip
+                    && crate::weapons_data::spec_assembled(
+                        w,
+                        Some(&crate::kitguns_data::Assembly {
+                            chamber: record.clone(),
+                            grip: g.id.clone(),
+                            loader: default.loader.clone(),
+                        }),
+                    )
+                    .is_some()
+            })
+            .map(|g| g.id.clone());
+        let Some(other) = other else { return };
+        let of = |grip: &str| {
+            validate_with(
+                &w.id,
+                &[],
+                &[],
+                &[],
+                "",
+                None,
+                None,
+                Some(&crate::kitguns_data::Assembly {
+                    chamber: record.clone(),
+                    grip: grip.to_string(),
+                    loader: default.loader.clone(),
+                }),
+            )
+            .map(|b| identity(&b))
+        };
+        let a = of(&default.grip).expect("the default assembles");
+        let b = of(&other).expect("the other grip assembles");
+        assert_ne!(a, b, "two grips, one identity: {a}");
+        assert!(a.contains(&default.grip), "{a}");
+    }
+
+    /// …AND A WEAPON THAT TAKES NO PARTS IS KEYED EXACTLY AS IT WAS.
+    ///
+    /// The assembly is APPENDED to the identity, so adding it must not re-key
+    /// the board: every row of every ordinary weapon has to hash to the string
+    /// it already did, or the first run after this files 22,000 rows as new.
+    #[test]
+    fn a_weapon_with_no_parts_is_keyed_as_it_always_was() {
+        let b = validate("braton_prime", &["serration".into()], &[], &[], "")
+            .expect("a legal Braton");
+        assert!(b.assembly.is_none());
+        assert_eq!(identity(&b), "braton_prime|serration|||");
+    }
+
+    /// A PAIR THAT DOES NOT COMPOSE IS REFUSED, not repaired. `assembly_of`
+    /// repairs a stale link for a FIGHT, where something has to be drawn; a
+    /// board record is a statement about one build, and swapping a part behind
+    /// the submitter is the divergence a record exists to prevent.
+    #[test]
+    fn parts_that_do_not_make_the_weapon_are_refused() {
+        let Some(w) = crate::weapons_data::roster().find(|w| w.kitgun.is_some()) else {
+            return;
+        };
+        let err = validate_with(
+            &w.id,
+            &[],
+            &[],
+            &[],
+            "",
+            None,
+            None,
+            Some(&crate::kitguns_data::Assembly {
+                chamber: w.kitgun.clone().unwrap(),
+                grip: "not_a_grip".into(),
+                loader: "not_a_loader".into(),
+            }),
+        )
+        .unwrap_err();
+        assert!(err.contains("not_a_grip"), "{err}");
+        // …AND A WEAPON THAT TAKES NONE MAY NOT BE HANDED ANY.
+        let err = validate_with(
+            "braton_prime",
+            &[],
+            &[],
+            &[],
+            "",
+            None,
+            None,
+            Some(&crate::kitguns_data::Assembly {
+                chamber: String::new(),
+                grip: "gaze".into(),
+                loader: "ramble".into(),
+            }),
+        )
+        .unwrap_err();
+        assert!(err.contains("not assembled from parts"), "{err}");
     }
 
 
@@ -2056,7 +2223,7 @@ mod tests {
         ];
         let go = |mods: Vec<String>, evos: Vec<String>, arcs: Vec<String>, ex: Option<&str>| {
             validate_for_board_with(
-                "group_clear", "praedos", &mods, &evos, &arcs, "", None, ex,
+                "group_clear", "praedos", &mods, &evos, &arcs, "", None, ex, None,
             )
         };
         let arc = || s(&["melee_influence"]);

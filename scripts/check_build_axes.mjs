@@ -143,4 +143,26 @@ check("...and the answer-side guard it leans on is still here",
     || read("scripts/check_opt_replay.mjs").length > 0,
   "scripts/check_opt_replay.mjs is missing — the list is not the guarantee");
 
+// ---- THE SCORER, which is where a stored axis is spent or dropped ------
+//
+// The three surfaces above carry a build TO the store; this is the one that
+// takes it OUT and turns it into a published number, and it is the link that
+// spends every axis or silently omits one. `assembly` is the case it is written
+// for: declared on_board, sent, stored under its own identity, and read by
+// nothing — so a Kitgun row was validated without its parts, keyed as though
+// two assemblies were one build, and scored with the chamber's default.
+//
+// `request_field` is the engine's own spelling on the wire, which makes this a
+// coverage question rather than a list.
+{
+  const scorer = read("cli/src/bin/wfsim-board.rs");
+  const fields = meta.axes.filter((a) => a.on_board).map((a) => a.request_field);
+  const missing = fields.filter((f) => !scorer.includes('"' + f + '"'));
+  check(
+    "the scorer names every axis a board row carries",
+    missing.length === 0,
+    "never mentioned in wfsim-board.rs: " + missing.join(", "),
+  );
+}
+
 await app.finish("a build's axes are declared once, and every surface answers to it");

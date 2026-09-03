@@ -159,6 +159,11 @@ pub fn row_fingerprint(
     // folded in SEPARATELY from `mods` because it is a separate axis: the same
     // card in the exilus slot and in a main slot are two builds.
     exilus: Option<&str>,
+    // THE PARTS, on a modular weapon's row. A grip and a loader are FILES, so a
+    // correction to either has to make the rows that read them stale — which is
+    // what this hash is for, and what it could not say while the row did not
+    // carry them.
+    assembly: Option<&crate::kitguns_data::Assembly>,
 ) -> String {
     let mut h = fold(FNV_OFFSET, b"wfsim-row-fp-1");
     h ^= global();
@@ -187,6 +192,14 @@ pub fn row_fingerprint(
         h = fold_entity(h, "mods", id);
         h = fold(h, b"#exilus");
     }
+    // …AND THE PARTS, folded only when there ARE any, so every fingerprint
+    // already computed for a weapon that takes none is unchanged byte for byte
+    // and no board is re-scored by a feature it does not use.
+    if let Some(a) = assembly {
+        h = fold_entity(h, "kitguns", &a.grip);
+        h = fold_entity(h, "kitguns", &a.loader);
+        h = fold(h, b"#assembly");
+    }
     format!("{h:016x}")
 }
 
@@ -196,7 +209,7 @@ mod tests {
 
     fn fp(weapon: &str, mods: &[&str]) -> String {
         let m: Vec<String> = mods.iter().map(|x| x.to_string()).collect();
-        row_fingerprint("single_target", weapon, &m, &[], &[], None)
+        row_fingerprint("single_target", weapon, &m, &[], &[], None, None)
     }
 
     #[test]
@@ -216,8 +229,8 @@ mod tests {
     fn a_ruler_is_part_of_it() {
         let m = vec!["serration".to_string()];
         assert_ne!(
-            row_fingerprint("single_target", "braton_prime", &m, &[], &[], None),
-            row_fingerprint("group_clear", "braton_prime", &m, &[], &[], None)
+            row_fingerprint("single_target", "braton_prime", &m, &[], &[], None, None),
+            row_fingerprint("group_clear", "braton_prime", &m, &[], &[], None, None)
         );
     }
 
@@ -227,7 +240,7 @@ mod tests {
     #[test]
     fn a_row_ignores_every_file_it_does_not_read() {
         let m = vec!["serration".to_string()];
-        let mine = row_fingerprint("single_target", "braton_prime", &m, &[], &[], None);
+        let mine = row_fingerprint("single_target", "braton_prime", &m, &[], &[], None, None);
         // Recomputing after touching NOTHING is trivially equal; what is asserted
         // here is the shape that makes the optimisation real — the fingerprint is
         // built from a NAMED set of files, and the roster has hundreds this row
@@ -236,7 +249,7 @@ mod tests {
             + crate::weapons_data::forms_of("braton_prime").len() + 1 /* mod */;
         let all = crate::data::files_under("").count();
         assert!(all > named * 20, "{all} files, {named} named — the index is not narrowing anything");
-        assert_eq!(mine, row_fingerprint("single_target", "braton_prime", &m, &[], &[], None));
+        assert_eq!(mine, row_fingerprint("single_target", "braton_prime", &m, &[], &[], None, None));
     }
 
     /// The exclusion list is the only hand list here, so it is asserted to be

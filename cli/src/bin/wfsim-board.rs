@@ -67,6 +67,12 @@ struct Row {
     /// THE EXILUS SLOT'S MOD, empty on almost every row. Optional as of
     /// 2026-08-25 — see `benchmarks_data::BuildRequirement::allows_exilus`.
     exilus: String,
+    /// THE PARTS, on a modular weapon's row; empty on every other. They are the
+    /// BUILD — a grip sets damage, fire rate and the charge — so a row that
+    /// dropped them would publish a number for a weapon nobody submitted, and
+    /// two assemblies of one chamber would be one row.
+    grip: String,
+    loader: String,
     /// WHAT THIS ROW'S SCORE DEPENDS ON, as one hash — see
     /// `engine::data_fingerprint`. Written into the board so the NEXT run can
     /// ask, per row, whether anything it reads has moved.
@@ -141,6 +147,15 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
     if !r.exilus.is_empty() {
         if let Some(o) = row.as_object_mut() {
             o.insert("exilus".into(), json!(r.exilus));
+        }
+    }
+    // …AND THE PARTS. The builder reads `row.grip` / `row.loader` to open a
+    // board row as a build, so a row that omitted them opened as the chamber's
+    // DEFAULT assembly — a different weapon from the one the number is for.
+    if !r.grip.is_empty() {
+        if let Some(o) = row.as_object_mut() {
+            o.insert("grip".into(), json!(r.grip));
+            o.insert("loader".into(), json!(r.loader));
         }
     }
     row
@@ -451,6 +466,7 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> 
                 .map(wfsim_engine::boards_data::BoardRiven::shape)
                 .as_ref(),
             Some(e.exilus.as_str()).filter(|x| !x.is_empty()),
+            e.assembly().as_ref(),
         ) else {
             continue;
         };
@@ -465,6 +481,7 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> 
             &v.arcanes,
             &v.evolutions,
             v.exilus.as_deref(),
+            v.assembly.as_ref(),
         );
         // THE COST IS READ BEFORE THE STALENESS CHECK, and that is the point.
         // A stale row has to be fought again, so it is exactly the row whose
@@ -553,6 +570,12 @@ fn simulate_request(
         o.insert("valence_element".into(), json!(v.valence));
         let max = wfsim_engine::weapons_data::valence_of(&v.weapon).map_or(0.0, |s| s.max);
         o.insert("valence_bonus".into(), json!(max));
+    }
+    // THE PARTS. Without them the fight is fought with the chamber's DEFAULT
+    // assembly, so a submitted grip is stored, validated and then silently not
+    // used — the number published would be for a weapon nobody built.
+    if let Some(a) = &v.assembly {
+        o.insert("assembly".into(), json!({ "grip": a.grip, "loader": a.loader }));
     }
     o.insert("mode".into(), json!(played.id));
     // ONE SPELLING OF ONE FACT. `form` is what a request carries when it names
@@ -824,6 +847,23 @@ fn main() {
             .get("exilus")
             .and_then(Value::as_str)
             .filter(|x| !x.is_empty());
+        // THE PARTS, flat, exactly as the worker stores them and as the page's
+        // own door reads them (`webapi::board_assembly_of`). The chamber is the
+        // weapon's, never the record's.
+        let asm = {
+            let g = s.get("grip").and_then(Value::as_str).unwrap_or("");
+            let l = s.get("loader").and_then(Value::as_str).unwrap_or("");
+            (!(g.is_empty() && l.is_empty())).then(|| wfsim_engine::kitguns_data::Assembly {
+                // The chamber's WEAPON id, which is what `Assembly` holds.
+                chamber: wfsim_engine::weapons_data::spec(&weapon)
+                    .and_then(|sp| sp.kitgun.clone())
+                    .and_then(|r| wfsim_engine::kitguns_data::default_assembly(&r))
+                    .map(|d| d.chamber)
+                    .unwrap_or_default(),
+                grip: g.to_string(),
+                loader: l.to_string(),
+            })
+        };
         let v = match wfsim_engine::builds::validate_for_board_with(
             &bench_id,
             &weapon,
@@ -833,6 +873,7 @@ fn main() {
             valence,
             shape.as_ref(),
             exilus,
+            asm.as_ref(),
         ) {
             Ok(v) => v,
             Err(e) => {
@@ -1013,10 +1054,12 @@ fn main() {
                                 arcanes: v.arcanes.clone(),
                                 valence: v.valence.clone(),
                                 exilus: v.exilus.clone().unwrap_or_default(),
+                                grip: v.assembly.as_ref().map(|a| a.grip.clone()).unwrap_or_default(),
+                                loader: v.assembly.as_ref().map(|a| a.loader.clone()).unwrap_or_default(),
                                 riven: None,
                                 fp: wfsim_engine::data_fingerprint::row_fingerprint(
                                     &bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions,
-                                    v.exilus.as_deref(),
+                                    v.exilus.as_deref(), v.assembly.as_ref(),
                                 ),
                             });
                             continue;
@@ -1082,6 +1125,8 @@ fn main() {
                                     arcanes: v.arcanes.clone(),
                                     valence: v.valence.clone(),
                                     exilus: v.exilus.clone().unwrap_or_default(),
+                                    grip: v.assembly.as_ref().map(|a| a.grip.clone()).unwrap_or_default(),
+                                    loader: v.assembly.as_ref().map(|a| a.loader.clone()).unwrap_or_default(),
                                     // THE SHAPE, EVEN THOUGH THE ROW IS NOT
                                     // PUBLISHED. `mods` carries the riven SLOT,
                                     // so a row stating one and naming no riven
@@ -1106,7 +1151,7 @@ fn main() {
                                     }),
                                     fp: wfsim_engine::data_fingerprint::row_fingerprint(
                                         &bench_id, &v.weapon, &v.mods, &v.arcanes,
-                                        &v.evolutions, v.exilus.as_deref(),
+                                        &v.evolutions, v.exilus.as_deref(), v.assembly.as_ref(),
                                     ),
                                 });
                                 continue;
@@ -1178,7 +1223,7 @@ fn main() {
                 &v.mods,
                 &v.arcanes,
                 &v.evolutions,
-                v.exilus.as_deref(),
+                v.exilus.as_deref(), v.assembly.as_ref(),
             );
             let exilus_for_row = v.exilus.clone().unwrap_or_default();
             rows.push(Row {
@@ -1201,6 +1246,8 @@ fn main() {
                 arcanes: v.arcanes,
                 valence: v.valence,
                 exilus: exilus_for_row,
+                grip: v.assembly.as_ref().map(|a| a.grip.clone()).unwrap_or_default(),
+                loader: v.assembly.as_ref().map(|a| a.loader.clone()).unwrap_or_default(),
                 riven: row_riven,
                 fp,
             });
@@ -1524,6 +1571,15 @@ fn main() {
             if !r.exilus.is_empty() {
                 println!("    exilus: {}", r.exilus);
             }
+            // THE PARTS, on the same terms as the exilus above: omitted on a
+            // row that takes none, so every existing row is byte for byte what
+            // it was and the Python side has nothing new to copy on one.
+            if !r.grip.is_empty() {
+                println!("    grip: {}", r.grip);
+            }
+            if !r.loader.is_empty() {
+                println!("    loader: {}", r.loader);
+            }
             println!("    mods: [{}]", r.mods.join(", "));
             if !r.evolutions.is_empty() {
                 println!("    evolutions: [{}]", r.evolutions.join(", "));
@@ -1655,6 +1711,7 @@ mod tests {
             valence: String::new(),
             exilus: None,
             riven: None,
+            assembly: None,
             forma: 0,
             drain: 0,
         };
@@ -1711,6 +1768,7 @@ mod tests {
                 valence: String::new(),
                 exilus: None,
                 riven: None,
+                assembly: None,
                 forma: 0,
                 drain: 0,
             };
@@ -1755,6 +1813,7 @@ mod tests {
             valence: String::new(),
             exilus: None,
             riven: None,
+            assembly: None,
             forma: 0,
             drain: 0,
         };
@@ -1875,6 +1934,8 @@ mod tests {
             arcanes: vec![],
             valence: String::new(),
             exilus: String::new(),
+            grip: String::new(),
+            loader: String::new(),
             riven: None,
             fp: String::new(),
         }
@@ -2090,6 +2151,8 @@ mod page_row_tests {
             arcanes: vec!["secondary_deadhead".into()],
             valence: String::new(),
             exilus: String::new(),
+            grip: String::new(),
+            loader: String::new(),
             riven,
             fp: "0123456789abcdef".into(),
         }

@@ -9040,6 +9040,22 @@ function switchWeapon(id) {
   initPresets();
 }
 
+/// THE OTHER SLOT OF THE SAME CHAMBER, WITHOUT LEAVING THE PAGE.
+///
+/// A Kitgun is ONE weapon — one mastery track, one riven, one wiki page — and
+/// two roster entries, because the slot decides the mod pool. So the Slot
+/// control switches the ENTRY and the address stays where the reader arrived,
+/// which is what makes the two a page rather than two pages sharing a name.
+///
+/// `restoreState` rewrites the address to the incoming weapon's own path, which
+/// is right for every other switch and wrong for this one — and was invisible
+/// only while the sibling had no address of its own to move to.
+function switchSlot(id) {
+  const was = location.pathname;
+  switchWeapon(id);
+  if (location.pathname !== was) history.replaceState(null, "", was);
+}
+
 function applyWeaponInner(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
@@ -12866,7 +12882,7 @@ function renderAssembly() {
         })).sort((a, b) => a.value.localeCompare(b.value)),
         onPick: (v) => {
           if (v === wSlot) return;
-          switchWeapon(sibling);
+          switchSlot(sibling);
         },
       })}</label>`
     : "";

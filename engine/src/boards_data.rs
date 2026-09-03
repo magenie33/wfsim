@@ -21,6 +21,27 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
+impl BoardEntry {
+    /// The row's parts as the engine's own shape, or `None` where it names none.
+    pub fn assembly(&self) -> Option<crate::kitguns_data::Assembly> {
+        if self.grip.is_empty() && self.loader.is_empty() {
+            return None;
+        }
+        // The chamber's WEAPON id, which is what `Assembly` holds — not the
+        // per-slot record id in `spec.kitgun`; the slot follows from the grip.
+        let chamber = crate::weapons_data::spec(&self.weapon)
+            .and_then(|s| s.kitgun.clone())
+            .and_then(|r| crate::kitguns_data::default_assembly(&r))
+            .map(|d| d.chamber)
+            .unwrap_or_default();
+        Some(crate::kitguns_data::Assembly {
+            chamber,
+            grip: self.grip.clone(),
+            loader: self.loader.clone(),
+        })
+    }
+}
+
 /// One row: a build, and what it measured.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct BoardEntry {
@@ -102,6 +123,17 @@ pub struct BoardEntry {
     /// in a MAIN slot, so `mods` alone cannot say which entry came out of it.
     #[serde(default)]
     pub exilus: String,
+    /// THE PARTS, on a modular weapon's row. Empty on every other, which is all
+    /// but the Kitguns.
+    ///
+    /// They are the BUILD — a grip sets damage, fire rate and the charge — so a
+    /// row that did not carry them could not be reproduced and two assemblies
+    /// of one chamber would be one row. Flat, matching the record the worker
+    /// stores: an object would be a third shape for one fact.
+    #[serde(default)]
+    pub grip: String,
+    #[serde(default)]
+    pub loader: String,
     #[serde(default)]
     pub riven: Option<BoardRiven>,
     /// WHAT THIS ROW'S SCORE DEPENDS ON, as one hash — the ruler, the weapon
@@ -305,6 +337,7 @@ mod tests {
                     &b.benchmark, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
                     e.riven.as_ref().map(BoardRiven::shape).as_ref(),
                     Some(e.exilus.as_str()).filter(|x| !x.is_empty()),
+                    e.assembly().as_ref(),
                 )
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
                 // `validate` already refused anything over capacity, and the

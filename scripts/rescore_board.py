@@ -47,8 +47,13 @@ SCORER = ROOT / "target" / "release" / ("wfsim-board.exe" if sys.platform == "wi
 # the whole point of the board (`wfsim-board`'s own header: "nobody's number is
 # trusted because nobody's number is asked for"), so rebuilding submissions
 # from published rows means dropping exactly the field we are re-deriving.
+# EVERY AXIS OF THE BUILD. Dropping one is not a smaller submission, it is a
+# DIFFERENT build — and the door then refuses it or scores something else.
+# `valence` was missing, so every Coda and Kuva row came back "has no Valence
+# element"; `grip`/`loader` were missing, so a Kitgun row was rescored with the
+# chamber's default. `engine::builds::BUILD_AXES` is the list this answers to.
 SUBMISSION_FIELDS = ("weapon", "mode", "mods", "arcanes", "evolutions", "exilus",
-                     "arcane_rank", "rivens")
+                     "valence", "grip", "loader", "arcane_rank", "rivens")
 
 
 def build_scorer() -> None:

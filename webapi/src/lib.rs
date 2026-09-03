@@ -706,6 +706,38 @@ pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::kitguns_d
     }
 }
 
+/// THE PARTS A BOARD PAYLOAD NAMES, as the engine's own shape.
+///
+/// FLAT ON THE WIRE, because a record's fields are flat: `grip` and `loader`
+/// are two ids the worker stores beside every other axis (`AXES`). The CHAMBER
+/// is not among them — it is the weapon, and `weapon` already carries it.
+///
+/// NO REPAIR HERE, unlike `assembly_of`. That one is answering a FIGHT, where
+/// there has to be something to draw; this is answering whether a BUILD is one
+/// the board can take, and quietly swapping a part would accept a record that
+/// scores as something else.
+pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::kitguns_data::Assembly> {
+    let grip = get_str(v, "grip", "");
+    let loader = get_str(v, "loader", "");
+    if grip.is_empty() && loader.is_empty() {
+        return None;
+    }
+    // THE CHAMBER'S WEAPON ID, not the per-slot RECORD id `spec.kitgun` holds:
+    // `Assembly::chamber_record` looks the record up by (chamber, slot) and the
+    // slot follows from the grip, so a record id here resolves to nothing and
+    // every legal pair reads as "these do not make a Tombfinger".
+    let chamber = wfsim_engine::weapons_data::spec(get_str(v, "weapon", ""))
+        .and_then(|s| s.kitgun.clone())
+        .and_then(|r| wfsim_engine::kitguns_data::default_assembly(&r))
+        .map(|d| d.chamber)
+        .unwrap_or_default();
+    Some(wfsim_engine::kitguns_data::Assembly {
+        chamber,
+        grip: grip.to_string(),
+        loader: loader.to_string(),
+    })
+}
+
 /// Which slot a modular entry's grips must belong to.
 fn kitgun_slot(spec: &wfsim_engine::weapons_data::WeaponSpec) -> Option<&str> {
     let record = spec.kitgun.as_deref()?;
@@ -2215,6 +2247,7 @@ pub fn build_keys_json(v: &Value) -> Value {
                 get_str(b, "valence", ""),
                 riven_shape_from(b).as_ref(),
                 Some(get_str(b, "exilus", "")).filter(|x| !x.is_empty()),
+                board_assembly_of(b).as_ref(),
             ) {
                 Ok(vb) => json!(wfsim_engine::builds::board_key(&vb, get_str(b, "mode", ""))),
                 Err(_) => Value::Null,
@@ -2288,6 +2321,10 @@ pub fn board_check_json(v: &Value) -> Value {
         // an exilus-eligible mod is legal in a MAIN slot, so a flat list cannot
         // say which entry came out of the exilus slot.
         Some(get_str(v, "exilus", "")).filter(|x| !x.is_empty()),
+        // …AND THE PARTS, read exactly as the scorer reads them off the stored
+        // record. The door and the scorer answer the same question or the door
+        // is not one.
+        board_assembly_of(v).as_ref(),
     ) {
         // A REFUSAL IS A RESULT, not a transport error: `ok` says the question
         // was answered, `accepted` says what the answer was.
