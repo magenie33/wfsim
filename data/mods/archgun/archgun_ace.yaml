@@ -10,6 +10,14 @@ description: "On Headshot Kill:\n+X% Fire/Charge Rate\n+X% Reload Speed for Xs"
 effects:
   # TRIGGERED - "On Headshot Kill: ... for 9s". The skeleton had the reload
   # half always-on and dropped the fire rate entirely.
+  #
+  # AND THIS HALF IS STILL ONLY ASSUMED. `kind: buff` dispatches on a closed
+  # list of (trigger, grants) pairs and `on_headshot_kill`+`fire_rate` is not on
+  # it, so it becomes a CondBuff: paid in full on the panel and in the optimizer,
+  # worth nothing in the fight. Saying it with `stacking_buff` — the way Berserker
+  # Fury now does — needs `on_headshot_kill` in `buff_trigger`, which only the
+  # pair table knows today. It is the one clause of this shape left in the pool
+  # that a fight could earn.
   - kind: buff
     trigger: on_headshot_kill
     grants: fire_rate

@@ -12,9 +12,21 @@ description: "On Melee Kill:\n+35% Attack Speed for 10s. Stacks up to 2x."
 # Rank 0: On Melee Kill:\n+5.8% Attack Speed for 10s. Stacks up to 2x.
 effects:
   # On a KILL, two stacks of ten seconds.
-  - kind: buff
+  #
+  # `stacking_buff` AND NOT `buff`: the second dispatches on a closed list of
+  # (trigger, grants) pairs and `on_kill`+`fire_rate` is not on it, so the
+  # clause became a CondBuff — paid IN FULL on the panel and in the optimizer,
+  # and worth NOTHING in the fight. The two surfaces disagreed about the card
+  # rather than either of them being blank.
+  #
+  # PER-STACK EXPIRY is the card's plain reading — each kill buys ten seconds —
+  # rather than the parser's default, which is the Galvanized family's
+  # lose-one-and-reset. UNMEASURED: it is a guess between two models that agree
+  # while kills keep coming and differ when they stop.
+  - kind: stacking_buff
     trigger: on_kill
     grants: fire_rate
+    decay: per_stack_expiry
     rank0: 0.058333
     rankMax: 0.35
     max_stacks: 2
