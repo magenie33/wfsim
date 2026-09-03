@@ -7238,6 +7238,26 @@ struct Landed {
     killed: bool,
 }
 
+/// WHAT ONE SWING'S INSTANCES ADD TO THE COMBO COUNTER.
+///
+/// *"Stance attacks add combo points, scaling with the attack's stance damage
+/// multiplier (100% stance damage multiplier = 1 point)"* (wiki, Melee Combo) —
+/// AND AT LEAST ONE PER INSTANCE, which that sentence does not say and a
+/// stopwatch does. Rogue Edict's first input is `200%` then `5x 50%`, six
+/// instances in one press: proportional throughout it is 4.5, flat one-a-hit is
+/// 6, and the floor is 7, which is what the counter shows.
+///
+/// `instances` is hits AND bodies — a swing that lands on five enemies earns
+/// five times as much, which is why reach and attack speed build the counter as
+/// fast as they do.
+///
+/// UNSETTLED: whether a multiplier BETWEEN 1 and 2 rounds or stays fractional.
+/// A 150% swing pays 1.5 here and 2 if the counter ceilings; nothing in the
+/// roster's measurements separates them.
+fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
+    multiplier.max(1.0) * instances
+}
+
 /// CAN MELEE INFLUENCE CARRY THIS STATUS?
 ///
 /// The wiki lists both halves, and they partition the elements exactly: the
@@ -12018,6 +12038,44 @@ mod melee {
         assert!(crowd(15.0) > 1000.0, "a 20 m spread missed a ring at 15 m");
         let far = crowd(23.0);
         assert!(far < 1.0, "a 20 m spread reached a ring at 23 m: {far:.1}");
+    }
+
+    /// A SWING UNDER FULL STANCE DAMAGE STILL EARNS ITS POINT.
+    ///
+    /// Measured on Rogue Edict's first input — `200%` then `5x 50%`, one press
+    /// — which shows SEVEN. Reading the wiki's proportionality alone gives 4.5
+    /// and a flat point an instance gives 6, so the two halves are both needed
+    /// and this is the case that says so.
+    ///
+    /// TIED TO THE DATA, not to a remembered shape: if the stance is ever
+    /// re-transcribed the arithmetic below is re-read from it.
+    #[test]
+    fn a_swing_under_full_stance_damage_still_earns_its_point() {
+        let base = crate::loadout::WeaponBase::from_data("praedos", false, &[]);
+        let pool = crate::mods_data::pool_for_weapon("praedos");
+        let stance = pool
+            .iter()
+            .find(|m| m.id == "sovereign_outcast")
+            .expect("the stance is in the pool");
+        let refs = vec![stance];
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        // ONE PRESS is the entries up to and including the first that waits.
+        let press: Vec<_> = panel
+            .combo_script
+            .iter()
+            .take_while(|h| h.delay_seconds == 0.0)
+            .chain(panel.combo_script.iter().find(|h| h.delay_seconds > 0.0))
+            .collect();
+        assert_eq!(press.len(), 2, "Rogue Edict opens on two entries");
+        let earned: f64 = press
+            .iter()
+            .map(|h| combo_points_for(h.multiplier, f64::from(h.hits)))
+            .sum();
+        assert!(
+            (earned - 7.0).abs() < 1e-9,
+            "the first input earns 7 in game, this says {earned}: {:?}",
+            press.iter().map(|h| (h.multiplier, h.hits)).collect::<Vec<_>>(),
+        );
     }
 
     /// …AND IT PAYS ON ONE BODY TOO, because the body that was struck is
@@ -17042,7 +17100,7 @@ pub fn run_once_traced(
             // only through Melee Combo Efficiency, which is the share of the
             // counter the swing does NOT empty.
             if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
-                combo_points += h.multiplier * landed;
+                combo_points += combo_points_for(h.multiplier, landed);
                 // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
                 // extra combo points on hit/block additively"* — ONE point, per
                 // HIT rather than per stance multiplier, which is what makes
