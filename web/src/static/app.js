@@ -17231,10 +17231,23 @@ function renderResults(r, testedAt) {
   // "KPM · …" starting the next read as two facts. Set
   // small and spaced away, so it labels the figure without competing with it.
   const heroUnit = byDps ? "DPS" : "KPM";
+  // HOW FIRM THE NUMBER IS, said beside the number.
+  //
+  // A mean with no spread invites a reader to compare two builds that differ by
+  // less than either one's own run-to-run swing. The range and the deviation
+  // are what say whether the gap they are looking at is a gap — and they belong
+  // ON the answer rather than folded away under a table nobody opens.
+  //
+  // ONLY WHERE IT MEANS SOMETHING: one run has no spread to report, and a fight
+  // that kills nothing has no kill count to spread.
+  const spread = killed && (r.runs || 0) > 1 && r.kills_max > r.kills_min
+    ? ` · ${n0(r.kills_min)}–${n0(r.kills_max)} over ${n0(r.runs)} runs (±${sig2(r.kills_std)})`
+    : "";
   const heroSub = (byDps ? `${n2(kpm(r.score, r.duration))} KPM · ` : ``) +
     `${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
     ? `${n0(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
-    : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`);
+    : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`)
+    + spread;
   // No Forma/capacity here — the simulator reports EFFECTS only; build
   // legality is the Builder's business.
   // `k` names the replay series that re-reads this cell. Without it a replay
@@ -17376,15 +17389,12 @@ function renderResults(r, testedAt) {
         <div id="tl-tip" class="tl-tip" hidden></div>
       </div>` : "";
   const { bar: replayBar, curves: replayCurves } = replayMarkup(r);
-  const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
-  const detail = [
-    row("Target", `${t.name || "?"} · Lv ${t.level}${t.steel_path ? " (SP)" : ""}`),
-    row("OG / Shield / Health", `${n0(t.overguard)} / ${n0(t.shield)} / ${n0(t.health)}`),
-    row("Armor", n0(t.armor)),
-    row("Shots / Pellets", `${n0(r.shots)} / ${n0(r.pellets)}`),
-    row("Kills min–max (±σ)", `${r.kills_min}–${r.kills_max} (±${sig2(r.kills_std)})`),
-    row("Runs", n0(r.runs)),
-  ].join("");
+  // THE `Detail` TABLE IS GONE. Five of its six rows were the fight restated —
+  // the target, its pools, its armour, the shot count — each of which the
+  // scenario panel above states while it is being CHOSEN, which is when a
+  // reader needs them. The sixth was the answer's own spread, and that has
+  // moved onto the answer (`spread`), where a reader deciding between two
+  // builds actually looks.
   // THE ASK, BENEATH THE ANSWER. The topbar is chrome and
   // the ask lived only there, which put it as far from the moment this tool
   // delivers anything as a page can put it. This is not an interruption: it is
@@ -17415,7 +17425,6 @@ function renderResults(r, testedAt) {
       ${foldBlock("meter", tr("Damage by source"), "",
         `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
       ${speedMarkup(r)}${recordMarkup(r)}${chart}${replayCurves}
-      ${foldBlock("detail", tr("Detail"), "", `<div class="stat-table">${detail}</div>`)}
       ${ask}
     </div>`;
   // WHAT BECAME OF THIS RUN, drawn on EVERY result — a stored one re-rendered
