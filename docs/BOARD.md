@@ -1097,10 +1097,17 @@ were.
 **FORTY JOBS RUN AT ONCE, WHATEVER THE MATRIX SAYS.** The account's concurrent
 job limit is the real fan-out: across every board run in a day, concurrency sat
 pinned at exactly 40 for 263 minutes and never once reached 41. A matrix of 128
-is therefore 3.2 waves, not one — measured start spread across the shards of one
-run, 195 minutes — and every shard past the fortieth adds a checkout and a cache
-restore while buying no parallelism at all. **The wall clock of a full rescore
-is `total work / 40`**, which is 3h20m, and no shard count moves it.
+is therefore several waves, not one — measured start spread across the shards of
+one run, 195 minutes — and every shard past the limit adds a checkout and a
+cache restore while buying no parallelism at all. **The wall clock of a full
+rescore is `total work / the jobs in flight`**, and no shard count moves it.
+
+**AND THE CEILING IS THE WHOLE REPOSITORY'S**, not the board's. A rescore that
+takes all forty starves every other workflow: a board run held them for three
+and a half hours with CI queued behind it, which is how a red build went two
+days unseen. `max-parallel: 32` on the scoring matrix leaves eight — the board
+is a background job, CI is the one a person waits on, and a rescore a quarter
+longer against hours it already takes is the cheaper side of that trade.
 
 **AND ONE ROW IS INDIVISIBLE.** The worst row is 121 minutes, so even at
 infinite fan-out a full rescore cannot finish faster than that. Row-wise
