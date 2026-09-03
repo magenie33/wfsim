@@ -13,13 +13,23 @@ effects:
     rank0: 0.072727
     rankMax: 0.8
   # On Melee Kill: +30% Status Chance for 20s, four stacks.
-  - kind: buff
+  #
+  # `stacking_buff` AND NOT `buff`: the second is not a kind this parser knows,
+  # so the whole clause was dropped and the card was +80% Status Damage and
+  # nothing else — strictly worse than the uncommon it upgrades, which prints
+  # +90%. The on-kill half is the entire reason to take it.
+  #
+  # PER-STACK EXPIRY, measured: the pile comes down ONE STACK AT A TIME, each on
+  # its own clock, rather than losing one and restarting the rest. That is not
+  # this parser's default, which the Galvanized family otherwise takes.
+  - kind: stacking_buff
     trigger: on_kill
     grants: status_chance
     rank0: 0.027273
     rankMax: 0.3
     max_stacks: 4
     duration: 20.0
+    decay: per_stack_expiry
 
 # THE GALVANIZED VARIANT OF MELEE ELEMENTALIST (wiki).
 family: melee_elementalist
