@@ -7049,6 +7049,10 @@ pub(crate) fn mode_forms(info: &WeaponInfo, mode_id: &str) -> ModeForms {
 pub struct OptimizePlan {
     weapon_id: String,
     pool: Vec<ModDef>,
+    /// The capacity the Forma planner is given — the weapon's own, plus what a
+    /// STANCE hands back. Not a literal: a melee build reads five to ten points
+    /// of headroom the weapon's rank did not buy.
+    cap: u32,
     constraints: Constraints,
     min_slots: usize,
     build_size: usize,
@@ -7176,6 +7180,51 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         }
     }
 
+    // ---- THE STANCE, IN EVERY CANDIDATE ---------------------------------
+    //
+    // IT IS NOT A SEARCH AXIS AND IT IS NOT OPTIONAL. A stance is the card that
+    // decides what a swing IS — the combo script, its multipliers, its forced
+    // procs — so a melee search that leaves the slot empty ranks builds nobody
+    // holds: measured on a Praedos, 4 kills against 5 and 15% of the DPS. It
+    // was left empty because the page's mod list filters stances out (a stance
+    // is legal in the stance slot and nowhere else) and nothing put it back.
+    //
+    // PINNED, THE WAY THE VALENCE AND THE ASSEMBLY ARE: the page holds one and
+    // the search does not range over it, so it is a constant of every candidate
+    // rather than a dimension. `require` is exactly that mechanism.
+    //
+    // ITS SLOT IS ITS OWN, so the ceiling rises with it — otherwise pinning it
+    // would cost a MAIN slot and the search would rank seven-mod builds. It
+    // costs no capacity either (`base_drain: 0`, see notes
+    // `stance_grants_capacity`); what it does is HAND capacity back, which is
+    // the grant below.
+    let stance_def = match get_str(v, "stance", "") {
+        "" => None,
+        id => match full.iter().find(|m| m.id == id) {
+            Some(m) if m.stance.is_some() => Some(m.clone()),
+            Some(_) => return Err(err_json(format!("{id} is not a stance"))),
+            None => return Err(err_json(mod_not_here(id, info, &[]))),
+        },
+    };
+    if let Some(m) = &stance_def {
+        if !fixed_ids.iter().any(|id| id == m.id) {
+            fixed_ids.push(m.id.to_string());
+            fixed_ids.sort();
+        }
+        search_ids.retain(|s| s != m.id);
+    }
+    // THE CAP THE PLANNER IS GIVEN. The stance slot at its INNATE colour, which
+    // is what the builder's own capacity line reads — the planner may polarize
+    // that slot for more, and this does not model it, which errs toward
+    // refusing a build the simulator would accept rather than crowning one it
+    // would not.
+    let cap = 60 + stance_def.as_ref().map_or(0, |m| {
+        wfsim_engine::mods::stance_capacity(
+            m.polarity,
+            wfsim_engine::weapons_data::stance_polarity(&info.id),
+        )
+    });
+
     // ---- exilus scope (the +1 slot, exilus-eligible mods only): its own
     // block. "search" entries are slot OPTIONS alongside "leave empty"; a
     // "fixed" one pins the slot (max one — there is only one exilus slot).
@@ -7253,7 +7302,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // which costs the reader exactly what 0–0 exists to protect. It also makes
     // the ceiling mean the same thing on all five axes, which is the point of
     // there being one control.
-    let build_size = get_u32(v, "build_size", 8).clamp(0, 8) as usize;
+    let build_size = get_u32(v, "build_size", 8).clamp(0, 8) as usize
+        + usize::from(stance_def.is_some());
     let mut pool_ids: Vec<String> = fixed_ids.iter().chain(search_ids.iter()).cloned().collect();
     pool_ids.sort();
     pool_ids.dedup();
@@ -7694,6 +7744,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     Ok(OptimizePlan {
         weapon_id: info.id.clone(),
         pool,
+        cap,
         constraints,
         min_slots,
         build_size,
@@ -7818,6 +7869,7 @@ pub fn grade_optimize(
     };
     let OptimizePlan {
         pool,
+        cap,
         constraints,
         min_slots,
         build_size,
@@ -8002,7 +8054,7 @@ pub fn grade_optimize(
                 continue;
             }
             wfsim_optimizer::expand_one(
-                &pool, base, base_form.as_ref(), vi as u32, 60, &innate, &exilus_refs,
+                &pool, base, base_form.as_ref(), vi as u32, cap, &innate, &exilus_refs,
                 subset, &scenario.arena.tenno, scenario.policy, &mut out,
             );
         }
@@ -8140,6 +8192,7 @@ pub fn run_optimize_resumable(
 ) -> Value {
     let OptimizePlan {
         pool,
+        cap,
         constraints,
         min_slots,
         build_size,
@@ -8399,7 +8452,7 @@ pub fn run_optimize_resumable(
                 base,
                 base_form.as_ref(),
                 vi as u32,
-                60,
+                cap,
                 &innate,
                 &exilus_refs,
                 subset,
@@ -8451,7 +8504,7 @@ pub fn run_optimize_resumable(
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             let (base, base_form) = forms_for(*variant as usize, set, &refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
-                &pool, &base, base_form.as_ref(), &innate, 60, &scenario.arena.tenno, scenario.policy,
+                &pool, &base, base_form.as_ref(), &innate, plan.cap, &scenario.arena.tenno, scenario.policy,
                 ordered, *variant, *exilus, &exilus_refs,
             ) else { continue };
             if *ai >= arcanes.len() {
@@ -9784,6 +9837,45 @@ mod optimizer_evolution_tests {
             "3": ["torid_extended_volley"],
         }));
         assert_eq!(gapped, vec![vec!["torid_evo1_incarnon_form".to_string()]]);
+    }
+
+    /// THE SEARCH WEARS THE STANCE IT WAS HANDED, in every candidate.
+    ///
+    /// A stance decides what a swing IS, so a melee search without one ranks
+    /// builds nobody holds: measured on a Praedos, the same four cards scored
+    /// 0.65 kills bare and 0.95 wearing Sovereign Outcast. It is pinned rather
+    /// than searched, so it belongs in `require` — and its SLOT is its own, so
+    /// the ceiling has to rise with it or pinning it costs a main slot.
+    #[test]
+    fn a_melee_search_is_handed_the_stance_and_it_costs_no_main_slot() {
+        let base = json!({
+            "weapon": "praedos",
+            "mods": { "primed_pressure_point": "fixed" },
+            "build_size": 8,
+        });
+        let bare = super::parse_optimize(&base).expect("bare");
+        assert!(!bare.constraints.require.iter().any(|m| m == "sovereign_outcast"));
+        assert_eq!(bare.build_size, 8);
+        assert_eq!(bare.cap, 60);
+
+        let mut with = base.clone();
+        with["stance"] = json!("sovereign_outcast");
+        let p = super::parse_optimize(&with).expect("with a stance");
+        assert!(
+            p.constraints.require.iter().any(|m| m == "sovereign_outcast"),
+            "{:?}",
+            p.constraints.require
+        );
+        assert_eq!(p.build_size, 9, "the stance's slot is its own");
+        // …AND IT HANDS CAPACITY BACK rather than taking it. Naramon on a slot
+        // of another colour is 80% of the listed drain, rounded down: 4.
+        assert_eq!(p.cap, 64);
+
+        // A CARD THAT IS NOT A STANCE IS NOT ONE, said rather than accepted:
+        // pinning an ordinary mod here would give it a ninth slot for free.
+        let mut wrong = base.clone();
+        wrong["stance"] = json!("primed_fury");
+        assert!(super::parse_optimize(&wrong).is_err());
     }
 }
 

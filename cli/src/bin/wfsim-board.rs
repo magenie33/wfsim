@@ -292,6 +292,10 @@ fn flag(name: &str) -> Option<String> {
         .and_then(|i| a.get(i + 1).cloned())
 }
 
+fn has_flag(name: &str) -> bool {
+    std::env::args().any(|x| x == name)
+}
+
 /// SCORING IS THE WHOLE COST — 67 minutes of a 71-minute run at the rulers'
 /// 1000 runs — and it is embarrassingly parallel: every
 /// row is an independent fight. So the job splits N ways and the scores are
@@ -395,13 +399,19 @@ struct Prior {
     stale: usize,
 }
 
-fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, String> {
+/// `across_code` = READ THE PRIOR BOARD DESPITE A FINGERPRINT DIFFERENCE, which
+/// is exactly what the refusal below exists to prevent. Two callers earn it and
+/// both have the same evidence behind them: `--verify`, which is not going to
+/// reuse those numbers but to reproduce a sample of them under the new code;
+/// and `--code-verified`, which the workflow passes only after that sample came
+/// back identical, so the stored numbers ARE what this code computes.
+fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> Result<Prior, String> {
     if code_fp.is_empty() {
         return Err("no engine fingerprint given".into());
     }
     let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
     let prior = wfsim_engine::boards_data::parse(&text).map_err(|e| format!("{path}: {e}"))?;
-    if prior.engine != code_fp {
+    if !across_code && prior.engine != code_fp {
         return Err(format!(
             "engine code moved ({} -> {code_fp})",
             if prior.engine.is_empty() {
@@ -588,17 +598,40 @@ fn main() {
     // …AND WHAT EACH GROUP'S BEST WAS, the threshold the probe screens against.
     let mut prior_leaders: std::collections::HashMap<(String, String, bool), f64> =
         Default::default();
+    // ---- DID THE CODE CHANGE MOVE ANY NUMBER? -------------------------
+    //
+    // The fingerprint declares every stored score stale on ANY edit to
+    // `engine`, `webapi` or `cli`, and most edits cannot move a number. Rather
+    // than guess which ones matter, MEASURE: `--verify` reproduces a sample of
+    // the published rows under the new code and compares each with what the
+    // board says. All identical and the code is score-equivalent, so the run
+    // reuses them; one difference and it is a full rescore.
+    //
+    // The sample, the floor and the weekly backstop are `docs/BOARD.md`
+    // §"When the code moved".
+    let verify = has_flag("--verify");
+    // THE PROBE'S VERDICT, CARRIED IN. Set by the workflow only after a
+    // `--verify` run over the sample came back identical throughout, which is
+    // what makes reusing across a code change a MEASUREMENT rather than a hope.
+    let code_verified = has_flag("--code-verified");
+    let mut verify_against: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
-        match reuse_prior(&path, &engine_fp, &bench_id) {
+        match reuse_prior(&path, &engine_fp, &bench_id, verify || code_verified) {
             Ok(p) => {
-                reused = p.scores.len();
+                reused = if verify { 0 } else { p.scores.len() };
                 stale = p.stale;
                 prior_rolls = p.rolls;
                 prior_costs = p.costs;
                 prior_leaders = p.leaders;
-                // The shards' own scores win: they were computed by THIS run.
-                for (k, v) in p.scores {
-                    known.entry(k).or_insert(v);
+                if verify {
+                    // NOT into `known`: a verify run has to MEASURE the sample,
+                    // and a seeded score is a row that is never fought.
+                    verify_against = p.scores;
+                } else {
+                    // The shards' own scores win: they were computed by THIS run.
+                    for (k, v) in p.scores {
+                        known.entry(k).or_insert(v);
+                    }
                 }
             }
             Err(why) => eprintln!("full rescore: {why}"),
@@ -1146,6 +1179,46 @@ fn main() {
         held.len(),
         screened.len(),
     );
+
+    // ---- THE VERDICT, and nothing is written on this path -------------
+    //
+    // EXACT EQUALITY, because a score is a pure function of (build, ruler,
+    // code, data) and an f64 round-trips through the yaml: "close enough" would
+    // be a tolerance nobody can defend, and a change that moves a rank by a
+    // thousandth still moves the board.
+    //
+    // TOO FEW ROWS COMPARED IS NOT A PASS. A sample that the floor screened
+    // away, or one whose rows are no longer on the board, proves nothing — and
+    // a verification that cannot fail is worse than none, so it answers "moved"
+    // and the run does what it would have done anyway.
+    if verify {
+        let mut compared = 0usize;
+        let mut moved: Vec<(&String, f64, f64)> = Vec::new();
+        for (k, &now) in &computed {
+            if let Some(&was) = verify_against.get(k) {
+                compared += 1;
+                if now != was {
+                    moved.push((k, was, now));
+                }
+            }
+        }
+        let floor = flag("--verify-min")
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(20);
+        for (k, was, now) in moved.iter().take(5) {
+            eprintln!("verify: {k} {was} -> {now}");
+        }
+        // ONE MACHINE-READABLE LINE, because the workflow shards this and has to
+        // SUM the two counts before it can apply a floor: a shard comparing
+        // three rows proves nothing on its own and everything together.
+        eprintln!("verify-result: compared={compared} moved={}", moved.len());
+        if compared < floor {
+            eprintln!("verify: only {compared} rows compared (want {floor}) — inconclusive");
+            std::process::exit(1);
+        }
+        eprintln!("verify: {} of {compared} rows moved", moved.len());
+        std::process::exit(i32::from(!moved.is_empty()));
+    }
 
     // The runtime copy, keyed by weapon because that is how the page asks.
     //

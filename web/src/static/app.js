@@ -14592,16 +14592,18 @@ function boardPayloadFromResult(res) {
     // list has no positions and an exilus-eligible mod is legal in a main slot,
     // so the endpoint reads a ninth entry as a ninth MAIN mod and refuses the
     // build for having nine. Which one it is, is `exilus` below.
-    // …AND THE STANCE RIDES WITH THEM, appended — the same rule `boardPayload`
-    // states, and it has to be stated twice because this path builds its list
-    // from a RESULT. The search does not range over the stance slot, so the
-    // stance is the PAGE's the way the riven and the assembly below are; leaving
-    // it out uploaded a build the player does not have and the scorer then
-    // measured a weaker one, which on a Praedos is 4 kills against 5.
-    mods: (res.mods || [])
-      .filter((m) => !exilusOf(res) || m !== exilusOf(res))
-      .map((m) => (isRivenId(m) ? BOARD_RIVEN_SLOT : m))
-      .concat((slots[STANCE] || {}).mod ? [slots[STANCE].mod] : []),
+    // …AND THE STANCE RIDES WITH THEM, the same rule `boardPayload` states. The
+    // search is HANDED the builder's stance and pins it into every candidate,
+    // so a result already names it — the append is for a result that predates
+    // that (a saved checkpoint), and it is conditional so the same card cannot
+    // arrive twice.
+    mods: (() => {
+      const st = (slots[STANCE] || {}).mod;
+      const out = (res.mods || [])
+        .filter((m) => !exilusOf(res) || m !== exilusOf(res))
+        .map((m) => (isRivenId(m) ? BOARD_RIVEN_SLOT : m));
+      return st && !out.includes(st) ? out.concat([st]) : out;
+    })(),
     riven_pos: boardRivenShape().riven_pos,
     riven_neg: boardRivenShape().riven_neg,
     evolutions: (res.evolutions || []).slice(),
@@ -18875,6 +18877,12 @@ async function runOptimize() {
       // owner's call whether a search should spend it.
       ...(assembly ? { assembly: { ...assembly } } : {}),
       exilus: opt.exilus,
+      // THE STANCE, PINNED TO THE BUILDER'S — not a search axis, the way the
+      // valence and the parts above are not. A stance decides what a swing IS,
+      // so a melee search without one ranks builds nobody holds; the mod list
+      // filters stances out (a stance is legal in the stance slot and nowhere
+      // else), so this is the only thing that puts it back.
+      stance: (slots[STANCE] || {}).mod || "",
       // THE FIGHT, WHOLE AND DERIVED — never a hand-written list of its
       // fields. This was twelve of them copied out one by one, under a comment
       // claiming "the TENNO travels whole", which was true only by inspection:

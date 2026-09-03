@@ -170,7 +170,43 @@ themselves — as `engine:` at the top of the file. Next run:
   right, it is the number this run would compute. It is reused, and only
   submissions with no row cost anything. Measured: 0.05 s to reproduce a board
   byte-for-byte, 1.5 s when one new build arrived.
-- **fingerprint moved** → everything is rescored, and the log says what moved.
+- **fingerprint moved** → the run does not assume every row is stale. It
+  PROVES it, one way or the other — see below.
+
+### When the code moved: prove whether any NUMBER did
+
+The fingerprint is a hash of three whole trees, so any edit to them declares
+every stored score stale. Most edits cannot move a number: a comment, a test, a
+validation rule, a field only the page reads. Measured on 2026-09-03, the cost
+of assuming otherwise was **7,808 minutes of work across 128 shards, median
+shard 55 minutes and worst 192, four hours of wall clock** — against a schedule
+firing every twenty, so every successor was discarded. Eleven engine commits in
+one morning produced no completed run for ten hours.
+
+So the workflow measures instead of guessing. `scripts/board_sample.py` takes
+**one published row per weapon** — the weapon's best, which is the row every
+other row in its group is measured against — and `wfsim-board --verify`
+reproduces them under the new code and compares each with what the board says.
+
+- **every sampled row identical** → the code is score-equivalent. The published
+  numbers are what this code computes, not merely what some older code did, so
+  the scorers are given `--code-verified` and reuse them across the fingerprint
+  difference. Cost: about two minutes of scoring plus a cached build.
+- **any row different, or too few compared to mean anything** → full rescore,
+  which is what would have happened anyway.
+
+**Exact equality**, not a tolerance: a score is a pure function and an `f64`
+round-trips through the yaml, so "close enough" would be a number nobody can
+defend. **Stratified by weapon**, because a change that moves a number moves it
+for some weapon, and a uniform sample of a 7,000-row board would miss a
+melee-only mechanic outright. A **floor of 100 rows compared** across the
+shards, because a verification that cannot fail is worse than none.
+
+What the sample can still miss is a change that moves only SOME builds of one
+weapon. Nothing bounds that but measuring everything, so **a full rescore runs
+weekly regardless** — `0 0 * * 1`, Monday 00:00 UTC, which is Warframe's own
+weekly reset (*"Other content uses a different server-side reset timer that
+resets only every Monday at 0:00 UTC"*, wiki `Reset`).
 
 TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 (asked and answered,). An untouched row is valid forever; a row

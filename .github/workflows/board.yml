@@ -43,6 +43,17 @@ on:
     # It is free to do: this repo is public, so Actions minutes are not metered,
     # and a run that finds nothing new commits nothing.
     - cron: "0,20,40 * * * *"
+    # THE BACKSTOP, and it is a FULL rescore whatever the probe below thinks.
+    # Sampling one published row per weapon catches any code change that moves a
+    # number for some weapon; what it can still miss is one that moves only SOME
+    # builds of one weapon, and nothing bounds that but measuring everything.
+    # Once a week does, and it costs one long run out of ~500.
+    #
+    # MONDAY 00:00 UTC, which is Warframe's own weekly reset — *"Other content
+    # uses a different server-side reset timer that resets only every Monday at
+    # 0:00 UTC"* (wiki `Reset`). A small tribute, and a time the players this is
+    # for already have in their heads.
+    - cron: "0 0 * * 1"
   push:
     branches: [main]
     paths:
@@ -126,6 +137,14 @@ env:
   # `accounted:` and the shard spread on the next run before touching this line.
   SHARDS: 128
 
+  # HOW MANY WAYS THE PROBE SPLITS. It reproduces one published row per
+  # weapon (~135 of them, ~200 rows) and the whole point is that it is
+  # cheap beside the run it decides: measured locally, a shard of 16 is
+  # 22-42 s of scoring per board, so a job carrying all three finishes in
+  # about two minutes plus a cached build. Sixteen, not 128: past a point
+  # the fixed cost of a runner is the whole bill.
+  VERIFY_SHARDS: 16
+
 jobs:
   # ---- 1. what is there to score ----------------------------------------
   #
@@ -138,6 +157,9 @@ jobs:
       wired: ${{ steps.wired.outputs.yes }}
       engine: ${{ steps.fp.outputs.engine }}
       shards: ${{ steps.shards.outputs.list }}
+      probe: ${{ steps.shards.outputs.probe }}
+      full: ${{ steps.full.outputs.yes }}
+      moved: ${{ steps.fp.outputs.moved }}
     steps:
       - uses: actions/checkout@v4
 
@@ -150,6 +172,7 @@ jobs:
       - id: shards
         run: |
           python3 -c "import json;print('list='+json.dumps(list(range($SHARDS))))" >> "$GITHUB_OUTPUT"
+          python3 -c "import json;print('probe='+json.dumps(list(range($VERIFY_SHARDS))))" >> "$GITHUB_OUTPUT"
 
       # WHAT A SCORE DEPENDS ON THAT IS NOT THE BUILD, as one hash: the code
       # that simulates, the data it simulates with, and the rulers. `data/`
@@ -175,6 +198,29 @@ jobs:
           fp=$(git ls-files -s -- engine webapi cli | git hash-object --stdin)
           echo "engine=$fp" >> "$GITHUB_OUTPUT"
           echo "engine fingerprint: $fp"
+          # DID IT MOVE AT ALL? Every board carries the fingerprint that scored
+          # it, so this is the question the probe exists to answer more cheaply
+          # — and when the answer is no there is nothing to probe.
+          # EVERY board, and they must AGREE. Two boards carrying different
+          # fingerprints is a half-finished migration, and reading the first of
+          # them would call it settled.
+          was=$(grep -h '^engine:' boards/*.yaml 2>/dev/null | awk '{print $2}' | sort -u)
+          if [ "$(printf '%s' "$was" | wc -l)" = "0" ] && [ "$was" = "$fp" ]; then
+            echo "moved=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "moved=true" >> "$GITHUB_OUTPUT"
+            echo "code moved: ${was:-unrecorded} -> $fp"
+          fi
+
+      # A FULL RESCORE IGNORES EVERY STORED SCORE. Two things ask for one: the
+      # manual button, and the weekly backstop above.
+      - id: full
+        run: |
+          if [ "${{ inputs.full }}" = "true" ] || [ "${{ github.event.schedule }}" = "0 0 * * 1" ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"; echo "FULL rescore"
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
       # nothing to read, and a job that fails hourly for a reason nobody is
@@ -241,13 +287,124 @@ jobs:
           path: submissions.json
           retention-days: 30
 
+  # ---- 1b. did the code change move any NUMBER? -------------------------
+  #
+  # The engine fingerprint is a hash of `engine`, `webapi` and `cli`, so ANY
+  # edit to them declares every stored score stale. Most edits cannot move a
+  # number — a comment, a test, a validation rule, a field only the page reads —
+  # and paying a full rescore for each is what stopped the board updating:
+  # measured on the run of 2026-09-03, 128 shards, median 55 minutes and worst
+  # 192, **7,808 minutes of work and four hours of wall clock** against a
+  # schedule that fires every twenty. Every successor was discarded; eleven
+  # engine commits in one morning meant no completed run for ten hours.
+  #
+  # SO IT IS MEASURED RATHER THAN GUESSED. Each shard re-scores its slice of one
+  # published row per weapon and compares with what the board says. Identical
+  # throughout and the code is score-equivalent: the numbers on the board are
+  # what THIS code computes, so `--code-verified` lets the scorers reuse them.
+  # One difference and `decide` says so and the full rescore happens.
+  #
+  # A SHARD NEVER FAILS THE RUN. "The numbers moved" is an ANSWER, not a broken
+  # job, so the exit code is captured into a file and `decide` sums them.
+  verify:
+    needs: submissions
+    if: needs.submissions.outputs.wired == 'true'
+      && needs.submissions.outputs.full != 'true'
+      && needs.submissions.outputs.moved == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.submissions.outputs.probe) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - run: cargo build --release --bin wfsim-board
+      - run: pip install --quiet pyyaml
+      - name: reproduce this shard of the sample
+        run: |
+          set -euo pipefail
+          mkdir -p verdict
+          for f in boards/*.yaml; do
+            id=$(basename "$f" .yaml)
+            python3 scripts/board_sample.py "$f" > sample.json
+            # `--verify-min 0`: a shard comparing three rows proves nothing on
+            # its own, so the floor is applied ONCE, over the sum, in `decide`.
+            set +e
+            ./target/release/wfsim-board "$id" \
+              --engine "${{ needs.submissions.outputs.engine }}" \
+              --reuse "$f" --verify --verify-min 0 \
+              --shard "${{ matrix.shard }}/${VERIFY_SHARDS}" \
+              < sample.json > /dev/null 2> verify.log
+            set -e
+            grep -o 'verify-result: .*' verify.log >> "verdict/${{ matrix.shard }}.txt" || true
+            grep -o 'verify: .* -> .*' verify.log | head -5 || true
+          done
+          cat "verdict/${{ matrix.shard }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verdict-${{ matrix.shard }}
+          path: verdict/
+          retention-days: 1
+
+  # ---- 1c. …and the one place that answers it ---------------------------
+  #
+  # ALWAYS RUNS, because "the code did not move" and "the probe was skipped" are
+  # both answers the scorers need, and a job that only runs on one path leaves
+  # the others reading an empty output as false — which is the safe direction,
+  # and worth being explicit about rather than relying on.
+  decide:
+    needs: [submissions, verify]
+    if: always() && needs.submissions.outputs.wired == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      equivalent: ${{ steps.v.outputs.equivalent }}
+    steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: verdict-*
+          merge-multiple: true
+          path: verdict
+      - id: v
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.verify.result }}" != "success" ]; then
+            echo "equivalent=false" >> "$GITHUB_OUTPUT"
+            echo "no usable probe (${{ needs.verify.result }}) — full rescore"
+            exit 0
+          fi
+          sum() { cat verdict/*.txt 2>/dev/null \
+            | awk -v k="$1" '{ for (i = 1; i <= NF; i++)
+                                 if (index($i, k "=") == 1) n += substr($i, length(k) + 2) }
+                             END { print n + 0 }'; }
+          compared=$(sum compared)
+          moved=$(sum moved)
+          echo "probe: $compared rows reproduced, $moved moved"
+          # A HUNDRED ROWS IS THE FLOOR. A probe that compared almost nothing —
+          # rows the floor screened away, or a board whose rows no longer
+          # validate — proves nothing, and a verification that cannot fail is
+          # worse than none.
+          if [ "$moved" = "0" ] && [ "$compared" -ge 100 ]; then
+            echo "equivalent=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::the code moved and the numbers did not — reusing $compared verified rows"
+          else
+            echo "equivalent=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # ---- 2. score, N ways at once -----------------------------------------
   #
   # Each shard simulates the submissions whose INDEX is its own and writes only
   # the scores it computed. It produces no board: a shard's view is a slice, and
   # a slice ranked on its own would be a leaderboard of a third of the field.
   score:
-    needs: submissions
+    needs: [submissions, decide]
     if: needs.submissions.outputs.wired == 'true'
     runs-on: ubuntu-latest
     strategy:
@@ -279,12 +436,21 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p scores
+          # ...AND WHAT THE PROBE FOUND. `--code-verified` is the statement
+          # that a sample of the published rows came back IDENTICAL under
+          # this code, so reusing across the fingerprint difference is a
+          # measurement rather than a hope. Empty on a full run, and on any
+          # run where the probe did not clear the board.
+          verified=""
+          if [ "${{ needs.decide.outputs.equivalent }}" = "true" ]; then
+            verified="--code-verified"
+          fi
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             prior=""
-            [ "${{ inputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
+            [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
             ./target/release/wfsim-board "$id" \
-              --engine "${{ needs.submissions.outputs.engine }}" $prior \
+              --engine "${{ needs.submissions.outputs.engine }}" $prior $verified \
               --shard "${{ matrix.shard }}/${SHARDS}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
@@ -302,7 +468,7 @@ jobs:
   # deduplicates, ranks and writes. Measured locally at 0.064 s for the rows it
   # was given, against the 1.5 s the shards spent computing them.
   publish:
-    needs: [submissions, score]
+    needs: [submissions, decide, score]
     if: needs.submissions.outputs.wired == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -340,6 +506,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p site
+          # THE SAME VERDICT THE SCORERS WERE GIVEN, and this is the call
+          # that matters most: it ASSEMBLES the board. Without the flag the
+          # reuse is refused here and the board is written from the newly
+          # scored rows alone -- which is not a stale board, it is an empty
+          # one.
+          verified=""
+          if [ "${{ needs.decide.outputs.equivalent }}" = "true" ]; then
+            verified="--code-verified"
+          fi
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             prior=""
@@ -351,14 +526,14 @@ jobs:
             # scoring step above does not have the problem: it
             # passes the path straight to the binary, which treats an
             # unreadable prior as "full rescore" and carries on.
-            if [ "${{ inputs.full }}" != "true" ]                && [ -f "boards/$id.yaml" ]; then
+            if [ "${{ needs.submissions.outputs.full }}" != "true" ]                && [ -f "boards/$id.yaml" ]; then
               # Read the board BEFORE it is overwritten: the loop writes in
               # place, so a copy is what the reuse actually reads.
               cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
               prior="--reuse /tmp/$id-prior.yaml"
             fi
             ./target/release/wfsim-board "$id" site/board.json \
-              --engine "${{ needs.submissions.outputs.engine }}" $prior \
+              --engine "${{ needs.submissions.outputs.engine }}" $prior $verified \
               --scores scores \
               < submissions.json > "boards/$id.yaml"
           done
