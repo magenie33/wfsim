@@ -2148,15 +2148,25 @@ vector (Impact at 20% of panel → ×1.5 on it = ×1.1 total).
 **Armor → damage reduction (post-U36 formula — wiki `Damage/Calculation`
 §Armored Enemies).**
 ```
-DR = 0.9 × √(armor / 2700)
+DR = 0.9 × √(armor / 2700)          armor ≤ 2700
+DR = armor / (armor + 300)          armor > 2700
 damage_to_health = incoming × (1 + type_modifier) × (1 − DR)
 ```
 `armor` is the value **after** all strips/debuffs (Corrosive −26%/stack to
-−80%, Heat −50%, Corrosive Projection, Terrify). The 2,700 cap is enforced
-on the armor **value** by the stat system (data-side discipline: nothing in
-the formula forbids a 10k-armor enemy — DE just never writes one, and the
-scaling curve tops out at 2,700, where the formula evaluates to 90% DR).
-Spawn minimum 200 (initial value only).
+−80%, Heat −50%, Corrosive Projection, Terrify).
+
+**90% is where the two branches MEET, not a ceiling on the reduction** —
+`2700/3000 = 0.9 = 0.9·√1`. Past the cap the curve changes rather than
+stopping, and DR keeps climbing (10,000 armor → 97.1%). The two facts get
+told as one and are not one.
+
+The cap is on the armor **VALUE**: level scaling clamps an enemy's initial
+armor to [200, 2700]. Nothing in the model can lift it past that — Steel
+Path is +100 levels and ×2.5 health/shields (*"Steel Path no longer
+increases Armor values"*, Ver 36), and every mitigation factor is a
+`1 − strip`, the only armor aura being Corrosive Projection. So the second
+branch is written because the RULE has it, not because a fight reaches it;
+`nothing_in_the_model_lifts_armor_past_the_cap` is what keeps that true.
 
 **Per-type damage floor (armor only)** (wiki `Armor`): damage reduced by
 armor has a **minimum of 1 per damage type** in the hit's vector (a

@@ -212,16 +212,24 @@ pub fn eximus_base_health(base_health: f64, level: u32, has_shields_or_armor: bo
 /// square-root curve makes partial armor strip far more valuable (300 armor:
 /// 30% DR now vs 50% before). `armor` is the value after all strips/debuffs.
 ///
-/// The formula itself is uncapped; its in-game domain is `[0, 2700]` only
-/// because the stat system never produces larger *values* (see
-/// [`ARMOR_CAP`]). We still clamp defensively: an out-of-domain input would
-/// yield DR > 90% (and > 100% past 3,333), which no in-game armor value can
-/// cause. Unverified until golden-tested.
+/// ABOVE THE CAP THE CURVE CHANGES RATHER THAN STOPPING: *"If an enemy's Net
+/// Armor exceeds 2,700 under an exceptional condition, damage reduction instead
+/// uses `Net Armor/(Net Armor+300)`"* (wiki `Armor`). So 90% is NOT a ceiling on
+/// the REDUCTION — it is only where the two curves meet, which is why "the
+/// 2,700 cap" and "the 90% cap" get told as one fact and are not one.
+///
+/// NOTHING NAMED REACHES IT. Level scaling clamps an enemy's initial armor to
+/// `[200, 2700]`, and the wiki names no current source that raises the value —
+/// *"Steel Path no longer increases Armor values"* (Ver 36), the same update
+/// that brought this curve in. The branch is written because the RULE has it,
+/// not because a fight here can take it.
 pub fn armor_damage_reduction(armor: f64) -> f64 {
     if armor <= 0.0 {
         0.0
+    } else if armor > ARMOR_CAP {
+        armor / (armor + 300.0)
     } else {
-        0.9 * (armor.min(ARMOR_CAP) / ARMOR_CAP).sqrt()
+        0.9 * (armor / ARMOR_CAP).sqrt()
     }
 }
 
@@ -294,8 +302,32 @@ mod tests {
         assert!(approx(armor_damage_reduction(300.0), 0.30, 1e-12));
         assert!(approx(armor_damage_reduction(675.0), 0.45, 1e-12));
         assert!(approx(armor_damage_reduction(2700.0), 0.90, 1e-12));
-        // Out-of-domain inputs never exceed the 90% cap.
-        assert!(approx(armor_damage_reduction(10_000.0), 0.90, 1e-12));
+    }
+
+    #[test]
+    fn above_the_cap_the_curve_switches_and_the_two_meet_there() {
+        // AR/(AR+300) past 2,700, and 90% is where the two AGREE rather than a
+        // ceiling either one imposes: 2700/3000 = 0.9 = 0.9·sqrt(2700/2700).
+        assert!(approx(armor_damage_reduction(2700.0 + 1e-9), 0.90, 1e-9));
+        assert!(approx(armor_damage_reduction(10_000.0), 10_000.0 / 10_300.0, 1e-12));
+        // It keeps CLIMBING, which the old defensive clamp hid.
+        assert!(armor_damage_reduction(10_000.0) > 0.90);
+        assert!(armor_damage_reduction(1e9) < 1.0);
+    }
+
+    /// NO FIGHT HERE REACHES THAT BRANCH, and this is what says so: `armor_at`
+    /// clamps to the cap, and every mitigation factor is a `1 - strip` — the
+    /// only aura that touches enemy armor is Corrosive Projection, which
+    /// removes. A source that ADDS armor would land above the cap and this test
+    /// is where it would first be noticed.
+    #[test]
+    fn nothing_in_the_model_lifts_armor_past_the_cap() {
+        assert_eq!(armor_at(5000.0, LEVEL_CAP, 1), ARMOR_CAP);
+        for a in crate::auras_data::all() {
+            if let crate::auras_data::AuraEffect::EnemyArmor(v) = a.effect {
+                assert!(v <= 0.0, "{} raises enemy armor by {v}", a.id);
+            }
+        }
     }
 
     #[test]
