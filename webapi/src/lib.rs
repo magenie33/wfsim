@@ -6770,6 +6770,15 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "pellets": m.pellets,
         "crit_rate": m.crits as f64 / pel,
         "big_crit_rate": m.big_crits as f64 / pel,
+        // WHAT THE BUILD CHARGED ITS OWNER, by type and never applied — see
+        // `SelfDamage`. Absent rather than zero when nothing charged anything,
+        // so a reader is not shown a cost line for a build that has none.
+        "self_damage": (m.self_damage.total() > 0.0).then(|| json!({
+            "total": m.self_damage.total(),
+            "by_type": m.self_damage.parts().into_iter()
+                .map(|(t, v)| json!({ "type": t.name(), "amount": v }))
+                .collect::<Vec<_>>(),
+        })),
         // The tier, because the RATE stops saying anything past 100% crit
         // chance: every pellet crits, so it reads 1.0 whether the build is
         // at 110% or 410%. Uncapped — red is not the top.

@@ -512,6 +512,13 @@ pub enum ModEffect {
         crit_damage: f64,
         /// Status chance on a Tennokai attack (Condition's Perfection: +100%).
         status_chance: f64,
+        /// TRUTH'S FLAME'S THREE, and no other card has any of them — see
+        /// [`Tennokai`] for what each one means.
+        chain_seconds: f64,
+        damage_needs_chain: bool,
+        curse_resets_combo: bool,
+        curse_heat_per_second: f64,
+        curse_seconds: f64,
     },
     /// A CRIT-CHANCE CARD THAT READS x2 ON A HEAVY ATTACK.
     ///
@@ -1153,7 +1160,11 @@ impl ModEffect {
                 pct(v)
             ),
             StatusChanceOnLifted(v) => format!("+{} status chance on a LIFTED target", pct(v)),
-            Tennokai { enabled, chance, every_n_hits, window_seconds, damage, crit_damage, status_chance } => {
+            Tennokai {
+                enabled, chance, every_n_hits, window_seconds, damage, crit_damage,
+                status_chance, chain_seconds, damage_needs_chain, curse_resets_combo,
+                curse_heat_per_second, curse_seconds,
+            } => {
                 let mut parts: Vec<String> = Vec::new();
                 if enabled {
                     parts.push("enables Tennokai — a 15% chance on a direct hit to open a 2s                                 window in which a heavy attack costs no combo".into());
@@ -1166,6 +1177,24 @@ impl ModEffect {
                 if damage > 0.0 { parts.push(format!("+{} damage on a Tennokai attack", pct(damage))); }
                 if crit_damage > 0.0 { parts.push(format!("+{} critical damage on one", pct(crit_damage))); }
                 if status_chance > 0.0 { parts.push(format!("+{} status chance on one", pct(status_chance))); }
+                // THE CARD THAT IS A GAMBLE, said as one. Every clause above is
+                // a bonus; these three are the terms it comes on.
+                if chain_seconds > 0.0 {
+                    parts.push(format!(
+                        "a Tennokai KILL re-opens the window for {chain_seconds}s{}",
+                        if damage_needs_chain { ", and the damage bonus pays only in that one" } else { "" },
+                    ));
+                }
+                if curse_resets_combo {
+                    parts.push(format!(
+                        "a Tennokai attack that FAILS to kill empties the combo counter{}",
+                        if curse_heat_per_second > 0.0 {
+                            format!(" and burns you for {curse_heat_per_second:.0} Heat a second for {curse_seconds:.0}s")
+                        } else {
+                            String::new()
+                        },
+                    ));
+                }
                 parts.join(", ")
             }
             CritChanceHeavyDoubled(v) => format!(
@@ -1482,6 +1511,27 @@ pub struct Tennokai {
     pub damage: f64,
     pub crit_damage: f64,
     pub status_chance: f64,
+    /// SECONDS A TENNOKAI **KILL** RE-OPENS THE WINDOW FOR, 0 when no card buys
+    /// it. *"Kills grant an additional 4s Tennokai opportunity"* — the only way
+    /// in this mechanic to swing Tennokai twice without a normal hit between,
+    /// since every other card has to build back to its own trigger.
+    pub chain_seconds: f64,
+    /// Does [`Self::damage`] pay only inside a CHAINED window? *"The damage
+    /// bonus is only active following the first kill"* — so the swing that
+    /// earns the chain does not carry it and the swing after it does.
+    pub damage_needs_chain: bool,
+    /// Does a Tennokai swing that FAILS TO KILL empty the combo counter?
+    ///
+    /// *"Curse activates when failing to kill a target with a Tennokai attack,
+    /// and reset your Combo Counter."* It is the whole cost of the card and the
+    /// reason it is a gamble rather than a bonus — and status immunity does not
+    /// save it: *"your combo will still be reset"*.
+    pub curse_resets_combo: bool,
+    /// Heat a second the WIELDER takes on that failure, for
+    /// [`Self::curse_seconds`]. Nothing here damages the Tenno, so it is
+    /// COUNTED and never applied — a number the reader is owed, not a death.
+    pub curse_heat_per_second: f64,
+    pub curse_seconds: f64,
     /// THE CHARGE BEFORE A TENNOKAI ATTACK, seconds — and it is ZERO.
     ///
     /// Measured: the window's swing goes out with no charge at all. DE says
@@ -4247,8 +4297,16 @@ pub fn resolve_for(
                 ModEffect::HeavyWindUpSpeed(v) => windup_speed += v,
                 ModEffect::Tennokai {
                     enabled, chance, every_n_hits, window_seconds, damage, crit_damage,
-                    status_chance,
+                    status_chance, chain_seconds, damage_needs_chain, curse_resets_combo,
+                    curse_heat_per_second, curse_seconds,
                 } => {
+                    // ONE CARD CARRIES THESE and they compose the way the rest
+                    // do: the longest chain, and a term either card states.
+                    tk.chain_seconds = tk.chain_seconds.max(chain_seconds);
+                    tk.damage_needs_chain |= damage_needs_chain;
+                    tk.curse_resets_combo |= curse_resets_combo;
+                    tk.curse_heat_per_second = tk.curse_heat_per_second.max(curse_heat_per_second);
+                    tk.curse_seconds = tk.curse_seconds.max(curse_seconds);
                     tk.enabled |= enabled;
                     tk.chance += chance;
                     // A CADENCE REPLACES THE ROLL and the SHORTEST one wins,

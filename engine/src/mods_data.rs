@@ -311,6 +311,17 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             damage: f(v, "damage").unwrap_or(0.0),
             crit_damage: f(v, "crit_damage").unwrap_or(0.0),
             status_chance: f(v, "status_chance").unwrap_or(0.0),
+            chain_seconds: f(v, "chain_seconds").unwrap_or(0.0),
+            damage_needs_chain: v
+                .get("damage_needs_chain")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+            curse_resets_combo: v
+                .get("curse_resets_combo")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+            curse_heat_per_second: f(v, "curse_heat_per_second").unwrap_or(0.0),
+            curse_seconds: f(v, "curse_seconds").unwrap_or(0.0),
         },
         "status_chance_per_combo" => ModEffect::StatusChancePerCombo(max("rankMax")),
         // MELEE'S CONDITION OVERLOAD, which is the ORIGINAL one and is not a

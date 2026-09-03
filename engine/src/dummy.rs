@@ -645,6 +645,59 @@ pub struct TargetParams {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TypeShares([f64; DamageType::ALL.len()]);
 
+/// WHAT THE WIELDER TOOK FROM THEIR OWN BUILD, by damage type.
+///
+/// **NOBODY DIES HERE AND NOTHING IS APPLIED.** This arena has no Tenno to
+/// damage — `nobody_shoots_back` is one of its declared classes — so self
+/// damage is COUNTED and never paid. That is not a shrug: a card or a weapon
+/// that charges the wielder is making a trade, and a model that drops the cost
+/// prices the trade wrong even when it cannot simulate the consequence.
+///
+/// BY TYPE rather than a total, because the types are not interchangeable to a
+/// reader: Heat over six seconds and one lump of Blast are different problems
+/// and a single number cannot be either.
+///
+/// Truth's Flame is the first source — 100 Heat a second for six, every time a
+/// Tennokai attack fails its kill — and it will not be the last: a self-damaging
+/// launcher lands in the same accumulator with no new machinery.
+#[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct SelfDamage([f64; DamageType::ALL.len()]);
+
+impl SelfDamage {
+    pub fn add(&mut self, t: DamageType, v: f64) {
+        self.0[t as usize] += v;
+    }
+    pub fn of(&self, t: DamageType) -> f64 {
+        self.0[t as usize]
+    }
+    pub fn total(&self) -> f64 {
+        self.0.iter().sum()
+    }
+    /// Every type that took something, biggest first — what a reader is shown.
+    pub fn parts(&self) -> Vec<(DamageType, f64)> {
+        let mut v: Vec<(DamageType, f64)> = DamageType::ALL
+            .iter()
+            .copied()
+            .filter(|&t| self.0[t as usize] > 0.0)
+            .map(|t| (t, self.0[t as usize]))
+            .collect();
+        v.sort_by(|a, b| b.1.total_cmp(&a.1));
+        v
+    }
+    pub fn merge(&mut self, o: &Self) {
+        for (a, b) in self.0.iter_mut().zip(o.0.iter()) {
+            *a += b;
+        }
+    }
+    pub fn scale(&self, k: f64) -> Self {
+        let mut out = *self;
+        for a in &mut out.0 {
+            *a *= k;
+        }
+        out
+    }
+}
+
 impl TypeShares {
     /// THE BIGGEST SHARE — which type a mixed instance reads AS, for DISPLAY
     /// only. Same contract as `DamageVector::dominant`, and nothing in the
@@ -5513,6 +5566,8 @@ pub struct RunResult {
     pub pellets: u32,    // multishot instances (>= shots)
     pub crits: u32,      // tier >= 1, counted per pellet
     pub big_crits: u32,  // tier >= 2
+    /// What the WIELDER took from their own build — see [`SelfDamage`].
+    pub self_damage: SelfDamage,
     /// HOW MANY MOMENTS A BLAST WENT OFF IN — not how many stacks did.
     ///
     /// Nine expiring one at a time are nine; any number expiring together are
@@ -11196,7 +11251,7 @@ mod melee {
         let none = dps(&[]);
         for card in [
             "mentors_legacy", "disciplines_merit", "dreamers_wrath", "masters_edge",
-            "opportunitys_reach", "conditions_perfection", "truths_flame",
+            "opportunitys_reach", "conditions_perfection",
         ] {
             assert!(
                 dps(&[card]) > none * 1.5,
@@ -11204,6 +11259,21 @@ mod melee {
                 dps(&[card]),
             );
         }
+        // TRUTH'S FLAME IS THE SEVENTH AND IT IS NOT A BONUS. It opens the
+        // window like the rest and then charges for it: the damage half pays
+        // only in a window a KILL chained, and a Tennokai attack that fails to
+        // kill EMPTIES THE COMBO COUNTER. On this fixture — one target it does
+        // not always finish — that is worth less than the six above and more
+        // than nothing, which is the shape of a gamble rather than a card.
+        let flame = dps(&["truths_flame"]);
+        assert!(
+            flame > none * 1.1,
+            "truths_flame says `Enables Tennokai` and opened no window: {none:.0} -> {flame:.0}",
+        );
+        assert!(
+            flame < none * 1.5,
+            "truths_flame is priced as an unconditional bonus again: {none:.0} -> {flame:.0}",
+        );
         // …AND A CADENCE BEATS THE ROLL. `every 4 melee hits` is 25% against
         // the base 15%, so the two together are worth more than either alone.
         // THE MARGIN IS THINNER THAN THE TWO CHANCES SUGGEST, because a heavy
@@ -12070,6 +12140,40 @@ mod melee {
         assert!(crowd(15.0) > 1000.0, "a 20 m spread missed a ring at 15 m");
         let far = crowd(23.0);
         assert!(far < 1.0, "a 20 m spread reached a ring at 23 m: {far:.1}");
+    }
+
+    /// TRUTH'S FLAME IS A GAMBLE, AND BOTH SIDES OF IT ARE PAID.
+    ///
+    /// *"Kills grant an additional 4s Tennokai opportunity"*, *"the damage
+    /// bonus is only active following the first kill"*, and *"Curse activates
+    /// when failing to kill a target with a Tennokai attack, and reset your
+    /// Combo Counter"*. So on a fight it can finish it is worth something, and
+    /// on one it cannot the chain never happens and the curse fires every time.
+    ///
+    /// THE CONTRAST IS THE ASSERTION. Master's Edge is an unconditional +60% on
+    /// the same swing, so it pays on both fights; if Truth's Flame ever pays
+    /// like that on the fight with no kills, its terms have stopped applying.
+    #[test]
+    fn truths_flame_pays_where_it_can_kill_and_charges_where_it_cannot() {
+        let go = |card: Option<&str>, level: f64| {
+            let mut mods = vec!["primed_pressure_point", "sacrificial_steel", "organ_shatter"];
+            if let Some(c) = card { mods.push(c); }
+            let _ = level;
+            melee_fight("praedos", &[], &mods, None, 60.0, Some(3.0))
+        };
+        // THIS FIXTURE KILLS NOTHING — training dummies — which is exactly the
+        // half worth asserting here: the chain never happens, the damage bonus
+        // never pays, and the curse fires on every swing. The paying half is
+        // measured where kills do happen (42.0 against 35.6 on the group ruler
+        // at Lv 60) and asserted by the Tennokai card sweep above, which now
+        // requires this card to be worth LESS than the six unconditional ones.
+        let (bare, flame) = (go(None, 60.0), go(Some("truths_flame"), 60.0));
+        assert!(
+            flame.mean_self_damage.of(DamageType::Heat) > 0.0,
+            "the curse never fired, so nothing was ever risked",
+        );
+        // …AND NOTHING CHARGES A BUILD THAT DOES NOT CARRY IT.
+        assert_eq!(bare.mean_self_damage.total(), 0.0, "a bare build paid a curse");
     }
 
     /// A SWING UNDER FULL STANCE DAMAGE STILL EARNS ITS POINT.
@@ -13289,6 +13393,10 @@ pub fn run_once_traced(
     // roll with "every 4 hits", which is the one card that makes the count
     // load-bearing).
     let mut tennokai_until = f64::NEG_INFINITY;
+    // WAS THIS WINDOW OPENED BY A TENNOKAI KILL? Truth's Flame pays its damage
+    // only in one that was: *"the damage bonus is only active following the
+    // first kill"*, so the swing that earns the chain does not carry it.
+    let mut tennokai_chained = false;
     let mut tennokai_hits = 0u32;
     // MELEE INFLUENCE'S WINDOW. One number, and the clause that makes it one:
     // *"Cannot refresh while active"* — so a roll that lands while it is open
@@ -13881,8 +13989,15 @@ pub fn run_once_traced(
         // SWING either way — the flash goes out with it.
         let tennokai = ap.tennokai.enabled && t < tennokai_until;
         let tennokai_heavy = tennokai && !ap.spends_combo && ap.heavy.is_some();
+        // …AND WHETHER THE ONE BEING SPENT WAS CHAINED, kept because spending
+        // it clears the flag and the damage is decided after.
+        let tennokai_was_chained = tennokai && tennokai_chained;
+        // WHAT THE COUNT WAS BEFORE IT, so "did this swing kill" is a
+        // subtraction rather than a flag every path would have to set.
+        let tennokai_kill_mark = r.kills;
         if tennokai {
             tennokai_until = f64::NEG_INFINITY;
+            tennokai_chained = false;
         }
         // SEISMIC WAVE IS A MULTIPLIER OF ITS OWN: *"Slam damage bonus is
         // multiplicative to base damage (e.g. Pressure Point)"* (wiki). Killing
@@ -13915,7 +14030,14 @@ pub fn run_once_traced(
                 // one is.
                 * (1.0 + ap.base_damage_bonus + ap.heavy_attack_damage)
                 / (1.0 + ap.base_damage_bonus)
-                * (1.0 + ap.tennokai.damage)
+                // …AND ONLY WHERE THE CARD PAYS IT. Truth's Flame's bonus is
+                // the CHAINED window's; every other card's is unconditional.
+                * (1.0
+                    + if ap.tennokai.damage_needs_chain && !tennokai_was_chained {
+                        0.0
+                    } else {
+                        ap.tennokai.damage
+                    })
         } else {
             swing.as_ref().map_or(1.0, |h| h.multiplier)
                 * if ap.spends_combo { combo_mult } else { 1.0 }
@@ -17111,6 +17233,27 @@ pub fn run_once_traced(
             // Merit: every 4 hits), and the count only advances while the
             // window is SHUT: a hit landed during the flash is a hit the player
             // is about to spend it on.
+            // TRUTH'S FLAME'S TWO TERMS, settled before the ordinary roll
+            // because a chain replaces it: a Tennokai KILL re-opens the window
+            // with no hit in between, which is the only way in this mechanic to
+            // swing it twice in a row.
+            if tennokai && ap.tennokai.chain_seconds > 0.0 && r.kills > tennokai_kill_mark {
+                tennokai_until = t + ap.tennokai.chain_seconds;
+                tennokai_chained = true;
+                tennokai_hits = 0;
+            }
+            // …AND THE CURSE, which is the whole cost of the card: a Tennokai
+            // attack that FAILS to kill empties the counter. Status immunity
+            // does not save it — *"your combo will still be reset"* — so it is
+            // unconditional here, and the Heat is COUNTED rather than applied
+            // because nothing in this arena damages the Tenno.
+            if tennokai && ap.tennokai.curse_resets_combo && r.kills == tennokai_kill_mark {
+                combo_points = 0.0;
+                r.self_damage.add(
+                    DamageType::Heat,
+                    ap.tennokai.curse_heat_per_second * ap.tennokai.curse_seconds,
+                );
+            }
             if ap.tennokai.enabled && landed > 0.0 && t >= tennokai_until {
                 tennokai_hits += 1;
                 let opens = if ap.tennokai.every_n_hits > 0 {
@@ -17678,6 +17821,9 @@ pub struct Summary {
     pub mean_pellets: f64,
     pub mean_crit_rate: f64,
     pub mean_big_crit_rate: f64,
+    /// What the wielder took from their own build, per run — see
+    /// [`SelfDamage`]. Zero for every build that charges nothing.
+    pub mean_self_damage: SelfDamage,
     /// Mean crit TIER over every direct pellet: 0 = a normal hit, 1 yellow,
     /// 2 orange, 3 red, and ABOVE red keeps going — the game shows those and
     /// so must we. Equal to `mean_crit_rate` below 100% crit chance and the
@@ -17852,6 +17998,7 @@ pub struct Shard {
     pellets: u64,
     crits: u64,
     big_crits: u64,
+    self_damage: SelfDamage,
     crit_tier_sum: u64,
     headshots: u64,
     sources: SourceDamage,
@@ -17901,6 +18048,7 @@ impl Default for Shard {
             pellets: 0,
             crits: 0,
             big_crits: 0,
+            self_damage: SelfDamage::default(),
             crit_tier_sum: 0,
             headshots: 0,
             sources: SourceDamage::default(),
@@ -17946,6 +18094,7 @@ impl Shard {
         self.pellets += o.pellets;
         self.crits += o.crits;
         self.big_crits += o.big_crits;
+        self.self_damage.merge(&o.self_damage);
         self.crit_tier_sum += o.crit_tier_sum;
         self.headshots += o.headshots;
         add_sources(&mut self.sources, &o.sources);
@@ -18076,6 +18225,7 @@ pub fn shard(
         a.pellets += u64::from(r.pellets);
         a.crits += u64::from(r.crits);
         a.big_crits += u64::from(r.big_crits);
+        a.self_damage.merge(&r.self_damage);
         a.crit_tier_sum += u64::from(r.crit_tier_sum);
         a.headshots += u64::from(r.headshots);
         add_sources(&mut a.sources, &r.sources);
@@ -18171,6 +18321,7 @@ impl Shard {
         mean_pellets: pellets as f64 / n,
         mean_crit_rate: crits as f64 / total_pellets,
         mean_big_crit_rate: big_crits as f64 / total_pellets,
+        mean_self_damage: self.self_damage.scale(1.0 / runs.max(1) as f64),
         mean_crit_tier: crit_tier_sum as f64 / total_pellets,
         mean_headshot_rate: headshots as f64 / total_pellets,
         burst_dps: {

@@ -10,17 +10,35 @@ exilus: true
 
 # Rank 0: Enables Tennokai.\nTennokai kills grant an additional 4s Tennokai opportunity and increase Tennokai damage by 30%.\n\nCURSE: Suffer 25 <DT_FIRE_COLOR>Heat Damage/s for 6s.\n / +0.3 'Truth'
 effects:
-  # `Tennokai kills grant an additional 4s Tennokai opportunity and increase
-  # Tennokai damage by 120%` — the damage half is unconditional enough to pay
-  # (a Tennokai attack is a Tennokai attack), and the KILL half is not: it
-  # extends a window this loop closes when the swing is spent.
+  # THE ONLY CARD IN THE POOL THAT IS A GAMBLE, and all three halves of it are
+  # modelled because all three are decidable here.
   #
-  # THE CURSE is out of scope besides — 100 Heat/s to the WIELDER, and nothing
-  # damages the Tenno in this arena.
+  # A KILL RE-OPENS THE WINDOW for 4 s — *"Kills grant an additional 4s Tennokai
+  # opportunity"* — which is the one way in this mechanic to swing Tennokai
+  # twice with no ordinary hit between, since every other card has to build back
+  # to its own trigger.
+  #
+  # THE DAMAGE IS THE CHAINED WINDOW'S: *"the damage bonus is only active
+  # following the first kill"*. The swing that earns the chain does not carry
+  # it; the one after it does.
+  #
+  # AND THE CURSE IS THE COST: *"Curse activates when failing to kill a target
+  # with a Tennokai attack, and reset your Combo Counter."* The reset is the
+  # part that bites, and status immunity does not save it — *"your combo will
+  # still be reset"*. The Heat is 100/s for 6 s to the WIELDER, counted into
+  # `RunResult::self_heat_damage` and never applied: nothing here damages the
+  # Tenno, and nothing here can kill them.
   - kind: tennokai
     damage: 1.2
+    chain_seconds: 4
+    damage_needs_chain: true
+    curse_resets_combo: true
+    curse_heat_per_second: 100
+    curse_seconds: 6
+  # THE SYNDICATE HALF. `+1 'Truth'` builds toward a syndicate radial, which is
+  # a proc this arena has machinery for and this card has no measured trigger
+  # rate for — it is the one clause of the four still owed.
   - kind: unmodeled
-  - kind: out_of_scope
 
 family: tennokai
 
