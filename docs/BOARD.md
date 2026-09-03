@@ -219,11 +219,13 @@ something outside the hash changed, or when you simply want to see it done.
 
 ### Why it is sharded
 
-Every row is an independent fight, so the scoring splits by submission index
-across eight jobs, each writing only the scores it computed; a merge job
-validates, deduplicates, ranks and writes, simulating nothing. Verified before
-it shipped: 24 submissions through 8 shards reproduced every published score to
-1e-9, and the merge ran in 0.064 s.
+Every row is an independent fight, so the scoring splits across `SHARDS` jobs —
+each row charged to the least loaded of them, so a shard's slice is its own
+share of the WORK rather than of the row count — and each writes only the scores
+it computed; a merge job validates, deduplicates, ranks and writes, simulating
+nothing. Verified before it shipped: 24 submissions through 8 shards reproduced
+every published score to 1e-9, and the merge ran in 0.064 s. What `SHARDS` can
+and cannot buy is §"Two ceilings, and neither is the shard count".
 
 **A score file says which board it is.** A shard's key is `identity#mode` and
 carries no ruler, so two boards scoring one build produce the SAME key with
@@ -1016,13 +1018,14 @@ off a record that is not an identity axis (not `at`, not `benchmark`).
    warm run — but a cold one (a lost cache, a new namespace) still pays the full
    O(store) price, and that price grows with the library. It is bounded by the
    API's 4/s, so at 20,000 builds a cold start is 80 minutes.
-2. **The board file holds every row.** 2,185 today across three rulers. It is
-   committed on every update, so the repo grows with the community, and `site/`
-   is regenerated and redeployed with it.
-3. **Full rescores are O(store)**, and 128 shards buys only a constant factor —
-   the ceiling is GitHub's 256-job matrix. A code change is no longer assumed to
-   change every number (§"When the code moved"), and what a full rescore does
-   pay for is bounded by the screen below.
+2. **The board file holds every row.** 7,493 per ruler. It is committed on
+   every update, so the repo grows with the community, and `site/` is
+   regenerated and redeployed with it.
+3. **Full rescores are O(store)**, and the shard count buys a constant factor
+   against two ceilings that are both already reached — §"Two ceilings, and
+   neither is the shard count". A code change is no longer assumed to change
+   every number (§"When the code moved"), and what a full rescore does pay for
+   is bounded by the screen below.
 
 ### Where the 132 hours go, measured
 
@@ -1046,6 +1049,29 @@ row-wise fan-out goes below the biggest row.
 **RIVEN ROWS ARE 58% of the `group_clear` bill on 33% of its rows** (mean 86 s
 against 31 s), which is the corner search: sixteen probes at `PROBE_RUNS` plus
 one real measurement, ~2.6x a plain row.
+
+### Two ceilings, and neither is the shard count
+
+Raising `SHARDS` was the answer three times and it is not available a fourth,
+because the shard count is not what binds. Both ceilings are measured, and a
+sizing argument that does not name them will be wrong the way the last three
+were.
+
+**FORTY JOBS RUN AT ONCE, WHATEVER THE MATRIX SAYS.** The account's concurrent
+job limit is the real fan-out: across every board run in a day, concurrency sat
+pinned at exactly 40 for 263 minutes and never once reached 41. A matrix of 128
+is therefore 3.2 waves, not one — measured start spread across the shards of one
+run, 195 minutes — and every shard past the fortieth adds a checkout and a cache
+restore while buying no parallelism at all. **The wall clock of a full rescore
+is `total work / 40`**, which is 3h20m, and no shard count moves it.
+
+**AND ONE ROW IS INDIVISIBLE.** The worst row is 121 minutes, so even at
+infinite fan-out a full rescore cannot finish faster than that. Row-wise
+splitting is within a small factor of its own floor already.
+
+Together they say the same thing: **a full rescore cannot be made fast, so the
+lever is not paying for one.** §"A row's code dependency is measured, not
+assumed" is where that lever is.
 
 ### Not paying for rows that cannot be listed
 
@@ -1080,14 +1106,18 @@ expensive pure function on a growing input set**:
 score = f(build, ruler, engine_version, data_version)
 ```
 
-Four properties decide everything downstream:
+Five properties decide everything downstream:
 
 1. **`f` is deterministic** — the seed is pinned, so the same inputs give the
    same number for ever.
-2. **`f` is expensive** — 5.8 seconds per `(build, ruler)` on average (712 CPU
-   minutes over 7,341 pairs, measured 2026-08-26).
+2. **`f` is expensive** — 21.4 seconds per `(build, ruler)` on average, 8,071
+   CPU minutes over 22,656 pairs, and the spread is four orders of magnitude
+   wide (§"Where the 132 hours go").
 3. **The input set only grows**, apart from the one-year expiry.
 4. **The output is a projection** — top N per (weapon, mode, ruler).
+5. **Each row reads a SUBSET of the code, and usually a small one.** The data
+   half of this is already exploited per row; the code half is still assumed to
+   be everything, which is what makes a rescore cost what it costs.
 
 Anything with those four properties is a BUILD SYSTEM, and that is not an
 analogy: Bazel and Nix exist for exactly this shape — an expensive pure function
@@ -1120,8 +1150,8 @@ It does not, and the resolution is one rule: **publish the newest COMPLETE
 generation.**
 
 ```
-fingerprint A (old):  7341 / 7341 facts   <- publish this one
-fingerprint B (new):  3102 / 7341 facts   <- backfilling
+fingerprint A (old):  22656 / 22656 facts   <- publish this one
+fingerprint B (new):   9430 / 22656 facts   <- backfilling
 ```
 
 When B completes it replaces A atomically. A reader never sees a mixed board,
@@ -1132,6 +1162,24 @@ That rule is what turns a rescore from an EVENT into background noise. Without
 it a six-hour backfill is a six-hour outage; with it, it is invisible. It
 matters more than any hardware choice.
 
+**A GENERATION INHERITS EVERY FACT WHOSE KEY DID NOT MOVE**, which is what
+makes it affordable to wait for a complete one. Under a per-row code
+fingerprint a melee change leaves 98.6% of the pairs keyed exactly as they were,
+so B opens already almost complete and closes in minutes rather than hours. The
+two ideas are not independent: generations without §"A row's code dependency is
+measured" means holding a stale board for three hours on every push, and a
+subset dependency without generations means publishing a mixture.
+
+**A NEW SUBMISSION IS PENDING, NOT A GENERATION.** It has no fact yet, so it
+cannot enter the ranking — but the submitter's own client already computed a
+number to show them, and holding the row back entirely would be less honest than
+showing it as what it is. A submitted row appears immediately, marked as
+unverified, ranked provisionally by the client's number and OUTSIDE the
+generation, and is replaced by its fact when one exists. The client's number is
+never a score: it is a placeholder that the board is required to overwrite, and
+a placeholder that does not match the fact is a signal worth recording rather
+than a row worth trusting.
+
 #### THREE TIERS, EACH WITH ITS OWN SCALING LAW
 
 They are one lockstep batch in Actions today, and that is the whole of the
@@ -1139,9 +1187,22 @@ trouble.
 
 | tier | scales with | needs | the right thing |
 | --- | --- | --- | --- |
-| ingest | new submissions | cheap, always up | Worker + queue |
+| ingest | new submissions | cheap, always up | a Worker, and a doorbell |
 | compute | missing facts | embarrassingly parallel, CPU-bound | wherever CPU is cheapest |
 | serve | readers | fast, unblockable | a static file on the CDN — already right |
+
+**THE QUEUE IS A QUERY, SO THERE IS NO QUEUE.** Once a score is a fact keyed by
+its inputs, the work outstanding is `the keys with no fact yet, ordered by
+priority` — derived from the store, never stored beside it. That is strictly
+better than a real queue here rather than merely cheaper: nothing can be lost,
+because nothing was enqueued; a worker that dies leaves the key missing and the
+next one takes it; scoring twice is harmless because `f` is deterministic, so
+at-least-once delivery costs nothing to tolerate; and a push that reorders every
+priority at once is a different `ORDER BY` rather than a re-enqueue of the
+backlog. A queue would add one more piece of state that can disagree with
+reality, which is the failure this section exists to remove. What ingest needs
+is not a queue but one bit — *there is work* — and a `repository_dispatch` from
+the Worker carries it.
 
 #### THE MOAT IS THE LIBRARY, SO IT IS A DATABASE AND NOT A CACHE
 
@@ -1158,14 +1219,28 @@ whole, which is a hard requirement for the one asset that cannot be regenerated.
 
 #### WHERE THE COMPUTE GOES, AND A NUMBER WORTH KNOWING
 
-Steady state is about **35 new builds a day times 3 rulers = ~10 CPU minutes a
-day**. A €4 two-core box is 2,880 CPU minutes a day — **280x more than the
-steady state needs**. Cost is not a steady-state question at all; it is a BURST
-question, and the burst is a full rescore at 712 CPU minutes.
+**THE FREE TIER IS NOT SHORT OF COMPUTE.** Actions minutes are unmetered on a
+public repo, so the budget is the concurrency ceiling times the clock: 40 jobs
+times 24 hours is **960 CPU hours a day, free**. Steady state is nowhere near
+it — about 365 new builds a day across three rulers is ~160 CPU minutes at the
+median row, a quarter of one percent of the budget.
 
-The two kinds of compute are good at opposite things, so use both against one
-queue: GitHub Actions is free and unmetered on a public repo and absorbs bursts
-256 ways, while a small always-on box gives SECOND-level latency for a new
+**WHAT EXCEEDS IT IS RESCORES, AND THEY ARE NOT RARE.** A full rescore is 134
+CPU hours, and every push touching `engine`, `webapi` or `cli` asks for one. A
+working day of thirteen such pushes asks for **1,742 CPU hours against 960
+available** — nearly twice what exists, which no scheduling policy can absorb
+and no shard count can compress. A board hours behind on such a day is not a
+starved queue; it is an oversubscribed one.
+
+The bill is also almost entirely for work that could not have mattered: of the
+thirteen, most touch one mechanic, and a melee change re-derives 7,388 gun rows
+that never execute a line of it. Under §"A row's code dependency is measured"
+the same day asks for well under the budget. **Sizing the compute is downstream
+of not asking for it.**
+
+The two kinds of compute are good at opposite things, so use both against the
+same missing-fact query: GitHub Actions is free and unmetered and absorbs a
+burst 40 ways, while a small always-on box gives SECOND-level latency for a new
 submission — which is a product difference, not an ops one, for a tool whose
 board is the reason people come back.
 
@@ -1176,46 +1251,87 @@ the edge; CPU-bound work goes on the box.
 
 ### The order to move in, when each becomes the binding constraint
 
-Each step is independently useful and none of them requires the next.
+Cost-based packing is in place and has reached its own floor (§"Two ceilings").
+What follows is what is left, and each step is independently useful. The
+lettering is not the order: **F is the safety net for A, so F lands first.**
 
-**A. Shard by COST, not by index.** *(cheap, do it first)* `idx % shards` assumes
-rows cost the same; measured at 32 shards they ranged 9.3 to 52.9 minutes — a
-5.7x spread, because a group-clear row reaches 361 bodies. Deal the rows out
-longest-first (LPT scheduling) and the worst shard falls to near the mean. Ten
-lines in the scorer, halves the full-rescore wall clock, costs nothing.
+**A. A ROW'S CODE DEPENDENCY IS MEASURED, NOT ASSUMED.** *(the lever, and the
+only step that changes the bill rather than who waits for it)* The data half of
+`f`'s inputs is already asked per row, from the files that row actually reads.
+The code half is one fingerprint over `engine` + `webapi` + `cli`, so a change
+to any of it invalidates all of it. Measured: **105 of 7,493 rows on each board
+are melee**, so a melee fix re-derives 7,388 gun rows that never execute a line
+of it — 134 CPU hours to reproduce numbers that could not have moved, for one of
+the most common commits there is. Partition the engine into named units, map
+each to the entity families that can reach it, and union the units a row's own
+entities name — the walk `data_fingerprint` already performs, over the same
+build, one field wider.
 
-**B. Persist the SCORES, not just the board.** *(the architectural one)* A score
-keyed by `(identity, ruler, data fingerprint)` is a fact that never expires. Put
-those in **Cloudflare D1** — SQLite, free tier 5 GB and 5 M row-reads a day,
-which is orders of magnitude more than this needs — and three things become
-true at once: a rescore is a background BACKFILL rather than a blocking rebuild,
-the board file becomes a cheap projection (read, sort, take the top N per weapon
-per mode per ruler — seconds), and a run that dies loses nothing it had already
-computed. This is the step that removes the whole class of problem, because
-after it no ordinary run is O(store) at all.
+**THE DEFAULT DECIDES WHETHER THIS IS SAFE, AND IT IS THE ONE THE DATA HALF
+ALREADY USES.** A unit attributed to nothing falls into a GLOBAL bucket every
+row carries, exactly as an unattributed data file does, so a unit nobody
+classified rescores the whole board: forgetting one costs time and is never
+wrong. Keying on the units a fight was OBSERVED to execute would be more precise
+and is the wrong trade — a build that starts reaching code it did not reach
+before has a recorded set that predates the change, and reuse under it is silent
+and wrong. Precision here is worth nothing, since the win is already 98.6% at
+the coarsest useful granularity: no gun row reaches melee under any attribution.
 
-**C. Publish a VIEW, not the library.** Once B is done the board file can hold
-the top N per (weapon, mode, ruler) instead of every row, and the deeper ranks
-the builder's picker shows can be fetched on demand. The file stays a static
-asset on the CDN — fast, free, and unblockable from where the players are, which
-is the property worth protecting above all the others.
+**B. A SCORE IS WRITTEN WHERE IT IS COMPUTED.** *(the architectural one)* A
+score keyed by `(identity, ruler, data fingerprint, code units)` is a fact that
+never expires. Put those in **Cloudflare D1** — SQLite, free tier 5 GB and 5 M
+row reads a day, orders of magnitude more than this needs — and three things
+become true at once: a rescore is a background backfill rather than a blocking
+rebuild, the board file becomes a cheap projection, and a run that dies loses
+nothing it had already computed. After it, no ordinary run is O(store) at all.
+KV is the wrong store and its write quota says so before its query model does:
+a full backfill is 22,656 writes against a free-tier day of 1,000, and the same
+tier is already carrying the submissions.
 
-**D. Move the queue, keep the compute.** The compute is not the problem:
-**GitHub Actions is free and unmetered on a public repo**, which is a better
-deal than any paid runner, and the engine is a Rust binary that runs anywhere.
-What Actions is bad at is being a QUEUE — no backpressure, cancellation
-discards finished work, a 256-job ceiling, ~15 minutes of scheduler slip. So
-the move is a real queue in front of it (**Cloudflare Queues**, 1 M operations a
-month free, $0.40/M after) with Actions draining it, rather than replacing the
-runners.
+**C. THE BOARD IS A PROJECTION OF THE NEWEST COMPLETE GENERATION.** Once B is
+done the board file holds the top N per (weapon, mode, ruler) instead of every
+row, and the deeper ranks the builder's picker shows are fetched on demand.
+Publishing is then a read, a sort and a commit — seconds, and independent of
+whether any scoring is in flight. The file stays a static asset on the CDN.
 
-**E. A persistent scorer, only if D is not enough.** In rough order of cost:
-**Oracle Cloud Always Free** (4 ARM cores, 24 GB — genuinely free, genuinely
-enough), then a **€4/month Hetzner** box, then Fly.io. A long-lived process
-removes the per-run 30 s of checkout and cache restore that 128 shards pay 128
-times, and it can hold the library in memory instead of fetching it at all.
-Nothing above needs this; it is written down so the option is known rather than
-discovered under pressure.
+**D. A SUBMISSION RINGS A DOORBELL; NOTHING POLLS.** A schedule is a stand-in
+for an event that nobody delivered, and it is the wrong stand-in in both
+directions: it sleeps through a burst of 169 submissions in 27 minutes and it
+wakes 24 times through 8 hours in which nothing arrived. The Worker that
+accepts a submission already knows, so it fires `repository_dispatch` when no
+scorer is awake; workers stay up while the missing-fact query returns rows and
+exit when it does not. **Quiet hours then cost nothing at all** rather than
+costing a probe and a share of the concurrency ceiling.
+
+**E. VERIFICATION EFFORT FOLLOWS RANK.** Verifying a deterministic function is
+recomputing it, so the saving is in how many rows are verified rather than how
+fast. The incentive to submit a false number follows rank, so the effort
+should: the rows a group lists are verified on every generation, and rows under
+the screen — a third of the bill, and read by nobody — are spot-checked. This is
+the screen's own ordering applied to a second question.
+
+**F. A TRICKLE AUDIT, PERMANENTLY AT THE BOTTOM OF THE PRIORITY ORDER.** One
+worker that takes a cached fact, recomputes it from nothing, and compares. It
+publishes no board and holds up no reader: it takes only capacity that no
+submission and no backfill wants, so it is preempted the moment a push lands and
+resumes when the backlog drains. Its output is a counter when the two agree and
+an alarm naming the row, both numbers and the key when they do not — which is
+how a unit attributed under A to a family too narrow to hold it, or a
+determinism regression anywhere, is found in hours by a machine. **The full rescore is the backstop this replaces**,
+and continuously auditing a slice beats a weekly rebuild on both counts: it is
+never a spike that starves everything else, and it reports coverage constantly
+rather than once. Coverage period is the number to watch as the store grows.
+
+**G. A PERSISTENT SCORER, ONLY IF THE CEILINGS BIND.** In rough order of cost:
+**Oracle Cloud Always Free** (4 ARM cores, 24 GB), then a **EUR 4/month
+Hetzner** box, then Fly.io. A long-lived process removes the per-wake checkout
+and cache restore, and can hold the library in memory rather than fetching it.
+Nothing above needs this. The signal that it is time is not a run overrunning a
+schedule — after D there is no schedule to overrun — but the two numbers below.
+
+**The metrics that decide all of this** are how long after a push the listed
+rows are correct again, and how long the audit takes to cross the whole store.
+Neither is a property of the shard count, and both mean something to a reader.
 
 ### What must not change
 
@@ -1229,6 +1345,12 @@ discovered under pressure.
 - **The library is the only irreplaceable thing.** Boards are derived, the site
   is generated, the code is in git. Anything that could truncate it needs a
   tripwire before it needs a backup.
+- **Nobody submits a number.** A client's figure may stand in front of a reader
+  as an unverified placeholder, and may never be stored as a score or ranked
+  against one. Every published row is reproducible from the repo by anyone.
+- **No work is enqueued anywhere.** What is outstanding is derived from the
+  facts that exist, so there is no second copy of it to fall out of step with
+  the first — §"The queue is a query".
 
 ---
 
