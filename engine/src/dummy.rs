@@ -7238,24 +7238,21 @@ struct Landed {
     killed: bool,
 }
 
-/// WHAT ONE SWING'S INSTANCES ADD TO THE COMBO COUNTER.
+/// WHAT ONE SWING'S INSTANCES ADD TO THE COUNTER — the multiplier ROUNDED UP,
+/// once per instance, where an instance is a hit AND a body.
 ///
 /// *"Stance attacks add combo points, scaling with the attack's stance damage
-/// multiplier (100% stance damage multiplier = 1 point)"* (wiki, Melee Combo) —
-/// AND AT LEAST ONE PER INSTANCE, which that sentence does not say and a
-/// stopwatch does. Rogue Edict's first input is `200%` then `5x 50%`, six
-/// instances in one press: proportional throughout it is 4.5, flat one-a-hit is
-/// 6, and the floor is 7, which is what the counter shows.
+/// multiplier (100% = 1 point)"* (wiki, Melee Combo), and a swing under 100%
+/// still earns one, which that sentence does not say and a stopwatch does:
+/// Rogue Edict opens `200%` then `5x 50%` and the counter shows SEVEN, against
+/// 4.5 proportional and 6 flat.
 ///
-/// `instances` is hits AND bodies — a swing that lands on five enemies earns
-/// five times as much, which is why reach and attack speed build the counter as
-/// fast as they do.
-///
-/// UNSETTLED: whether a multiplier BETWEEN 1 and 2 rounds or stays fractional.
-/// A 150% swing pays 1.5 here and 2 if the counter ceilings; nothing in the
-/// roster's measurements separates them.
+/// ROUNDED rather than floored at one: the two agree wherever they can be told
+/// apart, and rounding is ONE rule where a floor is two. Not separable with
+/// this roster — every stance multiplier in it is whole except `0.5`, below the
+/// line they differ above — so a stance publishing 150% would settle it.
 fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
-    multiplier.max(1.0) * instances
+    multiplier.ceil().max(1.0) * instances
 }
 
 /// CAN MELEE INFLUENCE CARRY THIS STATUS?
