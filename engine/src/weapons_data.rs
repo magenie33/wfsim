@@ -130,15 +130,22 @@ pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64)
     }
     let add = total * fraction;
     base.base_vector = base.base_vector.with(ty, base.base_vector.get(ty) + add);
+    // …AND THE CO TERM'S BASE WITH IT. The bonus is the weapon's OWN listed
+    // base — "increases the listed base damage of the weapon by 25%-60%" — so
+    // there is no smaller original for GunCO to read: every copy in the game
+    // has a Lich's element in its printed damage. Left behind, `co_base` makes
+    // a maxed Kuva Nukor read 62% of its own base, against the CO catalog's
+    // own row for the family ("Kuva Seer … 131 | 131 | 100%").
+    base.co_base *= 1.0 + fraction;
     // THE RADIAL TOO, on a weapon that has one: the bonus is base damage, and a
-    // radial's base is base damage. None of today's adversary weapons in this
-    // roster has one, which is exactly when to write the line — before a
-    // weapon arrives that would have been silently wrong.
+    // radial's base is base damage. The Kuva Bramma, Ogris, Tonkor and Zarr all
+    // carry one.
     if let Some(r) = base.radial.as_mut() {
         let rt = r.base_vector.total();
         if rt > 0.0 {
             let radd = rt * fraction;
             r.base_vector = r.base_vector.with(ty, r.base_vector.get(ty) + radd);
+            r.co_base *= 1.0 + fraction;
         }
     }
     // …AND A LINGERING FIELD, on the same argument and still on no weapon in
@@ -7428,6 +7435,25 @@ mod valence_tests {
         let mut slash = bare.clone();
         apply_valence(&mut slash, "kuva_nukor", "slash", 0.60);
         assert!((slash.base_vector.total() - 21.0).abs() < 1e-9, "slash is not a progenitor element");
+
+        // …AND THE CO TERM READS THE WHOLE OF IT. A valenced copy is what every
+        // player owns, so its GunCO base is its own printed damage and the
+        // fraction stays the ordinary 1.0 — the panel said 62% and blamed an
+        // evolution this weapon does not have.
+        assert!((rad.co_base - 33.6).abs() < 1e-9, "the CO base is {}", rad.co_base);
+        assert!((rad.co_base_fraction() - 1.0).abs() < 1e-9);
+        assert!((toxin.co_base_fraction() - 1.0).abs() < 1e-9);
+        // …ON THE EXPLOSION TOO, and a weapon that declares a fraction of its
+        // own keeps it: the Kuva Drakgoon's charged shot reads half its base
+        // before any Lich and half of it after.
+        let mut drak = WeaponBase::from_data("kuva_drakgoon", true, &[]);
+        let declared = drak.co_base_fraction();
+        apply_valence(&mut drak, "kuva_drakgoon", "heat", 0.60);
+        assert!((drak.co_base_fraction() - declared).abs() < 1e-9, "{declared} moved");
+        let mut ogris = WeaponBase::from_data("kuva_ogris", true, &[]);
+        apply_valence(&mut ogris, "kuva_ogris", "heat", 0.60);
+        let r = ogris.radial.as_ref().expect("the Kuva Ogris explodes");
+        assert!((r.co_base_fraction() - 1.0).abs() < 1e-9, "{}", r.co_base_fraction());
 
         // …AND A WEAPON WITH NO SPEC CANNOT BE HANDED ONE.
         let mut torid = WeaponBase::from_data("torid", true, &[]);
