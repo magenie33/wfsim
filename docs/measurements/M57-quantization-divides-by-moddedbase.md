@@ -31,6 +31,12 @@ excluded — the number this engine already carried as `dot_modified_base` for
 status payloads, one line below the call that needed it. Elements are in the
 numerator only.
 
+**A PER-TYPE PHYSICAL MOD IS IN THE NUMERATOR TOO**, which these four rows do
+not separate because none of them carries one. M66 does: +120% Slash and +120%
+Puncture on a Ballistica Prime leave the scale at `155 × 3.2 / 32` and raise
+only their own components, and folding them into the denominator would have
+predicted 3781 against a measured 2341.
+
 `DamageVector::quantized()` divided by `self.total()` instead, which includes
 them. On the first row that snaps the four components to **33** units of a
 larger scale rather than 32 of the right one, and the hit comes out 3.1% high.

@@ -85,30 +85,11 @@ and 43 → 44.34 → **44** and 137.6 → 141.9 → **142** are both exact. The
 Incarnon form is mono-Slash, so it sits at 32/32 and its 5864 confirms the
 other end: a quantization that gained anything there would have missed it.
 
-**And with an element on it, which is the reading M57's denominator is about**
-(owner). +220% base damage, +165% Electricity, +90% Cold on the Charged Shot
-pops **1783**:
-
-```
-ModdedBase = 155 × 3.2 = 496,  scale = 15.5
-Electricity + Cold combine FIRST -> Magnetic 255%, one type, not two
-  2 + 18 + 13 (physical, unchanged by a base-damage mod)
-+ 82          (2.55 × 32 = 81.6, the element on the SAME denominator)
-= 115 units × 15.5 = 1782.5 -> 1783
-```
-
-`496 × 3.55 = 1760.8` is what the vector's own total would give, 22 low. The
-reading does **not** separate combining-then-quantizing from quantizing each
-element (53 + 29 is also 82); it pins the denominator, which is the thing M57
-found wrong.
-
-**The `Adding` class reads the UNEVOLVED base** (M50). Headcracker's +3 is out
-of the CO term on all three attacks, which is the class default and needs no
-per-perk declaration: 137.6 + 2.4×40 = 233.6 → **241**, and 43 in place of 40
-would have printed 248.
-
-**`independent` on the Incarnon form.** 833 × 3.2 × 2.2 = 5864.3 → **5864**,
-the CO term as a free-standing final multiplier and the +3 inside the base.
+**The rest of these readings are M80.** Three more builds on this weapon —
+an element, two per-type physical mods, and a Galvanized Shot ladder — settle
+the composition of quantization's DENOMINATOR rather than anything about the
+charge, so they are their own entry. The one thing they say about THIS entry
+is that the ladder re-derives **C = 80** from a direction §3 did not use.
 
 ### Not settled by this
 

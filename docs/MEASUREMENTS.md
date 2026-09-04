@@ -163,6 +163,8 @@ path, so an entry may be renamed but never renumbered.
 | [M77](measurements/M77-electricity-stun-refresh.md) | Electricity's stun cannot be re-applied while it runs | · 2026-09-03 (owner) |
 | [M78](measurements/M78-kuva-nukor-valence-in-co-base.md) | the valence bonus is inside the Condition Overload base, and the Kuva Nukor counts a status type nobody can see | · 2026-09-04 (owner) |
 | [M79](measurements/M79-flat-base-add-and-eclipse.md) | a flat base-damage add rides BESIDE an attack's own multiplier, and Eclipse does not reach Condition Overload | · 2026-09-04 (owner) |
+| [M80](measurements/M80-denominator-is-base-damage-only.md) | the quantization denominator is `base × (1 + base-damage mods)` and nothing else | ✅ 2026-09-04 (owner) |
+| [M81](measurements/M81-independent-co-applies-after-quantization.md) | an `Independent` Condition Overload multiplier applies AFTER quantization | ✅ 2026-09-04 (owner) |
 
 ## By weapon
 
@@ -174,7 +176,7 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | --- | --- | --- |
 | Amprex | `amprex` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
 | Atomos | `atomos` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
-| Ballistica Prime | `ballistica_prime` | [M66](measurements/M66-ballistica-prime-charge-x2.md) · [M67](measurements/M67-ballistica-prime-incarnon-pierce-and-perks.md) |
+| Ballistica Prime | `ballistica_prime` | [M66](measurements/M66-ballistica-prime-charge-x2.md) · [M67](measurements/M67-ballistica-prime-incarnon-pierce-and-perks.md) · [M80](measurements/M80-denominator-is-base-damage-only.md) · [M81](measurements/M81-independent-co-applies-after-quantization.md) |
 | Boar Prime | `boar_prime` | [M29](measurements/M29-reified-bane-reload-start.md) |
 | Braton | `braton` | [M1](measurements/M01-toxin-shield-bypass-gate.md) |
 | Braton Prime | `braton_prime` | [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) · [M56](measurements/M56-blast-detonation-no-elemental.md) · [M57](measurements/M57-quantization-divides-by-moddedbase.md) · [M58](measurements/M58-status-tick-accumulator.md) |
