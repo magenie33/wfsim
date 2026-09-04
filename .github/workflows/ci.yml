@@ -46,6 +46,9 @@ jobs:
       # browser, so it sits beside the parser check at the front.
       - name: Prose states the current rule
         run: node scripts/check_comment_style.mjs
+
+      - name: A rescore is triggered by everything that buys one
+        run: node scripts/check_rescore_paths.mjs
       - name: Builder / optimizer parity
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.

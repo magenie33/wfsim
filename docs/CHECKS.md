@@ -582,6 +582,21 @@ history, so a polarity off and back on lands on the number it started from; and
 the page's bill is the engine's, because the plan is MIRRORED in JS rather than
 asked for.
 
+## `check_rescore_paths`
+
+Everything that can move the engine fingerprint must also WAKE the board. Plain
+node, no browser: it reads the pathspec out of `scripts/engine_fingerprint.sh`
+and the `push.paths` out of `.github/workflows/board.yml` and asserts the first
+is covered by the second.
+
+Not symmetric, and it must not be — `data/**` wakes the board and is not in the
+code fingerprint, because a data change is asked per row inside the scorer.
+Waking on more than the hash covers is the safe direction. The other direction
+is the fault: a path that moves the fingerprint and triggers nothing invalidates
+every stored score without asking anyone to recompute them, so the rescore it
+bought lands on whichever run happens next, for a reason that run has nothing to
+do with.
+
 ## `check_comment_style`
 
 No attribution and no dated decision survives in the
