@@ -116,11 +116,12 @@ jobs:
           done
           cat result.txt
 
-      # WHAT IT FOUND. `beyond` and not `moved` is the alarm, because a score is
-      # reproducible bit for bit only within a platform and a runner image bump
-      # would otherwise report every row as a finding — see `PLATFORM_NOISE` in
-      # `cli/src/bin/wfsim-board.rs`. Both counts are reported: the exact one is
-      # what a reader checks after an image moves, the other is the alarm.
+      # WHAT IT FOUND, AND THE TEST IS EXACT. A score is a pure function of its
+      # inputs and the carry between the scoring processes is lossless, so any
+      # difference at all is one — "close enough" would be a tolerance nobody
+      # can defend. `worst` rides along because it is the first thing a reader
+      # wants when a row is reported: a defect moves a number by orders of
+      # magnitude where a numerical artefact moves it by a bit.
       - name: the verdict
         if: steps.age.outputs.generation == 'current'
         run: |
@@ -128,9 +129,8 @@ jobs:
           sum() { awk -v k="$1" '{ for (i = 1; i <= NF; i++)
                                      if (index($i, k "=") == 1) n += substr($i, length(k) + 2) }
                                    END { print n + 0 }' result.txt; }
-          compared=$(sum compared); moved=$(sum moved)
-          beyond=$(sum beyond); stale=$(sum stale)
-          echo "audited $compared rows: $moved differ, $beyond beyond the platform's noise"
+          compared=$(sum compared); moved=$(sum moved); stale=$(sum stale)
+          echo "audited $compared rows: $moved differ"
           # NOTHING TO AUDIT IS NOT A FINDING. A row whose DATA fingerprint moved
           # carries no number under this generation, so it is not a claim yet —
           # which is the state right after a data change and until the backfill
@@ -147,8 +147,8 @@ jobs:
             echo "::error::only $compared rows compared and $stale stale — the slice is empty, so this run audited nothing"
             exit 1
           fi
-          if [ "$beyond" -gt 0 ]; then
-            echo "::error::$beyond of $compared published rows are not what this code computes"
+          if [ "$moved" -gt 0 ]; then
+            echo "::error::$moved of $compared published rows are not what this code computes"
             exit 1
           fi
           echo "::notice::$compared rows agree with the board (crossing every $CROSSING runs)"

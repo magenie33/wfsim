@@ -63,12 +63,13 @@ number**. Everything else follows from it:
   one search differ in their mods and not in why the board would not take them;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
-  pinned seed. Measured: wasm and native agree to the last digit on one host
-  (`0.9647804061510868` both ways). ACROSS hosts the last bits are the host's,
-  not this repository's: the runner writes `1.1070976928071057` where another
-  machine computes `1.1070976928071055` for the same build under the same code.
-  A rank cannot turn on two ULP, but "to the last digit" is a claim about one
-  platform — see §"The audit", which is built around the distinction.
+  pinned seed. Measured: wasm and native agree to the last digit
+  (`0.9647804061510868` both ways). What made that untrue for a while was not
+  the engine but the CARRY — see `num_out` in the scorer: a shard's number
+  reached the publish process through `serde_json`'s number parser, which is not
+  correctly rounding, so the board published `1.1070976928071057` where the
+  engine computes `...055` and a reader reproducing the row was right and the
+  board was wrong.
 
 ## The pieces
 
@@ -236,13 +237,14 @@ by: how many runs it takes to read the whole board. Slices are ordered by `fp`,
 a hash, so each interleaves cheap and expensive rows and the cut is the same
 every run.
 
-**THE ALARM IS `beyond`, NOT `moved`.** A score is deterministic within a
-platform and only within one: the runner writes `1.1070976928071057` where
-another host computes `1.1070976928071055` for the same build under the same
-code — two ULP, from the host's libm. Exact inequality would therefore report
-every row the day a runner image moves, which is the shape of alarm nobody reads
-twice. `PLATFORM_NOISE` in the scorer is four orders above that noise and many
-below any change a build can make; the exact count is published beside it.
+**THE TEST IS EXACT, AND A TOLERANCE WOULD HAVE HIDDEN THE ONE DEFECT IT HAS
+FOUND.** A score is a pure function and the carry between the scoring processes
+is lossless (`num_out`), so any difference at all is one. The first ULP-scale
+disagreement measured here read like the host's arithmetic and was the carry —
+a tolerance sized to "noise" would have absorbed it and left the board
+publishing numbers the engine never computed. `worst` is reported beside the
+count because it is the first thing a reader wants when a row is named: a defect
+moves a number by orders of magnitude, an artefact by a bit.
 
 **AND IT ANSWERS THE QUESTION NO CHECK ASKED**: a board that has not moved in
 `STALE_HOURS` fails the run. That state has been found by a reader wondering
