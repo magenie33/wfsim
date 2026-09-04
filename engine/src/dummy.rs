@@ -2852,6 +2852,9 @@ pub struct DummyParams {
     /// CO base effectiveness (wiki: the CO bonus excludes evolution flat
     /// damage — DT with Fevered = 75/125 = 0.6).
     pub co_base_fraction: f64,
+    /// See [`crate::loadout::WeaponBase::unswung_fraction`] — the share of the
+    /// vector a stance's, a slam's or a heavy's own multiplier leaves alone.
+    pub unswung_fraction: f64,
     /// The evolution's PERMANENT stacked multishot (Fevered Frenzy): its
     /// full contribution is already inside `multishot`; `apply_buff_config`
     /// rescales it by the configured stacks ("evo_multishot"). No live
@@ -4462,6 +4465,7 @@ impl DummyParams {
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
             co_base_fraction: panel.co_base_fraction,
+            unswung_fraction: panel.unswung_fraction,
             co_stack: panel.co_stack,
             multishot_stack: panel.multishot_stack,
             crit_chance_on_headshot: panel.crit_chance_on_headshot,
@@ -4844,6 +4848,7 @@ impl Default for DummyParams {
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
             co_base_fraction: 1.0,
+            unswung_fraction: 0.0,
             co_stack: None,
             multishot_stack: None,
             crit_chance_on_headshot: None,
@@ -5101,6 +5106,9 @@ fn pellet_layers(
     is_head: bool,
     crit_damage: f64,
     crit_damage_base: f64,
+    // ECLIPSE'S TWO NUMBERS — the ability's own bonus, and the share of the
+    // hit it reaches. `(0.0, 1.0)` where no ability is up, which draws nothing.
+    eclipse: (f64, f64),
 ) -> Vec<crate::record::Layer> {
     use crate::record::{Factor, Layer, Term};
     // THE WEAPON'S OWN DAMAGE, before any bracket. `stage_mb` is it times the
@@ -5185,6 +5193,16 @@ fn pellet_layers(
         // take on trust.
         let of = if *factor == Factor::BodyPart && is_head && headshot_bonus.abs() > 1e-12 {
             vec![Term { factor: Some(Factor::HeadshotDamage), value: headshot_bonus, of: None }]
+        } else if *factor == Factor::WarframeAbility
+            && eclipse.0.abs() > 1e-12
+            && (eclipse.1 - 1.0).abs() > 1e-12
+        {
+            // ECLIPSE, OPENED UP — the ability's OWN bonus and the share of the
+            // hit it reaches, which is everything but what Condition Overload
+            // put in the bracket (MEASUREMENTS M79). A reader checking the
+            // ability card wants the 0.30 and the share; `x1.18` is the two of
+            // them multiplied and is a number nothing on any card says.
+            vec![Term { factor: None, value: eclipse.0 * eclipse.1, of: Some(eclipse) }]
         } else if *factor == Factor::Critical && (crit_damage - crit_damage_base).abs() > 1e-9 {
             // THE CRIT DAMAGE, OPENED UP: the weapon's own, plus what the build
             // adds. Unnamed for the same reason the base bucket's sum is — the
@@ -5197,6 +5215,8 @@ fn pellet_layers(
             *v
         } else if *factor == Factor::Critical {
             crit_damage_base
+        } else if *factor == Factor::WarframeAbility {
+            1.0
         } else {
             part_multiplier
         };
@@ -7145,6 +7165,26 @@ struct Gunco {
     types: f64,
     /// The below-half-health bonus, which shares this bracket.
     half_hp: f64,
+    /// WHAT SHARE OF [`Self::bucket`] CONDITION OVERLOAD PUT THERE — 0 with no
+    /// source equipped, and the whole of what ECLIPSE must not multiply
+    /// (MEASUREMENTS M79). Computed here because this is the one place that
+    /// holds both the term and the bracket it went into.
+    co_share: f64,
+}
+
+/// ECLIPSE, AS THE FACTOR IT ACTUALLY IS — its bonus on everything the hit is
+/// made of EXCEPT the share Condition Overload put in the base bracket.
+///
+/// MEASURED (M79): a Magistar reading 1644 under a 30% Eclipse with one CO
+/// stack only comes out at `weapon x swing x (1 + 0.3 + 0.8) + flat x 1.3`.
+/// Eclipse multiplying the whole bracket reads 1808.
+///
+/// The reading cannot tell "a multiplier the CO term does not see" apart from
+/// "a term in the same bracket as CO" — they are the same arithmetic — so this
+/// keeps the page's own word for it ("an unique multiplier") and takes the CO
+/// share out of it, which is the smaller of the two claims.
+fn eclipse_at(mult: f64, co_share: f64) -> f64 {
+    1.0 + (mult - 1.0) * (1.0 - co_share.clamp(0.0, 1.0))
 }
 
 /// Pox's row in the same catalog: "Damage recalculates on every tick".
@@ -7190,23 +7230,29 @@ fn gunco_bucket(
     // and the third falls out of being CO's SIBLING here rather than nested
     // inside it.
     let half_hp = half_hp * co_base_fraction;
-    let terms = |bucket: f64| Gunco {
+    let terms = |bucket: f64, numerator: f64| Gunco {
         bucket,
         co: gunco_total,
         rate: co_rate,
         types: debuffs.distinct_statuses() as f64,
         half_hp,
+        co_share: if numerator > 0.0 { (gunco_total / numerator).clamp(0.0, 1.0) } else { 0.0 },
     };
     match ap.co_behavior {
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
-        crate::loadout::CoBehavior::AdditiveWithBaseDamage => terms(
-            (1.0 + base_damage + arcane_base_damage + gunco_total + half_hp) / (1.0 + base_damage),
-        ),
-        crate::loadout::CoBehavior::Independent => terms(arc_ratio * (1.0 + gunco_total + half_hp)),
+        crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
+            let numerator = 1.0 + base_damage + arcane_base_damage + gunco_total + half_hp;
+            terms(numerator / (1.0 + base_damage), numerator)
+        }
+        crate::loadout::CoBehavior::Independent => {
+            let numerator = 1.0 + gunco_total + half_hp;
+            terms(arc_ratio * numerator, numerator)
+        }
         // No CO bracket to join, so the ordinary one: the base-damage bucket.
         crate::loadout::CoBehavior::Inert => terms(
             arc_ratio * (1.0 + base_damage + half_hp) / (1.0 + base_damage),
+            0.0,
         ),
     }
 }
@@ -14074,27 +14120,57 @@ pub fn run_once_traced(
             (DamageType::Slash, swing.as_ref().map_or(1.0, |h| h.slash_multiplier)),
         ];
         let any_physical = physical_bonus.iter().any(|(_, b)| (b - 1.0).abs() > 1e-12);
+        // THE FLAT ADD RIDES BESIDE THE SWING, NEVER INSIDE IT (MEASUREMENTS
+        // M79). A stance's multiplier, a slam's and a heavy's are the WEAPON's,
+        // so the packet an Incarnon perk added keeps its size while the
+        // weapon's own base is multiplied: `mods x (base x swing + flat)`.
+        // Its IMPACT multiplier is treated the same way — the attack's own
+        // shape, on the attack's own base — which is a generalisation and not
+        // one of M79's four readings.
+        let unswung = ap.unswung_fraction.clamp(0.0, 1.0);
         let swung;
+        // What the fold did to the whole base, and to the WEAPON's half of it.
+        // The two differ exactly when a flat add is present, and the GunCO
+        // bracket needs the second: it reads the weapon's base and takes the
+        // swing with it, where the flat packet takes neither.
+        let (mut swing_eff, mut swing_on_weapon) = (1.0, 1.0);
         let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12 || any_physical {
-            let mut v = qvec.scale(swing_mult);
+            let flat = qvec.scale(unswung);
+            let mut v = qvec.scale((1.0 - unswung) * swing_mult);
             for (ty, bonus) in physical_bonus {
                 if (bonus - 1.0).abs() > 1e-12 {
                     let extra = v.get(ty) * (bonus - 1.0);
                     v.add(ty, extra);
                 }
             }
-            let mb = modded_base * swing_mult * if any_physical {
-                // The ModifiedBase grows by the same share the vector did, so
-                // the quantization grid stays proportional to what is on it.
-                let before = qvec.total() * swing_mult;
-                if before > 0.0 { v.total() / before } else { 1.0 }
-            } else {
-                1.0
-            };
+            // The ModifiedBase grows by the same share the vector did, so
+            // the quantization grid stays proportional to what is on it.
+            let before = qvec.total() * (1.0 - unswung) * swing_mult;
+            let shape = if before > 0.0 { v.total() / before } else { 1.0 };
+            swing_on_weapon = swing_mult * shape;
+            swing_eff = (1.0 - unswung) * swing_on_weapon + unswung;
+            let mb = modded_base * swing_eff;
+            for (ty, amount) in flat.iter_nonzero() {
+                v.add(ty, amount);
+            }
             swung = v;
             (&swung, mb)
         } else {
             (qvec, modded_base)
+        };
+        // THE SWUNG VECTOR, kept for the LEDGER. Its quantization layer is
+        // drawn against `stage_mb`, which the fold has already grown, so
+        // handing it the unswung vector printed a grid and a set of components
+        // that were never on it — the ledger's own product then fell short of
+        // the number by exactly the swing, on every melee row.
+        let direct_pre_snap = *qvec;
+        // …AND THE CO BRACKET FOLLOWS THE WEAPON'S HALF. `ap`'s fraction is
+        // read against the UNSWUNG base; once the swing has landed on one half
+        // only, the share the term reads is a different number.
+        let co_base_fraction = if swing_eff > 0.0 {
+            (ap.co_base_fraction * swing_on_weapon / swing_eff).min(1.0)
+        } else {
+            ap.co_base_fraction
         };
         // The per-projectile vectors belong to the FORM that is firing, like
         // everything else at this scope. A cycle whose base form has them and
@@ -14999,7 +15075,7 @@ pub fn run_once_traced(
             let co_mult = gunco_bucket(
                 params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio,
                 half_hp,
-                ap.co_base_fraction,
+                co_base_fraction,
             );
             // The explosion's own, and only when it differs — an evolution
             // that raises the radial's damage without raising its CO base
@@ -15559,7 +15635,7 @@ pub fn run_once_traced(
                 // hit's grid for an explosion would be a different weapon's
                 // arithmetic.
                 let pre_quantization = match &rad {
-                    None => ap.damage,
+                    None => direct_pre_snap,
                     Some(r) => r.damage,
                 };
                 let pre_ability_total = qvec.total();
@@ -15807,8 +15883,13 @@ pub fn run_once_traced(
                     // that tells it apart from the last-round card.
                     * cc_mult
                     // ECLIPSE: "an unique multiplier", so it stands beside the
-                    // others rather than joining any of them.
-                    * params.ability_final_at(t)
+                    // others rather than joining any of them — and CONDITION
+                    // OVERLOAD IS THE ONE THING IT DOES NOT REACH, measured
+                    // (MEASUREMENTS M79). `eclipse_at` spends it on everything
+                    // but the share the CO term put in the bracket, which is
+                    // the same arithmetic as Eclipse joining that bracket and
+                    // is the only one of the two this reading can tell apart.
+                    * eclipse_at(params.ability_final_at(t), co_mult.co_share)
                     * beam_ramp
                     * combo_mult
                     // Multishot paid in DAMAGE, for the weapon that works that
@@ -16136,7 +16217,7 @@ pub fn run_once_traced(
                         (crate::record::Factor::Faction, params.faction_at_time(t)),
                         (crate::record::Factor::ArcaneFinal, arc_final),
                         (crate::record::Factor::Attrition, attrition),
-                        (crate::record::Factor::WarframeAbility, params.ability_final_at(t)),
+                        (crate::record::Factor::WarframeAbility, eclipse_at(params.ability_final_at(t), co_mult.co_share)),
                         (crate::record::Factor::BeamRamp, beam_ramp),
                         // DOUBLE TAP and SYNTH CHARGE were applied and
                         // never listed, which is the exact failure a ledger
@@ -16446,6 +16527,10 @@ pub fn run_once_traced(
                                 part.is_head,
                                 cd,
                                 ap.unmodded_crit_damage,
+                                (
+                                    params.ability_final_at(t) - 1.0,
+                                    1.0 - co_mult.co_share.clamp(0.0, 1.0),
+                                ),
                             ),
                             crit_damage: cd,
                             part: Some(part.name.clone()),
@@ -26311,7 +26396,7 @@ mod tests {
             forced_procs: Default::default(),
             takes_condition_overload: false,
             takes_multishot: true,
-            co_base_fraction: 1.0, // the default: an explosion gets no CO
+            co_base_fraction: 1.0,
         }
     }
 
@@ -31188,6 +31273,70 @@ mod warframe_ability_tests {
     use super::*;
     use crate::abilities_data::{resolve, AbilityPick};
     use crate::damage::DamageVector;
+
+    /// THE FOUR READINGS OF M79, and the arithmetic that lands on all of them.
+    ///
+    /// A Magistar carrying a `+100 Base Damage` Incarnon perk was measured four
+    /// ways, and one formula fits every one:
+    /// **`mods x (weapon base x attack multiplier + flat)`**, with Condition
+    /// Overload reading the weapon's half only and Eclipse not reaching the
+    /// term CO put in the bracket.
+    ///
+    /// Every number below the weapon comes from data — the base, the perk,
+    /// Primed Pressure Point — so the four readings are what this test adds.
+    #[test]
+    fn the_magistars_measured_flat_base_damage_ladder() {
+        let evos = ["magistar_evo1_incarnon_form", "magistar_edge_of_justice"];
+        let base = crate::loadout::WeaponBase::from_data("magistar", true, &evos);
+        assert!((base.base_vector.total() - 310.0).abs() < 1e-9, "the fixture moved");
+        assert!((base.unswung_base - 100.0).abs() < 1e-9, "the perk is the flat add");
+        let f = base.unswung_fraction();
+
+        // READING 1 — the stance's forward combo at x2, nothing else on the
+        // build, measured **536** on a Deimos Runner (every physical type x1.0
+        // there, so no faction column to read past).
+        let swung = base.base_vector.scale((1.0 - f) * 2.0 + f);
+        let mb = base.base_vector.total() * ((1.0 - f) * 2.0 + f);
+        assert!((mb - 520.0).abs() < 1e-9, "the attack's base is {mb}");
+        let hit = swung.quantized_against(mb).total();
+        assert!((hit - 536.25).abs() < 0.01, "computed {hit:.2} against a measured 536");
+        // …and the flat INSIDE the multiplier — what this engine did — reads
+        // 639, which is the reading this test exists to refuse.
+        let inside = base.base_vector.scale(2.0).quantized_against(620.0).total();
+        assert!((inside - 639.375).abs() < 0.01, "{inside}");
+
+        // READING 3 — the HEAVY SLAM at x3 under Primed Pressure Point's +165%,
+        // measured **2902** against Deimos' x1.5 Blast column: 2902 / 1.5 is
+        // 1934.7 and the formula says 1934.5. The explosion has carried the add
+        // as an absolute since M69, so this half asserts the base it lands on.
+        let slam = crate::loadout::WeaponBase::from_data("magistar_heavy_slam", true, &evos);
+        let r = slam.radial.as_ref().expect("the heavy slam explodes");
+        assert!((r.base_vector.total() - 730.0).abs() < 1e-9,
+            "the explosion's base is {}", r.base_vector.total());
+        assert!(((r.base_vector.total() * 2.65) - 1934.5).abs() < 0.01);
+        // …and READING 2, the ordinary slam at x2 on the same build: 1378.
+        assert!((2.65_f64 * (210.0 * 2.0 + 100.0) - 1378.0).abs() < 0.01);
+
+        // READING 4 — the same forward swing under a 60% Heat mod, one
+        // Condition Overload stack (+80% on one status type) and a 30%
+        // Eclipse, measured **1644**. The bracket is the weapon's half only,
+        // so CO reads 420 of the attack's 520; the grid is that 520 and never
+        // the elements, which ride on top of it.
+        let mut hot = base.base_vector;
+        hot.add(DamageType::Heat, base.base_vector.total() * 0.6);
+        let swung = hot.scale((1.0 - f) * 2.0 + f);
+        let co_fraction = base.co_base_fraction() * 2.0 / ((1.0 - f) * 2.0 + f);
+        let bracket = 1.0 + 0.8 * co_fraction;
+        let at = mb * bracket;
+        let snap = swung.scale(bracket).quantized_against(at).total();
+        assert!((snap - 1391.0).abs() < 0.01, "{snap}");
+        // ECLIPSE MISSES THE CO SHARE, which is the whole of M79's fourth
+        // reading: multiplying the finished bracket reads 1808 instead.
+        let co_share = (0.8 * co_fraction) / bracket;
+        let out = snap * eclipse_at(1.3, co_share);
+        assert!((out - 1644.5).abs() < 0.6, "computed {out:.1} against a measured 1644");
+        assert!((snap * 1.3 - 1808.3).abs() < 0.6, "{}", snap * 1.3);
+    }
 
     /// A fixed weapon and a fixed fight, so the only thing moving is the buff.
     fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> DummyParams {

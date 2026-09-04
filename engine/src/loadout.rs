@@ -2149,6 +2149,16 @@ pub struct WeaponBase {
     /// the only place a fraction is still written down, because that is how the
     /// catalog prints it.
     pub co_base: f64,
+    /// THE PART OF THE BASE AN ATTACK'S OWN MULTIPLIER DOES NOT SCALE, in the
+    /// same units as `base_vector.total()` — a flat base-damage add, and
+    /// nothing else.
+    ///
+    /// A stance's combo multiplier, a slam's and a heavy slam's scale the
+    /// WEAPON's base and this rides beside it rather than inside it:
+    /// `mods x (base x swing + flat)` (MEASUREMENTS M79). An ABSOLUTE for the
+    /// reason [`Self::co_base`] is one, and zero on every weapon that carries
+    /// no flat add — which is all but the Incarnon Genesis perks.
+    pub unswung_base: f64,
     /// Buff-injected elements as RELATIVE bonuses (element, bonus): each
     /// contributes ModifiedBase × bonus at the END of the hierarchy
     /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
@@ -3251,6 +3261,21 @@ impl WeaponBase {
         self.co_base / total
     }
 
+    /// WHAT SHARE OF THE VECTOR AN ATTACK'S MULTIPLIER MUST LEAVE ALONE —
+    /// derived from [`Self::unswung_base`], never stored, for the reason
+    /// [`Self::co_base_fraction`] is derived.
+    ///
+    /// It survives every later multiplication: a base-damage mod and an
+    /// elemental mod both scale the flat add and the weapon's own base by the
+    /// same factor, so the share the vector carries stays this one.
+    pub fn unswung_fraction(&self) -> f64 {
+        let total = self.base_vector.total();
+        if total <= 0.0 {
+            return 0.0;
+        }
+        (self.unswung_base / total).clamp(0.0, 1.0)
+    }
+
     /// Add flat base damage, and say how much of it the GunCO term's base
     /// grows by.
     ///
@@ -3269,6 +3294,12 @@ impl WeaponBase {
             let evolved = original_total + flat;
             self.base_vector = self.base_vector.scale(evolved / original_total);
             self.co_base += into_co;
+            // …AND THE ATTACK'S OWN MULTIPLIER LEAVES IT ALONE, measured
+            // (M79). It rides beside the swung base rather than inside it,
+            // which is what an EXPLOSION already does here — the radial takes
+            // the same add as an ABSOLUTE, on a base its slam multiplier has
+            // already been spent on, and that half was measured first (M69).
+            self.unswung_base += flat;
         }
         // AN EXPLOSION TAKES THE SAME ABSOLUTE ADD, and a SLAM is measured to.
         // The Magistar's heavy slam is 1050 and its `+100 Base Damage` reads
@@ -3648,6 +3679,9 @@ pub struct ResolvedPanel {
     /// nothing, so one arcane has two answers inside one cycle.
     pub compression: Option<Compression>,
     pub co_base_fraction: f64,
+    /// See [`WeaponBase::unswung_fraction`] — the share of this build's vector
+    /// an attack's own multiplier must leave alone.
+    pub unswung_fraction: f64,
     /// Live on-kill CO stacks (Emergent policy).
     pub co_stack: Option<StackSpec>,
     /// Live on-kill multishot stacks (Emergent policy); per_stack is
@@ -5592,6 +5626,7 @@ pub fn resolve_for(
         co_behavior: base.co_behavior,
         compression,
         co_base_fraction: base.co_base_fraction(),
+        unswung_fraction: base.unswung_fraction(),
         co_per_type: co,
         co_stack,
         multishot_stack,

@@ -165,6 +165,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         co_per_type: 0.0,
         co_behavior: CoBehavior::AdditiveWithBaseDamage,
         co_base_fraction: 1.0,
+        unswung_fraction: 0.0,
         co_stack: None,
         multishot_stack: None,
         crit_chance_on_headshot: None,

@@ -3632,6 +3632,9 @@ pub fn base_panel_assembled(
         // Filled in by `apply_valence`; zero until then, and zero forever on a
         // weapon that never came out of a Lich.
         valence_bonus: 0.0,
+        // Zero until an evolution's flat add writes into it
+        // (`add_flat_base_damage`), which is the only thing that does.
+        unswung_base: 0.0,
         recharge_per_second: s.recharge_per_second,
         echo_multiplier: s.echo_multiplier,
         mod_pools: Box::leak(

@@ -2725,6 +2725,45 @@ A weapon may also DECLARE a starting value below its own base (`co_base_fraction
 in the yaml, 0.5 on a bow's charged entry). That is the only place a fraction is
 still written, because it is how the catalog prints it.
 
+## 10c. THE UNSWUNG BASE — what an attack's own multiplier leaves alone
+
+A stance's combo multiplier, a slam's and a heavy's are the WEAPON's, and a flat
+base-damage add rides beside them rather than inside them (MEASUREMENTS M79,
+four readings on a Magistar):
+
+```
+damage = mods x (weapon base x attack multiplier + flat)
+```
+
+`WeaponBase::unswung_base` is the flat half as an ABSOLUTE, for the reason
+[`co_base`](#10b-the-original-base--what-a-gunco-term-computes-on) is one, and
+`unswung_fraction` is the share of the vector it survives as: a base-damage mod
+and an elemental mod scale both halves by the same factor, so the share does not
+move once it is set. The fold spends `(1 - f)·k + f` where it spent `k`.
+
+**THE EXPLOSION ALREADY DID THIS.** A radial takes the add as an absolute, on a
+base its slam multiplier has already been spent on (M69) — the direct hit was
+the half that folded it in, and the readings say the explosion's was right.
+
+**WHAT THE FLAT PACKET TAKES, AND WHAT IT DOES NOT**
+
+| | flat packet |
+|---|---|
+| base-damage mods, elemental mods | yes |
+| a Warframe ability's bonus | yes |
+| the attack's own multiplier (stance / slam / heavy) | **no** |
+| Condition Overload | **no** (which `co_base` already said) |
+
+The GunCO bracket therefore follows the weapon's half of the fold rather than
+the whole of it — `co_base_fraction x k / ((1 - f)k + f)` — and the two are the
+same number on every weapon with no flat add, which is all but the Incarnon
+Genesis perks.
+
+**QUANTIZATION DOES NOT NEED TO SPLIT.** Snapping the two packets on their own
+grids (`base / 32` and `flat / 32`) and snapping the sum against the sum give
+the same total: both carry the weapon's composition, so their unit counts are
+identical. A fraction is enough; a second snap is not needed.
+
 ## 11. THE ARENA'S GEOMETRY — where a shot leaves, and what counts as a hit
 
 The fight is two circles on a floor (`engine::space`). Everything below falls
