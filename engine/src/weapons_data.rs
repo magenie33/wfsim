@@ -7436,10 +7436,10 @@ mod valence_tests {
         apply_valence(&mut slash, "kuva_nukor", "slash", 0.60);
         assert!((slash.base_vector.total() - 21.0).abs() < 1e-9, "slash is not a progenitor element");
 
-        // …AND THE CO TERM READS THE WHOLE OF IT. A valenced copy is what every
-        // player owns, so its GunCO base is its own printed damage and the
-        // fraction stays the ordinary 1.0 — the panel said 62% and blamed an
-        // evolution this weapon does not have.
+        // …AND THE CO TERM READS THE WHOLE OF IT, measured (MEASUREMENTS M78).
+        // A valenced copy is what every player owns, so its GunCO base is its
+        // own printed damage and the fraction stays the ordinary 1.0 — the
+        // panel said 62% and blamed an evolution this weapon does not have.
         assert!((rad.co_base - 33.6).abs() < 1e-9, "the CO base is {}", rad.co_base);
         assert!((rad.co_base_fraction() - 1.0).abs() < 1e-9);
         assert!((toxin.co_base_fraction() - 1.0).abs() < 1e-9);
@@ -7462,6 +7462,46 @@ mod valence_tests {
         assert!((torid.base_vector.total() - before).abs() < 1e-9);
         assert!(valence_of("torid").is_none());
         assert!(valence_of("kuva_nukor").is_some());
+    }
+
+    /// THE FOUR READINGS, and the only arithmetic that lands on all of them.
+    ///
+    /// MEASUREMENTS M78: a Kuva Nukor on a 60% Magnetic Lich with +220% base
+    /// damage reads **108 / 148 / 188 / 228** across Galvanized Shot's three
+    /// stacks, with TWO statuses on screen. Every number below the weapon comes
+    /// from data — the base, Hornet Strike, Galvanized Shot's rate — so the
+    /// measurement is what this test adds and the rest cannot drift under it.
+    ///
+    /// It separates two claims at once, and neither alternative is close: the
+    /// term computing on the unvalenced 21 reads 133 / 158 / 183, and counting
+    /// the two VISIBLE statuses instead of three reads 134 / 161 / 188.
+    #[test]
+    fn the_kuva_nukors_measured_condition_overload_ladder() {
+        let mut base = WeaponBase::from_data("kuva_nukor", true, &[]);
+        apply_valence(&mut base, "kuva_nukor", "magnetic", 0.60);
+        let pool = crate::mods_data::pool_for_weapon("kuva_nukor");
+        let by = |id: &str| pool.iter().find(|m| m.id == id).expect(id);
+        let mods = [by("hornet_strike"), by("galvanized_shot")];
+        let r = crate::loadout::resolve(&base, &mods, crate::loadout::StackPolicy::Emergent);
+        let stack = r.co_stack.expect("Galvanized Shot grants CO stacks");
+
+        // MICROWAVE IS THE THIRD, and it is the weapon's own: this vector is
+        // Radiation plus the Lich's Magnetic and has no other type to offer.
+        assert!(spec("kuva_nukor").is_some_and(|s| s.applies_microwave));
+        let types = 3.0;
+        for (stacks, reading) in [(0u32, 108.0), (1, 148.0), (2, 188.0), (3, 228.0)] {
+            assert!(stacks <= stack.max_stacks, "the card holds {stacks}");
+            let co = base.base_vector.total()
+                * stack.per_stack
+                * types
+                * f64::from(stacks)
+                * base.co_base_fraction();
+            let got = r.modified_base + co;
+            assert!(
+                (got - reading).abs() < 0.5,
+                "{stacks} stacks: computed {got:.2} against a measured {reading}"
+            );
+        }
     }
 }
 
