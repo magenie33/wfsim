@@ -61,14 +61,15 @@ const PER_ENTITY: &[&str] = &["weapons", "mods", "arcanes", "evolutions", "bench
 ///     (`docs/DATA_SOURCES.md`).
 ///   * `unmodelled/reasons.yaml` is the prose behind an admission — a sentence
 ///     shown to a reader, never a term in a formula.
-///   * `board_state.yaml` is each board's own COUNTS — how many builds it
-///     scored, listed and held — written by the scorer and committed by the
-///     publish step. It is the one file here that this hash would otherwise
-///     move on its own schedule: every publish that lists a new build rewrites
-///     a count, and a row that reads a count would then be stale because the
-///     board it sits on grew. Nothing in a fight reads it.
+///   * `notes.yaml` is the sourcing prose a file would otherwise repeat, and
+///     says so itself: *"Nothing in the engine reads this file"*. Every value
+///     here cites its source, so writing one is part of entering data.
+///   * `board_state.yaml` is each board's own counts, written by the scorer and
+///     committed by `publish` — the one file here that would move this hash on
+///     its own schedule, since every publish listing a build rewrites a count.
+///     Nothing in a fight reads either of these two.
 const AFFECTS_NO_NUMBER: &[&str] =
-    &["i18n/", "assets.yaml", "surveys/", "unmodelled/", "board_state.yaml"];
+    &["i18n/", "assets.yaml", "surveys/", "unmodelled/", "board_state.yaml", "notes.yaml"];
 
 fn ignored(path: &str) -> bool {
     AFFECTS_NO_NUMBER.iter().any(|p| path.starts_with(p))
@@ -271,9 +272,17 @@ mod tests {
             let f = family_of(p);
             assert!(
                 matches!(f, "i18n" | "surveys" | "unmodelled")
-                    || matches!(*p, "assets.yaml" | "board_state.yaml"),
+                    || matches!(*p, "assets.yaml" | "board_state.yaml" | "notes.yaml"),
                 "{p} is excused from the board's fingerprint and nothing says why"
             );
+        }
+        // AND THE OTHER DIRECTION, because dropping an entry from the list is
+        // silent: the file simply rejoins the global bucket and every row goes
+        // stale on the next commit that touches it. These two are the ones a
+        // reader would put back — prose and a count, both written while entering
+        // data, neither readable by any formula.
+        for p in ["notes.yaml", "board_state.yaml"] {
+            assert!(ignored(p), "{p} belongs to no row and has to stay excused");
         }
     }
 
