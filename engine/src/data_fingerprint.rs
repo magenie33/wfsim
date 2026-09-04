@@ -184,9 +184,14 @@ pub fn row_fingerprint(
     for f in crate::weapons_data::forms_of(weapon) {
         h = fold_entity(h, "weapons", f.weapon_id);
     }
-    // SORTED, because a build is a SET of cards on these three axes and two
-    // submissions listing them in different orders are one build. The identity
-    // key already treats them that way.
+    // SORTED, AND NOT BECAUSE ORDER DOES NOT MATTER — it decides the build.
+    // Elements pair in FIRST-PLACEMENT order (`elements::ElementalInput`), so
+    // two orderings of one card set are two builds with two scores, and
+    // `builds::identity` keeps the order for exactly that reason. What this
+    // hash asks is narrower: WHICH FILES this row reads. Both orderings read
+    // the same ones, so sorting is what makes the answer the same for a
+    // question that has one answer. Sorting `identity` would file the second
+    // build under the first's number.
     for (family, list) in [("mods", mods), ("arcanes", arcanes), ("evolutions", evolutions)] {
         let mut ids: Vec<&str> = list.iter().map(String::as_str).collect();
         ids.sort_unstable();
