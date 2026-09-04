@@ -16564,7 +16564,6 @@ function replayMarkup(r) {
   if (!rp || !rp.t || rp.t.length < 2) return { bar: "", curves: "" };
   const named = buffRosterName;
   const dbName = debuffRosterName;
-  // MICROWAVE is not a damage type, so it has no `DT` name to borrow — it is
   // WHOSE DEBUFFS. `rp.tracked` names the bodies the replay followed — the
   // aimed one first — and this is the index into it. The selection lives
   // OUTSIDE the render (`replayFoe`) so picking an enemy survives a scrub and

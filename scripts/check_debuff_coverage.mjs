@@ -336,4 +336,58 @@ check("...marks it on the scene", r.mapMarked === 1, `${r.mapMarked} marked`);
 check("...and moves nobody, because it is a picture of a fight already run",
   r.mapMovedNothing === true);
 
+// ---- AND THE ONE THE GAME ITSELF WILL NOT DRAW ------------------------
+//
+// MICROWAVE is the Nukor family's own status: invisible in game, real in the
+// arithmetic — MEASUREMENTS M78 reads a Kuva Nukor whose Condition Overload
+// term counts THREE types with two on screen. A count a reader cannot see is a
+// count they cannot check, so this table draws it where the game does not, and
+// under DE's name for it rather than a description of what it does.
+//
+// It is the only row that is not a damage type, which is what makes it the row
+// worth asserting: everything else reaches a name through the damage meter.
+const mw = await evaluate(`(async () => {
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  localStorage.clear();
+  history.pushState({},'','/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({},'','/weapons/Kuva_Nukor/simulator'); route(); await sleep(1200);
+  const out = {};
+  sim.duration = 20; setSimRuns(2);
+  markScenarioDirty(); renderSim(); await sleep(600);
+
+  let shot = null;
+  const real = window.api;
+  const realFleet = window.simulateFleet;
+  const take = (p, b, res) => { if (p === '/api/simulate' && b && b.replay) shot = res; };
+  window.api = async (p, b) => { const res = await real(p, b); take(p, b, res); return res; };
+  window.simulateFleet = async (b, onp) => {
+    const res = await realFleet(b, onp); take('/api/simulate', b, res); return res;
+  };
+  await runSim();
+  window.api = real;
+  window.simulateFleet = realFleet;
+  for (let i = 0; i < 60 && !shot; i++) await sleep(500);
+
+  const rp = shot && shot.replay;
+  const roster = (rp && rp.debuffs) || [];
+  const ds = rp ? (rp.dstacks || [])[0] || [] : [];
+  const k = roster.findIndex((d) => d.id === 'microwave');
+  out.inRoster = k >= 0;
+  out.peak = k >= 0 ? Math.max(0, ...(ds[k] || [])) : -1;
+
+  const s = [...document.querySelectorAll('summary')]
+    .find((x) => /Debuff|减益/i.test(x.textContent));
+  if (s && !s.parentElement.open) { s.click(); await sleep(800); }
+  out.names = [...document.querySelectorAll('.rp-row[data-debuff] .rp-name')]
+    .map((x) => x.textContent.trim());
+  return out;
+})()`);
+
+check("the Kuva Nukor applies Microwave", mw.inRoster === true && mw.peak > 0,
+  `peak ${mw.peak}`);
+// UNDER DE'S OWN NAME: it is not a damage type, so it has no translated one to
+// borrow, and a string is transcribed rather than translated (AGENTS.md).
+check("...and the table draws it, which the game does not",
+  (mw.names || []).some((n) => /Microwave/i.test(n)), (mw.names || []).join(", "));
+
 await app.finish("the debuff table is the buff table, read from the other side");
