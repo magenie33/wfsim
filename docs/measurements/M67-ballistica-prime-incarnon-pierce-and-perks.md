@@ -60,7 +60,7 @@ the middle, take a head hit each (owner). The engine had no width at all — a
 shot was a ray that struck bodies within `BODY_RADIUS_M` of its centre line —
 so `projectile_width_m` is new, defaults to 0, and 0 is a ray.
 
-**3 m is a working figure and NOT a source.** Neither the wiki, the module nor
+**4 m is a working figure and NOT a source.** Neither the wiki, the module nor
 DE's export publishes a width for any weapon in the class, on this weapon or on
 the Arca Plasmor and Catchmoon the same pages call "wide projectiles". A
 measurement replaces it in this weapon's yaml and nowhere else.
