@@ -93,9 +93,7 @@ attack:
   multishot: 1.0
   # "Consumes 0.5 ammo per tick of damage" — half a round a tick, which is what
   # makes a 77-round magazine last 15 seconds of held fire.
-  # A WHOLE ROUND A TICK, which is the module's figure for THIS beam and
-  # twice what the ordinary Nukor pays. Beams usually cost half.
-  ammo_cost: 1
+  ammo_cost: 0.5
   crit_chance: 0.07
   # THE HIGHEST CRITICAL MULTIPLIER OF ALL WEAPONS IN THE GAME, and the reason
   # this weapon is built the way it is: 7% crit chance is nothing on its own, so
@@ -126,17 +124,8 @@ attack:
       origin: radius_targets
   damage: { radiation: 21 }   # total 21
 
-  # NO `beam:` BLOCK, the same call the Ocucor, the Phantasma and the Boar's
-  # Incarnon make: that block requires `damage_radius_m` and `chain`, and this
-  # beam does not splash. Its CHAIN is real and its range is 29 m, and both are
-  # recorded in the unmodelled list below rather than as zeroes that would be
-  # inventing a fact to record none.
-
 unmodeled:
-  - "the beam CHAINS to 2 more enemies within 9 m at 50% of the main beam's damage each — one target here, so it is worth exactly nothing (UNMODELLED.md §one target). It is the largest thing this weapon does in a room and the reason it was nerfed from 4 chains to 2"
   - "MICROWAVE's other half: it ENLARGES the body part it was shot at, which is a hit-location mechanic and worth nothing where nobody is aiming by hand. Its status COUNT is modelled (`applies_microwave`)"
-  - "punch through makes the MAIN beam chain independently from every target it passes through, which the wiki says can double or triple the output in a crowd — a second-target mechanic on top of a second-target mechanic"
-  - "the beam's 29 m range and its pinpoint accuracy, which this arena has no distance to spend"
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Nukor
