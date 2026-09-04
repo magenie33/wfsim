@@ -2322,6 +2322,12 @@ function benchPendingAsk() {
 /// The footnote itself. Silent unless the library is genuinely AHEAD of the
 /// board: "0 waiting" is furniture, and a board that IS current should simply
 /// look current.
+///
+/// IT PROMISES NOTHING ABOUT WHEN. The schedule fires three times an hour, but
+/// a scheduled run STANDS DOWN while the engine fingerprint has moved — the
+/// push that moved it owns that rescore — so "the next run is within 20
+/// minutes" was a promise the pipeline does not keep and the page cannot check.
+/// How far behind the board is, it can say exactly.
 function benchPendingNote(cur) {
   benchPendingAsk();
   if (!benchPending || typeof benchPending !== "object") return "";
@@ -2332,7 +2338,7 @@ function benchPendingNote(cur) {
   // run read; both are real and neither is "builds are waiting".
   if (!(waiting > 0) || !scored) return "";
   return ` <span class="bench-pending">${escHtml(
-    tr("· {n} more submitted since this board was scored — the next run is within 20 minutes")
+    tr("· {n} more submitted since this board was scored")
       .replace("{n}", waiting))}</span>`;
 }
 

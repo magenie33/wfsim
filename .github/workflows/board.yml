@@ -575,24 +575,30 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- boards data/board_state.yaml site/board.json; then
+          # WHAT THIS RUN GENERATED, named ONCE. The same list is diffed, held
+          # across the reset, put back and added — and while it was four
+          # literals, `data/board_state.yaml` was held by none of them: the
+          # reset took it back to main's copy and `git add` then staged a file
+          # identical to HEAD. The counts the PAGE reads froze on the day that
+          # file landed while the boards beside it moved on, so the board
+          # reported 1,168 builds waiting where 344 were.
+          GENERATED="boards data/board_state.yaml site/board.json"
+          if git diff --quiet -- $GENERATED; then
             echo "board unchanged — nothing to commit"
             exit 0
           fi
           for attempt in 1 2 3; do
             # Hold the generated files, take whatever main is now, put them back.
-            mkdir -p /tmp/out
-            cp -r boards /tmp/out/
-            cp site/board.json /tmp/out/
+            rm -rf /tmp/out && mkdir -p /tmp/out
+            cp -r --parents $GENERATED /tmp/out/
             git fetch origin main
             git reset --hard origin/main
-            cp -r /tmp/out/boards .
-            cp /tmp/out/board.json site/
-            if git diff --quiet -- boards data/board_state.yaml site/board.json; then
+            cp -r /tmp/out/. .
+            if git diff --quiet -- $GENERATED; then
               echo "board already current on main — nothing to commit"
               exit 0
             fi
-            git add boards data/board_state.yaml site/board.json
+            git add $GENERATED
             # THE TIME, not just the date. Three runs an hour means a day of
             # "board: rescore 2026-08-09" is a wall of identical subjects, and the
             # one thing you want from this line is WHICH rescore you are looking
