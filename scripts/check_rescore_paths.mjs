@@ -1,22 +1,21 @@
-// EVERYTHING THAT CAN MOVE THE FINGERPRINT MUST TRIGGER A RESCORE.
+// THE BOARD WAKES ON EVERYTHING IT DOES NOT ITSELF WRITE.
 //
-// Two lists decide when the board re-scores and they are written in different
-// files. `scripts/engine_fingerprint.sh` says what a score depends on; the
-// `push.paths` in `.github/workflows/board.yml` say what wakes the board. A
-// path in the first and not the second moves every stored score without asking
-// anyone to recompute them — so the board keeps publishing numbers under a
-// fingerprint that no longer matches, and the next run triggered for some
-// unrelated reason does a full rescore nobody asked for.
+// Deciding when to re-score had two answers — a trigger list and a fingerprint
+// — and they could disagree. A path in the fingerprint and not the trigger
+// moves every stored score without waking anyone, so the full rescore it bought
+// lands on whichever run happens next, for a reason that run has nothing to do
+// with. `cli` was such a path: `cli/src/main.rs` is a demo that shoots a
+// training dummy, and editing it invalidated the whole board in silence.
 //
-// It is not symmetric and must not be. `data/**` wakes the board and is NOT in
-// the code fingerprint, because a data change is asked PER ROW inside the
-// scorer (`engine::data_fingerprint`) — waking on more than the hash covers is
-// the safe direction and the one this repository already chose.
+// AN EXCLUSION LIST INVERTS THAT FAILURE, which is the only reason to prefer
+// it: forgetting an entry costs one wasted run, where forgetting an entry in an
+// inclusion list costs a board that quietly stops moving. So this asserts the
+// SHAPE — the board must name what to skip, never what to catch — and then that
+// the skipped set is the board's own output and nothing else.
 //
-// THE CASE IT WAS WRITTEN FOR: the fingerprint hashed all of `cli` while the
-// trigger named only `cli/src/bin/wfsim-board.rs`. `cli/src/main.rs` is a demo
-// that shoots a training dummy and cannot reach the board, and editing it
-// invalidated every row on the next run that happened for any other reason.
+// It is affordable because a run with nothing to do is one job: the
+// `is there anything to score` step asks the scorer by walking the boards, and
+// the fan-out does not start when the answer is none.
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,42 +28,50 @@ const check = (ok, name, detail) => {
   if (!ok) bad += 1;
 };
 
-// The pathspec the fingerprint hashes: everything after `git ls-files -s --`.
-const fp = readFileSync(resolve(ROOT, "scripts/engine_fingerprint.sh"), "utf8");
-const spec = fp.split(NL).find((l) => l.includes("git ls-files") && l.includes("--"));
-const hashed = spec
-  ? spec.slice(spec.indexOf("--") + 2).split("|")[0].trim().split(/\s+/).filter(Boolean)
-  : [];
-check(hashed.length > 0, `the fingerprint names its paths (${hashed.join(" ") || "none found"})`);
-
-// The board's own push trigger, read out of the workflow rather than restated.
 const wf = readFileSync(resolve(ROOT, ".github/workflows/board.yml"), "utf8").split(NL);
-const at = wf.findIndex((l) => l.trim() === "paths:");
-const triggers = [];
-for (let i = at + 1; i < wf.length && at >= 0; i += 1) {
-  const m = wf[i].match(/^\s+- "?([^"]+)"?\s*$/);
-  if (!m) break;
-  triggers.push(m[1]);
-}
-check(triggers.length > 0, `the board names its triggers (${triggers.length} paths)`);
 
-// A trigger covers a path when it IS that path or when its `/**` prefix is a
-// parent of it. Both directions of "the same directory" count, since a hashed
-// `engine` is covered by a trigger on `engine/**`.
-const covers = (trigger, path) => {
-  const t = trigger.replace(/\/\*\*$/, "").replace(/\/$/, "");
-  const p = path.replace(/\/$/, "");
-  return t === p || p.startsWith(`${t}/`);
+// The list under a key, as workflow yaml writes one: `- "value"` lines until
+// something that is not one.
+const listAt = (key) => {
+  const at = wf.findIndex((l) => l.trim() === key);
+  if (at < 0) return null;
+  const out = [];
+  for (let i = at + 1; i < wf.length; i += 1) {
+    const m = wf[i].match(/^\s+- "?([^"]+)"?\s*$/);
+    if (!m) break;
+    out.push(m[1]);
+  }
+  return out;
 };
-for (const p of hashed) {
-  const by = triggers.find((t) => covers(t, p));
+
+const skipped = listAt("paths-ignore:");
+check(listAt("paths:") === null, "the board names what to SKIP, not what to catch",
+  "an inclusion list cannot wake the board for a path nobody remembered to add");
+check(Array.isArray(skipped) && skipped.length > 0,
+  `the board names what it skips (${(skipped || []).join(" ") || "nothing"})`);
+
+// WHAT THE RUN GENERATES, read from the step that commits it rather than
+// restated — the two lists are the same claim about the same files.
+const gen = wf.find((l) => l.trim().startsWith("GENERATED="));
+const generated = gen
+  ? gen.slice(gen.indexOf("=") + 1).replace(/"/g, "").trim().split(/\s+/).filter(Boolean)
+  : [];
+check(generated.length > 0, `publish names what it writes (${generated.join(" ") || "none"})`);
+
+// A generated path covers a skipped one when it IS that path or a parent of it.
+const covers = (g, p) => {
+  const a = g.replace(/\/\*\*$/, "").replace(/\/$/, "");
+  const b = p.replace(/\/\*\*$/, "").replace(/\/$/, "");
+  return a === b || b.startsWith(`${a}/`);
+};
+for (const p of skipped || []) {
   check(
-    Boolean(by),
-    `a change to \`${p}\` wakes the board`,
-    "it moves the fingerprint and triggers nothing, so the rescore it buys "
-      + "lands on whichever run happens next",
+    generated.some((g) => covers(g, p)),
+    `\`${p}\` is skipped because this workflow writes it`,
+    "nothing else may be skipped: a path the board does not generate is a path "
+      + "whose change it has to look at, and skipping it is how a board stops moving",
   );
 }
 
-console.log(NL + (bad ? `${bad} failed` : "the fingerprint and the trigger agree"));
+console.log(NL + (bad ? `${bad} failed` : "the board skips only what it writes"));
 process.exit(bad ? 1 : 0);

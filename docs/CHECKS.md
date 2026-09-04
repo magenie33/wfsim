@@ -584,18 +584,19 @@ asked for.
 
 ## `check_rescore_paths`
 
-Everything that can move the engine fingerprint must also WAKE the board. Plain
-node, no browser: it reads the pathspec out of `scripts/engine_fingerprint.sh`
-and the `push.paths` out of `.github/workflows/board.yml` and asserts the first
-is covered by the second.
+The board must wake on everything it does not itself write. Plain node, no
+browser: it asserts the SHAPE of the trigger in `.github/workflows/board.yml` —
+`paths-ignore` and never `paths` — and then that every skipped path is one the
+`publish` step's own `GENERATED` list says the run writes.
 
-Not symmetric, and it must not be — `data/**` wakes the board and is not in the
-code fingerprint, because a data change is asked per row inside the scorer.
-Waking on more than the hash covers is the safe direction. The other direction
-is the fault: a path that moves the fingerprint and triggers nothing invalidates
-every stored score without asking anyone to recompute them, so the rescore it
-bought lands on whichever run happens next, for a reason that run has nothing to
-do with.
+The shape is the point. An inclusion list cannot wake the board for a path
+nobody remembered to add, and that path's change still moves the engine
+fingerprint, so it invalidates every stored score and the rescore it bought
+lands on whichever run happens next. An exclusion list fails the other way:
+a forgotten entry costs one wasted run.
+
+It fails on both broken shapes — a `paths:` key at all, and a `paths-ignore`
+entry naming something the run does not generate.
 
 ## `check_comment_style`
 

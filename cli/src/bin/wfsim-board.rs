@@ -689,6 +689,16 @@ fn main() {
     //
     // The sample, the floor and the weekly backstop are `docs/BOARD.md`
     // §"When the code moved".
+    // IS THERE ANYTHING TO DO AT ALL — asked by walking, not by declaring.
+    //
+    // A run that finds every row reusable still fans out to `SHARDS` jobs and
+    // pays a checkout, a build and a cache restore for each. This walks the
+    // whole board exactly as a scoring run does — same validation, same row
+    // fingerprints, same reuse — and counts what is left instead of fighting it,
+    // so the answer is the scorer's own rather than a second opinion that can
+    // disagree with it.
+    let dry = has_flag("--dry-run");
+    let mut todo = 0usize;
     let verify = has_flag("--verify");
     // THE PROBE'S VERDICT, CARRIED IN. Set by the workflow only after a
     // `--verify` run over the sample came back identical throughout, which is
@@ -1037,6 +1047,10 @@ fn main() {
                     if shards > 1 && mine != shard {
                         continue;
                     }
+                    if dry {
+                        todo += 1;
+                        continue;
+                    }
                     // WHAT THIS ROW COST, when it cost enough to matter.
                     //
                     // The fan-out's efficiency is set by its SLOWEST shard, not by
@@ -1368,6 +1382,15 @@ fn main() {
     // own `kept` covers a fraction by construction — the question "did every
     // build get ranked" is only meaningful where every row was in scope, which
     // is the unsharded PUBLISH run.
+    // ONE MACHINE-READABLE LINE, the way `verify-result` is: the workflow reads
+    // it to decide whether to fan out at all. It stands BEFORE the accounting
+    // below, which asserts every validated build reached a row — true of a run
+    // that scores and false by construction of one that only counts.
+    if dry {
+        eprintln!("dry-run: todo={todo} reused={reused} stale={stale} seen={seen}");
+        return;
+    }
+
     let listed: std::collections::BTreeSet<&str> =
         kept.iter().map(|r| r.identity.as_str()).collect();
     let held: std::collections::BTreeSet<&str> =

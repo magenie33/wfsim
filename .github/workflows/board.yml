@@ -50,11 +50,24 @@ on:
     - cron: "0 0 * * 1"
   push:
     branches: [main]
-    paths:
-      - "engine/**"
-      - "data/**"
-      - "webapi/**"
-      - "cli/src/bin/wfsim-board.rs"
+    # WAKE ON EVERYTHING EXCEPT WHAT THIS WORKFLOW ITSELF WRITES.
+    #
+    # An INCLUSION list is the wrong shape here and was wrong in the way that
+    # matters: a path that moves the engine fingerprint and is not listed
+    # invalidates every stored score and wakes nobody, so the full rescore it
+    # bought lands on whichever run happens next, for a reason that run has
+    # nothing to do with. `cli` was such a path. Naming what to SKIP inverts the
+    # failure — forgetting an entry costs one wasted run and can never cost a
+    # board that quietly stops moving.
+    #
+    # It is affordable because a run with nothing to do is now one job:
+    # `is there anything to score` asks the scorer by walking, and `score` and
+    # `publish` do not start when the answer is none. The list is the board's own
+    # output and nothing else; `check_rescore_paths` holds it to that.
+    paths-ignore:
+      - "boards/**"
+      - "data/board_state.yaml"
+      - "site/board.json"
   workflow_dispatch:
     inputs:
       full:
@@ -116,6 +129,7 @@ jobs:
       full: ${{ steps.full.outputs.yes }}
       moved: ${{ steps.fp.outputs.moved }}
       rescore: ${{ steps.rescore.outputs.yes }}
+      work: ${{ steps.work.outputs.yes }}
     steps:
       - uses: actions/checkout@v4
 
@@ -259,6 +273,57 @@ jobs:
           path: submissions.json
           retention-days: 30
 
+      # THE SCORER, HERE TOO. One build against the shared cache, so the step
+      # below can ask it what is left rather than guessing from a hash.
+      - uses: actions/cache@v4
+        if: steps.wired.outputs.yes == 'true'
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - if: steps.wired.outputs.yes == 'true'
+        run: cargo build --release --bin wfsim-board
+
+      # IS THERE ANYTHING TO DO — ASKED BY WALKING, NOT BY DECLARING.
+      #
+      # A run where every row is reusable still fanned out to `SHARDS` jobs and
+      # paid a checkout, a build and a cache restore for each, to write the board
+      # it already had. `--dry-run` walks the boards exactly as a scoring run
+      # does — the same validation, the same row fingerprints, the same reuse —
+      # and counts what is left instead of fighting it, so the answer is the
+      # SCORER'S OWN. A second opinion computed here could disagree with it, and
+      # the direction it would disagree in is a board that quietly stops moving.
+      #
+      # ANYTHING IT CANNOT ANSWER MEANS WORK: a build that fails to validate, a
+      # board that will not parse, a benchmark with no file. Being wrong that way
+      # costs one run; being wrong the other way costs a board nobody updates.
+      - name: is there anything to score
+        id: work
+        if: steps.wired.outputs.yes == 'true'
+        run: |
+          set -euo pipefail
+          todo=0
+          for f in boards/*.yaml; do
+            id=$(basename "$f" .yaml)
+            line=$(./target/release/wfsim-board "$id" \
+                     --engine "${{ steps.fp.outputs.engine }}" \
+                     --reuse "$f" --dry-run \
+                     < submissions.json 2>&1 >/dev/null \
+                   | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
+            echo "$id: $line"
+            n=$(printf '%s' "$line" | grep -o 'todo=[0-9]*' | cut -d= -f2 || echo 1)
+            todo=$(( todo + ${n:-1} ))
+          done
+          if [ "$todo" -gt 0 ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+            echo "$todo rows to score"
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::every row is what this code computes — nothing to score"
+          fi
+
   # ---- 1b. did the code change move any NUMBER? -------------------------
   #
   # The engine fingerprint is a hash of `engine`, `webapi` and `cli`, so ANY
@@ -380,6 +445,7 @@ jobs:
     needs: [submissions, decide]
     if: needs.submissions.outputs.wired == 'true'
       && needs.submissions.outputs.rescore == 'true'
+      && needs.submissions.outputs.work != 'false'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -453,6 +519,7 @@ jobs:
     needs: [submissions, decide, score]
     if: needs.submissions.outputs.wired == 'true'
       && needs.submissions.outputs.rescore == 'true'
+      && needs.submissions.outputs.work != 'false'
     runs-on: ubuntu-latest
     permissions:
       contents: write
