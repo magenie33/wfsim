@@ -1152,7 +1152,7 @@ expensive pure function on a growing input set**:
 score = f(build, ruler, engine_version, data_version)
 ```
 
-Five properties decide everything downstream:
+Six properties decide everything downstream:
 
 1. **`f` is deterministic** — the seed is pinned, so the same inputs give the
    same number for ever.
@@ -1161,11 +1161,17 @@ Five properties decide everything downstream:
    wide (§"Where the 132 hours go").
 3. **The input set only grows**, apart from the one-year expiry.
 4. **The output is a projection** — top N per (weapon, mode, ruler).
-5. **Each row reads a SUBSET of the code, and usually a small one.** The data
-   half of this is already exploited per row; the code half is still assumed to
-   be everything, which is what makes a rescore cost what it costs.
+5. **A ROW IS `(build, ruler, mode)`, and a mode is a property of the WEAPON.**
+   Every melee carries seven — base, block, block_forward, forward, heavy,
+   heavy_slam, slide — the Ballistica Prime four, and most guns one or two, so
+   the roster's 149 weapons are 259 groups on each board. A weapon with n modes
+   is n independent rankings, because the cards that win them differ.
+6. **Most changes are to the CODE.** Measured over two weeks of 647 commits:
+   55.6% touch `engine`/`webapi`/the scorer, 13.6% touch only `data/`. The data
+   half of invalidation is already asked per row and is the cheap half; the
+   expensive half is the one a single hash answers for the whole board.
 
-Anything with those four properties is a BUILD SYSTEM, and that is not an
+Anything with the first four properties is a BUILD SYSTEM, and that is not an
 analogy: Bazel and Nix exist for exactly this shape — an expensive pure function
 over a versioned input set — so the answers can be taken from there rather than
 invented.
@@ -1295,100 +1301,86 @@ a player waits on: the players are in China, and what makes wfsim.app fast and
 reachable there is that it is static and on Cloudflare. User-facing work stays at
 the edge; CPU-bound work goes on the box.
 
-### The order to move in, when each becomes the binding constraint
+### The order to move in, and the one rule under all of it
 
-Cost-based packing is in place and has reached its own floor (§"Two ceilings"),
-and so is F — the audit runs, which is what makes A safe to be wrong about.
-What follows is what is left, and each step is independently useful.
+> **EVERY LAYER'S FAILURE MUST BE SLOWNESS, NOT A WRONG ANSWER.**
 
-**A. A ROW'S CODE DEPENDENCY IS MEASURED, NOT ASSUMED.** *(the lever, and the
-only step that changes the bill rather than who waits for it)* The data half of
-`f`'s inputs is already asked per row, from the files that row actually reads.
-The code half is one fingerprint over `engine` + `webapi` + `cli`, so a change
-to any of it invalidates all of it. Measured: **105 of 7,493 rows on each board
-are melee**, so a melee fix re-derives 7,388 gun rows that never execute a line
-of it — 134 CPU hours to reproduce numbers that could not have moved, for one of
-the most common commits there is. Partition the engine into named units, map
-each to the entity families that can reach it, and union the units a row's own
-entities name — the walk `data_fingerprint` already performs, over the same
-build, one field wider.
+That is what the faults this section replaces had in common. Each was a
+hand-kept list — which paths wake the board, which families are attributed,
+which files affect no number, which fields a sample carries — and each, left
+incomplete, published a number the engine does not compute rather than costing
+time. `AFFECTS_NO_NUMBER` states the correct direction for its own list and is
+the model: *forgetting an entry is slow and never wrong.*
 
-**THE DEFAULT DECIDES WHETHER THIS IS SAFE, AND IT IS THE ONE THE DATA HALF
-ALREADY USES.** A unit attributed to nothing falls into a GLOBAL bucket every
-row carries, exactly as an unattributed data file does, so a unit nobody
-classified rescores the whole board: forgetting one costs time and is never
-wrong. Keying on the units a fight was OBSERVED to execute would be more precise
-and is the wrong trade — a build that starts reaching code it did not reach
-before has a recorded set that predates the change, and reuse under it is silent
-and wrong.
+**1. THE LIBRARY IS PERMANENT AND CHEAP.** Builds are configurations; storing
+every one for ever costs almost nothing, and it is the only thing here that
+cannot be regenerated. Deduplicated by `builds::identity`, which keeps mod
+ORDER because elements pair in first-placement order — the same cards in two
+arrangements are two builds with two scores.
 
-**WHAT A UNIT CANNOT BE IS A FILE, AND THAT IS WHAT THIS STEP COSTS.** Measured
-over two days of pushes that moved the fingerprint: every melee commit touches
-`engine/src/dummy.rs`, which is 32,146 lines of the engine's 78,003 and holds
-the gun logic too — so a file-level attribution puts it in the global bucket and
-buys NOTHING for the case worth 98.6%. Two cheaper readings of the same idea
-were measured and are also empty or nearly so: no commit in that window changed
-only comments, which is what makes the data half's comment stripping free, and
-only 2 of 24 fell entirely inside `#[cfg(test)]`. Melee-only FUNCTIONS do exist
-— `melee_combo_multiplier`, `combo_points_for`, `spread_from_influence`,
-`heavy_cycle_seconds` — so an item-level hash reaches part of it, while a melee
-change that touches the shared fight loop stays global.
+**2. INVALIDATION, AND ITS TWO HALVES ARE DIFFERENT PROBLEMS.**
 
-So this step begins with moving the melee mechanics out of `dummy.rs` and not
-with a hash. That is the honest sequence, and the 98.6% is what it is worth.
+The DATA half is already asked per row, from the entities the row names, and it
+is the cheap half: 13.6% of commits. It stays. What it needs is the silent gaps
+closed, not more precision.
 
-**B. A SCORE IS WRITTEN WHERE IT IS COMPUTED.** *(the architectural one)* A
-score keyed by `(identity, ruler, data fingerprint, code units)` is a fact that
-never expires. Put those in **Cloudflare D1** — SQLite, free tier 5 GB and 5 M
-row reads a day, orders of magnitude more than this needs — and three things
-become true at once: a rescore is a background backfill rather than a blocking
-rebuild, the board file becomes a cheap projection, and a run that dies loses
-nothing it had already computed. After it, no ordinary run is O(store) at all.
-KV is the wrong store and its write quota says so before its query model does:
-a full backfill is 22,656 writes against a free-tier day of 1,000, and the same
-tier is already carrying the submissions.
+The CODE half is 55.6% of commits and a single hash for the whole board, so
+every one of them nominally rescores everything. **The answer is not a finer
+declaration but a finer MEASUREMENT: probe per GROUP.** Each `(weapon, mode)`
+re-scores one published row at the ruler's own terms and compares it exactly;
+only the groups whose sample moved are rescored. Nothing declares that changing
+one thing affects another — it is measured, so no list can be incomplete.
 
-**C. THE BOARD IS A PROJECTION OF THE NEWEST COMPLETE GENERATION.** Once B is
-done the board file holds the top N per (weapon, mode, ruler) instead of every
-row, and the deeper ranks the builder's picker shows are fetched on demand.
-Publishing is then a read, a sort and a commit — seconds, and independent of
-whether any scoring is in flight. The file stays a static asset on the CDN.
+Measured across the three boards: **777 groups, and probing all of them is 174
+CPU minutes — 2.2% of the 8,008 a full rescore costs.** A melee change goes
+from 8,008 to 684 (12x); a change confined to one group is 46x; a change to
+`damage.rs` that really does move everything costs 2% more than today. Cheap
+changes get cheap, expensive ones stay honest.
 
-**D. A SUBMISSION RINGS A DOORBELL; NOTHING POLLS.** A schedule is a stand-in
-for an event that nobody delivered, and it is the wrong stand-in in both
-directions: it sleeps through a burst of 169 submissions in 27 minutes and it
-wakes 24 times through 8 hours in which nothing arrived. The Worker that
-accepts a submission already knows, so it fires `repository_dispatch` when no
-scorer is awake; workers stay up while the missing-fact query returns rows and
-exit when it does not. **Quiet hours then cost nothing at all** rather than
-costing a probe and a share of the concurrency ceiling.
+**ITS UNDER-APPROXIMATION, NAMED.** One row per group, so a change that moves
+some builds of a group and not the sampled one is missed. That is the same hole
+the whole-board probe already had, one row per WEAPON rather than per group, so
+this is strictly finer — and step 5 is what makes it affordable to have.
 
-**E. VERIFICATION EFFORT FOLLOWS RANK.** Verifying a deterministic function is
-recomputing it, so the saving is in how many rows are verified rather than how
-fast. The incentive to submit a false number follows rank, so the effort
-should: the rows a group lists are verified on every generation, and rows under
-the screen — a third of the bill, and read by nobody — are spot-checked. This is
-the screen's own ordering applied to a second question.
+**3. PROGRESS IS MONOTONIC.** A score keyed by its inputs is a fact, written the
+moment it is computed rather than when a batch ends (§"A score is a fact").
+`worker/schema.sql` already holds the table. A cancelled run then loses one row
+instead of an afternoon, which does not make a long run shorter — it stops the
+length of a run from being a question anyone has to answer.
 
-**F. A TRICKLE AUDIT, PERMANENTLY AT THE BOTTOM OF THE PRIORITY ORDER.** *(it
-runs — §"The audit")* It is what finds a unit attributed under A to a family too
-narrow to hold it, or a determinism regression anywhere, in hours and by a
-machine. **The full rescore is the backstop it replaces**, and auditing a slice
-for ever beats a weekly rebuild on both counts: never a spike that starves
-everything else, and a coverage figure reported constantly rather than once.
-What is left here is to make it read the FACTS rather than the published file
-once B lands, so a row is audited whether or not it was listed.
+**4. PUBLISHING IS A PROJECTION.** Read the facts, rank, write the file:
+seconds, and independent of whether any scoring is in flight. The newest
+COMPLETE generation is what ships (§"Generations").
 
-**G. A PERSISTENT SCORER, ONLY IF THE CEILINGS BIND.** In rough order of cost:
-**Oracle Cloud Always Free** (4 ARM cores, 24 GB), then a **EUR 4/month
-Hetzner** box, then Fly.io. A long-lived process removes the per-wake checkout
-and cache restore, and can hold the library in memory rather than fetching it.
-Nothing above needs this. The signal that it is time is not a run overrunning a
-schedule — after D there is no schedule to overrun — but the two numbers below.
+**5. THE AUDIT** — it runs (§"The audit"), and it is what makes step 2's
+under-approximation something to hold rather than something to fear.
 
-**The metrics that decide all of this** are how long after a push the listed
-rows are correct again, and how long the audit takes to cross the whole store.
-Neither is a property of the shard count, and both mean something to a reader.
+**TRIGGERING AND SCHEDULING**, which is where the failure direction was
+inverted: the trigger is an EXCLUSION list naming only what the board itself
+generates, a run that finds nothing to do costs one job rather than a hundred
+and twenty-eight, and a submission rings a doorbell rather than being waited for
+by a schedule.
+
+### What was refused, and why that is written down
+
+Each of these is a plausible answer that measurement turned down. They are here
+so the next reading does not have to re-derive the refusal.
+
+**Per-unit code fingerprints, and the refactor under them.** Attributing code
+units to weapon classes so a melee change dirties melee rows: the group probe
+reaches the same selectivity by measuring, without a table to keep. And the
+refactor it needs is real — every melee commit touches `engine/src/dummy.rs`,
+32,146 lines of the engine's 78,003, which holds the gun logic too, so a
+file-level attribution buys nothing until melee is moved out of it.
+
+**Adaptive precision — fewer runs for rows far from a boundary.** The run count
+is the RULER'S OWN TERM and is where a published number's authority comes from.
+Spending less of it is not an optimisation of the board, it is a trade against
+the thing the board is for.
+
+**Recording which data files a fight read.** Exact and safe, and it would retire
+four hand lists at once — but it improves the half that is already cheap and
+already per row. 13.6% of commits.
 
 ### What must not change
 
@@ -1408,6 +1400,18 @@ Neither is a property of the shard count, and both mean something to a reader.
 - **No work is enqueued anywhere.** What is outstanding is derived from the
   facts that exist, so there is no second copy of it to fall out of step with
   the first — §"The queue is a query".
+- **THE RUN COUNT IS THE RULER'S OWN TERM.** A published row is measured at the
+  count its benchmark names, and that is where its authority comes from. Every
+  cheaper answer this pipeline finds has to come from computing FEWER ROWS, and
+  never from computing a row less well.
+- **A MODE IS AN INDEPENDENT RANKING.** It is a property of the weapon, not of
+  the build — seven on every melee — and the cards that win one do not win
+  another, so `(weapon, mode)` is the group and its own leader sets its own
+  floor. Nothing may rank two modes against each other.
+- **MOD ORDER IS PART OF THE BUILD.** Elements pair in first-placement order, so
+  one card set in two arrangements is two builds; measured on the boards, 338
+  rows differ from a sibling by order alone and NOT ONE of them scores the same.
+  An identity that sorted them would publish one and lose the other.
 
 ---
 
