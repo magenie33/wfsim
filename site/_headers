@@ -1,0 +1,8 @@
+/img/*
+  Cache-Control: public, max-age=604800
+/og/*
+  Cache-Control: public, max-age=604800
+/pol/*
+  Cache-Control: public, max-age=604800
+/logo.svg
+  Cache-Control: public, max-age=604800

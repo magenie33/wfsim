@@ -177,6 +177,12 @@ fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
         && name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '(' | ')'));
+    // `IMG()` asks for `<cached name>.webp` — the form `ship_art` derives for
+    // the static deployment. THE CACHE HOLDS WHAT WAS DOWNLOADED, so strip the
+    // suffix to get the cached name back exactly, and let the header carry the
+    // format: a browser reads Content-Type, not the extension, so the original
+    // bytes render under the derived name and dev needs no derived files.
+    let name = name.strip_suffix(".webp").unwrap_or(name);
     if safe {
         let path = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/cache/img"))
             .join(name);

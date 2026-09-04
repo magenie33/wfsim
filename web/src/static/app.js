@@ -88,12 +88,8 @@ const ddReg = new Map();
 // wasm engine and api() below is worker RPC. Unset (the native server),
 // api() is plain fetch.
 const WASM = !!window.WFSIM_WASM;
-// Art: on the native server through our OWN origin (img/ proxy: local disk
-// cache, WFCD fallback) — fast, offline-capable, one source. The static
-// deployment has no proxy: straight to the WFCD CDN (wiki Special:FilePath
-// for the paren-named evolution icons).
 // Art is SAME-ORIGIN in both deployments: the native server reads
-// web/cache/img/, and the static build ships the same files in site/img/
+// web/cache/img/, and the static build derives site/img/ from it
 // (build_site_app.py `ship_art`). Hotlinking the CDN instead 301s to
 // raw.githubusercontent.com — unreliable to blocked from mainland China, which
 // is where the players are.
@@ -101,10 +97,15 @@ const WASM = !!window.WFSIM_WASM;
 // `wiki:` (data/assets.yaml) marks a file the CDN does not carry; it changes
 // where the BUILD fetches from, not where the page asks — the cache holds it
 // under its bare name like everything else.
+//
+// `.webp` IS APPENDED, NOT SUBSTITUTED — `Sobek.png.webp` — because six names
+// in this cache differ only by extension for different pictures (`Sobek.png`
+// is the shotgun, `Sobek.jpg` is Shattering Justice). `ship_art` derives that
+// name and `img_response` strips it back.
 const IMG = (name) => {
   if (!name) return null;
   const s = String(name);
-  return "/img/" + encodeURIComponent(s.startsWith("wiki:") ? s.slice(5) : s);
+  return "/img/" + encodeURIComponent((s.startsWith("wiki:") ? s.slice(5) : s) + ".webp");
 };
 // Polarity icons are vendored locally (pol/, shipped with both deployments)
 // — no more slow wiki 302 redirects. Omni (universal) uses the "Any" symbol
@@ -371,7 +372,14 @@ function stanceGrant() {
 // build that fits in three still pays it, because those three do not put the
 // weapon at rank 40 and rank 40 is what the 80 above assumes.
 const formaMin = (id) => (weaponInfo(id) || {}).forma_min || 0;
-const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror="this.style.visibility='hidden'"/>` : `<span class="${cls||''}"></span>`;
+// EVERY CALLER IS A LIST, so this loads lazily. The picker and the optimizer's
+// scope draw one `modRow` per eligible mod — two images each — and without this
+// a scope of 300 mods opens 600 connections for art that is mostly below the
+// fold. `loading="lazy"` costs the visible rows nothing: a browser fetches what
+// is in or near the viewport immediately either way. The weapon render on the
+// arena's inspector is a bare <img> for the same reason inverted — it is one
+// image, always on screen, and deferring it would delay the largest paint.
+const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" loading="lazy" onerror="this.style.visibility='hidden'"/>` : `<span class="${cls||''}"></span>`;
 
 // ---- transport: api(path, body) --------------------------------------
 // Native: fetch to the local server. Wasm: a Web Worker owns the engine, and

@@ -8,8 +8,11 @@ Steps:
   4. copy web/src/static/{index.html,app.js,style.css,worker.js,logo.svg,pol/} -> site/
   5. inject <script>window.WFSIM_WASM = true;</script> into the copied
      index.html — that flag flips app.js's api() from fetch to worker RPC.
-  6. copy the art cache into site/img/ (same-origin art — see ship_art)
-  7. prerender one HTML file per weapon (its own title/description/OG plus a
+  6. write site/_headers and site/_redirects (what the edge is told about each
+     path — see ship_edge_config)
+  7. derive site/img/ from the art cache (same-origin art, downscaled to
+     webp — see ship_art)
+  8. prerender one HTML file per weapon (its own title/description/OG plus a
      crawler-visible summary), and write sitemap.xml + robots.txt — see
      prerender() for why a single shell was not enough.
 
@@ -258,8 +261,102 @@ def og_card(out: Path, name: str, cn: str | None, facts: str, stats: str) -> boo
     return True
 
 
+# WHAT THE EDGE IS TOLD ABOUT EACH PATH. Cloudflare's default for a static
+# asset is `max-age=0, must-revalidate`, which buys a round trip per file per
+# session — on the 2.11 MB/s the desktop updater measured to Shanghai, a picker
+# opening forty icons pays forty of them before it can draw.
+#
+# ART ONLY, AND DELIBERATELY. `app.js`, `style.css` and the wasm are served
+# under names that carry no content hash, so a reader holding a cached app.js
+# beside a fresh wasm is one long `max-age` away — and that pair fails at
+# runtime, far from anything that names the cache. Art is addressed by DE's own
+# asset name, which changes when the picture does; a week bounds the case where
+# it does not.
+EDGE_HEADERS = """\
+/img/*
+  Cache-Control: public, max-age=604800
+/og/*
+  Cache-Control: public, max-age=604800
+/pol/*
+  Cache-Control: public, max-age=604800
+/logo.svg
+  Cache-Control: public, max-age=604800
+"""
+
+# Legacy URLs from the /app/-era layout, plus the one weapon page that shipped
+# with an extension.
+EDGE_REDIRECTS = """\
+/app / 301
+/app/ / 301
+/app/* /:splat 301
+/weapons/Dual_Toxocyst.html /weapons/Dual_Toxocyst 301
+"""
+
+
+def ship_edge_config() -> None:
+    """Write `site/_headers` and `site/_redirects`, the two files the Workers
+    asset layer reads (`wrangler.jsonc`).
+
+    GENERATED RATHER THAN COMMITTED BY HAND. `site/` is this script's output and
+    a hand-placed file inside it survives only because nothing here clears the
+    directory — which makes it invisible to anyone reading the build to find out
+    what gets deployed, and silently absent from a build into a fresh directory.
+    """
+    (APP / "_headers").write_text(EDGE_HEADERS, encoding="utf-8", newline="\n")
+    (APP / "_redirects").write_text(EDGE_REDIRECTS, encoding="utf-8", newline="\n")
+
+
+# WHAT THE PAGE IS SENT, AND WHY IT IS NOT WHAT WAS DOWNLOADED.
+#
+# `ART_MAX` is the largest size the CSS ever draws this art (`.wcard .wc-img`,
+# 84px) doubled for a 2x display. Above that the pixels cannot be seen. If a
+# surface ever draws art larger, raise this — a stale cap is a blurry page.
+#
+# WEBP, AND LOSSY. Measured over the cache: the downloads are already tight
+# (448 of 855 are palettized PNG), so re-encoding at full size wins 1.2x and
+# downscaling to PNG LOSES — resampling turns flat fills into gradients that
+# PNG cannot pack. Only the pair wins: 27.2 KiB -> ~8 KiB, 3x. Lossless webp at
+# this size is a wash, which is what makes q80 the choice and not the default.
+ART_MAX = 168
+ART_QUALITY = 80
+ART_SIG = "art-v1"
+
+
+def derive_art(src: Path, dst: Path) -> Path:
+    """Downscale one cached image into the form the page asks for.
+
+    DERIVED HERE AND NOT IN THE CACHE. `web/cache/img/` holds what the CDN and
+    the wiki served, byte for byte — it is the record of what was fetched, and
+    the native server answers `.webp` out of it directly (`img_response`). This
+    is a DEPLOYMENT step, so it belongs to the thing that builds the deployment.
+    """
+    from PIL import Image
+
+    # Same bargain as the OG cards: 855 encodes is most of a minute, and the
+    # output is a pure function of the bytes in and the settings above.
+    stat = src.stat()
+    key = hashlib.sha256(
+        f"{ART_SIG}\x00{ART_MAX}\x00{ART_QUALITY}\x00{stat.st_size}\x00{stat.st_mtime_ns}"
+        .encode("utf-8")).hexdigest()[:16]
+    sig = ROOT / "target" / "art-sigs" / (dst.stem + ".sig")
+    sig.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists() and sig.exists() and sig.read_text(encoding="utf-8").strip() == key:
+        return dst
+    img = Image.open(src)
+    img.load()
+    # RGBA THROUGHOUT: 448 of these are palettized and 66 already carry alpha,
+    # and webp cannot take a P-mode image. Converting a palette that holds
+    # transparency straight to RGB would fill it black.
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    img.thumbnail((ART_MAX, ART_MAX), Image.LANCZOS)
+    past_the_scanner(lambda: img.save(dst, "WEBP", quality=ART_QUALITY, method=6))
+    sig.write_text(key, encoding="utf-8")
+    return dst
+
+
 def ship_art() -> None:
-    """Copy the art cache into `site/img/`, so the static deployment serves
+    """Derive `site/img/` from the art cache, so the static deployment serves
     game art from ITS OWN ORIGIN.
 
     Loading straight from the CDN goes through a redirector:
@@ -312,10 +409,23 @@ def ship_art() -> None:
         )
     out = APP / "img"
     out.mkdir(parents=True, exist_ok=True)
-    for name in sorted(want):
-        past_the_scanner(lambda: shutil.copy2(cache / name, out / name))
-    size = sum((out / n).stat().st_size for n in want)
-    print(f"art: {len(want)} images -> site/img/ ({size / 1e6:.1f} MB)")
+    # APPENDED, NOT SUBSTITUTED. Six stems in this cache carry both extensions
+    # for DIFFERENT pictures — `Sobek.png` is the shotgun, `Sobek.jpg` is
+    # Shattering Justice — so `<stem>.webp` would silently draw one of each
+    # pair on the other's card. `<name>.webp` also makes the reverse exact:
+    # the native server strips the suffix and has the cached name back.
+    shipped = [derive_art(cache / name, out / (name + ".webp")) for name in sorted(want)]
+    # A RENAMED ASSET LEAVES A GHOST otherwise: nothing here clears `site/img/`,
+    # so the file the last build shipped stays, gets committed, and is deployed
+    # for as long as nobody looks. The art directory is generated in full.
+    keep = {p.name for p in shipped}
+    for stale in out.iterdir():
+        if stale.name not in keep:
+            stale.unlink()
+    size = sum(p.stat().st_size for p in shipped)
+    raw = sum((cache / n).stat().st_size for n in want)
+    print(f"art: {len(want)} images -> site/img/ "
+          f"({size / 1e6:.1f} MB, from {raw / 1e6:.1f} MB)")
 
 
 # WHAT THE SCORER WRITES ABOUT ITS OWN RUN RATHER THAN ABOUT THE BUILD, and
@@ -984,6 +1094,7 @@ def main() -> None:
         sys.exit("app.js: PROJECT_FACTS placeholder not found")
     (APP / "app.js").write_text(counted, encoding="utf-8", newline=chr(10))
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
+    ship_edge_config()
     ship_art()
     write_board()
     prerender(flagged)
