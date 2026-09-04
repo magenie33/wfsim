@@ -540,13 +540,20 @@ check("...and one it would refuse never leaves the page",
 // …AND NOBODY IS REFUSED FOR NOT HAVING POLARIZED YET.
 //
 // A submission carries NO polarities — the server plans the cheapest layout
-// itself — so the page's capacity floor is measured FULLY FORMA'D. Judging the
-// live layout instead would refuse exactly the people who had not got round to
-// it, which is the shape of every bug on this path.
+// itself — so the door is asked about a build measured FULLY FORMA'D. Judging
+// the live layout instead would refuse exactly the people who had not got round
+// to it, which is the shape of every bug on this path. The verdict is the
+// ENGINE'S: `boardVerdict` is what the panel reads, so this asks the same
+// question the reader's screen does.
 const forma = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
   history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  // THE ELEMENT BACK ON, because the block before this one took it off to be
+  // refused and routing to the address already on screen re-enters nothing.
+  // This block is about CAPACITY, and a build refused for its valence would
+  // pass a capacity assertion by accident.
+  valence = defaultValence('kuva_nukor', null); renderValence();
   const sc = builtinScenarios().find(s => s.builtin === 'single_target');
   pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1000);
   const eight = ['hornet_strike', 'barrel_diffusion', 'lethal_torrent',
@@ -557,9 +564,9 @@ const forma = await evaluate(`(async () => {
   // NOT A POLARITY IN SIGHT, which is where a player starts.
   slots.forEach(s => { s.pol = null; });
   renderMods(); renderArcanes(); await sleep(400);
-  const bare = { raw: capacityUsed(), short: buildShortfalls() };
+  const bare = { raw: capacityUsed(), door: await boardVerdict(boardPayload()) };
   autoForma(); renderMods(); await sleep(400);
-  const planned = { raw: capacityUsed(), short: buildShortfalls() };
+  const planned = { raw: capacityUsed(), door: await boardVerdict(boardPayload()) };
 
   // …and the positive control: eight mods that cannot fit however much Forma
   // you own. The Burston Prime's priciest eight are 64 against a 60 cap, which
@@ -575,23 +582,29 @@ const forma = await evaluate(`(async () => {
   heavy.forEach((m, i) => { slots[i].mod = m.id; slots[i].rank = m.max_rank; });
   arcanes = [(arcanePool(0) || [{ id: 'none' }])[0].id];
   autoForma(); renderMods(); renderArcanes(); await sleep(400);
-  return { bare, planned, over: buildShortfalls(), cap: capOf('burston_prime') };
+  return { bare, planned, over: await boardVerdict(boardPayload()),
+           cap: capOf('burston_prime') };
 })()`);
 
-// The raw layout is far over 80 and the floor is not: the page must read the
-// floor, or a player who has not polarized is turned away for it.
+// The raw layout is far over 80 and the door does not care: it is asked about
+// the build, and a player who has not polarized is not turned away for it.
 check("an unpolarized build is not refused for capacity",
-  forma.bare.raw > 80 && forma.bare.short.length === 0,
-  `raw ${forma.bare.raw}, shortfalls ${JSON.stringify(forma.bare.short)}`);
+  forma.bare.raw > 80 && forma.bare.door.accepted === true,
+  `raw ${forma.bare.raw}, door ${JSON.stringify(forma.bare.door)}`);
 check("...and the auto plan does not change that answer",
-  forma.planned.short.length === 0, JSON.stringify(forma.planned.short));
+  forma.planned.door.accepted === true, JSON.stringify(forma.planned.door));
 // …and a build that genuinely cannot exist IS named, in the engine's own terms.
 check("a build over capacity even fully forma'd is named before the run",
-  forma.over.some((s) => /capacity|容量/.test(s)),
+  forma.over.accepted === false && /capacity|容量/.test(forma.over.reason || ""),
   `cap ${forma.cap} · ${JSON.stringify(forma.over)}`);
 
+// The consent box carries ONE sentence for every refusal the door gives, so
+// the claim here is that the box holds the board's own reason AND says the
+// build is going nowhere — not which of the page's two phrasings it reached
+// for.
 check("...with the reason ON SCREEN rather than in a workflow log",
-  /Valence/.test(door.bad.panel) && /榜单不会收|would not take/.test(door.bad.panel),
+  /Valence/.test(door.bad.panel)
+    && /不会提交|榜单不会收|is not sent|would not take/.test(door.bad.panel),
   door.bad.panel.replace(/\s+/g, " ").slice(0, 160));
 
 await app.finish("an adversary weapon's Valence bonus reaches its damage");
