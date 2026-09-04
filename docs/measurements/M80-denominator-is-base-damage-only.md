@@ -70,6 +70,15 @@ units: 2 + 28 + 18 + 82 = 130, IN EVERY ROW
 pop : 130 · s = 2015  2145  2275  2405  2535  2795
 ```
 
+**AND THE LADDER RE-CONFIRMS THAT THE CO TERM READS THE UNEVOLVED BASE**
+(M50, and M66 §"What was already right"). C = 80 is 0.5263 × **152**, the charged
+base before the tier-2 evolution's +3. Reading it off 155 instead gives
+C = 81.58, a step of 32.63, and 2413 / 2148 / 2810 where the rows measured
+2405 / 2145 / 2795 — 8, 3 and 15 points out, in a build where the base itself
+is only 3 points bigger. The other wrong shape is M79's, folded the wrong way:
+letting the flat +3 ride INSIDE the charge multiplier makes the CO base
+43 × 2 = 86 and prints 2434 at 3–1. Both are excluded by the same six rows.
+
 **3–1 IS THE ROW THAT RULES OUT ADDITION.** 3–1 and 2–2 are the same `a + b`
 and would print the same number under a sum; they print 2405 and 2535. 3–1 and
 3–2 share `a` and would print the same number if only the stack count mattered;

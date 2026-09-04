@@ -33,15 +33,22 @@ charge weapon has been measured for it, and none may be given it without its
 own reading — a bow's drawn shot is calibrated against golden values that this
 would break.
 
-Releasing early fires: a shot at 50% of the bar deals 1.5× the Normal Shot, and
-the number tracks the PROGRESS rather than the time held (owner). The two "near
-full" readings are the same release point under both builds — 85/44.34 = 1.917
-and 273/141.9 = 1.924 — and a single p = 0.92 reproduces both to the digit:
+Releasing early multiplies the Normal Shot's OWN base by (1 + progress), and
+the number tracks the PROGRESS rather than the time held (owner). **The
+evolution's flat +3 rides BESIDE that multiplier**, which is M79's law —
+`base × attack multiplier + flat`, measured four ways on a Magistar — and one
+release point reproduces both readings exactly:
 
 ```
-43    × 1.92 × 33/32 =  85.1  ->  85
-137.6 × 1.92 × 33/32 = 272.5  -> 273
+(40 × 1.99 + 3)       × 33/32 =  85.2  ->  85   (measured 85)
+(40 × 1.99 + 3) × 3.2 × 33/32 = 272.6  -> 273   (measured 273)
 ```
+
+**The bar was nearly full when both were taken** (owner), which is what 1.99
+says. Folding the +3 inside instead needs a 92% bar and still misses the second
+row by 1. The two shapes are otherwise near-indistinguishable HERE, because the
+flat add is 7.5% of this weapon's base: on the base Ballistica, whose own
+Headcracker is +30 against a base of 25, they differ by 22% at half charge.
 
 At the top of the ramp the shot becomes the CHARGED attack, which is where the
 discontinuity is: 40 × 2 = 80 against the 160 a full charge actually deals.
@@ -118,11 +125,15 @@ decides it. The base Ballistica pays nothing on either attack, so the pair is
 a control on the Prime's own +3.125%: the gain is not a property of this
 family, of a charged shot, or of a bolt.
 
-**Charging CONCENTRATES on both of them, it does not add.** 4 × 25 = 100 and
-4 × 75 = 300 — each family member's whole burst, in one bolt, with that bolt's
-own crit, status and Puncture share. It is the rule the Prime's published 76
-breaks (4 × 40 = 160 against 76) and its measured 152 nearly keeps, which is
-the shape of the ×2 rather than a reason for it.
+**Charging CONCENTRATES on those two, and the Prime is the one it does not.**
+The base and the Rakta drop from 4 bolts to 1 when charged, and the burst's
+whole total goes into that bolt: 4 × 25 = 100 and 4 × 75 = 300, with the single
+bolt's own crit, status and Puncture share bought instead of damage. **The
+Prime keeps all four** (`multishot: 4.0` on both of its non-Incarnon entries,
+and the wiki's infobox prints 160 and 304 for the two modes against 40 and 76
+a bolt), so its charge is a straight damage gain and not a trade. Nothing about
+the family's shape argues for the ×2 or against it — the four full-charge pops
+are what settle it, and they are §2.
 
 **The ramp itself is not modelled.** A partial charge is a shot this engine
 cannot fire — the entry says so in `unmodeled:`. It is dominated at both ends

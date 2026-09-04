@@ -19,7 +19,7 @@ spawn_on_kill:
   range_m: 50.0
 
 unmodeled:
-  - "a PARTLY charged shot is not modelled — releasing early fires a shot worth (1 + charge progress) times the Normal Shot, so a 50% charge deals 1.5x it, and this entry carries only the two ends of that ramp: no charge at all, and the full charge that fires this attack instead"
+  - "a PARTLY charged shot is not modelled — releasing early multiplies the Normal Shot's OWN base by (1 + charge progress) and adds the evolution's flat base damage beside that multiplier rather than inside it (M79), so a 50% charge is 40 x 1.5 + 3 rather than 43 x 1.5; this entry carries only the two ends of that ramp: no charge at all, and the full charge that fires this attack instead"
   - "a GHOST is counted, not fought: a charged-shot kill leaves one for 7 seconds and the run reports how many stood, but what a ghost does is not modelled — it neither attacks nor blocks a shot of yours, so nothing in the fight reads it back"
 accuracy: 4
 disposition: 1.2
