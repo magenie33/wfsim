@@ -317,7 +317,7 @@ jobs:
           # code difference drops every stored score before the slice can keep
           # any, so the count comes back as the whole board and the gate cannot
           # tell a slice from a rescore.
-          SLICE="--refresh $(( REFRESH_MINUTES * 60 )) --refresh-from ${{ github.run_number }}"
+          SLICE="--refresh $(( REFRESH_MINUTES * 60 ))"
           if [ "${{ inputs.full }}" = "true" ]; then SLICE=""; fi
           todo=0
           for f in boards/*.yaml; do
@@ -469,21 +469,15 @@ jobs:
             comm -23 /tmp/ok /tmp/bad > "verified/$id.txt" || true
             echo "$id: $(wc -l < "verified/$id.txt") group(s) clear of $(wc -l < /tmp/ok) judged"
           done
-          # A HUNDRED ROWS IS THE FLOOR. A probe that compared almost nothing —
-          # rows the floor screened away, or a board whose rows no longer
-          # validate — proves nothing, and a verification that cannot fail is
-          # worse than none.
-          # A PROBE THAT COMPARED ENOUGH IS USABLE EVEN WHEN SOMETHING MOVED,
-          # which is the whole change: the groups that moved are named, so the
-          # rest can be reused instead of the board being rescored because one
-          # row of it moved. What still decides nothing is a probe that could
-          # not compare — a hundred rows is the floor, and under it the file is
-          # empty and every row goes back through the fight.
+          # A PROBE THAT COMPARED ENOUGH IS USABLE EVEN WHEN SOMETHING MOVED:
+          # the groups that moved are NAMED, so the rest stay reused instead of
+          # the board being rescored because one row of it moved.
+          #
           # A HUNDRED ROWS IS THE FLOOR, and under it the verdict is thrown away
-          # rather than acted on: a probe that compared almost nothing proves
-          # nothing, and the clear set it produced would send every group it
-          # never judged back through the fight for no reason. Deleting the
-          # files means no narrowing, which now means no rescore.
+          # rather than acted on — rows the floor screened away, or a board
+          # whose rows no longer validate, prove nothing, and a verification
+          # that cannot fail is worse than none. Deleting the files means no
+          # narrowing, which now means no rescore.
           if [ "$compared" -ge 100 ]; then
             echo "::notice::probe compared $compared rows, $moved moved — rescoring only the groups that moved"
           else
@@ -573,12 +567,14 @@ jobs:
             prior=""
             [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
             # THE SLICE THIS RUN REPAIRS, and `full` takes none because it is
-            # already fighting everything. `--refresh-from` is the run number,
-            # so successive runs walk different rows and the board crosses
-            # itself rather than re-reading its own first page.
+            # already fighting everything. Where the slice STARTS is the cursor
+            # the last run stored in `data/board_state.yaml`, advanced by the
+            # rows it took — the run number cannot do that job, because it steps
+            # by one where a slice is hundreds of rows wide, and the board would
+            # re-fight what it just repaired.
             slice=""
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 )) --refresh-from ${{ github.run_number }}"
+              slice="--refresh $(( REFRESH_MINUTES * 60 ))"
             fi
             # THE NARROWING, and only when the probe produced one. An absent
             # file means no verdict, and no verdict now means nothing is
@@ -686,12 +682,14 @@ jobs:
               prior="--reuse /tmp/$id-prior.yaml"
             fi
             # THE SLICE THIS RUN REPAIRS, and `full` takes none because it is
-            # already fighting everything. `--refresh-from` is the run number,
-            # so successive runs walk different rows and the board crosses
-            # itself rather than re-reading its own first page.
+            # already fighting everything. Where the slice STARTS is the cursor
+            # the last run stored in `data/board_state.yaml`, advanced by the
+            # rows it took — the run number cannot do that job, because it steps
+            # by one where a slice is hundreds of rows wide, and the board would
+            # re-fight what it just repaired.
             slice=""
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 )) --refresh-from ${{ github.run_number }}"
+              slice="--refresh $(( REFRESH_MINUTES * 60 ))"
             fi
             # THE NARROWING, and only when the probe produced one. An absent
             # file means no verdict, and no verdict now means nothing is

@@ -196,6 +196,41 @@ const DEFAULT_ROW_SECONDS: f64 = 1.0;
 /// is embedded. See its own header for why the rows are not.
 const BOARD_STATE: &str = "data/board_state.yaml";
 
+/// WHAT THE LAST RUN LEFT, read the way the writer below spells it.
+///
+/// BY LINE, not by a yaml crate: the shape is this program's own output and
+/// never anybody's input, so a parser dependency here would be one more thing
+/// that can disagree with the writer. Read from DISK rather than from the
+/// compiled-in copy, because publish rewrites the file after the binary was
+/// built and the cursor has to be the one the last run actually stored.
+fn stored_state() -> std::collections::BTreeMap<String, [usize; 5]> {
+    let mut state: std::collections::BTreeMap<String, [usize; 5]> = Default::default();
+    let text = std::fs::read_to_string(BOARD_STATE).unwrap_or_default();
+    let mut cur = String::new();
+    for line in text.lines() {
+        let t = line.trim_end();
+        if let Some(id) = t.strip_prefix("  ").and_then(|x| x.strip_suffix(':')) {
+            if !id.starts_with(' ') {
+                cur = id.to_string();
+                state.entry(cur.clone()).or_default();
+            }
+        } else if let Some((k, v)) = t.trim().split_once(": ") {
+            let n = v.trim().parse::<usize>().unwrap_or(0);
+            if let Some(e) = state.get_mut(&cur) {
+                match k.trim() {
+                    "submissions" => e[0] = n,
+                    "listed" => e[1] = n,
+                    "held" => e[2] = n,
+                    "scored_at_epoch_seconds" => e[3] = n,
+                    "refresh_cursor" => e[4] = n,
+                    _ => {}
+                }
+            }
+        }
+    }
+    state
+}
+
 /// HOW FAR UNDER THE CUT A PROBE HAS TO LAND before the full measurement is
 /// skipped — a share of the floor, which is itself a share of the leader.
 ///
@@ -802,7 +837,13 @@ fn main() {
     // `docs/BOARD.md` §"When the code moved".
 
     let refresh = flag("--refresh").and_then(|s| s.parse::<f64>().ok());
-    let refresh_from = flag("--refresh-from").and_then(|s| s.parse::<usize>().ok()).unwrap_or(0);
+    // WHERE THE SLICE STARTS. The operator may pin it, but the default is the
+    // cursor the last run stored: every shard of a run reads the same file, so
+    // they agree on the slice without being told, and the next run starts past
+    // what this one repaired instead of on top of it.
+    let refresh_from = flag("--refresh-from")
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or_else(|| stored_state().get(&bench_id).map_or(0, |e| e[4]));
     let dry = has_flag("--dry-run");
     let mut todo = 0usize;
     let verify = has_flag("--verify");
@@ -911,6 +952,7 @@ fn main() {
     // back through the fight. Budgeted by the cost the last run MEASURED, so a
     // slice is a wall-clock promise rather than a row count over a population
     // whose rows differ by four orders of magnitude.
+    let mut refresh_next: Option<usize> = None;
     if let Some(budget) = refresh {
         let mut stale_keys = prior_stale_keys;
         stale_keys.sort_by(|a, b| a.0.cmp(&b.0));
@@ -928,6 +970,8 @@ fn main() {
             took += 1;
         }
         reused = reused.saturating_sub(took);
+        // ADVANCED BY WHAT WAS TAKEN, which is the whole point of storing it.
+        refresh_next = Some(if n > 0 { (refresh_from + took) % n } else { 0 });
         eprintln!(
             "refresh: {took} of {n} stale row(s) go back through the fight, \
              {:.1} min of measured work, from offset {}",
@@ -1826,33 +1870,7 @@ fn main() {
     // generated file that is. Merged rather than overwritten, the same as
     // `board.json`: this binary runs once per benchmark.
     if std::path::Path::new(BOARD_STATE).exists() {
-        // READ BY LINE, not by a yaml crate. The shape is this program's own
-        // output and never anybody's input — three integers under an id — so a
-        // parser dependency here would be one more thing that can disagree with
-        // the writer twelve lines down.
-        let mut state: std::collections::BTreeMap<String, [usize; 4]> = Default::default();
-        let text = std::fs::read_to_string(BOARD_STATE).unwrap_or_default();
-        let mut cur = String::new();
-        for line in text.lines() {
-            let t = line.trim_end();
-            if let Some(id) = t.strip_prefix("  ").and_then(|x| x.strip_suffix(':')) {
-                if !id.starts_with(' ') {
-                    cur = id.to_string();
-                    state.entry(cur.clone()).or_default();
-                }
-            } else if let Some((k, v)) = t.trim().split_once(": ") {
-                let n = v.trim().parse::<usize>().unwrap_or(0);
-                if let Some(e) = state.get_mut(&cur) {
-                    match k.trim() {
-                        "submissions" => e[0] = n,
-                        "listed" => e[1] = n,
-                        "held" => e[2] = n,
-                        "scored_at_epoch_seconds" => e[3] = n,
-                        _ => {}
-                    }
-                }
-            }
-        }
+        let mut state = stored_state();
         // WHEN, AND NOT ONLY WHAT. The counts say how far behind the board is in
         // BUILDS; a reader looking at a number wants to know how old it is, and
         // that is the one thing neither the counts nor the fingerprints can
@@ -1865,17 +1883,25 @@ fn main() {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs() as usize);
-        state.insert(bench_id.clone(), [seen, kept.len(), below.len() + probed.len(), now]);
+        // THE CURSOR ONLY MOVES WHEN A SLICE WAS TAKEN. A run that took none —
+        // a full rescore, a verify, a board with nothing stale — leaves it
+        // where it was rather than resetting the rotation to the top.
+        let cursor = refresh_next.unwrap_or_else(|| state.get(&bench_id).map_or(0, |e| e[4]));
+        state.insert(
+            bench_id.clone(),
+            [seen, kept.len(), below.len() + probed.len(), now, cursor],
+        );
         let mut out = String::from(BOARD_STATE_HEADER);
         out.push_str("boards:
 ");
-        for (id, [subs, listed, held, at]) in &state {
+        for (id, [subs, listed, held, at, cur]) in &state {
             out.push_str(&format!(
                 "  {id}:
     submissions: {subs}
     listed: {listed}
     held: {held}
     scored_at_epoch_seconds: {at}
+    refresh_cursor: {cur}
 "
             ));
         }

@@ -88,5 +88,17 @@ for (const p of skipped || []) {
   );
 }
 
+// THE REPAIR SLICE ADVANCES BY WHAT IT TOOK, and the workflow may not say
+// otherwise. `--refresh-from` pins the offset, and pinning it to the run number
+// is the shape that stalled the board for 35 hours: a slice is hundreds of rows
+// wide and the run number steps by one, so consecutive runs re-fought the same
+// rows and a board of 7,659 would have needed 7,659 runs to cross itself once.
+// The cursor in `data/board_state.yaml` is the only source, and it is silent
+// when it is wrong — the runs all go green.
+const pinned = wf.filter((l) => l.includes("--refresh-from"));
+check(pinned.length === 0, "the repair slice starts where the last one stopped",
+  `the workflow pins the offset (${pinned.map((l) => l.trim()).join(" | ")}) instead of `
+    + "letting it come from the stored cursor");
+
 console.log(NL + (bad ? `${bad} failed` : "the board skips only what is generated"));
 process.exit(bad ? 1 : 0);

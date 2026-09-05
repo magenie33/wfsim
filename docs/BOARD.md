@@ -224,9 +224,22 @@ deleted and every row goes back through the fight.
 fingerprint difference says a stored score is UNVERIFIED under this generation,
 not that it is wrong. So every run scores what is NEW and repairs a BOUNDED
 SLICE of what is unverified — `REFRESH_MINUTES` of measured work, walked in `fp`
-order from the run number, so successive runs cross the board rather than
-re-reading its first page. Thirty minutes a run, three runs an hour, is under
-four days to cross all 8,008 and under 4% of a day's free CPU.
+order. Thirty minutes a run, three runs an hour, is under four days to cross all
+8,008 and under 4% of a day's free CPU.
+
+**WHERE THE SLICE STARTS IS A STORED CURSOR**, `refresh_cursor` in
+`data/board_state.yaml`, advanced by the rows the run actually took. Nothing
+else can do that job: the slice is hundreds of rows wide and measured at 382 on
+`single_target`, so an offset that steps by one — the run number — hands the
+next run the same rows again, and a board of 7,659 needs 7,659 runs to cross
+itself once instead of about twenty-seven. It stalled for 35 hours that way,
+with every run green. `check_rescore_paths.mjs` refuses a pinned offset.
+
+Every shard of a run reads the same committed file, so they agree on the slice
+without being told. The cursor lives in that file because it moves no number
+(`data_fingerprint`) and wakes no run (`paths-ignore`) — a cursor that did
+either would pay for itself in rescores. A run that takes no slice leaves it
+where it was rather than resetting the rotation to the top.
 
 The slice is one set for both kinds of staleness, because the repair is the
 same: a row whose own DATA moved and a row whose CODE fingerprint moved are both
