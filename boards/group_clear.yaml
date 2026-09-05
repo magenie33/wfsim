@@ -47683,6 +47683,16 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       rolls: [0.9, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 17.21717798572827
+    fp: 4a987a3234076c64
+    cost: 8.688
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: strun_prime
     mode: cycle
     listed: false
