@@ -1,79 +1,74 @@
 #!/usr/bin/env bash
 # SCORES OUTLIVE THE RUN THAT COMPUTED THEM.
 #
-# A shard writes what it scored here the moment it finishes; every later run
-# reads the lot back before deciding what is left to do. That is the whole of
-# it, and what it buys is that a run cancelled at 95% has banked 95% of its
-# work instead of throwing all of it away.
+# A shard banks what it scored the moment it finishes; every later run reads the
+# lot back before deciding what is left to do. What that buys is that a run
+# cancelled at 95% has kept 95% of its work instead of throwing all of it away —
+# and it is why "did this run fit in twenty minutes" stops being a question
+# about correctness at all.
 #
-#   scripts/score_store.sh put <file>    # CF_* in the env
-#   scripts/score_store.sh get <dir>
+#   scripts/score_store.sh get <dir>            # everything, into one directory
+#   scripts/score_store.sh put <file> <key>     # bank one file
+#   scripts/score_store.sh sweep                # drop the merged deltas
 #   scripts/score_store.sh --self-test
 #
-# A SEPARATE NAMESPACE FROM THE SUBMISSIONS, and that is not tidiness. The
-# submissions are the one irreplaceable thing in this pipeline; scores are
-# derived and can always be recomputed. Sharing a namespace would put score
-# blobs into the listing `fetch_submissions.sh` walks, where they are neither
-# builds nor a thing it could refuse cleanly.
+# TWO SHAPES UNDER ONE PREFIX, and the difference is who writes them:
 #
-# UNCONFIGURED IS A WORKING STATE, checked before anything else: with no
-# namespace both verbs succeed doing nothing, and the pipeline is exactly what
-# it was before the store existed. That is the rollback, and it is one secret.
+#   scores/<bench>.json           the merged set, written by `publish` alone
+#   scores/delta/<run>-<id>.json  what one shard banked, merged and then swept
 #
-# NOTHING HERE KNOWS ABOUT CODE VERSIONS. Every row inside a blob carries the
+# WITHOUT THE MERGE THE STORE GROWS WITHOUT BOUND — a delta per shard per
+# benchmark per run is a couple of hundred objects an hour, and every run reads
+# all of them. Merging turns that back into three objects plus whatever the run
+# in flight has banked.
+#
+# NOTHING HERE KNOWS ABOUT CODE VERSIONS. Every row inside a file carries the
 # hash of what it READ, and the reader admits it only where that still matches,
 # so a stored score proves itself without anyone declaring which binary wrote
-# it. Whether the CODE moved a number is measured by the audit, not asserted by
-# a hash. Blobs expire on a TTL rather than being collected: a cleanup pass is a
-# second thing that can fail, and a spent blob costs bytes.
+# it. Whether the CODE moved a number is measured by the audit, never asserted.
+#
+# UNCONFIGURED IS A WORKING STATE, checked before anything else: with no
+# endpoint every verb succeeds doing nothing and the pipeline is what it was
+# before the store existed. That is the rollback, and it is three secrets.
 set -euo pipefail
 
-# TEN DAYS. Long enough that a fingerprint can sit unpublished over a weekend
-# and still find its work, short enough that abandoned generations do not
-# accumulate. KV's own floor is 60 seconds.
-TTL="${SCORE_TTL_SECONDS:-864000}"
-
-api_base() {
-  printf 'https://api.cloudflare.com/client/v4/accounts/%s/storage/kv/namespaces/%s' \
-    "${CF_ACCOUNT:-}" "${CF_SCORES_NAMESPACE:-}"
-}
+BUCKET="${R2_BUCKET:-wfsim}"
+PREFIX="scores"
 
 configured() {
-  [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_SCORES_NAMESPACE:-}" ] && [ -n "${CF_TOKEN:-}" ] \
-   
+  [ -n "${R2_ENDPOINT:-}" ] && [ -n "${R2_ACCESS_KEY_ID:-}" ] \
+    && [ -n "${R2_SECRET_ACCESS_KEY:-}" ]
 }
 
-# WHAT THIS BLOB IS CALLED. The run and the shard: unique without coordination,
-# which is what lets thirty-two shards write at once without knowing about each
-# other.
-blob_key() {
-  printf 's/%s-%s' "${GITHUB_RUN_ID:-local}" "${SHARD_ID:-0}"
+# THE AWS CLI RATHER THAN A SIGNATURE OF OUR OWN. R2 speaks S3, the CLI is
+# preinstalled on the runners, and SigV4 by hand is thirty lines whose failure
+# mode is a 403 nobody can read.
+#
+# THE CHECKSUM SETTINGS ARE NOT DECORATION: recent CLI versions send integrity
+# headers R2 rejects outright, and `when_required` holds it to what S3 itself
+# asks for. `auto` is R2's region, and the instance-metadata lookup is turned
+# off because there is no profile to find and looking costs a timeout.
+s3() {
+  AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+  AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+  AWS_DEFAULT_REGION=auto \
+  AWS_EC2_METADATA_DISABLED=true \
+  AWS_REQUEST_CHECKSUM_CALCULATION=when_required \
+  AWS_RESPONSE_CHECKSUM_VALIDATION=when_required \
+  aws s3 "$@" --endpoint-url "$R2_ENDPOINT"
 }
-
-# NO `jq` HERE, unlike `fetch_submissions.sh`. That script encodes SUBMISSION
-# keys — build identities carrying `|`, `,` and `+` — where these are ours and
-# are `s/<hex>/<alnum>-<int>`, so a slash is the only character needing escape.
-# What it buys is a self-test that runs anywhere bash does, which is where it
-# actually gets run.
-urlenc() { printf '%s' "${1//\//%2F}"; }
-# One repeated field out of a flat JSON object, by name. Enough for a listing.
-field() { grep -o "\"$1\":\"[^\"]*\"" | sed 's/.*:"//;s/"$//'; }
 
 put_scores() {
-  local file="$1"
-  [ -s "$file" ] || { echo "score_store: $file is empty, nothing stored"; return 0; }
-  configured || { echo "score_store: not configured, nothing stored"; return 0; }
-  local key; key=$(blob_key)
-  # A FAILED WRITE IS NOT A FAILED RUN. The scores are still in this run's
+  local file="$1" key="$2"
+  [ -s "$file" ] || { echo "score_store: $file is empty, nothing banked"; return 0; }
+  configured || { echo "score_store: not configured, nothing banked"; return 0; }
+  # A FAILED WRITE IS NOT A FAILED RUN. The scores are still in this run's own
   # artifacts and the board is still assembled from them; what is lost is the
-  # banking, so the next run recomputes what this one did. Loud, and green.
-  if curl -sf -X PUT -H "Authorization: Bearer $CF_TOKEN" \
-       -F "value=@$file" -F "metadata={}" \
-       "$(api_base)/values/$(urlenc "$key")?expiration_ttl=$TTL" \
-       > /dev/null; then
-    echo "score_store: stored $(wc -c < "$file") bytes at $key"
+  # banking, so a later run recomputes this slice. Loud, and green.
+  if s3 cp "$file" "s3://$BUCKET/$PREFIX/$key" > /dev/null; then
+    echo "score_store: banked $(wc -c < "$file") bytes at $PREFIX/$key"
   else
-    echo "score_store: could not store $key — the next run recomputes this slice"
+    echo "score_store: could not bank $key — a later run recomputes this slice"
   fi
 }
 
@@ -81,106 +76,103 @@ get_scores() {
   local dir="$1"
   mkdir -p "$dir"
   configured || { echo "score_store: not configured, starting from the boards alone"; return 0; }
-  local api cursor="" resp n=0
-  api=$(api_base)
-  : > "$dir/.keys"
-  while :; do
-    resp=$(curl -sf -H "Authorization: Bearer $CF_TOKEN" \
-      "$api/keys?limit=1000&prefix=s%2F${cursor:+&cursor=$cursor}") \
-      || { echo "score_store: listing failed, starting from the boards alone"; return 0; }
-    # `|| true` on both: a listing with no keys and one with no cursor are the
-    # ORDINARY end states, and `grep` reports "found nothing" as a failure —
-    # which under `set -e` ended the script before it read anything at all.
-    printf '%s' "$resp" | field name >> "$dir/.keys" || true
-    cursor=$(printf '%s' "$resp" | field cursor || true)
-    [ -n "$cursor" ] || break
-  done
-  while read -r key; do
-    [ -n "$key" ] || continue
-    # A MISS IS ORDINARY: the entry expired between the listing and the read, or
-    # the read failed. The row it held is simply scored again.
-    if curl -sf -H "Authorization: Bearer $CF_TOKEN" \
-         "$api/values/$(urlenc "$key")" \
-         > "$dir/$(printf '%s' "$key" | tr '/' '_').json"; then
-      n=$(( n + 1 ))
-    else
-      rm -f "$dir/$(printf '%s' "$key" | tr '/' '_').json"
+  # FLATTENED, because the reader takes ONE directory and a delta is the same
+  # kind of file as a merged set: each says what every row it holds read, and is
+  # held to it row by row.
+  if s3 sync "s3://$BUCKET/$PREFIX/" "$dir" --no-progress > /dev/null; then
+    if [ -d "$dir/delta" ]; then
+      find "$dir/delta" -name '*.json' -exec mv -f {} "$dir/" \; 2>/dev/null || true
+      rm -rf "$dir/delta"
     fi
-  done < "$dir/.keys"
-  rm -f "$dir/.keys"
-  echo "score_store: read $n blob(s)"
+    echo "score_store: read $(find "$dir" -maxdepth 1 -name '*.json' | wc -l) file(s)"
+  else
+    echo "score_store: read failed, starting from the boards alone"
+  fi
+}
+
+# WHAT THE MERGE HAS MADE REDUNDANT, and only after it is written: a sweep
+# before the merged set lands drops work nothing else holds.
+sweep_deltas() {
+  configured || { echo "score_store: not configured, nothing to sweep"; return 0; }
+  if s3 rm "s3://$BUCKET/$PREFIX/delta/" --recursive > /dev/null 2>&1; then
+    echo "score_store: swept the merged deltas"
+  else
+    echo "score_store: nothing to sweep"
+  fi
 }
 
 # ---- the self-test ---------------------------------------------------------
 #
-# A stub `curl` in a temp directory, for the same reason `fetch_submissions.sh`
-# has one: the thing tested has to be the thing that runs. What is asserted is
-# the SHAPE — unconfigured is silent and green, a put names the run and shard
-# a get writes one file per listed key, and a failing read
-# leaves no file behind rather than an empty one.
+# A stub `aws` in a temp directory, for the reason `fetch_submissions.sh` has
+# one: the thing tested has to be the thing that runs. What is asserted is the
+# SHAPE — unconfigured is silent and green, a put names the key it was handed,
+# an empty file banks nothing, a get flattens what it synced, and a sweep only
+# ever names the delta prefix.
 self_test() {
   local dir; dir=$(mktemp -d)
   trap 'rm -rf "$dir"' RETURN
   mkdir -p "$dir/bin"
-  cat > "$dir/bin/curl" <<'STUB'
+  cat > "$dir/bin/aws" <<'STUB'
 #!/usr/bin/env bash
-url=""
-for a in "$@"; do case "$a" in https://*) url="$a";; esac; done
-case "$url" in
-  *"/keys?"*) printf '{"result":[{"name":"s/r1-0"},{"name":"s/r1-1"},{"name":"s/gone"}],"result_info":{}}'; exit 0;;
-  *"/values/s%2Fgone"*) exit 22;;
-  *"/values/"*) printf '{"benchmark":"single_target","scores":{}}'; exit 0;;
-esac
-exit 1
+echo "AWS $*" >> "$STUB_LOG"
+if [ "$2" = "sync" ]; then
+  mkdir -p "$4/delta"
+  printf '{}' > "$4/single_target.json"
+  printf '{}' > "$4/delta/r1-0.json"
+fi
+exit 0
 STUB
-  chmod +x "$dir/bin/curl"
-  local bad=0
+  chmod +x "$dir/bin/aws"
+  export STUB_LOG="$dir/log"
+  : > "$STUB_LOG"
+  local bad=0 out
   check() {
     if [ "$2" = "1" ]; then echo "  ok    $1"; else echo "  FAIL  $1${3:+  — $3}"; bad=1; fi
   }
+  has() { if [ "${1#*"$2"}" != "$1" ]; then echo 1; else echo 0; fi; }
 
   printf '{"scores":{"a":"1"}}' > "$dir/one.json"
-
-  # 1. Unconfigured is a working state.
-  local out
-  out=$(CF_ACCOUNT="" CF_SCORES_NAMESPACE="" CF_TOKEN="" \
-    bash "$0" put "$dir/one.json" 2>&1) || bad=1
-  check "unconfigured put is silent and green" \
-    "$([ "${out#*nothing stored}" != "$out" ] && echo 1 || echo 0)" "$out"
-  out=$(CF_ACCOUNT="" CF_SCORES_NAMESPACE="" CF_TOKEN="" \
-    bash "$0" get "$dir/in" 2>&1) || bad=1
-  check "unconfigured get is silent and green" \
-    "$([ "${out#*boards alone}" != "$out" ] && echo 1 || echo 0)" "$out"
-
-  # 2. A put names the run and the shard.
-  out=$(PATH="$dir/bin:$PATH" CF_ACCOUNT=a CF_SCORES_NAMESPACE=n CF_TOKEN=t \
-    GITHUB_RUN_ID=r9 SHARD_ID=7 bash "$0" put "$dir/one.json" 2>&1) || bad=1
-  check "a put is keyed by run and shard" \
-    "$([ "${out#*s/r9-7}" != "$out" ] && echo 1 || echo 0)" "$out"
-
-  # 3. An empty file stores nothing rather than an empty blob.
   : > "$dir/empty.json"
-  out=$(PATH="$dir/bin:$PATH" CF_ACCOUNT=a CF_SCORES_NAMESPACE=n CF_TOKEN=t \
-    bash "$0" put "$dir/empty.json" 2>&1) || bad=1
-  check "an empty score file stores nothing" \
-    "$([ "${out#*is empty}" != "$out" ] && echo 1 || echo 0)" "$out"
 
-  # 4. A get writes one file per key it could read, and none for the one it could not.
-  PATH="$dir/bin:$PATH" CF_ACCOUNT=a CF_SCORES_NAMESPACE=n CF_TOKEN=t \
+  out=$(R2_ENDPOINT="" R2_ACCESS_KEY_ID="" R2_SECRET_ACCESS_KEY="" \
+    bash "$0" put "$dir/one.json" x.json 2>&1) || bad=1
+  check "unconfigured put is silent and green" "$(has "$out" "not configured")" "$out"
+  out=$(R2_ENDPOINT="" R2_ACCESS_KEY_ID="" R2_SECRET_ACCESS_KEY="" \
+    bash "$0" sweep 2>&1) || bad=1
+  check "unconfigured sweep is silent and green" "$(has "$out" "nothing to sweep")" "$out"
+
+  out=$(PATH="$dir/bin:$PATH" R2_ENDPOINT=e R2_ACCESS_KEY_ID=k R2_SECRET_ACCESS_KEY=s \
+    bash "$0" put "$dir/empty.json" x.json 2>&1) || bad=1
+  check "an empty score file banks nothing" "$(has "$out" "is empty")" "$out"
+
+  : > "$STUB_LOG"
+  PATH="$dir/bin:$PATH" R2_ENDPOINT=e R2_ACCESS_KEY_ID=k R2_SECRET_ACCESS_KEY=s \
+    bash "$0" put "$dir/one.json" delta/r9-7.json > /dev/null 2>&1 || bad=1
+  check "a put names the key it was handed" \
+    "$(has "$(cat "$STUB_LOG")" "s3://wfsim/scores/delta/r9-7.json")" "$(cat "$STUB_LOG")"
+
+  PATH="$dir/bin:$PATH" R2_ENDPOINT=e R2_ACCESS_KEY_ID=k R2_SECRET_ACCESS_KEY=s \
     bash "$0" get "$dir/in" > /dev/null 2>&1 || bad=1
-  local n; n=$(find "$dir/in" -name '*.json' | wc -l)
-  check "a get writes one file per readable key" "$([ "$n" = "2" ] && echo 1 || echo 0)" "got $n"
-  check "a key that could not be read leaves no file" \
-    "$([ ! -f "$dir/in/s_gone.json" ] && echo 1 || echo 0)" "an empty file was left behind"
+  local n; n=$(find "$dir/in" -maxdepth 1 -name '*.json' | wc -l)
+  check "a get flattens the deltas into one directory" \
+    "$([ "$n" = "2" ] && echo 1 || echo 0)" "got $n"
+
+  : > "$STUB_LOG"
+  PATH="$dir/bin:$PATH" R2_ENDPOINT=e R2_ACCESS_KEY_ID=k R2_SECRET_ACCESS_KEY=s \
+    bash "$0" sweep > /dev/null 2>&1 || bad=1
+  check "a sweep only ever names the delta prefix" \
+    "$(has "$(cat "$STUB_LOG")" "scores/delta/ --recursive")" "$(cat "$STUB_LOG")"
 
   echo ""
-  [ "$bad" = "0" ] && echo "the store banks what a run computed" || echo "score_store self-test failed"
+  if [ "$bad" = "0" ]; then echo "the store banks what a run computed"
+  else echo "score_store self-test failed"; fi
   return "$bad"
 }
 
 case "${1:-}" in
-  put) put_scores "${2:?usage: score_store.sh put <file>}" ;;
+  put) put_scores "${2:?usage: score_store.sh put <file> <key>}" "${3:?missing key}" ;;
   get) get_scores "${2:?usage: score_store.sh get <dir>}" ;;
+  sweep) sweep_deltas ;;
   --self-test) self_test ;;
-  *) echo "usage: score_store.sh put <file> | get <dir> | --self-test" >&2; exit 2 ;;
+  *) echo "usage: score_store.sh get <dir> | put <file> <key> | sweep | --self-test" >&2; exit 2 ;;
 esac

@@ -906,6 +906,11 @@ fn main() {
         }
     }
     let emit_to = flag("--emit-scores");
+    // EVERYTHING THIS RUN KNOWS, not only what it computed. A shard banks its
+    // own slice — re-emitting the store it read would make every delta a copy
+    // of the whole — where the publish pass writes the MERGED set the next run
+    // starts from, and a merged set missing what it reused is not merged.
+    let emit_all = has_flag("--emit-all");
     // WHAT EACH ROW THIS RUN TOUCHED READS, filed beside the score it produced.
     // Written into the emitted file so the score survives the run — see the
     // emit block for why the engine hash alone is not enough.
@@ -1851,6 +1856,20 @@ fn main() {
         let as_text = |m: &std::collections::HashMap<String, f64>| {
             m.iter().map(|(k, v)| (k.clone(), num_out(*v))).collect::<std::collections::HashMap<_, _>>()
         };
+        // WHAT IS BEING WRITTEN, decided once so the maps below agree.
+        // A SCORE WITHOUT ITS FINGERPRINT CANNOT BE READ BACK, so it is not
+        // written: the reader admits an entry only where the row's hash still
+        // matches, and `row_fps` is filled for every key this run walked. A
+        // board row whose build is no longer submitted is not walked, and
+        // emitting its number would put a byte in the store nothing can use.
+        let emitted: std::collections::HashMap<String, f64> = if emit_all {
+            let mut all = known.clone();
+            all.extend(computed.iter().map(|(k, v)| (k.clone(), *v)));
+            all.retain(|k, _| row_fps.contains_key(k));
+            all
+        } else {
+            computed.clone()
+        };
         let text = serde_json::to_string(&serde_json::json!({
             "benchmark": bench_id,
             // WHAT EACH ROW READ, which is the whole of what a stored score
@@ -1858,23 +1877,35 @@ fn main() {
             // what a row reads is enumerable from the row, where what it
             // EXECUTES is not, so the second question is answered by the audit
             // measuring rather than by anything here declaring.
-            "fps": computed
+            // ONE PER SCORE AND NO MORE. `row_fps` holds every key the run
+            // walked, most of which it neither computed nor is emitting.
+            "fps": emitted
                 .keys()
                 .filter_map(|k| row_fps.get(k).map(|f| (k.clone(), f.clone())))
                 .collect::<std::collections::HashMap<_, _>>(),
-            "scores": as_text(&computed),
+            "scores": as_text(&emitted),
             // WHAT EACH ONE COST, so the publish step can write it into the
             // board and the NEXT run can pack the shards with it. Without this
             // the figure survives exactly one run: publish measures almost
             // nothing, so it would write the default over every real number.
-            "costs": as_text(&costs),
+            // THE PRIOR BOARD'S FIGURES TOO, under `--emit-all`. They are what
+            // packs the next run's shards, and a merged set that dropped them
+            // would charge every row the default and deal the tail to one shard.
+            "costs": as_text(&if emit_all {
+                let mut all = prior_costs.clone();
+                all.extend(known_costs.iter().map(|(k, v)| (k.clone(), *v)));
+                all.extend(costs.iter().map(|(k, v)| (k.clone(), *v)));
+                all
+            } else {
+                costs.clone()
+            }),
             // …AND THE PROBE OF EVERY ROW THIS SHARD SCREENED, apart from the
             // scores because a probe is not one. The publish process walks
             // every row and would otherwise retake each of these alone.
             "probes": as_text(&probes),
             // Only the rows this shard actually searched; a plain build has no
             // entry, so an ordinary board's shard file is what it always was.
-            "rolls": computed
+            "rolls": emitted
                 .keys()
                 .filter_map(|k| rolls.get(k).map(|r| (k.clone(), r.clone())))
                 .collect::<std::collections::HashMap<_, _>>(),

@@ -164,9 +164,9 @@ jobs:
       - name: read the score store
         if: steps.wired.outputs.yes == 'true'
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_SCORES_NAMESPACE: ${{ secrets.CF_SCORES_NAMESPACE_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         run: bash scripts/score_store.sh get store
       - uses: actions/upload-artifact@v4
         if: steps.wired.outputs.yes == 'true'
@@ -381,13 +381,18 @@ jobs:
               --shard "${{ matrix.shard }}/${{ needs.submissions.outputs.shard_count }}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
-            # BANKED PER BENCHMARK, AS SOON AS IT EXISTS. A run cancelled after
-            # this has still kept the work; the artifact below only has to reach
-            # `publish` in THIS run, where the store has to reach every later
-            # one. The key carries the benchmark because a shard emits one file
-            # per board and they must not overwrite each other.
-            SHARD_ID="$id-${{ matrix.shard }}" bash scripts/score_store.sh put               "scores/$id-${{ matrix.shard }}.json" || true
+            # BANKED AS SOON AS IT EXISTS. A run cancelled after this has kept
+            # the work; the artifact below only has to reach `publish` in THIS
+            # run, where the store has to reach every later one. A DELTA, which
+            # `publish` merges and then sweeps — without that the store grows by
+            # a couple of hundred objects an hour and every run reads them all.
+            key="delta/${{ github.run_id }}-$id-${{ matrix.shard }}.json"
+            bash scripts/score_store.sh put "scores/$id-${{ matrix.shard }}.json" "$key" || true
           done
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -484,12 +489,26 @@ jobs:
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
               slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
             fi
+            mkdir -p merged
             ./target/release/wfsim-board "$id" site/board.json \
               $prior $FORCE \
               $slice \
               --scores scores \
+              --emit-scores "merged/$id.json" --emit-all \
               < submissions.json > "boards/$id.yaml"
+            # THE MERGED SET, which is what the next run starts from. `--emit-all`
+            # rather than what this pass computed: it computes almost nothing, so
+            # a file of its own work would be empty and the store would forget
+            # everything the shards banked.
+            bash scripts/score_store.sh put "merged/$id.json" "$id.json" || true
           done
+          # …AND THE DELTAS ARE SPENT. Only now: a sweep before the merged set
+          # lands drops work nothing else holds.
+          bash scripts/score_store.sh sweep || true
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
       # hour that says nothing is history nobody can read.

@@ -359,13 +359,21 @@ it. `scripts/score_store.sh` is the split: a shard writes what it scored into KV
 the moment it has it, and every later run reads the lot back before deciding
 what is left to do. **A run cancelled at 95% has banked 95% of its work.**
 
-A STORED SCORE PROVES ITSELF TWICE. The blob names the engine that wrote it and,
-per row, what that row read. The reader refuses the file whole if the engine
-differs and each row unless it recomputes to the same hash — measured on a store
-of 24 rows: 1,556 rows to do without it, 1,532 with it, 1,556 under a wrong
-engine, and 1,533 with one row's data fingerprint altered. Only entries under a
-declared engine are held to this; a run reading its own shards has one binary
-over one checkout and nothing to check.
+A STORED SCORE PROVES ITSELF ROW BY ROW: each carries the hash of what it read,
+and is admitted only where that still matches. Nothing declares which binary
+wrote it, because a code hash answers the wrong question (§"What decides new").
+Measured on a store of 24 rows: 1,556 rows to do without it, 1,532 with it, and
+1,533 with one row's data fingerprint altered — that row refought and no other.
+
+**TWO SHAPES UNDER ONE PREFIX.** A shard banks a DELTA the moment it has one, so
+a run cancelled after that has kept the work; `publish` writes the MERGED set
+the next run starts from and then sweeps the deltas. Without the merge the store
+grows by a couple of hundred objects an hour and every run reads all of them.
+
+THE MERGED SET CARRIES WHAT A SCORE NEEDS TO BE USED, not just the number: each
+row's fingerprint, its measured cost — which packs the next run's shards — and a
+riven row's ROLLS, which are a measurement like the score. A riven row reused
+without its rolls loses its whole riven block.
 
 NOTHING IN THE STORE KNOWS ABOUT CODE VERSIONS. Every row inside a blob carries
 the hash of what it READ and is admitted only where that still matches, so a
@@ -862,15 +870,19 @@ assets, and until the board there was no script at all. Two consequences:
    scored, not at the board. Every name in this pipeline says what it holds —
    the board is a file in the repo and nothing in Cloudflare is called after it.
 
-3. **The score store** — OPTIONAL, and everything works without it. A second KV
-   namespace and one more secret, `CF_SCORES_NAMESPACE_ID`, and the runs begin
-   banking what they compute (§"The store is what a run banks").
+3. **The score store** — OPTIONAL, and everything works without it. An R2
+   bucket, an R2 API token with *Object Read & Write*, and three secrets:
+   `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. The runs then bank
+   what they compute (§"The store is what a run banks").
 
-   SEPARATE FROM THE SUBMISSIONS, because the submissions are the one
-   irreplaceable thing here and a score can always be recomputed. Sharing a
-   namespace would put score blobs into the listing `fetch_submissions.sh`
-   walks. Unset the secret and the pipeline is exactly what it was — that is the
-   rollback, and it is why the store went in this way round.
+   R2 RATHER THAN KV, on the write quota: a run banks a delta per shard per
+   benchmark, which is thousands of writes a day against KV's free ceiling of
+   about a thousand. R2's is a million operations a month and egress is free.
+
+   SEPARATE FROM THE SUBMISSIONS, because those are the one irreplaceable thing
+   here and a score can always be recomputed. Unset the secrets and the pipeline
+   is exactly what it was — that is the rollback, and it is why the store went
+   in this way round.
 
 4. **The library database** — OPTIONAL, and everything above works without it.
    It is the first step of moving the library out of KV, and it is written so

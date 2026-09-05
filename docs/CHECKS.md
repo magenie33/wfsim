@@ -605,10 +605,11 @@ It fails on each of the seven.
 
 ## `score_store --self-test`
 
-Scores must outlive the run that computed them. Plain bash against a stub
-`curl`, no network: unconfigured is silent and green (which is the rollback), a
-blob is keyed by engine, run and shard, an empty score file stores nothing, and
-a read that fails leaves no file behind rather than an empty one.
+Scores must outlive the run that computed them. Plain bash against a stub `aws`,
+no network: unconfigured is silent and green (which is the rollback), a put
+names the key it was handed, an empty score file banks nothing, a get flattens
+the deltas into the one directory the reader takes, and a sweep only ever names
+the delta prefix — sweeping the merged set would throw away every banked score.
 
 The failure it guards is a run that banks nothing while reporting success — the
 board would still be right, and every run would still be green, while the whole
