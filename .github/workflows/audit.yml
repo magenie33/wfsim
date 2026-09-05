@@ -98,6 +98,7 @@ jobs:
         run: |
           set -euo pipefail
           : > result.txt
+          : > moved.txt
           for f in boards/*.yaml; do
             id=$(basename "$f" .yaml)
             python3 scripts/board_sample.py "$f" \
@@ -112,6 +113,10 @@ jobs:
               < sample.json > /dev/null 2> verify.log
             set -e
             grep -o 'verify-result: .*' verify.log >> result.txt || true
+            # THE ROWS THEMSELVES, so the finding below can be acted on rather
+            # than only counted. A row line is `verify: <key> <was> -> <now>`;
+            # the other `verify:` lines carry no arrow.
+            grep -o 'verify: [^ ]* .* -> .*' verify.log | awk '{print $2}' >> moved.txt || true
             grep -o 'verify: .* -> .*' verify.log | head -3 || true
           done
           cat result.txt
@@ -149,6 +154,13 @@ jobs:
           fi
           if [ "$moved" -gt 0 ]; then
             echo "::error::$moved of $compared published rows are not what this code computes"
+            # THE WARRANT, NOT JUST THE CHARGE. This job rescores nothing — it
+            # is an inspector — so what it owes the operator is the selector
+            # that repairs exactly what it found. `board_select.py` widens it
+            # to everything sharing the changed mechanic; the button takes
+            # either. docs/BOARD.md §"Two backstops".
+            sel=$(sort -u moved.txt | paste -sd';' -)
+            echo "::notice::Actions -> board -> Run workflow, weapon = $sel"
             exit 1
           fi
           echo "::notice::$compared rows agree with the board (crossing every $CROSSING runs)"

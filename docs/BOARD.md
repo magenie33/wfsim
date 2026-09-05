@@ -182,47 +182,45 @@ themselves — as `engine:` at the top of the file. Next run:
 - **fingerprint moved** → the run does not assume every row is stale. It
   PROVES it, one way or the other — see below.
 
-### When the code moved: prove whether any NUMBER did
+### When the code moved: nothing rescores, and two backstops watch
 
 The fingerprint is a hash of three whole trees, so any edit to them declares
 every stored score stale. Most edits cannot move a number: a comment, a test, a
-validation rule, a field only the page reads. Measured on 2026-09-03, the cost
-of assuming otherwise was **7,808 minutes of work across 128 shards, median
-shard 55 minutes and worst 192, four hours of wall clock** — against a schedule
-firing every twenty, so every successor was discarded. Eleven engine commits in
-one morning produced no completed run for ten hours.
+validation rule, a field only the page reads. Measured, the cost of assuming
+otherwise was **7,808 minutes across 128 shards, median shard 55 minutes and
+worst 192, four hours of wall clock** — against a schedule firing every twenty,
+so every successor was discarded. Eleven engine commits in one morning produced
+no completed run for ten hours.
 
-So the workflow measures instead of guessing, and it measures PER GROUP.
-`scripts/board_sample.py` takes **one published row per `(weapon, mode)`** — the
-group's best, which is the row every other row in it is measured against — and
-`wfsim-board --verify` reproduces them under the new code and compares each with
-what the board says.
+So a fingerprint difference means UNVERIFIED, never wrong, and the pipeline
+answers it by repairing a bounded slice per run. Nothing in it re-fights a
+published row to decide anything — `check_rescore_paths.mjs` refuses a
+`--verify` in the board workflow.
 
-**THE GROUP IS THE UNIT BECAUSE IT IS WHAT THE BOARD RANKS.** A melee carries
-seven modes and the cards that win one do not win another, so a probe that
-sampled the WEAPON judged seven rankings by one of them — and a run could then
-only reuse everything or nothing. `--verify` names the groups that CLEARED and
-the ones that MOVED; `decide` subtracts the second from the first, because two
-shards can sample one group and a group clear in one and moved in the other is
-moved; and `--verified-groups` keeps the stored scores of the clear ones and
-sends the rest back through the fight.
+**THE TWO BACKSTOPS ARE A PERSON AND AN INSPECTOR**, and neither is the
+pipeline:
 
-Measured across the three boards: **777 groups, and probing every one of them is
-174 CPU minutes — 2.2% of the 8,008 a full rescore costs.** A melee change is
-684 minutes rather than 8,008, twelve times; a change confined to one group is
-forty-six; a change to `damage.rs` that really does move everything costs 2%
-more than today. Cheap changes get cheap and expensive ones stay honest.
+| | who decides | what it does | what it costs |
+| --- | --- | --- | --- |
+| **the button** | a person | rescores exactly the rows a selector names, at any precision | minutes; `board_select.py` prices it first |
+| **the audit** | nobody — it reports | re-fights a slice of the PUBLISHED board hourly, exact comparison, crosses all of it in 3.5 days | one job, under 2% of a day's free CPU |
 
-**THE POLARITY IS THE SAFE ONE.** What the file lists is KEPT and everything
-else is dropped, so a file that is missing, empty or truncated rescores
-everything — slow, and never a stale number published under a generation that
-never measured it. Naming what to drop would fail the other way.
+The audit publishes nothing and gates nothing. Its outputs are a count when the
+numbers agree, and when they do not, a failure naming the rows **plus the
+selector that repairs them** — the charge and the warrant, so the finding lands
+in the button rather than in a discussion. §"The audit" is the mechanism.
 
-**Exact equality**, not a tolerance: a score is a pure function and the carry
-between the scoring processes is lossless, so "close enough" would be a number
-nobody can defend. A **floor of 100 rows compared** across the shards, because a
-verification that cannot fail is worse than none — under it the clear sets are
-deleted and every row goes back through the fight.
+AN INSPECTOR THAT CAN STOP THE LINE STOPS BEING AN INSPECTOR. A group probe on
+the critical path buys a priority hint for 25 minutes of wall clock and 280 CPU
+minutes, and leaves the run behind it to be cancelled while it works. Its
+question — *does the file still say what the code computes* — is the audit's
+question, and the audit asks it continuously, over the whole board rather than
+one row per group.
+
+TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
+(asked and answered). An untouched row is valid forever; a row whose engine
+moved is wrong immediately, not in an hour. A cooldown would be both too slow
+and too fast at once.
 
 **A PUSH NEVER RESCORES THE BOARD, AND THE BOARD CONVERGES INSTEAD.** A
 fingerprint difference says a stored score is UNVERIFIED under this generation,
@@ -248,16 +246,15 @@ where it was rather than resetting the rotation to the top.
 The slice is one set for both kinds of staleness, because the repair is the
 same: a row whose own DATA moved and a row whose CODE fingerprint moved are both
 unverified, and telling `--refresh` about them separately would be two lists
-where one will do. Where the probe can conclude, the groups it measured as moved
-are what a run puts first; where it cannot — it compared nothing, or the
-fingerprint FUNCTION itself moved — the slice still converges, just without the
-head start.
+where one will do. The slice walks them in `fp` order and nothing reorders it:
+a priority hint is what the group probe cost 25 minutes of wall clock to
+produce, and the rows it would have promoted are repaired within the same
+crossing anyway.
 
-That assumption was the old policy and it is what it cost: over one day, five
-cancelled full rescores, thousands of CPU minutes, and **the board published
-nothing at all**, because each was superseded by the next push before it
-finished. A rescore that never lands is not a slow update, it is no update and a
-bill.
+The alternative was to treat unverified as wrong, and that is what it cost: over
+one day, five cancelled full rescores, thousands of CPU minutes, and **the board
+published nothing at all**, because each was superseded before it finished. A
+rescore that never lands is not a slow update, it is no update and a bill.
 
 So a full rescore is a BUTTON. `full` does all of it, `weapon` does one weapon,
 and both are somebody deciding rather than a push implying. Nothing automatic
@@ -1430,15 +1427,14 @@ is the cheap half: 13.6% of commits. It stays. What it needs is the silent gaps
 closed, not more precision.
 
 The CODE half is 55.6% of commits and a single hash for the whole board, so
-every one of them nominally rescores everything. The answer is not a finer
-declaration but a finer MEASUREMENT, and it runs: **the probe clears per GROUP**
-(§"When the code moved"), so only the groups whose sample moved are rescored and
-nothing declares that changing one thing affects another.
+every one of them nominally marks everything unverified. The answer is not a
+finer declaration: **unverified is not wrong**, so the slice repairs it at a
+bounded rate and nothing declares that changing one thing affects another.
 
-**ITS UNDER-APPROXIMATION, NAMED.** One row per group, so a change that moves
-some builds of a group and not the sampled one is missed. That is the same hole
-the whole-board probe already had, one row per WEAPON rather than per group, so
-this is strictly finer — and step 5 is what makes it affordable to have.
+**WHAT NO SAMPLE CAN CLOSE.** Any probe that reads one row per group misses a
+change that moves some builds of a group and not the sampled one. That is why
+the check on a published number is the AUDIT, which reads every row in turn
+rather than one per group — §"When the code moved", the two backstops.
 
 **3. PROGRESS IS MONOTONIC.** A score keyed by its inputs is a fact, written the
 moment it is computed rather than when a batch ends (§"A score is a fact").

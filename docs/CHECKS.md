@@ -584,19 +584,20 @@ asked for.
 
 ## `check_rescore_paths`
 
-Only the clock and a person may start a board run. Plain node, no browser: it
-reads the `on:` block of `.github/workflows/board.yml` and refuses a `push`
-trigger, requires the `schedule`, refuses any path list, and refuses a pinned
-`--refresh-from` anywhere in the file.
+Only the clock and a person may start a board run, and the run must not stop to
+judge itself. Plain node, no browser: it reads `.github/workflows/board.yml` and
+refuses a `push` trigger, requires the `schedule`, refuses any path list,
+refuses a `--verify` anywhere in the file, and refuses a pinned
+`--refresh-from`.
 
-Each of those spins the wheel without turning it, and every run stays green
-while it happens. A pushed run duplicates the scheduled one and is cancelled by
-the next push; a path list is a second answer to the question the fingerprint
-already answers; a pinned offset hands the next run the rows the last one just
-repaired.
+Each of those spins the wheel without turning it while every run stays green. A
+pushed run duplicates the scheduled one and is cancelled by the next push; a
+path list is a second answer to the question the fingerprint already answers;
+`--verify` re-fights published rows, which is the audit's job and costs 25
+minutes of wall clock on the critical path; a pinned offset hands the next run
+the rows the last one just repaired.
 
-It fails on a re-added `push:` trigger, on a `paths:` or `paths-ignore:` key,
-and on a pinned offset.
+It fails on each of the five.
 
 ## `check_comment_style`
 

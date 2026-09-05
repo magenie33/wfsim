@@ -43,6 +43,16 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
   "the fingerprint decides what a change reached; a path list is a second "
     + "answer to that question and the two can disagree");
 
+// THE BOARD PUBLISHES; THE AUDIT INSPECTS. `--verify` re-fights published rows
+// and compares them, which is an inspector's job and costs 25 minutes of wall
+// clock — on the board's critical path it delayed every publish to decide a
+// priority hint, and the run behind it was cancelled while it worked. The audit
+// asks the same question hourly, gating nothing.
+const verifies = wf.filter((l) => l.includes("--verify"));
+check(verifies.length === 0, "the board does not stop to verify itself",
+  `the pipeline re-fights published rows (${verifies.map((l) => l.trim()).join(" | ")}) `
+    + "instead of leaving that to audit.yml");
+
 // THE REPAIR SLICE ADVANCES BY WHAT IT TOOK, and the workflow may not say
 // otherwise. `--refresh-from` pins the offset, and pinning it to the run number
 // is the shape that stalled the board for 35 hours: a slice is hundreds of rows
