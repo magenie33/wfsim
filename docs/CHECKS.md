@@ -589,9 +589,10 @@ judge itself. Plain node, no browser: it reads `.github/workflows/board.yml` and
 refuses a `push` trigger, requires the `schedule`, refuses any path list,
 refuses a `--verify` anywhere in the file, refuses a pinned
 `--refresh-from`, requires the `--shard i/N` denominator to name the same output
-the matrix is built from, and requires every scoring call to bound BOTH
-backlogs — `--refresh` for rows already held, `--new-limit` for builds with no
-score at all.
+the matrix is built from, and requires every scoring call to bound both
+backlogs and the clock behind them — `--refresh` for rows already held (spent in
+measured seconds), `--new-limit` for builds with no score at all (a count, since
+they have no cost), and `--deadline` to make that count a promise.
 
 Each of those spins the wheel without turning it while every run stays green. A
 pushed run duplicates the scheduled one and is cancelled by the next push; a

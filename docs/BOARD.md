@@ -248,6 +248,19 @@ boards. `--refresh` bounds the first and `--new-limit` the second, and leaving
 either unbounded means a run that cannot finish inside the cadence that starts
 the next one. `check_rescore_paths.mjs` refuses a scoring call missing either.
 
+**A BUDGET PREDICTS; A DEADLINE GUARANTEES**, and only one of the two backlogs
+can be predicted. A repair is spent in seconds the LAST run measured, so it
+self-corrects. A never-scored row has no cost, so `NEW_ROWS` can only count —
+and rows differ **79x**: on a published board the median is 3.6 s, the ninetieth
+percentile 16.9, the ninety-ninth 65.4 and the worst 281. A hundred and fifty of
+them is nine minutes or fifty, depending on which builds arrived.
+
+`SCORE_DEADLINE_MINUTES` is what makes it a promise. When the clock runs out the
+run stops taking on NEW rows — **and only new ones**, which is the whole safety
+argument: a new row not taken is a row that was not on the board anyway, where a
+repair not taken is a row that would VANISH from it. The predictable half is the
+one that must finish. The run says which bound stopped it, `count` or `clock`.
+
 A RUN THAT DEFERS ROWS IS NOT A RUN THAT FAILED. It publishes a board with more
 rows than the last one had, and says how many are left; the count falling run
 over run is the board catching up. At `NEW_ROWS: 150` a backlog of 1,523 clears

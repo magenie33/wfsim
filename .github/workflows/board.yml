@@ -107,6 +107,14 @@ env:
   # about ten minutes of scoring a shard at `SLICE_SHARDS`.
   REFRESH_MINUTES: 15
   NEW_ROWS: 150
+  # …AND THE CLOCK BEHIND BOTH, because only one of them predicts anything. A
+  # repair is spent in seconds the last run MEASURED; a never-scored row has no
+  # cost, so `NEW_ROWS` can only count — and rows differ 79x, which makes 150 of
+  # them nine minutes or fifty depending on which builds arrived. The deadline
+  # stops taking NEW work when the time is up, and only new work: a row not
+  # taken is one that was not on the board anyway, where a repair not taken is
+  # one that would vanish from it.
+  SCORE_DEADLINE_MINUTES: 12
 
 jobs:
   # ---- 1. what is there to score ----------------------------------------
@@ -283,7 +291,7 @@ jobs:
           # code difference drops every stored score before the slice can keep
           # any, so the count comes back as the whole board and the gate cannot
           # tell a slice from a rescore.
-          SLICE="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS"
+          SLICE="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
           if [ "${{ inputs.full }}" = "true" ]; then SLICE=""; fi
           todo=0
           for f in boards/*.yaml; do
@@ -380,7 +388,7 @@ jobs:
             # re-fight what it just repaired.
             slice=""
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS"
+              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
             fi
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
@@ -485,7 +493,7 @@ jobs:
             # re-fight what it just repaired.
             slice=""
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS"
+              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
             fi
             ./target/release/wfsim-board "$id" site/board.json \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \

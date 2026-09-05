@@ -185,12 +185,15 @@ const FLOOR: f64 = 0.5;
 /// WHAT A ROW IS ASSUMED TO COST when nothing has measured it — a new build, or
 /// a board written before costs were recorded.
 ///
-/// ONE SECOND is the median row, which is the right guess precisely because it
-/// is wrong about the tail: the packing only has to keep the monsters apart,
-/// and a monster is measured the first time it runs. A board with no costs at
-/// all charges every row the same and the split degenerates to round-robin,
-/// which is what it was.
-const DEFAULT_ROW_SECONDS: f64 = 1.0;
+/// THE MEDIAN ROW, counted on a published board: 3.6 s across 7,659 of them,
+/// against 16.9 at the ninetieth percentile, 65.4 at the ninety-ninth and 281
+/// for the worst — a spread of 79x, which is why the packing only has to keep
+/// the monsters apart and a monster is measured the first time it runs.
+///
+/// IT IS THE MEDIAN AND NOT A ROUND NUMBER because it is charged to every row
+/// nobody has scored, and a run takes ~450 of those: guessing one second
+/// under-charges the whole backlog fourfold and hands one shard the tail.
+const DEFAULT_ROW_SECONDS: f64 = 3.6;
 
 /// THE FEW SCALARS THE RUNTIME ASKS OF A BOARD, and the only part of one that
 /// is embedded. See its own header for why the rows are not.
@@ -854,6 +857,22 @@ fn main() {
     // number it showed yesterday. Bounded, each run publishes a board with more
     // rows on it than the last.
     let new_limit = flag("--new-limit").and_then(|s| s.parse::<usize>().ok());
+    // WHEN THE RUN STOPS TAKING ON NEW WORK, in seconds of wall clock.
+    //
+    // A BUDGET PREDICTS AND A DEADLINE GUARANTEES, and only one of those can be
+    // had here: `--refresh` is spent in seconds the last run MEASURED, so it is
+    // self-correcting, while a never-scored row has no cost and `--new-limit`
+    // can only count. Rows differ 79x, so a count of 150 is nine minutes or
+    // fifty depending on which builds arrived.
+    //
+    // IT APPLIES TO NEW ROWS ALONE, and that asymmetry is the whole safety
+    // argument: a new row not taken is a row that is not on the board yet,
+    // which is where it already was, while a REPAIR not taken is a row that
+    // would vanish from it. The predictable half is the one that must finish.
+    let deadline = flag("--deadline")
+        .and_then(|s| s.parse::<u64>().ok())
+        .map(std::time::Duration::from_secs);
+    let started = std::time::Instant::now();
     let refresh = flag("--refresh").and_then(|s| s.parse::<f64>().ok());
     // WHERE THE SLICE STARTS. The operator may pin it, but the default is the
     // cursor the last run stored: every shard of a run reads the same file, so
@@ -1303,7 +1322,12 @@ fn main() {
                     // and call it done.
                     if !prior_present.is_empty() && !prior_present.contains(&key) {
                         fresh_seen += 1;
-                        if new_limit.is_some_and(|n| fresh_seen > n) {
+                        // THE COUNT IS THE PLAN AND THE CLOCK IS THE PROMISE.
+                        // Whichever runs out first stops the backlog here; the
+                        // rest of this row's kind wait for the next run.
+                        let over = new_limit.is_some_and(|n| fresh_seen > n)
+                            || deadline.is_some_and(|d| started.elapsed() > d);
+                        if over {
                             fresh_left += 1;
                             continue;
                         }
@@ -1641,8 +1665,9 @@ fn main() {
     // run that failed to score them: the next one takes the next share, and the
     // count falling run over run is what says the board is catching up.
     if fresh_left > 0 {
+        let why = if deadline.is_some_and(|d| started.elapsed() > d) { "clock" } else { "count" };
         eprintln!(
-            "new: {} of {fresh_seen} never-scored row(s) taken, {fresh_left} left for the next run",
+            "new: {} of {fresh_seen} never-scored row(s) taken, {fresh_left} left for the next run ({why})",
             fresh_seen - fresh_left
         );
     }
