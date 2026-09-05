@@ -37,17 +37,12 @@ on:
     # It is free to do: this repo is public, so Actions minutes are not metered,
     # and a run that finds nothing new commits nothing.
     - cron: "0,20,40 * * * *"
-    # THE BACKSTOP, and it is a FULL rescore whatever the probe below thinks.
-    # Sampling one published row per weapon catches any code change that moves a
-    # number for some weapon; what it can still miss is one that moves only SOME
-    # builds of one weapon, and nothing bounds that but measuring everything.
-    # Once a week does, and it costs one long run out of ~500.
-    #
-    # MONDAY 00:00 UTC, which is Warframe's own weekly reset — *"Other content
-    # uses a different server-side reset timer that resets only every Monday at
-    # 0:00 UTC"* (wiki `Reset`). A small tribute, and a time the players this is
-    # for already have in their heads.
-    - cron: "0 0 * * 1"
+    # THE WEEKLY FULL RESCORE IS GONE, and `audit.yml` is what replaced it. It
+    # was the backstop for the probe's blind spot — a change that moves only
+    # SOME builds of one group — and it paid for that by rescoring 22,977 rows
+    # every Monday whether or not anything had moved. The audit reads a slice of
+    # the published board every hour, crosses all of it in days, and reports a
+    # row that is not what this code computes without rescoring anything.
   push:
     branches: [main]
     # WAKE ON EVERYTHING EXCEPT WHAT THIS WORKFLOW ITSELF WRITES.
@@ -436,9 +431,24 @@ jobs:
       - id: v
         run: |
           set -euo pipefail
+          # A PUSH NEVER RESCORES THE BOARD, and that is the rule this job now
+          # serves. A fingerprint difference says a stored score is UNVERIFIED
+          # under this generation, not that it is wrong — so the run scores what
+          # is NEW, rescores the groups the probe MEASURED as moved, and leaves
+          # the rest alone. Measured over one day of the other policy: five
+          # cancelled full rescores, thousands of CPU minutes, and the board
+          # published nothing at all, because each was superseded before it
+          # finished. A full rescore is a button now (`full`), and `weapon` is
+          # the narrow one beside it.
+          #
+          # `equivalent` therefore says "keep the stored scores", and it says it
+          # whatever the probe managed. What the probe decides is the NARROWING
+          # below: with a usable verdict the moved groups go back through the
+          # fight, and without one nothing does — the board holds what it has
+          # and says how old it is (§"The audit", `scored_at_epoch_seconds`).
+          echo "equivalent=true" >> "$GITHUB_OUTPUT"
           if [ "${{ needs.verify.result }}" != "success" ]; then
-            echo "equivalent=false" >> "$GITHUB_OUTPUT"
-            echo "no usable probe (${{ needs.verify.result }}) — full rescore"
+            echo "::notice::no usable probe (${{ needs.verify.result }}) — the board keeps what it has"
             exit 0
           fi
           sum() { cat verdict/*.txt 2>/dev/null \
@@ -469,12 +479,15 @@ jobs:
           # row of it moved. What still decides nothing is a probe that could
           # not compare — a hundred rows is the floor, and under it the file is
           # empty and every row goes back through the fight.
+          # A HUNDRED ROWS IS THE FLOOR, and under it the verdict is thrown away
+          # rather than acted on: a probe that compared almost nothing proves
+          # nothing, and the clear set it produced would send every group it
+          # never judged back through the fight for no reason. Deleting the
+          # files means no narrowing, which now means no rescore.
           if [ "$compared" -ge 100 ]; then
-            echo "equivalent=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::probe compared $compared rows, $moved moved — reusing every group that cleared"
+            echo "::notice::probe compared $compared rows, $moved moved — rescoring only the groups that moved"
           else
-            echo "equivalent=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::probe compared only $compared rows — every row goes back through the fight"
+            echo "::notice::probe compared only $compared rows — no verdict, so the board keeps what it has"
             rm -f verified/*.txt
           fi
 
@@ -560,9 +573,15 @@ jobs:
             id=$(basename "$f" .yaml)
             prior=""
             [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
+            # THE NARROWING, and only when the probe produced one. An absent
+            # file means no verdict, and no verdict now means nothing is
+            # dropped — the opposite of what an EMPTY file would mean, so the
+            # two are kept apart rather than collapsed into one flag.
+            narrow=""
+            if [ -s "verified/$id.txt" ]; then narrow="--verified-groups verified/$id.txt"; fi
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
-              --verified-groups "verified/$id.txt" \
+              $narrow \
               --shard "${{ matrix.shard }}/${SHARDS}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
@@ -660,9 +679,15 @@ jobs:
               cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
               prior="--reuse /tmp/$id-prior.yaml"
             fi
+            # THE NARROWING, and only when the probe produced one. An absent
+            # file means no verdict, and no verdict now means nothing is
+            # dropped — the opposite of what an EMPTY file would mean, so the
+            # two are kept apart rather than collapsed into one flag.
+            narrow=""
+            if [ -s "verified/$id.txt" ]; then narrow="--verified-groups verified/$id.txt"; fi
             ./target/release/wfsim-board "$id" site/board.json \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
-              --verified-groups "verified/$id.txt" \
+              $narrow \
               --scores scores \
               < submissions.json > "boards/$id.yaml"
           done

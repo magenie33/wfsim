@@ -220,12 +220,26 @@ nobody can defend. A **floor of 100 rows compared** across the shards, because a
 verification that cannot fail is worse than none — under it the clear sets are
 deleted and every row goes back through the fight.
 
-What the sample can still miss is a change that moves only SOME builds of one
-group. Nothing bounds that but measuring everything, so **a full rescore runs
-weekly regardless** — `0 0 * * 1`, Monday 00:00 UTC, which is Warframe's own
-weekly reset (*"Other content uses a different server-side reset timer that
-resets only every Monday at 0:00 UTC"*, wiki `Reset`) — and §"The audit" reads a
-slice of the published board hourly for the same reason.
+**A PUSH NEVER RESCORES THE BOARD.** A fingerprint difference says a stored
+score is UNVERIFIED under this generation, not that it is wrong, so a code
+change scores what is NEW, rescores the groups the probe MEASURED as moved, and
+leaves the rest alone. Where the probe cannot conclude — it could compare
+nothing, or the fingerprint FUNCTION itself moved — the answer is to keep what
+the board has and say how old it is, never to rescore 22,977 rows on the
+assumption that something might have changed.
+
+That assumption was the old policy and it is what it cost: over one day, five
+cancelled full rescores, thousands of CPU minutes, and **the board published
+nothing at all**, because each was superseded by the next push before it
+finished. A rescore that never lands is not a slow update, it is no update and a
+bill.
+
+So a full rescore is a BUTTON. `full` does all of it, `weapon` does one weapon,
+and both are somebody deciding rather than a push implying. What the sample can
+still miss — a change that moves only SOME builds of one group — is what
+§"The audit" is for: it reads a slice of the published board every hour and
+crosses all of it in days, reporting a row that is not what this code computes
+without rescoring anything.
 
 TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 (asked and answered,). An untouched row is valid forever; a row
