@@ -584,19 +584,19 @@ asked for.
 
 ## `check_rescore_paths`
 
-The board must wake on everything it does not itself write. Plain node, no
-browser: it asserts the SHAPE of the trigger in `.github/workflows/board.yml` —
-`paths-ignore` and never `paths` — and then that every skipped path is one the
-`publish` step's own `GENERATED` list says the run writes.
+Only the clock and a person may start a board run. Plain node, no browser: it
+reads the `on:` block of `.github/workflows/board.yml` and refuses a `push`
+trigger, requires the `schedule`, refuses any path list, and refuses a pinned
+`--refresh-from` anywhere in the file.
 
-The shape is the point. An inclusion list cannot wake the board for a path
-nobody remembered to add, and that path's change still moves the engine
-fingerprint, so it invalidates every stored score and the rescore it bought
-lands on whichever run happens next. An exclusion list fails the other way:
-a forgotten entry costs one wasted run.
+Each of those spins the wheel without turning it, and every run stays green
+while it happens. A pushed run duplicates the scheduled one and is cancelled by
+the next push; a path list is a second answer to the question the fingerprint
+already answers; a pinned offset hands the next run the rows the last one just
+repaired.
 
-It fails on both broken shapes — a `paths:` key at all, and a `paths-ignore`
-entry naming something the run does not generate.
+It fails on a re-added `push:` trigger, on a `paths:` or `paths-ignore:` key,
+and on a pinned offset.
 
 ## `check_comment_style`
 

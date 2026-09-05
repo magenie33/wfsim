@@ -124,13 +124,19 @@ state anyway.
 
 ## When it updates
 
+**THE CLOCK IS THE ONLY AUTOMATIC TRIGGER.** A push does not wake the board.
+
 | trigger | scope | cost |
 | --- | --- | --- |
-| `:00`, `:20`, `:40` | score what is new | seconds; no commit when nothing changed |
-| a push touching `engine/`, `webapi/` or the scorer | **everything** — the CODE fingerprint moved | ~2h20m measured 2026-08-25, 32 ways at once |
-| a push touching `data/` | only the rows that READ the file that moved | a new weapon costs **0 of 885 rows**; one mod costs the rows carrying it |
-| a change to a benchmark's terms | everything on THAT ruler | the builds carry over; only the numbers change |
-| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | the same ~2h20m |
+| `:00`, `:20`, `:40` | what is NEW, plus `REFRESH_MINUTES` of what is unverified | 30 minutes of measured work a board |
+| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | ~2h20m, 32 ways at once |
+| Actions → board → Run workflow, **weapon = …** | the rows the selector names, whatever the fingerprints say | minutes; `board_select.py` prices it first |
+
+A PUSHED RUN DID EXACTLY WHAT THE NEXT SCHEDULED ONE DOES, so it duplicated a
+run that was coming anyway while competing for the same forty slots. Over 95
+measured runs, 21 of 22 pushed runs were cancelled by the next push and the
+board published nothing. Ordinary work still reaches it: a change moves the
+fingerprint, the rows it reached become unverified, and the slice repairs them.
 
 **THE FULL RESCORE GOT MUCH BIGGER WHEN THE LIBRARY LANDED, and that is the
 price of it**: 2,223 builds crossed with three rulers rather than 967 rows each
@@ -139,12 +145,10 @@ minutes. The per-row fingerprint above is what keeps that off the ordinary day �
 a data change costs the rows that read it and nothing else — but a CODE change
 still pays in full.
 
-**A DAY OF CODE PUSHES IS A DAY WITH NO BOARD.** The workflow keeps one pending
-run and cancels the rest, so a rescore that takes 2h20m is cancelled by any push
-inside that window: on 2026-08-25, 18 of 20 runs were cancelled and two
-completed. That is the concurrency rule working as designed and it is worth
-knowing before wondering why the board has not moved. If a rescore matters more
-than the next push, stop pushing for two hours or run it by hand from Actions.
+**ONE PENDING RUN, AND THE REST ARE CANCELLED.** That is GitHub's rule, not a
+setting, and it is why a run has to fit inside the cadence that starts the next
+one: a run longer than 20 minutes leaves the one behind it to be cancelled by
+the one behind that. It cost the board every pushed run it ever had.
 
 **The clock is a best effort, not a promise.** GitHub delays scheduled runs
 under load and says so, and this repo's own history is the evidence: while the
@@ -153,10 +157,10 @@ apart is the answer to that — a submission waits ~20 minutes rather than an
 hour, and a slipped run is covered by the next one instead of costing you the
 whole hour. If you want a result NOW, Actions → board → Run workflow.
 
-The second row is the point: the maintainer's ordinary work — fixing a bug,
-correcting a number, changing the benchmark to 480 s — IS the trigger. There is
-no dependency analysis deciding which rows were affected, because that question
-can be answered wrong silently.
+The maintainer's ordinary work — fixing a bug, correcting a number, changing the
+benchmark to 480 s — reaches the board through the FINGERPRINT rather than
+through a trigger: it marks the rows the change reached as unverified, and the
+next run's slice repairs them. What it never does is start a run of its own.
 
 ### What decides "new" — the ENGINE FINGERPRINT
 

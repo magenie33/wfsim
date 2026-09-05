@@ -1,22 +1,24 @@
 # THE BOARD RUNS ITSELF. Nobody commits a leaderboard by hand.
 #
 # The repo owner never touches this: the bot scores, the bot commits, and
-# Cloudflare deploys the push. What triggers a re-score is the owner's ORDINARY
-# WORK — fixing a bug in `engine/`, correcting a number in `data/`, or bumping a
-# benchmark to a new version is itself the trigger, because all three are a push
-# that changes what a score MEANS.
+# Cloudflare deploys the push.
 #
-# NOTHING AUTOMATIC EVER FIGHTS MORE THAN A SLICE. Every run — scheduled or
-# pushed — scores what is NEW and repairs `REFRESH_MINUTES` of what this
-# generation has not verified, then publishes. A fingerprint difference says a
-# stored score is UNVERIFIED, never that it is wrong, so the board CONVERGES at
-# a rate this file sets instead of being re-derived whenever the code moves.
+# THE CLOCK IS THE ONLY AUTOMATIC TRIGGER. A push does not wake the board, and
+# that is deliberate: under convergence a pushed run does exactly what the next
+# scheduled one does — score what is NEW, repair `REFRESH_MINUTES` of what this
+# generation has not verified, publish — so it duplicates a run that is coming
+# anyway while competing for the same forty slots. Measured over 95 runs: 21 of
+# 22 pushed runs were cancelled by the next push, and the board published
+# nothing. Ordinary work still reaches the board; the FINGERPRINT is what
+# carries it, marking the rows a change reached as unverified so the slice
+# repairs them.
 #
-# That is not a softening of the correctness rule, it is what makes it
-# affordable: rescoring all 22,977 rows on every push produced, over one
-# measured day, five cancelled runs and no published board at all. A full
-# rescore is a button (`full`), and `weapon` names rows at any precision beside
-# it — docs/BOARD.md §"When the code moved".
+# NOTHING AUTOMATIC EVER FIGHTS MORE THAN A SLICE, which is what makes the
+# correctness rule affordable: a fingerprint difference says a stored score is
+# UNVERIFIED, never that it is wrong, so the board CONVERGES at a rate this file
+# sets instead of being re-derived whenever the code moves. A full rescore is a
+# button (`full`), and `weapon` names rows at any precision beside it —
+# docs/BOARD.md §"When the code moved".
 #
 # Scoring is embarrassingly parallel — every row is an independent fight — so it
 # splits `SHARDS` ways and a merge job assembles the board from the scores. What
@@ -44,29 +46,6 @@ on:
     # every Monday whether or not anything had moved. The audit reads a slice of
     # the published board every hour, crosses all of it in days, and reports a
     # row that is not what this code computes without rescoring anything.
-  push:
-    branches: [main]
-    # WAKE ON EVERY SOURCE. SKIP EVERY GENERATED TREE.
-    #
-    # An INCLUSION list is the wrong shape here and was wrong in the way that
-    # matters: a path that moves the engine fingerprint and is not listed
-    # invalidates every stored score and wakes nobody, so the full rescore it
-    # bought lands on whichever run happens next, for a reason that run has
-    # nothing to do with. `cli` was such a path. Naming what to SKIP inverts the
-    # failure — forgetting an entry costs one wasted run and can never cost a
-    # board that quietly stops moving.
-    #
-    # GENERATED, BY ANYONE — not just by this workflow. Nothing reads `site/`
-    # to decide a number; it is what `build_site_app.py` writes for the CDN, so
-    # a push that only regenerates it cannot change what a score means, and
-    # every `site: regenerate` is such a push. What may never be skipped is a
-    # SOURCE, whatever it looks like: `scripts/` holds `engine_fingerprint.sh`,
-    # which decides the hash itself. `check_rescore_paths` reads both
-    # generators and holds this list to them.
-    paths-ignore:
-      - "boards/**"
-      - "data/board_state.yaml"
-      - "site/**"
   workflow_dispatch:
     inputs:
       full:
@@ -87,20 +66,16 @@ on:
         type: string
         default: ""
 
-# ONE EXPENSIVE RUN AT A TIME, and only `full` is expensive now. A push and a
-# manual run do the same thing, and in groups of their own they did it AT THE
-# SAME TIME — each asking `max-parallel` of an account ceiling that holds forty,
-# so both ran at half speed to produce one board twice. They share a group.
-#
-# THE SCHEDULE KEEPS ITS OWN, because it is the thing that drives convergence:
-# every one of its runs repairs a slice, and standing those down behind a manual
-# rescore would pause the mechanism the board updates by.
+# THE SCHEDULE AND THE BUTTON KEEP SEPARATE GROUPS. The schedule is what drives
+# convergence — every one of its runs repairs a slice — and standing those down
+# behind a manual `full` would pause the mechanism the board updates by, which
+# is the shape that starved it before.
 #
 # Splitting is safe because `publish` takes whatever `main` is now, writes the
 # generated files on top and retries three times: two runs landing a board is
 # last-writer-wins BY DESIGN, the same reasoning that made it refuse to rebase.
 concurrency:
-  group: board-${{ github.event_name == 'schedule' && 'schedule' || 'rescore' }}
+  group: board-${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
   cancel-in-progress: false
 
 env:
