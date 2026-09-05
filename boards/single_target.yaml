@@ -29399,6 +29399,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 100.2078700328183
+    fp: d8599a2cda6bfb65
+    cost: 10.075
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, point_strike, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 98.61586855842005
     fp: ea1b2b61c3428d96
     cost: 15.325
@@ -40400,6 +40412,19 @@ entries:
   - weapon: latron_prime
     mode: cycle
     listed: false
+    score: 86.5413231555993
+    fp: f246f39f87c1270b
+    cost: 8.872
+    mods: [double_tap, galvanized_aptitude, galvanized_scope, critical_delay, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
     score: 86.22917504972243
     fp: 980fe1fe666c7816
     cost: 6.444
@@ -40513,6 +40538,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 74.89037363319189
+    fp: c793c7a33915080d
+    cost: 9.145
+    mods: [serration, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
@@ -48163,6 +48201,19 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 15.903478817308216
+    fp: d8599a2cda6bfb65
+    cost: 5.876
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, point_strike, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
