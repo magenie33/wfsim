@@ -29399,6 +29399,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 98.61586855842005
+    fp: ea1b2b61c3428d96
+    cost: 15.325
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 98.4469724719064
     fp: f4a40561f7507a08
     cost: 12.964
@@ -40528,6 +40540,19 @@ entries:
       bonuses: [critical_damage, multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 73.96246958807156
+    fp: 9ebc59af7ea5e95c
+    cost: 8.335
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, rime_rounds, malignant_force, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -40745,6 +40770,19 @@ entries:
     fp: 89d712d261c22a8b
     cost: 6.484
     mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 62.04551630970313
+    fp: ebb4a523f638b9bc
+    cost: 8.577
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, rime_rounds, malignant_force, riven]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
     arcanes: [primary_compression]
     riven:
@@ -41769,6 +41807,19 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
+    listed: false
+    score: 43.89344235866054
+    fp: 6b164ecad01d5fff
+    cost: 7.675
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, magnetic_might, deep_freeze, riven]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, fire_rate, toxin]
+      malus: multishot
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -48884,6 +48935,19 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
     arcanes: [cascadia_flare]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 15.225254513384792
+    fp: ea1b2b61c3428d96
+    cost: 8.885
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -60629,6 +60693,19 @@ entries:
     mods: [galvanized_chamber, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 7.362417684238398
+    fp: 6b164ecad01d5fff
+    cost: 2.680
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, magnetic_might, deep_freeze, riven]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, fire_rate, toxin]
+      malus: multishot
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: base
     listed: false
