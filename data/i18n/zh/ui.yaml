@@ -222,6 +222,7 @@ ui:
   "the record is open in its own window": 战斗记录已在它自己的窗口里打开。
   "Bring it back here": 收回本页
   "Open in its own window": 在新窗口打开
+  "this run measured {v} — #{n} of {of} in {group}, against the board as it stands": 这次跑出 {v} —— 以当前榜单为参照，在 {group} 里排第 {n}，同组共 {of} 套
   "{a}–{b} of {n}": 第 {a}–{b} 行，共 {n} 行
   "A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It also GRANTS capacity instead of costing it — 10 on a slot of its own polarity, 5 on a bare one, 4 on the wrong colour.": "架势决定这把武器实际挥出的是什么：它按 mode 各发布一套连段，装上就会顶掉武器自己的那套。它还**给予**容量而不是消耗容量——同极性槽位 10 点，无极性 5 点，极性不对 4 点。"
   "the LIFE STEAL this weapon is bought for: a heavy attack grants every attack 5% life steal plus 5% per combo level, permanently and shared with allies within 15 m for the rest of the mission. Nothing damages the Tenno in this arena and there are no allies in it, so what it heals is a number this fight has no use for": "这把武器被买来用的那个**吸血**：一次重击就永久让它的所有攻击获得 5% 吸血，每一级连击再加 5%，并且在剩余任务里对 15 米内的队友共享治疗。这个竞技场里没有任何东西会伤害 Tenno，也没有队友，所以它治的量对这场仗没有用处"

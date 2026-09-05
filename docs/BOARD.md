@@ -327,6 +327,34 @@ the fix costs minutes. The rolls go with the scores: a riven row's rolls are the
 argmax of its score, so keeping them would re-measure the corner a stale number
 chose. A misspelled id rescores nothing and says so rather than passing quietly.
 
+### The standing a submitter sees at once
+
+The wait for a ROW is the pipeline's and it is minutes at best: the board is a
+static file a scheduled run writes. The question behind the wait is not. "Is my
+build any good" is answerable on the page, from the number already on screen and
+the board already fetched — no server, no round trip, no wait.
+
+`boardProjection()` answers it, and returns null wherever the two numbers are
+not ONE number:
+
+* **The scenario must BE the ruler.** The board scores a build under its own
+  fight, so a run of the player's own is a different measurement and ranking it
+  against rows would be a number naming nothing. Where the scenario is the
+  benchmark, the same engine ran the same fight for the same metric.
+* **No riven and no valence.** The board scores those at their CEILING — the
+  best corner of a riven's shape, a valence at the roll's maximum — where the
+  run used what the player actually has, so the scorer's row comes back higher.
+* **The board must have loaded.** A fetch that failed and a weapon nobody has
+  submitted both leave the rows undefined; the second is ordinary and the first
+  would answer "#1 of 1" to a reader whose network dropped one file.
+
+A PROJECTION IS NOT A ROW. It is against the board as it stands, it is shown to
+the submitter alone, and nothing about it is sent anywhere. The ranking holds
+numbers this project measured — that is the whole of where it gets its
+authority, and a client-supplied figure inside it would end that. It is the same
+line §"When the code moved" draws: unverified is a state a number this project
+computed may be in, never a place to put one it did not.
+
 ### Which rows carry the thing you just fixed
 
 `scripts/board_select.py` answers that, and prints the selector above. The

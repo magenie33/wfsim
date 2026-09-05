@@ -15056,11 +15056,52 @@ function boardRunOutcome() {
   return { kind: "pending", text: tr("submitting to the board…") };
 }
 
+/// WHERE THIS RUN WOULD STAND, answered without waiting for the pipeline.
+///
+/// It returns null wherever the two numbers are not ONE number, which is most
+/// of the reasoning — docs/BOARD.md §"The standing a submitter sees at once".
+///
+/// A PROJECTION IS NOT A ROW: it is against the board as it stands, it is shown
+/// to the submitter alone, and it is never sent. The ranking holds numbers this
+/// project measured, which is the whole of where it gets its authority.
+function boardProjection() {
+  // A BOARD THAT DID NOT LOAD IS NOT AN EMPTY BOARD. Both leave `BOARD[w.id]`
+  // undefined, and the second is ordinary — a weapon nobody has submitted is
+  // the invitation — but the first would answer "#1 of 1" to a reader whose
+  // network dropped one file. So the file has to be here before this speaks.
+  if (!Object.keys(BOARD).length) return null;
+  const body = boardPayload();
+  if (!body || !body.benchmark) return null;
+  if ((body.mods || []).includes(BOARD_RIVEN_SLOT) || body.valence) return null;
+  const w = weaponInfo(body.weapon) || {};
+  const p = loadPresetList(BUILDS).find((z) => z.name === activePreset);
+  const r = p && p.lastResult && p.lastResult.r;
+  if (!r || !w.id) return null;
+  const met = metricOf((scenarioNamed(activeScenario) || {}).metric);
+  const mine = metricValue(met, r);
+  if (!(mine > 0)) return null;
+  // THE CELL, spelled the way `builtinBuilds` spells it — one benchmark, one
+  // mode, one riven-ness. A rank across anything wider names nothing.
+  const rows = (BOARD[w.id] || []).filter((x) =>
+    x.benchmark === body.benchmark
+    && (x.mode || "base") === (body.mode || "base")
+    && !rowHasRiven(x));
+  const ahead = rows.filter((x) => (x.score || 0) > mine).length;
+  return {
+    text: (met.per_minute ? sig2(mine) : Math.round(mine).toLocaleString())
+      + " " + metricLabel(met),
+    place: ahead + 1,
+    of: rows.length + 1,
+    group: `${benchmarkName(body.benchmark)} · ${modeLabel(w, body.mode || "base")}`,
+  };
+}
+
 /// The result's own copy of that sentence. Re-rendered when the verdict lands.
 function renderBoardOutcome() {
   const box = $("sim-board-outcome");
   if (!box) return;
   const o = boardRunOutcome();
+  const stand = o.kind === "sent" ? boardProjection() : null;
   box.className = `board-outcome ${o.kind}`;
   box.innerHTML = `<div class="bo-h">${escHtml(o.text)}</div>`
     // THE CUT LINE FOLLOWS A SENT RUN, because that is the reader who is about
@@ -15068,6 +15109,16 @@ function renderBoardOutcome() {
     // Trailing it onto the sentence above made one run-on paragraph out of two
     // separate facts: what happened to this run, and the rule that decides
     // whether it will be listed.
+    // THE STANDING FIRST, then the rule that decides listing. A submitter reads
+    // the panel to find out how they did; the cut line answers a question they
+    // have not asked yet, and putting it first buries the answer under it.
+    + (stand
+      ? `<div class="board-place">${escHtml(
+        tr("this run measured {v} — #{n} of {of} in {group}, against the board as it stands")
+          .replace("{v}", stand.text)
+          .replace("{n}", stand.place)
+          .replace("{of}", stand.of)
+          .replace("{group}", stand.group))}</div>` : "")
     + (o.kind === "sent"
       ? `<div class="board-state">${escHtml(boardCutNote())}</div>` : "");
 }
