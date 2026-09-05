@@ -318,7 +318,11 @@ jobs:
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
           # THE SAME SLICE THE SCORERS WILL TAKE, or this step counts work the
-          # run is not going to do and the gate below reads it as busy.
+          # run is not going to do and the gate below reads it as busy. It needs
+          # `--code-verified` for the same reason and more sharply: without it a
+          # code difference drops every stored score before the slice can keep
+          # any, so the count comes back as the whole board and the gate cannot
+          # tell a slice from a rescore.
           SLICE="--refresh $(( REFRESH_MINUTES * 60 )) --refresh-from ${{ github.run_number }}"
           if [ "${{ inputs.full }}" = "true" ]; then SLICE=""; fi
           todo=0
@@ -326,7 +330,7 @@ jobs:
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
                      --engine "${{ steps.fp.outputs.engine }}" \
-                     --reuse "$f" --dry-run $FORCE $SLICE \
+                     --reuse "$f" --code-verified --dry-run $FORCE $SLICE \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
             echo "$id: $line"
