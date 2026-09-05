@@ -49,6 +49,19 @@ families:
     never:
       - stat: projectile_speed
         note: "survey 2026-08-08: 0 of 309 live listings"
+  - family: Dual Toxocyst
+    rolls:
+      - stat: projectile_speed
+        # THE FURIS'S CASE AGAIN, down to the reason. Both forms are hit_scan
+        # in our data, so the rules refuse the stat; the Incarnon form is a
+        # PROJECTILE in DE's code, and the wiki's Condition Overload catalog
+        # says so in the same words it uses for the Furis — "Dual Toxocyst |
+        # Incarnon Mode | Projectile".
+        #
+        # ASKED PER STAT, which is the only count worth quoting: 12 listings
+        # carry it as a bonus and 49 as a curse, against 1 for Impact, which
+        # this family does not roll, and 0 for a Bronco that cannot.
+        note: "a player's card carries it as a curse; 61 of the family's live listings carry it, 2026-09-05"
   - family: Furis
     rolls:
       - stat: projectile_speed
