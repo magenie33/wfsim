@@ -154,28 +154,6 @@ jobs:
       # time is not an input to a score. Untouched, a row is valid forever;
       # moved, it is wrong immediately. This asks the only question that matters
       # — "is anything different" — and answers it exactly.
-      # WHAT EARLIER RUNS ALREADY SCORED UNDER THIS ENGINE, fetched ONCE and
-      # handed to every job as an artifact — thirty-two shards asking Cloudflare
-      # for the same blobs is thirty-two times the requests for one answer.
-      #
-      # Unconfigured is a working state: with no namespace the directory is
-      # empty and every job falls back on the boards alone, which is the whole
-      # pipeline as it was before the store existed. That is the rollback.
-      - name: read the score store
-        if: steps.wired.outputs.yes == 'true'
-        env:
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: bash scripts/score_store.sh get store
-      - uses: actions/upload-artifact@v4
-        if: steps.wired.outputs.yes == 'true'
-        with:
-          name: store
-          path: store/
-          retention-days: 1
-          if-no-files-found: ignore
-
       # A FULL RESCORE IGNORES EVERY STORED SCORE. Two things ask for one: the
       # manual button, and the weekly backstop above.
       - id: full
@@ -196,6 +174,34 @@ jobs:
         run: |
           if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
+
+      # WHAT EARLIER RUNS ALREADY BANKED, fetched ONCE and handed to every job
+      # as an artifact — thirty-two shards asking R2 for the same objects is
+      # thirty-two times the requests for one answer.
+      #
+      # AFTER THE STEP WHOSE OUTPUT GATES IT, which is not a formality: placed
+      # above it the condition reads an output nothing has set, the step is
+      # SKIPPED, and every job downstream points `--scores` at a directory that
+      # was never filled. Nothing fails and the store silently holds nothing.
+      #
+      # Unconfigured is a working state: with no namespace the directory is
+      # empty and every job falls back on the boards alone, which is the whole
+      # pipeline as it was before the store existed. That is the rollback.
+      - name: read the score store
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: bash scripts/score_store.sh get store
+      - uses: actions/upload-artifact@v4
+        if: steps.wired.outputs.yes == 'true'
+        with:
+          name: store
+          path: store/
+          retention-days: 1
+          if-no-files-found: ignore
+
 
       # THE LIBRARY IS FETCHED ONCE AND THEN ONLY ADDED TO. `restore-keys` takes
       # the newest cache whatever run wrote it, while the `key` carries this run
@@ -342,6 +348,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: submissions
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: store
+          path: store
 
       - name: build the scorer
         run: cargo build --release --bin wfsim-board

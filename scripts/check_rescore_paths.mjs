@@ -43,6 +43,35 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
   "the fingerprint decides what a change reached; a path list is a second "
     + "answer to that question and the two can disagree");
 
+// A STEP MAY NOT READ AN OUTPUT NOTHING HAS SET YET.
+//
+// `if: steps.x.outputs.y == '...'` above the step that defines `id: x` reads an
+// empty string, so the condition is false, the step is SKIPPED, and everything
+// downstream quietly gets nothing. It cost the score store its first run: the
+// fetch sat above the check that gates it, never ran, and three jobs pointed
+// `--scores` at a directory nobody had filled. Every run stayed green.
+for (const wfName of ["board.yml", "audit.yml"]) {
+  const lines = readFileSync(resolve(ROOT, ".github/workflows", wfName), "utf8").split(NL);
+  const definedAt = new Map();
+  lines.forEach((l, i) => {
+    const m = l.match(/^\s+id:\s*([A-Za-z0-9_-]+)\s*$/);
+    if (m && !definedAt.has(m[1])) definedAt.set(m[1], i);
+  });
+  const early = [];
+  lines.forEach((l, i) => {
+    // A STEP CONDITION AND NOTHING ELSE. A job's own `outputs:` block names
+    // steps below it on purpose — those are read when the job ENDS — and an
+    // `if:` is read the moment the runner reaches it.
+    if (!l.trim().startsWith("if:")) return;
+    for (const m of l.matchAll(/steps\.([A-Za-z0-9_-]+)\.outputs/g)) {
+      const at = definedAt.get(m[1]);
+      if (at === undefined || at > i) early.push(`${wfName}:${i + 1} reads steps.${m[1]}`);
+    }
+  });
+  check(early.length === 0, `${wfName} gates no step on an output set below it`,
+    early.join(" | "));
+}
+
 // BOTH BACKLOGS ARE BOUNDED AND THE CLOCK IS BEHIND THEM, or the run does not
 // fit the cadence that starts the next one. `--refresh` bounds the repair of
 // rows the board already holds, in seconds the last run MEASURED; `--new-limit`
