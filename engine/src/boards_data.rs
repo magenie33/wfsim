@@ -268,6 +268,16 @@ pub struct BoardState {
     /// board that says only how many it shows cannot say how much it looked at.
     #[serde(default)]
     pub held: usize,
+    /// WHEN THE RUN THAT WROTE THIS BOARD FINISHED, in seconds since the epoch.
+    ///
+    /// The counts above say how far behind the board is in BUILDS; this is the
+    /// one thing neither they nor the fingerprints can say — a fingerprint
+    /// answers "did an input move", never "when was this measured", and a
+    /// reader looking at a number wants to know how old it is. ZERO means a
+    /// board written before this field existed, which the page reads as unknown
+    /// rather than as 1970.
+    #[serde(default)]
+    pub scored_at_epoch_seconds: u64,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]

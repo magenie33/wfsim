@@ -1641,7 +1641,7 @@ fn main() {
         // output and never anybody's input — three integers under an id — so a
         // parser dependency here would be one more thing that can disagree with
         // the writer twelve lines down.
-        let mut state: std::collections::BTreeMap<String, [usize; 3]> = Default::default();
+        let mut state: std::collections::BTreeMap<String, [usize; 4]> = Default::default();
         let text = std::fs::read_to_string(BOARD_STATE).unwrap_or_default();
         let mut cur = String::new();
         for line in text.lines() {
@@ -1658,21 +1658,35 @@ fn main() {
                         "submissions" => e[0] = n,
                         "listed" => e[1] = n,
                         "held" => e[2] = n,
+                        "scored_at_epoch_seconds" => e[3] = n,
                         _ => {}
                     }
                 }
             }
         }
-        state.insert(bench_id.clone(), [seen, kept.len(), below.len() + probed.len()]);
+        // WHEN, AND NOT ONLY WHAT. The counts say how far behind the board is in
+        // BUILDS; a reader looking at a number wants to know how old it is, and
+        // that is the one thing neither the counts nor the fingerprints can
+        // say — a fingerprint answers "did an input move", never "when was this
+        // measured". Seconds rather than a date because the page does the
+        // rendering and a board that should move in hours cannot say "today".
+        //
+        // A board written before this existed carries 0, which the page reads as
+        // "unknown" rather than as 1970.
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs() as usize);
+        state.insert(bench_id.clone(), [seen, kept.len(), below.len() + probed.len(), now]);
         let mut out = String::from(BOARD_STATE_HEADER);
         out.push_str("boards:
 ");
-        for (id, [subs, listed, held]) in &state {
+        for (id, [subs, listed, held, at]) in &state {
             out.push_str(&format!(
                 "  {id}:
     submissions: {subs}
     listed: {listed}
     held: {held}
+    scored_at_epoch_seconds: {at}
 "
             ));
         }

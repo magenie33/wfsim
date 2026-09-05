@@ -2044,6 +2044,13 @@ pub fn meta_json() -> Value {
             // STATIC board say how far behind it is — see `boards_data::Board`.
             "submissions": wfsim_engine::boards_data::of(&b.id)
                 .map(|x| x.submissions).unwrap_or(0),
+            // …AND WHEN IT WAS SCORED. The count says how far behind the board
+            // is in BUILDS; this says how old its numbers are, which no
+            // fingerprint can answer — a fingerprint says whether an input
+            // moved, never when a measurement was taken. Zero is "unknown", not
+            // 1970: a board written before the field existed carries none.
+            "scored_at_epoch_seconds": wfsim_engine::boards_data::of(&b.id)
+                .map(|x| x.scored_at_epoch_seconds).unwrap_or(0),
             // The standard AT LENGTH — the name is the same thing in one line.
             // A reader deciding whether a ranking answers their question needs
             // the terms, and a term that only exists in a yaml comment is one

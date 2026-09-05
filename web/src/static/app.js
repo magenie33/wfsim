@@ -2336,16 +2336,36 @@ function benchPendingAsk() {
 /// push that moved it owns that rescore — so "the next run is within 20
 /// minutes" was a promise the pipeline does not keep and the page cannot check.
 /// How far behind the board is, it can say exactly.
+/// HOW OLD A NUMBER IS, in the coarsest unit that still says something. A board
+/// that should move in hours cannot answer "today", and a reader deciding
+/// whether to trust a row wants the age before the count.
+function benchAgeText(seconds) {
+  const mins = Math.floor((Date.now() / 1000 - seconds) / 60);
+  if (!(mins >= 0)) return "";
+  if (mins < 60) return tr("{n} min").replace("{n}", String(mins));
+  if (mins < 60 * 48) return tr("{n} h").replace("{n}", String(Math.floor(mins / 60)));
+  return tr("{n} d").replace("{n}", String(Math.floor(mins / 1440)));
+}
+
 function benchPendingNote(cur) {
   benchPendingAsk();
-  if (!benchPending || typeof benchPending !== "object") return "";
+  // THE AGE IS NOT CONDITIONAL ON THE COUNT. A board with nothing waiting can
+  // still be days old — a data correction adds no submission — and that is
+  // exactly the case a reader cannot see any other way. ZERO means a board
+  // written before the field existed, which is unknown rather than 1970.
+  const at = (cur && cur.scored_at_epoch_seconds) || 0;
+  const age = at > 0 ? benchAgeText(at) : "";
+  const aged = age
+    ? ` <span class="bench-pending">${escHtml(tr("· scored {t} ago").replace("{t}", age))}</span>`
+    : "";
+  if (!benchPending || typeof benchPending !== "object") return aged;
   const scored = (cur && cur.submissions) || 0;
   const waiting = benchPending.count - scored;
   // AND NEVER A NEGATIVE ONE. A ruler that has just been added has scored
   // nothing, and a store that has expired records can sit below what the last
   // run read; both are real and neither is "builds are waiting".
-  if (!(waiting > 0) || !scored) return "";
-  return ` <span class="bench-pending">${escHtml(
+  if (!(waiting > 0) || !scored) return aged;
+  return aged + ` <span class="bench-pending">${escHtml(
     tr("· {n} more submitted since this board was scored")
       .replace("{n}", waiting))}</span>`;
 }
@@ -15028,7 +15048,7 @@ function boardRunOutcome() {
         .replace("{n}", b.n).replace("{of}", b.of)
       : "";
     return { kind: "sent",
-      text: tr("uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. The board re-scores every 20 minutes, so rows appear within about 20, at most 40") + where };
+      text: tr("uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. It is stored the moment it arrives; the board picks it up on its next re-score and says how long ago that was") + where };
   }
   // NOT YET ANSWERED. `offerBoardSubmit` runs after the result is drawn, so
   // this is the state the first paint is in and it has to say so rather than
@@ -15085,7 +15105,7 @@ function renderBoardConsent() {
       // and it is the one that was silent about the twenty minutes. Saying it
       // only after the consent had been chosen told the fact to everyone except
       // the person meeting the board for the first time.
-      ` ${escHtml(tr("A run appears on the board within about 20 minutes, at most 40 — it is re-scored on a schedule, not the instant you send it."))}` +
+      ` ${escHtml(tr("A run is stored the moment it arrives and appears on the board at its next re-score — not the instant you send it. The board says how long ago it was scored."))}` +
       ` ${escHtml(boardCutNote())}` +
       floorNote +
       ` <button class="ghost-btn small" id="board-no">${escHtml(tr("don't submit"))}</button>`;
@@ -15104,7 +15124,7 @@ function renderBoardConsent() {
   const state = c !== "yes"
     ? tr("nothing is sent from here")
     : boardState === ""
-      ? tr("builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40")
+      ? tr("builds you run here are submitted — stored the moment they arrive, and picked up at the board's next re-score")
       : boardRunOutcome().text;
   box.innerHTML =
     `<span class="board-state">${escHtml(state)}</span>` +
