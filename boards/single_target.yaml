@@ -19686,6 +19686,18 @@ entries:
       rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 52.68363494469282
+    fp: 2311d3093bcd4ad3
+    cost: 10.965
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_duration
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 51.67570954386076
     fp: 16870c9dca372edd
     cost: 9.983
@@ -20643,6 +20655,18 @@ entries:
       bonuses: [multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: base
+    score: 15.48027629768247
+    fp: 2311d3093bcd4ad3
+    cost: 35.607
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_duration
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: base
     score: 14.04013568069602
