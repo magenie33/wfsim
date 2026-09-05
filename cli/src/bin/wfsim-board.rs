@@ -966,13 +966,18 @@ fn main() {
     // THE ROLLS GO WITH THE SCORES. A riven row's rolls are the argmax of the
     // score, so keeping them while dropping the score would re-measure the
     // corner a stale number chose.
-    // THE SLICE THIS RUN REPAIRS. Everything stale keeps its number; these go
-    // back through the fight. Budgeted by the cost the last run MEASURED, so a
-    // slice is a wall-clock promise rather than a row count over a population
-    // whose rows differ by four orders of magnitude.
+
+    // KEPT FOR THE WHOLE RUN, not applied once. A stored score reaches `known`
+    // from TWO places — the prior board here, and the score store row by row in
+    // the loop below — so dropping it from only the first is the backstop
+    // pressing nothing: measured, a `kuva_nukor#base` rescore came back green
+    // having refought no row, because the store put every one back.
+    let forced: Vec<Selector> = flag("--rescore")
+        .map(|list| list.split(';').filter_map(Selector::parse).collect())
+        .unwrap_or_default();
+    let is_forced = |k: &String| forced.iter().any(|sel| sel.matches(k));
     if let Some(list) = flag("--rescore") {
-        let sels: Vec<Selector> = list.split(';').filter_map(Selector::parse).collect();
-        let hit = |k: &String| sels.iter().any(|sel| sel.matches(k));
+        let hit = &is_forced;
         let before = known.len();
         known.retain(|k, _| !hit(k));
         rolls.retain(|k, _| !hit(k));
@@ -1251,7 +1256,9 @@ fn main() {
             // `or_insert`, because the prior board and this run's own shards
             // were validated on their own way in and must win.
             if let Some(&stored) = store_scores.get(&key) {
-                if store_fps.get(&key).map(String::as_str) == Some(build_fp.as_str()) {
+                if store_fps.get(&key).map(String::as_str) == Some(build_fp.as_str())
+                    && !is_forced(&key)
+                {
                     known.entry(key.clone()).or_insert(stored);
                 }
             }
