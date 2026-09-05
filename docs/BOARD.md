@@ -220,13 +220,21 @@ nobody can defend. A **floor of 100 rows compared** across the shards, because a
 verification that cannot fail is worse than none — under it the clear sets are
 deleted and every row goes back through the fight.
 
-**A PUSH NEVER RESCORES THE BOARD.** A fingerprint difference says a stored
-score is UNVERIFIED under this generation, not that it is wrong, so a code
-change scores what is NEW, rescores the groups the probe MEASURED as moved, and
-leaves the rest alone. Where the probe cannot conclude — it could compare
-nothing, or the fingerprint FUNCTION itself moved — the answer is to keep what
-the board has and say how old it is, never to rescore 22,977 rows on the
-assumption that something might have changed.
+**A PUSH NEVER RESCORES THE BOARD, AND THE BOARD CONVERGES INSTEAD.** A
+fingerprint difference says a stored score is UNVERIFIED under this generation,
+not that it is wrong. So every run scores what is NEW and repairs a BOUNDED
+SLICE of what is unverified — `REFRESH_MINUTES` of measured work, walked in `fp`
+order from the run number, so successive runs cross the board rather than
+re-reading its first page. Thirty minutes a run, three runs an hour, is under
+four days to cross all 8,008 and under 4% of a day's free CPU.
+
+The slice is one set for both kinds of staleness, because the repair is the
+same: a row whose own DATA moved and a row whose CODE fingerprint moved are both
+unverified, and telling `--refresh` about them separately would be two lists
+where one will do. Where the probe can conclude, the groups it measured as moved
+are what a run puts first; where it cannot — it compared nothing, or the
+fingerprint FUNCTION itself moved — the slice still converges, just without the
+head start.
 
 That assumption was the old policy and it is what it cost: over one day, five
 cancelled full rescores, thousands of CPU minutes, and **the board published
@@ -235,7 +243,8 @@ finished. A rescore that never lands is not a slow update, it is no update and a
 bill.
 
 So a full rescore is a BUTTON. `full` does all of it, `weapon` does one weapon,
-and both are somebody deciding rather than a push implying. What the sample can
+and both are somebody deciding rather than a push implying. Nothing automatic
+ever fights more than a slice. What the sample can
 still miss — a change that moves only SOME builds of one group — is what
 §"The audit" is for: it reads a slice of the published board every hour and
 crosses all of it in days, reporting a row that is not what this code computes

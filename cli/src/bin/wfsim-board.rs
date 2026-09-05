@@ -464,6 +464,14 @@ struct Prior {
     /// Rows whose OWN data moved. Printed rather than counted silently: it is
     /// the number that says how much a change actually cost.
     stale: usize,
+    /// …AND WHICH ONES, with what each cost to measure.
+    ///
+    /// A stale row is not a WRONG row, it is one whose inputs moved and whose
+    /// number no longer carries a promise. Dropping it made every such row a
+    /// row this run had to fight, which is how one data correction became a
+    /// full rescore. Kept, the run can fight a BOUNDED slice of them and leave
+    /// the rest holding what they have until their turn comes.
+    stale_keys: Vec<(String, f64)>,
     /// WHY THE SCORES ARE EMPTY, when they are. The costs and the leaders are
     /// still here: a prior board that cannot be REUSED can still be READ.
     dropped: Option<String>,
@@ -475,7 +483,13 @@ struct Prior {
 /// reuse those numbers but to reproduce a sample of them under the new code;
 /// and `--code-verified`, which the workflow passes only after that sample came
 /// back identical, so the stored numbers ARE what this code computes.
-fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> Result<Prior, String> {
+fn reuse_prior(
+    path: &str,
+    code_fp: &str,
+    bench_id: &str,
+    across_code: bool,
+    keep_stale: bool,
+) -> Result<Prior, String> {
     if code_fp.is_empty() {
         return Err("no engine fingerprint given".into());
     }
@@ -495,7 +509,8 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> 
     // A STALE LEADER IS A FINE THRESHOLD. It does not decide what is published;
     // it decides whether a row is worth 1000 runs rather than 100, under a 2x
     // margin on top of a floor that is itself half the leader.
-    let dropped = (!across_code && prior.engine != code_fp).then(|| {
+    let code_moved = prior.engine != code_fp;
+    let dropped = (!across_code && code_moved).then(|| {
         format!(
             "engine code moved ({} -> {code_fp}) — scores dropped, leaders and costs kept",
             if prior.engine.is_empty() { "unrecorded" } else { &prior.engine }
@@ -558,9 +573,25 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str, across_code: bool) -> 
         if e.probe {
             continue;
         }
-        if e.fp != want {
-            out.stale += 1;
-            continue;
+        // UNVERIFIED UNDER THIS GENERATION, for either reason. A row is that
+        // when its own DATA moved or when the CODE that scored it did, and the
+        // repair is the same either way — so `--refresh` walks one set rather
+        // than the union of two it would have to be told about separately.
+        if e.fp != want || code_moved {
+            if e.fp != want {
+                out.stale += 1;
+            }
+            out.stale_keys.push((key.clone(), e.cost));
+            // KEPT WHEN THE CALLER ASKS, and only the DATA half is decided
+            // here. `--refresh` fights a slice of these and the rest keep the
+            // number they have; without it a row whose data moved is dropped,
+            // which is what the manual full rescore and the targeted one both
+            // want. Whether a CODE difference drops a row is `dropped`'s
+            // question, two lines down, and answering it here as well took
+            // `--code-verified` out of the picture.
+            if e.fp != want && !keep_stale {
+                continue;
+            }
         }
         // THE SCORES, AND ONLY THEY, ARE WHAT A CODE CHANGE INVALIDATES.
         if out.dropped.is_some() {
@@ -687,28 +718,22 @@ fn main() {
     let mut prior_rolls: std::collections::HashMap<String, Vec<f64>> = Default::default();
     // WHAT THE LAST RUN MEASURED, per row — the input to the shard packing.
     let mut prior_costs: ScoreMap = Default::default();
+    // …AND THE ROWS WHOSE OWN DATA MOVED, which `--refresh` walks a slice of.
+    let mut prior_stale_keys: Vec<(String, f64)> = Vec::new();
     // …AND WHAT EACH GROUP'S BEST WAS, the threshold the probe screens against.
     let mut prior_leaders: std::collections::HashMap<(String, String, bool), f64> =
         Default::default();
-    // ---- DID THE CODE CHANGE MOVE ANY NUMBER? -------------------------
+    // ---- WHAT THIS RUN IS ALLOWED TO FIGHT ----------------------------
     //
-    // The fingerprint declares every stored score stale on ANY edit to
-    // `engine`, `webapi` or `cli`, and most edits cannot move a number. Rather
-    // than guess which ones matter, MEASURE: `--verify` reproduces a sample of
-    // the published rows under the new code and compares each with what the
-    // board says. All identical and the code is score-equivalent, so the run
-    // reuses them; one difference and it is a full rescore.
-    //
-    // The sample, the floor and the weekly backstop are `docs/BOARD.md`
-    // §"When the code moved".
-    // IS THERE ANYTHING TO DO AT ALL — asked by walking, not by declaring.
-    //
-    // A run that finds every row reusable still fans out to `SHARDS` jobs and
-    // pays a checkout, a build and a cache restore for each. This walks the
-    // whole board exactly as a scoring run does — same validation, same row
-    // fingerprints, same reuse — and counts what is left instead of fighting it,
-    // so the answer is the scorer's own rather than a second opinion that can
-    // disagree with it.
+    // A fingerprint says a stored score is UNVERIFIED under this generation,
+    // never that it is wrong, so nothing here rescores a board. `--verify`
+    // MEASURES which groups moved, `--dry-run` counts what is left so a run
+    // with nothing to do costs one job, and `--refresh` is the bounded slice of
+    // the unverified that this run repairs. The rates and the reasons are
+    // `docs/BOARD.md` §"When the code moved".
+
+    let refresh = flag("--refresh").and_then(|s| s.parse::<f64>().ok());
+    let refresh_from = flag("--refresh-from").and_then(|s| s.parse::<usize>().ok()).unwrap_or(0);
     let dry = has_flag("--dry-run");
     let mut todo = 0usize;
     let verify = has_flag("--verify");
@@ -718,12 +743,13 @@ fn main() {
     let code_verified = has_flag("--code-verified");
     let mut verify_against: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
-        match reuse_prior(&path, &engine_fp, &bench_id, verify || code_verified) {
+        match reuse_prior(&path, &engine_fp, &bench_id, verify || code_verified, refresh.is_some()) {
             Ok(p) => {
                 reused = if verify { 0 } else { p.scores.len() };
                 stale = p.stale;
                 prior_rolls = p.rolls;
                 prior_costs = p.costs;
+                prior_stale_keys = p.stale_keys;
                 prior_leaders = p.leaders;
                 if let Some(why) = &p.dropped {
                     eprintln!("full rescore: {why}");
@@ -812,6 +838,35 @@ fn main() {
     // THE ROLLS GO WITH THE SCORES. A riven row's rolls are the argmax of the
     // score, so keeping them while dropping the score would re-measure the
     // corner a stale number chose.
+    // THE SLICE THIS RUN REPAIRS. Everything stale keeps its number; these go
+    // back through the fight. Budgeted by the cost the last run MEASURED, so a
+    // slice is a wall-clock promise rather than a row count over a population
+    // whose rows differ by four orders of magnitude.
+    if let Some(budget) = refresh {
+        let mut stale_keys = prior_stale_keys;
+        stale_keys.sort_by(|a, b| a.0.cmp(&b.0));
+        let n = stale_keys.len();
+        let mut spent = 0.0;
+        let mut took = 0usize;
+        for i in 0..n {
+            let (k, cost) = &stale_keys[(refresh_from + i) % n];
+            if took > 0 && spent + cost > budget {
+                break;
+            }
+            known.remove(k);
+            rolls.remove(k);
+            spent += cost;
+            took += 1;
+        }
+        reused = reused.saturating_sub(took);
+        eprintln!(
+            "refresh: {took} of {n} stale row(s) go back through the fight, \
+             {:.1} min of measured work, from offset {}",
+            spent / 60.0,
+            if n > 0 { refresh_from % n } else { 0 }
+        );
+    }
+
     if let Some(list) = flag("--rescore") {
         let want: Vec<String> = list
             .split(',')

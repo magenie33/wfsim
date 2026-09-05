@@ -125,6 +125,22 @@ env:
   # the fixed cost of a runner is the whole bill.
   VERIFY_SHARDS: 16
 
+  # HOW MUCH OF THE PAST EACH RUN REPAIRS, in minutes of measured work.
+  #
+  # THE BOARD CONVERGES AT A RATE THIS SETS. A change leaves stored rows
+  # unverified under the new generation, and the old answer was to fight all
+  # 22,977 of them at once — measured over one day, five cancelled runs,
+  # thousands of CPU minutes, and the board published NOTHING, because each was
+  # superseded before it finished. A run now fights what is NEW plus this much
+  # of what is unverified, and every run publishes.
+  #
+  # 30 MINUTES AGAINST A BOARD THAT COSTS 8,008: three runs an hour crosses all
+  # of it in under four days, at 36 CPU hours a day of the 960 a free public
+  # repo has — under 4%. Raise it to converge faster; the cost is linear and the
+  # ceiling is docs/BOARD.md §"Two ceilings". It is spread across `SHARDS`, so
+  # what it adds to a run's WALL clock is a minute.
+  REFRESH_MINUTES: 30
+
 jobs:
   # ---- 1. what is there to score ----------------------------------------
   #
@@ -140,7 +156,6 @@ jobs:
       probe: ${{ steps.shards.outputs.probe }}
       full: ${{ steps.full.outputs.yes }}
       moved: ${{ steps.fp.outputs.moved }}
-      rescore: ${{ steps.rescore.outputs.yes }}
       work: ${{ steps.work.outputs.yes }}
     steps:
       - uses: actions/checkout@v4
@@ -199,25 +214,6 @@ jobs:
             echo "yes=true" >> "$GITHUB_OUTPUT"; echo "FULL rescore"
           else
             echo "yes=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      # THE PUSH OWNS THE RESCORE; THE SCHEDULE ONLY SCORES WHAT IS NEW.
-      #
-      # A rescore is 8,071 CPU minutes against a 40-job ceiling, so it cannot
-      # finish inside any schedule interval and two of them cannot run at once
-      # without halving each other. When the code has moved, the push that moved
-      # it is already scoring that generation and a scheduled run can only
-      # compete for the same forty slots — while its own new submissions could
-      # not be published anyway, since the generation they would join is not
-      # complete. So it exits, and quiet polling costs one job instead of forty.
-      - id: rescore
-        run: |
-          if [ "${{ github.event_name }}" != "schedule" ] \
-             || [ "${{ steps.fp.outputs.moved }}" != "true" ]; then
-            echo "yes=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "yes=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::code moved — the push for it owns this rescore"
           fi
 
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
@@ -318,12 +314,16 @@ jobs:
           set -euo pipefail
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
+          # THE SAME SLICE THE SCORERS WILL TAKE, or this step counts work the
+          # run is not going to do and the gate below reads it as busy.
+          SLICE="--refresh $(( REFRESH_MINUTES * 60 )) --refresh-from ${{ github.run_number }}"
+          if [ "${{ inputs.full }}" = "true" ]; then SLICE=""; fi
           todo=0
           for f in boards/*.yaml; do
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
                      --engine "${{ steps.fp.outputs.engine }}" \
-                     --reuse "$f" --dry-run $FORCE \
+                     --reuse "$f" --dry-run $FORCE $SLICE \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
             echo "$id: $line"
@@ -360,7 +360,6 @@ jobs:
   verify:
     needs: submissions
     if: needs.submissions.outputs.wired == 'true'
-      && needs.submissions.outputs.rescore == 'true'
       && needs.submissions.outputs.full != 'true'
       && needs.submissions.outputs.moved == 'true'
     runs-on: ubuntu-latest
@@ -510,7 +509,6 @@ jobs:
   score:
     needs: [submissions, decide]
     if: needs.submissions.outputs.wired == 'true'
-      && needs.submissions.outputs.rescore == 'true'
       && needs.submissions.outputs.work != 'false'
     runs-on: ubuntu-latest
     strategy:
@@ -573,6 +571,14 @@ jobs:
             id=$(basename "$f" .yaml)
             prior=""
             [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
+            # THE SLICE THIS RUN REPAIRS, and `full` takes none because it is
+            # already fighting everything. `--refresh-from` is the run number,
+            # so successive runs walk different rows and the board crosses
+            # itself rather than re-reading its own first page.
+            slice=""
+            if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
+              slice="--refresh $(( REFRESH_MINUTES * 60 )) --refresh-from ${{ github.run_number }}"
+            fi
             # THE NARROWING, and only when the probe produced one. An absent
             # file means no verdict, and no verdict now means nothing is
             # dropped — the opposite of what an EMPTY file would mean, so the
@@ -581,7 +587,7 @@ jobs:
             if [ -s "verified/$id.txt" ]; then narrow="--verified-groups verified/$id.txt"; fi
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
-              $narrow \
+              $narrow $slice \
               --shard "${{ matrix.shard }}/${SHARDS}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
@@ -601,7 +607,6 @@ jobs:
   publish:
     needs: [submissions, decide, score]
     if: needs.submissions.outputs.wired == 'true'
-      && needs.submissions.outputs.rescore == 'true'
       && needs.submissions.outputs.work != 'false'
     runs-on: ubuntu-latest
     permissions:
@@ -679,6 +684,14 @@ jobs:
               cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
               prior="--reuse /tmp/$id-prior.yaml"
             fi
+            # THE SLICE THIS RUN REPAIRS, and `full` takes none because it is
+            # already fighting everything. `--refresh-from` is the run number,
+            # so successive runs walk different rows and the board crosses
+            # itself rather than re-reading its own first page.
+            slice=""
+            if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
+              slice="--refresh $(( REFRESH_MINUTES * 60 )) --refresh-from ${{ github.run_number }}"
+            fi
             # THE NARROWING, and only when the probe produced one. An absent
             # file means no verdict, and no verdict now means nothing is
             # dropped — the opposite of what an EMPTY file would mean, so the
@@ -687,7 +700,7 @@ jobs:
             if [ -s "verified/$id.txt" ]; then narrow="--verified-groups verified/$id.txt"; fi
             ./target/release/wfsim-board "$id" site/board.json \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
-              $narrow \
+              $narrow $slice \
               --scores scores \
               < submissions.json > "boards/$id.yaml"
           done
