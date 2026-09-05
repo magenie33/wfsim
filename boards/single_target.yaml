@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6200
+submissions: 6202
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -29135,6 +29135,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 128.94142158805596
+    fp: 747179d4ff4db981
+    cost: 9.130
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 128.6847593862603
     fp: 50c44b31da4fc974
     cost: 7.787
@@ -29369,6 +29381,18 @@ entries:
     cost: 10.492
     mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, riven, rime_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    score: 105.03749480082712
+    fp: fe3267624e617ab7
+    cost: 9.045
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_swift_punishment, latron_prime_marksmans_hand, latron_prime_critical_parallel]
     arcanes: [primary_compression]
     riven:
       bonuses: [critical_damage, damage, multishot]
