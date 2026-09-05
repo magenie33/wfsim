@@ -100,7 +100,13 @@ on:
 # generated files on top and retries three times: two runs landing a board is
 # last-writer-wins BY DESIGN, the same reasoning that made it refuse to rebase.
 concurrency:
-  group: board-${{ github.event_name }}
+  # TWO WORKLOADS, NOT THREE TRIGGERS. A push and a manual run do the same
+  # expensive thing, and in groups of their own they do it AT THE SAME TIME —
+  # each asking for `max-parallel` of an account ceiling that holds forty, so
+  # both run at half speed to produce the same board twice. They share a group;
+  # the schedule keeps its own, because standing a cheap run down behind an
+  # expensive one is what starved the board before.
+  group: board-${{ github.event_name == 'schedule' && 'schedule' || 'rescore' }}
   cancel-in-progress: false
 
 env:
