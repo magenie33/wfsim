@@ -211,13 +211,20 @@ selector that repairs them** — the charge and the warrant, so the finding land
 in the button rather than in a discussion. §"The audit" is the mechanism.
 
 **THE SPLIT IS SIZED AGAINST THE WORK, NOT THE CEILING.** A shard costs 2.6
-minutes before it scores anything — checkout, cache restore, load — so 128 ways
-of a 90-minute slice is 333 minutes of pure startup to save eighty seconds each,
-and measured on one such run the 128 shards took 847 runner-minutes to do 90
-minutes of scoring. `SLICE_SHARDS` is 32, which fits one wave under the forty
-ceiling; `FULL_SHARDS` stays at 128 because 8,008 minutes is a different
-problem. The matrix and the `i/N` denominator come from one output, because a
-list of 32 against an N of 128 scores a quarter of the board and fails nothing.
+minutes before it scores anything — checkout, cache restore, load — so past a
+point the split is buying startup rather than parallelism. An ordinary run is
+5,553 rows and about 512 CPU minutes, and **the repair slice is the small half
+of it**: 984 rows against ~4,570 builds carrying no score yet. Measured, 128
+shards spend 845 runner-minutes on that where 32 spend 595, in far fewer waves.
+
+`SLICE_SHARDS` is 32; `FULL_SHARDS` stays at 128 because 8,008 minutes is a
+different problem and its tail is what the extra shards deal out early. The
+matrix and the `i/N` denominator come from one output, because a list of 32
+against an N of 128 scores a quarter of the board and fails nothing.
+
+**THE CEILING IS NOT FORTY IN PRACTICE.** Counted on a live run, GitHub granted
+12–17 concurrent jobs, so `max-parallel: 32` is an upper bound the account does
+not reach and the wave count is set by what is granted, not by what is asked.
 
 AN INSPECTOR THAT CAN STOP THE LINE STOPS BEING AN INSPECTOR. A group probe on
 the critical path buys a priority hint for 25 minutes of wall clock and 280 CPU
