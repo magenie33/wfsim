@@ -404,9 +404,9 @@ to two seconds** against a board of 7,659 rows — and never simulates. A row
 nobody has banked is absent from this board and lands on the next one, which is
 the convergence rule applied to the assembly.
 
-WHAT IT BUYS is that a shard falling over costs a row rather than an hour: the
-merge used to pick up whatever the fan-out missed, alone and unsharded, which
-is the one place a single slow row could hold the whole publish.
+WHAT IT BUYS is that a shard falling over costs a row rather than an hour. A
+merge that picks up whatever the fan-out missed does it alone and unsharded,
+which is the one place a single slow row can hold the whole publish.
 
 **IT KEEPS EVERY ROW IT IS HANDED**, stale or not, and the two rules under that
 are the same rule. It takes no repair slice and it drops no row whose data
