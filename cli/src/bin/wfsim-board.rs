@@ -469,7 +469,11 @@ fn group_of(key: &str) -> String {
     format!("{weapon}|{mode}")
 }
 
-fn load_scores(spec: Option<String>, bench_id: &str) -> (ScoreMap, ScoreMap, ScoreMap) {
+fn load_scores(
+    spec: Option<String>,
+    bench_id: &str,
+    want_engine: Option<&str>,
+) -> (ScoreMap, ScoreMap, ScoreMap, std::collections::HashMap<String, String>) {
     let mut out = std::collections::HashMap::new();
     // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
     // the same reason as the score: the publish process computes almost
@@ -481,7 +485,11 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> (ScoreMap, ScoreMap, Sco
     // published or reused AS a measurement. What it can do is spare the publish
     // process from taking it again.
     let mut probes = std::collections::HashMap::new();
-    let Some(spec) = spec else { return (out, cost, probes) };
+    // WHAT EACH SCORE READ, carried so the caller can refuse one whose data has
+    // moved. A file from THIS run needs none — every shard is one binary over
+    // one checkout — and a file from a durable store needs it for every row.
+    let mut fps: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    let Some(spec) = spec else { return (out, cost, probes, fps) };
     let mut files: Vec<std::path::PathBuf> = Vec::new();
     let p = std::path::Path::new(&spec);
     if p.is_dir() {
@@ -513,6 +521,23 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> (ScoreMap, ScoreMap, Sco
         if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
             continue;
         }
+        // …AND WHICH ENGINE COMPUTED IT. Refused rather than merged, and a file
+        // that does not say is refused too: silence is what a file written by an
+        // older binary looks like, and reading one publishes its numbers under
+        // this generation's name. Only a caller that ASKS is held to it — a run
+        // reading its own shards has nothing to check.
+        if let Some(want) = want_engine {
+            if file.get("engine").and_then(Value::as_str) != Some(want) {
+                continue;
+            }
+        }
+        if let Some(fs) = file.get("fps").and_then(Value::as_object) {
+            for (k, v) in fs {
+                if let Some(t) = v.as_str() {
+                    fps.insert(k.clone(), t.to_string());
+                }
+            }
+        }
         if let Some(cs) = file.get("costs").and_then(Value::as_object) {
             for (k, v) in cs {
                 if let Some(n) = num_in(v) {
@@ -536,7 +561,7 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> (ScoreMap, ScoreMap, Sco
             }
         }
     }
-    (out, cost, probes)
+    (out, cost, probes, fps)
 }
 
 /// The prior board's scores, keyed the way this run keys them — but only if it
@@ -828,7 +853,29 @@ fn main() {
     // numbers that could not have moved. The data half is asked PER ROW, from
     // the files that row actually reads.
     let engine_fp = flag("--engine").unwrap_or_default();
-    let (mut known, known_costs, known_probes) = load_scores(flag("--scores"), &bench_id);
+    // THE STORE IS NOT THE BOARD. A score file may come from this run's own
+    // shards — one binary, one checkout, nothing to check — or from a durable
+    // store that outlived the run that wrote it, where every entry has to prove
+    // it still reads what it read. `--scores-engine` is how the caller says
+    // which: given, the files must name that engine and each row is held to its
+    // own hash in the loop below.
+    let scores_engine = flag("--scores-engine");
+    let (loaded, known_costs, known_probes, store_fps) =
+        load_scores(flag("--scores"), &bench_id, scores_engine.as_deref());
+    // A SAME-RUN FILE IS TRUSTED WHOLE; A STORED ONE IS TRUSTED PER ROW. Without
+    // a declared engine these are this run's own shards and go straight in.
+    // With one they outlived the run that wrote them, so each waits in
+    // `store_scores` until the loop has recomputed the hash it was filed under.
+    // Merging them here instead was a real bug: `known` also holds the PRIOR
+    // BOARD's rows, which carry no entry in `store_fps`, so a gate applied to
+    // the merged map threw the whole board away and made every row todo.
+    let mut known: ScoreMap = Default::default();
+    let mut store_scores: ScoreMap = Default::default();
+    if scores_engine.is_some() {
+        store_scores = loaded;
+    } else {
+        known = loaded;
+    }
     let mut reused = 0usize;
     let mut stale = 0usize;
     let mut prior_rolls: std::collections::HashMap<String, Vec<f64>> = Default::default();
@@ -885,6 +932,11 @@ fn main() {
     let mut todo = 0usize;
     let mut fresh_seen = 0usize;
     let mut fresh_left = 0usize;
+    // WHOSE ROWS WERE DEFERRED, as identities. The accounting below asserts
+    // that every validated build reached a row, and a bounded run makes that
+    // false ON PURPOSE — a build the budget did not reach this time is queued,
+    // not lost, which is a FOURTH outcome and has to be one the check knows.
+    let mut deferred_ids: std::collections::BTreeSet<String> = Default::default();
     let verify = has_flag("--verify");
     // THE PROBE'S VERDICT, CARRIED IN. Set by the workflow only after a
     // `--verify` run over the sample came back identical throughout, which is
@@ -919,6 +971,10 @@ fn main() {
         }
     }
     let emit_to = flag("--emit-scores");
+    // WHAT EACH ROW THIS RUN TOUCHED READS, filed beside the score it produced.
+    // Written into the emitted file so the score survives the run — see the
+    // emit block for why the engine hash alone is not enough.
+    let mut row_fps: std::collections::HashMap<String, String> = Default::default();
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
     // …AND WHAT EACH ONE COST, travelling with it — see the emit block.
     let mut costs: std::collections::HashMap<String, f64> = Default::default();
@@ -1230,6 +1286,19 @@ fn main() {
         // modes are enumerated, because what has to be provable is that a
         // VALIDATED build was ranked — not that some particular mode of it was.
         scored_ids.insert(wfsim_engine::builds::identity(&v));
+        // WHAT EVERY ROW OF THIS BUILD READS. Per BUILD and not per row: the
+        // hash is taken from the canonical build and the ruler, and a mode is
+        // how the same build is fired, so the seven rows of a melee share one.
+        let build_fp = wfsim_engine::data_fingerprint::row_fingerprint(
+            &bench_id,
+            &v.weapon,
+            &v.mods,
+            &v.arcanes,
+            &v.evolutions,
+            v.exilus.as_deref(),
+            v.assembly.as_ref(),
+        );
+
         // EVERY MODE THIS WEAPON CAN BE PLAYED IN, and not the one the
         // submitter happened to try.
         //
@@ -1278,6 +1347,19 @@ fn main() {
             let key = wfsim_engine::builds::board_key(&v, played.id);
             if !seen_ids.insert(key.clone()) {
                 continue;
+            }
+            row_fps.insert(key.clone(), build_fp.clone());
+            // A STORED SCORE IS HELD TO ITS OWN HASH. The engine gate is the
+            // coarse half and cannot see a data change — that is what
+            // `row_fingerprint` is for — so an entry is admitted only where the
+            // build still reads what it read, and refought otherwise.
+            //
+            // `or_insert`, because the prior board and this run's own shards
+            // were validated on their own way in and must win.
+            if let Some(&stored) = store_scores.get(&key) {
+                if store_fps.get(&key).map(String::as_str) == Some(build_fp.as_str()) {
+                    known.entry(key.clone()).or_insert(stored);
+                }
             }
             // THE SHARD IS A PROPERTY OF THE ROW, not of the submission it came
             // from: a melee weapon is seven rows off one record. `charge`
@@ -1329,6 +1411,8 @@ fn main() {
                             || deadline.is_some_and(|d| started.elapsed() > d);
                         if over {
                             fresh_left += 1;
+                            deferred_ids
+                                .insert(key.rsplit_once('#').map_or(key.clone(), |(i, _)| i.to_string()));
                             continue;
                         }
                     }
@@ -1673,8 +1757,8 @@ fn main() {
     }
 
     // EVERY STORED SUBMISSION IS ACCOUNTED FOR, and the run says so rather than
-    // being trusted. Three outcomes and no fourth: refused at the door, listed,
-    // or scored and held below the floor. A build that fell out of all three
+    // being trusted. Four outcomes and no fifth: refused at the door, listed,
+    // scored and held below the floor, or deferred to the next run by a budget. A build that fell out of all three
     // would be one the library holds and this board never looked at — the
     // failure mode that has to be impossible rather than unlikely, because from
     // the submitter's side it is indistinguishable from the other two.
@@ -1707,6 +1791,10 @@ fn main() {
             !listed.contains(id.as_str())
                 && !held.contains(id.as_str())
                 && !screened.contains(id.as_str())
+                // …AND NOT ONE THE BUDGET DEFERRED. A build queued for the next
+                // run is the fourth outcome, and the only one that is a
+                // statement about this run rather than about the build.
+                && !deferred_ids.contains(id.as_str())
         })
         .collect();
     assert!(
@@ -1852,6 +1940,21 @@ fn main() {
         };
         let text = serde_json::to_string(&serde_json::json!({
             "benchmark": bench_id,
+            // WHAT COMPUTED THESE, so the file can outlive the run that wrote
+            // it. Within one run every shard is the same binary and the field
+            // says nothing; across runs it is the difference between a durable
+            // store and a way to publish last week's numbers as today's.
+            "engine": engine_fp,
+            // …AND WHAT EACH ROW READ, for the same reason at the other
+            // granularity. The engine hash cannot see a data change — that is
+            // the whole point of `row_fingerprint` — so a file that named only
+            // the engine would hand back a score whose weapon has since been
+            // corrected. A reader keeps the entries whose hash it recomputes to
+            // and refights the rest.
+            "fps": computed
+                .keys()
+                .filter_map(|k| row_fps.get(k).map(|f| (k.clone(), f.clone())))
+                .collect::<std::collections::HashMap<_, _>>(),
             "scores": as_text(&computed),
             // WHAT EACH ONE COST, so the publish step can write it into the
             // board and the NEXT run can pack the shards with it. Without this
@@ -2530,8 +2633,8 @@ mod tests {
         .unwrap();
 
         let spec = Some(d.to_string_lossy().into_owned());
-        let (aimed, _, _) = load_scores(spec.clone(), "single_target");
-        let (no_aim, _, _) = load_scores(spec.clone(), "single_target_no_aim");
+        let (aimed, _, _, _) = load_scores(spec.clone(), "single_target", None);
+        let (no_aim, _, _, _) = load_scores(spec.clone(), "single_target_no_aim", None);
         assert_eq!(aimed.get(key).copied(), Some(28.44229348067104));
         assert_eq!(no_aim.get(key).copied(), Some(0.17033484369504454));
         // The sharp one: neither board may see the other's, in EITHER direction
@@ -2545,7 +2648,7 @@ mod tests {
 
         // A ruler with no file of its own reuses nothing rather than reusing
         // whatever else is in the directory.
-        assert!(load_scores(spec, "group_clear").0.is_empty());
+        assert!(load_scores(spec, "group_clear", None).0.is_empty());
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -2563,7 +2666,8 @@ mod tests {
             r#"{"benchmark":"single_target","scores":{"b#base":2.0}}"#,
         )
         .unwrap();
-        let (got, _, _) = load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
+        let (got, _, _, _) =
+            load_scores(Some(d.to_string_lossy().into_owned()), "single_target", None);
         assert_eq!(got.len(), 2);
         assert_eq!(got.get("a#base").copied(), Some(1.0));
         assert_eq!(got.get("b#base").copied(), Some(2.0));
