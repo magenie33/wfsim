@@ -45,7 +45,7 @@ on:
     # row that is not what this code computes without rescoring anything.
   push:
     branches: [main]
-    # WAKE ON EVERYTHING EXCEPT WHAT THIS WORKFLOW ITSELF WRITES.
+    # WAKE ON EVERY SOURCE. SKIP EVERY GENERATED TREE.
     #
     # An INCLUSION list is the wrong shape here and was wrong in the way that
     # matters: a path that moves the engine fingerprint and is not listed
@@ -55,14 +55,17 @@ on:
     # failure — forgetting an entry costs one wasted run and can never cost a
     # board that quietly stops moving.
     #
-    # It is affordable because a run with nothing to do is now one job:
-    # `is there anything to score` asks the scorer by walking, and `score` and
-    # `publish` do not start when the answer is none. The list is the board's own
-    # output and nothing else; `check_rescore_paths` holds it to that.
+    # GENERATED, BY ANYONE — not just by this workflow. Nothing reads `site/`
+    # to decide a number; it is what `build_site_app.py` writes for the CDN, so
+    # a push that only regenerates it cannot change what a score means, and
+    # every `site: regenerate` is such a push. What may never be skipped is a
+    # SOURCE, whatever it looks like: `scripts/` holds `engine_fingerprint.sh`,
+    # which decides the hash itself. `check_rescore_paths` reads both
+    # generators and holds this list to them.
     paths-ignore:
       - "boards/**"
       - "data/board_state.yaml"
-      - "site/board.json"
+      - "site/**"
   workflow_dispatch:
     inputs:
       full:
