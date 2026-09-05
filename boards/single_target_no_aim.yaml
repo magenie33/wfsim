@@ -7423,6 +7423,10 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, riven, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [cold, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 10
@@ -7432,6 +7436,10 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 9.964965105906751
@@ -7440,6 +7448,9 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 9.947597440068476
@@ -7448,6 +7459,9 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 9.931074514190469
@@ -7473,6 +7487,9 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: kuva_nukor
     mode: base
     score: 9.528462025497834
@@ -7481,6 +7498,10 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, riven, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [cold, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 9.266530401802406
@@ -7489,6 +7510,10 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, sure_shot, riven, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [cold, multishot]
+      malus: ammo_maximum
+      rolls: [0.9, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 8.795283810083168
@@ -7539,6 +7564,10 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, riven, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 8.348517337911927
@@ -7547,6 +7576,10 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+    riven:
+      bonuses: [cold, multishot]
+      malus: ammo_maximum
+      rolls: [0.9, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 8.347263116948417
@@ -7572,6 +7605,10 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 8.06350523354853
@@ -7580,6 +7617,10 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, riven, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 8.015259170756535
@@ -7645,6 +7686,9 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 6.8458317238326005
@@ -7653,6 +7697,9 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: kuva_nukor
     mode: base
     score: 6.817762212389791
@@ -7800,6 +7847,10 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, riven, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+    riven:
+      bonuses: [critical_damage, damage_to_grineer, reload_speed]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 5.433087701889816
@@ -7816,6 +7867,9 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven]
     arcanes: [secondary_enervate]
     valence: heat
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 5.269332802082099
@@ -46484,6 +46538,9 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven]
     arcanes: [secondary_enervate]
     valence: impact
+    riven:
+      bonuses: [cold, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: felarx
     mode: cycle
     listed: false
