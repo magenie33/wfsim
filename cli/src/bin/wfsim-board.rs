@@ -972,7 +972,13 @@ fn main() {
     // the loop below — so dropping it from only the first is the backstop
     // pressing nothing: measured, a `kuva_nukor#base` rescore came back green
     // having refought no row, because the store put every one back.
+    // …AND NEVER ON THE ASSEMBLY. Forcing is how a SHARD is told to refight a
+    // row; a pass that fights nothing would only drop it, and the weapon leaves
+    // the board. Measured, and live: `--rescore kuva_nukor` took all 56 of its
+    // rows off the published board because the merge honoured the flag it
+    // cannot act on. Same rule as a stale row, same reason.
     let forced: Vec<Selector> = flag("--rescore")
+        .filter(|_| !project)
         .map(|list| list.split(';').filter_map(Selector::parse).collect())
         .unwrap_or_default();
     let is_forced = |k: &String| forced.iter().any(|sel| sel.matches(k));
