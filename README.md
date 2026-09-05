@@ -11,7 +11,7 @@ True to in-game numbers, down to the last proc. Theorycrafting, solved.
 
 [**wfsim.app**](https://wfsim.app) ·
 QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S) ·
-[Discord](https://discord.gg/5GXgbtmxY)
+[Discord](https://discord.gg/H4BMqvYFVg)
 
 [![CI](https://github.com/magenie33/wfsim/actions/workflows/ci.yml/badge.svg)](https://github.com/magenie33/wfsim/actions/workflows/ci.yml)
 

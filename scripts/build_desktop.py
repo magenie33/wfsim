@@ -211,7 +211,7 @@ def main() -> None:
         "官网: https://wfsim.app\n"
         "GitHub: https://github.com/magenie33/wfsim\n"
         "QQ 群: 995078378\n"
-        "Discord: https://discord.gg/5GXgbtmxY\n"
+        "Discord: https://discord.gg/H4BMqvYFVg\n"
         "许可证: AGPL-3.0\n",
         encoding="utf-8",
     )
