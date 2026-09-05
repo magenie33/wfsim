@@ -27,6 +27,13 @@ const NL = String.fromCharCode(10);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // LICENSE is the AGPL text verbatim and is nobody's to edit.
 const EXEMPT = new Set(["docs/MEASUREMENTS.md", "scripts/check_comment_style.mjs", "LICENSE"]);
+// THE EXEMPTION FOLLOWS THE CONTENT, NOT THE FILENAME. A measurement's
+// provenance IS its data — when it was taken, and by which reading — which is
+// why `docs/MEASUREMENTS.md` was exempt. Splitting it into one file per
+// measurement moved eighty of those out from under the exemption without
+// changing a word of any of them, and turned a date inside M01 and a phrase
+// inside two others into failures. A prefix is what the rule always meant.
+const EXEMPT_UNDER = ["docs/measurements/"];
 const SKIP = ["site/", "private/", "vendor/", "target/"];
 const EXTS = [".rs", ".js", ".mjs", ".html", ".css", ".md", ".py", ".yaml", ".yml", ".jsonc", ".toml"];
 
@@ -65,7 +72,8 @@ const NARRATIVE_CEILING = 6;
 
 const files = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")
-  .filter((f) => f && !EXEMPT.has(f) && !SKIP.some((d) => f.startsWith(d))
+  .filter((f) => f && !EXEMPT.has(f) && !EXEMPT_UNDER.some((d) => f.startsWith(d))
+    && !SKIP.some((d) => f.startsWith(d))
     && EXTS.some((e) => f.endsWith(e)));
 
 let failures = 0;
