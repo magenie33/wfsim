@@ -22394,7 +22394,7 @@ entries:
     mode: base
     score: 29.13964179184237
     fp: 859af549a31769f1
-    cost: 7.615
+    cost: 4.362
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22465,7 +22465,7 @@ entries:
     mode: base
     score: 28.22566561920644
     fp: 865d92166f02f2a1
-    cost: 8.495
+    cost: 8.626
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -22488,7 +22488,7 @@ entries:
     mode: base
     score: 27.724529724411266
     fp: ce3865386e9371fe
-    cost: 8.375
+    cost: 8.219
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22501,7 +22501,7 @@ entries:
     mode: base
     score: 27.333333333333332
     fp: bf6350fa203ea94d
-    cost: 5.725
+    cost: 5.878
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -22513,7 +22513,7 @@ entries:
     mode: base
     score: 27.331920277874694
     fp: 865d92166f02f2a1
-    cost: 5.735
+    cost: 4.398
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -22524,7 +22524,7 @@ entries:
     mode: base
     score: 26.672878207707218
     fp: 81f47a7136233db7
-    cost: 8.669
+    cost: 8.206
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, riven, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -22576,7 +22576,7 @@ entries:
     mode: base
     score: 25.351126163112443
     fp: bf6350fa203ea94d
-    cost: 5.562
+    cost: 5.205
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -22617,7 +22617,7 @@ entries:
     mode: base
     score: 25.245630361451575
     fp: 026717da31e5df24
-    cost: 8.460
+    cost: 8.282
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22647,7 +22647,7 @@ entries:
     mode: base
     score: 24.893059472821843
     fp: bd60e119a1ac112e
-    cost: 8.506
+    cost: 8.677
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22741,7 +22741,7 @@ entries:
     mode: base
     score: 23.67356225599011
     fp: dfdbfd03220e4ef3
-    cost: 4.026
+    cost: 3.839
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -22810,7 +22810,7 @@ entries:
     mode: base
     score: 23.35813868342745
     fp: bd58e4d77ebf952e
-    cost: 3.672
+    cost: 3.596
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22874,7 +22874,7 @@ entries:
     mode: base
     score: 23.000497171368757
     fp: ad1070bce688339b
-    cost: 2.835
+    cost: 3.809
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -22958,7 +22958,7 @@ entries:
     mode: base
     score: 22.235521636911752
     fp: 54b4e6f3d7a35f7f
-    cost: 5.484
+    cost: 5.528
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, pistol_pestilence, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -23043,7 +23043,7 @@ entries:
     mode: base
     score: 21.585934159392593
     fp: 9b34ac3390ff472e
-    cost: 4.139
+    cost: 4.215
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23069,7 +23069,7 @@ entries:
     mode: base
     score: 21.378542783132236
     fp: 06f3ded5834277f7
-    cost: 3.444
+    cost: 3.441
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23118,7 +23118,7 @@ entries:
     mode: base
     score: 20.96422922026056
     fp: ef2568d950e8ce1a
-    cost: 1.951
+    cost: 2.465
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -23126,7 +23126,7 @@ entries:
     mode: base
     score: 20.86068276242304
     fp: bec3e9a17b770204
-    cost: 3.723
+    cost: 3.754
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, gunslinger, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23143,7 +23143,7 @@ entries:
     mode: base
     score: 20.67742877623131
     fp: c079ec725038b8b1
-    cost: 4.547
+    cost: 4.457
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, gunslinger, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23160,7 +23160,7 @@ entries:
     mode: base
     score: 20.595806512843982
     fp: 76abaefb6dc432d5
-    cost: 3.688
+    cost: 3.585
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, gunslinger, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23212,7 +23212,7 @@ entries:
     mode: base
     score: 20.00251647364701
     fp: 87ef2046f686b3d0
-    cost: 3.625
+    cost: 3.607
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23243,7 +23243,7 @@ entries:
     mode: base
     score: 19.632052607515906
     fp: 5e854cd7d8b8f470
-    cost: 1.584
+    cost: 2.372
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23301,7 +23301,7 @@ entries:
     mode: base
     score: 19.21628592073201
     fp: c70e8256377dee3f
-    cost: 3.477
+    cost: 3.462
     exilus: ruinous_extension
     mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23310,7 +23310,7 @@ entries:
     mode: base
     score: 19.038793571659237
     fp: ffa52f63725f2913
-    cost: 2.328
+    cost: 2.024
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23328,7 +23328,7 @@ entries:
     mode: base
     score: 18.94276505593432
     fp: 315d883461d49ed4
-    cost: 3.569
+    cost: 3.661
     exilus: ruinous_extension
     mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23337,7 +23337,7 @@ entries:
     mode: base
     score: 18.91979637824121
     fp: c822643002027dc7
-    cost: 2.541
+    cost: 2.527
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23346,7 +23346,7 @@ entries:
     mode: base
     score: 18.887944370340325
     fp: 2c7ad97c3968f92f
-    cost: 3.650
+    cost: 4.979
     exilus: ruinous_extension
     mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23380,7 +23380,7 @@ entries:
     mode: base
     score: 18.31396131092584
     fp: 234b027e2010e13c
-    cost: 3.874
+    cost: 3.926
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23389,7 +23389,7 @@ entries:
     mode: base
     score: 18.18225291165303
     fp: 7bb125459130c022
-    cost: 3.620
+    cost: 3.695
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, gunslinger, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23445,7 +23445,7 @@ entries:
     mode: base
     score: 17.942163123792024
     fp: 88d328c2327bb0fa
-    cost: 3.810
+    cost: 3.773
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23454,7 +23454,7 @@ entries:
     mode: base
     score: 17.850726105347256
     fp: 6e8bcd3c5dd97eb6
-    cost: 3.753
+    cost: 3.832
     mods: [seeker, galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -23488,7 +23488,7 @@ entries:
     mode: base
     score: 17.62774859910318
     fp: c0a0b363f4bf2f7c
-    cost: 3.314
+    cost: 1.827
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23510,7 +23510,7 @@ entries:
     mode: base
     score: 17.602119703235008
     fp: 2870ab3b2e859562
-    cost: 3.242
+    cost: 2.736
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -23518,7 +23518,7 @@ entries:
     mode: base
     score: 17.56667855573915
     fp: 8d683e46d169d49c
-    cost: 2.558
+    cost: 3.948
     exilus: ruinous_extension
     mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23553,7 +23553,7 @@ entries:
     mode: base
     score: 17.33716815514848
     fp: 1e9a6819b8d5d99c
-    cost: 4.755
+    cost: 3.657
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, gunslinger, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23562,7 +23562,7 @@ entries:
     mode: base
     score: 17.261493828880532
     fp: ea01d6ea5ec05b1c
-    cost: 2.505
+    cost: 2.462
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23571,7 +23571,7 @@ entries:
     mode: base
     score: 17.23030501959452
     fp: 57a8baf7c254a306
-    cost: 3.265
+    cost: 3.410
     exilus: ruinous_extension
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23580,7 +23580,7 @@ entries:
     mode: base
     score: 17.22484317106359
     fp: 4ae6af2f50263bd9
-    cost: 3.421
+    cost: 3.417
     exilus: ruinous_extension
     mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23658,7 +23658,7 @@ entries:
     mode: base
     score: 15.997365732673883
     fp: 83c167dc523bae85
-    cost: 1.811
+    cost: 1.865
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23667,7 +23667,7 @@ entries:
     mode: base
     score: 15.933702928937768
     fp: 79097fda69876ac8
-    cost: 1.737
+    cost: 1.783
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23685,7 +23685,7 @@ entries:
     mode: base
     score: 15.267765763055232
     fp: 1b57ef06fd7389cf
-    cost: 3.325
+    cost: 1.758
     exilus: ruinous_extension
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23703,7 +23703,7 @@ entries:
     mode: base
     score: 15.220784054795487
     fp: 555e1681badbf945
-    cost: 3.293
+    cost: 3.351
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23738,7 +23738,7 @@ entries:
     mode: base
     score: 14.07602040557688
     fp: c8940d0cabe112d1
-    cost: 4.486
+    cost: 3.457
     exilus: ruinous_extension
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23799,7 +23799,7 @@ entries:
     mode: base
     score: 13.214460490168351
     fp: 6011ff2ee12df66c
-    cost: 3.148
+    cost: 1.785
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -50589,7 +50589,7 @@ entries:
     listed: false
     score: 12.59093403915443
     fp: 1edf21467a94c118
-    cost: 4.492
+    cost: 4.488
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -50872,7 +50872,7 @@ entries:
     listed: false
     score: 12.379078835611159
     fp: 16c78b90dc2ebcc9
-    cost: 3.260
+    cost: 3.187
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, hollow_point, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -51002,7 +51002,7 @@ entries:
     listed: false
     score: 12.311508103266842
     fp: 0d6d74cc404221d4
-    cost: 3.161
+    cost: 2.901
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -51088,7 +51088,7 @@ entries:
     listed: false
     score: 12.25569548445608
     fp: dfabf7c0d18876c4
-    cost: 3.193
+    cost: 3.066
     exilus: ruinous_extension
     mods: [merciless_gunfight, seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -51668,7 +51668,7 @@ entries:
     listed: false
     score: 11.882195319826046
     fp: de085a28b38d8c69
-    cost: 3.857
+    cost: 3.828
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, primed_heated_charge]
     arcanes: [secondary_enervate]
