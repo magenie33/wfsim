@@ -29861,6 +29861,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 88.98249862623445
+    fp: a608fd196f3a43cd
+    cost: 10.123
+    mods: [double_tap, galvanized_aptitude, galvanized_scope, point_strike, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 87.53983288881604
     fp: fd54e5718ce16740
     cost: 9.899
