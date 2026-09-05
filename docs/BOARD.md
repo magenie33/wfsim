@@ -340,6 +340,32 @@ the fix costs minutes. The rolls go with the scores: a riven row's rolls are the
 argmax of its score, so keeping them would re-measure the corner a stale number
 chose. A misspelled id rescores nothing and says so rather than passing quietly.
 
+### The store is what a run banks
+
+The cache and the artifact were one file, which is why a run had to compute
+everything before it could publish anything and why a cancelled run lost all of
+it. `scripts/score_store.sh` is the split: a shard writes what it scored into KV
+the moment it has it, and every later run reads the lot back before deciding
+what is left to do. **A run cancelled at 95% has banked 95% of its work.**
+
+A STORED SCORE PROVES ITSELF TWICE. The blob names the engine that wrote it and,
+per row, what that row read. The reader refuses the file whole if the engine
+differs and each row unless it recomputes to the same hash — measured on a store
+of 24 rows: 1,556 rows to do without it, 1,532 with it, 1,556 under a wrong
+engine, and 1,533 with one row's data fingerprint altered. Only entries under a
+declared engine are held to this; a run reading its own shards has one binary
+over one checkout and nothing to check.
+
+THE ENGINE FINGERPRINT IS THE KEY PREFIX, so a code change makes the whole
+generation unreachable rather than wrong, and what is left behind expires on a
+TTL rather than being collected — a cleanup pass is a second thing that can
+fail, and a stale blob costs bytes.
+
+A FAILED WRITE IS NOT A FAILED RUN. The scores are still in the run's own
+artifacts and the board is still assembled from them; what is lost is the
+banking. The store is an optimisation of WHERE work goes, never of whether the
+board is right.
+
 ### The standing a submitter sees at once
 
 The wait for a ROW is the pipeline's and it is minutes at best: the board is a
@@ -816,14 +842,25 @@ assets, and until the board there was no script at all. Two consequences:
    a debugging trap — "the board is empty but the BOARD binding looks fine" is a
    sentence that sends you looking in the wrong place.
 2. **Repo secrets** — `CF_ACCOUNT_ID`, `CF_SUBMISSIONS_NAMESPACE_ID`,
-   `CF_API_TOKEN` (a token with *Workers KV Storage: Read*).
+   `CF_API_TOKEN` (a token with *Workers KV Storage: Read*, and *Write* if you
+   add the score store below).
 
    The middle one is the SUBMISSIONS namespace's id, and it is named that way
    for the same reason the binding is: it points at the builds waiting to be
    scored, not at the board. Every name in this pipeline says what it holds —
    the board is a file in the repo and nothing in Cloudflare is called after it.
 
-3. **The library database** — OPTIONAL, and everything above works without it.
+3. **The score store** — OPTIONAL, and everything works without it. A second KV
+   namespace and one more secret, `CF_SCORES_NAMESPACE_ID`, and the runs begin
+   banking what they compute (§"The store is what a run banks").
+
+   SEPARATE FROM THE SUBMISSIONS, because the submissions are the one
+   irreplaceable thing here and a score can always be recomputed. Sharing a
+   namespace would put score blobs into the listing `fetch_submissions.sh`
+   walks. Unset the secret and the pipeline is exactly what it was — that is the
+   rollback, and it is why the store went in this way round.
+
+4. **The library database** — OPTIONAL, and everything above works without it.
    It is the first step of moving the library out of KV, and it is written so
    that it can land long before the database does: without the binding the
    mirror in `worker/index.js` is a no-op, and `check_board_submit.mjs` asserts

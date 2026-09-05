@@ -74,6 +74,12 @@ jobs:
       # and nothing anywhere saying so. Stub `curl`, no network, milliseconds.
       - name: The library is fetched once and then only added to
         run: bash scripts/fetch_submissions.sh --self-test
+      # …AND SCORES OUTLIVE THE RUN THAT COMPUTED THEM. Same reason and same
+      # stub: the failure is a run banking nothing while reporting success, so
+      # what is asserted is that unconfigured is silent and green, a blob is
+      # keyed by engine, run and shard, and a read that fails leaves no file.
+      - name: Scores outlive the run that computed them
+        run: bash scripts/score_store.sh --self-test
       # …AND IT CAN BE PUT BACK. A backup nobody has restored is a hope: the
       # restore runs once, under pressure, by someone who has just lost data,
       # which is the worst moment to find a typo in it. Stub `curl`, no network.

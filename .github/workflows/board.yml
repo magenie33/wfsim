@@ -177,6 +177,29 @@ jobs:
             echo "code moved: ${was:-unrecorded} -> $fp"
           fi
 
+      # WHAT EARLIER RUNS ALREADY SCORED UNDER THIS ENGINE, fetched ONCE and
+      # handed to every job as an artifact — thirty-two shards asking Cloudflare
+      # for the same blobs is thirty-two times the requests for one answer.
+      #
+      # Unconfigured is a working state: with no namespace the directory is
+      # empty and every job falls back on the boards alone, which is the whole
+      # pipeline as it was before the store existed. That is the rollback.
+      - name: read the score store
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_SCORES_NAMESPACE: ${{ secrets.CF_SCORES_NAMESPACE_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          ENGINE_FP: ${{ steps.fp.outputs.engine }}
+        run: bash scripts/score_store.sh get store
+      - uses: actions/upload-artifact@v4
+        if: steps.wired.outputs.yes == 'true'
+        with:
+          name: store
+          path: store/
+          retention-days: 1
+          if-no-files-found: ignore
+
       # A FULL RESCORE IGNORES EVERY STORED SCORE. Two things ask for one: the
       # manual button, and the weekly backstop above.
       - id: full
@@ -299,6 +322,7 @@ jobs:
             line=$(./target/release/wfsim-board "$id" \
                      --engine "${{ steps.fp.outputs.engine }}" \
                      --reuse "$f" --code-verified --dry-run $FORCE $SLICE \
+                     --scores store --scores-engine "${{ steps.fp.outputs.engine }}" \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
             echo "$id: $line"
@@ -393,9 +417,16 @@ jobs:
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
               $slice \
+              --scores store --scores-engine "${{ needs.submissions.outputs.engine }}" \
               --shard "${{ matrix.shard }}/${{ needs.submissions.outputs.shard_count }}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
+            # BANKED PER BENCHMARK, AS SOON AS IT EXISTS. A run cancelled after
+            # this has still kept the work; the artifact below only has to reach
+            # `publish` in THIS run, where the store has to reach every later
+            # one. The key carries the benchmark because a shard emits one file
+            # per board and they must not overwrite each other.
+            SHARD_ID="$id-${{ matrix.shard }}" bash scripts/score_store.sh put               "scores/$id-${{ matrix.shard }}.json" || true
           done
 
       - uses: actions/upload-artifact@v4
@@ -437,12 +468,15 @@ jobs:
           pattern: scores-*
           path: scores
           merge-multiple: true
-
+      # WHAT EARLIER RUNS BANKED, beside what this run's shards computed. One
+      # directory because `--scores` takes one path, and the two are the same
+      # kind of file — each says which engine wrote it and what each row read,
+      # so the reader holds both to the same test.
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: verified-groups
-          path: verified
+          name: store
+          path: scores
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
@@ -498,7 +532,7 @@ jobs:
             ./target/release/wfsim-board "$id" site/board.json \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
               $slice \
-              --scores scores \
+              --scores scores --scores-engine "${{ needs.submissions.outputs.engine }}" \
               < submissions.json > "boards/$id.yaml"
           done
 

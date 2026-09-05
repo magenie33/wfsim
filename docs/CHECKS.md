@@ -603,6 +603,17 @@ the rows the last one just repaired.
 
 It fails on each of the seven.
 
+## `score_store --self-test`
+
+Scores must outlive the run that computed them. Plain bash against a stub
+`curl`, no network: unconfigured is silent and green (which is the rollback), a
+blob is keyed by engine, run and shard, an empty score file stores nothing, and
+a read that fails leaves no file behind rather than an empty one.
+
+The failure it guards is a run that banks nothing while reporting success — the
+board would still be right, and every run would still be green, while the whole
+point of the store quietly went missing.
+
 ## `check_comment_style`
 
 No attribution and no dated decision survives in the
