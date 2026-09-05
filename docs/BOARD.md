@@ -234,8 +234,8 @@ compute is how the symptom gets treated and the cause does not.
 **THE SPLIT IS SIZED AGAINST THE WORK, NOT THE CEILING.** A shard costs 2.6
 minutes before it scores anything — checkout, cache restore, load — so past a
 point the split is buying startup rather than parallelism: 128 shards pay 333
-minutes of it, 32 pay 83. An ordinary run is 5,553 rows, and **the repair slice
-is the small half of it** — 984 rows against ~4,570 builds carrying no score
+minutes of it, 32 pay 83. An ordinary run is 5,553 rows, and **repair is the
+small half of it** — 984 rows against ~4,570 builds carrying no score
 yet, which is the backlog and a one-time cost. A shard of that backlog measured
 18 to 36 minutes at 32 ways.
 
@@ -282,9 +282,9 @@ same map is what made a slice necessary in the first place.
 **A PUSH NEVER RESCORES THE BOARD, AND THE BOARD CONVERGES INSTEAD.** A
 fingerprint difference says a stored score is UNVERIFIED under this generation,
 not that it is wrong. So every run scores a bounded share of what is NEW and
-repairs a BOUNDED SLICE of what is unverified — `REFRESH_MINUTES` of measured work, walked in `fp`
-order. Thirty minutes a run, three runs an hour, is under four days to cross all
-8,008 and under 4% of a day's free CPU.
+repairs what it reaches before the clock runs out, walked in `fp` order. A
+repaired row leaves the stale set, so the next run starts where the work still
+is — no rotation to steer and none to get wrong.
 
 The alternative was to treat unverified as wrong, and that is what it cost: over
 one day, five cancelled full rescores, thousands of CPU minutes, and **the board
@@ -379,8 +379,8 @@ merge that picks up whatever the fan-out missed does it alone and unsharded,
 which is the one place a single slow row can hold the whole publish.
 
 **IT KEEPS EVERY ROW IT IS HANDED**, stale or not, and the two rules under that
-are the same rule. It takes no repair slice and it drops no row whose data
-moved: a pass that cannot refight a row must not remove it, or a published row
+are the same rule. It fights nothing and it drops no row whose data moved: a
+pass that cannot refight a row must not remove it, or a published row
 would vanish because a file it reads was corrected. Refighting is the shards'
 job, and the board says how old it is.
 
