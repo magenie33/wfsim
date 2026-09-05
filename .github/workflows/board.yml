@@ -78,17 +78,20 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # HOW MANY WAYS THE SCORING SPLITS, and it is sized against the account's
-  # concurrency ceiling rather than against the schedule. Forty jobs run at
-  # once whatever this says, so every shard past the fortieth pays a checkout
-  # and a cache restore and buys no parallelism — and one 121-minute row is a
-  # floor no split goes under. Both are measured in docs/BOARD.md §"Two
-  # ceilings, and neither is the shard count", which also says why raising this
-  # is not the answer a fourth time.
+  # HOW MANY WAYS THE SCORING SPLITS, and it is sized against the WORK, not
+  # against the ceiling. A shard costs 2.6 minutes before it scores anything —
+  # checkout, cache restore, load — so the split is only worth what it saves.
+  # Forty jobs run at once whatever these say, and one 121-minute row is a floor
+  # no split goes under: docs/BOARD.md §"Two ceilings, and neither is the shard
+  # count".
   #
-  # It is left ABOVE forty on purpose: the extra shards are the tail, and
-  # dealing the long rows out early is what keeps the last wave short.
-  SHARDS: 128
+  # A FULL RESCORE IS 8,008 CPU MINUTES and stays above forty on purpose — the
+  # extra shards are the tail, and dealing the long rows out early is what keeps
+  # the last wave short.
+  FULL_SHARDS: 128
+  # A SLICE IS 90, so 128 ways of it is 333 minutes of pure startup to save
+  # eighty seconds each. Thirty-two fits one wave under the ceiling.
+  SLICE_SHARDS: 32
 
   # HOW MUCH OF THE PAST EACH RUN REPAIRS, in minutes of measured work.
   #
@@ -118,20 +121,22 @@ jobs:
       wired: ${{ steps.wired.outputs.yes }}
       engine: ${{ steps.fp.outputs.engine }}
       shards: ${{ steps.shards.outputs.list }}
+      shard_count: ${{ steps.shards.outputs.count }}
       full: ${{ steps.full.outputs.yes }}
       work: ${{ steps.work.outputs.yes }}
     steps:
       - uses: actions/checkout@v4
 
-      # THE MATRIX IS DERIVED FROM `SHARDS`, and it has to be. The scorer is
-      # told `--shards N` from the env while the matrix was a hand-written
-      # [0..7], so raising one without the other tells eight jobs they are one
-      # of thirty-two — and three quarters of the board is silently never
-      # scored. Nothing would have failed; the rows would simply keep their old
-      # numbers.
+      # THE MATRIX AND THE COUNT COME FROM ONE PLACE, and they have to. The
+      # scorer is told `--shard i/N` while the matrix is a list, so a list of
+      # eight against an N of thirty-two tells eight jobs they are one of
+      # thirty-two — and three quarters of the board is silently never scored.
+      # Nothing fails; the rows keep their old numbers.
       - id: shards
         run: |
-          python3 -c "import json;print('list='+json.dumps(list(range($SHARDS))))" >> "$GITHUB_OUTPUT"
+          if [ "${{ inputs.full }}" = "true" ]; then n=$FULL_SHARDS; else n=$SLICE_SHARDS; fi
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+          N=$n python3 -c "import json,os;print('list='+json.dumps(list(range(int(os.environ['N'])))))" >> "$GITHUB_OUTPUT"
 
       # WHAT A SCORE DEPENDS ON THAT IS NOT THE BUILD, as one hash: the code
       # that simulates, the data it simulates with, and the rulers. `data/`
@@ -381,7 +386,7 @@ jobs:
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
               $slice \
-              --shard "${{ matrix.shard }}/${SHARDS}" \
+              --shard "${{ matrix.shard }}/${{ needs.submissions.outputs.shard_count }}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
           done

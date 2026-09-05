@@ -43,6 +43,16 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
   "the fingerprint decides what a change reached; a path list is a second "
     + "answer to that question and the two can disagree");
 
+// THE MATRIX AND THE DENOMINATOR ARE ONE NUMBER. A shard is told `i/N` while
+// the matrix is a list, so a list of 32 against an N of 128 tells 32 jobs they
+// are one of 128 and three quarters of the board is never scored — nothing
+// fails, the rows just keep their old numbers. The denominator must therefore
+// name the same output the matrix is built from.
+const denom = wf.filter((l) => l.includes("--shard ") && !l.trim().startsWith("#"));
+check(denom.length > 0 && denom.every((l) => l.includes("outputs.shard_count")),
+  "the shard denominator comes from the matrix's own count",
+  `a shard is told a count the matrix does not set (${denom.map((l) => l.trim()).join(" | ") || "no --shard at all"})`);
+
 // THE BOARD PUBLISHES; THE AUDIT INSPECTS. `--verify` re-fights published rows
 // and compares them, which is an inspector's job and costs 25 minutes of wall
 // clock — on the board's critical path it delayed every publish to decide a

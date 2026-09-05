@@ -128,8 +128,8 @@ state anyway.
 
 | trigger | scope | cost |
 | --- | --- | --- |
-| `:00`, `:20`, `:40` | what is NEW, plus `REFRESH_MINUTES` of what is unverified | 30 minutes of measured work a board |
-| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | ~2h20m, 32 ways at once |
+| `:00`, `:20`, `:40` | what is NEW, plus `REFRESH_MINUTES` of what is unverified | 30 minutes of measured work a board, 32 ways |
+| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | ~2h20m, 128 ways |
 | Actions → board → Run workflow, **weapon = …** | the rows the selector names, whatever the fingerprints say | minutes; `board_select.py` prices it first |
 
 A PUSHED RUN DID EXACTLY WHAT THE NEXT SCHEDULED ONE DOES, so it duplicated a
@@ -209,6 +209,15 @@ The audit publishes nothing and gates nothing. Its outputs are a count when the
 numbers agree, and when they do not, a failure naming the rows **plus the
 selector that repairs them** — the charge and the warrant, so the finding lands
 in the button rather than in a discussion. §"The audit" is the mechanism.
+
+**THE SPLIT IS SIZED AGAINST THE WORK, NOT THE CEILING.** A shard costs 2.6
+minutes before it scores anything — checkout, cache restore, load — so 128 ways
+of a 90-minute slice is 333 minutes of pure startup to save eighty seconds each,
+and measured on one such run the 128 shards took 847 runner-minutes to do 90
+minutes of scoring. `SLICE_SHARDS` is 32, which fits one wave under the forty
+ceiling; `FULL_SHARDS` stays at 128 because 8,008 minutes is a different
+problem. The matrix and the `i/N` denominator come from one output, because a
+list of 32 against an N of 128 scores a quarter of the board and fails nothing.
 
 AN INSPECTOR THAT CAN STOP THE LINE STOPS BEING AN INSPECTOR. A group probe on
 the critical path buys a priority hint for 25 minutes of wall clock and 280 CPU

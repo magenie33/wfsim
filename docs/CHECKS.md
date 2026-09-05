@@ -587,8 +587,9 @@ asked for.
 Only the clock and a person may start a board run, and the run must not stop to
 judge itself. Plain node, no browser: it reads `.github/workflows/board.yml` and
 refuses a `push` trigger, requires the `schedule`, refuses any path list,
-refuses a `--verify` anywhere in the file, and refuses a pinned
-`--refresh-from`.
+refuses a `--verify` anywhere in the file, refuses a pinned
+`--refresh-from`, and requires the `--shard i/N` denominator to name the same
+output the matrix is built from.
 
 Each of those spins the wheel without turning it while every run stays green. A
 pushed run duplicates the scheduled one and is cancelled by the next push; a
@@ -597,7 +598,7 @@ path list is a second answer to the question the fingerprint already answers;
 minutes of wall clock on the critical path; a pinned offset hands the next run
 the rows the last one just repaired.
 
-It fails on each of the five.
+It fails on each of the six.
 
 ## `check_comment_style`
 
