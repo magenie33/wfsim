@@ -95,21 +95,18 @@ env:
   # thirty-two — through the dozen-odd runners a free account is granted.
   SLICE_SHARDS: 32
 
-  # HOW MUCH OF THE PAST EACH RUN REPAIRS, in minutes of measured work.
+  # HOW MUCH OF THE PAST EACH RUN REPAIRS, in minutes of measured work, and
+  # HOW MANY NEVER-SCORED ROWS IT TAKES ON. Two budgets because there are two
+  # backlogs: rows the board holds under an older generation, and builds it has
+  # no score for at all. Leaving the second unbounded is what kept the board
+  # from publishing — 4,570 rows a run had to clear before `publish` assembled
+  # anything.
   #
-  # THE BOARD CONVERGES AT A RATE THIS SETS. A change leaves stored rows
-  # unverified under the new generation, and the old answer was to fight all
-  # 22,977 of them at once — measured over one day, five cancelled runs,
-  # thousands of CPU minutes, and the board published NOTHING, because each was
-  # superseded before it finished. A run now fights what is NEW plus this much
-  # of what is unverified, and every run publishes.
-  #
-  # 30 MINUTES AGAINST A BOARD THAT COSTS 8,008: three runs an hour crosses all
-  # of it in under four days, at 36 CPU hours a day of the 960 a free public
-  # repo has — under 4%. Raise it to converge faster; the cost is linear and the
-  # ceiling is docs/BOARD.md §"Two ceilings". It is spread across `SHARDS`, so
-  # what it adds to a run's WALL clock is a minute.
-  REFRESH_MINUTES: 30
+  # A RUN HAS TO FIT INSIDE THE CADENCE THAT STARTS THE NEXT ONE: GitHub keeps
+  # one pending run and cancels the rest. Together these come to ~940 rows,
+  # about ten minutes of scoring a shard at `SLICE_SHARDS`.
+  REFRESH_MINUTES: 15
+  NEW_ROWS: 150
 
 jobs:
   # ---- 1. what is there to score ----------------------------------------
@@ -286,7 +283,7 @@ jobs:
           # code difference drops every stored score before the slice can keep
           # any, so the count comes back as the whole board and the gate cannot
           # tell a slice from a rescore.
-          SLICE="--refresh $(( REFRESH_MINUTES * 60 ))"
+          SLICE="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS"
           if [ "${{ inputs.full }}" = "true" ]; then SLICE=""; fi
           todo=0
           for f in boards/*.yaml; do
@@ -383,7 +380,7 @@ jobs:
             # re-fight what it just repaired.
             slice=""
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 ))"
+              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS"
             fi
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
@@ -488,7 +485,7 @@ jobs:
             # re-fight what it just repaired.
             slice=""
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 ))"
+              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS"
             fi
             ./target/release/wfsim-board "$id" site/board.json \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \

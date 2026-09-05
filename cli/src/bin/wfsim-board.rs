@@ -565,6 +565,14 @@ struct Prior {
     /// a STALE row: the fight has to be redone, but how long it takes is a
     /// property of the build and the ruler, and those did not move.
     costs: std::collections::HashMap<String, f64>,
+    /// EVERY ROW THE PRIOR BOARD HELD, whatever its score or staleness.
+    ///
+    /// It is what tells a REPAIR from a row nobody has ever scored, and the two
+    /// are bounded separately: the repair slice is `--refresh`, and the backlog
+    /// of never-scored builds is `--new-limit`. `costs` cannot answer it — a
+    /// row written before costs were recorded carries none, and would read as
+    /// never scored.
+    present: std::collections::HashSet<String>,
     /// Rows whose OWN data moved. Printed rather than counted silently: it is
     /// the number that says how much a change actually cost.
     stale: usize,
@@ -659,6 +667,7 @@ fn reuse_prior(
         // cost the packing needs — throwing the figure away with the score
         // would blind the split to the very work it is about to schedule.
         let key = wfsim_engine::builds::board_key(&v, &e.mode);
+        out.present.insert(key.clone());
         if e.cost > 0.0 {
             out.costs.insert(key.clone(), e.cost);
         }
@@ -822,6 +831,7 @@ fn main() {
     let mut prior_rolls: std::collections::HashMap<String, Vec<f64>> = Default::default();
     // WHAT THE LAST RUN MEASURED, per row — the input to the shard packing.
     let mut prior_costs: ScoreMap = Default::default();
+    let mut prior_present: std::collections::HashSet<String> = Default::default();
     // …AND THE ROWS WHOSE OWN DATA MOVED, which `--refresh` walks a slice of.
     let mut prior_stale_keys: Vec<(String, f64)> = Vec::new();
     // …AND WHAT EACH GROUP'S BEST WAS, the threshold the probe screens against.
@@ -836,6 +846,14 @@ fn main() {
     // the unverified that this run repairs. The rates and the reasons are
     // `docs/BOARD.md` §"When the code moved".
 
+    // HOW MANY NEVER-SCORED ROWS A RUN TAKES ON, and it is the other half of
+    // `--refresh`. The slice bounds the REPAIR of rows the board already holds;
+    // without this, the backlog of submitted builds that have no score yet is
+    // unbounded, so a run has to clear all of it before `publish` assembles
+    // anything — 4,570 rows and hours of it, during which the board shows the
+    // number it showed yesterday. Bounded, each run publishes a board with more
+    // rows on it than the last.
+    let new_limit = flag("--new-limit").and_then(|s| s.parse::<usize>().ok());
     let refresh = flag("--refresh").and_then(|s| s.parse::<f64>().ok());
     // WHERE THE SLICE STARTS. The operator may pin it, but the default is the
     // cursor the last run stored: every shard of a run reads the same file, so
@@ -846,6 +864,8 @@ fn main() {
         .unwrap_or_else(|| stored_state().get(&bench_id).map_or(0, |e| e[4]));
     let dry = has_flag("--dry-run");
     let mut todo = 0usize;
+    let mut fresh_seen = 0usize;
+    let mut fresh_left = 0usize;
     let verify = has_flag("--verify");
     // THE PROBE'S VERDICT, CARRIED IN. Set by the workflow only after a
     // `--verify` run over the sample came back identical throughout, which is
@@ -859,6 +879,7 @@ fn main() {
                 stale = p.stale;
                 prior_rolls = p.rolls;
                 prior_costs = p.costs;
+                prior_present = p.present;
                 prior_stale_keys = p.stale_keys;
                 prior_leaders = p.leaders;
                 if let Some(why) = &p.dropped {
@@ -1272,6 +1293,21 @@ fn main() {
                     // It is decided HERE, inside the `None` arm, because a row
                     // whose score is already known costs nothing to publish and
                     // must not be charged to anybody.
+                    // NEVER SCORED, AND THE RUN HAS TAKEN ITS SHARE. Counted
+                    // before the shard filter so every shard reaches the same
+                    // verdict on the same row — they walk one list in one order
+                    // and must agree on where the backlog stops.
+                    //
+                    // Only where a prior board was read: with none, every row is
+                    // new and a limit would score a fraction of a first board
+                    // and call it done.
+                    if !prior_present.is_empty() && !prior_present.contains(&key) {
+                        fresh_seen += 1;
+                        if new_limit.is_some_and(|n| fresh_seen > n) {
+                            fresh_left += 1;
+                            continue;
+                        }
+                    }
                     let cost = prior_costs.get(&key).copied().unwrap_or(DEFAULT_ROW_SECONDS);
                     let mine = charge(&mut load, cost);
                     // Not this shard's slice: another one is simulating it right
@@ -1601,6 +1637,16 @@ fn main() {
         below.len(),
         probed.len(),
     );
+    // HOW MUCH BACKLOG IS LEFT, said out loud. A run that defers rows is not a
+    // run that failed to score them: the next one takes the next share, and the
+    // count falling run over run is what says the board is catching up.
+    if fresh_left > 0 {
+        eprintln!(
+            "new: {} of {fresh_seen} never-scored row(s) taken, {fresh_left} left for the next run",
+            fresh_seen - fresh_left
+        );
+    }
+
     // EVERY STORED SUBMISSION IS ACCOUNTED FOR, and the run says so rather than
     // being trusted. Three outcomes and no fourth: refused at the door, listed,
     // or scored and held below the floor. A build that fell out of all three

@@ -43,6 +43,18 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
   "the fingerprint decides what a change reached; a path list is a second "
     + "answer to that question and the two can disagree");
 
+// BOTH BACKLOGS ARE BOUNDED, or the run does not fit the cadence that starts
+// the next one. `--refresh` bounds the repair of rows the board already holds;
+// `--new-limit` bounds the builds it has no score for at all. Dropping the
+// second is what kept the board from publishing for 35 hours — a run had 4,570
+// never-scored rows to clear before `publish` assembled anything, took hours,
+// and was cancelled before it got there. Every run stayed green.
+const scoring = wf.filter((l) => /(slice|SLICE)="--refresh/.test(l));
+check(scoring.length > 0 && scoring.every((l) => l.includes("--new-limit")),
+  `both backlogs are bounded (${scoring.length} scoring call${scoring.length === 1 ? "" : "s"})`,
+  "a run bounds its repair slice but not its never-scored rows, so it must "
+    + "clear the whole backlog before it can publish anything");
+
 // THE MATRIX AND THE DENOMINATOR ARE ONE NUMBER. A shard is told `i/N` while
 // the matrix is a list, so a list of 32 against an N of 128 tells 32 jobs they
 // are one of 128 and three quarters of the board is never scored — nothing

@@ -128,7 +128,7 @@ state anyway.
 
 | trigger | scope | cost |
 | --- | --- | --- |
-| `:00`, `:20`, `:40` | what is NEW, plus `REFRESH_MINUTES` of what is unverified | 30 minutes of measured work a board, 32 ways |
+| `:00`, `:20`, `:40` | `NEW_ROWS` of what has no score, plus `REFRESH_MINUTES` of what is unverified | ~1,218 rows a run, 32 ways |
 | Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | ~2h20m, 128 ways |
 | Actions → board → Run workflow, **weapon = …** | the rows the selector names, whatever the fingerprints say | minutes; `board_select.py` prices it first |
 
@@ -240,10 +240,23 @@ TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 moved is wrong immediately, not in an hour. A cooldown would be both too slow
 and too fast at once.
 
+**TWO BACKLOGS, AND A RUN BOUNDS BOTH.** Rows the board holds under an older
+generation are one; builds it has no score for at all are the other, and they
+are not the same size. Measured against the submissions the pipeline is handed:
+984 rows of repair against **4,570 never scored** — 1,523 on each of the three
+boards. `--refresh` bounds the first and `--new-limit` the second, and leaving
+either unbounded means a run that cannot finish inside the cadence that starts
+the next one. `check_rescore_paths.mjs` refuses a scoring call missing either.
+
+A RUN THAT DEFERS ROWS IS NOT A RUN THAT FAILED. It publishes a board with more
+rows than the last one had, and says how many are left; the count falling run
+over run is the board catching up. At `NEW_ROWS: 150` a backlog of 1,523 clears
+in about ten runs, and every one of them publishes.
+
 **A PUSH NEVER RESCORES THE BOARD, AND THE BOARD CONVERGES INSTEAD.** A
 fingerprint difference says a stored score is UNVERIFIED under this generation,
-not that it is wrong. So every run scores what is NEW and repairs a BOUNDED
-SLICE of what is unverified — `REFRESH_MINUTES` of measured work, walked in `fp`
+not that it is wrong. So every run scores a bounded share of what is NEW and
+repairs a BOUNDED SLICE of what is unverified — `REFRESH_MINUTES` of measured work, walked in `fp`
 order. Thirty minutes a run, three runs an hour, is under four days to cross all
 8,008 and under 4% of a day's free CPU.
 
