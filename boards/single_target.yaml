@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6198
+submissions: 6199
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -28991,7 +28991,7 @@ entries:
     mode: cycle
     score: 155.74893705991883
     fp: bdc30928862029bc
-    cost: 16.147
+    cost: 12.330
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
     arcanes: [primary_compression]
@@ -40417,7 +40417,7 @@ entries:
     listed: false
     score: 80.22995593867188
     fp: fb6c3660ceb5067f
-    cost: 8.396
+    cost: 8.327
     mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_compression]
@@ -40947,6 +40947,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 54.206696012860924
+    fp: 2ba5304a90a5687c
+    cost: 6.404
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven, thermite_rounds]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -40983,6 +40996,19 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, punch_through, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 53.75031676234493
+    fp: d63868f8e6878c82
+    cost: 8.286
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven, hellfire]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
@@ -46794,6 +46820,19 @@ entries:
       bonuses: [critical_damage, multishot]
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 18.08902247127079
+    fp: d63868f8e6878c82
+    cost: 3.548
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven, hellfire]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -46817,6 +46856,19 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge, scorch]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [cascadia_flare]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 17.960556127200828
+    fp: 2ba5304a90a5687c
+    cost: 3.859
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven, thermite_rounds]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -47784,7 +47836,7 @@ entries:
     listed: false
     score: 16.22659040812036
     fp: bdc30928862029bc
-    cost: 6.311
+    cost: 6.092
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
     arcanes: [primary_compression]
@@ -49677,7 +49729,7 @@ entries:
     listed: false
     score: 14.43605191142601
     fp: 89d712d261c22a8b
-    cost: 4.851
+    cost: 4.839
     mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
     arcanes: [primary_compression]
@@ -49833,7 +49885,7 @@ entries:
     listed: false
     score: 14.236987055653614
     fp: fb6c3660ceb5067f
-    cost: 3.705
+    cost: 3.675
     mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, riven, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_compression]
