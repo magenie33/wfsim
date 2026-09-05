@@ -457,6 +457,13 @@ impl Selector {
     }
 }
 
+/// THE BUILD A ROW KEY NAMES, which is the key without its mode. The accounting
+/// asks whether a BUILD reached a row, and a run that defers work answers with
+/// identities rather than keys.
+fn identity_of(key: &str) -> String {
+    key.rsplit_once('#').map_or_else(|| key.to_string(), |(i, _)| i.to_string())
+}
+
 /// THE GROUP A ROW BELONGS TO — `(weapon, mode)`, read off the row key.
 ///
 /// A weapon with n modes is n independent rankings (docs/BOARD.md), so a mode
@@ -854,6 +861,11 @@ fn main() {
     // argument: a new row not taken is a row that is not on the board yet,
     // which is where it already was, while a REPAIR not taken is a row that
     // would vanish from it. The predictable half is the one that must finish.
+    // ASSEMBLE, NEVER FIGHT. The publish pass computes almost nothing already;
+    // this makes that a guarantee instead of an outcome, so a shard that failed
+    // costs a row on this board rather than an hour on the merge.
+    let project = has_flag("--project");
+    let mut absent = 0usize;
     let deadline = flag("--deadline")
         .and_then(|s| s.parse::<u64>().ok())
         .map(std::time::Duration::from_secs);
@@ -882,7 +894,12 @@ fn main() {
 
     let mut verify_against: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
-        match reuse_prior(&path, &bench_id, refresh.is_some()) {
+        // A PROJECTION KEEPS EVERY ROW IT IS HANDED, stale or not. Dropping a
+        // row whose data moved is what a run that can REFIGHT it does; a pass
+        // that fights nothing would drop it from the board instead, and a
+        // published row vanishing because a file it reads was corrected is the
+        // one outcome the floor and the archive both exist to prevent.
+        match reuse_prior(&path, &bench_id, refresh.is_some() || project) {
             Ok(p) => {
                 reused = if verify { 0 } else { p.scores.len() };
                 stale = p.stale;
@@ -962,7 +979,10 @@ fn main() {
     // slice is a wall-clock promise rather than a row count over a population
     // whose rows differ by four orders of magnitude.
     let mut refresh_next: Option<usize> = None;
-    if let Some(budget) = refresh {
+    // …AND TAKES NO SLICE. Removing a row here so it can be refought is exactly
+    // what a projection cannot do: nothing would refight it and the row would
+    // leave the board.
+    if let Some(budget) = refresh.filter(|_| !project) {
         let mut stale_keys = prior_stale_keys;
         stale_keys.sort_by(|a, b| a.0.cmp(&b.0));
         let n = stale_keys.len();
@@ -1298,6 +1318,18 @@ fn main() {
                 // map only ever travels between processes built from one commit.
                 Some(&s) => s,
                 None => {
+                    // NOTHING IS FOUGHT HERE UNDER `--project`. The pass
+                    // ASSEMBLES: it groups what is known, ranks it, applies the
+                    // floor and writes the files. A row nobody has banked is
+                    // absent from this board and lands on the next one — the
+                    // convergence rule applied to the merge, and what makes the
+                    // publish cost bounded by construction rather than by
+                    // whichever shard fell over.
+                    if project {
+                        absent += 1;
+                        deferred_ids.insert(identity_of(&key));
+                        continue;
+                    }
                     // WHOSE ROW IS THIS. Charged to the least-loaded shard at
                     // the cost the last run measured — an unmeasured row (a new
                     // build, or a board written before costs were recorded)
@@ -1319,8 +1351,7 @@ fn main() {
                         fresh_seen += 1;
                         if new_limit.is_some_and(|n| fresh_seen > n) {
                             fresh_left += 1;
-                            deferred_ids
-                                .insert(key.rsplit_once('#').map_or(key.clone(), |(i, _)| i.to_string()));
+                            deferred_ids.insert(identity_of(&key));
                             continue;
                         }
                     }
@@ -1338,8 +1369,7 @@ fn main() {
                     // its OWN and leaves the deal itself untouched.
                     if fresh && deadline.is_some_and(|d| started.elapsed() > d) {
                         fresh_left += 1;
-                        deferred_ids
-                            .insert(key.rsplit_once('#').map_or(key.clone(), |(i, _)| i.to_string()));
+                        deferred_ids.insert(identity_of(&key));
                         continue;
                     }
                     if dry {
@@ -1666,6 +1696,9 @@ fn main() {
     // HOW MUCH BACKLOG IS LEFT, said out loud. A run that defers rows is not a
     // run that failed to score them: the next one takes the next share, and the
     // count falling run over run is what says the board is catching up.
+    if absent > 0 {
+        eprintln!("project: {absent} row(s) nobody has banked yet — they land on the next board");
+    }
     if fresh_left > 0 {
         let why = if deadline.is_some_and(|d| started.elapsed() > d) { "clock" } else { "count" };
         eprintln!(

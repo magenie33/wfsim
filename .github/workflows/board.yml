@@ -479,21 +479,20 @@ jobs:
               cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
               prior="--reuse /tmp/$id-prior.yaml"
             fi
-            # THE SLICE THIS RUN REPAIRS, and `full` takes none because it is
-            # already fighting everything. Where the slice STARTS is the cursor
-            # the last run stored in `data/board_state.yaml`, advanced by the
-            # rows it took — the run number cannot do that job, because it steps
-            # by one where a slice is hundreds of rows wide, and the board would
-            # re-fight what it just repaired.
-            slice=""
-            if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
-            fi
+            # NO SLICE AND NO BUDGET: this pass fights nothing. `--project`
+            # makes that a guarantee, so a shard that fell over costs a row
+            # on this board rather than an hour on the merge — and the row
+            # lands on the next one, which is the convergence rule applied
+            # to the assembly.
+            #
+            # IT ALSO KEEPS EVERY ROW IT IS HANDED, stale or not. A pass
+            # that cannot refight a row must not drop it: a published row
+            # vanishing because a file it reads was corrected is the one
+            # outcome the archive exists to prevent.
             mkdir -p merged
             ./target/release/wfsim-board "$id" site/board.json \
               $prior $FORCE \
-              $slice \
-              --scores scores \
+              --scores scores --project \
               --emit-scores "merged/$id.json" --emit-all \
               < submissions.json > "boards/$id.yaml"
             # THE MERGED SET, which is what the next run starts from. `--emit-all`

@@ -396,6 +396,29 @@ artifacts and the board is still assembled from them; what is lost is the
 banking. The store is an optimisation of WHERE work goes, never of whether the
 board is right.
 
+### Publish assembles; it does not fight
+
+`--project` is the guarantee rather than the habit. The publish pass groups what
+is known, ranks it, applies the floor and writes the files — **measured at one
+to two seconds** against a board of 7,659 rows — and never simulates. A row
+nobody has banked is absent from this board and lands on the next one, which is
+the convergence rule applied to the assembly.
+
+WHAT IT BUYS is that a shard falling over costs a row rather than an hour: the
+merge used to pick up whatever the fan-out missed, alone and unsharded, which
+is the one place a single slow row could hold the whole publish.
+
+**IT KEEPS EVERY ROW IT IS HANDED**, stale or not, and the two rules under that
+are the same rule. It takes no repair slice and it drops no row whose data
+moved: a pass that cannot refight a row must not remove it, or a published row
+would vanish because a file it reads was corrected. Refighting is the shards'
+job, and the board says how old it is.
+
+THE ARCHIVE IS STILL AN INPUT, as a floor, and that is the half of this not yet
+done. `boards/*.yaml` is read so nothing can vanish while the store is young;
+once the store demonstrably holds every published row, publish reads it alone
+and the archive is what its name says.
+
 ### The standing a submitter sees at once
 
 The wait for a ROW is the pipeline's and it is minutes at best: the board is a
