@@ -132,6 +132,40 @@ const identity = (b) =>
     return (a.set ? [...list].sort() : list).join(",");
   }).join("|");
 
+/// THE BODY, PARSED AND SIZED, or the refusal to send back. Shared because two
+/// endpoints take a build and must not disagree about what one is.
+async function body(request) {
+  if (!request) return { err: "no request" };
+  // Size first, before parsing: the cheapest rejection there is.
+  const raw = await request.text();
+  if (raw.length > MAX_BYTES) return { err: "payload too large" };
+  try { return { b: JSON.parse(raw) }; } catch { return { err: "not json" }; }
+}
+
+/// A BUILD AS THIS SERVICE STORES ONE, or the name of the axis that failed.
+///
+/// Extracted so `/submit` and `/disagree` are held to ONE definition. A report
+/// about a row the scorer would never file under that key is a report nobody
+/// can act on, and two copies of this loop is how the two would drift apart.
+function record(b) {
+  const rec = { at: new Date().toISOString().slice(0, 10) };
+  for (const a of AXES) {
+    const v = b[a.key];
+    if (a.kind === "id") {
+      if (v !== undefined && typeof v !== "string") return { err: `bad ${a.key}` };
+      const s = v || "";
+      if (a.required ? !ID.test(s) : s && !ID.test(s)) return { err: `bad ${a.key}` };
+      if (s) rec[a.key] = s;
+    } else {
+      const list = v === undefined ? [] : v;
+      if (!Array.isArray(list) || list.length > a.max) return { err: `bad ${a.key}` };
+      if (!list.every((s) => typeof s === "string" && ID.test(s))) return { err: `bad ${a.key}` };
+      if (list.length) rec[a.key] = list;
+    }
+  }
+  return { rec };
+}
+
 async function submit(request, env) {
   if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
 
@@ -142,40 +176,13 @@ async function submit(request, env) {
   let b;
   try { b = JSON.parse(raw); } catch { return bad("not json"); }
 
-  // ONE PASS OVER `AXES` for both jobs — check the shape, and copy what
-  // survives it. There is no second list to fall out of step with, which is
-  // the only reason this endpoint can be trusted to store a build it was never
-  // taught about by name.
-  //
   // NOTHING ABOUT THE SUBMITTER IS STORED. Not the IP, not a token, not a
   // timestamp that could order one person's submissions against another's. The
   // record is the build and the key it hashes to; `at` is the day, which is
   // coarse enough to expire old entries and too coarse to identify anyone.
-  const rec = { at: new Date().toISOString().slice(0, 10) };
-  for (const a of AXES) {
-    const v = b[a.key];
-    if (a.kind === "id") {
-      if (v !== undefined && typeof v !== "string") return bad(`bad ${a.key}`);
-      const s = v || "";
-      if (a.required ? !ID.test(s) : s && !ID.test(s)) return bad(`bad ${a.key}`);
-      // An empty optional axis is absent rather than empty: an ordinary
-      // weapon's record carries no `valence` key at all.
-      if (s) rec[a.key] = s;
-    } else {
-      // AN EMPTY LIST IS AN ABSENT AXIS, the same rule an `id` axis has three
-      // lines up. A build with no riven sends `riven_pos: []` — the page states
-      // every axis rather than omitting the ones it has nothing for — and a
-      // record should no more carry an empty riven than it carries an empty
-      // valence. `undefined` means the same thing, so a caller written before
-      // an axis existed is not a rejection.
-      const list = v === undefined ? [] : v;
-      if (!Array.isArray(list) || list.length > a.max) return bad(`bad ${a.key}`);
-      if (!list.every((s) => typeof s === "string" && ID.test(s))) return bad(`bad ${a.key}`);
-      // As submitted, never sorted here: sorting would store a build the
-      // player never made. The KEY sorts the axes that are sets.
-      if (list.length) rec[a.key] = list;
-    }
-  }
+  const built = record(b);
+  if (built.err) return bad(built.err);
+  const rec = built.rec;
   const key = identity(rec);
   await env.SUBMISSIONS.put(key, JSON.stringify(rec), {
     // A build nobody has submitted in a year is not a live answer any more, and
@@ -184,6 +191,49 @@ async function submit(request, env) {
     expirationTtl: 60 * 60 * 24 * 365,
   });
   await mirror(env, key, rec);
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { "content-type": "application/json" },
+  });
+}
+
+/// TWO MEASUREMENTS OF ONE ROW DISAGREE, and the board should look again.
+///
+/// A HASH CANNOT ASK THIS. What a row READS is enumerable from the row, so a
+/// data change is caught exactly; what the code DOES to it is not, and a change
+/// that moves a number leaves every fingerprint agreeing. The audit re-fights
+/// published rows to find those, and it crosses the board in days — while a
+/// player runs the one build they care about and finds it at once.
+///
+/// NOTHING HERE IS TRUSTED AS A SCORE. The numbers are a REPORT that two
+/// measurements differ; the board answers by measuring again, and only its own
+/// measurement can move a row. The worst a forged report can buy is one wasted
+/// rescore, which is why this needs no authentication and never will.
+///
+/// KEYED BY THE ROW, so a thousand players finding the same disagreement leave
+/// one report. Under `d/`, which nothing else can collide with — an identity is
+/// built from `[a-z0-9_]` ids and cannot contain a slash — and expiring in a
+/// fortnight, because a report the board has already acted on is noise.
+async function disagree(request, env) {
+  if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
+  const { b, err } = await body(request);
+  if (err) return bad(err);
+
+  const num = (x) => (typeof x === "number" && Number.isFinite(x) && x > 0 ? x : null);
+  const client = num(b.client);
+  const board = num(b.board);
+  if (client === null || board === null) return bad("client and board must be positive numbers");
+  // THE RULER IS REQUIRED HERE, unlike on a submission. A build carries no
+  // ruler because every ruler crosses the library; a DISAGREEMENT is about one
+  // row, and a row is a build under one ruler.
+  if (typeof b.benchmark !== "string" || !ID.test(b.benchmark)) return bad("bad benchmark");
+
+  const built = record(b);
+  if (built.err) return bad(built.err);
+  await env.SUBMISSIONS.put(
+    `d/${b.benchmark}/${identity(built.rec)}`,
+    JSON.stringify({ ...built.rec, client, board }),
+    { expirationTtl: 60 * 60 * 24 * 14 },
+  );
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
   });
@@ -357,6 +407,14 @@ export default {
     }
     if (path === "/api/board/pending") {
       return request.method === "GET" ? pending(env) : bad("GET only", 405);
+    }
+    // A DISAGREEMENT IS NOT A SCORE. What it stores is a REPORT that two
+    // measurements of one row differ, which the board answers by measuring
+    // again — the number a browser sends never reaches a ranking.
+    if (path === "/api/board/disagree") {
+      return request.method === "POST"
+        ? disagree(request, env)
+        : bad("POST only", 405);
     }
     if (path === "/api/board/submit") {
       // A GET here is somebody looking for the board itself, which is a STATIC

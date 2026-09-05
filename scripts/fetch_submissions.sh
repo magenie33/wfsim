@@ -145,7 +145,16 @@ list_keys() {
   while :; do
     resp=$(curl -sf -H "Authorization: Bearer $CF_TOKEN" \
       "$api/keys?limit=1000${cursor:+&cursor=$cursor}")
-    printf '%s' "$resp" | jq -r '.result[].name' >> keys.txt
+    # NOT THE REPORTS. `d/...` is a DISAGREEMENT — two measurements of one row
+    # differing — and the board reads those separately. An identity is built
+    # from `[a-z0-9_]` ids and cannot contain a slash, so the prefix cannot take
+    # a build with it; fetched as one it would store a record with no weapon
+    # that the scorer refuses every run, quietly.
+    #
+    # `grep` rather than a jq filter because THIS function is the one the
+    # self-test does not drive — it writes `keys.txt` itself — so what is here
+    # has to be readable enough to be checked by eye.
+    printf '%s' "$resp" | jq -r '.result[].name' | grep -v '^d/' >> keys.txt || true
     cursor=$(printf '%s' "$resp" | jq -r '.result_info.cursor // empty')
     [ -n "$cursor" ] || break
   done
