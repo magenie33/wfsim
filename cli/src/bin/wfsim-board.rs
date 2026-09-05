@@ -1306,7 +1306,15 @@ fn main() {
                     // convergence rule applied to the merge, and what makes the
                     // publish cost bounded by construction rather than by
                     // whichever shard fell over.
-                    if project {
+                    //
+                    // A SCREENED ROW IS BANKED WORK TOO, and this is where the
+                    // board stopped filling: a row the floor screens is filed
+                    // under `probes` and not `scores`, so an assembly that gave
+                    // up on the first miss wrote none of them. They stayed off
+                    // the archive, stayed "never scored", and every run took the
+                    // same 150 and lost them — the backlog grew while thirty-two
+                    // shards reported "scored 0 rows" in a second.
+                    if project && !known_probes.contains_key(&key) {
                         absent += 1;
                         deferred_ids.insert(identity_of(&key));
                         continue;
