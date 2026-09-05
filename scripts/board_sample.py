@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ONE PUBLISHED ROW PER WEAPON, as submissions the scorer can be fed.
+"""ONE PUBLISHED ROW PER GROUP, as submissions the scorer can be fed.
 
 WHAT IT IS FOR. A code change declares every stored score stale, because the
 engine fingerprint is a hash of `engine`, `webapi` and `cli` and a score is a
@@ -14,13 +14,18 @@ Identical throughout and the code is score-equivalent: the published numbers are
 what this code computes, so the run reuses them. One difference and it falls
 back to the full rescore it would have done anyway.
 
-STRATIFIED BY WEAPON, and that is the whole design. A change that moves a number
-moves it for some weapon, so a sample holding every weapon catches any change
-that is not confined to a subset of ONE weapon's builds — and a uniform sample
-of a 7,000-row board would miss a melee-only mechanic outright. The weekly full
-rescore is the backstop for what remains.
+STRATIFIED BY GROUP, and that is the whole design. A group is `(weapon, mode)`,
+which is what the board ranks independently — a melee has seven of them — so a
+sample holding every group catches any change that is not confined to a subset
+of ONE group's builds, and a uniform sample of a 7,000-row board would miss a
+melee-only mechanic outright.
 
-THE WEAPON'S BEST ROW, not a random one. It is the row every other row in the
+IT IS ALSO THE UNIT OF THE VERDICT. Sampling the weapon judges seven melee
+rankings by one of them, and a run can then only reuse everything or nothing;
+sampling the group lets it rescore the groups that moved and reuse the rest,
+which is the difference between a melee fix costing the board and costing melee.
+
+THE GROUP'S BEST ROW, not a random one. It is the row every other row in the
 group is measured against (the floor is half the leader), so it is both the row
 most worth being right about and the one the probe screen cannot turn away.
 
@@ -136,14 +141,19 @@ def main() -> int:
               f"{spent / 60:.1f} min of measured work", file=sys.stderr)
         return 0
 
-    best: dict[str, dict] = {}
+    # ONE ROW PER GROUP, and a group is `(weapon, mode)`. A weapon with n modes
+    # is n independent rankings, so a probe that samples the weapon judges seven
+    # melee rankings by one of them — and a verdict is only as fine as its
+    # sample. Keying on the mode is what lets a run rescore the modes that moved
+    # and reuse the rest.
+    best: dict[tuple, dict] = {}
     for e in plain_rows(board):
-        w = e.get("weapon")
-        if w and (w not in best or (e.get("score") or 0) > (best[w].get("score") or 0)):
-            best[w] = e
-    subs = [as_submission(best[w], bench) for w in sorted(best)]
+        k = (e.get("weapon"), e.get("mode"))
+        if k[0] and (k not in best or (e.get("score") or 0) > (best[k].get("score") or 0)):
+            best[k] = e
+    subs = [as_submission(best[k], bench) for k in sorted(best, key=lambda x: (x[0], str(x[1])))]
     json.dump(subs, sys.stdout)
-    print(f"{path.name}: {len(subs)} weapons sampled", file=sys.stderr)
+    print(f"{path.name}: {len(subs)} groups sampled", file=sys.stderr)
     return 0
 
 

@@ -398,8 +398,12 @@ jobs:
               --engine "${{ needs.submissions.outputs.engine }}" \
               --reuse "$f" --verify --verify-min 0 \
               --shard "${{ matrix.shard }}/${VERIFY_SHARDS}" \
-              < sample.json > /dev/null 2> verify.log
+              < sample.json > groups.txt 2> verify.log
             set -e
+            # THE GROUPS THIS SHARD JUDGED, both halves. `decide` needs what
+            # MOVED as well as what cleared: two shards can sample one group,
+            # and a group clear in one and moved in the other is moved.
+            cat groups.txt >> "verdict/${{ matrix.shard }}.txt"
             grep -o 'verify-result: .*' verify.log >> "verdict/${{ matrix.shard }}.txt" || true
             grep -o 'verify: .* -> .*' verify.log | head -5 || true
           done
@@ -444,16 +448,46 @@ jobs:
           compared=$(sum compared)
           moved=$(sum moved)
           echo "probe: $compared rows reproduced, $moved moved"
+          # WHAT CLEARED, PER BENCHMARK: every group some shard verified, minus
+          # every group some shard saw move. The subtraction is the point — a
+          # group split across two shards is only clear when BOTH said so.
+          mkdir -p verified
+          for f in boards/*.yaml; do
+            id=$(basename "$f" .yaml)
+            grep -h "^verified-group: $id " verdict/*.txt 2>/dev/null | awk '{print $3}' | sort -u > /tmp/ok || true
+            grep -h "^moved-group: $id " verdict/*.txt 2>/dev/null | awk '{print $3}' | sort -u > /tmp/bad || true
+            comm -23 /tmp/ok /tmp/bad > "verified/$id.txt" || true
+            echo "$id: $(wc -l < "verified/$id.txt") group(s) clear of $(wc -l < /tmp/ok) judged"
+          done
           # A HUNDRED ROWS IS THE FLOOR. A probe that compared almost nothing —
           # rows the floor screened away, or a board whose rows no longer
           # validate — proves nothing, and a verification that cannot fail is
           # worse than none.
-          if [ "$moved" = "0" ] && [ "$compared" -ge 100 ]; then
+          # A PROBE THAT COMPARED ENOUGH IS USABLE EVEN WHEN SOMETHING MOVED,
+          # which is the whole change: the groups that moved are named, so the
+          # rest can be reused instead of the board being rescored because one
+          # row of it moved. What still decides nothing is a probe that could
+          # not compare — a hundred rows is the floor, and under it the file is
+          # empty and every row goes back through the fight.
+          if [ "$compared" -ge 100 ]; then
             echo "equivalent=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::the code moved and the numbers did not — reusing $compared verified rows"
+            echo "::notice::probe compared $compared rows, $moved moved — reusing every group that cleared"
           else
             echo "equivalent=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::probe compared only $compared rows — every row goes back through the fight"
+            rm -f verified/*.txt
           fi
+
+      # THE CLEAR SET TRAVELS AS ITS OWN ARTIFACT, always — an absent one and an
+      # empty one say the same thing to the scorer, which is "reuse nothing",
+      # and that is the safe direction for both.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-groups
+          path: verified/
+          retention-days: 1
+          if-no-files-found: ignore
 
   # ---- 2. score, N ways at once -----------------------------------------
   #
@@ -491,6 +525,11 @@ jobs:
         with:
           name: submissions
 
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: verified-groups
+          path: verified
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
@@ -523,6 +562,7 @@ jobs:
             [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
             ./target/release/wfsim-board "$id" \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
+              --verified-groups "verified/$id.txt" \
               --shard "${{ matrix.shard }}/${SHARDS}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
@@ -569,6 +609,11 @@ jobs:
           path: scores
           merge-multiple: true
 
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: verified-groups
+          path: verified
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
@@ -617,6 +662,7 @@ jobs:
             fi
             ./target/release/wfsim-board "$id" site/board.json \
               --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
+              --verified-groups "verified/$id.txt" \
               --scores scores \
               < submissions.json > "boards/$id.yaml"
           done

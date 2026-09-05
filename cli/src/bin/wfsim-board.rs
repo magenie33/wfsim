@@ -350,6 +350,18 @@ fn num_in(v: &Value) -> Option<f64> {
     }
 }
 
+/// THE GROUP A ROW BELONGS TO — `(weapon, mode)`, read off the row key.
+///
+/// A weapon with n modes is n independent rankings (docs/BOARD.md), so a mode
+/// is the unit a probe can clear and a rescore can skip. The key is
+/// `identity#mode` and an identity opens with the weapon and a `|`, so the two
+/// ends are the group and nothing has to carry it separately.
+fn group_of(key: &str) -> String {
+    let (identity, mode) = key.rsplit_once('#').unwrap_or((key, "base"));
+    let weapon = identity.split('|').next().unwrap_or(identity);
+    format!("{weapon}|{mode}")
+}
+
 fn load_scores(spec: Option<String>, bench_id: &str) -> (ScoreMap, ScoreMap, ScoreMap) {
     let mut out = std::collections::HashMap::new();
     // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
@@ -759,6 +771,34 @@ fn main() {
     // scores. This run's shards win: they were computed by this engine.
     for (k, v) in prior_rolls {
         rolls.entry(k).or_insert(v);
+    }
+
+    // WHAT THE PROBE CLEARED, AND ONLY THAT. `--code-verified` is the whole-board
+    // answer: a sample came back identical, so every stored score is reused
+    // across the fingerprint difference. This is the same statement per GROUP,
+    // and it is the difference between a melee fix costing the board and
+    // costing melee.
+    //
+    // THE POLARITY IS THE SAFE ONE. What is listed is KEPT and everything else
+    // is dropped, so a file that is missing, empty or truncated rescores
+    // everything — slow, and never a stale number published under a generation
+    // that never measured it. Naming what to drop would fail the other way.
+    if let Some(path) = flag("--verified-groups") {
+        let text = std::fs::read_to_string(&path).unwrap_or_default();
+        let clear: std::collections::BTreeSet<&str> = text
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty())
+            .collect();
+        let before = known.len();
+        known.retain(|k, _| clear.contains(group_of(k).as_str()));
+        rolls.retain(|k, _| clear.contains(group_of(k).as_str()));
+        let dropped = before - known.len();
+        reused = reused.saturating_sub(dropped);
+        eprintln!(
+            "verified groups: {} clear, {dropped} of {before} stored row(s) go back through the fight",
+            clear.len()
+        );
     }
 
     // FORCING ONE WEAPON BACK THROUGH THE FIGHT, and it is the backstop rather
@@ -1513,11 +1553,40 @@ fn main() {
             "verify-result: compared={compared} moved={} stale={stale} worst={worst:e}",
             moved.len()
         );
+        // WHICH GROUPS CLEARED, and not merely how many rows did. A whole-board
+        // verdict spends the entire board on one row that moved; a per-group one
+        // spends the groups that moved and reuses the rest, which is the whole
+        // saving. A group is cleared only when it was COMPARED and nothing in it
+        // moved — an absent group is not a cleared one, so a sample that never
+        // reached a group leaves it to be rescored.
+        let bad: std::collections::BTreeSet<String> =
+            moved.iter().map(|(k, _, _)| group_of(k)).collect();
+        let mut seen_groups: std::collections::BTreeSet<String> = Default::default();
+        for k in computed.keys() {
+            if verify_against.contains_key(k) {
+                seen_groups.insert(group_of(k));
+            }
+        }
+        // BOTH SIDES, because a shard's view is a slice. Two shards can sample
+        // one group, and a group clear in one and moved in the other is MOVED —
+        // so the collector needs what moved as well as what cleared, or the
+        // clear half of a split group would carry the whole of it.
+        for g in seen_groups.difference(&bad) {
+            println!("verified-group: {bench_id} {g}");
+        }
+        for g in &bad {
+            println!("moved-group: {bench_id} {g}");
+        }
         if compared < floor {
             eprintln!("verify: only {compared} rows compared (want {floor}) — inconclusive");
             std::process::exit(1);
         }
-        eprintln!("verify: {} of {compared} rows moved", moved.len());
+        eprintln!(
+            "verify: {} of {compared} rows moved, {} of {} groups clear",
+            moved.len(),
+            seen_groups.len() - bad.len(),
+            seen_groups.len()
+        );
         std::process::exit(i32::from(!moved.is_empty()));
     }
 
