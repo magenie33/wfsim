@@ -29280,6 +29280,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 114.01303584193062
+    fp: 33210e714b570ddc
+    cost: 9.222
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, semi_rifle_cannonade, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 113.5405767786634
     fp: 12da0835f2a4ff20
     cost: 14.967
@@ -29403,6 +29415,18 @@ entries:
     fp: d8599a2cda6bfb65
     cost: 10.075
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, point_strike, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    score: 99.56571671938146
+    fp: dd0ef4905a210f2d
+    cost: 5.645
+    mods: [galvanized_chamber, primed_firestorm, double_tap, galvanized_aptitude, galvanized_scope, riven, rime_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_compression]
     riven:
@@ -47441,6 +47465,19 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 17.01512471054891
+    fp: 33210e714b570ddc
+    cost: 5.981
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, semi_rifle_cannonade, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -49434,6 +49471,19 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 14.918654954910265
+    fp: c4a83a715fd926d4
+    cost: 6.046
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: sicarus_prime
     mode: cycle
