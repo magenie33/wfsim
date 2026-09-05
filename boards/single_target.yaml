@@ -23447,6 +23447,15 @@ entries:
     valence: impact
   - weapon: kuva_nukor
     mode: base
+    score: 19.359851017397563
+    fp: 544965736ff15e57
+    cost: 3.560
+    exilus: ruinous_extension
+    mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 19.295663904098564
     fp: 560429906ff9f34c
     cost: 3.081
@@ -23510,6 +23519,15 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 18.68864928286219
+    fp: 99f95509591c86ad
+    cost: 3.960
+    exilus: ruinous_extension
+    mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 18.681515518213523
     fp: 48a7e0c579d2fa1f
     cost: 2.963
@@ -23540,6 +23558,15 @@ entries:
     cost: 3.926
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 18.222556170282974
+    fp: 66c6df1f7f33e996
+    cost: 3.938
+    exilus: ruinous_extension
+    mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -23775,6 +23802,15 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 16.669357194057827
+    fp: 6cdda53743d029df
+    cost: 2.374
+    exilus: ruinous_extension
+    mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 16.581991121525338
     fp: 2053f4920cc7171b
     cost: 1.476
@@ -23792,12 +23828,30 @@ entries:
     valence: impact
   - weapon: kuva_nukor
     mode: base
+    score: 16.491714110286782
+    fp: 1bb5d565b4fba728
+    cost: 2.269
+    exilus: ruinous_extension
+    mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 16.356095845953575
     fp: cf781526bd1a34ed
     cost: 1.887
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
     valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 16.333333333333332
+    fp: 1c280371bef06144
+    cost: 2.909
+    exilus: ruinous_extension
+    mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, accelerated_isotope, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 16.249094808777876
@@ -23811,6 +23865,15 @@ entries:
       bonuses: [critical_damage, electricity, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_nukor
+    mode: base
+    score: 16.236064456586263
+    fp: 0a2a18ddf174d484
+    cost: 2.403
+    exilus: ruinous_extension
+    mods: [seeker, galvanized_diffusion, magnum_force, primed_target_cracker, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 16.024291739725705
@@ -23927,6 +23990,15 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 14.000700572728665
+    fp: afc912ef91ee5427
+    cost: 2.322
+    exilus: ruinous_extension
+    mods: [merciless_gunfight, seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 13.558068531578005
     fp: fe643f7d4e65eec0
     cost: 1.891
@@ -23951,6 +24023,15 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, ice_storm, primed_convulsion, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 13.34312278263414
+    fp: be89266295fe1330
+    cost: 2.383
+    exilus: ruinous_extension
+    mods: [merciless_gunfight, seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 13.326894313431186
@@ -40463,6 +40544,19 @@ entries:
     riven:
       bonuses: [cold, critical_chance, multishot]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 69.00543991013413
+    fp: 0ba30274417b52ac
+    cost: 6.397
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, riven, rime_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -40503,6 +40597,19 @@ entries:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 64.3165718631882
+    fp: cfded2af5cb3f5dc
+    cost: 12.782
+    mods: [galvanized_chamber, heavy_caliber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -40515,6 +40622,19 @@ entries:
     arcanes: [cascadia_flare]
     riven:
       bonuses: [critical_chance, critical_damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 63.2054067788118
+    fp: 0f2d026fd6991dad
+    cost: 6.258
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, riven, rime_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
@@ -40647,6 +40767,32 @@ entries:
     riven:
       bonuses: [critical_chance, fire_rate]
       rolls: [1.1, 1.1]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 56.64599822553325
+    fp: 05c0194de26af368
+    cost: 17.058
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, point_strike, vile_acceleration, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 55.916010938512095
+    fp: 5d25d8dd4c6177a0
+    cost: 17.618
+    mods: [galvanized_chamber, primed_firestorm, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
     listed: false
@@ -40727,6 +40873,19 @@ entries:
   - weapon: latron_prime
     mode: cycle
     listed: false
+    score: 53.62729315685279
+    fp: 163865100ee5f979
+    cost: 17.423
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
     score: 53.62007595133065
     fp: 0ac12d28ab0752ac
     cost: 6.611
@@ -40737,6 +40896,19 @@ entries:
     riven:
       bonuses: [cold, critical_chance, multishot]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 53.59704231243723
+    fp: 15ffa45d75957fd2
+    cost: 5.655
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, riven, rime_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -40840,6 +41012,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, fire_rate]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 50.92871916906489
+    fp: 6cbd2b1da1e5e958
+    cost: 13.334
+    mods: [galvanized_chamber, heavy_caliber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_swift_punishment, latron_prime_marksmans_hand, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
@@ -45840,6 +46025,19 @@ entries:
       bonuses: [critical_chance, critical_damage, electricity]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 20.613030609309156
+    fp: 15ffa45d75957fd2
+    cost: 2.950
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, riven, rime_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     listed: false
