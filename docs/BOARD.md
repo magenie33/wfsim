@@ -188,30 +188,44 @@ shard 55 minutes and worst 192, four hours of wall clock** — against a schedul
 firing every twenty, so every successor was discarded. Eleven engine commits in
 one morning produced no completed run for ten hours.
 
-So the workflow measures instead of guessing. `scripts/board_sample.py` takes
-**one published row per weapon** — the weapon's best, which is the row every
-other row in its group is measured against — and `wfsim-board --verify`
-reproduces them under the new code and compares each with what the board says.
+So the workflow measures instead of guessing, and it measures PER GROUP.
+`scripts/board_sample.py` takes **one published row per `(weapon, mode)`** — the
+group's best, which is the row every other row in it is measured against — and
+`wfsim-board --verify` reproduces them under the new code and compares each with
+what the board says.
 
-- **every sampled row identical** → the code is score-equivalent. The published
-  numbers are what this code computes, not merely what some older code did, so
-  the scorers are given `--code-verified` and reuse them across the fingerprint
-  difference. Cost: about two minutes of scoring plus a cached build.
-- **any row different, or too few compared to mean anything** → full rescore,
-  which is what would have happened anyway.
+**THE GROUP IS THE UNIT BECAUSE IT IS WHAT THE BOARD RANKS.** A melee carries
+seven modes and the cards that win one do not win another, so a probe that
+sampled the WEAPON judged seven rankings by one of them — and a run could then
+only reuse everything or nothing. `--verify` names the groups that CLEARED and
+the ones that MOVED; `decide` subtracts the second from the first, because two
+shards can sample one group and a group clear in one and moved in the other is
+moved; and `--verified-groups` keeps the stored scores of the clear ones and
+sends the rest back through the fight.
 
-**Exact equality**, not a tolerance: a score is a pure function and an `f64`
-round-trips through the yaml, so "close enough" would be a number nobody can
-defend. **Stratified by weapon**, because a change that moves a number moves it
-for some weapon, and a uniform sample of a 7,000-row board would miss a
-melee-only mechanic outright. A **floor of 100 rows compared** across the
-shards, because a verification that cannot fail is worse than none.
+Measured across the three boards: **777 groups, and probing every one of them is
+174 CPU minutes — 2.2% of the 8,008 a full rescore costs.** A melee change is
+684 minutes rather than 8,008, twelve times; a change confined to one group is
+forty-six; a change to `damage.rs` that really does move everything costs 2%
+more than today. Cheap changes get cheap and expensive ones stay honest.
+
+**THE POLARITY IS THE SAFE ONE.** What the file lists is KEPT and everything
+else is dropped, so a file that is missing, empty or truncated rescores
+everything — slow, and never a stale number published under a generation that
+never measured it. Naming what to drop would fail the other way.
+
+**Exact equality**, not a tolerance: a score is a pure function and the carry
+between the scoring processes is lossless, so "close enough" would be a number
+nobody can defend. A **floor of 100 rows compared** across the shards, because a
+verification that cannot fail is worse than none — under it the clear sets are
+deleted and every row goes back through the fight.
 
 What the sample can still miss is a change that moves only SOME builds of one
-weapon. Nothing bounds that but measuring everything, so **a full rescore runs
+group. Nothing bounds that but measuring everything, so **a full rescore runs
 weekly regardless** — `0 0 * * 1`, Monday 00:00 UTC, which is Warframe's own
 weekly reset (*"Other content uses a different server-side reset timer that
-resets only every Monday at 0:00 UTC"*, wiki `Reset`).
+resets only every Monday at 0:00 UTC"*, wiki `Reset`) — and §"The audit" reads a
+slice of the published board hourly for the same reason.
 
 TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 (asked and answered,). An untouched row is valid forever; a row
@@ -1336,17 +1350,10 @@ is the cheap half: 13.6% of commits. It stays. What it needs is the silent gaps
 closed, not more precision.
 
 The CODE half is 55.6% of commits and a single hash for the whole board, so
-every one of them nominally rescores everything. **The answer is not a finer
-declaration but a finer MEASUREMENT: probe per GROUP.** Each `(weapon, mode)`
-re-scores one published row at the ruler's own terms and compares it exactly;
-only the groups whose sample moved are rescored. Nothing declares that changing
-one thing affects another — it is measured, so no list can be incomplete.
-
-Measured across the three boards: **777 groups, and probing all of them is 174
-CPU minutes — 2.2% of the 8,008 a full rescore costs.** A melee change goes
-from 8,008 to 684 (12x); a change confined to one group is 46x; a change to
-`damage.rs` that really does move everything costs 2% more than today. Cheap
-changes get cheap, expensive ones stay honest.
+every one of them nominally rescores everything. The answer is not a finer
+declaration but a finer MEASUREMENT, and it runs: **the probe clears per GROUP**
+(§"When the code moved"), so only the groups whose sample moved are rescored and
+nothing declares that changing one thing affects another.
 
 **ITS UNDER-APPROXIMATION, NAMED.** One row per group, so a change that moves
 some builds of a group and not the sampled one is missed. That is the same hole
