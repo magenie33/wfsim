@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6203
+submissions: 6213
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -29663,6 +29663,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 94.11267532824121
+    fp: 4365f3eecac21786
+    cost: 16.886
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, point_strike, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 93.95278822487748
     fp: ff01c520e165ce3c
     cost: 17.853
@@ -50268,6 +50280,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 14.233013385388144
+    fp: 4365f3eecac21786
+    cost: 9.413
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, point_strike, vile_acceleration, riven, rime_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
