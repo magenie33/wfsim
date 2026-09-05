@@ -216,10 +216,20 @@ pipeline:
 | **the button** | a person | rescores exactly the rows a selector names, at any precision | minutes; `board_select.py` prices it first |
 | **the audit** | nobody — it reports | re-fights a slice of the PUBLISHED board hourly, exact comparison, crosses all of it in 3.5 days | one job, under 2% of a day's free CPU |
 
-The audit publishes nothing and gates nothing. Its outputs are a count when the
-numbers agree, and when they do not, a failure naming the rows **plus the
-selector that repairs them** — the charge and the warrant, so the finding lands
-in the button rather than in a discussion. §"The audit" is the mechanism.
+The audit publishes nothing and gates nothing. When the numbers agree its
+output is a count; when they do not it fails, names the rows, and **presses the
+button itself** — `gh workflow run board.yml -f weapon=<the rows it measured>`.
+
+**THAT IS THE WHOLE INVALIDATION MECHANISM.** No hash declares a row stale; a
+MEASUREMENT does, and only the rows it measured. The inspector still publishes
+nothing — its token cannot write to the repository — it files a warrant the
+board acts on, which is the manual backstop fired by evidence instead of by a
+person noticing.
+
+A CAP OF `REPAIR_CAP` ROWS, because a finding that large is not a repair but a
+question. A hundred rows moving at once is a ruler's terms or a fight-wide
+constant, not a hundred separate defects, and burying that under an hour of
+compute is how the symptom gets treated and the cause does not.
 
 **THE SPLIT IS SIZED AGAINST THE WORK, NOT THE CEILING.** A shard costs 2.6
 minutes before it scores anything — checkout, cache restore, load — so past a

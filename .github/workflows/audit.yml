@@ -42,9 +42,21 @@ env:
   # wondering where their build went.
   STALE_HOURS: 24
 
+  # HOW MANY MOVED ROWS THIS WILL REPAIR ON ITS OWN. Past it the finding stops
+  # being a repair and becomes a question: a hundred rows moving at once is a
+  # ruler's terms or a fight-wide constant, not a hundred separate defects, and
+  # a human should read it before an hour of compute goes into the symptom.
+  REPAIR_CAP: 40
+
 jobs:
   audit:
     runs-on: ubuntu-latest
+    # ENOUGH TO FILE THE WARRANT AND NOTHING ELSE. `actions: write` starts the
+    # board's manual rescore; the token cannot write to the repository, which is
+    # what keeps an inspector from publishing.
+    permissions:
+      contents: read
+      actions: write
     steps:
       # DEEP ENOUGH TO FIND THE LAST BOARD COMMIT, and no deeper. A board that
       # has not moved inside two hundred commits is stale by any reading, so a
@@ -116,6 +128,8 @@ jobs:
       # wants when a row is reported: a defect moves a number by orders of
       # magnitude where a numerical artefact moves it by a bit.
       - name: the verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           sum() { awk -v k="$1" '{ for (i = 1; i <= NF; i++)
@@ -147,7 +161,26 @@ jobs:
             # to everything sharing the changed mechanic; the button takes
             # either. docs/BOARD.md §"Two backstops".
             sel=$(sort -u moved.txt | paste -sd';' -)
-            echo "::notice::Actions -> board -> Run workflow, weapon = $sel"
+            # …AND THE WARRANT IS SERVED. The inspector does not rescore — it
+            # presses the button somebody would otherwise press by hand, with
+            # the rows it just proved are not what this code computes. That is
+            # the whole invalidation mechanism: no hash declares a row stale,
+            # a MEASUREMENT does, and only the rows it measured.
+            #
+            # A CAP, because a finding this large is not a row to repair but a
+            # question to ask. Something systemic moved — the ruler's terms, the
+            # metric, a fight-wide constant — and rescoring a hundred rows one
+            # by one would bury that under an hour of compute.
+            n=$(sort -u moved.txt | wc -l)
+            if [ "$n" -le "$REPAIR_CAP" ]; then
+              if gh workflow run board.yml -f weapon="$sel"; then
+                echo "::notice::filed a rescore for $n row(s)"
+              else
+                echo "::notice::could not file a rescore — Actions -> board -> Run workflow, weapon = $sel"
+              fi
+            else
+              echo "::notice::$n rows moved, over the cap of $REPAIR_CAP — read it before rescoring: $sel"
+            fi
             exit 1
           fi
           echo "::notice::$compared rows agree with the board (crossing every $CROSSING runs)"
