@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6035
+submissions: 6063
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -9913,6 +9913,19 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 104.26647423397705
+    fp: 12bde810e4aef6a1
+    cost: 31.909
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 103.86377666849818
     fp: 3ccacb2d847714c8
     cost: 33.283
@@ -9951,11 +9964,50 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 102.59547851718034
+    fp: aac72c6d61ad1004
+    cost: 28.936
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 102.57570470712008
+    fp: a8c438522cb4ff48
+    cost: 20.125
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, hammer_shot, vile_acceleration, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 101.3556188340253
     fp: 78544f016f2a0073
     cost: 30.312
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 101.3556188340253
+    fp: 804c9f634c432d92
+    cost: 32.001
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, rime_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
     riven:
@@ -9982,6 +10034,45 @@ entries:
     cost: 33.094
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 101.20556637275666
+    fp: 1990124d00561e4e
+    cost: 32.850
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, rime_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 100.02407587228477
+    fp: 90f85d79422ac681
+    cost: 32.044
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 100.02407587228477
+    fp: fd236e6303096392
+    cost: 31.484
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
     riven:
@@ -10090,6 +10181,32 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 89.601042526247
+    fp: 70fe4b6f1b0a3747
+    cost: 22.788
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 89.601042526247
+    fp: c9ac64b324346c84
+    cost: 22.561
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 86.87235038978835
     fp: f760d61d12d5cc34
     cost: 24.014
@@ -10154,6 +10271,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 83.87226671405381
+    fp: fb11f765653fffc2
+    cost: 16.783
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_scope, bladed_rounds, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 83.098894042376
     fp: 63b421c04f735048
     cost: 32.361
@@ -10202,6 +10332,45 @@ entries:
       bonuses: [critical_chance, damage, fire_rate]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
+    score: 81.96298169584038
+    fp: 7346c2f9890bef56
+    cost: 57.317
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 81.96298169584038
+    fp: 21cdce77aa1ede79
+    cost: 53.531
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 81.7769844840325
+    fp: 41d53bd07851a11c
+    cost: 42.233
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     score: 81.28467501822449
@@ -10269,6 +10438,110 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 78.914608839147
+    fp: 7346c2f9890bef56
+    cost: 31.014
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 78.914608839147
+    fp: 21cdce77aa1ede79
+    cost: 42.525
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 78.66666666666667
+    fp: 6bb8db67dda7d38a
+    cost: 46.231
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 78.66666666666667
+    fp: 5ae37d5c7e2dd92d
+    cost: 61.883
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 78.55622277636287
+    fp: 41d53bd07851a11c
+    cost: 53.092
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 77.94042236537229
+    fp: 6bb8db67dda7d38a
+    cost: 33.932
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 77.94042236537229
+    fp: 5ae37d5c7e2dd92d
+    cost: 33.283
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 77.86030593040573
+    fp: fd86c6cbc9c5cc07
+    cost: 44.946
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 77.65879742035547
     fp: 554b94b9591ec2f1
     cost: 23.913
@@ -10279,6 +10552,45 @@ entries:
     riven:
       bonuses: [cold, critical_chance, damage]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 77.11870474048906
+    fp: 480b4a36f136cb9c
+    cost: 43.949
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 77.11870474048906
+    fp: 528c30129632cbbf
+    cost: 60.880
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 76.6293199043663
+    fp: 8bc65f654cf0a0be
+    cost: 33.031
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -10334,6 +10646,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 75.0382075438003
+    fp: a2d9160ac01d6a41
+    cost: 78.277
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 74.67479264365853
     fp: 1cd08ba126687a1f
     cost: 48.956
@@ -10343,6 +10668,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 74.55108722626996
+    fp: 45978e5c66ab6e8e
+    cost: 55.643
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -10483,6 +10821,32 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 69.67659545451549
+    fp: 301fb6ea55d39b72
+    cost: 63.689
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 69.04763362813121
+    fp: 1f1063428d4ebf40
+    cost: 76.841
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 68.94830913784318
     fp: 0154212d2a6099eb
     cost: 23.001
@@ -10545,6 +10909,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 66.30921822979766
+    fp: 5fda354cf87cd96d
+    cost: 49.427
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
     score: 65.62811159039217
     fp: 3988627e37560093
     cost: 23.578
@@ -10568,6 +10944,44 @@ entries:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
+    score: 65.29080483820832
+    fp: 4450533777ab2c79
+    cost: 60.084
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 65.21392563382875
+    fp: 5fda354cf87cd96d
+    cost: 40.521
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 64.94209152573075
+    fp: 0c1e195758bb3259
+    cost: 60.090
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, rime_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     score: 64.83457949221952
@@ -10743,6 +11157,18 @@ entries:
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 54.51870349218351
+    fp: 5fda354cf87cd96d
+    cost: 50.662
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     score: 54.287964591685075
@@ -11458,6 +11884,32 @@ entries:
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
+    mode: base
+    score: 34.87207344547847
+    fp: 480b4a36f136cb9c
+    cost: 21.630
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 34.87207344547847
+    fp: 528c30129632cbbf
+    cost: 21.546
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
     mode: cycle
     score: 34.71933347866369
     fp: 5fb9ea5a0c7ccb7b
@@ -11538,6 +11990,19 @@ entries:
     mods: [galvanized_chamber, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 33.73140834595285
+    fp: 8bc65f654cf0a0be
+    cost: 20.173
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     score: 33.62010367327225
@@ -11696,11 +12161,63 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
+    score: 30.294468043132802
+    fp: aac72c6d61ad1004
+    cost: 8.360
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 29.961168667975606
+    fp: a8c438522cb4ff48
+    cost: 8.268
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, hammer_shot, vile_acceleration, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 29.585470208210943
     fp: 78544f016f2a0073
     cost: 7.883
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 29.585470208210943
+    fp: 804c9f634c432d92
+    cost: 8.098
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, rime_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 29.167426216161104
+    fp: 41d53bd07851a11c
+    cost: 15.207
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
     riven:
@@ -11722,11 +12239,37 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 29.06572544104657
+    fp: 1990124d00561e4e
+    cost: 7.786
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, rime_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 28.90913228306525
     fp: ce34b9a82ea4739b
     cost: 8.892
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, gilded_truth, high_voltage, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 28.88663355049582
+    fp: 12bde810e4aef6a1
+    cost: 7.452
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
     riven:
@@ -11744,6 +12287,19 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 28.750245757547418
+    fp: 1f1063428d4ebf40
+    cost: 24.857
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
@@ -11793,6 +12349,45 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 28.157287922866296
+    fp: 4ef16e62f10c7cb4
+    cost: 8.524
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven, high_voltage]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 28.04075759101129
+    fp: 7346c2f9890bef56
+    cost: 8.894
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 28.04075759101129
+    fp: 21cdce77aa1ede79
+    cost: 15.307
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 27.905799503902763
     fp: e6c5fe2024e129f8
     cost: 6.838
@@ -11802,6 +12397,32 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 27.732406137204894
+    fp: 90f85d79422ac681
+    cost: 7.885
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 27.732406137204894
+    fp: fd236e6303096392
+    cost: 8.019
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -11834,6 +12455,58 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 27.333333333333332
+    fp: 6bb8db67dda7d38a
+    cost: 16.517
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 27.333333333333332
+    fp: 5ae37d5c7e2dd92d
+    cost: 13.002
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 27.205406778811806
+    fp: 7346c2f9890bef56
+    cost: 20.219
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 27.205406778811806
+    fp: 21cdce77aa1ede79
+    cost: 21.107
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 27.1871604600084
     fp: 163a03b987d97f9a
     cost: 6.291
@@ -11851,6 +12524,32 @@ entries:
     fp: 6ab83bed66bf026b
     cost: 7.464
     mods: [primary_acuity, primed_shred, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 26.562174039955604
+    fp: 70fe4b6f1b0a3747
+    cost: 6.071
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 26.562174039955604
+    fp: c9ac64b324346c84
+    cost: 3.056
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
     riven:
@@ -11923,6 +12622,32 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 25.25534512978489
+    fp: 6bb8db67dda7d38a
+    cost: 21.029
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 25.25534512978489
+    fp: 5ae37d5c7e2dd92d
+    cost: 21.007
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 25.19026788625025
     fp: 63b421c04f735048
     cost: 7.988
@@ -11931,6 +12656,19 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 25.068600331330668
+    fp: fd86c6cbc9c5cc07
+    cost: 16.619
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
@@ -11958,6 +12696,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 24.459565839673328
+    fp: fb11f765653fffc2
+    cost: 6.141
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_scope, bladed_rounds, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
@@ -11995,6 +12746,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 23.646935799271656
+    fp: 41d53bd07851a11c
+    cost: 20.474
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
@@ -12126,6 +12890,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 22.1416529449304
+    fp: a2d9160ac01d6a41
+    cost: 25.025
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 22.06302555849472
     fp: 3d81b567601ce284
     cost: 7.903
@@ -12135,6 +12912,18 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 21.95469900768464
+    fp: 5fda354cf87cd96d
+    cost: 15.577
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
@@ -12211,6 +13000,31 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 21.2201142501152
+    fp: 5fda354cf87cd96d
+    cost: 21.266
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 20.964835623541028
+    fp: 45978e5c66ab6e8e
+    cost: 23.461
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 20.886584173722365
     fp: fcf05f902c14f1e9
     cost: 21.000
@@ -12273,6 +13087,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 20.190368410473624
+    fp: 85730cb1e3737ce9
+    cost: 14.817
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 20.165334678335014
     fp: 9af16bcb83407f7c
     cost: 20.950
@@ -12283,6 +13110,19 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 19.881604553833938
+    fp: 1c67c4b256164d50
+    cost: 14.341
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
@@ -19764,17 +20604,17 @@ entries:
   - weapon: kuva_nukor
     mode: base
     score: 18.730391902792334
-    fp: 57721acad943b840
-    cost: 2.853
+    fp: 0dfc61982e5bd5b5
+    cost: 2.876
+    exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: kuva_nukor
     mode: base
     score: 18.730391902792334
-    fp: 0dfc61982e5bd5b5
-    cost: 2.876
-    exilus: ruinous_extension
+    fp: 57721acad943b840
+    cost: 2.853
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
@@ -36523,6 +37363,20 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 44.426624826243255
+    fp: ee9c4ee08abc5208
+    cost: 39.802
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
     listed: false
@@ -36586,6 +37440,20 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 44.01179339861987
+    fp: 78103845a3ef819e
+    cost: 41.090
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -36599,6 +37467,34 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 43.87105034630019
+    fp: 90f089be409f95c9
+    cost: 39.846
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 43.62493784898035
+    fp: 8a0aa677c06a6b57
+    cost: 40.522
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
@@ -36640,6 +37536,20 @@ entries:
       bonuses: [critical_chance, critical_damage, puncture]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 43.21671781620344
+    fp: 75d459708c27c88d
+    cost: 47.848
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -36679,6 +37589,20 @@ entries:
     riven:
       bonuses: [critical_chance, fire_rate, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 42.80055015289269
+    fp: effc76d26b8798a4
+    cost: 48.357
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
@@ -36730,6 +37654,20 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 42.13726871858578
+    fp: b47e603ed0c0ce69
+    cost: 40.862
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -36813,6 +37751,20 @@ entries:
   - weapon: burston_prime
     mode: cycle
     listed: false
+    score: 41.560652768674956
+    fp: b95f7f490afa935c
+    cost: 40.148
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
     score: 41.520056322859354
     fp: 00fc19dbd27a3bfb
     cost: 20.901
@@ -36849,6 +37801,48 @@ entries:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 41.25495630710466
+    fp: 85730cb1e3737ce9
+    cost: 40.129
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 40.77241347558715
+    fp: 1c67c4b256164d50
+    cost: 39.804
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 40.641043805089595
+    fp: 2b423037251824b7
+    cost: 43.907
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, vital_sense, argon_scope, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -36874,6 +37868,62 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 40.335662533906586
+    fp: ed055ee68ab52f0f
+    cost: 36.901
+    exilus: vigilante_supplies
+    mods: [serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 39.966034778679344
+    fp: 6b3448c26cb2ae4d
+    cost: 35.231
+    exilus: vigilante_supplies
+    mods: [serration, critical_delay, vigilante_armaments, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 39.947207718327505
+    fp: 04eb406ae8aad685
+    cost: 50.702
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 39.91512164818435
+    fp: c4b81fff828bf11c
+    cost: 36.237
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
@@ -36902,6 +37952,34 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 39.87173153858384
+    fp: 577386a0643b1992
+    cost: 39.110
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 39.70340875379903
+    fp: 5ea6aa54022e9c92
+    cost: 41.963
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, gilded_truth, radiated_reload, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
     listed: false
@@ -36914,6 +37992,20 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 39.48657812974469
+    fp: 7bc0b997b6c04a0a
+    cost: 36.174
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, critical_delay, vigilante_armaments, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
@@ -36932,6 +38024,20 @@ entries:
     cost: 29.724
     exilus: vigilante_supplies
     mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 39.114189228420685
+    fp: f5c4ac5cf27e5713
+    cost: 42.174
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, gilded_truth, radiated_reload, primed_cryo_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
     riven:
@@ -41535,6 +42641,20 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, magnetic_capacity, primed_cryo_rounds, thermite_rounds, high_voltage, infected_clip]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 17.288499214858597
+    fp: 301fb6ea55d39b72
+    cost: 23.787
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -42036,6 +43156,19 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, expel_corpus, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_encumber]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 16.41719599074647
+    fp: 5fda354cf87cd96d
+    cost: 11.776
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -42422,6 +43555,20 @@ entries:
       bonuses: [damage, toxin]
       malus: puncture
       rolls: [1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 15.884797657810994
+    fp: 4450533777ab2c79
+    cost: 25.451
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -43064,6 +44211,20 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 15.256025420178881
+    fp: 0c1e195758bb3259
+    cost: 13.950
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, rime_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -43981,6 +45142,20 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 14.301786859881519
+    fp: 78103845a3ef819e
+    cost: 13.004
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -44155,6 +45330,20 @@ entries:
     riven:
       bonuses: [critical_damage, damage, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 14.102983906865935
+    fp: 8a0aa677c06a6b57
+    cost: 14.488
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
@@ -44393,6 +45582,20 @@ entries:
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 13.931180153402478
+    fp: 75d459708c27c88d
+    cost: 18.451
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
     mode: cycle
     listed: false
     score: 13.927279085570245
@@ -44417,6 +45620,20 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [cold, damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 13.902817626040951
+    fp: ee9c4ee08abc5208
+    cost: 14.532
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
@@ -44598,6 +45815,20 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 13.693918540143127
+    fp: effc76d26b8798a4
+    cost: 18.547
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -44633,6 +45864,20 @@ entries:
     riven:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 13.624643304999593
+    fp: 90f089be409f95c9
+    cost: 15.058
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -45270,6 +46515,20 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 13.042058294804574
+    fp: b47e603ed0c0ce69
+    cost: 14.784
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     listed: false
@@ -45572,6 +46831,20 @@ entries:
       bonuses: [critical_chance, critical_damage, damage]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.874906163333598
+    fp: 2b423037251824b7
+    cost: 16.957
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, vital_sense, argon_scope, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -45594,6 +46867,20 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, primed_cryo_rounds, thermite_rounds, high_voltage, infected_clip]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.828549245052947
+    fp: b95f7f490afa935c
+    cost: 14.686
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -46013,6 +47300,20 @@ entries:
     mods: [heavy_caliber, primary_acuity, galvanized_aptitude, vile_acceleration, magnetic_capacity, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.433937347447435
+    fp: ed055ee68ab52f0f
+    cost: 14.014
+    exilus: vigilante_supplies
+    mods: [serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -46225,6 +47526,20 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.268109846921766
+    fp: c4b81fff828bf11c
+    cost: 13.724
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -46238,6 +47553,20 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.248144287421468
+    fp: 5ea6aa54022e9c92
+    cost: 8.695
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vital_sense, gilded_truth, radiated_reload, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: base
@@ -46443,6 +47772,20 @@ entries:
       bonuses: [critical_chance, multishot]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.089773819807856
+    fp: 04eb406ae8aad685
+    cost: 16.468
+    exilus: vigilante_supplies
+    mods: [split_chamber, serration, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -46558,6 +47901,20 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 11.987446600696037
+    fp: f5c4ac5cf27e5713
+    cost: 15.909
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vital_sense, gilded_truth, radiated_reload, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -46610,6 +47967,20 @@ entries:
       bonuses: [fire_rate, toxin]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 11.93472122126669
+    fp: 6b3448c26cb2ae4d
+    cost: 6.945
+    exilus: vigilante_supplies
+    mods: [serration, critical_delay, vigilante_armaments, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -46691,6 +48062,20 @@ entries:
       bonuses: [critical_damage, damage]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 11.89863908105172
+    fp: 577386a0643b1992
+    cost: 18.109
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_chamber, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -46929,6 +48314,20 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 11.69336869436816
+    fp: 7bc0b997b6c04a0a
+    cost: 7.053
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, critical_delay, vigilante_armaments, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base

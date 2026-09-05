@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6035
+submissions: 6063
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -27366,6 +27366,15 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 76.48511948457855
+    fp: 1e6d75c17e8ebeed
+    cost: 55.213
+    mods: [primary_acuity, serration, critical_delay, rifle_elementalist, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: kuva_grattler
     mode: base
     listed: false
@@ -40252,8 +40261,9 @@ entries:
     mode: base
     listed: false
     score: 27.220071648440392
-    fp: 1fb5ce9d096c44e0
-    cost: 13.437
+    fp: c31b0c76e0493295
+    cost: 13.550
+    exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
@@ -40261,9 +40271,8 @@ entries:
     mode: base
     listed: false
     score: 27.220071648440392
-    fp: c31b0c76e0493295
-    cost: 13.550
-    exilus: ruinous_extension
+    fp: 1fb5ce9d096c44e0
+    cost: 13.437
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
@@ -48726,6 +48735,15 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 16.572365731398957
+    fp: 1e6d75c17e8ebeed
+    cost: 9.582
+    mods: [primary_acuity, serration, critical_delay, rifle_elementalist, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: larkspur_prime
     mode: alternate
     listed: false
@@ -54292,6 +54310,15 @@ entries:
       bonuses: [critical_chance, toxin]
       malus: projectile_speed
       rolls: [1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 11.434537924322058
+    fp: f011d870a670f021
+    cost: 6.639
+    mods: [primary_acuity, serration, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: laetum
     mode: base
     listed: false

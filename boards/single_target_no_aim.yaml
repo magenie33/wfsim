@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6035
+submissions: 6063
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -7817,17 +7817,17 @@ entries:
   - weapon: kuva_nukor
     mode: base
     score: 5.60871901822676
-    fp: 77d3771b1e54f50b
-    cost: 2.784
+    fp: 455384ef63b3699c
+    cost: 2.751
+    exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: kuva_nukor
     mode: base
     score: 5.60871901822676
-    fp: 455384ef63b3699c
-    cost: 2.751
-    exilus: ruinous_extension
+    fp: 77d3771b1e54f50b
+    cost: 2.784
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
