@@ -74,6 +74,17 @@ on:
         description: "rescore every row, even if the engine has not moved"
         type: boolean
         default: false
+      # THE BACKSTOP FOR A NUMBER THE HASHES CANNOT SEE. Reuse is decided by
+      # fingerprints, and a fingerprint answers "did an INPUT move" — so a
+      # correction they cannot see, or a run this pipeline lost, leaves a
+      # published number nobody can argue the board out of. Naming a weapon
+      # drops what is stored for it and nothing else, so the fix costs minutes
+      # rather than the whole board. A misspelled id rescores nothing and says
+      # so rather than passing quietly.
+      weapon:
+        description: "rescore these weapons whatever the fingerprints say (id, comma-separated)"
+        type: string
+        default: ""
 
 # ONE AT A TIME **PER TRIGGER**, which is two workloads. A scheduled run scores
 # what is NEW — a handful of builds, reusing every stored score — while a push
@@ -304,12 +315,14 @@ jobs:
         if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
+          FORCE=""
+          if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
           todo=0
           for f in boards/*.yaml; do
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
                      --engine "${{ steps.fp.outputs.engine }}" \
-                     --reuse "$f" --dry-run \
+                     --reuse "$f" --dry-run $FORCE \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
             echo "$id: $line"
@@ -493,12 +506,17 @@ jobs:
           if [ "${{ needs.decide.outputs.equivalent }}" = "true" ]; then
             verified="--code-verified"
           fi
+          # THE FORCED LIST, if the operator named one. It has to reach every
+          # process that decides reuse: a shard that keeps a row the publish
+          # pass drops leaves publish to compute it alone, at the end.
+          FORCE=""
+          if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             prior=""
             [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
             ./target/release/wfsim-board "$id" \
-              --engine "${{ needs.submissions.outputs.engine }}" $prior $verified \
+              --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
               --shard "${{ matrix.shard }}/${SHARDS}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
@@ -559,6 +577,11 @@ jobs:
       - name: assemble every benchmark
         run: |
           set -euo pipefail
+          # THE FORCED LIST, if the operator named one. It has to reach every
+          # process that decides reuse: a shard that keeps a row the publish
+          # pass drops leaves publish to compute it alone, at the end.
+          FORCE=""
+          if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
           mkdir -p site
           # THE SAME VERDICT THE SCORERS WERE GIVEN, and this is the call
           # that matters most: it ASSEMBLES the board. Without the flag the
@@ -587,7 +610,7 @@ jobs:
               prior="--reuse /tmp/$id-prior.yaml"
             fi
             ./target/release/wfsim-board "$id" site/board.json \
-              --engine "${{ needs.submissions.outputs.engine }}" $prior $verified \
+              --engine "${{ needs.submissions.outputs.engine }}" $prior $verified $FORCE \
               --scores scores \
               < submissions.json > "boards/$id.yaml"
           done

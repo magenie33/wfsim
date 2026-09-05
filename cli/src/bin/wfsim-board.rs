@@ -760,6 +760,35 @@ fn main() {
     for (k, v) in prior_rolls {
         rolls.entry(k).or_insert(v);
     }
+
+    // FORCING ONE WEAPON BACK THROUGH THE FIGHT, and it is the backstop rather
+    // than a tool. Reuse is decided by fingerprints, and a fingerprint answers
+    // "did an INPUT move" — so a correction the hashes cannot see, or a run the
+    // pipeline lost, leaves a published number nobody can argue the board out
+    // of. `--rescore <id[,id]>` drops what is stored for those weapons and
+    // nothing else: every other row still reuses, so a wrong number costs
+    // minutes to replace rather than the whole board.
+    //
+    // THE ROLLS GO WITH THE SCORES. A riven row's rolls are the argmax of the
+    // score, so keeping them while dropping the score would re-measure the
+    // corner a stale number chose.
+    if let Some(list) = flag("--rescore") {
+        let want: Vec<String> = list
+            .split(',')
+            .map(|w| format!("{}|", w.trim()))
+            .filter(|w| w.len() > 1)
+            .collect();
+        let hit = |k: &String| want.iter().any(|w| k.starts_with(w.as_str()));
+        let before = known.len();
+        known.retain(|k, _| !hit(k));
+        rolls.retain(|k, _| !hit(k));
+        let dropped = before - known.len();
+        reused = reused.saturating_sub(dropped);
+        eprintln!("rescore: forced {dropped} stored row(s) back through the fight for {list}");
+        if dropped == 0 {
+            eprintln!("rescore: nothing stored matched {list} — check the weapon id");
+        }
+    }
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
         eprintln!("unknown benchmark: {bench_id}");
         std::process::exit(2);

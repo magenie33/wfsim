@@ -218,9 +218,20 @@ TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 whose engine moved is wrong immediately, not in an hour. A cooldown would be
 both too slow and too fast at once.
 
-**The manual button is the escape hatch.** Actions → board → Run workflow with
-`full` ticked ignores the fingerprint and rescores every row — for when
-something outside the hash changed, or when you simply want to see it done.
+**The manual button is the escape hatch, and it has two settings.** Actions →
+board → Run workflow. `full` ignores the fingerprint and rescores every row —
+for when something outside the hash changed, or when you simply want to see it
+done. `weapon` takes one or more ids and rescores just those, whatever the
+fingerprints say.
+
+THE SECOND EXISTS BECAUSE A FINGERPRINT ANSWERS THE WRONG QUESTION FOR THIS
+CASE. It says whether an INPUT moved, so a correction it cannot see, or a run
+this pipeline lost, leaves a published number nobody can argue the board out of
+— and the only answer then was to rescore all of it. Naming a weapon drops what
+is stored for that weapon and nothing else, so every other row still reuses and
+the fix costs minutes. The rolls go with the scores: a riven row's rolls are the
+argmax of its score, so keeping them would re-measure the corner a stale number
+chose. A misspelled id rescores nothing and says so rather than passing quietly.
 
 ### The audit: does the FILE still say what the code computes
 
