@@ -13,8 +13,9 @@ Steps:
   7. derive site/img/ from the art cache (same-origin art, downscaled to
      webp — see ship_art)
   8. prerender one HTML file per weapon (its own title/description/OG plus a
-     crawler-visible summary), and write sitemap.xml + robots.txt — see
-     prerender() for why a single shell was not enough.
+     crawler-visible summary and its board standing), the /weapons roster that
+     links to them, and sitemap.xml + robots.txt — see prerender() for why a
+     single shell was not enough.
 
 wrangler already serves site/ at wfsim.app, so after this script the builder
 lives at wfsim.app/ and every simulation runs on the visitor's own CPU.
@@ -657,29 +658,115 @@ def one_h1(page: str, keep: str | None, text: str | None = None) -> str:
     return page
 
 
-def page_ld(name: str, desc: str, url: str) -> dict:
+@functools.lru_cache(maxsize=1)
+def gear_names() -> dict:
+    """`id` -> display name, for everything a board row can name."""
+    out = {}
+    for rel in ("mods", "arcanes"):
+        for f in (ROOT / "data" / rel).rglob("*.yaml"):
+            spec = yload(f.read_text(encoding="utf-8"))
+            if isinstance(spec, dict) and spec.get("id") and spec.get("name"):
+                out[spec["id"]] = spec["name"]
+    return out
+
+
+@functools.lru_cache(maxsize=1)
+def board_asof() -> str:
+    """The day the board archive last moved, from git rather than from a clock.
+
+    A BUILD IS REPRODUCIBLE OR THE DATE IS A LIE. `datetime.now()` would stamp
+    "today" onto a page whose numbers are a week old, which is the opposite of
+    what the date is for; the archive's own last commit is when those numbers
+    were actually written, and any checkout of this commit computes the same.
+    """
+    import subprocess
+
+    r = subprocess.run(
+        ("git", "log", "-1", "--format=%cs", "--", "boards"),
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else ""
+
+
+@functools.lru_cache(maxsize=1)
+def board_best() -> dict:
+    """weapon id -> [(ruler name, row)], the best RIVEN-FREE row under each.
+
+    THE NUMBER TRAVELS WITH ITS FIGHT. A score is meaningless without the
+    scenario that produced it, and a benchmark's `name` already states that
+    scenario in full — enemy, level, count, duration and metric — so a row
+    quoted with its ruler's name cannot be flattened into "this weapon does N".
+    That is the whole reason it is worth publishing to a reader who will never
+    run the fight, machine or human.
+
+    RIVEN-FREE, because a riven is a roll nobody else has. The top row overall
+    is frequently one, and a build the reader cannot reproduce is a worse answer
+    to "what should I put on this" than the best one they can.
+    """
+    out: dict = {}
+    for f in sorted((ROOT / "boards").glob("*.yaml")):
+        board = yload(f.read_text(encoding="utf-8"))
+        ruler = yload((ROOT / "data" / "benchmarks" / f.name).read_text(encoding="utf-8"))
+        for row in board.get("entries") or ():
+            if row.get("riven"):
+                continue
+            rows = out.setdefault(row["weapon"], {})
+            # Entries arrive best-first per weapon, so the first is the best.
+            rows.setdefault(board["benchmark"], (ruler["name"], row))
+    return {w: list(v.values()) for w, v in out.items()}
+
+
+def board_sentence(ruler_name: str, row: dict, weapon: str) -> str:
+    """One board row as a sentence that carries everything it depends on."""
+    names = gear_names()
+    gear = [names.get(m, m) for m in (row.get("mods") or ())]
+    if row.get("exilus"):
+        gear.append(names.get(row["exilus"], row["exilus"]))
+    gear += [names.get(a, a) for a in (row.get("arcanes") or ())]
+    score = row.get("shown") or f"{row['score']:.4g}"
+    asof = f"As of {board_asof()}, t" if board_asof() else "T"
+    mode = row.get("mode", "base").replace("_", " ")
+    return (f"{asof}he best riven-free {weapon} build on the WFSim board scores "
+            f"{score} under {ruler_name} — {mode} mode, wearing "
+            f"{', '.join(gear)}.")
+
+
+def page_ld(name: str, desc: str, url: str, cn: str | None = None) -> dict:
     """One page's structured data: what it is, and where it sits.
 
     A WebPage rather than a second WebApplication, because a weapon page is a
     page ABOUT something inside one app — `isPartOf` is what says the 389 URLs
     are one product without claiming each is a separate one.
+
+    `about` NAMES THE SUBJECT SEPARATELY FROM THE PAGE. "A page called Braton
+    Prime" and "a page about the thing called Braton Prime" are different
+    claims, and only the second lets a reader that never renders HTML answer a
+    question about the weapon with this page. `dateModified` is what keeps a
+    quoted number honest once it has left the site.
     """
-    return {
+    ld: dict = {
         "@context": "https://schema.org",
         "@type": "WebPage",
         "name": name,
         "description": desc,
         "url": url,
+        "inLanguage": "en",
         "isPartOf": {"@type": "WebApplication", "name": "WFSim", "url": SITE + "/"},
         "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "WFSim", "item": SITE + "/"},
             {"@type": "ListItem", "position": 2, "name": name, "item": url},
         ]},
     }
+    if board_asof():
+        ld["dateModified"] = board_asof()
+    if cn:
+        ld["about"] = {"@type": "Thing", "name": name, "alternateName": cn}
+    return ld
 
 
 def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
-          keep_h1: str | None = None, name: str | None = None) -> str:
+          keep_h1: str | None = None, name: str | None = None,
+          cn: str | None = None) -> str:
     """The app shell carrying ONE page's head and its crawler-visible body.
 
     Shared by every prerendered page so a new one cannot get half the
@@ -723,7 +810,7 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
     # no other. Repeated unchanged it tells an answer engine that all 389 URLs
     # are the same application, which is the machine-readable half of the very
     # sameness the per-page title and canonical exist to break.
-    ld = json.dumps(page_ld(name or title, desc, url),
+    ld = json.dumps(page_ld(name or title, desc, url, cn),
                     ensure_ascii=False, separators=(",", ":"))
     lded = re.sub(r'<script type="application/ld\+json">.*?</script>',
                   '<script type="application/ld+json">' + ld + "</script>",
@@ -795,19 +882,78 @@ def prerender(flagged: str) -> None:
         og_img = SITE + card if drew else f"{SITE}/logo.svg"
         url = SITE + wiki_path(spec)
 
+        # THE REST OF WHAT THE ARSENAL SHOWS. The block below is this page's
+        # only content that is not the shell, and four numbers of it left the
+        # other 99% of the page to speak for the weapon. Everything here is
+        # drawn by the app on this same page — the rule this block lives under.
+        gear = [
+            f"{spec['magazine']:g}-round magazine" if spec.get("magazine") else "",
+            f"{spec['reload_seconds']:g} s reload" if spec.get("reload_seconds") else "",
+            f"{spec['ammo_max']:g} reserve ammo" if spec.get("ammo_max") else "",
+            f"{spec['accuracy']:g} accuracy" if spec.get("accuracy") else "",
+            f"{spec['disposition']:g} riven disposition" if spec.get("disposition") else "",
+        ]
+        detail = ", ".join(x for x in gear if x)
+        traits = ", ".join(t.replace("_", " ") for t in (spec.get("traits") or ()))
+
         # The crawler-visible body, removed as soon as the app takes over.
         seo = (
             f"    <p>{html_mod.escape(name)}"
             f"{f' / {html_mod.escape(cn)}' if cn else ''} — Warframe. "
             f"{html_mod.escape(facts)}</p>\n"
             f"    <p>{html_mod.escape(stats)}.</p>\n"
-            "    <p>Build, simulate and optimize this weapon at "
-            f'<a href="{SITE}/">wfsim.app</a>.</p>\n'
+            + (f"    <p>{html_mod.escape(detail)}.</p>\n" if detail else "")
+            + (f"    <p>Traits: {html_mod.escape(traits)}.</p>\n" if traits else "")
+            + "".join(f"    <p>{html_mod.escape(board_sentence(rn, row, name))}</p>\n"
+                      for rn, row in board_best().get(wid, ()))
+            + "    <p>Build, simulate and optimize this weapon at "
+            f'<a href="{SITE}/">wfsim.app</a>, or browse '
+            f'<a href="{SITE}/weapons">every weapon</a>.</p>\n'
         )
         out = APP / wiki_path(spec).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
-        page = shell(flagged, title, desc, url, og_img, seo, "w-name", name)
+        page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)
         past_the_scanner(lambda: put(out, page))
+
+    # /weapons — THE ADDRESS OF THE ROSTER, and the only page that links to it.
+    #
+    # Every weapon URL was reachable from the sitemap and from nothing else. A
+    # sitemap says a URL exists; a LINK says it is worth reading and what sits
+    # near it, and an answer engine asked what this site covers had to fetch 387
+    # pages to find out. Now the roster links down and every weapon links back.
+    #
+    # PLURAL, BECAUSE THE WIKI IS PLURAL — `wiki.warframe.com/w/Weapons`, and
+    # `Warframes` and `Mods` beside it. URLs mirror wiki page names (AGENTS.md),
+    # so the roster that comes after this one already has its address.
+    #
+    # THE ROUTER ALREADY SERVES IT: an unmatched path takes `on-home`, and the
+    # home view IS the weapon grid, so the visitor lands on the list this page
+    # describes. The block below is that grid in HTML, for whoever runs no JS.
+    by_slot: dict = {}
+    for s in roster():
+        by_slot.setdefault(s["slot"], []).append(s)
+    grid = ""
+    for slot in sorted(by_slot):
+        links = ", ".join(f'<a href="{wiki_path(s)}">{html_mod.escape(s["name"])}</a>'
+                          for s in by_slot[slot])
+        grid += (f"    <h2>{html_mod.escape(slot.title())} "
+                 f"({len(by_slot[slot])})</h2>\n    <p>{links}</p>\n")
+    wl_desc = (
+        f"Every Warframe weapon WFSim models: {len(roster())} across "
+        f"{len(by_slot)} slots. Each one can be built, simulated and optimized "
+        "in the browser, against numbers measured in game."
+    )
+    (APP / "weapons").mkdir(parents=True, exist_ok=True)
+    put(APP / "weapons" / "index.html", shell(
+        flagged,
+        f"All {len(roster())} Warframe weapons | WFSim",
+        wl_desc,
+        SITE + "/weapons",
+        f"{SITE}/logo.svg",
+        f"    <p>{html_mod.escape(wl_desc)}</p>\n" + grid,
+        "h-home",
+        "Weapons",
+    ))
 
     # /support — a URL people paste, so it gets the same treatment. Its OG
     # description says what the page IS (running costs, nothing sold); a link
@@ -864,7 +1010,7 @@ def prerender(flagged: str) -> None:
         newline="\n",
     )
 
-    urls = [SITE + "/", SITE + "/support", SITE + "/download"] + [
+    urls = [SITE + "/", SITE + "/weapons", SITE + "/support", SITE + "/download"] + [
         SITE + wiki_path(s) for s in roster()
     ]
     put(
@@ -877,7 +1023,7 @@ def prerender(flagged: str) -> None:
     # Without this file the SPA fallback answered /robots.txt with HTML and a
     # 200, which is a soft 404 for every crawler that asks.
     put(APP / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n")
-    print(f"prerendered {len(urls) - 3} weapon pages + /support + /download + "
+    print(f"prerendered {len(urls) - 4} weapon pages + /weapons + /support + /download + "
           f"sitemap.xml + robots.txt — {WROTE[0]} written, {WROTE[1]} already current")
 
 
