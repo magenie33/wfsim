@@ -10,12 +10,25 @@
        OVERRIDES these per weapon on the prerendered pages, which is the only
        reason a shared weapon link shows that weapon rather than the site. -->
   <meta property="og:type" content="website" />
+  <!-- THE SHELL ANSWERS EVERY UNMATCHED PATH. `not_found_handling:
+       single-page-application` serves this file, with a 200, for any URL that
+       is not an asset — which is how /weapons/<Name> routes, and also what a
+       retired image path now gets. Without a canonical here each of those is a
+       separate page saying the same thing; with one they consolidate onto the
+       home page. `prerender` REPLACES this line per page, so a real page still
+       names itself. -->
   <link rel="canonical" href="https://wfsim.app/weapons/Baza" />
   <meta property="og:site_name" content="WFSim" />
   <meta property="og:title" content="Baza — Warframe build, damage &amp; DPS | WFSim" />
   <meta property="og:description" content="Baza (苍鹰) — Rifle · Primary · Mastery Rank 7. 16 base damage (impact 5.76, puncture 6.72, slash 3.52), 26% crit chance, 3x crit multiplier, 10% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers." />
   <meta property="og:url" content="https://wfsim.app/weapons/Baza" />
   <meta property="og:image" content="https://wfsim.app/og/Baza.png" />
+  <!-- WHAT THIS SITE IS, in the one form a machine reads without guessing.
+       An answer engine asked for a Warframe calculator has no way to learn
+       from prose that this is a free one that runs in the browser; every
+       field here restates something the page already says in English.
+       `shell` REPLACES it per page, so a weapon page describes the weapon. -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Baza","description":"Baza (苍鹰) — Rifle · Primary · Mastery Rank 7. 16 base damage (impact 5.76, puncture 6.72, slash 3.52), 26% crit chance, 3x crit multiplier, 10% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers.","url":"https://wfsim.app/weapons/Baza","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Baza","item":"https://wfsim.app/weapons/Baza"}]}}</script>
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
@@ -82,8 +95,7 @@
 </head>
 <body>
   <div id="seo-fallback">
-    <h1>Baza / 苍鹰 — Warframe</h1>
-    <p>Rifle · Primary · Mastery Rank 7</p>
+    <p>Baza / 苍鹰 — Warframe. Rifle · Primary · Mastery Rank 7</p>
     <p>16 base damage (impact 5.76, puncture 6.72, slash 3.52), 26% crit chance, 3x crit multiplier, 10% status chance.</p>
     <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>.</p>
   </div>
@@ -228,7 +240,7 @@
        Hidden inside the desktop app, where the offer is replaced by the fact
        that they are already running it. -->
   <main id="download-page" class="dl-page" hidden>
-    <h1 class="hero-h" data-i18n>WFSim for Windows</h1>
+    <h2 id="h-download" class="hero-h" data-i18n>WFSim for Windows</h2>
     <p class="hero-sub" data-i18n>The same calculator on your own machine — it opens instantly, works with no connection, and keeps itself up to date. It is not a cut-down version: the engine is the same wasm module this site serves.</p>
 
     <!-- The button and the source it comes from, drawn by `renderDownloadPage`
@@ -290,7 +302,7 @@
          after translation (applyI18n), because those four letters are the
          same in every language. Splitting it into two keys is what made the
          old "The Simulacrum. / The Primed One." pair awkward to translate. -->
-    <h1 class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
+    <h2 id="h-home" class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h2>
     <p class="hero-sub" data-i18n>WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.</p>
     <!-- A POINTER TO /download, one line. The offer itself is a page of
          questions — SmartScreen, signing, updating, uninstalling — and the
@@ -313,7 +325,7 @@
        live on that weapon's own page, which is also where the deeper ranks are
        computed on demand. -->
   <main id="bench-page" class="home-page" hidden>
-    <h1 class="home-h" data-i18n>Benchmark</h1>
+    <h2 id="h-benchmark" class="home-h" data-i18n>Benchmark</h2>
     <p class="bench-sub" data-i18n>One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.</p>
     <div id="bench-picker"></div>
     <!-- WHICH BUILDS ARE LISTED, not which fight. Its own row of chips because
@@ -407,7 +419,7 @@
        an order; "within N hours" is an obligation that grows with every
        subscriber, and that is the shape maintainers are buried by. -->
   <main id="support-page" class="support-page" hidden>
-    <h1 class="hero-h" data-i18n>Support WFSim</h1>
+    <h2 id="h-support" class="hero-h" data-i18n>Support WFSim</h2>
     <!-- What this says nothing about is accounts, or anything else that does
          not exist yet. The promise is
          about the THREE MODULES and about the LICENCE — the two things that
@@ -506,7 +518,7 @@
     <div class="wstrip">
       <img id="w-img" alt="" />
       <div>
-        <h1 id="w-name">—</h1>
+        <h1 id="w-name">Baza</h1>
         <div id="w-tags" class="tags"></div>
         <!-- WHAT THIS WEAPON DOES THAT ITS STATS DO NOT SAY. Generated by the
              engine from the data that implements it; empty for most weapons.
@@ -996,7 +1008,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">37ef065d</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">b8a77ba3</span>
     </div>
   </footer>
 

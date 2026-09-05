@@ -620,13 +620,75 @@ def write_board() -> None:
     print(f"board: {sum(len(v) for v in out.values())} rows -> site/board.json")
 
 
-def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str) -> str:
+# Every heading in `index.html` that is a ROUTE'S OWN, by its id. One HTML file
+# answers every route, so all five ship in every page and exactly one of them is
+# the heading of the page being served. `w-name` is the weapon route's, empty in
+# the shell and filled by `app.js` on boot.
+ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-support", "w-name")
+
+
+def one_h1(page: str, keep: str | None, text: str | None = None) -> str:
+    """Demote every route heading except this route's, so a page has ONE <h1>.
+
+    A PAGE SAYS WHAT IT IS ABOUT ONCE. One HTML file answers every route, so
+    without this each of the 389 pages carries all five headings and a crawler
+    reads 389 near-identical pages that each claim to be about the Windows
+    client. Styling is by class (`.hero-h`, `.home-h`), never by tag, so a
+    demoted heading looks the same.
+
+    `text` FILLS THE KEPT ONE, which is what lets the weapon page have a single
+    heading rather than a crawler's copy beside an empty placeholder: `app.js`
+    assigns `#w-name` on boot, so writing the name in here is the same string
+    arriving earlier, for the reader who runs no JavaScript.
+    """
+    for hid in ROUTE_H1:
+        was = page
+        if hid == keep:
+            if text is None:
+                continue
+            page = re.sub(rf'(<h1 id="{hid}"[^>]*>).*?(</h1>)',
+                          lambda m: m.group(1) + html_mod.escape(text) + m.group(2),
+                          page, count=1, flags=re.S)
+        else:
+            page = re.sub(rf'<h1 (id="{hid}"[^>]*)>(.*?)</h1>',
+                          r"<h2 \1>\2</h2>", page, count=1, flags=re.S)
+        if page == was:
+            sys.exit(f"index.html: <h1 id=\"{hid}\"> not found — heading not set")
+    return page
+
+
+def page_ld(name: str, desc: str, url: str) -> dict:
+    """One page's structured data: what it is, and where it sits.
+
+    A WebPage rather than a second WebApplication, because a weapon page is a
+    page ABOUT something inside one app — `isPartOf` is what says the 389 URLs
+    are one product without claiming each is a separate one.
+    """
+    return {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": name,
+        "description": desc,
+        "url": url,
+        "isPartOf": {"@type": "WebApplication", "name": "WFSim", "url": SITE + "/"},
+        "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "WFSim", "item": SITE + "/"},
+            {"@type": "ListItem", "position": 2, "name": name, "item": url},
+        ]},
+    }
+
+
+def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
+          keep_h1: str | None = None, name: str | None = None) -> str:
     """The app shell carrying ONE page's head and its crawler-visible body.
 
     Shared by every prerendered page so a new one cannot get half the
     treatment: a per-page <title> with the site-wide OG block still saying
     "WFSim" previews as the site, which is the bug this whole pass exists to
     fix. `seo` is the block removed the moment the app boots.
+
+    `keep_h1` names the route hero this page is about; a weapon page passes
+    none, because its heading is the weapon and the shell has no hero for it.
     """
     page = flagged.replace(
         "<title>WFSim — Ultimate Warframe Calculator</title>",
@@ -650,12 +712,27 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str) 
             page,
             count=1,
         )
-    page = page.replace(
-        '<meta property="og:type" content="website" />',
-        '<meta property="og:type" content="website" />\n'
-        f'  <link rel="canonical" href="{url}" />',
-        1,
-    )
+    # REPLACED, NOT ADDED. The shell declares one so that the SPA fallback — the
+    # answer to every unmatched path — has one; inserting a second here would
+    # give every real page two canonicals, which is the same as having none.
+    canoned = re.sub(r'<link rel="canonical" href="[^"]*" />',
+                     f'<link rel="canonical" href="{url}" />', page, count=1)
+    if canoned == page:
+        sys.exit("index.html: canonical link not found — per-page canonical not set")
+    # THE SHELL'S BLOCK DESCRIBES THE APP, which is true of the home page and of
+    # no other. Repeated unchanged it tells an answer engine that all 389 URLs
+    # are the same application, which is the machine-readable half of the very
+    # sameness the per-page title and canonical exist to break.
+    ld = json.dumps(page_ld(name or title, desc, url),
+                    ensure_ascii=False, separators=(",", ":"))
+    lded = re.sub(r'<script type="application/ld\+json">.*?</script>',
+                  '<script type="application/ld+json">' + ld + "</script>",
+                  canoned, count=1, flags=re.S)
+    if lded == canoned:
+        sys.exit("index.html: ld+json block not found — per-page structured data not set")
+    # The weapon route's heading is the weapon, so it is filled rather than
+    # left as the shell's placeholder; every other route spells its own out.
+    page = one_h1(lded, keep_h1, name if keep_h1 == "w-name" else None)
     body = (
         '<div id="seo-fallback">\n' + seo + "  </div>\n"
         "  <script>document.getElementById('seo-fallback').remove()</script>\n  "
@@ -720,16 +797,16 @@ def prerender(flagged: str) -> None:
 
         # The crawler-visible body, removed as soon as the app takes over.
         seo = (
-            f"    <h1>{html_mod.escape(name)}"
-            f"{f' / {html_mod.escape(cn)}' if cn else ''} — Warframe</h1>\n"
-            f"    <p>{html_mod.escape(facts)}</p>\n"
+            f"    <p>{html_mod.escape(name)}"
+            f"{f' / {html_mod.escape(cn)}' if cn else ''} — Warframe. "
+            f"{html_mod.escape(facts)}</p>\n"
             f"    <p>{html_mod.escape(stats)}.</p>\n"
             "    <p>Build, simulate and optimize this weapon at "
             f'<a href="{SITE}/">wfsim.app</a>.</p>\n'
         )
         out = APP / wiki_path(spec).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
-        page = shell(flagged, title, desc, url, og_img, seo)
+        page = shell(flagged, title, desc, url, og_img, seo, "w-name", name)
         past_the_scanner(lambda: put(out, page))
 
     # /support — a URL people paste, so it gets the same treatment. Its OG
@@ -750,9 +827,10 @@ def prerender(flagged: str) -> None:
             sup_desc,
             SITE + "/support",
             f"{SITE}/logo.svg",
-            "    <h1>Support WFSim</h1>\n"
             f"    <p>{html_mod.escape(sup_desc)}</p>\n"
             f'    <p><a href="{SITE}/">wfsim.app</a></p>\n',
+            "h-support",
+            "Support",
         ),
         encoding="utf-8",
         newline="\n",
@@ -777,9 +855,10 @@ def prerender(flagged: str) -> None:
             dl_desc,
             SITE + "/download",
             f"{SITE}/logo.svg",
-            "    <h1>WFSim for Windows</h1>\n"
             f"    <p>{html_mod.escape(dl_desc)}</p>\n"
             f'    <p><a href="{SITE}/">wfsim.app</a></p>\n',
+            "h-download",
+            "Download",
         ),
         encoding="utf-8",
         newline="\n",
@@ -1093,7 +1172,11 @@ def main() -> None:
     if counted == marked:
         sys.exit("app.js: PROJECT_FACTS placeholder not found")
     (APP / "app.js").write_text(counted, encoding="utf-8", newline=chr(10))
-    (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
+    # THE HOME PAGE IS ITS OWN ROUTE and does not go through `shell` — it keeps
+    # the shell's title, description and canonical as written. It still owes the
+    # one-<h1> rule: `Benchmark` is a section of this page, not its subject.
+    (APP / "index.html").write_text(one_h1(flagged, "h-home"),
+                                    encoding="utf-8", newline="\n")
     ship_edge_config()
     ship_art()
     write_board()
