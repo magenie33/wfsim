@@ -164,7 +164,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         base_damage_bonus: 0.0,
         co_per_type: 0.0,
         co_behavior: CoBehavior::AdditiveWithBaseDamage,
-        co_base_fraction: 1.0,
+        co_base: wfsim_engine::loadout::CoBase::whole(),
         unswung_fraction: 0.0,
         co_stack: None,
         multishot_stack: None,

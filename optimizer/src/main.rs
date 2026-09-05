@@ -298,7 +298,7 @@ fn main() {
                 "CO {:.0}%/type x{} earned (eff {:.0}%)",
                 s.per_stack * 100.0,
                 s.max_stacks,
-                c.panel.co_base_fraction * 100.0
+                c.panel.co_base_fraction() * 100.0
             ),
             (None, co) if co > 0.0 => format!("CO/type +{:.0}%", co * 100.0),
             _ => "no CO".into(),

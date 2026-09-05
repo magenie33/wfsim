@@ -28,10 +28,12 @@ GunCO, at +220% base damage, written `mods × status types`:
 ### 1. ON THIS WEAPON, THE CHARGE MULTIPLIER IS (1 + PROGRESS) — THE BAR, NOT THE CLOCK
 
 **ONE WEAPON, NOT A CLASS.** Everything in this entry is the Ballistica
-Prime's, and it is the only weapon this has been found on (owner). No other
-charge weapon has been measured for it, and none may be given it without its
-own reading — a bow's drawn shot is calibrated against golden values that this
-would break.
+Prime's, and it is the only weapon this has been found on (owner). **Its two
+family members were measured for the ramp and do not have it** — releasing
+early on the base Ballistica or the Rakta fires the plain Burst Shot, unscaled.
+Every other charge weapon in the roster is untested, and none may be given
+either half of this without its own reading: a bow's drawn shot is calibrated
+against golden values that this would break.
 
 Releasing early multiplies the Normal Shot's OWN base by (1 + progress), and
 the number tracks the PROGRESS rather than the time held (owner). **The
@@ -101,8 +103,9 @@ is that the ladder re-derives **C = 80** from a direction §3 did not use.
 ### Not settled by this
 
 **Nothing about how far this reaches, except where it does NOT.** The base
-Ballistica and the Rakta Ballistica were measured for the same thing and
-**neither has it** (owner) — the ×2 is one weapon's, not the family's. Every
+Ballistica and the Rakta Ballistica were measured for **both halves** and
+**neither has either** (owner) — no ×2 on the full charge, and no ramp on a
+partial one. Both are this one weapon's, not the family's. Every
 other charge weapon in the roster is untested and stays as published: a bow's
 drawn shot is calibrated against golden values this would break.
 `data/notes.yaml` `charge_x2_is_the_primes_alone` is what the three entries

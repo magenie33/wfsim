@@ -4346,7 +4346,7 @@ pub fn panel_json(v: &Value) -> Value {
             wfsim_engine::loadout::CoBehavior::Independent => "multiplying",
             wfsim_engine::loadout::CoBehavior::Inert => "inert",
         };
-        let excluded = (panel.co_base_fraction - 1.0).abs() > 1e-9;
+        let excluded = (panel.co_base_fraction() - 1.0).abs() > 1e-9;
         // THE PERCENTAGE IS ALWAYS PRINTED, including the ordinary 100%. A slot that is blank when nothing is odd cannot
         // be told apart from a slot nobody filled in, and "100%" is the claim
         // being made — that this weapon reads its WHOLE base — which is worth
@@ -4358,7 +4358,7 @@ pub fn panel_json(v: &Value) -> Value {
         } else {
             format!(
                 "{behavior} · base = {:.0}% ({:.0} of {:.0}) · parts = {parts}",
-                panel.co_base_fraction * 100.0,
+                panel.co_base_fraction() * 100.0,
                 raw_bd,
                 base.base_vector.total()
             )
@@ -4647,13 +4647,13 @@ pub fn panel_json(v: &Value) -> Value {
                 // its own base and its own eligibility, so both are printed
                 // here rather than inherited from the row above.
                 let (value, rule, note) = if rr.takes_condition_overload {
-                    let orig = rb.base_vector.total() * rr.co_base_fraction;
-                    let cut = (rr.co_base_fraction - 1.0).abs() > 1e-9;
+                    let orig = rb.base_vector.total() * rr.co_base_fraction();
+                    let cut = (rr.co_base_fraction() - 1.0).abs() > 1e-9;
                     (
                         format!("{} per status type on target", fpct(panel.co_per_type)),
                         format!(
                             "{behavior} · base = {:.0}% ({} of {}) · this part = takes CO",
-                            rr.co_base_fraction * 100.0,
+                            rr.co_base_fraction() * 100.0,
                             num(orig),
                             num(rb.base_vector.total())
                         ),
@@ -4780,7 +4780,7 @@ pub fn panel_json(v: &Value) -> Value {
             // had none at all and "no row" reads as "nobody thought about it"
             // rather than as an answer. A field keeps the DIRECT hit's base
             // fraction: the catalog puts the Torid's cloud on the same base as
-            // its main fire (`field_tick` passes `ap.co_base_fraction`).
+            // its main fire (`field_tick` passes `ap.co_base_fraction()`).
             rows.push(json!({ "key": "co", "label": "Condition Overload",
                 "base": "—",
                 "final": if fb.takes_condition_overload {
@@ -4791,7 +4791,7 @@ pub fn panel_json(v: &Value) -> Value {
                 "rule": if fb.takes_condition_overload {
                     format!(
                         "{behavior} · base = {:.0}% ({:.0} of {:.0}) · this part = takes CO",
-                        panel.co_base_fraction * 100.0,
+                        panel.co_base_fraction() * 100.0,
                         raw_bd,
                         base.base_vector.total()
                     )

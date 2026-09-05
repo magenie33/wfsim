@@ -2850,8 +2850,9 @@ pub struct DummyParams {
     /// an independent multiplier, or inert on this weapon.
     pub co_behavior: crate::loadout::CoBehavior,
     /// CO base effectiveness (wiki: the CO bonus excludes evolution flat
-    /// damage — DT with Fevered = 75/125 = 0.6).
-    pub co_base_fraction: f64,
+    /// damage — DT with Fevered = 75/125 = 0.6), paired with the base it is a
+    /// share of — see [`crate::loadout::CoBase`].
+    pub co_base: crate::loadout::CoBase,
     /// See [`crate::loadout::WeaponBase::unswung_fraction`] — the share of the
     /// vector a stance's, a slam's or a heavy's own multiplier leaves alone.
     pub unswung_fraction: f64,
@@ -4464,7 +4465,7 @@ impl DummyParams {
             base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
-            co_base_fraction: panel.co_base_fraction,
+            co_base: panel.co_base,
             unswung_fraction: panel.unswung_fraction,
             co_stack: panel.co_stack,
             multishot_stack: panel.multishot_stack,
@@ -4847,7 +4848,7 @@ impl Default for DummyParams {
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: 1.0,
+            co_base: crate::loadout::CoBase::whole(),
             unswung_fraction: 0.0,
             co_stack: None,
             multishot_stack: None,
@@ -7201,11 +7202,23 @@ fn gunco_bucket(
     // The below-half-health bonus, routed HERE rather than into `arcane_base_damage`
     // because its bracket is the weapon's CO bracket — see the call site.
     half_hp: f64,
-    // Which fraction of the EVOLVED base CO multiplies. The direct hit's lives
-    // on `ap`; an explosion carries its own, because an evolution can raise
-    // what the explosion deals without raising what CO reads.
-    co_base_fraction: f64,
+    // What CO reads, PAIRED with the base it is a share of. The direct hit's
+    // lives on `ap`; an explosion carries its own, because an evolution can
+    // raise what the explosion deals without raising what CO reads — and the
+    // pair is what keeps one stage's absolute off another stage's denominator.
+    co_base: crate::loadout::CoBase,
+    // WHICH PART IS BEING RESOLVED. Checked against the tag the base carries,
+    // so a new stage cannot inherit another's denominator by being written next
+    // to it: the assertion fires until the author either builds that stage its
+    // own pair or says `borrowed_for` and means it.
+    stage: crate::loadout::CoStage,
 ) -> Gunco {
+    debug_assert_eq!(
+        co_base.stage(),
+        stage,
+        "a {stage:?} stage was handed a {:?} CO base — build its own pair, or say borrowed_for",
+        co_base.stage(),
+    );
     let co_rate = ap.co_per_type
         + params
             .co_stack
@@ -7221,7 +7234,7 @@ fn gunco_bucket(
     .iter()
     .map(|(rate, count)| rate * *count as f64)
     .sum::<f64>()
-        * co_base_fraction;
+        * co_base.fraction();
     // THE HALF-HEALTH BONUS SHARES THIS BRACKET, so it shares its base fraction
     // too. The Dread's page spells out all three halves of that: its conditional
     // bonus "ignores the base damage increase from the same perk, the 2x damage
@@ -7229,7 +7242,7 @@ fn gunco_bucket(
     // bonus" — the second is `co_base_fraction` (0.5 on a bow's charged entry),
     // and the third falls out of being CO's SIBLING here rather than nested
     // inside it.
-    let half_hp = half_hp * co_base_fraction;
+    let half_hp = half_hp * co_base.fraction();
     let terms = |bucket: f64, numerator: f64| Gunco {
         bucket,
         co: gunco_total,
@@ -7637,7 +7650,8 @@ fn spread_hit(
         arcane_base_damage,
         arc_ratio,
         half_hp,
-        ap.co_base_fraction,
+        ap.co_base,
+        crate::loadout::CoStage::Direct,
     );
     // THE PART FACTOR IS A SEPARATE MULTIPLIER FROM THE SHARE, and the two are
     // not interchangeable: `share` scales the hit AND the modded base its DoTs
@@ -9409,7 +9423,8 @@ fn field_tick(
         // the Torid's cloud on the same base as its main fire.
         // A FIELD TICK carries no half-health term: the bonus is a DIRECT-hit
         // bonus like CO itself, and nothing in the catalog says otherwise.
-        gunco_bucket(params, ap, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0, ap.co_base_fraction)
+        gunco_bucket(params, ap, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0,
+            ap.co_base.borrowed_for(crate::loadout::CoStage::Field), crate::loadout::CoStage::Field)
             .bucket
     } else {
         arc_ratio
@@ -14167,10 +14182,10 @@ pub fn run_once_traced(
         // …AND THE CO BRACKET FOLLOWS THE WEAPON'S HALF. `ap`'s fraction is
         // read against the UNSWUNG base; once the swing has landed on one half
         // only, the share the term reads is a different number.
-        let co_base_fraction = if swing_eff > 0.0 {
-            (ap.co_base_fraction * swing_on_weapon / swing_eff).min(1.0)
+        let co_base = if swing_eff > 0.0 {
+            ap.co_base.against(ap.co_base.of() * swing_eff / swing_on_weapon)
         } else {
-            ap.co_base_fraction
+            ap.co_base
         };
         // The per-projectile vectors belong to the FORM that is firing, like
         // everything else at this scope. A cycle whose base form has them and
@@ -15075,7 +15090,8 @@ pub fn run_once_traced(
             let co_mult = gunco_bucket(
                 params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio,
                 half_hp,
-                co_base_fraction,
+                co_base,
+                crate::loadout::CoStage::Direct,
             );
             // The explosion's own, and only when it differs — an evolution
             // that raises the radial's damage without raising its CO base
@@ -15090,7 +15106,7 @@ pub fn run_once_traced(
                 // DIRECT-hit bonus, like the CO it rides beside.
                 Some(r) if r.takes_condition_overload => gunco_bucket(
                     params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
-                    r.co_base_fraction,
+                    r.co_base, crate::loadout::CoStage::Radial,
                 ),
                 _ => Gunco { bucket: arc_ratio, ..Default::default() },
             };
@@ -23509,7 +23525,7 @@ mod tests {
             forced_procs: Default::default(),
             takes_condition_overload: takes,
             takes_multishot: true,
-            co_base_fraction: 1.0,
+            co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial),
         };
         // Zero-damage direct hit that still forces an Impact proc, so the only
         // damage reported is the explosion's and the target carries one status
@@ -25358,7 +25374,7 @@ mod tests {
             forced_procs: Default::default(),
             takes_condition_overload: false,
             takes_multishot: true,
-            co_base_fraction: 1.0,
+            co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial),
         };
         // A zero-damage direct hit, so everything reported is the explosion's.
         let p = |promote: f64| DummyParams {
@@ -26396,7 +26412,7 @@ mod tests {
             forced_procs: Default::default(),
             takes_condition_overload: false,
             takes_multishot: true,
-            co_base_fraction: 1.0,
+            co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial),
         }
     }
 
@@ -26605,7 +26621,7 @@ mod tests {
                 forced_procs: Default::default(),
                 takes_condition_overload: false,
                 takes_multishot: true,
-                co_base_fraction: 1.0, // the default: an explosion gets no CO
+                co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial), // the default: an explosion gets no CO
             }
         };
         // +50% x 2 pinned stacks = +100% of the part's base crit damage.
@@ -26674,7 +26690,7 @@ mod tests {
                 forced_procs: Default::default(),
                 takes_condition_overload: false,
                 takes_multishot: true,
-                co_base_fraction: 1.0, // the default: an explosion gets no CO
+                co_base: crate::loadout::CoBase::whole_for(crate::loadout::CoStage::Radial), // the default: an explosion gets no CO
             });
             let p = DummyParams {
                 radial,
@@ -28461,7 +28477,7 @@ mod tests {
         // 75 × (1 + 9 × (1 + 0.6)) = 75 × 15.4 = 1155.
         let p = DummyParams {
             co_per_type: 1.0,
-            co_base_fraction: 0.6,
+            co_base: crate::loadout::CoBase::new(0.6, 1.0, crate::loadout::CoStage::Direct),
             ..bare(DamageType::Impact)
         };
         let s = monte_carlo(&p, 20, 5);
@@ -28639,7 +28655,7 @@ mod tests {
         let p = DummyParams {
             arcane: arc("secondary_shiver"),
             forced_procs: vec![DamageType::Cold],
-            co_base_fraction: 0.5,
+            co_base: crate::loadout::CoBase::new(0.5, 1.0, crate::loadout::CoStage::Direct),
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
@@ -31392,7 +31408,7 @@ mod warframe_ability_tests {
             p.dot_modified_base = Some(100.0);
             p.status_chance = 1.0;
             p.co_per_type = 0.5;
-            p.co_base_fraction = 1.0;
+            p.co_base = crate::loadout::CoBase::whole();
             p.magazine_size = 1e9;
             p.duration_seconds = 20.0;
             run_once(&p, &mut crate::rng::Rng::new(17))

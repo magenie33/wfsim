@@ -2967,14 +2967,107 @@ pub struct RadialBase {
     pub co_base: f64,
 }
 
+/// THE CO TERM'S BASE, AND THE BASE IT IS A SHARE OF — carried together.
+///
+/// The FACT is `absolute`: an evolution's flat add leaves it alone, a valence
+/// bonus scales it, and it never moves for any other reason. The damage math
+/// wants a RATIO, and a ratio is only correct against the base it was derived
+/// from — so the two travel as one value and the division happens here rather
+/// than at four call sites. A stage whose base differs (a melee swing landing
+/// on half the vector, an explosion an evolution raised) says so with
+/// [`Self::against`] instead of recomputing a fraction of its own.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CoBase {
+    absolute: f64,
+    of: f64,
+    stage: CoStage,
+}
+
+/// WHICH PART OF AN ATTACK A CO BASE BELONGS TO.
+///
+/// A stage that reads its OWN base is the rule; one that reads another's is an
+/// exception the catalog states per weapon, and [`CoBase::borrowed_for`] is
+/// where it gets written down. The tag is checked against the stage actually
+/// being resolved, so a fifth stage added by copying the line above it fires in
+/// the test suite instead of shipping a silently wrong denominator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CoStage {
+    /// The bullet.
+    Direct,
+    /// The explosion, which carries its own base — an evolution can raise what
+    /// it DEALS without raising what its CO term reads.
+    Radial,
+    /// A lingering field. The catalog puts the Torid's cloud on the same base
+    /// as its main fire, so this one borrows.
+    Field,
+}
+
+impl Default for CoBase {
+    /// READS THE WHOLE BASE, which is what a weapon with no catalog row does.
+    fn default() -> Self {
+        Self { absolute: 1.0, of: 1.0, stage: CoStage::Direct }
+    }
+}
+
+impl CoBase {
+    pub fn new(absolute: f64, of: f64, stage: CoStage) -> Self {
+        Self { absolute, of, stage }
+    }
+
+    /// A term that reads the whole of whatever base it lands on — the direct
+    /// hit, which is what a weapon with no catalog row has.
+    pub fn whole() -> Self {
+        Self::default()
+    }
+
+    /// The same, for a part that is not the bullet.
+    pub fn whole_for(stage: CoStage) -> Self {
+        Self { stage, ..Self::default() }
+    }
+
+    /// The share of the base the CO term multiplies. 1 when there is no base
+    /// to divide by, which is the same answer an unstated catalog row gives.
+    ///
+    /// CLAMPED AT THE WHOLE BASE. No catalog row states a term that reads more
+    /// than the attack it is on, and a denominator narrowed by [`Self::against`]
+    /// is the one place arithmetic could push it past 1.
+    pub fn fraction(self) -> f64 {
+        if self.of > 0.0 { (self.absolute / self.of).min(1.0) } else { 1.0 }
+    }
+
+    /// The base this share is taken of — for a stage that must re-aim it.
+    pub fn of(self) -> f64 {
+        self.of
+    }
+
+    /// THE SAME ABSOLUTE, AGAINST A DIFFERENT DENOMINATOR — for a stage whose
+    /// base is not the one this was built from.
+    pub fn against(self, of: f64) -> Self {
+        Self { of, ..self }
+    }
+
+    /// Which stage this base belongs to.
+    pub fn stage(self) -> CoStage {
+        self.stage
+    }
+
+    /// DELIBERATELY READ BY ANOTHER STAGE — the catalog exception, written
+    /// down. Only for a part whose row puts it on a base that is not its own;
+    /// a part that has its own builds it with [`Self::new`] instead.
+    pub fn borrowed_for(self, stage: CoStage) -> Self {
+        Self { stage, ..self }
+    }
+}
+
 impl RadialBase {
-    /// See [`WeaponBase::co_base_fraction`] — derived, never stored.
+    /// See [`WeaponBase::co_base_pair`] — paired, never stored.
+    pub fn co_base_pair(&self) -> CoBase {
+        CoBase::new(self.co_base, self.base_vector.total(), CoStage::Radial)
+    }
+
+    /// The share alone, for a reader with no stage to pair it with.
     pub fn co_base_fraction(&self) -> f64 {
-        let total = self.base_vector.total();
-        if total <= 0.0 {
-            return 1.0;
-        }
-        self.co_base / total
+        self.co_base_pair().fraction()
     }
 }
 
@@ -3015,11 +3108,17 @@ pub struct ResolvedRadial {
     pub takes_condition_overload: bool,
     /// See [`RadialBase::takes_multishot`].
     pub takes_multishot: bool,
-    /// See [`RadialBase::co_base_fraction`].
-    pub co_base_fraction: f64,
+    /// See [`RadialBase::co_base_pair`].
+    pub co_base: CoBase,
 }
 
 impl ResolvedRadial {
+    /// The share the CO term reads, for a reader — the damage path takes the
+    /// pair in [`Self::co_base`] instead.
+    pub fn co_base_fraction(&self) -> f64 {
+        self.co_base.fraction()
+    }
+
     /// What a body `d` metres from the EPICENTRE takes, as a fraction.
     ///
     /// Full inside `falloff_start_m`, decaying linearly to
@@ -3249,16 +3348,18 @@ impl WeaponBase {
     /// flat perk and `resolve_for` for one the player's state gates. A gated
     /// "+40 with overshields" and an ungated "+40" are the same statement, so
     /// they must not come out as different panels.
-    /// WHAT FRACTION OF THE PANEL THE CO TERM READS — derived from
-    /// [`Self::co_base`], never stored. The damage math wants a fraction of the
-    /// evolved base; the FACT is the absolute, and deriving one from the other
-    /// means they cannot disagree.
+    /// WHAT THE CO TERM READS, PAIRED WITH THE BASE IT IS A SHARE OF —
+    /// derived from [`Self::co_base`], never stored. The FACT is the absolute;
+    /// pairing it with its own denominator here means the two cannot disagree,
+    /// and a caller cannot hand one stage's share to another stage's base.
+    pub fn co_base_pair(&self) -> CoBase {
+        CoBase::new(self.co_base, self.base_vector.total(), CoStage::Direct)
+    }
+
+    /// The share alone, for a reader that has no stage to pair it with — the
+    /// panel, a test, the combat record.
     pub fn co_base_fraction(&self) -> f64 {
-        let total = self.base_vector.total();
-        if total <= 0.0 {
-            return 1.0;
-        }
-        self.co_base / total
+        self.co_base_pair().fraction()
     }
 
     /// WHAT SHARE OF THE VECTOR AN ATTACK'S MULTIPLIER MUST LEAVE ALONE —
@@ -3678,7 +3779,8 @@ pub struct ResolvedPanel {
     /// PER FORM. The Torid's cloud pays +240% and its Incarnon beam pays
     /// nothing, so one arcane has two answers inside one cycle.
     pub compression: Option<Compression>,
-    pub co_base_fraction: f64,
+    /// See [`WeaponBase::co_base_pair`] — the absolute and its denominator.
+    pub co_base: CoBase,
     /// See [`WeaponBase::unswung_fraction`] — the share of this build's vector
     /// an attack's own multiplier must leave alone.
     pub unswung_fraction: f64,
@@ -3837,6 +3939,12 @@ pub struct ResolvedPanel {
 }
 
 impl ResolvedPanel {
+    /// The share the CO term reads, for a reader — the damage path takes the
+    /// pair in [`Self::co_base`] instead.
+    pub fn co_base_fraction(&self) -> f64 {
+        self.co_base.fraction()
+    }
+
     /// Is the reserve effectively bottomless for this weapon, under this
     /// scenario's Infinite-ammo setting?
     ///
@@ -4967,7 +5075,7 @@ pub fn resolve_for(
             falloff_reduction: r.falloff_reduction,
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
-            co_base_fraction: r.co_base_fraction(),
+            co_base: r.co_base_pair(),
         }
     };
     let radial = base.radial.as_ref().map(&a_resolved).map(|mut r| {
@@ -5625,7 +5733,7 @@ pub fn resolve_for(
         crit_damage_on_undamaged: if locked_stat("critical_damage") { 0.0 } else { base.crit_damage_on_undamaged * (1.0 + cd) },
         co_behavior: base.co_behavior,
         compression,
-        co_base_fraction: base.co_base_fraction(),
+        co_base: base.co_base_pair(),
         unswung_fraction: base.unswung_fraction(),
         co_per_type: co,
         co_stack,
