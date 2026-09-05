@@ -258,8 +258,20 @@ both too slow and too fast at once.
 **The manual button is the escape hatch, and it has two settings.** Actions →
 board → Run workflow. `full` ignores the fingerprint and rescores every row —
 for when something outside the hash changed, or when you simply want to see it
-done. `weapon` takes one or more ids and rescores just those, whatever the
-fingerprints say.
+done. `weapon` names rows at whatever precision the case needs and rescores just
+those, whatever the fingerprints say:
+
+```
+felarx                     every mode, every build of the weapon
+felarx#cycle               one mode
+felarx#cycle:plain         one mode, the rows carrying no riven
+<a whole row key>          one row — the smallest unit there is
+```
+
+A row key is `identity#mode`, so any prefix of one names the rows under it and
+the whole of one names exactly that row. The prefix is matched at a COMPONENT
+BOUNDARY, so `felarx` cannot half-match `felarx_prime`. Several are separated by
+`;`, because a mod list is commas.
 
 THE SECOND EXISTS BECAUSE A FINGERPRINT ANSWERS THE WRONG QUESTION FOR THIS
 CASE. It says whether an INPUT moved, so a correction it cannot see, or a run

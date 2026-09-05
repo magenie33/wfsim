@@ -350,6 +350,75 @@ fn num_in(v: &Value) -> Option<f64> {
     }
 }
 
+/// WHICH ROWS A `--rescore` NAMES, at whatever precision the operator has.
+///
+/// The backstop has to cover the extreme case, and the extreme case is ONE
+/// build. A row key is `identity#mode` and an identity is `weapon|mods|…`, so a
+/// selector is read as `<identity prefix>[#<mode>][:riven|:plain]` and the
+/// prefix is matched at a COMPONENT BOUNDARY — `felarx` names every row of the
+/// weapon and cannot half-match `felarx_prime`, while pasting a whole identity
+/// names exactly one build.
+///
+///   `felarx`                       every mode, every build
+///   `felarx#cycle`                 one mode
+///   `felarx#cycle:plain`           one mode, the rows without a riven
+///   `felarx|galvanized_hell,…`     one build, every mode
+///   `felarx|galvanized_hell,…#base`  one row
+///
+/// SEPARATED BY `;` AND NOT `,`, because a mod list is commas and a selector
+/// that ended at the first one could not name a build at all.
+struct Selector {
+    ident: String,
+    mode: Option<String>,
+    riven: Option<bool>,
+}
+
+impl Selector {
+    fn parse(text: &str) -> Option<Selector> {
+        let text = text.trim();
+        if text.is_empty() {
+            return None;
+        }
+        // `:riven` / `:plain` last, then `#mode`: an identity holds neither
+        // character, so the split is unambiguous whatever the build is called.
+        let (head, riven) = match text.rsplit_once(':') {
+            Some((h, "riven")) => (h, Some(true)),
+            Some((h, "plain")) => (h, Some(false)),
+            _ => (text, None),
+        };
+        let (ident, mode) = match head.split_once('#') {
+            Some((i, m)) => (i, Some(m.to_string())),
+            None => (head, None),
+        };
+        Some(Selector { ident: ident.to_string(), mode, riven })
+    }
+
+    fn matches(&self, key: &str) -> bool {
+        let (ident, mode) = key.rsplit_once('#').unwrap_or((key, "base"));
+        if let Some(want) = &self.mode {
+            if want != mode {
+                return false;
+            }
+        }
+        if let Some(want) = self.riven {
+            // THE MODS COMPONENT HOLDS THE RIVEN SLOT BY NAME, so membership is
+            // exact where a substring would match a card merely spelled like
+            // one. `builds::RIVEN_SLOT` is that name and this is the only place
+            // outside the engine that has to know it.
+            let mods = ident.split('|').nth(1).unwrap_or("");
+            let has = mods.split(',').any(|m| m == wfsim_engine::builds::RIVEN_SLOT);
+            if has != want {
+                return false;
+            }
+        }
+        // AT A COMPONENT BOUNDARY. `felarx` may not name `felarx_prime`, and a
+        // half-typed mod list may not name the build it is a prefix of.
+        ident == self.ident
+            || (ident.starts_with(&self.ident)
+                && ident[self.ident.len()..].starts_with('|'))
+    }
+}
+
 /// THE GROUP A ROW BELONGS TO — `(weapon, mode)`, read off the row key.
 ///
 /// A weapon with n modes is n independent rankings (docs/BOARD.md), so a mode
@@ -868,12 +937,8 @@ fn main() {
     }
 
     if let Some(list) = flag("--rescore") {
-        let want: Vec<String> = list
-            .split(',')
-            .map(|w| format!("{}|", w.trim()))
-            .filter(|w| w.len() > 1)
-            .collect();
-        let hit = |k: &String| want.iter().any(|w| k.starts_with(w.as_str()));
+        let sels: Vec<Selector> = list.split(';').filter_map(Selector::parse).collect();
+        let hit = |k: &String| sels.iter().any(|sel| sel.matches(k));
         let before = known.len();
         known.retain(|k, _| !hit(k));
         rolls.retain(|k, _| !hit(k));
@@ -881,7 +946,7 @@ fn main() {
         reused = reused.saturating_sub(dropped);
         eprintln!("rescore: forced {dropped} stored row(s) back through the fight for {list}");
         if dropped == 0 {
-            eprintln!("rescore: nothing stored matched {list} — check the weapon id");
+            eprintln!("rescore: nothing stored matched {list} — check the selector");
         }
     }
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {

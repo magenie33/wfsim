@@ -6,16 +6,17 @@
 # benchmark to a new version is itself the trigger, because all three are a push
 # that changes what a score MEANS.
 #
-# Two triggers, two scopes:
-#   schedule  — score what is NEW, and only while the code has not moved.
-#               quiet hours produce no commit at all.
-#   push      - engine or data changed, and this run OWNS that rescore. A CODE
-#               change re-scores every stored build; a DATA change re-scores
-#               only the rows that read the file that moved, which is most
-#               pushes and nearly free.
+# NOTHING AUTOMATIC EVER FIGHTS MORE THAN A SLICE. Every run — scheduled or
+# pushed — scores what is NEW and repairs `REFRESH_MINUTES` of what this
+# generation has not verified, then publishes. A fingerprint difference says a
+# stored score is UNVERIFIED, never that it is wrong, so the board CONVERGES at
+# a rate this file sets instead of being re-derived whenever the code moves.
 #
-# The second is not an optimisation of the first, it is the correctness rule:
-# a board whose rows were measured by different engine versions is not a board.
+# That is not a softening of the correctness rule, it is what makes it
+# affordable: rescoring all 22,977 rows on every push produced, over one
+# measured day, five cancelled runs and no published board at all. A full
+# rescore is a button (`full`), and `weapon` names rows at any precision beside
+# it — docs/BOARD.md §"When the code moved".
 #
 # Scoring is embarrassingly parallel — every row is an independent fight — so it
 # splits `SHARDS` ways and a merge job assembles the board from the scores. What
@@ -72,38 +73,33 @@ on:
         description: "rescore every row, even if the engine has not moved"
         type: boolean
         default: false
-      # THE BACKSTOP FOR A NUMBER THE HASHES CANNOT SEE. Reuse is decided by
-      # fingerprints, and a fingerprint answers "did an INPUT move" — so a
-      # correction they cannot see, or a run this pipeline lost, leaves a
-      # published number nobody can argue the board out of. Naming a weapon
-      # drops what is stored for it and nothing else, so the fix costs minutes
-      # rather than the whole board. A misspelled id rescores nothing and says
-      # so rather than passing quietly.
+      # THE BACKSTOP FOR A NUMBER THE HASHES CANNOT SEE, and it goes as fine as
+      # the case demands. A fingerprint answers "did an INPUT move", so a
+      # correction it cannot see leaves a published number nobody can argue the
+      # board out of. This names rows at any precision — a weapon, one of its
+      # modes, the riven or the plain half of that mode, or a single row by its
+      # key — and drops what is stored for those and nothing else, so the fix
+      # costs minutes rather than the whole board. `;` separates several,
+      # because a mod list is commas. A selector that matches nothing rescores
+      # nothing and says so rather than passing quietly.
       weapon:
-        description: "rescore these weapons whatever the fingerprints say (id, comma-separated)"
+        description: "rescore these rows whatever the fingerprints say — weapon | weapon#mode | weapon#mode:plain | a whole row key; ';' between several"
         type: string
         default: ""
 
-# ONE AT A TIME **PER TRIGGER**, which is two workloads. A scheduled run scores
-# what is NEW — a handful of builds, reusing every stored score — while a push
-# that moves `engine/` makes every row stale and scores the whole library. They
-# differ by three orders of magnitude, and in one group GitHub's single PENDING
-# slot lets the expensive one cancel the cheap one.
+# ONE EXPENSIVE RUN AT A TIME, and only `full` is expensive now. A push and a
+# manual run do the same thing, and in groups of their own they did it AT THE
+# SAME TIME — each asking `max-parallel` of an account ceiling that holds forty,
+# so both ran at half speed to produce one board twice. They share a group.
 #
-# SEPARATE GROUPS ARE NOT PERMISSION TO RUN AT ONCE: forty jobs is the account's
-# whole ceiling, so two rescores would halve each other. `rescore` above is what
-# prevents it — the schedule stands down while the code is moving.
+# THE SCHEDULE KEEPS ITS OWN, because it is the thing that drives convergence:
+# every one of its runs repairs a slice, and standing those down behind a manual
+# rescore would pause the mechanism the board updates by.
 #
 # Splitting is safe because `publish` takes whatever `main` is now, writes the
 # generated files on top and retries three times: two runs landing a board is
 # last-writer-wins BY DESIGN, the same reasoning that made it refuse to rebase.
 concurrency:
-  # TWO WORKLOADS, NOT THREE TRIGGERS. A push and a manual run do the same
-  # expensive thing, and in groups of their own they do it AT THE SAME TIME —
-  # each asking for `max-parallel` of an account ceiling that holds forty, so
-  # both run at half speed to produce the same board twice. They share a group;
-  # the schedule keeps its own, because standing a cheap run down behind an
-  # expensive one is what starved the board before.
   group: board-${{ github.event_name == 'schedule' && 'schedule' || 'rescore' }}
   cancel-in-progress: false
 
@@ -120,12 +116,10 @@ env:
   # dealing the long rows out early is what keeps the last wave short.
   SHARDS: 128
 
-  # HOW MANY WAYS THE PROBE SPLITS. It reproduces one published row per
-  # weapon (~135 of them, ~200 rows) and the whole point is that it is
-  # cheap beside the run it decides: measured locally, a shard of 16 is
-  # 22-42 s of scoring per board, so a job carrying all three finishes in
-  # about two minutes plus a cached build. Sixteen, not 128: past a point
-  # the fixed cost of a runner is the whole bill.
+  # HOW MANY WAYS THE PROBE SPLITS. It reproduces one published row per GROUP —
+  # 237 of them on each board — and names the groups that moved, which is what
+  # a run puts at the head of its slice. Sixteen, not 128: past a point the
+  # fixed cost of a runner is the whole bill.
   VERIFY_SHARDS: 16
 
   # HOW MUCH OF THE PAST EACH RUN REPAIRS, in minutes of measured work.
