@@ -19317,6 +19317,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 85
+    fp: fec227e5c81ffdf2
+    cost: 11.246
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_duration
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 83.66666666666667
     fp: 4c52fcf68e6c069b
     cost: 12.839
@@ -19526,6 +19538,18 @@ entries:
     riven:
       bonuses: [critical_damage, damage, multishot]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 61.793736637976885
+    fp: 95f8583f0b5ec01e
+    cost: 13.896
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_duration
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
@@ -20501,6 +20525,18 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: furis
     mode: base
+    score: 18.60573770439896
+    fp: 95f8583f0b5ec01e
+    cost: 60.063
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_duration
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: base
     score: 18.59872193280109
     fp: 5693bf53a4dc94aa
     cost: 39.152
@@ -20522,6 +20558,18 @@ entries:
     riven:
       bonuses: [cold, damage, multishot]
       malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: base
+    score: 18.2449382284366
+    fp: fec227e5c81ffdf2
+    cost: 25.137
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_duration
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: base
@@ -29135,18 +29183,6 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
-    score: 128.94142158805596
-    fp: 747179d4ff4db981
-    cost: 9.130
-    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, rime_rounds, malignant_force]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_marksmans_hand, latron_prime_critical_parallel]
-    arcanes: [primary_compression]
-    riven:
-      bonuses: [critical_damage, damage, multishot]
-      malus: damage_to_grineer
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
     score: 128.6847593862603
     fp: 50c44b31da4fc974
     cost: 7.787
@@ -29381,18 +29417,6 @@ entries:
     cost: 10.492
     mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, riven, rime_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
-    arcanes: [primary_compression]
-    riven:
-      bonuses: [critical_damage, damage, multishot]
-      malus: damage_to_grineer
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
-    score: 105.03749480082712
-    fp: fe3267624e617ab7
-    cost: 9.045
-    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, rime_rounds, malignant_force]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_swift_punishment, latron_prime_marksmans_hand, latron_prime_critical_parallel]
     arcanes: [primary_compression]
     riven:
       bonuses: [critical_damage, damage, multishot]
