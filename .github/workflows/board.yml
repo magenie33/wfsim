@@ -89,11 +89,10 @@ env:
   # extra shards are the tail, and dealing the long rows out early is what keeps
   # the last wave short.
   FULL_SHARDS: 128
-  # AN ORDINARY RUN IS ~512, and the repair slice is the small half of it: 5,553
-  # rows, of which 984 are the slice and the rest are builds with no score yet.
-  # Splitting that 128 ways pays the fixed cost 128 times to save four minutes a
-  # shard — measured, 845 runner-minutes against 595 at thirty-two, and fewer
-  # waves through the dozen-odd runners a free account is actually granted.
+  # AN ORDINARY RUN IS 5,553 ROWS, and the repair slice is the small half of it:
+  # 984, against ~4,570 builds carrying no score yet. Splitting that 128 ways
+  # pays 2.6 minutes of startup 128 times — 333 minutes of it, against 83 at
+  # thirty-two — through the dozen-odd runners a free account is granted.
   SLICE_SHARDS: 32
 
   # HOW MUCH OF THE PAST EACH RUN REPAIRS, in minutes of measured work.
