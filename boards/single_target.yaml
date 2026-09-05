@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6063
+submissions: 6074
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -9990,6 +9990,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 101.8722508045025
+    fp: 563fcd56c9dc3f85
+    cost: 29.326
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 101.3556188340253
     fp: 78544f016f2a0073
     cost: 30.312
@@ -10055,6 +10068,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 100.28694022451366
+    fp: 1d0de3a4d1dee3b1
+    cost: 32.901
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 100.02407587228477
     fp: 90f85d79422ac681
     cost: 32.044
@@ -10086,6 +10112,32 @@ entries:
     cost: 31.370
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, infected_clip, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 98.39920771882551
+    fp: 4ef16e62f10c7cb4
+    cost: 32.753
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven, high_voltage]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 96.98570840697232
+    fp: ec9eff5792545756
+    cost: 32.168
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
     riven:
@@ -10203,6 +10255,19 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 87.33378679537157
+    fp: 177ca2736aba1282
+    cost: 33.367
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
@@ -10386,6 +10451,32 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 81.25879083689487
+    fp: 1d28f35318dcf76f
+    cost: 45.027
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 81.25879083689487
+    fp: 2c98c7473c7e5f20
+    cost: 61.490
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 80.93138404398776
     fp: 8b70613b6afb204a
     cost: 22.084
@@ -10503,6 +10594,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 78.27140813337779
+    fp: 24786fb7b0caa119
+    cost: 41.540
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 77.94042236537229
     fp: 6bb8db67dda7d38a
     cost: 33.932
@@ -10604,6 +10708,32 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 76.37970471597117
+    fp: 1d28f35318dcf76f
+    cost: 45.086
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 76.37970471597117
+    fp: 2c98c7473c7e5f20
+    cost: 24.761
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -10749,6 +10879,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: burston_prime
     mode: cycle
+    score: 72.71835827877041
+    fp: 1736ba0819935f9f
+    cost: 37.454
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 72.22005608866819
     fp: f3552bb213c57d6e
     cost: 23.737
@@ -10821,6 +10964,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 69.78069330223124
+    fp: 977c580171ccc0b5
+    cost: 64.319
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 69.67659545451549
     fp: 301fb6ea55d39b72
     cost: 63.689
@@ -10885,6 +11041,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 67.58150308624032
+    fp: 197ea23c90ec1b7b
+    cost: 40.555
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 67.28672580300076
     fp: 51765a8c2952f707
     cost: 18.196
@@ -10919,6 +11088,19 @@ entries:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
+    score: 66
+    fp: faac9fc103b8b126
+    cost: 60.176
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     score: 65.62811159039217
@@ -11047,6 +11229,30 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 58.449981494830595
+    fp: 06e1d619cda15503
+    cost: 61.190
+    mods: [amalgam_serration, galvanized_chamber, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, status_chance, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 57.614094704198244
+    fp: afcbcfd1c2ae49fc
+    cost: 57.606
+    mods: [amalgam_serration, galvanized_chamber, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, status_chance, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 56.74039260717269
     fp: f5f2be04816e61aa
     cost: 20.841
@@ -11081,6 +11287,30 @@ entries:
     riven:
       bonuses: [critical_damage, punch_through, toxin]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 56.029765499611784
+    fp: 2f8cfc1230fb201d
+    cost: 56.062
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 56.029765499611784
+    fp: 2f8cfc1230fb201d
+    cost: 53.777
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: weapon_recoil
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -11958,6 +12188,19 @@ entries:
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
+    mode: base
+    score: 34.23999482836435
+    fp: 1736ba0819935f9f
+    cost: 21.759
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
     mode: cycle
     score: 34.15091268106547
     fp: 73f5dce15dcbe343
@@ -12001,6 +12244,19 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 33.68186344587506
+    fp: 1d0de3a4d1dee3b1
+    cost: 7.876
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, primed_cryo_rounds, riven, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
@@ -12102,6 +12358,19 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
+    score: 31.17992696362161
+    fp: 24786fb7b0caa119
+    cost: 14.496
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 30.925409113221058
     fp: e6551e32a534edf3
     cost: 17.745
@@ -12174,6 +12443,32 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 30.230038858667772
+    fp: 1d28f35318dcf76f
+    cost: 17.074
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 30.230038858667772
+    fp: 2c98c7473c7e5f20
+    cost: 14.597
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 29.961168667975606
     fp: a8c438522cb4ff48
     cost: 8.268
@@ -12183,6 +12478,32 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 29.593722752546828
+    fp: 1d28f35318dcf76f
+    cost: 22.356
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 29.593722752546828
+    fp: 2c98c7473c7e5f20
+    cost: 21.602
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
@@ -12337,6 +12658,19 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
+    score: 28.402068473525976
+    fp: 563fcd56c9dc3f85
+    cost: 8.655
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 28.205887597820723
     fp: 3988627e37560093
     cost: 4.156
@@ -12397,6 +12731,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 27.85174017343266
+    fp: faac9fc103b8b126
+    cost: 14.794
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
@@ -12520,6 +12867,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 26.933484093506486
+    fp: ec9eff5792545756
+    cost: 5.887
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 26.798117548759805
     fp: 6ab83bed66bf026b
     cost: 7.464
@@ -12622,6 +12982,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 25.63452926565074
+    fp: 197ea23c90ec1b7b
+    cost: 15.671
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 25.25534512978489
     fp: 6bb8db67dda7d38a
     cost: 21.029
@@ -12683,6 +13056,19 @@ entries:
     riven:
       bonuses: [cold, critical_chance, damage]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 24.63568004024028
+    fp: 977c580171ccc0b5
+    cost: 12.526
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
@@ -12758,6 +13144,19 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, fire_rate, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 23.555859357055002
+    fp: 177ca2736aba1282
+    cost: 8.076
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
@@ -13165,6 +13564,30 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 18.963745911469864
+    fp: 2f8cfc1230fb201d
+    cost: 29.242
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 18.963745911469864
+    fp: 2f8cfc1230fb201d
+    cost: 22.828
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 18.875504356864845
     fp: be197080b340229e
     cost: 21.109
@@ -13252,6 +13675,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 17.952504271806234
+    fp: afcbcfd1c2ae49fc
+    cost: 27.834
+    mods: [amalgam_serration, galvanized_chamber, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, status_chance, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
     score: 17.939666376849797
     fp: f1fbf8a6781803b3
     cost: 12.108
@@ -13263,6 +13698,18 @@ entries:
       bonuses: [critical_chance, damage, fire_rate]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    score: 17.78342404422288
+    fp: 2f8cfc1230fb201d
+    cost: 16.807
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
     score: 17.73755298055676
@@ -14857,6 +15304,28 @@ entries:
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cortege
+    mode: base
+    score: 26.52795248155652
+    fp: 3619cf4b4250c896
+    cost: 6.160
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: fire_rate
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 25.519510754124333
+    fp: a9739b7233c9bf3e
+    cost: 3.051
+    mods: [primed_dual_rounds, critical_focus, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, toxin]
+      malus: zoom
+      rolls: [1.1, 0.9, 0.9]
+  - weapon: cortege
     mode: cycle
     score: 25.095299140610805
     fp: 0888ecb2407b5217
@@ -14877,6 +15346,61 @@ entries:
     riven:
       bonuses: [fire_rate, toxin]
       rolls: [1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 24.333333333333332
+    fp: 3619cf4b4250c896
+    cost: 7.983
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [heat, magazine_capacity, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 24
+    fp: 3619cf4b4250c896
+    cost: 8.218
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, magazine_capacity, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 23.666666666666668
+    fp: b508e62b8ffb46d7
+    cost: 7.512
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [heat, magazine_capacity, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 23.666666666666668
+    fp: 3619cf4b4250c896
+    cost: 7.496
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 23.666666666666668
+    fp: 3619cf4b4250c896
+    cost: 7.131
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [damage, magazine_capacity, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: cortege
     mode: cycle
     score: 23.49860937643971
@@ -14899,6 +15423,28 @@ entries:
       rolls: [1.1, 1.1]
   - weapon: cortege
     mode: cycle
+    score: 23.22865885360166
+    fp: 3619cf4b4250c896
+    cost: 8.306
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [heat, magazine_capacity, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 23.014734986212897
+    fp: b508e62b8ffb46d7
+    cost: 4.444
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: fire_rate
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
     score: 23.01204501616682
     fp: 042f143862a9587f
     cost: 7.651
@@ -14906,6 +15452,39 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
     riven:
       bonuses: [ammo_maximum, critical_damage, damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 22.883777391249314
+    fp: 3619cf4b4250c896
+    cost: 6.324
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, magazine_capacity, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 22.666666666666668
+    fp: 3619cf4b4250c896
+    cost: 4.362
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [damage, magazine_capacity, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 22.609538318313326
+    fp: b508e62b8ffb46d7
+    cost: 4.062
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cortege
@@ -14919,6 +15498,248 @@ entries:
       bonuses: [damage, toxin]
       rolls: [1.1, 0.9]
   - weapon: cortege
+    mode: base
+    score: 22.333333333333332
+    fp: 3619cf4b4250c896
+    cost: 5.384
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 22.215882628360678
+    fp: b508e62b8ffb46d7
+    cost: 8.160
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [heat, magazine_capacity, multishot]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 22
+    fp: cdd705318f5d790a
+    cost: 6.573
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [cold, critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21.666666666666668
+    fp: cdd705318f5d790a
+    cost: 7.369
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [cold, critical_chance, multishot]
+      malus: zoom
+      rolls: [0.9, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21.666666666666668
+    fp: 3619cf4b4250c896
+    cost: 5.319
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [heat, multishot]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21.666666666666668
+    fp: 65cd7b689c18a002
+    cost: 5.740
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21.5591434296506
+    fp: a9739b7233c9bf3e
+    cost: 4.657
+    mods: [primed_dual_rounds, critical_focus, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21.47483939535207
+    fp: cdd705318f5d790a
+    cost: 3.657
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [cold, critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21.333333333333332
+    fp: b508e62b8ffb46d7
+    cost: 6.347
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: zoom
+      rolls: [0.9, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21.333333333333332
+    fp: 3619cf4b4250c896
+    cost: 7.109
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, heat, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21.333333333333332
+    fp: 3619cf4b4250c896
+    cost: 7.597
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21.333333333333332
+    fp: 3619cf4b4250c896
+    cost: 7.328
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [heat, multishot, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21.333333333333332
+    fp: 3619cf4b4250c896
+    cost: 6.966
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [heat, multishot, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21.333333333333332
+    fp: 3619cf4b4250c896
+    cost: 4.950
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [heat, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21.266345281879353
+    fp: 44b200719f1f7252
+    cost: 5.473
+    mods: [primed_dual_rounds, primed_ammo_chain, hollowed_bullets, magnetized_cycle, parallax_scope, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, toxin]
+      malus: zoom
+      rolls: [1.1, 0.9, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21
+    fp: b508e62b8ffb46d7
+    cost: 5.944
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21
+    fp: b508e62b8ffb46d7
+    cost: 7.137
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21
+    fp: cdd705318f5d790a
+    cost: 6.869
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [cold, critical_chance, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21
+    fp: 3619cf4b4250c896
+    cost: 5.857
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, heat, multishot]
+      malus: zoom
+      rolls: [0.9, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21
+    fp: 3619cf4b4250c896
+    cost: 6.587
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, multishot, reload_speed]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 21
+    fp: 3619cf4b4250c896
+    cost: 4.142
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, multishot, reload_speed]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 21
+    fp: 3619cf4b4250c896
+    cost: 6.339
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
     mode: cycle
     score: 20.666666666666668
     fp: 85d2e89f35bf3f67
@@ -14927,11 +15748,33 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cortege
     mode: base
+    score: 20.666666666666668
+    fp: 3619cf4b4250c896
+    cost: 7.939
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, magazine_capacity, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
     score: 20.635804062922276
     fp: 3b38667d540d5665
     cost: 2.499
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: cycle
+    score: 20.48987156159697
+    fp: 3619cf4b4250c896
+    cost: 7.995
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, magazine_capacity, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cortege
     mode: cycle
     score: 20.48579463936725
@@ -14949,6 +15792,17 @@ entries:
     cost: 2.004
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: cycle
+    score: 20.06634386591643
+    fp: 3619cf4b4250c896
+    cost: 5.100
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: fire_rate
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cortege
     mode: base
     score: 20.003519741782423
@@ -14981,6 +15835,17 @@ entries:
     mods: [primed_dual_rounds, critical_focus, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: cortege
+    mode: cycle
+    score: 18.98610799117389
+    fp: 65cd7b689c18a002
+    cost: 5.325
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cortege
     mode: base
     score: 18.849452740687884
     fp: 09c1da1efe8ed0e1
@@ -14989,11 +15854,33 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cortege
     mode: cycle
+    score: 18.775845779474405
+    fp: 44b200719f1f7252
+    cost: 5.410
+    mods: [primed_dual_rounds, primed_ammo_chain, hollowed_bullets, magnetized_cycle, parallax_scope, primed_polar_magazine, riven, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, toxin]
+      malus: zoom
+      rolls: [1.1, 0.9, 0.9]
+  - weapon: cortege
+    mode: cycle
     score: 18.666666666666668
     fp: 09c1da1efe8ed0e1
     cost: 2.879
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: cycle
+    score: 18.367728238367174
+    fp: b508e62b8ffb46d7
+    cost: 4.809
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: fire_rate
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cortege
     mode: cycle
     score: 18.333333333333332
@@ -15016,12 +15903,26 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cortege
+    mode: cycle
+    score: 17.900369280234596
+    fp: 92bd8b4f7cb7ff2d
+    cost: 1.582
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: cortege
     mode: base
     score: 17.666666666666668
     fp: c70cc32fd687ac3e
     cost: 2.649
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: base
+    score: 17.333333333333332
+    fp: 92bd8b4f7cb7ff2d
+    cost: 2.489
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
   - weapon: cortege
     mode: cycle
     score: 17.32993378101369
@@ -15037,6 +15938,127 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cortege
+    mode: cycle
+    score: 16.084953573971724
+    fp: b508e62b8ffb46d7
+    cost: 6.708
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 16
+    fp: b508e62b8ffb46d7
+    cost: 7.264
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 15.856777077621887
+    fp: b508e62b8ffb46d7
+    cost: 6.494
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 15.666666666666666
+    fp: b508e62b8ffb46d7
+    cost: 6.749
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 15.666666666666666
+    fp: b508e62b8ffb46d7
+    cost: 6.966
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 15.666666666666666
+    fp: b508e62b8ffb46d7
+    cost: 6.504
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 15.666666666666666
+    fp: 3619cf4b4250c896
+    cost: 6.866
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 15.666666666666666
+    fp: 3619cf4b4250c896
+    cost: 7.287
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 15.666666666666666
+    fp: 3619cf4b4250c896
+    cost: 6.807
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate, status_chance]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: cycle
+    score: 15.666666666666666
+    fp: 3619cf4b4250c896
+    cost: 7.089
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate, status_chance]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    score: 15.243491665627104
+    fp: 0416df51030c9a63
+    cost: 6.206
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, parallax_scope, riven, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
     mode: base
     score: 14.666666666666666
     fp: 847358222168a878
@@ -15050,6 +16072,17 @@ entries:
     cost: 2.715
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: cycle
+    score: 13.509862596693935
+    fp: 0416df51030c9a63
+    cost: 5.790
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, parallax_scope, riven, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cyanex
     mode: alternate
     score: 11.293474744632109
@@ -36969,6 +38002,19 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 51.26517386301951
+    fp: f15534f200ffeda3
+    cost: 42.755
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -37019,6 +38065,19 @@ entries:
     riven:
       bonuses: [critical_chance, damage]
       rolls: [1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 50.53768857706783
+    fp: 2f8cfc1230fb201d
+    cost: 38.143
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -42644,6 +43703,19 @@ entries:
   - weapon: burston_prime
     mode: base
     listed: false
+    score: 17.29213572050424
+    fp: f15534f200ffeda3
+    cost: 22.551
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, gilded_truth, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
     score: 17.288499214858597
     fp: 301fb6ea55d39b72
     cost: 23.787
@@ -42971,6 +44043,19 @@ entries:
     riven:
       bonuses: [critical_damage, damage, fire_rate]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 16.666666666666668
+    fp: 06e1d619cda15503
+    cost: 24.365
+    mods: [amalgam_serration, galvanized_chamber, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, status_chance, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -47053,6 +48138,19 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.666666666666666
+    fp: 04d1cc34d05ec690
+    cost: 15.123
+    mods: [amalgam_serration, critical_delay, vital_sense, gilded_truth, magnetic_capacity, high_voltage, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, status_chance, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -48816,6 +49914,18 @@ entries:
       bonuses: [critical_chance, critical_damage, damage]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: cortege
+    mode: cycle
+    listed: false
+    score: 11.333333333333334
+    fp: b508e62b8ffb46d7
+    cost: 2.653
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     listed: false
@@ -50132,6 +51242,18 @@ entries:
     riven:
       bonuses: [critical_chance, multishot, status_chance]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: cortege
+    mode: base
+    listed: false
+    score: 10.335770726709796
+    fp: b508e62b8ffb46d7
+    cost: 3.244
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -52296,6 +53418,14 @@ entries:
     cost: 3.004
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: cortege
+    mode: base
+    listed: false
+    score: 8.994512855325635
+    fp: e776b1d10e2ce12d
+    cost: 2.584
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: laetum
     mode: base
     listed: false
@@ -52805,6 +53935,14 @@ entries:
     riven:
       bonuses: [damage, multishot, status_duration]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: cortege
+    mode: cycle
+    listed: false
+    score: 8.666666666666666
+    fp: e776b1d10e2ce12d
+    cost: 1.984
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -52852,6 +53990,14 @@ entries:
       bonuses: [critical_damage, multishot, status_chance]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    listed: false
+    score: 8.646745595927815
+    fp: 1fa55aa715ca6008
+    cost: 2.285
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
   - weapon: coda_synapse
     mode: base
     listed: false
@@ -52870,6 +54016,14 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, jolt, pistol_pestilence, scorch]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
+  - weapon: cortege
+    mode: cycle
+    listed: false
+    score: 8.635870737441014
+    fp: 1fa55aa715ca6008
+    cost: 2.403
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -54027,6 +55181,14 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cortege
+    mode: base
+    listed: false
+    score: 8
+    fp: 0cb430948e468020
+    cost: 2.543
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, archgun_ace, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -54211,6 +55373,14 @@ entries:
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, accelerated_isotope, magnetic_might, heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
+  - weapon: cortege
+    mode: cycle
+    listed: false
+    score: 7.9063046075459145
+    fp: 0cb430948e468020
+    cost: 2.712
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, archgun_ace, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: torid
     mode: cycle
     listed: false
