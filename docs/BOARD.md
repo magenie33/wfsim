@@ -251,7 +251,7 @@ crosses all of it in days, reporting a row that is not what this code computes
 without rescoring anything.
 
 TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
-(asked and answered,). An untouched row is valid forever; a row
+(asked and answered). An untouched row is valid forever; a row
 whose engine moved is wrong immediately, not in an hour. A cooldown would be
 both too slow and too fast at once.
 
@@ -281,6 +281,34 @@ is stored for that weapon and nothing else, so every other row still reuses and
 the fix costs minutes. The rolls go with the scores: a riven row's rolls are the
 argmax of its score, so keeping them would re-measure the corner a stale number
 chose. A misspelled id rescores nothing and says so rather than passing quietly.
+
+### Which rows carry the thing you just fixed
+
+`scripts/board_select.py` answers that, and prints the selector above. The
+button names rows; this finds their names. Nothing automatic decides the scope
+any more, so the scope has to be findable by hand, and a fingerprint cannot help
+here — it says whether a FILE moved, where the question is which BUILDS contain
+a thing.
+
+```
+python scripts/board_select.py --element heat --selectors
+python scripts/board_select.py --mod 'galvanized_*' --board single_target --plain
+python scripts/board_select.py --weapon 'torid*' --mode cycle --rows
+```
+
+`--element` reads `data/` rather than a list: every mod, arcane, evolution and
+weapon whose file grants it, so a card added tomorrow is found by the same walk.
+The rest are globs, repeatable, any-of within a flag and all-of across them.
+
+IT PRICES THE ANSWER BEFORE THE BUTTON. Every row records what it cost to
+measure, so the summary is rows, published rows, groups and CPU minutes — `heat`
+reaches 14,664 of 22,977 rows and 3,578 CPU minutes, `heat` on one board and
+without rivens reaches 548. That difference is a decision, and it belongs on
+screen rather than in the bill afterwards.
+
+BATCH THE FIXES, THEN RESCORE ONCE. Ten corrections landing separately are ten
+rescores of overlapping rows; landing together they are one. That is the whole
+reason this prints a selector instead of starting anything.
 
 ### The audit: does the FILE still say what the code computes
 

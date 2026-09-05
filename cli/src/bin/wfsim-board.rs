@@ -2589,4 +2589,53 @@ mod page_row_tests {
             assert!(v.get(k).is_some(), "{k} is missing");
         }
     }
+
+    /// THE BACKSTOP REACHES EVERY PRECISION, down to one row.
+    ///
+    /// It is the button for the case nothing automatic covers, so what it can
+    /// NAME is the whole of its worth: a weapon, one of that weapon's modes,
+    /// one riven category within a mode, or a single build. Each line below is
+    /// one of those four, and the negatives are the ways a looser match would
+    /// quietly rescore rows nobody asked for.
+    #[test]
+    fn a_selector_names_rows_at_every_precision() {
+        let felarx = "felarx|galvanized_chamber,serration#cycle";
+        let prime = "felarx_prime|galvanized_chamber,serration#cycle";
+        let riven = "felarx|riven,serration#cycle";
+        let base = "felarx|galvanized_chamber,serration#base";
+
+        let hits = |sel: &str, key: &str| Selector::parse(sel).unwrap().matches(key);
+
+        // A weapon: every mode, every build.
+        assert!(hits("felarx", felarx));
+        assert!(hits("felarx", base));
+        // AND NOT THE PRIME. A prefix that stops mid-component names a weapon
+        // whose rows the mechanic never touched, and the operator paying for
+        // the rescore has no way to see it happened.
+        assert!(!hits("felarx", prime));
+
+        // One mode of it.
+        assert!(hits("felarx#cycle", felarx));
+        assert!(!hits("felarx#cycle", base));
+
+        // One riven category within that mode.
+        assert!(hits("felarx#cycle:plain", felarx));
+        assert!(!hits("felarx#cycle:plain", riven));
+        assert!(hits("felarx#cycle:riven", riven));
+        assert!(!hits("felarx#cycle:riven", felarx));
+
+        // A single build, and a single row of it.
+        assert!(hits("felarx|galvanized_chamber,serration", felarx));
+        assert!(hits("felarx|galvanized_chamber,serration", base));
+        assert!(!hits("felarx|galvanized_chamber,serration#base", felarx));
+        assert!(!hits("felarx|galvanized_chamber", felarx));
+
+        // SEPARATED BY `;`, because a mod list is commas: splitting on those
+        // would leave the backstop unable to name a build at all.
+        let many: Vec<Selector> = "felarx#base;torid#cycle".split(';')
+            .filter_map(Selector::parse)
+            .collect();
+        assert_eq!(many.len(), 2);
+        assert!(many.iter().any(|s| s.matches(base)));
+    }
 }
