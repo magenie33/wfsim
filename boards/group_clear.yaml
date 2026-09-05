@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6174
+submissions: 6175
 entries:
   - weapon: acceltra_prime
     mode: base

@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6174
+submissions: 6175
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -11329,7 +11329,7 @@ entries:
     mode: cycle
     score: 55.876061777596895
     fp: f823d837ccda6874
-    cost: 25.872
+    cost: 25.289
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
@@ -22443,7 +22443,7 @@ entries:
     mode: base
     score: 29.03211969819181
     fp: 672f71f314b00fe4
-    cost: 5.718
+    cost: 5.969
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22502,7 +22502,7 @@ entries:
     mode: base
     score: 28.035057752893096
     fp: 6d02124516b9156f
-    cost: 7.560
+    cost: 7.030
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22514,7 +22514,7 @@ entries:
     mode: base
     score: 28.01756693995045
     fp: 13e6c61ea4dad744
-    cost: 8.403
+    cost: 8.507
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22550,7 +22550,7 @@ entries:
     mode: base
     score: 27.678134779315084
     fp: d44b762e4a1759db
-    cost: 5.434
+    cost: 5.541
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22585,7 +22585,7 @@ entries:
     mode: base
     score: 27.331920277874694
     fp: ce3865386e9371fe
-    cost: 5.807
+    cost: 6.016
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -22597,7 +22597,7 @@ entries:
     mode: base
     score: 27.138879771327453
     fp: 7176adc2972bbb51
-    cost: 5.660
+    cost: 5.441
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -22621,7 +22621,7 @@ entries:
     mode: base
     score: 26.413482300879096
     fp: 6c543cd7e623f071
-    cost: 7.956
+    cost: 6.645
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, riven, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -22673,7 +22673,7 @@ entries:
     mode: base
     score: 25.620909323221763
     fp: 87cfe2188d6b9c9f
-    cost: 5.510
+    cost: 5.676
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, riven, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -22697,7 +22697,7 @@ entries:
     mode: base
     score: 25.289707769900264
     fp: 8ff3dbb8a9892562
-    cost: 3.087
+    cost: 5.475
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, hollow_point, riven, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -23566,7 +23566,7 @@ entries:
     mode: base
     score: 17.969478808789628
     fp: d03d6cd341c1d526
-    cost: 2.717
+    cost: 3.433
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
@@ -23806,7 +23806,7 @@ entries:
     mode: base
     score: 15.933702928937768
     fp: 0fa3deed74697b97
-    cost: 2.356
+    cost: 2.323
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -23963,7 +23963,7 @@ entries:
     mode: base
     score: 12.955426917242246
     fp: b3e248026611b3e5
-    cost: 2.533
+    cost: 2.509
     mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, jolt, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -24008,7 +24008,7 @@ entries:
     mode: base
     score: 0.4177945379305171
     fp: 5a0cc2492095d269
-    cost: 2.172
+    cost: 2.211
     exilus: terminal_velocity
     mods: [galvanized_chamber, heavy_caliber, primed_firestorm, primed_magazine_warp, nightwatch_napalm, rifle_elementalist, primed_cryo_rounds, riven]
     arcanes: [primary_overcharge]
@@ -24020,7 +24020,7 @@ entries:
     mode: base
     score: 0.417621952588588
     fp: 282fecd14d180c03
-    cost: 2.562
+    cost: 3.012
     exilus: terminal_velocity
     mods: [galvanized_chamber, heavy_caliber, primed_firestorm, primed_magazine_warp, nightwatch_napalm, vile_acceleration, primed_cryo_rounds, riven]
     arcanes: [primary_overcharge]
@@ -24032,7 +24032,7 @@ entries:
     mode: base
     score: 8.321260582659706
     fp: 09237d19d47e8283
-    cost: 4.672
+    cost: 2.633
     exilus: vigilante_supplies
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
@@ -24041,7 +24041,7 @@ entries:
     mode: base
     score: 4.91796560975606
     fp: 09237d19d47e8283
-    cost: 3.266
+    cost: 4.266
     exilus: vigilante_supplies
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
@@ -24058,7 +24058,7 @@ entries:
     mode: base
     score: 4.2851956077273305
     fp: 09237d19d47e8283
-    cost: 4.286
+    cost: 2.483
     exilus: vigilante_supplies
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
@@ -24067,7 +24067,7 @@ entries:
     mode: base
     score: 4.260155293772411
     fp: 09237d19d47e8283
-    cost: 4.080
+    cost: 4.209
     exilus: vigilante_supplies
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
@@ -24076,7 +24076,7 @@ entries:
     mode: base
     score: 4.254833107921798
     fp: 09237d19d47e8283
-    cost: 4.231
+    cost: 3.053
     exilus: vigilante_supplies
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
@@ -24085,7 +24085,7 @@ entries:
     mode: base
     score: 4.254833107921798
     fp: 09237d19d47e8283
-    cost: 3.183
+    cost: 3.420
     exilus: vigilante_supplies
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
@@ -24940,7 +24940,7 @@ entries:
     mode: cycle
     score: 45.96113910372287
     fp: 0431949082abffac
-    cost: 27.895
+    cost: 39.003
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
@@ -25121,7 +25121,7 @@ entries:
     mode: cycle
     score: 42.786080380652656
     fp: 64abfada644ab5a1
-    cost: 27.337
+    cost: 20.206
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_elemental_excess, laetum_devouring_attrition]
@@ -25167,7 +25167,7 @@ entries:
     mode: cycle
     score: 41.95008042710577
     fp: 1a46b7b70cb8eefc
-    cost: 30.822
+    cost: 31.265
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, accelerated_isotope, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
@@ -25243,7 +25243,7 @@ entries:
     mode: cycle
     score: 40.97144103419811
     fp: 2ff17c9fe36f62c3
-    cost: 39.363
+    cost: 38.979
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
@@ -25382,7 +25382,7 @@ entries:
     mode: cycle
     score: 39.09138795556042
     fp: 511743cfd9377fb1
-    cost: 27.814
+    cost: 24.147
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, accelerated_isotope, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_elemental_excess, laetum_devouring_attrition]
@@ -26059,7 +26059,7 @@ entries:
     mode: base
     score: 16.74102986222271
     fp: 0431949082abffac
-    cost: 6.659
+    cost: 6.555
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
@@ -26378,7 +26378,7 @@ entries:
     mode: base
     score: 14.917648698702088
     fp: 1a46b7b70cb8eefc
-    cost: 5.500
+    cost: 4.120
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, accelerated_isotope, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
@@ -26541,7 +26541,7 @@ entries:
     mode: base
     score: 13.79195988174054
     fp: 2ff17c9fe36f62c3
-    cost: 6.739
+    cost: 5.712
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
@@ -26693,7 +26693,7 @@ entries:
     mode: base
     score: 12.995016150126737
     fp: 64abfada644ab5a1
-    cost: 3.851
+    cost: 4.897
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_elemental_excess, laetum_devouring_attrition]
@@ -26936,7 +26936,7 @@ entries:
     mode: base
     score: 11.666890475622985
     fp: 511743cfd9377fb1
-    cost: 4.056
+    cost: 4.147
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, accelerated_isotope, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_elemental_excess, laetum_devouring_attrition]
@@ -27109,7 +27109,7 @@ entries:
     mode: base
     score: 28.05790568123951
     fp: e92ac20580812af7
-    cost: 10.339
+    cost: 10.519
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -27120,7 +27120,7 @@ entries:
     mode: base
     score: 26.186244980756186
     fp: e92ac20580812af7
-    cost: 10.023
+    cost: 9.876
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -27131,7 +27131,7 @@ entries:
     mode: base
     score: 22.292844891193084
     fp: e92ac20580812af7
-    cost: 5.715
+    cost: 10.020
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -27142,7 +27142,7 @@ entries:
     mode: base
     score: 22.021731174214892
     fp: e92ac20580812af7
-    cost: 10.095
+    cost: 10.254
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -27371,7 +27371,7 @@ entries:
     mode: base
     score: 14.910570127407514
     fp: 7688fed66247c42b
-    cost: 3.088
+    cost: 4.032
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -27627,7 +27627,7 @@ entries:
     mode: base
     score: 13.292062417832085
     fp: 2824c20fd39747f0
-    cost: 3.671
+    cost: 3.791
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -27781,7 +27781,7 @@ entries:
     mode: alternate
     score: 9.360698473001047
     fp: e92ac20580812af7
-    cost: 1.949
+    cost: 1.987
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -27813,7 +27813,7 @@ entries:
     mode: alternate
     score: 7.666666666666667
     fp: e92ac20580812af7
-    cost: 1.608
+    cost: 1.594
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -27824,7 +27824,7 @@ entries:
     mode: alternate
     score: 7.241532433631222
     fp: 7688fed66247c42b
-    cost: 0.803
+    cost: 0.457
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -27905,7 +27905,7 @@ entries:
     mode: alternate
     score: 6.814013804713495
     fp: e92ac20580812af7
-    cost: 1.473
+    cost: 1.492
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -27969,7 +27969,7 @@ entries:
     mode: alternate
     score: 6.276639670694872
     fp: e92ac20580812af7
-    cost: 1.341
+    cost: 1.069
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -28184,7 +28184,7 @@ entries:
     mode: alternate
     score: 5.377597418636699
     fp: 2824c20fd39747f0
-    cost: 0.730
+    cost: 0.662
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -28360,7 +28360,7 @@ entries:
     mode: alternate
     score: 4.700500985051016
     fp: c6441e7e8b894c00
-    cost: 0.817
+    cost: 0.489
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, charged_bullets, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -28556,7 +28556,7 @@ entries:
     mode: alternate
     score: 4.022847681527162
     fp: 2e499f21daccce48
-    cost: 0.581
+    cost: 0.651
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, electrified_barrel, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -47879,7 +47879,7 @@ entries:
     listed: false
     score: 15.349949555232767
     fp: f823d837ccda6874
-    cost: 7.841
+    cost: 6.041
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
@@ -51396,7 +51396,7 @@ entries:
     listed: false
     score: 12.353897821655407
     fp: a88cdb585afc1641
-    cost: 2.334
+    cost: 2.255
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, jolt, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -53561,7 +53561,7 @@ entries:
     listed: false
     score: 10.859010173206345
     fp: c6441e7e8b894c00
-    cost: 4.003
+    cost: 4.199
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, charged_bullets, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: latron_prime
@@ -56142,7 +56142,7 @@ entries:
     listed: false
     score: 9.294129354891519
     fp: 2e499f21daccce48
-    cost: 2.866
+    cost: 3.837
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, electrified_barrel, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: kunai
@@ -58926,7 +58926,7 @@ entries:
     listed: false
     score: 7.69561104328334
     fp: c7a47da271d2329e
-    cost: 2.828
+    cost: 2.405
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_bulwark, secondary_enervate]
   - weapon: larkspur_prime
@@ -58934,7 +58934,7 @@ entries:
     listed: false
     score: 7.69561104328334
     fp: ea45bf616d4dbbc4
-    cost: 2.966
+    cost: 2.091
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_overcharge, secondary_enervate]
   - weapon: burston_prime
@@ -62556,7 +62556,7 @@ entries:
     listed: false
     score: 6
     fp: d1054ce63bd8fff9
-    cost: 2.863
+    cost: 2.273
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, charged_bullets, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_overcharge, cascadia_flare]
   - weapon: laetum
@@ -62896,7 +62896,7 @@ entries:
     listed: false
     score: 5.8312661475919425
     fp: 26be90026ba9fcf6
-    cost: 2.508
+    cost: 2.597
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_bulwark, secondary_fortifier]
   - weapon: torid
@@ -84448,7 +84448,7 @@ entries:
     listed: false
     score: 0.11733719057606344
     fp: 9263e4cb7e0b95cc
-    cost: 1.037
+    cost: 0.796
     exilus: terminal_velocity
     mods: [amalgam_serration, galvanized_chamber, heavy_caliber, primed_firestorm, primed_magazine_warp, vile_acceleration, primed_cryo_rounds, riven]
     arcanes: [primary_overcharge]
