@@ -23,6 +23,15 @@
     // Real-path routing: /weapons/<Wiki_Name> is a client-side route — any
     // unmatched path serves index.html and app.js's router resolves it.
     "not_found_handling": "single-page-application",
+    // THE ADDRESS IS THE ONE WITHOUT THE SLASH, everywhere: the wiki page name
+    // it mirrors, the canonical each page declares, every row of sitemap.xml,
+    // and every link app.js writes. The default is `auto-trailing-slash`, which
+    // 307s all 390 of those to a slashed twin — so each page's canonical named
+    // a URL that redirects, and a TEMPORARY redirect is a search engine being
+    // told not to move the signals across. This serves the declared address
+    // and redirects the twin, which is the direction the whole site already
+    // points.
+    "html_handling": "drop-trailing-slash",
     // The api is the one thing that must NOT fall through to the SPA.
     "run_worker_first": ["/api/*"]
   },
