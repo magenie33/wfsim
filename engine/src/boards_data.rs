@@ -264,21 +264,6 @@ pub struct BoardState {
     /// rather than as 1970.
     #[serde(default)]
     pub scored_at_epoch_seconds: u64,
-    /// WHERE THE NEXT REPAIR SLICE STARTS, as an index into this board's
-    /// unverified rows.
-    ///
-    /// A run repairs a BOUNDED slice and the next one has to start where it
-    /// stopped, so the offset advances by the rows actually taken and is stored
-    /// rather than derived. Deriving it from the run number is what a run
-    /// number cannot do: the slice is ~382 rows wide and the number steps by
-    /// one, so consecutive runs re-fought the same rows and a board of 7,659
-    /// would need 7,659 runs to cross itself once.
-    ///
-    /// It lives HERE because this file moves no number (`data_fingerprint`)
-    /// and wakes no run (`paths-ignore`) — a cursor that did either would pay
-    /// for itself in rescores.
-    #[serde(default)]
-    pub refresh_cursor: usize,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]

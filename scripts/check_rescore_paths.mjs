@@ -82,9 +82,9 @@ for (const wfName of ["board.yml", "audit.yml"]) {
 // Leaving the backlog unbounded is what kept the board from publishing for 35
 // hours — a run had 4,570 never-scored rows to clear before `publish` assembled
 // anything, and was cancelled before it got there, every run green.
-const scoring = wf.filter((l) => /(slice|SLICE)="--refresh/.test(l));
+const scoring = wf.filter((l) => /(slice|SLICE)="--new-limit/.test(l));
 check(scoring.length > 0
-  && scoring.every((l) => l.includes("--new-limit") && l.includes("--deadline")),
+  && scoring.every((l) => l.includes("--deadline")),
   `both backlogs are bounded, and the clock is behind them (${scoring.length} scoring call${scoring.length === 1 ? "" : "s"})`,
   "a run must bound its repair slice, its never-scored rows AND its wall clock: "
     + "the first is spent in measured seconds, the second can only COUNT rows "
@@ -110,17 +110,6 @@ const verifies = wf.filter((l) => l.includes("--verify"));
 check(verifies.length === 0, "the board does not stop to verify itself",
   `the pipeline re-fights published rows (${verifies.map((l) => l.trim()).join(" | ")}) `
     + "instead of leaving that to audit.yml");
-
-// THE REPAIR SLICE ADVANCES BY WHAT IT TOOK, and the workflow may not say
-// otherwise. `--refresh-from` pins the offset, and pinning it to the run number
-// is the shape that stalled the board for 35 hours: a slice is hundreds of rows
-// wide and the run number steps by one, so consecutive runs re-fought the same
-// rows and a board of 7,659 would have needed 7,659 runs to cross itself once.
-// The cursor in `data/board_state.yaml` is the only source.
-const pinned = wf.filter((l) => l.includes("--refresh-from"));
-check(pinned.length === 0, "the repair slice starts where the last one stopped",
-  `the workflow pins the offset (${pinned.map((l) => l.trim()).join(" | ")}) instead of `
-    + "letting it come from the stored cursor");
 
 console.log(NL + (bad ? `${bad} failed` : "only the clock and a person start a board run"));
 process.exit(bad ? 1 : 0);

@@ -5,7 +5,7 @@
 #
 # THE CLOCK IS THE ONLY AUTOMATIC TRIGGER. A push does not wake the board, and
 # that is deliberate: under convergence a pushed run does exactly what the next
-# scheduled one does — score what is NEW, repair `REFRESH_MINUTES` of what this
+# scheduled one does — score what is NEW, repair what this
 # generation has not verified, publish — so it duplicates a run that is coming
 # anyway while competing for the same forty slots. Measured over 95 runs: 21 of
 # 22 pushed runs were cancelled by the next push, and the board published
@@ -95,25 +95,15 @@ env:
   # thirty-two — through the dozen-odd runners a free account is granted.
   SLICE_SHARDS: 32
 
-  # HOW MUCH OF THE PAST EACH RUN REPAIRS, in minutes of measured work, and
-  # HOW MANY NEVER-SCORED ROWS IT TAKES ON. Two budgets because there are two
-  # backlogs: rows the board holds under an older generation, and builds it has
-  # no score for at all. Leaving the second unbounded is what kept the board
-  # from publishing — 4,570 rows a run had to clear before `publish` assembled
-  # anything.
-  #
-  # A RUN HAS TO FIT INSIDE THE CADENCE THAT STARTS THE NEXT ONE: GitHub keeps
-  # one pending run and cancels the rest. Together these come to ~940 rows,
-  # about ten minutes of scoring a shard at `SLICE_SHARDS`.
-  REFRESH_MINUTES: 15
+  # HOW MANY NEVER-SCORED ROWS A RUN TAKES ON. A count, because a row nobody
+  # has scored has no cost to spend — and counted BEFORE the shard filter, so
+  # every shard stops at the same row and they agree on the deal.
   NEW_ROWS: 150
-  # …AND THE CLOCK BEHIND BOTH, because only one of them predicts anything. A
-  # repair is spent in seconds the last run MEASURED; a never-scored row has no
-  # cost, so `NEW_ROWS` can only count — and rows differ 79x, which makes 150 of
-  # them nine minutes or fifty depending on which builds arrived. The deadline
-  # stops taking NEW work when the time is up, and only new work: a row not
-  # taken is one that was not on the board anyway, where a repair not taken is
-  # one that would vanish from it.
+  # …AND THE CLOCK BEHIND IT, which is the only bound on a REPAIR. There is no
+  # slice and no cursor: a repaired row leaves the stale set, so a run walking
+  # it from the top converges, and what a run does not reach keeps the number
+  # it has until the next one — the assembly publishes a stale row rather than
+  # dropping it, which is what made a wall-clock bound safe here at all.
   SCORE_DEADLINE_MINUTES: 12
 
 jobs:
@@ -292,7 +282,7 @@ jobs:
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
           # THE SAME SLICE THE SCORERS WILL TAKE, or this step counts work the
           # run is not going to do and the gate below reads it as busy.
-          SLICE="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
+          SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
           if [ "${{ inputs.full }}" = "true" ]; then SLICE=""; fi
           todo=0
           for f in boards/*.yaml; do
@@ -375,15 +365,13 @@ jobs:
             id=$(basename "$f" .yaml)
             prior=""
             [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
-            # THE SLICE THIS RUN REPAIRS, and `full` takes none because it is
-            # already fighting everything. Where the slice STARTS is the cursor
-            # the last run stored in `data/board_state.yaml`, advanced by the
-            # rows it took — the run number cannot do that job, because it steps
-            # by one where a slice is hundreds of rows wide, and the board would
-            # re-fight what it just repaired.
+            # WHAT THIS RUN TAKES ON, and `full` takes no bound because it is
+            # already fighting everything. No slice and no cursor: a repaired
+            # row leaves the stale set, so walking it from the top converges,
+            # and the CLOCK is what says when to stop.
             slice=""
             if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
-              slice="--refresh $(( REFRESH_MINUTES * 60 )) --new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
+              slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
             fi
             ./target/release/wfsim-board "$id" \
               $prior $FORCE \

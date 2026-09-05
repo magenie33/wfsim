@@ -261,31 +261,23 @@ TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 moved is wrong immediately, not in an hour. A cooldown would be both too slow
 and too fast at once.
 
-**TWO BACKLOGS, AND A RUN BOUNDS BOTH.** Rows the board holds under an older
-generation are one; builds it has no score for at all are the other, and they
-are not the same size. Measured against the submissions the pipeline is handed:
-984 rows of repair against **4,570 never scored** — 1,523 on each of the three
-boards. `--refresh` bounds the first and `--new-limit` the second, and leaving
-either unbounded means a run that cannot finish inside the cadence that starts
-the next one. `check_rescore_paths.mjs` refuses a scoring call missing either.
+**TWO BACKLOGS, AND ONE BOUND.** Rows the board holds under an older data
+generation are one; builds it has no score for at all are the other. Measured
+against the submissions the pipeline is handed: 984 rows of repair against
+**4,570 never scored** — 1,523 on each of the three boards.
 
-**A BUDGET PREDICTS; A DEADLINE GUARANTEES**, and only one of the two backlogs
-can be predicted. A repair is spent in seconds the LAST run measured, so it
-self-corrects. A never-scored row has no cost, so `NEW_ROWS` can only count —
-and rows differ **79x**: on a published board the median is 3.6 s, the ninetieth
-percentile 16.9, the ninety-ninth 65.4 and the worst 281. A hundred and fifty of
-them is nine minutes or fifty, depending on which builds arrived.
+`NEW_ROWS` counts the second, because a row nobody has scored has no cost to
+spend, and it is counted BEFORE the shard filter so every shard stops at the
+same row and they agree on the deal. `SCORE_DEADLINE_MINUTES` bounds everything,
+including repairs.
 
-`SCORE_DEADLINE_MINUTES` is what makes it a promise. When the clock runs out the
-run stops taking on NEW rows — **and only new ones**, which is the whole safety
-argument: a new row not taken is a row that was not on the board anyway, where a
-repair not taken is a row that would VANISH from it. The predictable half is the
-one that must finish. The run says which bound stopped it, `count` or `clock`.
-
-A RUN THAT DEFERS ROWS IS NOT A RUN THAT FAILED. It publishes a board with more
-rows than the last one had, and says how many are left; the count falling run
-over run is the board catching up. At `NEW_ROWS: 150` a backlog of 1,523 clears
-in about ten runs, and every one of them publishes.
+**THERE IS NO REPAIR SLICE AND NO CURSOR.** A repaired row leaves the stale set,
+so a run that walks it from the top converges; what a run does not reach keeps
+the number it has until the next one. That is safe only because the two readers
+of a stale row now see opposite things — the pass that can REFIGHT it sees it
+missing and does, the pass that only ASSEMBLES sees it and keeps it — so a
+corrected data file never takes a published row off the board. Handing both the
+same map is what made a slice necessary in the first place.
 
 **A PUSH NEVER RESCORES THE BOARD, AND THE BOARD CONVERGES INSTEAD.** A
 fingerprint difference says a stored score is UNVERIFIED under this generation,
@@ -293,28 +285,6 @@ not that it is wrong. So every run scores a bounded share of what is NEW and
 repairs a BOUNDED SLICE of what is unverified — `REFRESH_MINUTES` of measured work, walked in `fp`
 order. Thirty minutes a run, three runs an hour, is under four days to cross all
 8,008 and under 4% of a day's free CPU.
-
-**WHERE THE SLICE STARTS IS A STORED CURSOR**, `refresh_cursor` in
-`data/board_state.yaml`, advanced by the rows the run actually took. Nothing
-else can do that job: the slice is hundreds of rows wide and measured at 382 on
-`single_target`, so an offset that steps by one — the run number — hands the
-next run the same rows again, and a board of 7,659 needs 7,659 runs to cross
-itself once instead of about twenty-seven. It stalled for 35 hours that way,
-with every run green. `check_rescore_paths.mjs` refuses a pinned offset.
-
-Every shard of a run reads the same committed file, so they agree on the slice
-without being told. The cursor lives in that file because it moves no number
-(`data_fingerprint`) and wakes no run (`paths-ignore`) — a cursor that did
-either would pay for itself in rescores. A run that takes no slice leaves it
-where it was rather than resetting the rotation to the top.
-
-The slice is one set for both kinds of staleness, because the repair is the
-same: a row whose own DATA moved and a row whose CODE fingerprint moved are both
-unverified, and telling `--refresh` about them separately would be two lists
-where one will do. The slice walks them in `fp` order and nothing reorders it:
-a priority hint is what the group probe cost 25 minutes of wall clock to
-produce, and the rows it would have promoted are repaired within the same
-crossing anyway.
 
 The alternative was to treat unverified as wrong, and that is what it cost: over
 one day, five cancelled full rescores, thousands of CPU minutes, and **the board

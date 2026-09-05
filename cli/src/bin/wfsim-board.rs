@@ -206,8 +206,8 @@ const BOARD_STATE: &str = "data/board_state.yaml";
 /// that can disagree with the writer. Read from DISK rather than from the
 /// compiled-in copy, because publish rewrites the file after the binary was
 /// built and the cursor has to be the one the last run actually stored.
-fn stored_state() -> std::collections::BTreeMap<String, [usize; 5]> {
-    let mut state: std::collections::BTreeMap<String, [usize; 5]> = Default::default();
+fn stored_state() -> std::collections::BTreeMap<String, [usize; 4]> {
+    let mut state: std::collections::BTreeMap<String, [usize; 4]> = Default::default();
     let text = std::fs::read_to_string(BOARD_STATE).unwrap_or_default();
     let mut cur = String::new();
     for line in text.lines() {
@@ -225,7 +225,6 @@ fn stored_state() -> std::collections::BTreeMap<String, [usize; 5]> {
                     "listed" => e[1] = n,
                     "held" => e[2] = n,
                     "scored_at_epoch_seconds" => e[3] = n,
-                    "refresh_cursor" => e[4] = n,
                     _ => {}
                 }
             }
@@ -607,7 +606,10 @@ struct Prior {
     /// row this run had to fight, which is how one data correction became a
     /// full rescore. Kept, the run can fight a BOUNDED slice of them and leave
     /// the rest holding what they have until their turn comes.
-    stale_keys: Vec<(String, f64)>,
+    /// WHAT A STALE ROW LAST SCORED, for the assembly alone — see the split in
+    /// `reuse_prior`. Never merged into `scores`: a run that can refight the
+    /// row has to see it missing.
+    stale_scores: std::collections::HashMap<String, f64>,
 }
 
 /// THERE IS NO CODE FINGERPRINT, and there never honestly could be. A hash of
@@ -625,7 +627,7 @@ struct Prior {
 ///
 /// What is left here is the DATA fingerprint, which is evidence: a row's data
 /// dependencies are enumerable from the row, and forgetting one only costs time.
-fn reuse_prior(path: &str, bench_id: &str, keep_stale: bool) -> Result<Prior, String> {
+fn reuse_prior(path: &str, bench_id: &str) -> Result<Prior, String> {
     let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
     let prior = wfsim_engine::boards_data::parse(&text).map_err(|e| format!("{path}: {e}"))?;
     // A PRIOR BOARD THAT CANNOT BE REUSED CAN STILL BE READ.
@@ -703,23 +705,21 @@ fn reuse_prior(path: &str, bench_id: &str, keep_stale: bool) -> Result<Prior, St
         // STALE MEANS ITS OWN DATA MOVED, and nothing else. What the row
         // reads is enumerable FROM the row, so this is evidence; a code
         // difference is not, and no longer marks anything.
+        // TWO MAPS, BECAUSE TWO READERS WANT OPPOSITE THINGS of a stale row.
+        // A pass that can REFIGHT it must not see it, or it reuses the number
+        // its data has moved out from under; a pass that only ASSEMBLES must,
+        // or the row leaves the board because a file it reads was corrected.
+        // Handing both the same map is what made the repair slice necessary.
+        let into = if e.fp == want { &mut out.scores } else { &mut out.stale_scores };
         if e.fp != want {
             out.stale += 1;
-            out.stale_keys.push((key.clone(), e.cost));
-            // KEPT WHEN THE CALLER ASKS. `--refresh` fights a slice of
-            // these and the rest keep the number they have; without it a row
-            // whose data moved is dropped, which is what the manual full
-            // rescore and the targeted one both want.
-            if !keep_stale {
-                continue;
-            }
         }
         if let Some(rv) = &e.riven {
             if !rv.rolls.is_empty() {
                 out.rolls.insert(key.clone(), rv.rolls.clone());
             }
         }
-        out.scores.insert(key, e.score);
+        into.insert(key, e.score);
     }
     Ok(out)
 }
@@ -827,8 +827,8 @@ fn main() {
     // WHAT THE LAST RUN MEASURED, per row — the input to the shard packing.
     let mut prior_costs: ScoreMap = Default::default();
     let mut prior_present: std::collections::HashSet<String> = Default::default();
-    // …AND THE ROWS WHOSE OWN DATA MOVED, which `--refresh` walks a slice of.
-    let mut prior_stale_keys: Vec<(String, f64)> = Vec::new();
+    // …AND WHAT THE ROWS WHOSE DATA MOVED LAST SCORED, for the assembly alone.
+    let mut prior_stale: ScoreMap = Default::default();
     // …AND WHAT EACH GROUP'S BEST WAS, the threshold the probe screens against.
     let mut prior_leaders: std::collections::HashMap<(String, String, bool), f64> =
         Default::default();
@@ -870,14 +870,6 @@ fn main() {
         .and_then(|s| s.parse::<u64>().ok())
         .map(std::time::Duration::from_secs);
     let started = std::time::Instant::now();
-    let refresh = flag("--refresh").and_then(|s| s.parse::<f64>().ok());
-    // WHERE THE SLICE STARTS. The operator may pin it, but the default is the
-    // cursor the last run stored: every shard of a run reads the same file, so
-    // they agree on the slice without being told, and the next run starts past
-    // what this one repaired instead of on top of it.
-    let refresh_from = flag("--refresh-from")
-        .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or_else(|| stored_state().get(&bench_id).map_or(0, |e| e[4]));
     let dry = has_flag("--dry-run");
     let mut todo = 0usize;
     let mut fresh_seen = 0usize;
@@ -899,14 +891,14 @@ fn main() {
         // that fights nothing would drop it from the board instead, and a
         // published row vanishing because a file it reads was corrected is the
         // one outcome the floor and the archive both exist to prevent.
-        match reuse_prior(&path, &bench_id, refresh.is_some() || project) {
+        match reuse_prior(&path, &bench_id) {
             Ok(p) => {
                 reused = if verify { 0 } else { p.scores.len() };
                 stale = p.stale;
                 prior_rolls = p.rolls;
                 prior_costs = p.costs;
                 prior_present = p.present;
-                prior_stale_keys = p.stale_keys;
+                prior_stale = p.stale_scores;
                 prior_leaders = p.leaders;
                 if verify {
                     // NOT into `known`: a verify run has to MEASURE the sample,
@@ -978,37 +970,6 @@ fn main() {
     // back through the fight. Budgeted by the cost the last run MEASURED, so a
     // slice is a wall-clock promise rather than a row count over a population
     // whose rows differ by four orders of magnitude.
-    let mut refresh_next: Option<usize> = None;
-    // …AND TAKES NO SLICE. Removing a row here so it can be refought is exactly
-    // what a projection cannot do: nothing would refight it and the row would
-    // leave the board.
-    if let Some(budget) = refresh.filter(|_| !project) {
-        let mut stale_keys = prior_stale_keys;
-        stale_keys.sort_by(|a, b| a.0.cmp(&b.0));
-        let n = stale_keys.len();
-        let mut spent = 0.0;
-        let mut took = 0usize;
-        for i in 0..n {
-            let (k, cost) = &stale_keys[(refresh_from + i) % n];
-            if took > 0 && spent + cost > budget {
-                break;
-            }
-            known.remove(k);
-            rolls.remove(k);
-            spent += cost;
-            took += 1;
-        }
-        reused = reused.saturating_sub(took);
-        // ADVANCED BY WHAT WAS TAKEN, which is the whole point of storing it.
-        refresh_next = Some(if n > 0 { (refresh_from + took) % n } else { 0 });
-        eprintln!(
-            "refresh: {took} of {n} stale row(s) go back through the fight, \
-             {:.1} min of measured work, from offset {}",
-            spent / 60.0,
-            if n > 0 { refresh_from % n } else { 0 }
-        );
-    }
-
     if let Some(list) = flag("--rescore") {
         let sels: Vec<Selector> = list.split(';').filter_map(Selector::parse).collect();
         let hit = |k: &String| sels.iter().any(|sel| sel.matches(k));
@@ -1313,7 +1274,14 @@ fn main() {
             // `None` where the score came from a sibling shard or from the prior
             // board — those carry their own figure, resolved below.
             let mut measured: Option<f64> = None;
-            let score = match known.get(&key) {
+            // A STALE ROW'S LAST NUMBER COUNTS AS KNOWN TO THE ASSEMBLY, and
+            // to nothing else. The pass that can refight it sees the row
+            // missing and does; the pass that cannot sees it and keeps it, so a
+            // corrected data file never takes a published row off the board.
+            let score = match known
+                .get(&key)
+                .or_else(|| if project { prior_stale.get(&key) } else { None })
+            {
                 // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
                 // map only ever travels between processes built from one commit.
                 Some(&s) => s,
@@ -1363,11 +1331,17 @@ fn main() {
                     if shards > 1 && mine != shard {
                         continue;
                     }
-                    // …AND THE CLOCK, WHICH ONLY THIS SHARD CAN READ. It is
-                    // spent differently in every shard, so it is asked AFTER
-                    // the row has been dealt: a shard out of time drops rows of
-                    // its OWN and leaves the deal itself untouched.
-                    if fresh && deadline.is_some_and(|d| started.elapsed() > d) {
+                    // …AND THE CLOCK, WHICH ONLY THIS SHARD CAN READ. Spent
+                    // differently in every shard, so it is asked AFTER the row
+                    // has been dealt: a shard out of time drops rows of its OWN
+                    // and leaves the deal itself untouched.
+                    //
+                    // IT BOUNDS REPAIRS TOO, which it could not while the
+                    // assembly dropped a stale row: a repair not taken now
+                    // keeps the number it has and is refought next run, and the
+                    // board says how old it is. That is what replaced the
+                    // slice, the cursor and the budget that steered them.
+                    if deadline.is_some_and(|d| started.elapsed() > d) {
                         fresh_left += 1;
                         deferred_ids.insert(identity_of(&key));
                         continue;
@@ -2025,25 +1999,20 @@ fn main() {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs() as usize);
-        // THE CURSOR ONLY MOVES WHEN A SLICE WAS TAKEN. A run that took none —
-        // a full rescore, a verify, a board with nothing stale — leaves it
-        // where it was rather than resetting the rotation to the top.
-        let cursor = refresh_next.unwrap_or_else(|| state.get(&bench_id).map_or(0, |e| e[4]));
         state.insert(
             bench_id.clone(),
-            [seen, kept.len(), below.len() + probed.len(), now, cursor],
+            [seen, kept.len(), below.len() + probed.len(), now],
         );
         let mut out = String::from(BOARD_STATE_HEADER);
         out.push_str("boards:
 ");
-        for (id, [subs, listed, held, at, cur]) in &state {
+        for (id, [subs, listed, held, at]) in &state {
             out.push_str(&format!(
                 "  {id}:
     submissions: {subs}
     listed: {listed}
     held: {held}
     scored_at_epoch_seconds: {at}
-    refresh_cursor: {cur}
 "
             ));
         }
