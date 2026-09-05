@@ -53,10 +53,15 @@ SOURCES = [
 def updatekit(*args: str) -> None:
     cargo = pathlib.Path.home() / ".cargo" / "bin" / "cargo.exe"
     exe = str(cargo) if cargo.exists() else "cargo"
+    # UTF-8, NOT THE LOCALE. `text=True` alone decodes with the console codepage,
+    # which on a Chinese Windows is GBK — and cargo emits UTF-8. The mismatch
+    # raises inside the reader thread, so `stdout` and `stderr` arrive as None
+    # and the failure below reports the word "None" instead of the error. An
+    # error path that destroys the error is worse than no error path.
     r = subprocess.run(
         [exe, "run", "--quiet", "--manifest-path", str(ROOT / "desktop" / "Cargo.toml"),
          "--example", "updatekit", "--", *args],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         sys.exit(f"updatekit {' '.join(args)} failed:\n{r.stdout}\n{r.stderr}")
