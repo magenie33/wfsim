@@ -842,11 +842,13 @@ assets, and until the board there was no script at all. Two consequences:
    "kv_namespaces": [{ "binding": "SUBMISSIONS", "id": "<namespace id>" }]
    ```
 
-   **A PUSH DOES NOT DEPLOY THE WORKER.** A push deploys `site/`; the endpoint
-   is deployed by `npx wrangler deploy` and by nothing else, so the code in
-   `worker/index.js` can be right while wfsim.app runs an older one — and the
-   failure that shape produces is a legal build refused at the one hop neither
-   the engine nor the page is watching. `check_board_submit.mjs` asks the
+   **A PUSH DEPLOYS THE WORKER TOO.** Cloudflare's Workers Build runs
+   `scripts/deploy.sh` on a push to `main`, so `worker/index.js` ships with
+   everything else — verified by asking the live endpoint, which answered in the
+   words of a just-pushed change. What still has to be CHECKED is that it
+   answered at all: the code can be right while wfsim.app runs an older one, and
+   the failure that shape produces is a legal build refused at the one hop
+   neither the engine nor the page is watching. `check_board_submit.mjs` asks the
    DEPLOYED endpoint whether it takes `MAX_MODS` ids and refuses one more,
    without writing anything: the shape pass stops at the first bad field, so a
    payload with a full mod list and a deliberately malformed arcane answers
