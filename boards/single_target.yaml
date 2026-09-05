@@ -9992,7 +9992,7 @@ entries:
     mode: cycle
     score: 101.8722508045025
     fp: 563fcd56c9dc3f85
-    cost: 29.326
+    cost: 33.661
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10135,7 +10135,7 @@ entries:
     mode: cycle
     score: 96.98570840697232
     fp: ec9eff5792545756
-    cost: 32.168
+    cost: 31.659
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10261,7 +10261,7 @@ entries:
     mode: cycle
     score: 87.33378679537157
     fp: 177ca2736aba1282
-    cost: 33.367
+    cost: 31.903
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10453,7 +10453,7 @@ entries:
     mode: cycle
     score: 81.25879083689487
     fp: 1d28f35318dcf76f
-    cost: 45.027
+    cost: 59.345
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10466,7 +10466,7 @@ entries:
     mode: cycle
     score: 81.25879083689487
     fp: 2c98c7473c7e5f20
-    cost: 61.490
+    cost: 43.943
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10596,7 +10596,7 @@ entries:
     mode: cycle
     score: 78.27140813337779
     fp: 24786fb7b0caa119
-    cost: 41.540
+    cost: 41.251
     exilus: vigilante_supplies
     mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10713,7 +10713,7 @@ entries:
     mode: cycle
     score: 76.37970471597117
     fp: 1d28f35318dcf76f
-    cost: 45.086
+    cost: 34.183
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10726,7 +10726,7 @@ entries:
     mode: cycle
     score: 76.37970471597117
     fp: 2c98c7473c7e5f20
-    cost: 24.761
+    cost: 45.140
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -10881,7 +10881,7 @@ entries:
     mode: cycle
     score: 72.71835827877041
     fp: 1736ba0819935f9f
-    cost: 37.454
+    cost: 50.055
     exilus: vigilante_supplies
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -11043,7 +11043,7 @@ entries:
     mode: cycle
     score: 67.58150308624032
     fp: 197ea23c90ec1b7b
-    cost: 40.555
+    cost: 38.906
     exilus: vigilante_supplies
     mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12191,7 +12191,7 @@ entries:
     mode: base
     score: 34.23999482836435
     fp: 1736ba0819935f9f
-    cost: 21.759
+    cost: 18.277
     exilus: vigilante_supplies
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, riven]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12360,7 +12360,7 @@ entries:
     mode: base
     score: 31.17992696362161
     fp: 24786fb7b0caa119
-    cost: 14.496
+    cost: 11.657
     exilus: vigilante_supplies
     mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12445,7 +12445,7 @@ entries:
     mode: base
     score: 30.230038858667772
     fp: 1d28f35318dcf76f
-    cost: 17.074
+    cost: 17.580
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12458,7 +12458,7 @@ entries:
     mode: base
     score: 30.230038858667772
     fp: 2c98c7473c7e5f20
-    cost: 14.597
+    cost: 17.186
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12484,7 +12484,7 @@ entries:
     mode: base
     score: 29.593722752546828
     fp: 1d28f35318dcf76f
-    cost: 22.356
+    cost: 21.946
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12497,7 +12497,7 @@ entries:
     mode: base
     score: 29.593722752546828
     fp: 2c98c7473c7e5f20
-    cost: 21.602
+    cost: 21.486
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12660,7 +12660,7 @@ entries:
     mode: base
     score: 28.402068473525976
     fp: 563fcd56c9dc3f85
-    cost: 8.655
+    cost: 4.682
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12869,7 +12869,7 @@ entries:
     mode: base
     score: 26.933484093506486
     fp: ec9eff5792545756
-    cost: 5.887
+    cost: 5.905
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, gilded_truth, stormbringer, riven, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -12984,7 +12984,7 @@ entries:
     mode: base
     score: 25.63452926565074
     fp: 197ea23c90ec1b7b
-    cost: 15.671
+    cost: 15.817
     exilus: vigilante_supplies
     mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -13150,7 +13150,7 @@ entries:
     mode: base
     score: 23.555859357055002
     fp: 177ca2736aba1282
-    cost: 8.076
+    cost: 7.883
     exilus: vigilante_supplies
     mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, riven, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -15307,7 +15307,7 @@ entries:
     mode: base
     score: 26.52795248155652
     fp: 3619cf4b4250c896
-    cost: 6.160
+    cost: 4.717
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15318,7 +15318,7 @@ entries:
     mode: base
     score: 25.519510754124333
     fp: a9739b7233c9bf3e
-    cost: 3.051
+    cost: 3.132
     mods: [primed_dual_rounds, critical_focus, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, riven, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15350,7 +15350,7 @@ entries:
     mode: base
     score: 24.333333333333332
     fp: 3619cf4b4250c896
-    cost: 7.983
+    cost: 7.972
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15361,7 +15361,7 @@ entries:
     mode: base
     score: 24
     fp: 3619cf4b4250c896
-    cost: 8.218
+    cost: 7.975
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15372,7 +15372,7 @@ entries:
     mode: base
     score: 23.666666666666668
     fp: b508e62b8ffb46d7
-    cost: 7.512
+    cost: 6.005
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15383,7 +15383,7 @@ entries:
     mode: cycle
     score: 23.666666666666668
     fp: 3619cf4b4250c896
-    cost: 7.496
+    cost: 7.402
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15394,7 +15394,7 @@ entries:
     mode: base
     score: 23.666666666666668
     fp: 3619cf4b4250c896
-    cost: 7.131
+    cost: 8.096
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15425,7 +15425,7 @@ entries:
     mode: cycle
     score: 23.22865885360166
     fp: 3619cf4b4250c896
-    cost: 8.306
+    cost: 6.284
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15436,7 +15436,7 @@ entries:
     mode: base
     score: 23.014734986212897
     fp: b508e62b8ffb46d7
-    cost: 4.444
+    cost: 4.449
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15458,7 +15458,7 @@ entries:
     mode: cycle
     score: 22.883777391249314
     fp: 3619cf4b4250c896
-    cost: 6.324
+    cost: 7.852
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15469,7 +15469,7 @@ entries:
     mode: cycle
     score: 22.666666666666668
     fp: 3619cf4b4250c896
-    cost: 4.362
+    cost: 8.072
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15480,7 +15480,7 @@ entries:
     mode: cycle
     score: 22.609538318313326
     fp: b508e62b8ffb46d7
-    cost: 4.062
+    cost: 7.333
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15501,7 +15501,7 @@ entries:
     mode: base
     score: 22.333333333333332
     fp: 3619cf4b4250c896
-    cost: 5.384
+    cost: 5.406
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15512,7 +15512,7 @@ entries:
     mode: cycle
     score: 22.215882628360678
     fp: b508e62b8ffb46d7
-    cost: 8.160
+    cost: 6.094
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15523,7 +15523,7 @@ entries:
     mode: cycle
     score: 22
     fp: cdd705318f5d790a
-    cost: 6.573
+    cost: 7.249
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15534,7 +15534,7 @@ entries:
     mode: cycle
     score: 21.666666666666668
     fp: cdd705318f5d790a
-    cost: 7.369
+    cost: 7.296
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15545,7 +15545,7 @@ entries:
     mode: cycle
     score: 21.666666666666668
     fp: 3619cf4b4250c896
-    cost: 5.319
+    cost: 5.133
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15556,7 +15556,7 @@ entries:
     mode: base
     score: 21.666666666666668
     fp: 65cd7b689c18a002
-    cost: 5.740
+    cost: 5.620
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15567,7 +15567,7 @@ entries:
     mode: cycle
     score: 21.5591434296506
     fp: a9739b7233c9bf3e
-    cost: 4.657
+    cost: 5.257
     mods: [primed_dual_rounds, critical_focus, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, riven, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15578,7 +15578,7 @@ entries:
     mode: base
     score: 21.47483939535207
     fp: cdd705318f5d790a
-    cost: 3.657
+    cost: 3.768
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15589,7 +15589,7 @@ entries:
     mode: base
     score: 21.333333333333332
     fp: b508e62b8ffb46d7
-    cost: 6.347
+    cost: 6.986
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15600,7 +15600,7 @@ entries:
     mode: base
     score: 21.333333333333332
     fp: 3619cf4b4250c896
-    cost: 7.109
+    cost: 6.948
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15611,7 +15611,7 @@ entries:
     mode: cycle
     score: 21.333333333333332
     fp: 3619cf4b4250c896
-    cost: 7.597
+    cost: 7.372
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15622,7 +15622,7 @@ entries:
     mode: base
     score: 21.333333333333332
     fp: 3619cf4b4250c896
-    cost: 7.328
+    cost: 4.257
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15633,7 +15633,7 @@ entries:
     mode: cycle
     score: 21.333333333333332
     fp: 3619cf4b4250c896
-    cost: 6.966
+    cost: 7.564
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15644,7 +15644,7 @@ entries:
     mode: base
     score: 21.333333333333332
     fp: 3619cf4b4250c896
-    cost: 4.950
+    cost: 4.952
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15655,7 +15655,7 @@ entries:
     mode: base
     score: 21.266345281879353
     fp: 44b200719f1f7252
-    cost: 5.473
+    cost: 4.316
     mods: [primed_dual_rounds, primed_ammo_chain, hollowed_bullets, magnetized_cycle, parallax_scope, primed_polar_magazine, riven, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15666,7 +15666,7 @@ entries:
     mode: base
     score: 21
     fp: b508e62b8ffb46d7
-    cost: 5.944
+    cost: 5.046
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15677,7 +15677,7 @@ entries:
     mode: cycle
     score: 21
     fp: b508e62b8ffb46d7
-    cost: 7.137
+    cost: 7.009
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15688,7 +15688,7 @@ entries:
     mode: base
     score: 21
     fp: cdd705318f5d790a
-    cost: 6.869
+    cost: 6.700
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, riven, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15699,7 +15699,7 @@ entries:
     mode: cycle
     score: 21
     fp: 3619cf4b4250c896
-    cost: 5.857
+    cost: 7.266
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15710,7 +15710,7 @@ entries:
     mode: base
     score: 21
     fp: 3619cf4b4250c896
-    cost: 6.587
+    cost: 5.589
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15721,7 +15721,7 @@ entries:
     mode: cycle
     score: 21
     fp: 3619cf4b4250c896
-    cost: 4.142
+    cost: 6.097
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15732,7 +15732,7 @@ entries:
     mode: base
     score: 21
     fp: 3619cf4b4250c896
-    cost: 6.339
+    cost: 5.446
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15750,7 +15750,7 @@ entries:
     mode: base
     score: 20.666666666666668
     fp: 3619cf4b4250c896
-    cost: 7.939
+    cost: 7.984
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15768,7 +15768,7 @@ entries:
     mode: cycle
     score: 20.48987156159697
     fp: 3619cf4b4250c896
-    cost: 7.995
+    cost: 8.035
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15796,7 +15796,7 @@ entries:
     mode: cycle
     score: 20.06634386591643
     fp: 3619cf4b4250c896
-    cost: 5.100
+    cost: 2.904
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -15838,7 +15838,7 @@ entries:
     mode: cycle
     score: 18.98610799117389
     fp: 65cd7b689c18a002
-    cost: 5.325
+    cost: 5.286
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, riven, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15856,7 +15856,7 @@ entries:
     mode: cycle
     score: 18.775845779474405
     fp: 44b200719f1f7252
-    cost: 5.410
+    cost: 3.980
     mods: [primed_dual_rounds, primed_ammo_chain, hollowed_bullets, magnetized_cycle, parallax_scope, primed_polar_magazine, riven, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15874,7 +15874,7 @@ entries:
     mode: cycle
     score: 18.367728238367174
     fp: b508e62b8ffb46d7
-    cost: 4.809
+    cost: 4.770
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15906,7 +15906,7 @@ entries:
     mode: cycle
     score: 17.900369280234596
     fp: 92bd8b4f7cb7ff2d
-    cost: 1.582
+    cost: 2.279
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: cortege
@@ -15920,7 +15920,7 @@ entries:
     mode: base
     score: 17.333333333333332
     fp: 92bd8b4f7cb7ff2d
-    cost: 2.489
+    cost: 2.067
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: cortege
@@ -15941,7 +15941,7 @@ entries:
     mode: cycle
     score: 16.084953573971724
     fp: b508e62b8ffb46d7
-    cost: 6.708
+    cost: 5.147
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15952,7 +15952,7 @@ entries:
     mode: cycle
     score: 16
     fp: b508e62b8ffb46d7
-    cost: 7.264
+    cost: 5.540
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15963,7 +15963,7 @@ entries:
     mode: base
     score: 15.856777077621887
     fp: b508e62b8ffb46d7
-    cost: 6.494
+    cost: 6.498
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15974,7 +15974,7 @@ entries:
     mode: base
     score: 15.666666666666666
     fp: b508e62b8ffb46d7
-    cost: 6.749
+    cost: 6.723
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15985,7 +15985,7 @@ entries:
     mode: base
     score: 15.666666666666666
     fp: b508e62b8ffb46d7
-    cost: 6.966
+    cost: 4.002
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -15996,7 +15996,7 @@ entries:
     mode: cycle
     score: 15.666666666666666
     fp: b508e62b8ffb46d7
-    cost: 6.504
+    cost: 7.043
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -16007,7 +16007,7 @@ entries:
     mode: base
     score: 15.666666666666666
     fp: 3619cf4b4250c896
-    cost: 6.866
+    cost: 7.016
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -16018,7 +16018,7 @@ entries:
     mode: cycle
     score: 15.666666666666666
     fp: 3619cf4b4250c896
-    cost: 7.287
+    cost: 5.627
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -16029,7 +16029,7 @@ entries:
     mode: base
     score: 15.666666666666666
     fp: 3619cf4b4250c896
-    cost: 6.807
+    cost: 6.937
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -16040,7 +16040,7 @@ entries:
     mode: cycle
     score: 15.666666666666666
     fp: 3619cf4b4250c896
-    cost: 7.089
+    cost: 5.469
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -16051,7 +16051,7 @@ entries:
     mode: base
     score: 15.243491665627104
     fp: 0416df51030c9a63
-    cost: 6.206
+    cost: 6.214
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, parallax_scope, riven, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -16076,7 +16076,7 @@ entries:
     mode: cycle
     score: 13.509862596693935
     fp: 0416df51030c9a63
-    cost: 5.790
+    cost: 5.806
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, parallax_scope, riven, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
     riven:
@@ -38070,7 +38070,7 @@ entries:
     listed: false
     score: 50.53768857706783
     fp: 2f8cfc1230fb201d
-    cost: 38.143
+    cost: 38.633
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, riven, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
@@ -49919,7 +49919,7 @@ entries:
     listed: false
     score: 11.333333333333334
     fp: b508e62b8ffb46d7
-    cost: 2.653
+    cost: 3.255
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -51247,7 +51247,7 @@ entries:
     listed: false
     score: 10.335770726709796
     fp: b508e62b8ffb46d7
-    cost: 3.244
+    cost: 3.138
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     riven:
@@ -53423,7 +53423,7 @@ entries:
     listed: false
     score: 8.994512855325635
     fp: e776b1d10e2ce12d
-    cost: 2.584
+    cost: 2.514
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: laetum
@@ -53940,7 +53940,7 @@ entries:
     listed: false
     score: 8.666666666666666
     fp: e776b1d10e2ce12d
-    cost: 1.984
+    cost: 2.500
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: boar_prime
@@ -53995,7 +53995,7 @@ entries:
     listed: false
     score: 8.646745595927815
     fp: 1fa55aa715ca6008
-    cost: 2.285
+    cost: 2.395
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: coda_synapse
@@ -54021,7 +54021,7 @@ entries:
     listed: false
     score: 8.635870737441014
     fp: 1fa55aa715ca6008
-    cost: 2.403
+    cost: 1.913
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: burston_prime
@@ -55186,7 +55186,7 @@ entries:
     listed: false
     score: 8
     fp: 0cb430948e468020
-    cost: 2.543
+    cost: 1.930
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, archgun_ace, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -55378,7 +55378,7 @@ entries:
     listed: false
     score: 7.9063046075459145
     fp: 0cb430948e468020
-    cost: 2.712
+    cost: 1.472
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, archgun_ace, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: torid
