@@ -189,20 +189,6 @@ pub struct Board {
     /// that has.
     #[serde(default)]
     pub source: String,
-    /// THE ENGINE THAT SCORED THESE ROWS — a hash of everything a score depends
-    /// on that is not the build: `engine/`, `webapi/`, `cli/` and `data/` minus
-    /// the boards themselves.
-    ///
-    /// It is what lets the next run tell reuse from staleness EXACTLY. A score
-    /// is a pure function of (build, the ruler's terms, this code and this
-    /// The ENGINE CODE this board was scored by (`engine`, `webapi`, `cli`).
-    /// The DATA half is per row — see `BoardEntry::fp` — because a data change
-    /// moves the rows that read the file that changed and no others, while a
-    /// change in `damage.rs` can move any row and no dependency set can say
-    /// otherwise. Empty = scored before this was recorded, which reads as
-    /// "rescore everything".
-    #[serde(default)]
-    pub engine: String,
     /// HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. The library reports
     /// its own size at `/api/board/pending`; the difference is what has arrived
     /// since, which is the one thing a static file cannot say about itself.

@@ -472,7 +472,6 @@ fn group_of(key: &str) -> String {
 fn load_scores(
     spec: Option<String>,
     bench_id: &str,
-    want_engine: Option<&str>,
 ) -> (ScoreMap, ScoreMap, ScoreMap, std::collections::HashMap<String, String>) {
     let mut out = std::collections::HashMap::new();
     // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
@@ -520,16 +519,6 @@ fn load_scores(
         // the NO-AIM board, where that build actually scores 0.5.
         if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
             continue;
-        }
-        // …AND WHICH ENGINE COMPUTED IT. Refused rather than merged, and a file
-        // that does not say is refused too: silence is what a file written by an
-        // older binary looks like, and reading one publishes its numbers under
-        // this generation's name. Only a caller that ASKS is held to it — a run
-        // reading its own shards has nothing to check.
-        if let Some(want) = want_engine {
-            if file.get("engine").and_then(Value::as_str) != Some(want) {
-                continue;
-            }
         }
         if let Some(fs) = file.get("fps").and_then(Value::as_object) {
             for (k, v) in fs {
@@ -612,27 +601,24 @@ struct Prior {
     /// full rescore. Kept, the run can fight a BOUNDED slice of them and leave
     /// the rest holding what they have until their turn comes.
     stale_keys: Vec<(String, f64)>,
-    /// WHY THE SCORES ARE EMPTY, when they are. The costs and the leaders are
-    /// still here: a prior board that cannot be REUSED can still be READ.
-    dropped: Option<String>,
 }
 
-/// `across_code` = READ THE PRIOR BOARD DESPITE A FINGERPRINT DIFFERENCE, which
-/// is exactly what the refusal below exists to prevent. Two callers earn it and
-/// both have the same evidence behind them: `--verify`, which is not going to
-/// reuse those numbers but to reproduce a sample of them under the new code;
-/// and `--code-verified`, which the workflow passes only after that sample came
-/// back identical, so the stored numbers ARE what this code computes.
-fn reuse_prior(
-    path: &str,
-    code_fp: &str,
-    bench_id: &str,
-    across_code: bool,
-    keep_stale: bool,
-) -> Result<Prior, String> {
-    if code_fp.is_empty() {
-        return Err("no engine fingerprint given".into());
-    }
+/// THERE IS NO CODE FINGERPRINT, and there never honestly could be. A hash of
+/// the source says the BYTES moved, which is a different question from whether
+/// any NUMBER did — and most edits that move it cannot move one: a comment, a
+/// test, a validation rule, a field only the page reads. Hashing more finely
+/// would not fix it either, because the failure inverts: a data file a row
+/// forgets to name costs one wasted rescore, where a code path a row forgets to
+/// name silently reuses a score the change moved.
+///
+/// SO CODE IS MEASURED, NOT HASHED. The audit re-fights published rows and
+/// compares exactly; what it finds moved is what gets recomputed. A stored
+/// score is valid until something PROVES it moved, which is a stronger claim
+/// than "valid until a hash moved", because a hash moving proves nothing.
+///
+/// What is left here is the DATA fingerprint, which is evidence: a row's data
+/// dependencies are enumerable from the row, and forgetting one only costs time.
+fn reuse_prior(path: &str, bench_id: &str, keep_stale: bool) -> Result<Prior, String> {
     let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
     let prior = wfsim_engine::boards_data::parse(&text).map_err(|e| format!("{path}: {e}"))?;
     // A PRIOR BOARD THAT CANNOT BE REUSED CAN STILL BE READ.
@@ -649,17 +635,10 @@ fn reuse_prior(
     // A STALE LEADER IS A FINE THRESHOLD. It does not decide what is published;
     // it decides whether a row is worth 1000 runs rather than 100, under a 2x
     // margin on top of a floor that is itself half the leader.
-    let code_moved = prior.engine != code_fp;
-    let dropped = (!across_code && code_moved).then(|| {
-        format!(
-            "engine code moved ({} -> {code_fp}) — scores dropped, leaders and costs kept",
-            if prior.engine.is_empty() { "unrecorded" } else { &prior.engine }
-        )
-    });
     if family(&prior.benchmark) != family(bench_id) {
         return Err(format!("{path} is {}'s board", prior.benchmark));
     }
-    let mut out = Prior { dropped, ..Default::default() };
+    let mut out = Prior::default();
     for e in &prior.entries {
         let Ok(v) = wfsim_engine::builds::validate_for_board_with(
             bench_id,
@@ -714,29 +693,19 @@ fn reuse_prior(
         if e.probe {
             continue;
         }
-        // UNVERIFIED UNDER THIS GENERATION, for either reason. A row is that
-        // when its own DATA moved or when the CODE that scored it did, and the
-        // repair is the same either way — so `--refresh` walks one set rather
-        // than the union of two it would have to be told about separately.
-        if e.fp != want || code_moved {
-            if e.fp != want {
-                out.stale += 1;
-            }
+        // STALE MEANS ITS OWN DATA MOVED, and nothing else. What the row
+        // reads is enumerable FROM the row, so this is evidence; a code
+        // difference is not, and no longer marks anything.
+        if e.fp != want {
+            out.stale += 1;
             out.stale_keys.push((key.clone(), e.cost));
-            // KEPT WHEN THE CALLER ASKS, and only the DATA half is decided
-            // here. `--refresh` fights a slice of these and the rest keep the
-            // number they have; without it a row whose data moved is dropped,
-            // which is what the manual full rescore and the targeted one both
-            // want. Whether a CODE difference drops a row is `dropped`'s
-            // question, two lines down, and answering it here as well took
-            // `--code-verified` out of the picture.
-            if e.fp != want && !keep_stale {
+            // KEPT WHEN THE CALLER ASKS. `--refresh` fights a slice of
+            // these and the rest keep the number they have; without it a row
+            // whose data moved is dropped, which is what the manual full
+            // rescore and the targeted one both want.
+            if !keep_stale {
                 continue;
             }
-        }
-        // THE SCORES, AND ONLY THEY, ARE WHAT A CODE CHANGE INVALIDATES.
-        if out.dropped.is_some() {
-            continue;
         }
         if let Some(rv) = &e.riven {
             if !rv.rolls.is_empty() {
@@ -833,49 +802,18 @@ fn main() {
         }
         None => (0, 1),
     };
-    // THE ENGINE FINGERPRINT — a hash of everything a score depends on that is
-    // not the build: `engine/`, `webapi/`, `cli/`, and `data/` minus the boards
-    // themselves. The workflow computes it from the index and hands it in.
+    // EVERY STORED SCORE PROVES ITSELF THE SAME WAY, whether it came from this
+    // run's own shards or from a store that outlived the run that wrote it: the
+    // row's data hash, recomputed in the loop below. A same-run file passes
+    // trivially, so there is one rule rather than a flag saying which to apply.
     //
-    // It is what makes reuse EXACT rather than a guess. A score is a pure
-    // function of (build, the ruler's terms, this code and this data), so if
-    // the fingerprint is unchanged the stored number is not merely probably
-    // still right — it is the same number this run would compute, and running
-    // the fight again would be spending an hour to reproduce it.
-    //
-    // A COOLDOWN WOULD BE THE WRONG AXIS.
-    // Time is not an input: an untouched score is valid forever, and a score
-    // whose engine moved is wrong immediately, not in an hour.
-    // WHAT `--engine` IS NOW: the CODE, and only the code (`engine`, `webapi`,
-    // `cli`). Hashing `data/` in as well makes adding a weapon — a file no
-    // existing row reads — invalidate every stored score and buy a full
-    // rescore: about an hour of wall clock and thirty of CPU to reproduce
-    // numbers that could not have moved. The data half is asked PER ROW, from
-    // the files that row actually reads.
-    let engine_fp = flag("--engine").unwrap_or_default();
-    // THE STORE IS NOT THE BOARD. A score file may come from this run's own
-    // shards — one binary, one checkout, nothing to check — or from a durable
-    // store that outlived the run that wrote it, where every entry has to prove
-    // it still reads what it read. `--scores-engine` is how the caller says
-    // which: given, the files must name that engine and each row is held to its
-    // own hash in the loop below.
-    let scores_engine = flag("--scores-engine");
-    let (loaded, known_costs, known_probes, store_fps) =
-        load_scores(flag("--scores"), &bench_id, scores_engine.as_deref());
-    // A SAME-RUN FILE IS TRUSTED WHOLE; A STORED ONE IS TRUSTED PER ROW. Without
-    // a declared engine these are this run's own shards and go straight in.
-    // With one they outlived the run that wrote them, so each waits in
-    // `store_scores` until the loop has recomputed the hash it was filed under.
-    // Merging them here instead was a real bug: `known` also holds the PRIOR
-    // BOARD's rows, which carry no entry in `store_fps`, so a gate applied to
-    // the merged map threw the whole board away and made every row todo.
+    // They wait in `store_scores` rather than joining `known`, which also holds
+    // the PRIOR BOARD's rows — those were validated on their own way in and
+    // carry no entry here, so a check applied to the merged map threw the whole
+    // board away and made every row todo.
+    let (store_scores, known_costs, known_probes, store_fps) =
+        load_scores(flag("--scores"), &bench_id);
     let mut known: ScoreMap = Default::default();
-    let mut store_scores: ScoreMap = Default::default();
-    if scores_engine.is_some() {
-        store_scores = loaded;
-    } else {
-        known = loaded;
-    }
     let mut reused = 0usize;
     let mut stale = 0usize;
     let mut prior_rolls: std::collections::HashMap<String, Vec<f64>> = Default::default();
@@ -941,10 +879,10 @@ fn main() {
     // THE PROBE'S VERDICT, CARRIED IN. Set by the workflow only after a
     // `--verify` run over the sample came back identical throughout, which is
     // what makes reusing across a code change a MEASUREMENT rather than a hope.
-    let code_verified = has_flag("--code-verified");
+
     let mut verify_against: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
-        match reuse_prior(&path, &engine_fp, &bench_id, verify || code_verified, refresh.is_some()) {
+        match reuse_prior(&path, &bench_id, refresh.is_some()) {
             Ok(p) => {
                 reused = if verify { 0 } else { p.scores.len() };
                 stale = p.stale;
@@ -953,9 +891,6 @@ fn main() {
                 prior_present = p.present;
                 prior_stale_keys = p.stale_keys;
                 prior_leaders = p.leaders;
-                if let Some(why) = &p.dropped {
-                    eprintln!("full rescore: {why}");
-                }
                 if verify {
                     // NOT into `known`: a verify run has to MEASURE the sample,
                     // and a seeded score is a row that is never fought.
@@ -1005,33 +940,6 @@ fn main() {
         rolls.entry(k).or_insert(v);
     }
 
-    // WHAT THE PROBE CLEARED, AND ONLY THAT. `--code-verified` is the whole-board
-    // answer: a sample came back identical, so every stored score is reused
-    // across the fingerprint difference. This is the same statement per GROUP,
-    // and it is the difference between a melee fix costing the board and
-    // costing melee.
-    //
-    // THE POLARITY IS THE SAFE ONE. What is listed is KEPT and everything else
-    // is dropped, so a file that is missing, empty or truncated rescores
-    // everything — slow, and never a stale number published under a generation
-    // that never measured it. Naming what to drop would fail the other way.
-    if let Some(path) = flag("--verified-groups") {
-        let text = std::fs::read_to_string(&path).unwrap_or_default();
-        let clear: std::collections::BTreeSet<&str> = text
-            .lines()
-            .map(str::trim)
-            .filter(|l| !l.is_empty())
-            .collect();
-        let before = known.len();
-        known.retain(|k, _| clear.contains(group_of(k).as_str()));
-        rolls.retain(|k, _| clear.contains(group_of(k).as_str()));
-        let dropped = before - known.len();
-        reused = reused.saturating_sub(dropped);
-        eprintln!(
-            "verified groups: {} clear, {dropped} of {before} stored row(s) go back through the fight",
-            clear.len()
-        );
-    }
 
     // FORCING ONE WEAPON BACK THROUGH THE FIGHT, and it is the backstop rather
     // than a tool. Reuse is decided by fingerprints, and a fingerprint answers
@@ -1395,21 +1303,16 @@ fn main() {
                     // whose score is already known costs nothing to publish and
                     // must not be charged to anybody.
                     // NEVER SCORED, AND THE RUN HAS TAKEN ITS SHARE. Counted
-                    // before the shard filter so every shard reaches the same
-                    // verdict on the same row — they walk one list in one order
-                    // and must agree on where the backlog stops.
-                    //
-                    // Only where a prior board was read: with none, every row is
-                    // new and a limit would score a fraction of a first board
-                    // and call it done.
-                    if !prior_present.is_empty() && !prior_present.contains(&key) {
+                    // BEFORE the shard filter, because every shard must reach
+                    // the same verdict on the same row: a bound that stopped
+                    // one and not another leaves them disagreeing about who
+                    // owns the rows after it, and a row both believe is the
+                    // other's is a row nobody scores. Only where a prior board
+                    // was read — with none every row is new.
+                    let fresh = !prior_present.is_empty() && !prior_present.contains(&key);
+                    if fresh {
                         fresh_seen += 1;
-                        // THE COUNT IS THE PLAN AND THE CLOCK IS THE PROMISE.
-                        // Whichever runs out first stops the backlog here; the
-                        // rest of this row's kind wait for the next run.
-                        let over = new_limit.is_some_and(|n| fresh_seen > n)
-                            || deadline.is_some_and(|d| started.elapsed() > d);
-                        if over {
+                        if new_limit.is_some_and(|n| fresh_seen > n) {
                             fresh_left += 1;
                             deferred_ids
                                 .insert(key.rsplit_once('#').map_or(key.clone(), |(i, _)| i.to_string()));
@@ -1422,6 +1325,16 @@ fn main() {
                     // now, and publishing a row for it here would mean scoring it
                     // twice and ranking it once.
                     if shards > 1 && mine != shard {
+                        continue;
+                    }
+                    // …AND THE CLOCK, WHICH ONLY THIS SHARD CAN READ. It is
+                    // spent differently in every shard, so it is asked AFTER
+                    // the row has been dealt: a shard out of time drops rows of
+                    // its OWN and leaves the deal itself untouched.
+                    if fresh && deadline.is_some_and(|d| started.elapsed() > d) {
+                        fresh_left += 1;
+                        deferred_ids
+                            .insert(key.rsplit_once('#').map_or(key.clone(), |(i, _)| i.to_string()));
                         continue;
                     }
                     if dry {
@@ -1940,17 +1853,11 @@ fn main() {
         };
         let text = serde_json::to_string(&serde_json::json!({
             "benchmark": bench_id,
-            // WHAT COMPUTED THESE, so the file can outlive the run that wrote
-            // it. Within one run every shard is the same binary and the field
-            // says nothing; across runs it is the difference between a durable
-            // store and a way to publish last week's numbers as today's.
-            "engine": engine_fp,
-            // …AND WHAT EACH ROW READ, for the same reason at the other
-            // granularity. The engine hash cannot see a data change — that is
-            // the whole point of `row_fingerprint` — so a file that named only
-            // the engine would hand back a score whose weapon has since been
-            // corrected. A reader keeps the entries whose hash it recomputes to
-            // and refights the rest.
+            // WHAT EACH ROW READ, which is the whole of what a stored score
+            // has to prove. There is no code hash beside it and no need of one:
+            // what a row reads is enumerable from the row, where what it
+            // EXECUTES is not, so the second question is answered by the audit
+            // measuring rather than by anything here declaring.
             "fps": computed
                 .keys()
                 .filter_map(|k| row_fps.get(k).map(|f| (k.clone(), f.clone())))
@@ -2034,9 +1941,6 @@ fn main() {
     // THE FINGERPRINT THIS BOARD WAS SCORED UNDER, so the next run can tell
     // whether these numbers are still its own answer. Absent = "scored by an
     // engine that did not record one", which reads as a full rescore.
-    if !engine_fp.is_empty() {
-        println!("engine: {engine_fp}");
-    }
     // WHAT THE RUNTIME NEEDS, and only that.
     //
     // The rows are not embedded — `boards/` is outside `data/` for exactly that
@@ -2633,8 +2537,8 @@ mod tests {
         .unwrap();
 
         let spec = Some(d.to_string_lossy().into_owned());
-        let (aimed, _, _, _) = load_scores(spec.clone(), "single_target", None);
-        let (no_aim, _, _, _) = load_scores(spec.clone(), "single_target_no_aim", None);
+        let (aimed, _, _, _) = load_scores(spec.clone(), "single_target");
+        let (no_aim, _, _, _) = load_scores(spec.clone(), "single_target_no_aim");
         assert_eq!(aimed.get(key).copied(), Some(28.44229348067104));
         assert_eq!(no_aim.get(key).copied(), Some(0.17033484369504454));
         // The sharp one: neither board may see the other's, in EITHER direction
@@ -2648,7 +2552,7 @@ mod tests {
 
         // A ruler with no file of its own reuses nothing rather than reusing
         // whatever else is in the directory.
-        assert!(load_scores(spec, "group_clear", None).0.is_empty());
+        assert!(load_scores(spec, "group_clear").0.is_empty());
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -2667,7 +2571,7 @@ mod tests {
         )
         .unwrap();
         let (got, _, _, _) =
-            load_scores(Some(d.to_string_lossy().into_owned()), "single_target", None);
+            load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
         assert_eq!(got.len(), 2);
         assert_eq!(got.get("a#base").copied(), Some(1.0));
         assert_eq!(got.get("b#base").copied(), Some(2.0));

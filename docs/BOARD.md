@@ -162,25 +162,36 @@ benchmark to 480 s — reaches the board through the FINGERPRINT rather than
 through a trigger: it marks the rows the change reached as unverified, and the
 next run's slice repairs them. What it never does is start a run of its own.
 
-### What decides "new" — the ENGINE FINGERPRINT
+### What decides "new" — the DATA FINGERPRINT, and nothing about the code
 
-A FULL rescore on both triggers is what the fingerprint exists to prevent. It
-is affordable at 100 runs a build and is not at 1000: scoring goes from ~7
-minutes to **1h07m**, the schedule fires every 20, and `concurrency` keeps only
-ONE pending run — so every queued run is cancelled by the next and the board
-stops updating altogether. Five `cancelled` in a row is what that looks like.
+A score is a pure function of `(build, the ruler's terms, the code, the data)`.
+Three of those four are hashed per ROW — `engine::data_fingerprint` — because
+what a row READS is enumerable from the row: it names its weapon, its mods, its
+arcanes, its evolutions, and the ruler names itself. A mod correction restores
+the rows carrying that mod and no others.
 
-A score is a pure function of `(build, the ruler's terms, this code, this
-data)`. So the board records the hash of everything on that list which is not
-the build — `engine/`, `webapi/`, `cli/`, and `data/` minus the boards
-themselves — as `engine:` at the top of the file. Next run:
+**THERE IS NO CODE FINGERPRINT**, and there never honestly could be. A hash of
+`engine/` says the BYTES moved, which is a different question from whether any
+NUMBER did — and most edits that move it cannot move one: a comment, a test, a
+validation rule, a field only the page reads. It cost a full rescore on 55.6% of
+commits to answer a question it was not answering.
 
-- **fingerprint unchanged** → every stored score is not merely probably still
-  right, it is the number this run would compute. It is reused, and only
-  submissions with no row cost anything. Measured: 0.05 s to reproduce a board
-  byte-for-byte, 1.5 s when one new build arrived.
-- **fingerprint moved** → the run does not assume every row is stale. It
-  PROVES it, one way or the other — see below.
+HASHING CODE MORE FINELY WOULD NOT FIX IT, because the failure inverts. A data
+file a row forgets to name lands in the global bucket and costs one wasted
+rescore — slow, never wrong. A code path a row forgets to name silently reuses a
+score the change moved. One is a schedule; the other is a published lie.
+
+**SO CODE IS MEASURED, NOT HASHED.** The audit re-fights published rows and
+compares exactly; what it finds moved is what gets recomputed. A stored score is
+valid until something PROVES it moved — a stronger claim than "valid until a
+hash moved", because a hash moving proves nothing.
+
+The fingerprint's failure polarity is what makes the data half safe to keep:
+anything not attributed to an entity falls into a GLOBAL bucket every row
+carries, so forgetting an entry is slow and never wrong. Fourteen data families
+are still in that bucket against five attributed, which is the next thing worth
+narrowing — `rivens/` reaches only rows carrying a riven, `kitguns/` only kitgun
+rows.
 
 ### When the code moved: nothing rescores, and two backstops watch
 
@@ -356,10 +367,11 @@ engine, and 1,533 with one row's data fingerprint altered. Only entries under a
 declared engine are held to this; a run reading its own shards has one binary
 over one checkout and nothing to check.
 
-THE ENGINE FINGERPRINT IS THE KEY PREFIX, so a code change makes the whole
-generation unreachable rather than wrong, and what is left behind expires on a
-TTL rather than being collected — a cleanup pass is a second thing that can
-fail, and a stale blob costs bytes.
+NOTHING IN THE STORE KNOWS ABOUT CODE VERSIONS. Every row inside a blob carries
+the hash of what it READ and is admitted only where that still matches, so a
+stored score proves itself without anyone declaring which binary wrote it. Blobs
+expire on a TTL rather than being collected — a cleanup pass is a second thing
+that can fail, and a spent blob costs bytes.
 
 A FAILED WRITE IS NOT A FAILED RUN. The scores are still in the run's own
 artifacts and the board is still assembled from them; what is lost is the

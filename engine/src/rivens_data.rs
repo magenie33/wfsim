@@ -1863,6 +1863,11 @@ fn an_element_is_never_a_malus() {
         assert!(!f.contains(&"projectile_speed"), "a real Furis card carries it: {f:?}");
         // The MK1 is the same riven, because it is the same family.
         assert!(!excluded_for("mk1_furis").contains(&"projectile_speed"));
+        // …and the Dual Toxocyst is the same case with the same reason: both
+        // its forms are hit_scan here, the Incarnon one is a Projectile in
+        // DE's code, and a player's card carries the stat as a curse.
+        let t = excluded_for("dual_toxocyst");
+        assert!(!t.contains(&"projectile_speed"), "a real card carries it: {t:?}");
 
         // 2. ADDING what the rules refused. The Ocucor is 9% Puncture and 91%
         //    Radiation — the 25% rule strikes all three physical stats, and all

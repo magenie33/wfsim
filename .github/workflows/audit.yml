@@ -64,24 +64,13 @@ jobs:
       - run: cargo build --release --bin wfsim-board
       - run: pip install --quiet pyyaml
 
-      # HOW FAR BEHIND THE BOARD IS, which is worth reporting whether or not the
-      # audit can run. `engine:` is the code that scored it, so a board that
-      # does not carry the current fingerprint is a generation behind — and
-      # during ordinary work it usually is, which is why that alone is not the
-      # alarm. Silence for a day is.
+      # HAS THE BOARD MOVED AT ALL. A rescore is hours, not days, so a day of
+      # silence means the pipeline stopped rather than that nothing was
+      # submitted — the state that went unnoticed every time it happened.
       - name: how far behind is the board
         id: age
         run: |
           set -euo pipefail
-          fp=$(bash scripts/engine_fingerprint.sh)
-          was=$(grep -h '^engine:' boards/*.yaml | awk '{print $2}' | sort -u)
-          echo "current=$fp" >> "$GITHUB_OUTPUT"
-          if [ "$(printf '%s' "$was" | wc -l)" = "0" ] && [ "$was" = "$fp" ]; then
-            echo "generation=current" >> "$GITHUB_OUTPUT"
-          else
-            echo "generation=behind" >> "$GITHUB_OUTPUT"
-            echo "::notice::the board was scored by ${was:-unrecorded}, the code is $fp"
-          fi
           last=$(git log -1 --format=%ct -- boards || true)
           hours=$(( ( $(date +%s) - ${last:-0} ) / 3600 ))
           echo "the last board commit was ${hours}h ago"
@@ -90,11 +79,11 @@ jobs:
             exit 1
           fi
 
-      # THE SLICE, and only when there is something to compare against. Auditing
-      # a board scored by other code compares two generations and reports every
-      # row moved, which is true and says nothing.
+      # THE SLICE. It runs whatever the code has done since the board was
+      # written, because that is the question: a published number either is what
+      # this code computes or it is not, and no hash can answer it. There is no
+      # code fingerprint to stand down behind any more.
       - name: read this run's slice of the board
-        if: steps.age.outputs.generation == 'current'
         run: |
           set -euo pipefail
           : > result.txt
@@ -108,7 +97,6 @@ jobs:
             # little alone and the three together prove what they prove.
             set +e
             ./target/release/wfsim-board "$id" \
-              --engine "${{ steps.age.outputs.current }}" \
               --reuse "$f" --verify --verify-min 0 \
               < sample.json > /dev/null 2> verify.log
             set -e
@@ -128,7 +116,6 @@ jobs:
       # wants when a row is reported: a defect moves a number by orders of
       # magnitude where a numerical artefact moves it by a bit.
       - name: the verdict
-        if: steps.age.outputs.generation == 'current'
         run: |
           set -euo pipefail
           sum() { awk -v k="$1" '{ for (i = 1; i <= NF; i++)

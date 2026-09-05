@@ -6,7 +6,7 @@
 # it, and what it buys is that a run cancelled at 95% has banked 95% of its
 # work instead of throwing all of it away.
 #
-#   scripts/score_store.sh put <file>    # CF_* and ENGINE_FP in the env
+#   scripts/score_store.sh put <file>    # CF_* in the env
 #   scripts/score_store.sh get <dir>
 #   scripts/score_store.sh --self-test
 #
@@ -20,12 +20,12 @@
 # namespace both verbs succeed doing nothing, and the pipeline is exactly what
 # it was before the store existed. That is the rollback, and it is one secret.
 #
-# THE ENGINE FINGERPRINT IS THE PREFIX, so a code change makes every stored
-# score unreachable rather than wrong — the reader would refuse them anyway
-# (`--scores-engine`), and this way it does not pay to fetch them first. What is
-# left behind expires: entries are written with a TTL rather than collected,
-# because a cleanup pass is a second thing that can fail and a stale blob under
-# an old prefix costs nothing but bytes.
+# NOTHING HERE KNOWS ABOUT CODE VERSIONS. Every row inside a blob carries the
+# hash of what it READ, and the reader admits it only where that still matches,
+# so a stored score proves itself without anyone declaring which binary wrote
+# it. Whether the CODE moved a number is measured by the audit, not asserted by
+# a hash. Blobs expire on a TTL rather than being collected: a cleanup pass is a
+# second thing that can fail, and a spent blob costs bytes.
 set -euo pipefail
 
 # TEN DAYS. Long enough that a fingerprint can sit unpublished over a weekend
@@ -40,14 +40,14 @@ api_base() {
 
 configured() {
   [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_SCORES_NAMESPACE:-}" ] && [ -n "${CF_TOKEN:-}" ] \
-    && [ -n "${ENGINE_FP:-}" ]
+   
 }
 
-# WHAT THIS BLOB IS CALLED. The run and the shard, under the engine that
-# computed it: unique without coordination, which is what lets thirty-two shards
-# write at once without knowing about each other.
+# WHAT THIS BLOB IS CALLED. The run and the shard: unique without coordination,
+# which is what lets thirty-two shards write at once without knowing about each
+# other.
 blob_key() {
-  printf 's/%s/%s-%s' "$ENGINE_FP" "${GITHUB_RUN_ID:-local}" "${SHARD_ID:-0}"
+  printf 's/%s-%s' "${GITHUB_RUN_ID:-local}" "${SHARD_ID:-0}"
 }
 
 # NO `jq` HERE, unlike `fetch_submissions.sh`. That script encodes SUBMISSION
@@ -86,7 +86,7 @@ get_scores() {
   : > "$dir/.keys"
   while :; do
     resp=$(curl -sf -H "Authorization: Bearer $CF_TOKEN" \
-      "$api/keys?limit=1000&prefix=$(urlenc "s/$ENGINE_FP/")${cursor:+&cursor=$cursor}") \
+      "$api/keys?limit=1000&prefix=s%2F${cursor:+&cursor=$cursor}") \
       || { echo "score_store: listing failed, starting from the boards alone"; return 0; }
     # `|| true` on both: a listing with no keys and one with no cursor are the
     # ORDINARY end states, and `grep` reports "found nothing" as a failure —
@@ -108,7 +108,7 @@ get_scores() {
     fi
   done < "$dir/.keys"
   rm -f "$dir/.keys"
-  echo "score_store: read $n blob(s) for engine $ENGINE_FP"
+  echo "score_store: read $n blob(s)"
 }
 
 # ---- the self-test ---------------------------------------------------------
@@ -116,7 +116,7 @@ get_scores() {
 # A stub `curl` in a temp directory, for the same reason `fetch_submissions.sh`
 # has one: the thing tested has to be the thing that runs. What is asserted is
 # the SHAPE — unconfigured is silent and green, a put names the run and shard
-# under the engine, a get writes one file per listed key, and a failing read
+# a get writes one file per listed key, and a failing read
 # leaves no file behind rather than an empty one.
 self_test() {
   local dir; dir=$(mktemp -d)
@@ -127,8 +127,8 @@ self_test() {
 url=""
 for a in "$@"; do case "$a" in https://*) url="$a";; esac; done
 case "$url" in
-  *"/keys?"*) printf '{"result":[{"name":"s/ENG/r1-0"},{"name":"s/ENG/r1-1"},{"name":"s/ENG/gone"}],"result_info":{}}'; exit 0;;
-  *"/values/s%2FENG%2Fgone"*) exit 22;;
+  *"/keys?"*) printf '{"result":[{"name":"s/r1-0"},{"name":"s/r1-1"},{"name":"s/gone"}],"result_info":{}}'; exit 0;;
+  *"/values/s%2Fgone"*) exit 22;;
   *"/values/"*) printf '{"benchmark":"single_target","scores":{}}'; exit 0;;
 esac
 exit 1
@@ -143,35 +143,35 @@ STUB
 
   # 1. Unconfigured is a working state.
   local out
-  out=$(CF_ACCOUNT="" CF_SCORES_NAMESPACE="" CF_TOKEN="" ENGINE_FP="" \
+  out=$(CF_ACCOUNT="" CF_SCORES_NAMESPACE="" CF_TOKEN="" \
     bash "$0" put "$dir/one.json" 2>&1) || bad=1
   check "unconfigured put is silent and green" \
     "$([ "${out#*nothing stored}" != "$out" ] && echo 1 || echo 0)" "$out"
-  out=$(CF_ACCOUNT="" CF_SCORES_NAMESPACE="" CF_TOKEN="" ENGINE_FP="" \
+  out=$(CF_ACCOUNT="" CF_SCORES_NAMESPACE="" CF_TOKEN="" \
     bash "$0" get "$dir/in" 2>&1) || bad=1
   check "unconfigured get is silent and green" \
     "$([ "${out#*boards alone}" != "$out" ] && echo 1 || echo 0)" "$out"
 
-  # 2. A put names the run and the shard under the engine.
+  # 2. A put names the run and the shard.
   out=$(PATH="$dir/bin:$PATH" CF_ACCOUNT=a CF_SCORES_NAMESPACE=n CF_TOKEN=t \
-    ENGINE_FP=ENG GITHUB_RUN_ID=r9 SHARD_ID=7 bash "$0" put "$dir/one.json" 2>&1) || bad=1
-  check "a put is keyed by engine, run and shard" \
-    "$([ "${out#*s/ENG/r9-7}" != "$out" ] && echo 1 || echo 0)" "$out"
+    GITHUB_RUN_ID=r9 SHARD_ID=7 bash "$0" put "$dir/one.json" 2>&1) || bad=1
+  check "a put is keyed by run and shard" \
+    "$([ "${out#*s/r9-7}" != "$out" ] && echo 1 || echo 0)" "$out"
 
   # 3. An empty file stores nothing rather than an empty blob.
   : > "$dir/empty.json"
   out=$(PATH="$dir/bin:$PATH" CF_ACCOUNT=a CF_SCORES_NAMESPACE=n CF_TOKEN=t \
-    ENGINE_FP=ENG bash "$0" put "$dir/empty.json" 2>&1) || bad=1
+    bash "$0" put "$dir/empty.json" 2>&1) || bad=1
   check "an empty score file stores nothing" \
     "$([ "${out#*is empty}" != "$out" ] && echo 1 || echo 0)" "$out"
 
   # 4. A get writes one file per key it could read, and none for the one it could not.
   PATH="$dir/bin:$PATH" CF_ACCOUNT=a CF_SCORES_NAMESPACE=n CF_TOKEN=t \
-    ENGINE_FP=ENG bash "$0" get "$dir/in" > /dev/null 2>&1 || bad=1
+    bash "$0" get "$dir/in" > /dev/null 2>&1 || bad=1
   local n; n=$(find "$dir/in" -name '*.json' | wc -l)
   check "a get writes one file per readable key" "$([ "$n" = "2" ] && echo 1 || echo 0)" "got $n"
   check "a key that could not be read leaves no file" \
-    "$([ ! -f "$dir/in/s_ENG_gone.json" ] && echo 1 || echo 0)" "an empty file was left behind"
+    "$([ ! -f "$dir/in/s_gone.json" ] && echo 1 || echo 0)" "an empty file was left behind"
 
   echo ""
   [ "$bad" = "0" ] && echo "the store banks what a run computed" || echo "score_store self-test failed"
