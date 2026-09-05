@@ -2,10 +2,10 @@
 #
 # THE ROWS ARE NOT HERE and must never be. `data/` is compiled into the binary,
 # so a board archive under it put every row of every board into the wasm that
-# every visitor downloads — 1.47 MB of a 6.36 MB module, to serve the handful of
-# scalars below. The archive is `boards/*.yaml` at the repository root, read
-# from DISK by the scorer that writes it and by the site build; nothing at
-# runtime asks a board for a row, because the page fetches `board.json`.
+# every visitor downloads. The archive is `boards/*.yaml` at the repository
+# root, read from DISK by the scorer that writes it and by the site build;
+# nothing at runtime asks a board for a row, because the page fetches
+# `board.json`.
 #
 # `submissions` paired with the library's own size (`/api/board/pending`) is how
 # a STATIC board says how far behind it is. `listed` and `held` say how much of
@@ -13,14 +13,17 @@
 # say how much it looked at.
 boards:
   group_clear:
-    submissions: 4254
-    listed: 1029
-    held: 0
+    submissions: 5939
+    listed: 2181
+    held: 5477
+    scored_at_epoch_seconds: 1788615752
   single_target:
-    submissions: 4254
-    listed: 1810
-    held: 0
+    submissions: 5939
+    listed: 3509
+    held: 4149
+    scored_at_epoch_seconds: 1788615760
   single_target_no_aim:
-    submissions: 4254
-    listed: 1000
-    held: 0
+    submissions: 5939
+    listed: 1950
+    held: 5708
+    scored_at_epoch_seconds: 1788615764
