@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6479
+submissions: 6491
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -5331,6 +5331,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: boar_prime
     mode: base
+    score: 30.544785647441763
+    fp: a4c0a2b7aaeea070
+    cost: 14.626
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
     score: 30.397448502475154
     fp: 8f813e882374c0f8
     cost: 20.937
@@ -6102,31 +6110,6 @@ entries:
     fp: cf0af209905348c3
     cost: 27.939
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
-    arcanes: [shotgun_vendetta]
-  - weapon: boar_prime
-    mode: base
-    score: 15.270634870302391
-    fp: d36921d45ea3a629
-    cost: 16.951
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, magnetic_strafe, primed_chilling_grasp, contagious_spread]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
-    arcanes: [primary_deadhead]
-  - weapon: boar_prime
-    mode: base
-    score: 15.241641554349384
-    fp: ec76e440e3b7a7b9
-    cost: 24.429
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
-    arcanes: [shotgun_vendetta]
-  - weapon: boar_prime
-    mode: base
-    score: 15.241641554349384
-    fp: 5263bae0062bee46
-    cost: 19.455
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [shotgun_vendetta]
   - weapon: boar_prime
@@ -57981,6 +57964,20 @@ entries:
       bonuses: [damage, toxin]
       malus: puncture
       rolls: [1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 17
+    fp: 8b5d77a6591318fa
+    cost: 11.706
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -59575,6 +59572,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 15.270634870302391
+    fp: d36921d45ea3a629
+    cost: 16.951
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, magnetic_strafe, primed_chilling_grasp, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: tenet_detron
     mode: alternate
     listed: false
@@ -59598,6 +59604,25 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
     arcanes: [cascadia_flare]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 15.241641554349384
+    fp: ec76e440e3b7a7b9
+    cost: 24.429
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 15.241641554349384
+    fp: 5263bae0062bee46
+    cost: 19.455
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
   - weapon: torid
     mode: cycle
     listed: false
@@ -71494,6 +71519,15 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, weapon_recoil]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    score: 6.62313632416556
+    fp: a4c0a2b7aaeea070
+    cost: 11.517
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: furis
     mode: base
     listed: false
@@ -92293,6 +92327,15 @@ entries:
     cost: 1.561
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_deadhead, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 36.281953448445975
+    fp: b992c2c50d70d829
+    cost: 1.192
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     listed: false
