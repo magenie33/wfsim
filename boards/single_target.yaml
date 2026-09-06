@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6496
+submissions: 6497
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -38487,6 +38487,14 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: sicarus_prime
     mode: cycle
+    score: 41.62577658730186
+    fp: 374b95a363ff5237
+    cost: 8.887
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
     score: 41.137628192685945
     fp: e636f8cde4e60bac
     cost: 7.297
@@ -38915,6 +38923,14 @@ entries:
     fp: a63af3fe704c5a68
     cost: 1.855
     mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: base
+    score: 11.607650406800111
+    fp: 374b95a363ff5237
+    cost: 6.072
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
     arcanes: [secondary_deadhead]
   - weapon: sicarus_prime
