@@ -89450,6 +89450,90 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.2792815508217846
+    fp: 36512eada3a0811a
+    cost: 0.495
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.2792815508217846
+    fp: 36512eada3a0811a
+    cost: 0.491
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.2937577863829489
+    fp: 5c55864b2a811afb
+    cost: 0.536
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.2937577863829489
+    fp: 5c55864b2a811afb
+    cost: 0.495
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.53195852914801
+    fp: 06203755fcc7654b
+    cost: 0.427
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.53195852914801
+    fp: 06203755fcc7654b
+    cost: 0.414
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.810191093430372
+    fp: f639c4328e360049
+    cost: 0.278
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.810191093430372
+    fp: f639c4328e360049
+    cost: 0.302
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
     score: 0.8429753405098023
     fp: 9ae275827ef9cbd2
     cost: 0.250
@@ -89465,6 +89549,106 @@ entries:
     cost: 0.239
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.31588471196683066
+    fp: 8665c6f5fd44ba8e
+    cost: 0.461
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.31588471196683066
+    fp: 8665c6f5fd44ba8e
+    cost: 0.357
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.25470548830376283
+    fp: 43a196f0c8f14ccf
+    cost: 0.624
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.25470548830376283
+    fp: 43a196f0c8f14ccf
+    cost: 0.625
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.3451621058345209
+    fp: 068b76694f5a6c09
+    cost: 0.498
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.3451621058345209
+    fp: 068b76694f5a6c09
+    cost: 0.501
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.6384949342568069
+    fp: 70113fb58dd42aa6
+    cost: 0.257
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.6384949342568069
+    fp: 70113fb58dd42aa6
+    cost: 0.436
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.7390761277002663
+    fp: 146ea001e1d42cf7
+    cost: 0.498
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.7390761277002663
+    fp: 146ea001e1d42cf7
+    cost: 0.520
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: kuva_grattler
     mode: base
@@ -91214,187 +91398,3 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.2792815508217846
-    fp: 36512eada3a0811a
-    cost: 0.495
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.2792815508217846
-    fp: 36512eada3a0811a
-    cost: 0.491
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.2937577863829489
-    fp: 5c55864b2a811afb
-    cost: 0.536
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.2937577863829489
-    fp: 5c55864b2a811afb
-    cost: 0.495
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.53195852914801
-    fp: 06203755fcc7654b
-    cost: 0.427
-    exilus: primed_steady_hands
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.53195852914801
-    fp: 06203755fcc7654b
-    cost: 0.414
-    exilus: primed_steady_hands
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.810191093430372
-    fp: f639c4328e360049
-    cost: 0.278
-    exilus: primed_steady_hands
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.810191093430372
-    fp: f639c4328e360049
-    cost: 0.302
-    exilus: primed_steady_hands
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.31588471196683066
-    fp: 8665c6f5fd44ba8e
-    cost: 0.461
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.31588471196683066
-    fp: 8665c6f5fd44ba8e
-    cost: 0.357
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.25470548830376283
-    fp: 43a196f0c8f14ccf
-    cost: 0.624
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.25470548830376283
-    fp: 43a196f0c8f14ccf
-    cost: 0.625
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.3451621058345209
-    fp: 068b76694f5a6c09
-    cost: 0.498
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.3451621058345209
-    fp: 068b76694f5a6c09
-    cost: 0.501
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.6384949342568069
-    fp: 70113fb58dd42aa6
-    cost: 0.257
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.6384949342568069
-    fp: 70113fb58dd42aa6
-    cost: 0.436
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: base
-    listed: false
-    probe: true
-    score: 0.7390761277002663
-    fp: 146ea001e1d42cf7
-    cost: 0.498
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
-  - weapon: furis
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.7390761277002663
-    fp: 146ea001e1d42cf7
-    cost: 0.520
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
-    arcanes: [secondary_enervate]
