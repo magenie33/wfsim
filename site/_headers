@@ -11,6 +11,9 @@
 /board.json
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
+/board/*
+  Cache-Control: public, max-age=0, must-revalidate
+  Access-Control-Allow-Origin: *
 /board.meta.json
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
