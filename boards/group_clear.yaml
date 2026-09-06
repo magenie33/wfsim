@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6478
+submissions: 6479
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -22094,6 +22094,19 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
+    score: 132.21904508668447
+    fp: a049ca0c473ad008
+    cost: 68.169
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
     score: 117.97604988570814
     fp: 3ad7c59d1433cedc
     cost: 95.118
@@ -34654,6 +34667,19 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 66.38530245609617
+    fp: 374724dcb276915f
+    cost: 57.296
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [damage, magazine_capacity, multishot]
+      malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
@@ -92257,6 +92283,15 @@ entries:
     fp: b80d1ea1e5df0c3a
     cost: 1.590
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, magma_chamber]
+    arcanes: [primary_deadhead, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 40.62075326838596
+    fp: ce394fa77d0720a8
+    cost: 1.561
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_deadhead, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
