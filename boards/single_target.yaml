@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6393
+submissions: 6402
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -9534,6 +9534,19 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: braton_vandal
     mode: cycle
+    score: 27.213644373086
+    fp: 84536670302ddb6c
+    cost: 11.842
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_munitions_grit, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_grineer]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: braton_vandal
+    mode: cycle
     score: 26.7782826219502
     fp: 73af6c2d5421d3de
     cost: 2.074
@@ -9542,12 +9555,38 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: braton_vandal
     mode: cycle
+    score: 26.304035108799436
+    fp: f1e6d85f54784bc7
+    cost: 7.336
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_grineer]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: braton_vandal
+    mode: cycle
     score: 25.4399095727416
     fp: 4a728ec8cd70a637
     cost: 2.588
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
     evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_munitions_grit, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: braton_vandal
+    mode: cycle
+    score: 24.692219978889035
+    fp: ccac157024a710f8
+    cost: 13.073
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_grineer]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: braton_vandal
     mode: cycle
     score: 21.2401196586508
@@ -9599,6 +9638,32 @@ entries:
     riven:
       bonuses: [critical_damage, damage, toxin]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: braton_vandal
+    mode: base
+    score: 9.463787881621187
+    fp: 84536670302ddb6c
+    cost: 12.424
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_munitions_grit, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_grineer]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: braton_vandal
+    mode: base
+    score: 8.517445633844867
+    fp: f1e6d85f54784bc7
+    cost: 4.997
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_grineer]
+      malus: puncture
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: braton_vandal
     mode: base
@@ -32166,26 +32231,68 @@ entries:
     arcanes: [primary_deadhead, secondary_enervate]
   - weapon: mausolon
     mode: cycle
-    score: 2.2353661708470436
-    fp: 80e2670b8a4ecafd
-    cost: 6.312
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, parallax_scope, primed_polar_magazine, riven]
-    arcanes: [primary_bulwark, secondary_outburst]
+    score: 8.213076109036214
+    fp: 9bc1715673f046f9
+    cost: 5.182
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
     riven:
-      bonuses: [damage_to_corpus, electricity]
-      malus: fire_rate
-      rolls: [1.1, 1.1, 0.9]
+      bonuses: [critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 0.9, 0.9]
   - weapon: mausolon
     mode: base
-    score: 2.2264494327171556
-    fp: 80e2670b8a4ecafd
-    cost: 6.221
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, parallax_scope, primed_polar_magazine, riven]
-    arcanes: [primary_bulwark, secondary_outburst]
+    score: 7.978904421497825
+    fp: 9bc1715673f046f9
+    cost: 7.073
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
     riven:
-      bonuses: [damage_to_corpus, electricity]
-      malus: fire_rate
-      rolls: [1.1, 1.1, 0.9]
+      bonuses: [critical_damage, fire_rate]
+      malus: zoom
+      rolls: [1.1, 0.9, 0.9]
+  - weapon: mausolon
+    mode: cycle
+    score: 7.97167631352763
+    fp: 9bc1715673f046f9
+    cost: 5.393
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate]
+      rolls: [1.1, 0.9]
+  - weapon: mausolon
+    mode: cycle
+    score: 7.8493318560152625
+    fp: 9bc1715673f046f9
+    cost: 6.230
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: zoom
+      rolls: [0.9, 1.1, 0.9]
+  - weapon: mausolon
+    mode: base
+    score: 7.666666666666667
+    fp: 9bc1715673f046f9
+    cost: 4.399
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate]
+      rolls: [1.1, 0.9]
+  - weapon: mausolon
+    mode: base
+    score: 7.606236509646121
+    fp: 9bc1715673f046f9
+    cost: 4.553
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: zoom
+      rolls: [0.9, 1.1, 0.9]
   - weapon: miter
     mode: cycle
     score: 22.70526480250924
@@ -38871,6 +38978,18 @@ entries:
     arcanes: [primary_crux]
   - weapon: strun_prime
     mode: base
+    score: 22.390198794786947
+    fp: c318b83a978d8651
+    cost: 88.118
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, riven, primed_chilling_grasp, toxic_barrage, primed_charged_shell]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
     score: 22.340439641455585
     fp: 864be20865eab4c9
     cost: 30.186
@@ -39652,6 +39771,18 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: stug
+    mode: base
+    score: 14.350022518426506
+    fp: 455b720a10ca7286
+    cost: 10.382
+    mods: [galvanized_diffusion, magnum_force, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_resonant_restore, stug_elemental_dominance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [multishot, status_duration, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: stug
     mode: base
     score: 13.921027298431342
@@ -47968,6 +48099,19 @@ entries:
       bonuses: [fire_rate, multishot, toxin]
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: stug
+    mode: cycle
+    listed: false
+    score: 34.752290237994465
+    fp: 455b720a10ca7286
+    cost: 21.087
+    mods: [galvanized_diffusion, magnum_force, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_resonant_restore, stug_elemental_dominance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [multishot, status_duration, toxin]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     listed: false
@@ -68740,6 +68884,14 @@ entries:
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_crux]
+  - weapon: mausolon
+    mode: cycle
+    listed: false
+    score: 6.636632895835544
+    fp: 1b97a10561469d25
+    cost: 3.332
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
   - weapon: torid
     mode: cycle
     listed: false
@@ -72681,6 +72833,20 @@ entries:
       bonuses: [critical_damage, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9]
+  - weapon: braton_vandal
+    mode: base
+    listed: false
+    score: 4.889281706074119
+    fp: ccac157024a710f8
+    cost: 9.759
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_grineer]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: base
     listed: false
@@ -79887,6 +80053,18 @@ entries:
     cost: 0.319
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, cascadia_flare]
+  - weapon: mausolon
+    mode: cycle
+    listed: false
+    score: 2.2353661708470436
+    fp: 80e2670b8a4ecafd
+    cost: 6.312
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, parallax_scope, primed_polar_magazine, riven]
+    arcanes: [primary_bulwark, secondary_outburst]
+    riven:
+      bonuses: [damage_to_corpus, electricity]
+      malus: fire_rate
+      rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -79920,6 +80098,18 @@ entries:
     cost: 0.315
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_overcharge, cascadia_flare]
+  - weapon: mausolon
+    mode: base
+    listed: false
+    score: 2.2264494327171556
+    fp: 80e2670b8a4ecafd
+    cost: 6.221
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, parallax_scope, primed_polar_magazine, riven]
+    arcanes: [primary_bulwark, secondary_outburst]
+    riven:
+      bonuses: [damage_to_corpus, electricity]
+      malus: fire_rate
+      rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
     listed: false
@@ -96942,3 +97132,12 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
+  - weapon: mausolon
+    mode: base
+    listed: false
+    probe: true
+    score: 6.404349792696034
+    fp: 1b97a10561469d25
+    cost: 0.387
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
