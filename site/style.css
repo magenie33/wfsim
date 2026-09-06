@@ -557,6 +557,10 @@ body.on-enemies [data-module="builder"]{display:none}
 .board-outcome:empty{display:none}
 .board-outcome.sent{border-left-color:var(--gold)}
 .board-outcome.sent .bo-h{color:var(--gold)}
+/* WHERE THE RUN WOULD STAND, in the panel's own accent: it is the answer the
+   submitter came for, and the two lines under it are the rules around it. */
+.board-outcome .board-place{margin-top:5px;display:block;color:var(--text)}
+.board-outcome.sent .board-place{color:var(--gold)}
 /* THE RULE THAT DECIDES WHETHER IT WILL BE LISTED, under what happened to the
    run rather than trailing off the end of it: two facts, two lines. */
 .board-outcome .board-state{margin-top:5px;display:block}
