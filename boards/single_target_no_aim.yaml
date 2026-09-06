@@ -90395,6 +90395,50 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.2163856947784401
+    fp: 39dbef9ed46d94cc
+    cost: 0.259
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.37825987911578113
+    fp: 39dbef9ed46d94cc
+    cost: 0.144
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 0.08337487545497443
+    fp: 10cdeac6861539c8
+    cost: 0.308
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.14417890617412943
+    fp: 10cdeac6861539c8
+    cost: 0.132
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
     score: 0.22522830684690887
     fp: 4d5c6e5bc5234959
     cost: 0.214
@@ -91040,47 +91084,3 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.2163856947784401
-    fp: 39dbef9ed46d94cc
-    cost: 0.411
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.37825987911578113
-    fp: 39dbef9ed46d94cc
-    cost: 0.149
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.08337487545497443
-    fp: 10cdeac6861539c8
-    cost: 0.313
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.14417890617412943
-    fp: 10cdeac6861539c8
-    cost: 0.125
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_merciless]
