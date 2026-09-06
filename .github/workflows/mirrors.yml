@@ -1,0 +1,28 @@
+# DO THE MIRRORS STILL SERVE WHAT THIS REPOSITORY HOLDS?
+#
+# A mirror that fell behind serves a page that WORKS — it opens, it computes, it
+# answers, with the previous engine. Nothing fails, so nothing reports, and the
+# first symptom is two readers comparing numbers and disagreeing. That is not a
+# monitoring strategy, which is why this asks out loud on a clock.
+#
+# READ-ONLY AND CREDENTIAL-FREE: it fetches the same public files a client
+# fetches. `--warn` because this reports on the WORLD, not on the tree — a
+# mirror being behind is a fact about a bucket, and failing the repository for
+# it would put a red mark on commits that are perfectly fine.
+name: mirrors
+
+on:
+  schedule:
+    - cron: "25 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Mirrors agree with the tree
+        run: python scripts/check_mirrors.py --warn

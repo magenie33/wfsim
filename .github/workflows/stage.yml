@@ -1,0 +1,47 @@
+# STAGE THE RELEASE THIS COMMIT DEPLOYS — the half of publishing that needs no
+# key. It uploads blobs and the manifest naming them, and points at NOTHING: no
+# client reads any of it until a person signs the pointer
+# (`scripts/promote.py`). So a compromised runner reaches nobody, and the
+# expensive half stops waiting on somebody remembering to run it.
+#
+# IT PUBLISHES THE COMMITTED `site/`, never a rebuild of it. Cloudflare deploys
+# that directory verbatim, so staging anything else would put the two channels
+# back where they started — two builds of one tree that are only supposed to be
+# identical. docs/DISTRIBUTION.md §The release plane.
+#
+# UNCONFIGURED IS SILENT AND GREEN. Without COS credentials in the repository's
+# secrets there is nowhere to publish, and reddening every push for a job nobody
+# asked to be able to run teaches people to ignore the colour.
+name: stage
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One at a time, and the newest wins: a run staging an older commit while a
+# newer one is already up adds blobs nothing will point at.
+concurrency:
+  group: stage
+  cancel-in-progress: true
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # `payload_manifest.py` and `cos.py` are dependency-free by design — a
+      # release job should not need a package index to push a few files.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # THE BOARD MOVES THREE TIMES AN HOUR AND THE RELEASE DOES NOT, so most
+      # pushes stage a manifest the bucket already holds and stop after one
+      # request. That gate is inside the script, where a re-run gets it too.
+      - name: Stage
+        env:
+          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
+          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
+        run: python scripts/stage.py

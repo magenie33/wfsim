@@ -28,6 +28,8 @@ import subprocess
 import sys
 import urllib.request
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 BUILT_MANIFEST = ROOT / "desktop" / "target" / "payload-manifest.json"
@@ -117,6 +119,18 @@ def main() -> None:
     run(cargo(), "build", "--manifest-path", str(ROOT / "desktop" / "Cargo.toml"))
     if not BUILT_MANIFEST.exists():
         sys.exit(f"ship: {BUILT_MANIFEST} was not written — the shell did not build")
+
+    # TWO PRODUCERS OF ONE ARTEFACT, HELD AGAINST EACH OTHER. `build.rs` is the
+    # authority and `payload_manifest.py` is what a runner without a Tauri
+    # toolchain uses; they read one list (`desktop/payload.lst`), and this is
+    # what keeps them reading it the same way. A silent divergence here is a
+    # staged release that no promotion can verify.
+    import payload_manifest  # noqa: E402
+    if payload_manifest.build() != BUILT_MANIFEST.read_bytes():
+        sys.exit(
+            "ship: scripts/payload_manifest.py and desktop/build.rs describe "
+            "different payloads — they read desktop/payload.lst and must agree"
+        )
 
     release = [sys.executable, str(ROOT / "scripts" / "release_desktop.py")]
     if args.dry_run:

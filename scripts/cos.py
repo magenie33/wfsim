@@ -25,14 +25,38 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CREDS = ROOT / "private" / "cos.json"
 
 
+# THE SAME FOUR VALUES FROM THE ENVIRONMENT, for a runner that has no `private/`
+# and must not have a file written to disk to get them. The file wins where it
+# exists, because a developer's own bucket should not be overridden by whatever
+# is exported in their shell.
+ENV = {"secret_id": "COS_SECRET_ID", "secret_key": "COS_SECRET_KEY",
+       "bucket": "COS_BUCKET", "region": "COS_REGION"}
+
+
+def _from_env() -> dict | None:
+    import os
+    got = {k: os.environ.get(v, "") for k, v in ENV.items()}
+    return got if all(got.values()) else None
+
+
+def configured() -> bool:
+    """Is there anywhere to publish TO? Asked so an unconfigured runner can be
+    silent and green rather than red for a job nobody asked it to run."""
+    return CREDS.exists() or _from_env() is not None
+
+
 def creds() -> dict:
-    if not CREDS.exists():
-        sys.exit(
-            f"missing {CREDS}\n\nCreate it with:\n"
-            '  { "secret_id": "...", "secret_key": "...",\n'
-            '    "bucket": "wfsim-1388973035", "region": "ap-shanghai" }'
-        )
-    return json.loads(CREDS.read_text(encoding="utf-8"))
+    if CREDS.exists():
+        return json.loads(CREDS.read_text(encoding="utf-8"))
+    env = _from_env()
+    if env:
+        return env
+    sys.exit(
+        f"missing {CREDS}\n\nCreate it with:\n"
+        '  { "secret_id": "...", "secret_key": "...",\n'
+        '    "bucket": "wfsim-1388973035", "region": "ap-shanghai" }\n'
+        f"…or set {', '.join(ENV.values())} in the environment."
+    )
 
 
 def host(c: dict) -> str:
