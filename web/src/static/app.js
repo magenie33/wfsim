@@ -6650,7 +6650,7 @@ async function drawShareCard(canvas, url) {
     const v = metricValue(met, r);
     g.fillStyle = gold; g.font = F(40, "600");
     g.fillText(
-      (met.per_minute ? sig2(v) : Math.round(v).toLocaleString())
+      fmtScore(v)
         + " " + metricLabel(met), 36, y);
     g.fillStyle = dim; g.font = F(15);
     const en = allEnemies().find((e) => e.id === sim.enemy) || {};
@@ -7649,6 +7649,21 @@ const sig2 = (x, min = 2) => {
   return v.toFixed(need);
 };
 const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
+
+/// A SCORE, SPELLED THE WAY THE BOARD SPELLS IT — `boards_data::format_score`,
+/// transcribed. Four significant figures with four decimals as the floor, which
+/// on anything above 1 is simply four decimals.
+///
+/// ONE RULE FOR ONE NUMBER. The page rounded a result to two decimals while the
+/// ranking published four, so a reader comparing their own run against the row
+/// it is about to become was reading two different spellings of the same
+/// measurement — and a disagreement of 0.001 looked like agreement.
+const fmtScore = (x) => {
+  const v = Number(x);
+  if (!Number.isFinite(v) || v === 0) return (0).toFixed(4);
+  const mag = Math.floor(Math.log10(Math.abs(v)));
+  return v.toFixed(Math.min(12, Math.max(4, 3 - mag)));
+};
 
 // One-time move of the weapon-LESS preset lists onto a weapon. They were
 // written before presets were scoped, so they belong to whatever the user
@@ -15088,7 +15103,7 @@ function boardProjection() {
     && !rowHasRiven(x));
   const ahead = rows.filter((x) => (x.score || 0) > mine).length;
   return {
-    text: (met.per_minute ? sig2(mine) : Math.round(mine).toLocaleString())
+    text: fmtScore(mine)
       + " " + metricLabel(met),
     place: ahead + 1,
     of: rows.length + 1,
@@ -16930,8 +16945,8 @@ function replayApply(rp, i) {
     // The replay's own series is what it reads, so the field is looked up on it.
     const hm = metricOf(hero.dataset.hero);
     const v = hm.per_minute
-      ? (mins > 0 ? progress / mins : 0).toFixed(2)
-      : n((rp.kpi && rp.kpi[hm.field] ? rp.kpi[hm.field][i] : 0));
+      ? fmtScore(mins > 0 ? progress / mins : 0)
+      : fmtScore(rp.kpi && rp.kpi[hm.field] ? rp.kpi[hm.field][i] : 0);
     const unit = hero.querySelector(".hero-unit");
     hero.textContent = v;
     if (unit) hero.appendChild(unit);
@@ -17411,7 +17426,7 @@ function renderResults(r, testedAt) {
   // The score itself is the total over the engagement and stays beside it,
   // the same way total damage sits beside DPS.
   const met = metricOf(sim.metric);
-  const heroNum = met.per_minute ? n2(metricValue(met, r)) : n0(metricValue(met, r));
+  const heroNum = fmtScore(metricValue(met, r));
   // The UNIT belongs beside the number, not under it: "5.29" on one line and
   // "KPM · …" starting the next read as two facts. Set
   // small and spaced away, so it labels the figure without competing with it.
@@ -17434,7 +17449,7 @@ function renderResults(r, testedAt) {
   // metric borrows the sentence instead of needing a new one.
   const alt = met.id === metricOf().id ? "" : (() => {
     const d = metricOf();
-    return `${d.per_minute ? n2(metricValue(d, r)) : n0(metricValue(d, r))} ${metricLabel(d)} · `;
+    return `${fmtScore(metricValue(d, r))} ${metricLabel(d)} · `;
   })();
   const heroSub = alt +
     `${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
