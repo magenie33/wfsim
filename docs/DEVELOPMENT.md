@@ -340,6 +340,21 @@ That Torid line is the tool doing its job: the weapon's entire cost is its
 lingering field, and the status axis — the obvious suspect, and 12.5% on the
 Gotva Prime — sees none of it.
 
+**`bodies=361 spacing=3` STANDS THE RULER'S CROWD THERE**, unkillable, and
+`arcanes=` seats what the row wears. The rows that set this board's makespan are
+all group-clear ones and a build pays 141x there what it pays against one body,
+so a table taken against the fixture alone profiles the cheap 0.7% of the
+weapon. It is off by default: every saved baseline and every golden value was
+measured against one body.
+
+**AND THE CROWD BRINGS ITS OWN LIMIT, which is the same one from the other
+side.** The fixture cannot kill, so nothing resets — and a build that kills 537
+bodies a run in the real fight spends most of it against targets whose status
+has just been cleared. Anything whose cost GROWS with untouched state reads far
+too high here: Primary Debilitate profiles at 96.5% of a Phantasma row against
+1.7x measured on the ruler itself. Read the coarse answer (which subsystem) and
+take the shares of anything state-shaped back to the real scenario.
+
 **Read it with its two refusals in mind**, both of which it learned the hard
 way. A row whose SHOT COUNT moved is not an ablation, it is a different fight.
 A row whose share is NEGATIVE is not an ablation either — it did not remove

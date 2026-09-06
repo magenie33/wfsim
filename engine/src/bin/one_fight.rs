@@ -119,10 +119,83 @@ struct Cfg<'a> {
     level: u32,
     steel_path: bool,
     verbose: bool,
+    /// HOW MANY BODIES STAND THERE. One is the fixture every golden value was
+    /// measured under; the group-clear ruler's crowd is 361, and the rows that
+    /// cost this board its makespan are all in it. A cost table that can only
+    /// be taken against one body cannot see where their time goes.
+    bodies: usize,
+    /// Centre to centre, in metres. The ruler's 3 m is the single most
+    /// consequential number in its file (docs/BOARD.md): a 5 m Blast sphere
+    /// holds 35 bodies at 1.5 m and 5 at 4 m, so a profile taken at the wrong
+    /// spacing is a profile of a different weapon.
+    spacing: f64,
+    arcanes: &'a [&'a str],
 }
 
 /// A saved row: the shape's name, its two costs, and its two answers.
 type BaseRow = (String, f64, f64, f64, f64);
+
+/// Stand `bodies` of them in the ruler's own grid, all of them unkillable.
+///
+/// A CROWD THAT CANNOT DIE, and that is the whole reason this is separate from
+/// the scenario the board runs: against a killable formation, removing work
+/// also removes damage and an ablation profiles nothing (`ablate`'s own
+/// −71.8%). `Arena::training`'s dummy has infinite health, and every body here
+/// is a clone of it.
+fn crowd(mut arena: Arena, bodies: usize, spacing: f64) -> Arena {
+    if bodies <= 1 {
+        return arena;
+    }
+    let side = (bodies as f64).sqrt().round().max(1.0) as usize;
+    let at = wfsim_engine::formation::Formation::grid_around(
+        arena.target_at,
+        wfsim_engine::space::Vec2::new(0.0, 1.0),
+        side,
+        side,
+        spacing,
+    );
+    // INDEX 0 IS THE AIMED BODY and stays `target`, which is the shape every
+    // scenario has: `target_at` plus the rest.
+    arena.others = at
+        .iter()
+        .skip(1)
+        .enumerate()
+        .map(|(i, p)| wfsim_engine::formation::FoeSpec {
+            id: format!("e{}", i + 2),
+            params: arena.target.clone(),
+            body_parts: wfsim_engine::dummy::DummyParams::humanoid_parts(),
+            at: *p,
+        })
+        .collect();
+    arena
+}
+
+/// The arcanes a shape wears, merged. Empty is `ArcaneFx::none`, which is what
+/// every saved baseline was measured under.
+fn arcanes_for(weapon: &str, ids: &[&str]) -> ArcaneFx {
+    let seats: Vec<_> = ids
+        .iter()
+        .filter(|id| !id.is_empty())
+        .map(|id| {
+            let card = wfsim_engine::arcanes_data::pool_for_weapon(weapon, "primary")
+                .into_iter()
+                .chain(wfsim_engine::arcanes_data::pool_for_weapon(weapon, "secondary"))
+                .find(|a| a.id == *id)
+                .unwrap_or_else(|| panic!("no arcane seat for {id} on {weapon}"));
+            card.fx(
+                card.max_rank,
+                StackPolicy::Emergent,
+                &[],
+                wfsim_engine::tenno_data::default_tenno(),
+            )
+        })
+        .collect();
+    if seats.is_empty() {
+        ArcaneFx::none()
+    } else {
+        ArcaneFx::merged(&seats)
+    }
+}
 
 /// THE FIGHT, built once. `measure` and `ablate` both need it, and when they
 /// each built their own one of them was against a training dummy while the
@@ -134,7 +207,7 @@ type BaseRow = (String, f64, f64, f64, f64);
 /// I do to the damage pipeline", the wrong one for "what does a search pay".
 fn arena_for(c: &Cfg) -> Arena {
     if c.enemy == "training" {
-        return Arena::training(c.duration);
+        return crowd(Arena::training(c.duration), c.bodies, c.spacing);
     }
     let e = wfsim_engine::enemy_data::all()
         .into_iter()
@@ -247,7 +320,14 @@ fn ablate(weapon: &str, c: &Cfg) {
     // ruler's Thrax, truncating the body-part list reported **−71.8%**. Removing
     // work made the fight SLOWER, because a build that stops headshotting takes
     // longer to kill and therefore does more. It profiled nothing.
-    let full = DummyParams::from_panel(&panel, &Arena::training(c.duration), &ArcaneFx::none());
+    //
+    // THE CROWD IS PART OF THE FIXTURE, not of the variants: the rows that set
+    // this board's makespan are 361-body ones, and their cost is 141x what the
+    // same build pays against one. A profile taken against one body is a
+    // profile of the cheap 0.7%.
+    let arena = crowd(Arena::training(c.duration), c.bodies, c.spacing);
+    let fx = arcanes_for(weapon, c.arcanes);
+    let full = DummyParams::from_panel(&panel, &arena, &fx);
 
     // …and a fixed length is necessary, not sufficient: the SHOT COUNT has to
     // come out identical too, or the variant changed the fight rather than
@@ -288,10 +368,21 @@ fn ablate(weapon: &str, c: &Cfg) {
     // while the fight is plainly doing something.
     let mut no_field = full.clone();
     no_field.lingering = None;
+    // THE CROWD ITSELF, which no other axis touches. The shot count is the
+    // weapon's and does not know how many bodies stand there, so this removes
+    // work without changing the fight — the two refusals below still check it.
+    let alone = DummyParams::from_panel(&panel, &Arena::training(c.duration), &fx);
+    // …AND THE ARCANE, when the shape wears one. Debilitate splits a combined
+    // element's proc into a component once a target is at ten stacks, so on a
+    // crowd it is a multiplier on the proc count rather than a flat cost.
+    let no_arcane = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
 
     println!(
-        "{weapon} · {:.0} s · {} runs · fixed-length fight — where the time goes",
-        c.duration, c.runs
+        "{weapon} · {:.0} s · {} runs · {} bod{} · fixed-length fight — where the time goes",
+        c.duration,
+        c.runs,
+        c.bodies,
+        if c.bodies == 1 { "y" } else { "ies" }
     );
     println!("  whole fight                        {whole:>8.3} multishot/run");
     for (name, p) in [
@@ -300,6 +391,8 @@ fn ablate(weapon: &str, c: &Cfg) {
         ("the explosion", &no_radial),
         ("the stacking buffs", &no_buffs),
         ("the lingering field", &no_field),
+        ("the crowd — every body but the one aimed at", &alone),
+        ("the arcane", &no_arcane),
     ] {
         let (t, shots) = time(p);
         let share = (whole - t) / whole * 100.0;
@@ -396,6 +489,8 @@ fn main() -> std::process::ExitCode {
              \x20 runs=1000  duration=180  seed=24301  repeats=3\n\
              \x20 enemy=thrax_centurion  level=9999  steel_path=1\n\
              \x20 enemy=training        no mitigation — the weapon's own arithmetic\n\
+             \x20 bodies=361 spacing=3  the ruler's crowd, and it cannot die\n\
+             \x20 arcanes=primary_debilitate\n\
              \x20 -v                    print every repeat\n\
              \x20 ablate                where the time goes, by subsystem\n\n\
              Exit code is non-zero when an ANSWER moved: that is not a speed-up."
@@ -413,6 +508,13 @@ fn main() -> std::process::ExitCode {
     let enemy = arg(&args, "enemy").unwrap_or("thrax_centurion");
     let level: u32 = arg(&args, "level").and_then(|s| s.parse().ok()).unwrap_or(9999);
     let steel_path = arg(&args, "steel_path").is_none_or(|s| s != "0");
+    // THE CROWD IS OFF BY DEFAULT. Every saved baseline and every golden value
+    // was measured against one body, and a harness that quietly stood 360 more
+    // there would make the whole history incomparable.
+    let bodies: usize = arg(&args, "bodies").and_then(|s| s.parse().ok()).unwrap_or(1);
+    let spacing: f64 = arg(&args, "spacing").and_then(|s| s.parse().ok()).unwrap_or(3.0);
+    let arcanes: Vec<&str> =
+        arg(&args, "arcanes").map(|s| s.split(',').collect()).unwrap_or_default();
 
     let shapes: Vec<(&str, &str)> = match arg(&args, "weapon") {
         Some(w) => vec![(w, "")],
@@ -431,6 +533,7 @@ fn main() -> std::process::ExitCode {
 
     let cfg_v0 = Cfg {
         mod_ids: &mod_ids, runs, duration, seed, repeats, enemy, level, steel_path, verbose,
+        bodies, spacing, arcanes: &arcanes,
     };
     if ablate_mode {
         for (w, _) in &shapes {
