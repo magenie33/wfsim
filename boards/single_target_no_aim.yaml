@@ -79332,7 +79332,7 @@ entries:
     listed: false
     score: 0.15767712803880296
     fp: 0a5b2016dfa67ec8
-    cost: 1.624
+    cost: 1.580
     exilus: vigilante_supplies
     mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
@@ -79342,7 +79342,7 @@ entries:
     listed: false
     score: 0.15767712803880296
     fp: 0a5b2016dfa67ec8
-    cost: 1.237
+    cost: 1.698
     exilus: vigilante_supplies
     mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
@@ -90749,6 +90749,72 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.030634503774970272
+    fp: b2db9aaee31cdf73
+    cost: 0.071
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.019073730561162794
+    fp: b2db9aaee31cdf73
+    cost: 0.075
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.030634503774970272
+    fp: b2db9aaee31cdf73
+    cost: 0.076
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: alternate_cycle
+    listed: false
+    probe: true
+    score: 0.019073730561162794
+    fp: b2db9aaee31cdf73
+    cost: 0.079
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.09565543882668157
+    fp: 0a5b2016dfa67ec8
+    cost: 0.159
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: alternate_cycle
+    listed: false
+    probe: true
+    score: 0.09565543882668157
+    fp: 0a5b2016dfa67ec8
+    cost: 0.165
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: base
+    listed: false
+    probe: true
     score: 0.1284552315422715
     fp: 3b6c6f3d7a8f69bf
     cost: 0.056
@@ -91829,70 +91895,4 @@ entries:
     cost: 0.066
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: base
-    listed: false
-    probe: true
-    score: 0.030634503774970272
-    fp: b2db9aaee31cdf73
-    cost: 0.075
-    exilus: vigilante_supplies
-    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: alternate
-    listed: false
-    probe: true
-    score: 0.019073730561162794
-    fp: b2db9aaee31cdf73
-    cost: 0.068
-    exilus: vigilante_supplies
-    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.030634503774970272
-    fp: b2db9aaee31cdf73
-    cost: 0.071
-    exilus: vigilante_supplies
-    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: alternate_cycle
-    listed: false
-    probe: true
-    score: 0.019073730561162794
-    fp: b2db9aaee31cdf73
-    cost: 0.080
-    exilus: vigilante_supplies
-    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: alternate
-    listed: false
-    probe: true
-    score: 0.09565543882668157
-    fp: 0a5b2016dfa67ec8
-    cost: 0.165
-    exilus: vigilante_supplies
-    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: alternate_cycle
-    listed: false
-    probe: true
-    score: 0.09565543882668157
-    fp: 0a5b2016dfa67ec8
-    cost: 0.156
-    exilus: vigilante_supplies
-    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]

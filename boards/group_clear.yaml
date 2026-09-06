@@ -13379,7 +13379,7 @@ entries:
     mode: base
     score: 5.666666666666667
     fp: 9952e6195c1e0f77
-    cost: 51.155
+    cost: 62.224
     mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_elementalist, riven, primed_charged_shell]
     arcanes: [primary_crux]
     valence: electricity
@@ -17298,6 +17298,24 @@ entries:
     cost: 17.685
     mods: [split_flights, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_ardent_trigger, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: alternate_cycle
+    score: 3059.288507483186
+    fp: 9d3c7b019e4dab63
+    cost: 39.911
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: cycle
+    score: 3030.7716866314504
+    fp: 9d3c7b019e4dab63
+    cost: 38.783
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
   - weapon: paris_prime
     mode: cycle
@@ -21941,19 +21959,6 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, riven]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
     arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: cycle
-    score: 132.21904508668447
-    fp: a049ca0c473ad008
-    cost: 68.590
-    exilus: vigilante_supplies
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_compression]
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
@@ -28200,7 +28205,7 @@ entries:
     listed: false
     score: 1334
     fp: f783f38ff37cdf36
-    cost: 11.173
+    cost: 11.615
     exilus: vigilante_supplies
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
@@ -28264,6 +28269,16 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: paris_prime
+    mode: cycle
+    listed: false
+    score: 1240.8720734454785
+    fp: f783f38ff37cdf36
+    cost: 8.168
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -58175,7 +58190,7 @@ entries:
     listed: false
     score: 16.5748353188801
     fp: 14eb2084bd7b737c
-    cost: 5.658
+    cost: 6.326
     mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: burston_prime
@@ -63412,7 +63427,7 @@ entries:
     listed: false
     score: 11.90911483418746
     fp: 467aefb3954bbda2
-    cost: 20.393
+    cost: 20.772
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
     arcanes: [primary_deadhead, secondary_enervate]
   - weapon: sicarus_prime
@@ -67075,7 +67090,7 @@ entries:
     listed: false
     score: 9.333333333333334
     fp: 40ec404ff353ea77
-    cost: 20.329
+    cost: 20.213
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
     arcanes: [primary_deadhead, cascadia_flare]
   - weapon: burston_prime
@@ -67454,6 +67469,14 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
+  - weapon: mausolon
+    mode: base
+    listed: false
+    score: 9.049295471252002
+    fp: 40ec404ff353ea77
+    cost: 22.463
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
+    arcanes: [primary_deadhead, cascadia_flare]
   - weapon: dread
     mode: base
     listed: false
@@ -68945,14 +68968,6 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_debilitate]
-  - weapon: mausolon
-    mode: cycle
-    listed: false
-    score: 8.02556631350377
-    fp: eb5a525eca009bf1
-    cost: 19.228
-    mods: [primed_rubedo_lined_barrel, automatic_trigger, dual_rounds, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing]
-    arcanes: [primary_deadhead, cascadia_flare]
   - weapon: torid
     mode: cycle
     listed: false
@@ -91872,7 +91887,7 @@ entries:
     probe: true
     score: 7.333333333333333
     fp: c6ce66293c08a316
-    cost: 0.838
+    cost: 0.821
     mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, cascadia_flare]
   - weapon: larkspur_prime
@@ -91890,7 +91905,7 @@ entries:
     probe: true
     score: 11.666666666666666
     fp: 653157f2b0d07c65
-    cost: 0.835
+    cost: 0.839
     mods: [primed_rubedo_lined_barrel, dual_rounds, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
@@ -92025,7 +92040,7 @@ entries:
     probe: true
     score: 7.666666666666667
     fp: 2cbb731fc5fa7f33
-    cost: 0.834
+    cost: 0.651
     mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
@@ -92109,15 +92124,6 @@ entries:
     evolutions: [magistar_evo1_incarnon_form, magistar_edge_of_justice, magistar_seismic_slam, magistar_critical_parallel]
     arcanes: [melee_exposure]
   - weapon: mausolon
-    mode: base
-    listed: false
-    probe: true
-    score: 0.32973595938138556
-    fp: 08c3f099502b5cae
-    cost: 1.294
-    mods: [primed_rubedo_lined_barrel, automatic_trigger, dual_rounds, containment_breach, hollowed_bullets, primed_polar_magazine, magma_chamber, contamination_casing]
-    arcanes: [primary_deadhead, cascadia_flare]
-  - weapon: mausolon
     mode: cycle
     listed: false
     probe: true
@@ -92125,15 +92131,6 @@ entries:
     fp: 08c3f099502b5cae
     cost: 1.748
     mods: [primed_rubedo_lined_barrel, automatic_trigger, dual_rounds, containment_breach, hollowed_bullets, primed_polar_magazine, magma_chamber, contamination_casing]
-    arcanes: [primary_deadhead, cascadia_flare]
-  - weapon: mausolon
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.5813359931950818
-    fp: 4ea2b8498aa2a10c
-    cost: 1.826
-    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, magma_chamber, contamination_casing]
     arcanes: [primary_deadhead, cascadia_flare]
   - weapon: miter
     mode: base
@@ -92190,6 +92187,17 @@ entries:
     cost: 1.330
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
+  - weapon: paris_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 1.2976444117262063
+    fp: f783f38ff37cdf36
+    cost: 0.276
+    exilus: vigilante_supplies
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
   - weapon: paris_prime
     mode: alternate
     listed: false
