@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6358
+submissions: 6367
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -20366,6 +20366,19 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
+    score: 5.635063097276738
+    fp: e122f5e29c1ee9a2
+    cost: 8.019
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, riven, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [cold, critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
     score: 5.604464949744136
     fp: d385e7fc99fa5845
     cost: 13.469
@@ -38352,6 +38365,16 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 1.6421636356452631
+    fp: f4f46b1ed6f3c4d5
+    cost: 4.421
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -38657,6 +38680,16 @@ entries:
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 1.6235400208142599
+    fp: 0a463c02bffa7c6b
+    cost: 5.077
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: cortege
     mode: base
@@ -46417,6 +46450,20 @@ entries:
     cost: 0.991
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 1.0952183043015224
+    fp: e122f5e29c1ee9a2
+    cost: 22.967
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, riven, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [cold, critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -59074,6 +59121,16 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 0.5669431241303913
+    fp: f4f46b1ed6f3c4d5
+    cost: 6.281
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
     listed: false
@@ -60316,6 +60373,16 @@ entries:
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 0.5184421729296228
+    fp: 0a463c02bffa7c6b
+    cost: 7.636
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -91397,4 +91464,24 @@ entries:
     cost: 0.066
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.10601207701665412
+    fp: 49ef44b6ba115d15
+    cost: 0.259
+    mods: [primary_acuity, primed_shred, metal_auger, galvanized_aptitude, vital_sense, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.10601207701665412
+    fp: 49ef44b6ba115d15
+    cost: 0.307
+    mods: [primary_acuity, primed_shred, metal_auger, galvanized_aptitude, vital_sense, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]

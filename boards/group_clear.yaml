@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6358
+submissions: 6367
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -92628,6 +92628,17 @@ entries:
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 0.9184705672330256
+    fp: 5ec52fc6a5abafc7
+    cost: 1.908
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
