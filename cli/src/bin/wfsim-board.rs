@@ -475,10 +475,15 @@ fn group_of(key: &str) -> String {
     format!("{weapon}|{mode}")
 }
 
-fn load_scores(
-    spec: Option<String>,
-    bench_id: &str,
-) -> (ScoreMap, ScoreMap, ScoreMap, std::collections::HashMap<String, String>) {
+type LoadedScores = (
+    ScoreMap,
+    ScoreMap,
+    ScoreMap,
+    std::collections::HashMap<String, String>,
+    std::collections::HashMap<String, Partial>,
+);
+
+fn load_scores(spec: Option<String>, bench_id: &str) -> LoadedScores {
     let mut out = std::collections::HashMap::new();
     // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
     // the same reason as the score: the publish process computes almost
@@ -494,7 +499,12 @@ fn load_scores(
     // moved. A file from THIS run needs none — every shard is one binary over
     // one checkout — and a file from a durable store needs it for every row.
     let mut fps: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-    let Some(spec) = spec else { return (out, cost, probes, fps) };
+    // …AND WHAT A ROW HAS PAID FOR WITHOUT FINISHING. Held to the same
+    // fingerprint as a score by the caller: half a measurement taken against
+    // data that has since moved is not a head start, it is two engines' work
+    // added together.
+    let mut partials: std::collections::HashMap<String, Partial> = std::collections::HashMap::new();
+    let Some(spec) = spec else { return (out, cost, probes, fps, partials) };
     let mut files: Vec<std::path::PathBuf> = Vec::new();
     let p = std::path::Path::new(&spec);
     if p.is_dir() {
@@ -547,6 +557,13 @@ fn load_scores(
                 }
             }
         }
+        if let Some(pt) = file.get("partials").and_then(Value::as_object) {
+            for (k, v) in pt {
+                if let Ok(p) = serde_json::from_value::<Partial>(v.clone()) {
+                    partials.insert(k.clone(), p);
+                }
+            }
+        }
         let Some(scores) = file.get("scores").and_then(Value::as_object) else {
             continue;
         };
@@ -556,7 +573,7 @@ fn load_scores(
             }
         }
     }
-    (out, cost, probes, fps)
+    (out, cost, probes, fps, partials)
 }
 
 /// The prior board's scores, keyed the way this run keys them — but only if it
@@ -818,7 +835,7 @@ fn main() {
     // the PRIOR BOARD's rows — those were validated on their own way in and
     // carry no entry here, so a check applied to the merged map threw the whole
     // board away and made every row todo.
-    let (store_scores, known_costs, known_probes, store_fps) =
+    let (store_scores, known_costs, known_probes, store_fps, mut row_partials) =
         load_scores(flag("--scores"), &bench_id);
     let mut known: ScoreMap = Default::default();
     let mut reused = 0usize;
@@ -869,6 +886,10 @@ fn main() {
     let deadline = flag("--deadline")
         .and_then(|s| s.parse::<u64>().ok())
         .map(std::time::Duration::from_secs);
+    let mut paused = 0usize;
+    // A row's banked progress, by key. Emptied as each row is taken up and
+    // refilled only where the clock stopped one.
+    let mut partials_out: std::collections::HashMap<String, Partial> = Default::default();
     let started = std::time::Instant::now();
     let dry = has_flag("--dry-run");
     let mut todo = 0usize;
@@ -1389,6 +1410,31 @@ fn main() {
                     // asked once, and a schema for it before that answer is known
                     // would be a guess wearing a table.
                     let began = std::time::Instant::now();
+                    // THE DEADLINE REACHES INSIDE THE ROW, which is what makes
+                    // it a deadline. Checked before dealing, it only ever said
+                    // when to stop TAKING rows — so one row set the makespan,
+                    // and the board holds rows costing 95 minutes against a
+                    // schedule that fires every 20. A row that runs out here is
+                    // banked where it stopped and resumes on a later run.
+                    //
+                    // The SAME clock, not a second budget: a run is given a
+                    // length once. `full` passes none and is unbounded, which is
+                    // what it is for.
+                    let row_deadline = deadline.map(|d| started + d);
+                    // HELD TO ITS OWN HASH, exactly as a stored score is. Half
+                    // a measurement taken against data that has since moved is
+                    // not a head start — resuming onto it would add two engines'
+                    // work together and publish the sum.
+                    let part = std::cell::RefCell::new(
+                        row_partials
+                            .remove(&key)
+                            .filter(|_| {
+                                store_fps.get(&key).map(String::as_str)
+                                    == Some(build_fp.as_str())
+                            })
+                            .unwrap_or_default(),
+                    );
+                    let paused_here = std::cell::Cell::new(false);
                     // SCREEN BEFORE MEASURING. A row that reads a quarter of
                     // its group's leader at a tenth of the runs is not going to
                     // be listed, and paying the ruler's full precision to find
@@ -1431,10 +1477,23 @@ fn main() {
                                 if let Some(o) = probe.as_object_mut() {
                                     o.insert("runs".into(), json!(PROBE_RUNS));
                                 }
-                                let out = wfsim_engine_webapi_simulate(&probe);
-                                (out.get("ok").and_then(Value::as_bool).unwrap_or(false), score_in(&out))
+                                match priced(
+                                    &mut part.borrow_mut(), "screen", &probe,
+                                    PROBE_RUNS, row_deadline, &score_in,
+                                ) {
+                                    Some(pair) => pair,
+                                    None => {
+                                        paused_here.set(true);
+                                        (false, 0.0)
+                                    }
+                                }
                             }
                         };
+                        if paused_here.get() {
+                            pause_row(&key, &part.borrow(), &mut partials_out, &mut deferred_ids);
+                            paused += 1;
+                            continue;
+                        }
                         if ok && s < cut {
                             probes.insert(key.clone(), s);
                             // WHAT IT COST THE RUN THAT ACTUALLY PAID. Reading
@@ -1498,16 +1557,40 @@ fn main() {
                         // returned before, so the corner it picks, and every
                         // number published, are unchanged.
                         let top_probe = std::cell::Cell::new(f64::NEG_INFINITY);
-                        let best = wfsim_engine::rivens_data::perfect(shape, cls, |sp| {
+                        // THE CORNER'S OWN INDEX IS THE CACHE KEY — never the
+                        // order this closure was called in, which would map a
+                        // banked score onto the wrong corner the day the search
+                        // is walked differently, silently, into a number this
+                        // board publishes.
+                        //
+                        // ONCE THE CLOCK IS GONE THE REST COST NOTHING. `perfect`
+                        // walks every corner and cannot be stopped, so the
+                        // remaining ones answer with the losing value and the row
+                        // is deferred below — its result is never read.
+                        let best = wfsim_engine::rivens_data::perfect(shape, cls, |corner, sp| {
+                            if paused_here.get() {
+                                return f64::NEG_INFINITY;
+                            }
                             let mut probe = req.clone();
                             if let Some(o) = probe.as_object_mut() {
                                 o.insert("rivens".into(), riven_request(sp));
                                 o.insert("runs".into(), json!(PROBE_RUNS));
                             }
-                            let s = score_in(&wfsim_engine_webapi_simulate(&probe));
+                            let Some((_, s)) = priced(
+                                &mut part.borrow_mut(), &corner.to_string(), &probe,
+                                PROBE_RUNS, row_deadline, &score_in,
+                            ) else {
+                                paused_here.set(true);
+                                return f64::NEG_INFINITY;
+                            };
                             top_probe.set(top_probe.get().max(s));
                             s
                         });
+                        if paused_here.get() {
+                            pause_row(&key, &part.borrow(), &mut partials_out, &mut deferred_ids);
+                            paused += 1;
+                            continue;
+                        }
                         // …AND THE SCREEN, ON A NUMBER THAT COST NOTHING EXTRA.
                         //
                         // A riven row is sixteen probes and one real measurement.
@@ -1585,7 +1668,19 @@ fn main() {
                             rolls.insert(key.clone(), rv.rolls.clone());
                         }
                     }
-                    let out = wfsim_engine_webapi_simulate(&req);
+                    // THE MEASUREMENT, IN AS MANY SITTINGS AS THE CLOCK ALLOWS.
+                    // The ruler's run count is untouchable — it is the accuracy
+                    // promise — so what bends is how many of those runs one
+                    // board run pays for. `run_budgeted` merges the pieces into
+                    // exactly what one call over the range produces.
+                    let want = req.get("runs").and_then(Value::as_u64).unwrap_or(0) as u32;
+                    let Some(out) = run_budgeted(
+                        &mut part.borrow_mut(), "measure", &req, want, row_deadline,
+                    ) else {
+                        pause_row(&key, &part.borrow(), &mut partials_out, &mut deferred_ids);
+                        paused += 1;
+                        continue;
+                    };
                     let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
                     let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
                     if !ok || raw <= 0.0 {
@@ -1693,6 +1788,12 @@ fn main() {
     // count falling run over run is what says the board is catching up.
     if absent > 0 {
         eprintln!("project: {absent} row(s) nobody has banked yet — they land on the next board");
+    }
+    // …AND HOW MANY RAN OUT OF CLOCK PARTWAY. Not the same as `fresh_left`,
+    // which is a row never started: these carry banked progress and resume on
+    // the next run, which is what makes an arbitrarily slow row finishable.
+    if paused > 0 {
+        eprintln!("paused: {paused} row(s) banked partway — they resume on the next run");
     }
     if fresh_left > 0 {
         let why = if deadline.is_some_and(|d| started.elapsed() > d) { "clock" } else { "count" };
@@ -1898,6 +1999,19 @@ fn main() {
         } else {
             computed.clone()
         };
+        // WHERE EVERY PAUSED ROW STOPPED.
+        //
+        // A shard banks only what IT paused; the merged set the publish pass
+        // writes carries every row still partway, MINUS any that now has a
+        // score — a partial left beside a finished row would be read back for
+        // ever by a run that has nothing to do with it.
+        let banked = {
+            let mut all: std::collections::HashMap<String, Partial> =
+                if emit_all { row_partials.clone() } else { Default::default() };
+            all.extend(partials_out.iter().map(|(k, v)| (k.clone(), v.clone())));
+            all.retain(|k, _| !emitted.contains_key(k));
+            all
+        };
         let text = serde_json::to_string(&serde_json::json!({
             "benchmark": bench_id,
             // WHAT EACH ROW READ, which is the whole of what a stored score
@@ -1931,6 +2045,13 @@ fn main() {
             // scores because a probe is not one. The publish process walks
             // every row and would otherwise retake each of these alone.
             "probes": as_text(&probes),
+            // …AND WHERE EVERY PAUSED ROW STOPPED.
+            //
+            // A shard banks only what IT paused; the merged set the publish
+            // pass writes carries every row still partway, MINUS any that now
+            // has a score — a partial left beside a finished row would be read
+            // back for ever by a run that has nothing to do with it.
+            "partials": banked,
             // Only the rows this shard actually searched; a plain build has no
             // entry, so an ordinary board's shard file is what it always was.
             "rolls": emitted
@@ -2183,6 +2304,23 @@ fn load_rolls(spec: Option<String>, bench_id: &str) -> std::collections::HashMap
 /// toward whichever end noise happened to favour.
 const PROBE_RUNS: u32 = 100;
 
+/// HOW MANY RUNS A PIECE OF A ROW IS, and it is ONE because nothing else
+/// reproduces the number.
+///
+/// A single call folds the runs one at a time into one `Shard`, and float
+/// addition is not associative — so a coarser piece regroups the sums and moves
+/// the last bit of every quantity derived from one. MEASURED over a 200-run
+/// crowd fight: pieces of 1 come out identical to a single call and pieces of
+/// 2, 5, 10, 25, 50 and 100 all differ.
+///
+/// A ULP IS NOT BELOW ANYONE'S NOTICE HERE. `audit.yml` compares a republished
+/// score to the stored one EXACTLY — "close enough would be a tolerance nobody
+/// can defend" — so a row that was interrupted would report as moved for ever.
+///
+/// It costs 2.5% of a crowd fight against one call, which is what a bounded
+/// makespan and a resumable row are worth.
+const CHUNK_RUNS: u32 = 1;
+
 /// The mod id a RIVEN takes in a simulate request. A record spells it `riven`
 /// (the endpoint's ids are `[a-z0-9_]`); the request names an ITEM.
 const RIVEN_ITEM: &str = "riven:board";
@@ -2208,9 +2346,273 @@ fn wfsim_engine_webapi_simulate(v: &Value) -> Value {
     wfsim_webapi::simulate_json(v)
 }
 
+/// WHAT A ROW HAS PAID FOR SO FAR, when it ran out of clock partway.
+///
+/// A row is not one measurement. A riven row is sixteen corner probes at 100
+/// runs and one measurement at the ruler's 1000 — 2,600 runs, of which the
+/// corners are 62% — so a budget that only bounded the last one would leave
+/// most of the bill unbounded.
+///
+/// ONE CURSOR, BECAUSE ONE SUB-MEASUREMENT IS IN FLIGHT AT A TIME. The screen,
+/// then each corner in turn, then the measurement: whatever the clock
+/// interrupts is the only thing partway, and everything before it is a number.
+#[derive(Default, Clone, serde::Serialize, serde::Deserialize)]
+struct Partial {
+    /// Sub-measurements this row has finished: `screen` for the plain-row
+    /// probe, a riven corner under its own index.
+    #[serde(default)]
+    priced: std::collections::BTreeMap<String, f64>,
+    /// The one that is partway: its label, how many runs are banked, and what
+    /// they contributed.
+    #[serde(default)]
+    cursor: Option<(String, u32, Value)>,
+}
+
+/// Run `want` runs of `req`, resuming and pausing on the clock.
+///
+/// `None` means the budget ran out and `part` now carries the progress —
+/// **including the runs this call paid for**, which is the whole point: a row
+/// that cannot finish inside one run of the board still finishes, across as
+/// many as it takes. Every run's dice are a pure function of `(seed, index)`,
+/// so the pieces merge into exactly what one call over the range produces
+/// (`wfsim_webapi::simulate_shard_json`, `dummy::tests::eight_shards_are_one_run`).
+///
+/// THE FIRST CHUNK IS ONE RUN, and the rest are sized from what it cost. A
+/// fixed chunk is wrong in both directions here: the rows this exists for are
+/// seconds a run, and the median row is milliseconds — one chunk of a thousand
+/// would blow any budget, and a thousand chunks of one would pay to build a
+/// 361-body arena a thousand times.
+fn run_budgeted(
+    part: &mut Partial,
+    label: &str,
+    req: &Value,
+    want: u32,
+    deadline: Option<std::time::Instant>,
+) -> Option<Value> {
+    let mut acc = wfsim_engine::dummy::Shard::default();
+    let mut done = 0u32;
+    if let Some((who, at, shard)) = part.cursor.take() {
+        if who == label {
+            if let Ok(s) = serde_json::from_value::<wfsim_engine::dummy::Shard>(shard.clone()) {
+                acc = s;
+                done = at;
+            }
+        } else {
+            // Another sub-measurement's progress, which this row will come back
+            // to. Putting it back is what keeps "one in flight" true.
+            part.cursor = Some((who, at, shard));
+        }
+    }
+    while done < want {
+        let piece = wfsim_webapi::simulate_shard_json(req, done, CHUNK_RUNS, &mut |_, _| {});
+        let Ok(s) = serde_json::from_value::<wfsim_engine::dummy::Shard>(piece) else {
+            // A shard that will not parse is not a slow row, it is a broken
+            // one; the caller's `ok` check answers it the way it always did.
+            return Some(wfsim_engine_webapi_simulate(req));
+        };
+        acc.merge(&s);
+        done += CHUNK_RUNS;
+        if done < want && deadline.is_some_and(|d| std::time::Instant::now() >= d) {
+            let shard = serde_json::to_value(&acc).unwrap_or(Value::Null);
+            part.cursor = Some((label.to_string(), done, shard));
+            return None;
+        }
+    }
+    let shard = serde_json::to_value(&acc).unwrap_or(Value::Null);
+    Some(wfsim_webapi::simulate_merged_json(req, std::slice::from_ref(&shard)))
+}
+
+/// BANK WHERE THIS ROW STOPPED, and leave it for the next run.
+///
+/// A paused row is a FOURTH outcome beside listed, held and refused: the build
+/// reached no row on this board and is not lost either. `deferred_ids` is what
+/// tells the accounting below so, because a run that quietly dropped a build
+/// would look exactly like one that ranked it.
+fn pause_row(
+    key: &str,
+    part: &Partial,
+    out: &mut std::collections::HashMap<String, Partial>,
+    deferred: &mut std::collections::BTreeSet<String>,
+) {
+    out.insert(key.to_string(), part.clone());
+    deferred.insert(identity_of(key));
+}
+
+/// …and the same thing where only the SCORE is wanted, cached by label.
+///
+/// The conversion is handed in rather than repeated: `score_in` is the ruler's
+/// own, and a second copy of it here would publish a 180-second total under a
+/// per-minute name the day the two drifted.
+///
+/// A REFUSAL IS NOT CACHED. `ok` false is a build the engine would not
+/// simulate, and banking a zero for it would carry the refusal into every later
+/// run as if it were a measurement.
+fn priced(
+    part: &mut Partial,
+    label: &str,
+    req: &Value,
+    want: u32,
+    deadline: Option<std::time::Instant>,
+    score_in: &dyn Fn(&Value) -> f64,
+) -> Option<(bool, f64)> {
+    if let Some(&s) = part.priced.get(label) {
+        return Some((true, s));
+    }
+    let out = run_budgeted(part, label, req, want, deadline)?;
+    if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        return Some((false, 0.0));
+    }
+    let s = score_in(&out);
+    part.priced.insert(label.to_string(), s);
+    Some((true, s))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A ROW PAID FOR IN SITTINGS IS THE ROW PAID FOR IN ONE.
+    ///
+    /// This is the whole warrant for `--row-budget`. The board's accuracy
+    /// promise is the ruler's run count, so the ONLY thing a budget may bend is
+    /// how many board runs those runs are spread over — and the moment a
+    /// resumed row answered even one ULP away from an uninterrupted one, the
+    /// budget would be buying speed with the number.
+    ///
+    /// BIT FOR BIT, not "close": every run's dice are a pure function of
+    /// `(seed, index)`, so this is an identity and not a tolerance. A crowd,
+    /// because the per-body means are part of what has to survive the merge and
+    /// a single target cannot test them — the same reason
+    /// `dummy::tests::eight_shards_are_one_run` uses one.
+    ///
+    /// THE PAUSES ARE FORCED, with a deadline already in the past: every call
+    /// banks after its first chunk and hands back, so 40 runs are taken in
+    /// pieces no larger than the probe. A budget that never expired would make
+    /// this assert that one call equals one call.
+    #[test]
+    fn a_row_paid_for_in_sittings_is_the_row_paid_for_in_one() {
+        let req = json!({
+            "weapon": "torid",
+            "mods": ["serration", "split_chamber"],
+            "enemy": "corrupted_heavy_gunner",
+            "level": 30,
+            "steel_path": false,
+            "duration": 12,
+            "runs": 40,
+            "seed": 12648430,
+            "formation": [
+                { "at": [0.7, 1.2] }, { "at": [1.4, 1.2] }, { "at": [2.1, 1.2] }
+            ],
+        });
+
+        // THE UNTOUCHED PATH is the yardstick, not another budgeted call. The
+        // archive holds numbers this produced, and `audit.yml` recomputes and
+        // compares them EXACTLY — so what has to hold is that paying for a row
+        // in pieces does not move it, and two budgeted calls agreeing with each
+        // other would assert nothing at all.
+        let one = wfsim_engine_webapi_simulate(&req);
+        assert!(one.get("ok").and_then(Value::as_bool).unwrap_or(false), "{one}");
+
+        let mut whole = Partial::default();
+        let unbounded = run_budgeted(&mut whole, "measure", &req, 40, None)
+            .expect("an unbounded run cannot pause");
+        assert!(whole.cursor.is_none(), "a finished row carries no cursor");
+        assert_eq!(
+            serde_json::to_string(&unbounded).unwrap(),
+            serde_json::to_string(&one).unwrap(),
+            "chunking moved the number even without a pause",
+        );
+
+        let mut part = Partial::default();
+        let mut sittings = 0;
+        let resumed = loop {
+            sittings += 1;
+            assert!(sittings < 200, "40 runs took more than 200 sittings");
+            // ALREADY EXPIRED, so each call takes exactly one chunk and banks.
+            let past = std::time::Instant::now() - std::time::Duration::from_secs(1);
+            if let Some(out) = run_budgeted(&mut part, "measure", &req, 40, Some(past)) {
+                break out;
+            }
+            let (label, done, _) = part.cursor.as_ref().expect("a pause banks a cursor");
+            assert_eq!(label, "measure");
+            assert!(*done > 0 && *done < 40, "banked {done} of 40");
+        };
+        assert!(sittings > 3, "the deadline did not force pauses ({sittings} sittings)");
+        assert_eq!(
+            serde_json::to_string(&resumed).unwrap(),
+            serde_json::to_string(&one).unwrap(),
+            "a resumed row answered differently from an uninterrupted one",
+        );
+    }
+
+    /// A PAUSE SURVIVES THE FILE IT CROSSES.
+    ///
+    /// The banked progress is only worth anything to the NEXT process, so the
+    /// seam that matters is the store: a partial that does not round-trip reads
+    /// as a row that has never been started, and the run that was supposed to
+    /// resume it pays for the whole thing again — the backlog stops draining
+    /// and nothing says so.
+    #[test]
+    fn a_paused_row_crosses_the_store_intact() {
+        let d = tmpdir("partial");
+        let mut part = Partial::default();
+        part.priced.insert("3".into(), 12.5);
+        part.cursor = Some(("measure".into(), 275, json!({ "runs": 275, "sum": 1.5 })));
+        std::fs::write(
+            d.join("group_clear-0.json"),
+            serde_json::to_string(&json!({
+                "benchmark": "group_clear",
+                "scores": {},
+                "partials": { "torid#base": part },
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let (_, _, _, _, back) =
+            load_scores(Some(d.to_string_lossy().into_owned()), "group_clear");
+        let got = back.get("torid#base").expect("the partial came back");
+        assert_eq!(got.priced.get("3").copied(), Some(12.5));
+        let (label, done, shard) = got.cursor.as_ref().expect("the cursor came back");
+        assert_eq!(label, "measure");
+        assert_eq!(*done, 275);
+        assert_eq!(shard.get("runs").and_then(Value::as_u64), Some(275));
+
+        // …AND ANOTHER BOARD'S IS REFUSED, the same rule the scores follow: two
+        // rulers key one build identically, so a partial merged across them
+        // would resume a group-clear measurement into a single-target one.
+        let (_, _, _, _, other) =
+            load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
+        assert!(other.is_empty(), "another board's partial was admitted");
+    }
+
+    /// …AND A PAUSE IS NOT A CACHE ACROSS A DATA CHANGE.
+    ///
+    /// The cursor is keyed by the sub-measurement it belongs to, so progress
+    /// banked under one label is never spent on another: a corner's runs
+    /// resumed into the final measurement would publish a 100-run probe as the
+    /// ruler's thousand.
+    #[test]
+    fn banked_progress_is_only_spent_on_what_it_was_taken_for() {
+        let req = json!({
+            "weapon": "torid",
+            "mods": ["serration"],
+            "enemy": "corrupted_heavy_gunner",
+            "level": 30, "steel_path": false,
+            "duration": 8, "runs": 12, "seed": 12648430,
+        });
+        let mut part = Partial::default();
+        let past = std::time::Instant::now() - std::time::Duration::from_secs(1);
+        assert!(run_budgeted(&mut part, "0", &req, 12, Some(past)).is_none());
+        let banked = part.cursor.clone().expect("a cursor");
+        assert_eq!(banked.0, "0");
+        // A different label finds nothing to resume and starts at zero — and
+        // the other one's progress is still there afterwards.
+        assert!(run_budgeted(&mut part, "measure", &req, 12, Some(past)).is_none());
+        let now = part.cursor.clone().expect("a cursor");
+        assert_eq!(now.0, "measure", "the new label took over the cursor");
+        assert!(now.1 > 0);
+    }
 
     /// A SCORE CROSSES BETWEEN PROCESSES WITHOUT MOVING.
     ///
@@ -2591,8 +2993,8 @@ mod tests {
         .unwrap();
 
         let spec = Some(d.to_string_lossy().into_owned());
-        let (aimed, _, _, _) = load_scores(spec.clone(), "single_target");
-        let (no_aim, _, _, _) = load_scores(spec.clone(), "single_target_no_aim");
+        let (aimed, _, _, _, _) = load_scores(spec.clone(), "single_target");
+        let (no_aim, _, _, _, _) = load_scores(spec.clone(), "single_target_no_aim");
         assert_eq!(aimed.get(key).copied(), Some(28.44229348067104));
         assert_eq!(no_aim.get(key).copied(), Some(0.17033484369504454));
         // The sharp one: neither board may see the other's, in EITHER direction
@@ -2624,7 +3026,7 @@ mod tests {
             r#"{"benchmark":"single_target","scores":{"b#base":2.0}}"#,
         )
         .unwrap();
-        let (got, _, _, _) =
+        let (got, _, _, _, _) =
             load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
         assert_eq!(got.len(), 2);
         assert_eq!(got.get("a#base").copied(), Some(1.0));

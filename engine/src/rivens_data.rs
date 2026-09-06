@@ -979,7 +979,11 @@ impl RivenShape {
 /// the fight cannot read at all (a magazine stat on a build that never
 /// reloads) comes back at the bottom of its band rather than at an arbitrary
 /// end, and two runs of this cannot disagree.
-pub fn perfect(shape: &RivenShape, class: &str, mut score: impl FnMut(&RivenSpec) -> f64) -> RivenSpec {
+pub fn perfect(
+    shape: &RivenShape,
+    class: &str,
+    mut score: impl FnMut(u32, &RivenSpec) -> f64,
+) -> RivenSpec {
     let n = shape.stat_count();
     let n_bonus = shape.bonuses.len();
     // HOW GOOD THIS CORNER IS FOR THE PLAYER, all else equal: every bonus at its
@@ -999,7 +1003,10 @@ pub fn perfect(shape: &RivenShape, class: &str, mut score: impl FnMut(&RivenSpec
             .map(|i| if corner >> i & 1 == 1 { ROLL_MAX } else { ROLL_MIN })
             .collect();
         let spec = shape.at(class, &rolls);
-        let s = score(&spec);
+        // THE INDEX GOES WITH THE SPEC so a caller banking a partial search
+        // can key on it. Keyed on the order this callback was invoked in, a
+        // resumed score would land on the wrong corner the day the walk changes.
+        let s = score(corner, &spec);
         let p = preference(corner);
         // **A TIE GOES TO THE PLAYER**. A stat this fight
         // cannot read — Zoom, Recoil, Ammo Maximum against one standing target
@@ -1036,7 +1043,7 @@ fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
     // A SCORE THAT WANTS EVERY BONUS HIGH AND THE MALUS LOW — the ordinary
     // reading, and the one a per-stat table would have hard-coded.
     let mut seen = 0;
-    let want_high = perfect(&shape, "rifle", |r| {
+    let want_high = perfect(&shape, "rifle", |_, r| {
         seen += 1;
         r.bonuses.iter().map(|b| b.roll).sum::<f64>() - r.malus.as_ref().map_or(0.0, |m| m.roll)
     });
@@ -1047,7 +1054,7 @@ fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
     // …AND ONE THAT WANTS THE OPPOSITE OF ALL FOUR. Nothing about the stats
     // changed — only the fight — and every end flips, which is the property
     // that makes a per-stat rule impossible.
-    let want_low = perfect(&shape, "rifle", |r| {
+    let want_low = perfect(&shape, "rifle", |_, r| {
         -(r.bonuses.iter().map(|b| b.roll).sum::<f64>())
             + r.malus.as_ref().map_or(0.0, |m| m.roll)
     });
@@ -1063,11 +1070,11 @@ fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
     // will go and
     // try to obtain, so a shape with one dead stat was published asking for a
     // worse card than it needs.
-    let flat = perfect(&shape, "rifle", |_| 1.0);
+    let flat = perfect(&shape, "rifle", |_, _| 1.0);
     assert!(flat.bonuses.iter().all(|b| b.roll == ROLL_MAX));
     assert_eq!(flat.malus.as_ref().unwrap().roll, ROLL_MIN);
     // …AND IT IS STILL DETERMINISTIC, which is the half worth keeping.
-    let again = perfect(&shape, "rifle", |_| 1.0);
+    let again = perfect(&shape, "rifle", |_, _| 1.0);
     assert_eq!(again.bonuses.iter().map(|b| b.roll).collect::<Vec<_>>(),
                flat.bonuses.iter().map(|b| b.roll).collect::<Vec<_>>());
     // …AND A REAL SCORE STILL WINS OVER THE PREFERENCE: the tie-break only

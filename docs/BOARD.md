@@ -366,6 +366,46 @@ artifacts and the board is still assembled from them; what is lost is the
 banking. The store is an optimisation of WHERE work goes, never of whether the
 board is right.
 
+### A row is paid for in sittings
+
+The store made a run's work survive the run. It did not make a ROW survive one,
+and a row is where the tail lives: the board holds 35 rows costing over twenty
+minutes each and eight over an hour, against a schedule that fires every twenty.
+0.4% of the rows are 20% of the group-clear bill.
+
+A `--deadline` asked only before a row is dealt says when to stop TAKING rows
+and cannot touch one already in flight. **One row then sets the makespan**, and
+the worst of them sets it at ninety-five minutes.
+
+So it reaches inside. A row is not one measurement — a riven row is sixteen
+corner probes at 100 runs and one measurement at the ruler's 1000, of which the
+corners are 62% — and the clock is asked between every run of every one of them.
+What a row has finished is banked: the corner scores by their own index, and the
+one sub-measurement that is partway as a cursor. The next run resumes there.
+
+**THE RUN COUNT IS UNTOUCHED.** It is the accuracy promise, so the only thing
+that bends is how many board runs those runs are spread over. Given any row,
+however slow, that advances by at least one run a sitting, it finishes.
+
+**A PIECE IS ONE RUN, and it may not be more.** A single call folds the runs one
+at a time into one `Shard`; float addition is not associative, so a coarser
+piece regroups the sums and moves the last bit of everything derived from one.
+Measured over a 200-run crowd fight: pieces of 1 come out identical to a single
+call and pieces of 2, 5, 10, 25, 50 and 100 all differ. A ULP is not below
+notice here — the audit below compares exactly, on purpose — so a row that was
+interrupted would report as moved for ever. It costs 2.5% of a crowd fight.
+
+A paused row is a FOURTH outcome beside listed, held and refused: the build
+reached no row on this board and is not lost either. The run says so
+(`paused: N row(s) banked partway`) and the accounting knows about it, because a
+run that quietly dropped a build looks exactly like one that ranked it.
+
+**What this does NOT bound is the number of benchmarks.** The scoring step runs
+`--deadline` once per ruler, so a shard's ceiling is three deadlines plus three
+runs — 36 minutes at the current twelve. That ceiling is reachable only when
+every ruler has a full deadline of work; the median shard finishes in 17 minutes
+because it runs out of rows first.
+
 ### Publish assembles; it does not fight
 
 `--project` is the guarantee rather than the habit. The publish pass groups what

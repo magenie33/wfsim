@@ -21,4 +21,5 @@ path = "src/bin/wfsim-board.rs"
 wfsim-engine = { path = "../engine" }
 wfsim-optimizer = { path = "../optimizer" }
 wfsim-webapi = { path = "../webapi" }
+serde = { workspace = true }
 serde_json = { workspace = true }

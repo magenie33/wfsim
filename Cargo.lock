@@ -270,6 +270,7 @@ dependencies = [
 name = "wfsim-cli"
 version = "0.0.0"
 dependencies = [
+ "serde",
  "serde_json",
  "wfsim-engine",
  "wfsim-optimizer",

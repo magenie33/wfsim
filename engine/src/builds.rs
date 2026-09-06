@@ -793,7 +793,7 @@ pub fn validate_with(
     // what does it drain. A riven has no family and drains 18 at max rank, and
     // both of those are the mod's own answer rather than a special case here.
     let riven_def = riven.map(|shape| {
-        crate::rivens_data::perfect(shape, riven_class(weapon), |_| 0.0)
+        crate::rivens_data::perfect(shape, riven_class(weapon), |_, _| 0.0)
             .to_mod_def(RIVEN_SLOT, spec.disposition.unwrap_or(1.0))
     });
     let (multishot, evos) = normalize_with(weapon, mods, evolutions, riven);
@@ -1071,7 +1071,7 @@ fn check_riven_shape(
     // SHAPE FIRST: two or three bonuses, at most one malus. Asked through
     // `RivenSpec::illegal` so there is one answer to "could this exist", and
     // this function only has to carry the part that is about the WEAPON.
-    let spec = crate::rivens_data::perfect(shape, class, |_| 0.0);
+    let spec = crate::rivens_data::perfect(shape, class, |_, _| 0.0);
     let bad = spec.illegal();
     if !bad.is_empty() {
         return Err(bad.join("; "));
@@ -1231,7 +1231,7 @@ mod riven_perfection_tests {
 
     /// That shape with every bonus at its ceiling and the malus at `malus_roll`.
     fn at(shape: &RivenShape, malus_roll: f64) -> RivenSpec {
-        let mut sp = perfect(shape, "pistol", |_| 0.0);
+        let mut sp = perfect(shape, "pistol", |_, _| 0.0);
         for b in sp.bonuses.iter_mut() {
             b.roll = ROLL_MAX;
         }
@@ -1283,13 +1283,13 @@ mod riven_perfection_tests {
 
         // AND `perfect` FINDS BOTH WITHOUT BEING TOLD — handed the fight and
         // nothing else. No per-stat table, no sign convention.
-        let with = perfect(&shape, "pistol", |sp| fight("laetum_incarnon", ATTRITION, sp));
+        let with = perfect(&shape, "pistol", |_, sp| fight("laetum_incarnon", ATTRITION, sp));
         assert_eq!(
             with.malus.as_ref().unwrap().roll,
             ROLL_MAX,
             "on Devouring Attrition the malus belongs at its deepest"
         );
-        let without = perfect(&shape, "pistol", |sp| fight("laetum", &[], sp));
+        let without = perfect(&shape, "pistol", |_, sp| fight("laetum", &[], sp));
         assert_eq!(
             without.malus.as_ref().unwrap().roll,
             ROLL_MIN,
