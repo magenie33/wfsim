@@ -94119,6 +94119,16 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 4.15985493320565
+    fp: 588db22c698630a2
+    cost: 0.190
+    mods: [primary_acuity, serration, critical_delay, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
     score: 0.9701912284959344
     fp: ee58d79388ce8e6b
     cost: 0.298
@@ -95676,6 +95686,28 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.7906609880466214
+    fp: 9ece42b86d3e7f9e
+    cost: 0.150
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 1.771285114403241
+    fp: 4aaaa972f37a3ebe
+    cost: 0.143
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
     score: 1.0321369697382168
     fp: a7f77f4a340f27a1
     cost: 0.236
@@ -95918,68 +95950,6 @@ entries:
     mode: base
     listed: false
     probe: true
-    score: 1.0556405167962488
-    fp: b9605dd504a6194b
-    cost: 0.205
-    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
-    arcanes: [primary_deadhead]
-  - weapon: vasto_prime
-    mode: base
-    listed: false
-    probe: true
-    score: 1.1493305764381507
-    fp: 5905c1fcc30ae179
-    cost: 0.158
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
-    arcanes: [secondary_deadhead]
-  - weapon: vectis_prime
-    mode: cycle
-    listed: false
-    probe: true
-    score: 2.301654354168621
-    fp: 6b0e92364a89e1de
-    cost: 0.145
-    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
-    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_crux]
-  - weapon: burston_prime
-    mode: base
-    listed: false
-    probe: true
-    score: 4.15985493320565
-    fp: 588db22c698630a2
-    cost: 0.190
-    mods: [primary_acuity, serration, critical_delay, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.7906609880466214
-    fp: 9ece42b86d3e7f9e
-    cost: 0.150
-    exilus: vigilante_supplies
-    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_deadhead]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 1.771285114403241
-    fp: 4aaaa972f37a3ebe
-    cost: 0.143
-    exilus: vigilante_supplies
-    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_deadhead]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
     score: 0.2358686051766085
     fp: 43a81f7d78c9251a
     cost: 0.348
@@ -96086,3 +96056,33 @@ entries:
     mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 1.0556405167962488
+    fp: b9605dd504a6194b
+    cost: 0.205
+    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+  - weapon: vasto_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 1.1493305764381507
+    fp: 5905c1fcc30ae179
+    cost: 0.158
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: vectis_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 2.301654354168621
+    fp: 6b0e92364a89e1de
+    cost: 0.145
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
