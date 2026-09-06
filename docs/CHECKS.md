@@ -9,6 +9,19 @@ assert — this file is the shape of each and why it is shaped that way.
 `node --check` over every check script. No browser; runs
 first in CI.
 
+## `check_release_identity`
+
+The built `site/` names its own release and cannot be
+mixed with another's. No browser — every assertion is a fact about the files,
+so it runs on every change rather than the ones somebody remembered. It holds
+four things: `site/release.json` and the `RELEASE_ID` stamped into `app.js`
+agree; `pkg/` holds exactly one module, named by its own digest, with the glue
+carrying the same one; `worker.js` asks for those names and for no unhashed
+one; and `board.meta.json` stamps the board sitting beside it. The second and
+third are the ones that matter most: an unhashed module path is a browser cache
+that can hold the PREVIOUS engine under this build's `app.js`, which is
+different answers from the same seed with no error anywhere.
+
 ## `check_parity`
 
 The builder and the optimizer offer the same options, the

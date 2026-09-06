@@ -18,6 +18,13 @@ const BUILD_ID = "dev";
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
 const BUILD_SHA = "dev";
+/// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
+///
+/// `BUILD_ID` covers this file and the markup; a release covers the engine
+/// module too, which is where two clients disagreeing about a NUMBER actually
+/// differ. When a reader says "the desktop gives me something else", this is
+/// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
+const RELEASE_ID = "dev";
 
 /// WHAT THIS REPOSITORY HOLDS, COUNTED BY THE BUILD.
 ///
@@ -1746,7 +1753,10 @@ async function init() {
   // the guard reads the token the page was SERVED with, and this overwrites it.
   {
     const el = $("build-stamp");
-    if (el && BUILD_SHA !== "dev") el.textContent = `${BUILD_SHA} · ${BUILD_ID}`;
+    if (el && BUILD_SHA !== "dev") {
+      el.textContent = `${BUILD_SHA} · ${RELEASE_ID}`;
+      el.title = `commit ${BUILD_SHA} · release ${RELEASE_ID} · page ${BUILD_ID}`;
+    }
   }
   META = await api("/api/meta");
   {
@@ -2632,6 +2642,48 @@ function projectFacts() {
   return rows.filter(([n]) => n > 0).map(([n, what]) => ({ n, what }));
 }
 
+/// WHAT THIS CLIENT IS RUNNING, in the three identifiers of
+/// docs/DISTRIBUTION.md §Identity: the release, the board, the shell.
+///
+/// EVERY LINE IS OMITTED WHEN IT WOULD BE A GUESS. The dev server has no
+/// release and no board stamp, a browser has no shell version, and a line
+/// saying `dev` beside two real digests is worse than three lines that are all
+/// true — a reader quoting it would be quoting nothing.
+///
+/// ASYNC ONLY FOR THE SHELL, which is one IPC call away and may not answer at
+/// all. The two lines that are already known are drawn first and the shell
+/// appends itself, so a wedged bridge costs the shell line and not the block.
+async function identityLines() {
+  const el = $("support-identity");
+  if (!el) return;
+  const lines = [];
+  if (RELEASE_ID !== "dev") {
+    lines.push(trF("release {r} · commit {c}", { r: RELEASE_ID, c: BUILD_SHA }));
+  }
+  if (BOARD_META && BOARD_META.digest) {
+    lines.push(trF("board {d} · scored {t} · {n} rows", {
+      d: BOARD_META.digest.slice(0, 12),
+      t: BOARD_META.scored_at
+        ? new Date(BOARD_META.scored_at * 1000).toLocaleString()
+        : "—",
+      n: (BOARD_META.rows || 0).toLocaleString(),
+    }));
+  }
+  const draw = () => {
+    el.hidden = !lines.length;
+    el.innerHTML = lines.map(escHtml).join("<br>");
+  };
+  draw();
+  if (!window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__) return;
+  try {
+    const v = await window.__TAURI_INTERNALS__.invoke("app_version");
+    if (v) {
+      lines.push(trF("shell {v}", { v }));
+      draw();
+    }
+  } catch (_) { /* a shell that cannot say is a line that is not drawn */ }
+}
+
 function renderSupport() {
   const facts = $("support-facts");
   if (facts) {
@@ -2650,6 +2702,7 @@ function renderSupport() {
         .replace("{day}", f.first_commit_day).replace("{n}", f.commits.toLocaleString());
     }
   }
+  identityLines();
   const used = $("support-usage");
   if (used) {
     const u = supportUse();
@@ -8428,12 +8481,25 @@ function blankBuildState() {
 // first submissions there is nothing to show, and that is a state the page has
 // to render anyway.
 let BOARD = {};
+/// WHICH BOARD THIS IS — `site/board.meta.json`, written by both writers of the
+/// board itself (`scripts/board_meta.py`). It is small on purpose: the payload
+/// beside it is 4.3 MB, and "is the copy I hold current" must not cost that.
+///
+/// ABSENT IS A STATE, not a failure — the dev server has no stamp, and a page
+/// that cannot say when the board was scored says nothing rather than guessing.
+let BOARD_META = null;
 async function loadBoard() {
   try {
     const r = await fetch("/board.json", { cache: "no-cache" });
     BOARD = r.ok ? await r.json() : {};
   } catch (_) {
     BOARD = {};
+  }
+  try {
+    const r = await fetch("/board.meta.json", { cache: "no-cache" });
+    BOARD_META = r.ok ? await r.json() : null;
+  } catch (_) {
+    BOARD_META = null;
   }
 }
 

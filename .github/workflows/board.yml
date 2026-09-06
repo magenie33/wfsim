@@ -580,7 +580,13 @@ jobs:
           # identical to HEAD. The counts the PAGE reads froze on the day that
           # file landed while the boards beside it moved on, so the board
           # reported 1,168 builds waiting where 344 were.
-          GENERATED="boards data/board_state.yaml site/board.json"
+          # THE STAMP IS WRITTEN BY WHOEVER WRITES THE BOARD, and this is the
+          # writer that runs three times an hour. A stamp only the site build
+          # maintains would name the board of whenever somebody last rebuilt
+          # locally, which is a worse answer than none — docs/DISTRIBUTION.md.
+          python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+          python3 scripts/board_meta.py
+          GENERATED="boards data/board_state.yaml site/board.json site/board.meta.json"
           if git diff --quiet -- $GENERATED; then
             echo "board unchanged — nothing to commit"
             exit 0

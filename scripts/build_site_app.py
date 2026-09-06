@@ -59,6 +59,11 @@ ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "web" / "src" / "static"
 APP = ROOT / "site"
 WASM = ROOT / "target" / "wasm32-unknown-unknown" / "release" / "wfsim_wasm.wasm"
+# `wasm-bindgen` writes HERE, and `ship_wasm_pkg` publishes content-addressed
+# copies into `site/pkg/`. Not straight into `site/`, because the names there
+# carry a digest and the gate below has to be able to ask "is this the same
+# module" of a path that does not move.
+WASM_PKG = ROOT / "target" / "wasm-pkg"
 SITE = "https://wfsim.app"
 
 
@@ -282,6 +287,10 @@ EDGE_HEADERS = """\
   Cache-Control: public, max-age=604800
 /logo.svg
   Cache-Control: public, max-age=604800
+/pkg/*
+  Cache-Control: public, max-age=31536000, immutable
+/board.meta.json
+  Cache-Control: public, max-age=0, must-revalidate
 """
 
 # Legacy URLs from the /app/-era layout, plus the one weapon page that shipped
@@ -292,6 +301,53 @@ EDGE_REDIRECTS = """\
 /app/* /:splat 301
 /weapons/Dual_Toxocyst.html /weapons/Dual_Toxocyst 301
 """
+
+
+def ship_wasm_pkg() -> dict:
+    """Publish `site/pkg/` under CONTENT-ADDRESSED names, and say what they are.
+
+    THE MODULE IS THE ONE FILE A BROWSER COULD PAIR WRONG. `checkBuildMatches`
+    catches an old page against a new script, but `worker.js` fetched the wasm
+    from a fixed path with no cache rule — so a reader could hold a cached
+    module against a fresh `app.js` and get answers from the previous engine,
+    with nothing on either side able to see it. A name carrying the digest
+    cannot be served from a cache filled by a different build.
+
+    The directory is CLEARED first: a stale hashed module is 5 MB of payload
+    that nothing references and that every client would still download.
+    """
+    digest = hashlib.sha256((WASM_PKG / "wfsim_wasm_bg.wasm").read_bytes()).hexdigest()[:12]
+    out = APP / "pkg"
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    names = {"glue": f"wfsim_wasm.{digest}.js", "wasm": f"wfsim_wasm_bg.{digest}.wasm"}
+    shutil.copy2(WASM_PKG / "wfsim_wasm.js", out / names["glue"])
+    shutil.copy2(WASM_PKG / "wfsim_wasm_bg.wasm", out / names["wasm"])
+    names["digest"] = digest
+    return names
+
+
+def release_id() -> str:
+    """WHICH RELEASE THIS IS — a digest over the release plane and nothing else.
+
+    docs/DISTRIBUTION.md §Identity. It is what a reader quotes when two clients
+    disagree, so it has to move when the CODE moves and stay still otherwise:
+    the sources the page is built from, plus the engine module they drive.
+    `BUILD_ID` answers a narrower question — page against script — and does not
+    cover the wasm, which is exactly where a disagreement about a NUMBER comes
+    from.
+
+    Art is not in it. A release with one more weapon picture is the same
+    release, and a shell that streams its art instead of shipping it is running
+    that same release too.
+    """
+    h = hashlib.sha256()
+    for name in ("index.html", "app.js", "style.css", "worker.js"):
+        h.update((STATIC / name).read_bytes())
+    for name in ("wfsim_wasm.js", "wfsim_wasm_bg.wasm"):
+        h.update((WASM_PKG / name).read_bytes())
+    return h.hexdigest()[:12]
 
 
 def ship_edge_config() -> None:
@@ -1247,7 +1303,7 @@ def main() -> None:
     # THE STAMP LIVES UNDER `target/`, which is not committed — so a fresh clone
     # has no stamp and does the full pass, and the only direction this can be
     # wrong in is doing the work unnecessarily.
-    bg = APP / "pkg" / "wfsim_wasm_bg.wasm"
+    bg = WASM_PKG / "wfsim_wasm_bg.wasm"
     stamp = ROOT / "target" / ".wasm-opt-stamp"
     want = hashlib.sha256(WASM.read_bytes()).hexdigest()
     have = stamp.read_text(encoding="utf-8").strip() if stamp.exists() else ""
@@ -1255,7 +1311,7 @@ def main() -> None:
         print(f"+ wasm unchanged ({want[:8]}) — bindgen and wasm-opt skipped")
     else:
         run("wasm-bindgen", str(WASM), "--target", "no-modules", "--no-typescript",
-            "--out-dir", str(APP / "pkg"))
+            "--out-dir", str(WASM_PKG))
         # Optional size pass — the app works without it.
         if shutil.which("wasm-opt"):
             run("wasm-opt", "-Oz", "-o", str(bg), str(bg))
@@ -1266,9 +1322,21 @@ def main() -> None:
         stamp.parent.mkdir(parents=True, exist_ok=True)
         stamp.write_text(want, encoding="utf-8")
 
+    pkg = ship_wasm_pkg()
+    release = release_id()
+
     for name in ("app.js", "style.css", "worker.js", "logo.svg"):
         shutil.copy2(STATIC / name, APP / name)
     shutil.copytree(STATIC / "pol", APP / "pol", dirs_exist_ok=True)
+
+    # THE WORKER LEARNS THE HASHED NAMES. The dev server keeps the plain ones,
+    # where there is no cache to be wrong about and no build step to rename.
+    worker = (APP / "worker.js").read_text(encoding="utf-8")
+    named = (worker.replace("pkg/wfsim_wasm.js", f"pkg/{pkg['glue']}")
+                   .replace("pkg/wfsim_wasm_bg.wasm", f"pkg/{pkg['wasm']}"))
+    if named == worker:
+        sys.exit("worker.js: neither pkg/ path found — the module would 404")
+    (APP / "worker.js").write_text(named, encoding="utf-8", newline=chr(10))
 
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     flagged = re.sub(
@@ -1317,7 +1385,13 @@ def main() -> None:
                              f"const PROJECT_FACTS = {json.dumps(project_facts())};", 1)
     if counted == marked:
         sys.exit("app.js: PROJECT_FACTS placeholder not found")
-    (APP / "app.js").write_text(counted, encoding="utf-8", newline=chr(10))
+    # …AND WHICH RELEASE, which is the one identifier every client prints and
+    # the only one that is comparable ACROSS shells — docs/DISTRIBUTION.md.
+    released = counted.replace('const RELEASE_ID = "dev";',
+                               f'const RELEASE_ID = "{release}";', 1)
+    if released == counted:
+        sys.exit("app.js: RELEASE_ID placeholder not found")
+    (APP / "app.js").write_text(released, encoding="utf-8", newline=chr(10))
     # THE HOME PAGE IS ITS OWN ROUTE and does not go through `shell` — it keeps
     # the shell's title, description and canonical as written. It still owes the
     # one-<h1> rule: `Benchmark` is a section of this page, not its subject.
@@ -1326,10 +1400,19 @@ def main() -> None:
     ship_edge_config()
     ship_art()
     write_board()
+    run(sys.executable, str(ROOT / "scripts" / "board_meta.py"))
     prerender(flagged)
 
-    size = (APP / "pkg" / "wfsim_wasm_bg.wasm").stat().st_size
-    print(f"site/ ready — wasm {size / 1e6:.1f} MB")
+    # WHAT THIS RELEASE IS, served beside the files it names. A mirror is asked
+    # this file and nothing else to answer "are you current" — see
+    # `scripts/check_mirrors.py`.
+    (APP / "release.json").write_text(
+        json.dumps({"release": release, "commit": build_sha(), "wasm": pkg["digest"]},
+                   separators=(",", ":"), sort_keys=True),
+        encoding="utf-8", newline="\n")
+
+    size = (APP / "pkg" / pkg["wasm"]).stat().st_size
+    print(f"site/ ready — release {release}, wasm {size / 1e6:.1f} MB")
 
 
 if __name__ == "__main__":

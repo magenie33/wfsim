@@ -49,6 +49,13 @@ jobs:
 
       - name: A rescore is triggered by everything that buys one
         run: node scripts/check_rescore_paths.mjs
+      # THE BUILD SAYS WHICH RELEASE IT IS, and its engine module cannot be
+      # paired with another build's. Both fail silently — a page with no
+      # identity still opens, and a cached module still loads — so they are
+      # asserted about the committed `site/`, in the job that already reads it.
+      # No browser: every one of them is a fact about the files.
+      - name: The build says which release it is
+        run: node scripts/check_release_identity.mjs
       - name: Builder / optimizer parity
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.
