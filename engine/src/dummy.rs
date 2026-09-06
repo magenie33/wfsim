@@ -1569,6 +1569,21 @@ struct DebuffState {
     /// `dots`/`heat`/`blast` every time. Taken out and put back around the loop,
     /// which is what lets the loop hold `&mut self` for everything else.
     tick_q: std::collections::BinaryHeap<std::cmp::Reverse<TickKey>>,
+    /// SCRATCH FOR THE REFILL, beside the heap and for the same reason: it is
+    /// filled ~480,000 times a run on a crowd, and a `Vec` built there is an
+    /// allocation each time.
+    tick_best: Vec<(DamageType, f64, u32)>,
+    /// DOES THIS BODY CARRY A CONSOLIDATED FAMILY AT ALL — Electricity or Gas.
+    ///
+    /// The collapse below is worth 23% where one is and costs 3.9% where none
+    /// is, which is the whole roster: a build whose Electricity is combined
+    /// away into Corrosive never has one. So the flag buys the old loop back,
+    /// unchanged, for everything that cannot profit.
+    ///
+    /// Conservative by construction: set when such a DoT arrives and recomputed
+    /// in the compaction that is already walking the list. Staying true a beat
+    /// longer than it must costs a slower refill, never a wrong one.
+    dots_consolidated: bool,
     /// The clock reading this state was last pruned at — see [`Self::prune`].
     ///
     /// An OPTION rather than a sentinel float: the derived default of an `f64`
@@ -2227,6 +2242,7 @@ impl DebuffState {
                 }
             }
         }
+        self.dots_consolidated |= matches!(dot.dtype, DamageType::Electricity | DamageType::Gas);
         self.dots.push(dot);
     }
 
@@ -9664,6 +9680,7 @@ impl DebuffState {
     fn refill_tick_queue(
         &self,
         q: &mut std::collections::BinaryHeap<std::cmp::Reverse<TickKey>>,
+        best: &mut Vec<(DamageType, f64, u32)>,
         until: f64,
     ) {
         q.clear();
@@ -9672,10 +9689,58 @@ impl DebuffState {
                 q.push(std::cmp::Reverse(TickKey { t, class, index: index as u32 }));
             }
         };
-        for (i, d) in self.dots.iter().enumerate() {
-            if d.ticks_left > 0 {
-                push(d.next_tick, 0, i);
+        // ONE KEY PER CONSOLIDATED FAMILY, and it is the family's EARLIEST.
+        //
+        // An Electricity or Gas group advances every live instance of itself
+        // when the first of them fires, so every other key it left in the heap
+        // is popped, found stale and thrown away: 22.0M keys pushed on a
+        // Phantasma group-clear row for 3.4M ticks, 85% of the pops stale.
+        //
+        // THE REPRESENTATIVE IS THE SMALLEST `next_tick`, ties to the lowest
+        // index — which is `scan_next`'s rule, and `scan_next` is the order's
+        // definition. A family's members are within 1e-9 of each other and NOT
+        // bit-identical, so keeping the lowest index instead settles a
+        // different instance at the same instant and moves the answer: caught
+        // at event 30,284 of a 1,155,960-event run, index 1158 against 498.
+        if !self.dots_consolidated {
+            // THE ORIGINAL LOOP, and it has to stay reachable: with no family to
+            // collapse there is nothing to win, and the bookkeeping below is a
+            // measured 3.9% on the suite.
+            for (i, d) in self.dots.iter().enumerate() {
+                if d.ticks_left > 0 {
+                    push(d.next_tick, 0, i);
+                }
             }
+            return;
+        }
+        best.clear();
+        for (i, d) in self.dots.iter().enumerate() {
+            // NOTHING PAST THE HORIZON, and the test goes FIRST. `scan_next`
+            // ignores those too, so a family's representative is the earliest
+            // of the members that are DUE — and letting the rest into the list
+            // below makes it hundreds long on a body carrying 735 DoTs across
+            // the next fourteen seconds. Measured at +96% with the test after.
+            if d.ticks_left == 0 || d.next_tick >= until {
+                continue;
+            }
+            if !matches!(d.dtype, DamageType::Electricity | DamageType::Gas) {
+                push(d.next_tick, 0, i);
+                continue;
+            }
+            match best
+                .iter_mut()
+                .find(|(ty, t, _)| *ty == d.dtype && (*t - d.next_tick).abs() < 1e-9)
+            {
+                Some(e) if d.next_tick < e.1 || (d.next_tick == e.1 && (i as u32) < e.2) => {
+                    e.1 = d.next_tick;
+                    e.2 = i as u32;
+                }
+                Some(_) => {}
+                None => best.push((d.dtype, d.next_tick, i as u32)),
+            }
+        }
+        for (_, t, i) in best.iter() {
+            push(*t, 0, *i as usize);
         }
         if let Some(h) = &self.heat {
             if h.next_tick <= h.expiry {
@@ -9741,8 +9806,9 @@ fn process_ticks(
     let mut seeded_by;
     let use_queue = debuffs.dots.len() > TICK_QUEUE_MIN;
     let mut q = std::mem::take(&mut debuffs.tick_q);
+    let mut best = std::mem::take(&mut debuffs.tick_best);
     if use_queue {
-        debuffs.refill_tick_queue(&mut q, until);
+        debuffs.refill_tick_queue(&mut q, &mut best, until);
     }
     let mut shape = debuffs.tick_shape();
     loop {
@@ -10003,7 +10069,7 @@ fn process_ticks(
         }
         let now_shape = debuffs.tick_shape();
         if now_shape != shape {
-            debuffs.refill_tick_queue(&mut q, until);
+            debuffs.refill_tick_queue(&mut q, &mut best, until);
             shape = now_shape;
         } else {
             match &ev {
@@ -10033,7 +10099,14 @@ fn process_ticks(
     // BACK WHERE IT LIVES, with its capacity — see `tick_q`.
     q.clear();
     debuffs.tick_q = q;
-    debuffs.dots.retain(|d| d.ticks_left > 0);
+    debuffs.tick_best = best;
+    let mut consolidated = false;
+    debuffs.dots.retain(|d| {
+        let keep = d.ticks_left > 0;
+        consolidated |= keep && matches!(d.dtype, DamageType::Electricity | DamageType::Gas);
+        keep
+    });
+    debuffs.dots_consolidated = consolidated;
 }
 
 /// Live reload time for the active form: the arcane's reload-speed sources
