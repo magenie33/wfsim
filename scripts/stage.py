@@ -37,11 +37,12 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    release = json.loads((SITE / "release.json").read_text(encoding="utf-8"))["release"]
     body = payload_manifest.build()
     manifest = json.loads(body)
     digest = hashlib.sha256(body).hexdigest()
     files = manifest["files"]
-    print(f"release {manifest['version']}: {len(files)} files, "
+    print(f"release {release} ({manifest['version']}): {len(files)} files, "
           f"{sum(f['n'] for f in files) / 1e6:.1f} MB\nmanifest digest {digest}")
 
     if not cos.configured():
@@ -51,17 +52,18 @@ def main() -> None:
     c = cos.creds()
     print(f"bucket  {cos.host(c)}")
 
-    # ALREADY STAGED IS A NO-OP, and that is what gates this job: a push that
-    # moved the board and nothing else produces the manifest that is already up
-    # there. No history to inspect, and a re-run costs one request.
-    if cos.head(c, f"manifest/{digest}.json") == 200:
-        print(f"\nmanifest/{digest}.json is already staged — nothing to do")
+    # THE GATE IS THE RELEASE, NOT THE MANIFEST. A manifest names the commit it
+    # was built from, so its digest moves on every push whether or not a single
+    # served byte did; the release digest moves when the CODE does. No history
+    # to inspect, and a re-run costs one request.
+    if cos.head(c, f"release/{release}.json") == 200:
+        print(f"\nrelease {release} is already staged — nothing to do")
         return
 
     # ONE LIST RATHER THAN A HEAD PER FILE: 868 round trips is minutes of a
-    # publish that uploads a megabyte and a half.
-    # LISTED EVEN ON A DRY RUN. It is read-only, and a dry run that reports 868
-    # uploads where three are due is a rehearsal of the wrong thing.
+    # publish that uploads a megabyte and a half. LISTED EVEN ON A DRY RUN,
+    # because it is read-only and a rehearsal reporting 868 uploads where three
+    # are due is a rehearsal of the wrong thing.
     have = cos.list_keys(c, "blob/")
     new = sent = 0
     for f in files:
@@ -82,9 +84,16 @@ def main() -> None:
     # not the pointer: no client is looking at this yet.
     if not args.dry_run:
         cos.put(c, f"manifest/{digest}.json", body, "application/json; charset=utf-8")
+        # WRITTEN LAST: it is what the gate above reads and what `promote.py`
+        # resolves a release through. A run that dies before this leaves blobs
+        # nothing names, which the next run finds already present and reuses.
+        cos.put(c, f"release/{release}.json",
+                json.dumps({"manifest": digest, "version": manifest["version"]},
+                           separators=(",", ":"), sort_keys=True).encode("utf-8"),
+                "application/json; charset=utf-8")
     print(f"manifest staged at manifest/{digest}.json"
           + ("  [DRY RUN — nothing uploaded]" if args.dry_run else ""))
-    print(f"\nto publish it:  python scripts/promote.py {digest}")
+    print("\nto publish it:  python scripts/promote.py")
 
 
 if __name__ == "__main__":

@@ -112,13 +112,12 @@ pub fn proxy(req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
         .expect("proxy response")
 }
 
-/// THE PATHS SERVED FROM THIS SHELL'S OWN CACHE BEFORE `current/`.
+/// THE PATHS SERVED FROM THIS SHELL'S OWN CACHE, and never from `current/`.
 ///
 /// The board is 4.3 MB and is rescored three times an hour; a release is code
-/// and moves on a code change. So the release carries a SEED — whatever the
-/// board was when it was built, which is what a fresh install shows before it
-/// has reached the network — and the live copy supersedes it from then on.
-/// docs/DISTRIBUTION.md §The data plane.
+/// and moves on a code change. So it does not travel in one — it is fetched,
+/// kept beside the release, and survives an update instead of being replaced by
+/// it. docs/DISTRIBUTION.md §The data plane.
 pub const LIVE: &[&str] = &["board.json", "board.meta.json"];
 
 /// Fetch the board if the copy on disk is not the one being served.
@@ -183,14 +182,13 @@ pub fn serve(root: &Path, live: &Path, req: &Request<Vec<u8>>) -> Response<Vec<u
     let raw = req.uri().path().trim_start_matches('/');
     let rel = percent_decode(if raw.is_empty() { "index.html" } else { raw });
 
-    // LIVE DATA: the fetched copy, else the seed the release shipped, and a
-    // miss is a 404 — never the SPA fallback. `index.html` answered with a 200
-    // is what `res.ok` reads as success, and the page would then parse markup
-    // as a board; an honest 404 is the empty board it already knows how to draw.
+    // LIVE DATA, AND A MISS IS A 404 — never the SPA fallback. `index.html`
+    // answered with a 200 is what `res.ok` reads as success, and the page would
+    // then parse markup as a board. An honest miss is what sends the page to
+    // the site instead (`fetchJson`), which is how a client that has not
+    // fetched one yet still has a board to show.
     if LIVE.contains(&rel.as_str()) {
-        let found = std::fs::read(live.join(&rel))
-            .or_else(|_| std::fs::read(root.join(&rel)));
-        return match found {
+        return match std::fs::read(live.join(&rel)) {
             Ok(b) => Response::builder()
                 .header("Content-Type", "application/json; charset=utf-8")
                 .header("Cache-Control", "no-store")

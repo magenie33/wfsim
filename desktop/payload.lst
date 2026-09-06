@@ -18,11 +18,11 @@ style.css
 worker.js
 logo.svg
 
-# THE BOARD IS A SEED, not the release's copy of it. The shell serves whatever
-# it has fetched in preference to these, and these are only what a fresh install
-# shows before it has reached the network — docs/DISTRIBUTION.md §The data plane.
-board.json
-board.meta.json
+# THE BOARD IS NOT HERE, and must never be. It is 4.3 MB rescored three times an
+# hour against a release that moves on a code change: inside the payload it
+# banks a new immortal blob every twenty minutes and hands every client a
+# download for a file it replaces before it reads it. The shell fetches it and
+# keeps it beside the release — docs/DISTRIBUTION.md §The data plane.
 
 # `pkg/` is the wasm module, `pol/` the polarity icons, `img/` the weapon and mod
 # art the same-origin rule put in the repository. The art ships rather than

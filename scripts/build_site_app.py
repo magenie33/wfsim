@@ -289,9 +289,31 @@ EDGE_HEADERS = """\
   Cache-Control: public, max-age=604800
 /pkg/*
   Cache-Control: public, max-age=31536000, immutable
+/board.json
+  Cache-Control: public, max-age=0, must-revalidate
+  Access-Control-Allow-Origin: *
 /board.meta.json
   Cache-Control: public, max-age=0, must-revalidate
+  Access-Control-Allow-Origin: *
+/app.js
+  Cache-Control: public, max-age=0, must-revalidate
+/worker.js
+  Cache-Control: public, max-age=0, must-revalidate
+/style.css
+  Cache-Control: public, max-age=0, must-revalidate
 """
+
+# WHY THE THREE ABOVE REVALIDATE AND `pkg/` DOES NOT.
+#
+# A release has two kinds of file: hashed ones, which a cache may keep for ever
+# because a different build cannot ask for the same name, and the handful that
+# keep their names across releases. The second kind MUST be revalidated, and
+# `worker.js` is the sharp case — a stale copy asks for the previous release's
+# hashed module, which is no longer served, and the page fails to start.
+#
+# `board.json` is a different plane and revalidates for its own reason: it is
+# rescored three times an hour. `Access-Control-Allow-Origin` is what lets a
+# shell serving its own origin fall back to the site for it — see `fetchJson`.
 
 # Legacy URLs from the /app/-era layout, plus the one weapon page that shipped
 # with an extension.

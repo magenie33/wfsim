@@ -82,6 +82,26 @@ check(/^\/pkg\/\*$/m.test(read("_headers"))
   && /\/pkg\/\*[\s\S]{0,120}?immutable/.test(read("_headers")),
   "the edge is told pkg/ is immutable", "no immutable rule for /pkg/*");
 
+// ── the board does not travel in the release ──────────────────────────────
+// 4.3 MB rescored three times an hour, against a release that moves on a code
+// change: inside the payload it banks a new immortal blob every twenty minutes
+// and hands every client a download for a file it replaces before reading it.
+// Nothing breaks if it goes back in, which is why this is asserted.
+const list = readFileSync(resolve(ROOT, "desktop/payload.lst"), "utf8")
+  .split(NL).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+check(!list.some((l) => l.startsWith("board.")), "the board is not in the payload",
+  `desktop/payload.lst carries ${list.filter((l) => l.startsWith("board.")).join(" ")}`);
+
+// A HASHED NAME NEEDS ITS UNHASHED NEIGHBOURS REVALIDATED. `worker.js` keeps its
+// name across releases, and a stale copy asks for the previous release's module
+// — which is no longer served, so the page does not start at all.
+const headers = read("_headers");
+for (const f of ["/app.js", "/worker.js", "/style.css"]) {
+  const rule = new RegExp(`^\\${f}$[\\s\\S]{0,120}?must-revalidate`, "m");
+  check(rule.test(headers), `the edge revalidates ${f}`,
+    "a cached copy can outlive the hashed module it asks for");
+}
+
 // ── the board says which board it is ──────────────────────────────────────
 const meta = JSON.parse(read("board.meta.json"));
 const board = readFileSync(resolve(SITE, "board.json"));

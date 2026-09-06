@@ -8488,19 +8488,30 @@ let BOARD = {};
 /// ABSENT IS A STATE, not a failure — the dev server has no stamp, and a page
 /// that cannot say when the board was scored says nothing rather than guessing.
 let BOARD_META = null;
+/// THE SITE, for a shell whose own origin has no board yet.
+///
+/// The board is not part of a release, so a client that has not fetched one has
+/// nothing to serve — and a shell answering same-origin cannot invent it. Asked
+/// second and never first: on the web the same-origin copy always answers, and
+/// on a shell the local one is the offline copy this exists to keep.
+const BOARD_ORIGIN = "https://wfsim.app";
+
+/// Same-origin, then the site. `res.ok` is not the whole test: a shell that
+/// falls back to its SPA answers `index.html` with a 200, so what decides is
+/// whether the body PARSES.
+async function fetchJson(path) {
+  for (const url of [path, BOARD_ORIGIN + path]) {
+    try {
+      const r = await fetch(url, { cache: "no-cache" });
+      if (r.ok) return await r.json();
+    } catch (_) { /* the next source, or nothing */ }
+  }
+  return null;
+}
+
 async function loadBoard() {
-  try {
-    const r = await fetch("/board.json", { cache: "no-cache" });
-    BOARD = r.ok ? await r.json() : {};
-  } catch (_) {
-    BOARD = {};
-  }
-  try {
-    const r = await fetch("/board.meta.json", { cache: "no-cache" });
-    BOARD_META = r.ok ? await r.json() : null;
-  } catch (_) {
-    BOARD_META = null;
-  }
+  BOARD = (await fetchJson("/board.json")) || {};
+  BOARD_META = await fetchJson("/board.meta.json");
 }
 
 /// THE BOARD'S ROWS, as read-only builds you can open.

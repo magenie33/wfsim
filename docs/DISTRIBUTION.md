@@ -107,12 +107,22 @@ toolchain). `ship.py` holds the two outputs against each other on every run.
 
 Publishing is two acts, and they are kept apart because their requirements are:
 
-1. **Stage.** Upload every blob and the manifest at `manifest/<digest>.json`.
-   Needs a toolchain, a network and bucket credentials; needs **no key**, and
-   changes nothing any client reads.
-2. **Promote.** Sign a pointer and put it up. Needs the key, takes a second,
-   and **builds nothing** — so a promotion cannot produce bytes that differ
-   from the ones already staged and deployed.
+1. **Stage.** Upload every blob, the manifest at `manifest/<digest>.json`, and
+   last a marker at `release/<release>.json` naming it. Needs a toolchain, a
+   network and bucket credentials; needs **no key**, and changes nothing any
+   client reads.
+2. **Promote.** Resolve the marker, check it, sign a pointer and put it up.
+   Needs the key, takes a second, and **builds nothing** — so a promotion cannot
+   produce bytes that differ from the ones already staged and deployed.
+
+**The gate is the release, not the manifest.** A manifest names the commit it
+was built from, so its digest moves on every push whether or not a served byte
+did; the release digest moves when the code does. That is what makes staging on
+every push cost one request three times an hour instead of a publish.
+
+It is also why promotion resolves through the marker rather than recomputing:
+recomputing would produce a different digest on any later commit, and then
+promotion would refuse a release that is staged and correct.
 
 The failure mode of a forgotten promotion is that readers stay on the last good
 release. **Late, not divergent** — which is the property the split is for.
@@ -181,12 +191,17 @@ on a schedule, and it moves at its own rate.
 in the background and keeps on disk beside the release rather than inside it. The
 page is identical on every shell and no cross-origin configuration is involved.
 
-**The release carries a SEED**, which is whatever the board was when it was
-built. It is what a fresh install shows before it has reached the network, and
-the fetched copy supersedes it from the first refresh. That is why a board file
-still appears in `desktop/payload.lst`: as a seed it moves with the release, and
-the staging job is gated on the manifest digest — so a push that moved only the
-board stages nothing.
+**A client that has not fetched one yet asks the site.** `fetchJson` tries the
+same origin and then `wfsim.app`, which is why `board.json` carries
+`Access-Control-Allow-Origin`. On the web the first answer always wins; on a
+shell the local copy is the offline one, and the fallback is what a fresh
+install reads before its first refresh. A shell that has neither answers **404,
+never its SPA fallback** — `index.html` with a 200 is what `res.ok` reads as
+success.
+
+There is deliberately **no seed in the payload**. A seed is stale on arrival and
+it puts a file that moves three times an hour inside an artefact that must not,
+which is the whole failure this plane exists to prevent.
 
 **What a board still cannot say is which engine scored it.** `fp` is per row and
 is dropped on the way to the page, so a client comparing its own run against a

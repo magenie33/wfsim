@@ -29,7 +29,6 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import cos  # noqa: E402
-import payload_manifest  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -70,11 +69,21 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    # WHAT THIS TREE SAYS THE RELEASE IS. Computed either way: with no digest it
-    # names the one to promote, and with one it is what the fetched manifest is
-    # checked against.
-    mine = payload_manifest.build()
-    digest = args.digest or hashlib.sha256(mine).hexdigest()
+    # WHICH MANIFEST TO PROMOTE, resolved through the release this tree holds.
+    #
+    # NOT RECOMPUTED FROM THE TREE. A manifest names the commit it was built
+    # from, so recomputing it here would produce a different digest from the
+    # staged one on any later commit — and then this would fetch a manifest that
+    # does not exist and refuse a release that is sitting there, correct.
+    if args.digest:
+        digest = args.digest
+    else:
+        release = site_release()
+        if not release:
+            sys.exit("site/release.json is missing — build site/ before promoting it")
+        marker = json.loads(fetch(f"{CHANNEL}/release/{release}.json"))
+        digest = marker["manifest"]
+        print(f"release {release} was staged as manifest {digest[:12]}")
 
     body = fetch(f"{CHANNEL}/manifest/{digest}.json")
     got = hashlib.sha256(body).hexdigest()
