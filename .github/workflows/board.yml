@@ -95,10 +95,16 @@ env:
   # thirty-two — through the dozen-odd runners a free account is granted.
   SLICE_SHARDS: 32
 
-  # HOW MANY NEVER-SCORED ROWS A RUN TAKES ON. A count, because a row nobody
-  # has scored has no cost to spend — and counted BEFORE the shard filter, so
-  # every shard stops at the same row and they agree on the deal.
-  NEW_ROWS: 150
+  # HOW MANY NEVER-SCORED ROWS A RUN MAY TAKE ON. A ceiling, not a plan: the
+  # CLOCK below is what actually stops a run, and this only keeps one from
+  # walking the whole library when the clock has room for it.
+  #
+  # IT WAS 150 AND THAT WAS THE BOTTLENECK. Most new rows are SCREENED — a
+  # hundred runs to confirm a build cannot reach half its group leader — which
+  # is cheap, so a run finished in six minutes against a twelve-minute
+  # deadline and absorbed thirty rows against a backlog of 1,758. Seventeen
+  # hours to catch up on work the machine had already been given time for.
+  NEW_ROWS: 3000
   # …AND THE CLOCK BEHIND IT, which is the only bound on a REPAIR. There is no
   # slice and no cursor: a repaired row leaves the stale set, so a run walking
   # it from the top converges, and what a run does not reach keeps the number
