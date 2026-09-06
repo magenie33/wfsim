@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6495
+submissions: 6496
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -11042,6 +11042,14 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: furis
     mode: cycle
+    score: 35.787598112129054
+    fp: 9d5ccd9abbff1ffd
+    cost: 14.563
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
     score: 35.33750142478426
     fp: 07a5c6c7ebbe34cd
     cost: 12.043
@@ -17098,6 +17106,16 @@ entries:
     riven:
       bonuses: [critical_damage, heat]
       malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: ocucor
+    mode: base
+    score: 24.510149277986365
+    fp: c510b1f36f7b5a36
+    cost: 77.313
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, frostbite, riven, primed_heated_charge]
+    arcanes: [secondary_irradiate]
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
       rolls: [1.1, 1.1, 0.9]
   - weapon: ocucor
     mode: base
