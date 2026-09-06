@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6355
+submissions: 6358
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -23773,6 +23773,14 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: tenet_quanta
     mode: base
+    score: 3.6386190520755393
+    fp: 1d1f064d4a89ca2c
+    cost: 11.011
+    mods: [heavy_caliber, split_chamber, point_strike, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_deadhead]
+    valence: cold
+  - weapon: tenet_quanta
+    mode: base
     score: 2.847129082186498
     fp: 2cde83b94c8ea268
     cost: 51.487
@@ -25844,6 +25852,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: base
+    score: 261.2225003473859
+    fp: 6d19dcf7ba714761
+    cost: 14.220
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, riven, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: damage_to_infested
+      rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: vectis_prime
+    mode: base
     score: 256.63189078618564
     fp: 43b5a537f2285fde
     cost: 9.010
@@ -26143,6 +26163,14 @@ entries:
     fp: 2415b1de87d6dd5c
     cost: 4.733
     mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: vectis_prime
+    mode: base
+    score: 153.57120169936047
+    fp: c1a2438dc80dc9d2
+    cost: 4.833
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: vectis_prime
@@ -30530,6 +30558,18 @@ entries:
       bonuses: [critical_chance, critical_damage, fire_rate]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: vectis_prime
+    mode: base
+    listed: false
+    score: 165.24110797345622
+    fp: 3c4e8e27c54f5d52
+    cost: 13.629
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, riven, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, reload_speed, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: vectis_prime
     mode: base
     listed: false
@@ -46814,6 +46854,16 @@ entries:
       bonuses: [critical_damage, damage, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 29.788397173539163
+    fp: d78384ed16ed8cfc
+    cost: 18.847
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -92118,6 +92168,16 @@ entries:
     cost: 1.460
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_merciless]
+    valence: impact
+  - weapon: tenet_cycron
+    mode: base
+    listed: false
+    probe: true
+    score: 7.534356369605959
+    fp: 76c4a3d322cb71a0
+    cost: 1.931
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_surge]
     valence: impact
   - weapon: tenet_cycron
     mode: base
