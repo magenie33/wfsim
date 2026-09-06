@@ -1605,6 +1605,34 @@ refactor it needs is real — every melee commit touches `engine/src/dummy.rs`,
 32,146 lines of the engine's 78,003, which holds the gun logic too, so a
 file-level attribution buys nothing until melee is moved out of it.
 
+**A message queue.** The pipeline wears every sign of one — durable work,
+stateless workers scaled sideways, at-least-once semantics, backpressure, a
+bounded batch per cycle — and it is not a queue and must not become one.
+
+THERE IS NO QUEUE, THERE IS A SET DIFFERENCE: what the library holds, minus what
+the score store holds, recomputed from scratch every run. No pending list, no
+head, no ack, no redelivery, no dead letter. That is the RECONCILIATION LOOP a
+controller runs — desired state against observed state, closing the gap a little
+each cycle — and it is why a run that dies loses nothing. There was never a
+message to lose.
+
+THE LICENCE FOR IT IS THAT THE WORK IS DERIVABLE. A queue earns its complexity
+where the work item is the ONLY record of itself: an event nobody wrote down is
+gone. Here the BUILD is the record and it is permanent, so what remains to be
+done can always be derived again. At-least-once needs no thought either — a
+score is a pure function, so computing one twice costs time and nothing else.
+
+WHAT WOULD CHANGE IT is the walk. The difference is taken by reading the whole
+library each run, which is O(the library) and today is seconds. Grow it a
+hundredfold and that walk becomes the cost, and an index of what is missing
+starts to earn its keep — most likely a query against the store rather than a
+queue, but that is the first moment the question is worth asking again.
+
+THE ONE THING THAT IS A MESSAGE is `/api/board/disagree`: a browser reporting
+that two measurements of a row differ. Nobody can derive it from anything, so it
+has a store, a key and an expiry of its own. The only queue-shaped thing here is
+the only event-shaped thing here, and that is not a coincidence.
+
 **Adaptive precision — fewer runs for rows far from a boundary.** The run count
 is the RULER'S OWN TERM and is where a published number's authority comes from.
 Spending less of it is not an optimisation of the board, it is a trade against
