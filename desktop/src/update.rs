@@ -371,8 +371,13 @@ pub fn download(local: &Manifest, current: &Path, next: &Path) -> Result<Manifes
         // the loop above accepts a body only on that condition, so exhausting
         // every source means no source held this file, not that a wrong one was
         // taken.
+        //
+        // THE WORD "CHECKSUM" IS LOAD-BEARING: a refusal that reads like a
+        // network error is one a reader waits out, and this one will not clear
+        // on its own. `--selftest-update` asserts the reason says which it is.
         let bytes = got.ok_or_else(|| {
-            format!("{} - refusing this update ({last})", entry.p)
+            format!("{} failed its checksum at every source - refusing this update ({last})",
+                    entry.p)
         })?;
         std::fs::write(&dest, &bytes).map_err(|e| format!("{}: {e}", entry.p))?;
 

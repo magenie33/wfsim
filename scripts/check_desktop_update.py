@@ -29,6 +29,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import cos  # noqa: E402
@@ -46,24 +47,54 @@ MARK = "<!-- update-channel probe -->"
 # the signature is then corrupted.
 MARK2 = b"\n<!-- update-channel probe 2 -->\n"
 
+# Where the pointer lives, which is what a current client reads first.
+CHANNEL = "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com"
+
 FAILED = []
+
+
+def fetch(url: str) -> bytes:
+    with urllib.request.urlopen(url, timeout=60) as r:
+        return r.read()
+
+
+def flip(b: bytes) -> bytes:
+    """One hex digit of a signature, changed. Enough to make it not verify and
+    small enough that nothing else about the object moved."""
+    return bytes(bytearray(b)[:-1]) + (b"0" if b[-1:] != b"0" else b"1")
 
 
 def step(msg: str) -> None:
     print(f"\n=== {msg}")
 
 
+def say(line: str) -> None:
+    """Print without letting the CONSOLE decide whether this run continues.
+
+    A Chinese Windows console encodes GBK, and one character it cannot take
+    ends the check with a `UnicodeEncodeError` from a print statement — the
+    whole update path unverified because of a dash in somebody's progress
+    line. What cannot be shown is shown as `?`.
+    """
+    enc = sys.stdout.encoding or "utf-8"
+    print(line.encode(enc, "replace").decode(enc, "replace"), flush=True)
+
+
 def run(*cmd: str, quiet: bool = False) -> str:
+    # UTF-8 BOTH WAYS. Without telling the child, a Python subprocess writing to
+    # a pipe encodes with the locale — GBK here — and this decodes it as UTF-8,
+    # turning any non-ASCII character into a replacement this then cannot print.
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT,
-                       encoding="utf-8", errors="replace")
+                       encoding="utf-8", errors="replace", env=env)
     if r.returncode != 0:
-        print(r.stdout[-3000:])
-        print(r.stderr[-3000:])
+        say(r.stdout[-3000:])
+        say(r.stderr[-3000:])
         sys.exit(f"command failed: {' '.join(cmd)}")
     if not quiet:
         tail = [ln for ln in r.stdout.split("\n") if ln.strip()][-3:]
         for ln in tail:
-            print("    " + ln, flush=True)
+            say("    " + ln)
     return r.stdout
 
 
@@ -83,7 +114,7 @@ def client(*args: str, timeout: int = 300) -> str:
         ln for ln in (r.stdout + r.stderr).split("\n")
         if not ln.startswith("[serve]") and "PICKER" not in ln
     )
-    print(out.strip()[-2500:], flush=True)
+    say(out.strip()[-2500:])
     if r.returncode != 0:
         FAILED.append(" ".join(args))
     return out
@@ -151,11 +182,20 @@ def main() -> None:
             FAILED.append("corrupt blob was applied")
         cos.put(c, f"blob/{vh}", good_blob.read_bytes(), "image/svg+xml")
 
-        step("8. a manifest whose signature does not verify must be refused")
+        # BOTH SIGNED OBJECTS, because there are two paths and only one of them
+        # is what a current client reads. Corrupting `manifest.json.sig` alone
+        # left this asserting a refusal the client never had to make: it resolves
+        # `channel.json` first and would have accepted a perfectly good pointer.
+        # A check that tests the path nobody takes is a channel with no guard.
+        step("8. a signature that does not verify must be refused, on either path")
         good_sig = (ROOT / "desktop" / "target" / "manifest.json.sig").read_bytes()
-        bad = bytearray(good_sig)
-        bad[-1] = ord("0") if bad[-1] != ord("0") else ord("1")
-        cos.put(c, "manifest.json.sig", bytes(bad), "text/plain; charset=utf-8")
+        good_ptr = fetch(f"{CHANNEL}/channel.json")
+        ptr = json.loads(good_ptr)
+        cos.put(c, "channel.json",
+                json.dumps({"sig": flip(ptr["sig"].encode()).decode(), "signed": ptr["signed"]},
+                           ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
+                "application/json; charset=utf-8")
+        cos.put(c, "manifest.json.sig", flip(good_sig), "text/plain; charset=utf-8")
         before = (CURRENT / VICTIM.name).read_bytes()
         client("--selftest-update", "--expect-refused")
         if (CURRENT / VICTIM.name).read_bytes() == before:
@@ -164,6 +204,7 @@ def main() -> None:
             print("    FAIL  an update with a bad signature was applied")
             FAILED.append("bad signature was accepted")
         cos.put(c, "manifest.json.sig", good_sig, "text/plain; charset=utf-8")
+        cos.put(c, "channel.json", good_ptr, "application/json; charset=utf-8")
 
     finally:
         step("cleanup: restore the tree and republish the baseline")
