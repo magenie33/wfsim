@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6367
+submissions: 6371
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -20377,6 +20377,14 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 45.027522832014256
+    fp: 3554755e81d25c66
+    cost: 5.312
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
     score: 44.947695871853114
     fp: f7977dc054ff7a4d
     cost: 3.372
@@ -20851,6 +20859,14 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 25.20847343642972
+    fp: 1bd93d4a7d6022bf
+    cost: 3.343
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 25.005196033865065
     fp: 614a10fc531b4154
     cost: 5.336
@@ -21135,6 +21151,14 @@ entries:
     fp: 9acd1bf4e1231058
     cost: 16.608
     exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    score: 14.347731961539067
+    fp: 3554755e81d25c66
+    cost: 16.602
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
     arcanes: [secondary_enervate]
@@ -21748,6 +21772,13 @@ entries:
     fp: 6ade365d3c6cf9c5
     cost: 1.267
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vigilante_armaments, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: ignis_wraith
+    mode: base
+    score: 2.696592626198758
+    fp: afd64f35a3d55977
+    cost: 3.040
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_crux]
   - weapon: imperator_vandal
     mode: base
@@ -66529,21 +66560,21 @@ entries:
     mode: cycle
     listed: false
     score: 7.562407851192626
-    fp: f46b4061d89948e0
-    cost: 4.295
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    score: 7.562407851192626
     fp: d94717649ce2fe58
     cost: 5.391
     exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 7.562407851192626
+    fp: f46b4061d89948e0
+    cost: 4.295
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: perigale_prime
     mode: base
@@ -72318,6 +72349,15 @@ entries:
     mods: [primary_acuity, galvanized_aptitude, hammer_shot, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_swift_punishment, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_compression]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 4.922255858242781
+    fp: 1bd93d4a7d6022bf
+    cost: 9.554
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
     listed: false
@@ -95928,6 +95968,28 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 1.0395334383759902
+    fp: 37ad2bb0b657b4de
+    cost: 0.476
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 1.003290925319244
+    fp: d94717649ce2fe58
+    cost: 0.434
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
     score: 0.5129777758441033
     fp: 675870d08aa2d86a
     cost: 0.266
@@ -96482,25 +96544,3 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 1.0395334383759902
-    fp: 37ad2bb0b657b4de
-    cost: 0.476
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 1.003290925319244
-    fp: d94717649ce2fe58
-    cost: 0.434
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_debilitate]

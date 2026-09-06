@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6367
+submissions: 6371
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -6988,6 +6988,14 @@ entries:
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
+    mode: cycle
+    score: 215.33244003566944
+    fp: 0cec125b90db59c6
+    cost: 72.894
+    mods: [primary_acuity, primed_shred, metal_auger, galvanized_aptitude, vital_sense, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
     mode: base
     score: 214.47813629240133
     fp: 5ade9a18a69bce9b
@@ -7013,20 +7021,20 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
+    score: 81.66426727583509
+    fp: 0cec125b90db59c6
+    cost: 18.125
+    mods: [primary_acuity, primed_shred, metal_auger, galvanized_aptitude, vital_sense, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
     score: 42.28013579728278
     fp: 69227e06fbf436f2
     cost: 14.729
     mods: [primary_acuity, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: base
-    score: 23.981661243183392
-    fp: 3e3ff1b08178b55e
-    cost: 36.814
-    mods: [galvanized_chamber, primed_shred, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_merciless]
   - weapon: cedo_prime
     mode: base
     score: 12.882138088438683
@@ -10726,6 +10734,14 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 45.027522832014256
+    fp: b5f04052bc3166c6
+    cost: 18.100
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
     score: 44.947695871853114
     fp: 3a17224c9aea09ed
     cost: 9.928
@@ -11812,6 +11828,13 @@ entries:
     fp: 2eb5e8164a92b853
     cost: 14.945
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vile_acceleration, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: ignis_wraith
+    mode: base
+    score: 7.009285895589942
+    fp: 35cae835e03af617
+    cost: 9.827
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_crux]
   - weapon: ignis_wraith
     mode: base
@@ -23425,6 +23448,15 @@ entries:
   - weapon: tenet_cycron
     mode: base
     score: 28.705609181091138
+    fp: 01e139dbd6e4b28b
+    cost: 16.854
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_encumber]
+    valence: magnetic
+  - weapon: tenet_cycron
+    mode: base
+    score: 28.705609181091138
     fp: 4a8ba7116ad212ea
     cost: 16.407
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -26371,6 +26403,14 @@ entries:
     fp: aa42d44906b2d700
     cost: 16.650
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 41.06663054527512
+    fp: 1f274830331750aa
+    cost: 13.852
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: vectis_prime
@@ -33689,6 +33729,20 @@ entries:
     mods: [galvanized_chamber, primed_firestorm, galvanized_scope, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 72.5470727065433
+    fp: 2c23fe5b38cf4d74
+    cost: 54.366
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, magnetic_strafe, chilling_reload, toxic_barrage, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -51360,6 +51414,15 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 23.981661243183392
+    fp: 3e3ff1b08178b55e
+    cost: 36.814
+    mods: [galvanized_chamber, primed_shred, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
   - weapon: furis
     mode: base
     listed: false
@@ -51590,6 +51653,15 @@ entries:
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
+  - weapon: tenet_cycron
+    mode: base
+    listed: false
+    score: 23.6968377421617
+    fp: 071c7f9ac922fd8c
+    cost: 22.628
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_encumber]
+    valence: magnetic
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -92163,6 +92235,16 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 11.028950119337054
+    fp: 071c7f9ac922fd8c
+    cost: 2.617
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_encumber]
+    valence: impact
+  - weapon: tenet_cycron
+    mode: base
+    listed: false
+    probe: true
     score: 9.452481926430439
     fp: 8b24079bf3f01c75
     cost: 1.460
@@ -92387,6 +92469,28 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 2.0590395216016875
+    fp: a0d1400886273c3e
+    cost: 3.680
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 2.0203887647753414
+    fp: 07d2354b59bb8bf8
+    cost: 4.093
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, speed_trigger, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
   - weapon: torid
     mode: base
     listed: false
