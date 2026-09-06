@@ -8,6 +8,7 @@
 use std::io::Read;
 use std::path::Path;
 
+use sha2::{Digest, Sha256};
 use tauri::http::{Request, Response, StatusCode};
 
 /// `application/wasm` is not cosmetic: `WebAssembly.instantiateStreaming`
@@ -111,9 +112,97 @@ pub fn proxy(req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
         .expect("proxy response")
 }
 
-pub fn serve(root: &Path, req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
+/// THE PATHS SERVED FROM THIS SHELL'S OWN CACHE BEFORE `current/`.
+///
+/// The board is 4.3 MB and is rescored three times an hour; a release is code
+/// and moves on a code change. So the release carries a SEED — whatever the
+/// board was when it was built, which is what a fresh install shows before it
+/// has reached the network — and the live copy supersedes it from then on.
+/// docs/DISTRIBUTION.md §The data plane.
+pub const LIVE: &[&str] = &["board.json", "board.meta.json"];
+
+/// Fetch the board if the copy on disk is not the one being served.
+///
+/// THE STAMP IS ASKED FIRST, and that is the whole economy of it: a few hundred
+/// bytes decide whether the 4.3 MB is worth fetching, and three times an hour
+/// most clients learn they already have it.
+///
+/// NOTHING IS WRITTEN THAT DOES NOT HASH TO WHAT THE STAMP PROMISED. A board is
+/// public data and needs no signature — anyone can recompute it — but a
+/// truncated download is not a smaller board, it is a broken one.
+///
+/// The payload lands BEFORE the stamp: a run that dies between them leaves a
+/// stamp naming a board this client does not have, and the next check would
+/// then believe it is current.
+pub fn refresh_board(live: &Path) -> Result<Option<String>, String> {
+    let meta = fetch(&format!("{BOARD_ORIGIN}/board.meta.json"))?;
+    let want = serde_json::from_slice::<serde_json::Value>(&meta)
+        .ok()
+        .and_then(|v| v.get("digest")?.as_str().map(str::to_owned))
+        .ok_or("board.meta.json names no digest")?;
+
+    let have = std::fs::read(live.join("board.json"))
+        .map(|b| format!("{:x}", Sha256::digest(&b)))
+        .unwrap_or_default();
+    if have == want {
+        return Ok(None);
+    }
+
+    let body = fetch(&format!("{BOARD_ORIGIN}/board.json"))?;
+    let got = format!("{:x}", Sha256::digest(&body));
+    if got != want {
+        return Err(format!("board.json failed its checksum (expected {want}, got {got})"));
+    }
+    write_atomic(&live.join("board.json"), &body)?;
+    write_atomic(&live.join("board.meta.json"), &meta)?;
+    Ok(Some(want))
+}
+
+fn fetch(url: &str) -> Result<Vec<u8>, String> {
+    let resp = ureq::get(url)
+        .timeout(std::time::Duration::from_secs(60))
+        .call()
+        .map_err(|e| format!("{url}: {e}"))?;
+    let mut buf = Vec::new();
+    resp.into_reader()
+        .take(32 * 1024 * 1024)
+        .read_to_end(&mut buf)
+        .map_err(|e| format!("{url}: {e}"))?;
+    Ok(buf)
+}
+
+/// Written beside the target and renamed over it, so a reader never sees half
+/// a board: the page fetches these while this is running.
+fn write_atomic(path: &Path, body: &[u8]) -> Result<(), String> {
+    let tmp = path.with_extension("part");
+    std::fs::write(&tmp, body).map_err(|e| format!("{}: {e}", tmp.display()))?;
+    std::fs::rename(&tmp, path).map_err(|e| format!("{}: {e}", path.display()))
+}
+
+pub fn serve(root: &Path, live: &Path, req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
     let raw = req.uri().path().trim_start_matches('/');
     let rel = percent_decode(if raw.is_empty() { "index.html" } else { raw });
+
+    // LIVE DATA: the fetched copy, else the seed the release shipped, and a
+    // miss is a 404 — never the SPA fallback. `index.html` answered with a 200
+    // is what `res.ok` reads as success, and the page would then parse markup
+    // as a board; an honest 404 is the empty board it already knows how to draw.
+    if LIVE.contains(&rel.as_str()) {
+        let found = std::fs::read(live.join(&rel))
+            .or_else(|_| std::fs::read(root.join(&rel)));
+        return match found {
+            Ok(b) => Response::builder()
+                .header("Content-Type", "application/json; charset=utf-8")
+                .header("Cache-Control", "no-store")
+                .body(b)
+                .expect("live response"),
+            Err(_) => Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "application/json; charset=utf-8")
+                .body(br#"{"error":"not fetched yet"}"#.to_vec())
+                .expect("live miss"),
+        };
+    }
 
     // THE SELFTEST REPORTS THROUGH THE PROTOCOL, not through Tauri's IPC.
     // A check that depends on IPC cannot tell "the page never ran" from "the
@@ -149,9 +238,9 @@ pub fn serve(root: &Path, req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
 
     Response::builder()
         .header("Content-Type", mime)
-        // THE FILENAMES ARE FIXED (`app.js`, `wfsim_wasm_bg.wasm`), so after an
-        // update swaps the directory the webview would happily serve its own
-        // cached copy of the old one. Caching a local file buys nothing here
+        // `index.html` AND `app.js` KEEP THEIR NAMES across an update, so the
+        // webview would happily serve its own cached copy of the old one after
+        // the directory is swapped. Caching a local file buys nothing here
         // anyway — this is a disk read, not a network round trip.
         .header("Cache-Control", "no-store")
         .body(bytes)

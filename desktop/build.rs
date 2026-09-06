@@ -16,12 +16,27 @@
 use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 
-/// Files at the root of the payload. `worker.js` is the WASM worker (not the
-/// Cloudflare one, which lives in `worker/index.js` and has no business here).
-const ROOT_FILES: &[&str] = &["index.html", "app.js", "style.css", "worker.js", "logo.svg", "board.json"];
-/// Whole trees. `pkg/` is the wasm module, `pol/` the polarity icons, `img/`
-/// the weapon/mod art the same-origin rule put in the repo.
-const ROOT_DIRS: &[&str] = &["pkg", "pol", "img"];
+/// WHAT GOES IN, read from the one file that declares it — `desktop/payload.lst`,
+/// which `scripts/payload_manifest.py` reads too. Embedded rather than opened at
+/// build time so a missing list is a compile error and not an empty payload.
+const PAYLOAD_LIST: &str = include_str!("payload.lst");
+
+/// The list, split into single files and whole trees. A trailing `/` is a tree.
+fn declared() -> (Vec<String>, Vec<String>) {
+    let mut files = Vec::new();
+    let mut dirs = Vec::new();
+    for line in PAYLOAD_LIST.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        match line.strip_suffix('/') {
+            Some(d) => dirs.push(d.to_string()),
+            None => files.push(line.to_string()),
+        }
+    }
+    (files, dirs)
+}
 
 fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
@@ -39,13 +54,21 @@ fn main() {
     tauri_build::build();
 
     let site = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("site");
-    if !site.join("pkg").join("wfsim_wasm_bg.wasm").exists() {
+    // THE MODULE IS NAMED BY ITS DIGEST (`ship_wasm_pkg`), so the check is that
+    // `pkg/` holds one — a fixed name would pass on a stale build and fail on
+    // every fresh one.
+    let has_wasm = std::fs::read_dir(site.join("pkg")).is_ok_and(|d| {
+        d.filter_map(Result::ok)
+            .any(|e| e.path().extension().is_some_and(|x| x == "wasm"))
+    });
+    if !has_wasm {
         panic!("site/ is not built — run `python scripts/build_site_app.py` first");
     }
     println!("cargo:rerun-if-changed=../site");
 
-    let mut files: Vec<PathBuf> = ROOT_FILES.iter().map(|f| site.join(f)).collect();
-    for d in ROOT_DIRS {
+    let (root_files, root_dirs) = declared();
+    let mut files: Vec<PathBuf> = root_files.iter().map(|f| site.join(f)).collect();
+    for d in &root_dirs {
         walk(&site.join(d), &mut files);
     }
 

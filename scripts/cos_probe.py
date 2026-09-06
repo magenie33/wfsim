@@ -33,7 +33,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CREDS = ROOT / "private" / "cos.json"
 # The real payload, because a probe on a synthetic file measures the wrong
 # thing: this is the exact object the updater will pull on every engine change.
-PAYLOAD = ROOT / "site" / "pkg" / "wfsim_wasm_bg.wasm"
+# FOUND BY EXTENSION — the module is named by its digest, so there is no fixed
+# name to hold here and a stale one would silently probe nothing.
+PAYLOAD = next(iter(sorted((ROOT / "site" / "pkg").glob("*.wasm"))), None)
 KEY = "probe/wfsim_wasm_bg.wasm"
 
 
@@ -101,7 +103,7 @@ def main() -> None:
 
     print("2. DOWNLOAD (public read, no credentials — what the updater does)")
     timed_get(url, "COS ap-shanghai")
-    timed_get("https://wfsim.app/pkg/wfsim_wasm_bg.wasm", "wfsim.app (CF)")
+    timed_get(f"https://wfsim.app/pkg/{PAYLOAD.name}", "wfsim.app (CF)")
     print("\n3. wfsim.app api reachability (the board submit path)")
     timed_get("https://wfsim.app/api/board/pending", "wfsim.app /api")
 

@@ -511,6 +511,11 @@ const HEALTH_PROBE: &str = r#"
 /// Total working set of every WebView2 process, in MB. Shelling out to
 /// PowerShell keeps this measurement-only code free of a Windows API
 /// dependency the shipped shell would carry for ever.
+/// HOW OFTEN THE BOARD IS ASKED ABOUT. The scoring job publishes three times an
+/// hour, so anything shorter re-asks a question that cannot have a new answer;
+/// the check itself costs a few hundred bytes, not the board.
+const BOARD_REFRESH: std::time::Duration = std::time::Duration::from_secs(20 * 60);
+
 fn webview_memory_mb() -> f64 {
     std::process::Command::new("powershell")
         .args(["-NoProfile", "-Command",
@@ -574,6 +579,21 @@ fn main() {
     let layout = Arc::new(Layout::open().expect("could not prepare the app directory"));
     let rolled_back = layout.boot_begin();
     let root = layout.current();
+    let live = layout.live();
+    // THE BOARD IS FETCHED, NOT SHIPPED. On its own thread from the start: the
+    // window must never wait on a network, and a client that cannot reach one
+    // shows the seed the release carried — docs/DISTRIBUTION.md §The data plane.
+    {
+        let live = live.clone();
+        std::thread::spawn(move || loop {
+            match protocol::refresh_board(&live) {
+                Ok(Some(d)) => println!("board: fetched {}", d.get(..12).unwrap_or(&d)),
+                Ok(None) => {}
+                Err(e) => eprintln!("board: {e}"),
+            }
+            std::thread::sleep(BOARD_REFRESH);
+        });
+    }
 
     if selftest {
         // A DEADLINE FOR EVERY CHECK MODE, not one inside the payload
@@ -638,7 +658,7 @@ TIMEOUT: the page never reported after {secs}s
             if protocol::is_proxied(&req) {
                 std::thread::spawn(move || responder.respond(protocol::proxy(&req)));
             } else {
-                responder.respond(protocol::serve(&root, &req));
+                responder.respond(protocol::serve(&root, &live, &req));
             }
         })
         .setup(move |app| {

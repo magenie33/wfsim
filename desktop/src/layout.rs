@@ -76,6 +76,7 @@ impl Layout {
     pub fn open() -> std::io::Result<Self> {
         let me = Self { root: data_root() };
         std::fs::create_dir_all(&me.root)?;
+        std::fs::create_dir_all(me.live())?;
 
         // A `next/` left behind is an update that died partway. It is never
         // salvageable — the manifest check that would have promoted it never
@@ -97,6 +98,10 @@ impl Layout {
 
     pub fn current(&self) -> PathBuf { self.root.join("current") }
     pub fn next(&self) -> PathBuf { self.root.join("next") }
+    /// LIVE DATA, beside the release rather than inside it. The board moves
+    /// every twenty minutes and a release does not, so it survives an update
+    /// instead of being replaced by one — docs/DISTRIBUTION.md §The data plane.
+    pub fn live(&self) -> PathBuf { self.root.join("live") }
     fn prev(&self) -> PathBuf { self.root.join("prev") }
     fn boot_file(&self) -> PathBuf { self.root.join("boot.json") }
     fn manifest_file(&self) -> PathBuf { self.current().join(".manifest.json") }

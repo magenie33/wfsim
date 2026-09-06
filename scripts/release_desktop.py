@@ -145,11 +145,58 @@ def main() -> None:
     out.write_bytes(body)
     updatekit("sign", str(out))
     sig = (out.parent / "manifest.json.sig").read_bytes()
+    digest = hashlib.sha256(body).hexdigest()
+
+    # THE MANIFEST, ADDRESSED BY ITS OWN DIGEST. Immutable, so it is cacheable
+    # for ever and a client that verified a digest can check that what came back
+    # is the thing it verified.
+    if not dry:
+        cos.put(c, f"manifest/{digest}.json", body, "application/json; charset=utf-8")
+
+    # 4. THE POINTER, which is what a current client actually reads.
+    #
+    # ONE OBJECT CARRYING ITS OWN SIGNATURE. `manifest.json` and its detached
+    # `.sig` are two mutable objects fetched separately, so a client reading
+    # between the two puts of a publish gets a new manifest beside an old
+    # signature and is told its update FAILED VERIFICATION — an alarming
+    # message for a publish landing mid-fetch. A pointer cannot be torn.
+    signed = json.dumps(
+        {"manifest": digest, "release": site_release(), "version": version,
+         "sources": SOURCES},
+        ensure_ascii=False, separators=(",", ":"), sort_keys=True,
+    )
+    ptr = ROOT / "desktop" / "target" / "channel-body.json"
+    ptr.write_text(signed, encoding="utf-8", newline="")
+    updatekit("sign", str(ptr))
+    ptr_sig = (ptr.parent / "channel-body.json.sig").read_text(encoding="utf-8").strip()
+    pointer = json.dumps({"sig": ptr_sig, "signed": signed},
+                         ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
     if not dry:
         cos.put(c, "manifest.json", body, "application/json; charset=utf-8")
         cos.put(c, "manifest.json.sig", sig, "text/plain; charset=utf-8")
-    print(f"manifest {len(body)} bytes, signed" + ("  [DRY RUN — nothing uploaded]" if dry else ""))
-    print(f"\nlive at {SOURCES[0]}/manifest.json")
+        # THE POINTER GOES LAST OF ALL. It is the only object a current client
+        # consults, so nothing it names may be missing by the time it lands.
+        cos.put(c, "channel.json", pointer, "application/json; charset=utf-8")
+    print(f"manifest {len(body)} bytes, signed — {digest[:12]}")
+    print(f"pointer  {len(pointer)} bytes, signed"
+          + ("  [DRY RUN — nothing uploaded]" if dry else ""))
+    print(f"\nlive at {SOURCES[0]}/channel.json")
+
+
+def site_release() -> str:
+    """WHICH RELEASE these files are, as `site/release.json` computed it.
+
+    The manifest's digest names the exact FILE SET a client must hold; this
+    names the CODE, which is the identifier that is comparable across shells
+    that ship different art — docs/DISTRIBUTION.md §Identity. Absent on a tree
+    whose `site/` predates the stamp, and an empty string says so rather than
+    inventing one.
+    """
+    f = SITE / "release.json"
+    if not f.exists():
+        return ""
+    return json.loads(f.read_text(encoding="utf-8")).get("release", "")
 
 
 if __name__ == "__main__":

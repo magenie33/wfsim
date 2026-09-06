@@ -30,7 +30,17 @@ use crate::payload::Manifest;
 
 /// From `updatekit keygen`. The private half lives in `private/` and in a
 /// backup, never in this repository.
-const PUBLIC_KEY: &str = "b488481177cb0a459a685c5d66f646768e7f66c405b92ecde81025581419a95e";
+///
+/// A LIST, NEVER ONE KEY, and the reason is that this array is compiled in. A
+/// shell that accepts exactly one key cannot be handed a signature from a new
+/// one, so losing or rotating the private half would leave every reader with a
+/// dead update path and a manual reinstall as the only way back — which is the
+/// outcome this client exists to remove. Rotation is: ship a shell accepting
+/// both, wait for it to spread, then publish under the new key and drop the old
+/// from this list.
+const PUBLIC_KEYS: &[&str] = &[
+    "b488481177cb0a459a685c5d66f646768e7f66c405b92ecde81025581419a95e",
+];
 
 /// Tried in order until one answers. MEASURED 2026-08-26 from Shanghai:
 /// COS 9.73 MB/s, wfsim.app (Cloudflare) 2.11 MB/s — so the bucket leads and
@@ -131,22 +141,31 @@ fn fetch(url: &str) -> Result<Vec<u8>, String> {
     Ok(buf)
 }
 
-/// Verify a detached signature over the manifest's RAW BYTES.
+/// Verify a signature over RAW BYTES.
 ///
 /// Signing the bytes rather than a parsed structure keeps this independent of
 /// how either side serializes JSON: two encoders disagree about key order and
 /// spacing, and a signature that depends on which one ran fails at random.
+///
+/// ANY ACCEPTED KEY IS ENOUGH — see `PUBLIC_KEYS` for why there is more than
+/// one. A malformed entry is skipped rather than fatal: it would otherwise take
+/// the whole update path down at the moment a rotation is being prepared.
 fn verify(body: &[u8], sig_hex: &str) -> Result<(), String> {
-    let key: [u8; 32] = hex_to_bytes(PUBLIC_KEY)
-        .and_then(|v| v.try_into().ok())
-        .ok_or("built-in public key is malformed")?;
     let sig: [u8; 64] = hex_to_bytes(sig_hex)
         .and_then(|v| v.try_into().ok())
         .ok_or("signature is malformed")?;
-    VerifyingKey::from_bytes(&key)
-        .map_err(|e| e.to_string())?
-        .verify(body, &Signature::from_bytes(&sig))
-        .map_err(|_| "SIGNATURE DOES NOT MATCH - refusing this update".to_string())
+    let sig = Signature::from_bytes(&sig);
+    let ok = PUBLIC_KEYS.iter().any(|k| {
+        hex_to_bytes(k)
+            .and_then(|v| <[u8; 32]>::try_from(v).ok())
+            .and_then(|k| VerifyingKey::from_bytes(&k).ok())
+            .is_some_and(|vk| vk.verify(body, &sig).is_ok())
+    });
+    if ok {
+        Ok(())
+    } else {
+        Err("SIGNATURE DOES NOT MATCH - refusing this update".to_string())
+    }
 }
 
 fn sources(local: &Manifest) -> Vec<String> {
@@ -172,18 +191,75 @@ pub fn source_url(local: &Manifest) -> String {
     format!("{base}/src/{}/source.zip", local.version)
 }
 
+/// A signed document that carries its own signature — see `pointer`.
+#[derive(serde::Deserialize)]
+struct SignedDoc {
+    sig: String,
+    signed: String,
+}
+
+/// What the pointer says. `sources` replaces the local list, which is what lets
+/// the channel be moved without shipping a new shell.
+#[derive(serde::Deserialize)]
+struct Pointer {
+    manifest: String,
+    #[serde(default)]
+    sources: Vec<String>,
+}
+
+/// THE CURRENT PATH: one signed pointer, then the manifest it names.
+///
+/// The signature travels INSIDE the pointer because two objects fetched
+/// separately can be torn: a client reading between the two puts of a publish
+/// got a new manifest beside an old detached signature and was told its update
+/// failed verification — which reads as an attack and is a publish landing
+/// mid-fetch.
+///
+/// The manifest is then addressed by the digest that was just verified, so what
+/// comes back is checked against what was signed rather than trusted for having
+/// arrived from the same host.
+fn pointer_manifest(base: &str) -> Result<Manifest, String> {
+    let doc: SignedDoc = serde_json::from_slice(&fetch(&format!("{base}/channel.json"))?)
+        .map_err(|e| format!("channel.json is not valid: {e}"))?;
+    verify(doc.signed.as_bytes(), &doc.sig)?;
+    let p: Pointer = serde_json::from_str(&doc.signed)
+        .map_err(|e| format!("the pointer is not valid: {e}"))?;
+
+    let body = fetch(&format!("{base}/manifest/{}.json", p.manifest))?;
+    let got = format!("{:x}", Sha256::digest(&body));
+    if got != p.manifest {
+        return Err(format!(
+            "manifest {got} is not the {} the pointer named - refusing this update",
+            p.manifest
+        ));
+    }
+    let mut m: Manifest =
+        serde_json::from_slice(&body).map_err(|e| format!("manifest is not valid: {e}"))?;
+    if !p.sources.is_empty() {
+        m.sources = p.sources;
+    }
+    Ok(m)
+}
+
+/// THE PATH SHELLS OLDER THAN THE POINTER READ, kept because a shell only
+/// changes with an installer: taking it away would leave those readers with no
+/// update path and no way to be told so.
+fn legacy_manifest(base: &str) -> Result<Manifest, String> {
+    let body = fetch(&format!("{base}/manifest.json"))?;
+    let sig = fetch(&format!("{base}/manifest.json.sig"))?;
+    verify(&body, &String::from_utf8_lossy(&sig))?;
+    serde_json::from_slice(&body).map_err(|e| format!("manifest is not valid: {e}"))
+}
+
 /// Fetch and verify the remote manifest, from the first source that answers.
 fn remote_manifest(local: &Manifest) -> Result<Manifest, String> {
     let mut last = String::from("no sources configured");
     for base in sources(local) {
         let base = base.trim_end_matches('/');
-        let attempt = || -> Result<Manifest, String> {
-            let body = fetch(&format!("{base}/manifest.json"))?;
-            let sig = fetch(&format!("{base}/manifest.json.sig"))?;
-            verify(&body, &String::from_utf8_lossy(&sig))?;
-            serde_json::from_slice(&body).map_err(|e| format!("manifest is not valid: {e}"))
-        };
-        match attempt() {
+        match pointer_manifest(base).or_else(|e| {
+            last = e;
+            legacy_manifest(base)
+        }) {
             Ok(m) => return Ok(m),
             Err(e) => last = e,
         }
@@ -268,26 +344,36 @@ pub fn download(local: &Manifest, current: &Path, next: &Path) -> Result<Manifes
         // distinct file once for ever, a publish uploads only what is new, and
         // an update fetches only what this reader is missing — regardless of
         // how many versions ago they last looked.
+        //
+        // …AND A SOURCE THAT KEEPS ITS FILES BY PATH ANSWERS TOO. wfsim.app is
+        // the site, not a blob store: it has `app.js`, never `blob/<sha>`. The
+        // bytes are checked against the manifest either way, so a path that has
+        // moved on fails its hash and falls through — which makes the fallback
+        // real rather than a second entry in a list that could never answer.
         let mut got = None;
         let mut last = String::new();
         for base in &bases {
-            match fetch(&format!("{base}/blob/{}", entry.h)) {
-                Ok(b) => {
-                    got = Some(b);
-                    break;
+            for url in [format!("{base}/blob/{}", entry.h), format!("{base}/{}", entry.p)] {
+                match fetch(&url) {
+                    Ok(b) if format!("{:x}", Sha256::digest(&b)) == entry.h => {
+                        got = Some(b);
+                        break;
+                    }
+                    Ok(_) => last = format!("{url}: not the file the manifest names"),
+                    Err(e) => last = e,
                 }
-                Err(e) => last = e,
+            }
+            if got.is_some() {
+                break;
             }
         }
-        let bytes = got.ok_or_else(|| format!("{}: {last}", entry.p))?;
-
-        let digest = format!("{:x}", Sha256::digest(&bytes));
-        if digest != entry.h {
-            return Err(format!(
-                "{} failed its checksum (expected {}, got {digest}) - refusing this update",
-                entry.p, entry.h
-            ));
-        }
+        // NOTHING REACHES DISK THAT DID NOT HASH TO WHAT THE MANIFEST NAMED —
+        // the loop above accepts a body only on that condition, so exhausting
+        // every source means no source held this file, not that a wrong one was
+        // taken.
+        let bytes = got.ok_or_else(|| {
+            format!("{} - refusing this update ({last})", entry.p)
+        })?;
         std::fs::write(&dest, &bytes).map_err(|e| format!("{}: {e}", entry.p))?;
 
         s.files_done += 1;
