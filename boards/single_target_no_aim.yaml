@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6491
+submissions: 6493
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -6020,7 +6020,7 @@ entries:
     mode: base
     score: 0.8280095637697694
     fp: 311168a5f43156eb
-    cost: 3.798
+    cost: 3.811
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, anemic_agility, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -14225,6 +14225,16 @@ entries:
     cost: 3.152
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_fortifier]
+  - weapon: ocucor
+    mode: base
+    score: 4.026771205737185
+    fp: b1fc25f78027589a
+    cost: 4.744
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, frostbite, riven, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: ocucor
     mode: base
     score: 3.6548289969662022
@@ -27227,7 +27237,7 @@ entries:
     listed: false
     score: 2.687477344044749
     fp: 311168a5f43156eb
-    cost: 11.787
+    cost: 11.151
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, anemic_agility, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -91677,6 +91687,15 @@ entries:
     cost: 0.318
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_irradiate]
+  - weapon: ocucor
+    mode: base
+    listed: false
+    probe: true
+    score: 0.6904175601221212
+    fp: 128a374795d84925
+    cost: 0.328
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: paris_prime
     mode: base
     listed: false
@@ -92828,12 +92847,3 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
-  - weapon: ocucor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.6904175601221212
-    fp: 128a374795d84925
-    cost: 0.367
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]

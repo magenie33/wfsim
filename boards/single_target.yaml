@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6491
+submissions: 6493
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -17536,7 +17536,7 @@ entries:
     mode: cycle
     score: 126.89732935672752
     fp: b6fd38bf4a230ffa
-    cost: 49.349
+    cost: 50.744
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -17560,7 +17560,7 @@ entries:
     mode: cycle
     score: 114.11038347724273
     fp: ec6786d78992e2e0
-    cost: 46.512
+    cost: 49.566
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -17573,7 +17573,7 @@ entries:
     mode: cycle
     score: 112.9471243834514
     fp: 742001c658448ee6
-    cost: 35.348
+    cost: 35.687
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -17586,7 +17586,7 @@ entries:
     mode: cycle
     score: 105.01648209839468
     fp: 33fcd6f235747e7b
-    cost: 51.878
+    cost: 55.355
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, accelerated_isotope, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -17599,7 +17599,7 @@ entries:
     mode: cycle
     score: 96.29743831391131
     fp: ae1b8b7361fa40cf
-    cost: 19.735
+    cost: 34.083
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, riven, primed_convulsion, jolt]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -17636,7 +17636,7 @@ entries:
     mode: cycle
     score: 83.62202738368015
     fp: 9238c5b125ca5238
-    cost: 30.537
+    cost: 17.397
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -18035,7 +18035,7 @@ entries:
     mode: base
     score: 23.23155233300895
     fp: b6fd38bf4a230ffa
-    cost: 14.534
+    cost: 14.518
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -18109,7 +18109,7 @@ entries:
     mode: base
     score: 17.83823153495988
     fp: 742001c658448ee6
-    cost: 7.682
+    cost: 10.120
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -18122,7 +18122,7 @@ entries:
     mode: base
     score: 17.4224995302863
     fp: ec6786d78992e2e0
-    cost: 14.787
+    cost: 14.117
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -18147,7 +18147,7 @@ entries:
     mode: base
     score: 16.464318081872882
     fp: 33fcd6f235747e7b
-    cost: 16.392
+    cost: 16.202
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, accelerated_isotope, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -18233,7 +18233,7 @@ entries:
     mode: base
     score: 14.311101136511184
     fp: 9238c5b125ca5238
-    cost: 6.758
+    cost: 8.949
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -18246,7 +18246,7 @@ entries:
     mode: base
     score: 14.300474935447518
     fp: 5065ba5aab531212
-    cost: 11.749
+    cost: 11.737
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, anemic_agility, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -33278,6 +33278,16 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: ocucor
     mode: base
+    score: 12.264238095225108
+    fp: ed308f0226548967
+    cost: 5.373
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, frostbite, riven, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: ocucor
+    mode: base
     score: 10.39517474862058
     fp: 9e94f3b5b3981ff7
     cost: 3.375
@@ -46536,7 +46546,7 @@ entries:
     listed: false
     score: 75.26694160578401
     fp: 55dde113659f0c92
-    cost: 45.398
+    cost: 45.861
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -46799,7 +46809,7 @@ entries:
     listed: false
     score: 62.891255455878834
     fp: 5065ba5aab531212
-    cost: 40.121
+    cost: 42.414
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, anemic_agility, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -60464,7 +60474,7 @@ entries:
     listed: false
     score: 11.945758103168792
     fp: 55dde113659f0c92
-    cost: 13.325
+    cost: 13.106
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -60541,7 +60551,7 @@ entries:
     listed: false
     score: 11.911832972358214
     fp: ae1b8b7361fa40cf
-    cost: 10.121
+    cost: 9.206
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, riven, primed_convulsion, jolt]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -97630,6 +97640,15 @@ entries:
     cost: 0.332
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_irradiate]
+  - weapon: ocucor
+    mode: base
+    listed: false
+    probe: true
+    score: 2.3265655417984075
+    fp: 45cc4f109b14b130
+    cost: 0.382
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: paris_prime
     mode: alternate
     listed: false
@@ -98820,12 +98839,3 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
-  - weapon: ocucor
-    mode: base
-    listed: false
-    probe: true
-    score: 2.3265655417984075
-    fp: 45cc4f109b14b130
-    cost: 0.374
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
