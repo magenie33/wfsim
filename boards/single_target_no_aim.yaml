@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6500
+submissions: 6502
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -25389,6 +25389,20 @@ entries:
   - weapon: torid
     mode: cycle
     listed: false
+    score: 4.039589633637107
+    fp: 0d80a6c563c0ce69
+    cost: 7.755
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
     score: 4.039206703580001
     fp: 6c0f5a7e6c7730d9
     cost: 4.912
@@ -31243,6 +31257,18 @@ entries:
       bonuses: [damage, multishot]
       malus: status_duration
       rolls: [1.1, 1.1, 0.9]
+  - weapon: ocucor
+    mode: base
+    listed: false
+    score: 2.1732492863298365
+    fp: 12b75beae8f8eb57
+    cost: 6.656
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, riven, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -42538,6 +42564,20 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 1.4030487128229996
+    fp: 0d80a6c563c0ce69
+    cost: 19.737
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle

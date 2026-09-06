@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6500
+submissions: 6502
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -24518,6 +24518,19 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
+    score: 13.450358967251727
+    fp: e5c942ef93f547e5
+    cost: 157.626
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, rime_rounds, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
     score: 13.333333333333334
     fp: 03756cb54721c248
     cost: 51.334
@@ -32357,6 +32370,20 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_merciless, cascadia_flare]
     valence: heat
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 99.07940940861585
+    fp: df9b3402efa4bf70
+    cost: 43.734
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: coda_bassocyst
     mode: base
     listed: false
@@ -92535,6 +92562,16 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
     valence: heat
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    probe: true
+    score: 29.06525030842602
+    fp: 4270300fa623170b
+    cost: 5.744
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, accelerated_isotope, augur_pact, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -94258,13 +94295,3 @@ entries:
     fp: a885ab82408d7d22
     cost: 1.123
     mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
-  - weapon: laetum
-    mode: cycle
-    listed: false
-    probe: true
-    score: 29.06525030842602
-    fp: 4270300fa623170b
-    cost: 5.744
-    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, accelerated_isotope, augur_pact, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [cascadia_flare]
