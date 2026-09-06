@@ -53,14 +53,19 @@ desktop/                     an INDEPENDENT cargo workspace — it depends on
 The window is a Tauri 2 webview pointed at a **custom protocol** that reads
 `current/`. Not a localhost server: a server listens on a port, and a port is a
 firewall prompt on every install. `protocol.rs` serves files with
-`Cache-Control: no-store` — the filenames are fixed, so after a swap the webview
-would happily serve its own cached copy of the old `app.js`.
+`Cache-Control: no-store` — `index.html` and `app.js` keep their names across a
+swap, so the webview would happily serve its own cached copy of the old one.
+
+Three planes travel this way and only one of them is a release; which file
+belongs to which, and why the board is not one of them, is
+docs/DISTRIBUTION.md.
 
 ## Two layers, and why the frequent one is quiet
 
 | | changes | how it ships | what the reader sees |
 |---|---|---|---|
-| **content** — `app.js`, `pkg/*.wasm`, `img/`, `board.json` | every push | files, swapped by two renames | a notice, then a restart |
+| **content** — `app.js`, `pkg/*.wasm`, `img/` | on a code change | files, swapped by two renames | a notice, then a restart |
+| **live data** — the board | every twenty minutes | fetched into `live/`, beside the release | nothing |
 | **shell** — the `.exe` | rarely | one file, downloaded once | a download |
 
 Everything that moves a number is content. So the path that runs weekly is a

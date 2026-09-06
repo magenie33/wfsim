@@ -38,8 +38,15 @@ MIRRORS = [
 TIMEOUT = 60
 
 
+# NAMED, BECAUSE THE DEFAULT IS REFUSED. Cloudflare answers `Python-urllib/3.x`
+# with a 403, which this reported as an unreachable mirror — a check that cries
+# outage over its own user agent is worse than no check.
+UA = "wfsim-mirror-check/1 (+https://wfsim.app)"
+
+
 def get(url: str) -> bytes:
-    with urllib.request.urlopen(url, timeout=TIMEOUT) as r:
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         return r.read()
 
 

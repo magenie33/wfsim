@@ -56,7 +56,9 @@ def main() -> None:
     # was built from, so its digest moves on every push whether or not a single
     # served byte did; the release digest moves when the CODE does. No history
     # to inspect, and a re-run costs one request.
-    if cos.head(c, f"release/{release}.json") == 200:
+    # `head` answers the object's SIZE or None — not a status code, and an
+    # empty object is falsy, so the test is against None and nothing else.
+    if cos.head(c, f"release/{release}.json") is not None:
         print(f"\nrelease {release} is already staged — nothing to do")
         return
 
