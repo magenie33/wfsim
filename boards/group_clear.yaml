@@ -11075,6 +11075,14 @@ entries:
   - weapon: furis
     mode: cycle
     score: 34.355126152585406
+    fp: 35c194aeb5c382f5
+    cost: 9.063
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    score: 34.355126152585406
     fp: 65e45e458243e0c6
     cost: 7.644
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -11580,6 +11588,14 @@ entries:
     cost: 18.208
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    score: 9.029650818480786
+    fp: 35c194aeb5c382f5
+    cost: 7.943
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
@@ -16715,6 +16731,17 @@ entries:
     cost: 39.874
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, parallax_scope, polar_magazine, venomous_clip]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: mausolon
+    mode: cycle
+    score: 9.039409635032216
+    fp: fb9dba1be0fe4519
+    cost: 30.802
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: mausolon
     mode: base
     score: 8.608825970601039
@@ -91776,6 +91803,16 @@ entries:
     exilus: primed_steady_hands
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 1.4005480237183654
+    fp: 9d5ccd9abbff1ffd
+    cost: 1.123
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
