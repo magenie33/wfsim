@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6248
+submissions: 6249
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -50305,6 +50305,19 @@ entries:
       bonuses: [critical_chance, critical_damage, heat]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 22.32642001627502
+    fp: 43f0c8a5fb235b47
+    cost: 2.732
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, high_voltage, malignant_force, riven, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -93521,6 +93534,16 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.9631347940804885
+    fp: 0cb52905c813b4cd
+    cost: 0.328
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_heated_charge, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
     score: 0.4911000473827614
     fp: 45bf46236447f075
     cost: 0.761
@@ -93569,6 +93592,16 @@ entries:
     fp: 30a46c51932c44b7
     cost: 0.508
     exilus: ruinous_extension
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, primed_heated_charge, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
+    score: 0.9900322865527524
+    fp: 4449b7ea5baf97d6
+    cost: 0.524
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, primed_heated_charge, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -93640,6 +93673,16 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.9780275814041932
+    fp: 3c282e4beb09579d
+    cost: 0.402
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, primed_heated_charge, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
     score: 0.3084779549817224
     fp: 45bf46236447f075
     cost: 0.475
@@ -93695,6 +93738,16 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.9321093021219646
+    fp: 4449b7ea5baf97d6
+    cost: 0.343
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, pistol_pestilence, frostbite]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
     score: 0.5883176963348046
     fp: ef2568d950e8ce1a
     cost: 0.202
@@ -93738,11 +93791,61 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.9158147311797136
+    fp: e1f95816ff29a74e
+    cost: 0.326
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, hollow_point, primed_heated_charge, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
+    score: 0.9165141105321059
+    fp: 455d019f965e4c7d
+    cost: 0.242
+    mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
+    score: 0.9478334267707633
+    fp: c38a858210cdc47a
+    cost: 0.206
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
+    score: 0.9268807076275059
+    fp: 3c282e4beb09579d
+    cost: 0.343
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, pistol_pestilence, ice_storm]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
     score: 0.3051906499650301
     fp: ad1070bce688339b
     cost: 0.350
     exilus: ruinous_extension
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, scorch, pistol_pestilence, frostbite]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    probe: true
+    score: 0.8973855782563782
+    fp: f8f616e5e488140b
+    cost: 0.337
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, scorch, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -94875,93 +94978,3 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9631347940804885
-    fp: 0cb52905c813b4cd
-    cost: 0.328
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_heated_charge, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: impact
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9900322865527524
-    fp: 4449b7ea5baf97d6
-    cost: 0.524
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, primed_heated_charge, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9780275814041932
-    fp: 3c282e4beb09579d
-    cost: 0.402
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, primed_heated_charge, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9321093021219646
-    fp: 4449b7ea5baf97d6
-    cost: 0.343
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, pistol_pestilence, frostbite]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9158147311797136
-    fp: e1f95816ff29a74e
-    cost: 0.326
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, hollow_point, primed_heated_charge, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9165141105321059
-    fp: 455d019f965e4c7d
-    cost: 0.242
-    mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9478334267707633
-    fp: c38a858210cdc47a
-    cost: 0.206
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9268807076275059
-    fp: 3c282e4beb09579d
-    cost: 0.343
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, pistol_pestilence, ice_storm]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    probe: true
-    score: 0.8973855782563782
-    fp: f8f616e5e488140b
-    cost: 0.337
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_heated_charge, scorch, pistol_pestilence]
-    arcanes: [secondary_enervate]
-    valence: magnetic
