@@ -2341,11 +2341,11 @@ function benchPendingAsk() {
 /// board: "0 waiting" is furniture, and a board that IS current should simply
 /// look current.
 ///
-/// IT PROMISES NOTHING ABOUT WHEN. The schedule fires three times an hour, but
-/// a scheduled run STANDS DOWN while the engine fingerprint has moved — the
-/// push that moved it owns that rescore — so "the next run is within 20
-/// minutes" was a promise the pipeline does not keep and the page cannot check.
-/// How far behind the board is, it can say exactly.
+/// IT PROMISES NOTHING ABOUT WHEN. The schedule fires hourly, but a scheduled
+/// run STANDS DOWN while the engine fingerprint has moved — the push that moved
+/// it owns that rescore — and a row too expensive for one sitting carries into
+/// the next, so any named wait is a promise the pipeline does not keep and the
+/// page cannot check. How far behind the board is, it can say exactly.
 /// HOW OLD A NUMBER IS, in the coarsest unit that still says something. A board
 /// that should move in hours cannot answer "today", and a reader deciding
 /// whether to trust a row wants the age before the count.
@@ -15157,7 +15157,7 @@ function boardRunOutcome() {
         .replace("{n}", b.n).replace("{of}", b.of)
       : "";
     return { kind: "sent",
-      text: tr("uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. It is stored the moment it arrives; the board picks it up on its next re-score and says how long ago that was") + where };
+      text: tr("uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. It is stored the moment it arrives; the board re-scores hourly and picks it up on its next run, and says how long ago that was") + where };
   }
   // NOT YET ANSWERED. `offerBoardSubmit` runs after the result is drawn, so
   // this is the state the first paint is in and it has to say so rather than
@@ -15264,7 +15264,7 @@ function renderBoardConsent() {
       // WHEN, on the FIRST visit too — this is the branch a new player reads,
       // and saying it only after the consent had been chosen told the fact to
       // everyone except the person meeting the board for the first time.
-      ` ${escHtml(tr("A run is stored the moment it arrives and appears on the board at its next re-score — not the instant you send it. The board says how long ago it was scored."))}` +
+      ` ${escHtml(tr("A run is stored the moment it arrives and appears on the board at its next re-score — the board re-scores hourly, not the instant you send it. It says how long ago it was scored."))}` +
       ` ${escHtml(boardCutNote())}` +
       floorNote +
       ` <button class="ghost-btn small" id="board-no">${escHtml(tr("don't submit"))}</button>`;
@@ -15282,7 +15282,7 @@ function renderBoardConsent() {
   const state = c !== "yes"
     ? tr("nothing is sent from here")
     : boardState === ""
-      ? tr("builds you run here are submitted — stored the moment they arrive, and picked up at the board's next re-score")
+      ? tr("builds you run here are submitted — stored the moment they arrive, and picked up at the board's next hourly re-score")
       : boardRunOutcome().text;
   box.innerHTML =
     `<span class="board-state">${escHtml(state)}</span>` +

@@ -128,7 +128,7 @@ state anyway.
 
 | trigger | scope | cost |
 | --- | --- | --- |
-| `:00`, `:20`, `:40` | `NEW_ROWS` of what has no score, plus `REFRESH_MINUTES` of what is unverified | ~1,218 rows a run, 32 ways |
+| `:00` every hour | `NEW_ROWS` of what has no score, plus `REFRESH_MINUTES` of what is unverified | ~1,218 rows a run, 32 ways |
 | Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | ~2h20m, 128 ways |
 | Actions → board → Run workflow, **weapon = …** | the rows the selector names, whatever the fingerprints say | minutes; `board_select.py` prices it first |
 
@@ -147,15 +147,16 @@ still pays in full.
 
 **ONE PENDING RUN, AND THE REST ARE CANCELLED.** That is GitHub's rule, not a
 setting, and it is why a run has to fit inside the cadence that starts the next
-one: a run longer than 20 minutes leaves the one behind it to be cancelled by
-the one behind that. It cost the board every pushed run it ever had.
+one. An hourly slot is what makes that affordable: a run has the whole hour, and
+a row too expensive to finish inside it is PAUSED and resumed by the next run
+rather than cancelled — §"A row is paid for in sittings".
 
 **The clock is a best effort, not a promise.** GitHub delays scheduled runs
 under load and says so, and this repo's own history is the evidence: while the
-job was set to `:17` its commits landed at `:33`–`:35`. Three slots 20 minutes
-apart is the answer to that — a submission waits ~20 minutes rather than an
-hour, and a slipped run is covered by the next one instead of costing you the
-whole hour. If you want a result NOW, Actions → board → Run workflow.
+job was set to `:17` its commits landed at `:33`–`:35`. So the hour is the
+cadence, not the latency — what the page promises is "at the next re-score",
+and it prints how old the board it is showing actually is. If you want a result
+NOW, Actions → board → Run workflow.
 
 The maintainer's ordinary work — fixing a bug, correcting a number, changing the
 benchmark to 480 s — reaches the board through the FINGERPRINT rather than

@@ -58,7 +58,7 @@ ui:
   "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
   "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.":
     一个数字。这里买到的东西不会让任何结果动一位小数——能改变引擎行为的只有游戏内实测，没有第二样。
-  "A run is stored the moment it arrives and appears on the board at its next re-score — not the instant you send it. The board says how long ago it was scored.": 一次跑分一到就被保存，并在榜单下一次重算时出现——不是你一提交就立刻更新。榜单会写明自己上次评分是多久以前。
+  "A run is stored the moment it arrives and appears on the board at its next re-score — the board re-scores hourly, not the instant you send it. It says how long ago it was scored.": 一次跑分一到就被保存，并在榜单下一次重算时出现——榜单每小时重算一次，不是你一提交就立刻更新。它会写明自己上次评分是多久以前。
   "A sentinel weapon scores the same on both boards. Its companion picks its own targets and never aims for a head, so neither term is the player's to set — and none of that weapon is your aim.": 守护型武器在两个榜上分数完全相同。它的守护自己选目标、从不瞄头，所以这两个条件都不归玩家管——这把武器里没有一分是你的瞄准。
   "Ability Strength %": 技能强度 %
   "Accuracy": 精准度
@@ -537,7 +537,7 @@ ui:
   "body part": 身体部位
   body: 身体
   "build": 配装
-  "builds you run here are submitted — stored the moment they arrive, and picked up at the board's next re-score": 你在这里跑的配装会上传——一到就被保存，并在榜单下一次重算时被算进去
+  "builds you run here are submitted — stored the moment they arrive, and picked up at the board's next hourly re-score": 你在这里跑的配装会上传——一到就被保存，并在榜单下一次整点重算时被算进去
   "builds you run here are submitted": 你在这里跑的配装会被提交
   "burst": 点射
   "card is wrong": "卡面有误"
@@ -826,7 +826,7 @@ ui:
   "selected": "个已选中"
   "self-stagger is not modelled — the wiki notes an explosion at your feet can interrupt the 2-round burst so only one rocket leaves, and nothing damages the player in this fight": 自身踉跄尚未建模 —— wiki 提到脚下的爆炸会打断这个 2 发点射、让只有一发火箭射出，而这场战斗里没有任何东西会伤到玩家
   "semi-auto": 半自动
-  "uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. It is stored the moment it arrives; the board picks it up on its next re-score and says how long ago that was": 已上传——投稿是一套**配装**，所以它会在这把武器能用的每一个模式下、以及每一块收它的榜上评分。它一到就被永久保存；下一次榜单重算时会把它算进去，而榜单会写明自己上次评分是多久以前
+  "uploaded — a submission is a BUILD, so it is scored in every mode this weapon can be played and on every board that takes it. It is stored the moment it arrives; the board re-scores hourly and picks it up on its next run, and says how long ago that was": 已上传——投稿是一套**配装**，所以它会在这把武器能用的每一个模式下、以及每一块收它的榜上评分。它一到就被永久保存；榜单每小时重算一次，下一次重算时会把它算进去，并写明自己上次评分是多久以前
   "sentinels cannot equip arcanes": 守护武器无法装备赋能
   "share of the engagement": 整场交战的占比
   "share": 分享
