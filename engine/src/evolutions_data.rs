@@ -2594,7 +2594,6 @@ fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
 /// either computed or is work (`notes: one_target_is_not_an_edge`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Scope {
-    NoDistance,
     NoMovement,
     NoHolster,
     InfiniteAmmo,
@@ -2605,7 +2604,6 @@ pub enum Scope {
 impl Scope {
     fn parse(s: &str) -> Option<Scope> {
         Some(match s {
-            "no_distance" => Scope::NoDistance,
             "no_movement" => Scope::NoMovement,
             "no_holster" => Scope::NoHolster,
             "infinite_ammo" => Scope::InfiniteAmmo,
@@ -2619,7 +2617,6 @@ impl Scope {
     /// translates it like any other UI string.
     pub fn why(self) -> &'static str {
         match self {
-            Scope::NoDistance => "every shot lands at point blank, so distance changes nothing",
             Scope::NoMovement => "the player does not move or aim by hand here",
             Scope::NoHolster => "this weapon is never holstered during the fight",
             Scope::InfiniteAmmo => "ammo reserves are unlimited, so nothing runs dry",

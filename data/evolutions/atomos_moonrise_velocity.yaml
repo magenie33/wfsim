@@ -8,10 +8,18 @@ base_form_only: true
 selection: choose_one
 
 effects:
-  # see notes: edge_gap_see_docs
-  - kind: out_of_scope
-    clause: "Increase Range by +7"
-    reason: no_distance
+  # "RANGE" ON A BEAM WEAPON IS THE BEAM'S, and it is a WALL the sim already
+  # reads (`gap_m <= ap.range_m`) — so this is metres in the same bucket
+  # Ruinous Extension lands in, a FLAT add outside the percentage
+  # (`loadout::resolve`: `range x (1 + percent) + flat`). The Atomos beam is
+  # 15 m and this takes it to 22.
+  #
+  # "Does not affect Incarnon Form" is `base_form_only` above, and the CHAIN is
+  # untouched either way: a hop reads `chain_range_m`, which no range mod or
+  # perk in the roster moves.
+  - kind: indirect
+    stat: beam_range
+    value: 7.0
 
 source:
   url: https://wiki.warframe.com/w/Atomos_Incarnon_Genesis

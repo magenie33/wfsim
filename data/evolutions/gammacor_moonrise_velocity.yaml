@@ -7,10 +7,12 @@ description: "Increase Range by +8."
 selection: choose_one
 
 effects:
-  # see notes: edge_gap_see_docs
-  - kind: out_of_scope
-    clause: "Increase Range by +8"
-    reason: no_distance
+  # "RANGE" ON A BEAM WEAPON IS THE BEAM'S — metres in the same flat bucket
+  # Ruinous Extension lands in, outside the percentage (`loadout::resolve`).
+  # The Gammacor beam is 25 m and this takes it to 33.
+  - kind: indirect
+    stat: beam_range
+    value: 8.0
 
 source:
   url: https://wiki.warframe.com/w/Gammacor_Incarnon_Genesis

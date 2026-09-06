@@ -6083,6 +6083,49 @@ mod tests {
         );
     }
 
+    /// …AND A PERK MOVES THE SAME WALL A MOD DOES.
+    ///
+    /// Moonrise Velocity reads *"Increase Range by +7"*, and on a beam weapon
+    /// the range that means is the beam's. It lands in `flat` beside Ruinous
+    /// Extension rather than in `pct`, so the two are additive metres and a
+    /// weapon carrying both reaches the sum.
+    ///
+    /// THE ATOMOS IS THE ONE WHOSE CARD ALSO SAYS *"Does not affect Incarnon
+    /// Form"*, which is `base_form_only` in its entry — asserted here on the
+    /// BASE form, which is the form the perk is about.
+    #[test]
+    fn a_range_perk_moves_the_beam_wall_the_way_a_range_mod_does() {
+        let plain = super::WeaponBase::from_data("atomos", false, &[]);
+        assert!((plain.range_m - 15.0).abs() < 1e-9, "the Atomos beam is 15 m");
+        let perked = super::WeaponBase::from_data("atomos", false, &["atomos_moonrise_velocity"]);
+
+        let at = |base: &super::WeaponBase, mods: &[&_], gap: f64| {
+            let panel = super::resolve(base, mods, super::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(5.0);
+            arena.target_at =
+                crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
+            let p = crate::dummy::DummyParams::from_panel(
+                &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
+            );
+            crate::dummy::monte_carlo(&p, 3, 11).mean_damage
+        };
+        // 18 m: past the bare beam's 15, inside the perked 22. The perk is the
+        // only difference between the two runs, so it is the only thing that
+        // can account for one dealing nothing and the other dealing damage.
+        assert_eq!(at(&plain, &[], 18.0), 0.0, "past its wall the bare beam deals nothing");
+        assert!(at(&perked, &[], 18.0) > 0.0, "and the perk moves the wall");
+
+        // AND THE METRES ADD. Ruinous Extension is +8 flat, so 22 + 8 = 30 —
+        // a distance neither reaches on its own.
+        let ext = crate::mods_data::pool_for_build("atomos", &[])
+            .into_iter()
+            .find(|m| m.id == "ruinous_extension")
+            .expect("the Atomos is on Ruinous Extension's catalog");
+        assert_eq!(at(&perked, &[], 26.0), 0.0, "the perk alone stops at 22 m");
+        assert_eq!(at(&plain, &[&ext], 26.0), 0.0, "the mod alone stops at 23 m");
+        assert!(at(&perked, &[&ext], 26.0) > 0.0, "together they reach 30 m");
+    }
+
     /// …AND WHO MAY EQUIP ONE IS A CATALOG, not a property of the weapon.
     ///
     /// DE gates both flat mods on a hidden `BEAM` compatibility tag the export

@@ -114,7 +114,6 @@ What is still open here:
   IS — so the intake takes nothing rather than the neighbouring one. Each says
   so (`spread_not_transcribed`); re-running `scripts/intake_spread.py` only
   ever lowers the count and a test holds the ceiling;
-- **beam RANGE** — a beam still reaches whatever it is aimed at;
 - **Dizzying Rounds**' stun, which applies "from less than 8m" — the distance
   half is answerable now and the STUN half is not: it opens a finisher, and
   nothing here takes one. Filed under `nobody_shoots_back`'s neighbourhood
@@ -134,9 +133,19 @@ Both are worth exactly zero at point blank, which is why no board row moved.
 The OTHER half of Hunter's Mantra (Punch Through +4) is still an edge and still
 says so: it needs a second body.
 
-The three `no_distance` clauses left are all the same one — Moonrise Velocity's
-*"Increase Range by +7/+8"* on the Atomos and the two Gammacors — and they are
-waiting on beam range, above.
+**AND `no_distance` IS GONE.** The last three clauses filed under it were one
+perk — Moonrise Velocity's *"Increase Range by +7/+8"* on the Atomos and the two
+Gammacors — and on a beam weapon the range a card means is the beam's, which is
+a wall the sim reads. They are `indirect / beam_range` now, metres in the same
+flat bucket Ruinous Extension lands in, and
+`a_range_perk_moves_the_beam_wall_the_way_a_range_mod_does` holds both the wall
+and the addition.
+
+The reason itself was retired from `evolutions_data::Scope` rather than left
+available: it said *"every shot lands at point blank, so distance changes
+nothing"*, and that set's own rule is that a member must be a property of the
+ARENA and not something a reader can invalidate by editing their scenario. The
+Distance (m) field invalidates it.
 
 ### 3. NO MOVEMENT, NO STANCE
 
@@ -518,6 +527,7 @@ than from memory — 22 spatial kinds across mods, arcanes and evolutions.
 | `blast_radius_bonus` | 4 mods (Firestorm family) | `radial.radius_m` and `lingering.radius_m` |
 | `aoe_echo` | 1 arcane (Secondary Irradiate) | `spread_from_echo` |
 | `multishot_beyond_range` | 2 evolutions (Lone Enforcer) | `panel.multishot_beyond_range` |
+| `beam_range_bonus` / `beam_range_percent` | 3 mods + 3 evolutions | `ap.range_m`, a WALL — `gap_m <= ap.range_m` |
 | `accuracy_bonus` | 28 | the spread cone |
 | `projectile_speed_bonus` | 4 | the falloff window |
 
@@ -527,27 +537,16 @@ through was read.
 
 ### LOADED AND NEVER READ — the gaps
 
-**1. BEAM RANGE, and it is the biggest.** `beam.range_m` is in every beam
-weapon's data and **nothing in the sim reads it**, so a beam reaches any body on
-the line at any distance. On the group-clear ruler the far rank is 27 m out
-while the Atomos is a 15 m beam and the Torid Incarnon a 37 m one — two weapons
-the model cannot currently tell apart. The three mods that move it are unread
-for the same reason: **Sinister Reach** (+12 m), **Ruinous Extension** (+8 m),
-**Galvanized Acceleration** (+30%, and it stacks on kill).
-
-It is the same shape as the punch-through gap was: a stat that sat in the data
-unread because the arena had one body, and that a crowd makes load-bearing.
-
-**2. `explosion_on_kill` — Combustion Beam.** *"Enemies killed explode, dealing
+**1. `explosion_on_kill` — Combustion Beam.** *"Enemies killed explode, dealing
 600 Damage shortly after death."* Worth exactly nothing against one target,
 which is why it was filed as indirect; against a formation it is a chain
 reaction and the mod's whole identity.
 
-**3. `status_spread_chance` — Shivering Contagion.** *"On Cold Status Effect:
+**2. `status_spread_chance` — Shivering Contagion.** *"On Cold Status Effect:
 100% chance to spread that status to other enemies within 6m."* A pure formation
 mechanic — there was no second body for a status to spread to.
 
-**4. `range_bonus` — Ballista Measure** (+20% Range, Arch-Gun). What DE means by
+**3. `range_bonus` — Ballista Measure** (+20% Range, Arch-Gun). What DE means by
 "Range" on an Arch-Gun is not settled by the card, which is its own reason to
 leave it: a number applied to the wrong quantity is worse than one applied to
 nothing.
