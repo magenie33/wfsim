@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6375
+submissions: 6383
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -10399,6 +10399,15 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_sobek
     mode: base
+    score: 6.42037409066529
+    fp: fbc9f58b7c4451ad
+    cost: 5.720
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_chilling_grasp, toxic_barrage, blaze]
+    arcanes: [shotgun_vendetta]
+    valence: magnetic
+  - weapon: kuva_sobek
+    mode: base
     score: 0.5572032856877089
     fp: 9562b300e03a6900
     cost: 17.816
@@ -10412,27 +10421,22 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_sobek
     mode: base
-    score: 0.44334654781321586
-    fp: fe085b0aa4e80fb3
-    cost: 1.723
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, contagious_spread, incendiary_coat]
-    arcanes: [shotgun_vendetta]
-    valence: toxin
-  - weapon: kuva_sobek
-    mode: base
-    score: 0.3268013406614598
-    fp: 125aa550ed98a7be
-    cost: 3.527
-    exilus: vigilante_supplies
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
-    arcanes: [primary_frostbite]
-    valence: magnetic
-  - weapon: kuva_sobek
-    mode: base
     score: 0.28756298125563406
     fp: 3e54da46439cd15b
     cost: 14.465
     exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_elementalist, riven, primed_charged_shell]
+    arcanes: [primary_crux]
+    valence: electricity
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_sobek
+    mode: base
+    score: 0.28756298125563406
+    fp: 400e884343675dd6
+    cost: 15.077
     mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_elementalist, riven, primed_charged_shell]
     arcanes: [primary_crux]
     valence: electricity
@@ -10453,15 +10457,6 @@ entries:
       bonuses: [fire_rate, multishot]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 0.9]
-  - weapon: kuva_sobek
-    mode: base
-    score: 0.24215259716037388
-    fp: e4e28279f6602463
-    cost: 3.734
-    exilus: primed_counterbalance
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_barrage, shotgun_elementalist, primed_charged_shell]
-    arcanes: [primary_crux]
-    valence: electricity
   - weapon: kuva_tonkor
     mode: base
     score: 0.21883458119914903
@@ -37609,6 +37604,14 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    score: 1.6757819786404464
+    fp: 11a7bb1cdc6494ad
+    cost: 1.699
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
   - weapon: cortege
     mode: base
     listed: false
@@ -38026,6 +38029,30 @@ entries:
     cost: 1.176
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    score: 1.6666666666666667
+    fp: 4c1ccf985b52ce0c
+    cost: 1.776
+    mods: [primed_rubedo_lined_barrel, dual_rounds, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    score: 1.6666666666666667
+    fp: 67396c19287c725b
+    cost: 1.659
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    score: 1.6666666666666667
+    fp: 875c60257eeadba9
+    cost: 1.735
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -59006,6 +59033,14 @@ entries:
       bonuses: [critical_chance, multishot]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 0.9]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    score: 0.5748847080681257
+    fp: 4c1ccf985b52ce0c
+    cost: 0.471
+    mods: [primed_rubedo_lined_barrel, dual_rounds, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
   - weapon: torid
     mode: base
     listed: false
@@ -62431,6 +62466,15 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
+  - weapon: kuva_sobek
+    mode: base
+    listed: false
+    score: 0.44334654781321586
+    fp: fe085b0aa4e80fb3
+    cost: 1.723
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, contagious_spread, incendiary_coat]
+    arcanes: [shotgun_vendetta]
+    valence: toxin
   - weapon: ocucor
     mode: base
     listed: false
@@ -66232,6 +66276,16 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
+  - weapon: kuva_sobek
+    mode: base
+    listed: false
+    score: 0.3268013406614598
+    fp: 125aa550ed98a7be
+    cost: 3.527
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
+    arcanes: [primary_frostbite]
+    valence: magnetic
   - weapon: strun_prime
     mode: base
     listed: false
@@ -73646,6 +73700,16 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       rolls: [1.1, 1.1]
+  - weapon: kuva_sobek
+    mode: base
+    listed: false
+    score: 0.24215259716037388
+    fp: e4e28279f6602463
+    cost: 3.734
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_barrage, shotgun_elementalist, primed_charged_shell]
+    arcanes: [primary_crux]
+    valence: electricity
   - weapon: burston_prime
     mode: base
     listed: false
@@ -91589,3 +91653,68 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: laetum
+    mode: base
+    listed: false
+    probe: true
+    score: 0.6291697088732422
+    fp: 282f24af895e16e6
+    cost: 0.182
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [secondary_irradiate]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.6291697088732422
+    fp: 282f24af895e16e6
+    cost: 0.187
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [secondary_irradiate]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.3833857024259802
+    fp: 11a7bb1cdc6494ad
+    cost: 0.045
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.2801246504184378
+    fp: 67396c19287c725b
+    cost: 0.044
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.29885525760615234
+    fp: 875c60257eeadba9
+    cost: 0.060
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 1.069988822730515
+    fp: e62c18248b732352
+    cost: 0.120
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.3333333333333333
+    fp: e62c18248b732352
+    cost: 0.061
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
