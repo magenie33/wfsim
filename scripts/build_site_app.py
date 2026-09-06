@@ -292,6 +292,9 @@ EDGE_HEADERS = """\
 /board.json
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
+/board/*
+  Cache-Control: public, max-age=0, must-revalidate
+  Access-Control-Allow-Origin: *
 /board.meta.json
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
@@ -311,9 +314,14 @@ EDGE_HEADERS = """\
 # `worker.js` is the sharp case — a stale copy asks for the previous release's
 # hashed module, which is no longer served, and the page fails to start.
 #
-# `board.json` is a different plane and revalidates for its own reason: it is
-# rescored once an hour. `Access-Control-Allow-Origin` is what lets a
-# shell serving its own origin fall back to the site for it — see `fetchJson`.
+# `board.json` and `board/` are a different plane and revalidate for their own
+# reason: they are rescored once an hour. `Access-Control-Allow-Origin` is what
+# lets a shell serving its own origin fall back to the site for them — see
+# `fetchJson`.
+#
+# A REVALIDATION OF `board/<weapon>.json` COSTS ONE ROUND TRIP AND A FEW KB
+# where the whole board cost 228 KB on the wire and 4.6 MB to parse, so the
+# hourly rescore stopped being something every page load pays for.
 
 # Legacy URLs from the /app/-era layout, plus the one weapon page that shipped
 # with an extension.
@@ -696,7 +704,34 @@ def write_board() -> None:
     (APP / "board.json").write_text(
         json.dumps(out, separators=(",", ":"), sort_keys=True), encoding="utf-8"
     )
-    print(f"board: {sum(len(v) for v in out.values())} rows -> site/board.json")
+
+    # ONE FILE PER WEAPON, because a weapon page reads ONE weapon's rows.
+    #
+    # The whole board is 4.6 MB and every page fetched all of it to draw a few
+    # rows of one. Split, a weapon page pays for what it draws and the benchmark
+    # page — the only surface that ranks ACROSS weapons — is the only one that
+    # still asks for the lot.
+    #
+    # CLEARED FIRST, like `pkg/`: a weapon dropped from the roster otherwise
+    # leaves a file the page would happily go on serving rows from.
+    #
+    # EVERY WEAPON IN THE ROSTER GETS ONE, INCLUDING THE EMPTY ONES. A 404 and
+    # an empty list are the same thing to `fetch` and opposite things to the
+    # page: a weapon nobody has submitted is the INVITATION, and it is the one
+    # whose standing the projection most wants to state. Without a file it would
+    # read as a board that failed to load and say nothing at all.
+    per = APP / "board"
+    if per.exists():
+        shutil.rmtree(per)
+    per.mkdir(parents=True)
+    for spec in roster():
+        rows = out.get(spec["id"], [])
+        (per / f"{spec['id']}.json").write_text(
+            json.dumps(rows, separators=(",", ":"), sort_keys=True), encoding="utf-8"
+        )
+    biggest = max((len(json.dumps(v, separators=(",", ":"))) for v in out.values()), default=0)
+    print(f"board: {sum(len(v) for v in out.values())} rows -> site/board.json"
+          f" + {len(list(roster()))} per-weapon files (largest {biggest / 1024:.0f} KB)")
 
 
 # Every heading in `index.html` that is a ROUTE'S OWN, by its id. One HTML file

@@ -305,6 +305,12 @@ const cross = await evaluate(`(async () => {
   const out = {};
   // A weapon whose board leader carries an arcane, opened the way the board
   // page links to it.
+  //
+  // ITS ROWS ARE FETCHED FIRST. A page holds the board of the weapon it is
+  // SHOWING, not of all 387, so reading another weapon's rows before going
+  // there answers with an empty list — and the URL built from it names no row
+  // at all, which is a green setup producing a meaningless assertion.
+  await loadWeaponBoard('boar');
   const row = (BOARD['boar'] || []).find(r => (r.arcanes || []).length);
   out.seeded = row ? row.arcanes[0] : null;
   history.pushState({}, '', '/weapons/Boar?bench=' + (row || {}).benchmark + '&mode=' + ((row || {}).mode || 'base'));

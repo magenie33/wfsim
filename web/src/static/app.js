@@ -1770,6 +1770,15 @@ async function init() {
       : null;
     applyNameOverlay();
   }
+  // THE BOARD NEEDS NEITHER WASM NOR i18n, so it is in flight while both
+  // finish rather than queued behind the whole engine boot.
+  //
+  // AND IT IS THE ROUTE'S WEAPON, not the default one: the board's rows ARE
+  // build presets, so the file has to be in hand before `initPresets` runs for
+  // the weapon actually being opened. Fetching the default's would leave every
+  // deep link a page whose benchmark builds arrive after the presets that were
+  // supposed to contain them.
+  const boardBoot = loadBoard(routeWeaponId() || META.defaults.weapon);
   applyI18n();
   fillSelect("weapon", META.weapons);
   initWeaponSearch();
@@ -1778,7 +1787,7 @@ async function init() {
   arcanes = arcanesFor(d.weapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   sim = defaultScenario();
-  await loadBoard();          // before presets: the board's rows ARE build presets
+  await boardBoot;            // before presets: the board's rows ARE build presets
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
@@ -1948,7 +1957,7 @@ function nav(path) {
   // for on top of a navigation.
   if (moved) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 }
-function route() {
+async function route() {
   // A SHARED LINK is answered before anything else on the page is drawn for
   // it, and the query is stripped afterwards so a refresh does not import the
   // same build a second time. `?b=` only ever ADDS — see importShare.
@@ -2024,7 +2033,11 @@ function route() {
   } else if (dl) {
     renderDownloadPage();
   } else if (bench) {
+    // THE ONLY SURFACE THAT RANKS ACROSS WEAPONS, and therefore the only one
+    // that needs every weapon's rows. It draws first with whatever is in hand
+    // and redraws when the rest lands, so the page is never a spinner.
     renderBenchBoard();
+    loadFullBoard().then(() => { if ($("bench-board")) renderBenchBoard(); });
   } else if (w) {
     // `?mode=` — HOW the linked build is played, carried by the link that made
     // it. A board row is a weapon AND a mode ("Burston Prime, base form"), so a
@@ -2048,6 +2061,13 @@ function route() {
     // predates the parameter, which means "whichever row leads".
     const rivenParam = new URLSearchParams(location.search).get("riven");
     const wantRiven = rivenParam === null ? null : rivenParam === "1";
+    // THE ROWS BEFORE THE WEAPON, because everything below reads them
+    // SYNCHRONOUSLY: `switchWeapon` builds this weapon's presets out of them
+    // and `applyBenchLink` opens one BY NAME. A board that lands afterwards is
+    // a deep link that opens the wrong build, which is what a board link exists
+    // to stop. Already in hand for the weapon boot fetched, so this is a real
+    // wait only when the reader moves to another one.
+    await loadWeaponBoard(w.id);
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
@@ -8629,15 +8649,82 @@ async function fetchJson(url) {
   return null;
 }
 
-/// SAME-ORIGIN ONLY, BECAUSE BOOT WAITS ON THIS. The board is 4.3 MB, and a
-/// client whose own origin has not got one yet must not spend a first launch
-/// downloading it before the page appears — "opens instantly" is the whole
-/// reason the desktop build exists. So the site is asked afterwards, off the
-/// boot path, and the view redraws if an answer arrives.
-async function loadBoard() {
-  BOARD = (await fetchJson("/board.json")) || {};
+/// WHICH WEAPON THIS URL IS ABOUT, without routing to it.
+///
+/// The router resolves the same slug and cannot be called yet — it draws, and
+/// boot has not filled the page. This answers the ONE question boot needs
+/// before it can fetch the right board: which weapon is about to be opened.
+/// Spelled the same way `route` spells it, id first and the wiki slug second.
+function routeWeaponId() {
+  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/[a-z]+)?\/?$/);
+  if (!m) return "";
+  const slug = decodeURIComponent(m[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const w = (META.weapons || []).find((x) => x.id === slug)
+    || (META.weapons || []).find((x) => wikiSlug(x).toLowerCase() === slug);
+  return w ? w.id : "";
+}
+
+/// WHICH WEAPONS' ROWS ARE IN HAND — and it is NOT `Object.keys(BOARD)`. A
+/// weapon nobody has submitted has an empty list, and "loaded and empty" is a
+/// different answer from "never fetched" to everything that states a rank.
+const BOARD_HAVE = new Set();
+/// …and whether the WHOLE board is, which only the benchmark page ranks across.
+let BOARD_ALL = false;
+
+/// ONE WEAPON'S ROWS, BECAUSE THE PAGE SHOWS ONE WEAPON.
+///
+/// The whole board is 4.6 MB of 387 weapons and a weapon page reads one of
+/// them, so boot fetches the file it is about to draw and nothing else. A
+/// reader who never opens the benchmark page never downloads the rest.
+async function loadWeaponBoard(id) {
+  if (!id || BOARD_ALL || BOARD_HAVE.has(id)) return;
+  const rows = await fetchJson(`/board/${id}.json`);
+  // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
+  // weapon left unloaded is what `boardProjection` refuses to speak about.
+  if (!rows) return;
+  BOARD[id] = rows;
+  BOARD_HAVE.add(id);
+}
+
+/// EVERY WEAPON'S. Awaited only where a rank ACROSS weapons is drawn.
+async function loadFullBoard() {
+  if (BOARD_ALL) return;
+  const all = await fetchJson("/board.json");
+  if (!all) return;
+  BOARD = all;
+  BOARD_ALL = true;
+  Object.keys(all).forEach((k) => BOARD_HAVE.add(k));
+}
+
+/// SAME-ORIGIN ONLY, BECAUSE BOOT WAITS ON THIS. A client whose own origin has
+/// not got a board yet must not spend a first launch downloading one before the
+/// page appears — "opens instantly" is the whole reason the desktop build
+/// exists. So the site is asked afterwards, off the boot path, and the view
+/// redraws if an answer arrives.
+async function loadBoard(weapon) {
+  await loadWeaponBoard(weapon);
   BOARD_META = await fetchJson("/board.meta.json");
   if (!BOARD_META) boardFromSite();
+}
+
+/// A WEAPON THE READER SWITCHED TO, fetched without blocking the switch.
+///
+/// NOT AWAITED, the same terms as `boardFromSite`: the rows redraw when they
+/// land, and a weapon page renders perfectly well before they do. Awaiting it
+/// would put a network round trip inside a control that is otherwise instant.
+function ensureWeaponBoard(id) {
+  if (!id || BOARD_ALL || BOARD_HAVE.has(id)) return;
+  loadWeaponBoard(id).then(() => {
+    // ONLY IF THE READER IS STILL THERE. A slow answer for a weapon they have
+    // already left must not redraw the one they are looking at.
+    if ($("weapon") && $("weapon").value === id) {
+      // THE ROWS ARE PRESETS, so landing them is `initPresets` and not a
+      // repaint — a bar redrawn without them is a bar with no benchmark builds
+      // in it, which is what the reader came for.
+      try { initPresets(); renderPresetBar(); refreshPanel(); }
+      catch (_) { /* nothing is showing it yet */ }
+    }
+  });
 }
 
 /// The site, for a shell whose own origin has no board: one that has never
@@ -9298,6 +9385,7 @@ function applyWeapon(id, presetMods) {
 // NOT called from restoreState: loading a preset must not re-enter this.
 function switchWeapon(id) {
   $("weapon").value = id;
+  ensureWeaponBoard(id);
   applyWeapon(id, null);
   initPresets();
 }
@@ -15297,11 +15385,11 @@ function boardProjection() {
   // undefined, and the second is ordinary — a weapon nobody has submitted is
   // the invitation — but the first would answer "#1 of 1" to a reader whose
   // network dropped one file. So the file has to be here before this speaks.
-  if (!Object.keys(BOARD).length) return null;
   const body = boardPayload();
   if (!body || !body.benchmark) return null;
   if ((body.mods || []).includes(BOARD_RIVEN_SLOT) || body.valence) return null;
   const w = weaponInfo(body.weapon) || {};
+  if (!BOARD_HAVE.has(w.id)) return null;
   const p = loadPresetList(BUILDS).find((z) => z.name === activePreset);
   const r = p && p.lastResult && p.lastResult.r;
   if (!r || !w.id) return null;
