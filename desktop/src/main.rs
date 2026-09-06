@@ -226,8 +226,19 @@ const SELFTEST_PROBE: &str = r#"
       // boot counter climbing, and the third check run in a row is rolled back
       // to `prev/` by a mechanism doing exactly its job.
       if (nodes > 200) { try { await window.__TAURI_INTERNALS__.invoke('mark_healthy'); } catch (_) {} }
-      try { const r = await fetch('/board.json', { cache: 'no-cache' }); check('board.json', r.ok, 'HTTP ' + r.status); }
-      catch (e) { check('board.json', false, e.message); }
+      // THE BOARD PATH ANSWERS HONESTLY, which is the property — not that a
+      // board is there. It is fetched now, not shipped, so a cold launch may
+      // legitimately have none yet and the page goes to the site for it. What
+      // must never happen is the SPA fallback answering with `index.html` and a
+      // 200: `res.ok` reads that as success and the page parses markup as a
+      // ranking. So JSON or an honest 404, and nothing else passes.
+      try {
+        const r = await fetch('/board.json', { cache: 'no-cache' });
+        const ct = r.headers.get('content-type') || '';
+        check('board.json honest', (r.ok || r.status === 404) && ct.includes('json'),
+              'HTTP ' + r.status + ' ' + ct.split(';')[0]);
+      }
+      catch (e) { check('board.json honest', false, e.message); }
       try { const r = await fetch('/weapons/Torid'); const b = await r.text(); check('spa fallback', r.ok && b.includes('<'), 'HTTP ' + r.status + ', ' + b.length + ' bytes'); }
       catch (e) { check('spa fallback', false, e.message); }
       try { localStorage.setItem('wfsim-selftest', '1'); localStorage.removeItem('wfsim-selftest'); check('localStorage', true, 'writable'); }
@@ -273,12 +284,15 @@ const SELFTEST_PROBE: &str = r#"
       } catch (e) { check('ipc + version', false, 'invoke failed: ' + e.message); }
       // THE HOME PAGE OFFERS A DOWNLOAD, and in here that is an invitation to
       // install what is already running. The element still exists — the same
-      // index.html serves both — so the assertion is that it is HIDDEN, which
-      // is a thing only this build does.
+      // index.html serves both — so what is asserted is that NOTHING IS
+      // OFFERED, which this build reaches by never calling `renderDownloads`
+      // at all. Empty and hidden both satisfy it; either is a reader who is
+      // not asked to install what they are inside.
       try {
         const dl = document.getElementById('hero-dl');
-        check('download offer hidden', !!dl && dl.hidden, dl ? 'hidden=' + dl.hidden : 'element missing');
-      } catch (e) { check('download offer hidden', false, e.message); }
+        const shown = dl && !dl.hidden && dl.textContent.trim();
+        check('no download offer', !!dl && !shown, dl ? 'shows ' + JSON.stringify(dl.textContent.trim().slice(0, 40)) : 'element missing');
+      } catch (e) { check('no download offer', false, e.message); }
       // THE BOARD IS A SERVICE, NOT A CALCULATION — the one thing the wasm
       // engine cannot answer. app.js fetches it same-origin on purpose, and in
       // here "same origin" is wfsim.localhost, so without a proxy the SPA

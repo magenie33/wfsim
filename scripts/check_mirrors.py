@@ -13,11 +13,14 @@ files a client fetches and compares them with the tree it is run from.
     python scripts/check_mirrors.py            # exits non-zero on a mismatch
     python scripts/check_mirrors.py --warn     # reports, always exits 0
 
-WHAT IT DOES NOT DO is fetch a payload. The pointer and the stamp are a few
-hundred bytes each and they name everything else, which is the whole reason
-they exist — docs/DISTRIBUTION.md.
+A RELEASE IS ASKED ABOUT BY ITS POINTER, never by its payload: a few hundred
+bytes name all 866 files, which is the whole reason the pointer exists. The
+board is the one thing fetched whole, because its stamp is only worth anything
+if something compares it to the board sitting beside it —
+docs/DISTRIBUTION.md.
 """
 import argparse
+import hashlib
 import json
 import pathlib
 import sys
@@ -117,6 +120,24 @@ def main() -> None:
         same = live.get("digest", "") == want_board
         print(f"board        {'same as tree' if same else 'ahead of tree'} — "
               f"{live.get('digest', '')[:12]}, {live.get('rows', 0)} rows")
+        # …AND THE STAMP IS ABOUT THE BOARD BESIDE IT.
+        #
+        # A board published WITHOUT its stamp reads as a working site from every
+        # other angle — the page still shows rows, because the page fetches the
+        # board and never checks it. The only thing that breaks is the client,
+        # which refuses an update it cannot verify and then silently stops
+        # taking any. Nothing else in this project would ever notice.
+        #
+        # FETCHED AND HASHED, not measured off a HEAD: Cloudflare answers a HEAD
+        # here with no `Content-Length` at all, so a size test reads 0 and
+        # reports a mismatch on a perfectly good pair. This is the whole 4.3 MB,
+        # once an hour, from a CDN that is free and unmetered.
+        served = get("https://wfsim.app/board.json")
+        got = hashlib.sha256(served).hexdigest()
+        if got != live.get("digest"):
+            print(f"board        STAMP DOES NOT MATCH IT — stamp names {live.get('digest', '')[:12]}, "
+                  f"the board served is {got[:12]} ({len(served)} bytes)")
+            bad.append("board stamp")
     except (urllib.error.URLError, ValueError, OSError) as e:
         print(f"board        UNREACHABLE — {e}")
 

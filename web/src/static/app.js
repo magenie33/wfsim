@@ -8496,22 +8496,39 @@ let BOARD_META = null;
 /// on a shell the local one is the offline copy this exists to keep.
 const BOARD_ORIGIN = "https://wfsim.app";
 
-/// Same-origin, then the site. `res.ok` is not the whole test: a shell that
-/// falls back to its SPA answers `index.html` with a 200, so what decides is
-/// whether the body PARSES.
-async function fetchJson(path) {
-  for (const url of [path, BOARD_ORIGIN + path]) {
-    try {
-      const r = await fetch(url, { cache: "no-cache" });
-      if (r.ok) return await r.json();
-    } catch (_) { /* the next source, or nothing */ }
-  }
+/// `res.ok` is not the whole test: a shell that falls back to its SPA answers
+/// `index.html` with a 200, so what decides is whether the body PARSES.
+async function fetchJson(url) {
+  try {
+    const r = await fetch(url, { cache: "no-cache" });
+    if (r.ok) return await r.json();
+  } catch (_) { /* nothing */ }
   return null;
 }
 
+/// SAME-ORIGIN ONLY, BECAUSE BOOT WAITS ON THIS. The board is 4.3 MB, and a
+/// client whose own origin has not got one yet must not spend a first launch
+/// downloading it before the page appears — "opens instantly" is the whole
+/// reason the desktop build exists. So the site is asked afterwards, off the
+/// boot path, and the view redraws if an answer arrives.
 async function loadBoard() {
   BOARD = (await fetchJson("/board.json")) || {};
   BOARD_META = await fetchJson("/board.meta.json");
+  if (!BOARD_META) boardFromSite();
+}
+
+/// The site, for a shell whose own origin has no board: one that has never
+/// reached the network, or one older than the release that stopped shipping a
+/// copy. `board.json` carries `Access-Control-Allow-Origin` for exactly this.
+///
+/// NOT AWAITED ANYWHERE. It redraws the ranking when it lands, and an empty
+/// board until then is a state the page already renders.
+async function boardFromSite() {
+  const rows = await fetchJson(BOARD_ORIGIN + "/board.json");
+  if (!rows) return;
+  BOARD = rows;
+  BOARD_META = await fetchJson(BOARD_ORIGIN + "/board.meta.json");
+  try { renderBenchBoard(); } catch (_) { /* nothing is showing it yet */ }
 }
 
 /// THE BOARD'S ROWS, as read-only builds you can open.

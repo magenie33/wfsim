@@ -149,12 +149,29 @@ pub fn refresh_board(live: &Path) -> Result<Option<String>, String> {
 
     let body = fetch(&format!("{BOARD_ORIGIN}/board.json"))?;
     let got = format!("{:x}", Sha256::digest(&body));
-    if got != want {
+    if got == want {
+        write_atomic(&live.join("board.json"), &body)?;
+        write_atomic(&live.join("board.meta.json"), &meta)?;
+        return Ok(Some(want));
+    }
+
+    // THE STAMP AND THE BOARD ARE TWO OBJECTS, FETCHED SEPARATELY. A publish
+    // landing between them hands this a stamp for the board before and a body
+    // for the board after — a torn read, not a corrupt file. So the stamp is
+    // asked again and matched against the body already in hand; only a pair
+    // that still disagrees is a refusal, and a refusal it must be, because a
+    // stamp is the only thing saying what these bytes are.
+    let again = fetch(&format!("{BOARD_ORIGIN}/board.meta.json"))?;
+    let now = serde_json::from_slice::<serde_json::Value>(&again)
+        .ok()
+        .and_then(|v| v.get("digest")?.as_str().map(str::to_owned))
+        .unwrap_or_default();
+    if now != got {
         return Err(format!("board.json failed its checksum (expected {want}, got {got})"));
     }
     write_atomic(&live.join("board.json"), &body)?;
-    write_atomic(&live.join("board.meta.json"), &meta)?;
-    Ok(Some(want))
+    write_atomic(&live.join("board.meta.json"), &again)?;
+    Ok(Some(got))
 }
 
 fn fetch(url: &str) -> Result<Vec<u8>, String> {
