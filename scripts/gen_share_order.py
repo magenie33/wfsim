@@ -66,18 +66,21 @@ def ids_under(rel):
 
 
 def read_existing():
-    """The frozen list as it stands, in order. Parsed by hand rather than with
-    a yaml library: this file is one key and a list of bare slugs, and the
-    parser has to agree with the Rust one byte for byte."""
+    """The frozen list as it stands, in order, and the digest the file CLAIMS
+    for it. Parsed by hand rather than with a yaml library: this file is one key
+    and a list of bare slugs, and the parser has to agree with the Rust one byte
+    for byte."""
     if not os.path.exists(OUT):
-        return []
-    order = []
+        return [], ""
+    order, claimed = [], ""
     with io.open(OUT, encoding="utf-8") as f:
         for line in f:
             s = line.strip()
             if s.startswith("- "):
                 order.append(s[2:].strip())
-    return order
+            elif s.startswith("digest:"):
+                claimed = s[7:].strip()
+    return order, claimed
 
 
 def digest(order):
@@ -92,7 +95,27 @@ def digest(order):
 
 def main():
     check = "--check" in sys.argv
-    have = read_existing()
+    have, claimed = read_existing()
+
+    # **APPEND-ONLY MEANS THIS SCRIPT MAY NOT REPAIR ANYTHING.**
+    #
+    # The file states the digest of its own contents, and a hand edit leaves the
+    # two disagreeing. Rebuilding from a disagreeing file would put a deleted id
+    # back at the END — a valid, freshly-digested manifest in which every index
+    # after the hole names something else, and every link already posted opens
+    # somebody's other build. Nothing would fail: the ratchet in
+    # `engine::share_order` compares the file against ITSELF, and this script
+    # would just have made those agree again.
+    #
+    # So a disagreement stops here, where the evidence still exists.
+    if have and claimed and claimed != digest(have):
+        sys.exit(
+            f"{OUT} has been edited by hand: it states digest {claimed} and its "
+            f"{len(have)} ids come to {digest(have)}. This script only APPENDS "
+            "and will not rebuild from an edited file — restore it "
+            "(git checkout data/share_order.yaml), then run this again to add "
+            "what is new."
+        )
     seen = set(have)
     fresh = []
 

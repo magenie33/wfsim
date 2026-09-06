@@ -177,7 +177,7 @@ that). The mental model is a FILE: a list you pick from, one open at a time,
 none open being a real state — so the UI is a list + editor, NOT the preset
 chip bar, and the key is `wfsim-customs-<weapon>-<domain>` /
 `wfsim-custom-open-…`. Everything below the key is shared: storage, undo,
-per-weapon scoping, ⇤ import.
+per-weapon scoping.
 
 **DAMAGE IMMUNITY AND STATUS IMMUNITY ARE TWO MECHANICS**, and the wiki puts
 both halves in one paragraph (`Status_Effect` §Status Immunity Interactions):
@@ -206,8 +206,7 @@ A SCENARIO is not a statement about a weapon, so it is SHARED across the
 roster — one list, key `wfsim-presets-simulator-scenarios` with no weapon in
 it (`SHARED_DOMAINS`), and switching weapons keeps the fight you are measuring
 under. The one weapon-scoped knob it holds is headshot %, handled the way the
-rulers handle it: the SERVER forces 0 on a weapon that cannot headshot. A
-shared bar offers no "⇤ import" — there is no other weapon to import from.
+rulers handle it: the SERVER forces 0 on a weapon that cannot headshot.
 
 **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE.** A build carries no `sim`
 snapshot: a build is a build, and the live scenario is seeded from the active
@@ -220,17 +219,25 @@ deleted, and the editor stands down instead of showing a document that is not
 there. Presets are not — the modules behind them always have a state, and "no
 build" is not something the builder can show.
 
-## A share link reproduces the whole thing
+## A share link is a build, and never a fight
 
-**A SHARE LINK reproduces the whole thing**: `/weapons/<Wiki_Name>?b=<code>`
-carries the build, the RIVENS it equips (a custom exists only on the machine
-that made it, so it must travel inline), the scenario it was measured in, and
-the measurement itself as the sharer's claim. Opening one creates a NEW copy
-of each — never a merge, never an overwrite — repoints the build's riven ids
-at the copies, strips the query so a refresh cannot import twice, and says
-what it dropped. The payload is POSITIONAL and omits everything derivable
-(defaults, max ranks, a buff left at its own default, the shape drafts a riven
-regenerates).
+**A SHARE LINK IS A STATEMENT ABOUT A WEAPON, NEVER ABOUT A FIGHT.**
+`/weapons/<Wiki_Name>?b=<code>` carries the build and the RIVENS it equips (a
+custom exists only on the machine that made it, so it must travel inline), and
+carries nothing else. Opening one creates a NEW copy of each — never a merge,
+never an overwrite — repoints the build's riven ids at the copies, strips the
+query so a refresh cannot import twice, and says what it dropped. The payload
+is POSITIONAL and omits everything derivable (defaults, max ranks, the shape
+drafts a riven regenerates).
+
+THE FIGHT AND THE MEASUREMENT ARE FIELDS 7 AND 8, FROZEN AT 0. A scenario is
+`SHARED_DOMAINS` — one list for the whole roster — so a link that planted one
+would follow the reader onto every other weapon they own, and a number measured
+in a fight the reader does not have is not a claim they could check. Links
+posted while both travelled still carry them; `decodeShare` does not read the
+fields, which is why `importShare` has no scenario step to guard rather than a
+guarded one. `check_share` builds such a link by hand and asserts the reader's
+own fight, their scenario list and the build's `lastResult` are all untouched.
 A v3 link names an id by its place in `data/share_order.yaml`, which is
 APPEND-ONLY and held there by a ratchet — `engine::share_order` recomputes the
 generator's digest over the whole list and fails on anything that is not an
@@ -242,23 +249,20 @@ v2 links still open.
 AND v3 IS PLAIN TEXT IN THE URL. At 79 characters deflate makes the payload
 BIGGER, so the text goes in raw; the separators are RFC 3986 unreserved
 characters and sub-delims a query accepts unescaped. A payload it cannot
-express — a CLAIM, or a name in a script the URL would escape — falls back to
-the deflate+base64 form, so the encoder measures all three and takes the
-shortest.
+express — a name in a script the URL would escape — falls back to the
+deflate+base64 form, so the encoder measures all three and takes the shortest.
 
 A NAME THE SHAPE IMPLIES DOES NOT TRAVEL: a board riven's local name is
 `boardRivenName(shape)`, derived on arrival, which is shorter AND names it in
 the reader's own language.
 It rides the QUERY, not the fragment — a fragment never reaches a crawler and
-these links are meant to be posted. The card (`drawShareCard`, a canvas PNG to
-paste into chat) always carries the wordmark and the site's host, and a QR of
-the same link. `qrMatrix` is a from-scratch encoder (byte mode, ECC L, mask
-0), VERIFIED against a reference encoder's matrices and decoded back out of
-the rendered PNG by an independent decoder. It is drawn at a FIXED 8 device
-pixels per module — measured: at 4 the card only scans at full size, at 6 it
-survives a 0.66x shrink, at 8 it still reads at 1080px wide after JPEG 60,
-which is what a chat app hands back. The code's size is therefore an input to
-the layout, not an output.
+these links are meant to be posted.
+
+THE CARD IS OFF. `SHARE_CARD_ENABLED` is false, so the share panel draws no
+entry to it and `drawShareCard`/`qrMatrix` stand unreached: a card states a
+MEASUREMENT, and what may be shared today is a build. The question the card
+answers — how a number travels without landing in the reader's app — is open,
+not settled, and the code is kept against the answer.
 
 ## The page that asks for something
 
@@ -495,8 +499,10 @@ a module — or an editor, and an editor whose ENTIRE content is one collection
 is its own domain (`rivens`). Every durable name (localStorage key, DOM id,
 label) derives from the domain. A preset belongs to ONE WEAPON, so the storage
 key also carries it (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels
-stay weapon-free, and copying a preset across weapons is the explicit "⇤
-import" action, which drops per axis what the target cannot hold. URLs mirror
+stay weapon-free. THERE IS NO CROSS-WEAPON COPY: what survived a rescope was
+the mods every gun shares, since the axes that make a build its own (evolutions,
+valence, the assembly, a riven) are exactly the ones the target cannot hold.
+A build worth having comes from the board or from a share link. URLs mirror
 English wiki page names (spaces → `_`); an internal id appears in a URL only
 where the wiki name is not one weapon's alone — two Kitgun slots are one wiki
 page and two roster entries, so the lowest id keeps the wiki name and the other

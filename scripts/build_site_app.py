@@ -1307,8 +1307,33 @@ def project_facts() -> dict:
     return facts
 
 
+def freeze_share_order() -> None:
+    """APPEND WHAT IS NEW TO THE SHARE MANIFEST.
+
+    A share link names a mod, an arcane, an evolution or a riven stat by its
+    INDEX in `data/share_order.yaml`. An id that is not in it still travels —
+    spelled out, in an older and longer form — so forgetting to freeze one
+    costs every link that carries it and breaks nothing, which is the kind of
+    mistake nobody finds. Running the generator HERE is what makes forgetting
+    impossible: it only ever appends, and the ratchet in `engine::share_order`
+    refuses anything else.
+
+    BEFORE THE CARGO BUILD, because `data/` is embedded at COMPILE TIME: a
+    manifest appended to after it would ship stale in the wasm that reads it.
+
+    The generator REFUSES a manifest somebody edited by hand rather than
+    rebuilding it, and that refusal is a rule rather than a crash — so it is
+    reported as one instead of as this script's traceback.
+    """
+    gen = ROOT / "scripts" / "gen_share_order.py"
+    print("+", sys.executable, str(gen))
+    if subprocess.run((sys.executable, str(gen)), cwd=ROOT).returncode:
+        sys.exit("share manifest: see above")
+
+
 def main() -> None:
     check_data_parses()
+    freeze_share_order()
     run("cargo", "build", "--release", "-p", "wfsim-wasm", "--target", "wasm32-unknown-unknown")
     APP.mkdir(parents=True, exist_ok=True)
     # BINDGEN AND THE SIZE PASS ARE SKIPPED WHEN THE MODULE DID NOT MOVE.

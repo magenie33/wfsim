@@ -14,6 +14,12 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, sleep, send, BASE } = app;
 
+// A RIVEN'S ID IS MINTED ON ARRIVAL, and that is the feature: the copy the
+// reader gets is a card of THEIRS with an identity of its own. So sender and
+// recipient never agree on it, and anything comparing the two has to say so —
+// comparing the raw id asserts that the copy was NOT made.
+const sameRiven = (s) => String(s).replace(/riven:[a-z0-9]+/g, "riven:*");
+
 // SHARING CAN BE SWITCHED OFF, and while it is, THIS is what has to hold: no
 // way to make a new link, and every link already posted still opens a page.
 // A blank is the one outcome a posted URL must never reach — it is what got the
@@ -76,31 +82,48 @@ const sent = await evaluate(`(async () => {
   await openSharePanel(bar); await sleep(900);
   const shown = ((bar.querySelector('.pshare .sh-url') || {}).value) || '';
   const dec = shown.includes('?b=') ? await decodeShare(shown.split('?b=')[1]) : null;
-  return { url: await shareUrl(true), urlBuild: await shareUrl(false),
-           panel, mods: slots.map(s => s.mod),
+  // A LEGACY LINK, BUILT BY HAND from this very build: the same tuple with a
+  // fight in field 7 and a measurement in field 8, encoded the way v1/v2 links
+  // in the wild are. Nothing can produce one any more, which is exactly why it
+  // has to be made here — the links it stands for are already posted.
+  const legacy = (() => {
+    const a = sharePayload();
+    while (a.length < 9) a.push(0);
+    a[7] = { level: 155, headshot_pct: 40 };
+    a[8] = [12345, 60, 999];
+    return a;
+  })();
+  const lj = new TextEncoder().encode(JSON.stringify(legacy));
+  const lz = await deflate(lj);
+  const legacyCode = lz && lz.length < lj.length ? '1' + b64urlEnc(lz) : '0' + b64urlEnc(lj);
+  const ldec = await decodeShare(legacyCode);
+  return { url: await shareUrl(), panel, mods: slots.map(s => s.mod),
+           legacyUrl: location.origin + weaponPath('torid') + '?b=' + legacyCode,
+           legacyDec: { sc: ldec && ldec.sc, m: ldec && ldec.m,
+                        mods: (ldec && ldec.slots || []).filter(x => x && x.mod).length },
+           card: !!bar.querySelector('.pshare .sh-full'),
            shownIsBuildOnly: !!dec && dec.sc === null && dec.m === null,
            shownHasMods: !!dec && (dec.slots || []).some(x => x && x.mod) };
 })()`);
-// THE PANEL'S DEFAULT IS THE BUILD, not the claim: the claim costs a
-// simulation and is one click further in, which is the whole point of the
-// split — a panel that opens on a spinner is a panel nobody uses to paste a
-// build into a chat.
-check("the share panel offers the BUILD first", sent.shownIsBuildOnly === true,
+// WHAT THE PANEL HANDS OUT IS A BUILD. Asserted on the panel's own field
+// rather than on `shareUrl`, because the button could be wired to something
+// else and every other assertion here would stay green — which is what a
+// sabotage of the panel proved on the way in.
+check("the share panel hands out a BUILD", sent.shownIsBuildOnly === true,
   `decoded sc/m from the panel's own link`);
 check("...and it is a real build, not an empty one", sent.shownHasMods === true);
 check("a link is produced", !!sent.url, sent.url);
 check("the link is under 600 characters", sent.url.length < 600, `${sent.url.length} chars`);
-// **THERE IS NO CLAIM LINK ANY MORE**. A share link is a
-// build and nothing else: fields 7 and 8 — the fight and the measurement — are
-// always 0, so the two paths through the panel produce the SAME url. This used
-// to assert that the build link was strictly shorter than the claim, which is
-// the assertion for a world with two link kinds in it.
-//
-// The measurement did not vanish: it travels as the CARD, a picture of a run
-// rather than something that lands in the reader's app. What vanished is a link
-// that plants a scenario preset in somebody else's page.
-check("both paths give the same build-only link", sent.urlBuild === sent.url,
-  `${sent.urlBuild.length} vs ${sent.url.length} chars`);
+// **THE PANEL OFFERS ONE THING**. There is no second link and no card entry
+// beside it: a card states a MEASUREMENT, and what may be shared is a build.
+check("the panel offers no card", sent.card === false);
+// AND A LEGACY LINK IS READ AS A BUILD. The decoder is where a fight stops —
+// one place rather than a guard at every use — so the assertion is on what the
+// DECODER returns for a link that really does carry one.
+check("a legacy link's fight is not decoded", sent.legacyDec.sc === null,
+  JSON.stringify(sent.legacyDec.sc));
+check("...nor its measurement", sent.legacyDec.m === null, JSON.stringify(sent.legacyDec.m));
+check("...and its build still is", sent.legacyDec.mods >= 5, `${sent.legacyDec.mods} mods`);
 // ---- the RECIPIENT: a real navigation, in a browser with nothing ---------
 await evaluate(`(() => { localStorage.clear(); location.href = ${JSON.stringify("__URL__").replace("__URL__", sent.url)}; })()`);
 await sleep(12000);
@@ -135,8 +158,9 @@ check("the riven is equipped in its slot", /^riven:/.test(got.mods[6] || ""), go
 check("the scenario does NOT travel — the reader's own fight is untouched",
   got.scenarioLevel !== 155 || got.headshot !== 40,
   `level=${got.scenarioLevel} headshot=${got.headshot}`);
-check("the panel reproduces the sender's exactly", got.panel === sent.panel,
-  got.panel === sent.panel ? "" : `\n    sent: ${sent.panel.slice(0, 140)}\n    got : ${got.panel.slice(0, 140)}`);
+check("the panel reproduces the sender's exactly", sameRiven(got.panel) === sameRiven(sent.panel),
+  sameRiven(got.panel) === sameRiven(sent.panel) ? ""
+    : `\n    sent: ${sameRiven(sent.panel).slice(0, 140)}\n    got : ${sameRiven(got.panel).slice(0, 140)}`);
 
 // ---- ACT THREE: a BUILD is not a CLAIM, and it moves nobody's fight -------
 //
@@ -178,10 +202,15 @@ check("the reader has a fight of their own to disturb",
   mine.level === 90 && mine.official === false,
   `level=${mine.level} official=${mine.official} active=${mine.active}`);
 
-await evaluate(`(() => { location.href = ${JSON.stringify(sent.urlBuild)}; })()`);
+// THE LINK NAVIGATED TO IS THE LEGACY ONE — the tuple with a fight at 155/40
+// in field 7 and a measurement in field 8. A link that carries nothing cannot
+// prove that nothing lands; this one can, and it is the shape already posted in
+// chat windows, so it is the shape that has to be safe to click.
+await evaluate(`(() => { location.href = ${JSON.stringify(sent.legacyUrl)}; })()`);
 await sleep(12000);
 const bo = await evaluate(`(async () => {
   await new Promise(r => setTimeout(r, 2500));
+  const b = loadPresetList('builder-builds').find(p => p.name === activePreset);
   return {
     weapon: document.getElementById('weapon').value,
     activeBuild: activePreset,
@@ -190,83 +219,129 @@ const bo = await evaluate(`(async () => {
     level: sim.level, headshot: sim.headshot_pct,
     active: activeScenario,
     scenarios: loadPresetList('simulator-scenarios').map(p => p.name),
+    landedResult: !!(b && b.lastResult),
     said: (document.querySelector('.preset-toast, .ptoast') || {}).textContent || '',
   };
 })()`);
-check("a build-only link still lands the build", /\(shared\)/.test(bo.activeBuild || "")
+check("a legacy link still lands the build", /\(shared\)/.test(bo.activeBuild || "")
   && bo.weapon === "torid", `weapon=${bo.weapon} build=${bo.activeBuild}`);
 check("...and its riven with it", bo.rivens.length === 1 && /^riven:/.test(bo.mods[6] || ""),
   `${JSON.stringify(bo.rivens)} slot6=${bo.mods[6]}`);
-check("...and the mods are the sender's", JSON.stringify(bo.mods) === JSON.stringify(sent.mods),
+check("...and the mods are the sender's",
+  sameRiven(JSON.stringify(bo.mods)) === sameRiven(JSON.stringify(sent.mods)),
   `
-    sent: ${JSON.stringify(sent.mods)}
-    got : ${JSON.stringify(bo.mods)}`);
-// THE THREE THAT MUST NOT HAVE MOVED.
+    sent: ${sameRiven(JSON.stringify(sent.mods))}
+    got : ${sameRiven(JSON.stringify(bo.mods))}`);
+// THE FOUR THAT MUST NOT HAVE MOVED — asserted against a link that was really
+// carrying all of them.
 check("the reader's fight is untouched", bo.level === 90 && bo.headshot === 0,
-  `level=${bo.level} headshot=${bo.headshot} — the sender's was 155/40`);
+  `level=${bo.level} headshot=${bo.headshot} — the link carried 155/40`);
 check("...no scenario was planted in their list", bo.scenarios.length === mine.scenarios.length,
   `${JSON.stringify(mine.scenarios)} -> ${JSON.stringify(bo.scenarios)}`);
 check("...and they are still on their own", bo.active === mine.active,
   `${mine.active} -> ${bo.active}`);
+// A NUMBER IS NOT A BUILD'S EITHER. The link carried one; the build lands with
+// no result at all, so the first run on this machine is its first number.
+check("...and the sender's measurement did not land", bo.landedResult === false);
 
-// ---- v3: THE IDS TRAVEL AS INDICES, AND NOTHING ELSE CHANGES ---------------
+// ---- THE COMPACT FORMS: SAME BUILD, FEWER CHARACTERS ----------------------
 //
-// A link spelling its ids out and deflating them is v2; v3 sends each one's place
-// in a frozen manifest and puts the text in the URL raw. That is a renumbering of every id in the payload,
-// laid on top of a format that has ALREADY silently dropped an axis once
-// (2026-08-15: `mode` and `valence` were in the state and not in the tuple, so
-// a shared Kuva Nukor reopened on the default element).
+// v2 spells every id out and deflates the result. v3 sends each one's place in a
+// frozen manifest; v4 spells that same place in base62 at a fixed two
+// characters, so nothing separates one id from the next. Each is a renumbering
+// or a respelling of EVERY id in the payload, laid on a format that has already
+// dropped an axis silently once (`mode` and `valence` were in the state and not
+// in the tuple, so a shared Kuva Nukor reopened on the default element).
 //
-// SO THE ASSERTION IS AN ANSWER, not a field list: the same build encoded BOTH
-// ways must decode to the same object. It cannot go stale — an axis added
-// tomorrow is covered by nobody, because neither side of the comparison knows
-// what an axis is.
+// SO THE ASSERTION IS AN ANSWER, NOT A FIELD LIST: the same build encoded every
+// way must decode to the same object. It cannot go stale — an axis added
+// tomorrow is covered without editing this file, because neither side of the
+// comparison knows what an axis is.
 {
-  const r3 = await evaluate(`(async () => {
+  const enc = await evaluate(`(async () => {
     const s = (ms) => new Promise(r => setTimeout(r, ms));
     localStorage.clear();
     history.pushState({}, '', '/weapons/Dual_Toxocyst?bench=single_target&mode=cycle&riven=1');
     route(); await s(4000);
-    const out = {};
-    out.build = activePreset;
+    const out = { build: activePreset };
     out.hasRiven = slots.some(x => String(x.mod || '').startsWith('riven'));
-    const payload = sharePayload(false);
-    const text = packV3(payload);
-    out.packed = text !== null;
-    if (!out.packed) return out;
-    // BOTH CODES, from ONE payload - so the comparison is about the framing and
-    // not about two different builds.
+    // A NAME A PERSON TYPED, and not one this app would ever generate: a space
+    // and a non-ASCII character are exactly what a compact form's alphabet does
+    // not hold, and the name is the one field that may contain them.
+    //
+    // SAVED AS THE READER'S OWN, because the board build this arrived as is
+    // BUILTIN — and a builtin's name never travels whatever it is called, so
+    // renaming it in place would assert nothing about names at all.
+    const ps = loadPresetList('builder-builds');
+    ps.push({ name: '我的 build', savedAt: Date.now(), state: snapshotState() });
+    storePresetList('builder-builds', ps);
+    activePreset = '我的 build';
+    await s(600);
+
+    // ONE payload, every framing — so the comparison is about the framing and
+    // never about two different builds.
+    const payload = sharePayload();
+    out.name = payload[2];
     const json = new TextEncoder().encode(JSON.stringify(payload));
     const z = await deflate(json);
-    const oldCode = (z && z.length < json.length ? '1' + b64urlEnc(z) : '0' + b64urlEnc(json));
-    const newCode = '3' + text;
-    out.oldLen = oldCode.length;
-    out.newLen = newCode.length;
-    const a = await decodeShare(oldCode);
-    const b = await decodeShare(newCode);
-    out.same = JSON.stringify(a) === JSON.stringify(b);
-    out.a = JSON.stringify(a).slice(0, 260);
-    out.b = JSON.stringify(b).slice(0, 260);
-    // ...AND IT SURVIVES A REAL URL UNCHANGED. The whole point of the text form
-    // is that it needs no base64, so what is asserted is the round trip through
-    // the thing that actually carries it — not 'encodeURIComponent', which
-    // escapes ':' ';' and ',' although a QUERY accepts all three (they are
-    // sub-delims in RFC 3986). Testing against the wrong function would have
-    // sent every link back through base64 for nothing.
-    const u = new URL('https://wfsim.app/weapons/X');
-    u.searchParams.set('b', newCode);
-    out.raw = new URL(u.href).searchParams.get('b') === newCode;
-    out.href = u.href.slice(0, 90);
+    const codes = {
+      v2: (z && z.length < json.length ? '1' + b64urlEnc(z) : '0' + b64urlEnc(json)),
+      v3: packV3(payload) === null ? null : '3' + packV3(payload),
+      v4: packV4(payload) === null ? null : '4' + packV4(payload),
+    };
+    out.expressed = Object.fromEntries(Object.entries(codes).map(([k, v]) => [k, v !== null]));
+    out.len = Object.fromEntries(Object.entries(codes).map(([k, v]) => [k, v && v.length]));
+    const want = JSON.stringify(await decodeShare(codes.v2));
+    out.same = {};
+    out.got = {};
+    for (const [k, v] of Object.entries(codes)) {
+      if (v === null) continue;
+      const got = JSON.stringify(await decodeShare(v));
+      out.same[k] = got === want;
+      if (got !== want) {
+        // WHERE THEY PART, as data — two equal 300-character prefixes say
+        // nothing. Formatted on the node side, because a newline escape inside
+        // this body is eaten by the template literal carrying it.
+        let i = 0;
+        while (i < got.length && i < want.length && got[i] === want[i]) i++;
+        out.got[k] = { at: i, want: want.slice(Math.max(0, i - 40), i + 90),
+                       got: got.slice(Math.max(0, i - 40), i + 90) };
+      }
+    }
+    out.want = want.slice(0, 200);
+
+    // ...AND THROUGH THE THING THAT ACTUALLY CARRIES IT. shareUrl builds the
+    // URL by CONCATENATION, so what has to survive is a raw code sitting in a
+    // real query and read back the way the router reads it — not
+    // 'searchParams.set', which escapes the code first and would prove nothing
+    // about the path production takes.
+    out.viaUrl = {};
+    for (const [k, v] of Object.entries(codes)) {
+      if (v === null) continue;
+      const href = 'https://wfsim.app/weapons/Dual_Toxocyst?b=' + v;
+      const back = new URL(href).searchParams.get('b');
+      out.viaUrl[k] = JSON.stringify(await decodeShare(back)) === want;
+    }
     return out;
   })()`);
-  check("the v3 case runs on a build with a riven, which is the hard one",
-    r3.hasRiven === true, `${r3.build}, riven ${r3.hasRiven}`);
-  check("...and v3 can express it", r3.packed === true);
-  check("...decoding both codes gives the SAME build",
-    r3.same === true, `old ${r3.a}    new ${r3.b}`);
-  check(`...and the new code is shorter (${r3.oldLen} -> ${r3.newLen})`,
-    r3.newLen < r3.oldLen, `${r3.oldLen} -> ${r3.newLen}`);
-  check("...and survives a real URL unchanged", r3.raw === true, r3.href);
+  check("the case runs on a build with a riven, which is the hard one",
+    enc.hasRiven === true, `${enc.build}, riven ${enc.hasRiven}`);
+  check("...and on a name a PERSON typed, with a space and a non-ASCII character",
+    enc.name === "我的 build", JSON.stringify(enc.name));
+  for (const v of ["v3", "v4"]) {
+    check(`...${v} can express it`, enc.expressed[v] === true);
+    check(`...${v} decodes to the SAME build as v2`, enc.same[v] === true,
+      enc.same[v] ? "" : `they part at character ${enc.got[v].at}
+      want …${enc.got[v].want}
+      got  …${enc.got[v].got}`);
+    check(`...${v} survives a real URL unchanged`, enc.viaUrl[v] === true);
+  }
+  // AND EACH FORM IS SHORTER THAN THE ONE IT REPLACES. Stated as an ordering
+  // rather than as a number: a manifest that grows moves every figure here, and
+  // what must hold is that the denser spelling is still denser.
+  check(`v4 < v3 < v2 (${enc.len.v4} < ${enc.len.v3} < ${enc.len.v2})`,
+    enc.len.v4 < enc.len.v3 && enc.len.v3 < enc.len.v2,
+    `v4=${enc.len.v4} v3=${enc.len.v3} v2=${enc.len.v2}`);
 }
 
 await app.finish("a shared link lands whole, on screen, first time");

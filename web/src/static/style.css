@@ -630,9 +630,6 @@ body.on-enemies [data-module="builder"]{display:none}
 .fparth .fmeta{color:var(--text-2);font-weight:400;font-size:11px;margin-left:8px}
 .fpart /* Cross-weapon preset import: an inline panel under the bar, one row per
    source weapon. No native dialogs anywhere in this UI. */
-.pimport{flex-basis:100%;margin-top:6px;border-top:1px solid var(--line);padding-top:6px;display:flex;flex-direction:column;gap:4px}
-.pimp-w{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.pimp-wn{font-size:11px;color:var(--muted);min-width:9em}
 .sdmg-title{margin-top:10px}
 .sdmg-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px}
 .sdmg{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}
@@ -1114,7 +1111,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .cu-del:hover{border-color:var(--critical);color:var(--critical)}
 .cu-name{background:var(--plane);color:var(--text);border:1px solid var(--accent);
   border-radius:8px;padding:4px 8px;font:inherit;font-size:14px;width:14em}
-.cu-import{flex-basis:100%;margin-top:6px}
 .rv-none{color:var(--muted);font-size:13px;padding:10px 2px}
 
 /* Undo/redo, where the change happened — the shortcut alone hid the fact

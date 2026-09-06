@@ -134,10 +134,53 @@ mod tests {
                 }
             }
         }
+        // ...AND EVERY OTHER FAMILY THE GENERATOR SWEEPS. A weapon or a mod
+        // outside the manifest is caught above; an ARCANE, an EVOLUTION or a
+        // RIVEN STAT outside it costs the same and is the same mistake, so the
+        // families here are the generator's `FAMILIES` + `RIVEN_POOLS` and
+        // nothing narrower.
+        for slot in crate::arcanes_data::slots() {
+            for a in crate::arcanes_data::slot_pool(slot) {
+                if index_of(&a.id).is_none() {
+                    missing.push(format!("arcane {}", a.id));
+                }
+            }
+        }
+        for e in crate::evolutions_data::pool() {
+            if index_of(&e.id).is_none() {
+                missing.push(format!("evolution {}", e.id));
+            }
+        }
+        for class in ["pistol", "rifle", "shotgun", "archgun", "melee"] {
+            for st in crate::rivens_data::pool(class) {
+                if index_of(&st.id).is_none() {
+                    missing.push(format!("riven stat {}", st.id));
+                }
+            }
+        }
         assert!(
             missing.is_empty(),
             "not in data/share_order.yaml — run scripts/gen_share_order.py:\n{}",
             missing.join("\n")
+        );
+    }
+
+    /// **THE COMPACT FORM SPELLS AN INDEX IN TWO CHARACTERS**, so the manifest
+    /// may hold 62x62 of them. Past that the encoder declines the ids it cannot
+    /// spell and every link carrying one falls back to the longer form — a
+    /// regression nobody would go looking for, because nothing breaks.
+    ///
+    /// Crossing it is a THIRD width, which is a new version character. This
+    /// test is what says the day has come.
+    #[test]
+    fn the_manifest_fits_the_compact_form() {
+        // ONE number, read by the assertion AND by what it says. Written twice,
+        // a lowered ceiling reports the old one and the message lies.
+        const CEILING: usize = 62 * 62;
+        let n = manifest().ids.len();
+        assert!(
+            n <= CEILING,
+            "the share manifest holds {n} ids and the compact form spells only {CEILING} — give it a third character, and a new version character, in web/src/static/app.js"
         );
     }
 

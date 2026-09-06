@@ -547,12 +547,10 @@ ui:
   "click a body to inspect it": "点击一具身体查看它的信息"
   "collide": "不重叠"
   "copied": 已复制
-  "copy a riven from another weapon": 从其他武器复制一张裂罅
   "copy image": 复制图片
   "copy it into a {thing} of your own — the official one cannot be edited": 复制成一份你自己的{thing} —— 官方那份不可编辑
   "copy it to edit": 复制一份来编辑
   "copy link": 复制链接
-  "copy one from another weapon": 从其他武器复制一个
   "copy the group number": 复制群号
   "corpses keep conducting the chain, which the page states as 'Enemy corpses will still allow the beam to connect to nearby enemies' — this arena removes a body when it dies": "尸体仍然能导电，页面的原话是「敌人的尸体仍然允许光束连接到附近的敌人」——本场里一个身体死了就会被移走"
   "corpses keep conducting the chain, which the page states as 'Enemy corpses will still allow the beam to connect to nearby enemies' — this arena removes a body when it dies, so a chain that would have hopped THROUGH a corpse to a live enemy behind it finds nothing there": "尸体仍然能导电，页面的原话是「敌人的尸体仍然允许光束连接到附近的敌人」——本场里一个身体死了就会被移走，所以一段本该「穿过」尸体连到它身后活敌的连锁，在这里什么也找不到"
@@ -625,7 +623,6 @@ ui:
   "ignored — this stat is locked at the weapon's default": 未生效 —— 这项属性已被锁定为武器默认值
   "ignored": 未生效
   "image copied": 图片已复制
-  "import": 导入
   "imported": 已导入
   "in the current fight": 当前这场仗用的就是它
   "in this build": 仅当前配装
@@ -1162,7 +1159,7 @@ ui:
   "{runs} engagements · {rolls} damage instances rolled, on your own machine.":
     "{runs} 次交战 · {rolls} 次伤害判定，全部跑在你自己的机器上。"
   "{what} — the board takes a weapon built as far as it goes, so this one is not sent": "{what} —— 榜单收的是这把武器的最努力配置，所以这一份不会提交"
-  "…with the fight and the measurement →": ……连同战场与测量结果 →
+  "…as a card →": ……做成一张图 →
   "The search": 搜索方案
   "what to look through, and how hard to look — all of it, and only it, is what a search preset saves": 要搜哪些东西、搜得有多狠 —— 这个框里的全部，也只有这些，才是一份搜索方案保存的内容
   "how many builds survive to the last round": 有多少套配装能进入最后一轮
