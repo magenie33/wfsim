@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6383
+submissions: 6389
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -24763,6 +24763,18 @@ entries:
     riven:
       bonuses: [damage, heat, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    score: 8.028923139032598
+    fp: 701802647ee59c9a
+    cost: 197.057
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: projectile_speed
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
@@ -63845,6 +63857,14 @@ entries:
       bonuses: [fire_rate, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: mausolon
+    mode: base
+    listed: false
+    score: 11.580247647635847
+    fp: 467aefb3954bbda2
+    cost: 22.630
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
+    arcanes: [primary_deadhead, secondary_enervate]
   - weapon: dual_toxocyst
     mode: base
     listed: false
@@ -66063,6 +66083,14 @@ entries:
       bonuses: [multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: mausolon
+    mode: cycle
+    listed: false
+    score: 9.97243482608364
+    fp: 009538bec4557804
+    cost: 14.596
+    mods: [primed_rubedo_lined_barrel, automatic_trigger, dual_rounds, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing]
+    arcanes: [primary_deadhead, secondary_enervate]
   - weapon: phenmor
     mode: base
     listed: false
@@ -66261,6 +66289,15 @@ entries:
     mods: [galvanized_chamber, serration, point_strike, vigilante_armaments, vital_sense, cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 9.846966884665285
+    fp: 71f429e54d041e6d
+    cost: 6.647
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [secondary_irradiate]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -66444,6 +66481,14 @@ entries:
       bonuses: [damage, multishot]
       malus: damage_to_grineer
       rolls: [1.1, 1.1, 0.9]
+  - weapon: mausolon
+    mode: base
+    listed: false
+    score: 9.666666666666666
+    fp: 009538bec4557804
+    cost: 10.743
+    mods: [primed_rubedo_lined_barrel, automatic_trigger, dual_rounds, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing]
+    arcanes: [primary_deadhead, secondary_enervate]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -69314,6 +69359,14 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, toxic_barrage, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
     arcanes: [shotgun_vendetta]
+  - weapon: mausolon
+    mode: base
+    listed: false
+    score: 7.680014778845409
+    fp: eb5a525eca009bf1
+    cost: 17.231
+    mods: [primed_rubedo_lined_barrel, automatic_trigger, dual_rounds, containment_breach, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing]
+    arcanes: [primary_deadhead, cascadia_flare]
   - weapon: laetum
     mode: base
     listed: false
@@ -77948,6 +78001,16 @@ entries:
     mods: [split_chamber, critical_delay, vigilante_armaments, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    listed: false
+    score: 2.332446714296775
+    fp: 333360c614e7d2f8
+    cost: 24.116
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
   - weapon: ax_52
     mode: base
     listed: false
@@ -91740,6 +91803,24 @@ entries:
     mode: alternate
     listed: false
     probe: true
+    score: 0.900398670687574
+    fp: c6ce66293c08a316
+    cost: 0.375
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 1.292723126733423
+    fp: 653157f2b0d07c65
+    cost: 0.358
+    mods: [primed_rubedo_lined_barrel, dual_rounds, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
     score: 1.9502026599289157
     fp: 7d96e00a61e1b23e
     cost: 0.445
@@ -91826,6 +91907,42 @@ entries:
     cost: 0.423
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_bulwark, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 20.910275735654235
+    fp: 14eb2084bd7b737c
+    cost: 1.393
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 5.984353185305487
+    fp: e7ee466c22a1eff4
+    cost: 0.519
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.8739453345183182
+    fp: e7ee466c22a1eff4
+    cost: 0.312
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.7738235292703166
+    fp: 2cbb731fc5fa7f33
+    cost: 0.368
+    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -93201,21 +93318,12 @@ entries:
     fp: a885ab82408d7d22
     cost: 1.123
     mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
-  - weapon: larkspur_prime
-    mode: base
+  - weapon: mausolon
+    mode: cycle
     listed: false
     probe: true
-    score: 5.984353185305487
-    fp: e7ee466c22a1eff4
-    cost: 0.519
-    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
-    arcanes: [primary_merciless, cascadia_flare]
-  - weapon: larkspur_prime
-    mode: alternate
-    listed: false
-    probe: true
-    score: 0.7738235292703166
-    fp: 2cbb731fc5fa7f33
-    cost: 0.368
-    mods: [primed_rubedo_lined_barrel, dual_rounds, containment_breach, magnetized_cycle, primed_polar_magazine, venomous_clip, combustion_rounds, magma_chamber]
-    arcanes: [primary_merciless, secondary_enervate]
+    score: 0.32973595938138556
+    fp: 08c3f099502b5cae
+    cost: 1.748
+    mods: [primed_rubedo_lined_barrel, automatic_trigger, dual_rounds, containment_breach, hollowed_bullets, primed_polar_magazine, magma_chamber, contamination_casing]
+    arcanes: [primary_deadhead, cascadia_flare]
