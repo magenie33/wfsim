@@ -38,6 +38,7 @@ code, not after.
 | what a form is CALLED on the page | `docs/FORM_NAMES.md` |
 | the worker fleet, sharding, the wasm build | `docs/WASM.md` |
 | capacity and Forma | `docs/INVESTMENT.md` |
+| the update channel, mirrors, shells | `docs/DISTRIBUTION.md` |
 | the Windows client | `docs/DESKTOP.md` |
 | setup, profiling, what has been tried | `docs/DEVELOPMENT.md` |
 | how usage would be counted (unimplemented) | `docs/ANALYTICS.md` |
