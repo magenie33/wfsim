@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6433
+submissions: 6478
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -11066,6 +11066,30 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: base
+    score: 3.5994080829821997
+    fp: a4b38a50e50a7a82
+    cost: 4.539
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: laetum
+    mode: cycle
+    score: 3.5994080829821997
+    fp: a4b38a50e50a7a82
+    cost: 5.410
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: laetum
+    mode: base
     score: 3.5815232520660407
     fp: 3e33df8ff26a6b6e
     cost: 1.750
@@ -11524,34 +11548,6 @@ entries:
   - weapon: larkspur_prime
     mode: base
     score: 4
-    fp: 1e74b111ab898ec5
-    cost: 2.622
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_crux, cascadia_flare]
-  - weapon: larkspur_prime
-    mode: base
-    score: 4
-    fp: 0afee9ffc8fab1e1
-    cost: 2.520
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_bulwark, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 4
-    fp: 10999c8f5854cf37
-    cost: 2.705
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_crux, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 4
-    fp: b82855a577842b39
-    cost: 2.618
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_overcharge, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 4
     fp: 33e7238a766aee37
     cost: 2.691
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
@@ -11566,6 +11562,13 @@ entries:
   - weapon: larkspur_prime
     mode: base
     score: 4
+    fp: 10999c8f5854cf37
+    cost: 2.705
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 4
     fp: 193482a42985ee80
     cost: 3.401
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
@@ -11577,6 +11580,27 @@ entries:
     cost: 3.099
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 4
+    fp: 1e74b111ab898ec5
+    cost: 2.622
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    score: 4
+    fp: 0afee9ffc8fab1e1
+    cost: 2.520
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 4
+    fp: b82855a577842b39
+    cost: 2.618
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_overcharge, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 3.984394844826496
@@ -12062,13 +12086,6 @@ entries:
   - weapon: larkspur_prime
     mode: alternate
     score: 1.3624535162843623
-    fp: 0afee9ffc8fab1e1
-    cost: 0.417
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_bulwark, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: alternate
-    score: 1.3624535162843623
     fp: 33e7238a766aee37
     cost: 0.894
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
@@ -12080,6 +12097,13 @@ entries:
     cost: 0.906
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_deadhead, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: alternate
+    score: 1.3624535162843623
+    fp: 0afee9ffc8fab1e1
+    cost: 0.417
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
   - weapon: larkspur_prime
     mode: alternate
     score: 1.3623210651109183
@@ -26339,6 +26363,32 @@ entries:
     cost: 1.230
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, containment_breach, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 3.073644069389344
+    fp: 34ff3ab1e1abc4b2
+    cost: 4.930
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 3.073644069389344
+    fp: 34ff3ab1e1abc4b2
+    cost: 3.818
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -26376,6 +26426,34 @@ entries:
     riven:
       bonuses: [damage, multishot, status_duration]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 3.0307619391953917
+    fp: 36ea3733176b268d
+    cost: 3.454
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, magnetic_might, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 3.0307619391953917
+    fp: 36ea3733176b268d
+    cost: 5.262
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, magnetic_might, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -29236,6 +29314,34 @@ entries:
       bonuses: [critical_damage, reload_speed, toxin]
       malus: ammo_maximum
       rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 2.351549137307923
+    fp: e9bf7d14ac272f15
+    cost: 4.812
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, magnetic_might, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_incarnon_efficiency, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 2.351549137307923
+    fp: e9bf7d14ac272f15
+    cost: 2.702
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, magnetic_might, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_incarnon_efficiency, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -31366,6 +31472,32 @@ entries:
       bonuses: [cold, critical_chance, multishot]
       malus: projectile_speed
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 2.12247782356065
+    fp: cf284dbe31895a53
+    cost: 4.183
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 2.12247782356065
+    fp: cf284dbe31895a53
+    cost: 3.931
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: base
     listed: false
@@ -32525,6 +32657,32 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 2.020366599833417
+    fp: dfbd7af301b7a837
+    cost: 4.320
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 2.020366599833417
+    fp: dfbd7af301b7a837
+    cost: 4.328
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -34090,6 +34248,32 @@ entries:
       bonuses: [multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.9366450037021512
+    fp: fa632cbd7d20285f
+    cost: 4.048
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.9366450037021512
+    fp: fa632cbd7d20285f
+    cost: 4.037
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -35103,6 +35287,32 @@ entries:
     mods: [split_chamber, serration, critical_delay, hammer_shot, vigilante_armaments, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.846813952257623
+    fp: 36d40ae93d946a0b
+    cost: 2.467
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.846813952257623
+    fp: 36d40ae93d946a0b
+    cost: 4.203
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -36299,6 +36509,32 @@ entries:
   - weapon: laetum
     mode: base
     listed: false
+    score: 1.765548477048
+    fp: 939214880b0e31ad
+    cost: 4.144
+    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge, scorch]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.765548477048
+    fp: 939214880b0e31ad
+    cost: 4.138
+    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, riven, primed_heated_charge, scorch]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
     score: 1.7638839629598484
     fp: 0335bb280745015c
     cost: 1.004
@@ -36877,6 +37113,62 @@ entries:
     riven:
       bonuses: [critical_damage, damage, fire_rate]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.7263010657219147
+    fp: 2d5ca7f800fc6a01
+    cost: 3.865
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.7263010657219147
+    fp: 2d5ca7f800fc6a01
+    cost: 4.948
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.7263010657219147
+    fp: 28b88990f919163c
+    cost: 4.135
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_incarnon_efficiency, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.7263010657219147
+    fp: 28b88990f919163c
+    cost: 4.971
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_incarnon_efficiency, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
@@ -38220,6 +38512,32 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.6684222321055895
+    fp: 2ae7316e1353b82e
+    cost: 4.127
+    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 0.9, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.6684222321055895
+    fp: 2ae7316e1353b82e
+    cost: 2.310
+    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 0.9, 0.9]
   - weapon: ocucor
     mode: base
     listed: false
@@ -38898,6 +39216,34 @@ entries:
       bonuses: [fire_rate, heat, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.6408783053149554
+    fp: f35e626bd71d4e3a
+    cost: 5.227
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.6408783053149554
+    fp: f35e626bd71d4e3a
+    cost: 5.262
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -39137,6 +39483,34 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, hollow_point, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.6260221843719282
+    fp: 42223286136e287a
+    cost: 5.013
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.6260221843719282
+    fp: 42223286136e287a
+    cost: 5.019
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: laetum
     mode: base
     listed: false
@@ -39644,6 +40018,32 @@ entries:
       bonuses: [critical_damage, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.5889662018368989
+    fp: 01d348dadea22998
+    cost: 3.795
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.5889662018368989
+    fp: 01d348dadea22998
+    cost: 4.755
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: magazine_capacity
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
