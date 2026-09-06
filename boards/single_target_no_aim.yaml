@@ -92008,6 +92008,26 @@ entries:
     cost: 0.050
     mods: [galvanized_hell, galvanized_savvy, blunderbuss, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
     arcanes: [primary_debilitate]
+  - weapon: sicarus_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.08628343692007905
+    fp: ec9b5155743dff90
+    cost: 0.404
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.08628343692007905
+    fp: ec9b5155743dff90
+    cost: 0.406
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [secondary_deadhead]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -92883,23 +92903,3 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
-  - weapon: sicarus_prime
-    mode: base
-    listed: false
-    probe: true
-    score: 0.08628343692007905
-    fp: ec9b5155743dff90
-    cost: 0.403
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
-    arcanes: [secondary_deadhead]
-  - weapon: sicarus_prime
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.08628343692007905
-    fp: ec9b5155743dff90
-    cost: 0.413
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
-    arcanes: [secondary_deadhead]

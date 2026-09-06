@@ -93220,6 +93220,26 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [prisma_gorgon_evo1_incarnon_form, prisma_gorgon_hunters_mantra, prisma_gorgon_rapid_reinforcement, prisma_gorgon_elemental_balance]
     arcanes: [primary_compression]
+  - weapon: sicarus_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 11.636959147542255
+    fp: 22e0ad4dffa4af17
+    cost: 1.002
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 41.5866782787375
+    fp: 22e0ad4dffa4af17
+    cost: 1.185
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [secondary_deadhead]
   - weapon: kuva_nukor
     mode: base
     listed: false

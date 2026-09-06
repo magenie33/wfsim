@@ -38489,7 +38489,7 @@ entries:
     mode: cycle
     score: 41.62577658730186
     fp: 374b95a363ff5237
-    cost: 8.887
+    cost: 8.786
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
     arcanes: [secondary_deadhead]
