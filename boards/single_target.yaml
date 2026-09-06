@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6333
+submissions: 6334
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -41250,6 +41250,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
+    score: 30.90509639360808
+    fp: 514971277c7923b1
+    cost: 6.635
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, riven, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [cold, critical_damage, damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
     score: 30.846102036296077
     fp: 6fcfa7ba9e898940
     cost: 3.512
@@ -42447,6 +42459,18 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, heat]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    score: 7.060980090213816
+    fp: 514971277c7923b1
+    cost: 17.275
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, riven, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [cold, critical_damage, damage]
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
@@ -95534,7 +95558,7 @@ entries:
     probe: true
     score: 0.5244734648033348
     fp: 6de78a48a7cb0b3f
-    cost: 0.422
+    cost: 0.420
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -95545,7 +95569,7 @@ entries:
     probe: true
     score: 2.966703754510669
     fp: 6de78a48a7cb0b3f
-    cost: 0.156
+    cost: 0.153
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -95556,7 +95580,7 @@ entries:
     probe: true
     score: 0.19992990119127235
     fp: 7ee0fb7434a87fd7
-    cost: 0.312
+    cost: 0.308
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -95567,7 +95591,7 @@ entries:
     probe: true
     score: 0.8445142300146847
     fp: 7ee0fb7434a87fd7
-    cost: 0.076
+    cost: 0.135
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
