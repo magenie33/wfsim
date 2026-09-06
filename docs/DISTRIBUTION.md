@@ -249,11 +249,18 @@ this one is invisible by construction: a stale mirror serves a page that works.
    holds is not the one being served.
 4. **The pointer.** *Done.* `channel.json` published and preferred;
    `manifest.json` and its detached signature kept for older shells.
-5. **Automation.** *Written, unconfigured.* `scripts/stage.py` and
-   `.github/workflows/stage.yml` need `COS_SECRET_ID`, `COS_SECRET_KEY`,
-   `COS_BUCKET` and `COS_REGION` in the repository's secrets; without them the
-   job is silent and green. `scripts/promote.py` and `.github/workflows/mirrors.yml`
-   need nothing.
+5. **Automation.** *Written; the CI half is unconfigured.* The stage → promote
+   path is proved end to end from a workstation: staged, resolved through the
+   marker, 866 files verified against the tree, pointer signed and read back,
+   and a second stage answering "already staged". `stage.yml` runs on every push
+   and computes the same manifest a Tauri toolchain does, then stops — it needs
+   `COS_SECRET_ID`, `COS_SECRET_KEY`, `COS_BUCKET` and `COS_REGION` in the
+   repository's secrets to reach the bucket, and is silent and green without
+   them. `scripts/promote.py` and `.github/workflows/mirrors.yml` need nothing.
+
+   **Adding those four secrets is what turns this on**, and it is the last act
+   of the plan: after it, a push stages itself and the only thing left for a
+   person is signing a pointer that builds nothing.
 
 Two things are deliberately NOT on this list. **`site/` leaving git**: Cloudflare
 deploys from the repository and the browser checks run against the committed
