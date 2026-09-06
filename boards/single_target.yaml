@@ -95534,7 +95534,7 @@ entries:
     probe: true
     score: 0.5244734648033348
     fp: 6de78a48a7cb0b3f
-    cost: 0.420
+    cost: 0.422
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -95545,7 +95545,7 @@ entries:
     probe: true
     score: 2.966703754510669
     fp: 6de78a48a7cb0b3f
-    cost: 0.153
+    cost: 0.156
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -95556,7 +95556,7 @@ entries:
     probe: true
     score: 0.19992990119127235
     fp: 7ee0fb7434a87fd7
-    cost: 0.308
+    cost: 0.312
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -95567,7 +95567,7 @@ entries:
     probe: true
     score: 0.8445142300146847
     fp: 7ee0fb7434a87fd7
-    cost: 0.135
+    cost: 0.076
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vigilante_armaments, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
