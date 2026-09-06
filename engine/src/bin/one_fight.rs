@@ -213,7 +213,11 @@ fn arena_for(c: &Cfg) -> Arena {
         .into_iter()
         .find(|e| e.id == c.enemy)
         .unwrap_or_else(|| panic!("unknown enemy: {}", c.enemy));
-    Arena {
+    // A KILLABLE CROWD IS THE RULER'S OWN FIGHT, and it is what an optimisation
+    // has to be measured against: the unkillable one exists so an ABLATION has a
+    // fixed length, and it reaches a state — every body at its cap for the whole
+    // engagement — that a build killing 537 bodies a run never sees.
+    crowd(Arena {
         target_id: "e1".to_string(),
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         target: e
@@ -230,11 +234,12 @@ fn arena_for(c: &Cfg) -> Arena {
         abilities: Vec::new(),
         ability_picks: Vec::new(),
         ability_strength: 1.0,
-        // ONE BODY — a fixture, not a formation.
+        // The crowd is added below; one body stays the default, and is the
+        // fixture every golden value was measured under.
         others: Vec::new(),
         // …and the weapon points AT it.
         aim_at: None,
-    }
+    }, c.bodies, c.spacing)
 }
 
 fn measure(weapon: &str, c: &Cfg) -> Shape {
@@ -253,7 +258,11 @@ fn measure(weapon: &str, c: &Cfg) -> Shape {
     }
     let panel = resolve(&base, &refs, StackPolicy::Emergent);
     let arena = arena_for(c);
-    let params = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+    // THE SAME SEATS `ablate` FILLS. They were `none` here while `ablate` read
+    // `arcanes=`, so the two halves of this tool measured different builds and
+    // printed them as one — the mistake `arena_for` already carries a paragraph
+    // about, arrived at through a second door.
+    let params = DummyParams::from_panel(&panel, &arena, &arcanes_for(weapon, c.arcanes));
 
     // Warm: the first call pays for whatever the allocator and the branch
     // predictors have not seen, which is not what a search pays per candidate.
