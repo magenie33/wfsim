@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6222
+submissions: 6223
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -78641,3 +78641,378 @@ entries:
     cost: 3.352
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage]
     arcanes: [primary_debilitate]
+  - weapon: acceltra_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 1.378796907833978
+    fp: ba2e1e03b8322257
+    cost: 2.158
+    mods: [amalgam_serration, galvanized_chamber, primed_firestorm, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: akarius_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 18.556000770030487
+    fp: d5ae6d09d93824ec
+    cost: 2.225
+    mods: [primed_fulmination, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 9.498568073897218
+    fp: 6b0d22a06b481b94
+    cost: 2.579
+    exilus: steady_hands
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: bronco_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 16.911841342249378
+    fp: 32bf0c8d1e96a038
+    cost: 1.219
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, dizzying_rounds, magnetic_might, primed_heated_charge]
+    evolutions: [bronco_prime_evo1_incarnon_form, bronco_prime_speeding_bullet, bronco_prime_extended_volley, bronco_prime_commodores_fortune]
+    arcanes: [cascadia_flare]
+  - weapon: bronco_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 2.0937427539197935
+    fp: f75eaa51913bbb9f
+    cost: 0.475
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, creeping_bullseye, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [bronco_prime_evo1_incarnon_form, bronco_prime_speeding_bullet, bronco_prime_kinetic_battle, bronco_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: bronco_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 5.335714082519247
+    fp: f17d4bf3839f1527
+    cost: 0.322
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [bronco_prime_evo1_incarnon_form, bronco_prime_speeding_bullet, bronco_prime_kinetic_battle, bronco_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 9.25621338894962
+    fp: 11b29c150af01677
+    cost: 0.740
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 45.95803766054776
+    fp: 11b29c150af01677
+    cost: 3.987
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 44.616147661080674
+    fp: f011d870a670f021
+    cost: 2.515
+    mods: [primary_acuity, serration, bladed_rounds, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 9.597626325975405
+    fp: 3fc6290a7aaeef19
+    cost: 0.763
+    mods: [primary_acuity, serration, galvanized_aptitude, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 34.333333333333336
+    fp: 3fc6290a7aaeef19
+    cost: 3.012
+    mods: [primary_acuity, serration, galvanized_aptitude, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 9.522250454818261
+    fp: cc6d791ab0305fa6
+    cost: 0.426
+    mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 42.925278348773865
+    fp: cc6d791ab0305fa6
+    cost: 4.117
+    mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 10.235361762713003
+    fp: 616a800c06a67c0e
+    cost: 0.631
+    mods: [primary_acuity, serration, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 39.681131782819726
+    fp: 616a800c06a67c0e
+    cost: 4.128
+    mods: [primary_acuity, serration, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 9.87207344547847
+    fp: fa57fbcca4311b87
+    cost: 0.750
+    mods: [heavy_caliber, primary_acuity, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 38.51678953352299
+    fp: fa57fbcca4311b87
+    cost: 2.538
+    mods: [heavy_caliber, primary_acuity, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 10.014587885240863
+    fp: 8638c2f9c9dc13c3
+    cost: 0.983
+    mods: [primary_acuity, serration, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 42.42662522036181
+    fp: 8638c2f9c9dc13c3
+    cost: 5.982
+    mods: [primary_acuity, serration, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 10.052779160587427
+    fp: c2cfb07e337f72a0
+    cost: 0.801
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 46.33004333035978
+    fp: c2cfb07e337f72a0
+    cost: 4.643
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 47.72532347205503
+    fp: c700d2654410e574
+    cost: 4.611
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 48.242476754859226
+    fp: 79ed9ca90cd652c9
+    cost: 6.444
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 10.052779160587427
+    fp: 0f497178d6101d23
+    cost: 0.816
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, rime_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 46.33004333035978
+    fp: 0f497178d6101d23
+    cost: 2.280
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, rime_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 47.70820847222525
+    fp: 279e89b080fc84f4
+    cost: 4.295
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 46.22952979535058
+    fp: 9781fe2a42b9f3f7
+    cost: 6.531
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 2.0857517827898677
+    fp: ac970430aeed9e3e
+    cost: 1.096
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 9.472521785348942
+    fp: ac970430aeed9e3e
+    cost: 5.181
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 2.320728446176127
+    fp: e83036b01e1fea4b
+    cost: 1.098
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 10.685078683032105
+    fp: e83036b01e1fea4b
+    cost: 5.434
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 2.27472653721141
+    fp: 258c72ed9b8bf3c2
+    cost: 0.960
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 9.886252236600203
+    fp: 258c72ed9b8bf3c2
+    cost: 5.660
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 10.55271633605659
+    fp: dc420b2bf2547eee
+    cost: 1.068
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 49.30975769628177
+    fp: dc420b2bf2547eee
+    cost: 6.372
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 47.9489072992084
+    fp: 4a987a3234076c64
+    cost: 4.641
+    exilus: vigilante_supplies
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
