@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6493
+submissions: 6495
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -92847,3 +92847,23 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: furis
+    mode: base
+    listed: false
+    probe: true
+    score: 0.27691864777130165
+    fp: c98855010e4ccc2e
+    cost: 0.452
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.27691864777130165
+    fp: c98855010e4ccc2e
+    cost: 0.613
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]

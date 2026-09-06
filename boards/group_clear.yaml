@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6493
+submissions: 6495
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -16751,6 +16751,17 @@ entries:
       malus: zoom
       rolls: [1.1, 0.9, 0.9]
   - weapon: mausolon
+    mode: cycle
+    score: 7.932100539420234
+    fp: fb9dba1be0fe4519
+    cost: 34.304
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_bulwark, secondary_enervate]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: mausolon
     mode: base
     score: 7.666666666666667
     fp: fb9dba1be0fe4519
@@ -17012,6 +17023,16 @@ entries:
       bonuses: [damage, multishot]
       malus: status_duration
       rolls: [1.1, 1.1, 0.9]
+  - weapon: ocucor
+    mode: base
+    score: 28.53500435204775
+    fp: 8be7bb54d6e80fc7
+    cost: 26.762
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, frostbite, riven, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: ocucor
     mode: base
     score: 28.29527292688823
@@ -30291,6 +30312,20 @@ entries:
     riven:
       bonuses: [cold, critical_chance, multishot]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: dual_toxocyst
+    mode: cycle
+    listed: false
+    score: 234.54531803121398
+    fp: 6431c26d3a9f4a86
+    cost: 72.326
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_grattler
     mode: base
     listed: false
@@ -60655,6 +60690,20 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, riven, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 14.287976811453776
+    fp: d2bb8686fa1e1532
+    cost: 16.757
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, anemic_agility, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_encumber]
     riven:
       bonuses: [critical_damage, damage, multishot]
       malus: status_chance
