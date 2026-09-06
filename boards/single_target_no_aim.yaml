@@ -677,7 +677,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 6.001574631538877
-    fp: 913e85ab814703be
+    fp: bcaf905c55b1d5d6
     cost: 2.210
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -685,7 +685,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 6.001574631538877
-    fp: 913e85ab814703be
+    fp: bcaf905c55b1d5d6
     cost: 1.873
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -693,7 +693,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 5.26270081756309
-    fp: ae57fe33fdd3a19f
+    fp: 82359a9b08df4819
     cost: 1.952
     mods: [galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -704,7 +704,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 5.26270081756309
-    fp: ae57fe33fdd3a19f
+    fp: 82359a9b08df4819
     cost: 2.049
     mods: [galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -715,7 +715,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 5.051598475137225
-    fp: 85d7b8a82d322a1e
+    fp: f1bb6cf23eb994b0
     cost: 5.144
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -728,7 +728,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 5.051598475137225
-    fp: 85d7b8a82d322a1e
+    fp: f1bb6cf23eb994b0
     cost: 3.947
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -741,7 +741,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 5.051598475137225
-    fp: 547319888d92fdb3
+    fp: 1133dc0399f7aead
     cost: 5.168
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -753,7 +753,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 5.051598475137225
-    fp: 547319888d92fdb3
+    fp: 1133dc0399f7aead
     cost: 4.735
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -781,7 +781,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.807969325795231
-    fp: 8c2e73e534187c6f
+    fp: 5604ff261d9ab195
     cost: 1.452
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
@@ -789,7 +789,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.807969325795231
-    fp: 8c2e73e534187c6f
+    fp: 5604ff261d9ab195
     cost: 1.542
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
@@ -813,7 +813,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.772737686668879
-    fp: 4c72b5c72bb67b29
+    fp: 626cd136c92edd9f
     cost: 2.156
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -821,7 +821,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.772737686668879
-    fp: 4c72b5c72bb67b29
+    fp: 626cd136c92edd9f
     cost: 2.257
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -863,7 +863,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.666706500502713
-    fp: b3c9047083d2d1b4
+    fp: 8e222fca89079172
     cost: 2.107
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -872,7 +872,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.666706500502713
-    fp: b3c9047083d2d1b4
+    fp: 8e222fca89079172
     cost: 2.018
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -881,7 +881,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.51364528083021
-    fp: 70adbe27d5701a29
+    fp: c47abfb05f6da4f5
     cost: 1.620
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -890,7 +890,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.51364528083021
-    fp: 70adbe27d5701a29
+    fp: c47abfb05f6da4f5
     cost: 1.878
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -899,7 +899,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.462175272338327
-    fp: 7ecd94355ab86967
+    fp: 45a5b3242310ed2f
     cost: 1.897
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -908,7 +908,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.462175272338327
-    fp: 7ecd94355ab86967
+    fp: 45a5b3242310ed2f
     cost: 1.912
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -917,7 +917,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.425354925593613
-    fp: 07ed4b2433c88e3f
+    fp: ed630d8a2d2cf439
     cost: 1.607
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -925,7 +925,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.425354925593613
-    fp: 07ed4b2433c88e3f
+    fp: ed630d8a2d2cf439
     cost: 2.144
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -933,7 +933,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.319372577268414
-    fp: ca539fba3460a20a
+    fp: 57050d495b365b86
     cost: 1.892
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -941,7 +941,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.319372577268414
-    fp: ca539fba3460a20a
+    fp: 57050d495b365b86
     cost: 1.955
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -949,7 +949,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 4.202986584313757
-    fp: 55e7dcef2878dbb6
+    fp: e3f69c10e62e63ce
     cost: 1.926
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
@@ -957,7 +957,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 4.202986584313757
-    fp: 55e7dcef2878dbb6
+    fp: e3f69c10e62e63ce
     cost: 2.096
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
@@ -965,7 +965,7 @@ entries:
   - weapon: atomos
     mode: base
     score: 3.983592906004659
-    fp: 65078b42dc94136e
+    fp: 809fbd2854705d7a
     cost: 2.038
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -973,7 +973,7 @@ entries:
   - weapon: atomos
     mode: cycle
     score: 3.983592906004659
-    fp: 65078b42dc94136e
+    fp: 809fbd2854705d7a
     cost: 2.146
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -25232,7 +25232,7 @@ entries:
     mode: base
     listed: false
     score: 4.343992511905389
-    fp: 85d7b8a82d322a1e
+    fp: f1bb6cf23eb994b0
     cost: 6.244
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -25246,7 +25246,7 @@ entries:
     mode: cycle
     listed: false
     score: 4.343992511905389
-    fp: 85d7b8a82d322a1e
+    fp: f1bb6cf23eb994b0
     cost: 6.616
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -25594,7 +25594,7 @@ entries:
     mode: base
     listed: false
     score: 3.768962324271599
-    fp: 87142a5b4477c54a
+    fp: b17041087956ed62
     cost: 1.952
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -25606,7 +25606,7 @@ entries:
     mode: cycle
     listed: false
     score: 3.768962324271599
-    fp: 87142a5b4477c54a
+    fp: b17041087956ed62
     cost: 1.907
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -26831,7 +26831,7 @@ entries:
     mode: base
     listed: false
     score: 2.798375304675748
-    fp: 9fa88a7ce0952f84
+    fp: 4039ea1177d8e046
     cost: 2.045
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -26841,7 +26841,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.798375304675748
-    fp: 9fa88a7ce0952f84
+    fp: 4039ea1177d8e046
     cost: 2.199
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -26987,7 +26987,7 @@ entries:
     mode: base
     listed: false
     score: 2.7388042053226487
-    fp: f523c06ec007ca57
+    fp: f78f53cda4536c1f
     cost: 1.744
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -26997,7 +26997,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.7388042053226487
-    fp: f523c06ec007ca57
+    fp: f78f53cda4536c1f
     cost: 2.113
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -27176,7 +27176,7 @@ entries:
     mode: base
     listed: false
     score: 2.6964373755627884
-    fp: 6cc4d6c18de75193
+    fp: 6ee401e4b0af228d
     cost: 1.126
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -27185,7 +27185,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.6964373755627884
-    fp: 6cc4d6c18de75193
+    fp: 6ee401e4b0af228d
     cost: 1.487
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -27404,7 +27404,7 @@ entries:
     mode: base
     listed: false
     score: 2.6711642345911253
-    fp: 3df7f640bd336fca
+    fp: a1151ff772bdff8c
     cost: 1.188
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -27414,7 +27414,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.6711642345911253
-    fp: 3df7f640bd336fca
+    fp: a1151ff772bdff8c
     cost: 2.106
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
@@ -27548,7 +27548,7 @@ entries:
     mode: base
     listed: false
     score: 2.6495610865215427
-    fp: 6dd4c17c42ebde06
+    fp: eb7258a606de5702
     cost: 1.346
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -27557,7 +27557,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.6495610865215427
-    fp: 6dd4c17c42ebde06
+    fp: eb7258a606de5702
     cost: 1.622
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -28449,7 +28449,7 @@ entries:
     mode: base
     listed: false
     score: 2.4617797088237956
-    fp: 8e2b751b41a52063
+    fp: cded33d69994ea5d
     cost: 1.710
     mods: [seeker, galvanized_diffusion, primed_target_cracker, magnetic_might, frostbite, riven, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -28462,7 +28462,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.4617797088237956
-    fp: 8e2b751b41a52063
+    fp: cded33d69994ea5d
     cost: 2.337
     mods: [seeker, galvanized_diffusion, primed_target_cracker, magnetic_might, frostbite, riven, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
@@ -30870,7 +30870,7 @@ entries:
     mode: base
     listed: false
     score: 2.213290552605834
-    fp: eb63f4f072189c0a
+    fp: 9615c950f785b0cc
     cost: 2.094
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -30880,7 +30880,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.213290552605834
-    fp: eb63f4f072189c0a
+    fp: 9615c950f785b0cc
     cost: 2.032
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -30965,7 +30965,7 @@ entries:
     mode: base
     listed: false
     score: 2.206547497621811
-    fp: 7de812e165912804
+    fp: 52ad798a2ffd6e82
     cost: 1.916
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
@@ -30975,7 +30975,7 @@ entries:
     mode: cycle
     listed: false
     score: 2.206547497621811
-    fp: 7de812e165912804
+    fp: 52ad798a2ffd6e82
     cost: 2.058
     exilus: primed_pistol_ammo_mutation
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
@@ -37877,7 +37877,7 @@ entries:
     mode: base
     listed: false
     score: 1.691604178376978
-    fp: c443d9b612ad8101
+    fp: a4ddba15f09515a7
     cost: 2.070
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -37886,7 +37886,7 @@ entries:
     mode: cycle
     listed: false
     score: 1.691604178376978
-    fp: c443d9b612ad8101
+    fp: a4ddba15f09515a7
     cost: 2.019
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -42449,7 +42449,7 @@ entries:
     mode: base
     listed: false
     score: 1.4043326914745708
-    fp: 838c7fe08126d66d
+    fp: 87f77a9654ee3bc7
     cost: 0.755
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
@@ -42461,7 +42461,7 @@ entries:
     mode: cycle
     listed: false
     score: 1.4043326914745708
-    fp: 838c7fe08126d66d
+    fp: 87f77a9654ee3bc7
     cost: 0.753
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
@@ -42885,7 +42885,7 @@ entries:
     mode: base
     listed: false
     score: 1.377325106220442
-    fp: 5dfe7f1b4b84c539
+    fp: 5768cf702ea7bf2f
     cost: 0.175
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, deep_freeze, pathogen_rounds, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -42894,7 +42894,7 @@ entries:
     mode: cycle
     listed: false
     score: 1.377325106220442
-    fp: 5dfe7f1b4b84c539
+    fp: 5768cf702ea7bf2f
     cost: 0.176
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, deep_freeze, pathogen_rounds, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -46176,7 +46176,7 @@ entries:
     mode: base
     listed: false
     score: 1.2028751073827688
-    fp: 68fd2eefb4a72fb2
+    fp: 7f8d8be1e2547c7a
     cost: 0.813
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, riven, frostbite, pistol_pestilence]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -46188,7 +46188,7 @@ entries:
     mode: cycle
     listed: false
     score: 1.2028751073827688
-    fp: 68fd2eefb4a72fb2
+    fp: 7f8d8be1e2547c7a
     cost: 0.819
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, riven, frostbite, pistol_pestilence]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
