@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6371
+submissions: 6375
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -10726,17 +10726,17 @@ entries:
   - weapon: furis
     mode: cycle
     score: 45.027522832014256
-    fp: aae4fba711a1e838
-    cost: 14.224
-    exilus: primed_steady_hands
+    fp: b5f04052bc3166c6
+    cost: 18.100
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
     score: 45.027522832014256
-    fp: b5f04052bc3166c6
-    cost: 18.100
+    fp: aae4fba711a1e838
+    cost: 14.224
+    exilus: primed_steady_hands
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
     arcanes: [secondary_enervate]
@@ -11216,6 +11216,14 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 25.20847343642972
+    fp: 4447d9d17f6edd9f
+    cost: 12.380
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 25.005196033865065
     fp: c12677b0f4b0bd74
     cost: 14.974
@@ -11230,6 +11238,14 @@ entries:
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_prelude_of_might]
     arcanes: [secondary_deadhead]
+  - weapon: furis
+    mode: base
+    score: 14.347731961539067
+    fp: b5f04052bc3166c6
+    cost: 28.548
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
     score: 14.347731961539067
@@ -23827,6 +23843,14 @@ entries:
     mods: [galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, hunter_munitions, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_crux]
     valence: magnetic
+  - weapon: tenet_quanta
+    mode: alternate
+    score: 0.5944394612127227
+    fp: 1d1f064d4a89ca2c
+    cost: 11.954
+    mods: [heavy_caliber, split_chamber, point_strike, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_deadhead]
+    valence: cold
   - weapon: tenet_quanta
     mode: alternate
     score: 0.32038165509664795
@@ -51956,6 +51980,15 @@ entries:
     cost: 6.120
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: tenet_cycron
+    mode: base
+    listed: false
+    score: 23.337069692161897
+    fp: 5484957d0d8a70d4
+    cost: 29.114
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_empowered]
+    valence: magnetic
   - weapon: larkspur_prime
     mode: base
     listed: false
