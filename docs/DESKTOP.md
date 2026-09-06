@@ -65,7 +65,7 @@ docs/DISTRIBUTION.md.
 | | changes | how it ships | what the reader sees |
 |---|---|---|---|
 | **content** — `app.js`, `pkg/*.wasm`, `img/` | on a code change | files, swapped by two renames | a notice, then a restart |
-| **live data** — the board | every twenty minutes | fetched into `live/`, beside the release | nothing |
+| **live data** — the board | every hour | fetched into `live/`, beside the release | nothing |
 | **shell** — the `.exe` | rarely | one file, downloaded once | a download |
 
 Everything that moves a number is content. So the path that runs weekly is a

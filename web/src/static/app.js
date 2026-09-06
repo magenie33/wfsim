@@ -15262,9 +15262,8 @@ function renderBoardConsent() {
       `<b>${escHtml(tr("Builds you run here are added to the official board."))}</b> ` +
       escHtml(tr("What is sent is the BUILD: the weapon and its mods, evolutions and arcanes. Not the fight you ran it under — the board scores every build under its OWN rulers, so any scenario can contribute. And nothing about you: no account, no identifier, no address, no time finer than the day, and no score. The board takes a weapon built as far as it goes: every main slot filled, and the exilus slot counted if you use one.")) +
       // WHEN, on the FIRST visit too — this is the branch a new player reads,
-      // and it is the one that was silent about the twenty minutes. Saying it
-      // only after the consent had been chosen told the fact to everyone except
-      // the person meeting the board for the first time.
+      // and saying it only after the consent had been chosen told the fact to
+      // everyone except the person meeting the board for the first time.
       ` ${escHtml(tr("A run is stored the moment it arrives and appears on the board at its next re-score — not the instant you send it. The board says how long ago it was scored."))}` +
       ` ${escHtml(boardCutNote())}` +
       floorNote +
@@ -15273,11 +15272,10 @@ function renderBoardConsent() {
     return;
   }
   // WHEN, not just whether. A submission is stored the moment it is sent and
-  // the board is re-scored on a schedule, so "sent" and "on the board" are
-  // twenty minutes apart — long enough that a player concludes it failed. The
-  // number is the workflow's own: three runs an hour, and GitHub's scheduler
-  // slips about fifteen minutes whatever minute is named, so the honest bound
-  // is "usually 20, sometimes 40".
+  // the board is re-scored on a schedule, so "sent" and "on the board" are an
+  // hour apart — long enough that a player concludes it failed. The number is
+  // the workflow's own: one run an hour, and GitHub's scheduler slips about
+  // fifteen minutes whatever minute is named.
   // THE SAME SENTENCE THE RESULT SHOWS — see `boardRunOutcome`. Before any run
   // this box states the standing POLICY instead, which is what a reader at the
   // top of an unrun panel needs; the result says what happened to a run.

@@ -21,14 +21,14 @@ There are three, and **a file may not travel in a plane that is not its own.**
 | --- | --- | --- | --- | --- |
 | **release** | `index.html`, `app.js`, `style.css`, `worker.js`, `pkg/` | on a code change | **yes** — it is code | **no**: two channels on different releases give different answers |
 | **assets** | `img/`, `pol/`, `logo.svg` | rarely, and only by addition | no — the hash is the check | yes: an asset is present and correct, or absent |
-| **data** | the board | every twenty minutes | no — it is reproducible | yes, briefly, and visibly |
+| **data** | the board | every hour | no — it is reproducible | yes, briefly, and visibly |
 
 The cost of ignoring this is not theoretical. `site/board.json` is 4.3 MB and is
-rewritten up to three times an hour; the blob store is never pruned. Carrying it
-in the release would bank about 114 GB of immortal blobs a year in the one
-place this project pays for, and hand every client a 4.3 MB download for a file
-it replaces twenty minutes later. **So the planes are separated before the
-publish is automated, not after.**
+rewritten every hour; the blob store is never pruned. Carrying it
+in the release would bank about 38 GB of immortal blobs a year in the one place
+this project pays for, and hand every client a 4.3 MB download for a file it
+replaces within the hour. **So the planes are separated before the publish is
+automated, not after.**
 
 ## Three words
 
@@ -118,7 +118,7 @@ Publishing is two acts, and they are kept apart because their requirements are:
 **The gate is the release, not the manifest.** A manifest names the commit it
 was built from, so its digest moves on every push whether or not a served byte
 did; the release digest moves when the code does. That is what makes staging on
-every push cost one request three times an hour instead of a publish.
+every push cost one request an hour instead of a publish.
 
 It is also why promotion resolves through the marker rather than recomputing:
 recomputing would produce a different digest on any later commit, and then
@@ -183,7 +183,7 @@ on a schedule, and it moves at its own rate.
   makes staleness detectable; content-addressing it would buy caching this plane
   does not need.
 - `scripts/board_meta.py` writes the stamp, and **both writers of the board call
-  it** — the scoring job three times an hour, and the site build keeping a local
+  it** — the scoring job every hour, and the site build keeping a local
   tree in step. A stamp only one of them maintains lies for the other.
 
 **A shell serves live data through its own protocol.** The page asks for
@@ -200,7 +200,7 @@ never its SPA fallback** — `index.html` with a 200 is what `res.ok` reads as
 success.
 
 There is deliberately **no seed in the payload**. A seed is stale on arrival and
-it puts a file that moves three times an hour inside an artefact that must not,
+it puts a file that moves every hour inside an artefact that must not,
 which is the whole failure this plane exists to prevent.
 
 **What a board still cannot say is which engine scored it.** `fp` is per row and
@@ -245,7 +245,7 @@ this one is invisible by construction: a stale mirror serves a page that works.
 2. **Keys and contract.** *Done.* `PUBLIC_KEYS` is a list; the contract above is
    written down while there is still one shell to fit it to.
 3. **The data plane.** *Done.* The shell keeps `live/` beside `current/`, asks
-   the stamp every twenty minutes, and fetches the board only when the digest it
+   the stamp every hour, and fetches the board only when the digest it
    holds is not the one being served.
 4. **The pointer.** *Done.* `channel.json` published and preferred;
    `manifest.json` and its detached signature kept for older shells.

@@ -312,7 +312,7 @@ EDGE_HEADERS = """\
 # hashed module, which is no longer served, and the page fails to start.
 #
 # `board.json` is a different plane and revalidates for its own reason: it is
-# rescored three times an hour. `Access-Control-Allow-Origin` is what lets a
+# rescored once an hour. `Access-Control-Allow-Origin` is what lets a
 # shell serving its own origin fall back to the site for it — see `fetchJson`.
 
 # Legacy URLs from the /app/-era layout, plus the one weapon page that shipped

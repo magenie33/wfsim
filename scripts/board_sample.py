@@ -6,7 +6,7 @@ engine fingerprint is a hash of `engine`, `webapi` and `cli` and a score is a
 pure function of the code that produced it. Most changes cannot MOVE a number —
 a comment, a test, a validation rule, a field only the page reads — and paying
 a full rescore for them is what stopped the board updating: 130 hours of CPU and
-four of wall clock, against a schedule that fires every twenty minutes.
+four of wall clock, against a schedule that fires every hour.
 
 So the workflow does not guess. It re-scores THIS sample under the new code and
 compares each row with what the board already says (`wfsim-board --verify`).

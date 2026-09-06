@@ -99,7 +99,7 @@ impl Layout {
     pub fn current(&self) -> PathBuf { self.root.join("current") }
     pub fn next(&self) -> PathBuf { self.root.join("next") }
     /// LIVE DATA, beside the release rather than inside it. The board moves
-    /// every twenty minutes and a release does not, so it survives an update
+    /// every hour and a release does not, so it survives an update
     /// instead of being replaced by one — docs/DISTRIBUTION.md §The data plane.
     pub fn live(&self) -> PathBuf { self.root.join("live") }
     fn prev(&self) -> PathBuf { self.root.join("prev") }

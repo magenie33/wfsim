@@ -8,7 +8,7 @@ fetch in order to find out. This is what it reads instead.
 
 DERIVED, NEVER DECLARED. Everything here is a function of `site/board.json` and
 `data/board_state.yaml`, so the two writers of the board — the scoring job,
-three times an hour, and the site build keeping a local tree in step — produce
+every hour, and the site build keeping a local tree in step — produce
 the same stamp without coordinating. A field either writer had to fill in by
 itself is a field that is wrong for the other.
 

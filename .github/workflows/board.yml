@@ -28,18 +28,17 @@ name: board
 
 on:
   schedule:
-    # THREE TIMES AN HOUR, on the twenty. It was hourly at
-    # :17 — off the hour on the theory that :00 queues behind everyone else,
-    # which is true and turns out not to be worth optimising for: this repo's
-    # own history shows the :17 runs landing at :33–:35, so GitHub's scheduler
-    # slips ~15 minutes whatever minute you name. Naming :00 costs nothing that
-    # was not already being paid, and naming three of them is what actually
-    # makes the board fresh — a submission now waits ~20 minutes rather than an
-    # hour, and the worst case is bounded instead of being "you just missed it".
+    # ONCE AN HOUR, ON THE HOUR. The cadence has to be longer than a run, and a
+    # run is not twenty minutes: measured over 40 scheduled runs, 25 of the 29
+    # that published finished inside twenty and the rest took 29, 38, 82 and 102.
+    # A cadence shorter than the tail means the queued run is cancelled by the
+    # next arrival — GitHub keeps one pending per concurrency group — so two of
+    # every three wake-ups did nothing at all and the board still published at
+    # whatever rate the long runs allowed.
     #
-    # It is free to do: this repo is public, so Actions minutes are not metered,
-    # and a run that finds nothing new commits nothing.
-    - cron: "0,20,40 * * * *"
+    # Naming :00 costs nothing: the scheduler slips ~15 minutes whatever minute
+    # is named, so an off-the-hour minute buys a precision this does not have.
+    - cron: "0 * * * *"
     # THE WEEKLY FULL RESCORE IS GONE, and `audit.yml` is what replaced it. It
     # rescored 22,977 rows every Monday whether or not anything had moved. The
     # audit reads a slice of the published board every hour, crosses all of it
@@ -581,7 +580,7 @@ jobs:
           # file landed while the boards beside it moved on, so the board
           # reported 1,168 builds waiting where 344 were.
           # THE STAMP IS WRITTEN BY WHOEVER WRITES THE BOARD, and this is the
-          # writer that runs three times an hour. A stamp only the site build
+          # writer that runs once an hour. A stamp only the site build
           # maintains would name the board of whenever somebody last rebuilt
           # locally, which is a worse answer than none — docs/DISTRIBUTION.md.
           python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml

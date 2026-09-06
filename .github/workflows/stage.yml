@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # THE BOARD MOVES THREE TIMES AN HOUR AND THE RELEASE DOES NOT, so most
+      # THE BOARD MOVES ONCE AN HOUR AND THE RELEASE DOES NOT, so most
       # pushes stage a manifest the bucket already holds and stop after one
       # request. That gate is inside the script, where a re-run gets it too.
       - name: Stage

@@ -525,10 +525,11 @@ const HEALTH_PROBE: &str = r#"
 /// Total working set of every WebView2 process, in MB. Shelling out to
 /// PowerShell keeps this measurement-only code free of a Windows API
 /// dependency the shipped shell would carry for ever.
-/// HOW OFTEN THE BOARD IS ASKED ABOUT. The scoring job publishes three times an
-/// hour, so anything shorter re-asks a question that cannot have a new answer;
-/// the check itself costs a few hundred bytes, not the board.
-const BOARD_REFRESH: std::time::Duration = std::time::Duration::from_secs(20 * 60);
+/// HOW OFTEN THE BOARD IS ASKED ABOUT — the publisher's own cadence, because
+/// anything shorter re-asks a question that cannot have a new answer and
+/// anything longer leaves a reader a whole extra publish behind. The check
+/// itself costs a few hundred bytes, not the board.
+const BOARD_REFRESH: std::time::Duration = std::time::Duration::from_secs(60 * 60);
 
 fn webview_memory_mb() -> f64 {
     std::process::Command::new("powershell")

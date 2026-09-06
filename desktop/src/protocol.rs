@@ -114,7 +114,7 @@ pub fn proxy(req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
 
 /// THE PATHS SERVED FROM THIS SHELL'S OWN CACHE, and never from `current/`.
 ///
-/// The board is 4.3 MB and is rescored three times an hour; a release is code
+/// The board is 4.3 MB and is rescored once an hour; a release is code
 /// and moves on a code change. So it does not travel in one — it is fetched,
 /// kept beside the release, and survives an update instead of being replaced by
 /// it. docs/DISTRIBUTION.md §The data plane.
@@ -123,7 +123,7 @@ pub const LIVE: &[&str] = &["board.json", "board.meta.json"];
 /// Fetch the board if the copy on disk is not the one being served.
 ///
 /// THE STAMP IS ASKED FIRST, and that is the whole economy of it: a few hundred
-/// bytes decide whether the 4.3 MB is worth fetching, and three times an hour
+/// bytes decide whether the 4.3 MB is worth fetching, and most of the time
 /// most clients learn they already have it.
 ///
 /// NOTHING IS WRITTEN THAT DOES NOT HASH TO WHAT THE STAMP PROMISED. A board is

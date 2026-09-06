@@ -49,7 +49,7 @@ on:
     # statement rather than an approximate one.
     #
     # It was 04:35 to keep clear of the board's :00/:20/:40, and that reasoning
-    # was weaker than it read: the board fires THREE TIMES AN HOUR and GitHub's
+    # was weaker than it read: the board fires ONCE AN HOUR and GitHub's
     # scheduler slips ~15 minutes whatever minute you name (this repo's own
     # history — the :17 runs landed at :33-:35), so no minute reliably avoids
     # it. Timing was never the protection. What protects the snapshot is the

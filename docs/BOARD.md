@@ -110,7 +110,7 @@ blocked, which is the failure the same-origin art rule was written about.
 ### Why the page FETCHES the board
 
 Everything else in `data/` is embedded into the wasm at compile time. The board
-is the one piece that changes without a release — three times an hour, if people
+is the one piece that changes without a release — once an hour, if people
 are playing
 — and compiling it in made every update cost a full site rebuild: install
 wasm-bindgen, fetch 300 images, recompile, to change a few numbers. It is a
@@ -370,7 +370,7 @@ board is right.
 
 The store made a run's work survive the run. It did not make a ROW survive one,
 and a row is where the tail lives: the board holds 35 rows costing over twenty
-minutes each and eight over an hour, against a schedule that fires every twenty.
+minutes each and eight over an hour, against a schedule that fires every hour.
 0.4% of the rows are 20% of the group-clear bill.
 
 A `--deadline` asked only before a row is dealt says when to stop TAKING rows
