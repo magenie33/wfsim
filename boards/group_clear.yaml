@@ -1319,14 +1319,6 @@ entries:
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 4110.562701104378
-    fp: 24dd8d12e58a93cb
-    cost: 28.156
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
     mode: cycle
     score: 4104.171750235468
     fp: 4213031802389573
@@ -1364,22 +1356,6 @@ entries:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 4075.5555823154255
-    fp: 179fd17b13d105c9
-    cost: 28.824
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 4074.1029090377087
-    fp: 962a93ed16130aca
-    cost: 20.666
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 4071.15833659396
@@ -1442,6 +1418,14 @@ entries:
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 3992.289514341759
+    fp: 4fa5115a5158d688
+    cost: 31.071
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
     mode: cycle
     score: 3972.8720734454782
     fp: 9552844d60896ad5
@@ -1468,20 +1452,20 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 3960
-    fp: 4fa5115a5158d688
-    cost: 31.071
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, heated_charge]
+    score: 3934.89768790564
+    fp: 24dd8d12e58a93cb
+    cost: 28.156
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 3943.2707311038284
-    fp: 7fb2e7ec07a859f7
-    cost: 34.719
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    score: 3928.683611165557
+    fp: 179fd17b13d105c9
+    cost: 28.824
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3914.4125911830806
@@ -1494,6 +1478,14 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 3904.277067897783
+    fp: 7fb2e7ec07a859f7
+    cost: 34.719
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
     score: 3889.6666666666665
@@ -1546,21 +1538,13 @@ entries:
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
-    mode: cycle
-    score: 3832.9208852114725
-    fp: 24dd8d12e58a93cb
-    cost: 26.925
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    mode: alternate_cycle
+    score: 3824.3929164648935
+    fp: 962a93ed16130aca
+    cost: 20.666
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 3821.544725463985
-    fp: 179fd17b13d105c9
-    cost: 22.069
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3798.7463616871455
@@ -1589,14 +1573,6 @@ entries:
       rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
-    score: 3794.964375688396
-    fp: 962a93ed16130aca
-    cost: 17.798
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
     score: 3788.6408550743654
     fp: 72ff604edfbb0508
     cost: 80.068
@@ -1607,14 +1583,6 @@ entries:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
       rolls: [1.1, 0.9, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 3768.3000220585104
-    fp: 6b28afd215554ab1
-    cost: 30.004
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3764.7752092716128
@@ -1678,6 +1646,22 @@ entries:
       malus: zoom
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
+    mode: cycle
+    score: 3696.817866871488
+    fp: 4fa5115a5158d688
+    cost: 28.151
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 3686.264604717576
+    fp: 179fd17b13d105c9
+    cost: 22.069
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3681.612953559508
     fp: f4c647b7dba129a9
@@ -1690,22 +1674,6 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 0.9, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 3679.328465937995
-    fp: 24bf64468167fb7d
-    cost: 21.969
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 3675.2345083412147
-    fp: 7fb2e7ec07a859f7
-    cost: 32.604
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
     score: 3661.6666666666665
@@ -1721,10 +1689,10 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
-    score: 3649.6095360017025
-    fp: 4fa5115a5158d688
-    cost: 28.151
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, heated_charge]
+    score: 3650.126575595192
+    fp: 24dd8d12e58a93cb
+    cost: 26.925
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
@@ -1780,6 +1748,14 @@ entries:
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
+    score: 3602.555919355476
+    fp: 7fb2e7ec07a859f7
+    cost: 32.604
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
     score: 3597.1233438692566
     fp: 815f6bdb91bdafe8
     cost: 111.962
@@ -1804,10 +1780,10 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
-    score: 3579.3145115081015
-    fp: 6b28afd215554ab1
-    cost: 23.132
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    score: 3577.018619728613
+    fp: 962a93ed16130aca
+    cost: 17.798
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
@@ -1873,14 +1849,6 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 3505.5692203375434
-    fp: 24bf64468167fb7d
-    cost: 27.666
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3503.6977446017404
@@ -2031,6 +1999,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
+    score: 3380.4870727759526
+    fp: 7a58cd9339cb8bfb
+    cost: 21.285
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
     score: 3368.564537733466
     fp: 9c5811834993c1a6
     cost: 75.195
@@ -2054,22 +2030,6 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 0.9, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 3354.2245162283334
-    fp: 7a58cd9339cb8bfb
-    cost: 21.285
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 3351.3619021228596
-    fp: e8491f0abe9e63ad
-    cost: 23.671
-    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
     score: 3346.5539973270315
@@ -2120,7 +2080,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 3294.65004212889
+    score: 3300.0943399583043
     fp: 150e82a4987f0235
     cost: 21.329
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -2152,6 +2112,14 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 3276
+    fp: f73dca8b37883331
+    cost: 19.471
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
     score: 3271.413398778134
@@ -2262,14 +2230,6 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 3195
-    fp: f73dca8b37883331
-    cost: 19.471
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
     score: 3194.558083514441
     fp: 610df8c295db3c11
     cost: 72.737
@@ -2308,6 +2268,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
+    score: 3181.657328843167
+    fp: 6b28afd215554ab1
+    cost: 30.004
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
     score: 3181.589303741547
     fp: 04f86207c1667fd1
     cost: 73.639
@@ -2318,22 +2286,6 @@ entries:
       bonuses: [critical_damage, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 3160.8879256059877
-    fp: 7a58cd9339cb8bfb
-    cost: 20.205
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 3158.6666666666665
-    fp: 2b148c688cd7f150
-    cost: 35.283
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3148.2328008979875
@@ -2382,14 +2334,6 @@ entries:
       bonuses: [multishot, reload_speed, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 3129.2221325831074
-    fp: e8491f0abe9e63ad
-    cost: 15.846
-    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
     score: 3126.227410036151
@@ -2489,14 +2433,6 @@ entries:
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
-    mode: cycle
-    score: 3093.4074226992334
-    fp: 150e82a4987f0235
-    cost: 19.932
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3091.9767688964066
     fp: 7a7681d89ce43104
@@ -2547,6 +2483,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
+    score: 3062
+    fp: 24bf64468167fb7d
+    cost: 21.969
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
     score: 3059.075494354294
     fp: 2622159bf5eaf41c
     cost: 137.048
@@ -2557,6 +2501,14 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 3041.700555664447
+    fp: 7a58cd9339cb8bfb
+    cost: 20.205
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3040.397416047536
@@ -2585,10 +2537,10 @@ entries:
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
-    score: 3005.4932791008487
-    fp: f73dca8b37883331
-    cost: 21.700
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    score: 3016.3333333333335
+    fp: 150e82a4987f0235
+    cost: 19.932
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
@@ -2690,14 +2642,6 @@ entries:
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
-    mode: cycle
-    score: 2942.6078929320274
-    fp: 2b148c688cd7f150
-    cost: 33.401
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
     mode: alternate_cycle
     score: 2940.97855509428
     fp: 7ab5a4f301eb4500
@@ -2724,6 +2668,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
+    score: 2939.2054067788117
+    fp: 6b28afd215554ab1
+    cost: 23.132
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
     score: 2938.1718469705943
     fp: 6b5b2358c226e38a
     cost: 84.277
@@ -2734,6 +2686,14 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 2933.640989014369
+    fp: f73dca8b37883331
+    cost: 21.700
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
     score: 2929.5387401121448
@@ -2834,6 +2794,14 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
+    score: 2881.558811806464
+    fp: 24bf64468167fb7d
+    cost: 27.666
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
     score: 2869.3617748110582
     fp: 5bcc03fdd1d40df9
     cost: 88.337
@@ -2859,6 +2827,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
+    score: 2851.1968841451708
+    fp: e8491f0abe9e63ad
+    cost: 23.671
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
     score: 2850.011032767756
     fp: 4f16eaa5431d3b79
     cost: 43.850
@@ -2869,22 +2845,6 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2842.3333333333335
-    fp: 9816686a4a465f6d
-    cost: 40.964
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2838.9885034037275
-    fp: 90109cf228455d59
-    cost: 15.345
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
     score: 2830.835686533337
@@ -2922,6 +2882,14 @@ entries:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2825.6293503887823
+    fp: 2b148c688cd7f150
+    cost: 35.283
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 2810.5819458849874
@@ -3034,14 +3002,6 @@ entries:
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2756.013301130306
-    fp: 7e074f1515a31830
-    cost: 20.772
-    mods: [primed_target_cracker, galvanized_crosshairs, galvanized_shot, barrel_diffusion, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
     mode: cycle
     score: 2741.451011691938
     fp: 7ab5a4f301eb4500
@@ -3053,14 +3013,6 @@ entries:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2739.181847492099
-    fp: c3b41ed6d6dacb7b
-    cost: 19.046
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 2738.5389711947714
@@ -3123,6 +3075,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
+    score: 2675.5519677792204
+    fp: e8491f0abe9e63ad
+    cost: 15.846
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
     score: 2673
     fp: 3ac24bfd96122104
     cost: 99.453
@@ -3162,22 +3122,6 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
-    score: 2654.0855145802516
-    fp: 90109cf228455d59
-    cost: 25.039
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 2646.3333333333335
-    fp: 9816686a4a465f6d
-    cost: 39.979
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
     score: 2637.771559508546
     fp: 340defaa265c6981
     cost: 119.661
@@ -3203,6 +3147,14 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
+    score: 2612.673674091413
+    fp: 2b148c688cd7f150
+    cost: 33.401
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
     score: 2612.146161759828
     fp: 04f86207c1667fd1
     cost: 78.480
@@ -3226,6 +3178,14 @@ entries:
       malus: ammo_maximum
       rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2574.2752010207205
+    fp: 9816686a4a465f6d
+    cost: 40.964
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
     mode: cycle
     score: 2565.8433316816613
     fp: fd69c4313ee0b9af
@@ -3237,22 +3197,6 @@ entries:
       bonuses: [critical_chance, critical_damage, reload_speed]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9, 0.9]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 2550.6666666666665
-    fp: c3b41ed6d6dacb7b
-    cost: 24.888
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2524.2115419886695
-    fp: 1ee8126373574e3e
-    cost: 16.104
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
     score: 2500.937116977476
@@ -3267,16 +3211,48 @@ entries:
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2434.594808592415
+    fp: 90109cf228455d59
+    cost: 15.345
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
     mode: cycle
-    score: 2473.2343070936367
+    score: 2414.898590073642
+    fp: 9816686a4a465f6d
+    cost: 39.979
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 2305.312619867355
+    fp: 90109cf228455d59
+    cost: 25.039
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2299.56289440086
+    fp: c3b41ed6d6dacb7b
+    cost: 19.046
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2271.1119575139496
     fp: 7e074f1515a31830
-    cost: 22.531
+    cost: 20.772
     mods: [primed_target_cracker, galvanized_crosshairs, galvanized_shot, barrel_diffusion, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 2415.4663100318294
+    score: 2236.343606564058
     fp: da16f039c213a5ff
     cost: 41.836
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
@@ -3284,15 +3260,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 2342.184237622739
-    fp: 383e744ffc75c88d
-    cost: 22.415
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2335.9714204237143
+    score: 2191.0304025835576
     fp: 7d54ce632349bf63
     cost: 45.172
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
@@ -3300,7 +3268,39 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
-    score: 2292.0197246029907
+    score: 2177.0748772377306
+    fp: c3b41ed6d6dacb7b
+    cost: 24.888
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2174.5738405557877
+    fp: 1ee8126373574e3e
+    cost: 16.104
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2145.3333333333335
+    fp: bad752ce08c39ffe
+    cost: 17.799
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    score: 2090.558001318159
+    fp: 383e744ffc75c88d
+    cost: 22.415
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 2073.649124513007
     fp: da16f039c213a5ff
     cost: 38.282
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
@@ -3308,39 +3308,15 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
-    score: 2263.9940740433312
-    fp: 1ee8126373574e3e
-    cost: 17.930
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    score: 2036.2498201418312
+    fp: 7e074f1515a31830
+    cost: 22.531
+    mods: [primed_target_cracker, galvanized_crosshairs, galvanized_shot, barrel_diffusion, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2199.6062287884065
-    fp: bad752ce08c39ffe
-    cost: 17.799
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
     mode: cycle
-    score: 2191.586736007631
-    fp: 383e744ffc75c88d
-    cost: 20.358
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    score: 2134.362491442102
-    fp: 2f1e10c2187f8f04
-    cost: 28.875
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 2124.3333333333335
+    score: 2020.3101141204304
     fp: 7d54ce632349bf63
     cost: 42.476
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
@@ -3348,7 +3324,23 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
-    score: 1979.570513590935
+    score: 1948.1842376227391
+    fp: 383e744ffc75c88d
+    cost: 20.358
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 1933.9644464672415
+    fp: 1ee8126373574e3e
+    cost: 17.930
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 1900.905010793599
     fp: bad752ce08c39ffe
     cost: 16.317
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
@@ -3749,14 +3741,6 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 82.3376628100992
-    fp: 7fb2e7ec07a859f7
-    cost: 6.955
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
     score: 81.95514823720562
     fp: 2a2b87fde2a1125a
     cost: 22.173
@@ -3770,10 +3754,10 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 80.25022917537511
-    fp: 24dd8d12e58a93cb
-    cost: 9.600
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    score: 80.97973157755055
+    fp: 7fb2e7ec07a859f7
+    cost: 6.955
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
@@ -3791,12 +3775,12 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 78.51103432206959
-    fp: 179fd17b13d105c9
-    cost: 7.745
+    score: 79.17661253139342
+    fp: 24dd8d12e58a93cb
+    cost: 9.600
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
+    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
     score: 78.28517741881335
@@ -3822,6 +3806,14 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    score: 77.61408821678972
+    fp: 179fd17b13d105c9
+    cost: 7.745
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: base
     score: 76.4968487810745
@@ -3860,7 +3852,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 75.42914164724165
+    score: 74.70829729610467
     fp: 962a93ed16130aca
     cost: 9.233
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
@@ -3929,14 +3921,6 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 71.10189198448064
-    fp: e8491f0abe9e63ad
-    cost: 9.819
-    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: base
     score: 71.00432840878754
     fp: d244318f31972b6a
     cost: 21.694
@@ -3950,12 +3934,20 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 70.79394174596395
+    score: 69.88175871047233
     fp: 4fa5115a5158d688
     cost: 9.662
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    score: 69.80712273370578
+    fp: e8491f0abe9e63ad
+    cost: 9.819
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: base
     score: 69.68771368076077
@@ -4057,7 +4049,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 61.54888479560548
+    score: 60.93471472545818
     fp: f73dca8b37883331
     cost: 6.265
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4065,23 +4057,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 59.57393726242612
-    fp: 6b28afd215554ab1
-    cost: 7.640
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    score: 59.56697969769739
-    fp: 7a58cd9339cb8bfb
-    cost: 7.631
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: base
-    score: 59.270216427129164
+    score: 59.10307234920969
     fp: 150e82a4987f0235
     cost: 5.359
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4089,7 +4065,23 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 57.87463514742177
+    score: 59.0501156156039
+    fp: 6b28afd215554ab1
+    cost: 7.640
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    score: 59.00269592255438
+    fp: 7a58cd9339cb8bfb
+    cost: 7.631
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: base
+    score: 57.45040157602163
     fp: 24bf64468167fb7d
     cost: 10.150
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
@@ -4097,7 +4089,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 47.67625859816996
+    score: 47.48545155356555
     fp: 90109cf228455d59
     cost: 9.759
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -4105,7 +4097,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: base
-    score: 46.88356790521843
+    score: 47.2697135676704
     fp: 9816686a4a465f6d
     cost: 11.662
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4113,31 +4105,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 45.48426985740912
-    fp: 1ee8126373574e3e
-    cost: 5.758
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    score: 45.47635213026825
-    fp: c3b41ed6d6dacb7b
-    cost: 9.339
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    score: 45.152463205488715
-    fp: 2b148c688cd7f150
-    cost: 8.059
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    score: 45.06160932148807
+    score: 45.21309216323989
     fp: 383e744ffc75c88d
     cost: 7.606
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4145,7 +4113,31 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: base
-    score: 42.82558260538521
+    score: 45.1733210708497
+    fp: c3b41ed6d6dacb7b
+    cost: 9.339
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    score: 45.023165933166304
+    fp: 1ee8126373574e3e
+    cost: 5.758
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    score: 45.01550473743778
+    fp: 2b148c688cd7f150
+    cost: 8.059
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    score: 42.540643131054935
     fp: bad752ce08c39ffe
     cost: 7.266
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4153,7 +4145,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate
-    score: 23.40788212296178
+    score: 23.321714214962302
     fp: 7fb2e7ec07a859f7
     cost: 13.409
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4161,7 +4153,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 22.8689516547594
+    score: 22.75696757311975
     fp: 24dd8d12e58a93cb
     cost: 9.192
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4169,7 +4161,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 22.31919121918267
+    score: 22.30740349627797
     fp: 179fd17b13d105c9
     cost: 11.283
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4177,7 +4169,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate
-    score: 21.666666666666668
+    score: 21.66079078033825
     fp: 962a93ed16130aca
     cost: 10.798
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
@@ -4185,7 +4177,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 20.6642724476244
+    score: 20.621491700545857
     fp: 4fa5115a5158d688
     cost: 11.134
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, heated_charge]
@@ -4193,7 +4185,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 19.94405447526944
+    score: 19.91858379780575
     fp: e8491f0abe9e63ad
     cost: 11.290
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4201,7 +4193,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate
-    score: 18.706756777873373
+    score: 18.668491254904826
     fp: f73dca8b37883331
     cost: 9.222
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4209,7 +4201,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 18.295014940687967
+    score: 18.24106065960426
     fp: 6b28afd215554ab1
     cost: 10.906
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
@@ -4217,7 +4209,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 18.00988856087404
+    score: 18.010933363057866
     fp: 150e82a4987f0235
     cost: 8.863
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4225,7 +4217,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 17.993260692075243
+    score: 17.960091873807585
     fp: 24bf64468167fb7d
     cost: 11.673
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
@@ -4233,7 +4225,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 17.50552368913264
+    score: 17.44064509326334
     fp: 7a58cd9339cb8bfb
     cost: 8.971
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4241,7 +4233,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate
-    score: 16.335485867785053
+    score: 16.223800249492452
     fp: 9816686a4a465f6d
     cost: 12.462
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4249,7 +4241,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 15.146647407164094
+    score: 15.11933281973478
     fp: 2b148c688cd7f150
     cost: 11.582
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
@@ -4257,7 +4249,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 13.696911590999743
+    score: 13.686559270541425
     fp: 1ee8126373574e3e
     cost: 8.545
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4265,7 +4257,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 13.334565170432183
+    score: 13.278556510015498
     fp: 90109cf228455d59
     cost: 11.188
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -4273,7 +4265,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate
-    score: 12.342562319757134
+    score: 12.310022063875056
     fp: b3088a75345a5bc2
     cost: 6.683
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -4281,7 +4273,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate
-    score: 12.186133668067793
+    score: 12.124655374763597
     fp: 7e074f1515a31830
     cost: 9.397
     mods: [primed_target_cracker, galvanized_crosshairs, galvanized_shot, barrel_diffusion, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
@@ -28041,15 +28033,6 @@ entries:
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
-    mode: alternate_cycle
-    listed: false
-    score: 2052.890922813152
-    fp: b3088a75345a5bc2
-    cost: 16.669
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
     mode: cycle
     listed: false
     score: 2051.3333333333335
@@ -28213,15 +28196,6 @@ entries:
   - weapon: ballistica_prime
     mode: cycle
     listed: false
-    score: 1906.4466846876717
-    fp: 2f1e10c2187f8f04
-    cost: 25.504
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
-    listed: false
     score: 1874.8720734454785
     fp: 162df75c313fab2b
     cost: 132.681
@@ -28275,30 +28249,12 @@ entries:
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
-    score: 1826.628405686726
-    fp: c099008c6fe25e6b
-    cost: 36.855
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    score: 1827.3333333333333
+    fp: 2f1e10c2187f8f04
+    cost: 28.875
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    listed: false
-    score: 1811.6750364292232
-    fp: 0afe684e7a0877f1
-    cost: 36.904
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: cycle
-    listed: false
-    score: 1797.0354348528597
-    fp: b3088a75345a5bc2
-    cost: 16.907
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -28369,6 +28325,15 @@ entries:
       bonuses: [critical_chance, toxin]
       malus: projectile_speed
       rolls: [1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1740.7084702190575
+    fp: c099008c6fe25e6b
+    cost: 36.855
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -28392,23 +28357,14 @@ entries:
       malus: critical_damage
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
-    mode: cycle
+    mode: alternate_cycle
     listed: false
-    score: 1719.7294797418542
+    score: 1704.576920179008
     fp: 0afe684e7a0877f1
-    cost: 21.423
+    cost: 36.904
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: cycle
-    listed: false
-    score: 1667.2137750151062
-    fp: c099008c6fe25e6b
-    cost: 45.150
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -28435,6 +28391,42 @@ entries:
       bonuses: [critical_chance, toxin]
       malus: projectile_speed
       rolls: [1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1628.0674792903674
+    fp: 2f1e10c2187f8f04
+    cost: 25.504
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1615.2573551005632
+    fp: b3088a75345a5bc2
+    cost: 16.669
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1613.6227641309947
+    fp: c099008c6fe25e6b
+    cost: 45.150
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1613.1104011537243
+    fp: 0afe684e7a0877f1
+    cost: 21.423
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -28575,15 +28567,6 @@ entries:
       bonuses: [fire_rate, multishot]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    listed: false
-    score: 1436.1265826946671
-    fp: af08e8f09cff79d9
-    cost: 37.867
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: felarx
     mode: base
     listed: false
@@ -28606,24 +28589,6 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, chilling_reload, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_debilitate]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    listed: false
-    score: 1419
-    fp: 3b6ca7d52266f87b
-    cost: 29.799
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    listed: false
-    score: 1410.5435574488504
-    fp: d26bae89a7c798c4
-    cost: 24.436
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -28653,14 +28618,14 @@ entries:
       malus: critical_chance
       rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
-    mode: alternate_cycle
+    mode: cycle
     listed: false
-    score: 1394.1784229973991
-    fp: ef95603c2f66112a
-    cost: 18.546
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_irradiate]
+    score: 1403.3643964654138
+    fp: b3088a75345a5bc2
+    cost: 16.907
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -28693,6 +28658,15 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, shotgun_barrage, primed_charged_shell, toxic_barrage, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1387.6666666666667
+    fp: 3b6ca7d52266f87b
+    cost: 29.799
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: felarx
     mode: base
     listed: false
@@ -28707,6 +28681,15 @@ entries:
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1380.8478486518168
+    fp: d26bae89a7c798c4
+    cost: 24.436
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
     mode: cycle
     listed: false
     score: 1378.7720080598613
@@ -28719,24 +28702,6 @@ entries:
       bonuses: [fire_rate, multishot]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: cycle
-    listed: false
-    score: 1355.6666666666667
-    fp: af08e8f09cff79d9
-    cost: 35.740
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: cycle
-    listed: false
-    score: 1339.6666666666667
-    fp: 3b6ca7d52266f87b
-    cost: 28.058
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -28773,12 +28738,30 @@ entries:
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
-    score: 1299.0345332866991
-    fp: bc7b346a681287bd
-    cost: 30.225
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    score: 1330.4471621041046
+    fp: af08e8f09cff79d9
+    cost: 37.867
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1302.1181709784132
+    fp: 3b6ca7d52266f87b
+    cost: 28.058
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1293.9155412251728
+    fp: ef95603c2f66112a
+    cost: 18.546
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_irradiate]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -28791,11 +28774,11 @@ entries:
   - weapon: ballistica_prime
     mode: cycle
     listed: false
-    score: 1258.3333333333333
-    fp: d26bae89a7c798c4
-    cost: 30.189
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    score: 1253.0652841479423
+    fp: af08e8f09cff79d9
+    cost: 35.740
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
@@ -28836,23 +28819,23 @@ entries:
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
   - weapon: ballistica_prime
-    mode: cycle
+    mode: alternate_cycle
     listed: false
-    score: 1231.0316163060788
+    score: 1230.6267872146886
     fp: bc7b346a681287bd
-    cost: 22.589
+    cost: 30.225
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
-    score: 1223.8175503819803
-    fp: ef95603c2f66112a
-    cost: 13.663
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_irradiate]
+    score: 1226
+    fp: d26bae89a7c798c4
+    cost: 30.189
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -28915,6 +28898,24 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1158.9950811465155
+    fp: bc7b346a681287bd
+    cost: 22.589
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1133.0816962132697
+    fp: ef95603c2f66112a
+    cost: 13.663
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_irradiate]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -46995,15 +46996,6 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 37.67308269515578
-    fp: 7e074f1515a31830
-    cost: 4.302
-    mods: [primed_target_cracker, galvanized_crosshairs, galvanized_shot, barrel_diffusion, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: akarius_prime
     mode: base
     listed: false
@@ -47047,6 +47039,15 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: magazine_capacity
       rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 37.56950247462699
+    fp: 7e074f1515a31830
+    cost: 4.302
+    mods: [primed_target_cracker, galvanized_crosshairs, galvanized_shot, barrel_diffusion, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -49404,15 +49405,6 @@ entries:
       bonuses: [critical_chance, critical_damage, fire_rate]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 33.740952682219316
-    fp: b3088a75345a5bc2
-    cost: 6.439
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: torid
     mode: cycle
     listed: false
@@ -49592,6 +49584,15 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 33.42091731622674
+    fp: b3088a75345a5bc2
+    cost: 6.439
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -51173,15 +51174,6 @@ entries:
     cost: 25.300
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 31.192990575991956
-    fp: af08e8f09cff79d9
-    cost: 10.732
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -51512,6 +51504,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, jolt, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 30.73839236719019
+    fp: af08e8f09cff79d9
+    cost: 10.732
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -51760,6 +51761,15 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, high_voltage, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 30.551534107509625
+    fp: 0afe684e7a0877f1
+    cost: 10.794
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -51903,15 +51913,6 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 30.333333333333332
-    fp: 0afe684e7a0877f1
-    cost: 10.794
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -54728,15 +54729,6 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 27.355651762367867
-    fp: da16f039c213a5ff
-    cost: 9.973
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -54973,15 +54965,6 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 1.1]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 27.15635974439513
-    fp: c099008c6fe25e6b
-    cost: 10.760
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -55022,6 +55005,15 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 27.089701517662725
+    fp: da16f039c213a5ff
+    cost: 9.973
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: torid
     mode: cycle
     listed: false
@@ -55055,6 +55047,15 @@ entries:
     riven:
       bonuses: [damage, multishot, status_duration]
       rolls: [1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 27.03075844509897
+    fp: c099008c6fe25e6b
+    cost: 10.760
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: tenet_cycron
     mode: base
     listed: false
@@ -55558,15 +55559,6 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 26.41958990408101
-    fp: bc7b346a681287bd
-    cost: 10.762
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -55576,15 +55568,6 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_crux]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 26.410788663881167
-    fp: 7d54ce632349bf63
-    cost: 10.890
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -55797,6 +55780,15 @@ entries:
       bonuses: [critical_chance, critical_damage, electricity]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 26.26676796267968
+    fp: 7d54ce632349bf63
+    cost: 10.890
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -55949,6 +55941,15 @@ entries:
     riven:
       bonuses: [damage, heat, status_chance]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 26.06822126031546
+    fp: bc7b346a681287bd
+    cost: 10.762
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: vasto_prime
     mode: cycle
     listed: false
@@ -56072,15 +56073,6 @@ entries:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 25.973279360995868
-    fp: 8b4137c234659206
-    cost: 10.647
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -56373,6 +56365,15 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, stormbringer]
     evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_blazing_barrel, sybaris_prime_ready_retaliation, sybaris_prime_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 25.748732462125908
+    fp: 8b4137c234659206
+    cost: 10.647
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: torid
     mode: cycle
     listed: false
@@ -56663,15 +56664,6 @@ entries:
       bonuses: [fire_rate, toxin]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 25.487613337625913
-    fp: 3b6ca7d52266f87b
-    cost: 7.769
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -56822,6 +56814,15 @@ entries:
     mods: [primary_acuity, galvanized_scope, bladed_rounds, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 25.300787590635156
+    fp: 3b6ca7d52266f87b
+    cost: 7.769
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -57563,7 +57564,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 24.393045527405736
+    score: 24.42685645559501
     fp: 2f1e10c2187f8f04
     cost: 7.212
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
@@ -58272,15 +58273,6 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 23.78021424604459
-    fp: d26bae89a7c798c4
-    cost: 8.253
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -58593,6 +58585,15 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 23.475622393570692
+    fp: d26bae89a7c798c4
+    cost: 8.253
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: torid
     mode: cycle
     listed: false
@@ -59335,15 +59336,6 @@ entries:
       bonuses: [critical_chance, multishot]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 22.795802710718796
-    fp: 07ca33c22013348c
-    cost: 10.847
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_enervate]
   - weapon: akarius_prime
     mode: base
     listed: false
@@ -59561,6 +59553,15 @@ entries:
       bonuses: [critical_chance, damage, multishot]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 22.632766862093924
+    fp: 07ca33c22013348c
+    cost: 10.847
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -60535,15 +60536,6 @@ entries:
     mods: [galvanized_chamber, serration, vital_sense, gilded_truth, magnetic_capacity, cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 21.687925225929238
-    fp: ef95603c2f66112a
-    cost: 6.714
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_irradiate]
   - weapon: torid
     mode: cycle
     listed: false
@@ -60618,6 +60610,15 @@ entries:
     exilus: terminal_velocity
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_crux]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 21.619725369723547
+    fp: ef95603c2f66112a
+    cost: 6.714
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_irradiate]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -61941,6 +61942,15 @@ entries:
       bonuses: [critical_chance, multishot, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: base
+    listed: false
+    score: 20.457239665171304
+    fp: c1976d5537e331c6
+    cost: 8.455
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: akarius_prime
     mode: base
     listed: false
@@ -61971,15 +61981,6 @@ entries:
     cost: 5.733
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
-  - weapon: ballistica_prime
-    mode: base
-    listed: false
-    score: 20.4104182038144
-    fp: c1976d5537e331c6
-    cost: 8.455
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_enervate]
   - weapon: boar_prime
     mode: cycle
     listed: false
@@ -74223,15 +74224,6 @@ entries:
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_crux]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 11.513778140032304
-    fp: 383e744ffc75c88d
-    cost: 11.645
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
   - weapon: boar_prime
     mode: cycle
     listed: false
@@ -74264,6 +74256,15 @@ entries:
     mods: [primary_acuity, serration, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 11.477219357724636
+    fp: 383e744ffc75c88d
+    cost: 11.645
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: dual_toxocyst
     mode: base
     listed: false
@@ -74724,15 +74725,6 @@ entries:
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, bladed_rounds, vile_acceleration, vital_sense, magnetic_capacity]
     evolutions: [miter_evo1_incarnon_form, miter_plentiful_mayhem, miter_ready_retaliation, miter_commodores_fortune]
     arcanes: [primary_crux]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 11.210427766901795
-    fp: c3b41ed6d6dacb7b
-    cost: 8.023
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -74769,6 +74761,15 @@ entries:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 11.178755918068106
+    fp: c3b41ed6d6dacb7b
+    cost: 8.023
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: base
     listed: false
@@ -76046,15 +76047,6 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, heavy_caliber, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_frostbite]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 10.343527938903506
-    fp: bad752ce08c39ffe
-    cost: 6.428
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
     listed: false
@@ -76342,6 +76334,15 @@ entries:
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 10.238101715619276
+    fp: bad752ce08c39ffe
+    cost: 6.428
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -79286,15 +79287,6 @@ entries:
     mods: [primary_acuity, serration, critical_delay, hammer_shot, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 8.586114259142704
-    fp: 2f1e10c2187f8f04
-    cost: 7.146
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: phenmor
     mode: base
     listed: false
@@ -79304,6 +79296,15 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 8.584626932156624
+    fp: 2f1e10c2187f8f04
+    cost: 7.146
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: torid
     mode: cycle
     listed: false
@@ -79347,7 +79348,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 8.555680984020318
+    score: 8.555770454681651
     fp: c099008c6fe25e6b
     cost: 9.176
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
@@ -79513,15 +79514,6 @@ entries:
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_enervate]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 8.464836355278587
-    fp: af08e8f09cff79d9
-    cost: 12.292
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -79662,6 +79654,15 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 8.344825880384933
+    fp: af08e8f09cff79d9
+    cost: 12.292
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -79684,15 +79685,6 @@ entries:
       bonuses: [critical_chance, critical_damage, heat]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 8.338902633954024
-    fp: ef95603c2f66112a
-    cost: 8.108
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_irradiate]
   - weapon: torid
     mode: cycle
     listed: false
@@ -79732,6 +79724,15 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, primed_tactical_pump, amalgam_shotgun_barrage, seeking_fury, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_fortress_salvo, boar_prime_mercenary_chamber, boar_prime_survivors_edge]
     arcanes: [shotgun_vendetta]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 8.32510265052518
+    fp: ef95603c2f66112a
+    cost: 8.108
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_irradiate]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -79832,15 +79833,6 @@ entries:
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, target_cracker, magnetic_might, jolt]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_fortifier]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 8.282559231947333
-    fp: da16f039c213a5ff
-    cost: 11.234
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: bronco_prime
     mode: base
     listed: false
@@ -79859,6 +79851,15 @@ entries:
     mods: [amalgam_serration, split_chamber, critical_delay, vile_acceleration, magnetic_capacity, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 8.28128369485074
+    fp: da16f039c213a5ff
+    cost: 11.234
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: base
     listed: false
@@ -80440,15 +80441,6 @@ entries:
     cost: 7.651
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, secondary_enervate]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 7.997835742083555
-    fp: 0afe684e7a0877f1
-    cost: 12.176
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -80519,6 +80511,15 @@ entries:
     exilus: galvanized_acceleration
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, shotgun_barrage, magnetic_strafe, primed_charged_shell, toxic_barrage]
     arcanes: [shotgun_vendetta]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 7.975950295477613
+    fp: 0afe684e7a0877f1
+    cost: 12.176
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: furis
     mode: base
     listed: false
@@ -80710,15 +80711,6 @@ entries:
     mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, thermite_rounds, infected_clip, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_renewed_horror, torid_survivors_edge]
     arcanes: [primary_debilitate]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 7.898571173218616
-    fp: 7d54ce632349bf63
-    cost: 11.586
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: base
     listed: false
@@ -80746,6 +80738,15 @@ entries:
     mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 7.884450803292438
+    fp: 7d54ce632349bf63
+    cost: 11.586
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: gotva_prime
     mode: base
     listed: false
@@ -80966,15 +80967,6 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, bladed_rounds, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 7.690835516414687
-    fp: 8b4137c234659206
-    cost: 12.164
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
     listed: false
@@ -81167,6 +81159,15 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 7.630637123393187
+    fp: 8b4137c234659206
+    cost: 12.164
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -81897,15 +81898,6 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, high_voltage, infected_clip, hellfire]
     arcanes: [primary_debilitate]
     valence: magnetic
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 7.230372935505094
-    fp: bc7b346a681287bd
-    cost: 12.251
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: torid
     mode: base
     listed: false
@@ -81954,6 +81946,15 @@ entries:
     riven:
       bonuses: [critical_damage, damage, electricity]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 7.2055814467954535
+    fp: bc7b346a681287bd
+    cost: 12.251
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: boar_prime
     mode: cycle
     listed: false
@@ -83446,15 +83447,6 @@ entries:
       bonuses: [critical_chance, critical_damage, damage]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 6.441050752736909
-    fp: 3b6ca7d52266f87b
-    cost: 5.830
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: furis
     mode: base
     listed: false
@@ -83469,6 +83461,15 @@ entries:
       bonuses: [damage, multishot, status_chance]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 6.435361766444075
+    fp: 3b6ca7d52266f87b
+    cost: 5.830
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: laetum
     mode: base
     listed: false
@@ -84022,15 +84023,6 @@ entries:
     cost: 2.795
     mods: [primary_acuity, serration, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
     arcanes: [primary_crux]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 6.211321628902825
-    fp: 07ca33c22013348c
-    cost: 12.011
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_enervate]
   - weapon: trumna_prime
     mode: base
     listed: false
@@ -84095,6 +84087,15 @@ entries:
     cost: 16.717
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, pressurized_magazine, magnetic_might, primed_heated_charge]
     arcanes: [secondary_encumber]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 6.131429118045578
+    fp: 07ca33c22013348c
+    cost: 12.011
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: laetum
     mode: base
     listed: false
@@ -84187,15 +84188,6 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 6.05050358787609
-    fp: c1976d5537e331c6
-    cost: 5.572
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
     listed: false
@@ -84246,6 +84238,15 @@ entries:
       bonuses: [heat, multishot, status_chance]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 6.022275473302075
+    fp: c1976d5537e331c6
+    cost: 5.572
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
     listed: false
@@ -84304,15 +84305,6 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
-  - weapon: ballistica_prime
-    mode: alternate
-    listed: false
-    score: 5.973156234502398
-    fp: d26bae89a7c798c4
-    cost: 9.655
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: dual_toxocyst
     mode: base
     listed: false
@@ -84391,6 +84383,15 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds, rime_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 5.951766486604239
+    fp: d26bae89a7c798c4
+    cost: 9.655
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: coda_bubonico
     mode: base
     listed: false
