@@ -530,6 +530,17 @@ pub struct Settled {
     /// on is discarded — a different waste from `overkill` and counted apart
     /// from it: one is killing a corpse, the other is hitting a wall too hard.
     pub spilled: f64,
+    /// WHAT REACHED HEALTH, which is the only pool Viral multiplies — the
+    /// weight the statistic below is averaged against. Overguard and shields
+    /// are damage this build dealt under a Viral pile that did nothing to it,
+    /// so counting them would move the average with the fight's armour rather
+    /// than with its Viral.
+    pub health: f64,
+    /// …AND THAT DAMAGE TIMES THE STACKS IN FORCE BEHIND IT. Summed over the
+    /// engagement and divided by `health`, this is the average Viral pile
+    /// every point of health damage was dealt through — over every body and
+    /// every run, which is what the replay's eight followed bodies cannot say.
+    pub virus_stack_health: f64,
     broken: Option<BrokenPool>,
 }
 
@@ -1241,6 +1252,8 @@ impl TargetState {
             killed: false,
             overkill: 0.0,
             spilled: 0.0,
+            health: health_part,
+            virus_stack_health: f64::from(mit.virus_stacks) * health_part,
             broken: None,
         };
         let Some(b) = led else {
@@ -1799,6 +1812,11 @@ const MELEE_ARC_DEG: f64 = 90.0;
 struct Mitigation {
     disrupt_amp: f64,
     virus_amp: f64,
+    /// THE LADDER BEHIND `virus_amp`, carried because an AVERAGED amp cannot
+    /// be read back into an average stack count: `ten_stack_amp` steps 1.0 →
+    /// 2.0 at its foot and by 0.25 everywhere above, so the inverse of a mean
+    /// is not the mean of the inverse.
+    virus_stacks: u32,
     /// (1 − heat strip) × (1 − corrosive strip), applied to armor VALUE.
     armor_multiplier: f64,
 }
@@ -2583,6 +2601,7 @@ impl DebuffState {
         Mitigation {
             disrupt_amp: ten_stack_amp(self.disrupt.len()),
             virus_amp: ten_stack_amp(self.virus.len()),
+            virus_stacks: self.virus.len() as u32,
             // THREE SOURCES, MULTIPLIED — the two the game strips with and the
             // one a perk grants. They compose the way the first two already
             // did, rather than sharing a bucket: each removes a share of what
@@ -5477,6 +5496,12 @@ pub mod ledger {
         // close: a tenth site could move the rate and appear in no ledger.
         r.overkill += settled.overkill;
         r.spilled += settled.spilled;
+        // …AND WHAT THE TARGET WAS CARRYING WHILE IT TOOK IT, through the same
+        // door for the same reason. A tenth damage site would otherwise land
+        // health damage that no average knows about, and the average would
+        // still look right.
+        r.health_damage += settled.health;
+        r.virus_stack_health += settled.virus_stack_health;
         r.spread.credit(body, settled.effective);
         let i = t.max(0.0) as usize;
         r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
@@ -5659,6 +5684,11 @@ pub struct RunResult {
     pub overkill: f64,
     /// See [`Settled::spilled`] — summed over the engagement.
     pub spilled: f64,
+    /// See [`Settled::health`] — summed over the engagement.
+    pub health_damage: f64,
+    /// See [`Settled::virus_stack_health`] — summed over the engagement, and
+    /// only ever read as the ratio `virus_stack_health / health_damage`.
+    pub virus_stack_health: f64,
     /// …of which this many were taken DIRECTLY by a tendril — see
     /// [`RunResult::note_tendril_kills`]. Those spawn no tendril of their own,
     /// and it is the only kind of kill in this engine that is worth less than
@@ -12388,6 +12418,65 @@ mod melee {
 mod pellet_volley {
     use super::*;
 
+    /// THE VIRAL AVERAGE IS DAMAGE-WEIGHTED AND WHOLE-FIGHT — and its
+    /// denominator is what a booking site can silently drop.
+    ///
+    /// Against the training dummy every point lands on health, so the
+    /// denominator must equal the meter EXACTLY: a damage site that spends
+    /// health and forgets to declare it would leave the average reading high
+    /// and nothing else disagreeing.
+    #[test]
+    fn the_viral_average_is_weighted_by_the_health_damage_it_multiplied() {
+        let soma = |mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("soma_prime", true, &[]);
+            let pool = crate::mods_data::pool_for_weapon("soma_prime");
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            assert_eq!(refs.len(), mods.len(), "every named mod is in this weapon's pool");
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            monte_carlo(
+                &DummyParams::from_panel(
+                    &panel,
+                    &crate::arena::Arena::training(60.0),
+                    &crate::arcanes_data::ArcaneFx::none(),
+                ),
+                20,
+                5,
+            )
+        };
+
+        // Toxin and Cold COMBINE into Viral; either alone is a different status
+        // and neither is this one.
+        let viral = soma(&["malignant_force", "primed_cryo_rounds", "vital_sense"]);
+        let none = soma(&["vital_sense"]);
+
+        for (what, s) in [("viral", &viral), ("no viral", &none)] {
+            assert!(s.mean_effective_damage > 0.0, "{what}: the fixture fires");
+            assert!(
+                (s.mean_health_damage - s.mean_effective_damage).abs() < 1e-6,
+                "{what}: the dummy is health and nothing else, so every point booked as                  damage is booked as health damage — {} against {}",
+                s.mean_health_damage,
+                s.mean_effective_damage
+            );
+        }
+
+        assert_eq!(
+            none.mean_virus_stacks, 0.0,
+            "a build that cannot apply Viral averages no stacks at all"
+        );
+        assert!(
+            none.mean_procs > 0.0,
+            "…and that zero is the absence of Viral, not the absence of a fight"
+        );
+        assert!(
+            viral.mean_virus_stacks > 0.0
+                && viral.mean_virus_stacks <= TEN_STACK_CAP as f64,
+            "a Viral build averages a real pile, and no pile is above the cap: {}",
+            viral.mean_virus_stacks
+        );
+    }
+
     fn arbucep(mods: &[&str]) -> DummyParams {
         let base = crate::loadout::WeaponBase::from_data("arbucep", false, &[]);
         let pool = crate::mods_data::pool_for_weapon("arbucep");
@@ -17922,6 +18011,21 @@ pub struct Summary {
     pub std_effective_damage: f64,
     pub effective_dps: f64,
     pub mean_dot_damage: f64,
+    /// MEAN DAMAGE PER RUN THAT REACHED HEALTH — see [`Settled::health`]. It
+    /// is `mean_virus_stacks`'s denominator, and it is reported because the
+    /// ratio alone cannot say whether a fight spent itself on health at all:
+    /// a build held off by overguard reports the same Viral average as one
+    /// that never met any.
+    pub mean_health_damage: f64,
+    /// THE AVERAGE VIRAL PILE EVERY POINT OF HEALTH DAMAGE WAS DEALT THROUGH,
+    /// over every body and every run — see [`Settled::virus_stack_health`].
+    ///
+    /// Weighted by that damage rather than by the hit, because it exists to
+    /// explain a damage total: a DoT tick on a body carrying ten stacks and a
+    /// charged shot on one carrying none are not one vote each. It is the
+    /// figure the replay's eight followed bodies cannot give — that is one
+    /// engagement and a sample of the crowd, and this is all of both.
+    pub mean_virus_stacks: f64,
     pub mean_procs: f64,
     /// Mean lingering-FIELD ticks that landed (Torid's cloud).
     pub mean_field_ticks: f64,
@@ -18109,6 +18213,11 @@ pub struct Shard {
     effective: f64,
     effective_sq: f64,
     dot: f64,
+    /// The two halves of `Summary::mean_virus_stacks`, summed over every run
+    /// of the shard. A ratio has to travel as its numerator and its
+    /// denominator or a fleet of workers averages the averages.
+    health_damage: f64,
+    virus_stack_health: f64,
     procs: u64,
     field_ticks: u64,
     dot_ticks: u64,
@@ -18177,6 +18286,8 @@ impl Default for Shard {
             max_hit_sum: 0.0,
             biggest: 0.0,
             ttks: Vec::new(),
+            health_damage: 0.0,
+            virus_stack_health: 0.0,
             shots: 0,
             pellets: 0,
             crits: 0,
@@ -18205,6 +18316,8 @@ impl Shard {
         self.effective += o.effective;
         self.effective_sq += o.effective_sq;
         self.dot += o.dot;
+        self.health_damage += o.health_damage;
+        self.virus_stack_health += o.virus_stack_health;
         self.procs += o.procs;
         self.field_ticks += o.field_ticks;
         self.dot_ticks += o.dot_ticks;
@@ -18334,6 +18447,8 @@ pub fn shard(
         a.effective += r.effective_damage();
         a.effective_sq += r.effective_damage() * r.effective_damage();
         a.dot += r.meter.dot();
+        a.health_damage += r.health_damage;
+        a.virus_stack_health += r.virus_stack_health;
         a.procs += u64::from(r.procs);
         a.field_ticks += u64::from(r.field_ticks);
         a.dot_ticks += u64::from(r.dot_ticks);
@@ -18377,6 +18492,7 @@ impl Shard {
         let series = self.series.clone();
         let (sum, sum_sq, min, max) = (self.sum, self.sum_sq, self.min, self.max);
         let (effective, effective_sq, dot) = (self.effective, self.effective_sq, self.dot);
+        let (health_damage, virus_stack_health) = (self.health_damage, self.virus_stack_health);
         let (procs, field_ticks, reloads, transforms) =
             (self.procs, self.field_ticks, self.reloads, self.transforms);
         let (ghost_kills, ghosts_peak) = (self.ghost_kills, self.ghosts_peak);
@@ -18431,6 +18547,15 @@ impl Shard {
         },
         effective_dps: effective / n / params.duration_seconds,
         mean_dot_damage: dot / n,
+        mean_health_damage: health_damage / n,
+        // THE RATIO OF THE SUMS, never the mean of the ratios: a run that
+        // reached health once and a run that reached it ten thousand times
+        // are not one vote each.
+        mean_virus_stacks: if health_damage > 0.0 {
+            virus_stack_health / health_damage
+        } else {
+            0.0
+        },
         mean_procs: procs as f64 / n,
         mean_field_ticks: field_ticks as f64 / n,
         mean_dot_ticks: dot_ticks as f64 / n,
@@ -19452,6 +19577,11 @@ mod tests {
             ("mean_kills", part.mean_kills, whole.mean_kills),
             ("std_kills", part.std_kills, whole.std_kills),
             ("mean_procs", part.mean_procs, whole.mean_procs),
+            // A RATIO AND ITS DENOMINATOR, the same pairing and for the same
+            // reason as the two lines below: the fleet merges shards, and a
+            // ratio recomputed from a lost denominator agrees with nothing.
+            ("mean_virus_stacks", part.mean_virus_stacks, whole.mean_virus_stacks),
+            ("mean_health_damage", part.mean_health_damage, whole.mean_health_damage),
             // …AND WHAT IT IS DIVIDED BY. `procs_mean`/`pellets_mean` reach a
             // caller as a RATE (`check_custom_enemies` asks whether a damage x0
             // column moves the proc draw), and the page runs every simulation on
@@ -27798,7 +27928,7 @@ mod tests {
                 0.0,
                 &target,
                 true,
-                &Mitigation { disrupt_amp: 1.0, virus_amp: 1.0, armor_multiplier: 1.0 },
+                &Mitigation { disrupt_amp: 1.0, virus_amp: 1.0, virus_stacks: 0, armor_multiplier: 1.0 },
                 None,
             );
             (before_shield - st.shield, before_health - st.health)

@@ -6823,6 +6823,16 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "overkill": m.overkill,
         "spilled": m.spilled,
         "overkill_rate": overkill_rate,
+        // THE AVERAGE VIRAL PILE THE DAMAGE WAS DEALT THROUGH — over every
+        // body and every run, not the median engagement the numbers above it
+        // describe. The debuff chart follows eight bodies of a formation that
+        // may be nineteen, so it can show a pile rising and cannot say what
+        // the fight as a whole was multiplied by.
+        //
+        // ABSENT RATHER THAN ZERO on a build that never applies Viral, the
+        // same way `self_damage` is: a reader is not shown a Viral line for a
+        // fight that had none.
+        "virus_stacks": (s.mean_virus_stacks > 0.0).then_some(s.mean_virus_stacks),
         "kills_std": s.std_kills,
         // THE MEAN, AND HOW FAR IT CAN BE FROM THE TRUTH. `score` and `dps`
         // above are the MEDIAN RUN — one engagement, however many were paid

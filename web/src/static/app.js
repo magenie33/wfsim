@@ -17804,6 +17804,10 @@ function renderResults(r, testedAt) {
     // difference on corpses. Read against what the kills actually cost, so it
     // is not capped at 100%.
     kpi("Overkill", pc(r.overkill_rate), "overkill_rate"),
+    // THE AVERAGE VIRAL PILE THE DAMAGE WAS DEALT THROUGH — every body and
+    // every run, where the debuff chart below follows eight bodies of one
+    // engagement. Absent on a build that never applies Viral.
+    r.virus_stacks == null ? "" : kpi("Viral stacks", r.virus_stacks.toFixed(2), "virus_stacks"),
     kpi("Reloads", n0(r.reloads), "reloads"), kpi("Transforms", n0(r.transforms), "transforms"),
     // COUNTED, NOT FOUGHT. The row is drawn only where a weapon leaves
     // something standing, and it says BOTH numbers because neither is the
