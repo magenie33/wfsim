@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6502
+submissions: 6506
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -93030,4 +93030,26 @@ entries:
     cost: 0.066
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.28790127139368515
+    fp: 7931d977b48f4652
+    cost: 0.377
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.28790127139368515
+    fp: 7931d977b48f4652
+    cost: 0.657
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
