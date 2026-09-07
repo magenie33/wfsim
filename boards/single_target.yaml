@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6624
+submissions: 6628
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -57271,6 +57271,19 @@ entries:
     mods: [pistol_acuity, merciless_gunfight, seeker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
     arcanes: [secondary_merciless]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 15.40896560549141
+    fp: e95050d1ea86e31e
+    cost: 74.394
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, riven, primed_charged_shell, toxic_barrage]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: slash
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -104534,6 +104547,46 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.9787989279758931
+    fp: 0cc6887eb4d24d6d
+    cost: 0.204
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.763296902176779
+    fp: 0cc6887eb4d24d6d
+    cost: 0.217
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 1.0739598412470786
+    fp: 67f95e5d0fc4bf85
+    cost: 0.690
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.459837650745445
+    fp: 67f95e5d0fc4bf85
+    cost: 0.190
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
     score: 0.8336670684189337
     fp: 327af5dda606a7d2
     cost: 0.280
@@ -104610,43 +104663,3 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9787989279758931
-    fp: 0cc6887eb4d24d6d
-    cost: 0.204
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 4.763296902176779
-    fp: 0cc6887eb4d24d6d
-    cost: 0.217
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 1.0739598412470786
-    fp: 67f95e5d0fc4bf85
-    cost: 0.690
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 4.459837650745445
-    fp: 67f95e5d0fc4bf85
-    cost: 0.190
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]

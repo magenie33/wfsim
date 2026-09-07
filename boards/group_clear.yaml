@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6624
+submissions: 6628
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -106392,6 +106392,46 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 0.9827591251367059
+    fp: 9bbd260ebb5e184d
+    cost: 2.458
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 7.828729640137744
+    fp: 9bbd260ebb5e184d
+    cost: 1.457
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 1.0840285474193183
+    fp: 5bee8dbd50249565
+    cost: 2.404
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 7.1877874360806455
+    fp: 5bee8dbd50249565
+    cost: 1.327
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
     score: 1.5130970101387773
     fp: a232f61aa1d456b2
     cost: 1.948
@@ -106468,43 +106508,3 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.9827591251367059
-    fp: 9bbd260ebb5e184d
-    cost: 2.458
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 7.828729640137744
-    fp: 9bbd260ebb5e184d
-    cost: 1.457
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 1.0840285474193183
-    fp: 5bee8dbd50249565
-    cost: 2.404
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 7.1877874360806455
-    fp: 5bee8dbd50249565
-    cost: 1.327
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
