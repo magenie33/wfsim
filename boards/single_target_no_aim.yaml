@@ -7999,14 +7999,14 @@ entries:
     mode: base
     score: 0.10171675011201771
     fp: 4d9f21defd6f63db
-    cost: 1.875
+    cost: 1.858
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_crux]
   - weapon: higasa
     mode: cycle
     score: 0.10171675011201771
     fp: 4d9f21defd6f63db
-    cost: 1.861
+    cost: 1.433
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_crux]
   - weapon: hikou_prime
