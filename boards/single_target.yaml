@@ -8149,7 +8149,7 @@ entries:
     riven:
       bonuses: [damage, multishot, status_chance]
       malus: impact
-      rolls: [1.1, 1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     score: 19.959797525045303
@@ -15857,7 +15857,7 @@ entries:
     riven:
       bonuses: [damage, multishot, reload_speed]
       malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: coda_sporothrix
     mode: base
     score: 27.75519799571026
@@ -15869,7 +15869,7 @@ entries:
     riven:
       bonuses: [damage, multishot, reload_speed]
       malus: impact
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: coda_sporothrix
     mode: base
     score: 24.259190781335164
@@ -16157,7 +16157,7 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
     riven:
       bonuses: [cold, critical_damage, toxin]
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 0.9]
   - weapon: cortege
     mode: base
     score: 26.52795248155652
@@ -16308,7 +16308,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       malus: fire_rate
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: cortege
     mode: cycle
     score: 23.01204501616682
@@ -16449,7 +16449,7 @@ entries:
     riven:
       bonuses: [critical_chance, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [1.1, 0.9, 0.9]
   - weapon: cortege
     mode: base
     score: 21.47483939535207
@@ -16515,7 +16515,7 @@ entries:
     riven:
       bonuses: [heat, multishot, status_chance]
       malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: cortege
     mode: base
     score: 21.333333333333332
@@ -19738,7 +19738,7 @@ entries:
     riven:
       bonuses: [electricity, fire_rate, multishot]
       malus: critical_damage
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: felarx
     mode: cycle
     score: 34.839441705181834
@@ -21321,7 +21321,7 @@ entries:
     riven:
       bonuses: [critical_damage, damage, multishot]
       malus: zoom
-      rolls: [1.1, 0.9, 1.1, 0.9]
+      rolls: [0.9, 0.9, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 47.45693182904698
@@ -23625,7 +23625,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: kunai
     mode: base
-    score: 1.9229672574363108
+    score: 1.9432686890717163
     fp: f10181d3827e945e
     cost: 1.668
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -24462,7 +24462,7 @@ entries:
     valence: magnetic
     riven:
       bonuses: [cold, damage, toxin]
-      rolls: [0.9, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: kuva_nukor
     mode: base
     score: 27.937498359675406
@@ -25655,6 +25655,15 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 19.02345005100196
+    fp: 2c7ad97c3968f92f
+    cost: 4.979
+    exilus: ruinous_extension
+    mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 18.997693091850145
     fp: abaa96cc1b9bf0ce
     cost: 3.315
@@ -25698,15 +25707,6 @@ entries:
     fp: 0aa6433746d7e346
     cost: 2.054
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    score: 18.887944370340325
-    fp: 2c7ad97c3968f92f
-    cost: 4.979
-    exilus: ruinous_extension
-    mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -29309,7 +29309,7 @@ entries:
     riven:
       bonuses: [heat, multishot, reload_speed]
       malus: critical_chance
-      rolls: [1.1, 1.1, 0.9, 1.1]
+      rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: laetum
     mode: base
     score: 12.995016150126737
@@ -29535,7 +29535,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 0.9, 1.1, 0.9]
   - weapon: laetum
     mode: base
     score: 12.183739738134934
@@ -29654,7 +29654,7 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, status_chance]
       malus: slash
-      rolls: [1.1, 1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: base
     score: 11.656670972619358
@@ -30032,7 +30032,7 @@ entries:
     riven:
       bonuses: [damage, multishot]
       malus: critical_chance
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     score: 18.021297949375818
@@ -30971,6 +30971,13 @@ entries:
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: alternate
+    score: 6.010064992524468
+    fp: 2ea6673ab42bef21
+    cost: 0.776
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, containment_breach, magnetized_cycle, hypothermic_shell, venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
     score: 6
     fp: 199b07af618177a6
     cost: 0.598
@@ -30989,13 +30996,6 @@ entries:
     fp: a03f44bb487df14d
     cost: 0.776
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, containment_breach, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_crux, cascadia_flare]
-  - weapon: larkspur_prime
-    mode: alternate
-    score: 5.927824623956795
-    fp: 2ea6673ab42bef21
-    cost: 0.776
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, containment_breach, magnetized_cycle, hypothermic_shell, venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: alternate
@@ -31041,6 +31041,13 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: alternate
+    score: 5.735347585449575
+    fp: 136cea702b9188fb
+    cost: 0.750
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
     score: 5.69365199030004
     fp: d376ae8327b898e1
     cost: 0.587
@@ -31067,13 +31074,6 @@ entries:
     cost: 0.484
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, critical_focus, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: alternate
-    score: 5.662537181410314
-    fp: 136cea702b9188fb
-    cost: 0.750
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: alternate
     score: 5.645662832782833
@@ -34641,7 +34641,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ocucor
     mode: base
-    score: 6.481974696405045
+    score: 6.482402480930833
     fp: 7f98774ba207f238
     cost: 3.440
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -35504,7 +35504,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: puncture
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: phantasma
     mode: base
     score: 14.560424408141564
@@ -40100,7 +40100,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: sicarus_prime
     mode: base
-    score: 10.8031078693919
+    score: 10.784364689989815
     fp: 7c7a025600d7f6e9
     cost: 4.874
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
@@ -41865,7 +41865,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: damage_to_infested
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: tenet_arca_plasmor
     mode: base
     score: 3.4014063016688945
@@ -41889,7 +41889,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: damage_to_infested
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: tenet_arca_plasmor
     mode: base
     score: 1.3265288544547025
@@ -42601,7 +42601,7 @@ entries:
     riven:
       bonuses: [cold, reload_speed, toxin]
       malus: damage
-      rolls: [0.9, 0.9, 0.9, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: tenet_plinx
     mode: alternate
     score: 1.552907123171847
@@ -48296,7 +48296,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage]
       malus: slash
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -50236,7 +50236,7 @@ entries:
     riven:
       bonuses: [multishot, status_chance]
       malus: critical_chance
-      rolls: [1.1, 0.9, 1.1]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: vasto_prime
     mode: cycle
     listed: false
@@ -51031,7 +51031,7 @@ entries:
     riven:
       bonuses: [damage, multishot, status_chance]
       malus: zoom
-      rolls: [0.9, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     listed: false
@@ -51763,7 +51763,7 @@ entries:
     riven:
       bonuses: [critical_damage, heat, punch_through]
       malus: damage_to_corpus
-      rolls: [1.1, 0.9, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -52794,7 +52794,7 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -54396,7 +54396,7 @@ entries:
     riven:
       bonuses: [critical_damage, damage, fire_rate]
       malus: critical_chance
-      rolls: [1.1, 1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -57233,7 +57233,7 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
-      rolls: [1.1, 1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -58176,7 +58176,7 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -58204,7 +58204,7 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
-      rolls: [0.9, 1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -67660,6 +67660,15 @@ entries:
     riven:
       bonuses: [damage, heat, status_chance]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 9.429265223165489
+    fp: e0714b4a18417e87
+    cost: 1.247
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -67819,15 +67828,6 @@ entries:
     mode: cycle
     listed: false
     score: 9.34742183187339
-    fp: e0714b4a18417e87
-    cost: 1.247
-    mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    score: 9.34742183187339
     fp: 9973b225a249c7b6
     cost: 1.409
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
@@ -67869,6 +67869,14 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, primed_firestorm, galvanized_scope, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_deadhead]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    score: 9.33658735674024
+    fp: 2ee3879cae43046a
+    cost: 2.674
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, archgun_ace, critical_focus, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
   - weapon: dual_toxocyst
     mode: base
     listed: false
@@ -67948,7 +67956,7 @@ entries:
     riven:
       bonuses: [cold, critical_chance, multishot]
       malus: impact
-      rolls: [0.9, 1.1, 1.1, 1.1]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: mausolon
     mode: cycle
     listed: false
@@ -68024,7 +68032,7 @@ entries:
     arcanes: [cascadia_flare]
     riven:
       bonuses: [critical_chance, critical_damage, reload_speed]
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -68511,14 +68519,6 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
-  - weapon: larkspur_prime
-    mode: base
-    listed: false
-    score: 9.000650804681381
-    fp: 2ee3879cae43046a
-    cost: 2.674
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, archgun_ace, critical_focus, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
-    arcanes: [primary_crux, cascadia_flare]
   - weapon: sicarus_prime
     mode: base
     listed: false
@@ -73722,7 +73722,7 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, status_chance]
       malus: weapon_recoil
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: sicarus_prime
     mode: base
     listed: false
@@ -74522,7 +74522,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: magazine_capacity
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: base
     listed: false
@@ -76458,7 +76458,7 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, status_chance]
       malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -78144,7 +78144,7 @@ entries:
     arcanes: [secondary_enervate]
     riven:
       bonuses: [critical_chance, status_chance, weapon_recoil]
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 0.9, 1.1]
   - weapon: torid
     mode: cycle
     listed: false
@@ -85272,6 +85272,14 @@ entries:
   - weapon: larkspur_prime
     mode: alternate
     listed: false
+    score: 2.568090127038246
+    fp: 09337f1205c2e633
+    cost: 0.378
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
     score: 2.562956777086527
     fp: 534e73f87c71bca7
     cost: 0.387
@@ -85389,14 +85397,6 @@ entries:
     mods: [serration, rifle_elementalist, vile_acceleration, rime_rounds, malignant_force, hellfire, wildfire, thermite_rounds]
     arcanes: [primary_overcharge]
     valence: magnetic
-  - weapon: larkspur_prime
-    mode: alternate
-    listed: false
-    score: 2.5284814092744172
-    fp: 09337f1205c2e633
-    cost: 0.378
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_merciless, secondary_enervate]
   - weapon: torid
     mode: base
     listed: false
@@ -87773,6 +87773,15 @@ entries:
   - weapon: torid
     mode: base
     listed: false
+    score: 2.042219779176107
+    fp: e0714b4a18417e87
+    cost: 2.067
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: base
+    listed: false
     score: 2.041723723161418
     fp: a57aec0f42ce1947
     cost: 6.520
@@ -87811,15 +87820,6 @@ entries:
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, radiated_reload, rime_rounds, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: base
-    listed: false
-    score: 2.0328248447224833
-    fp: e0714b4a18417e87
-    cost: 2.067
-    mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_merciless]
   - weapon: torid
     mode: base
     listed: false
@@ -98289,7 +98289,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, initial_combo]
       malus: status_chance
-      rolls: [1.1, 0.9, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -98448,7 +98448,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, initial_combo]
       malus: status_chance
-      rolls: [1.1, 0.9, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
     listed: false
