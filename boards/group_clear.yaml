@@ -15819,6 +15819,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 812.9964772177937
+    fp: 16f66ba22260bbb4
+    cost: 150.995
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 811.9759173339094
     fp: e6c8081590a88499
     cost: 204.094
@@ -30580,6 +30592,19 @@ entries:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: zoom
       rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
+    listed: false
+    score: 241.3564158695652
+    fp: 6babfcd3fa75552b
+    cost: 82.154
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: status_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -58862,6 +58887,19 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 16.929520898045602
+    fp: 6babfcd3fa75552b
+    cost: 17.260
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: status_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
