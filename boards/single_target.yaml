@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6616
+submissions: 6617
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -16887,6 +16887,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cyanex
     mode: alternate
+    score: 14.312346053794338
+    fp: 9c928ecf2999ff9c
+    cost: 8.492
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cyanex
+    mode: alternate
     score: 11.293474744632109
     fp: 30bf16daa753ee68
     cost: 11.148
@@ -16897,23 +16908,23 @@ entries:
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cyanex
+    mode: base
+    score: 7.1472972858488495
+    fp: 9c928ecf2999ff9c
+    cost: 6.797
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cyanex
     mode: alternate
     score: 3.224365987231536
     fp: f6bf6d33baf560b8
     cost: 1.108
     mods: [pistol_acuity, primed_target_cracker, pistol_elementalist, pressurized_magazine, magnetic_might, sure_shot, primed_heated_charge, scorch]
     arcanes: [cascadia_flare]
-  - weapon: cyanex
-    mode: base
-    score: 2.6966089848549086
-    fp: 30bf16daa753ee68
-    cost: 8.333
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [cascadia_flare]
-    riven:
-      bonuses: [fire_rate, multishot, reload_speed]
-      malus: critical_chance
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cyanex
     mode: base
     score: 2.1979542044773734
@@ -84057,6 +84068,18 @@ entries:
       bonuses: [damage, multishot]
       malus: status_duration
       rolls: [1.1, 1.1, 0.9]
+  - weapon: cyanex
+    mode: base
+    listed: false
+    score: 2.6966089848549086
+    fp: 30bf16daa753ee68
+    cost: 8.333
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, reload_speed]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ignis_wraith
     mode: base
     listed: false

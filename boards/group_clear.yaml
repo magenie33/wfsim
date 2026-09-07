@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6616
+submissions: 6617
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -8640,6 +8640,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cyanex
     mode: alternate
+    score: 29.668432157209185
+    fp: f8b92b70dd1cf5fc
+    cost: 20.969
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cyanex
+    mode: alternate
     score: 23.29960489741113
     fp: a50916fd86243108
     cost: 29.281
@@ -8649,6 +8660,17 @@ entries:
       bonuses: [fire_rate, multishot, reload_speed]
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cyanex
+    mode: base
+    score: 7.161032044347827
+    fp: f8b92b70dd1cf5fc
+    cost: 17.448
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
   - weapon: cyanex
     mode: alternate
     score: 4.652003594440762
@@ -8663,17 +8685,6 @@ entries:
     cost: 3.427
     mods: [pistol_acuity, galvanized_diffusion, hornet_strike, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_deadhead]
-  - weapon: cyanex
-    mode: base
-    score: 2.6966089848549086
-    fp: a50916fd86243108
-    cost: 26.197
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [cascadia_flare]
-    riven:
-      bonuses: [fire_rate, multishot, reload_speed]
-      malus: critical_chance
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cyanex
     mode: base
     score: 2.1957633148350264
@@ -90003,6 +90014,18 @@ entries:
     mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: cyanex
+    mode: base
+    listed: false
+    score: 2.6966089848549086
+    fp: a50916fd86243108
+    cost: 26.197
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, reload_speed]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
     listed: false

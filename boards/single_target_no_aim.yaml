@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6616
+submissions: 6617
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -5218,32 +5218,32 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cyanex
     mode: alternate
-    score: 2.080695966850743
-    fp: b2e063f36f524af7
-    cost: 10.301
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    score: 5.274931429830601
+    fp: 936a4e3b45cf361f
+    cost: 8.495
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
     riven:
-      bonuses: [fire_rate, multishot, reload_speed]
-      malus: critical_chance
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: cyanex
+    mode: base
+    score: 1.6692290607218945
+    fp: 936a4e3b45cf361f
+    cost: 5.871
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [cold, multishot]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 0.9]
   - weapon: cyanex
     mode: base
     score: 1.1641363200830952
     fp: b2e063f36f524af7
     cost: 7.887
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [cascadia_flare]
-    riven:
-      bonuses: [fire_rate, multishot, reload_speed]
-      malus: critical_chance
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: cyanex
-    mode: base
-    score: 0.669541929890044
-    fp: 468f9570b5e73a25
-    cost: 7.774
-    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
     riven:
       bonuses: [fire_rate, multishot, reload_speed]
@@ -32516,6 +32516,18 @@ entries:
     riven:
       bonuses: [critical_chance, heat, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cyanex
+    mode: alternate
+    listed: false
+    score: 2.080695966850743
+    fp: b2e063f36f524af7
+    cost: 10.301
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, reload_speed]
+      malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
@@ -61802,6 +61814,18 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     valence: cold
+  - weapon: cyanex
+    mode: base
+    listed: false
+    score: 0.669541929890044
+    fp: 468f9570b5e73a25
+    cost: 7.774
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, reload_speed]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     listed: false
