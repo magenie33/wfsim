@@ -7882,6 +7882,22 @@ fn spread_hit(
     if killed {
         gal.bump_on_kill(params, t);
         arc.on_kill(params, t);
+        // …AND THE BODY THAT STANDS BACK UP IS A NEW INDIVIDUAL, which the
+        // aimed path has said since the engine had statuses and this one did
+        // not say at all. `apply` respawns it with full pools; leaving the
+        // pile standing gave the formation an enemy at full health wearing six
+        // seconds of somebody else's Viral. On an instant-respawn ruler that
+        // is most of the fight: every body but the aimed one snowballed, and
+        // the aimed one — the only one obeying the rule — read as the weak one.
+        //
+        // NO ACID SHELLS HERE. The radial path fires them under its own
+        // once-per-corpse guard (`exploded`); this path has none, so passing
+        // them would detonate a Sobek's corpse once per spread instance. It
+        // does not fire them today and this does not start.
+        foe.debuffs.on_death(None, &spec.params);
+        // A FRESH INDIVIDUAL TAKES NO STATUS FROM THE HIT THAT KILLED THE LAST
+        // ONE — the aimed path returns here for the same reason.
+        return Landed { procs: Vec::new(), raw, killed };
     }
 
     // …AND ITS OWN STATUS ROLL, at FULL chance. The share scales the damage and
@@ -19141,6 +19157,54 @@ mod tests {
     /// Asserted as a SHARE rather than a number: the roll call records per-body
     /// damage only once there is more than one body, so the two totals are
     /// comparable only in a crowd.
+    /// A RESPAWNED BODY IS A NEW INDIVIDUAL, EVERYWHERE — not only where the
+    /// gun is pointed.
+    ///
+    /// The aimed path has cleared the target's statuses on death since the
+    /// engine had statuses. The spread path — punch through, chains, blasts,
+    /// clouds — counted the kill and left the pile standing, so on an
+    /// instant-respawn ruler every body but the aimed one inherited six
+    /// seconds of stacks it had never been given: more Condition Overload,
+    /// more Viral, less armour, on every fight with a formation in it.
+    ///
+    /// Two bodies on one line, both frail, both punched through by the same
+    /// shot. What separates them is only WHICH ONE IS AIMED AT, so the damage
+    /// they take may not diverge.
+    #[test]
+    fn a_respawned_body_in_the_formation_starts_with_no_statuses() {
+        let base = crate::loadout::WeaponBase::from_data("soma_prime", true, &[]);
+        let pool = crate::mods_data::pool_for_weapon("soma_prime");
+        let refs: Vec<&crate::loadout::ModDef> = ["malignant_force", "primed_cryo_rounds"]
+            .iter()
+            .filter_map(|id| pool.iter().find(|m| m.id == *id))
+            .collect();
+        assert_eq!(refs.len(), 2, "Viral needs both halves");
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let frail = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        let mut arena = crate::arena::Arena::training(30.0);
+        arena.target_at = crate::space::Vec2::new(0.0, 1.0);
+        arena.others = vec![crate::formation::FoeSpec {
+            id: "e2".into(),
+            params: frail.clone(),
+            body_parts: DummyParams::humanoid_parts(),
+            at: crate::space::Vec2::new(0.0, 2.0),
+        }];
+        let mut p = DummyParams::from_panel(
+            &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
+        );
+        p.target = frail;
+        // Enough to cross both bodies and keep going.
+        p.punch_through_m = 4.0;
+        let r = run_once(&p, &mut Rng::new(0x5EED));
+        let by = r.spread.by_body().0;
+        assert!(by[0] > 0.0 && by[1] > 0.0, "both bodies are on the line: {by:?}");
+        assert!(
+            by[1] <= by[0] * 1.5,
+            "the body behind may not snowball on stacks the aimed one is denied:              aimed {} against behind {} ({:.2}x)",
+            by[0], by[1], by[1] / by[0]
+        );
+    }
+
     #[test]
     fn the_damage_meter_accounts_for_the_whole_formation() {
         let base = crate::loadout::WeaponBase::from_data("akarius", false, &[]);
