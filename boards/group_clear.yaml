@@ -11802,7 +11802,7 @@ entries:
     mode: cycle
     score: 17.257989497952593
     fp: db7052826e845ce3
-    cost: 6.746
+    cost: 9.153
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [gorgon_wraith_evo1_incarnon_form, gorgon_wraith_hoplite_virtue, gorgon_wraith_voids_guidance, gorgon_wraith_absolute_valor]
     arcanes: [primary_compression]
@@ -11826,7 +11826,7 @@ entries:
     mode: base
     score: 0.6041895174538509
     fp: db7052826e845ce3
-    cost: 12.016
+    cost: 11.449
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [gorgon_wraith_evo1_incarnon_form, gorgon_wraith_hoplite_virtue, gorgon_wraith_voids_guidance, gorgon_wraith_absolute_valor]
     arcanes: [primary_compression]
@@ -11922,14 +11922,14 @@ entries:
     mode: base
     score: 0.7039978282147132
     fp: f9b062b4bea84892
-    cost: 5.656
+    cost: 4.418
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_crux]
   - weapon: higasa
     mode: cycle
     score: 0.7039978282147132
     fp: f9b062b4bea84892
-    cost: 5.521
+    cost: 5.502
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_crux]
   - weapon: hikou_prime
