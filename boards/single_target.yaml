@@ -2054,7 +2054,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 80.2054067788118
@@ -2115,7 +2115,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 78.2054067788118
@@ -2567,7 +2567,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 73.46201371285167
@@ -3499,7 +3499,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 66.93040851140115
@@ -4118,7 +4118,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 60.909329587048525
@@ -4369,7 +4369,7 @@ entries:
     riven:
       bonuses: [critical_damage, damage, reload_speed]
       malus: weapon_recoil
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 54.06780332278075
@@ -5588,7 +5588,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [0.9, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     score: 22.4654123617044
@@ -57866,6 +57866,19 @@ entries:
       bonuses: [damage, heat, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 14.54990702766167
+    fp: 602794955e49a274
+    cost: 13.476
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, riven, incendiary_coat]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: felarx
     mode: base
     listed: false
@@ -58701,6 +58714,19 @@ entries:
     riven:
       bonuses: [critical_damage, damage, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 13.886650967354164
+    fp: 3d7b949569063e92
+    cost: 2.929
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
@@ -67964,6 +67990,19 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_irradiate]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 8.322489287466997
+    fp: fb519d4588b8422a
+    cost: 1.165
+    exilus: lethal_momentum
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, electricity]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: kuva_sobek
     mode: base
     listed: false
@@ -80388,6 +80427,18 @@ entries:
     mods: [primary_acuity, galvanized_aptitude, rifle_elementalist, vile_acceleration, vital_sense, magnetic_capacity, high_voltage, malignant_force]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_survivors_edge, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
+  - weapon: ocucor
+    mode: base
+    listed: false
+    score: 3.123053294017047
+    fp: da54c0ececb2777d
+    cost: 1.769
+    mods: [galvanized_diffusion, pistol_elementalist, magnetic_might, sentient_surge, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_irradiate]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 0.9]
   - weapon: shedu
     mode: base
     listed: false

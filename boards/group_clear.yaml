@@ -1367,7 +1367,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 4063.3437770348633
@@ -1582,7 +1582,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3764.7752092716128
@@ -2131,7 +2131,7 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: status_chance
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 3270.5387401121448
@@ -2321,7 +2321,7 @@ entries:
     riven:
       bonuses: [cold, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3131.0123343869254
@@ -2856,7 +2856,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 2827.553667020365
@@ -3048,7 +3048,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2683.979216117908
@@ -3176,7 +3176,7 @@ entries:
     riven:
       bonuses: [cold, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 2574.2752010207205
@@ -3196,7 +3196,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 0.9, 0.9, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2500.937116977476
@@ -27766,7 +27766,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -41896,7 +41896,7 @@ entries:
     riven:
       bonuses: [critical_damage, damage, reload_speed]
       malus: weapon_recoil
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
