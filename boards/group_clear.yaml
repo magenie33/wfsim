@@ -17728,6 +17728,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: paris_prime
     mode: cycle
+    score: 5791.569370773682
+    fp: d31fbac93fbf2f80
+    cost: 93.878
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: paris_prime
+    mode: cycle
     score: 3465.9174393543435
     fp: 4084925184006ef3
     cost: 30.686
