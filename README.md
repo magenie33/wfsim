@@ -6,23 +6,35 @@
 
 **The real Simulacrum Prime.**
 
-WFSim is the ultimate Warframe calculator — builder, simulator, optimizer.
-True to in-game numbers, down to the last proc. Theorycrafting, solved.
+A Warframe calculator that simulates the fight instead of estimating it —
+builder, simulator, optimizer.
 
 [**wfsim.app**](https://wfsim.app) ·
-QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S) ·
 [Discord](https://discord.gg/H4BMqvYFVg)
 
 [![CI](https://github.com/magenie33/wfsim/actions/workflows/ci.yml/badge.svg)](https://github.com/magenie33/wfsim/actions/workflows/ci.yml)
 
 </div>
 
-**Status:** in development. ~90 primary/secondary/archgun/sentinel weapons,
-most with their Incarnon adapters; mods, arcanes, evolutions, rivens, custom
-enemies and the [leaderboard](docs/BOARD.md) are live. What the sim
-deliberately does **not** model — one target, no distance or movement, no
-Warframe layer — is listed in [`docs/UNMODELLED.md`](docs/UNMODELLED.md) and
-stated on the page itself, per weapon.
+**Status:** usable, still moving. 387 weapons — every primary, secondary and
+archgun, plus sentinel weapons and 69 Incarnon forms; mods, arcanes,
+evolutions, rivens, custom enemies and the [leaderboard](docs/BOARD.md) are
+live. Melee is being imported now: three weapons so far, seven attack forms
+each. Fights are single-target or a 19x19 formation. Gaps are expected —
+issues welcome.
+
+**On AI:** I use AI assistance while writing this code (see
+[AGENTS.md](AGENTS.md) / [CLAUDE.md](CLAUDE.md)). The simulator itself contains
+no AI: it is a deterministic damage model plus a Monte Carlo search over mod
+combinations. Every formula cites a wiki page, a datamine, or a measurement,
+and each in-game measurement is written up as its own file under
+[`docs/measurements/`](docs/measurements) — the engine tests that pin them cite
+the measurement by number.
+
+What the sim does **not** model — movement, holstering, nobody shooting back,
+the Warframe's own actions beyond the buffs it puts on the weapon — is listed
+in [`docs/UNMODELLED.md`](docs/UNMODELLED.md) and stated on the page itself,
+per weapon.
 
 ## Contributing
 
