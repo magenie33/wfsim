@@ -140,7 +140,7 @@ guard_shrink() {
 }
 
 list_keys() {
-  local api="$1" cursor="" resp attempt
+  local api="$1" cursor="" resp attempt diag
   : > keys.txt
   while :; do
     # THREE TRIES, BACKING OFF — the same rate limit the value fetch runs at
@@ -167,7 +167,16 @@ list_keys() {
     # rather than a `break`: the floor guard would catch a truncated library one
     # step later, and this catches it where the cause is still legible.
     if [ -z "$resp" ]; then
-      echo "list_keys: Cloudflare refused the key listing three times" >&2
+      # …AND IT SAYS WHAT CLOUDFLARE SAID. `-sf` hides both the status and the
+      # body, so the job's whole account of itself was "exit code 22" — a
+      # refusal that could equally be a rate limit, an expired token or a
+      # namespace that moved, and an hour was spent not knowing which. One
+      # extra request on a path that has already failed three times is free.
+      diag=""
+      diag=$(curl -s -w ' [HTTP %{http_code}]' \
+        -H "Authorization: Bearer ${CF_TOKEN:-x}" \
+        "$api/keys?limit=1000${cursor:+&cursor=$cursor}" 2>/dev/null | head -c 500) || true
+      echo "list_keys: Cloudflare refused the key listing three times — $diag" >&2
       return 1
     fi
     # NOT THE REPORTS. `d/...` is a DISAGREEMENT — two measurements of one row
