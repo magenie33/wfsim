@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6617
+submissions: 6624
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -40213,6 +40213,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
+    score: 49.88396245054802
+    fp: 10e6d40cf753517f
+    cost: 15.269
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
     score: 49.32259865508403
     fp: 10e6d40cf753517f
     cost: 18.174
@@ -40297,6 +40309,18 @@ entries:
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
+    mode: base
+    score: 39.52913474219785
+    fp: 8c2ac7d999d8fbe3
+    cost: 37.408
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
     mode: cycle
     score: 37.99462734306614
     fp: 07c4d51aa1f97079
@@ -40307,6 +40331,18 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    score: 35.77189219646459
+    fp: 4f9854db5c9cde94
+    cost: 59.834
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
@@ -40392,6 +40428,18 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    score: 31.30792571523697
+    fp: 3e6814fdc1e6ba20
+    cost: 87.386
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, primed_charged_shell]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
@@ -41038,37 +41086,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: strun_prime
     mode: base
-    score: 19.29712961820244
-    fp: c8830cb2027d4a60
-    cost: 28.873
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, chilling_grasp, toxic_barrage, blaze, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
     score: 19.19784071018411
     fp: f45f58a44e1c5a8d
     cost: 8.496
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, contagious_spread, incendiary_coat]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_deadhead]
-  - weapon: strun_prime
-    mode: base
-    score: 18.81505994028536
-    fp: 6c16db9d5a076f7f
-    cost: 68.114
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, magnetic_strafe, riven, frigid_blast, toxic_barrage, scattering_inferno]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_chance, damage_to_corpus, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     score: 18.666666666666668
@@ -41077,44 +41100,6 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
     arcanes: [primary_deadhead]
-  - weapon: strun_prime
-    mode: base
-    score: 18.536873095895967
-    fp: 10e6d40cf753517f
-    cost: 40.737
-    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_compression]
-    riven:
-      bonuses: [critical_damage, fire_rate, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 18.34145896755033
-    fp: e9b835f84f133943
-    cost: 36.690
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 18.34145367759081
-    fp: 10ee4ffb8328bf5e
-    cost: 29.885
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, incendiary_coat, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     score: 18.137386709806957
@@ -41131,94 +41116,6 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_merciless]
-  - weapon: strun_prime
-    mode: base
-    score: 17.696039311968327
-    fp: d8cb65c7fc3c8d9f
-    cost: 47.271
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, vigilante_armaments, primed_chilling_grasp, toxic_barrage, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 17.667727906634035
-    fp: 43a0e4ef233cfe5a
-    cost: 50.199
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, semi_shotgun_cannonade, frigid_blast, toxic_barrage, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 17.57049644896461
-    fp: 4a67e24c84f59803
-    cost: 32.066
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, scattering_inferno, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 17.565080478377652
-    fp: fb370ea814210aa1
-    cost: 28.437
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_compression]
-    riven:
-      bonuses: [critical_damage, fire_rate, toxin]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 17.55116123249511
-    fp: ee35d4f314711aca
-    cost: 39.956
-    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, frigid_blast, toxic_barrage, primed_charged_shell]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-    riven:
-      bonuses: [critical_chance, critical_damage, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 17.527658887868963
-    fp: ea5ac4db5809eefe
-    cost: 43.434
-    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [damage, punch_through, slash]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: strun_prime
-    mode: base
-    score: 17.487953331082224
-    fp: 79fd5df393ac910c
-    cost: 41.752
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, semi_shotgun_cannonade, frigid_blast, toxic_barrage, riven]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, heat, multishot]
-      malus: impact
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     score: 16.928315162160178
@@ -51935,6 +51832,19 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 25.954463427785747
+    fp: 4f9854db5c9cde94
+    cost: 14.304
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -53252,6 +53162,19 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 22.92837448467871
+    fp: 8c2ac7d999d8fbe3
+    cost: 15.774
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -54798,6 +54721,20 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 19.29712961820244
+    fp: c8830cb2027d4a60
+    cost: 28.873
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, chilling_grasp, toxic_barrage, blaze, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -54921,6 +54858,19 @@ entries:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 18.81505994028536
+    fp: 6c16db9d5a076f7f
+    cost: 68.114
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, magnetic_strafe, riven, frigid_blast, toxic_barrage, scattering_inferno]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, damage_to_corpus, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -55019,6 +54969,19 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
     arcanes: [secondary_encumber]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 18.536873095895967
+    fp: 10e6d40cf753517f
+    cost: 40.737
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: sicarus_prime
     mode: cycle
     listed: false
@@ -55072,6 +55035,34 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
     arcanes: [secondary_encumber]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 18.34145896755033
+    fp: e9b835f84f133943
+    cost: 36.690
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 18.34145367759081
+    fp: 10ee4ffb8328bf5e
+    cost: 29.885
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, incendiary_coat, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -55133,6 +55124,19 @@ entries:
     riven:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.981423000076024
+    fp: 10e6d40cf753517f
+    cost: 23.998
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
@@ -55308,6 +55312,20 @@ entries:
       bonuses: [critical_chance, multishot]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.696039311968327
+    fp: d8cb65c7fc3c8d9f
+    cost: 47.271
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, vigilante_armaments, primed_chilling_grasp, toxic_barrage, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -55320,6 +55338,20 @@ entries:
     arcanes: [primary_deadhead]
     riven:
       bonuses: [critical_damage, multishot, toxin]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.667727906634035
+    fp: 43a0e4ef233cfe5a
+    cost: 50.199
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, semi_shotgun_cannonade, frigid_blast, toxic_barrage, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
@@ -55362,6 +55394,20 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, magnetic_capacity, primed_cryo_rounds, thermite_rounds, stormbringer, infected_clip]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.57049644896461
+    fp: 4a67e24c84f59803
+    cost: 32.066
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, scattering_inferno, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -55372,6 +55418,19 @@ entries:
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_evolved_autoloader, dual_toxocyst_neurotoxin]
     arcanes: [secondary_deadhead]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.565080478377652
+    fp: fb370ea814210aa1
+    cost: 28.437
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, fire_rate, toxin]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: felarx
     mode: base
     listed: false
@@ -55399,6 +55458,46 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       malus: slash
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.55116123249511
+    fp: ee35d4f314711aca
+    cost: 39.956
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, frigid_blast, toxic_barrage, primed_charged_shell]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.527658887868963
+    fp: ea5ac4db5809eefe
+    cost: 43.434
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [damage, punch_through, slash]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 17.487953331082224
+    fp: 79fd5df393ac910c
+    cost: 41.752
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, semi_shotgun_cannonade, frigid_blast, toxic_barrage, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
@@ -57860,6 +57959,19 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, speed_trigger, vile_acceleration, high_voltage, infected_clip, hellfire]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 14.981619754398075
+    fp: 3e6814fdc1e6ba20
+    cost: 13.402
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, primed_charged_shell]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -104498,3 +104610,43 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 0.9787989279758931
+    fp: 0cc6887eb4d24d6d
+    cost: 0.204
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.763296902176779
+    fp: 0cc6887eb4d24d6d
+    cost: 0.217
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 1.0739598412470786
+    fp: 67f95e5d0fc4bf85
+    cost: 0.690
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.459837650745445
+    fp: 67f95e5d0fc4bf85
+    cost: 0.190
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
