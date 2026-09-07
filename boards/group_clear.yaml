@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6580
+submissions: 6588
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -5896,6 +5896,14 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: boar_prime
     mode: base
+    score: 21.70035501334089
+    fp: 6b5be84e8285c99e
+    cost: 25.347
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, primed_chilling_grasp, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
     score: 21.25508931772232
     fp: d9c60ba70e4d465f
     cost: 20.149
@@ -5944,6 +5952,22 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: base
+    score: 19.86289758834585
+    fp: 9aaeb18c1bdf00ab
+    cost: 20.491
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    score: 19.60013081385687
+    fp: 4d9ae1579dd3fd31
+    cost: 20.907
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
     score: 19.564600223901664
     fp: ac99d37f70a5628b
     cost: 18.955
@@ -5956,6 +5980,22 @@ entries:
     fp: 1604687561024e2b
     cost: 12.843
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_chilling_grasp, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    score: 19.10604964009645
+    fp: 9f44aa8a4c9f2ecc
+    cost: 20.241
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, frail_momentum, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    score: 19.04470079530539
+    fp: 8279f549b5f1e2fa
+    cost: 20.523
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, primed_charged_shell, toxic_barrage, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: boar_prime
@@ -5974,6 +6014,14 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: base
+    score: 18.590831879235726
+    fp: cd8befb1e16b23bc
+    cost: 20.295
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
     score: 18.35395209636322
@@ -6065,6 +6113,22 @@ entries:
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_merciless]
   - weapon: boar_prime
+    mode: base
+    score: 17.08859101399293
+    fp: b4b4da07320f5527
+    cost: 21.656
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, shotgun_barrage, vigilante_armaments, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    score: 17.07577587316296
+    fp: 1c63dad995e62cf9
+    cost: 26.686
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
     mode: cycle
     score: 16.93920816220859
     fp: 829aede76b717869
@@ -6080,6 +6144,14 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, magnetic_strafe, blaze, scattering_inferno]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: base
+    score: 16.489024442557014
+    fp: e6ca6ac287187cea
+    cost: 20.398
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, vicious_spread, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
     score: 16.337807810407234
@@ -6305,6 +6377,14 @@ entries:
     mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
     arcanes: [primary_debilitate]
+  - weapon: boar_prime
+    mode: cycle
+    score: 11.304407136013724
+    fp: 60e06df45908e9c2
+    cost: 13.417
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, primed_chilling_grasp, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
     score: 11.143483988655635
@@ -10616,6 +10696,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 246.1216089852259
+    fp: b18c9dd6929bb1de
+    cost: 68.257
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, heat, punch_through]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 194.9468749227199
     fp: 7fe58ee154139d8a
     cost: 117.268
@@ -10652,6 +10744,18 @@ entries:
     riven:
       bonuses: [critical_damage, heat, punch_through]
       malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: base
+    score: 52.27671964262587
+    fp: 7a80e376f07c46e9
+    cost: 166.065
+    mods: [seeker, galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
@@ -12667,52 +12771,13 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: kuva_bramma
     mode: base
-    score: 1.3161303244816818
-    fp: 63137188d7420c92
-    cost: 7.726
+    score: 2.636892589292932
+    fp: d5ca300b9aed2084
+    cost: 24.434
+    exilus: vigilante_supplies
     mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, hammer_shot, vile_acceleration, vital_sense, thermite_rounds]
-    arcanes: [primary_merciless]
-    valence: heat
-  - weapon: kuva_bramma
-    mode: base
-    score: 1.2822242717421883
-    fp: e36c78f8dc44dec8
-    cost: 4.793
-    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, hammer_shot, vital_sense, hellfire, thermite_rounds]
-    arcanes: [primary_merciless]
-    valence: heat
-  - weapon: kuva_bramma
-    mode: base
-    score: 1.2194108889137003
-    fp: d767f87335bc4fb2
-    cost: 7.320
-    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, hammer_shot, vile_acceleration, vital_sense, hellfire]
-    arcanes: [primary_merciless]
-    valence: heat
-  - weapon: kuva_bramma
-    mode: base
-    score: 1.2168080053161814
-    fp: a188108d389c231b
-    cost: 5.532
-    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vile_acceleration, vital_sense, hellfire, thermite_rounds]
-    arcanes: [primary_merciless]
-    valence: heat
-  - weapon: kuva_bramma
-    mode: base
-    score: 0.8239795984129603
-    fp: 5efe5935500f0a48
-    cost: 5.017
-    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vital_sense, rime_rounds, malignant_force, thermite_rounds]
-    arcanes: [primary_merciless]
-    valence: heat
-  - weapon: kuva_bramma
-    mode: base
-    score: 0.8236860271296195
-    fp: b15a1feb01d5de92
-    cost: 4.735
-    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
-    arcanes: [primary_merciless]
-    valence: heat
+    arcanes: [primary_compression]
+    valence: toxin
   - weapon: kuva_bramma
     mode: base
     score: 0.5806643343789428
@@ -15303,6 +15368,13 @@ entries:
     cost: 8.788
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, polar_magazine, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
+    score: 28.943330324434672
+    fp: b67e751c6ad1a17b
+    cost: 9.133
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, hollowed_bullets, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: alternate
     score: 28.717849006764713
@@ -19495,6 +19567,15 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
+    score: 30.809938030189905
+    fp: 9a30fd33e78fef74
+    cost: 9.822
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: prisma_angstrum
+    mode: cycle
     score: 30.34129928346185
     fp: bc6e26da1642d09f
     cost: 8.418
@@ -19601,6 +19682,15 @@ entries:
     cost: 1.838
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: prisma_angstrum
+    mode: base
+    score: 3.2872585316317577
+    fp: 2903a112fee76811
+    cost: 3.273
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_swift_deliverance, prisma_angstrum_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: base
@@ -34270,6 +34360,14 @@ entries:
       bonuses: [damage, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    score: 73.239035071758
+    fp: b67e751c6ad1a17b
+    cost: 48.492
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, hollowed_bullets, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -61857,6 +61955,15 @@ entries:
     mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
     valence: impact
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 13.753648195334568
+    fp: bae54f4112a1567c
+    cost: 14.746
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: ocucor
     mode: base
     listed: false
@@ -62497,6 +62604,15 @@ entries:
       bonuses: [damage, fire_rate, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 13.230965068674449
+    fp: df3cdcfcf9d6e878
+    cost: 12.765
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, vicious_spread, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: phenmor
     mode: base
     listed: false
@@ -64111,6 +64227,15 @@ entries:
       bonuses: [fire_rate, multishot, toxin]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 12.175770850369513
+    fp: 43204227cf9e4574
+    cost: 20.661
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -70602,6 +70727,15 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    score: 7.699697376900268
+    fp: 9f44aa8a4c9f2ecc
+    cost: 13.465
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, frail_momentum, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -73366,6 +73500,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge, scorch]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
     arcanes: [cascadia_flare]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    score: 5.992556261890828
+    fp: cd8befb1e16b23bc
+    cost: 13.393
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: dual_toxocyst
     mode: base
     listed: false
@@ -82968,6 +83111,15 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
+  - weapon: kuva_bramma
+    mode: base
+    listed: false
+    score: 1.3161303244816818
+    fp: 63137188d7420c92
+    cost: 7.726
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, hammer_shot, vile_acceleration, vital_sense, thermite_rounds]
+    arcanes: [primary_merciless]
+    valence: heat
   - weapon: boar_prime
     mode: base
     listed: false
@@ -83188,6 +83340,15 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: kuva_bramma
+    mode: base
+    listed: false
+    score: 1.2822242717421883
+    fp: e36c78f8dc44dec8
+    cost: 4.793
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, hammer_shot, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_merciless]
+    valence: heat
   - weapon: scourge_prime
     mode: alternate
     listed: false
@@ -83390,6 +83551,15 @@ entries:
       bonuses: [damage, fire_rate, multishot]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_bramma
+    mode: base
+    listed: false
+    score: 1.2194108889137003
+    fp: d767f87335bc4fb2
+    cost: 7.320
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, hammer_shot, vile_acceleration, vital_sense, hellfire]
+    arcanes: [primary_merciless]
+    valence: heat
   - weapon: torid
     mode: base
     listed: false
@@ -83399,6 +83569,15 @@ entries:
     mods: [galvanized_chamber, heavy_caliber, primary_acuity, hunter_munitions, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: kuva_bramma
+    mode: base
+    listed: false
+    score: 1.2168080053161814
+    fp: a188108d389c231b
+    cost: 5.532
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vile_acceleration, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_merciless]
+    valence: heat
   - weapon: grimoire
     mode: base
     listed: false
@@ -85304,6 +85483,24 @@ entries:
     mods: [heavy_caliber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, rime_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: kuva_bramma
+    mode: base
+    listed: false
+    score: 0.8239795984129603
+    fp: 5efe5935500f0a48
+    cost: 5.017
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vital_sense, rime_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_merciless]
+    valence: heat
+  - weapon: kuva_bramma
+    mode: base
+    listed: false
+    score: 0.8236860271296195
+    fp: b15a1feb01d5de92
+    cost: 4.735
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
+    arcanes: [primary_merciless]
+    valence: heat
   - weapon: ocucor
     mode: base
     listed: false
@@ -91957,10 +92154,120 @@ entries:
     mode: cycle
     listed: false
     probe: true
+    score: 3.5059539987674473
+    fp: 8279f549b5f1e2fa
+    cost: 1.264
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.463986945849315
+    fp: 43204227cf9e4574
+    cost: 1.055
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 3.124309583688038
+    fp: 1c63dad995e62cf9
+    cost: 1.537
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.740060697251665
+    fp: 6b5be84e8285c99e
+    cost: 1.598
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, primed_chilling_grasp, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.682416654857452
+    fp: e6ca6ac287187cea
+    cost: 0.765
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, vicious_spread, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 3.5594053548812377
+    fp: df3cdcfcf9d6e878
+    cost: 0.823
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, vicious_spread, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 1.6465362867811495
+    fp: 00e6a3d68a86f722
+    cost: 1.516
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, incendiary_coat, toxic_barrage, primed_chilling_grasp, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.2893530618823433
+    fp: 00e6a3d68a86f722
+    cost: 1.508
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, incendiary_coat, toxic_barrage, primed_chilling_grasp, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
     score: 4.668689321287932
     fp: e1efe8291db06826
     cost: 0.834
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 4.677287863929554
+    fp: 9aaeb18c1bdf00ab
+    cost: 1.266
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 2.7972393828314055
+    fp: bae54f4112a1567c
+    cost: 0.850
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 3.375882067208891
+    fp: b4b4da07320f5527
+    cost: 1.275
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, shotgun_barrage, vigilante_armaments, primed_charged_shell, toxic_barrage, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: bronco_prime
@@ -93583,6 +93890,15 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 24.026847160487776
+    fp: f5e8185729a56b7f
+    cost: 1.338
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
     mode: alternate
     listed: false
     probe: true
@@ -94131,6 +94447,17 @@ entries:
     exilus: vigilante_supplies
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
+  - weapon: prisma_angstrum
+    mode: base
+    listed: false
+    probe: true
+    score: 0.2580962360088291
+    fp: 9a30fd33e78fef74
+    cost: 0.265
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_deadhead]
   - weapon: prisma_gorgon
     mode: base
     listed: false
@@ -95190,12 +95517,12 @@ entries:
     cost: 1.123
     mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: boar_prime
-    mode: cycle
+    mode: base
     listed: false
     probe: true
-    score: 3.124309583688038
-    fp: 1c63dad995e62cf9
-    cost: 1.537
-    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, primed_charged_shell, toxic_barrage, incendiary_coat]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
-    arcanes: [primary_deadhead]
+    score: 1.444390711174601
+    fp: f4a4c7d216faa92c
+    cost: 1.067
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, primed_chilling_grasp, scattering_inferno, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
