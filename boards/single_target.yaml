@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6554
+submissions: 6561
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -8094,6 +8094,14 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, contagious_spread, primed_chilling_grasp]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: base
+    score: 19.37619059875257
+    fp: f7f22a0cb099de4b
+    cost: 9.757
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_chilling_grasp, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
     score: 19.33409875799306
@@ -31449,6 +31457,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
+    score: 122.46559029663784
+    fp: 048ba2f0a0c503cb
+    cost: 13.169
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 122.2880510554995
     fp: 317343f9bbe6deb0
     cost: 8.772
@@ -31458,6 +31478,18 @@ entries:
     riven:
       bonuses: [critical_chance, damage, toxin]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    score: 121.41511609174994
+    fp: 19e0f44c09cacc94
+    cost: 12.940
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
@@ -34396,6 +34428,30 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: paris_prime
     mode: alternate_cycle
+    score: 138.08319042342202
+    fp: f9597ebebf2a04e0
+    cost: 8.108
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: paris_prime
+    mode: cycle
+    score: 135.7059367455593
+    fp: f9597ebebf2a04e0
+    cost: 7.935
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: paris_prime
+    mode: alternate_cycle
     score: 78.5988182492585
     fp: 2d88aa6ca6a3cd43
     cost: 3.341
@@ -34579,6 +34635,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: paris_prime
     mode: base
+    score: 9.719346538381577
+    fp: f9597ebebf2a04e0
+    cost: 3.814
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: paris_prime
+    mode: base
     score: 7.244514291486412
     fp: 2c70e41758361088
     cost: 0.707
@@ -34596,6 +34664,18 @@ entries:
     fp: 27e6e7b5d57f19d5
     cost: 1.672
     exilus: vigilante_supplies
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: paris_prime
+    mode: alternate
+    score: 6.294854050516684
+    fp: f9597ebebf2a04e0
+    cost: 2.406
     mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, primed_cryo_rounds, riven]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
@@ -36749,6 +36829,15 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
+    score: 30.77211143690051
+    fp: 53a819ab20657554
+    cost: 4.881
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: prisma_angstrum
+    mode: cycle
     score: 30.350746746630342
     fp: adaaf9fa2ed3a8ff
     cost: 4.223
@@ -36855,6 +36944,15 @@ entries:
     cost: 0.285
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: prisma_angstrum
+    mode: base
+    score: 3.291994655650801
+    fp: 3d58708d0654ca71
+    cost: 0.845
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_swift_deliverance, prisma_angstrum_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: base
@@ -52591,6 +52689,19 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [secondary_irradiate]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 23.182316423065114
+    fp: 048ba2f0a0c503cb
+    cost: 6.246
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: base
     listed: false
@@ -53195,6 +53306,19 @@ entries:
     mods: [amalgam_barrel_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_deadhead]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 21.621629259099468
+    fp: 19e0f44c09cacc94
+    cost: 7.808
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -57059,6 +57183,15 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 14.956437597136691
+    fp: d7adcecda46ec446
+    cost: 9.957
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -75421,6 +75554,15 @@ entries:
     cost: 1.794
     mods: [primed_fulmination, galvanized_diffusion, galvanized_shot, synth_charge, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    score: 4.823428947112821
+    fp: f7f22a0cb099de4b
+    cost: 1.404
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_chilling_grasp, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: perigale_prime
     mode: base
     listed: false
@@ -98379,6 +98521,24 @@ entries:
     mode: base
     listed: false
     probe: true
+    score: 1.996163556217307
+    fp: 8bc9b35bf6923ad6
+    cost: 0.312
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magazine_extension, hollowed_bullets, primed_polar_magazine, contamination_casing, charged_bullets]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.9183617966219606
+    fp: 8bc9b35bf6923ad6
+    cost: 0.065
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magazine_extension, hollowed_bullets, primed_polar_magazine, contamination_casing, charged_bullets]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
     score: 4.361661591729904
     fp: 9c62fd327d53c845
     cost: 0.163
@@ -99840,21 +100000,35 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
-  - weapon: larkspur_prime
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 2.6402519663574653
+    fp: d7adcecda46ec446
+    cost: 0.168
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: prisma_angstrum
     mode: base
     listed: false
     probe: true
-    score: 1.996163556217307
-    fp: 8bc9b35bf6923ad6
-    cost: 0.312
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magazine_extension, hollowed_bullets, primed_polar_magazine, contamination_casing, charged_bullets]
-    arcanes: [primary_merciless, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: alternate
+    score: 0.2580962360088291
+    fp: 53a819ab20657554
+    cost: 0.089
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_swift_deliverance, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: prisma_angstrum
+    mode: cycle
     listed: false
     probe: true
-    score: 0.9183617966219606
-    fp: 8bc9b35bf6923ad6
-    cost: 0.065
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magazine_extension, hollowed_bullets, primed_polar_magazine, contamination_casing, charged_bullets]
-    arcanes: [primary_merciless, secondary_enervate]
+    score: 8.657856136953084
+    fp: 3d58708d0654ca71
+    cost: 0.424
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_swift_deliverance, prisma_angstrum_critical_parallel]
+    arcanes: [cascadia_flare]

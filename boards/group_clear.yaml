@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6554
+submissions: 6561
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -10326,10 +10326,31 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: flux_rifle
     mode: base
+    score: 0.2567910434258038
+    fp: 204ac7130d5d0933
+    cost: 14.522
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, hammer_shot, rifle_elementalist, vital_sense, infected_clip, malignant_force]
+    arcanes: [primary_blight]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.25081011771636746
+    fp: fb1071c59cb7e60e
+    cost: 23.157
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, rifle_elementalist, vile_acceleration, vital_sense, infected_clip, malignant_force]
+    arcanes: [primary_deadhead]
+  - weapon: flux_rifle
+    mode: base
     score: 0.250137258375673
     fp: 17399166460d54f0
     cost: 20.168
     mods: [primary_acuity, galvanized_aptitude, hammer_shot, point_strike, rifle_elementalist, vile_acceleration, vital_sense, infected_clip]
+    arcanes: [primary_deadhead]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.24801417532862824
+    fp: 2e400b6008db1156
+    cost: 18.997
+    mods: [primary_acuity, galvanized_aptitude, critical_delay, hammer_shot, rifle_elementalist, vile_acceleration, vital_sense, infected_clip]
     arcanes: [primary_deadhead]
   - weapon: flux_rifle
     mode: base
@@ -11619,6 +11640,15 @@ entries:
     mods: [galvanized_diffusion, galvanized_crosshairs, lethal_torrent, pistol_elementalist, magnetic_might, deep_freeze, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
     arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: base
+    score: 10.080454960986046
+    fp: dd0c95eb7f00b289
+    cost: 26.601
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
     score: 10.062816291871568
@@ -33766,6 +33796,19 @@ entries:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    score: 76.66319599582269
+    fp: 91a19d575ef21626
+    cost: 28.090
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: torid
     mode: cycle
     listed: false
@@ -58823,6 +58866,19 @@ entries:
     cost: 7.770
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_merciless, secondary_enervate]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 16.635389231328364
+    fp: ed260b0e2881cbfd
+    cost: 42.832
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, accelerated_isotope, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -93334,6 +93390,24 @@ entries:
     fp: b992c2c50d70d829
     cost: 1.530
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 3.5165424184305034
+    fp: c93a13f3d8ef5836
+    cost: 2.015
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magazine_extension, hollowed_bullets, primed_polar_magazine, contamination_casing, charged_bullets]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    probe: true
+    score: 1.015540011662322
+    fp: c93a13f3d8ef5836
+    cost: 0.777
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magazine_extension, hollowed_bullets, primed_polar_magazine, contamination_casing, charged_bullets]
     arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
