@@ -16,14 +16,14 @@ boards:
     submissions: 6639
     listed: 2878
     held: 7433
-    scored_at_epoch_seconds: 1788806773
+    scored_at_epoch_seconds: 1788808026
   single_target:
     submissions: 6639
     listed: 4882
     held: 5440
-    scored_at_epoch_seconds: 1788806782
+    scored_at_epoch_seconds: 1788808035
   single_target_no_aim:
     submissions: 6639
     listed: 2575
     held: 7730
-    scored_at_epoch_seconds: 1788806788
+    scored_at_epoch_seconds: 1788808041

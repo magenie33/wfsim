@@ -106527,6 +106527,46 @@ entries:
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, critical_delay, hunter_munitions, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 853.2201286486984
+    fp: 9d2ae399e2e78784
+    cost: 2.328
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    probe: true
+    score: 899.585431414533
+    fp: 9d2ae399e2e78784
+    cost: 2.390
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 892.9097936546648
+    fp: 1bcc27c1b0fc0816
+    cost: 3.007
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    probe: true
+    score: 944.9808953283799
+    fp: 1bcc27c1b0fc0816
+    cost: 2.309
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -106687,43 +106727,3 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
-  - weapon: ballistica_prime
-    mode: cycle
-    listed: false
-    probe: true
-    score: 853.2201286486984
-    fp: 9d2ae399e2e78784
-    cost: 2.328
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    listed: false
-    probe: true
-    score: 899.585431414533
-    fp: 9d2ae399e2e78784
-    cost: 2.390
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
-    listed: false
-    probe: true
-    score: 892.9097936546648
-    fp: 1bcc27c1b0fc0816
-    cost: 3.007
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: alternate_cycle
-    listed: false
-    probe: true
-    score: 944.9808953283799
-    fp: 1bcc27c1b0fc0816
-    cost: 2.309
-    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [secondary_deadhead]
