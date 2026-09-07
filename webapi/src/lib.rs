@@ -6833,6 +6833,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // same way `self_damage` is: a reader is not shown a Viral line for a
         // fight that had none.
         "virus_stacks": (s.mean_virus_stacks > 0.0).then_some(s.mean_virus_stacks),
+        // …AND WHAT WAS LEFT OF ITS ARMOUR when that damage arrived. Absent on
+        // an unarmoured target, where 1.0 would read as "nothing was stripped"
+        // rather than as "there was nothing to strip".
+        "armor_left": (ar > 0.0).then_some(s.mean_armor_left),
         "kills_std": s.std_kills,
         // THE MEAN, AND HOW FAR IT CAN BE FROM THE TRUTH. `score` and `dps`
         // above are the MEDIAN RUN — one engagement, however many were paid

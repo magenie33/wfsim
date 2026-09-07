@@ -545,6 +545,14 @@ pub struct Settled {
     /// every point of health damage was dealt through — over every body and
     /// every run, which is what the replay's eight followed bodies cannot say.
     pub virus_stack_health: f64,
+    /// …AND THE OTHER HALF OF WHAT THE TARGET WAS WEARING: the same damage
+    /// times the share of the target's ARMOUR still standing behind it, so
+    /// the pair covers both factors the health path reads. 1.0 is armour
+    /// untouched; 0.24 is a target three quarters stripped when the damage
+    /// arrived, which is a fact about the FIGHT and not about the mod that
+    /// strips — a build can carry Corrosive and land everything before it
+    /// piles.
+    pub armor_left_health: f64,
     broken: Option<BrokenPool>,
 }
 
@@ -1299,6 +1307,7 @@ impl TargetState {
             spilled: 0.0,
             health: health_part,
             virus_stack_health: f64::from(mit.virus_stacks) * health_part,
+            armor_left_health: mit.armor_multiplier * health_part,
             broken: None,
         };
         let Some(b) = led else {
@@ -5547,6 +5556,7 @@ pub mod ledger {
         // still look right.
         r.health_damage += settled.health;
         r.virus_stack_health += settled.virus_stack_health;
+        r.armor_left_health += settled.armor_left_health;
         r.spread.credit(body, settled.effective);
         let i = t.max(0.0) as usize;
         r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
@@ -5734,6 +5744,9 @@ pub struct RunResult {
     /// See [`Settled::virus_stack_health`] — summed over the engagement, and
     /// only ever read as the ratio `virus_stack_health / health_damage`.
     pub virus_stack_health: f64,
+    /// See [`Settled::armor_left_health`] — the same, over the same
+    /// denominator.
+    pub armor_left_health: f64,
     /// …of which this many were taken DIRECTLY by a tendril — see
     /// [`RunResult::note_tendril_kills`]. Those spawn no tendril of their own,
     /// and it is the only kind of kill in this engine that is worth less than
@@ -12531,6 +12544,21 @@ mod pellet_volley {
             "a Viral build averages a real pile, and no pile is above the cap: {}",
             viral.mean_virus_stacks
         );
+
+        // …AND THE ARMOUR HALF OF THE SAME QUESTION. Toxin with Electricity is
+        // Corrosive, which strips; Toxin with Cold is Viral, which does not —
+        // so the pair says the figure tracks the STRIP and not the fight.
+        let corrosive = soma(&["malignant_force", "high_voltage", "vital_sense"]);
+        assert!(
+            (viral.mean_armor_left - 1.0).abs() < 1e-9,
+            "a build that strips nothing leaves the armour whole: {}",
+            viral.mean_armor_left
+        );
+        assert!(
+            corrosive.mean_armor_left < 1.0 && corrosive.mean_armor_left > 0.0,
+            "a Corrosive build lands its damage on armour it has taken down: {}",
+            corrosive.mean_armor_left
+        );
     }
 
     fn arbucep(mods: &[&str]) -> DummyParams {
@@ -18087,6 +18115,14 @@ pub struct Summary {
     /// figure the replay's eight followed bodies cannot give — that is one
     /// engagement and a sample of the crowd, and this is all of both.
     pub mean_virus_stacks: f64,
+    /// THE SHARE OF THE TARGET'S ARMOUR STILL STANDING when a point of health
+    /// damage arrived, over every body and every run — the companion to
+    /// `mean_virus_stacks` and the other factor the health path reads.
+    ///
+    /// It answers what a stack count cannot: a build whose Corrosive piles to
+    /// ten AFTER the kill has stripped nothing, and a build that never carries
+    /// it reads 1.0 rather than reading nothing.
+    pub mean_armor_left: f64,
     pub mean_procs: f64,
     /// Mean lingering-FIELD ticks that landed (Torid's cloud).
     pub mean_field_ticks: f64,
@@ -18279,6 +18315,7 @@ pub struct Shard {
     /// denominator or a fleet of workers averages the averages.
     health_damage: f64,
     virus_stack_health: f64,
+    armor_left_health: f64,
     procs: u64,
     field_ticks: u64,
     dot_ticks: u64,
@@ -18349,6 +18386,7 @@ impl Default for Shard {
             ttks: Vec::new(),
             health_damage: 0.0,
             virus_stack_health: 0.0,
+            armor_left_health: 0.0,
             shots: 0,
             pellets: 0,
             crits: 0,
@@ -18379,6 +18417,7 @@ impl Shard {
         self.dot += o.dot;
         self.health_damage += o.health_damage;
         self.virus_stack_health += o.virus_stack_health;
+        self.armor_left_health += o.armor_left_health;
         self.procs += o.procs;
         self.field_ticks += o.field_ticks;
         self.dot_ticks += o.dot_ticks;
@@ -18510,6 +18549,7 @@ pub fn shard(
         a.dot += r.meter.dot();
         a.health_damage += r.health_damage;
         a.virus_stack_health += r.virus_stack_health;
+        a.armor_left_health += r.armor_left_health;
         a.procs += u64::from(r.procs);
         a.field_ticks += u64::from(r.field_ticks);
         a.dot_ticks += u64::from(r.dot_ticks);
@@ -18554,6 +18594,7 @@ impl Shard {
         let (sum, sum_sq, min, max) = (self.sum, self.sum_sq, self.min, self.max);
         let (effective, effective_sq, dot) = (self.effective, self.effective_sq, self.dot);
         let (health_damage, virus_stack_health) = (self.health_damage, self.virus_stack_health);
+        let armor_left_health = self.armor_left_health;
         let (procs, field_ticks, reloads, transforms) =
             (self.procs, self.field_ticks, self.reloads, self.transforms);
         let (ghost_kills, ghosts_peak) = (self.ghost_kills, self.ghosts_peak);
@@ -18616,6 +18657,11 @@ impl Shard {
             virus_stack_health / health_damage
         } else {
             0.0
+        },
+        mean_armor_left: if health_damage > 0.0 {
+            armor_left_health / health_damage
+        } else {
+            1.0
         },
         mean_procs: procs as f64 / n,
         mean_field_ticks: field_ticks as f64 / n,
@@ -19642,6 +19688,7 @@ mod tests {
             // reason as the two lines below: the fleet merges shards, and a
             // ratio recomputed from a lost denominator agrees with nothing.
             ("mean_virus_stacks", part.mean_virus_stacks, whole.mean_virus_stacks),
+            ("mean_armor_left", part.mean_armor_left, whole.mean_armor_left),
             ("mean_health_damage", part.mean_health_damage, whole.mean_health_damage),
             // …AND WHAT IT IS DIVIDED BY. `procs_mean`/`pellets_mean` reach a
             // caller as a RATE (`check_custom_enemies` asks whether a damage x0

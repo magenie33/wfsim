@@ -17808,6 +17808,10 @@ function renderResults(r, testedAt) {
     // every run, where the debuff chart below follows eight bodies of one
     // engagement. Absent on a build that never applies Viral.
     r.virus_stacks == null ? "" : kpi("Viral stacks", r.virus_stacks.toFixed(2), "virus_stacks"),
+    // …AND WHAT WAS LEFT OF THE ARMOUR when it arrived. The companion to the
+    // tile above: a Corrosive pile that finishes after the kill stripped
+    // nothing, and only this says so.
+    r.armor_left == null ? "" : kpi("Armour left", pc(r.armor_left), "armor_left"),
     kpi("Reloads", n0(r.reloads), "reloads"), kpi("Transforms", n0(r.transforms), "transforms"),
     // COUNTED, NOT FOUGHT. The row is drawn only where a weapon leaves
     // something standing, and it says BOTH numbers because neither is the
