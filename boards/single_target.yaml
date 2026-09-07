@@ -3165,7 +3165,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: cycle
     score: 69.37112002134646
@@ -3549,7 +3549,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 66.3733944740368
@@ -3995,7 +3995,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: cycle
     score: 62.666666666666664
@@ -4244,7 +4244,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 57.81622564413323
@@ -4357,7 +4357,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 54.85081522201484
@@ -15686,7 +15686,7 @@ entries:
     mode: base
     score: 17.834886768164875
     fp: ff5b16f360ddaf4b
-    cost: 20.379
+    cost: 11.691
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [shotgun_vendetta]
     valence: magnetic
@@ -15702,7 +15702,7 @@ entries:
     mode: base
     score: 14.353525898299344
     fp: f100f904035d6ea9
-    cost: 13.300
+    cost: 12.483
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_debilitate]
     valence: magnetic
@@ -15710,7 +15710,7 @@ entries:
     mode: alternate
     score: 0.3147633515719547
     fp: f100f904035d6ea9
-    cost: 2.596
+    cost: 2.047
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_debilitate]
     valence: magnetic
@@ -15734,7 +15734,7 @@ entries:
     mode: alternate
     score: 0.23855139808615536
     fp: ff5b16f360ddaf4b
-    cost: 1.655
+    cost: 2.407
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [shotgun_vendetta]
     valence: magnetic
@@ -25504,7 +25504,7 @@ entries:
     mode: base
     score: 19.20500021549925
     fp: 823711dc53fd3edc
-    cost: 3.687
+    cost: 3.116
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
@@ -25827,7 +25827,7 @@ entries:
     mode: base
     score: 17.283791756615585
     fp: cefc3b9f8e266cb9
-    cost: 3.104
+    cost: 3.904
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -26116,7 +26116,7 @@ entries:
     mode: base
     score: 13.466257350580552
     fp: 4ec0b8f26d88e1eb
-    cost: 2.181
+    cost: 3.982
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact

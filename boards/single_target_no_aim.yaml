@@ -4142,7 +4142,7 @@ entries:
     mode: base
     score: 3.9888483473310066
     fp: e618ff0890b36942
-    cost: 16.317
+    cost: 16.252
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_debilitate]
     valence: magnetic
@@ -4150,7 +4150,7 @@ entries:
     mode: alternate
     score: 0.2914872539734724
     fp: e618ff0890b36942
-    cost: 2.584
+    cost: 2.543
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_debilitate]
     valence: magnetic
@@ -4166,7 +4166,7 @@ entries:
     mode: alternate
     score: 0.23150849222127604
     fp: c7a687a50c460b64
-    cost: 2.398
+    cost: 1.507
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [shotgun_vendetta]
     valence: magnetic
@@ -9810,7 +9810,7 @@ entries:
     mode: base
     score: 7.615344051724555
     fp: b517fd6d1d22d020
-    cost: 2.060
+    cost: 2.950
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -10098,7 +10098,7 @@ entries:
     mode: base
     score: 7.0755523311075015
     fp: 75025d8e6e021979
-    cost: 3.986
+    cost: 3.898
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
@@ -24774,7 +24774,7 @@ entries:
     listed: false
     score: 5.163747899210188
     fp: 9261fca97983a8ea
-    cost: 3.875
+    cost: 3.946
     mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
@@ -38501,7 +38501,7 @@ entries:
     listed: false
     score: 1.7079186169576979
     fp: c7a687a50c460b64
-    cost: 10.019
+    cost: 13.959
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [shotgun_vendetta]
     valence: magnetic

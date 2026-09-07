@@ -983,7 +983,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 4871.954512082926
@@ -1594,7 +1594,7 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3764.7752092716128
@@ -1606,7 +1606,7 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 3718.6666666666665
@@ -1707,7 +1707,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 3638.1385936934244
@@ -1822,7 +1822,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 3516.0609594389775
@@ -1860,7 +1860,7 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: status_chance
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 3497.724630119002
@@ -1897,7 +1897,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3461.9178188097603
@@ -2394,7 +2394,7 @@ entries:
     riven:
       bonuses: [critical_damage, reload_speed, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 0.9, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3103.9707350363387
@@ -3024,7 +3024,7 @@ entries:
     riven:
       bonuses: [cold, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2735.891785026095
@@ -7536,27 +7536,11 @@ entries:
     valence: magnetic
   - weapon: coda_bubonico
     mode: base
-    score: 86.5879168194765
-    fp: e0d270e5a62de109
-    cost: 57.536
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
-    arcanes: [primary_debilitate]
-    valence: magnetic
-  - weapon: coda_bubonico
-    mode: base
     score: 85.55227657646513
     fp: a4087f6284e7b70a
     cost: 32.520
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_deadhead]
-    valence: magnetic
-  - weapon: coda_bubonico
-    mode: base
-    score: 80.3226537276143
-    fp: 22dc2ecb03efa52b
-    cost: 66.736
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
-    arcanes: [shotgun_vendetta]
     valence: magnetic
   - weapon: coda_bubonico
     mode: base
@@ -7566,14 +7550,6 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shrapnel_shot, primed_charged_shell, contagious_spread]
     arcanes: [primary_deadhead]
     valence: cold
-  - weapon: coda_bubonico
-    mode: alternate
-    score: 0.30043746207996935
-    fp: e0d270e5a62de109
-    cost: 31.430
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
-    arcanes: [primary_debilitate]
-    valence: magnetic
   - weapon: coda_bubonico
     mode: alternate
     score: 0.2925725228396387
@@ -7589,14 +7565,6 @@ entries:
     cost: 26.704
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_deadhead]
-    valence: magnetic
-  - weapon: coda_bubonico
-    mode: alternate
-    score: 0.24917499602810134
-    fp: 22dc2ecb03efa52b
-    cost: 30.954
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
-    arcanes: [shotgun_vendetta]
     valence: magnetic
   - weapon: coda_bubonico
     mode: alternate
@@ -13691,14 +13659,6 @@ entries:
     cost: 35.745
     exilus: ruinous_extension
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    score: 46.93857862522312
-    fp: bb96a10121f66159
-    cost: 26.360
-    mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -27232,7 +27192,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -27419,7 +27379,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -27445,7 +27405,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, damage]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -27683,7 +27643,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -48421,15 +48381,6 @@ entries:
   - weapon: kuva_nukor
     mode: base
     listed: false
-    score: 35.240163970184035
-    fp: dec7f71c50874d0b
-    cost: 16.551
-    mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: impact
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
     score: 35.23326930881948
     fp: f4be0deecb23e5bd
     cost: 15.781
@@ -53806,15 +53757,6 @@ entries:
       bonuses: [critical_chance, multishot, status_chance]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9, 0.9]
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    score: 28.34265174527345
-    fp: 450f988e5525b4bc
-    cost: 17.469
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: impact
   - weapon: kuva_nukor
     mode: base
     listed: false
