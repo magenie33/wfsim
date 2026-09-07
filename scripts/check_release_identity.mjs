@@ -39,7 +39,11 @@ check(/^[0-9a-f]{12}$/.test(rel.release || ""), "site/release.json names a relea
 // STAMPED INTO THE SCRIPT, not only served beside it. `release.json` is what a
 // mirror is asked; `RELEASE_ID` is what the running page can print, and a build
 // that shipped one without the other answers only half of a bug report.
-const app = read("app.js");
+// FOUND BY LOOKING, because the script's name carries a digest that changes
+// every release — naming it here would go stale on the first build.
+const appName = readdirSync(resolve(SITE, "asset")).find((f) => /^app\..*\.js$/.test(f));
+check(!!appName, "site/asset holds the page's script", "nothing matches app.<digest>.js");
+const app = read(`asset/${appName}`);
 check(app.includes(`const RELEASE_ID = "${rel.release}";`),
   "app.js carries the same release",
   `app.js does not hold RELEASE_ID = "${rel.release}"`);
@@ -69,7 +73,15 @@ if (digest) {
 // THE WORKER ASKS FOR THE NAMES THAT EXIST. A substitution that half ran leaves
 // a 404 the page reports as "could not start", which reads as a broken build
 // rather than a broken rename.
-const worker = read("worker.js");
+const workerName = readdirSync(resolve(SITE, "asset")).find((f) => /^worker\..*\.js$/.test(f));
+check(!!workerName, "site/asset holds the compute worker", "nothing matches worker.<digest>.js");
+const worker = read(`asset/${workerName}`);
+// …AND THE SCRIPT ASKS FOR THAT WORKER. Both names carry a digest, so the pair
+// can only be wrong in one direction: a substitution that did not run leaves
+// `/worker.js`, which no longer exists.
+check(app.includes(`new Worker("/asset/${workerName}")`),
+  "the page's script starts the hashed worker",
+  "app.js still names /worker.js, which this build does not serve");
 for (const f of [wasm[0], glue[0]].filter(Boolean)) {
   check(worker.includes(`pkg/${f}`), `worker.js asks for pkg/${f}`, "the module would 404");
 }
@@ -92,14 +104,34 @@ const list = readFileSync(resolve(ROOT, "desktop/payload.lst"), "utf8")
 check(!list.some((l) => l.startsWith("board.")), "the board is not in the payload",
   `desktop/payload.lst carries ${list.filter((l) => l.startsWith("board.")).join(" ")}`);
 
-// A HASHED NAME NEEDS ITS UNHASHED NEIGHBOURS REVALIDATED. `worker.js` keeps its
-// name across releases, and a stale copy asks for the previous release's module
-// — which is no longer served, so the page does not start at all.
+// EVERY ASSET THE PAGE NAMES IS IMMUTABLE, which is the whole of the caching
+// model: the HTML is the one mutable file a release has, it names digests of
+// its own assets, and a repeat visit therefore costs one conditional request
+// and nothing else. A script or a stylesheet at a name that survives a release
+// breaks that in the direction nobody looks — the page still works, and every
+// reader pays a blocking round trip for it before anything draws.
+//
+// READ OUT OF THE SHIPPED HTML rather than from a list written here, so an
+// asset added tomorrow is covered by a file nobody edited.
 const headers = read("_headers");
-for (const f of ["/app.js", "/worker.js", "/style.css"]) {
-  const rule = new RegExp(`^\\${f}$[\\s\\S]{0,120}?must-revalidate`, "m");
-  check(rule.test(headers), `the edge revalidates ${f}`,
-    "a cached copy can outlive the hashed module it asks for");
+const immutable = [];
+{
+  let at = null;
+  for (const line of headers.split(/\r?\n/)) {
+    if (/^\//.test(line)) at = line.trim();
+    else if (at && /immutable/.test(line)) immutable.push(at);
+  }
+}
+const covers = (path) => immutable.some((rule) =>
+  new RegExp("^" + rule.replace(/[.]/g, "[.]").replace(/[*]/g, ".*") + "$").test(path));
+
+const page = read("index.html");
+const named = [...page.matchAll(/(?:src|href)="(\/[^"]+\.(?:js|css))"/g)].map((m) => m[1]);
+check(named.length >= 2, "the page names a script and a stylesheet", JSON.stringify(named));
+for (const f of named) {
+  check(covers(f), `the edge serves ${f} immutable`,
+    "a name that survives a release costs every repeat visit a blocking round trip");
+  check(existsSync(resolve(SITE, f.replace(/^\//, ""))), `...and ${f} is in site/`);
 }
 
 // ── the board says which board it is ──────────────────────────────────────

@@ -289,6 +289,8 @@ EDGE_HEADERS = """\
   Cache-Control: public, max-age=604800
 /pkg/*
   Cache-Control: public, max-age=31536000, immutable
+/asset/*
+  Cache-Control: public, max-age=31536000, immutable
 /board.json
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
@@ -298,21 +300,22 @@ EDGE_HEADERS = """\
 /board.meta.json
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
-/app.js
-  Cache-Control: public, max-age=0, must-revalidate
-/worker.js
-  Cache-Control: public, max-age=0, must-revalidate
-/style.css
-  Cache-Control: public, max-age=0, must-revalidate
 """
 
-# WHY THE THREE ABOVE REVALIDATE AND `pkg/` DOES NOT.
+# TWO TIERS, AND THE PAGE IS THE ONLY MUTABLE ONE.
 #
-# A release has two kinds of file: hashed ones, which a cache may keep for ever
-# because a different build cannot ask for the same name, and the handful that
-# keep their names across releases. The second kind MUST be revalidated, and
-# `worker.js` is the sharp case — a stale copy asks for the previous release's
-# hashed module, which is no longer served, and the page fails to start.
+# Everything a release serves except the HTML carries a digest of its own bytes
+# (`pkg/` and `asset/`), so a cache may keep it for ever: a different build
+# cannot ask for the same name. The page keeps its name, names the current
+# digests, and is the one file a browser has to ask about — so a repeat visit
+# costs ONE conditional request and nothing else touches the network.
+#
+# THE PAGE'S OWN RULE IS NOT WRITTEN HERE, and that is the one gap in the model.
+# Cloudflare's asset layer serves HTML with a short-lived default, which is what
+# the whole scheme leans on: a page cached for a week would name digests this
+# release no longer serves. `check_release_identity` asserts the shape that
+# depends on it — every asset the page names is immutable — so if the default
+# ever changes, what fails is a check rather than a reader's browser.
 #
 # `board.json` and `board/` are a different plane and revalidate for their own
 # reason: they are rescored once an hour. `Access-Control-Allow-Origin` is what
@@ -356,6 +359,70 @@ def ship_wasm_pkg() -> dict:
     shutil.copy2(WASM_PKG / "wfsim_wasm_bg.wasm", out / names["wasm"])
     names["digest"] = digest
     return names
+
+
+ASSET_DIR = "asset"
+
+
+def publish_hashed(html: str) -> str:
+    """Give `app.js`, `style.css` and `worker.js` CONTENT-ADDRESSED names, and
+    return the page pointing at them.
+
+    THE PAGE IS THE ONLY MUTABLE FILE A RELEASE HAS. Everything it names carries
+    a digest of its own bytes, so a cache may keep those for ever — a different
+    build cannot ask for the same name. What that buys is the REPEAT VISIT: one
+    conditional request for the page and nothing else on the network, where three
+    files that keep their names cost three blocking round trips before a cached
+    page may draw.
+
+    IN DEPENDENCY ORDER, LEAVES FIRST. `worker.js` names the hashed wasm,
+    `app.js` names the hashed worker, and the page names the hashed `app.js` —
+    so each is hashed only once everything it mentions is final. Hashing before
+    a substitution is the failure this order exists to prevent, and it is a
+    quiet one: the bytes served stop being the bytes the name was computed
+    from, and a cache holds that for a year.
+
+    THE UNHASHED COPIES ARE REMOVED, not left beside them. Nothing references
+    one, and a file the page never asks for is payload every client downloads.
+    That a page holding the old names cannot appear is the same property
+    `pkg/` has always leaned on — it is cleared every build too.
+    """
+    out = APP / ASSET_DIR
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+
+    def place(src: Path, stem: str, ext: str) -> str:
+        body = src.read_bytes()
+        name = f"{stem}.{hashlib.sha256(body).hexdigest()[:12]}{ext}"
+        (out / name).write_bytes(body)
+        src.unlink()
+        return f"/{ASSET_DIR}/{name}"
+
+    worker_url = place(APP / "worker.js", "worker", ".js")
+
+    app_src = (APP / "app.js").read_text(encoding="utf-8")
+    wired = app_src.replace('new Worker("/worker.js")', f'new Worker("{worker_url}")')
+    if wired == app_src:
+        sys.exit('app.js: new Worker("/worker.js") not found — the worker would 404')
+    (APP / "app.js").write_text(wired, encoding="utf-8", newline=chr(10))
+
+    app_url = place(APP / "app.js", "app", ".js")
+    css_url = place(APP / "style.css", "style", ".css")
+
+    for was, now in ((quote_attr("/app.js"), quote_attr(app_url)),
+                     (quote_attr("/style.css"), quote_attr(css_url))):
+        if was not in html:
+            sys.exit(f"index.html: {was} not found — the page would name a file that is gone")
+        html = html.replace(was, now)
+    print(f"assets: {app_url}  {css_url}  {worker_url}")
+    return html
+
+
+def quote_attr(path: str) -> str:
+    """One asset path as it appears in the markup, quotes and all — so a
+    replacement cannot match a prefix of a longer path."""
+    return '"' + path + '"'
 
 
 def release_id() -> str:
@@ -1413,9 +1480,13 @@ def main() -> None:
 
     # THE WORKER LEARNS THE HASHED NAMES. The dev server keeps the plain ones,
     # where there is no cache to be wrong about and no build step to rename.
+    # ABSOLUTE, because the worker does not stay at the root: `publish_hashed`
+    # moves it under `asset/`, where a relative `pkg/…` resolves to
+    # `/asset/pkg/…` and 404s. The dev server keeps the relative form and the
+    # plain names, and there the worker IS at the root.
     worker = (APP / "worker.js").read_text(encoding="utf-8")
-    named = (worker.replace("pkg/wfsim_wasm.js", f"pkg/{pkg['glue']}")
-                   .replace("pkg/wfsim_wasm_bg.wasm", f"pkg/{pkg['wasm']}"))
+    named = (worker.replace("pkg/wfsim_wasm.js", f"/pkg/{pkg['glue']}")
+                   .replace("pkg/wfsim_wasm_bg.wasm", f"/pkg/{pkg['wasm']}"))
     if named == worker:
         sys.exit("worker.js: neither pkg/ path found — the module would 404")
     (APP / "worker.js").write_text(named, encoding="utf-8", newline=chr(10))
@@ -1474,6 +1545,10 @@ def main() -> None:
     if released == counted:
         sys.exit("app.js: RELEASE_ID placeholder not found")
     (APP / "app.js").write_text(released, encoding="utf-8", newline=chr(10))
+    # …AND ONLY NOW ARE THE THREE FINAL. Every substitution above rewrites the
+    # bytes, so a digest taken before any of them would name a file that is no
+    # longer what was hashed.
+    flagged = publish_hashed(flagged)
     # THE HOME PAGE IS ITS OWN ROUTE and does not go through `shell` — it keeps
     # the shell's title, description and canonical as written. It still owes the
     # one-<h1> rule: `Benchmark` is a section of this page, not its subject.

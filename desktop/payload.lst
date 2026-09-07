@@ -13,9 +13,6 @@
 # A trailing `/` means the whole tree. Blank lines and `#` lines are ignored.
 
 index.html
-app.js
-style.css
-worker.js
 logo.svg
 
 # THE BOARD IS NOT HERE, and must never be. It is 4.3 MB rescored three times an
@@ -24,9 +21,15 @@ logo.svg
 # download for a file it replaces before it reads it. The shell fetches it and
 # keeps it beside the release — docs/DISTRIBUTION.md §The data plane.
 
+# `asset/` is app.js, style.css and worker.js under CONTENT-ADDRESSED names, and
+# it is a TREE for the same reason `pkg/` is: the names carry a digest that
+# changes every release, so a list naming them by hand would go stale on the
+# first build and no one would find out until a client started missing files.
+#
 # `pkg/` is the wasm module, `pol/` the polarity icons, `img/` the weapon and mod
 # art the same-origin rule put in the repository. The art ships rather than
 # streams because "installed means offline" is the whole point of the client.
+asset/
 pkg/
 pol/
 img/
