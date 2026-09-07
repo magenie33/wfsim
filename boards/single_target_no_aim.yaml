@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6589
+submissions: 6591
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -1435,7 +1435,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 5.669727705414279
@@ -2027,7 +2027,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2.46429005076734
@@ -2039,7 +2039,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2.421353878012485
@@ -2051,7 +2051,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, damage]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2.4172558068739316
@@ -2100,7 +2100,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: base
     score: 2.245414444046721
@@ -27615,7 +27615,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -27691,7 +27691,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: atomos
     mode: base
     listed: false
@@ -28925,7 +28925,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -29120,7 +29120,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -29682,7 +29682,7 @@ entries:
     riven:
       bonuses: [critical_damage, reload_speed, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: laetum
     mode: base
     listed: false
@@ -29732,7 +29732,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: boar_prime
     mode: cycle
     listed: false
@@ -29917,7 +29917,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -30008,7 +30008,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -30797,7 +30797,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -30889,7 +30889,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -30902,7 +30902,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -30990,7 +30990,7 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       malus: magazine_capacity
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -31442,7 +31442,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -31455,7 +31455,7 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -31490,7 +31490,7 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ocucor
     mode: base
     listed: false
@@ -31915,7 +31915,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -32127,7 +32127,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, damage]
       malus: ammo_maximum
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -32140,7 +32140,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 1.1]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -32552,7 +32552,7 @@ entries:
     riven:
       bonuses: [cold, critical_chance, multishot]
       malus: projectile_speed
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -32602,7 +32602,7 @@ entries:
     riven:
       bonuses: [cold, critical_chance, multishot]
       malus: projectile_speed
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -32649,7 +32649,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: base
     listed: false
@@ -32989,7 +32989,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: akarius_prime
     mode: base
     listed: false
@@ -33369,7 +33369,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -33383,7 +33383,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: furis
     mode: base
     listed: false
@@ -34052,7 +34052,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: akarius_prime
     mode: base
     listed: false
@@ -35397,7 +35397,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -35599,7 +35599,7 @@ entries:
     riven:
       bonuses: [cold, critical_chance, multishot]
       malus: projectile_speed
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -35742,7 +35742,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -36398,7 +36398,7 @@ entries:
     riven:
       bonuses: [critical_chance, toxin]
       malus: projectile_speed
-      rolls: [1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -36669,7 +36669,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -37315,7 +37315,7 @@ entries:
     riven:
       bonuses: [critical_chance, toxin]
       malus: projectile_speed
-      rolls: [1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -37976,7 +37976,7 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       malus: magazine_capacity
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: base
     listed: false
@@ -42582,7 +42582,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -42727,7 +42727,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ocucor
     mode: base
     listed: false
@@ -43256,7 +43256,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: atomos
     mode: base
     listed: false
@@ -94247,4 +94247,24 @@ entries:
     cost: 0.066
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.31632841548725404
+    fp: 2d0592235e8efe28
+    cost: 1.265
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, ravage, chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.31632841548725404
+    fp: 2d0592235e8efe28
+    cost: 1.271
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, ravage, chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]

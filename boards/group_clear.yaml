@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6589
+submissions: 6591
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -1367,7 +1367,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [1.1, 0.9, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 4063.3437770348633
@@ -1582,7 +1582,7 @@ entries:
     riven:
       bonuses: [cold, critical_damage, multishot]
       malus: ammo_maximum
-      rolls: [1.1, 0.9, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3764.7752092716128
@@ -2131,7 +2131,7 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: status_chance
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 3270.5387401121448
@@ -2321,7 +2321,7 @@ entries:
     riven:
       bonuses: [cold, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 3131.0123343869254
@@ -2856,7 +2856,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 2827.553667020365
@@ -3048,7 +3048,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2683.979216117908
@@ -3176,7 +3176,7 @@ entries:
     riven:
       bonuses: [cold, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [0.9, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 2574.2752010207205
@@ -3196,7 +3196,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 0.9, 0.9]
+      rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 2500.937116977476
@@ -27766,7 +27766,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -28497,6 +28497,20 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, chilling_reload, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_debilitate]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1407.2319101915489
+    fp: 4b5a44995412a8b1
+    cost: 134.997
+    exilus: lethal_momentum
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -31318,6 +31332,20 @@ entries:
     riven:
       bonuses: [critical_chance, fire_rate]
       rolls: [1.1, 1.1]
+  - weapon: dual_toxocyst
+    mode: cycle
+    listed: false
+    score: 164.66666666666666
+    fp: 22ef4385031608ef
+    cost: 52.064
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, riven, primed_convulsion, jolt]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: status_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: phenmor
     mode: cycle
     listed: false
@@ -41896,7 +41924,7 @@ entries:
     riven:
       bonuses: [critical_damage, damage, reload_speed]
       malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -61446,6 +61474,19 @@ entries:
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 14.229429910189952
+    fp: cddc8bae5d16c782
+    cost: 7.761
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, riven, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [cold, critical_chance, critical_damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     listed: false

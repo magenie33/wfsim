@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6589
+submissions: 6591
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -2054,7 +2054,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 80.2054067788118
@@ -2115,7 +2115,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, toxin]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 78.2054067788118
@@ -2567,7 +2567,7 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 73.46201371285167
@@ -3499,7 +3499,7 @@ entries:
     riven:
       bonuses: [critical_chance, multishot]
       malus: puncture
-      rolls: [1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: cycle
     score: 66.93040851140115
@@ -4118,7 +4118,7 @@ entries:
     riven:
       bonuses: [critical_damage, multishot, reload_speed]
       malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
     score: 60.909329587048525
@@ -4369,7 +4369,7 @@ entries:
     riven:
       bonuses: [critical_damage, damage, reload_speed]
       malus: weapon_recoil
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     score: 54.06780332278075
@@ -5588,7 +5588,7 @@ entries:
     riven:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [0.9, 1.1, 0.9, 0.9]
   - weapon: ballistica_prime
     mode: alternate
     score: 22.4654123617044
@@ -9102,6 +9102,14 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: cycle
+    score: 9.985737173841482
+    fp: 063eda90b9f45f17
+    cost: 3.528
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, ravage, chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
     score: 9.671244546054632
@@ -48893,6 +48901,20 @@ entries:
       bonuses: [critical_chance, critical_damage, magazine_capacity]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    score: 42.89576383925346
+    fp: 5d5d517bce4a35b3
+    cost: 33.530
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, primed_shred, metal_auger, critical_delay, argon_scope, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
     listed: false
@@ -56927,6 +56949,15 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    score: 15.226685248005033
+    fp: 063eda90b9f45f17
+    cost: 13.396
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, ravage, chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -60202,6 +60233,20 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    score: 12.757638987895787
+    fp: 5d5d517bce4a35b3
+    cost: 7.961
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, primed_shred, metal_auger, critical_delay, argon_scope, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
