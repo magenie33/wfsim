@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6510
+submissions: 6526
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -12621,12 +12621,13 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_chakkhurr
     mode: base
-    score: 2.204044551199927
-    fp: 7c5a6d69d4147dd9
-    cost: 1.612
-    mods: [galvanized_chamber, internal_bleeding, galvanized_aptitude, galvanized_scope, rifle_elementalist, semi_rifle_cannonade, vital_sense, primed_cryo_rounds]
-    arcanes: [primary_deadhead]
-    valence: toxin
+    score: 10.613010556072133
+    fp: bb0167adc2f05252
+    cost: 2.827
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_compression]
+    valence: impact
   - weapon: kuva_drakgoon
     mode: base
     score: 19.82062083436424
@@ -29199,6 +29200,19 @@ entries:
     riven:
       bonuses: [critical_damage, electricity, fire_rate]
       malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 467.35999714574893
+    fp: a78d41019cae19ba
+    cost: 151.706
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
@@ -79511,6 +79525,15 @@ entries:
     mods: [galvanized_chamber, serration, hammer_shot, point_strike, vigilante_armaments, vital_sense, thermite_rounds, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: kuva_chakkhurr
+    mode: base
+    listed: false
+    score: 2.204044551199927
+    fp: 7c5a6d69d4147dd9
+    cost: 1.612
+    mods: [galvanized_chamber, internal_bleeding, galvanized_aptitude, galvanized_scope, rifle_elementalist, semi_rifle_cannonade, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_deadhead]
+    valence: toxin
   - weapon: torid
     mode: base
     listed: false
@@ -91255,6 +91278,28 @@ entries:
     exilus: steady_hands
     mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 3.200060745806079
+    fp: 59441bd0447cf0cb
+    cost: 2.906
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, ravage, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.3087084377389247
+    fp: 59441bd0447cf0cb
+    cost: 1.609
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, ravage, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: bronco_prime
     mode: cycle
     listed: false
@@ -94453,3 +94498,12 @@ entries:
     fp: a885ab82408d7d22
     cost: 1.123
     mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
+  - weapon: ax_52
+    mode: base
+    listed: false
+    probe: true
+    score: 0.2378815751467405
+    fp: 5103d621c813adc3
+    cost: 1.095
+    mods: [primary_acuity, primed_shred, galvanized_scope, bladed_rounds, critical_delay, vital_sense, stormbringer, hellfire]
+    arcanes: [primary_crux]

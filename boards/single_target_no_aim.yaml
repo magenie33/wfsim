@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6510
+submissions: 6526
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -8399,22 +8399,13 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_chakkhurr
     mode: base
-    score: 0.2331054489383715
-    fp: f9ca184fde4b32b6
-    cost: 0.426
-    exilus: vile_precision
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, rifle_elementalist, semi_rifle_cannonade, vital_sense, primed_cryo_rounds]
-    arcanes: [primary_frostbite]
-    valence: cold
-  - weapon: kuva_chakkhurr
-    mode: base
-    score: 0.22321843944360817
-    fp: 7da2408f793894f9
-    cost: 0.480
-    exilus: vile_precision
-    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, rifle_elementalist, semi_rifle_cannonade, vital_sense, thermite_rounds, malignant_force]
-    arcanes: [primary_frostbite]
-    valence: cold
+    score: 0.6276081073349591
+    fp: 7fdf1e69a179d217
+    cost: 0.802
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_compression]
+    valence: impact
   - weapon: kuva_drakgoon
     mode: base
     score: 0.6135173520017677
@@ -14879,6 +14870,14 @@ entries:
     fp: df77a043826b203e
     cost: 14.457
     exilus: shotgun_ammo_mutation
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma
+    mode: base
+    score: 4.7926712038257255
+    fp: 7e73511aae87e137
+    cost: 16.708
+    exilus: vigilante_supplies
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma
@@ -44793,6 +44792,32 @@ entries:
       bonuses: [critical_damage, fire_rate, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 1.2937947033461046
+    fp: 8632786553db811a
+    cost: 5.249
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    listed: false
+    score: 1.2937947033461046
+    fp: 63229010887c8a82
+    cost: 5.344
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: base
     listed: false
@@ -44825,6 +44850,32 @@ entries:
     riven:
       bonuses: [cold, critical_chance, critical_damage]
       malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 1.2930216855699763
+    fp: 8632786553db811a
+    cost: 4.540
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: base
+    listed: false
+    score: 1.2930216855699763
+    fp: 63229010887c8a82
+    cost: 3.424
+    mods: [galvanized_chamber, serration, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ocucor
     mode: base
@@ -75649,6 +75700,16 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_enervate]
+  - weapon: kuva_chakkhurr
+    mode: base
+    listed: false
+    score: 0.2331054489383715
+    fp: f9ca184fde4b32b6
+    cost: 0.426
+    exilus: vile_precision
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, rifle_elementalist, semi_rifle_cannonade, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_frostbite]
+    valence: cold
   - weapon: torid
     mode: base
     listed: false
@@ -76643,6 +76704,16 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, primed_heated_charge, pistol_pestilence, frostbite]
     arcanes: [secondary_enervate]
     valence: magnetic
+  - weapon: kuva_chakkhurr
+    mode: base
+    listed: false
+    score: 0.22321843944360817
+    fp: 7da2408f793894f9
+    cost: 0.480
+    exilus: vile_precision
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, rifle_elementalist, semi_rifle_cannonade, vital_sense, thermite_rounds, malignant_force]
+    arcanes: [primary_frostbite]
+    valence: cold
   - weapon: coda_bassocyst
     mode: base
     listed: false
@@ -90035,6 +90106,28 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_fortress_salvo, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.2731232106130162
+    fp: 0960406ba860fc20
+    cost: 1.835
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, ravage, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.2731232106130162
+    fp: 0960406ba860fc20
+    cost: 1.453
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, ravage, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: bronco_prime
     mode: base
     listed: false
@@ -93087,25 +93180,141 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: acceltra_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.08048059806357306
+    fp: 60acc12a5825fd6f
+    cost: 0.415
+    mods: [galvanized_chamber, primed_firestorm, primed_shred, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, thermite_rounds]
+    arcanes: [primary_merciless]
+  - weapon: ax_52
+    mode: base
+    listed: false
+    probe: true
+    score: 0.01134498190202271
+    fp: 04f41876e8c3a058
+    cost: 0.164
+    mods: [primary_acuity, primed_shred, galvanized_scope, bladed_rounds, critical_delay, vital_sense, stormbringer, hellfire]
+    arcanes: [primary_crux]
   - weapon: boar_prime
     mode: base
     listed: false
     probe: true
-    score: 0.2731232106130162
-    fp: 0960406ba860fc20
-    cost: 1.835
+    score: 0.27202659319811145
+    fp: 9de0d348dd9ad3f3
+    cost: 1.303
     exilus: primed_counterbalance
-    mods: [galvanized_hell, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, ravage, primed_charged_shell]
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.27202659319811145
+    fp: 9de0d348dd9ad3f3
+    cost: 1.343
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.30263095945543494
+    fp: 391b7f2396631277
+    cost: 1.802
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
     listed: false
     probe: true
-    score: 0.2731232106130162
-    fp: 0960406ba860fc20
-    cost: 1.453
+    score: 0.30263095945543494
+    fp: 391b7f2396631277
+    cost: 1.862
     exilus: primed_counterbalance
-    mods: [galvanized_hell, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, ravage, primed_charged_shell]
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.2871307904711556
+    fp: 9be1be8df158f6b5
+    cost: 1.511
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_ravage, primed_ammo_stock, critical_deceleration, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.2871307904711556
+    fp: 9be1be8df158f6b5
+    cost: 1.450
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_ravage, primed_ammo_stock, critical_deceleration, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.3000442734258586
+    fp: adc809a88fcb4061
+    cost: 1.067
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.3000442734258586
+    fp: adc809a88fcb4061
+    cost: 1.043
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 0.3303305446231196
+    fp: fbb98572b0977191
+    cost: 1.318
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.3303305446231196
+    fp: fbb98572b0977191
+    cost: 1.340
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, shotgun_elementalist, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: phantasma
+    mode: alternate
+    listed: false
+    probe: true
+    score: 0.013015797296364262
+    fp: 7e73511aae87e137
+    cost: 0.065
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
