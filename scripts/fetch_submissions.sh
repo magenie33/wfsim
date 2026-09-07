@@ -140,11 +140,36 @@ guard_shrink() {
 }
 
 list_keys() {
-  local api="$1" cursor="" resp
+  local api="$1" cursor="" resp attempt
   : > keys.txt
   while :; do
-    resp=$(curl -sf -H "Authorization: Bearer $CF_TOKEN" \
-      "$api/keys?limit=1000${cursor:+&cursor=$cursor}")
+    # THREE TRIES, BACKING OFF — the same rate limit the value fetch runs at
+    # and the same 429, and this had none: one transient refusal killed the
+    # whole run at its FIRST step, before a single row had been read, with
+    # `set -e` turning curl's exit 22 into a job that says only "exit code 22".
+    #
+    # LONGER THAN THE VALUE FETCH'S WAIT, because the listing is a handful of
+    # requests rather than thousands: fifteen seconds of patience costs nothing
+    # here and clears a rate-limit window that one second does not.
+    resp=""
+    for attempt in 1 2 3; do
+      # `:-x` LIKE THE VALUE FETCH ABOVE, and for the same reason: `set -u`
+      # otherwise makes this function untestable, which is how it went so long
+      # without the retry below.
+      if resp=$(curl -sf -H "Authorization: Bearer ${CF_TOKEN:-x}" \
+        "$api/keys?limit=1000${cursor:+&cursor=$cursor}"); then
+        break
+      fi
+      resp=""
+      sleep $((attempt * 5))
+    done
+    # A SHORT LIST IS WORSE THAN NO LIST, so exhausting the tries is fatal
+    # rather than a `break`: the floor guard would catch a truncated library one
+    # step later, and this catches it where the cause is still legible.
+    if [ -z "$resp" ]; then
+      echo "list_keys: Cloudflare refused the key listing three times" >&2
+      return 1
+    fi
     # NOT THE REPORTS. `d/...` is a DISAGREEMENT — two measurements of one row
     # differing — and the board reads those separately. An identity is built
     # from `[a-z0-9_]` ids and cannot contain a slash, so the prefix cannot take
@@ -212,6 +237,30 @@ FLAKY
   build_library x > /dev/null
   [ "$(got)" = "x,y" ] && say ok "a key whose first request fails is retried" \
     || say FAIL "after a flaky fetch: $(got)"
+
+  # …AND SO IS THE LISTING, which is the half that had no retry and the half a
+  # failure is fatal in: a refused VALUE costs one record, a refused LISTING
+  # costs the run. Three board runs died at exit 22 here before a row was read.
+  export KEYS_FLAKY="$dir/work/keysflaky"; echo 0 > "$KEYS_FLAKY"
+  cat > "$dir/bin/curl" <<'KEYFLAKY'
+#!/usr/bin/env bash
+for a in "$@"; do
+  case "$a" in *"/keys?"*)
+    n=$(cat "$KEYS_FLAKY"); echo $((n + 1)) > "$KEYS_FLAKY"
+    [ "$n" -lt 1 ] && exit 22
+    printf '{"result":[{"name":"k1"},{"name":"d/report"},{"name":"k2"}],"result_info":{}}'
+    exit 0;;
+  esac
+done
+exit 1
+KEYFLAKY
+  chmod +x "$dir/bin/curl"
+  rm -f keys.txt
+  if list_keys x && [ "$(tr '\n' ',' < keys.txt)" = "k1,k2," ]; then
+    say ok "a key LISTING whose first request fails is retried"
+  else
+    say FAIL "after a flaky listing: $(tr '\n' ',' < keys.txt 2>/dev/null)"
+  fi
 
   # …and back to the reliable stub, for everything below.
   cat > "$dir/bin/curl" <<'STUB2'
