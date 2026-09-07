@@ -525,10 +525,14 @@ pub struct Settled {
     /// it goes, so this is damage that bought nothing, and a build can deal
     /// MORE of it while killing FEWER units.
     pub overkill: f64,
-    /// WHAT A BROKEN POOL THREW AWAY. Overguard and shields do not spill into
-    /// what is under them, so the part of an instance past the pool it landed
-    /// on is discarded — a different waste from `overkill` and counted apart
-    /// from it: one is killing a corpse, the other is hitting a wall too hard.
+    /// WHAT A BROKEN SHIELD THREW AWAY — the 95% of the breaking instance's
+    /// overflow the shield gate does not pass down (`ENEMY_SHIELD_GATE_LEAK`).
+    /// It is a different waste from `overkill` and counted apart from it: one
+    /// is killing a corpse, the other is hitting a gate too hard.
+    ///
+    /// OVERGUARD NEVER SPILLS ANY. Its excess carries into what is under it in
+    /// full — see [`TargetState::apply`] — so an enemy has exactly two places
+    /// to waste damage, and this is the second one.
     pub spilled: f64,
     /// WHAT REACHED HEALTH, which is the only pool Viral multiplies — the
     /// weight the statistic below is averaged against. Overguard and shields
@@ -1006,11 +1010,12 @@ impl TargetState {
     /// Returns `(effective_damage, killed, broken_pool)`.
     ///
     /// Mitigation model (docs/MECHANICS.md §8, unverified). Order is
-    /// Overguard → Shields → Health with no spill, and every component is first
+    /// Overguard → Shields → Health, and every component is first
     /// scaled by the vulnerability COLUMN the pool reads (System B,
     /// `factions_data`) — which is what `shares` is for.
     /// - Overguard: raw × its column × Disrupt amp, no armour, and Toxin does
-    ///   NOT bypass it.
+    ///   NOT bypass it. What the pool cannot absorb CARRIES ON into what is
+    ///   under it — the depletion protection is the PLAYER's alone (M82).
     /// - Shields: the non-Toxin portion × Disrupt amp; the Toxin portion goes
     ///   straight to health.
     /// - Health: × Virus amp × (1 − 0.9·√(armor_eff/2700)), `armor_eff` floored
@@ -1029,6 +1034,13 @@ impl TargetState {
         p: &TargetParams,
         ignores_armor: bool,
         mit: &Mitigation,
+        // WHAT THE CALLER ALREADY MULTIPLIED INTO `raw` FOR OVERGUARD'S SAKE
+        // — Secondary Fortifier's `overguard_multiplier`, or 1.0. It is handed
+        // over rather than applied here because the caller applies it on the
+        // way in; this only needs it to take it back OFF the share that
+        // carries past a depleted pool, which never met the Overguard the card
+        // names.
+        overguard_multiplier: f64,
         // WHERE THE BREAKDOWN GOES, when anyone is watching. `None` is the
         // 999 runs of a thousand that are never replayed.
         led: Option<&mut Breakdown>,
@@ -1057,7 +1069,7 @@ impl TargetState {
             crate::record::TargetAt::default()
         };
 
-        // Route into pools (no spill). The vulnerability COLUMN is chosen by
+        // Route into pools. The vulnerability COLUMN is chosen by
         // the pool, not only by the enemy: Overguard has its own table (wiki
         // Overguard — neutral but ×1.5 Void), and it is a layer over the unit
         // rather than part of it, so the unit's own column never reaches it.
@@ -1091,16 +1103,43 @@ impl TargetState {
         let mut led_hp = (0.0f64, 1.0f64);
         let mut led_sh_dtype = DamageType::Impact;
         let mut led_hp_dtype = DamageType::Impact;
+        // WHAT IS LEFT OF THE INSTANCE ONCE OVERGUARD HAS TAKEN ITS SHARE —
+        // the whole of it when the target carries none.
+        let mut passed = gated;
+        let mut led_og_remaining = 1.0f64;
         if self.overguard > 0.0 {
             let whole = shares.whole(&p.type_mods.overguard);
-            og_part = gated * whole * mit.disrupt_amp;
+            let full = gated * whole * mit.disrupt_amp;
+            if full > self.overguard {
+                // ENEMY OVERGUARD CARRIES OVER, and it is the PLAYER's that
+                // does not. wiki `Overguard`: a player's has *"a 0.5 second
+                // invulnerability gate when fully depleted, preventing any
+                // excess damage from leaking into their shield or health
+                // pool"*, added in Update 33.6 — whose own note says
+                // *"This Overguard Depletion Protection applies only to Player
+                // Overguard, not Overguard seen on enemies"*, and the enemy
+                // paragraph says *"Enemies do not have any invulnerability
+                // gating when their Overguard is depleted."* Measured in game:
+                // an Overguard holder can be killed by one shot.
+                og_part = self.overguard;
+                led_og_remaining = self.overguard / full;
+                // …AND IT ARRIVES UNFORTIFIED. Secondary Fortifier multiplies
+                // the instance before it gets here and its card says "to
+                // Overguard", so the share that never met the pool must not
+                // keep the bonus (MEASUREMENTS M38).
+                passed = gated / overguard_multiplier * (1.0 - led_og_remaining);
+            } else {
+                og_part = full;
+                passed = 0.0;
+            }
             if led.is_some() {
                 led_og_column = whole;
             }
-        } else {
+        }
+        if passed > 0.0 {
             let col = &p.type_mods.faction;
-            let toxin = gated * shares.toxin_portion(col);
-            let rest = gated * shares.non_toxin_portion(col);
+            let toxin = passed * shares.toxin_portion(col);
+            let rest = passed * shares.non_toxin_portion(col);
             if self.shield > 0.0 {
                 // THE SHIELD GATE, AND IT BELONGS TO THE HIT THAT BREAKS THE
                 // SHIELD.
@@ -1190,7 +1229,13 @@ impl TargetState {
                 // THE SPLIT, named. A shapeless instance is one neutral lump —
                 // all of it non-Toxin at ×1.00 — which is what `TypeShares`
                 // answers from the other side.
-                let toxin_share = shares.toxin();
+                //
+                // A SHARE IS OF THE WHOLE INSTANCE, so what Overguard ate is
+                // already gone from it: the ledger's first factor is what
+                // reached this pool, and the column falls out of the division
+                // unchanged because the same fraction is in both halves.
+                let carried = passed / gated;
+                let toxin_share = shares.toxin() * carried;
                 let split = |portion: f64, share: f64| {
                     if share > 1e-12 {
                         (share, portion / gated / share)
@@ -1199,12 +1244,12 @@ impl TargetState {
                     }
                 };
                 if self.shield > 0.0 {
-                    led_sh = split(rest, 1.0 - toxin_share);
+                    led_sh = split(rest, carried - toxin_share);
                     led_hp = split(toxin, toxin_share);
                     led_sh_dtype = shares.dominant_non_toxin();
                     led_hp_dtype = DamageType::Toxin;
                 } else {
-                    led_hp = split(before, 1.0);
+                    led_hp = split(before, carried);
                     led_hp_dtype = shares.dominant();
                 }
             }
@@ -1275,7 +1320,7 @@ impl TargetState {
             armor: 1.0,
             floored: false,
             attenuation: atten,
-            pool_remaining: 1.0,
+            pool_remaining: led_og_remaining,
             effective: og_part,
         });
         b.push(Portion {
@@ -1361,7 +1406,7 @@ impl TargetState {
             self.overguard -= og_part;
             if self.overguard <= 0.0 {
                 out.spilled += -self.overguard;
-                self.overguard = 0.0; // no spill
+                self.overguard = 0.0;
                 out.broken = Some(BrokenPool::Overguard);
             }
         }
@@ -6276,6 +6321,7 @@ fn fire_extra_hits(
             &params.target,
             false,
             mit,
+            1.0,
             watching(rec, &mut breakdown),
         );
         let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
@@ -6562,6 +6608,7 @@ fn drain_area_procs(
                 fp,
                 false,
                 &mit,
+                1.0,
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
@@ -6983,6 +7030,7 @@ fn settle_procs(
                         foe,
                         false,
                         &mit,
+                        1.0,
                         watching(rec, &mut breakdown),
                     );
                     let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
@@ -7134,6 +7182,7 @@ fn settle_procs(
                 foe,
                 false,
                 mit,
+                1.0,
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
@@ -7579,6 +7628,7 @@ fn spread_from_influence(
                 tparams,
                 false,
                 &mit,
+                1.0,
                 watching(rec, &mut breakdown),
             );
             let (eff, killed) = (settled.effective, settled.killed);
@@ -7745,6 +7795,7 @@ fn spread_hit(
         &spec.params,
         false,
         &mit,
+        1.0,
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
@@ -8638,6 +8689,7 @@ fn fire_syndicate_radial(
         &params.target,
         false,
         &mit,
+        1.0,
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
@@ -9524,6 +9576,7 @@ fn field_tick(
         foe,
         false,
         &mit,
+        1.0,
         watching(rec, &mut breakdown),
     );
     let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
@@ -9966,6 +10019,8 @@ fn process_ticks(
         };
         let unfortified = value;
         let value = value * fortifier;
+        // …and `apply` is told what that was, so the share carrying past a
+        // depleted Overguard can shed it.
         let mut breakdown = Breakdown::default();
         let settled = target.apply(
             value,
@@ -9975,6 +10030,7 @@ fn process_ticks(
             p,
             ignores_armor,
             &mit,
+            fortifier,
             watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
@@ -15367,13 +15423,17 @@ pub fn run_once_traced(
             // it is `ap`'s rather than `params`' — the form being fired owns
             // it, because one arcane is worth +240% in the Torid's base form
             // and nothing in its Incarnon.
-            let arc_final = params.arcane.final_multiplier
-                * ap.compression_multiplier
-                * if target.overguard > 0.0 {
-                    params.arcane.overguard_multiplier
-                } else {
-                    1.0
-                };
+            // HOISTED so `apply` is handed the SAME number that went in, and
+            // can take it back off the share that carries past a depleted
+            // Overguard rather than re-deriving it from a pool it has already
+            // spent.
+            let og_mult = if target.overguard > 0.0 {
+                params.arcane.overguard_multiplier
+            } else {
+                1.0
+            };
+            let arc_final =
+                params.arcane.final_multiplier * ap.compression_multiplier * og_mult;
 
             // ---- ATTACK PARTS (MECHANICS §7) -------------------------
             // A projectile carries TWO instances where the weapon declares a
@@ -16047,6 +16107,7 @@ pub fn run_once_traced(
                     &params.target,
                     false,
                     &mit,
+                    og_mult,
                     watching(rec, &mut breakdown),
                 );
                 let (effective, killed, broke) =
@@ -27301,8 +27362,49 @@ mod tests {
         );
     }
 
+    /// ENEMY OVERGUARD IS A BAR IN FRONT OF THE HEALTH BAR, not a wall in
+    /// front of it. See [`TargetState::apply`] for the wiki's own wording; the
+    /// consequence a player states is that a unit holding Overguard can be
+    /// killed by ONE shot, and this is that sentence as arithmetic.
     #[test]
-    fn overguard_ignores_armor_and_does_not_spill() {
+    fn a_hit_that_breaks_overguard_carries_the_rest_into_health() {
+        // 100 of Overguard in front of 50 of health, and no armour: a 1000
+        // hit spends 100 and the other 900 has to land.
+        let target = frail_target(TargetMode::InstantRespawn, 0.0, 100.0);
+        let mut st = TargetState::spawn(&target);
+        let og = st.overguard;
+        let hp = st.health;
+        let settled = st.apply(
+            1000.0,
+            TypeShares::single(DamageType::Impact),
+            false,
+            0.0,
+            &target,
+            true,
+            &Mitigation { disrupt_amp: 1.0, virus_amp: 1.0, virus_stacks: 0, armor_multiplier: 1.0 },
+            1.0,
+            None,
+        );
+        assert!(settled.killed, "an Overguard holder can be killed by one shot");
+        assert_eq!(settled.spilled, 0.0, "nothing is thrown away on the way past");
+        assert!(
+            (settled.effective - 1000.0).abs() < 1e-9,
+            "the whole instance landed: {}",
+            settled.effective
+        );
+        // …AND IT ARRIVED WHERE IT WAS AIMED. The excess is health damage, so
+        // the overkill is everything past the two bars — a check the totals
+        // alone would pass with the 900 charged back to Overguard.
+        assert!(
+            (settled.overkill - (1000.0 - og - hp)).abs() < 1e-9,
+            "overkill is what was left after both bars: {} against {}",
+            settled.overkill,
+            1000.0 - og - hp
+        );
+    }
+
+    #[test]
+    fn overguard_ignores_armor_while_it_holds() {
         // Huge armor but active overguard: hits are neutral (effective == raw)
         // until overguard breaks; the pool is large enough to absorb all runs.
         // (Bleed ticks land on overguard at full value too.)
@@ -27929,6 +28031,7 @@ mod tests {
                 &target,
                 true,
                 &Mitigation { disrupt_amp: 1.0, virus_amp: 1.0, virus_stacks: 0, armor_multiplier: 1.0 },
+                1.0,
                 None,
             );
             (before_shield - st.shield, before_health - st.health)

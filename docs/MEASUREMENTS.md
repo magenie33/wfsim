@@ -165,6 +165,7 @@ path, so an entry may be renamed but never renumbered.
 | [M79](measurements/M79-flat-base-add-and-eclipse.md) | a flat base-damage add rides BESIDE an attack's own multiplier, and Eclipse does not reach Condition Overload | · 2026-09-04 (owner) |
 | [M80](measurements/M80-denominator-is-base-damage-only.md) | the quantization denominator is `base × (1 + base-damage mods)` and nothing else | ✅ 2026-09-04 (owner) |
 | [M81](measurements/M81-independent-co-applies-after-quantization.md) | an `Independent` Condition Overload multiplier applies AFTER quantization | ✅ 2026-09-04 (owner) |
+| [M82](measurements/M82-enemy-overguard-carries-over.md) | an enemy's Overguard carries its excess into what is under it; the depletion gate is the PLAYER's alone | ✅ 2026-09-07 (owner) |
 
 ## By weapon
 

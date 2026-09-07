@@ -3,9 +3,9 @@
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
 Audited against the whole wiki page at the owner's request. Everything
-transcribed is right — x3/x4/x5/x6/x7/x8 by rank, Overguard only (and this
-engine sends the WHOLE instance to Overguard while it holds, with no carry-over
-to shields or health, so multiplying the instance is right), lost the moment the
+transcribed is right — x3/x4/x5/x6/x7/x8 by rank, Overguard only (so the
+multiplier rides the whole instance while the pool can absorb it, and the share
+that carries past a depleted pool sheds it — M82), lost the moment the
 pool breaks, and the steal half deliberately unmodelled and disclosed as such
 (`secondary_fortifier :: overguard on damage`).
 
