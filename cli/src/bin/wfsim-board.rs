@@ -741,6 +741,25 @@ fn reuse_prior(path: &str, bench_id: &str) -> Result<Prior, String> {
     Ok(out)
 }
 
+/// WHAT AN EARLIER RUN STORED, TAKEN ONLY WHERE THIS RUN HAS NOTHING.
+///
+/// The rule the assembly rests on: a number this run computed is the number
+/// this code computes, and a stored one only claims to be. They agree on every
+/// row nobody refought, so the order costs nothing — until a rescore, where
+/// letting the stored copy win republishes exactly what was being replaced.
+///
+/// Returns how many were taken, which is what `reused` counts.
+fn take_where_unknown(known: &mut ScoreMap, stored: ScoreMap) -> usize {
+    let mut taken = 0;
+    for (k, v) in stored {
+        if let std::collections::hash_map::Entry::Vacant(slot) = known.entry(k) {
+            slot.insert(v);
+            taken += 1;
+        }
+    }
+    taken
+}
+
 /// THE RULER'S TERMS PLUS THE ENTRANT, as the request the simulator answers.
 ///
 /// **IT NAMES THE MODE, NEVER THE FORM THE MODE RESOLVES TO.** `form()` maps
@@ -806,7 +825,8 @@ fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!(
             "usage: wfsim-board <benchmark-id> [board.json] [--shard i/n] \
-                   [--scores <file|dir>] [--emit-scores <file>]  (submissions on stdin)"
+                   [--scores <file|dir>] [--scored-here <file|dir>] \
+                   [--refight-all] [--emit-scores <file>]  (submissions on stdin)"
         );
         std::process::exit(2);
     });
@@ -837,6 +857,14 @@ fn main() {
     // board away and made every row todo.
     let (store_scores, known_costs, known_probes, store_fps, mut row_partials) =
         load_scores(flag("--scores"), &bench_id);
+    // …AND WHICH OF THEM THIS RUN COMPUTED ITSELF, which is a different fact
+    // and the one the assembly needs. A row's stored score and this run's can
+    // only DIFFER where the row was refought — a forced rescore, or a full one
+    // — and the stored number is the one that was just proved out of date, so a
+    // merge that let it win published the rescore as a no-op.
+    //
+    // A SEPARATE PATH, because nothing inside a file says which run wrote it.
+    let (here_scores, ..) = load_scores(flag("--scored-here"), &bench_id);
     let mut known: ScoreMap = Default::default();
     let mut reused = 0usize;
     let mut stale = 0usize;
@@ -905,6 +933,11 @@ fn main() {
     // `--verify` run over the sample came back identical throughout, which is
     // what makes reusing across a code change a MEASUREMENT rather than a hope.
 
+    // THIS RUN'S OWN ANSWERS GO IN FIRST, so every stored copy below can only
+    // fill a gap. A verify run takes none, for the reason stated below.
+    if !verify {
+        known.extend(here_scores.iter().map(|(k, v)| (k.clone(), *v)));
+    }
     let mut verify_against: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
         // A PROJECTION KEEPS EVERY ROW IT IS HANDED, stale or not. Dropping a
@@ -914,7 +947,6 @@ fn main() {
         // one outcome the floor and the archive both exist to prevent.
         match reuse_prior(&path, &bench_id) {
             Ok(p) => {
-                reused = if verify { 0 } else { p.scores.len() };
                 stale = p.stale;
                 prior_rolls = p.rolls;
                 prior_costs = p.costs;
@@ -926,10 +958,7 @@ fn main() {
                     // and a seeded score is a row that is never fought.
                     verify_against = p.scores;
                 } else {
-                    // The shards' own scores win: they were computed by THIS run.
-                    for (k, v) in p.scores {
-                        known.entry(k).or_insert(v);
-                    }
+                    reused = take_where_unknown(&mut known, p.scores);
                 }
             }
             Err(why) => eprintln!("full rescore: {why}"),
@@ -998,21 +1027,41 @@ fn main() {
     // the board. Measured, and live: `--rescore kuva_nukor` took all 56 of its
     // rows off the published board because the merge honoured the flag it
     // cannot act on. Same rule as a stale row, same reason.
+    //
+    // EVERY ROW IS THE SAME BACKSTOP WITH NO SELECTOR — the `full` button, which
+    // says "rescore every row, whatever is stored" and has to mean it. Spelling
+    // it as forcing rather than as "run with no prior board" keeps the prior's
+    // COSTS, which the split packs by, and its LEADERS, which the probe screens
+    // against; without those a full rescore is blind twice over.
+    let refight_all = has_flag("--refight-all") && !project;
     let forced: Vec<Selector> = flag("--rescore")
         .filter(|_| !project)
         .map(|list| list.split(';').filter_map(Selector::parse).collect())
         .unwrap_or_default();
-    let is_forced = |k: &String| forced.iter().any(|sel| sel.matches(k));
-    if let Some(list) = flag("--rescore") {
+    let is_forced = |k: &String| refight_all || forced.iter().any(|sel| sel.matches(k));
+    if refight_all || flag("--rescore").is_some() {
+        let named = if refight_all {
+            "every row".to_string()
+        } else {
+            flag("--rescore").unwrap_or_default()
+        };
         let hit = &is_forced;
         let before = known.len();
-        known.retain(|k, _| !hit(k));
+        // FORCING DROPS WHAT WAS STORED, NEVER WHAT THIS RUN COMPUTED. The
+        // point of the flag is to refight a row; throwing away the fight is
+        // the one thing it must not do.
+        known.retain(|k, _| !hit(k) || here_scores.contains_key(k));
         rolls.retain(|k, _| !hit(k));
+        // …AND THE HALF-FINISHED FIGHTS WITH THEM. A partial is held to the
+        // row's DATA hash, which a forced rescore does not move, so a resumed
+        // row would add an older engine's runs to this one's and publish the
+        // sum — a forced row that is not fought from zero is not refought.
+        row_partials.retain(|k, _| !hit(k));
         let dropped = before - known.len();
         reused = reused.saturating_sub(dropped);
-        eprintln!("rescore: forced {dropped} stored row(s) back through the fight for {list}");
-        if dropped == 0 {
-            eprintln!("rescore: nothing stored matched {list} — check the selector");
+        eprintln!("rescore: forced {dropped} stored row(s) back through the fight for {named}");
+        if dropped == 0 && !refight_all {
+            eprintln!("rescore: nothing stored matched {named} — check the selector");
         }
     }
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
@@ -3198,5 +3247,32 @@ mod page_row_tests {
             .collect();
         assert_eq!(many.len(), 2);
         assert!(many.iter().any(|s| s.matches(base)));
+    }
+
+    /// A STORED SCORE NEVER OVERWRITES WHAT THIS RUN COMPUTED.
+    ///
+    /// Every rescore rests on it. The two copies agree on every row nobody
+    /// refought, so the order looks free — and on the rows a rescore DID
+    /// refight, letting the stored one win republishes the number the rescore
+    /// was called to replace, with the shards' work banked, the run green and
+    /// the board unchanged.
+    ///
+    /// The count is what `reused` reports, so a row taken from this run has to
+    /// leave it alone: a merge that claimed every prior row as reused would
+    /// report a full rescore as having refought nothing.
+    #[test]
+    fn a_stored_score_never_overwrites_what_this_run_computed() {
+        let mut known: ScoreMap = Default::default();
+        known.insert("refought#base".into(), 49.66);
+
+        let mut stored: ScoreMap = Default::default();
+        stored.insert("refought#base".into(), 48.53);
+        stored.insert("untouched#base".into(), 12.0);
+
+        let taken = take_where_unknown(&mut known, stored);
+
+        assert_eq!(known["refought#base"], 49.66, "the stored copy won the merge");
+        assert_eq!(known["untouched#base"], 12.0, "a row this run never fought was dropped");
+        assert_eq!(taken, 1, "the row this run computed was counted as reused");
     }
 }

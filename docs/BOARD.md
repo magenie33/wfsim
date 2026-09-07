@@ -227,6 +227,17 @@ nothing — its token cannot write to the repository — it files a warrant the
 board acts on, which is the manual backstop fired by evidence instead of by a
 person noticing.
 
+**A BACKSTOP IS ONLY WORTH WHAT REACHES THE BOARD.** The shards refight the rows
+they are told to; the assembly merges what it is handed, which is this run's
+shards beside the durable score store. It is told which is which
+(`--scored-here`), and a score this run computed wins every merge — without
+that the store's copy of a row won on name order and a rescore republished the
+number it was called to replace, with the run green, the work banked and the
+board unchanged. The same rule spells the `full` button: it FORCES every row
+(`--refight-all`) rather than withholding the prior board. Reuse is decided per
+row and the store answers first, so withholding the prior forced nothing, while
+losing the costs the split packs by and the leaders the probe screens against.
+
 A CAP OF `REPAIR_CAP` ROWS, because a finding that large is not a repair but a
 question. A hundred rows moving at once is a ruler's terms or a fight-wide
 constant, not a hundred separate defects, and burying that under an hour of

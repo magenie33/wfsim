@@ -101,6 +101,37 @@ check(denom.length > 0 && denom.every((l) => l.includes("outputs.shard_count")),
   "the shard denominator comes from the matrix's own count",
   `a shard is told a count the matrix does not set (${denom.map((l) => l.trim()).join(" | ") || "no --shard at all"})`);
 
+// A RESCORE'S OWN ANSWER REACHES THE BOARD, which is the whole of what a
+// rescore is. The assembly is handed one directory holding this run's shards
+// AND the durable store, and a name collision there is resolved by sort order —
+// so the stored number overwrote the fresh one and every forced rescore
+// published exactly what it was replacing. Green every time: the shards refight
+// the rows, bank them, and the merge hands back the old figures.
+const assemble = wf.filter((l) => l.includes("--project") && !l.trim().startsWith("#"));
+check(assemble.length > 0 && assemble.every((l) => l.includes("--scored-here")),
+  "the assembly is told which scores this run computed",
+  "a pass that cannot tell its own shards from the store republishes the store: "
+    + "the rows a rescore just refought come back with the numbers it replaced");
+
+// …AND THE FULL BUTTON FORCES ROWS RATHER THAN WITHHOLDING THE PRIOR BOARD.
+// Reuse is decided per row and the store answers first, so a run with no prior
+// forced nothing at all — while losing the two things the prior is really for,
+// the costs the split packs by and the leaders the probe screens against.
+//
+// READ OVER THE CODE LINES ALONE. A prose block between the condition and the
+// assignment is not distance, and counting it as distance is how the check
+// would pass on the shape it exists to refuse.
+const code = wf.filter((l) => l.trim() && !l.trim().startsWith("#"));
+const gated = code
+  .map((l, i) => [l, i])
+  .filter(([l]) => l.includes('prior="--reuse'))
+  .filter(([, i]) => code.slice(Math.max(0, i - 3), i + 1)
+    .some((l) => /(inputs|outputs)\.full/.test(l)));
+check(gated.length === 0, "a full rescore is every row forced, not a missing prior",
+  `the prior board is withheld on \`full\` (${gated.map(([l]) => l.trim()).join(" | ")}) — `
+    + "which forces nothing, since reuse is decided per row and the store answers "
+    + "first, and loses the costs the split packs by and the leaders it screens against");
+
 // THE BOARD PUBLISHES; THE AUDIT INSPECTS. `--verify` re-fights published rows
 // and compares them, which is an inspector's job and costs 25 minutes of wall
 // clock — on the board's critical path it delayed every publish to decide a

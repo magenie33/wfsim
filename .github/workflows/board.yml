@@ -283,8 +283,13 @@ jobs:
         if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
+          # THE SAME FORCING THE SCORERS WILL APPLY, or this step answers a
+          # question the run is not asking: without it a full rescore counts
+          # every row as reusable, reports nothing to do, and the button is a
+          # run that never starts.
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
+          if [ "${{ inputs.full }}" = "true" ]; then FORCE="$FORCE --refight-all"; fi
           # THE SAME SLICE THE SCORERS WILL TAKE, or this step counts work the
           # run is not going to do and the gate below reads it as busy.
           SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
@@ -355,8 +360,8 @@ jobs:
       # REUSE IS EXACT, NOT AN APPROXIMATION. With the fingerprint unchanged the
       # stored score is the number this run would compute, so re-running the
       # fight would be spending an hour to reproduce it — and only submissions
-      # with no row yet cost anything. The manual button skips the reuse and
-      # rescores everything.
+      # with no row yet cost anything. The manual buttons are what override it,
+      # by FORCING rows rather than by withholding a prior board.
       - name: score this shard of every benchmark
         run: |
           set -euo pipefail
@@ -366,10 +371,18 @@ jobs:
           # pass drops leaves publish to compute it alone, at the end.
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
+          # A FULL RESCORE IS EVERY ROW FORCED, and NOT a run with no prior
+          # board. Reuse is decided per row and the score store answers first,
+          # so dropping the prior forced nothing: 128 shards refought a tenth of
+          # the board and the store handed the rest back unchanged. Forcing also
+          # keeps what the prior is really for — the COSTS the split packs by
+          # and the LEADERS the probe screens against.
+          if [ "${{ needs.submissions.outputs.full }}" = "true" ]; then
+            FORCE="$FORCE --refight-all"
+          fi
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            prior=""
-            [ "${{ needs.submissions.outputs.full }}" = "true" ] || prior="--reuse boards/$id.yaml"
+            prior="--reuse boards/$id.yaml"
             # WHAT THIS RUN TAKES ON, and `full` takes no bound because it is
             # already fighting everything. No slice and no cursor: a repaired
             # row leaves the stale set, so walking it from the top converges,
@@ -446,6 +459,17 @@ jobs:
         with:
           name: store
           path: scores
+      # …AND THE SAME SHARDS AGAIN, ALONE, because "who wrote this" is a fact no
+      # file carries and the assembly needs it. Merged into one directory the
+      # store's copy of a row wins on name order, so a rescore's fresh number
+      # was overwritten by the very number it replaced and the board published
+      # the rescore as a no-op. `--scored-here` is the second path that answers
+      # it; the merged directory above still carries the costs and the probes.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: scores-*
+          path: fresh
+          merge-multiple: true
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
@@ -477,7 +501,12 @@ jobs:
             # scoring step above does not have the problem: it
             # passes the path straight to the binary, which treats an
             # unreadable prior as "full rescore" and carries on.
-            if [ "${{ needs.submissions.outputs.full }}" != "true" ]                && [ -f "boards/$id.yaml" ]; then
+            #
+            # READ ON A FULL RESCORE TOO, which it once was not: a full run's
+            # unreached rows then had nothing to fall back on and left the
+            # board. They are a fallback and no more — `--scored-here` above
+            # wins every row this run refought.
+            if [ -f "boards/$id.yaml" ]; then
               # Read the board BEFORE it is overwritten: the loop writes in
               # place, so a copy is what the reuse actually reads.
               cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
@@ -496,7 +525,7 @@ jobs:
             mkdir -p merged
             ./target/release/wfsim-board "$id" site/board.json \
               $prior $FORCE \
-              --scores scores --project \
+              --scores scores --scored-here fresh --project \
               --emit-scores "merged/$id.json" --emit-all \
               < submissions.json > "boards/$id.yaml"
             # THE MERGED SET, which is what the next run starts from. `--emit-all`
