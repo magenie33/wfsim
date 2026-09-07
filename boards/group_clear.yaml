@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6553
+submissions: 6554
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -10277,6 +10277,69 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: flux_rifle
     mode: base
+    score: 0.2950241855820394
+    fp: 8e7414b26bed5e85
+    cost: 28.163
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, hammer_shot, rifle_elementalist, vile_acceleration, vital_sense, infected_clip]
+    arcanes: [primary_blight]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.27999024729331845
+    fp: 692bb862c1fab889
+    cost: 26.483
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, hammer_shot, rifle_elementalist, vile_acceleration, infected_clip, malignant_force]
+    arcanes: [primary_blight]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.2786139170414083
+    fp: d0d42fb5312345bf
+    cost: 34.140
+    mods: [galvanized_chamber, galvanized_aptitude, hammer_shot, point_strike, rifle_elementalist, vile_acceleration, infected_clip, malignant_force]
+    arcanes: [primary_blight]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.27191221918857
+    fp: 885a3ccce1dc9232
+    cost: 26.291
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, rifle_elementalist, vile_acceleration, vital_sense, infected_clip, malignant_force]
+    arcanes: [primary_blight]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.26937446726189757
+    fp: 06277dec64246ac6
+    cost: 28.416
+    mods: [galvanized_chamber, galvanized_aptitude, point_strike, rifle_elementalist, vile_acceleration, vital_sense, infected_clip, malignant_force]
+    arcanes: [primary_blight]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.26772142737537485
+    fp: 7e18ce47d71e7705
+    cost: 20.966
+    mods: [galvanized_chamber, galvanized_aptitude, hammer_shot, point_strike, rifle_elementalist, vital_sense, infected_clip, malignant_force]
+    arcanes: [primary_blight]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.2621423678951235
+    fp: 540dee1e2f8e83b8
+    cost: 18.089
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, point_strike, rifle_elementalist, vile_acceleration, vital_sense, malignant_force]
+    arcanes: [primary_deadhead]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.250137258375673
+    fp: 17399166460d54f0
+    cost: 20.168
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, point_strike, rifle_elementalist, vile_acceleration, vital_sense, infected_clip]
+    arcanes: [primary_deadhead]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.23510817498247896
+    fp: eda686c635cac41d
+    cost: 20.705
+    mods: [primary_acuity, galvanized_aptitude, point_strike, rifle_elementalist, vile_acceleration, vital_sense, infected_clip, malignant_force]
+    arcanes: [primary_deadhead]
+  - weapon: flux_rifle
+    mode: base
     score: 0.2312926883113978
     fp: d3e836bef99eefc1
     cost: 16.494
@@ -10288,6 +10351,13 @@ entries:
     fp: bcb50acbf389cc90
     cost: 11.421
     mods: [primary_acuity, galvanized_aptitude, hammer_shot, point_strike, rifle_elementalist, vital_sense, infected_clip, malignant_force]
+    arcanes: [primary_deadhead]
+  - weapon: flux_rifle
+    mode: base
+    score: 0.22138023560470393
+    fp: 3dcee1b3b538adc2
+    cost: 8.496
+    mods: [primary_acuity, galvanized_aptitude, critical_delay, hammer_shot, rifle_elementalist, vital_sense, infected_clip, malignant_force]
     arcanes: [primary_deadhead]
   - weapon: fulmin_prime
     mode: base
@@ -10685,6 +10755,24 @@ entries:
     cost: 11.585
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    score: 48.33631805260495
+    fp: fd9c233020ab6f9e
+    cost: 14.366
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    score: 47.45693182904698
+    fp: dd0c95eb7f00b289
+    cost: 16.279
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
@@ -11651,6 +11739,15 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: base
+    score: 8.587044749329387
+    fp: fd9c233020ab6f9e
+    cost: 30.448
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
     score: 8.479185471259346
@@ -30340,6 +30437,34 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
+  - weapon: dual_toxocyst
+    mode: cycle
+    listed: false
+    score: 230.98432103453007
+    fp: d2af580b4dabd5f8
+    cost: 88.655
+    exilus: eject_magazine
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
+    listed: false
+    score: 230.98432103453007
+    fp: 6431c26d3a9f4a86
+    cost: 101.165
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -30770,6 +30895,20 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, status_chance]
       malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
+    listed: false
+    score: 178.1250129765164
+    fp: e85b58791c1eb86c
+    cost: 56.162
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: reload_speed
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
@@ -33229,6 +33368,19 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    score: 81.21583467361158
+    fp: bfed78bfe8aee7c5
+    cost: 31.047
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: dual_toxocyst
     mode: cycle
     listed: false
@@ -33248,6 +33400,19 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    score: 81.02125443532866
+    fp: 048027d47b8c3450
+    cost: 21.720
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, accelerated_isotope, magnetic_might, primed_convulsion, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -33643,6 +33808,19 @@ entries:
   - weapon: furis
     mode: cycle
     listed: false
+    score: 76.62278850327002
+    fp: ed260b0e2881cbfd
+    cost: 23.872
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, accelerated_isotope, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: furis
+    mode: cycle
+    listed: false
     score: 76.61541670210926
     fp: c92ac7fd3a4a453b
     cost: 43.043
@@ -34028,6 +34206,19 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, status_chance]
       malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    score: 72.88965278683777
+    fp: 8ce3c6eceb06853b
+    cost: 32.250
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, magnetic_might, riven, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
@@ -34912,6 +35103,19 @@ entries:
     mods: [galvanized_chamber, serration, double_tap, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_deadhead]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 65.57281540320471
+    fp: 1276c4df835b072c
+    cost: 128.885
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_charged_shell, contagious_spread]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -46580,6 +46784,19 @@ entries:
       bonuses: [critical_damage, damage, fire_rate]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 30.886586193040394
+    fp: 8ce3c6eceb06853b
+    cost: 47.206
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, magnetic_might, riven, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: cycle
     listed: false
@@ -49257,6 +49474,34 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 27.237044850276284
+    fp: d2af580b4dabd5f8
+    cost: 25.641
+    exilus: eject_magazine
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 27.237044850276284
+    fp: 6431c26d3a9f4a86
+    cost: 25.500
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: reload_speed
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
@@ -54776,6 +55021,20 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_charged_shell, shell_shock]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 20.637311382054218
+    fp: e85b58791c1eb86c
+    cost: 13.404
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -56215,6 +56474,19 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
     arcanes: [shotgun_vendetta]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 19.226147195652835
+    fp: f1f3cbd1a14d53e1
+    cost: 49.254
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -56228,6 +56500,19 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 19.217718813647117
+    fp: bfed78bfe8aee7c5
+    cost: 57.894
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, fire_rate]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: sicarus_prime
     mode: base
     listed: false
@@ -57100,6 +57385,19 @@ entries:
       bonuses: [critical_chance, multishot, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 18.26177643527668
+    fp: 048027d47b8c3450
+    cost: 33.780
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, accelerated_isotope, magnetic_might, primed_convulsion, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: boar_prime
     mode: cycle
     listed: false
@@ -57625,6 +57923,19 @@ entries:
     riven:
       bonuses: [fire_rate, multishot, toxin]
       rolls: [0.9, 1.1, 0.9]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 17.68357867700086
+    fp: 91a19d575ef21626
+    cost: 52.385
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: laetum
     mode: cycle
     listed: false
