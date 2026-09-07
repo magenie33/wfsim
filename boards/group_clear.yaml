@@ -14334,6 +14334,14 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: base
+    score: 16.342405908473083
+    fp: 1eb0593d50172337
+    cost: 5.225
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [secondary_deadhead]
+  - weapon: laetum
+    mode: base
     score: 16.2291261644383
     fp: e811e34366257b40
     cost: 5.033
@@ -14356,14 +14364,6 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
-  - weapon: laetum
-    mode: base
-    score: 16.159820725984293
-    fp: 1eb0593d50172337
-    cost: 5.225
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, deep_freeze, pistol_pestilence, primed_heated_charge]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: base
     score: 16.061568642576418
@@ -18257,7 +18257,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: paris_prime
     mode: alternate
-    score: 5.599568699460106
+    score: 5.717339201548172
     fp: 5ee73cb82ca7e799
     cost: 2.022
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
@@ -48666,25 +48666,6 @@ entries:
       bonuses: [critical_chance, critical_damage, fire_rate]
       malus: impact
       rolls: [1.1, 1.1, 0.9, 1.1]
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    score: 34.971303231501686
-    fp: ff971a380f01ac88
-    cost: 17.289
-    exilus: ruinous_extension
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    score: 34.971303231501686
-    fp: 3b30a8e906602757
-    cost: 16.994
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
-    arcanes: [secondary_enervate]
-    valence: magnetic
   - weapon: laetum
     mode: cycle
     listed: false
@@ -50153,6 +50134,25 @@ entries:
     mods: [primary_acuity, serration, critical_delay, hammer_shot, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    score: 32.64066978872324
+    fp: ff971a380f01ac88
+    cost: 17.289
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    score: 32.64066978872324
+    fp: 3b30a8e906602757
+    cost: 16.994
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -50251,15 +50251,6 @@ entries:
     cost: 789.584
     mods: [galvanized_hell, galvanized_savvy, point_blank, repeater_clip, vicious_spread, magnetic_strafe, incendiary_coat, scattering_inferno]
     arcanes: [primary_debilitate]
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    score: 32.460571429773914
-    fp: 8088f0e0588a519c
-    cost: 10.666
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: magnetic
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -51723,15 +51714,6 @@ entries:
       bonuses: [critical_damage, damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: kuva_nukor
-    mode: base
-    listed: false
-    score: 30.625192191838032
-    fp: 8088f0e0588a519c
-    cost: 10.595
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: heat
   - weapon: torid
     mode: cycle
     listed: false
@@ -51749,6 +51731,15 @@ entries:
     cost: 10.263
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    score: 30.58247820027613
+    fp: 8088f0e0588a519c
+    cost: 10.666
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: laetum
@@ -52697,6 +52688,15 @@ entries:
       bonuses: [damage, fire_rate, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
+    score: 29.474633165003343
+    fp: 8088f0e0588a519c
+    cost: 10.595
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: heat
   - weapon: braton_vandal
     mode: cycle
     listed: false
@@ -63849,15 +63849,6 @@ entries:
     mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, high_voltage, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
-  - weapon: strun_prime
-    mode: cycle
-    listed: false
-    score: 18.94509465171424
-    fp: 1bb6c00531e03ae9
-    cost: 16.104
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, contagious_spread, primed_chilling_grasp]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -63872,6 +63863,15 @@ entries:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 18.921088186693776
+    fp: 1bb6c00531e03ae9
+    cost: 16.104
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, contagious_spread, primed_chilling_grasp]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -76198,6 +76198,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    listed: false
+    score: 10.332097850873588
+    fp: 627224618934074f
+    cost: 9.602
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, frigid_blast, toxic_barrage, blaze]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
   - weapon: nataruk_perfect
     mode: base
     listed: false
@@ -76781,15 +76790,6 @@ entries:
       bonuses: [critical_chance, critical_damage]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9]
-  - weapon: boar_prime
-    mode: cycle
-    listed: false
-    score: 10.019861552741927
-    fp: 627224618934074f
-    cost: 9.602
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, frigid_blast, toxic_barrage, blaze]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
-    arcanes: [shotgun_vendetta]
   - weapon: torid
     mode: cycle
     listed: false
@@ -80193,6 +80193,15 @@ entries:
       bonuses: [damage, heat, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: base
+    listed: false
+    score: 8.178492762650082
+    fp: 5a2c16e15c615043
+    cost: 11.951
+    mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -80251,6 +80260,15 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 8.137367191862435
+    fp: 604e94ac7995410d
+    cost: 4.382
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -80300,15 +80318,6 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, infected_clip]
     arcanes: [primary_deadhead]
     valence: electricity
-  - weapon: dual_toxocyst
-    mode: base
-    listed: false
-    score: 8.09702482549902
-    fp: 5a2c16e15c615043
-    cost: 11.951
-    mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion]
-    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
-    arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
     listed: false
@@ -80365,15 +80374,6 @@ entries:
       bonuses: [critical_chance, heat, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: laetum
-    mode: base
-    listed: false
-    score: 8.062970182779596
-    fp: 604e94ac7995410d
-    cost: 4.382
-    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [cascadia_flare]
   - weapon: dual_toxocyst
     mode: base
     listed: false

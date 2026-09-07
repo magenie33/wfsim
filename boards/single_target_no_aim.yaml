@@ -9854,7 +9854,7 @@ entries:
     valence: impact
   - weapon: kuva_nukor
     mode: base
-    score: 7.695657771939063
+    score: 7.704805839288861
     fp: 3dd8fbb4d9c58d7f
     cost: 2.002
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -9973,6 +9973,14 @@ entries:
     valence: impact
   - weapon: kuva_nukor
     mode: base
+    score: 7.414610510640427
+    fp: 3dd8fbb4d9c58d7f
+    cost: 2.019
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 7.41099703551126
     fp: 5284e49dd179f0d5
     cost: 3.042
@@ -10047,14 +10055,6 @@ entries:
     cost: 2.661
     exilus: ruinous_extension
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge, scorch]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    score: 7.350412748171916
-    fp: 3dd8fbb4d9c58d7f
-    cost: 2.019
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -10147,6 +10147,23 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 7.186841314812161
+    fp: 0f8ad36a5a9c2391
+    cost: 3.584
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 7.186841314812161
+    fp: 35cd8836f7f0090c
+    cost: 3.408
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 7.177789710415972
     fp: d0ce9527b8915acc
     cost: 1.830
@@ -10160,23 +10177,6 @@ entries:
     cost: 3.470
     exilus: ruinous_extension
     mods: [amalgam_barrel_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, ice_storm, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    score: 7.166396888889308
-    fp: 0f8ad36a5a9c2391
-    cost: 3.584
-    exilus: ruinous_extension
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    score: 7.166396888889308
-    fp: 35cd8836f7f0090c
-    cost: 3.408
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -11452,18 +11452,18 @@ entries:
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_elemental_excess, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
-    mode: cycle
+    mode: base
     score: 2.6114194140428815
     fp: 35257f6bee130dc0
-    cost: 1.486
+    cost: 1.433
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
   - weapon: laetum
-    mode: base
-    score: 2.5794426089446953
+    mode: cycle
+    score: 2.6114194140428815
     fp: 35257f6bee130dc0
-    cost: 1.433
+    cost: 1.486
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
@@ -14691,8 +14691,16 @@ entries:
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: paris_prime
+    mode: cycle
+    score: 0.35780150334987004
+    fp: 357f5fd141f3a2e4
+    cost: 0.274
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
     mode: alternate
-    score: 0.3527135579320163
+    score: 0.35362308026235983
     fp: 357f5fd141f3a2e4
     cost: 0.344
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
@@ -14711,14 +14719,6 @@ entries:
     score: 0.3507225141374942
     fp: 357f5fd141f3a2e4
     cost: 0.262
-    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: cycle
-    score: 0.3507225141374942
-    fp: 357f5fd141f3a2e4
-    cost: 0.274
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
@@ -68013,14 +68013,6 @@ entries:
   - weapon: larkspur_prime
     mode: alternate
     listed: false
-    score: 0.5721076333232842
-    fp: 6e6fe87bef406543
-    cost: 0.156
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_merciless, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: alternate
-    listed: false
     score: 0.5721042692886124
     fp: 25e5f39a79fde6ed
     cost: 0.409
@@ -68056,6 +68048,14 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, primed_tactical_pump, amalgam_shotgun_barrage, seeking_fury, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_fortress_salvo, boar_prime_mercenary_chamber, boar_prime_survivors_edge]
     arcanes: [shotgun_vendetta]
+  - weapon: larkspur_prime
+    mode: alternate
+    listed: false
+    score: 0.570802927032821
+    fp: 6e6fe87bef406543
+    cost: 0.156
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
     mode: alternate
     listed: false
