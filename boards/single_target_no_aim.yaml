@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6631
+submissions: 6636
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -4140,52 +4140,20 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: coda_bubonico
     mode: base
-    score: 1.0190295685322344
-    fp: 4cee54d7ab9b4203
-    cost: 7.398
+    score: 3.9888483473310066
+    fp: e618ff0890b36942
+    cost: 16.317
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
-    arcanes: [primary_deadhead]
+    arcanes: [primary_debilitate]
     valence: magnetic
   - weapon: coda_bubonico
-    mode: base
-    score: 0.9428646951853322
-    fp: ccffbda8beec6fb7
-    cost: 7.420
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shrapnel_shot, vigilante_armaments, primed_charged_shell]
-    arcanes: [primary_deadhead]
+    mode: alternate
+    score: 0.2914872539734724
+    fp: e618ff0890b36942
+    cost: 2.584
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [primary_debilitate]
     valence: magnetic
-  - weapon: coda_bubonico
-    mode: base
-    score: 0.9024957957028408
-    fp: d7a8bcd646007fb7
-    cost: 20.828
-    mods: [critical_deceleration, hells_chamber, hunter_munitions, hunter_track, point_blank, shotgun_elementalist, vicious_spread, magnetic_strafe]
-    arcanes: [primary_blight]
-    valence: toxin
-  - weapon: coda_bubonico
-    mode: base
-    score: 0.6352663456771979
-    fp: 349cd3d01e0dbd2f
-    cost: 7.383
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, laser_sight, shrapnel_shot, primed_charged_shell]
-    arcanes: [primary_deadhead]
-    valence: magnetic
-  - weapon: coda_bubonico
-    mode: base
-    score: 0.611253186841953
-    fp: f4c161087f316c3b
-    cost: 9.776
-    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, point_blank, ravage, charged_shell, contagious_spread, chilling_grasp]
-    arcanes: [primary_frostbite]
-    valence: toxin
-  - weapon: coda_bubonico
-    mode: base
-    score: 0.58212284102642
-    fp: d87e6e188c3d2445
-    cost: 7.871
-    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, point_blank, ravage, charged_shell, toxic_barrage, chilling_grasp]
-    arcanes: [primary_frostbite]
-    valence: toxin
   - weapon: coda_bubonico
     mode: alternate
     score: 0.27799770529467976
@@ -4194,6 +4162,14 @@ entries:
     mods: [critical_deceleration, hells_chamber, hunter_munitions, hunter_track, point_blank, shotgun_elementalist, vicious_spread, magnetic_strafe]
     arcanes: [primary_blight]
     valence: toxin
+  - weapon: coda_bubonico
+    mode: alternate
+    score: 0.23150849222127604
+    fp: c7a687a50c460b64
+    cost: 2.398
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
+    valence: magnetic
   - weapon: coda_bubonico
     mode: alternate
     score: 0.2310438930578335
@@ -9832,6 +9808,14 @@ entries:
     valence: impact
   - weapon: kuva_nukor
     mode: base
+    score: 7.615344051724555
+    fp: b517fd6d1d22d020
+    cost: 2.060
+    mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 7.612315290456658
     fp: d466562c67a3ca67
     cost: 2.407
@@ -10110,6 +10094,14 @@ entries:
     riven:
       bonuses: [cold, damage, toxin]
       rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_nukor
+    mode: base
+    score: 7.0755523311075015
+    fp: 75025d8e6e021979
+    cost: 3.986
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
   - weapon: kuva_nukor
     mode: base
     score: 7.057318817992785
@@ -24780,6 +24772,15 @@ entries:
   - weapon: kuva_nukor
     mode: base
     listed: false
+    score: 5.163747899210188
+    fp: 9261fca97983a8ea
+    cost: 3.875
+    mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    listed: false
     score: 5.15839996101966
     fp: 533d48c42ae4a3bf
     cost: 2.591
@@ -38495,6 +38496,15 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: coda_bubonico
+    mode: base
+    listed: false
+    score: 1.7079186169576979
+    fp: c7a687a50c460b64
+    cost: 10.019
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
+    valence: magnetic
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -51504,6 +51514,15 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, heat]
       rolls: [1.1, 1.1, 1.1]
+  - weapon: coda_bubonico
+    mode: base
+    listed: false
+    score: 1.0190295685322344
+    fp: 4cee54d7ab9b4203
+    cost: 7.398
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [primary_deadhead]
+    valence: magnetic
   - weapon: torid
     mode: base
     listed: false
@@ -54061,6 +54080,15 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: coda_bubonico
+    mode: base
+    listed: false
+    score: 0.9428646951853322
+    fp: ccffbda8beec6fb7
+    cost: 7.420
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shrapnel_shot, vigilante_armaments, primed_charged_shell]
+    arcanes: [primary_deadhead]
+    valence: magnetic
   - weapon: laetum
     mode: base
     listed: false
@@ -55304,6 +55332,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, accelerated_isotope, deep_freeze, pathogen_rounds, primed_convulsion]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [conjunction_voltage]
+  - weapon: coda_bubonico
+    mode: base
+    listed: false
+    score: 0.9024957957028408
+    fp: d7a8bcd646007fb7
+    cost: 20.828
+    mods: [critical_deceleration, hells_chamber, hunter_munitions, hunter_track, point_blank, shotgun_elementalist, vicious_spread, magnetic_strafe]
+    arcanes: [primary_blight]
+    valence: toxin
   - weapon: latron_prime
     mode: base
     listed: false
@@ -63793,6 +63830,15 @@ entries:
       bonuses: [critical_chance, multishot, toxin]
       malus: projectile_speed
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: coda_bubonico
+    mode: base
+    listed: false
+    score: 0.6352663456771979
+    fp: 349cd3d01e0dbd2f
+    cost: 7.383
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, laser_sight, shrapnel_shot, primed_charged_shell]
+    arcanes: [primary_deadhead]
+    valence: magnetic
   - weapon: corinth_prime
     mode: base
     listed: false
@@ -65541,6 +65587,15 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: coda_bubonico
+    mode: base
+    listed: false
+    score: 0.611253186841953
+    fp: f4c161087f316c3b
+    cost: 9.776
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, point_blank, ravage, charged_shell, contagious_spread, chilling_grasp]
+    arcanes: [primary_frostbite]
+    valence: toxin
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -67271,6 +67326,15 @@ entries:
       bonuses: [critical_chance, critical_damage, magazine_capacity]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: coda_bubonico
+    mode: base
+    listed: false
+    score: 0.58212284102642
+    fp: d87e6e188c3d2445
+    cost: 7.871
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, point_blank, ravage, charged_shell, toxic_barrage, chilling_grasp]
+    arcanes: [primary_frostbite]
+    valence: toxin
   - weapon: latron_prime
     mode: base
     listed: false

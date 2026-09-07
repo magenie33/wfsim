@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6631
+submissions: 6636
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -15684,12 +15684,36 @@ entries:
     valence: magnetic
   - weapon: coda_bubonico
     mode: base
+    score: 17.834886768164875
+    fp: ff5b16f360ddaf4b
+    cost: 20.379
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
+    valence: magnetic
+  - weapon: coda_bubonico
+    mode: base
     score: 15.28738977579309
     fp: 8aa252de782f2a7c
     cost: 10.155
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shrapnel_shot, primed_charged_shell, contagious_spread]
     arcanes: [primary_deadhead]
     valence: cold
+  - weapon: coda_bubonico
+    mode: base
+    score: 14.353525898299344
+    fp: f100f904035d6ea9
+    cost: 13.300
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [primary_debilitate]
+    valence: magnetic
+  - weapon: coda_bubonico
+    mode: alternate
+    score: 0.3147633515719547
+    fp: f100f904035d6ea9
+    cost: 2.596
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [primary_debilitate]
+    valence: magnetic
   - weapon: coda_bubonico
     mode: alternate
     score: 0.30337707832699096
@@ -15705,6 +15729,14 @@ entries:
     cost: 1.738
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_deadhead]
+    valence: magnetic
+  - weapon: coda_bubonico
+    mode: alternate
+    score: 0.23855139808615536
+    fp: ff5b16f360ddaf4b
+    cost: 1.655
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
     valence: magnetic
   - weapon: coda_bubonico
     mode: alternate
@@ -25470,6 +25502,14 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 19.20500021549925
+    fp: 823711dc53fd3edc
+    cost: 3.687
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
     score: 19.038793571659237
     fp: ffa52f63725f2913
     cost: 2.024
@@ -25785,6 +25825,14 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 17.283791756615585
+    fp: cefc3b9f8e266cb9
+    cost: 3.104
+    mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 17.261493828880532
     fp: ea01d6ea5ec05b1c
     cost: 2.462
@@ -26062,6 +26110,14 @@ entries:
     cost: 2.860
     exilus: ruinous_extension
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 13.466257350580552
+    fp: 4ec0b8f26d88e1eb
+    cost: 2.181
+    mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: kuva_nukor
