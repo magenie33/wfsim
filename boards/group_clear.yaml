@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6630
+submissions: 6631
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -37248,6 +37248,19 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 68.60526942398405
+    fp: 572463f96d19233b
+    cost: 114.161
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -45162,6 +45175,19 @@ entries:
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_survivors_edge]
     arcanes: [secondary_deadhead]
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 41.12924656004268
+    fp: 572463f96d19233b
+    cost: 64.807
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
     listed: false

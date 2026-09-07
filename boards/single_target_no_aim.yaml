@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 6630
+submissions: 6631
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -26066,6 +26066,19 @@ entries:
       bonuses: [critical_chance, status_chance]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: base
+    listed: false
+    score: 3.7243845855888393
+    fp: 5658bfb6d0fe34f4
+    cost: 12.962
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -27673,6 +27686,19 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+  - weapon: strun_prime
+    mode: cycle
+    listed: false
+    score: 2.701356321003238
+    fp: 5658bfb6d0fe34f4
+    cost: 18.432
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: tenet_cycron
     mode: base
     listed: false
