@@ -814,6 +814,23 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .hero-h{font-size:32px;letter-spacing:-.01em;margin:22px 0 10px}
 .hero-h span{color:var(--gold)}
 .hero-sub{color:var(--text-2);font-size:15px;max-width:620px;margin:0 0 34px}
+/* A hero that runs to more than one paragraph: only the last line keeps the
+   gap to whatever follows it. */
+.hero-lead{margin-bottom:18px}
+/* THE STANCE, one size under the heading and in the body's own colour — it is
+   read as a second line of the headline, not as a caption of it. */
+.hero-stance{font-size:20px;font-weight:600;letter-spacing:-.01em;margin:0 0 8px}
+/* THE NUMBERS. A row of figures rather than tiles: the hero states them, the
+   support page presents them, and a grid of boxes here would read as the
+   product's features instead of its size. Wraps to a second line on a phone. */
+.hero-facts{display:flex;flex-wrap:wrap;gap:6px 20px;margin:0 0 12px}
+.hero-facts .hf{font-size:13px;color:var(--text-2)}
+.hero-facts .hf b{font-size:17px;font-weight:800;color:var(--text);margin-right:5px}
+/* THE TERMS, demoted: a footnote to the figures above, the way a chart carries
+   its data source. */
+.hero-note{font-size:12px;color:var(--muted);max-width:620px;margin:0 0 30px;line-height:1.6}
+.hero-note a{color:var(--muted);text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.hero-note a:hover{color:var(--accent)}
 .home-h{font-size:26px;margin:6px 0 18px}
 #weapon-grid{display:block}
 .wgroup+.wgroup{margin-top:26px}
@@ -1526,7 +1543,9 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .sim-ask a:hover{text-decoration:underline}
 
 /* ---- the board -------------------------------------------------------- */
-.bench-sub{max-width:70ch;margin:0 0 14px;color:var(--text-2);font-size:13px;line-height:1.55}
+.bench-sub{max-width:70ch;margin:0 0 14px;color:var(--text-2);font-size:15px;line-height:1.55}
+/* The terms, between the chips and the standard they belong to. */
+.bench-note{max-width:70ch;margin:14px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
 #bench-picker{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 /* WHICH BUILDS, under WHICH FIGHT — the second row reads as subordinate to the
    first because it is: a ruler is the standard, this only narrows who is shown

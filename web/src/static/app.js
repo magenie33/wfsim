@@ -2027,7 +2027,7 @@ async function route() {
   document.title = support ? `${tr("Support")} — WFSim`
     : dl ? `${tr("WFSim for Windows")} — WFSim`
     : bench ? `${tr("Benchmark")} — WFSim`
-    : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
+    : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Warframe Calculator";
   if (support) {
     renderSupport();
   } else if (dl) {
@@ -2162,6 +2162,7 @@ const oneCardPerChamber = (ws) => {
 };
 
 function renderHome() {
+  renderHomeFacts();
   const grid = $("weapon-grid");
   if (!grid) return;
   const card = (w) => {
@@ -2653,13 +2654,34 @@ function projectFacts() {
     for (const m of pool || []) mods.add(m.id);
   }
   const f = PROJECT_FACTS || {};
+  // IDENTIFIED, because the home hero states THREE of these and the support
+  // page states all of them. Picking by label would break the moment a label
+  // is reworded, and a hero silently short of a number is the failure.
   const rows = [
-    [META.weapons ? META.weapons.length : 0, "weapons modelled"],
-    [mods.size, "mods and rivens"],
-    [f.rust_tests, "tests on the engine"],
-    [f.browser_checks, "checks on the page"],
+    ["weapons", META.weapons ? META.weapons.length : 0, "weapons modelled"],
+    ["mods", mods.size, "mods and rivens"],
+    ["measurements", f.measurements, "in-game measurements"],
+    ["tests", f.rust_tests, "tests on the engine"],
+    ["checks", f.browser_checks, "checks on the page"],
   ];
-  return rows.filter(([n]) => n > 0).map(([n, what]) => ({ n, what }));
+  return rows.filter(([, n]) => n > 0).map(([id, n, what]) => ({ id, n, what }));
+}
+
+/// THE HERO'S NUMBERS — what is in the roster, and what it was measured
+/// against. The same counts the support page states, in the order a reader
+/// asks them: how much is in it, then why any of it is worth reading.
+///
+/// A figure the build did not supply is DROPPED, so the dev server draws the
+/// two the page can count for itself rather than a zero or a placeholder.
+const HERO_FACTS = ["weapons", "mods", "measurements"];
+
+function renderHomeFacts() {
+  const el = $("home-facts");
+  if (!el) return;
+  const rows = projectFacts().filter((f) => HERO_FACTS.includes(f.id));
+  el.hidden = !rows.length;
+  el.innerHTML = rows.map((f) => `<span class="hf"><b>${
+    escHtml(f.n.toLocaleString())}</b> ${escHtml(tr(f.what))}</span>`).join("");
 }
 
 /// WHAT THIS CLIENT IS RUNNING, in the three identifiers of

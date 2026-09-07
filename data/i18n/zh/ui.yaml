@@ -167,6 +167,8 @@ ui:
   "Environment": 环境
   "Erase": "擦除"
   "Eroding Blight and Vile Discharge, the Embolist-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Eroding Blight」和「Vile Discharge」，Embolist 的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
+  "Every formula cites its source, and every golden test is calibrated against a real in-game run.":
+    每一条公式都注明出处，每一个 golden test 都对着一次真实的游戏内实测校准。
   "Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.":
     引擎里每一条公式都注明来源——wiki 页面、数据挖掘，或一次实测——每一个 golden test 都对着一次真实的游戏内运行校准。
   "Every hit, sorted": 每一次命中，分类
@@ -302,8 +304,8 @@ ui:
   "No matches": 无匹配
   "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
     没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。
-  "No tracking beyond what Cloudflare counts to serve the page.":
-    除了 Cloudflare 为发送页面而记的那点数，不做任何追踪。
+  "There is no account system and no login, so nothing here is tied to a person. The only place a visit is counted is Cloudflare's own request log, which is what serves the page.":
+    没有账号系统，也不用登录，所以这里没有任何东西是绑在某个人身上的。一次访问唯一被记下的地方，是 Cloudflare 自己的请求日志——页面就是它发出去的。
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。
   "Noise Reduction": 消音
   "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 mod 卡的是姿势。
@@ -314,7 +316,8 @@ ui:
   "ORBS MERGE. The module gives this weapon a second AoE — 'Orb Merging Damage' in four metres — that fires when a new orb joins one already in the air, and the explosion grows with the number merged (wiki). This engine resolves each shot on its own, so the merge is not counted at all and a player laying orbs on one spot is well ahead of this number": "球会合并。模块给这把武器第二个范围攻击 ——「Orb Merging Damage」，四米范围 ——它在新的球并入已经在空中的球时触发，而且爆炸会随合并数量增长（维基）。本引擎逐发独立结算，所以合并完全没有被计入，一个把球都堆在同一个点上的玩家远高于这个数字"
   "Official test scenario": 官方测试场景
   "One Thrax Centurion at level 9999 on Steel Path, for 180 seconds. A single target, so nothing here rewards clearing a room.": 一只凶魂百夫长，9999 级，钢铁之路，打 180 秒。单体目标，所以清场能力在这里换不到任何分数。
-  "One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.": 一把尺子，量全部武器。榜上的分数是由本引擎在该基准自己钉死的条件下跑出来的——没有人提交数字。空着的一行，就是还没有人测过的武器。
+  "One ruler, every weapon.": 一把尺子，量全部武器。
+  "A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.": 榜上的分数是由本引擎在该基准自己钉死的条件下跑出来的——没有人提交数字。空着的一行，就是还没有人测过的武器。
   "One-off, in USD, from $5. Card or PayPal, no account needed.": 一次性，按美元结算，5 美元起。信用卡或 PayPal，无需注册账号。
   "Only builds scoring at least half their weapon's leading row are listed — the board holds the answers, not every attempt.": 只有分数达到这把武器榜首一半以上的配装才会被列出——榜单收录的是答案，不是每一次尝试。
   "Only this weapon": 仅装备这把武器
@@ -463,7 +466,6 @@ ui:
   "WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.": WF模拟 是非官方粉丝项目，与 Digital Extremes 无从属关系，也未获其认可。Warframe 是 Digital Extremes Ltd. 的商标。
   "WFSim is free software, licensed AGPL-3.0. Building, simulating and optimizing are the whole of this site, and they are the same for everyone: no account, no payment, no part held back.":
     WF模拟是自由软件，采用 AGPL-3.0 授权。构建、模拟、优化——这三件事就是这个站点的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。
-  "WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.": WF模拟是终极的 Warframe 计算器 —— 配装器、模拟器、优化器。与游戏内数值完全一致，精确到每一次触发。理论配装，已解。
   "WHEN AIMING, headshots take '+400% critical chance', additive with Point Strike (wiki). The engine has no headshot-CONDITIONAL crit bucket — a crit is rolled for the hit, and the body part it lands on is drawn beside it — so this arena's crit chance is the unaimed one. It is the larger half of the weapon: against a headshot-heavy fight the number here is well under the real one": "瞄准时，爆头获得「+400% 暴击率」，与 Point Strike 加算（维基）。本引擎没有「以爆头为条件」的暴击池 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这个战场用的是不带这一条的暴击率。它是这把武器更大的那一半：在一场以爆头为主的战斗里，这里的数字远低于真实值"
   "Warframe ability": 战甲技能
   "Warframe buffs": 战甲增益
@@ -1543,8 +1545,10 @@ ui:
   "Viral": 病毒
   "What this mode is": 这个模式是什么
 
-  "A Warframe calculator that matches in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone: no account, no payment, no part held back.":
-    "一个能对上游戏内实测数字的 Warframe 计算器，一项一项对得上。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。"
+  "Run the fight. Don't estimate it.": 把这场仗打一遍，而不是估出来。
+  "Builder, simulator, optimizer.": 配装器、模拟器、优化器。
+  "A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone: no account, no payment, no part held back.":
+    "一个奔着对上游戏内实测数字去做的 Warframe 计算器，一项一项地对。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。"
   "weapons modelled":
     "把武器已建模"
   "mods and rivens":

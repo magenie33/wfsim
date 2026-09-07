@@ -184,7 +184,7 @@ def main() -> None:
 
     notes = DIST / "使用说明.txt"
     notes.write_text(
-        "WFSim: 终极 Warframe 计算器\n"
+        "WFSim：Warframe 计算器\n"
         "\n"
         "怎么用\n"
         "下载 WFSim.exe，双击打开。\n"

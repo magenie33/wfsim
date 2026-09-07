@@ -16,7 +16,7 @@
 // THE PAGE IS PRERENDERED, which is the half no browser assertion can see. A
 // URL people paste and read off a video must carry its own title, description
 // and canonical; without them it previews as the app's own headline, and a link
-// that says "Ultimate Warframe Calculator" and opens on an executable download
+// that says "WFSim — Warframe Calculator" and opens on an executable download
 // is the kind of mismatch that reads as a scam.
 import { readFileSync } from "node:fs";
 import { openApp } from "./cdp.mjs";
@@ -167,7 +167,7 @@ check("/download is prerendered with its own head", built.length > 0, "site/down
 if (built) {
   check("...with a title that is not the app's headline",
     /<title>[^<]*Windows[^<]*<\/title>/.test(built)
-      && !/<title>WFSim — Ultimate/.test(built),
+      && !/<title>WFSim — Warframe Calculator<\/title>/.test(built),
     (built.match(/<title>[^<]*<\/title>/) || ["(none)"])[0]);
   check("...a canonical pointing at itself",
     /rel="canonical"[^>]*\/download/.test(built),

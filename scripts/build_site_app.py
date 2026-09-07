@@ -958,7 +958,7 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
     none, because its heading is the weapon and the shell has no hero for it.
     """
     page = flagged.replace(
-        "<title>WFSim — Ultimate Warframe Calculator</title>",
+        "<title>WFSim — Warframe Calculator</title>",
         f"<title>{html_mod.escape(title)}</title>",
     )
     page = re.sub(
@@ -1137,7 +1137,7 @@ def prerender(flagged: str) -> None:
 
     # /support — a URL people paste, so it gets the same treatment. Its OG
     # description says what the page IS (running costs, nothing sold); a link
-    # that previews as "Ultimate Warframe Calculator" and opens on a donation
+    # that previews as "WFSim — Warframe Calculator" and opens on a donation
     # page is the kind of mismatch that reads as a scam.
     sup_desc = (
         "What it costs to run WFSim, and where to chip in. WFSim is a free, "
@@ -1165,7 +1165,7 @@ def prerender(flagged: str) -> None:
     # /download — the URL a reader types after seeing it in a video, so it is
     # prerendered like /support: without its own title, description and
     # canonical it previews as the app's own headline, and a link that says
-    # "Ultimate Warframe Calculator" and opens on an executable download is the
+    # "WFSim — Warframe Calculator" and opens on an executable download is the
     # kind of mismatch that reads as a scam.
     dl_desc = (
         "WFSim as a Windows app: the same calculator on your own machine, "
@@ -1372,10 +1372,10 @@ def project_facts() -> dict:
     repository around the shipped data — its tests, its browser checks, and how
     long this has been going.
 
-    Every figure is one a reader can check against the public repository. A
-    count of in-game measurements is not, so it is not claimed. A count that
-    cannot be taken is omitted rather than guessed, and the page drops any
-    figure that is missing.
+    Every figure is one a reader can check against the public repository —
+    including the measurements, which are one tracked file each under
+    `docs/measurements/`. A count that cannot be taken is omitted rather than
+    guessed, and the page drops any figure that is missing.
     """
 
     def git(*a: str) -> str:
@@ -1400,6 +1400,12 @@ def project_facts() -> dict:
     checks = len(list((ROOT / "scripts").glob("check_*.mjs")))
     if checks:
         facts["browser_checks"] = checks
+    # ONE WRITE-UP PER MEASUREMENT, and the M-number is the citation
+    # (docs/MEASUREMENTS.md §The index) — so the file count IS the count of
+    # in-game measurements, and a reader can take it themselves.
+    measurements = len(git("ls-files", "docs/measurements/M*.md").splitlines())
+    if measurements:
+        facts["measurements"] = measurements
     commits = git("rev-list", "--count", "HEAD")
     if commits.isdigit():
         facts["commits"] = int(commits)
