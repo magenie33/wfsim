@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6508
+submissions: 6509
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -22213,6 +22213,20 @@ entries:
     cost: 3.652
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: higasa
+    mode: base
+    score: 0.7039978282147132
+    fp: cc5783e5217add72
+    cost: 2.286
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
+    arcanes: [primary_crux]
+  - weapon: higasa
+    mode: cycle
+    score: 0.7039978282147132
+    fp: cc5783e5217add72
+    cost: 2.283
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_crux]
   - weapon: hikou_prime
     mode: base
