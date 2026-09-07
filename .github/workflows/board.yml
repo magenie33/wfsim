@@ -236,6 +236,13 @@ jobs:
           CF_NAMESPACE: ${{ secrets.CF_SUBMISSIONS_NAMESPACE_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FLOOR: ${{ steps.floor.outputs.floor }}
+          # A RESCORE REUSES THE CACHED KEY LIST. Listing is the metered
+          # operation on Cloudflare's free plan and it is metered per DAY, so a
+          # handful of manual rescores can spend what the hourly board needs and
+          # take it down until UTC midnight — measured. The schedule still lists
+          # every hour, which is what finds a new submission and prunes an
+          # expired one; a rescore of rows we already hold does not need either.
+          SKIP_LISTING: ${{ inputs.weapon != '' && '1' || '' }}
         run: bash scripts/fetch_submissions.sh
 
       # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one

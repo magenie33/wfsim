@@ -37,10 +37,19 @@
 # ruler cross the whole store). So a value under a given key cannot come to mean
 # something different, and re-fetching it could only reproduce it.
 #
-# THE LISTING STAYS AUTHORITATIVE. Keys are listed in full every run — 3 requests
-# for 2,447 keys, not 2,447 — and the cache is PRUNED to what the listing holds,
-# so a record that expired out of KV leaves the library on the next run rather
-# than living forever in a cache nobody audits.
+# THE LISTING STAYS AUTHORITATIVE, and it is the SCHEDULE that keeps it so. Keys
+# are listed in full on every scheduled run — 3 requests for 2,447 keys, not
+# 2,447 — and the cache is PRUNED to what the listing holds, so a record that
+# expired out of KV leaves the library rather than living forever in a cache
+# nobody audits.
+#
+# A RESCORE (`SKIP_LISTING`) REUSES THE CACHED KEYS instead, because listing is
+# the operation Cloudflare's free plan meters per DAY and it is the one this
+# pipeline can exhaust. Spend it and every board run dies at its first step
+# until UTC midnight — measured, on an evening when a handful of manual
+# rescores took the hourly board down with them. A rescore refights rows the
+# library already holds; finding a new submission and pruning an expired one is
+# the next scheduled run's job, minutes away.
 set -euo pipefail
 
 # ---- the library, from a key list and whatever is already held --------------
@@ -139,6 +148,32 @@ guard_shrink() {
   echo "library floor: $have >= ${floor:-0}"
 }
 
+# A RESCORE DOES NOT NEED A FRESH LISTING, and the listing is the metered half.
+#
+# Cloudflare's free plan meters LIST operations per DAY, and it is the one this
+# pipeline can exhaust: a run lists the whole namespace whether it is looking
+# for new submissions or refighting rows it already holds. Spend it and every
+# board run fails at its first step until UTC midnight — measured, on an evening
+# where a handful of manual rescores took the hourly board down with them.
+#
+# The hourly run is the one that has to list: it is what FINDS a new submission,
+# and it is what prunes a key that expired. A rescore of existing rows wants the
+# library and nothing else. So it reuses the cached one, and the pruning it
+# skips is the next scheduled run's job — which is minutes away.
+#
+# THE CACHE MAY BE COLD, and then there is nothing to reuse: a missing or empty
+# `library.json` lists anyway rather than publishing from nothing. `guard_shrink`
+# is still the backstop under both paths.
+keys_for_this_run() {
+  local api="$1"
+  if [ -n "${SKIP_LISTING:-}" ] && jq -e 'type == "object" and length > 0' library.json >/dev/null 2>&1; then
+    jq -r 'keys[]' library.json > keys.txt
+    echo "listing skipped: reusing $(wc -l < keys.txt | tr -d ' ') cached keys (rescore)"
+  else
+    list_keys "$api"
+  fi
+}
+
 list_keys() {
   local api="$1" cursor="" resp attempt diag
   : > keys.txt
@@ -177,6 +212,16 @@ list_keys() {
         -H "Authorization: Bearer ${CF_TOKEN:-x}" \
         "$api/keys?limit=1000${cursor:+&cursor=$cursor}" 2>/dev/null | head -c 500) || true
       echo "list_keys: Cloudflare refused the key listing three times — $diag" >&2
+      # THE ONE REFUSAL THAT IS NOT A FAULT, named because it reads exactly like
+      # one. `10048` is the free plan's DAILY allowance for this operation, and
+      # it resets at UTC midnight: nothing here is broken, no retry will help,
+      # and the board simply cannot be rebuilt again today. An evening went into
+      # telling that apart from an expired token.
+      case "$diag" in
+        *10048*)
+          echo "::error::Cloudflare's free DAILY quota for this operation is spent. It resets at UTC midnight; the next scheduled run after that will publish. Nothing is broken — stop debugging and stop firing runs, each one spends more of tomorrow's." >&2
+          ;;
+      esac
       return 1
     fi
     # NOT THE REPORTS. `d/...` is a DISAGREEMENT — two measurements of one row
@@ -271,6 +316,34 @@ KEYFLAKY
     say FAIL "after a flaky listing: $(tr '\n' ',' < keys.txt 2>/dev/null)"
   fi
 
+  # A RESCORE REUSES THE CACHED LISTING AND SPENDS NO LIST OPERATION. The stub
+  # below refuses every request, so a run that reaches Cloudflare at all fails
+  # here — which is the assertion: the keys came from the library.
+  cat > "$dir/bin/curl" <<'NOCURL'
+#!/usr/bin/env bash
+exit 22
+NOCURL
+  chmod +x "$dir/bin/curl"
+  printf '{"a":{"weapon":"a"},"b":{"weapon":"b"}}' > library.json
+  rm -f keys.txt
+  if SKIP_LISTING=1 keys_for_this_run x >/dev/null 2>&1 \
+     && [ "$(tr -d '\r' < keys.txt | tr '\n' ',')" = "a,b," ]; then
+    say ok "a rescore reuses the cached listing"
+  else
+    say FAIL "rescore listing: $(tr -d '\r' < keys.txt 2>/dev/null | tr '\n' ',')"
+  fi
+
+  # …AND A COLD CACHE STILL LISTS. The skip is an optimisation, never a way to
+  # publish a board out of nothing.
+  echo '{}' > library.json
+  rm -f keys.txt
+  if SKIP_LISTING=1 keys_for_this_run x >/dev/null 2>&1; then
+    say FAIL "an empty cache must not be reused as a listing"
+  else
+    say ok "...and an empty cache lists anyway"
+  fi
+  rm -f library.json
+
   # …and back to the reliable stub, for everything below.
   cat > "$dir/bin/curl" <<'STUB2'
 #!/usr/bin/env bash
@@ -341,7 +414,7 @@ fi
 : "${CF_NAMESPACE:?CF_NAMESPACE is required}"
 : "${CF_TOKEN:?CF_TOKEN is required}"
 API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces/$CF_NAMESPACE"
-list_keys "$API"
+keys_for_this_run "$API"
 build_library "$API"
 # The floor comes from the caller, which knows what the last board was built
 # from; zero (the default) means "no prior board", which is a legal state.
