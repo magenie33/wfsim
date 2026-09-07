@@ -34168,6 +34168,19 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    listed: false
+    score: 70.61450534710578
+    fp: dbad9deaac012f1a
+    cost: 34.402
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -59283,6 +59296,19 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 15.610098750345808
+    fp: 636cbaf9aed64334
+    cost: 16.120
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: atomos
     mode: cycle
     listed: false
@@ -91823,6 +91849,28 @@ entries:
     mods: [primary_acuity, serration, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    listed: false
+    probe: true
+    score: 7.991226855697358
+    fp: eb4597bebd1c057f
+    cost: 1.649
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 34.55779471004989
+    fp: eb4597bebd1c057f
+    cost: 7.899
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: cortege
     mode: base
     listed: false
@@ -94348,14 +94396,3 @@ entries:
     fp: a885ab82408d7d22
     cost: 1.123
     mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
-  - weapon: burston_prime
-    mode: base
-    listed: false
-    probe: true
-    score: 7.991226855697358
-    fp: eb4597bebd1c057f
-    cost: 1.649
-    exilus: vigilante_supplies
-    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
