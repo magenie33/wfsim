@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6509
+submissions: 6510
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -31480,6 +31480,20 @@ entries:
     mods: [pistol_acuity, merciless_gunfight, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
     arcanes: [cascadia_flare]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 123.61099294869443
+    fp: 083e1c06bf95a0c2
+    cost: 51.489
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: coda_bassocyst
     mode: base
     listed: false
