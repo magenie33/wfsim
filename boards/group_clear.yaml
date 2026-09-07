@@ -6837,7 +6837,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: braton_vandal
     mode: base
-    score: 4.687031684919229
+    score: 4.71903935131516
     fp: 1a3411b7c68180b0
     cost: 5.498
     mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
@@ -14284,7 +14284,7 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: base
-    score: 16.80335211376507
+    score: 16.893010131238956
     fp: 15d520f563696e03
     cost: 5.053
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -17140,7 +17140,7 @@ entries:
     arcanes: [secondary_irradiate]
   - weapon: mausolon
     mode: base
-    score: 25.65386993877003
+    score: 25.826739914421058
     fp: 14762a74eb2faf50
     cost: 36.451
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip]
@@ -53134,6 +53134,15 @@ entries:
       bonuses: [critical_damage, damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 29.100883694579313
+    fp: a8318dc832daf574
+    cost: 16.858
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_debilitate]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -53184,6 +53193,15 @@ entries:
       bonuses: [damage, multishot, status_chance]
       malus: zoom
       rolls: [0.9, 1.1, 0.9, 0.9]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    score: 29.0311154930745
+    fp: e9e1f8a7b379f303
+    cost: 21.207
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
     listed: false
@@ -53298,15 +53316,6 @@ entries:
       bonuses: [critical_chance, critical_damage, damage]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    score: 28.85544907061826
-    fp: a8318dc832daf574
-    cost: 16.858
-    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
-    arcanes: [primary_debilitate]
   - weapon: furis
     mode: cycle
     listed: false
@@ -54805,15 +54814,6 @@ entries:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    score: 27.363951884200276
-    fp: e9e1f8a7b379f303
-    cost: 21.207
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_deadhead]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -68736,15 +68736,6 @@ entries:
       bonuses: [cold, damage, multishot]
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: vectis_prime
-    mode: cycle
-    listed: false
-    score: 14.844573625983971
-    fp: c1a2438dc80dc9d2
-    cost: 8.448
-    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
     listed: false
@@ -70331,6 +70322,15 @@ entries:
     mods: [amalgam_barrel_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
     arcanes: [cascadia_flare]
+  - weapon: vectis_prime
+    mode: cycle
+    listed: false
+    score: 13.666666666666666
+    fp: c1a2438dc80dc9d2
+    cost: 8.448
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
     listed: false
