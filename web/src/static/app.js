@@ -2378,19 +2378,30 @@ function benchAgeText(seconds) {
   return tr("{n} d").replace("{n}", String(Math.floor(mins / 1440)));
 }
 
+/// WHAT THE BOARD IN HAND SAYS ABOUT ITSELF, and NOT what the binary was built
+/// with. `board_state.yaml` is compiled into the wasm, so the copy behind
+/// `META.benchmarks` is as old as the last site build — while the scoring job
+/// rewrites `board.meta.json` every hour and never rebuilds the binary. Read
+/// the compiled copy and the age below dates the BUILD, and "N more submitted"
+/// counts everything sent since it. The fetched stamp carries the same fields
+/// for exactly this reason; `META`'s is the fallback for a page that has none.
+const benchState = (cur) =>
+  (BOARD_META && BOARD_META.boards && cur && BOARD_META.boards[cur.id]) || cur || {};
+
 function benchPendingNote(cur) {
   benchPendingAsk();
+  const st = benchState(cur);
   // THE AGE IS NOT CONDITIONAL ON THE COUNT. A board with nothing waiting can
   // still be days old — a data correction adds no submission — and that is
   // exactly the case a reader cannot see any other way. ZERO means a board
   // written before the field existed, which is unknown rather than 1970.
-  const at = (cur && cur.scored_at_epoch_seconds) || 0;
+  const at = st.scored_at_epoch_seconds || 0;
   const age = at > 0 ? benchAgeText(at) : "";
   const aged = age
     ? ` <span class="bench-pending">${escHtml(tr("· scored {t} ago").replace("{t}", age))}</span>`
     : "";
   if (!benchPending || typeof benchPending !== "object") return aged;
-  const scored = (cur && cur.submissions) || 0;
+  const scored = st.submissions || 0;
   const waiting = benchPending.count - scored;
   // AND NEVER A NEGATIVE ONE. A ruler that has just been added has scored
   // nothing, and a store that has expired records can sit below what the last
