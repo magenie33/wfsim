@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 6506
+submissions: 6508
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -56163,6 +56163,19 @@ entries:
       bonuses: [critical_damage, multishot]
       malus: reload_speed
       rolls: [1.1, 1.1, 1.1]
+  - weapon: furis
+    mode: base
+    listed: false
+    score: 19.038333704555974
+    fp: dbad9deaac012f1a
+    cost: 66.424
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
     listed: false

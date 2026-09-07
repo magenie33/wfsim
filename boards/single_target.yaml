@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6506
+submissions: 6508
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -22088,11 +22088,27 @@ entries:
     evolutions: [gorgon_wraith_evo1_incarnon_form, gorgon_wraith_hunters_mantra, gorgon_wraith_rapid_reinforcement, gorgon_wraith_absolute_valor]
     arcanes: [primary_compression]
   - weapon: gorgon_wraith
+    mode: cycle
+    score: 5.682354235433862
+    fp: b42725b8de34a9c3
+    cost: 1.828
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    evolutions: [gorgon_wraith_evo1_incarnon_form, gorgon_wraith_hoplite_virtue, gorgon_wraith_voids_guidance, gorgon_wraith_absolute_valor]
+    arcanes: [primary_compression]
+  - weapon: gorgon_wraith
     mode: base
     score: 0.6734583155996671
     fp: da9d03e1f51dbbfd
     cost: 3.500
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [gorgon_wraith_evo1_incarnon_form, gorgon_wraith_hoplite_virtue, gorgon_wraith_voids_guidance, gorgon_wraith_absolute_valor]
+    arcanes: [primary_compression]
+  - weapon: gorgon_wraith
+    mode: base
+    score: 0.6041895174538509
+    fp: b42725b8de34a9c3
+    cost: 4.691
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [gorgon_wraith_evo1_incarnon_form, gorgon_wraith_hoplite_virtue, gorgon_wraith_voids_guidance, gorgon_wraith_absolute_valor]
     arcanes: [primary_compression]
   - weapon: gotva_prime
