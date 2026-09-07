@@ -143,5 +143,24 @@ check(meta.digest === createHash("sha256").update(board).digest("hex"),
 check(meta.rows > 0 && meta.bytes === board.length,
   "…and counts what is in it", `${meta.rows} rows, ${meta.bytes} of ${board.length} bytes`);
 
+// …AND THE PAGE READS THAT STAMP RATHER THAN THE ONE IN THE BINARY. The same
+// fields are `data/board_state.yaml`, which is compiled into the wasm, so a
+// page reading the compiled copy dates the board by its own BUILD — and "N
+// more submitted since this board was scored" then counts every submission
+// since that build. The scoring job rewrites this file hourly and rebuilds
+// nothing, so the fetched stamp is the only copy that moves with the board.
+check(/const benchState = [\s\S]{0,300}?BOARD_META[\s\S]{0,120}?\.boards/.test(app),
+  "…and the page prefers it over the compiled copy",
+  "nothing reads BOARD_META.boards — the age would date the build");
+// THE BINDING IS READ OUT OF THE SOURCE, so renaming it is not a failure here
+// and reading a field off anything else still is.
+const bind = (app.match(/const (\w+) = benchState\(/) || [])[1];
+check(!!bind, "…through one binding", "nothing calls benchState()");
+for (const f of ["scored_at_epoch_seconds", "submissions"]) {
+  const off = [...app.matchAll(new RegExp(`([A-Za-z_$][\\w$]*)\\.${f}\\b`, "g"))].map((m) => m[1]);
+  check(off.length > 0 && off.every((o) => o === bind), `…and reads ${f} from it`,
+    `read off ${[...new Set(off)].join(", ") || "nothing"}`);
+}
+
 console.log(NL + (bad ? `${bad} failed` : "the build says which release it is"));
 process.exit(bad ? 1 : 0);
