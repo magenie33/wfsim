@@ -17798,6 +17798,12 @@ function renderResults(r, testedAt) {
     kpi("Crit tier", (r.crit_tier ?? 0).toFixed(2), "crit_tier"),
     kpi("Pellets crit", pc(r.crit_rate), "crit_rate"), kpi("Orange+", pc(r.big_crit_rate), "big_crit_rate"),
     kpi("Procs", n0(r.procs), "procs"), kpi("Shots", n0(r.shots), "shots"),
+    // WHAT THE FIGHT SPENT ON NOTHING. A unit dies once however far past zero
+    // it goes, so the excess on a killing blow bought nothing — and a build
+    // can deal MORE damage while killing FEWER units by spending the
+    // difference on corpses. Read against what the kills actually cost, so it
+    // is not capped at 100%.
+    kpi("Overkill", pc(r.overkill_rate), "overkill_rate"),
     kpi("Reloads", n0(r.reloads), "reloads"), kpi("Transforms", n0(r.transforms), "transforms"),
     // COUNTED, NOT FOUGHT. The row is drawn only where a weapon leaves
     // something standing, and it says BOTH numbers because neither is the

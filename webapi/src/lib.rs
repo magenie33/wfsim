@@ -6792,6 +6792,13 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         Value::Null
     };
 
+    // WHAT THE KILLS ACTUALLY COST — everything that landed, less the two
+    // kinds of waste. It is the denominator the rate is read against, so a
+    // rate of 1.0 means the fight spent as much on corpses and broken pools as
+    // it did on killing.
+    let needed = m.effective_damage() - m.overkill - m.spilled;
+    let overkill_rate = if needed > 0.0 { m.overkill / needed } else { 0.0 };
+
     json!({
         "ok": true,
         // WHICH ENGAGEMENT THIS REPORT IS ABOUT — the median run's own RNG
@@ -6806,6 +6813,16 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "run": [(m.rng_state >> 32) as u32, (m.rng_state & 0xffff_ffff) as u32],
         "score": m.kill_progress,
         "kills": m.kills,
+        // WHAT THE FIGHT SPENT ON NOTHING, from the same median run as the
+        // numbers above it. `overkill` is damage that took a bar past zero —
+        // a unit dies once however far past it goes — and `spilled` is what a
+        // broken overguard or shield threw away rather than passing down. The
+        // RATE's denominator is what the kills actually cost, so it reads as
+        // "for every point that was needed, this many were wasted" and is not
+        // capped at 1.
+        "overkill": m.overkill,
+        "spilled": m.spilled,
+        "overkill_rate": overkill_rate,
         "kills_std": s.std_kills,
         // THE MEAN, AND HOW FAR IT CAN BE FROM THE TRUTH. `score` and `dps`
         // above are the MEDIAN RUN — one engagement, however many were paid

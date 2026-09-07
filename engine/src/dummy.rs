@@ -520,6 +520,16 @@ pub struct Settled {
     pub raw: f64,
     pub effective: f64,
     pub killed: bool,
+    /// WHAT THE KILLING BLOW SPENT ON A CORPSE — the part of this instance
+    /// that took health below zero. The unit dies once however far past zero
+    /// it goes, so this is damage that bought nothing, and a build can deal
+    /// MORE of it while killing FEWER units.
+    pub overkill: f64,
+    /// WHAT A BROKEN POOL THREW AWAY. Overguard and shields do not spill into
+    /// what is under them, so the part of an instance past the pool it landed
+    /// on is discarded — a different waste from `overkill` and counted apart
+    /// from it: one is killing a corpse, the other is hitting a wall too hard.
+    pub spilled: f64,
     broken: Option<BrokenPool>,
 }
 
@@ -1229,6 +1239,8 @@ impl TargetState {
             raw,
             effective,
             killed: false,
+            overkill: 0.0,
+            spilled: 0.0,
             broken: None,
         };
         let Some(b) = led else {
@@ -1335,6 +1347,7 @@ impl TargetState {
         if og_part > 0.0 {
             self.overguard -= og_part;
             if self.overguard <= 0.0 {
+                out.spilled += -self.overguard;
                 self.overguard = 0.0; // no spill
                 out.broken = Some(BrokenPool::Overguard);
             }
@@ -1342,6 +1355,7 @@ impl TargetState {
         if shield_part > 0.0 {
             self.shield -= shield_part;
             if self.shield <= 0.0 {
+                out.spilled += -self.shield;
                 self.shield = 0.0; // no spill
                 self.gate_until = now + 0.1;
                 out.broken = Some(BrokenPool::Shield);
@@ -1349,6 +1363,12 @@ impl TargetState {
         }
         self.health -= health_part;
         if self.health <= 0.0 {
+            // READ BEFORE THE RESPAWN WIPES IT. Whichever instance takes the
+            // bar past zero owns the whole excess — a DoT tick as much as a
+            // bullet — and that is the same number as (everything that landed)
+            // minus (the bar), because every instance before it was absorbed
+            // whole.
+            out.overkill = -self.health;
             *self = TargetState::spawn_at(p, now); // instant respawn
             out.killed = true;
         }
@@ -5452,6 +5472,11 @@ pub mod ledger {
         // call site the gate is a second thing a new site has to remember; as a
         // closure, forgetting it is not something the language allows.
             r.meter.book(settled.raw, settled.effective, clock);
+        // THE WASTE, through the same door as the damage. Booking it at the
+        // call sites instead would be the exact split this function exists to
+        // close: a tenth site could move the rate and appear in no ledger.
+        r.overkill += settled.overkill;
+        r.spilled += settled.spilled;
         r.spread.credit(body, settled.effective);
         let i = t.max(0.0) as usize;
         r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
@@ -5630,6 +5655,10 @@ pub struct RunResult {
     /// The most standing at once — where the duration is visible.
     pub ghosts_peak: u32,
     pub kills: u32,      // InstantRespawn deaths (0 with InfiniteHealth)
+    /// See [`Settled::overkill`] — summed over the engagement.
+    pub overkill: f64,
+    /// See [`Settled::spilled`] — summed over the engagement.
+    pub spilled: f64,
     /// …of which this many were taken DIRECTLY by a tendril — see
     /// [`RunResult::note_tendril_kills`]. Those spawn no tendril of their own,
     /// and it is the only kind of kill in this engine that is worth less than
