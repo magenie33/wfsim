@@ -184,12 +184,27 @@ async function submit(request, env) {
   if (built.err) return bad(built.err);
   const rec = built.rec;
   const key = identity(rec);
+  // IS THIS BUILD NEW? Asked before the write, because the counter must not
+  // move when somebody submits a build the store already holds — the key is
+  // the build, so a resubmission is the same row and not a second one.
+  const already = await env.SUBMISSIONS.get(key);
   await env.SUBMISSIONS.put(key, JSON.stringify(rec), {
     // A build nobody has submitted in a year is not a live answer any more, and
     // the scoring job re-lists everything each run — so expiry is the only
     // cleanup needed.
     expirationTtl: 60 * 60 * 24 * 365,
   });
+  // …AND THE COUNTER THE BOARD PAGE READS INSTEAD OF LISTING (see `pending`).
+  // Bumped rather than recomputed: recomputing means listing, which is the
+  // metered operation this exists to avoid. It drifts — two submissions in the
+  // same instant race, an expiry passes unseen — and the hourly board run
+  // OVERWRITES it with the number it counted while listing anyway, so the drift
+  // has an hour to live and no way to compound.
+  if (already === null) {
+    const raw = await env.SUBMISSIONS.get(COUNT_KEY);
+    const n = Number.parseInt(raw ?? "", 10);
+    if (Number.isFinite(n)) await env.SUBMISSIONS.put(COUNT_KEY, String(n + 1));
+  }
   await mirror(env, key, rec);
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
@@ -273,42 +288,27 @@ async function mirror(env, key, rec) {
   }
 }
 
-/// HOW MANY BUILDS THE LIBRARY HOLDS — the one number that says whether the
-/// board on screen is current.
+/// HOW MANY BUILDS THE LIBRARY HOLDS — the count the static board cannot carry,
+/// so the page can say "N builds have arrived since this board was scored".
 ///
-/// THE BOARD IS A STATIC FILE, committed to the repo and served from the CDN,
-/// which is what makes it fast and free — and what makes it only as fresh as
-/// the last scoring run. Rather than moving the board behind a service to make
-/// it live, the page keeps reading the file and asks THIS for the one fact the
-/// file cannot carry: how many builds have arrived since. The strip it draws is
-/// "N builds submitted since this board was scored", which answers both "did
-/// mine arrive" and "is this list current" without pretending to rank anything.
+/// IT READS A COUNTER AND DOES NOT LIST. The free plan meters LIST at a thousand
+/// a day and the walk cost seven per reader, which took the board down at a
+/// hundred and forty-three of them; a READ is metered at a hundred thousand.
 ///
-/// A COUNT, and nothing else. No build, no weapon, no day — the store already
-/// holds nothing about the submitter and this endpoint hands back less than the
-/// store holds, not more.
-///
-/// KV LISTS IN PAGES, at most 1000 keys each, and the loop is bounded: at the
-/// library's present size (about a thousand) this is one call, and at twenty
-/// thousand it stops counting and says so rather than walking KV on every board
-/// view. A capped count still answers the question the strip asks.
+/// ABSENT IS "UNKNOWN", never a fallback walk — that would put the outage back
+/// exactly where it was found, invisibly. docs/BOARD.md carries who writes it.
+export const COUNT_KEY = "meta/submissions";
+
 async function pending(env) {
   if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
-  let count = 0;
-  let cursor;
-  let capped = true;
-  for (let page = 0; page < 20; page++) {
-    const r = await env.SUBMISSIONS.list({ limit: 1000, cursor });
-    count += (r.keys || []).length;
-    if (r.list_complete) { capped = false; break; }
-    cursor = r.cursor;
-  }
-  return new Response(JSON.stringify({ ok: true, count, capped }), {
+  const raw = await env.SUBMISSIONS.get(COUNT_KEY);
+  const n = raw === null ? null : Number.parseInt(raw, 10);
+  const count = Number.isFinite(n) ? n : null;
+  return new Response(JSON.stringify({ ok: true, count, capped: false }), {
     headers: {
       "content-type": "application/json",
       // A MINUTE. The board itself moves every twenty, so a count that is up to
-      // a minute old is exact enough for the sentence it is in — and it keeps a
-      // busy board page from listing KV once per reader.
+      // a minute old is exact enough for the sentence it is in.
       "cache-control": "public, max-age=60",
     },
   });

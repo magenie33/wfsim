@@ -169,8 +169,40 @@ keys_for_this_run() {
   if [ -n "${SKIP_LISTING:-}" ] && jq -e 'type == "object" and length > 0' library.json >/dev/null 2>&1; then
     jq -r 'keys[]' library.json > keys.txt
     echo "listing skipped: reusing $(wc -l < keys.txt | tr -d ' ') cached keys (rescore)"
+    LISTED=""
   else
-    list_keys "$api"
+    # EXPLICITLY, because a trailing assignment would swallow the failure: this
+    # function is called from an `if` in the self-test, where `set -e` is off
+    # for the whole call, and `LISTED=1` as the last command returns 0 whatever
+    # the listing did. The test caught it on the first run.
+    if ! list_keys "$api"; then return 1; fi
+    LISTED=1
+  fi
+}
+
+# ---- the counter the board page reads instead of listing --------------------
+#
+# `/api/board/pending` used to LIST the namespace to answer "how many builds are
+# waiting" — seven requests at the library's size, against a free plan that
+# meters listing at a thousand a DAY. A hundred and forty-three readers spent
+# it, and every board run afterwards died at its first step until UTC midnight.
+#
+# So the count is a KEY now, and this is what makes it true: the worker bumps it
+# on a new submission, and the run that just LISTED writes what it actually
+# counted. The bump is approximate — a race, an expiry nobody saw — and this
+# corrects it every hour, which is why an approximate counter is safe.
+#
+# IT MAY NOT FAIL THE RUN. The board is the product and the counter is a
+# footnote on a page; a refused write costs an hour of a slightly stale number.
+publish_count() {
+  local api="$1" n
+  n=$(jq 'length' submissions.json)
+  if curl -sf -X PUT -H "Authorization: Bearer ${CF_TOKEN:-x}" \
+      -F "value=$n" -F 'metadata={}' \
+      "$api/values/$(jq -rn '"meta/submissions"|@uri')" >/dev/null 2>&1; then
+    echo "counter: meta/submissions = $n"
+  else
+    echo "counter: could not write meta/submissions — the page will show no backlog" >&2
   fi
 }
 
@@ -224,16 +256,15 @@ list_keys() {
       esac
       return 1
     fi
-    # NOT THE REPORTS. `d/...` is a DISAGREEMENT — two measurements of one row
-    # differing — and the board reads those separately. An identity is built
-    # from `[a-z0-9_]` ids and cannot contain a slash, so the prefix cannot take
-    # a build with it; fetched as one it would store a record with no weapon
-    # that the scorer refuses every run, quietly.
+    # A SUBMISSION KEY HAS NO SLASH IN IT, so anything with one is not a build.
     #
-    # `grep` rather than a jq filter because THIS function is the one the
-    # self-test does not drive — it writes `keys.txt` itself — so what is here
-    # has to be readable enough to be checked by eye.
-    printf '%s' "$resp" | jq -r '.result[].name' | grep -v '^d/' >> keys.txt || true
+    # It was `^d/` — the DISAGREEMENT reports, which the board reads separately —
+    # and the rule behind that prefix is the general one: an identity is built
+    # from `[a-z0-9_]` ids and cannot contain a slash, so no prefixed key can
+    # ever be a build. Naming the prefixes one at a time meant the next one
+    # arrived as a record with no weapon that the scorer refused every run,
+    # quietly; `meta/submissions` is that next one.
+    printf '%s' "$resp" | jq -r '.result[].name' | grep -v '/' >> keys.txt || true
     cursor=$(printf '%s' "$resp" | jq -r '.result_info.cursor // empty')
     [ -n "$cursor" ] || break
   done
@@ -302,7 +333,7 @@ for a in "$@"; do
   case "$a" in *"/keys?"*)
     n=$(cat "$KEYS_FLAKY"); echo $((n + 1)) > "$KEYS_FLAKY"
     [ "$n" -lt 1 ] && exit 22
-    printf '{"result":[{"name":"k1"},{"name":"d/report"},{"name":"k2"}],"result_info":{}}'
+    printf '{"result":[{"name":"k1"},{"name":"d/report"},{"name":"meta/submissions"},{"name":"k2"}],"result_info":{}}'
     exit 0;;
   esac
 done
@@ -343,6 +374,30 @@ NOCURL
     say ok "...and an empty cache lists anyway"
   fi
   rm -f library.json
+
+  # THE COUNTER CARRIES THE LIBRARY'S SIZE, and a refused write does not fail
+  # the run: the board is the product, the counter is a footnote on a page.
+  cat > "$dir/bin/curl" <<'PUTSTUB'
+#!/usr/bin/env bash
+for a in "$@"; do
+  case "$a" in value=*) echo "${a#value=}" > "$PUT_SEEN"; exit 0;; esac
+done
+exit 1
+PUTSTUB
+  chmod +x "$dir/bin/curl"
+  export PUT_SEEN="$dir/work/put"; : > "$PUT_SEEN"
+  printf '[{"weapon":"a"},{"weapon":"b"},{"weapon":"c"}]' > submissions.json
+  publish_count x > /dev/null 2>&1
+  [ "$(cat "$PUT_SEEN")" = "3" ] && say ok "the counter is written with the library's size" \
+    || say FAIL "counter written as: $(cat "$PUT_SEEN")"
+
+  cat > "$dir/bin/curl" <<'NOPUT'
+#!/usr/bin/env bash
+exit 22
+NOPUT
+  chmod +x "$dir/bin/curl"
+  publish_count x > /dev/null 2>&1 && say ok "...and a refused write does not fail the run" \
+    || say FAIL "a refused counter write killed the run"
 
   # …and back to the reliable stub, for everything below.
   cat > "$dir/bin/curl" <<'STUB2'
@@ -414,8 +469,13 @@ fi
 : "${CF_NAMESPACE:?CF_NAMESPACE is required}"
 : "${CF_TOKEN:?CF_TOKEN is required}"
 API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces/$CF_NAMESPACE"
+LISTED=""
 keys_for_this_run "$API"
 build_library "$API"
 # The floor comes from the caller, which knows what the last board was built
 # from; zero (the default) means "no prior board", which is a legal state.
 guard_shrink "${FLOOR:-0}"
+# …AND ONLY A RUN THAT LISTED MAY CORRECT THE COUNTER. A rescore reused the
+# cached keys, so its number is whatever the last listing found — writing it
+# back would be the counter reporting itself.
+[ -n "$LISTED" ] && publish_count "$API"

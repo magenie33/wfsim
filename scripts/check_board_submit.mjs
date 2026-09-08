@@ -28,13 +28,21 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-// A KV stub that records what it was asked to store. The worker touches exactly
-// `put`, so this is the whole binding it needs.
+// A KV stub that records what it was asked to store. The worker touches `put`,
+// `get` — it asks whether a build is already held before bumping the counter —
+// and `list`.
+//
+// `get` RETURNS A STRING, like KV does, and the counter is stored as one:
+// a stub that handed back a number would let `Number.parseInt` be dropped and
+// nothing would notice until the endpoint answered `null` in production.
 const store = () => {
   const rows = new Map();
   return {
     rows,
     put: async (k, v) => { rows.set(k, JSON.parse(v)); },
+    // …AND GIVES BACK A STRING, like KV does. The rows are held parsed for the
+    // assertions below; what `get` hands the worker is what KV would.
+    get: async (k) => (rows.has(k) ? JSON.stringify(rows.get(k)) : null),
     // KV LISTS IN PAGES and the endpoint pages through them; the stub answers
     // in one page, which is the shape a store this size really has.
     list: async () => ({ keys: [...rows.keys()].map((name) => ({ name })), list_complete: true }),
@@ -279,8 +287,13 @@ console.log("the board's submission endpoint\n");
     { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
   );
   const body = res.ok ? await res.json() : null;
-  check("the library reports its own size", !!body && body.ok === true && body.count === 2,
-    JSON.stringify(body));
+  // TWO SUBMISSIONS, AND NOBODY HAS WRITTEN THE COUNTER YET — so the answer is
+  // that it does not know, which is the whole point of the endpoint no longer
+  // listing. A count that fell back to a walk would put the outage back where
+  // it was found: seven LIST operations a reader, against a free plan that
+  // meters them at a thousand a day.
+  check("with no counter written the library says it does not know",
+    !!body && body.ok === true && body.count === null, JSON.stringify(body));
   check("...and reports nothing else about it",
     !!body && Object.keys(body).sort().join(",") === "capped,count,ok",
     JSON.stringify(body && Object.keys(body)));
@@ -290,6 +303,31 @@ console.log("the board's submission endpoint\n");
   );
   check("...and it is a READ, so a POST is refused", post_.status === 405,
     String(post_.status));
+
+  // …AND WHEN THE HOURLY RUN HAS WRITTEN ONE, that is what comes back. The run
+  // writes the number it counted while listing — which it does anyway — and
+  // this endpoint only reads it.
+  const ask = async () => {
+    const r = await worker.fetch(
+      new Request("https://wfsim.app/api/board/pending"),
+      { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
+    );
+    return r.ok ? (await r.json()).count : "not ok";
+  };
+  await kv.put("meta/submissions", "2");
+  check("...and reports the counter once one is written", (await ask()) === 2,
+    String(await ask()));
+
+  // A NEW BUILD BUMPS IT, so a submission is visible before the next hour.
+  await post({ ...PAYLOAD, weapon: "soma_prime" }, kv);
+  check("a new submission bumps the counter", (await ask()) === 3, String(await ask()));
+
+  // A RESUBMISSION DOES NOT. The key IS the build, so sending the same one
+  // twice is one row — and a counter that moved would drift up for ever with
+  // nothing to pull it back but the hourly correction.
+  await post({ ...PAYLOAD, weapon: "soma_prime" }, kv);
+  check("...and a resubmission of the same build does not",
+    (await ask()) === 3, String(await ask()));
 }
 
 // ---- THE LIBRARY MIRROR ---------------------------------------------------

@@ -1762,6 +1762,24 @@ scorer writes `submissions:` per board and the difference is a footnote,
 
 SILENT when the board is current.
 
+**IT READS A COUNTER AND DOES NOT LIST.** Listing walked the namespace a page
+at a time — seven requests at the library's size — against a free plan that
+meters LIST operations at a thousand a DAY. So a hundred and forty-three
+readers spent the day's allowance and every board run afterwards died at its
+first step with `10048` until UTC midnight; it happened, on the day a video
+landed. A READ is metered at a hundred thousand instead.
+
+The key is `meta/submissions`, and two writers keep it true: the worker bumps
+it when a build arrives that the store did not already hold, and the run that
+LISTED — the hourly one, which lists anyway — overwrites it with what it
+counted. The bump is approximate and the hourly write is the correction, which
+is what makes an approximate counter safe. Absent, the endpoint answers
+`count: null` and the page draws nothing: falling back to a walk would put the
+outage back where it was found, invisibly.
+
+A RESCORE DOES NOT LIST AT ALL (`SKIP_LISTING`). It refights rows the library
+already holds; finding a new submission is the schedule's job.
+
 ## A fight is one document, and a scenario’s overrides sit behind legality
 
 **A FIGHT IS ONE DOCUMENT, AND A SCENARIO'S OVERRIDES SIT BEHIND LEGALITY.** A
