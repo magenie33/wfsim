@@ -39,13 +39,27 @@ const store = () => {
   const rows = new Map();
   return {
     rows,
-    put: async (k, v) => { rows.set(k, JSON.parse(v)); },
+    // A VALUE THAT IS NOT JSON IS STILL A VALUE. The build records are objects
+    // and the assertions below read them as objects, but a supporter key holds
+    // the empty string — so what does not parse is kept as it arrived.
+    put: async (k, v) => { let p; try { p = JSON.parse(v); } catch { p = v; } rows.set(k, p); },
     // …AND GIVES BACK A STRING, like KV does. The rows are held parsed for the
     // assertions below; what `get` hands the worker is what KV would.
-    get: async (k) => (rows.has(k) ? JSON.stringify(rows.get(k)) : null),
-    // KV LISTS IN PAGES and the endpoint pages through them; the stub answers
-    // in one page, which is the shape a store this size really has.
-    list: async () => ({ keys: [...rows.keys()].map((name) => ({ name })), list_complete: true }),
+    get: async (k) => {
+      if (!rows.has(k)) return null;
+      const v = rows.get(k);
+      return typeof v === "string" ? v : JSON.stringify(v);
+    },
+    // KV LISTS IN PAGES and a caller may page through them; the stub answers in
+    // one page, which is the shape a store this size really has. The PREFIX is
+    // honoured because the supporter count leans on it to leave its own counter
+    // key out of what it is counting.
+    list: async (o) => ({
+      keys: [...rows.keys()]
+        .filter((k) => !(o && o.prefix) || k.startsWith(o.prefix))
+        .map((name) => ({ name })),
+      list_complete: true,
+    }),
   };
 };
 
@@ -328,6 +342,64 @@ console.log("the board's submission endpoint\n");
   await post({ ...PAYLOAD, weapon: "soma_prime" }, kv);
   check("...and a resubmission of the same build does not",
     (await ask()) === 3, String(await ask()));
+}
+
+// ---- and the supporter count is the same shape ------------------------------
+//
+// THE SAME OUTAGE, IN THE OTHER NAMESPACE. `/api/support/count` answered by
+// LISTING, once per reader of /support — and the free plan meters LIST at a
+// thousand a DAY across the ACCOUNT, so the two endpoints spend one budget.
+//
+// It can afford what `pending` cannot: a supporter key never expires and the
+// webhook is the only writer, so a count taken once stays right and the counter
+// SEEDS ITSELF from a single listing. What has to be asserted is that the
+// listing happens once — a stub that refuses to list is how that is asked.
+{
+  const kv = store();
+  await kv.put("kofi:aaaaaaaa-1", "");
+  await kv.put("kofi:aaaaaaaa-2", "");
+  const env = { SUPPORT: kv, KOFI_TOKEN: "t", ASSETS: { fetch: async () => new Response("site") } };
+  // CAUGHT, so a listing that was made fatal reads as a FAILED CHECK rather
+  // than as a crashed script — a crash exits 127, which reads as the check
+  // itself being broken.
+  const ask = async () => {
+    try {
+      const r = await worker.fetch(new Request("https://wfsim.app/api/support/count"), env);
+      return r.ok ? (await r.json()).count : `not ok ${r.status}`;
+    } catch (e) { return `threw: ${e.message}`; }
+  };
+  check("the supporter count seeds itself from one listing", (await ask()) === 2,
+    String(await ask()));
+  check("...and writes the counter down", kv.rows.has("meta/supporters"),
+    [...kv.rows.keys()].join(","));
+
+  // AND NEVER LISTS AGAIN. This is the assertion the change exists for: with
+  // listing made fatal, an endpoint that still walked the namespace cannot
+  // answer at all.
+  kv.list = async () => { throw new Error("listed again"); };
+  check("...and never lists again", (await ask()) === 2, String(await ask()));
+
+  const kofi = async (id) => worker.fetch(
+    new Request("https://wfsim.app/api/support/kofi", {
+      method: "POST",
+      body: new URLSearchParams({
+        data: JSON.stringify({ verification_token: "t", message_id: id }),
+      }),
+    }),
+    env,
+  );
+  await kofi("bbbbbbbb-1");
+  check("a Ko-fi delivery bumps it", (await ask()) === 3, String(await ask()));
+
+  // A RETRY IS NOT A SUPPORTER. Ko-fi redelivers what it did not see
+  // acknowledged, and the id is the key — so a replay must leave the count
+  // exactly where it was.
+  await kofi("bbbbbbbb-1");
+  check("...and a redelivery of the same message does not",
+    (await ask()) === 3, String(await ask()));
+  check("...and the counter key is not counted as a supporter",
+    kv.rows.get("meta/supporters") === undefined || String(await ask()) === "3",
+    String(await ask()));
 }
 
 // ---- THE LIBRARY MIRROR ---------------------------------------------------

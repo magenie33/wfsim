@@ -168,13 +168,8 @@ function record(b) {
 
 async function submit(request, env) {
   if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
-
-  // Size first, before parsing: the cheapest rejection there is.
-  const raw = await request.text();
-  if (raw.length > MAX_BYTES) return bad("payload too large");
-
-  let b;
-  try { b = JSON.parse(raw); } catch { return bad("not json"); }
+  const { b, err } = await body(request);
+  if (err) return bad(err);
 
   // NOTHING ABOUT THE SUBMITTER IS STORED. Not the IP, not a token, not a
   // timestamp that could order one person's submissions against another's. The
@@ -201,8 +196,8 @@ async function submit(request, env) {
   // OVERWRITES it with the number it counted while listing anyway, so the drift
   // has an hour to live and no way to compound.
   if (already === null) {
-    const raw = await env.SUBMISSIONS.get(COUNT_KEY);
-    const n = Number.parseInt(raw ?? "", 10);
+    const held = await env.SUBMISSIONS.get(COUNT_KEY);
+    const n = Number.parseInt(held ?? "", 10);
     if (Number.isFinite(n)) await env.SUBMISSIONS.put(COUNT_KEY, String(n + 1));
   }
   await mirror(env, key, rec);
@@ -327,17 +322,28 @@ async function pending(env) {
 /// no message. That is a property of the schema rather than a promise about the
 /// endpoint: asked for a total, this worker could not produce one.
 ///
-/// A NAMESPACE OF ITS OWN, not a prefix inside `SUBMISSIONS`: the pending count
-/// above is `SUBMISSIONS.list()` — every key in it — so a supporter stored
-/// there would be counted as a build waiting to be scored.
+/// A NAMESPACE OF ITS OWN, not a prefix inside `SUBMISSIONS`: the two stores
+/// answer different questions and each keeps its own counter under `meta/`.
 ///
 /// SILENT UNTIL IT IS CONFIGURED. Without the binding this answers 503 and the
 /// page draws no line at all, which is the same rule a channel with no url
 /// follows: an option that does not work yet is worse than one not offered.
 const SUPPORTER = "kofi:";
 
-async function supporters(env) {
-  if (!env.SUPPORT) return bad("supporter storage is not configured", 503);
+/// AND IT COUNTS BY READING A COUNTER, for the reason `pending` does: LIST is
+/// metered at a thousand a DAY across the account, so an endpoint that lists
+/// once per reader is an outage waiting for an audience.
+///
+/// SELF-SEEDING, which is what this one can afford and `pending` cannot: the
+/// keys here never expire and the webhook is the only writer, so a count taken
+/// once is right forever after and the bump keeps it so. A missing counter
+/// therefore lists ONCE and writes what it found, rather than listing again.
+const SUPPORT_COUNT_KEY = "meta/supporters";
+
+async function supporterCount(env) {
+  const held = await env.SUPPORT.get(SUPPORT_COUNT_KEY);
+  const n = Number.parseInt(held ?? "", 10);
+  if (Number.isFinite(n)) return n;
   let count = 0;
   let cursor;
   for (let page = 0; page < 20; page++) {
@@ -346,6 +352,13 @@ async function supporters(env) {
     if (r.list_complete) break;
     cursor = r.cursor;
   }
+  await env.SUPPORT.put(SUPPORT_COUNT_KEY, String(count));
+  return count;
+}
+
+async function supporters(env) {
+  if (!env.SUPPORT) return bad("supporter storage is not configured", 503);
+  const count = await supporterCount(env);
   return new Response(JSON.stringify({ ok: true, count }), {
     headers: {
       "content-type": "application/json",
@@ -388,9 +401,19 @@ async function kofi(request, env) {
   // A plain id, because it becomes a key: Ko-fi sends a uuid, and anything
   // else is a payload this was not written for.
   if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) return bad("bad message id");
+  // A REPLAY IS NOT A SUPPORTER, so the counter moves only for an id the store
+  // did not already hold — the same guard a resubmitted build gets.
+  const already = await env.SUPPORT.get(SUPPORTER + id);
   await env.SUPPORT.put(SUPPORTER + id, "", {
     metadata: { at: new Date().toISOString().slice(0, 10) },
   });
+  // An ABSENT counter is not written here: the next read lists, and that listing
+  // already holds the key just written. Bumping it too would count it twice.
+  if (already === null) {
+    const held = await env.SUPPORT.get(SUPPORT_COUNT_KEY);
+    const n = Number.parseInt(held ?? "", 10);
+    if (Number.isFinite(n)) await env.SUPPORT.put(SUPPORT_COUNT_KEY, String(n + 1));
+  }
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
   });

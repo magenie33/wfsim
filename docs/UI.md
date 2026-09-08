@@ -298,8 +298,17 @@ order, "within N hours" is an obligation that grows with every subscriber.
 
 THE SUPPORTER COUNT IS THE ONLY MONEY FIGURE PUBLISHED, and the store cannot
 hold more: `SUPPORT` is one empty KV key per Ko-fi message id with the DAY as
-metadata — no amount, no name, no email. A namespace of its OWN, because
-`/api/board/pending` counts every key in `SUBMISSIONS`.
+metadata — no amount, no name, no email. A namespace of its OWN, so that what
+each store holds is one kind of thing.
+
+IT READS A COUNTER AND DOES NOT LIST, at `meta/supporters`. KV meters LIST at a
+thousand a DAY across the ACCOUNT, so an endpoint that lists once per reader
+spends the same budget the board's pipeline runs on — measured, on the day
+`/api/board/pending` did exactly that and took the board down until UTC
+midnight. This one SEEDS ITSELF: a supporter key never expires and the webhook
+is the only writer, so the first read lists once, writes what it found, and
+every read after it is a read. A replay of a Ko-fi delivery does not bump it —
+the message id is the key.
 
 WHAT THE READER HAS RUN NEVER LEAVES THE BROWSER. `wfsim-use` is two integers
 written by `runSim` and read by `/support` alone; the page says so where it

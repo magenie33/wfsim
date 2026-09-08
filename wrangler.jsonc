@@ -44,11 +44,11 @@
   // is not the board: the board is the generated yaml in
   // `data/benchmarks/boards/`, and this is the builds waiting to be scored.
   //
-  // SUPPORT is the second one and NOT a prefix inside the first: the pending
-  // count lists every key in SUBMISSIONS, so a supporter stored there would be
-  // reported as a build waiting to be scored. It holds one empty key per Ko-fi
-  // message id and nothing else. Until the namespace exists the two
-  // /api/support/* endpoints answer 503 and the page draws no supporter line.
+  // SUPPORT is the second one and NOT a prefix inside the first: each store
+  // holds one kind of thing and keeps its own count under `meta/`. It holds one
+  // empty key per Ko-fi message id and nothing else. Until the namespace exists
+  // the two /api/support/* endpoints answer 503 and the page draws no
+  // supporter line.
   //
   //   npx wrangler kv namespace create SUPPORT
   //   npx wrangler secret put KOFI_TOKEN     (from the Ko-fi webhook page)
