@@ -19142,21 +19142,6 @@ mod tests {
         assert!(split > 0.08, "the rival hypothesis must be distinguishable, got {split:.4}");
     }
 
-    /// A FORMATION TAKES MORE THAN A LONE TARGET, and the whole difference is
-    /// the chain — the end-to-end assertion that the layer, the mechanic and
-    /// the run loop are joined up. The Torid Incarnon is the roster's only
-    /// chaining beam, so it is the weapon this is asked of, over eight more
-    /// bodies at 3 m with the front row's middle one aimed at (MECHANICS §12).
-    /// THE DAMAGE METER ACCOUNTS FOR EVERY BODY.
-    ///
-    /// `effective_damage`, the score and the DPS count the whole formation, so
-    /// a METER written on the aimed body's path alone reports 5304 of damage by
-    /// source against 15980 actually dealt — and a reader comparing the
-    /// headline with the breakdown correctly concludes one of them is invented.
-    ///
-    /// Asserted as a SHARE rather than a number: the roll call records per-body
-    /// damage only once there is more than one body, so the two totals are
-    /// comparable only in a crowd.
     /// A RESPAWNED BODY IS A NEW INDIVIDUAL, EVERYWHERE — not only where the
     /// gun is pointed.
     ///
@@ -19205,6 +19190,21 @@ mod tests {
         );
     }
 
+    /// A FORMATION TAKES MORE THAN A LONE TARGET, and the whole difference is
+    /// the chain — the end-to-end assertion that the layer, the mechanic and
+    /// the run loop are joined up. The Torid Incarnon is the roster's only
+    /// chaining beam, so it is the weapon this is asked of, over eight more
+    /// bodies at 3 m with the front row's middle one aimed at (MECHANICS §12).
+    /// THE DAMAGE METER ACCOUNTS FOR EVERY BODY.
+    ///
+    /// `effective_damage`, the score and the DPS count the whole formation, so
+    /// a METER written on the aimed body's path alone reports 5304 of damage by
+    /// source against 15980 actually dealt — and a reader comparing the
+    /// headline with the breakdown correctly concludes one of them is invented.
+    ///
+    /// Asserted as a SHARE rather than a number: the roll call records per-body
+    /// damage only once there is more than one body, so the two totals are
+    /// comparable only in a crowd.
     #[test]
     fn the_damage_meter_accounts_for_the_whole_formation() {
         let base = crate::loadout::WeaponBase::from_data("akarius", false, &[]);
