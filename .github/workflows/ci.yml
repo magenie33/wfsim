@@ -108,3 +108,9 @@ jobs:
       # not move past a refusal or that row is never shipped again.
       - name: A fact is shipped as it is computed
         run: bash scripts/ship_facts.sh --self-test
+      # …AND READ BACK BY GENERATION. The read is where a paging bug hides: two
+      # pages that overlap or skip leave a row the pipeline recomputes for ever
+      # and nothing says so, which is why the ORDER BY is asserted rather than
+      # assumed.
+      - name: A generation is read back whole
+        run: bash scripts/fetch_facts.sh --self-test

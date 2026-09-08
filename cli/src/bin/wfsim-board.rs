@@ -360,6 +360,7 @@ fn has_flag(name: &str) -> bool {
 /// across runs would publish yesterday's numbers under today's engine, which is
 /// exactly the failure the board exists to prevent.
 type ScoreMap = std::collections::HashMap<String, f64>;
+type RollMap = std::collections::HashMap<String, Vec<f64>>;
 
 /// AN f64 CROSSES BETWEEN PROCESSES AS TEXT, NOT AS A JSON NUMBER.
 ///
@@ -565,6 +566,60 @@ impl FactLog {
             self.out = None;
         }
     }
+}
+
+/// THE SAME FACTS, READ BACK OUT OF THE DATABASE, as `scripts/fetch_facts.sh`
+/// wrote them: one json object a line, one row per (build, ruler, mode).
+///
+/// A ROW FROM ANOTHER RULER IS NOT MERGED. The key is `identity#mode` and
+/// carries no benchmark, so two boards scoring one build produce the SAME key
+/// with different numbers — a file holding both would publish whichever landed
+/// last under a ruler that never measured it.
+///
+/// THE SCORER NEVER SPEAKS TO THE DATABASE. It reads a file, and the network
+/// lives in a script a stub `curl` can drive.
+fn load_facts(spec: Option<String>, bench_id: &str) -> (LoadedScores, RollMap) {
+    let mut out: ScoreMap = Default::default();
+    let mut cost: ScoreMap = Default::default();
+    let mut fps: std::collections::HashMap<String, String> = Default::default();
+    let mut rolls: RollMap = Default::default();
+    let empty: LoadedScores =
+        (out.clone(), cost.clone(), Default::default(), fps.clone(), Default::default());
+    let Some(path) = spec else { return (empty, rolls) };
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        eprintln!("facts: cannot read {path}");
+        return (empty, rolls);
+    };
+    for line in text.lines() {
+        let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
+        if v.get("ruler").and_then(Value::as_str) != Some(bench_id) {
+            continue;
+        }
+        let (Some(id), Some(score)) = (
+            v.get("identity").and_then(Value::as_str),
+            v.get("score").and_then(Value::as_f64),
+        ) else {
+            continue;
+        };
+        let mode = v.get("mode").and_then(Value::as_str).unwrap_or("");
+        let key = if mode.is_empty() { id.to_string() } else { format!("{id}#{mode}") };
+        out.insert(key.clone(), score);
+        if let Some(c) = v.get("cost_seconds").and_then(Value::as_f64) {
+            cost.insert(key.clone(), c);
+        }
+        if let Some(f) = v.get("data_fp").and_then(Value::as_str) {
+            fps.insert(key.clone(), f.to_string());
+        }
+        // THE ROLLS TRAVEL AS TEXT, because the column is one and a riven
+        // corner is a list. A row without one is a plain row, not a broken one.
+        if let Some(r) = v.get("rolls").and_then(Value::as_str) {
+            if let Ok(list) = serde_json::from_str::<Vec<f64>>(r) {
+                rolls.insert(key, list);
+            }
+        }
+    }
+    eprintln!("facts: {} rows read for {bench_id}", out.len());
+    ((out, cost, Default::default(), fps, Default::default()), rolls)
 }
 
 fn load_scores(spec: Option<String>, bench_id: &str) -> LoadedScores {
@@ -952,8 +1007,18 @@ fn main() {
     // the PRIOR BOARD's rows — those were validated on their own way in and
     // carry no entry here, so a check applied to the merged map threw the whole
     // board away and made every row todo.
-    let (store_scores, known_costs, known_probes, store_fps, mut row_partials) =
+    let (mut store_scores, mut known_costs, known_probes, mut store_fps, mut row_partials) =
         load_scores(flag("--scores"), &bench_id);
+    // …AND THE FACTS OF THIS GENERATION ON TOP, where there are any. The two
+    // sources run side by side while the store migrates, and the DATABASE wins:
+    // it is keyed by (build, ruler, mode, what it read, generation), so it can
+    // say which generation a number belongs to, which a directory of files
+    // merged by filename order never could.
+    let ((facts_scores, facts_costs, _, facts_fps, _), facts_rolls) =
+        load_facts(flag("--facts-in"), &bench_id);
+    store_scores.extend(facts_scores);
+    known_costs.extend(facts_costs);
+    store_fps.extend(facts_fps);
     // …AND WHICH OF THEM THIS RUN COMPUTED ITSELF, which is a different fact
     // and the one the assembly needs. A row's stored score and this run's can
     // only DIFFER where the row was refought — a forced rescore, or a full one
@@ -1098,6 +1163,7 @@ fn main() {
     // move the rolls moves the score, since the rolls ARE the argmax of it.
     let mut rolls: std::collections::HashMap<String, Vec<f64>> =
         load_rolls(flag("--scores"), &bench_id);
+    prior_rolls.extend(facts_rolls);
     // …and the ones a prior board already found, on the same terms as its
     // scores. This run's shards win: they were computed by this engine.
     for (k, v) in prior_rolls {
