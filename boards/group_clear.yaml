@@ -107845,6 +107845,26 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, semi_rifle_cannonade, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
     arcanes: [primary_crux]
+  - weapon: paris_prime
+    mode: cycle
+    listed: false
+    probe: true
+    score: 798.2440422650532
+    fp: 5fd3549856934603
+    cost: 1.138
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_vicious_promise]
+    arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: alternate_cycle
+    listed: false
+    probe: true
+    score: 824.612975040143
+    fp: 5fd3549856934603
+    cost: 1.318
+    mods: [amalgam_serration, split_flights, galvanized_aptitude, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_vicious_promise]
+    arcanes: [primary_deadhead]
   - weapon: torid
     mode: base
     listed: false
@@ -107885,6 +107905,66 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 0.899376033465938
+    fp: 48ae5e4104fb973c
+    cost: 19.635
+    mods: [galvanized_chamber, primed_firestorm, serration, critical_delay, hammer_shot, vile_acceleration, vital_sense, high_voltage]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 0.6268820055286565
+    fp: e2f1bd007da1a20b
+    cost: 15.167
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 0.40738764085951507
+    fp: abfb4bf8057e2457
+    cost: 2.748
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 6.935660756921436
+    fp: abfb4bf8057e2457
+    cost: 2.185
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: base
+    listed: false
+    probe: true
+    score: 2.0748979094833064
+    fp: f0b6e7416a686797
+    cost: 2.489
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 20.69040051276008
+    fp: f0b6e7416a686797
+    cost: 1.978
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
+    arcanes: [primary_merciless]
   - weapon: torid
     mode: base
     listed: false
@@ -107964,86 +108044,6 @@ entries:
     cost: 1.140
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_merciless]
-  - weapon: paris_prime
-    mode: cycle
-    listed: false
-    probe: true
-    score: 798.2440422650532
-    fp: 5fd3549856934603
-    cost: 1.138
-    mods: [amalgam_serration, split_flights, galvanized_aptitude, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_vicious_promise]
-    arcanes: [primary_deadhead]
-  - weapon: paris_prime
-    mode: alternate_cycle
-    listed: false
-    probe: true
-    score: 824.612975040143
-    fp: 5fd3549856934603
-    cost: 1.318
-    mods: [amalgam_serration, split_flights, galvanized_aptitude, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_vicious_promise]
-    arcanes: [primary_deadhead]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.899376033465938
-    fp: 48ae5e4104fb973c
-    cost: 19.635
-    mods: [galvanized_chamber, primed_firestorm, serration, critical_delay, hammer_shot, vile_acceleration, vital_sense, high_voltage]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.6268820055286565
-    fp: e2f1bd007da1a20b
-    cost: 15.167
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 0.40738764085951507
-    fp: abfb4bf8057e2457
-    cost: 2.748
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 6.935660756921436
-    fp: abfb4bf8057e2457
-    cost: 2.185
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: base
-    listed: false
-    probe: true
-    score: 2.0748979094833064
-    fp: f0b6e7416a686797
-    cost: 2.489
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 20.69040051276008
-    fp: f0b6e7416a686797
-    cost: 1.978
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
     arcanes: [primary_merciless]
   - weapon: verglas_prime
     mode: base

@@ -40571,6 +40571,32 @@ entries:
     cost: 1.185
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: laetum
+    mode: base
+    listed: false
+    score: 1.6666666666666667
+    fp: ddfb7bb09c9860a7
+    cost: 4.799
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, damage, fire_rate]
+      malus: impact
+      rolls: [0.9, 1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: cycle
+    listed: false
+    score: 1.6666666666666667
+    fp: ddfb7bb09c9860a7
+    cost: 4.893
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, damage, fire_rate]
+      malus: impact
+      rolls: [0.9, 1.1, 1.1, 1.1]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -40720,32 +40746,6 @@ entries:
     cost: 1.176
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
-  - weapon: laetum
-    mode: base
-    listed: false
-    score: 1.6666666666666667
-    fp: ddfb7bb09c9860a7
-    cost: 4.799
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds, primed_heated_charge]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [cascadia_flare]
-    riven:
-      bonuses: [critical_chance, damage, fire_rate]
-      malus: impact
-      rolls: [0.9, 1.1, 1.1, 1.1]
-  - weapon: laetum
-    mode: cycle
-    listed: false
-    score: 1.6666666666666667
-    fp: ddfb7bb09c9860a7
-    cost: 4.893
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pathogen_rounds, primed_heated_charge]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [cascadia_flare]
-    riven:
-      bonuses: [critical_chance, damage, fire_rate]
-      malus: impact
-      rolls: [0.9, 1.1, 1.1, 1.1]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -108596,56 +108596,6 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, semi_rifle_cannonade, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
     arcanes: [primary_crux]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.6463857500893184
-    fp: 1be61a86f9f0424c
-    cost: 0.197
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 0.6452531339135033
-    fp: 60b0e2a00d458ee2
-    cost: 0.163
-    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 1.0611424211604557
-    fp: ee1787180aa1f1cb
-    cost: 0.166
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 1.2383071284266374
-    fp: 119eecca76453ec6
-    cost: 0.172
-    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    listed: false
-    probe: true
-    score: 1.1890315870510737
-    fp: 9429be6be3ef41b3
-    cost: 0.175
-    mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_merciless]
   - weapon: paris_prime
     mode: alternate
     listed: false
@@ -108666,6 +108616,26 @@ entries:
     mods: [amalgam_serration, split_flights, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.6463857500893184
+    fp: 1be61a86f9f0424c
+    cost: 0.197
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 0.6452531339135033
+    fp: 60b0e2a00d458ee2
+    cost: 0.163
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
   - weapon: torid
     mode: base
     listed: false
@@ -108716,3 +108686,33 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
     arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 1.0611424211604557
+    fp: ee1787180aa1f1cb
+    cost: 0.166
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 1.2383071284266374
+    fp: 119eecca76453ec6
+    cost: 0.172
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    listed: false
+    probe: true
+    score: 1.1890315870510737
+    fp: 9429be6be3ef41b3
+    cost: 0.175
+    mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
