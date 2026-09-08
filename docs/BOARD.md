@@ -1322,6 +1322,38 @@ was already doing, so fetching faster was never available. One ordered, paged
 `SELECT` replaced it, and the cache, the pruning pass, the three-try retry and
 the flag that skipped the listing went with it.
 
+### Three cheapenings that are deliberately not here
+
+Each was taken out because it made the pipeline harder to reason about while the
+foundation was still wrong, and each is worth having once the foundation is
+boring. **They are recorded so that reintroducing one is a decision rather than
+a rediscovery**, and the order below is the order they pay off in.
+
+**A SCREEN WHOSE CUT COMES FROM THE LIST'S OWN LEADER.** 36% of a 132-hour bill
+went on rows scoring under a quarter of their group's leader — rows that
+cannot be published whatever they measure. A cheap probe deciding which to skip
+is a second kind of number on the same board, which is why the old one had to
+go: it wrote a `probe:` field, the archive then had to say "screened, not
+measured", and the assembly needed a rule for it. Done again, the cut must come
+from the group's OWN leader in the facts, and a screened row must produce no row
+at all rather than a lesser one.
+
+**WORK ORDERED BY COST.** The split already packs by measured cost, so the
+shards are balanced; what is not ordered is which rows a BOUNDED run takes.
+`--new-limit` takes them in walk order, so a run's 3,000 rows are whatever the
+library's order hands it. Taking the cheapest first would publish more weapons
+per run, because a weapon is published only when every one of its rows is
+measured — and the tail rows that hold a weapon back are the expensive ones.
+
+**RESUMABLE PARTIALS IN THE FACTS TABLE.** A row is indivisible today: a shard
+killed part-way through a 121-minute row keeps nothing of it, and the next run
+starts that row from zero. The scorer already banks partial progress WITHIN a
+run (`Partial`, and `a_row_paid_for_in_sittings_is_the_row_paid_for_in_one`
+pins that the sum is bit-identical); what is missing is a place to put one
+between runs. The reason it is not the `scores` table is that a partial is not a
+fact — it is a fact under construction, and putting the two in one table would
+give the publisher something to filter out.
+
 ### The next wall, named in advance
 
 1. **Reading the library is one unsharded job**, and it is now one paged query

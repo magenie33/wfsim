@@ -331,3 +331,83 @@ fn percent_decode(s: &str) -> String {
     }
     String::from_utf8_lossy(&out).into_owned()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// THE PATH COMES OFF A URL AND IS JOINED TO A DIRECTORY, so what this
+    /// accepts is the whole of the guard: `safe_join` is not reached on the live
+    /// branch. A weapon id is a lowercase slug off the roster and nothing else
+    /// is a board file.
+    #[test]
+    fn only_a_weapon_file_is_served_from_the_live_directory() {
+        for ok in ["board.meta.json", "board/braton_prime.json", "board/index.json"] {
+            assert_eq!(live_path(ok), Some(ok), "{ok} should be live");
+        }
+        for no in [
+            "board/../../secrets.json",
+            "board/..%2F..%2Fsecrets.json",
+            "board/sub/dir.json",
+            "board/Braton_Prime.json",
+            "board/.json",
+            "board/braton prime.json",
+            "board/braton_prime.txt",
+            "board.json",
+            "index.html",
+            "",
+        ] {
+            assert_eq!(live_path(no), None, "{no} must not be served from live/");
+        }
+    }
+
+    /// A STAMP THAT DOES NOT DESCRIBE ITS OWN MANIFEST IS NOT A STAMP. The
+    /// digest is the one value saying which board this is, and a client that
+    /// took the file list without checking it would fetch whatever a truncated
+    /// or edited stamp happened to name.
+    #[test]
+    fn a_stamp_is_refused_unless_it_matches_the_manifest_it_carries() {
+        let files: Manifest =
+            [("index".to_string(), "aa".to_string()), ("braton".to_string(), "bb".to_string())]
+                .into_iter()
+                .collect();
+        let good = format!(
+            r#"{{"digest":"{}","files":{{"index":"aa","braton":"bb"}}}}"#,
+            digest_of(&files)
+        );
+        let (got, want) = manifest_of(good.as_bytes()).expect("a matching stamp is taken");
+        assert_eq!(got, files);
+        assert_eq!(want, digest_of(&files));
+
+        // …AND THE ORDER IS THE SORTED ONE, so two clients reading the same
+        // board cannot compute two digests for it.
+        let reversed: Manifest =
+            [("braton".to_string(), "bb".to_string()), ("index".to_string(), "aa".to_string())]
+                .into_iter()
+                .collect();
+        assert_eq!(digest_of(&reversed), digest_of(&files));
+
+        for bad in [
+            r#"{"digest":"0000","files":{"index":"aa","braton":"bb"}}"#,
+            r#"{"files":{"index":"aa"}}"#,
+            r#"{"digest":"0000","files":{}}"#,
+            "not json",
+        ] {
+            assert!(manifest_of(bad.as_bytes()).is_none(), "{bad} must be refused");
+        }
+    }
+
+    /// ONE FILE MOVING IS ONE DIGEST MOVING, which is what makes a refresh cost
+    /// the weapons that changed rather than the board.
+    #[test]
+    fn a_weapon_moving_moves_the_board_digest_and_only_its_own() {
+        let mut files: Manifest =
+            [("a".to_string(), "1".to_string()), ("b".to_string(), "2".to_string())]
+                .into_iter()
+                .collect();
+        let before = digest_of(&files);
+        files.insert("b".to_string(), "3".to_string());
+        assert_ne!(digest_of(&files), before);
+        assert_eq!(files["a"], "1");
+    }
+}
