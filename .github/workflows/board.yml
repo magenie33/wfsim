@@ -206,33 +206,6 @@ jobs:
           if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
-      # WHAT EARLIER RUNS ALREADY BANKED, fetched ONCE and handed to every job
-      # as an artifact — thirty-two shards asking R2 for the same objects is
-      # thirty-two times the requests for one answer.
-      #
-      # AFTER THE STEP WHOSE OUTPUT GATES IT, which is not a formality: placed
-      # above it the condition reads an output nothing has set, the step is
-      # SKIPPED, and every job downstream points `--scores` at a directory that
-      # was never filled. Nothing fails and the store silently holds nothing.
-      #
-      # Unconfigured is a working state: with no namespace the directory is
-      # empty and every job falls back on the boards alone, which is the whole
-      # pipeline as it was before the store existed. That is the rollback.
-      - name: read the score store
-        if: steps.wired.outputs.yes == 'true'
-        env:
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: bash scripts/score_store.sh get store
-      - uses: actions/upload-artifact@v4
-        if: steps.wired.outputs.yes == 'true'
-        with:
-          name: store
-          path: store/
-          retention-days: 1
-          if-no-files-found: ignore
-
 
       # THE LIBRARY IS FETCHED ONCE AND THEN ONLY ADDED TO. `restore-keys` takes
       # the newest cache whatever run wrote it, while the `key` carries this run
@@ -361,7 +334,6 @@ jobs:
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
                      --reuse "$f" --dry-run $FORCE $SLICE \
-                     --scores store \
                      --facts-in facts-known.ndjson \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
@@ -461,7 +433,6 @@ jobs:
           # rather than a line after it, so a scorer that exits non-zero still
           # banks what it managed.
           trap 'kill $SHIPPER 2>/dev/null || true; bash scripts/ship_facts.sh --generation "$GEN" facts.ndjson || true' EXIT
-          mkdir -p scores
           # THE FORCED LIST, if the operator named one. It has to reach every
           # process that decides reuse: a shard that keeps a row the publish
           # pass drops leaves publish to compute it alone, at the end.
@@ -493,20 +464,11 @@ jobs:
             ./target/release/wfsim-board "$id" \
               $prior $FORCE \
               $slice \
-              --scores store \
               --facts-in facts-known.ndjson \
               --facts facts.ndjson \
               --measured-by "$GITHUB_SHA" \
               --shard "${{ matrix.shard }}/${{ needs.submissions.outputs.shard_count }}" \
-              --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
-            # BANKED AS SOON AS IT EXISTS. A run cancelled after this has kept
-            # the work; the artifact below only has to reach `publish` in THIS
-            # run, where the store has to reach every later one. A DELTA, which
-            # `publish` merges and then sweeps — without that the store grows by
-            # a couple of hundred objects an hour and every run reads them all.
-            key="delta/${{ github.run_id }}-$id-${{ matrix.shard }}.json"
-            bash scripts/score_store.sh put "scores/$id-${{ matrix.shard }}.json" "$key" || true
           done
         env:
           # THE SHIPPER'S HALF. Without these the fact log is written and
@@ -514,15 +476,6 @@ jobs:
           # and green, which is how a whole shard's rows went nowhere.
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: scores-${{ matrix.shard }}
-          path: scores/
-          retention-days: 1
 
   # ---- 3. assemble the board and commit ---------------------------------
   #
@@ -574,37 +527,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: submissions
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: scores-*
-          path: scores
-          merge-multiple: true
-      # WHAT EARLIER RUNS BANKED, beside what this run's shards computed. One
-      # directory because `--scores` takes one path, and the two are the same
-      # kind of file — each says which engine wrote it and what each row read,
-      # so the reader holds both to the same test.
-      #
-      # READ HERE AND NOT TAKEN FROM `submissions`, which is the whole point:
-      # that copy is as old as the start of this run, and writing it back out
-      # rolls the store and the board to what they were then. An assembly is
-      # the last thing a run does, so it reads the store last.
-      - name: read the score store, as it is now
-        env:
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: bash scripts/score_store.sh get scores
-      # …AND THE SAME SHARDS AGAIN, ALONE, because "who wrote this" is a fact no
-      # file carries and the assembly needs it. Merged into one directory the
-      # store's copy of a row wins on name order, so a rescore's fresh number
-      # was overwritten by the very number it replaced and the board published
-      # the rescore as a no-op. `--scored-here` is the second path that answers
-      # it; the merged directory above still carries the costs and the probes.
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: scores-*
-          path: fresh
-          merge-multiple: true
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
@@ -674,26 +596,12 @@ jobs:
             # that cannot refight a row must not drop it: a published row
             # vanishing because a file it reads was corrected is the one
             # outcome the archive exists to prevent.
-            mkdir -p merged
             ./target/release/wfsim-board "$id" site/board.json \
               $prior $FORCE \
-              --scores scores --scored-here fresh --project \
+              --project \
               --facts-in facts-known.ndjson \
-              --emit-scores "merged/$id.json" --emit-all \
               < submissions.json > "boards/$id.yaml"
-            # THE MERGED SET, which is what the next run starts from. `--emit-all`
-            # rather than what this pass computed: it computes almost nothing, so
-            # a file of its own work would be empty and the store would forget
-            # everything the shards banked.
-            bash scripts/score_store.sh put "merged/$id.json" "$id.json" || true
           done
-          # …AND THE DELTAS ARE SPENT. Only now: a sweep before the merged set
-          # lands drops work nothing else holds.
-          bash scripts/score_store.sh sweep || true
-        env:
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
       # hour that says nothing is history nobody can read.

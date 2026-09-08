@@ -619,18 +619,6 @@ the rows the last one just repaired.
 
 It fails on each of the seven.
 
-## `score_store --self-test`
-
-Scores must outlive the run that computed them. Plain bash against a stub `aws`,
-no network: unconfigured is silent and green (which is the rollback), a put
-names the key it was handed, an empty score file banks nothing, a get flattens
-the deltas into the one directory the reader takes, and a sweep only ever names
-the delta prefix — sweeping the merged set would throw away every banked score.
-
-The failure it guards is a run that banks nothing while reporting success — the
-board would still be right, and every run would still be green, while the whole
-point of the store quietly went missing.
-
 ## `check_comment_style`
 
 No attribution and no dated decision survives in the

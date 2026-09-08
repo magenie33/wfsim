@@ -116,17 +116,26 @@ check(denom.length > 0 && denom.every((l) => l.includes("outputs.shard_count")),
   "the shard denominator comes from the matrix's own count",
   `a shard is told a count the matrix does not set (${denom.map((l) => l.trim()).join(" | ") || "no --shard at all"})`);
 
-// A RESCORE'S OWN ANSWER REACHES THE BOARD, which is the whole of what a
-// rescore is. The assembly is handed one directory holding this run's shards
-// AND the durable store, and a name collision there is resolved by sort order —
-// so the stored number overwrote the fresh one and every forced rescore
-// published exactly what it was replacing. Green every time: the shards refight
-// the rows, bank them, and the merge hands back the old figures.
-const assemble = wf.filter((l) => l.includes("--project") && !l.trim().startsWith("#"));
-check(assemble.length > 0 && assemble.every((l) => l.includes("--scored-here")),
-  "the assembly is told which scores this run computed",
-  "a pass that cannot tell its own shards from the store republishes the store: "
-    + "the rows a rescore just refought come back with the numbers it replaced");
+// THE ASSEMBLY HAS ONE SOURCE, and a publisher with more than one needs a rule
+// for which of them wins. Every defect this pipeline has produced has lived in
+// that rule: a merge decided by filename order, an artifact whose absence
+// skipped the assembly, a prior board republished beside rows half its size.
+//
+// Read over the whole step, because the flags sit on their own lines.
+const assembleStep = wf
+  .slice(wf.findIndex((l) => l.includes("- name: assemble every benchmark")))
+  .slice(0, 80)
+  .filter((l) => !l.trim().startsWith("#"))
+  .join(NL);
+check(assembleStep.includes("--project"), "the assembly does not fight a row",
+  "the pass that publishes must not also be a pass that scores");
+check(assembleStep.includes("--facts-in"), "…and it reads the generation's facts",
+  "a publisher with no facts publishes whatever else it was handed");
+for (const flag of ["--scores", "--scored-here", "--emit-scores"]) {
+  check(!assembleStep.includes(flag), `…and nothing else (${flag})`,
+    "a second source needs a rule about which one wins, and that rule is where "
+      + "every defect in this pipeline has lived");
+}
 
 // …AND THE FULL BUTTON FORCES ROWS RATHER THAN WITHHOLDING THE PRIOR BOARD.
 // Reuse is decided per row and the store answers first, so a run with no prior
@@ -160,10 +169,10 @@ const pub = wf.slice(wf.findIndex((l) => /^ {2}publish:/.test(l)));
 check(pub.some((l) => /group:\s*board-publish/.test(l)),
   "one assembly at a time, across every run",
   "two publishes overlap, and the later one writes the store it read at its own start");
-check(pub.some((l) => l.includes("score_store.sh get")),
-  "…and it reads the score store itself",
-  "the assembly is handed a copy read at the start of its run, so publishing it "
-    + "rolls the store back to what it was then");
+check(pub.some((l) => l.includes("fetch_facts.sh")),
+  "…and it reads the generation itself, at its own start",
+  "an assembly handed a copy of the facts read earlier in the run publishes what "
+    + "was true then, and a run's own shards are still shipping while it waits");
 check(!pub.some((l, i) => /name:\s*store/.test(l)
   && pub.slice(Math.max(0, i - 4), i).some((p) => p.includes("download-artifact"))),
   "…rather than the snapshot the scorers were handed",
