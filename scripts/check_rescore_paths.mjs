@@ -132,6 +132,28 @@ check(gated.length === 0, "a full rescore is every row forced, not a missing pri
     + "which forces nothing, since reuse is decided per row and the store answers "
     + "first, and loses the costs the split packs by and the leaders it screens against");
 
+// AND IT REACHES A BOARD NOBODY IS OVERWRITING. Two runs assembling at once is
+// last-writer-wins over a whole run's KNOWLEDGE, not over one file: the loser is
+// whichever read the score store first, and what it publishes is the store as it
+// was then — the board and the store both rolled back. Measured: a repaired row
+// landed at 18:02 and a run that had read the store at 18:01 published over it
+// at 18:07, twice, so the button looked like it did nothing.
+//
+// So the assembly is serialised and reads the store LAST. The scoring may
+// overlap freely; it only ever adds.
+const pub = wf.slice(wf.findIndex((l) => /^ {2}publish:/.test(l)));
+check(pub.some((l) => /group:\s*board-publish/.test(l)),
+  "one assembly at a time, across every run",
+  "two publishes overlap, and the later one writes the store it read at its own start");
+check(pub.some((l) => l.includes("score_store.sh get")),
+  "…and it reads the score store itself",
+  "the assembly is handed a copy read at the start of its run, so publishing it "
+    + "rolls the store back to what it was then");
+check(!pub.some((l, i) => /name:\s*store/.test(l)
+  && pub.slice(Math.max(0, i - 4), i).some((p) => p.includes("download-artifact"))),
+  "…rather than the snapshot the scorers were handed",
+  "the artifact is as old as the run; the assembly is the last thing it does");
+
 // THE BOARD PUBLISHES; THE AUDIT INSPECTS. `--verify` re-fights published rows
 // and compares them, which is an inspector's job and costs 25 minutes of wall
 // clock — on the board's critical path it delayed every publish to decide a

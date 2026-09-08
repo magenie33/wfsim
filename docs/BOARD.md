@@ -238,6 +238,15 @@ board unchanged. The same rule spells the `full` button: it FORCES every row
 row and the store answers first, so withholding the prior forced nothing, while
 losing the costs the split packs by and the leaders the probe screens against.
 
+**AND IT REACHES A BOARD NOBODY IS OVERWRITING.** The workflow's groups keep the
+schedule and the buttons apart so a long manual rescore cannot stand the
+schedule down, which means their runs overlap — and two assemblies is
+last-writer-wins over a whole run's KNOWLEDGE rather than over one file. The
+loser is whichever read the score store first, and what it publishes is the
+store as it was then, rolling back the board and the store together. So the
+ASSEMBLY is serialised and reads the store last; the scoring may overlap freely,
+since it only ever adds.
+
 A CAP OF `REPAIR_CAP` ROWS, because a finding that large is not a repair but a
 question. A hundred rows moving at once is a ruler's terms or a fight-wide
 constant, not a hundred separate defects, and burying that under an hour of

@@ -434,6 +434,16 @@ jobs:
     if: needs.submissions.outputs.wired == 'true'
       && needs.submissions.outputs.work != 'false'
     runs-on: ubuntu-latest
+    # ONE PUBLISH AT A TIME, ACROSS EVERY RUN. The workflow's own groups keep
+    # the schedule and the buttons apart so a long manual rescore cannot stand
+    # the schedule down — which means they overlap, and two assemblies writing
+    # the board is last-writer-wins over a whole run's knowledge. Measured: a
+    # rescore landed a repaired row at 18:02 and the run that had read the
+    # store at 18:01 published over it at 18:07, twice, so the button appeared
+    # to do nothing at all. The SCORING may overlap freely; only this may not.
+    concurrency:
+      group: board-publish
+      cancel-in-progress: false
     permissions:
       contents: write
       # NAMING ONE PERMISSION SETS EVERY OTHER TO NONE, so the CI check below
@@ -461,11 +471,17 @@ jobs:
       # directory because `--scores` takes one path, and the two are the same
       # kind of file — each says which engine wrote it and what each row read,
       # so the reader holds both to the same test.
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: store
-          path: scores
+      #
+      # READ HERE AND NOT TAKEN FROM `submissions`, which is the whole point:
+      # that copy is as old as the start of this run, and writing it back out
+      # rolls the store and the board to what they were then. An assembly is
+      # the last thing a run does, so it reads the store last.
+      - name: read the score store, as it is now
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: bash scripts/score_store.sh get scores
       # …AND THE SAME SHARDS AGAIN, ALONE, because "who wrote this" is a fact no
       # file carries and the assembly needs it. Merged into one directory the
       # store's copy of a row wins on name order, so a rescore's fresh number
