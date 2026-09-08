@@ -379,14 +379,6 @@ fn num_out(v: f64) -> String {
     format!("{v}")
 }
 
-/// The other half of [`num_out`], tolerating a plain number for a file a run
-/// already in flight wrote — where the ULP is the old behaviour and not worse.
-fn num_in(v: &Value) -> Option<f64> {
-    match v.as_str() {
-        Some(s) => s.parse().ok(),
-        None => v.as_f64(),
-    }
-}
 
 /// WHICH ROWS A `--rescore` NAMES, at whatever precision the operator has.
 ///
@@ -484,24 +476,6 @@ type LoadedScores = (
     std::collections::HashMap<String, Partial>,
 );
 
-/// THE MERGED SET IS READ FIRST, SO A DELTA CAN BEAT IT. Later files win a
-/// duplicate key, and the store flattens two kinds into one directory:
-/// `<bench>.json`, the merged set a publish writes, and
-/// `<run>-<bench>-<shard>.json`, what one shard banked. A plain name sort put
-/// every delta BEFORE the merged set — digits sort under letters — so a delta
-/// could only ever ADD a row the merged set did not hold, never UPDATE one.
-///
-/// Measured: a full rescore banked all 128 shards and its own publish was
-/// skipped, so its numbers sat in the store, correct and paid for, while the
-/// next run published the very numbers they replaced. A delta is always newer
-/// than the merged set, because `publish` sweeps the deltas it has merged.
-fn sort_store_files(files: &mut [std::path::PathBuf], bench_id: &str) {
-    let merged = format!("{bench_id}.json");
-    files.sort_by_key(|f| {
-        let name = f.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
-        (name != merged, name)
-    });
-}
 
 /// A FACT, WRITTEN THE MOMENT IT IS COMPUTED, to a file that is only ever
 /// APPENDED to and flushed per row.
@@ -622,111 +596,6 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> (LoadedScores, RollMap) {
     ((out, cost, Default::default(), fps, Default::default()), rolls)
 }
 
-fn load_scores(spec: Option<String>, bench_id: &str) -> LoadedScores {
-    let mut out = std::collections::HashMap::new();
-    // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
-    // the same reason as the score: the publish process computes almost
-    // nothing, so it has no figure of its own to write into the board.
-    let mut cost = std::collections::HashMap::new();
-    // …AND THE PROBE OF EVERY ROW A SHARD SCREENED, which is a third thing and
-    // not a score. It is kept apart from `out` for the reason the board keeps
-    // it apart: a probe is 100 runs against the ruler's 1000 and may never be
-    // published or reused AS a measurement. What it can do is spare the publish
-    // process from taking it again.
-    let mut probes = std::collections::HashMap::new();
-    // WHAT EACH SCORE READ, carried so the caller can refuse one whose data has
-    // moved. A file from THIS run needs none — every shard is one binary over
-    // one checkout — and a file from a durable store needs it for every row.
-    let mut fps: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-    // …AND WHAT A ROW HAS PAID FOR WITHOUT FINISHING. Held to the same
-    // fingerprint as a score by the caller: half a measurement taken against
-    // data that has since moved is not a head start, it is two engines' work
-    // added together.
-    let mut partials: std::collections::HashMap<String, Partial> = std::collections::HashMap::new();
-    let Some(spec) = spec else { return (out, cost, probes, fps, partials) };
-    let mut files: Vec<std::path::PathBuf> = Vec::new();
-    let p = std::path::Path::new(&spec);
-    if p.is_dir() {
-        if let Ok(rd) = std::fs::read_dir(p) {
-            files.extend(
-                rd.flatten()
-                    .map(|e| e.path())
-                    .filter(|f| f.extension().is_some_and(|e| e == "json")),
-            );
-        }
-    } else {
-        files.push(p.to_path_buf());
-    }
-    // THE MERGED SET IS READ FIRST, SO A DELTA CAN BEAT IT. Later files win a
-    // duplicate key, and the store flattens two kinds of file into one
-    // directory: `<bench>.json`, the merged set a publish writes, and
-    // `<run>-<bench>-<shard>.json`, what a shard banked. A plain name sort put
-    // every delta before the merged set — digits sort under letters — so a
-    // delta could only ever ADD a row the merged set did not hold, and never
-    // UPDATE one it did.
-    //
-    // Measured: a full rescore banked all 128 shards and its own publish was
-    // skipped, so the numbers sat in the store, correct and paid for, and the
-    // next run published the very numbers they replaced. A delta is always
-    // newer than the merged set — `publish` sweeps the deltas it has merged —
-    // so newer winning is the rule, and this is the order that states it.
-    sort_store_files(&mut files, bench_id);
-    for f in files {
-        let Ok(text) = std::fs::read_to_string(&f) else {
-            continue;
-        };
-        let Ok(file) = serde_json::from_str::<Value>(&text) else {
-            continue;
-        };
-        // A FILE SAYS WHICH BOARD IT IS, and another board's is refused rather
-        // than merged. The key is `identity#mode` and carries no benchmark, so
-        // two boards scoring the same build produce the SAME key with different
-        // numbers — and the publish step is handed one directory holding every
-        // benchmark's shards. Merging them silently published one ruler's score
-        // under the other's name: the Torid's aimed 28.44 kpm sat at the top of
-        // the NO-AIM board, where that build actually scores 0.5.
-        if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
-            continue;
-        }
-        if let Some(fs) = file.get("fps").and_then(Value::as_object) {
-            for (k, v) in fs {
-                if let Some(t) = v.as_str() {
-                    fps.insert(k.clone(), t.to_string());
-                }
-            }
-        }
-        if let Some(cs) = file.get("costs").and_then(Value::as_object) {
-            for (k, v) in cs {
-                if let Some(n) = num_in(v) {
-                    cost.insert(k.clone(), n);
-                }
-            }
-        }
-        if let Some(ps) = file.get("probes").and_then(Value::as_object) {
-            for (k, v) in ps {
-                if let Some(n) = num_in(v) {
-                    probes.insert(k.clone(), n);
-                }
-            }
-        }
-        if let Some(pt) = file.get("partials").and_then(Value::as_object) {
-            for (k, v) in pt {
-                if let Ok(p) = serde_json::from_value::<Partial>(v.clone()) {
-                    partials.insert(k.clone(), p);
-                }
-            }
-        }
-        let Some(scores) = file.get("scores").and_then(Value::as_object) else {
-            continue;
-        };
-        for (k, v) in scores {
-            if let Some(n) = num_in(v) {
-                out.insert(k.clone(), n);
-            }
-        }
-    }
-    (out, cost, probes, fps, partials)
-}
 
 /// The prior board's scores, keyed the way this run keys them — but only if it
 /// was computed by the same engine.
@@ -893,24 +762,6 @@ fn reuse_prior(path: &str, bench_id: &str) -> Result<Prior, String> {
     Ok(out)
 }
 
-/// WHAT AN EARLIER RUN STORED, TAKEN ONLY WHERE THIS RUN HAS NOTHING.
-///
-/// The rule the assembly rests on: a number this run computed is the number
-/// this code computes, and a stored one only claims to be. They agree on every
-/// row nobody refought, so the order costs nothing — until a rescore, where
-/// letting the stored copy win republishes exactly what was being replaced.
-///
-/// Returns how many were taken, which is what `reused` counts.
-fn take_where_unknown(known: &mut ScoreMap, stored: ScoreMap) -> usize {
-    let mut taken = 0;
-    for (k, v) in stored {
-        if let std::collections::hash_map::Entry::Vacant(slot) = known.entry(k) {
-            slot.insert(v);
-            taken += 1;
-        }
-    }
-    taken
-}
 
 /// THE RULER'S TERMS PLUS THE ENTRANT, as the request the simulator answers.
 ///
@@ -998,35 +849,18 @@ fn main() {
         }
         None => (0, 1),
     };
-    // EVERY STORED SCORE PROVES ITSELF THE SAME WAY, whether it came from this
-    // run's own shards or from a store that outlived the run that wrote it: the
-    // row's data hash, recomputed in the loop below. A same-run file passes
-    // trivially, so there is one rule rather than a flag saying which to apply.
+    // THE OPEN GENERATION, AND NOTHING ELSE. A row this generation has measured
+    // is done; a row it has not is work. That set difference is the whole of
+    // what a run decides, and it replaces a prior board, a merged store and a
+    // directory of this run's own artifacts — three sources that could
+    // disagree, and a rule about which of them won.
     //
-    // They wait in `store_scores` rather than joining `known`, which also holds
-    // the PRIOR BOARD's rows — those were validated on their own way in and
-    // carry no entry here, so a check applied to the merged map threw the whole
-    // board away and made every row todo.
-    let (mut store_scores, mut known_costs, known_probes, mut store_fps, mut row_partials) =
-        load_scores(flag("--scores"), &bench_id);
-    // …AND THE FACTS OF THIS GENERATION ON TOP, where there are any. The two
-    // sources run side by side while the store migrates, and the DATABASE wins:
-    // it is keyed by (build, ruler, mode, what it read, generation), so it can
-    // say which generation a number belongs to, which a directory of files
-    // merged by filename order never could.
-    let ((facts_scores, facts_costs, _, facts_fps, _), facts_rolls) =
+    // WHAT IS LOST WITH THEM is a screen probe and a half-finished row, so an
+    // expensive row that a shard died part-way through starts again. That costs
+    // TIME and never a number, which is the direction a cleanup is allowed to
+    // cost in.
+    let ((facts_scores, known_costs, known_probes, store_fps, mut row_partials), facts_rolls) =
         load_facts(flag("--facts-in"), &bench_id);
-    store_scores.extend(facts_scores.iter().map(|(k, v)| (k.clone(), *v)));
-    known_costs.extend(facts_costs);
-    store_fps.extend(facts_fps);
-    // …AND WHICH OF THEM THIS RUN COMPUTED ITSELF, which is a different fact
-    // and the one the assembly needs. A row's stored score and this run's can
-    // only DIFFER where the row was refought — a forced rescore, or a full one
-    // — and the stored number is the one that was just proved out of date, so a
-    // merge that let it win published the rescore as a no-op.
-    //
-    // A SEPARATE PATH, because nothing inside a file says which run wrote it.
-    let (here_scores, ..) = load_scores(flag("--scored-here"), &bench_id);
     let mut known: ScoreMap = Default::default();
     let mut reused = 0usize;
     let mut stale = 0usize;
@@ -1109,11 +943,8 @@ fn main() {
     // 3992.29, 3934.90 and 3928.68, and not one of them had a fact — they were
     // the prior board's, published beside freshly measured ones half their
     // size.
-    if project {
+    if !verify {
         known = facts_scores.clone();
-    } else if !verify {
-        known.extend(here_scores.iter().map(|(k, v)| (k.clone(), *v)));
-        take_where_unknown(&mut known, facts_scores.clone());
     }
     let mut verify_against: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
@@ -1133,8 +964,6 @@ fn main() {
                     // NOT into `known`: a verify run has to MEASURE the sample,
                     // and a seeded score is a row that is never fought.
                     verify_against = p.scores;
-                } else if !project {
-                    reused = take_where_unknown(&mut known, p.scores);
                 }
             }
             Err(why) => eprintln!("full rescore: {why}"),
@@ -1233,7 +1062,7 @@ fn main() {
         // A FACT OF THE OPEN GENERATION IS NOT "WHAT WAS STORED". Forcing means
         // refight what an OLDER generation measured; a row this generation has
         // already measured is the thing the force was asking for.
-        known.retain(|k, _| !hit(k) || here_scores.contains_key(k) || facts_scores.contains_key(k));
+        known.retain(|k, _| !hit(k) || facts_scores.contains_key(k));
         rolls.retain(|k, _| !hit(k));
         // …AND THE HALF-FINISHED FIGHTS WITH THEM. A partial is held to the
         // row's DATA hash, which a forced rescore does not move, so a resumed
@@ -1514,14 +1343,7 @@ fn main() {
             //
             // `or_insert`, because the prior board and this run's own shards
             // were validated on their own way in and must win.
-            if let Some(&stored) = store_scores.get(&key) {
-                if !project
-                    && store_fps.get(&key).map(String::as_str) == Some(build_fp.as_str())
-                    && !is_forced(&key)
-                {
-                    known.entry(key.clone()).or_insert(stored);
-                }
-            }
+
             // THE SHARD IS A PROPERTY OF THE ROW, not of the submission it came
             // from: a melee weapon is seven rows off one record. `charge`
             // decides which, below, and every shard walks this same sequence
@@ -2845,34 +2667,6 @@ mod tests {
         log.write("single_target", "k#base", "fp", 1.0, 1.0, None);
     }
 
-    /// A DELTA IS READ AFTER THE MERGED SET, so it wins the duplicate key.
-    ///
-    /// This is a NAME ORDER and not a timestamp, which is why it needs an
-    /// assertion: a delta is `<run>-<bench>-<shard>.json` and starts with a
-    /// digit, and a plain sort therefore put every one of them ahead of
-    /// `<bench>.json`. The board published the number a rescore had replaced.
-    #[test]
-    fn a_banked_delta_is_read_after_the_merged_set_it_replaces() {
-        let mut files: Vec<std::path::PathBuf> = [
-            "34191927725-single_target-7.json",
-            "single_target.json",
-            "34172612935-single_target-118.json",
-        ]
-        .iter()
-        .map(|n| std::path::Path::new("/store").join(n))
-        .collect();
-        super::sort_store_files(&mut files, "single_target");
-        let names: Vec<String> = files
-            .iter()
-            .map(|f| f.file_name().unwrap().to_string_lossy().into_owned())
-            .collect();
-        assert_eq!(names[0], "single_target.json", "the merged set is read first: {names:?}");
-        assert_eq!(
-            names.last().unwrap(),
-            "34191927725-single_target-7.json",
-            "the newest delta is read last: {names:?}"
-        );
-    }
 
     use super::*;
 
@@ -2950,46 +2744,6 @@ mod tests {
         );
     }
 
-    /// A PAUSE SURVIVES THE FILE IT CROSSES.
-    ///
-    /// The banked progress is only worth anything to the NEXT process, so the
-    /// seam that matters is the store: a partial that does not round-trip reads
-    /// as a row that has never been started, and the run that was supposed to
-    /// resume it pays for the whole thing again — the backlog stops draining
-    /// and nothing says so.
-    #[test]
-    fn a_paused_row_crosses_the_store_intact() {
-        let d = tmpdir("partial");
-        let mut part = Partial::default();
-        part.priced.insert("3".into(), 12.5);
-        part.cursor = Some(("measure".into(), 275, json!({ "runs": 275, "sum": 1.5 })));
-        std::fs::write(
-            d.join("group_clear-0.json"),
-            serde_json::to_string(&json!({
-                "benchmark": "group_clear",
-                "scores": {},
-                "partials": { "torid#base": part },
-            }))
-            .unwrap(),
-        )
-        .unwrap();
-
-        let (_, _, _, _, back) =
-            load_scores(Some(d.to_string_lossy().into_owned()), "group_clear");
-        let got = back.get("torid#base").expect("the partial came back");
-        assert_eq!(got.priced.get("3").copied(), Some(12.5));
-        let (label, done, shard) = got.cursor.as_ref().expect("the cursor came back");
-        assert_eq!(label, "measure");
-        assert_eq!(*done, 275);
-        assert_eq!(shard.get("runs").and_then(Value::as_u64), Some(275));
-
-        // …AND ANOTHER BOARD'S IS REFUSED, the same rule the scores follow: two
-        // rulers key one build identically, so a partial merged across them
-        // would resume a group-clear measurement into a single-target one.
-        let (_, _, _, _, other) =
-            load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
-        assert!(other.is_empty(), "another board's partial was admitted");
-    }
 
     /// …AND A PAUSE IS NOT A CACHE ACROSS A DATA CHANGE.
     ///
@@ -3019,25 +2773,6 @@ mod tests {
         assert!(now.1 > 0);
     }
 
-    /// A SCORE CROSSES BETWEEN PROCESSES WITHOUT MOVING.
-    ///
-    /// Every score a shard computes reaches the publish process through a file,
-    /// and `serde_json`'s NUMBER parser is not correctly rounding: written as a
-    /// JSON number, `1.1070976928071055` comes back one ULP away as `...057`,
-    /// and so does about one board value in ten. The board published the moved
-    /// number while a reader reproducing the row from the repo — which the board
-    /// invites — got the engine's. The three values here are ones it moves.
-    #[test]
-    fn a_number_crossing_between_processes_is_the_number_that_was_computed() {
-        for v in [1.107_097_692_807_105_5_f64, 0.987_342_303_252_504_9, 31.138_033_906_687_234] {
-            let wire: Value = serde_json::from_str(
-                &serde_json::to_string(&serde_json::json!({ "x": num_out(v) })).unwrap(),
-            )
-            .unwrap();
-            let back = num_in(wire.get("x").unwrap()).expect("a carried number reads back");
-            assert_eq!(back.to_bits(), v.to_bits(), "{v} did not survive the carry");
-        }
-    }
 
     /// THE SCORER ASKS FOR A MODE, AND TWO MODES ARE TWO QUESTIONS. A weapon
     /// that can fill its gauge either way sent one request for both cycles, so
@@ -3364,80 +3099,8 @@ mod tests {
         assert_eq!(below.len(), 0);
     }
 
-    fn tmpdir(tag: &str) -> std::path::PathBuf {
-        let d = std::env::temp_dir().join(format!("wfsim-board-{}-{}", tag, std::process::id()));
-        let _ = std::fs::remove_dir_all(&d);
-        std::fs::create_dir_all(&d).expect("tmpdir");
-        d
-    }
 
-    /// TWO BOARDS SCORING ONE BUILD PRODUCE THE SAME KEY AND DIFFERENT NUMBERS,
-    /// and the publish step is handed ONE directory holding every benchmark's
-    /// shards (`.github/workflows/board.yml`: eight shards x every ruler ->
-    /// `scores/`, then `--scores scores` once per ruler). Merging them published
-    /// one ruler's score under the other's name: the Torid's aimed 28.442 kpm
-    /// sat at the top of the NO-AIM board, where that build scores 0.170.
-    ///
-    /// The merged number also WINS over the board's own correct history, since
-    /// `--reuse` only fills where `--scores` left a hole — which is why only the
-    /// rows the other ruler happened to rescore that run were wrong, and why it
-    /// read as a scenario leak rather than as a file being read twice.
-    #[test]
-    fn a_score_file_belongs_to_one_board_and_another_boards_is_refused() {
-        let d = tmpdir("cross");
-        let key = "torid#cycle";
-        std::fs::write(
-            d.join("single_target-0.json"),
-            r#"{"benchmark":"single_target","scores":{"torid#cycle":28.44229348067104}}"#,
-        )
-        .unwrap();
-        std::fs::write(
-            d.join("single_target_no_aim-0.json"),
-            r#"{"benchmark":"single_target_no_aim","scores":{"torid#cycle":0.17033484369504454}}"#,
-        )
-        .unwrap();
 
-        let spec = Some(d.to_string_lossy().into_owned());
-        let (aimed, _, _, _, _) = load_scores(spec.clone(), "single_target");
-        let (no_aim, _, _, _, _) = load_scores(spec.clone(), "single_target_no_aim");
-        assert_eq!(aimed.get(key).copied(), Some(28.44229348067104));
-        assert_eq!(no_aim.get(key).copied(), Some(0.17033484369504454));
-        // The sharp one: neither board may see the other's, in EITHER direction
-        // — the file order decides which one wins, and it is a sort over names.
-        assert_eq!(aimed.len(), 1, "the aimed board read another ruler's file");
-        assert_eq!(
-            no_aim.len(),
-            1,
-            "the no-aim board read another ruler's file"
-        );
-
-        // A ruler with no file of its own reuses nothing rather than reusing
-        // whatever else is in the directory.
-        assert!(load_scores(spec, "group_clear").0.is_empty());
-        let _ = std::fs::remove_dir_all(&d);
-    }
-
-    /// Shards of ONE board still merge, which is the whole point of the file.
-    #[test]
-    fn shards_of_the_same_board_merge() {
-        let d = tmpdir("shards");
-        std::fs::write(
-            d.join("single_target-0.json"),
-            r#"{"benchmark":"single_target","scores":{"a#base":1.0}}"#,
-        )
-        .unwrap();
-        std::fs::write(
-            d.join("single_target-1.json"),
-            r#"{"benchmark":"single_target","scores":{"b#base":2.0}}"#,
-        )
-        .unwrap();
-        let (got, _, _, _, _) =
-            load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
-        assert_eq!(got.len(), 2);
-        assert_eq!(got.get("a#base").copied(), Some(1.0));
-        assert_eq!(got.get("b#base").copied(), Some(2.0));
-        let _ = std::fs::remove_dir_all(&d);
-    }
     /// THE FLOOR PARTITIONS BY RIVEN, and the ranking does not.
     ///
     /// A riven build and a plain one compete with each other for nothing, so a
@@ -3605,30 +3268,4 @@ mod page_row_tests {
         assert!(many.iter().any(|s| s.matches(base)));
     }
 
-    /// A STORED SCORE NEVER OVERWRITES WHAT THIS RUN COMPUTED.
-    ///
-    /// Every rescore rests on it. The two copies agree on every row nobody
-    /// refought, so the order looks free — and on the rows a rescore DID
-    /// refight, letting the stored one win republishes the number the rescore
-    /// was called to replace, with the shards' work banked, the run green and
-    /// the board unchanged.
-    ///
-    /// The count is what `reused` reports, so a row taken from this run has to
-    /// leave it alone: a merge that claimed every prior row as reused would
-    /// report a full rescore as having refought nothing.
-    #[test]
-    fn a_stored_score_never_overwrites_what_this_run_computed() {
-        let mut known: ScoreMap = Default::default();
-        known.insert("refought#base".into(), 49.66);
-
-        let mut stored: ScoreMap = Default::default();
-        stored.insert("refought#base".into(), 48.53);
-        stored.insert("untouched#base".into(), 12.0);
-
-        let taken = take_where_unknown(&mut known, stored);
-
-        assert_eq!(known["refought#base"], 49.66, "the stored copy won the merge");
-        assert_eq!(known["untouched#base"], 12.0, "a row this run never fought was dropped");
-        assert_eq!(taken, 1, "the row this run computed was counted as reused");
-    }
 }
