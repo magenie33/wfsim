@@ -90,10 +90,9 @@ Each of these fails silently. That is why it is here and not in a document.
   --workspace`.** Run both before pushing. Deploy = push to `main`; Cloudflare
   picks up `site/` in 1–2 minutes and there is no deploy step in CI.
 - **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/board.yml` does it and
-  the bot commits the result. `scripts/rescore_board.py --write` by hand holds
-  the board yaml TRUNCATED for an hour, which reds the board tests and blocks
-  `site/` regeneration. Without `--write`, to see whether a change moved
-  anything, is fine.
+  the bot commits `site/board/`; the numbers come from the `scores` table and
+  nothing local may write one. Running `wfsim-board` by hand in the repo
+  rewrites `data/board_state.yaml` and the published files under it.
 - **Images are SAME-ORIGIN.** `site/img/` holds every file `data/assets.yaml`
   references and the build FAILS on a missing one. Never hotlink a CDN — it
   redirects to a host that is unreliable to blocked from mainland China.
@@ -183,7 +182,7 @@ Each of these fails silently. That is why it is here and not in a document.
   check is another, so running that loop to DISCOVER the next thing to fix is
   how an afternoon goes. Enumerate the call sites by READING first, debug
   against the dev server (`openApp({base})`), regenerate `site/` once, then run
-  the checks — `docs/DEVELOPMENT.md`. **The dev server 404s on `/board.json`**,
+  the checks — `docs/DEVELOPMENT.md`. **The dev server 404s on `/board/`**,
   so a board-dependent check passes VACUOUSLY there: batch every edit first.
 - Run the checks a change touches — `docs/CHECKS.md` lists what each asserts.
   They drive headless Chrome over CDP through `scripts/cdp.mjs`.

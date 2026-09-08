@@ -81,7 +81,6 @@ jobs:
           key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
       - run: cargo build --release --bin wfsim-board
-      - run: pip install --quiet pyyaml
 
       # HAS THE BOARD MOVED AT ALL. A rescore is hours, not days, so a day of
       # silence means the pipeline stopped rather than that nothing was
@@ -90,7 +89,7 @@ jobs:
         id: age
         run: |
           set -euo pipefail
-          last=$(git log -1 --format=%ct -- boards || true)
+          last=$(git log -1 --format=%ct -- site/board || true)
           hours=$(( ( $(date +%s) - ${last:-0} ) / 3600 ))
           echo "the last board commit was ${hours}h ago"
           if [ "$hours" -ge "$STALE_HOURS" ]; then
@@ -98,28 +97,53 @@ jobs:
             exit 1
           fi
 
-      # THE SLICE. It runs whatever the code has done since the board was
-      # written, because that is the question: a published number either is what
-      # this code computes or it is not, and no hash can answer it. There is no
-      # code fingerprint to stand down behind any more.
+      # WHAT IS PUBLISHED, AND WHAT IT WAS MEASURED FROM. Two reads, once each:
+      # the library is the builds to re-fight and the facts are the numbers to
+      # compare against. Nothing here writes either.
+      - name: read the library and the facts
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_D1_DATABASE: ${{ secrets.CF_D1_DATABASE }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          scripts/fetch_library.sh submissions.json
+          # THE GENERATION THE BOARD SAYS IT IS. Read off the published stamp
+          # rather than declared here: the board publishes one generation, and a
+          # generation named in two workflows is one of them left behind.
+          GEN=$(python3 -c "import json;print(json.load(open('site/board.meta.json'))['generation'])")
+          [ -n "$GEN" ] || { echo "::error::site/board.meta.json names no generation"; exit 1; }
+          echo "auditing generation $GEN"
+          scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+
+      # THE SLICE. It runs whatever the code has done since the facts were
+      # measured, because that is the question: a published number either is what
+      # this code computes or it is not, and no hash can answer it.
+      #
+      # `--shard k/CROSSING` IS THE SAMPLER, and it is the scoring run's own. It
+      # packs by what each row COST when it was measured, because rows differ by
+      # four orders of magnitude — equal counts would give one slice a
+      # two-hour job and the next a two-minute one — and it is deterministic,
+      # so a bucket index means the same thing twice. It replaced a Python
+      # sampler that re-derived the same packing off the board yaml.
       - name: read this run's slice of the board
         run: |
           set -euo pipefail
           : > result.txt
           : > moved.txt
-          for f in boards/*.yaml; do
+          for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            python3 scripts/board_sample.py "$f" \
-              --crossing "$CROSSING" --bucket "${{ github.run_number }}" > sample.json
-            # `--verify-min 0`: the floor is applied ONCE, over the three boards,
-            # in the step below — a board whose slice held four rows proves
+            # `--verify-min 0`: the floor is applied ONCE, over the boards, in
+            # the step below — a board whose slice held four rows proves
             # little alone and the three together prove what they prove.
             set +e
             : > "moved-$id.txt"
             ./target/release/wfsim-board "$id" \
-              --reuse "$f" --verify --verify-min 0 \
+              --verify --verify-min 0 \
               --verify-list "moved-$id.txt" \
-              < sample.json > /dev/null 2> verify.log
+              --facts-in facts-known.ndjson \
+              --shard "$(( ${{ github.run_number }} % CROSSING ))/$CROSSING" \
+              < submissions.json > /dev/null 2> verify.log
             set -e
             grep -o 'verify-result: .*' verify.log >> result.txt || true
             # THE ROWS THEMSELVES, FROM THE FILE AND NOT FROM THE LOG. The

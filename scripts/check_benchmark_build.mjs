@@ -21,14 +21,15 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, sleep, send, BASE } = app;
 // THE REAL BOARD, not an injected one: the point of the cold path is that the
-// page RELOADS, and an in-memory injection does not survive that — `BOARD` is
-// fetched from /board.json on boot. So the check finds the weapon that actually
-// has a row and skips cleanly if the board is empty (which it is before the
-// first submission, and that is an ordinary state).
+// page RELOADS, and an in-memory injection does not survive that — a weapon's
+// rows are fetched from /board/<id>.json on boot. The INDEX is what names the
+// weapons that have any, so the check finds one that actually has a row and
+// skips cleanly if the board is empty (which it is before the first
+// submission, and that is an ordinary state).
 const WEAPON = await evaluate(`(async () => {
-  const r = await fetch('/board.json', {cache:'no-cache'});
+  const r = await fetch('/board/index.json', {cache:'no-cache'});
   const b = r.ok ? await r.json() : {};
-  const id = Object.keys(b)[0] || null;
+  const id = Object.keys(b).find(k => (b[k] || []).length) || null;
   if (!id) return null;
   const w = (META.weapons || []).find(x => x.id === id);
   return w ? { id, path: (w.name_en || w.name).replace(/ /g, '_') } : null;

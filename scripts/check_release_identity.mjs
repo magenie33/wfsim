@@ -101,8 +101,9 @@ check(/^\/pkg\/\*$/m.test(read("_headers"))
 // Nothing breaks if it goes back in, which is why this is asserted.
 const list = readFileSync(resolve(ROOT, "desktop/payload.lst"), "utf8")
   .split(NL).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
-check(!list.some((l) => l.startsWith("board.")), "the board is not in the payload",
-  `desktop/payload.lst carries ${list.filter((l) => l.startsWith("board.")).join(" ")}`);
+const carried = list.filter((l) => l.startsWith("board.") || l.startsWith("board/"));
+check(carried.length === 0, "the board is not in the payload",
+  `desktop/payload.lst carries ${carried.join(" ")}`);
 
 // EVERY ASSET THE PAGE NAMES IS IMMUTABLE, which is the whole of the caching
 // model: the HTML is the one mutable file a release has, it names digests of
@@ -126,22 +127,37 @@ const covers = (path) => immutable.some((rule) =>
   new RegExp("^" + rule.replace(/[.]/g, "[.]").replace(/[*]/g, ".*") + "$").test(path));
 
 const page = read("index.html");
-const named = [...page.matchAll(/(?:src|href)="(\/[^"]+\.(?:js|css))"/g)].map((m) => m[1]);
-check(named.length >= 2, "the page names a script and a stylesheet", JSON.stringify(named));
-for (const f of named) {
+const pageAssets = [...page.matchAll(/(?:src|href)="(\/[^"]+\.(?:js|css))"/g)].map((m) => m[1]);
+check(pageAssets.length >= 2, "the page names a script and a stylesheet",
+  JSON.stringify(pageAssets));
+for (const f of pageAssets) {
   check(covers(f), `the edge serves ${f} immutable`,
     "a name that survives a release costs every repeat visit a blocking round trip");
   check(existsSync(resolve(SITE, f.replace(/^\//, ""))), `...and ${f} is in site/`);
 }
 
 // ── the board says which board it is ──────────────────────────────────────
+// A DIGEST PER FILE AND ONE OVER THE MANIFEST, recomputed here rather than
+// trusted: the board is published a weapon at a time, so the stamp is what a
+// client uses to decide which files to fetch, and a stamp that does not describe
+// the directory beside it sends a client to fetch a board that is not there.
 const meta = JSON.parse(read("board.meta.json"));
-const board = readFileSync(resolve(SITE, "board.json"));
-check(meta.digest === createHash("sha256").update(board).digest("hex"),
+const dir = resolve(SITE, "board");
+const files = Object.fromEntries(readdirSync(dir)
+  .filter((f) => f.endsWith(".json"))
+  .map((f) => [f.replace(/[.]json$/, ""),
+    createHash("sha256").update(readFileSync(resolve(dir, f))).digest("hex")]));
+const lines = Object.keys(files).sort().map((k) => `${k} ${files[k]}\n`).join("");
+check(meta.digest === createHash("sha256").update(lines).digest("hex"),
   "board.meta.json stamps the board beside it",
   "the stamp names a board this build does not hold — run scripts/board_meta.py");
-check(meta.rows > 0 && meta.bytes === board.length,
-  "…and counts what is in it", `${meta.rows} rows, ${meta.bytes} of ${board.length} bytes`);
+const named = Object.keys(meta.files || {}).sort().join(",");
+check(named === Object.keys(files).sort().join(","),
+  "…and names every file of it",
+  `${Object.keys(meta.files || {}).length} named, ${Object.keys(files).length} present`);
+check(meta.rows > 0 && meta.weapons > 0 && meta.generation,
+  "…and counts what is in it and says which generation it is",
+  `${meta.rows} rows, ${meta.weapons} weapons, generation ${meta.generation || "(none)"}`);
 
 // …AND THE PAGE READS THAT STAMP RATHER THAN THE ONE IN THE BINARY. The same
 // fields are `data/board_state.yaml`, which is compiled into the wasm, so a

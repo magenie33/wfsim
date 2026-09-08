@@ -131,16 +131,16 @@ check(assembleStep.includes("--project"), "the assembly does not fight a row",
   "the pass that publishes must not also be a pass that scores");
 check(assembleStep.includes("--facts-in"), "…and it reads the generation's facts",
   "a publisher with no facts publishes whatever else it was handed");
-for (const flag of ["--scores", "--scored-here", "--emit-scores"]) {
+for (const flag of ["--scores", "--scored-here", "--emit-scores", "--reuse"]) {
   check(!assembleStep.includes(flag), `…and nothing else (${flag})`,
     "a second source needs a rule about which one wins, and that rule is where "
       + "every defect in this pipeline has lived");
 }
 
-// …AND THE FULL BUTTON FORCES ROWS RATHER THAN WITHHOLDING THE PRIOR BOARD.
-// Reuse is decided per row and the store answers first, so a run with no prior
-// forced nothing at all — while losing the two things the prior is really for,
-// the costs the split packs by and the leaders the probe screens against.
+// …AND THE FULL BUTTON FORCES ROWS RATHER THAN WITHHOLDING A PRIOR BOARD.
+// There is no prior to withhold any more — the facts of the open generation are
+// the only source — so "full" can only mean every row forced, and the facts it
+// drops still answer what each row cost, which is what the split packs by.
 //
 // READ OVER THE CODE LINES ALONE. A prose block between the condition and the
 // assignment is not distance, and counting it as distance is how the check

@@ -65,21 +65,22 @@ number**. Everything else follows from it:
   computed by the engine that ships to their browser under the benchmark's own
   pinned seed. Measured: wasm and native agree to the last digit
   (`0.9647804061510868` both ways). What made that untrue for a while was not
-  the engine but the CARRY — see `num_out` in the scorer: a shard's number
-  reached the publish process through `serde_json`'s number parser, which is not
-  correctly rounding, so the board published `1.1070976928071057` where the
-  engine computes `...055` and a reader reproducing the row was right and the
-  board was wrong.
+  the engine but the CARRY — see `exact_score` in the scorer: a score read
+  back through `serde_json`'s number parser, which is not correctly rounding,
+  publishes `1.1070976928071057` where the engine computes `...055`, and a
+  reader reproducing the row is right while the board is wrong.
 
 ## The pieces
 
 | what | where | who runs it |
 | --- | --- | --- |
 | the ruler | `data/benchmarks/*.yaml` | — |
-| the board | `boards/*.yaml` | generated, committed |
-| what the page reads | `site/board.json` | fetched at runtime, not compiled in |
+| the board | `site/board/<weapon>.json` | generated, committed, fetched at runtime |
+| ranked across weapons | `site/board/index.json` | derived from the files beside it |
+| which board this is | `site/board.meta.json` | a digest per file, plus the generation |
 | consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
-| the submissions | a Cloudflare KV namespace (binding `SUBMISSIONS`) | written by the endpoint |
+| the library | one D1 database, `wfsim-db` (binding `LIBRARY`) | written by the endpoint |
+| the facts | the `scores` table in it | written by `ship_facts.sh` |
 | the deploy | `wrangler.jsonc` | `scripts/deploy.sh`, from a git push |
 | the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
 
@@ -98,10 +99,12 @@ what they are missing was never stored.
 | the scorer | `cli/src/bin/wfsim-board.rs` | the scheduled job |
 | the automation | `.github/workflows/board.yml` | GitHub Actions |
 
-**The board is in the repo, not in a database.** That is what turns
-"reproducible" from a claim into a property, and it means the LOCAL build has
-the board with no network at all — `data/` is embedded at compile time. Only
-submitting needs a network.
+**The board is in the repo AND in the database, and they are different
+things.** `site/board/` is what is PUBLISHED — committed, diffable, served
+from the CDN — and the `scores` table is where a fact is DURABLE the instant
+it is computed. The repo copy is what makes "reproducible" a property rather
+than a claim; the table is what means a shard killed at nine tenths keeps nine
+tenths.
 
 **The endpoint is on the site's own origin** (`wfsim.app/api/board/submit`). A
 separate api domain would be a second DNS name and a second thing that can be
@@ -110,17 +113,23 @@ blocked, which is the failure the same-origin art rule was written about.
 ### Why the page FETCHES the board
 
 Everything else in `data/` is embedded into the wasm at compile time. The board
-is the one piece that changes without a release — once an hour, if people
-are playing
-— and compiling it in made every update cost a full site rebuild: install
-wasm-bindgen, fetch 300 images, recompile, to change a few numbers. It is a
-small file on the same origin instead, written by the scoring job beside the
-canonical yaml, and `build_site_app.py` regenerates it so a LOCAL build holds
-the same board.
+is the one piece that changes without a release — once an hour, if people are
+playing — and compiling it in made every update cost a full site rebuild:
+install wasm-bindgen, fetch 300 images, recompile, to change a few numbers.
 
-An unreachable or absent `board.json` is an EMPTY board, never an error: before
-the first submissions there is nothing to show, and the page has to render that
-state anyway.
+**ONE FILE PER WEAPON, because a weapon page shows one weapon.** A reader who
+opens the Braton Prime fetches the Braton Prime, and a rescore that moved twenty
+weapons moves twenty small files in git rather than rewriting the board. The one
+surface that ranks ACROSS weapons reads `index.json`, which holds each weapon's
+leader per (ruler, mode, riven) — 37 KB on the wire where the whole board is
+249 — and which is DERIVED from the weapon files, so it cannot disagree with
+one.
+
+An unreachable or absent file is an EMPTY board, never an error: before the
+first submissions there is nothing to show, and the page has to render that
+state anyway. Every weapon in the roster has a file for the same reason —
+including the empty ones, because a 404 and an empty list are the same thing to
+`fetch` and opposite things to a page that states a weapon's standing.
 
 ## When it updates
 
@@ -227,16 +236,15 @@ nothing — its token cannot write to the repository — it files a warrant the
 board acts on, which is the manual backstop fired by evidence instead of by a
 person noticing.
 
-**A BACKSTOP IS ONLY WORTH WHAT REACHES THE BOARD.** The shards refight the rows
-they are told to; the assembly merges what it is handed, which is this run's
-shards beside the durable score store. It is told which is which
-(`--scored-here`), and a score this run computed wins every merge — without
-that the store's copy of a row won on name order and a rescore republished the
-number it was called to replace, with the run green, the work banked and the
-board unchanged. The same rule spells the `full` button: it FORCES every row
-(`--refight-all`) rather than withholding the prior board. Reuse is decided per
-row and the store answers first, so withholding the prior forced nothing, while
-losing the costs the split packs by and the leaders the probe screens against.
+**A BACKSTOP IS ONLY WORTH WHAT REACHES THE BOARD, AND THERE IS NOTHING FOR IT
+TO LOSE A RACE WITH.** The shards refight the rows they are told to and ship each
+fact as it is computed; the assembly reads the facts and nothing else, so there
+is no "which copy wins" for a rescore to lose. A store that needed such a rule
+republished the number it was called to replace, with the run green, the work
+banked and the board unchanged. The same rule spells the `full` button: it FORCES
+every row (`--refight-all`), which under a set difference is the only thing it
+could mean — and the facts it drops still answer what each row COST, which is
+what the split packs by.
 
 **AND IT REACHES A BOARD NOBODY IS OVERWRITING.** The workflow's groups keep the
 schedule and the buttons apart so a long manual rescore cannot stand the
@@ -352,40 +360,29 @@ the fix costs minutes. The rolls go with the scores: a riven row's rolls are the
 argmax of its score, so keeping them would re-measure the corner a stale number
 chose. A misspelled id rescores nothing and says so rather than passing quietly.
 
-### The store is what a run banks
+### A fact is durable the instant it is computed
 
-The cache and the artifact were one file, which is why a run had to compute
-everything before it could publish anything and why a cancelled run lost all of
-it. `scripts/score_store.sh` is the split: a shard writes what it scored into KV
-the moment it has it, and every later run reads the lot back before deciding
-what is left to do. **A run cancelled at 95% has banked 95% of its work.**
+A shard appends each score to a log the moment it has it, flushed per row, and a
+process running beside it ships the log to the `scores` table in batches. **A run
+cancelled at 95% has banked 95% of its work**, and what it did not write is
+simply missing — which is the same thing as never having started it.
 
-A STORED SCORE PROVES ITSELF ROW BY ROW: each carries the hash of what it read,
-and is admitted only where that still matches. Nothing declares which binary
-wrote it, because a code hash answers the wrong question (§"What decides new").
-Measured on a store of 24 rows: 1,556 rows to do without it, 1,532 with it, and
-1,533 with one row's data fingerprint altered — that row refought and no other.
+**THE FACT IS THE UNIT, AND IT IS IDENTIFIED BY EVERYTHING THAT DETERMINES IT:**
+`(identity, ruler, mode, data_fp, generation)`. A row carries the hash of what it
+READ, so a data correction dirties exactly the rows that read the file that
+moved; it carries the GENERATION, so two engines' answers are two rows and
+neither can overwrite the other. Measured: with a generation holding 24 rows,
+1,556 rows to do without it, 1,532 with it, and 1,533 with one row's data
+fingerprint altered — that row refought and no other.
 
-**TWO SHAPES UNDER ONE PREFIX.** A shard banks a DELTA the moment it has one, so
-a run cancelled after that has kept the work; `publish` writes the MERGED set
-the next run starts from and then sweeps the deltas. Without the merge the store
-grows by a couple of hundred objects an hour and every run reads all of them.
+**NOTHING DOWNSTREAM MAY DESTROY A FACT.** No sweep, no merge, no delta, no
+expiry. The only thing that removes a row is a migration somebody writes, and a
+generation nobody publishes from costs storage and nothing else.
 
-THE MERGED SET CARRIES WHAT A SCORE NEEDS TO BE USED, not just the number: each
-row's fingerprint, its measured cost — which packs the next run's shards — and a
-riven row's ROLLS, which are a measurement like the score. A riven row reused
-without its rolls loses its whole riven block.
-
-NOTHING IN THE STORE KNOWS ABOUT CODE VERSIONS. Every row inside a blob carries
-the hash of what it READ and is admitted only where that still matches, so a
-stored score proves itself without anyone declaring which binary wrote it. Blobs
-expire on a TTL rather than being collected — a cleanup pass is a second thing
-that can fail, and a spent blob costs bytes.
-
-A FAILED WRITE IS NOT A FAILED RUN. The scores are still in the run's own
-artifacts and the board is still assembled from them; what is lost is the
-banking. The store is an optimisation of WHERE work goes, never of whether the
-board is right.
+Provenance rides along and decides nothing: `measured_by` says which build wrote
+the row, `cost_seconds` is what the split packs the next run by, `computed_at`
+says how old a row is. A fact does not decay — while the fingerprints match,
+the score is right however old it is — so nothing branches on the clock.
 
 ### A row is paid for in sittings
 
@@ -445,10 +442,14 @@ pass that cannot refight a row must not remove it, or a published row
 would vanish because a file it reads was corrected. Refighting is the shards'
 job, and the board says how old it is.
 
-THE ARCHIVE IS STILL AN INPUT, as a floor, and that is the half of this not yet
-done. `boards/*.yaml` is read so nothing can vanish while the store is young;
-once the store demonstrably holds every published row, publish reads it alone
-and the archive is what its name says.
+**THE PUBLICATION UNIT IS A WEAPON, AND A FILE IS WRITTEN WHOLE.** The directory
+the publisher is handed is both what it writes and where a weapon's rows under
+every OTHER ruler are read back from, so a file is only ever written with all of
+them in hand. A weapon this generation cannot speak for — one row of it
+unmeasured — keeps the rows it has, because a file written from an incomplete
+source is a file missing whatever the source lacks. A carried row is COPIED
+rather than reparsed, so a publish that measures nothing changes nothing: one
+ULP either way is a number the engine did not produce.
 
 ### The standing a submitter sees at once
 
@@ -514,16 +515,21 @@ that catches a score reused when it should not have been. It publishes nothing
 and gates nothing: one job out of the account's forty, hourly, in its own
 concurrency group so it can never cancel a board run.
 
-`board_sample.py --crossing N --bucket k` cuts a board into N slices of equal
-WORK — by `cost` and not by count, since the rows differ by four orders of
-magnitude — so `CROSSING` is both the budget and the number the audit is judged
-by: how many runs it takes to read the whole board. Slices are ordered by `fp`,
-a hash, so each interleaves cheap and expensive rows and the cut is the same
-every run.
+`--shard k/CROSSING` cuts the library into slices of equal WORK — by what
+each row COST when it was measured and not by count, since the rows differ by
+four orders of magnitude — so `CROSSING` is both the budget and the number the
+audit is judged by: how many runs it takes to read the whole board. It is the
+scoring run's own packing, which is what keeps the slice deterministic and the
+audit free of a sampler that would re-derive it.
+
+Riven rows are not audited. Their rolls are the argmax of a search, so
+re-fighting one pays for sixteen corner probes to compare a number that was
+chosen rather than measured — expensive, and a weaker statement than the plain
+rows give for free.
 
 **THE TEST IS EXACT, AND A TOLERANCE WOULD HAVE HIDDEN THE ONE DEFECT IT HAS
 FOUND.** A score is a pure function and the carry between the scoring processes
-is lossless (`num_out`), so any difference at all is one. The first ULP-scale
+is lossless (`exact_score`), so any difference at all is one. The first ULP-scale
 disagreement measured here read like the host's arithmetic and was the carry —
 a tolerance sized to "noise" would have absorbed it and left the board
 publishing numbers the engine never computed. `worst` is reported beside the
@@ -550,23 +556,19 @@ nothing. Verified before it shipped: 24 submissions through 8 shards reproduced
 every published score to 1e-9, and the merge ran in 0.064 s. What `SHARDS` can
 and cannot buy is §"Two ceilings, and neither is the shard count".
 
-**A score file says which board it is.** A shard's key is `identity#mode` and
-carries no ruler, so two boards scoring one build produce the SAME key with
-different numbers — and the merge job is handed ONE directory holding every
-ruler's shards. Merging them published one ruler's score under the other's name:
-the Torid's aimed **28.44229348067104** kpm sat at the top of the NO-AIM board,
-digit for digit, where that build actually scores **0.170**. Ten
-Torid rows and much of the no-aim top were the aimed board's numbers.
+**A FACT CARRIES ITS RULER, and the key would not be a key without it.** A row
+key is `identity#mode` and carries no ruler, so two boards scoring one build
+produce the SAME key with different numbers. A store that held both published
+whichever landed last under a ruler that never measured it: the Torid's aimed
+**28.44229348067104** kpm sat at the top of the NO-AIM board, digit for digit,
+where that build actually scores **0.170**.
 
 It read as a scenario leak and was not one — every score was computed under its
-own ruler's terms, then overwritten on the way out. What made it selective is
-that the merged number also WINS over the board's own history: `--reuse` fills
-only where `--scores` left a hole, so exactly the rows the OTHER ruler happened
-to rescore that run were the ones that went wrong. `--emit-scores` now writes
-`{"benchmark": …, "scores": {…}}` and `load_scores` refuses a file that names a
-different board;
-`a_score_file_belongs_to_one_board_and_another_boards_is_refused` asserts it in
-both directions, since which ruler wins is decided by a sort over file names.
+own ruler's terms, then overwritten on the way out. The `scores` table keys on
+`(identity, ruler, mode, data_fp, generation)`, and `load_facts` filters on the
+ruler as it reads, so the two cannot meet. That is the general shape of every
+defect this pipeline has produced: a value identified by less than what
+determines it.
 
 The generated files are NEVER rebased. There is no sense in which two versions
 of a computed board each hold something worth keeping, so a three-way merge can
@@ -867,9 +869,10 @@ being a DIFFERENT answer, not where it stops being the best one.
 Measured over the three boards of 2026-08-19: 1274 rows become 740.
 
 **NOTHING IS DESTROYED.** The floor is a property of the published board, not of
-the store: every submission stays in KV and every board is regenerated whole, so
-a row displaced by a new leader comes back the moment that leader is displaced
-or an engine fix lowers it.
+the library or the facts: every submission stays in `builds`, every score stays
+in `scores`, and a weapon's file is regenerated whole — so a row displaced by a
+new leader comes back the moment that leader is displaced or an engine fix lowers
+it.
 
 **AND IT IS SAID OUT LOUD, on both sides.** A build below the line is stored,
 scored and then not listed, which from the submitter's side is indistinguishable
@@ -896,102 +899,71 @@ assets, and until the board there was no script at all. Two consequences:
 
 ## Setup, once (repo owner)
 
-1. **KV namespace** — create one, then declare it in `wrangler.jsonc` as
-   `SUBMISSIONS`:
-
-   ```jsonc
-   "kv_namespaces": [{ "binding": "SUBMISSIONS", "id": "<namespace id>" }]
-   ```
-
-   **A PUSH DEPLOYS THE WORKER TOO.** Cloudflare's Workers Build runs
-   `scripts/deploy.sh` on a push to `main`, so `worker/index.js` ships with
-   everything else — verified by asking the live endpoint, which answered in the
-   words of a just-pushed change. What still has to be CHECKED is that it
-   answered at all: the code can be right while wfsim.app runs an older one, and
-   the failure that shape produces is a legal build refused at the one hop
-   neither the engine nor the page is watching. `check_board_submit.mjs` asks the
-   DEPLOYED endpoint whether it takes `MAX_MODS` ids and refuses one more,
-   without writing anything: the shape pass stops at the first bad field, so a
-   payload with a full mod list and a deliberately malformed arcane answers
-   "bad mods" from a stale worker and "bad arcanes" from a current one.
-
-   **In the file, not in the dashboard.** wfsim.app is a WORKER (static assets),
-   deployed by `npx wrangler deploy`, and a deploy REPLACES the worker's
-   bindings with what the config declares — a namespace added through the
-   dashboard is removed by the next push. The id is an identifier, not a
-   secret; it grants nothing without a token, and Cloudflare's own docs commit
-   it.
-
-   Named for what it HOLDS, which is not the board: the board is the generated
-   YAML in `boards/`, and this namespace holds the builds people
-   sent, waiting to be scored. The binding was briefly called `BOARD`, which is
-   a debugging trap — "the board is empty but the BOARD binding looks fine" is a
-   sentence that sends you looking in the wrong place.
-2. **Repo secrets** — `CF_ACCOUNT_ID`, `CF_SUBMISSIONS_NAMESPACE_ID`,
-   `CF_API_TOKEN` (a token with *Workers KV Storage: Read*, and *Write* if you
-   add the score store below).
-
-   The middle one is the SUBMISSIONS namespace's id, and it is named that way
-   for the same reason the binding is: it points at the builds waiting to be
-   scored, not at the board. Every name in this pipeline says what it holds —
-   the board is a file in the repo and nothing in Cloudflare is called after it.
-
-3. **The score store** — OPTIONAL, and everything works without it. An R2
-   bucket, an R2 API token with *Object Read & Write*, and three secrets:
-   `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. The runs then bank
-   what they compute (§"The store is what a run banks").
-
-   R2 RATHER THAN KV, on the write quota: a run banks a delta per shard per
-   benchmark, which is thousands of writes a day against KV's free ceiling of
-   about a thousand. R2's is a million operations a month and egress is free.
-
-   SEPARATE FROM THE SUBMISSIONS, because those are the one irreplaceable thing
-   here and a score can always be recomputed. Unset the secrets and the pipeline
-   is exactly what it was — that is the rollback, and it is why the store went
-   in this way round.
-
-4. **The library database** — OPTIONAL, and everything above works without it.
-   It is the first step of moving the library out of KV, and it is written so
-   that it can land long before the database does: without the binding the
-   mirror in `worker/index.js` is a no-op, and `check_board_submit.mjs` asserts
-   that.
+1. **The database** — one D1 database holds everything:
 
    ```sh
-   npx wrangler d1 create wfsim
-   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
+   npx wrangler d1 create wfsim-db
+   npx wrangler d1 execute wfsim-db --remote --file worker/schema.sql
    ```
 
-   …then declare it beside the KV namespace, in the file for the same reason:
+   …then declare it in `wrangler.jsonc`:
 
    ```jsonc
    "d1_databases": [
-     { "binding": "LIBRARY", "database_name": "wfsim",
+     { "binding": "LIBRARY", "database_name": "wfsim-db",
        "database_id": "<id from the create above>" }
    ]
    ```
 
-   KV STAYS THE AUTHORITY. The scorer and the pending count read KV and keep
-   reading it; this writes a second copy that nothing looks at yet, which is
-   what makes the step reversible — drop the binding and the system is exactly
-   what it was. What it buys immediately is that the library becomes something
-   you can ASK A QUESTION about (`wrangler d1 execute wfsim --remote
-   --command "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2
-   DESC LIMIT 20"`) and something you can DUMP, which KV is not.
+   **In the file, not in the dashboard.** wfsim.app is a WORKER (static assets),
+   deployed by `npx wrangler deploy`, and a deploy REPLACES the worker's
+   bindings with what the config declares — a binding added through the
+   dashboard is removed by the next push. The database id is an identifier, not
+   a secret; it grants nothing without a token, and Cloudflare's own docs commit
+   it.
 
-   THE WORKER'S MIRROR ONLY EVER CATCHES UP, so it cannot fill a database that
-   started empty and cannot repair a write it dropped. `backup.yml`'s `mirror`
-   job does both: it upserts the nightly snapshot — which carries the KEY beside
-   each record — and then counts both sides. A separate JOB, because a copy
-   nobody reads must not be able to red the backup, which is the half that
-   matters.
+   Named for what it HOLDS, which is not the board: the board is
+   `site/board/`, and this holds the builds people sent and the facts computed
+   from them. A binding called `BOARD` is a debugging trap — "the board is
+   empty but the BOARD binding looks fine" is a sentence that sends you looking
+   in the wrong place. The resource NAME follows `docs/NAMING.md` §8: the
+   granularity it is provisioned at is the database, so that is what is named.
 
-   THE COUNT IS ALLOWED TO GO ONE WAY. Records expire out of KV after a year and
-   nothing expires out of the database, so a SURPLUS is the library being
-   permanent, which is what it is for. A DEFICIT is the mirror failing, and that
-   is the only direction that fails the job.
+   **A PUSH DEPLOYS THE WORKER TOO.** Cloudflare's Workers Build runs
+   `scripts/deploy.sh` on a push to `main`, so `worker/index.js` ships with
+   everything else. What still has to be CHECKED is that it answered at all: the
+   code can be right while wfsim.app runs an older one, and the failure that
+   shape produces is a legal build refused at the one hop neither the engine nor
+   the page is watching. `check_board_submit.mjs` asks the DEPLOYED endpoint
+   whether it takes `MAX_MODS` ids and refuses one more, without writing
+   anything: the shape pass stops at the first bad field, so a payload with a
+   full mod list and a deliberately malformed arcane answers "bad mods" from a
+   stale worker and "bad arcanes" from a current one.
 
-The token only ever READS. What the board says is computed in the repo from
-data in the repo; nothing secret decides a rank.
+2. **Repo secrets** — `CF_ACCOUNT_ID`, `CF_D1_DATABASE`, `CF_API_TOKEN` (a
+   token with *D1: Read*, and *Edit* for the workflows that WRITE: the fact
+   shipper and the restore).
+
+   **A DATABASE ID WITH NO CREDENTIALS IS A MISCONFIGURATION, NOT AN ABSENCE.**
+   The scripts treat "nothing configured" as a working state — a run with no
+   database computes everything, which is what it did before there was one —
+   but a half-configured one fails loudly, because the alternative is a shipper
+   that runs green and sends no rows.
+
+3. **The facts table is already in the schema above.** Nothing else has to be
+   provisioned: the scorer writes a log, `scripts/ship_facts.sh` sends it, and
+   `scripts/fetch_facts.sh` reads it back. Both carry their own self-tests,
+   driven against a stub `curl`, so every hop is testable without a network.
+
+   ASK IT A QUESTION, which is most of why it is a database:
+
+   ```sh
+   npx wrangler d1 execute wfsim-db --remote --command \
+     "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2 DESC LIMIT 20"
+   ```
+
+The token only READS on the publishing path. What the board says is computed in
+the repo from data in the repo; nothing secret decides a rank.
 
 Until step 1 is done the endpoint answers 503 and the page says "could not
 reach the board — nothing was sent", which is the honest state rather than a
@@ -1236,8 +1208,8 @@ one would cost.
 | the page's ruler picker, scenario bar, board page | read `META.benchmarks` |
 | the worker | validates `benchmark` as an ID, holds no whitelist |
 | the scoring workflow | `for f in data/benchmarks/*.yaml` |
-| `site/board.json` | read back and merged, so each ruler replaces only its own rows |
-| the site build | globs `boards/*.yaml` |
+| `site/board/` | a weapon's file holds every ruler's rows, so one replaces only its own |
+| the site build | globs `data/benchmarks/*.yaml` for the roster's files |
 
 **And the rules come with it.** `group_clear` refuses an incomplete build with
 the same words `single_target` does — "0 mods, and this benchmark wants all 8
@@ -1245,32 +1217,19 @@ main slots", "0 of 4 evolution tiers" — because `validate_for_board` reads the
 `build:` block out of the yaml. A new ruler's admission standard is written, not
 coded.
 
-### The one thing that was NOT frictionless
+### A new ruler costs nothing to add
 
-`.github/workflows/board.yml`'s publish step copied the prior board before
-overwriting it:
-
-```
-cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
-```
-
-unguarded, under `set -euo pipefail`. A brand-new ruler has no board yet — a
-legal state, since the ruler exists before anyone has submitted to it — so
-adding one would have **aborted the hourly board job** until somebody
-hand-wrote an empty yaml. Guarded now. The SCORING step never had the problem:
-it passes the path straight to the binary, which treats an unreadable prior as
-"full rescore" and carries on.
-
-`check_board_submit.mjs` holds the assertion: a benchmark id **nobody has ever
-seen** is accepted, reaches storage under its own name, and sits BESIDE the same
-build's row on another ruler rather than on top of it — the identity key carries
-the benchmark, so two rulers scoring one build are two records.
+Nothing on the path holds a prior board to copy or an empty file to hand-write.
+The scorer is handed the facts of the open generation, and a ruler with none
+yet produces a board with no rows — which is what a ruler nobody has submitted
+to should look like.
 
 ## The library has a copy, and the copy has a restore
 
-Until this, the one irreplaceable thing here lived in exactly one Cloudflare KV
-namespace. The boards are derived from it, the site is generated, the code is in
-git — the library is what players sent, and there was no second copy of it.
+The library is the one irreplaceable thing here: the boards are derived from it,
+the facts are computed from it, the site is generated, the code is in git. It is
+what players sent, and a copy of it has to live somewhere that is not the vendor
+holding the original.
 
 `.github/workflows/backup.yml` runs nightly and writes two:
 
@@ -1279,10 +1238,9 @@ git — the library is what players sent, and there was no second copy of it.
 | the `library-backups` branch | for ever, versioned by git | `git clone --branch library-backups` |
 | a run artifact | 90 days | `gh run download --name library-<n>` |
 
-**IT FETCHES COLD.** The board pipeline caches the library between runs; the
-backup restores no cache and reads every key straight out of KV, because a copy
-that shares its input with the thing it is copying shares its failure mode. It
-costs about 7.5 minutes once a day.
+**IT FETCHES COLD.** The backup reads the rows straight out of the database
+with no cache of any kind, because a copy that shares its input with the thing
+it is copying shares its failure mode.
 
 **THE BRANCH IS CHEAP BECAUSE THE FILE IS SORTED.** One record per line
 (`{"k": "<identity>", "v": {…}}`), keys sorted, object keys canonicalised — so a
@@ -1310,31 +1268,31 @@ day it is needed is not the first day it has ever run.
 
 ```sh
 scripts/restore_library.sh library.ndjson            # says what it WOULD write
-CF_ACCOUNT=… CF_NAMESPACE=… CF_TOKEN=<a WRITE token>   scripts/restore_library.sh library.ndjson --write
+CF_ACCOUNT=… CF_D1_DATABASE=… CF_TOKEN=<an EDIT token>  scripts/restore_library.sh library.ndjson --write
 ```
 
-**THE TOKEN IS NOT THE REPO'S.** `CF_API_TOKEN` grants *KV: Read* and nothing
-else, which is why a compromised repo cannot touch the library. A restore needs
-*Write*, and the right way is to create that token, use it, and revoke it.
+**THE TOKEN IS NOT THE REPO'S.** A restore needs *D1: Edit*, and the right way
+is to create that token, use it, and revoke it.
 
 **IT IS ADDITIVE, NEVER DESTRUCTIVE.** It writes the records in the file and
 touches nothing else, so restoring an old snapshot cannot delete newer
 submissions — which is the failure a restore is most likely to cause and the one
 nobody thinks about while restoring.
 
-**AND IT WRITES IN BULK**, which is the one place KV is generous: there is no
-bulk read (which is why a cold fetch costs 7.5 minutes) but there is a bulk
-write of up to 10,000 pairs, so 2,474 records go back in one call.
+**NINE ROWS A STATEMENT**, three bound parameters each against D1's limit of a
+hundred per query. Slower than a bulk put and it does not matter — a restore
+runs once, under pressure, and what it owes is certainty. The parameters are
+BOUND because an identity is built from ids that arrived at a public endpoint,
+and a restore is the worst moment to discover one of them carried a quote.
 
 ### Three things fail differently, which is why there are three
 
 - `guard_shrink` (the **tripwire**) refuses to publish a board from a short
   list. It is the only one that works while nobody is watching, and it cannot
-  help if Cloudflare loses the namespace.
+  help if Cloudflare loses the database.
 - The **backup** can, and cannot help if nobody notices for a month.
-- The **board yaml in git** is a partial copy that has always existed — every
-  PUBLISHED row carries its build, which is 2,185 of 2,474. What it misses is
-  the builds under the 50% floor.
+- **`site/board/` in git** is a partial copy: every PUBLISHED row carries its
+  build. What it misses is the builds under the 50% floor.
 
 ## What it costs as it grows, and where it moves next
 
@@ -1356,23 +1314,22 @@ made the board fall behind on 2026-08-26.
 | read the library | **9 min**, every run, one request per build | one ordered query — `scripts/fetch_library.sh` |
 | a scheduled run behind a full rescore | cancelled by its successor | its own concurrency group, keyed by trigger |
 | a truncated library | published a valid board with rows missing | refused — `guard_shrink`, floor at 90% of the last board's `submissions:` |
-| the only copy of the library | one KV namespace | that, plus 30 days of rolling `submissions` artifacts |
+| the only copy of the library | one store at one vendor | that, plus a nightly snapshot on a git branch |
 
-KV has no bulk read and Cloudflare's API allows 1200 requests per five minutes —
-4 a second, which is what the old loop was already doing. So **fetching faster
-was never available; fetching fewer was.** The licence to cache a value is that
-the KEY DETERMINES IT: the key is `identity(rec)`, and the scorer reads nothing
-off a record that is not an identity axis (not `at`, not `benchmark`).
+**THE READ STOPPED BEING A LOOP.** KV has no bulk read and Cloudflare's API
+allows 1200 requests per five minutes — 4 a second, which is what the old loop
+was already doing, so fetching faster was never available. One ordered, paged
+`SELECT` replaced it, and the cache, the pruning pass, the three-try retry and
+the flag that skipped the listing went with it.
 
 ### The next wall, named in advance
 
-1. **`submissions` is one unsharded job.** With the cache it is seconds on a
-   warm run — but a cold one (a lost cache, a new namespace) still pays the full
-   O(store) price, and that price grows with the library. It is bounded by the
-   API's 4/s, so at 20,000 builds a cold start is 80 minutes.
-2. **The board file holds every row.** 7,493 per ruler. It is committed on
-   every update, so the repo grows with the community, and `site/` is
-   regenerated and redeployed with it.
+1. **Reading the library is one unsharded job**, and it is now one paged query
+   rather than a request per build. What grows is the number of PAGES, which is
+   linear in the library and measured in seconds.
+2. **Every published row is committed.** A weapon at a time, so an hour that
+   moved twenty weapons writes twenty small files rather than the board — but
+   the repo still grows with the community.
 3. **Full rescores are O(store)**, and the shard count buys a constant factor
    against two ceilings that are both already reached — §"Two ceilings, and
    neither is the shard count". A code change is no longer assumed to change
@@ -1757,9 +1714,9 @@ number is wrong, the SCORER is wrong, and that is where it is fixed.
 
 ```
   builds  ─┐
-           ├─►  PUBLISHER  ─►  boards/*.yaml
-  facts(g) ┘   join, rank,     site/board.json
-               project, write  site/board/<weapon>.json
+           ├─►  PUBLISHER  ─►  site/board/<weapon>.json
+  facts(g) ┘   join, rank,     site/board/index.json
+               project, write  data/board_state.yaml
 ```
 
 That is the whole of it. No prior board, no store, no artifacts, no forced
@@ -1800,32 +1757,6 @@ outside the ranking.
 The published generation's id goes in `board.meta.json`. "Is this board what
 this code computes" then compares two strings.
 
-### What this deletes
-
-`--reuse`, `--scores`, `--scored-here`, `--emit-scores`, `--rescore`,
-`--refight-all`; `score_store.sh` and the R2 bucket; the artifact hand-off
-between the scorers and the assembly; the merged-set/delta distinction and the
-sweep between them; `REPAIR_CAP`, `CROSSING`, `board_sample.py` and
-`--verify-list`; the submission counter, its hourly corrector and
-`SKIP_LISTING`.
-
-Three moving parts are left: **a table**, **one generation id**, and **a set
-difference**.
-
-### The order, and the one thing that gates it
-
-1. the scorer writes facts and reads them back (done)
-2. the publisher is extracted: two inputs, three outputs, no computation
-3. **one generation is filled COMPLETELY** — until that exists there is nothing
-   to publish from, because a partial generation would publish a board missing
-   every row it does not hold
-4. the publisher is switched to it, with the old path kept for one week
-5. everything in the list above is deleted
-
-**STEP 3 IS THE GATE, AND IT IS THE ONLY EXPENSIVE ONE.** It is a full rescore
-— 8,008 CPU minutes — but under the set difference it is RESUMABLE, so it is a
-run repeated until the completeness query answers zero, rather than a run that
-must survive five and a half hours to be worth anything.
 
 ---
 
@@ -1854,27 +1785,33 @@ correctness nothing checked gate a delete.
 same row. `GET /api/board/pending` is `SELECT COUNT(*)`. It knows nothing about
 scores and writes nothing else.
 
-**COMPUTE — a shard.** Reads the library and the facts under the current
-`code_fp`, takes its share of the difference, and after each row **writes the
-fact immediately**, in batches of about fifty. It produces NO artifact and NO
-blob: its only output is rows. Killed at any point, it keeps everything it
+**COMPUTE — a shard.** Reads the library and the open generation's facts,
+takes its share of the difference, and after each row **writes the fact
+immediately** — appended to a log and flushed per row, shipped by a process
+running beside it. It produces NO artifact and NO blob: its only output is rows. Killed at any point, it keeps everything it
 wrote, and what it did not write is simply missing — which is the same thing as
 never having started it.
 
-**PUBLISH — a projection, and it depends on no run.** One query for the newest
-complete generation, rank, project the top N per (weapon, mode, ruler), write
-`boards/*.yaml` and `site/board/*.json`, commit. It can run at any moment, needs
-nothing from any scoring run, and CANNOT DESTROY ANYTHING because it only reads.
+**PUBLISH — a projection, and it depends on no run.** One read of the
+generation, rank, keep everything within half of each group's own leader, write
+`site/board/<weapon>.json` and the index beside it, commit. It can run at any
+moment, needs nothing from any scoring run, and CANNOT DESTROY ANYTHING because
+the only thing it reads that it also writes is a weapon's own carried rows.
 
-**AUDIT — much smaller than it is now.** The board becomes a projection of facts
-keyed by `code_fp`, so "is the published board what this code computes" is a
-comparison of two strings rather than a sampler that crosses the board in days.
-What is left for it is the question a table cannot answer: is the engine
-DETERMINISTIC — re-fight a few rows and check the fact reproduces.
+**AUDIT — the one question a table cannot answer.** "Which generation is
+published" is a string in `board.meta.json`; what no query can say is whether
+the code still computes the number it recorded, because what a row READS is
+enumerable from the row and what it EXECUTES is not. So the audit re-fights a
+cost-balanced slice of the library under the current code and compares exactly.
+It publishes nothing and gates nothing.
 
 ### A generation, stated precisely
 
-A generation is every fact sharing one `code_fp`.
+A generation is a label meaning "these rows were measured by the same engine",
+and it is OPENED DELIBERATELY rather than derived. No hash can say whether a
+code change moved a number — 55.6% of commits touch the engine and almost none
+of them can move one — so most commits ride in the generation that is open,
+and one is opened when the AUDIT measures that a change actually moved numbers.
 
 > **A generation is COMPLETE when every (build, ruler, mode) that has a fact in
 > the PUBLISHED generation also has one here.**
@@ -1896,43 +1833,11 @@ rows that had not been repaired yet.
 | | why |
 | --- | --- |
 | a shard's work lost because a service timed out | the fact is in the table before the shard ends |
-| a correct fact overwritten by an older one | `code_fp` is in the key: two engines' answers are two rows |
+| a correct fact overwritten by an older one | the generation is in the key: two engines' answers are two rows |
 | a correct fact DELETED downstream | nothing deletes facts — no sweep, no merge, no delta |
-| the board mixing two engines | publish selects one `code_fp` |
+| the board mixing two engines | publish selects one generation |
 | "is this board current" taking days to answer | it is one comparison |
 
-### What it retires
-
-`score_store.sh` and the R2 bucket; artifacts as a data channel; the
-merged-set/delta distinction and the sweep between them; `--scores`,
-`--scored-here` and `--emit-scores`; the KV namespace, the submission counter
-and its hourly corrector; `SKIP_LISTING`; `board_sample.py`, `CROSSING`,
-`REPAIR_CAP` and `--verify-list`.
-
-Every one of them exists because the store underneath could not be asked a
-question, and every one is a seam where one component reads another's FORMATTING
-rather than its data — a log truncated at five lines, a shell message that
-closed its own expansion, a merge decided by filename order.
-
-### The order to move in, and why it is this order
-
-1. **Facts are written to D1 BESIDE R2.** Nothing reads them. Run one whole
-   generation both ways and compare: same rows, same numbers.
-2. **Publish reads D1**, with R2 kept as the fallback for a week.
-3. **Delete the R2 path** — the artifacts, the sweep, `score_store.sh`.
-4. **The board reads the library from D1.** The worker already writes it and the
-   backfill is proven.
-5. **`restore_library.sh` restores INTO D1.** Not tidying-up at the end: a
-   backup that runs, commits and passes its self-test while pointing at a
-   retired store is discovered by somebody who has just lost the library.
-6. **Retire the KV namespace.**
-7. **Restore the clock**, once a run is measured repairing rows at a rate that
-   crosses the board in days.
-
-**STEP 1 IS FIRST BECAUSE IT IS THE ONLY ONE THAT STOPS THE BLEEDING.**
-Everything after it is a simplification; step 1 is a repair, and until it is
-done every expensive run is staked on an artifact service and a merge decided by
-sorting filenames.
 
 ---
 
@@ -1941,8 +1846,8 @@ sorting filenames.
 ```
   READ PATH — nothing on it can fail
      reader ──► Cloudflare CDN ──► static files, committed to the repo
-                                   boards/*.yaml
                                    site/board/<weapon>.json
+                                   site/board/index.json
                                    site/app/*.wasm
      No service, no database, no query. The board's availability is not
      coupled to anything behind it.
@@ -1953,13 +1858,13 @@ sorting filenames.
 
   COMPUTE — the queue is a query
      GitHub Actions
-       what is outstanding = builds MINUS scores WHERE code_fp = current
+       what is outstanding = builds MINUS scores WHERE generation = open
        32-128 shards, each fighting rows
        every fact written the MOMENT it is computed
 
   PUBLISH — a generation completes, not a clock strikes
      when the newest generation is COMPLETE:
-       one query, rank, write the two files, commit
+       one read, rank, write a file per weapon and the index, commit
        Cloudflare deploys the push
 
   PROTECT — a gate in front, a copy at another vendor behind
@@ -1993,12 +1898,13 @@ repaired yet. Publish the newest COMPLETE generation.
 | serve | Cloudflare static assets | unmetered | — |
 | write | Worker + D1 | 100k requests/day; 100k rows written/day | tens of submissions |
 | compute | GitHub Actions | unmetered minutes, 40 jobs = 960 CPU hours/day | ~160 CPU minutes |
-| store | D1 | the library is 4.4 MB, a generation about 5 MB | — |
+| store | D1 | 500 MB per database; the library is 4.4 MB and a generation about 5 | — |
 | backup | a git branch | ~22 KB a night | — |
 
-**Nothing here is billed**, and the one thing that would have forced a plan is
-gone: KV metered LIST and WRITE at a thousand a DAY, and D1 counts rows at a
-hundred thousand with no listing operation at all.
+**The free tier carries all of this**, and the one thing that would not fit it
+is gone: KV metered LIST and WRITE at a thousand a DAY, where D1 counts rows at
+a hundred thousand and has no listing operation at all. The paid plan is taken
+for Workers Builds concurrency rather than for any of these numbers.
 
 ### The rule efficiency is judged by
 
@@ -2006,31 +1912,22 @@ hundred thousand with no listing operation at all.
 > EXISTS.**
 
 Finding the work becomes an indexed query, publishing becomes one query, and
-finding a row this code no longer computes becomes `WHERE code_fp != ?` instead
-of a sampler that crosses the board in days.
+and finding a row an older engine measured becomes `WHERE generation != ?`.
 
 **THE ONE STEP THAT STAYS O(EXISTS) IS A FULL RESCORE**, and no store changes
 that: forty jobs is the account's ceiling and one 121-minute row is a floor no
 split goes under. The lever is not paying for one — the audit MEASURES which
 rows actually moved, and only those are rescored.
 
-### What this retires
-
-`score_store.sh`, the R2 bucket, the KV namespace, the submission counter and
-its hourly corrector, `SKIP_LISTING`, `board_sample.py`, `CROSSING`,
-`REPAIR_CAP`, `--verify-list`, and the artifact hand-off between the scorers and
-the assembly. Every one of them exists because the store underneath could not be
-asked a question, and each is a place where one component reads another's
-FORMATTING rather than its data — which is how a display cap became the size of
-a finding, and how a shell message closed its own expansion and mangled a path.
 
 ---
 
 ## One database, and the two things that are deliberately not in it
 
-**KV AND R2 BOTH RETIRE. D1 IS THE SYSTEM OF RECORD** and holds two tables:
-`builds`, what players sent, and `scores`, the facts computed from them.
-Nothing else is a live store.
+**ONE D1 DATABASE IS THE SYSTEM OF RECORD**, and it holds four tables: `builds`,
+what players sent; `scores`, the facts computed from them; `disagreements`, the
+one event in this system; and `supporters`, a count. Nothing else is a live
+store — there is no KV namespace and no R2 bucket.
 
 The division is decided by two questions, asked of each piece of data:
 
@@ -2095,13 +1992,9 @@ self-test proves the SHAPE, not the destination.
 So the migration is three changes and not two, and the third is not the tidying
 up:
 
-1. the worker writes `builds`
-2. the board reads `builds`
-3. **`restore_library.sh` restores into `builds`**
-
-Left undone, the backup still runs, still commits, still passes its self-test,
-and is discovered pointing at KV by somebody who has just lost the library.
-
+**THE RESTORE POINTS AT THE SAME PLACE THE WORKER WRITES.** A backup that runs,
+commits and passes its self-test while restoring into a store nothing uses is
+discovered by somebody who has just lost the library.
 ---
 
 ## The store is a library of BUILDS, and every ruler crosses the whole of it
@@ -2129,33 +2022,25 @@ The one hand list (`AFFECTS_NO_NUMBER`) can only cost TIME — anything
 unclassified falls into the global bucket every row carries. Comments are
 free, since `build.rs` embeds each file with them stripped.
 
-## The board stays a static file, and says how far behind it is
 
 **THE BOARD STAYS A STATIC FILE, AND SAYS HOW FAR BEHIND IT IS.** Committed to
 the repo and served from the CDN, which is what makes it fast and unblockable.
-`GET /api/board/pending` answers the one fact the file cannot carry about
-itself: how many builds the library holds. A COUNT and nothing else. The
-scorer writes `submissions:` per board and the difference is a footnote,
+`GET /api/board/pending` answers the one fact the file cannot carry about itself:
+how many builds the library holds. `SELECT COUNT(*) FROM builds`, and nothing
+else — no build, no weapon, no day. The scorer records `submissions:` per board
+and the difference is a footnote, SILENT when the board is current.
 
-SILENT when the board is current.
+**ONE QUERY, WHERE IT WAS A WALK AND THEN A COUNTER.** Listing a KV namespace
+took seven requests at the library's size against a free plan metering LIST at a
+thousand a DAY, so a hundred and forty-three readers spent the day's allowance
+and every board run afterwards died at its first step with `10048` until UTC
+midnight — on the day a video landed. Avoiding the walk took a counter key and
+an hourly corrector to keep it true. `COUNT(*)` replaces all of it, which is
+most of why the library lives in a database at all.
 
-**IT READS A COUNTER AND DOES NOT LIST.** Listing walked the namespace a page
-at a time — seven requests at the library's size — against a free plan that
-meters LIST operations at a thousand a DAY. So a hundred and forty-three
-readers spent the day's allowance and every board run afterwards died at its
-first step with `10048` until UTC midnight; it happened, on the day a video
-landed. A READ is metered at a hundred thousand instead.
-
-The key is `meta/submissions`, and two writers keep it true: the worker bumps
-it when a build arrives that the store did not already hold, and the run that
-LISTED — the hourly one, which lists anyway — overwrites it with what it
-counted. The bump is approximate and the hourly write is the correction, which
-is what makes an approximate counter safe. Absent, the endpoint answers
-`count: null` and the page draws nothing: falling back to a walk would put the
-outage back where it was found, invisibly.
-
-A RESCORE DOES NOT LIST AT ALL (`SKIP_LISTING`). It refights rows the library
-already holds; finding a new submission is the schedule's job.
+Absent or unreachable, the endpoint answers `count: null` and the page draws
+nothing: falling back to a walk would put the outage back where it was found,
+invisibly.
 
 ## A fight is one document, and a scenario’s overrides sit behind legality
 

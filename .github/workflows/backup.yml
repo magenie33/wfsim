@@ -9,14 +9,8 @@
 # `scripts/fetch_library.sh` refuses to publish a board from a short list,
 # and that is the protection that works while nobody is watching — a backup
 # restores AFTER the damage. Both, because they fail differently: a tripwire
-# cannot help if Cloudflare loses the namespace, and a backup cannot help if
+# cannot help if Cloudflare loses the database, and a backup cannot help if
 # nobody notices for a month.
-#
-# IT FETCHES COLD, ON PURPOSE. The board pipeline caches the library between
-# runs; this restores no cache, so it reads every key straight out of KV. A
-# backup that shares its input with the thing it is backing up shares its
-# failure mode, and the whole point is to be the copy that survives a bug in
-# the other path. It costs ~7.5 minutes once a day.
 #
 # TWO LAYERS, because they expire differently:
 #
@@ -35,7 +29,7 @@
 # rather than silently: the arithmetic that justified committing a file nightly
 # is worth being right about.
 #
-# THE TOKEN HERE ONLY READS. Restoring needs a token with KV *Write*, which is
+# THE TOKEN HERE ONLY READS. Restoring needs a token with *D1: Edit*, which is
 # not a repo secret and is meant to be created for a restore and revoked after
 # — see `scripts/restore_library.sh`, which is the other half of this and the
 # reason this is a backup rather than a hope.
@@ -85,10 +79,9 @@ jobs:
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
       # ONE QUERY, AND IT IS THE SAME ONE THE BOARD RUNS. A backup that shares
-      # its input with the thing it backs up shares its failure mode, which was
-      # the argument for reading KV cold here while the board read a cache. There
-      # is no cache now: the read IS the whole library, in order, every time, so
-      # the two cannot diverge and there is nothing for a cold path to mean.
+      # its input with the thing it backs up shares its failure mode — which is
+      # why a cache here would be wrong. There is none: the read IS the whole
+      # library, in order, every time, so the two paths cannot diverge.
       - name: read the whole library
         if: steps.wired.outputs.yes == 'true'
         env:

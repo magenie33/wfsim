@@ -114,64 +114,114 @@ pub fn proxy(req: &Request<Vec<u8>>) -> Response<Vec<u8>> {
 
 /// THE PATHS SERVED FROM THIS SHELL'S OWN CACHE, and never from `current/`.
 ///
-/// The board is 4.3 MB and is rescored once an hour; a release is code
-/// and moves on a code change. So it does not travel in one — it is fetched,
-/// kept beside the release, and survives an update instead of being replaced by
-/// it. docs/DISTRIBUTION.md §The data plane.
-pub const LIVE: &[&str] = &["board.json", "board.meta.json"];
+/// The board is 4.8 MB across 387 files and is rescored once an hour; a release
+/// is code and moves on a code change. So it does not travel in one — it is
+/// fetched, kept beside the release, and survives an update instead of being
+/// replaced by it. docs/DISTRIBUTION.md §The data plane.
+///
+/// A PREFIX AND NOT A LIST, because the board is a directory now. Matched
+/// strictly: one segment, a `.json`, and nothing that could climb out of `live/`
+/// — the path comes off a URL and `safe_join` is not reached on this branch.
+pub fn live_path(rel: &str) -> Option<&str> {
+    if rel == "board.meta.json" {
+        return Some(rel);
+    }
+    let stem = rel.strip_prefix("board/")?.strip_suffix(".json")?;
+    let ok = !stem.is_empty()
+        && stem.len() <= 64
+        && stem.bytes().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_');
+    ok.then_some(rel)
+}
 
-/// Fetch the board if the copy on disk is not the one being served.
+/// ONE PUBLISHED FILE'S DIGEST, by stem, as `scripts/board_meta.py` wrote it.
+type Manifest = std::collections::BTreeMap<String, String>;
+
+/// THE BOARD'S IDENTITY, computed the way the stamp computes it: a line per file
+/// over the sorted manifest. Recomputed here rather than trusted, so the value
+/// written beside the payload cannot disagree with the payload.
+fn digest_of(files: &Manifest) -> String {
+    let mut h = Sha256::new();
+    for (name, sha) in files {
+        h.update(format!("{name} {sha}\n"));
+    }
+    format!("{:x}", h.finalize())
+}
+
+fn manifest_of(meta: &[u8]) -> Option<(Manifest, String)> {
+    let v = serde_json::from_slice::<serde_json::Value>(meta).ok()?;
+    let want = v.get("digest")?.as_str()?.to_owned();
+    let files = v
+        .get("files")?
+        .as_object()?
+        .iter()
+        .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned())))
+        .collect::<Manifest>();
+    // THE STAMP MUST NAME THE MANIFEST IT CARRIES. Anything else is a stamp
+    // written by something this shell does not understand, and a board is only
+    // as trustworthy as the one value that says what it is.
+    (!files.is_empty() && digest_of(&files) == want).then_some((files, want))
+}
+
+/// Fetch the files of the board that are not the ones being served.
 ///
 /// THE STAMP IS ASKED FIRST, and that is the whole economy of it: a few hundred
-/// bytes decide whether the 4.3 MB is worth fetching, and most of the time
-/// most clients learn they already have it.
+/// bytes decide what is worth fetching, and most of the time most clients learn
+/// they already have all of it. A rescore that moved twenty weapons then costs
+/// twenty small files rather than the board.
 ///
 /// NOTHING IS WRITTEN THAT DOES NOT HASH TO WHAT THE STAMP PROMISED. A board is
 /// public data and needs no signature — anyone can recompute it — but a
 /// truncated download is not a smaller board, it is a broken one.
 ///
-/// The payload lands BEFORE the stamp: a run that dies between them leaves a
-/// stamp naming a board this client does not have, and the next check would
-/// then believe it is current.
+/// THE STAMP LANDS LAST, and only if every file it named landed. A run that dies
+/// partway leaves a shell holding some files from before and some from after,
+/// with a stamp still naming the board it had — so the next check fetches the
+/// rest. Writing the stamp first would make that gap invisible for ever.
 pub fn refresh_board(live: &Path) -> Result<Option<String>, String> {
     let meta = fetch(&format!("{BOARD_ORIGIN}/board.meta.json"))?;
-    let want = serde_json::from_slice::<serde_json::Value>(&meta)
-        .ok()
-        .and_then(|v| v.get("digest")?.as_str().map(str::to_owned))
-        .ok_or("board.meta.json names no digest")?;
+    let (files, want) = manifest_of(&meta).ok_or("board.meta.json names no manifest")?;
 
-    let have = std::fs::read(live.join("board.json"))
-        .map(|b| format!("{:x}", Sha256::digest(&b)))
-        .unwrap_or_default();
-    if have == want {
+    let dir = live.join("board");
+    let mut fetched = 0usize;
+    for (name, sha) in &files {
+        let at = dir.join(format!("{name}.json"));
+        let have = std::fs::read(&at).ok().map(|b| format!("{:x}", Sha256::digest(&b)));
+        if have.as_deref() == Some(sha.as_str()) {
+            continue;
+        }
+        let body = fetch(&format!("{BOARD_ORIGIN}/board/{name}.json"))?;
+        let got = format!("{:x}", Sha256::digest(&body));
+        // A PUBLISH BETWEEN THE STAMP AND THIS FILE IS A TORN READ, not a
+        // corrupt one, and it is the ordinary case here: the loop runs for as
+        // long as the files take. So it is not an error — the stamp is asked
+        // again on the next pass and this file is fetched against the newer one.
+        if got != *sha {
+            return Ok(None);
+        }
+        std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        write_atomic(&at, &body)?;
+        fetched += 1;
+    }
+    // …AND THE ONES THE BOARD NO LONGER HAS. A weapon dropped from the roster
+    // leaves a file this shell would go on serving rows from.
+    if let Ok(rd) = std::fs::read_dir(&dir) {
+        for e in rd.flatten() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if let Some(stem) = name.strip_suffix(".json") {
+                if !files.contains_key(stem) {
+                    let _ = std::fs::remove_file(e.path());
+                }
+            }
+        }
+    }
+    let stamped = std::fs::read(live.join("board.meta.json"))
+        .ok()
+        .and_then(|b| manifest_of(&b).map(|(_, d)| d));
+    if fetched == 0 && stamped.as_deref() == Some(want.as_str()) {
         return Ok(None);
     }
-
-    let body = fetch(&format!("{BOARD_ORIGIN}/board.json"))?;
-    let got = format!("{:x}", Sha256::digest(&body));
-    if got == want {
-        write_atomic(&live.join("board.json"), &body)?;
-        write_atomic(&live.join("board.meta.json"), &meta)?;
-        return Ok(Some(want));
-    }
-
-    // THE STAMP AND THE BOARD ARE TWO OBJECTS, FETCHED SEPARATELY. A publish
-    // landing between them hands this a stamp for the board before and a body
-    // for the board after — a torn read, not a corrupt file. So the stamp is
-    // asked again and matched against the body already in hand; only a pair
-    // that still disagrees is a refusal, and a refusal it must be, because a
-    // stamp is the only thing saying what these bytes are.
-    let again = fetch(&format!("{BOARD_ORIGIN}/board.meta.json"))?;
-    let now = serde_json::from_slice::<serde_json::Value>(&again)
-        .ok()
-        .and_then(|v| v.get("digest")?.as_str().map(str::to_owned))
-        .unwrap_or_default();
-    if now != got {
-        return Err(format!("board.json failed its checksum (expected {want}, got {got})"));
-    }
-    write_atomic(&live.join("board.json"), &body)?;
-    write_atomic(&live.join("board.meta.json"), &again)?;
-    Ok(Some(got))
+    write_atomic(&live.join("board.meta.json"), &meta)?;
+    Ok(Some(want))
 }
 
 fn fetch(url: &str) -> Result<Vec<u8>, String> {
@@ -204,8 +254,8 @@ pub fn serve(root: &Path, live: &Path, req: &Request<Vec<u8>>) -> Response<Vec<u
     // then parse markup as a board. An honest miss is what sends the page to
     // the site instead (`fetchJson`), which is how a client that has not
     // fetched one yet still has a board to show.
-    if LIVE.contains(&rel.as_str()) {
-        return match std::fs::read(live.join(&rel)) {
+    if let Some(rel) = live_path(&rel) {
+        return match std::fs::read(live.join(rel)) {
             Ok(b) => Response::builder()
                 .header("Content-Type", "application/json; charset=utf-8")
                 .header("Cache-Control", "no-store")

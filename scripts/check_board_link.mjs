@@ -259,16 +259,22 @@ const pick = await evaluate(`(async () => {
   // Where the grouping is VISIBLE: a weapon this board holds in more than one
   // mode under one ruler. Includes the synthetic row injected above, which is
   // why this runs after it.
+  // WHICH WEAPONS TO ASK, off the INDEX — the benchmark page holds each
+  // weapon's group leaders and not its rows, so "does this weapon have more
+  // than one mode on some ruler" is answerable here and nothing else is.
   const many = (META.weapons || []).filter(w => {
     const byRuler = {};
-    for (const r of (BOARD[w.id] || [])) {
+    for (const r of (BOARD[w.id] || (BOARD_INDEX || {})[w.id] || [])) {
       (byRuler[r.benchmark] = byRuler[r.benchmark] || new Set()).add(r.mode || 'base');
     }
     return Object.values(byRuler).some(set => set.size > 1);
   });
   for (const w of many) {
-    // builtinBuilds reads the weapon on screen, so this is the one input it
-    // takes. Nothing else about the page decides its answer.
+    // THE ROWS A WEAPON PAGE WOULD HAVE, fetched the way that page fetches
+    // them. builtinBuilds reads the weapon on screen out of BOARD, and a
+    // weapon whose file has not been fetched has no rows there — which would
+    // make every assertion below pass on an empty list.
+    await loadWeaponBoard(w.id);
     document.getElementById('weapon').value = w.id;
     const ps = builtinBuilds();
     const blocks = [];

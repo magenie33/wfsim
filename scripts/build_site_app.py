@@ -291,9 +291,6 @@ EDGE_HEADERS = """\
   Cache-Control: public, max-age=31536000, immutable
 /asset/*
   Cache-Control: public, max-age=31536000, immutable
-/board.json
-  Cache-Control: public, max-age=0, must-revalidate
-  Access-Control-Allow-Origin: *
 /board/*
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
@@ -317,14 +314,13 @@ EDGE_HEADERS = """\
 # depends on it — every asset the page names is immutable — so if the default
 # ever changes, what fails is a check rather than a reader's browser.
 #
-# `board.json` and `board/` are a different plane and revalidate for their own
-# reason: they are rescored once an hour. `Access-Control-Allow-Origin` is what
-# lets a shell serving its own origin fall back to the site for them — see
-# `fetchJson`.
+# `board/` is a different plane and revalidates for its own reason: it is
+# rescored once an hour. `Access-Control-Allow-Origin` is what lets a shell
+# serving its own origin fall back to the site for it — see `fetchJson`.
 #
-# A REVALIDATION OF `board/<weapon>.json` COSTS ONE ROUND TRIP AND A FEW KB
-# where the whole board cost 228 KB on the wire and 4.6 MB to parse, so the
-# hourly rescore stopped being something every page load pays for.
+# A REVALIDATION OF `board/<weapon>.json` COSTS ONE ROUND TRIP AND A FEW KB, and
+# the cross-weapon view reads `board/index.json` at 37 KB on the wire — where
+# the whole board was 249 KB and 4.8 MB to parse, on every page load.
 
 # Legacy URLs from the /app/-era layout, plus the one weapon page that shipped
 # with an extension.
@@ -582,223 +578,51 @@ def ship_art() -> None:
           f"({size / 1e6:.1f} MB, from {raw / 1e6:.1f} MB)")
 
 
-# WHAT THE SCORER WRITES ABOUT ITS OWN RUN RATHER THAN ABOUT THE BUILD, and
-# therefore the only fields this file may drop. `page_row` — the Rust writer of
-# the same file — emits none of them, and the two have to agree byte for byte or
-# every local build leaves board.json dirty.
+# THE SITE BUILD DOES NOT WRITE A SINGLE BOARD ROW, and that is the rule rather
+# than an accident of what is convenient here.
 #
-#   `weapon`  the map KEY this row is filed under.
-#   `fp`      the reuse key: which data files this row's score depends on.
-#   `cost`    what the row took to simulate, the input to the shard packing.
-#   `listed`  and `probe` decide whether the row belongs on this page at all,
-#             and the ones that do not have already been dropped.
+# A SECOND WRITER OF PUBLISHED NUMBERS HAS TO REPRODUCE THE FIRST exactly — its
+# rounding, its field set, its key order, its float spelling — and each time this
+# one failed to, a local build either churned the file or silently dropped a
+# field (`valence`, then `riven`) on the way to the page. The rows have one
+# writer, `wfsim-board --project`, and one source, the facts.
 #
-# Naming the set is what makes the assertion below able to hold: a field the
-# scorer adds is kept unless it is declared here, with its reason.
-BOOKKEEPING = ("weapon", "fp", "cost", "listed", "probe")
-
-
-def write_board() -> None:
-    """`site/board.json` — the board the PAGE fetches, from the canonical yaml.
-
-    The board is the one piece of data that changes without a release, so it is
-    not compiled into the wasm like the rest of `data/`: an hourly update must
-    not cost a full rebuild. The scoring job writes this file directly beside
-    the yaml; this function is what keeps a LOCAL build in step with it.
-    """
-    # `shown` IS NOT RECOMPUTED HERE, it is CARRIED. The scorer writes it with
-    # `boards_data::format_score`, which is four SIGNIFICANT figures rather than
-    # four decimals — so for a score under 1 it is not the same string the
-    # page's `toFixed(4)` fallback would produce, and dropping it loses real
-    # precision. Recomputing it in Python would be a second copy of a rounding
-    # rule that already exists twice; carrying it keeps the scorer the only
-    # thing that decides.
-    #
-    # It also avoids a churn: a local site build that rewrites board.json
-    # WITHOUT this field leaves the file dirty after every run, and a careless
-    # commit ships it over a fresh rescore.
-    # A ROW IS FOUND BY ITS BUILD, not by its score. Keying on the number was a
-    # proxy for identity and it broke on the thing a proxy always breaks on:
-    # 10 of 118 rows had a score one ULP apart between the yaml and the json
-    # (11.980987537508963 against ...64), so those rows matched nothing, lost
-    # their `shown` string, and came back rewritten on every local build.
-    #
-    # The gap is real and not a formatting bug — Rust prints an f64 the same
-    # shortest-round-trip way through `{}` and through serde_json, so one run
-    # cannot spell one number two ways. It means the two files were written by
-    # two RUNS, and a board score is not bit-reproducible across runs: a
-    # hundred engagements are summed, and summation order decides the last bit.
-    # Which is exactly why an identity key is the right one — the build is what
-    # a row IS, and the score is a measurement of it.
-    def _ident(r):
-        """A row's identity, DERIVED from the row rather than from a list.
-
-        It was six named arguments, and the caller had to remember to pass
-        every axis. `riven` was never added, so two builds differing only in
-        their riven shared an identity and a carried score.
-
-        Everything but `score`, `shown` and `source` is identity: a row is a
-        BUILD, and every field the scorer writes about the build is part of
-        which build it is. That is the same rule `builds::BUILD_AXES` states in
-        the engine, and deriving it here is what stops this list going stale
-        the next time an axis is added.
-        """
-        skip = {"score", "shown", "source"}
-        return json.dumps({k: v for k, v in r.items() if k not in skip},
-                          sort_keys=True, separators=(",", ":"))
-
-    # ...and then the score decides only whether the CARRIED figures still
-    # describe this row. Equal to a part in 1e-12 is the same measurement (a
-    # rescore that moves a number moves it in the fourth digit, not the
-    # sixteenth); anything further apart is a new one, so both the number and
-    # the string it prints come from the yaml and the page's own rounding.
-    def _same_measurement(a, b):
-        try:
-            a, b = float(a), float(b)
-        except (TypeError, ValueError):
-            return False
-        return abs(a - b) <= 1e-12 * max(abs(a), abs(b), 1.0)
-
-    prior: dict = {}
-    board_path = APP / "board.json"
-    if board_path.exists():
-        try:
-            for weapon, rows in json.loads(board_path.read_text(encoding="utf-8")).items():
-                for r in rows:
-                    prior[(weapon, _ident(r))] = r
-        except (ValueError, AttributeError):
-            pass  # unreadable or an older shape: fall through and omit `shown`
-
-    out: dict = {}
-    for f in sorted((ROOT / "boards").glob("*.yaml")):
-        b = yload(f.read_text(encoding="utf-8")) or {}
-        for e in b.get("entries") or []:
-            # THE YAML IS THE ARCHIVE AND THIS FILE IS THE BOARD. Every row the
-            # run scored is in the yaml — listed, held under the floor, and
-            # screened without being measured — while the Rust writer of this
-            # same file emits `kept`, which is the listed ones alone. Taking
-            # every entry made a local build write 22,695 rows over the 7,571
-            # the scorer wrote: three times the page's fetch, and every row the
-            # floor decided not to show, published by whoever ran the site
-            # build last. `listed` defaults TRUE, the same as the scorer's.
-            if not e.get("listed", True) or e.get("probe"):
-                continue
-            # **EVERY FIELD THE SCORER WROTE, not a list of the ones somebody
-            # remembered.** This function's whole job is to be a NO-OP against
-            # the scorer's own output, and it was a hand list of seven keys —
-            # so a field the scorer added was silently dropped on the way to
-            # the page, for as long as nobody looked.
-            #
-            # IT HAS NOW HAPPENED TWICE. `valence` went first, and a local site
-            # build stripped it from all 118 rows; the comment written then said
-            # what this function is for and left the list in place. `riven` went
-            # second and cost three symptoms at once — the
-            # benchmark's "riven only" view showed nothing, the builder could
-            # not group riven rows, and TAKING one left an empty slot, because
-            # `row.riven` never reached the page so the bare `riven` id resolved
-            # to no mod.
-            # …MINUS TWO THAT ARE NOT FACTS ABOUT THE BUILD. `fp` is the
-            # SCORER'S REUSE KEY — which data files this row's score depends on,
-            # so the next run can skip re-scoring it
-            # (`engine::data_fingerprint`) — and `weapon` is the MAP KEY this
-            # row is filed under. The Rust writer of this same file emits
-            # neither, and the two have to agree byte for byte or every local
-            # build leaves board.json dirty.
-            #
-            # `weapon` was leaking, and it cost more than a churned file. `_ident` is "every field but score/shown/source", so
-            # a row carrying an extra key had a DIFFERENT identity from the same
-            # row in the file already on disk — `prior` never matched, `shown`
-            # was dropped from all 118 rows, and the page fell back to rounding
-            # `score` itself. The `missing` assertion below has always named
-            # `weapon` as legitimately absent, which is the intent this restores.
-            row = {k: v for k, v in e.items() if k not in BOOKKEEPING}
-            row["benchmark"] = b.get("benchmark")
-            row["source"] = b.get("source", "")
-            # FLOAT, always: the yaml writes a whole score as `10` and the
-            # scorer emits `10.0` from an f64. Two spellings of one number is a
-            # diff on every build.
-            row["score"] = float(e["score"]) if e.get("score") is not None else None
-            # …and the three the page reads by name are guaranteed present,
-            # because an entry may legitimately omit an empty one and the page
-            # would rather have `[]` than `undefined`.
-            for k in ("mods", "evolutions", "arcanes"):
-                row.setdefault(k, [])
-            # A RIVEN'S MALUS IS ALWAYS A KEY, even when there is not one. The
-            # yaml omits it (serde skips a `None`) and the Rust writer of this
-            # file emits it as `null` unconditionally — `json!({"bonuses": …,
-            # "malus": rv.malus, "rolls": …})` — so a riven row read back from
-            # the yaml is a key short of the same row written by the scorer.
-            # Eight rows churned on every local build because of it, and they
-            # lost their `shown` string with it: `_ident` is the whole row bar
-            # three fields, so a riven that is a key short is a DIFFERENT build
-            # as far as the carry-over lookup is concerned.
-            if isinstance(row.get("riven"), dict):
-                row["riven"].setdefault("malus", None)
-            # THE ELEMENT AN ADVERSARY WEAPON WAS SCORED ON, and part of the
-            # row's identity for the same reason `mode` is: two Kuva Nukors on
-            # different valences are two entrants.
-            row.setdefault("valence", "")
-            row.setdefault("mode", None)
-            # THE PRIOR ROW WINS ON BOTH FIGURES OR ON NEITHER. Carrying the
-            # string while re-deriving the number from the yaml would leave the
-            # file dirty after every build for the ULP alone — and the two
-            # spellings are the same measurement, so there is nothing to
-            # prefer between them. A score that actually MOVED takes the
-            # yaml's number and drops the string, which is what sends the page
-            # to its own rounding.
-            keep = prior.get((e["weapon"], _ident(row)))
-            if keep is not None and _same_measurement(keep.get("score"), row["score"]):
-                if keep.get("score") is not None:
-                    row["score"] = float(keep["score"])
-                if keep.get("shown") is not None:
-                    row["shown"] = keep["shown"]
-            # NOTHING THE SCORER WROTE MAY BE DROPPED, asserted rather than
-            # trusted. `row = dict(e)` makes it true by construction today; this
-            # is what keeps it true, because the two times it broke the code
-            # LOOKED right and the field was simply not in the list. A build
-            # that would ship a lesser board fails instead.
-            missing = [k for k in e if k not in row and k not in BOOKKEEPING]
-            if missing:
-                raise SystemExit(
-                    f"board.json would drop {missing} from {e['weapon']} — "
-                    "every field the scorer writes belongs on the page")
-            out.setdefault(e["weapon"], []).append(row)
-    # BYTE-FOR-BYTE with the scorer's own writer: `serde_json::to_string` over a
-    # BTreeMap is compact and key-sorted. Matching it is what makes this
-    # function a no-op when the board is already current — otherwise every local
-    # build leaves the file dirty, which is a papercut on its own and a real
-    # hazard when the next commit sweeps it up over a fresh rescore.
-    (APP / "board.json").write_text(
-        json.dumps(out, separators=(",", ":"), sort_keys=True), encoding="utf-8"
-    )
-
-    # ONE FILE PER WEAPON, because a weapon page reads ONE weapon's rows.
-    #
-    # The whole board is 4.6 MB and every page fetched all of it to draw a few
-    # rows of one. Split, a weapon page pays for what it draws and the benchmark
-    # page — the only surface that ranks ACROSS weapons — is the only one that
-    # still asks for the lot.
-    #
-    # CLEARED FIRST, like `pkg/`: a weapon dropped from the roster otherwise
-    # leaves a file the page would happily go on serving rows from.
-    #
-    # EVERY WEAPON IN THE ROSTER GETS ONE, INCLUDING THE EMPTY ONES. A 404 and
-    # an empty list are the same thing to `fetch` and opposite things to the
-    # page: a weapon nobody has submitted is the INVITATION, and it is the one
-    # whose standing the projection most wants to state. Without a file it would
-    # read as a board that failed to load and say nothing at all.
+# WHAT IS LEFT IS THE ROSTER'S SHAPE, which the scorer cannot know: it is driven
+# by what was submitted, so a weapon nobody has submitted for reaches it in no
+# form at all.
+#
+# EVERY WEAPON IN THE ROSTER GETS A FILE, INCLUDING THE EMPTY ONES. A 404 and an
+# empty list are the same thing to `fetch` and opposite things to the page: a
+# weapon nobody has submitted is the INVITATION, and it is the one whose standing
+# the projection most wants to state. Without a file it would read as a board
+# that failed to load and say nothing at all.
+def guard_board_files() -> None:
+    """`site/board/` holds one file per roster weapon, plus the index."""
     per = APP / "board"
-    if per.exists():
-        shutil.rmtree(per)
-    per.mkdir(parents=True)
-    for spec in roster():
-        rows = out.get(spec["id"], [])
-        (per / f"{spec['id']}.json").write_text(
-            json.dumps(rows, separators=(",", ":"), sort_keys=True), encoding="utf-8"
-        )
-    biggest = max((len(json.dumps(v, separators=(",", ":"))) for v in out.values()), default=0)
-    print(f"board: {sum(len(v) for v in out.values())} rows -> site/board.json"
-          f" + {len(list(roster()))} per-weapon files (largest {biggest / 1024:.0f} KB)")
+    per.mkdir(parents=True, exist_ok=True)
+    ids = {spec["id"] for spec in roster()}
+    made = []
+    for wid in sorted(ids):
+        f = per / f"{wid}.json"
+        if not f.exists():
+            f.write_text("[]", encoding="utf-8")
+            made.append(wid)
+    # …AND NOTHING ELSE. A weapon dropped from the roster otherwise leaves a file
+    # the page would go on serving rows from, and which the publisher would carry
+    # forward for ever because a carry reads the directory rather than the roster.
+    # `index.json` is the publisher's own derived file and is not a weapon.
+    gone = []
+    for f in sorted(per.glob("*.json")):
+        if f.stem != "index" and f.stem not in ids:
+            f.unlink()
+            gone.append(f.stem)
+    rows = 0
+    for f in per.glob("*.json"):
+        if f.stem != "index":
+            rows += f.read_text(encoding="utf-8").count('"benchmark"')
+    print(f"board: {len(ids)} weapon file(s), {rows} rows"
+          + (f", added {made}" if made else "")
+          + (f", removed {gone}" if gone else ""))
 
 
 # Every heading in `index.html` that is a ROUTE'S OWN, by its id. One HTML file
@@ -1562,7 +1386,7 @@ def main() -> None:
                                     encoding="utf-8", newline="\n")
     ship_edge_config()
     ship_art()
-    write_board()
+    guard_board_files()
     run(sys.executable, str(ROOT / "scripts" / "board_meta.py"))
     prerender(flagged)
 

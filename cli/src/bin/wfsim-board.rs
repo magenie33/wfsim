@@ -1,26 +1,26 @@
 //! THE SCORER — turns submitted builds into a board.
 //!
-//! Reads a JSON array of submissions on stdin, writes the board YAML on
-//! stdout. That shape is deliberate: fetching from KV and committing the
-//! result are the workflow's job (`.github/workflows/board.yml`), and neither
-//! needs the engine. What needs the engine is the only thing here — running
-//! each build under the benchmark and reading the number off.
+//! Reads the library as a JSON array on stdin, reads the open generation's
+//! FACTS as a file, and writes one file per weapon plus a cross-weapon index.
+//! Fetching either and committing the result are the workflow's job
+//! (`.github/workflows/board.yml`), and neither needs the engine. What needs
+//! the engine is the only thing here — running each build under the benchmark
+//! and reading the number off.
 //!
 //! WHY A SUBMISSION CARRIES NO SCORE: nobody's number is trusted because
 //! nobody's number is asked for. A row's score is produced HERE under the
 //! benchmark's own pinned seed, so anyone with the repo reproduces any row
-//! exactly, and an engine change re-scores everything instead of migrating
-//! anything — nobody is asked to resubmit.
+//! exactly.
 //!
-//! TWO OUTPUTS, because the board has two readers. The YAML on stdout is the
-//! CANONICAL record, committed and diffable; the JSON is what the PAGE fetches
-//! at runtime, because a board that changes hourly must not require rebuilding
-//! the wasm to reach anyone.
+//! IT NEVER SPEAKS TO THE DATABASE. Files in, files out; the network lives in
+//! `scripts/ship_facts.sh` and `scripts/fetch_facts.sh`, which a stub `curl`
+//! can drive — which is what makes every hop of the chain testable.
 //!
-//!   cat submissions.json | wfsim-board single_target site/board.json > board.yaml
+//!   cat submissions.json | wfsim-board single_target site/board //!     --facts-in facts-known.ndjson --facts facts.ndjson
 
 use std::io::Read;
 
+use serde_json::value::RawValue;
 use serde_json::{json, Value};
 
 /// A benchmark id without its `_v<n>` suffix — `single_target_v2` and
@@ -36,10 +36,6 @@ fn family(id: &str) -> &str {
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
-    /// SECONDS THIS ROW TOOK TO SIMULATE, or what the last run measured for it
-    /// when this run reused the score. Written to the yaml and read back by the
-    /// NEXT run to pack the shards — see `load`.
-    cost_seconds: f64,
     /// THE BUILD THIS ROW IS, without the mode — `builds::identity`.
     ///
     /// Carried so the run can prove every validated build ended up somewhere:
@@ -70,10 +66,6 @@ struct Row {
     /// two assemblies of one chamber would be one row.
     grip: String,
     loader: String,
-    /// WHAT THIS ROW'S SCORE DEPENDS ON, as one hash — see
-    /// `engine::data_fingerprint`. Written into the board so the NEXT run can
-    /// ask, per row, whether anything it reads has moved.
-    fp: String,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats and which is the
     /// malus, never a roll. A row states a shape and the shape is scored at its
     /// own ceiling (`rivens_data::perfect`), for the reason every row is scored
@@ -101,7 +93,28 @@ struct RowRiven {
     rolls: Vec<f64>,
 }
 
-/// ONE ROW AS THE PAGE RECEIVES IT — `site/board.json`'s shape, in one place.
+/// …AND THE PART OF ONE THAT IS READ BACK. Only the four fields the carry and
+/// the index decide on: everything else travels as bytes, because a publish that
+/// reparses a number it is not measuring publishes a number nobody computed.
+#[derive(serde::Deserialize)]
+struct Published<'a> {
+    benchmark: &'a str,
+    #[serde(default)]
+    mode: Option<&'a str>,
+    #[serde(borrow)]
+    score: &'a RawValue,
+    #[serde(default, borrow)]
+    riven: Option<&'a RawValue>,
+}
+
+/// A row the page would not understand is a row this cannot speak for either, so
+/// it is CARRIED and never indexed — dropping it would take it off the board.
+fn published(raw: &RawValue) -> Option<Published<'_>> {
+    serde_json::from_str(raw.get()).ok()
+}
+
+/// ONE ROW AS THE PAGE RECEIVES IT — `site/board/<weapon>.json`'s shape, in one
+/// place.
 ///
 /// Extracted so it can be TESTED, because the one thing that went wrong with it
 /// is invisible from the outside: it was a hand-written list of nine keys and
@@ -194,6 +207,11 @@ const DEFAULT_ROW_SECONDS: f64 = 3.6;
 
 /// THE FEW SCALARS THE RUNTIME ASKS OF A BOARD, and the only part of one that
 /// is embedded. See its own header for why the rows are not.
+/// THE CROSS-WEAPON INDEX, under the same directory as the weapon files and
+/// therefore excluded from them by name. `index` is not a weapon id: ids are
+/// `[a-z0-9_]` slugs off the roster and none of them is this.
+const INDEX_STEM: &str = "index";
+
 const BOARD_STATE: &str = "data/board_state.yaml";
 
 /// WHAT THE LAST RUN LEFT, read the way the writer below spells it.
@@ -203,8 +221,20 @@ const BOARD_STATE: &str = "data/board_state.yaml";
 /// that can disagree with the writer. Read from DISK rather than from the
 /// compiled-in copy, because publish rewrites the file after the binary was
 /// built and the cursor has to be the one the last run actually stored.
-fn stored_state() -> std::collections::BTreeMap<String, [usize; 4]> {
-    let mut state: std::collections::BTreeMap<String, [usize; 4]> = Default::default();
+#[derive(Default, Clone)]
+struct BoardRow {
+    submissions: usize,
+    listed: usize,
+    held: usize,
+    scored_at: usize,
+    /// WHICH GENERATION THESE ROWS WERE MEASURED UNDER, carried so the published
+    /// board can say what it is. The audit reads it rather than being told: a
+    /// generation named twice is two places to forget to change.
+    generation: String,
+}
+
+fn stored_state() -> std::collections::BTreeMap<String, BoardRow> {
+    let mut state: std::collections::BTreeMap<String, BoardRow> = Default::default();
     let text = std::fs::read_to_string(BOARD_STATE).unwrap_or_default();
     let mut cur = String::new();
     for line in text.lines() {
@@ -215,13 +245,15 @@ fn stored_state() -> std::collections::BTreeMap<String, [usize; 4]> {
                 state.entry(cur.clone()).or_default();
             }
         } else if let Some((k, v)) = t.trim().split_once(": ") {
-            let n = v.trim().parse::<usize>().unwrap_or(0);
+            let v = v.trim();
+            let n = v.parse::<usize>().unwrap_or(0);
             if let Some(e) = state.get_mut(&cur) {
                 match k.trim() {
-                    "submissions" => e[0] = n,
-                    "listed" => e[1] = n,
-                    "held" => e[2] = n,
-                    "scored_at_epoch_seconds" => e[3] = n,
+                    "submissions" => e.submissions = n,
+                    "listed" => e.listed = n,
+                    "held" => e.held = n,
+                    "scored_at_epoch_seconds" => e.scored_at = n,
+                    "generation" => e.generation = v.to_string(),
                     _ => {}
                 }
             }
@@ -235,10 +267,12 @@ const BOARD_STATE_HEADER: &str = "# WHAT THE RUNTIME KNOWS ABOUT EACH BOARD — 
 #
 # THE ROWS ARE NOT HERE and must never be. `data/` is compiled into the binary,
 # so a board archive under it put every row of every board into the wasm that
-# every visitor downloads. The archive is `boards/*.yaml` at the repository
-# root, read from DISK by the scorer that writes it and by the site build;
-# nothing at runtime asks a board for a row, because the page fetches
-# `board.json`.
+# every visitor downloads. The rows live in `site/board/<weapon>.json`, which
+# the page FETCHES, and durably in the `scores` table they were published from.
+#
+# `generation` is which facts these rows were measured from, and it is the one
+# thing here that is not derived from the run: the workflow opens a generation
+# deliberately, so it is handed in and recorded rather than invented.
 #
 # `submissions` paired with the library's own size (`/api/board/pending`) is how
 # a STATIC board says how far behind it is. `listed` and `held` say how much of
@@ -347,21 +381,34 @@ fn has_flag(name: &str) -> bool {
 type ScoreMap = std::collections::HashMap<String, f64>;
 type RollMap = std::collections::HashMap<String, Vec<f64>>;
 
-/// AN f64 CROSSES BETWEEN PROCESSES AS TEXT, NOT AS A JSON NUMBER.
+/// A SCORE IS READ FROM ITS TEXT, NEVER THROUGH THE JSON NUMBER PARSER.
 ///
-/// `serde_json`'s number parser is not correctly rounding: it reads
+/// `serde_json`'s parser is not correctly rounding: it reads
 /// `1.1070976928071055` back as `1.1070976928071057`, one ULP away, and the
-/// same for roughly one value in ten. Every score a shard computes crosses to
-/// the publish process through that parser, so the board published a number the
-/// engine never produced — and a reader reproducing the row from the repo, as
-/// the board invites them to, got the engine's answer and not the board's.
+/// same for roughly one value in ten. Every score crosses from the database to
+/// the publish process through it, so the board published a number the engine
+/// never produced — and a reader reproducing the row from the repo, as the
+/// board invites them to, got the engine's answer and not the board's.
 ///
-/// Rust's own `str::parse::<f64>` IS correctly rounding, so the fix is to keep
-/// the value out of the number path: `{f}` writes the shortest text that
-/// round-trips, and `parse` reads exactly that back. The files these travel in
-/// are written and read inside ONE run, so the encoding is nobody else's.
-fn num_out(v: f64) -> String {
-    format!("{v}")
+/// Rust's own `str::parse::<f64>` IS correctly rounding, and every writer in
+/// the chain emits the shortest text that round-trips (Ryu here, and
+/// `JSON.stringify` at the database's edge). So the literal is exact and only
+/// the reader was lossy. `RawValue` is what hands the literal over unparsed;
+/// the quotes are trimmed because the same field arrives as a json number out
+/// of the database and as a string from anything that batches it.
+fn exact_score(line: &str) -> Option<f64> {
+    #[derive(serde::Deserialize)]
+    struct Scored<'a> {
+        #[serde(borrow)]
+        score: &'a serde_json::value::RawValue,
+    }
+    serde_json::from_str::<Scored<'_>>(line)
+        .ok()?
+        .score
+        .get()
+        .trim_matches('"')
+        .parse()
+        .ok()
 }
 
 
@@ -554,10 +601,9 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> (LoadedScores, RollMap) {
         if v.get("ruler").and_then(Value::as_str) != Some(bench_id) {
             continue;
         }
-        let (Some(id), Some(score)) = (
-            v.get("identity").and_then(Value::as_str),
-            v.get("score").and_then(Value::as_f64),
-        ) else {
+        let (Some(id), Some(score)) =
+            (v.get("identity").and_then(Value::as_str), exact_score(line))
+        else {
             continue;
         };
         let mode = v.get("mode").and_then(Value::as_str).unwrap_or("");
@@ -582,170 +628,6 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> (LoadedScores, RollMap) {
 }
 
 
-/// The prior board's scores, keyed the way this run keys them — but only if it
-/// was computed by the same engine.
-///
-/// The rows are re-validated on the way in rather than trusted: the identity a
-/// score is filed under is `builds::identity`, which is a function of the
-/// canonical build, so it has to be recomputed from the row rather than stored
-/// beside it. That also means a row this engine would now REFUSE simply fails
-/// to produce a key and is rescored (and then refused) rather than carried.
-/// What a prior board still answers for.
-#[derive(Default)]
-struct Prior {
-    scores: std::collections::HashMap<String, f64>,
-    /// THE ROLLS TRAVEL WITH THE SCORE. They were written and never read back,
-    /// which nothing noticed while the fingerprint was coarse enough to make
-    /// almost every run a full rescore. The moment reuse became the common
-    /// case, a reused riven row would have come back with no rolls — and a
-    /// riven row with no rolls loses its whole riven block.
-    rolls: std::collections::HashMap<String, Vec<f64>>,
-    /// THE BEST LISTED SCORE IN EACH `(weapon, mode, riven)` GROUP, carried
-    /// forward so this run can tell a hopeless row from a contender BEFORE it
-    /// pays for one. The floor is relative to the leader and the leader is not
-    /// known until the group is scored, so the last run's is the estimate — and
-    /// it only has to be good enough to place a 4x margin.
-    leaders: std::collections::HashMap<(String, String, bool), f64>,
-    /// WHAT EACH ROW COST THE RUN THAT MEASURED IT, carried forward so the next
-    /// one can pack its shards by work rather than by count. Read back even for
-    /// a STALE row: the fight has to be redone, but how long it takes is a
-    /// property of the build and the ruler, and those did not move.
-    costs: std::collections::HashMap<String, f64>,
-    /// EVERY ROW THE PRIOR BOARD HELD, whatever its score or staleness.
-    ///
-    /// It is what tells a REPAIR from a row nobody has ever scored, and the two
-    /// are bounded separately: the repair slice is `--refresh`, and the backlog
-    /// of never-scored builds is `--new-limit`. `costs` cannot answer it — a
-    /// row written before costs were recorded carries none, and would read as
-    /// never scored.
-    present: std::collections::HashSet<String>,
-    /// Rows whose OWN data moved. Printed rather than counted silently: it is
-    /// the number that says how much a change actually cost.
-    stale: usize,
-    /// …AND WHICH ONES, with what each cost to measure.
-    ///
-    /// A stale row is not a WRONG row, it is one whose inputs moved and whose
-    /// number no longer carries a promise. Dropping it made every such row a
-    /// row this run had to fight, which is how one data correction became a
-    /// full rescore. Kept, the run can fight a BOUNDED slice of them and leave
-    /// the rest holding what they have until their turn comes.
-    /// WHAT A STALE ROW LAST SCORED, for the assembly alone — see the split in
-    /// `reuse_prior`. Never merged into `scores`: a run that can refight the
-    /// row has to see it missing.
-    stale_scores: std::collections::HashMap<String, f64>,
-}
-
-/// THERE IS NO CODE FINGERPRINT, and there never honestly could be. A hash of
-/// the source says the BYTES moved, which is a different question from whether
-/// any NUMBER did — and most edits that move it cannot move one: a comment, a
-/// test, a validation rule, a field only the page reads. Hashing more finely
-/// would not fix it either, because the failure inverts: a data file a row
-/// forgets to name costs one wasted rescore, where a code path a row forgets to
-/// name silently reuses a score the change moved.
-///
-/// SO CODE IS MEASURED, NOT HASHED. The audit re-fights published rows and
-/// compares exactly; what it finds moved is what gets recomputed. A stored
-/// score is valid until something PROVES it moved, which is a stronger claim
-/// than "valid until a hash moved", because a hash moving proves nothing.
-///
-/// What is left here is the DATA fingerprint, which is evidence: a row's data
-/// dependencies are enumerable from the row, and forgetting one only costs time.
-fn reuse_prior(path: &str, bench_id: &str) -> Result<Prior, String> {
-    let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
-    let prior = wfsim_engine::boards_data::parse(&text).map_err(|e| format!("{path}: {e}"))?;
-    // A PRIOR BOARD THAT CANNOT BE REUSED CAN STILL BE READ.
-    //
-    // Returning here turns the probe screen off on exactly the runs that need
-    // it. The screen's threshold is the group's LEADER from the last board and
-    // its packing input is each row's measured COST, both of which the walk
-    // below reads before the per-row staleness check, deliberately, "because a
-    // stale group still had a leader". Dropping them with the scores makes a
-    // full rescore run blind: measured across the three boards, ZERO rows
-    // screened out of 22,479 while 36% of the 132-hour bill went on rows
-    // scoring under a quarter of their group's leader.
-    //
-    // A STALE LEADER IS A FINE THRESHOLD. It does not decide what is published;
-    // it decides whether a row is worth 1000 runs rather than 100, under a 2x
-    // margin on top of a floor that is itself half the leader.
-    if family(&prior.benchmark) != family(bench_id) {
-        return Err(format!("{path} is {}'s board", prior.benchmark));
-    }
-    let mut out = Prior::default();
-    for e in &prior.entries {
-        let Ok(v) = wfsim_engine::builds::validate_for_board_with(
-            bench_id,
-            &e.weapon,
-            &e.mods,
-            &e.evolutions,
-            &e.arcanes,
-            &e.valence,
-            e.riven
-                .as_ref()
-                .map(wfsim_engine::boards_data::BoardRiven::shape)
-                .as_ref(),
-            Some(e.exilus.as_str()).filter(|x| !x.is_empty()),
-            e.assembly().as_ref(),
-        ) else {
-            continue;
-        };
-        // THE ROW'S OWN DATA, recomputed from the row rather than trusted — the
-        // same reason its identity is recomputed one line down. A row written
-        // before per-row fingerprints existed carries an empty one and is
-        // rescored, which is the safe direction and the only one available.
-        let want = wfsim_engine::data_fingerprint::row_fingerprint(
-            bench_id,
-            &v.weapon,
-            &v.mods,
-            &v.arcanes,
-            &v.evolutions,
-            v.exilus.as_deref(),
-            v.assembly.as_ref(),
-        );
-        // THE COST IS READ BEFORE THE STALENESS CHECK, and that is the point.
-        // A stale row has to be fought again, so it is exactly the row whose
-        // cost the packing needs — throwing the figure away with the score
-        // would blind the split to the very work it is about to schedule.
-        let key = wfsim_engine::builds::board_key(&v, &e.mode);
-        out.present.insert(key.clone());
-        if e.cost > 0.0 {
-            out.costs.insert(key.clone(), e.cost);
-        }
-        // THE LEADER IS READ FROM LISTED ROWS ONLY, and before the staleness
-        // check for the same reason the cost is: a stale group still had a
-        // leader, and a stale row still needs something to be measured against.
-        if e.listed && !e.probe {
-            let g = (e.weapon.clone(), e.mode.clone(), e.riven.is_some());
-            let top = out.leaders.entry(g).or_insert(e.score);
-            if e.score > *top {
-                *top = e.score;
-            }
-        }
-        // A PROBE SCORE IS NOT A MEASUREMENT and may never be reused as one. Its
-        // COST is still worth having — a screened row costs what it costs.
-        if e.probe {
-            continue;
-        }
-        // STALE MEANS ITS OWN DATA MOVED, and nothing else. What the row
-        // reads is enumerable FROM the row, so this is evidence; a code
-        // difference is not, and no longer marks anything.
-        // TWO MAPS, BECAUSE TWO READERS WANT OPPOSITE THINGS of a stale row.
-        // A pass that can REFIGHT it must not see it, or it reuses the number
-        // its data has moved out from under; a pass that only ASSEMBLES must,
-        // or the row leaves the board because a file it reads was corrected.
-        // Handing both the same map is what made the repair slice necessary.
-        let into = if e.fp == want { &mut out.scores } else { &mut out.stale_scores };
-        if e.fp != want {
-            out.stale += 1;
-        }
-        if let Some(rv) = &e.riven {
-            if !rv.rolls.is_empty() {
-                out.rolls.insert(key.clone(), rv.rolls.clone());
-            }
-        }
-        into.insert(key, e.score);
-    }
-    Ok(out)
-}
 
 
 /// THE RULER'S TERMS PLUS THE ENTRANT, as the request the simulator answers.
@@ -812,9 +694,9 @@ fn simulate_request(
 fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!(
-            "usage: wfsim-board <benchmark-id> [board.json] [--shard i/n] \
-                   [--scores <file|dir>] [--scored-here <file|dir>] \
-                   [--refight-all] [--emit-scores <file>]  (submissions on stdin)"
+            "usage: wfsim-board <benchmark-id> [site/board] [--shard i/n] \
+                   [--facts-in <file>] [--facts <file>] [--measured-by <sha>] \
+                   [--project] [--refight-all] [--rescore <sel>]  (library on stdin)"
         );
         std::process::exit(2);
     });
@@ -844,44 +726,28 @@ fn main() {
     // expensive row that a shard died part-way through starts again. That costs
     // TIME and never a number, which is the direction a cleanup is allowed to
     // cost in.
-    let ((facts_scores, known_costs, _, store_fps, mut row_partials), facts_rolls) =
+    let ((facts_scores, known_costs, _, fact_fps, mut row_partials), facts_rolls) =
         load_facts(flag("--facts-in"), &bench_id);
     let mut known: ScoreMap = Default::default();
     let mut reused = 0usize;
+    // ROWS WHOSE FACT IS HELD BY A HASH THAT NO LONGER MATCHES. Counted in the
+    // walk below, where the row's own fingerprint is computed.
     let mut stale = 0usize;
-    let mut prior_rolls: std::collections::HashMap<String, Vec<f64>> = Default::default();
-    // WHAT THE LAST RUN MEASURED, per row — the input to the shard packing.
-    let mut prior_costs: ScoreMap = Default::default();
-    let mut prior_present: std::collections::HashSet<String> = Default::default();
     // ---- WHAT THIS RUN IS ALLOWED TO FIGHT ----------------------------
     //
-    // A fingerprint says a stored score is UNVERIFIED under this generation,
-    // never that it is wrong, so nothing here rescores a board. `--verify`
-    // MEASURES which groups moved, `--dry-run` counts what is left so a run
-    // with nothing to do costs one job, and `--refresh` is the bounded slice of
-    // the unverified that this run repairs. The rates and the reasons are
-    // `docs/BOARD.md` §"When the code moved".
-
-    // HOW MANY NEVER-SCORED ROWS A RUN TAKES ON, and it is the other half of
-    // `--refresh`. The slice bounds the REPAIR of rows the board already holds;
-    // without this, the backlog of submitted builds that have no score yet is
-    // unbounded, so a run has to clear all of it before `publish` assembles
-    // anything — 4,570 rows and hours of it, during which the board shows the
-    // number it showed yesterday. Bounded, each run publishes a board with more
-    // rows on it than the last.
+    // HOW MANY UNMEASURED ROWS A RUN TAKES ON. Without it the backlog is
+    // unbounded, so a run has to clear all of it before anything is published
+    // — 4,570 rows and hours of it, during which the board shows the number it
+    // showed yesterday. Bounded, each run publishes a board with more rows on
+    // it than the last, and the rates are `docs/BOARD.md` §"The pipeline".
     let new_limit = flag("--new-limit").and_then(|s| s.parse::<usize>().ok());
-    // WHEN THE RUN STOPS TAKING ON NEW WORK, in seconds of wall clock.
+    // WHEN THE RUN STOPS TAKING ON WORK, in seconds of wall clock.
     //
-    // A BUDGET PREDICTS AND A DEADLINE GUARANTEES, and only one of those can be
-    // had here: `--refresh` is spent in seconds the last run MEASURED, so it is
-    // self-correcting, while a never-scored row has no cost and `--new-limit`
-    // can only count. Rows differ 79x, so a count of 150 is nine minutes or
-    // fifty depending on which builds arrived.
-    //
-    // IT APPLIES TO NEW ROWS ALONE, and that asymmetry is the whole safety
-    // argument: a new row not taken is a row that is not on the board yet,
-    // which is where it already was, while a REPAIR not taken is a row that
-    // would vanish from it. The predictable half is the one that must finish.
+    // A BUDGET PREDICTS AND A DEADLINE GUARANTEES, and a count can only
+    // predict: rows differ 79x, so a limit of 150 is nine minutes or fifty
+    // depending on which builds arrived. Both are here because the count is
+    // what every shard can agree on without talking, and the clock is what
+    // each one reads for itself.
     // ASSEMBLE, NEVER FIGHT. The publish pass computes almost nothing already;
     // this makes that a guarantee instead of an outcome, so a shard that failed
     // costs a row on this board rather than an hour on the merge.
@@ -910,12 +776,6 @@ fn main() {
     // not lost, which is a FOURTH outcome and has to be one the check knows.
     let mut deferred_ids: std::collections::BTreeSet<String> = Default::default();
     let verify = has_flag("--verify");
-    // THE PROBE'S VERDICT, CARRIED IN. Set by the workflow only after a
-    // `--verify` run over the sample came back identical throughout, which is
-    // what makes reusing across a code change a MEASUREMENT rather than a hope.
-
-    // THIS RUN'S OWN ANSWERS GO IN FIRST, so every stored copy below can only
-    // fill a gap. A verify run takes none, for the reason stated below.
     // THE ASSEMBLY TAKES ITS NUMBERS FROM THE FACTS AND NOWHERE ELSE.
     //
     // `--project` is the pass that PUBLISHES, and a publisher with more than
@@ -933,37 +793,16 @@ fn main() {
     if !verify {
         known = facts_scores.clone();
     }
-    let mut verify_against: ScoreMap = Default::default();
-    if let Some(path) = flag("--reuse") {
-        // A PROJECTION KEEPS EVERY ROW IT IS HANDED, stale or not. Dropping a
-        // row whose data moved is what a run that can REFIGHT it does; a pass
-        // that fights nothing would drop it from the board instead, and a
-        // published row vanishing because a file it reads was corrected is the
-        // one outcome the floor and the archive both exist to prevent.
-        match reuse_prior(&path, &bench_id) {
-            Ok(p) => {
-                stale = p.stale;
-                prior_rolls = p.rolls;
-                prior_costs = p.costs;
-                prior_present = p.present;
-                if verify {
-                    // NOT into `known`: a verify run has to MEASURE the sample,
-                    // and a seeded score is a row that is never fought.
-                    verify_against = p.scores;
-                }
-            }
-            Err(why) => eprintln!("full rescore: {why}"),
-        }
-    }
-    // THE DURABLE HALF, and it is not the same thing as `--emit-scores`: that
-    // file is written once at the end, this one is appended to per row.
+    // WHAT `--verify` MEASURES AGAINST: the facts of the generation it was
+    // handed. The audit re-fights a published row under newer code and compares
+    // exactly, which is the only thing that can say a code change moved a
+    // number — a hash cannot. So it must NOT seed `known`: a verify run that
+    // started from a score is a run that never fights.
+    let verify_against: ScoreMap = if verify { facts_scores.clone() } else { Default::default() };
+    // WHERE EVERY SCORE THIS RUN MEASURES IS APPENDED, one line a row and
+    // flushed per row, so a shard that dies has banked what it finished.
     let mut facts = FactLog::open(flag("--facts"), flag("--measured-by"));
-    let emit_to = flag("--emit-scores");
-    // EVERYTHING THIS RUN KNOWS, not only what it computed. A shard banks its
-    // own slice — re-emitting the store it read would make every delta a copy
-    // of the whole — where the publish pass writes the MERGED set the next run
-    // starts from, and a merged set missing what it reused is not merged.
-    let emit_all = has_flag("--emit-all");
+
     // WHAT EACH ROW THIS RUN TOUCHED READS, filed beside the score it produced.
     // Written into the emitted file so the score survives the run — see the
     // emit block for why the engine hash alone is not enough.
@@ -987,44 +826,21 @@ fn main() {
     // for the search again. And they reuse on the same terms as the score
     // because they were found by the same fingerprint — anything that could
     // move the rolls moves the score, since the rolls ARE the argmax of it.
-    let mut rolls: std::collections::HashMap<String, Vec<f64>> =
-        load_rolls(flag("--scores"), &bench_id);
-    prior_rolls.extend(facts_rolls);
-    // …and the ones a prior board already found, on the same terms as its
-    // scores. This run's shards win: they were computed by this engine.
-    for (k, v) in prior_rolls {
-        rolls.entry(k).or_insert(v);
-    }
+    let mut rolls: std::collections::HashMap<String, Vec<f64>> = facts_rolls;
 
 
-    // FORCING ONE WEAPON BACK THROUGH THE FIGHT, and it is the backstop rather
-    // than a tool. Reuse is decided by fingerprints, and a fingerprint answers
-    // "did an INPUT move" — so a correction the hashes cannot see, or a run the
-    // pipeline lost, leaves a published number nobody can argue the board out
-    // of. `--rescore <id[,id]>` drops what is stored for those weapons and
-    // nothing else: every other row still reuses, so a wrong number costs
-    // minutes to replace rather than the whole board.
+    // FORCING A ROW BACK THROUGH THE FIGHT, and it is the backstop rather than
+    // a tool. A fingerprint answers "did an INPUT move", so a correction the
+    // hashes cannot see leaves a published number nobody can argue the board
+    // out of. `--rescore <sel>` drops the facts for the rows it names and
+    // nothing else; `--refight-all` is the same with no selector, which is the
+    // `full` button. The rolls go with the scores, because a riven row's rolls
+    // are the argmax of its score.
     //
-    // THE ROLLS GO WITH THE SCORES. A riven row's rolls are the argmax of the
-    // score, so keeping them while dropping the score would re-measure the
-    // corner a stale number chose.
-
-    // KEPT FOR THE WHOLE RUN, not applied once. A stored score reaches `known`
-    // from TWO places — the prior board here, and the score store row by row in
-    // the loop below — so dropping it from only the first is the backstop
-    // pressing nothing: measured, a `kuva_nukor#base` rescore came back green
-    // having refought no row, because the store put every one back.
-    // …AND NEVER ON THE ASSEMBLY. Forcing is how a SHARD is told to refight a
-    // row; a pass that fights nothing would only drop it, and the weapon leaves
-    // the board. Measured, and live: `--rescore kuva_nukor` took all 56 of its
-    // rows off the published board because the merge honoured the flag it
-    // cannot act on. Same rule as a stale row, same reason.
-    //
-    // EVERY ROW IS THE SAME BACKSTOP WITH NO SELECTOR — the `full` button, which
-    // says "rescore every row, whatever is stored" and has to mean it. Spelling
-    // it as forcing rather than as "run with no prior board" keeps the prior's
-    // COSTS, which the split packs by, and its LEADERS, which the probe screens
-    // against; without those a full rescore is blind twice over.
+    // …AND NEVER ON THE ASSEMBLY. Forcing is how a SHARD is told to refight;
+    // a pass that fights nothing can only drop the row. Measured, and live:
+    // `--rescore kuva_nukor` took all 56 of its rows off the published board
+    // because the merge honoured a flag it cannot act on.
     let refight_all = has_flag("--refight-all") && !project;
     let forced: Vec<Selector> = flag("--rescore")
         .filter(|_| !project)
@@ -1319,22 +1135,37 @@ fn main() {
                 continue;
             }
             row_fps.insert(key.clone(), build_fp.clone());
+            // A FACT IS HELD TO ITS OWN HASH. What a row READS is enumerable
+            // from the row, so a data correction is caught exactly here; what
+            // the code DOES to it is not, and that is the audit's question.
+            //
+            // TWO READERS WANT OPPOSITE THINGS OF A STALE ROW. A pass that can
+            // REFIGHT it must not see the number, or it publishes one whose
+            // data moved out from under it; a pass that only ASSEMBLES must,
+            // or the row leaves the board because a file it reads was
+            // corrected. So the assembly keeps it and a shard drops it.
+            if known.contains_key(&key)
+                && fact_fps.get(&key).map(String::as_str) != Some(build_fp.as_str())
+            {
+                stale += 1;
+                if !project {
+                    known.remove(&key);
+                    rolls.remove(&key);
+                }
+            }
             // A STORED SCORE IS HELD TO ITS OWN HASH. The engine gate is the
             // coarse half and cannot see a data change — that is what
             // `row_fingerprint` is for — so an entry is admitted only where the
             // build still reads what it read, and refought otherwise.
             //
-            // `or_insert`, because the prior board and this run's own shards
-            // were validated on their own way in and must win.
-
             // THE SHARD IS A PROPERTY OF THE ROW, not of the submission it came
             // from: a melee weapon is seven rows off one record. `charge`
             // decides which, below, and every shard walks this same sequence
             // and skips only the SIMULATION — so they stay in step.
-            // THE ROLLS THIS ENGINE SETTLED ON, filled in by the search below. A row
-            // that was REUSED keeps whatever the last run found, which is correct:
-            // reuse only happens when the fingerprint says nothing that could move
-            // the answer has changed.
+            // THE ROLLS THIS ENGINE SETTLED ON, filled in by the search below —
+            // or carried from the fact, which is the same thing: a fact and its
+            // rolls were measured together and the hash check above admits or
+            // drops both.
             let mut row_riven: Option<RowRiven> = v.riven.as_ref().and_then(|shape| {
                 rolls.get(&key).map(|r| RowRiven {
                     bonuses: shape.bonuses.clone(),
@@ -1342,62 +1173,62 @@ fn main() {
                     rolls: r.clone(),
                 })
             });
-            // WHAT THIS ROW COST THIS RUN, when this run is the one that paid.
-            // `None` where the score came from a sibling shard or from the prior
-            // board — those carry their own figure, resolved below.
-            let mut measured: Option<f64> = None;
-            // A STALE ROW'S LAST NUMBER COUNTS AS KNOWN TO THE ASSEMBLY, and
-            // to nothing else. The pass that can refight it sees the row
-            // missing and does; the pass that cannot sees it and keeps it, so a
-            // corrected data file never takes a published row off the board.
             let score = match known.get(&key) {
                 // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
                 // map only ever travels between processes built from one commit.
                 Some(&s) => s,
                 None => {
-                    // NOTHING IS FOUGHT HERE UNDER `--project`. The pass
-                    // ASSEMBLES: it groups what is known, ranks it, applies the
-                    // floor and writes the files. A row nobody has banked is
-                    // absent from this board and lands on the next one — the
-                    // convergence rule applied to the merge, and what makes the
-                    // publish cost bounded by construction rather than by
-                    // whichever shard fell over.
-                    //
-                    // A ROW WITH NO FACT IS NOT ON THIS BOARD. The assembly
-                    // computes nothing, so a row this generation has not
-                    // measured is absent from it and lands on the next one.
+                    // A ROW WITH NO FACT IS NOT ON THIS BOARD. `--project`
+                    // ASSEMBLES and fights nothing: it groups what the facts
+                    // hold, ranks it, applies the floor and writes the files.
+                    // A row this generation has not measured lands on the next
+                    // board — which is what makes the publish cost bounded by
+                    // construction rather than by whichever shard fell over.
                     if project {
                         absent += 1;
                         unready.insert(v.weapon.clone());
                         deferred_ids.insert(identity_of(&key));
                         continue;
                     }
-                    // WHOSE ROW IS THIS. Charged to the least-loaded shard at
-                    // the cost the last run measured — an unmeasured row (a new
-                    // build, or a board written before costs were recorded)
-                    // takes the neutral default, which makes this degrade to
-                    // round-robin rather than to anything worse.
-                    //
-                    // It is decided HERE, inside the `None` arm, because a row
-                    // whose score is already known costs nothing to publish and
-                    // must not be charged to anybody.
-                    // NEVER SCORED, AND THE RUN HAS TAKEN ITS SHARE. Counted
-                    // BEFORE the shard filter, because every shard must reach
-                    // the same verdict on the same row: a bound that stopped
-                    // one and not another leaves them disagreeing about who
-                    // owns the rows after it, and a row both believe is the
-                    // other's is a row nobody scores. Only where a prior board
-                    // was read — with none every row is new.
-                    let fresh = !prior_present.is_empty() && !prior_present.contains(&key);
-                    if fresh {
-                        fresh_seen += 1;
-                        if new_limit.is_some_and(|n| fresh_seen > n) {
-                            fresh_left += 1;
-                            deferred_ids.insert(identity_of(&key));
-                            continue;
-                        }
+                    // A RIVEN ROW IS NOT AUDITABLE, and skipping it is a
+                    // property of the verification rather than of a sampler.
+                    // Its rolls are the argmax of a search, so re-fighting it
+                    // pays for sixteen corner probes to compare a number that
+                    // was chosen rather than measured — expensive, and a weaker
+                    // statement than the plain rows give for free. Counted
+                    // BEFORE the shard filter, like every other verdict here.
+                    if verify && v.riven.is_some() {
+                        deferred_ids.insert(identity_of(&key));
+                        continue;
                     }
-                    let cost = prior_costs.get(&key).copied().unwrap_or(DEFAULT_ROW_SECONDS);
+                    // THE RUN HAS TAKEN ITS SHARE, and every row without a
+                    // fact is a share: a generation is opened deliberately and
+                    // starts empty, so "repair" and "never scored" are one set.
+                    // That is why the bound is a count and a clock, and why
+                    // convergence is over runs rather than inside one.
+                    //
+                    // COUNTED BEFORE THE SHARD FILTER, because every shard must
+                    // reach the same verdict on the same row: a bound that
+                    // stopped one and not another leaves them disagreeing about
+                    // who owns the rows after it, and a row both believe is the
+                    // other’s is a row nobody scores.
+                    fresh_seen += 1;
+                    if new_limit.is_some_and(|n| fresh_seen > n) {
+                        fresh_left += 1;
+                        deferred_ids.insert(identity_of(&key));
+                        continue;
+                    }
+                    // WHOSE ROW IS THIS, charged to the least-loaded shard at
+                    // the cost whoever last measured it paid. It survives a
+                    // stale fact: the fight has to be redone, but how long it
+                    // takes is a property of the build and the ruler, and those
+                    // did not move. A row nobody has measured takes the neutral
+                    // default, which degrades to round-robin and no worse.
+                    //
+                    // DECIDED INSIDE THE `None` ARM, because a row whose score
+                    // is already known costs nothing to publish and must not be
+                    // charged to anybody.
+                    let cost = known_costs.get(&key).copied().unwrap_or(DEFAULT_ROW_SECONDS);
                     let mine = charge(&mut load, cost);
                     // Not this shard's slice: another one is simulating it right
                     // now, and publishing a row for it here would mean scoring it
@@ -1461,7 +1292,7 @@ fn main() {
                         row_partials
                             .remove(&key)
                             .filter(|_| {
-                                store_fps.get(&key).map(String::as_str)
+                                fact_fps.get(&key).map(String::as_str)
                                     == Some(build_fp.as_str())
                             })
                             .unwrap_or_default(),
@@ -1596,7 +1427,6 @@ fn main() {
                     // one, so this prints the tail and nothing else — a line per
                     // slow row rather than 2,474 lines nobody reads.
                     let took = began.elapsed().as_secs_f64();
-                    measured = Some(took);
                     if took >= 30.0 {
                         eprintln!(
                             "slow row: {:7.1}s  {}  key={key}  riven={}  evos={}  arcanes={}",
@@ -1610,28 +1440,8 @@ fn main() {
                     s
                 }
             };
-            // WHAT THIS ROW READS, hashed from the CANONICAL build rather than from
-            // the submission — the same object `identity` is taken from, so the
-            // next run recomputes the identical hash off its own stored row.
-            let fp = wfsim_engine::data_fingerprint::row_fingerprint(
-                &bench_id,
-                &v.weapon,
-                &v.mods,
-                &v.arcanes,
-                &v.evolutions,
-                v.exilus.as_deref(), v.assembly.as_ref(),
-            );
             let exilus_for_row = v.exilus.clone().unwrap_or_default();
             rows.push(Row {
-                // MEASURED HERE, else what a sibling shard measured, else what
-                // the last run did, else the default. The chain matters: the
-                // publish process computes almost nothing, so without the
-                // shards' own figures every cost would decay to the default
-                // one run after it was measured.
-                cost_seconds: measured
-                    .or_else(|| known_costs.get(&key).copied())
-                    .or_else(|| prior_costs.get(&key).copied())
-                    .unwrap_or(DEFAULT_ROW_SECONDS),
                 identity: wfsim_engine::builds::identity(&v),
                 weapon: v.weapon,
                 mode: played.id.to_string(),
@@ -1644,7 +1454,6 @@ fn main() {
                 grip: v.assembly.as_ref().map(|a| a.grip.clone()).unwrap_or_default(),
                 loader: v.assembly.as_ref().map(|a| a.loader.clone()).unwrap_or_default(),
                 riven: row_riven,
-                fp,
             });
         }
     }
@@ -1848,146 +1657,53 @@ fn main() {
         std::process::exit(i32::from(!moved.is_empty()));
     }
 
-    // The runtime copy, keyed by weapon because that is how the page asks.
-    //
-    // MERGED, NOT OVERWRITTEN. One file holds every benchmark's rows (each row
-    // says which ruler it was measured under), and the scoring job runs this
-    // binary ONCE PER BENCHMARK — so writing the whole file each time meant the
-    // last benchmark in the loop erased the others. That was invisible while
-    // there was one, and became wrong the hour a second one landed.
-    //
-    // This benchmark's own rows are dropped first, so a re-run replaces rather
-    // than duplicates; every other benchmark's are carried through untouched,
-    // which is what lets one benchmark be re-scored on its own.
-    // WHAT THIS PROCESS PAID FOR, for its siblings and the merge. Written even
-    // when empty: an absent file and an empty one say different things to the
-    // step that collects them, and "this shard found nothing to do" is a real
-    // answer.
-    if let Some(path) = &emit_to {
-        // THE FILE SAYS WHICH BOARD IT IS. The reader is handed a directory
-        // holding every benchmark's shards, and the key inside carries no
-        // benchmark — so without this the two boards' scores merge.
-        // AS TEXT, NOT AS JSON NUMBERS — see `num_out`. The three maps below
-        // are f64s crossing to another process, and the number path loses a ULP
-        // on about one value in ten.
-        let as_text = |m: &std::collections::HashMap<String, f64>| {
-            m.iter().map(|(k, v)| (k.clone(), num_out(*v))).collect::<std::collections::HashMap<_, _>>()
-        };
-        // WHAT IS BEING WRITTEN, decided once so the maps below agree.
-        // A SCORE WITHOUT ITS FINGERPRINT CANNOT BE READ BACK, so it is not
-        // written: the reader admits an entry only where the row's hash still
-        // matches, and `row_fps` is filled for every key this run walked. A
-        // board row whose build is no longer submitted is not walked, and
-        // emitting its number would put a byte in the store nothing can use.
-        let emitted: std::collections::HashMap<String, f64> = if emit_all {
-            let mut all = known.clone();
-            all.extend(computed.iter().map(|(k, v)| (k.clone(), *v)));
-            all.retain(|k, _| row_fps.contains_key(k));
-            all
-        } else {
-            computed.clone()
-        };
-        // WHERE EVERY PAUSED ROW STOPPED.
-        //
-        // A shard banks only what IT paused; the merged set the publish pass
-        // writes carries every row still partway, MINUS any that now has a
-        // score — a partial left beside a finished row would be read back for
-        // ever by a run that has nothing to do with it.
-        let banked = {
-            let mut all: std::collections::HashMap<String, Partial> =
-                if emit_all { row_partials.clone() } else { Default::default() };
-            all.extend(partials_out.iter().map(|(k, v)| (k.clone(), v.clone())));
-            all.retain(|k, _| !emitted.contains_key(k));
-            all
-        };
-        let text = serde_json::to_string(&serde_json::json!({
-            "benchmark": bench_id,
-            // WHAT EACH ROW READ, which is the whole of what a stored score
-            // has to prove. There is no code hash beside it and no need of one:
-            // what a row reads is enumerable from the row, where what it
-            // EXECUTES is not, so the second question is answered by the audit
-            // measuring rather than by anything here declaring.
-            // ONE PER SCORE AND NO MORE. `row_fps` holds every key the run
-            // walked, most of which it neither computed nor is emitting.
-            "fps": emitted
-                .keys()
-                .filter_map(|k| row_fps.get(k).map(|f| (k.clone(), f.clone())))
-                .collect::<std::collections::HashMap<_, _>>(),
-            "scores": as_text(&emitted),
-            // WHAT EACH ONE COST, so the publish step can write it into the
-            // board and the NEXT run can pack the shards with it. Without this
-            // the figure survives exactly one run: publish measures almost
-            // nothing, so it would write the default over every real number.
-            // THE PRIOR BOARD'S FIGURES TOO, under `--emit-all`. They are what
-            // packs the next run's shards, and a merged set that dropped them
-            // would charge every row the default and deal the tail to one shard.
-            "costs": as_text(&if emit_all {
-                let mut all = prior_costs.clone();
-                all.extend(known_costs.iter().map(|(k, v)| (k.clone(), *v)));
-                all.extend(costs.iter().map(|(k, v)| (k.clone(), *v)));
-                all
-            } else {
-                costs.clone()
-            }),
-            // …AND THE PROBE OF EVERY ROW THIS SHARD SCREENED, apart from the
-            // scores because a probe is not one. The publish process walks
-            // every row and would otherwise retake each of these alone.
-            // …AND WHERE EVERY PAUSED ROW STOPPED.
-            //
-            // A shard banks only what IT paused; the merged set the publish
-            // pass writes carries every row still partway, MINUS any that now
-            // has a score — a partial left beside a finished row would be read
-            // back for ever by a run that has nothing to do with it.
-            "partials": banked,
-            // Only the rows this shard actually searched; a plain build has no
-            // entry, so an ordinary board's shard file is what it always was.
-            "rolls": emitted
-                .keys()
-                .filter_map(|k| rolls.get(k).map(|r| (k.clone(), r.clone())))
-                .collect::<std::collections::HashMap<_, _>>(),
-        }))
-        .expect("scores");
-        std::fs::write(path, text).unwrap_or_else(|e| panic!("write {path}: {e}"));
-        eprintln!(
-            "shard {shard}/{shards}: scored {} rows -> {path}",
-            computed.len()
-        );
-    }
 
-    if let Some(path) = std::env::args().nth(2).filter(|p| !p.starts_with("--")) {
-        let mut by_weapon: std::collections::BTreeMap<String, Vec<Value>> = Default::default();
-        if let Ok(prior) = std::fs::read_to_string(&path) {
-            if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&prior) {
-                for (weapon, rows) in map {
-                    // A WEAPON THIS GENERATION CANNOT SPEAK FOR YET KEEPS EVERY
-                    // ROW IT HAS, this ruler's included: a file written from an
-                    // incomplete source is a file missing what the source lacks.
-                    let hold_all = unready.contains(&weapon);
-                    let keep: Vec<Value> = rows
-                        .as_array()
-                        .map(|a| {
-                            a.iter()
-                                .filter(|r| {
-                                    let b =
-                                        r.get("benchmark").and_then(Value::as_str).unwrap_or("");
-                                    hold_all || family(b) != family(&bench_id)
-                                })
-                                .cloned()
-                                .collect()
-                        })
-                        .unwrap_or_default();
-                    if !keep.is_empty() {
-                        by_weapon.insert(weapon, keep);
-                    }
+    // WHAT THE PAGE FETCHES, and the only thing published: one file per weapon,
+    // plus an INDEX of each group's leader for the one view that ranks across
+    // weapons.
+    //
+    // A WEAPON'S FILE IS THE SOURCE OF ITS OWN CARRY. The rows of every OTHER
+    // ruler live in it and this pass measured none of them, so they are read
+    // back and kept — and a weapon this generation cannot speak for yet keeps
+    // this ruler's rows too, because a file written from an incomplete source is
+    // a file missing whatever the source lacks.
+    if let Some(dir) = std::env::args().nth(2).filter(|p| !p.starts_with("--")) {
+        let dir = std::path::Path::new(&dir);
+        if let Err(e) = std::fs::create_dir_all(dir) {
+            panic!("{}: {e}", dir.display());
+        }
+        // A CARRIED ROW IS COPIED, NEVER REPARSED. `serde_json`'s number parser
+        // is not correctly rounding (`exact_score`), so a row read into a
+        // `Value` and written back comes out one ULP from what was published:
+        // measured, 21 of 387 weapon files moved on a publish that measured
+        // nothing. `RawValue` hands the bytes through untouched, which is also
+        // the honest meaning of a carry.
+        let mut by_weapon: std::collections::BTreeMap<String, Vec<Box<RawValue>>> =
+            Default::default();
+        if let Ok(rd) = std::fs::read_dir(dir) {
+            for e in rd.flatten() {
+                let name = e.file_name().to_string_lossy().into_owned();
+                let Some(weapon) = name.strip_suffix(".json") else { continue };
+                if weapon == INDEX_STEM {
+                    continue;
                 }
+                let Ok(text) = std::fs::read_to_string(e.path()) else { continue };
+                let Ok(rows) = serde_json::from_str::<Vec<Box<RawValue>>>(&text) else { continue };
+                let hold_all = unready.contains(weapon);
+                let keep: Vec<Box<RawValue>> = rows
+                    .into_iter()
+                    .filter(|r| {
+                        hold_all
+                            || published(r).is_none_or(|p| family(p.benchmark) != family(&bench_id))
+                    })
+                    .collect();
+                by_weapon.insert(weapon.to_string(), keep);
             }
         }
-        // …AND A READY WEAPON'S ROWS COME FROM THE FACTS, WHOLE.
+        // …AND A READY WEAPON'S ROWS FOR THIS RULER COME FROM THE FACTS, WHOLE.
         for r in kept.iter().filter(|r| !unready.contains(&r.weapon)) {
-            by_weapon
-                .entry(r.weapon.clone())
-                .or_default()
-                .push(page_row(&bench_id, r));
+            let row = serde_json::value::to_raw_value(&page_row(&bench_id, r)).expect("json");
+            by_weapon.entry(r.weapon.clone()).or_default().push(row);
         }
         if !unready.is_empty() {
             eprintln!(
@@ -1997,72 +1713,59 @@ fn main() {
                 if unready.len() > 6 { " …" } else { "" },
             );
         }
-        std::fs::write(&path, serde_json::to_string(&by_weapon).expect("json"))
-            .unwrap_or_else(|e| panic!("{path}: {e}"));
-        eprintln!("wrote {path}");
-
-        // …AND ONE FILE PER WEAPON, WHICH IS WHAT A WEAPON PAGE ACTUALLY
-        // FETCHES. Splitting them was a SITE build's job, and a site build runs
-        // when the frontend changes — so a weapon page served the rows of
-        // whenever that last happened while the board page, which reads the
-        // whole file above, served the current ones. Measured on the live site:
-        // one build, 19.5470 on its weapon page and 19.8793 on the board.
-        //
-        // WRITTEN BY WHOEVER WRITES THE BOARD, so the two cannot disagree. A
-        // weapon that has just lost its last row gets an EMPTY file rather than
-        // keeping its old one: `by_weapon` drops it, so the names come from the
-        // union of what the prior file held and what this run kept.
-        let dir = std::path::Path::new(&path).with_file_name("board");
-        if let Err(e) = std::fs::create_dir_all(&dir) {
-            eprintln!("{}: {e}", dir.display());
-        } else {
-            let mut names: std::collections::BTreeSet<String> =
-                by_weapon.keys().cloned().collect();
-            if let Ok(rd) = std::fs::read_dir(&dir) {
-                for e in rd.flatten() {
-                    let n = e.file_name().to_string_lossy().into_owned();
-                    if let Some(stem) = n.strip_suffix(".json") {
-                        names.insert(stem.to_string());
-                    }
-                }
+        for (weapon, rows) in &by_weapon {
+            let f = dir.join(format!("{weapon}.json"));
+            if let Err(e) = std::fs::write(&f, serde_json::to_string(rows).expect("json")) {
+                eprintln!("{}: {e}", f.display());
             }
-            let empty = Vec::new();
-            for name in &names {
-                let rows = by_weapon.get(name).unwrap_or(&empty);
-                let f = dir.join(format!("{name}.json"));
-                if let Err(e) = std::fs::write(&f, serde_json::to_string(rows).expect("json")) {
-                    eprintln!("{}: {e}", f.display());
-                }
-            }
-            eprintln!("wrote {} per-weapon files under {}", names.len(), dir.display());
         }
+
+        // THE CROSS-WEAPON VIEW IS AN INDEX, DERIVED FROM WHAT IS PUBLISHED.
+        //
+        // One row per GROUP — (weapon, ruler, mode, riven) — because that is
+        // what the benchmark page ranks: each weapon's own leader, and the page
+        // filters riven from plain client-side, so both leaders travel.
+        //
+        // IT CANNOT DISAGREE WITH A WEAPON PAGE, because it is computed FROM the
+        // weapon files rather than written beside them. The whole board was
+        // published as a second file for this one view: 4.7 MB of the same rows
+        // a second time, in git, rewritten every run, to draw about a thousand
+        // of them. The index is 509 KB, and 37 KB on the wire against 249.
+        let mut index: std::collections::BTreeMap<String, Vec<&RawValue>> = Default::default();
+        for (weapon, rows) in &by_weapon {
+            let mut best: std::collections::BTreeMap<(&str, &str, bool), (f64, &RawValue)> =
+                Default::default();
+            for r in rows {
+                let Some(p) = published(r) else { continue };
+                let k = (p.benchmark, p.mode.unwrap_or("base"), p.riven.is_some());
+                let score = p.score.get().trim_matches('"').parse().unwrap_or(f64::NEG_INFINITY);
+                let e = best.entry(k).or_insert((f64::NEG_INFINITY, r));
+                if score > e.0 {
+                    *e = (score, r);
+                }
+            }
+            if !best.is_empty() {
+                index.insert(weapon.clone(), best.into_values().map(|(_, r)| r).collect());
+            }
+        }
+        let f = dir.join(format!("{INDEX_STEM}.json"));
+        std::fs::write(&f, serde_json::to_string(&index).expect("json"))
+            .unwrap_or_else(|e| panic!("{}: {e}", f.display()));
+
+        eprintln!(
+            "wrote {} weapon file(s) and an index of {} group leader(s) under {}",
+            by_weapon.len(),
+            index.values().map(Vec::len).sum::<usize>(),
+            dir.display(),
+        );
     }
-    println!("# THE OFFICIAL BOARD for `{bench_id}` — GENERATED by `wfsim-board`.");
-    println!("#");
-    println!("# Rows are BUILDS players submitted; every score was computed here, by");
-    println!("# this engine, under that benchmark's own pinned seed. Nobody submits a");
-    println!("# number, so any row can be reproduced exactly by anyone with the repo.");
-    println!("#");
-    println!("# Regenerated whole on every run — never edited by hand, and never");
-    println!("# merged: an engine or data change re-scores everything rather than");
-    println!("# migrating anything, because the builds are still builds.");
-    println!("benchmark: {bench_id}");
-    println!("source: submissions");
-    // HOW MANY BUILDS THIS RUN READ, so the page can say whether the board on
-    // screen is current: the library reports its own size at
-    // `/api/board/pending`, and the difference is what has arrived since. The
-    // board is a static file and always will be — this is the one fact the file
-    // cannot carry about itself.
-    println!("submissions: {seen}");
-    // THE FINGERPRINT THIS BOARD WAS SCORED UNDER, so the next run can tell
-    // whether these numbers are still its own answer. Absent = "scored by an
-    // engine that did not record one", which reads as a full rescore.
+
     // WHAT THE RUNTIME NEEDS, and only that.
     //
-    // The rows are not embedded — `boards/` is outside `data/` for exactly that
-    // reason — so the page's three scalars per board come from a small
-    // generated file that is. Merged rather than overwritten, the same as
-    // `board.json`: this binary runs once per benchmark.
+    // The rows are not embedded — `site/board/` is outside `data/` for exactly
+    // that reason — so the page's few scalars per board come from a small
+    // generated file that is. Merged rather than overwritten: this binary runs
+    // once per benchmark.
     if std::path::Path::new(BOARD_STATE).exists() {
         let mut state = stored_state();
         // WHEN, AND NOT ONLY WHAT. The counts say how far behind the board is in
@@ -2079,139 +1782,38 @@ fn main() {
             .map_or(0, |d| d.as_secs() as usize);
         state.insert(
             bench_id.clone(),
-            [seen, kept.len(), below.len(), now],
+            BoardRow {
+                submissions: seen,
+                listed: kept.len(),
+                held: below.len(),
+                scored_at: now,
+                generation: flag("--generation").unwrap_or_default(),
+            },
         );
         let mut out = String::from(BOARD_STATE_HEADER);
         out.push_str("boards:
 ");
-        for (id, [subs, listed, held, at]) in &state {
+        for (id, r) in &state {
             out.push_str(&format!(
                 "  {id}:
-    submissions: {subs}
-    listed: {listed}
-    held: {held}
-    scored_at_epoch_seconds: {at}
-"
+    submissions: {}
+    listed: {}
+    held: {}
+    scored_at_epoch_seconds: {}
+",
+                r.submissions, r.listed, r.held, r.scored_at,
             ));
+            // WRITTEN ONLY WHERE THERE IS ONE, so a run that was not told keeps
+            // what the last one recorded rather than erasing it.
+            if !r.generation.is_empty() {
+                out.push_str(&format!("    generation: {}
+", r.generation));
+            }
         }
         std::fs::write(BOARD_STATE, out).unwrap_or_else(|e| panic!("{BOARD_STATE}: {e}"));
     }
-    println!("entries:");
-    // KEPT FIRST, THEN THE ONES THE FLOOR HELD BACK. Two populations in one
-    // file, told apart by `listed:`, because the file is BOTH the record and
-    // the next run's reuse cache and the second population belongs in each: a
-    // scored row absent from it is indistinguishable from a lost one, and it
-    // has no cached score, so it is re-fought every run to be discarded again.
-    //
-    // CACHING A LOW ROW CANNOT FREEZE A WRONG NUMBER — reuse is gated on the
-    // engine fingerprint and on the row's own `fp`. `site/board.json` is
-    // written from `kept` alone, so the page is unchanged.
-    // TWO POPULATIONS, WALKED SEPARATELY. Not one pass over a set of ids: the
-    // same BUILD can be listed in one mode and held below the floor in another,
-    // so the flag is a property of the ROW and only the loop it came from knows
-    // it.
-    for (group, listed_here) in [(&kept, true), (&below, false)] {
-        for r in group.iter() {
-            println!("  - weapon: {}", r.weapon);
-            println!("    mode: {}", r.mode);
-            // WRITTEN ONLY WHERE IT IS FALSE, so a board of listed rows is
-            // byte-for-byte what it was and the default carries the common case.
-            if !listed_here {
-                println!("    listed: false");
-            }
-            // FULL PRECISION in the record. `{}` on an f64 is the shortest string
-            // that reads back as the same number, so the yaml is the measurement
-            // rather than a rounding of it — the published figure is rounded at the
-            // point it is SHOWN, and two rows that tie on screen still rank.
-            println!("    score: {}", r.score);
-            // WHAT THIS SCORE DEPENDS ON. The next run recomputes it from the row
-            // and reuses the number only if it matches, which is what makes a mod
-            // correction cost the rows carrying that mod instead of the board.
-            if !r.fp.is_empty() {
-                println!("    fp: {}", r.fp);
-            }
-            // WHAT IT COST, to the millisecond — enough to tell a monster from
-            // the median and no more. It is scheduling data rather than part of
-            // the answer, so it is written where it survives (the board is what
-            // carries between runs) and rounded where it stops being useful.
-            if r.cost_seconds > 0.0 {
-                println!("    cost: {:.3}", r.cost_seconds);
-            }
-            if !r.exilus.is_empty() {
-                println!("    exilus: {}", r.exilus);
-            }
-            // THE PARTS, on the same terms as the exilus above: omitted on a
-            // row that takes none, so every existing row is byte for byte what
-            // it was and the Python side has nothing new to copy on one.
-            if !r.grip.is_empty() {
-                println!("    grip: {}", r.grip);
-            }
-            if !r.loader.is_empty() {
-                println!("    loader: {}", r.loader);
-            }
-            println!("    mods: [{}]", r.mods.join(", "));
-            if !r.evolutions.is_empty() {
-                println!("    evolutions: [{}]", r.evolutions.join(", "));
-            }
-            if r.arcanes.iter().any(|a| a != "none") {
-                println!("    arcanes: [{}]", r.arcanes.join(", "));
-            }
-            // Written only where there is one, the same rule the two lines above
-            // follow — a board of ordinary weapons is byte-for-byte what it was.
-            if !r.valence.is_empty() {
-                println!("    valence: {}", r.valence);
-            }
-            // THE RIVEN, where there is one — and both halves of it. The SHAPE is
-            // what a player acts on ("roll this weapon for these stats"); the ROLLS
-            // are what the number rests on, and what lets opening this row build
-            // the riven on the reader's own machine.
-            if let Some(rv) = &r.riven {
-                println!("    riven:");
-                println!("      bonuses: [{}]", rv.bonuses.join(", "));
-                if let Some(m) = &rv.malus {
-                    println!("      malus: {m}");
-                }
-                println!(
-                    "      rolls: [{}]",
-                    rv.rolls
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                );
-            }
-        }
-    }
 }
 
-/// The ROLLS a previous pass settled on, from the same shard files
-/// [`load_scores`] reads. Same key, same benchmark guard, same merge rule.
-fn load_rolls(spec: Option<String>, bench_id: &str) -> std::collections::HashMap<String, Vec<f64>> {
-    let mut out: std::collections::HashMap<String, Vec<f64>> = Default::default();
-    let Some(dir) = spec else { return out };
-    let Ok(entries) = std::fs::read_dir(&dir) else {
-        return out;
-    };
-    for e in entries.flatten() {
-        let Ok(text) = std::fs::read_to_string(e.path()) else {
-            continue;
-        };
-        let Ok(file) = serde_json::from_str::<Value>(&text) else {
-            continue;
-        };
-        if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
-            continue;
-        }
-        let Some(rolls) = file.get("rolls").and_then(Value::as_object) else {
-            continue;
-        };
-        for (k, v) in rolls {
-            let Some(a) = v.as_array() else { continue };
-            out.insert(k.clone(), a.iter().filter_map(Value::as_f64).collect());
-        }
-    }
-    out
-}
 
 /// HOW MANY RUNS A CORNER PROBE GETS. Only ever used to pick BETWEEN corners,
 /// never to publish: the winner is then measured at the ruler's own count.
@@ -2405,6 +2007,31 @@ mod tests {
     /// melee carries seven — so a fact table that kept them joined, or split on
     /// the FIRST `#`, would file seven measurements under one row and keep
     /// whichever was written last.
+    /// THE CLAIM IS THAT THE READER IS EXACT, and the first half of the test is
+    /// what makes the second half mean anything: this value is one serde's
+    /// number parser actually moves, so a reader that agreed with it would be
+    /// publishing a score the engine never produced.
+    #[test]
+    fn a_score_is_read_from_its_text_and_not_through_the_number_parser() {
+        let want = 1.1070976928071055_f64;
+        let line = format!(r#"{{"identity":"k","ruler":"r","score":{want}}}"#);
+        let through_serde = serde_json::from_str::<Value>(&line)
+            .unwrap()
+            .get("score")
+            .and_then(Value::as_f64)
+            .unwrap();
+        assert_ne!(
+            through_serde.to_bits(),
+            want.to_bits(),
+            "serde now reads this value exactly — the test has stopped biting"
+        );
+        assert_eq!(exact_score(&line).unwrap().to_bits(), want.to_bits());
+        // …AND AS A STRING, which is how anything that batches the line writes
+        // it. The same literal, the same f64.
+        let quoted = format!(r#"{{"identity":"k","ruler":"r","score":"{want}"}}"#);
+        assert_eq!(exact_score(&quoted).unwrap().to_bits(), want.to_bits());
+    }
+
     #[test]
     fn a_fact_carries_its_mode_apart_from_the_build() {
         let dir = std::env::temp_dir().join(format!("wfsim-facts-{}", std::process::id()));
@@ -2752,7 +2379,6 @@ mod tests {
             // fixture where every row shared one identity would make the
             // "everything was ranked" assertion pass on a single build.
             identity: format!("{weapon}|{mode}|{score}"),
-            cost_seconds: 0.0,
             weapon: weapon.into(),
             mode: mode.into(),
             score,
@@ -2764,7 +2390,6 @@ mod tests {
             grip: String::new(),
             loader: String::new(),
             riven: None,
-            fp: String::new(),
         }
     }
 
@@ -2894,10 +2519,123 @@ mod tests {
 mod page_row_tests {
     use super::*;
 
+    /// WHAT IS PUBLISHED, READ FROM DISK. `site/board/` is outside `data/`, so
+    /// it is not embedded and there is nothing to reach through the binary —
+    /// which is the point: the rows are a CI artifact and not something the
+    /// browser carries. The WEAPON is the file name, because that is what makes
+    /// a weapon page one fetch.
+    fn published() -> Vec<(String, Vec<Value>)> {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/board");
+        let mut out: Vec<(String, Vec<Value>)> = std::fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.extension().is_some_and(|x| x == "json"))
+            .filter(|p| p.file_stem().is_some_and(|x| x != INDEX_STEM))
+            .map(|p| {
+                let text = std::fs::read_to_string(&p).expect("read");
+                let rows = serde_json::from_str::<Vec<Value>>(&text)
+                    .unwrap_or_else(|e| panic!("{}: {e}", p.display()));
+                (p.file_stem().unwrap().to_string_lossy().into_owned(), rows)
+            })
+            .collect();
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        assert!(!out.is_empty(), "nothing published under site/board/");
+        out
+    }
+
+    fn strings(r: &Value, k: &str) -> Vec<String> {
+        r.get(k)
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(|x| x.as_str().map(str::to_owned)).collect())
+            .unwrap_or_default()
+    }
+
+    /// EVERY PUBLISHED ROW IS A BUILD SOMEONE COULD EQUIP. The board is public
+    /// and copyable, so a row that cannot be built is worse than a missing row
+    /// — it is an instruction that fails in the arsenal.
+    /// `validate_for_board_with` is the same check a submission faces, run here
+    /// against what is already published.
+    #[test]
+    fn every_published_row_is_a_legal_build() {
+        let mut n = 0usize;
+        for (weapon, rows) in published() {
+            for r in &rows {
+                let bench = r.get("benchmark").and_then(Value::as_str).unwrap_or("");
+                assert!(
+                    wfsim_engine::benchmarks_data::get(bench).is_some(),
+                    "{weapon} names benchmark {bench:?}, which does not exist",
+                );
+                let riven = r.get("riven").map(|rv| wfsim_engine::rivens_data::RivenShape {
+                    bonuses: strings(rv, "bonuses"),
+                    malus: rv.get("malus").and_then(Value::as_str).map(str::to_owned),
+                });
+                let grip = r.get("grip").and_then(Value::as_str).unwrap_or("");
+                let assembly = (!grip.is_empty()).then(|| {
+                    let chamber = wfsim_engine::weapons_data::spec(&weapon)
+                        .and_then(|s| s.kitgun.clone())
+                        .and_then(|k| wfsim_engine::kitguns_data::default_assembly(&k))
+                        .map(|d| d.chamber)
+                        .unwrap_or_default();
+                    wfsim_engine::kitguns_data::Assembly {
+                        chamber,
+                        grip: grip.to_string(),
+                        loader: r
+                            .get("loader")
+                            .and_then(Value::as_str)
+                            .unwrap_or_default()
+                            .to_string(),
+                    }
+                });
+                let v = wfsim_engine::builds::validate_for_board_with(
+                    bench,
+                    &weapon,
+                    &strings(r, "mods"),
+                    &strings(r, "evolutions"),
+                    &strings(r, "arcanes"),
+                    r.get("valence").and_then(Value::as_str).unwrap_or(""),
+                    riven.as_ref(),
+                    r.get("exilus").and_then(Value::as_str),
+                    assembly.as_ref(),
+                )
+                .unwrap_or_else(|e| panic!("{weapon} row on {bench}: {e}"));
+                // `validate` already refused anything over capacity, and the
+                // capacity is the weapon's own — so the assertion is that the
+                // row survived the door whole, not that it fits a number here.
+                assert_eq!(v.mods.len(), strings(r, "mods").len(), "{weapon} lost a mod");
+                let score = exact_score(&serde_json::to_string(r).expect("json"));
+                assert!(score.is_some_and(|x| x > 0.0), "{weapon} scored nothing");
+                n += 1;
+            }
+        }
+        eprintln!("{n} published row(s) are legal builds");
+    }
+
+    /// BEST FIRST INSIDE A GROUP, because "the top 10" is the only order a board
+    /// has — and a group is (benchmark, mode, riven-ness), which is what the
+    /// page ranks independently.
+    #[test]
+    fn a_weapons_rows_are_ranked() {
+        for (weapon, rows) in published() {
+            let mut last: std::collections::HashMap<(String, String, bool), f64> =
+                Default::default();
+            for r in &rows {
+                let k = (
+                    r.get("benchmark").and_then(Value::as_str).unwrap_or("").to_string(),
+                    r.get("mode").and_then(Value::as_str).unwrap_or("base").to_string(),
+                    r.get("riven").is_some(),
+                );
+                let s = exact_score(&serde_json::to_string(r).expect("json")).unwrap_or(0.0);
+                if let Some(prev) = last.insert(k.clone(), s) {
+                    assert!(prev >= s, "{weapon} out of order in {k:?}: {prev} then {s}");
+                }
+            }
+        }
+    }
+
     fn row(riven: Option<RowRiven>) -> Row {
         Row {
             identity: "dual_toxocyst|cycle".into(),
-            cost_seconds: 0.0,
             weapon: "dual_toxocyst".into(),
             mode: "cycle".into(),
             score: 139.28,
@@ -2909,13 +2647,12 @@ mod page_row_tests {
             grip: String::new(),
             loader: String::new(),
             riven,
-            fp: "0123456789abcdef".into(),
         }
     }
 
     /// **THE RIVEN REACHES THE PAGE**, which is the whole of what went wrong.
     ///
-    /// A row wearing one was written to `site/board.json` without it for as
+    /// A row wearing one was written to the page's file without it for as
     /// long as the writer existed, and the board simply held none until
     /// 2026-08-24 — so nothing was ever visibly broken until the hour the first
     /// riven build landed, and then three unrelated-looking things were.

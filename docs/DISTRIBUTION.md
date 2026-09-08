@@ -23,12 +23,12 @@ There are three, and **a file may not travel in a plane that is not its own.**
 | **assets** | `img/`, `pol/`, `logo.svg` | rarely, and only by addition | no — the hash is the check | yes: an asset is present and correct, or absent |
 | **data** | the board | every hour | no — it is reproducible | yes, briefly, and visibly |
 
-The cost of ignoring this is not theoretical. `site/board.json` is 4.3 MB and is
-rewritten every hour; the blob store is never pruned. Carrying it
-in the release would bank about 38 GB of immortal blobs a year in the one place
-this project pays for, and hand every client a 4.3 MB download for a file it
-replaces within the hour. **So the planes are separated before the publish is
-automated, not after.**
+The cost of ignoring this is not theoretical. `site/board/` is 4.8 MB and is
+rewritten every hour; the blob store is never pruned. Carrying it in the release
+would bank about 38 GB of immortal blobs a year in the one place this project
+pays for, and hand every client a download for files it replaces within the
+hour. **So the planes are separated before the publish is automated, not
+after.**
 
 ## Three words
 
@@ -173,26 +173,41 @@ shell may stream it and cache. They are running the same release.
 **The board is fetched, not released.** It is the output of a pipeline that runs
 on a schedule, and it moves at its own rate.
 
-- `board.json` is served at a stable URL and fetched at runtime.
-- `board.meta.json` beside it is small and carries the stamp: the payload's
-  digest, when each board was scored, and how many rows. A client reads the
-  stamp to learn whether the copy it holds is current **without fetching 4.3 MB
-  to find out** — which is the whole economy of the plane.
+- `board/<weapon>.json` and `board/index.json` are served at stable URLs and
+  fetched at runtime.
+- `board.meta.json` beside them is small and carries the stamp: **a digest per
+  published file**, one digest over that manifest, which generation the rows
+  were measured under, when each board was scored, and how many rows. A client
+  reads the stamp to learn whether the copy it holds is current **without
+  fetching the board to find out** — and, when it is not, learns WHICH files
+  moved, so an hourly rescore that touched twenty weapons costs twenty small
+  files rather than 4.8 MB. That is the whole economy of the plane.
 - The payload is served mutably rather than by digest **because there is exactly
   one live board and no client ever wants an older one.** The stamp is what
   makes staleness detectable; content-addressing it would buy caching this plane
   does not need.
-- `scripts/board_meta.py` writes the stamp, and **both writers of the board call
-  it** — the scoring job every hour, and the site build keeping a local
-  tree in step. A stamp only one of them maintains lies for the other.
+- `scripts/board_meta.py` writes the stamp, and **both the scoring job and the
+  site build call it** — the first every hour, the second so a local tree is
+  never left holding a stamp for a board it does not have. Only the scoring job
+  writes ROWS; the site build's whole job in `site/board/` is to guarantee one
+  file per roster weapon, because a weapon nobody has submitted for reaches the
+  publisher in no form at all.
 
 **A shell serves live data through its own protocol.** The page asks for
-`/board.json` and gets the freshest copy the shell has, which the shell refreshes
-in the background and keeps on disk beside the release rather than inside it. The
-page is identical on every shell and no cross-origin configuration is involved.
+`/board/<weapon>.json` and gets the freshest copy the shell has, which the shell
+refreshes in the background — file by file, against the stamp's manifest —
+and keeps on disk beside the release rather than inside it. It also deletes what
+the manifest no longer names, so a weapon dropped from the roster does not leave
+a file the shell goes on serving rows from. The page is identical on every shell
+and no cross-origin configuration is involved.
+
+**THE STAMP LANDS LAST, and only if every file it named landed.** A refresh that
+dies partway leaves the shell holding some files from before and some from
+after, with a stamp still naming the board it had — so the next check fetches
+the rest. Writing the stamp first would make that gap invisible for ever.
 
 **A client that has not fetched one yet asks the site.** `fetchJson` tries the
-same origin and then `wfsim.app`, which is why `board.json` carries
+same origin and then `wfsim.app`, which is why `/board/*` carries
 `Access-Control-Allow-Origin`. On the web the first answer always wins; on a
 shell the local copy is the offline one, and the fallback is what a fresh
 install reads before its first refresh. A shell that has neither answers **404,

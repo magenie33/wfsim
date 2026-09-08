@@ -10,9 +10,6 @@
   Cache-Control: public, max-age=31536000, immutable
 /asset/*
   Cache-Control: public, max-age=31536000, immutable
-/board.json
-  Cache-Control: public, max-age=0, must-revalidate
-  Access-Control-Allow-Origin: *
 /board/*
   Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *

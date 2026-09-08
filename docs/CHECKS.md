@@ -368,9 +368,9 @@ is a sentence the bar was never in a position to say, so `#build-current` says
 it, in each of its three states: a board row (read-only), one of your own, and
 the unsaved build the page starts on.
 
-**IT MUST RUN AGAINST `site/`.** `board.json` is FETCHED at runtime and the
-native dev server does not serve it, so a run pointed at 8787/8799 sees an empty
-board and every assertion passes on placeholder text. The first check asserts the
+**IT MUST RUN AGAINST `site/`.** `board/<weapon>.json` is FETCHED at runtime and
+the native dev server does not serve it, so a run pointed at 8787/8799 sees an
+empty board and every assertion passes on placeholder text. The first check asserts the
 weapon under test has rows, which is what makes that loud instead of green.
 
 ## `check_build_size`

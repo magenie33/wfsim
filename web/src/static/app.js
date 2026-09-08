@@ -2318,11 +2318,18 @@ const inBenchView = (r) =>
   benchRivenView === "all"
   || (benchRivenView === "riven") === rowHasRiven(r);
 
+/// THE WEAPON'S OWN FILE WINS OVER THE INDEX, and either answers this the
+/// same: the index holds each group's leader and this reduces a group to its
+/// leader, so a weapon whose full rows are already in hand needs no second
+/// source. A weapon in neither is "never fetched", which `boardProjection`
+/// refuses to speak about — and is why the index does not join `BOARD_HAVE`.
+const benchRows = (id) => BOARD[id] || (BOARD_INDEX && BOARD_INDEX[id]) || [];
+
 const benchEntries = (id) => {
   const out = [];
   for (const w of META.weapons || []) {
     for (const m of w.modes || ["base"]) {
-      const rows = (BOARD[w.id] || [])
+      const rows = benchRows(w.id)
         .filter((r) => r.benchmark === id && (r.mode || "base") === m)
         .filter(inBenchView);
       out.push({ w, mode: m,
@@ -8701,16 +8708,25 @@ function routeWeaponId() {
 /// weapon nobody has submitted has an empty list, and "loaded and empty" is a
 /// different answer from "never fetched" to everything that states a rank.
 const BOARD_HAVE = new Set();
-/// …and whether the WHOLE board is, which only the benchmark page ranks across.
-let BOARD_ALL = false;
+
+/// EVERY WEAPON'S GROUP LEADERS, which is the only thing that ranks ACROSS
+/// weapons — `site/board/index.json`, derived by the publisher from the weapon
+/// files it writes.
+///
+/// IT IS NOT A BOARD AND MUST NOT BE MISTAKEN FOR ONE. One row per (ruler, mode,
+/// riven) per weapon is exactly what `benchEntries` reduces to, and nothing
+/// else: a weapon page reads its own file, so this never reaches `BOARD` and
+/// never enters `BOARD_HAVE`. It is 37 KB on the wire where the whole board,
+/// which this view is the only reason to fetch, is 249.
+let BOARD_INDEX = null;
 
 /// ONE WEAPON'S ROWS, BECAUSE THE PAGE SHOWS ONE WEAPON.
 ///
-/// The whole board is 4.6 MB of 387 weapons and a weapon page reads one of
-/// them, so boot fetches the file it is about to draw and nothing else. A
-/// reader who never opens the benchmark page never downloads the rest.
+/// 387 weapons are 387 files and a weapon page reads one, so boot fetches the
+/// file it is about to draw and nothing else. A reader who never opens the
+/// benchmark page never downloads the rest.
 async function loadWeaponBoard(id) {
-  if (!id || BOARD_ALL || BOARD_HAVE.has(id)) return;
+  if (!id || BOARD_HAVE.has(id)) return;
   const rows = await fetchJson(`/board/${id}.json`);
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
@@ -8719,14 +8735,10 @@ async function loadWeaponBoard(id) {
   BOARD_HAVE.add(id);
 }
 
-/// EVERY WEAPON'S. Awaited only where a rank ACROSS weapons is drawn.
+/// EVERY WEAPON'S LEADERS. Awaited only where a rank ACROSS weapons is drawn.
 async function loadFullBoard() {
-  if (BOARD_ALL) return;
-  const all = await fetchJson("/board.json");
-  if (!all) return;
-  BOARD = all;
-  BOARD_ALL = true;
-  Object.keys(all).forEach((k) => BOARD_HAVE.add(k));
+  if (BOARD_INDEX) return;
+  BOARD_INDEX = await fetchJson("/board/index.json");
 }
 
 /// SAME-ORIGIN ONLY, BECAUSE BOOT WAITS ON THIS. A client whose own origin has
@@ -8746,7 +8758,7 @@ async function loadBoard(weapon) {
 /// land, and a weapon page renders perfectly well before they do. Awaiting it
 /// would put a network round trip inside a control that is otherwise instant.
 function ensureWeaponBoard(id) {
-  if (!id || BOARD_ALL || BOARD_HAVE.has(id)) return;
+  if (!id || BOARD_HAVE.has(id)) return;
   loadWeaponBoard(id).then(() => {
     // ONLY IF THE READER IS STILL THERE. A slow answer for a weapon they have
     // already left must not redraw the one they are looking at.
@@ -8762,14 +8774,14 @@ function ensureWeaponBoard(id) {
 
 /// The site, for a shell whose own origin has no board: one that has never
 /// reached the network, or one older than the release that stopped shipping a
-/// copy. `board.json` carries `Access-Control-Allow-Origin` for exactly this.
+/// copy. The index carries `Access-Control-Allow-Origin` for exactly this.
 ///
 /// NOT AWAITED ANYWHERE. It redraws the ranking when it lands, and an empty
 /// board until then is a state the page already renders.
 async function boardFromSite() {
-  const rows = await fetchJson(BOARD_ORIGIN + "/board.json");
-  if (!rows) return;
-  BOARD = rows;
+  const idx = await fetchJson(BOARD_ORIGIN + "/board/index.json");
+  if (!idx) return;
+  BOARD_INDEX = idx;
   BOARD_META = await fetchJson(BOARD_ORIGIN + "/board.meta.json");
   try { renderBenchBoard(); } catch (_) { /* nothing is showing it yet */ }
 }
@@ -8819,7 +8831,7 @@ const builtinBuilds = () => {
   // IN THE RULERS' OWN ORDER, which puts the PRIMARY one first — the same
   // declaration the board page and the scenario bar read (`Benchmark::primary`).
   //
-  // It was board.json's order, which is the scorer's, and that was
+  // It was the published file's order, which is the scorer's, and that was
   // indistinguishable from "the primary ruler first" until a second ruler took
   // rows: a cold load then restored a GROUP-CLEAR build under a weapon page,
   // which is not the row a first-time reader is looking at.
@@ -8856,9 +8868,9 @@ const builtinBuilds = () => {
       || modeOrder(a.mode) - modeOrder(b.mode)
       || (best[kindKey(b)] || 0) - (best[kindKey(a)] || 0)
       || (rowHasRiven(a) ? 1 : 0) - (rowHasRiven(b) ? 1 : 0)
-      // Best first inside a group. board.json already arrives this way; stating
-      // it here is what makes `#1` the leader rather than a bet on the scorer's
-      // write order.
+      // Best first inside a group. The published rows already arrive this way;
+      // stating it here is what makes `#1` the leader rather than a bet on the
+      // scorer's write order.
       || (b.score || 0) - (a.score || 0));
   const rank = {};
   return rows.map((row) => {
@@ -15229,7 +15241,7 @@ async function boardVerdict(body) {
 ///
 /// A MATCH IS PROOF, AN ABSENCE IS NOT. The board LISTS only builds scoring at
 /// least half their weapon's leading row, so a build the store already holds
-/// can be missing from `board.json` — which is why this only ever suppresses an
+/// can be missing from the board — which is why this only ever suppresses an
 /// upload it can prove is redundant, and never claims the reverse.
 async function boardRowMatching(body) {
   const rows = builtinBuilds();

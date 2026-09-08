@@ -128,15 +128,20 @@ def main() -> None:
         # which refuses an update it cannot verify and then silently stops
         # taking any. Nothing else in this project would ever notice.
         #
-        # FETCHED AND HASHED, not measured off a HEAD: Cloudflare answers a HEAD
-        # here with no `Content-Length` at all, so a size test reads 0 and
-        # reports a mismatch on a perfectly good pair. This is the whole 4.3 MB,
-        # once an hour, from a CDN that is free and unmetered.
-        served = get("https://wfsim.app/board.json")
+        # ONE FILE OF IT, FETCHED AND HASHED. The stamp carries a digest per
+        # published file, so checking that it describes what is served does not
+        # need the board: the cross-weapon index is the one file every reader of
+        # the benchmark page fetches, which makes it the one worth proving.
+        #
+        # NOT MEASURED OFF A HEAD: Cloudflare answers a HEAD here with no
+        # `Content-Length` at all, so a size test reads 0 and reports a mismatch
+        # on a perfectly good pair.
+        served = get("https://wfsim.app/board/index.json")
         got = hashlib.sha256(served).hexdigest()
-        if got != live.get("digest"):
-            print(f"board        STAMP DOES NOT MATCH IT — stamp names {live.get('digest', '')[:12]}, "
-                  f"the board served is {got[:12]} ({len(served)} bytes)")
+        want = (live.get("files") or {}).get("index")
+        if got != want:
+            print(f"board        STAMP DOES NOT MATCH IT — stamp names {(want or '(none)')[:12]}, "
+                  f"the index served is {got[:12]} ({len(served)} bytes)")
             bad.append("board stamp")
     except (urllib.error.URLError, ValueError, OSError) as e:
         print(f"board        UNREACHABLE — {e}")

@@ -216,7 +216,7 @@ jobs:
         id: floor
         run: |
           set -euo pipefail
-          n=$(grep -h '^submissions:' boards/*.yaml 2>/dev/null \
+          n=$(grep -h 'submissions:' data/board_state.yaml 2>/dev/null \
                 | awk '{print $2}' | sort -n | tail -1 || echo 0)
           n=${n:-0}
           echo "floor=$(( n * 9 / 10 ))" >> "$GITHUB_OUTPUT"
@@ -329,10 +329,10 @@ jobs:
             SLICE=""
           fi
           todo=0
-          for f in boards/*.yaml; do
+          for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
-                     --reuse "$f" --dry-run $FORCE $SLICE \
+                     --dry-run $FORCE $SLICE \
                      --facts-in facts-known.ndjson \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
@@ -427,18 +427,16 @@ jobs:
           # pass drops leaves publish to compute it alone, at the end.
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
-          # A FULL RESCORE IS EVERY ROW FORCED, and NOT a run with no prior
-          # board. Reuse is decided per row and the score store answers first,
-          # so dropping the prior forced nothing: 128 shards refought a tenth of
-          # the board and the store handed the rest back unchanged. Forcing also
-          # keeps what the prior is really for — the COSTS the split packs by
-          # and the LEADERS the probe screens against.
+          # A FULL RESCORE IS EVERY ROW FORCED. There is no "run with no prior"
+          # to fall back on any more: the facts of the open generation are the
+          # only source, so what a full run says is "refight every row whatever
+          # this generation holds" — and the facts it drops still answer what
+          # each row COST, which is what the split packs by.
           if [ "${{ needs.submissions.outputs.full }}" = "true" ]; then
             FORCE="$FORCE --refight-all"
           fi
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            prior="--reuse boards/$id.yaml"
             # WHAT THIS RUN TAKES ON. A repair slice is UNBOUNDED — it walks
             # the stale set from the top — so the clock is what says when to
             # stop. A `full` run and a `weapon` run are both already bounded by
@@ -451,7 +449,7 @@ jobs:
               slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
             fi
             ./target/release/wfsim-board "$id" \
-              $prior $FORCE \
+              $FORCE \
               $slice \
               --facts-in facts-known.ndjson \
               --facts facts.ndjson \
@@ -544,49 +542,29 @@ jobs:
           # pass drops leaves publish to compute it alone, at the end.
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
-          mkdir -p site
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            prior=""
-            # A BRAND-NEW BENCHMARK HAS NO BOARD YET, and that is a legal
-            # state — the ruler exists before anyone has submitted to it. This
-            # An unguarded `cp` aborts the whole publish job under `set -e`
-            # when the file is missing, so ADDING A RULER would break the
-            # hourly board until somebody hand-wrote an empty yaml. The
-            # scoring step above does not have the problem: it
-            # passes the path straight to the binary, which treats an
-            # unreadable prior as "full rescore" and carries on.
-            #
-            # READ ON A FULL RESCORE TOO, which it once was not: a full run's
-            # unreached rows then had nothing to fall back on and left the
-            # board. They are a fallback and no more — `--scored-here` above
-            # wins every row this run refought.
-            if [ -f "boards/$id.yaml" ]; then
-              # Read the board BEFORE it is overwritten: the loop writes in
-              # place, so a copy is what the reuse actually reads.
-              cp "boards/$id.yaml" "/tmp/$id-prior.yaml"
-              prior="--reuse /tmp/$id-prior.yaml"
-            fi
             # NO SLICE AND NO BUDGET: this pass fights nothing. `--project`
             # makes that a guarantee, so a shard that fell over costs a row
             # on this board rather than an hour on the merge — and the row
             # lands on the next one, which is the convergence rule applied
             # to the assembly.
             #
-            # IT ALSO KEEPS EVERY ROW IT IS HANDED, stale or not. A pass
-            # that cannot refight a row must not drop it: a published row
-            # vanishing because a file it reads was corrected is the one
-            # outcome the archive exists to prevent.
-            ./target/release/wfsim-board "$id" site/board.json \
-              $prior $FORCE \
+            # IT PUBLISHES A WEAPON AT A TIME, WHOLE. The directory it is
+            # handed is both what it writes and where a weapon's rows under
+            # every OTHER ruler are read back from, so a file is only ever
+            # written with all of them in hand. A weapon this generation
+            # cannot speak for keeps the rows it has.
+            ./target/release/wfsim-board "$id" site/board \
+              $FORCE \
               --project \
+              --generation "$GEN" \
               --facts-in facts-known.ndjson \
-              < submissions.json > "boards/$id.yaml.new" && mv "boards/$id.yaml.new" "boards/$id.yaml" || {
+              < submissions.json > /dev/null || {
                 code=$?
-                rm -f "boards/$id.yaml.new"
                 # TWO IS "NOT YET", ANYTHING ELSE IS BROKEN. Three boards are
-                # three files and three rankings, and they differ sixfold in
-                # cost — single_target settles in an hour where group_clear takes
+                # three rankings and they differ sixfold in cost —
+                # single_target settles in an hour where group_clear takes
                 # six — so an incomplete one may not hold a complete one back.
                 if [ "$code" = "2" ]; then
                   echo "::notice::$id is not complete yet — left as it was"
@@ -669,7 +647,7 @@ jobs:
           # locally, which is a worse answer than none — docs/DISTRIBUTION.md.
           python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
           python3 scripts/board_meta.py
-          GENERATED="boards data/board_state.yaml site/board.json site/board.meta.json"
+          GENERATED="site/board data/board_state.yaml site/board.meta.json"
           if git diff --quiet -- $GENERATED; then
             echo "board unchanged — nothing to commit"
             exit 0
