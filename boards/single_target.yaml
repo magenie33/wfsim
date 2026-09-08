@@ -1414,7 +1414,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 109.87306383243249
+    score: 109.87306383243248
     fp: bf1b60c501b60958
     cost: 5.968
     mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, riven]
@@ -1450,7 +1450,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 102.66666666666667
+    score: 102.66666666666669
     fp: f814dc50f993fae6
     cost: 7.217
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -1462,7 +1462,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 100.75685699175285
+    score: 100.75685699175284
     fp: 5acc71cff08e92aa
     cost: 7.770
     mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, riven, primed_heated_charge]
@@ -1486,7 +1486,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 98.95226281705541
+    score: 98.9522628170554
     fp: f814dc50f993fae6
     cost: 5.730
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -1534,7 +1534,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 95.02359198571675
+    score: 95.02359198571676
     fp: 8c075947c955ed3a
     cost: 7.310
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -1546,7 +1546,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 94.66666666666667
+    score: 94.66666666666669
     fp: 6275d1c0db00dfc5
     cost: 5.824
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, magnetic_might, primed_convulsion, riven]
@@ -1594,7 +1594,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 93.56663815802577
+    score: 93.56663815802575
     fp: 9e4bd36e055952e0
     cost: 5.028
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, accelerated_isotope, primed_convulsion, riven]
@@ -1606,7 +1606,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 91.87829369649141
+    score: 91.8782936964914
     fp: 7f0c9d4161cc75ba
     cost: 6.195
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, accelerated_isotope, primed_convulsion, riven]
@@ -1630,7 +1630,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 90.91848786788795
+    score: 90.91848786788796
     fp: 38864d3c444d0d4e
     cost: 7.087
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, riven, pistol_pestilence, primed_heated_charge]
@@ -1642,7 +1642,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 90.79134877323241
+    score: 90.7913487732324
     fp: 8c075947c955ed3a
     cost: 7.474
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -1654,7 +1654,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
-    score: 90.33333333333333
+    score: 90.33333333333331
     fp: 8c075947c955ed3a
     cost: 7.046
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -4538,7 +4538,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
-    score: 54.596219626500556
+    score: 54.59621962650056
     fp: d779af36be60fb1b
     cost: 2.335
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -4690,7 +4690,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
-    score: 47.587599063977876
+    score: 47.58759906397787
     fp: e19aa77cc119e4ab
     cost: 2.314
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4810,7 +4810,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
-    score: 41.078564171198884
+    score: 41.07856417119888
     fp: 97c29f17d97e318d
     cost: 1.809
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4898,7 +4898,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: alternate_cycle
-    score: 36.242477397157636
+    score: 36.24247739715763
     fp: 1df2b34a9d042cdb
     cost: 1.896
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -4990,7 +4990,7 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: ballistica_prime
     mode: base
-    score: 31.961569323109142
+    score: 31.961569323109146
     fp: 38864d3c444d0d4e
     cost: 10.589
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, riven, pistol_pestilence, primed_heated_charge]
@@ -5083,7 +5083,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 29.375082786996366
+    score: 29.37508278699637
     fp: f814dc50f993fae6
     cost: 21.810
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -5107,7 +5107,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 28.720690986715358
+    score: 28.72069098671536
     fp: b895d641e8693642
     cost: 30.768
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, riven, pistol_pestilence, primed_heated_charge]
@@ -5119,7 +5119,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 28.720690986715358
+    score: 28.72069098671536
     fp: 356857e000ca9288
     cost: 30.841
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, riven, primed_heated_charge]
@@ -5131,7 +5131,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 28.332937979524726
+    score: 28.33293797952473
     fp: f814dc50f993fae6
     cost: 31.118
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -5325,7 +5325,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 26.232473850245686
+    score: 26.23247385024569
     fp: 020d7248d193f9ce
     cost: 23.549
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, riven, primed_convulsion, pistol_pestilence]
@@ -5385,7 +5385,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 25.529113937214234
+    score: 25.52911393721423
     fp: 50ed3b5d8b2e5db6
     cost: 23.045
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -5397,7 +5397,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 25.415408787529106
+    score: 25.415408787529103
     fp: 779b39fbb262ca13
     cost: 8.857
     exilus: lethal_momentum
@@ -5571,7 +5571,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 24.046212111901838
+    score: 24.04621211190184
     fp: 3b35bfcdf8b144b5
     cost: 8.193
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, creeping_bullseye, primed_convulsion, riven, primed_heated_charge]
@@ -5596,7 +5596,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 23.986963361510142
+    score: 23.986963361510146
     fp: e3b2e5d32fd573ba
     cost: 20.854
     exilus: lethal_momentum
@@ -5634,7 +5634,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 23.822292341202754
+    score: 23.82229234120275
     fp: 52b30aa45f9348d5
     cost: 13.108
     exilus: lethal_momentum
@@ -5646,7 +5646,7 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: alternate
-    score: 23.757196826863286
+    score: 23.75719682686329
     fp: 412afd4e6a2894b1
     cost: 23.716
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -5682,7 +5682,7 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 23.461923927333622
+    score: 23.461923927333626
     fp: b895d641e8693642
     cost: 27.746
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, riven, pistol_pestilence, primed_heated_charge]
@@ -5694,7 +5694,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 23.461923927333622
+    score: 23.461923927333626
     fp: 356857e000ca9288
     cost: 26.708
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, riven, primed_heated_charge]
@@ -5766,7 +5766,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 22.869897235957726
+    score: 22.86989723595773
     fp: 5166822a22f460da
     cost: 25.156
     exilus: steady_hands
@@ -5928,7 +5928,7 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: alternate
-    score: 21.672514874054638
+    score: 21.67251487405464
     fp: 6275d1c0db00dfc5
     cost: 24.577
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, magnetic_might, primed_convulsion, riven]
@@ -6035,7 +6035,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 21.295249279168438
+    score: 21.29524927916844
     fp: 412afd4e6a2894b1
     cost: 23.842
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -6059,7 +6059,7 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 20.984442454856126
+    score: 20.98444245485613
     fp: bf1b60c501b60958
     cost: 14.306
     mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, riven]
@@ -6099,7 +6099,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 20.627660341069234
+    score: 20.62766034106923
     fp: 5dbef9ee44b74d0a
     cost: 19.684
     exilus: steady_hands
@@ -6124,7 +6124,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 20.562515974086182
+    score: 20.562515974086185
     fp: e00b850dc508bc12
     cost: 11.701
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, magnetic_might, riven, frostbite, pathogen_rounds, primed_heated_charge]
@@ -6185,7 +6185,7 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: alternate
-    score: 20.090551228262466
+    score: 20.090551228262463
     fp: 3427ee54b6eacfe4
     cost: 33.921
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, riven, pistol_pestilence, primed_heated_charge]
@@ -6291,7 +6291,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: alternate
-    score: 19.300988909749666
+    score: 19.300988909749663
     fp: 8c529dc2943af62c
     cost: 19.953
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, riven, pistol_pestilence]
@@ -6436,7 +6436,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 18.541318650066238
+    score: 18.54131865006624
     fp: 3e47e1e81c820808
     cost: 13.928
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, riven]
@@ -6484,7 +6484,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 18.304144909547826
+    score: 18.304144909547823
     fp: 8b50b1f3781fead0
     cost: 12.359
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, riven]
@@ -6516,7 +6516,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: base
-    score: 18.083862539246454
+    score: 18.083862539246457
     fp: 5dbef9ee44b74d0a
     cost: 9.278
     exilus: steady_hands
@@ -7036,7 +7036,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 14.144005889906435
+    score: 14.144005889906436
     fp: c6de20971125e20d
     cost: 3.692
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -7084,7 +7084,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 12.498092419247337
+    score: 12.498092419247335
     fp: d779af36be60fb1b
     cost: 4.074
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -7092,7 +7092,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 12.349562576233845
+    score: 12.349562576233843
     fp: 67e041acfd9e01d1
     cost: 3.190
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -7124,7 +7124,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: alternate
-    score: 12.186133668067793
+    score: 12.186133668067791
     fp: 5f3a5de5e0aae650
     cost: 7.644
     mods: [primed_target_cracker, galvanized_crosshairs, galvanized_shot, barrel_diffusion, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
@@ -7140,7 +7140,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: base
-    score: 11.573490360977045
+    score: 11.573490360977043
     fp: 832f7937ff8e5955
     cost: 3.097
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
@@ -7156,7 +7156,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: base
-    score: 10.474081910161779
+    score: 10.47408191016178
     fp: 3fb23473447d0e2d
     cost: 3.165
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
@@ -7164,7 +7164,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: base
-    score: 9.810771284983973
+    score: 9.810771284983971
     fp: e6cb465794b6151e
     cost: 1.798
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
@@ -24177,7 +24177,7 @@ entries:
     valence: toxin
   - weapon: kuva_bramma
     mode: base
-    score: 1.3238094343879963
+    score: 1.3238094343879965
     fp: 8af67bfa9cd92de8
     cost: 0.914
     mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, hammer_shot, vital_sense, hellfire, thermite_rounds]
@@ -33969,7 +33969,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: magistar
     mode: heavy_slam
-    score: 1.8777080199828702
+    score: 1.8777080199828704
     fp: e5a0a7cc434c78bb
     cost: 1.570
     mods: [sacrificial_pressure, sacrificial_steel, galvanized_reflex, organ_shatter, seismic_wave, corrupt_charge, riven, shattering_storm, primed_fever_strike]
@@ -34101,7 +34101,7 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: magistar
     mode: forward
-    score: 0.40341510173972045
+    score: 0.4034151017397205
     fp: 24a97e4bf06276bf
     cost: 1.493
     mods: [primed_pressure_point, galvanized_steel, killing_blow, organ_shatter, seismic_wave, corrupt_charge, riven, shattering_storm, primed_fever_strike]
@@ -34442,7 +34442,7 @@ entries:
     arcanes: [melee_exposure]
   - weapon: magistar
     mode: forward
-    score: 0.23888846298589458
+    score: 0.23888846298589456
     fp: 936992b2c213bd33
     cost: 0.873
     mods: [sacrificial_pressure, sacrificial_steel, galvanized_reflex, gladiator_might, organ_shatter, seismic_wave, corrupt_charge, shattering_storm, volcanic_edge]
@@ -34466,7 +34466,7 @@ entries:
     arcanes: [melee_exposure]
   - weapon: magistar
     mode: forward
-    score: 0.23743336963063466
+    score: 0.23743336963063463
     fp: 0f239d5246fed832
     cost: 0.869
     mods: [blood_rush, primed_pressure_point, galvanized_reflex, galvanized_steel, gladiator_might, organ_shatter, seismic_wave, shattering_storm, primed_fever_strike]
@@ -34498,7 +34498,7 @@ entries:
     arcanes: [melee_exposure]
   - weapon: magistar
     mode: block
-    score: 0.22869468741230478
+    score: 0.2286946874123048
     fp: 0f239d5246fed832
     cost: 0.822
     mods: [blood_rush, primed_pressure_point, galvanized_reflex, galvanized_steel, gladiator_might, organ_shatter, seismic_wave, shattering_storm, primed_fever_strike]
@@ -34514,7 +34514,7 @@ entries:
     arcanes: [melee_exposure]
   - weapon: magistar
     mode: forward
-    score: 0.22734897909000482
+    score: 0.2273489790900048
     fp: f490a9dd2431a569
     cost: 1.026
     mods: [sacrificial_steel, primed_pressure_point, galvanized_reflex, gladiator_might, organ_shatter, seismic_wave, corrupt_charge, crushing_ruin, volcanic_edge]
@@ -34563,7 +34563,7 @@ entries:
     arcanes: [melee_exposure]
   - weapon: magistar
     mode: block
-    score: 0.22121129545704046
+    score: 0.2212112954570405
     fp: da03fb648496095f
     cost: 0.968
     exilus: truths_flame
@@ -34625,7 +34625,7 @@ entries:
     arcanes: [melee_exposure]
   - weapon: magistar
     mode: slide
-    score: 0.20578884698238198
+    score: 0.205788846982382
     fp: 0f239d5246fed832
     cost: 0.539
     mods: [blood_rush, primed_pressure_point, galvanized_reflex, galvanized_steel, gladiator_might, organ_shatter, seismic_wave, shattering_storm, primed_fever_strike]
@@ -34649,7 +34649,7 @@ entries:
     arcanes: [melee_exposure]
   - weapon: magistar
     mode: slide
-    score: 0.18123397012577594
+    score: 0.1812339701257759
     fp: da03fb648496095f
     cost: 0.841
     exilus: truths_flame
@@ -38558,7 +38558,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 12.603059006485505
+    score: 12.603059006485504
     fp: dcbf21bad4876104
     cost: 0.937
     mods: [primary_acuity, galvanized_aptitude, bladed_rounds, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
@@ -38580,7 +38580,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 10.645044721996985
+    score: 10.645044721996983
     fp: 96beaaeeff904379
     cost: 1.124
     exilus: ammo_drum
@@ -38588,7 +38588,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 10.645044721996985
+    score: 10.645044721996983
     fp: 29f2c0d3c4c22830
     cost: 0.848
     exilus: stabilizer
@@ -38596,7 +38596,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 10.645044721996985
+    score: 10.645044721996983
     fp: 83bccc3db5eb8fb4
     cost: 0.727
     exilus: terminal_velocity
@@ -38619,7 +38619,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 10.249613857392859
+    score: 10.24961385739286
     fp: f871617711eacdd7
     cost: 1.304
     exilus: ammo_drum
@@ -38627,7 +38627,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 10.249613857392859
+    score: 10.24961385739286
     fp: f3eb5c3896babd22
     cost: 1.178
     exilus: stabilizer
@@ -38635,7 +38635,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 10.249613857392859
+    score: 10.24961385739286
     fp: 51f9884f27bc842a
     cost: 1.356
     exilus: terminal_velocity
@@ -50528,7 +50528,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
-    score: 39.562931805179716
+    score: 39.56293180517971
     fp: 0745a21551295617
     cost: 7.067
     exilus: lethal_momentum
@@ -54048,7 +54048,7 @@ entries:
     listed: false
     score: 23.619914987581595
     fp: 6f221ed9150bd3b7
-    cost: 3.238
+    cost: 4.401
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -54154,7 +54154,7 @@ entries:
     listed: false
     score: 23.33440896040716
     fp: 0f3815812a1581db
-    cost: 2.919
+    cost: 3.835
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -54555,7 +54555,7 @@ entries:
     listed: false
     score: 22.6312380566455
     fp: 6f221ed9150bd3b7
-    cost: 4.330
+    cost: 4.271
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -54672,7 +54672,7 @@ entries:
     listed: false
     score: 22.539990154917135
     fp: bd1391832d8d696c
-    cost: 1.668
+    cost: 1.670
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -54733,7 +54733,7 @@ entries:
     listed: false
     score: 22.346117857390503
     fp: 0f3815812a1581db
-    cost: 3.231
+    cost: 3.630
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -55345,7 +55345,7 @@ entries:
     listed: false
     score: 20.884877128695035
     fp: bd1391832d8d696c
-    cost: 1.592
+    cost: 1.585
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -55358,7 +55358,7 @@ entries:
     listed: false
     score: 20.881504643973408
     fp: 729def1106252408
-    cost: 4.696
+    cost: 4.750
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -55667,7 +55667,7 @@ entries:
     listed: false
     score: 20.216301469573434
     fp: 729def1106252408
-    cost: 4.583
+    cost: 4.640
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -55941,7 +55941,7 @@ entries:
     listed: false
     score: 19.631803398883186
     fp: 9e1a9f926d7a7602
-    cost: 1.757
+    cost: 1.642
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -56286,7 +56286,7 @@ entries:
     listed: false
     score: 18.640974071720994
     fp: 35c8d3158bb7568b
-    cost: 5.038
+    cost: 4.957
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_survivors_edge]
@@ -56318,7 +56318,7 @@ entries:
     listed: false
     score: 18.561807659380236
     fp: 9e1a9f926d7a7602
-    cost: 1.188
+    cost: 1.260
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -56393,7 +56393,7 @@ entries:
     listed: false
     score: 18.370382904406817
     fp: fb519d4588b8422a
-    cost: 0.687
+    cost: 0.694
     exilus: lethal_momentum
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -56531,7 +56531,7 @@ entries:
     listed: false
     score: 17.959836047659895
     fp: 35c8d3158bb7568b
-    cost: 4.929
+    cost: 4.736
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_survivors_edge]
@@ -57431,7 +57431,7 @@ entries:
     listed: false
     score: 16.571683978638557
     fp: fb519d4588b8422a
-    cost: 0.500
+    cost: 0.639
     exilus: lethal_momentum
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -57936,7 +57936,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 15.967116546060065
+    score: 15.967116546060064
     fp: 3ef0e81f9a6799a4
     cost: 23.595
     exilus: lethal_momentum
@@ -57972,7 +57972,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 15.964244972769903
+    score: 15.964244972769905
     fp: ae2763fc749f3291
     cost: 10.066
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, primed_convulsion, riven, primed_heated_charge]
@@ -58294,7 +58294,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 15.706092550455837
+    score: 15.706092550455836
     fp: 5acc71cff08e92aa
     cost: 10.683
     mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, riven, primed_heated_charge]
@@ -58334,7 +58334,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 15.690038883587759
+    score: 15.69003888358776
     fp: 6237b6d67d6889c6
     cost: 26.100
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, accelerated_isotope, primed_convulsion, riven]
@@ -58482,7 +58482,7 @@ entries:
     listed: false
     score: 15.603993855914581
     fp: 956bc3eb2ed90af6
-    cost: 0.706
+    cost: 0.700
     exilus: lethal_momentum
     mods: [pistol_acuity, primed_expel_corpus, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -58625,7 +58625,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 15.500556094102773
+    score: 15.500556094102771
     fp: 8ce9fee1df6e2dfa
     cost: 11.413
     exilus: lethal_momentum
@@ -59020,7 +59020,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 15.156483922186913
+    score: 15.156483922186911
     fp: 5be3456c8786e764
     cost: 10.060
     exilus: lethal_momentum
@@ -59448,7 +59448,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 14.955500871192745
+    score: 14.955500871192744
     fp: 0ed33911bb1d9a82
     cost: 9.334
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -59545,7 +59545,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 14.888202130267281
+    score: 14.88820213026728
     fp: 950654aa76d4f359
     cost: 14.629
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, creeping_bullseye, primed_convulsion, riven, primed_heated_charge]
@@ -59597,7 +59597,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 14.858247244600847
+    score: 14.858247244600848
     fp: 8c26cc3701c01059
     cost: 13.260
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, ice_storm, riven, primed_heated_charge]
@@ -59659,7 +59659,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 14.748370200877085
+    score: 14.748370200877083
     fp: a58c8a7039b35fc6
     cost: 32.438
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven, primed_heated_charge]
@@ -59694,7 +59694,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 14.698249580353187
+    score: 14.698249580353188
     fp: 09851195f115d087
     cost: 4.869
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -60138,7 +60138,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 14.312380260855285
+    score: 14.312380260855283
     fp: a58c8a7039b35fc6
     cost: 33.028
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven, primed_heated_charge]
@@ -60151,7 +60151,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 14.302650135634579
+    score: 14.30265013563458
     fp: becce385e5a1d36e
     cost: 10.097
     exilus: lethal_momentum
@@ -60179,7 +60179,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 14.260248430112501
+    score: 14.2602484301125
     fp: c808cd1e26c80a7c
     cost: 13.902
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -60883,7 +60883,7 @@ entries:
     listed: false
     score: 13.86757118493795
     fp: 956bc3eb2ed90af6
-    cost: 0.569
+    cost: 0.652
     exilus: lethal_momentum
     mods: [pistol_acuity, primed_expel_corpus, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -61349,7 +61349,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 13.472623348754441
+    score: 13.47262334875444
     fp: 48514ac6096cf823
     cost: 42.290
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
@@ -61641,7 +61641,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 13.302129278902985
+    score: 13.302129278902983
     fp: 4b256dcd721bdb6a
     cost: 13.847
     exilus: lethal_momentum
@@ -61713,7 +61713,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 13.244655815350853
+    score: 13.244655815350852
     fp: 8b50b1f3781fead0
     cost: 26.190
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, riven]
@@ -62395,7 +62395,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 12.843895485213903
+    score: 12.843895485213904
     fp: c5fb68a7e99612c1
     cost: 6.313
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -62587,7 +62587,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 12.714891075120345
+    score: 12.714891075120343
     fp: fa4ff188efc49252
     cost: 18.008
     mods: [galvanized_diffusion, hornet_strike, galvanized_crosshairs, galvanized_shot, accelerated_isotope, magnetic_might, primed_convulsion, riven]
@@ -63212,7 +63212,7 @@ entries:
     listed: false
     score: 12.376622202462343
     fp: 91d2e4440ecb5c4e
-    cost: 0.742
+    cost: 0.729
     mods: [pistol_acuity, primed_expel_orokin, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
     arcanes: [secondary_outburst]
@@ -63582,7 +63582,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 12.229898036231917
+    score: 12.229898036231916
     fp: 8c26cc3701c01059
     cost: 36.372
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, ice_storm, riven, primed_heated_charge]
@@ -63854,7 +63854,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 12.042410720181005
+    score: 12.042410720181003
     fp: 2e0faabae629f80e
     cost: 7.233
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven, primed_heated_charge]
@@ -64186,7 +64186,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 11.888476384474487
+    score: 11.888476384474489
     fp: 4b256dcd721bdb6a
     cost: 29.063
     exilus: lethal_momentum
@@ -64864,7 +64864,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 11.573774441413061
+    score: 11.57377444141306
     fp: cf0b2422b8dbc850
     cost: 10.534
     exilus: lethal_momentum
@@ -65287,7 +65287,7 @@ entries:
   - weapon: ballistica_prime
     mode: base
     listed: false
-    score: 11.318606454155491
+    score: 11.318606454155493
     fp: 988688f56708d161
     cost: 8.982
     exilus: lethal_momentum
@@ -65453,7 +65453,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 11.210427766901795
+    score: 11.210427766901796
     fp: d779af36be60fb1b
     cost: 6.377
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -65560,7 +65560,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 11.131806320427339
+    score: 11.13180632042734
     fp: c808cd1e26c80a7c
     cost: 26.299
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
@@ -65573,7 +65573,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 11.127300895523943
+    score: 11.127300895523945
     fp: 65c3d82829720fa5
     cost: 22.300
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, riven]
@@ -65608,7 +65608,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 11.095001524188639
+    score: 11.09500152418864
     fp: 89d70af5f4b913e8
     cost: 24.826
     exilus: lethal_momentum
@@ -66623,7 +66623,7 @@ entries:
     listed: false
     score: 10.58935381893784
     fp: 91d2e4440ecb5c4e
-    cost: 0.680
+    cost: 0.665
     mods: [pistol_acuity, primed_expel_orokin, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
     arcanes: [secondary_outburst]
@@ -67885,7 +67885,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 9.969157624699271
+    score: 9.969157624699273
     fp: f998f2e32287ad90
     cost: 20.629
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_convulsion, riven, frostbite]
@@ -67963,7 +67963,7 @@ entries:
     listed: false
     score: 9.9349256217484
     fp: 80e395be829326ee
-    cost: 1.822
+    cost: 1.776
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -68660,7 +68660,7 @@ entries:
   - weapon: ballistica_prime
     mode: alternate
     listed: false
-    score: 9.541823770717855
+    score: 9.541823770717857
     fp: 28431243a766ee42
     cost: 12.359
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -68947,7 +68947,7 @@ entries:
     listed: false
     score: 9.360113876470079
     fp: 80e395be829326ee
-    cost: 1.748
+    cost: 1.731
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -69910,7 +69910,7 @@ entries:
     listed: false
     score: 8.884515639179945
     fp: 61e05bb3efd156fa
-    cost: 1.860
+    cost: 1.785
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -70217,7 +70217,7 @@ entries:
     listed: false
     score: 8.721788201913753
     fp: b656e21e28bcc75b
-    cost: 2.127
+    cost: 2.100
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -70862,7 +70862,7 @@ entries:
     listed: false
     score: 8.414256769144577
     fp: 61e05bb3efd156fa
-    cost: 1.745
+    cost: 1.733
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -70875,7 +70875,7 @@ entries:
     listed: false
     score: 8.409227967669828
     fp: b656e21e28bcc75b
-    cost: 1.607
+    cost: 2.005
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge, frostbite]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -71070,7 +71070,7 @@ entries:
     listed: false
     score: 8.322489287466997
     fp: fb519d4588b8422a
-    cost: 1.535
+    cost: 1.556
     exilus: lethal_momentum
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -71093,7 +71093,7 @@ entries:
     listed: false
     score: 8.320221216791483
     fp: cf0b2422b8dbc850
-    cost: 13.305
+    cost: 13.341
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, accelerated_isotope, primed_convulsion, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_elemental_balance]
@@ -71172,7 +71172,7 @@ entries:
     listed: false
     score: 8.302617307293849
     fp: c0f2b5f16fd8d29a
-    cost: 1.463
+    cost: 1.251
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -71226,7 +71226,7 @@ entries:
     listed: false
     score: 8.282386247813534
     fp: b656e21e28bcc75b
-    cost: 2.065
+    cost: 2.046
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -71536,7 +71536,7 @@ entries:
     listed: false
     score: 8.12179153458309
     fp: 4a35221a56ea0a60
-    cost: 12.478
+    cost: 11.920
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, primed_pistol_gambit, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
@@ -71594,7 +71594,7 @@ entries:
     listed: false
     score: 8.096785876150758
     fp: 85180e2ebdd23e94
-    cost: 9.427
+    cost: 13.179
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_convulsion, riven, frostbite]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_elemental_balance]
     arcanes: [secondary_deadhead]
@@ -72026,7 +72026,7 @@ entries:
     listed: false
     score: 7.936164777195006
     fp: 4229efe61be22f1c
-    cost: 15.992
+    cost: 16.902
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_elemental_balance]
@@ -72040,7 +72040,7 @@ entries:
     listed: false
     score: 7.933438756503009
     fp: b656e21e28bcc75b
-    cost: 1.660
+    cost: 1.876
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge, frostbite]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -72075,7 +72075,7 @@ entries:
     listed: false
     score: 7.924782979715835
     fp: c0f2b5f16fd8d29a
-    cost: 1.585
+    cost: 1.588
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -72187,7 +72187,7 @@ entries:
     listed: false
     score: 7.881302893467439
     fp: 404034f4ab2d0451
-    cost: 7.756
+    cost: 7.869
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -73232,7 +73232,7 @@ entries:
     listed: false
     score: 7.373998166600652
     fp: fb519d4588b8422a
-    cost: 0.563
+    cost: 0.567
     exilus: lethal_momentum
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -73879,7 +73879,7 @@ entries:
     listed: false
     score: 7
     fp: 2d78b402bec53af5
-    cost: 6.461
+    cost: 5.156
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -74362,7 +74362,7 @@ entries:
     listed: false
     score: 6.866547976585492
     fp: e4e8dc2393fe7e60
-    cost: 8.426
+    cost: 8.549
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -75098,7 +75098,7 @@ entries:
     listed: false
     score: 6.642400577991791
     fp: 0745a21551295617
-    cost: 6.530
+    cost: 7.863
     exilus: lethal_momentum
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -75554,7 +75554,7 @@ entries:
     listed: false
     score: 6.4819089728277595
     fp: a7e44e2c6470091e
-    cost: 13.225
+    cost: 13.047
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_convulsion, jolt, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_elemental_balance]
     arcanes: [secondary_deadhead]
@@ -76147,7 +76147,7 @@ entries:
     listed: false
     score: 6.256470504552476
     fp: e7682743cad115b3
-    cost: 3.662
+    cost: 6.354
     exilus: lethal_momentum
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -77164,7 +77164,7 @@ entries:
     listed: false
     score: 5.874563503893198
     fp: 404034f4ab2d0451
-    cost: 12.076
+    cost: 13.038
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -77807,7 +77807,7 @@ entries:
     listed: false
     score: 5.664058954227268
     fp: 956bc3eb2ed90af6
-    cost: 0.815
+    cost: 0.788
     exilus: lethal_momentum
     mods: [pistol_acuity, primed_expel_corpus, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -78761,7 +78761,7 @@ entries:
     listed: false
     score: 5.330951401215183
     fp: 2d78b402bec53af5
-    cost: 12.907
+    cost: 13.091
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -79121,7 +79121,7 @@ entries:
     listed: false
     score: 5.172828101637137
     fp: 91d2e4440ecb5c4e
-    cost: 1.728
+    cost: 1.724
     mods: [pistol_acuity, primed_expel_orokin, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
     arcanes: [secondary_outburst]
@@ -79994,7 +79994,7 @@ entries:
     listed: false
     score: 4.842413186689445
     fp: 91d2e4440ecb5c4e
-    cost: 0.947
+    cost: 0.929
     mods: [pistol_acuity, primed_expel_orokin, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
     arcanes: [secondary_outburst]
@@ -80583,7 +80583,7 @@ entries:
     listed: false
     score: 4.6239450150177595
     fp: ea8366514f3804ab
-    cost: 1.118
+    cost: 0.855
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge, scorch]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -80951,7 +80951,7 @@ entries:
     listed: false
     score: 4.540785605521348
     fp: 5bff8d8e6bf4def9
-    cost: 7.552
+    cost: 7.508
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_survivors_edge]
@@ -81749,7 +81749,7 @@ entries:
     listed: false
     score: 4.273020418829007
     fp: b45fb719358fcff9
-    cost: 3.009
+    cost: 2.538
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_merciless]
@@ -82003,7 +82003,7 @@ entries:
     listed: false
     score: 4.230332810424971
     fp: 0745a21551295617
-    cost: 8.554
+    cost: 15.009
     exilus: lethal_momentum
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -82671,7 +82671,7 @@ entries:
     listed: false
     score: 3.939512488499693
     fp: e7682743cad115b3
-    cost: 12.206
+    cost: 6.983
     exilus: lethal_momentum
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -83972,7 +83972,7 @@ entries:
     listed: false
     score: 3.5016663007658906
     fp: ea8366514f3804ab
-    cost: 0.867
+    cost: 0.601
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge, scorch]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -85218,7 +85218,7 @@ entries:
     listed: false
     score: 2.9886548076777064
     fp: e4e8dc2393fe7e60
-    cost: 9.718
+    cost: 14.837
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -85772,7 +85772,7 @@ entries:
     listed: false
     score: 2.7628915546473913
     fp: 6f221ed9150bd3b7
-    cost: 7.271
+    cost: 6.902
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -87599,7 +87599,7 @@ entries:
     listed: false
     score: 2.3352089888628993
     fp: 0f3815812a1581db
-    cost: 5.637
+    cost: 5.574
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -87775,7 +87775,7 @@ entries:
     listed: false
     score: 2.311614344993924
     fp: 729def1106252408
-    cost: 5.920
+    cost: 5.352
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -88076,7 +88076,7 @@ entries:
     listed: false
     score: 2.2691356387402437
     fp: b45fb719358fcff9
-    cost: 6.744
+    cost: 6.680
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_merciless]
@@ -88188,7 +88188,7 @@ entries:
     listed: false
     score: 2.250893671853155
     fp: 814aabd7484150d0
-    cost: 0.364
+    cost: 0.547
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_irradiate]
@@ -88411,7 +88411,7 @@ entries:
     listed: false
     score: 2.213814123228163
     fp: 814aabd7484150d0
-    cost: 0.198
+    cost: 0.228
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_irradiate]
@@ -90090,7 +90090,7 @@ entries:
     listed: false
     score: 1.8969882771668314
     fp: 6f221ed9150bd3b7
-    cost: 11.766
+    cost: 14.000
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -91093,7 +91093,7 @@ entries:
     listed: false
     score: 1.6475470902585856
     fp: 35c8d3158bb7568b
-    cost: 7.144
+    cost: 7.147
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_survivors_edge]
@@ -91157,7 +91157,7 @@ entries:
     listed: false
     score: 1.640020193295177
     fp: 0f3815812a1581db
-    cost: 8.998
+    cost: 11.469
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, accelerated_isotope, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -91215,7 +91215,7 @@ entries:
     listed: false
     score: 1.634898440240328
     fp: 5bff8d8e6bf4def9
-    cost: 14.565
+    cost: 15.080
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_survivors_edge]
@@ -92992,7 +92992,7 @@ entries:
     listed: false
     score: 1.3280955083689274
     fp: 729def1106252408
-    cost: 14.812
+    cost: 14.686
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_critical_parallel]
@@ -94045,7 +94045,7 @@ entries:
     listed: false
     score: 1.2099034831425128
     fp: 35c8d3158bb7568b
-    cost: 11.311
+    cost: 8.607
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_swift_deliverance, ballistica_prime_survivors_edge]
@@ -95852,7 +95852,7 @@ entries:
     listed: false
     score: 0.9880126771519542
     fp: 9e1a9f926d7a7602
-    cost: 2.141
+    cost: 2.041
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -96276,7 +96276,7 @@ entries:
     listed: false
     score: 0.9626167511298853
     fp: 9e1a9f926d7a7602
-    cost: 5.398
+    cost: 5.400
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -96610,7 +96610,7 @@ entries:
     listed: false
     score: 0.9419242266899016
     fp: bd1391832d8d696c
-    cost: 2.067
+    cost: 2.042
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -96910,7 +96910,7 @@ entries:
     listed: false
     score: 0.9201787806921653
     fp: bd1391832d8d696c
-    cost: 4.394
+    cost: 5.423
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -98938,7 +98938,7 @@ entries:
     listed: false
     score: 0.6645670196583953
     fp: 61e05bb3efd156fa
-    cost: 2.033
+    cost: 2.044
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -99085,7 +99085,7 @@ entries:
     listed: false
     score: 0.6559139637329193
     fp: b656e21e28bcc75b
-    cost: 1.926
+    cost: 2.227
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -99191,7 +99191,7 @@ entries:
     listed: false
     score: 0.651828849786197
     fp: 80e395be829326ee
-    cost: 5.292
+    cost: 3.096
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -99492,7 +99492,7 @@ entries:
     listed: false
     score: 0.6351609905644365
     fp: c0f2b5f16fd8d29a
-    cost: 1.913
+    cost: 1.794
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -99838,7 +99838,7 @@ entries:
     listed: false
     score: 0.6127577709186325
     fp: b656e21e28bcc75b
-    cost: 2.134
+    cost: 2.091
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge, frostbite]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -99860,7 +99860,7 @@ entries:
     listed: false
     score: 0.6107961558423387
     fp: 61e05bb3efd156fa
-    cost: 5.580
+    cost: 5.310
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -99992,7 +99992,7 @@ entries:
     listed: false
     score: 0.6037725338692271
     fp: b656e21e28bcc75b
-    cost: 3.704
+    cost: 6.084
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, primed_heated_charge, riven]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -100257,7 +100257,7 @@ entries:
     listed: false
     score: 0.5924851917145277
     fp: c0f2b5f16fd8d29a
-    cost: 3.674
+    cost: 4.822
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -100576,7 +100576,7 @@ entries:
     listed: false
     score: 0.5741772990846521
     fp: b656e21e28bcc75b
-    cost: 5.537
+    cost: 5.558
     exilus: lethal_momentum
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, riven, primed_heated_charge, frostbite]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -101364,7 +101364,7 @@ entries:
   - weapon: kuva_bramma
     mode: base
     listed: false
-    score: 0.46814291852481843
+    score: 0.4681429185248184
     fp: 4cf5ba9f72d38960
     cost: 0.910
     mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vital_sense, rime_rounds, infected_clip, thermite_rounds]
@@ -102233,7 +102233,7 @@ entries:
     listed: false
     score: 0.3197956910301168
     fp: ea8366514f3804ab
-    cost: 1.064
+    cost: 0.619
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge, scorch]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
@@ -102509,7 +102509,7 @@ entries:
     listed: false
     score: 0.30948379133999043
     fp: ea8366514f3804ab
-    cost: 1.531
+    cost: 2.254
     exilus: lethal_momentum
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, pistol_elementalist, riven, primed_heated_charge, scorch]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
