@@ -454,8 +454,20 @@ jobs:
   # was given, against the 1.5 s the shards spent computing them.
   publish:
     needs: [submissions, score]
-    if: needs.submissions.outputs.wired == 'true'
-      && needs.submissions.outputs.work != 'false'
+    # A SHARD THAT DID THE WORK AND FAILED TO UPLOAD IT MUST NOT COST THE RUN.
+    # Every shard BANKS its scores to the store before it uploads anything, so
+    # the store is the authority and the artifact is a convenience — and an
+    # `if:` with no status function implies `success()`, which made one
+    # shard's failure skip the assembly. Measured: a full rescore computed all
+    # 128 shards, banked all of them, and published nothing because GitHub's
+    # artifact service timed out on one of them after five retries. Five and a
+    # half hours of correct work, thrown away by a transient service.
+    #
+    # `!cancelled()` is what lifts the implied `success()`; `submissions` is
+    # still required, because without the library there is nothing to assemble.
+    if: ${{ !cancelled() && needs.submissions.result == 'success'
+      && needs.submissions.outputs.wired == 'true'
+      && needs.submissions.outputs.work != 'false' }}
     runs-on: ubuntu-latest
     # ONE PUBLISH AT A TIME, ACROSS EVERY RUN. The workflow's own groups keep
     # the schedule and the buttons apart so a long manual rescore cannot stand
