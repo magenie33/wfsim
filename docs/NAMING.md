@@ -4,8 +4,8 @@
 > information away for brevity — that is what makes a codebase unmaintainable.
 >
 
-This file is DERIVED, not invented. Every rule below was read off the code that
-already existed, and the counts are the evidence for which spelling won. The
+This file is DERIVED, not invented. Every rule in §1–§7 was read off the code
+that already existed, and the counts are the evidence for which spelling won. The
 roster was ~250 weapons and ~1,100 data keys deep when it was written, which is
 late enough that the patterns are real and early enough that fixing them cost
 one afternoon.
@@ -134,6 +134,50 @@ everywhere also rewrote the checker's own row — `("ms", "multishot")` became
 needing to become itself, 335 of them. `the_table_is_not_a_fixed_point` refuses
 any rule whose two halves are equal, because that failure reads as a codebase
 problem when it is a one-row checker problem.
+
+## 8. AN INFRASTRUCTURE RESOURCE IS NAMED FOR WHAT IT HOLDS
+
+```
+<product>-<what it holds>
+```
+
+| holds | resource | binding |
+| --- | --- | --- |
+| the site and its api | `wfsim` | — |
+| the builds players sent | `wfsim-library` | `LIBRARY` |
+| the scores that were computed | `wfsim-scores` | `R2_BUCKET` |
+| supporter records | `wfsim-supporters` | `SUPPORT` |
+
+Read off the bindings, which already name a ROLE and never a product: `LIBRARY`,
+`SUBMISSIONS`, `SUPPORT`, `ASSETS`. The worker takes the bare product name
+because it is not a container holding the product — it IS the site.
+
+**THE TYPE IS NEVER IN THE NAME, AND NEITHER IS THE VENDOR.** A console lists
+one type per section and a command carries its own (`wrangler d1 execute`, `aws
+s3 cp`), so a name spending its one field on either says nothing the reader did
+not already have. That is §4 at the account's scale: `wfsim-db` costs what
+`bd_eximus_expiry` costs.
+
+**THE TEST IS A MIGRATION.** *Move it to another vendor's other product — is the
+name still true?* `wfsim-library` holds the builds players sent on D1, on
+SQLite, on Postgres and on whatever replaces them, because what a store holds
+does not change when where it lives does. `wfsim-db` and `wfsim-r2` are false
+the day the store moves, and neither said what was in it while it was true.
+
+**THE TYPE LIVES IN THE CONFIG KEY** — `D1_DATABASE_ID`, `R2_BUCKET` — which is
+the layer that has to be rewritten to change vendor anyway. The resource name
+says the CONTENT, the binding says the ROLE, and the config says the PRODUCT, so
+a move rewrites exactly the one that was about the product.
+
+**HYPHENS, NOT UNDERSCORES.** An object store's name has to be DNS-compatible —
+lowercase, 3–63 characters, no underscores — so every resource follows the
+constraint the strictest of them carries. §1's shape governs code and data keys,
+which have no such rule; the two conventions are separate because the two
+namespaces are.
+
+**AN ENVIRONMENT JOINS THE NAME WHEN A SECOND ONE EXISTS**, and not before. A
+`prod` in every name while there is one environment distinguishes nothing. The
+second names itself — `wfsim-staging-library` — and the first keeps what it has.
 
 ---
 
