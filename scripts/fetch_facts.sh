@@ -18,6 +18,13 @@ set -euo pipefail
 # A PAGE, AND THE LOOP IS BOUNDED. D1 answers a query whole, so the page is
 # about the size of the answer rather than about a cursor: 5,000 rows is a few
 # megabytes of json, and a generation is about 22,656 rows.
+#
+# READ ONCE A RUN, NEVER ONCE A JOB. D1 meters rows READ — five million a day on
+# the free plan — and thirty-two shards each asking for the same generation is
+# thirty-two times the rows for one answer: about a million a run, which spends
+# the day's allowance in five. The submissions job reads it and hands it down as
+# an artifact; only the ASSEMBLY reads again, because the shards were still
+# shipping when that artifact was taken.
 PAGE=5000
 MAX_PAGES=200
 

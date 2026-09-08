@@ -301,6 +301,15 @@ jobs:
           export CF_D1_DATABASE
           bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
 
+
+      # …AND HANDED TO EVERY JOB BELOW, so the database is read ONCE a run.
+      - uses: actions/upload-artifact@v4
+        if: steps.wired.outputs.yes == 'true'
+        with:
+          name: facts
+          path: facts-known.ndjson
+          retention-days: 1
+          if-no-files-found: ignore
       - name: is there anything to score
         id: work
         if: steps.wired.outputs.yes == 'true'
@@ -382,27 +391,17 @@ jobs:
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
-      # REUSE IS EXACT, NOT AN APPROXIMATION. With the fingerprint unchanged the
-      # stored score is the number this run would compute, so re-running the
-      # fight would be spending an hour to reproduce it — and only submissions
-      # with no row yet cost anything. The manual buttons are what override it,
-      # by FORCING rows rather than by withholding a prior board.
-      # WHAT THIS GENERATION ALREADY HOLDS. One query, ordered and paged,
-      # in place of a directory of files merged by filename order — which is
-      # how a whole rescore came to be discarded and then swept away.
+      # THE SAME GENERATION EVERY JOB WAS HANDED, as an artifact. Read once
+      # in the job above and passed down: thirty-two shards each asking the
+      # database for the same rows is thirty-two times the rows read for one
+      # answer, and D1 meters rows READ — five million a day on the free
+      # plan, which that shape spends in a handful of runs.
       #
-      # UNCONFIGURED IS AN EMPTY GENERATION, not a failure: the run then
-      # computes everything, which is what it did before there was one.
-      - name: read this generation's facts
-        env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
-          bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+      # …AND IT MEANS EVERY SHARD DECIDES FROM THE SAME FACTS, which is what
+      # lets them agree on who owns which row without talking to each other.
+      - uses: actions/download-artifact@v4
+        with:
+          name: facts
 
       - name: score this shard of every benchmark
         run: |
@@ -520,20 +519,11 @@ jobs:
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
-      # TWO OUTPUTS: the canonical yaml, and the json the PAGE fetches.
-      #
-      # It does NOT regenerate the whole site: that fails on a clean runner
-      # because `web/cache/img/` is gitignored, and the images are not even the
-      # real problem. A board that changes hourly must not need a 2.5 MB wasm
-      # rebuilt to reach anyone — install wasm-bindgen, fetch 300
-      # images, recompile, to change a few numbers. The board is fetched at
-      # runtime now, so this writes two small files and is done.
-      # WHAT THIS GENERATION ALREADY HOLDS. One query, ordered and paged,
-      # in place of a directory of files merged by filename order — which is
-      # how a whole rescore came to be discarded and then swept away.
-      #
-      # UNCONFIGURED IS AN EMPTY GENERATION, not a failure: the run then
-      # computes everything, which is what it did before there was one.
+      # THE GENERATION AS IT IS NOW, not as it was when this run started. The
+      # shards were still shipping while the artifact above was taken, so an
+      # assembly handed that copy publishes a generation without this run's own
+      # measurements in it. ONE job reads fresh, which is one read and not
+      # thirty-two.
       - name: read this generation's facts
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
@@ -544,6 +534,7 @@ jobs:
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
           bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+
 
       - name: assemble every benchmark
         run: |
