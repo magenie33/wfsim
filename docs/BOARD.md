@@ -957,15 +957,15 @@ assets, and until the board there was no script at all. Two consequences:
    that.
 
    ```sh
-   npx wrangler d1 create wfsim-library
-   npx wrangler d1 execute wfsim-library --remote --file worker/schema.sql
+   npx wrangler d1 create wfsim
+   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
    ```
 
    …then declare it beside the KV namespace, in the file for the same reason:
 
    ```jsonc
    "d1_databases": [
-     { "binding": "LIBRARY", "database_name": "wfsim-library",
+     { "binding": "LIBRARY", "database_name": "wfsim",
        "database_id": "<id from the create above>" }
    ]
    ```
@@ -974,7 +974,7 @@ assets, and until the board there was no script at all. Two consequences:
    reading it; this writes a second copy that nothing looks at yet, which is
    what makes the step reversible — drop the binding and the system is exactly
    what it was. What it buys immediately is that the library becomes something
-   you can ASK A QUESTION about (`wrangler d1 execute wfsim-library --remote
+   you can ASK A QUESTION about (`wrangler d1 execute wfsim --remote
    --command "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2
    DESC LIMIT 20"`) and something you can DUMP, which KV is not.
 

@@ -135,39 +135,41 @@ needing to become itself, 335 of them. `the_table_is_not_a_fixed_point` refuses
 any rule whose two halves are equal, because that failure reads as a codebase
 problem when it is a one-row checker problem.
 
-## 8. AN INFRASTRUCTURE RESOURCE IS NAMED FOR WHAT IT HOLDS
+## 8. AN INFRASTRUCTURE RESOURCE IS NAMED AT THE GRANULARITY IT IS PROVISIONED
 
-```
-<product>-<what it holds>
-```
+One worker, one bucket, one database — each holding everything of its kind for
+this product, because the cheap shape is a container with several things inside
+it and not a container per thing. The CONTENT is named one level down.
 
-| holds | resource | binding |
+| resource | name | what is inside |
 | --- | --- | --- |
-| the site and its api | `wfsim` | — |
-| the builds players sent | `wfsim-library` | `LIBRARY` |
-| the scores that were computed | `wfsim-scores` | `R2_BUCKET` |
-| supporter records | `wfsim-supporters` | `SUPPORT` |
+| Worker | `wfsim` | the site and its api |
+| R2 bucket | `wfsim` | `scores/`, and the next prefix |
+| D1 database | `wfsim` | `builds`, `scores` |
+| KV, a second namespace | `wfsim-supporters` | supporter records |
 
-Read off the bindings, which already name a ROLE and never a product: `LIBRARY`,
-`SUBMISSIONS`, `SUPPORT`, `ASSETS`. The worker takes the bare product name
-because it is not a container holding the product — it IS the site.
+**A NAME DESCRIBES THE RESOURCE, NOT WHAT HAPPENS TO BE IN IT.** A bucket named
+for one prefix is false the day a second prefix is added, and opening a second
+BUCKET to keep it true buys a credential scope, a lifecycle config and a domain
+for nothing. A prefix and a table cost none of that, which is where content
+belongs.
+
+**A SECOND RESOURCE OF ONE TYPE NEEDS A BOUNDARY**, and takes its name from
+that boundary: a different lifecycle, a different write path, a blast radius
+worth separating. `wfsim-supporters` is its own namespace because a public
+submission endpoint and a payment webhook should not be able to reach each
+other's keys.
 
 **THE TYPE IS NEVER IN THE NAME, AND NEITHER IS THE VENDOR.** A console lists
 one type per section and a command carries its own (`wrangler d1 execute`, `aws
-s3 cp`), so a name spending its one field on either says nothing the reader did
-not already have. That is §4 at the account's scale: `wfsim-db` costs what
-`bd_eximus_expiry` costs.
-
-**THE TEST IS A MIGRATION.** *Move it to another vendor's other product — is the
-name still true?* `wfsim-library` holds the builds players sent on D1, on
-SQLite, on Postgres and on whatever replaces them, because what a store holds
-does not change when where it lives does. `wfsim-db` and `wfsim-r2` are false
-the day the store moves, and neither said what was in it while it was true.
+s3 cp`), so a name spending its field on either says nothing the reader did not
+already have. That is §4 at the account's scale: `wfsim-db` costs what
+`bd_eximus_expiry` costs, and `wfsim-r2` is false the day the store moves.
 
 **THE TYPE LIVES IN THE CONFIG KEY** — `D1_DATABASE_ID`, `R2_BUCKET` — which is
-the layer that has to be rewritten to change vendor anyway. The resource name
-says the CONTENT, the binding says the ROLE, and the config says the PRODUCT, so
-a move rewrites exactly the one that was about the product.
+the layer a vendor change rewrites anyway, and which is therefore also what to
+GREP for. The resource name says the product, the binding says the role in code
+(`env.LIBRARY`), and the config says the product's vendor.
 
 **HYPHENS, NOT UNDERSCORES.** An object store's name has to be DNS-compatible —
 lowercase, 3–63 characters, no underscores — so every resource follows the
@@ -177,7 +179,7 @@ namespaces are.
 
 **AN ENVIRONMENT JOINS THE NAME WHEN A SECOND ONE EXISTS**, and not before. A
 `prod` in every name while there is one environment distinguishes nothing. The
-second names itself — `wfsim-staging-library` — and the first keeps what it has.
+second names itself — `wfsim-staging` — and the first keeps what it has.
 
 ---
 

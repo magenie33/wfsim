@@ -1,7 +1,7 @@
 -- THE LIBRARY, AS A DATABASE.
 --
---   npx wrangler d1 create wfsim-library
---   npx wrangler d1 execute wfsim-library --remote --file worker/schema.sql
+--   npx wrangler d1 create wfsim
+--   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
 --
 -- …then declare the binding in `wrangler.jsonc` (see docs/BOARD.md §Setup) and
 -- deploy. Until the binding exists the mirror in `worker/index.js` is a no-op,
