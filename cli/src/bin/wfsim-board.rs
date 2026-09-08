@@ -887,6 +887,11 @@ fn main() {
     // costs a row on this board rather than an hour on the merge.
     let project = has_flag("--project");
     let mut absent = 0usize;
+    // WHICH WEAPONS THIS GENERATION CANNOT SPEAK FOR YET. The publication unit
+    // is a WEAPON, because that is the file the page fetches, and a file is only
+    // ever written whole — so a weapon with one unmeasured row keeps the rows it
+    // has until every one of them is measured.
+    let mut unready: std::collections::BTreeSet<String> = Default::default();
     let deadline = flag("--deadline")
         .and_then(|s| s.parse::<u64>().ok())
         .map(std::time::Duration::from_secs);
@@ -1363,6 +1368,7 @@ fn main() {
                     // measured is absent from it and lands on the next one.
                     if project {
                         absent += 1;
+                        unready.insert(v.weapon.clone());
                         deferred_ids.insert(identity_of(&key));
                         continue;
                     }
@@ -1734,42 +1740,6 @@ fn main() {
         listed.len(),
         held.len(),
     );
-    // A BOARD MAY NOT SHRINK BY SURPRISE — the same tripwire `guard_shrink` puts
-    // in front of the library, in front of the thing derived from it.
-    //
-    // THE PRIOR BOARD IS NOT A SOURCE OF NUMBERS HERE. It is the only thing a
-    // short publish can be measured against: the assembly publishes one
-    // generation, and an INCOMPLETE generation publishes a board missing every
-    // row it does not hold. Ninety percent, because rows leave a board honestly
-    // — a build expires, a weapon's rows all fall under the floor — and losing
-    // a tenth of them between two runs is a generation that is not ready.
-    //
-    // IT REFUSES RATHER THAN WARNS. A board committed short is a board the next
-    // run reads as the prior one, and by then the rows are gone from the file
-    // the site serves.
-    if project {
-        if let Some(path) = flag("--reuse") {
-            if let Ok(text) = std::fs::read_to_string(&path) {
-                let prior_rows = wfsim_engine::boards_data::parse(&text)
-                    .map(|b| b.entries.len())
-                    .unwrap_or(0);
-                let floor = prior_rows * 9 / 10;
-                let now = kept.len() + below.len();
-                if prior_rows > 0 && now < floor {
-                    eprintln!(
-                        "::notice::{bench_id}: the generation holds {now} rows against {prior_rows} on the board — under the floor of {floor}, so this board is not published yet"
-                    );
-                    // EXIT 2, NOT 1 — AND THE RULERS DO NOT BLOCK EACH OTHER.
-                    // Three boards are three files and three rankings, and they
-                    // differ sixfold in cost: `single_target` settles in an hour
-                    // where `group_clear` takes six. A shared exit code under
-                    // `set -e` made the cheap boards wait for the expensive one,
-                    // which is two independent things coupled by a loop.
-                    std::process::exit(2);
-                }
-            }
-        }
-    }
 
     // ---- THE VERDICT, and nothing is written on this path -------------
     //
@@ -1989,6 +1959,10 @@ fn main() {
         if let Ok(prior) = std::fs::read_to_string(&path) {
             if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&prior) {
                 for (weapon, rows) in map {
+                    // A WEAPON THIS GENERATION CANNOT SPEAK FOR YET KEEPS EVERY
+                    // ROW IT HAS, this ruler's included: a file written from an
+                    // incomplete source is a file missing what the source lacks.
+                    let hold_all = unready.contains(&weapon);
                     let keep: Vec<Value> = rows
                         .as_array()
                         .map(|a| {
@@ -1996,7 +1970,7 @@ fn main() {
                                 .filter(|r| {
                                     let b =
                                         r.get("benchmark").and_then(Value::as_str).unwrap_or("");
-                                    family(b) != family(&bench_id)
+                                    hold_all || family(b) != family(&bench_id)
                                 })
                                 .cloned()
                                 .collect()
@@ -2008,11 +1982,20 @@ fn main() {
                 }
             }
         }
-        for r in &kept {
+        // …AND A READY WEAPON'S ROWS COME FROM THE FACTS, WHOLE.
+        for r in kept.iter().filter(|r| !unready.contains(&r.weapon)) {
             by_weapon
                 .entry(r.weapon.clone())
                 .or_default()
                 .push(page_row(&bench_id, r));
+        }
+        if !unready.is_empty() {
+            eprintln!(
+                "held: {} weapon(s) carry a row this generation has not measured — {}{}",
+                unready.len(),
+                unready.iter().take(6).cloned().collect::<Vec<_>>().join(" "),
+                if unready.len() > 6 { " …" } else { "" },
+            );
         }
         std::fs::write(&path, serde_json::to_string(&by_weapon).expect("json"))
             .unwrap_or_else(|e| panic!("{path}: {e}"));
