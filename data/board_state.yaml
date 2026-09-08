@@ -15,20 +15,20 @@
 # say how much it looked at.
 boards:
   group_clear:
-    submissions: 6776
-    listed: 3048
-    held: 7409
-    scored_at_epoch_seconds: 1788863213
+    submissions: 6992
+    listed: 3212
+    held: 6280
+    scored_at_epoch_seconds: 1788887647
     generation: g1
   single_target:
-    submissions: 6776
-    listed: 4989
-    held: 5524
-    scored_at_epoch_seconds: 1788863218
+    submissions: 6992
+    listed: 3752
+    held: 2645
+    scored_at_epoch_seconds: 1788887648
     generation: g1
   single_target_no_aim:
-    submissions: 6776
-    listed: 2643
-    held: 7833
-    scored_at_epoch_seconds: 1788863225
+    submissions: 6992
+    listed: 1679
+    held: 3015
+    scored_at_epoch_seconds: 1788887650
     generation: g1
