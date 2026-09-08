@@ -92,3 +92,11 @@ jobs:
       # which is the worst moment to find a typo in it. Stub `curl`, no network.
       - name: The library can be put back
         run: bash scripts/restore_library.sh --self-test
+      # …AND THE COPY IN THE DATABASE IS COUNTED, not assumed. Nothing reads
+      # that copy yet, so the mirror can be wrong without anything published
+      # being wrong — what it may not be is wrong SILENTLY. Asserted: a record
+      # reaches the statement as a bound parameter and never as text, and a
+      # database holding FEWER rows than the snapshot is a failure while one
+      # holding more is the library being permanent.
+      - name: The library mirror is counted, not assumed
+        run: bash scripts/mirror_library.sh --self-test

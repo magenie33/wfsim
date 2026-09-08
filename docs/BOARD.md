@@ -978,6 +978,18 @@ assets, and until the board there was no script at all. Two consequences:
    --command "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2
    DESC LIMIT 20"`) and something you can DUMP, which KV is not.
 
+   THE WORKER'S MIRROR ONLY EVER CATCHES UP, so it cannot fill a database that
+   started empty and cannot repair a write it dropped. `backup.yml`'s `mirror`
+   job does both: it upserts the nightly snapshot — which carries the KEY beside
+   each record — and then counts both sides. A separate JOB, because a copy
+   nobody reads must not be able to red the backup, which is the half that
+   matters.
+
+   THE COUNT IS ALLOWED TO GO ONE WAY. Records expire out of KV after a year and
+   nothing expires out of the database, so a SURPLUS is the library being
+   permanent, which is what it is for. A DEFICIT is the mirror failing, and that
+   is the only direction that fails the job.
+
 The token only ever READS. What the board says is computed in the repo from
 data in the repo; nothing secret decides a rank.
 

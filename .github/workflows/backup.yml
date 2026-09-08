@@ -69,6 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      count: ${{ steps.snap.outputs.count }}
+      wired: ${{ steps.wired.outputs.yes }}
     steps:
       - uses: actions/checkout@v4
 
@@ -174,3 +177,34 @@ jobs:
           git commit --quiet -m "library: $COUNT records $(date -u +'%Y-%m-%d')"
           git push --quiet "$url" library-backups
           echo "committed $COUNT records (was $prev)"
+
+  # THE SECOND COPY, AND THE COUNT THAT PROVES IT — a JOB of its own so that a
+  # mirror nobody reads yet cannot red the backup, which is the half that
+  # matters. It runs off the snapshot above rather than fetching its own: that
+  # file carries the KEY beside each record, and recomputing `identity()` would
+  # be a second implementation of the one thing that must not drift.
+  #
+  # THE DATABASE ID IS READ OUT OF `wrangler.jsonc`, not held as a secret. It is
+  # an identifier and it is already committed there, so a second copy of it is
+  # only a second thing to forget when it changes.
+  mirror:
+    needs: dump
+    if: needs.dump.outputs.wired == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: library-${{ needs.dump.outputs.count }}
+          path: out
+      - name: mirror the library into the database
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Only a line whose first non-space is `//` is a comment; a blind
+          # strip of `//` would eat the scheme out of any url in the file.
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/mirror_library.sh out/library.ndjson
