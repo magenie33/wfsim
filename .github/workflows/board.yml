@@ -600,7 +600,20 @@ jobs:
               $prior $FORCE \
               --project \
               --facts-in facts-known.ndjson \
-              < submissions.json > "boards/$id.yaml"
+              < submissions.json > "boards/$id.yaml.new" && mv "boards/$id.yaml.new" "boards/$id.yaml" || {
+                code=$?
+                rm -f "boards/$id.yaml.new"
+                # TWO IS "NOT YET", ANYTHING ELSE IS BROKEN. Three boards are
+                # three files and three rankings, and they differ sixfold in
+                # cost — single_target settles in an hour where group_clear takes
+                # six — so an incomplete one may not hold a complete one back.
+                if [ "$code" = "2" ]; then
+                  echo "::notice::$id is not complete yet — left as it was"
+                else
+                  echo "::error::$id: the assembly failed with $code"
+                  exit "$code"
+                fi
+              }
           done
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per

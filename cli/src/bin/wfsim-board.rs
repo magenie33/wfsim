@@ -1944,12 +1944,15 @@ fn main() {
                 let now = kept.len() + below.len() + probed.len();
                 if prior_rows > 0 && now < floor {
                     eprintln!(
-                        "::error::the generation would publish {now} rows against {prior_rows} on the board — under the floor of {floor}"
+                        "::notice::{bench_id}: the generation holds {now} rows against {prior_rows} on the board — under the floor of {floor}, so this board is not published yet"
                     );
-                    eprintln!(
-                        "::error::an incomplete generation is not published; fill it and run again"
-                    );
-                    std::process::exit(1);
+                    // EXIT 2, NOT 1 — AND THE RULERS DO NOT BLOCK EACH OTHER.
+                    // Three boards are three files and three rankings, and they
+                    // differ sixfold in cost: `single_target` settles in an hour
+                    // where `group_clear` takes six. A shared exit code under
+                    // `set -e` made the cheap boards wait for the expensive one,
+                    // which is two independent things coupled by a loop.
+                    std::process::exit(2);
                 }
             }
         }
