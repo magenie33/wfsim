@@ -1748,6 +1748,96 @@ already per row. 13.6% of commits.
 
 ---
 
+## The shape, end to end
+
+```
+  READ PATH — nothing on it can fail
+     reader ──► Cloudflare CDN ──► static files, committed to the repo
+                                   boards/*.yaml
+                                   site/board/<weapon>.json
+                                   site/app/*.wasm
+     No service, no database, no query. The board's availability is not
+     coupled to anything behind it.
+
+  WRITE PATH — one submission is one row
+     player ──► Worker ──► D1.builds
+                     └──► answers "how many" and "already held" with a query
+
+  COMPUTE — the queue is a query
+     GitHub Actions
+       what is outstanding = builds MINUS scores WHERE code_fp = current
+       32-128 shards, each fighting rows
+       every fact written the MOMENT it is computed
+
+  PUBLISH — a generation completes, not a clock strikes
+     when the newest generation is COMPLETE:
+       one query, rank, write the two files, commit
+       Cloudflare deploys the push
+
+  PROTECT — a gate in front, a copy at another vendor behind
+     nightly   D1.builds ──► library-backups branch (GitHub)
+               two-way count ──► red if the database holds fewer
+     always    guard_shrink ──► refuses to publish from a short library
+```
+
+**THE READ PATH TOUCHES NOTHING THAT CAN FAIL.** The database, the worker and
+the runners can all be down and a reader still sees the board. That is what
+makes it fast where the readers are and free at any traffic, and it is the
+property every other choice here is arranged around.
+
+**THE QUEUE IS A QUERY, SO THERE IS NO SECOND COPY OF THE WORK.** Nothing is
+enqueued, so nothing can be lost and nothing can disagree with reality: a worker
+that dies leaves the row missing and the next run takes it, and computing a
+score twice costs time and nothing else because `f` is deterministic.
+
+**PROGRESS IS MONOTONIC.** A fact is written when it is computed rather than
+when a batch ends, so a run cancelled at 95% has kept 95%.
+
+**A GENERATION, NEVER A MIXTURE.** A board whose rows were measured by different
+engine versions is not a board — measured: an engine fix moved a `group_clear`
+row by four times, so a repaired row ranks BELOW rows that have not been
+repaired yet. Publish the newest COMPLETE generation.
+
+### What it costs, at each tier
+
+| tier | runs on | free ceiling | steady state |
+| --- | --- | --- | --- |
+| serve | Cloudflare static assets | unmetered | — |
+| write | Worker + D1 | 100k requests/day; 100k rows written/day | tens of submissions |
+| compute | GitHub Actions | unmetered minutes, 40 jobs = 960 CPU hours/day | ~160 CPU minutes |
+| store | D1 | the library is 4.4 MB, a generation about 5 MB | — |
+| backup | a git branch | ~22 KB a night | — |
+
+**Nothing here is billed**, and the one thing that would have forced a plan is
+gone: KV metered LIST and WRITE at a thousand a DAY, and D1 counts rows at a
+hundred thousand with no listing operation at all.
+
+### The rule efficiency is judged by
+
+> **Every step's cost should be proportional to what CHANGED, not to what
+> EXISTS.**
+
+Finding the work becomes an indexed query, publishing becomes one query, and
+finding a row this code no longer computes becomes `WHERE code_fp != ?` instead
+of a sampler that crosses the board in days.
+
+**THE ONE STEP THAT STAYS O(EXISTS) IS A FULL RESCORE**, and no store changes
+that: forty jobs is the account's ceiling and one 121-minute row is a floor no
+split goes under. The lever is not paying for one — the audit MEASURES which
+rows actually moved, and only those are rescored.
+
+### What this retires
+
+`score_store.sh`, the R2 bucket, the KV namespace, the submission counter and
+its hourly corrector, `SKIP_LISTING`, `board_sample.py`, `CROSSING`,
+`REPAIR_CAP`, `--verify-list`, and the artifact hand-off between the scorers and
+the assembly. Every one of them exists because the store underneath could not be
+asked a question, and each is a place where one component reads another's
+FORMATTING rather than its data — which is how a display cap became the size of
+a finding, and how a shell message closed its own expansion and mangled a path.
+
+---
+
 ## One database, and the two things that are deliberately not in it
 
 **KV AND R2 BOTH RETIRE. D1 IS THE SYSTEM OF RECORD** and holds two tables:
