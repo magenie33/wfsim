@@ -353,7 +353,9 @@ jobs:
           # THE SAME SLICE THE SCORERS WILL TAKE, or this step counts work the
           # run is not going to do and the gate below reads it as busy.
           SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
-          if [ "${{ inputs.full }}" = "true" ]; then SLICE=""; fi
+          if [ "${{ inputs.full }}" = "true" ] || [ -n "${{ inputs.weapon }}" ]; then
+            SLICE=""
+          fi
           todo=0
           for f in boards/*.yaml; do
             id=$(basename "$f" .yaml)
@@ -477,12 +479,15 @@ jobs:
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             prior="--reuse boards/$id.yaml"
-            # WHAT THIS RUN TAKES ON, and `full` takes no bound because it is
-            # already fighting everything. No slice and no cursor: a repaired
-            # row leaves the stale set, so walking it from the top converges,
-            # and the CLOCK is what says when to stop.
+            # WHAT THIS RUN TAKES ON. A repair slice is UNBOUNDED — it walks
+            # the stale set from the top — so the clock is what says when to
+            # stop. A `full` run and a `weapon` run are both already bounded by
+            # what they name, and a clock on top of a bounded job does not
+            # bound it, it TRUNCATES it: measured, a five-weapon rescore left
+            # 110 of 190 rows done and the board unmoved, and running it again
+            # would have walked the same 110 into the same twelve minutes.
             slice=""
-            if [ "${{ needs.submissions.outputs.full }}" != "true" ]; then
+            if [ "${{ needs.submissions.outputs.full }}" != "true" ]                && [ -z "${{ inputs.weapon }}" ]; then
               slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
             fi
             ./target/release/wfsim-board "$id" \
