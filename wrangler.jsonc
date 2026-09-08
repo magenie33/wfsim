@@ -44,11 +44,11 @@
   // is not the board: the board is the generated yaml in
   // `data/benchmarks/boards/`, and this is the builds waiting to be scored.
   //
-  // SUPPORT is the second one and NOT a prefix inside the first: each store
-  // holds one kind of thing and keeps its own count under `meta/`. It holds one
-  // empty key per Ko-fi message id and nothing else. Until the namespace exists
-  // the two /api/support/* endpoints answer 503 and the page draws no
-  // supporter line.
+  // SUPPORT IS A SECOND NAMESPACE BECAUSE THE WRITE PATHS ARE DIFFERENT: a
+  // public submission endpoint and a payment webhook should not be able to
+  // reach each other's keys (docs/NAMING.md §8). It holds one empty key per
+  // Ko-fi message id and nothing else. Until the namespace exists the two
+  // /api/support/* endpoints answer 503 and the page draws no supporter line.
   //
   //   npx wrangler kv namespace create SUPPORT
   //   npx wrangler secret put KOFI_TOKEN     (from the Ko-fi webhook page)
@@ -57,5 +57,20 @@
   "kv_namespaces": [
     { "binding": "SUBMISSIONS", "id": "967ea857dfee4e6290daa2a6cd720889" }
     // { "binding": "SUPPORT", "id": "<paste the id here>" }
+  ],
+  // THE LIBRARY, AS A DATABASE — `worker/schema.sql`, and docs/BOARD.md
+  // §Setup for what it is for. ONE database holds every table this product
+  // has (`builds`, `scores`), which is why it takes the bare product name:
+  // docs/NAMING.md §8.
+  //
+  // KV IS STILL THE AUTHORITY while this fills. `mirror()` writes a second
+  // copy and nothing reads it, so removing the binding puts the system back
+  // exactly as it was — that is what makes the step reversible.
+  "d1_databases": [
+    {
+      "binding": "LIBRARY",
+      "database_name": "wfsim",
+      "database_id": "0fdd0713-cdd6-44ff-af38-efe6978c9e52"
+    }
   ]
 }
