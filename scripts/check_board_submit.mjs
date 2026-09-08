@@ -63,40 +63,60 @@ const store = () => {
   };
 };
 
-// A D1 stub. `prepare(sql).bind(...).run()` is the whole surface the mirror
-// touches, and `fail` makes it throw — because the property that matters about
-// a mirror is what happens when it is broken.
+// A D1 STUB, AND IT IS THE WHOLE STORE NOW. `prepare(sql).bind(...).run()` and
+// `.first()` are the whole surface the worker touches.
+//
+// IT KEEPS WHAT IT WAS WRITTEN, twice over: `rows` is the table as the
+// assertions want to read it — identity to record, so "is this one row or two"
+// is a question about the table and not about a call log — and `calls` is the
+// statements, for the assertions that are about the SQL.
+//
+// `fail` makes every write throw, because the property that matters about an
+// authoritative write is what the submitter is told when it does not land.
 const database = (fail = false) => {
-  const rows = [];
+  const tables = new Map();
+  const calls = [];
+  const rows = new Map();
+  tables.set("builds", rows);
   return {
     rows,
+    tables,
+    calls,
     prepare: (sql) => ({
       bind: (...args) => ({
         run: async () => {
           if (fail) throw new Error("D1 is down");
-          rows.push({ sql, args });
+          calls.push({ sql, args });
+          // ONE MAP PER TABLE, keyed the way the table is: the assertions ask
+          // "how many rows does `builds` hold", which is a question about a
+          // table and not about a call log.
+          const into = sql.match(/INTO ([a-z_]+)/);
+          if (into) {
+            if (!tables.has(into[1])) tables.set(into[1], new Map());
+            const t = tables.get(into[1]);
+            t.set(args[0], into[1] === "builds" ? JSON.parse(args[2]) : args);
+          }
           return { success: true };
         },
       }),
+      first: async () => {
+        if (fail) throw new Error("D1 is down");
+        calls.push({ sql, args: [] });
+        const from = sql.match(/COUNT\(\*\) AS n FROM ([a-z_]+)/);
+        return from ? { n: (tables.get(from[1]) || new Map()).size } : null;
+      },
     }),
   };
 };
 
-const post = async (body, kv, db) =>
+const post = async (body, db) =>
   worker.fetch(
     new Request("https://wfsim.app/api/board/submit", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     }),
-    {
-      SUBMISSIONS: kv,
-      ASSETS: { fetch: async () => new Response("site") },
-      // ABSENT BY DEFAULT, which is the state of every deploy until the
-      // database exists — so every assertion in this file also asserts that the
-      // mirror is a no-op without it.
-      ...(db ? { LIBRARY: db } : {}),
-    },
+    { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") } },
   );
 
 // THE PAYLOAD THE PAGE ACTUALLY SENDS, field for field — `boardPayload()` in
@@ -150,7 +170,7 @@ console.log("the board's submission endpoint\n");
 
 // ---- 1. EVERY KEY SURVIVES ------------------------------------------------
 {
-  const kv = store();
+  const kv = database();
   const res = await post(PAYLOAD, kv);
   const body = await res.json();
   check("a complete submission is accepted", res.ok && body.ok === true, JSON.stringify(body));
@@ -194,7 +214,7 @@ console.log("the board's submission endpoint\n");
     riven_neg: "recoil",
   };
   for (const [axis, value] of Object.entries(variants)) {
-    const kv = store();
+    const kv = database();
     await post(PAYLOAD, kv);
     await post({ ...PAYLOAD, [axis]: value }, kv);
     check(`two builds differing only in \`${axis}\` are two records`,
@@ -202,7 +222,7 @@ console.log("the board's submission endpoint\n");
   }
   // ...and the control: the SAME build twice is one record, or the board would
   // fill with duplicates of whoever pressed the button twice.
-  const kv = store();
+  const kv = database();
   await post(PAYLOAD, kv);
   await post(PAYLOAD, kv);
   check("the same build twice is one record", kv.rows.size === 1, String(kv.rows.size));
@@ -214,7 +234,7 @@ console.log("the board's submission endpoint\n");
 // omitting it. A shape guard written as `!== undefined` would have turned the
 // whole roster away — which is the failure mode of fixing this in a hurry.
 {
-  const kv = store();
+  const kv = database();
   const plain = { ...PAYLOAD, weapon: "torid", valence: "" };
   const res = await post(plain, kv);
   check("a weapon with no valence still submits", res.ok, String(res.status));
@@ -225,7 +245,7 @@ console.log("the board's submission endpoint\n");
 
 // ---- 4. MALFORMED INPUT IS STILL TURNED AWAY ------------------------------
 {
-  const kv = store();
+  const kv = database();
   const res = await post({ ...PAYLOAD, valence: "not an id!" }, kv);
   check("a malformed valence is rejected", !res.ok && kv.rows.size === 0, String(res.status));
 }
@@ -241,7 +261,7 @@ console.log("the board's submission endpoint\n");
 // A NAME NOBODY HAS SEEN, deliberately: submitting to an existing ruler would
 // prove only that the existing rulers work.
 {
-  const kv = store();
+  const kv = database();
   const fresh = { ...PAYLOAD, benchmark: "a_ruler_invented_by_this_check_v3" };
   const res = await post(fresh, kv);
   check("a benchmark the worker has never heard of is accepted", res.ok, String(res.status));
@@ -275,7 +295,7 @@ console.log("the board's submission endpoint\n");
   // every build one record. A build with no ruler at all is legal now — that is
   // what an upload from a scenario of the player's own is — and it is still a
   // record of its own build.
-  const kv2 = store();
+  const kv2 = database();
   const nameless = { ...PAYLOAD };
   delete nameless.benchmark;
   const res2 = await post(nameless, kv2);
@@ -289,96 +309,75 @@ console.log("the board's submission endpoint\n");
 //
 // THE BOARD IS A STATIC FILE and always will be — committed to the repo, served
 // from the CDN, unblockable and free. What it cannot carry is how far behind it
-// is, so the page asks the library for the one number that says: how many
-// builds it holds. A COUNT and nothing else, which is also the most the store
-// can honestly report, since it keeps nothing about a submitter to report.
+// is, so the page asks the library for the one number that says: how many builds
+// it holds.
+//
+// ONE QUERY. It was a walk of a key namespace metered a thousand operations a
+// DAY, and then a counter key with an hourly corrector to avoid the walk. Both
+// are gone, and with them every way the count could disagree with the table.
 {
-  const kv = store();
-  await post(PAYLOAD, kv);
-  await post({ ...PAYLOAD, weapon: "braton_prime" }, kv);
+  const db = database();
+  const ask = async () => {
+    const r = await worker.fetch(
+      new Request("https://wfsim.app/api/board/pending"),
+      { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") } },
+    );
+    return r.ok ? (await r.json()).count : `not ok ${r.status}`;
+  };
+  check("an empty library says so", (await ask()) === 0, String(await ask()));
+  await post(PAYLOAD, db);
+  await post({ ...PAYLOAD, weapon: "braton_prime" }, db);
+  check("...and otherwise counts what it holds", (await ask()) === 2, String(await ask()));
+
+  // A RESUBMISSION IS NOT A SECOND BUILD. The key IS the build, so the count
+  // cannot drift up for ever the way a bumped counter could.
+  await post(PAYLOAD, db);
+  check("...and a resubmission does not move it", (await ask()) === 2, String(await ask()));
+
   const res = await worker.fetch(
     new Request("https://wfsim.app/api/board/pending"),
-    { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
+    { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") } },
   );
   const body = res.ok ? await res.json() : null;
-  // TWO SUBMISSIONS, AND NOBODY HAS WRITTEN THE COUNTER YET — so the answer is
-  // that it does not know, which is the whole point of the endpoint no longer
-  // listing. A count that fell back to a walk would put the outage back where
-  // it was found: seven LIST operations a reader, against a free plan that
-  // meters them at a thousand a day.
-  check("with no counter written the library says it does not know",
-    !!body && body.ok === true && body.count === null, JSON.stringify(body));
   check("...and reports nothing else about it",
     !!body && Object.keys(body).sort().join(",") === "capped,count,ok",
     JSON.stringify(body && Object.keys(body)));
   const post_ = await worker.fetch(
     new Request("https://wfsim.app/api/board/pending", { method: "POST" }),
-    { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
+    { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") } },
   );
   check("...and it is a READ, so a POST is refused", post_.status === 405,
     String(post_.status));
 
-  // …AND WHEN THE HOURLY RUN HAS WRITTEN ONE, that is what comes back. The run
-  // writes the number it counted while listing — which it does anyway — and
-  // this endpoint only reads it.
-  const ask = async () => {
-    const r = await worker.fetch(
-      new Request("https://wfsim.app/api/board/pending"),
-      { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
-    );
-    return r.ok ? (await r.json()).count : "not ok";
-  };
-  await kv.put("meta/submissions", "2");
-  check("...and reports the counter once one is written", (await ask()) === 2,
-    String(await ask()));
-
-  // A NEW BUILD BUMPS IT, so a submission is visible before the next hour.
-  await post({ ...PAYLOAD, weapon: "soma_prime" }, kv);
-  check("a new submission bumps the counter", (await ask()) === 3, String(await ask()));
-
-  // A RESUBMISSION DOES NOT. The key IS the build, so sending the same one
-  // twice is one row — and a counter that moved would drift up for ever with
-  // nothing to pull it back but the hourly correction.
-  await post({ ...PAYLOAD, weapon: "soma_prime" }, kv);
-  check("...and a resubmission of the same build does not",
-    (await ask()) === 3, String(await ask()));
+  // A DATABASE THAT WILL NOT ANSWER SAYS "UNKNOWN", never a number. The page
+  // draws no footnote on a null and a wrong number is worse than none.
+  const dead = database(true);
+  const r = await worker.fetch(
+    new Request("https://wfsim.app/api/board/pending"),
+    { LIBRARY: dead, ASSETS: { fetch: async () => new Response("site") } },
+  );
+  const j = r.ok ? await r.json() : null;
+  check("a database that will not answer says it does not know",
+    !!j && j.ok === true && j.count === null, JSON.stringify(j));
 }
+
 
 // ---- and the supporter count is the same shape ------------------------------
 //
-// THE SAME OUTAGE, IN THE OTHER NAMESPACE. `/api/support/count` answered by
-// LISTING, once per reader of /support — and the free plan meters LIST at a
-// thousand a DAY across the ACCOUNT, so the two endpoints spend one budget.
+// THE SAME QUESTION, THE SAME ANSWER. A supporter row holds a Ko-fi message id
+// and a DAY and cannot hold more — no amount, no name, no email — so the count
+// is the only figure about this project's funding that exists, and it is a
+// `COUNT(*)` like the library's.
 //
-// It can afford what `pending` cannot: a supporter key never expires and the
-// webhook is the only writer, so a count taken once stays right and the counter
-// SEEDS ITSELF from a single listing. What has to be asserted is that the
-// listing happens once — a stub that refuses to list is how that is asked.
+// IDEMPOTENT ON THE MESSAGE ID, because Ko-fi redelivers what it did not see
+// acknowledged and a retry must not be a second supporter.
 {
-  const kv = store();
-  await kv.put("kofi:aaaaaaaa-1", "");
-  await kv.put("kofi:aaaaaaaa-2", "");
-  const env = { SUPPORT: kv, KOFI_TOKEN: "t", ASSETS: { fetch: async () => new Response("site") } };
-  // CAUGHT, so a listing that was made fatal reads as a FAILED CHECK rather
-  // than as a crashed script — a crash exits 127, which reads as the check
-  // itself being broken.
+  const db = database();
+  const env = { LIBRARY: db, KOFI_TOKEN: "t", ASSETS: { fetch: async () => new Response("site") } };
   const ask = async () => {
-    try {
-      const r = await worker.fetch(new Request("https://wfsim.app/api/support/count"), env);
-      return r.ok ? (await r.json()).count : `not ok ${r.status}`;
-    } catch (e) { return `threw: ${e.message}`; }
+    const r = await worker.fetch(new Request("https://wfsim.app/api/support/count"), env);
+    return r.ok ? (await r.json()).count : `not ok ${r.status}`;
   };
-  check("the supporter count seeds itself from one listing", (await ask()) === 2,
-    String(await ask()));
-  check("...and writes the counter down", kv.rows.has("meta/supporters"),
-    [...kv.rows.keys()].join(","));
-
-  // AND NEVER LISTS AGAIN. This is the assertion the change exists for: with
-  // listing made fatal, an endpoint that still walked the namespace cannot
-  // answer at all.
-  kv.list = async () => { throw new Error("listed again"); };
-  check("...and never lists again", (await ask()) === 2, String(await ask()));
-
   const kofi = async (id) => worker.fetch(
     new Request("https://wfsim.app/api/support/kofi", {
       method: "POST",
@@ -388,71 +387,31 @@ console.log("the board's submission endpoint\n");
     }),
     env,
   );
+  check("an empty supporter table counts zero", (await ask()) === 0, String(await ask()));
   await kofi("bbbbbbbb-1");
-  check("a Ko-fi delivery bumps it", (await ask()) === 3, String(await ask()));
-
-  // A RETRY IS NOT A SUPPORTER. Ko-fi redelivers what it did not see
-  // acknowledged, and the id is the key — so a replay must leave the count
-  // exactly where it was.
+  await kofi("bbbbbbbb-2");
+  check("...and two deliveries count two", (await ask()) === 2, String(await ask()));
   await kofi("bbbbbbbb-1");
   check("...and a redelivery of the same message does not",
-    (await ask()) === 3, String(await ask()));
-  check("...and the counter key is not counted as a supporter",
-    kv.rows.get("meta/supporters") === undefined || String(await ask()) === "3",
-    String(await ask()));
+    (await ask()) === 2, String(await ask()));
+
+  // THE TOKEN IS THE WHOLE OF THE AUTHENTICATION, so a payload without it is
+  // refused before anything is written: an endpoint that counts anonymous POSTs
+  // is a counter anybody can drive.
+  const bogus = await worker.fetch(
+    new Request("https://wfsim.app/api/support/kofi", {
+      method: "POST",
+      body: new URLSearchParams({
+        data: JSON.stringify({ verification_token: "wrong", message_id: "cccccccc-1" }),
+      }),
+    }),
+    env,
+  );
+  check("a delivery with the wrong token is refused", bogus.status === 403,
+    String(bogus.status));
+  check("...and counted as nothing", (await ask()) === 2, String(await ask()));
 }
 
-// ---- THE LIBRARY MIRROR ---------------------------------------------------
-//
-// The first step of moving the library out of KV (docs/BOARD.md §What this
-// system actually is): the same record goes into D1 beside it, KV stays the
-// authority, and nothing reads the copy yet. What has to be true of a mirror is
-// not that it works — it is that it CANNOT HURT, so the interesting assertions
-// here are the two about it being absent and being broken.
-{
-  const kv = store();
-  const db = database();
-  const res = await post(PAYLOAD, kv, db);
-  check("a submission is mirrored into the library database",
-    res.ok && db.rows.length === 1, `${db.rows.length} row(s)`);
-  if (db.rows.length) {
-    const { sql, args } = db.rows[0];
-    // KEYED THE SAME WAY AS KV, which is what lets the two stores be compared
-    // row for row later without inventing a join key.
-    check("...under the same identity KV used",
-      args[0] === [...kv.rows.keys()][0], `${args[0]} vs ${[...kv.rows.keys()][0]}`);
-    // THE WHOLE RECORD travels as json rather than exploded into columns: the
-    // axes are declared once in `AXES`, and a schema spelling them out would be
-    // a fifth place to forget one — which is how `mode` and then `valence` were
-    // lost.
-    check("...carrying the whole record, not a subset",
-      JSON.stringify(JSON.parse(args[2])) === JSON.stringify([...kv.rows.values()][0]),
-      String(args[2]).slice(0, 120));
-    check("...as a write that a resubmission can repeat",
-      /INSERT OR REPLACE/i.test(sql), sql);
-  }
-}
-{
-  // ABSENT IS THE STATE OF EVERY DEPLOY UNTIL THE DATABASE EXISTS, so it has to
-  // be an ordinary state and not a 500.
-  const kv = store();
-  const res = await post(PAYLOAD, kv);
-  const body = await res.json();
-  check("with no library binding at all the submission still succeeds",
-    res.ok && body.ok === true && kv.rows.size === 1, JSON.stringify(body));
-}
-{
-  // AND A BROKEN MIRROR MAY NOT REACH THE SUBMITTER. The authoritative write
-  // already happened; telling a player "sent" and then failing on a copy they
-  // do not know exists is the worst of both.
-  const kv = store();
-  const res = await post(PAYLOAD, kv, database(true));
-  const body = await res.json();
-  check("a library that throws does not fail the submission",
-    res.ok && body.ok === true, `${res.status} ${JSON.stringify(body)}`);
-  check("...and the authoritative record is written anyway",
-    kv.rows.size === 1, String(kv.rows.size));
-}
 
 // ---- THE LIMIT IS THE ENGINE'S, and this file cannot derive it ----------
 //

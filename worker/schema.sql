@@ -96,3 +96,39 @@ CREATE INDEX IF NOT EXISTS scores_generation ON scores (generation, ruler);
 -- …and "what has gone longest without being measured" is the order to repair
 -- in, which is the one thing `computed_at` is allowed to decide.
 CREATE INDEX IF NOT EXISTS scores_oldest ON scores (computed_at);
+
+-- TWO MEASUREMENTS OF ONE ROW DISAGREE, and the board should look again.
+--
+-- The only EVENT in this system: nobody can derive it from anything, so it has
+-- a row of its own. Everything else here is a fact or a build.
+--
+-- NOTHING HERE IS TRUSTED AS A SCORE. The numbers are a REPORT that two
+-- measurements differ; the board answers by measuring again, and only its own
+-- measurement moves a row. The worst a forged report buys is one wasted
+-- rescore, which is why the endpoint needs no authentication.
+--
+-- KEYED BY THE ROW, so a thousand players finding one disagreement leave one
+-- report. `at` is the DAY, and a report the board has acted on is swept by the
+-- nightly job rather than expiring on its own.
+CREATE TABLE IF NOT EXISTS disagreements (
+  ruler    TEXT NOT NULL,
+  identity TEXT NOT NULL,
+  at       TEXT NOT NULL,
+  client   REAL NOT NULL,
+  board    REAL NOT NULL,
+  record   TEXT NOT NULL,
+  PRIMARY KEY (ruler, identity)
+);
+
+-- HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and the schema cannot hold more.
+--
+-- One row per Ko-fi message id, a DAY, and nothing else: no amount, no name, no
+-- email, no message. That is a property of the table rather than a promise
+-- about the endpoint — asked for a total, this worker could not produce one.
+--
+-- IDEMPOTENT ON THE MESSAGE ID, because Ko-fi retries a delivery it did not see
+-- acknowledged and a retry must not be a second supporter.
+CREATE TABLE IF NOT EXISTS supporters (
+  message_id TEXT PRIMARY KEY,
+  at         TEXT NOT NULL
+);

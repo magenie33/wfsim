@@ -167,64 +167,57 @@ function record(b) {
 }
 
 async function submit(request, env) {
-  if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
+  if (!env.LIBRARY) return bad("the library is not configured", 503);
   const { b, err } = await body(request);
   if (err) return bad(err);
 
   // NOTHING ABOUT THE SUBMITTER IS STORED. Not the IP, not a token, not a
-  // timestamp that could order one person's submissions against another's. The
-  // record is the build and the key it hashes to; `at` is the day, which is
-  // coarse enough to expire old entries and too coarse to identify anyone.
+  // timestamp that could order one person's submissions against another's.
+  // The row is the build and the key it hashes to; `at` is the DAY, which is
+  // coarse enough to say when and too coarse to identify anyone.
   const built = record(b);
   if (built.err) return bad(built.err);
   const rec = built.rec;
-  const key = identity(rec);
-  // IS THIS BUILD NEW? Asked before the write, because the counter must not
-  // move when somebody submits a build the store already holds — the key is
-  // the build, so a resubmission is the same row and not a second one.
-  const already = await env.SUBMISSIONS.get(key);
-  await env.SUBMISSIONS.put(key, JSON.stringify(rec), {
-    // A build nobody has submitted in a year is not a live answer any more, and
-    // the scoring job re-lists everything each run — so expiry is the only
-    // cleanup needed.
-    expirationTtl: 60 * 60 * 24 * 365,
-  });
-  // …AND THE COUNTER THE BOARD PAGE READS INSTEAD OF LISTING (see `pending`).
-  // Bumped rather than recomputed: recomputing means listing, which is the
-  // metered operation this exists to avoid. It drifts — two submissions in the
-  // same instant race, an expiry passes unseen — and the hourly board run
-  // OVERWRITES it with the number it counted while listing anyway, so the drift
-  // has an hour to live and no way to compound.
-  if (already === null) {
-    const held = await env.SUBMISSIONS.get(COUNT_KEY);
-    const n = Number.parseInt(held ?? "", 10);
-    if (Number.isFinite(n)) await env.SUBMISSIONS.put(COUNT_KEY, String(n + 1));
+
+  // ONE ROW, AND NOTHING ELSE TO KEEP IN STEP. The key is the build, so a
+  // resubmission is the same row — `INSERT OR REPLACE`, with no read to ask
+  // whether it is new and no counter to bump: "how many builds are there" is
+  // a COUNT, which is most of why the library lives in a database at all
+  // (docs/BOARD.md §"One database").
+  //
+  // A FAILURE HERE REACHES THE SUBMITTER, and must. This is the
+  // authoritative write, and telling somebody "sent" when it was not is the
+  // one answer a submission endpoint may never give.
+  try {
+    await env.LIBRARY.prepare(
+      "INSERT OR REPLACE INTO builds (identity, at, record) VALUES (?, ?, ?)",
+    ).bind(identity(rec), rec.at, JSON.stringify(rec)).run();
+  } catch (e) {
+    console.log("library write failed:", (e && e.message) || String(e));
+    return bad("the library could not be written", 503);
   }
-  await mirror(env, key, rec);
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
   });
 }
-
 /// TWO MEASUREMENTS OF ONE ROW DISAGREE, and the board should look again.
 ///
 /// A HASH CANNOT ASK THIS. What a row READS is enumerable from the row, so a
-/// data change is caught exactly; what the code DOES to it is not, and a change
-/// that moves a number leaves every fingerprint agreeing. The audit re-fights
-/// published rows to find those, and it crosses the board in days — while a
-/// player runs the one build they care about and finds it at once.
+/// data change is caught exactly; what the code DOES to it is not, and a
+/// change that moves a number leaves every fingerprint agreeing. The audit
+/// re-fights published rows to find those and crosses the board in days —
+/// while a player runs the one build they care about and finds it at once.
 ///
 /// NOTHING HERE IS TRUSTED AS A SCORE. The numbers are a REPORT that two
-/// measurements differ; the board answers by measuring again, and only its own
-/// measurement can move a row. The worst a forged report can buy is one wasted
-/// rescore, which is why this needs no authentication and never will.
+/// measurements differ; the board answers by measuring again, and only its
+/// own measurement can move a row. The worst a forged report buys is one
+/// wasted rescore, which is why this needs no authentication and never will.
 ///
-/// KEYED BY THE ROW, so a thousand players finding the same disagreement leave
-/// one report. Under `d/`, which nothing else can collide with — an identity is
-/// built from `[a-z0-9_]` ids and cannot contain a slash — and expiring in a
-/// fortnight, because a report the board has already acted on is noise.
+/// THE ONE EVENT IN THIS SYSTEM. Nobody can derive it from anything else, so
+/// it gets a table of its own — keyed by the ROW, so a thousand players
+/// finding one disagreement leave one report.
 async function disagree(request, env) {
-  if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
+  if (!env.LIBRARY) return bad("the library is not configured", 503);
   const { b, err } = await body(request);
   if (err) return bad(err);
 
@@ -233,82 +226,59 @@ async function disagree(request, env) {
   const board = num(b.board);
   if (client === null || board === null) return bad("client and board must be positive numbers");
   // THE RULER IS REQUIRED HERE, unlike on a submission. A build carries no
-  // ruler because every ruler crosses the library; a DISAGREEMENT is about one
-  // row, and a row is a build under one ruler.
+  // ruler because every ruler crosses the library; a DISAGREEMENT is about
+  // one row, and a row is a build under one ruler.
   if (typeof b.benchmark !== "string" || !ID.test(b.benchmark)) return bad("bad benchmark");
 
   const built = record(b);
   if (built.err) return bad(built.err);
-  await env.SUBMISSIONS.put(
-    `d/${b.benchmark}/${identity(built.rec)}`,
-    JSON.stringify({ ...built.rec, client, board }),
-    { expirationTtl: 60 * 60 * 24 * 14 },
-  );
+  try {
+    await env.LIBRARY.prepare(
+      "INSERT OR REPLACE INTO disagreements (ruler, identity, at, client, board, record)"
+      + " VALUES (?, ?, ?, ?, ?, ?)",
+    ).bind(
+      b.benchmark, identity(built.rec), built.rec.at, client, board,
+      JSON.stringify(built.rec),
+    ).run();
+  } catch (e) {
+    console.log("disagreement write failed:", (e && e.message) || String(e));
+    return bad("the report could not be written", 503);
+  }
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
   });
 }
 
-/// THE SAME RECORD, INTO D1 — the first step of moving the library out of KV,
-/// and deliberately the only step that can be taken without changing anything
-/// that reads it.
+/// HOW MANY BUILDS THE LIBRARY HOLDS — the count the static board cannot
+/// carry, so the page can say "N builds have arrived since this board was
+/// scored".
 ///
-/// KV IS STILL THE AUTHORITY. Everything downstream — the scorer, the pending
-/// count — reads KV and keeps reading it; this writes a second copy and nothing
-/// looks at it yet. That is what makes the step reversible: delete the binding
-/// and the system is exactly what it was.
+/// ONE QUERY. It was a walk of a key namespace metered at a thousand
+/// operations a DAY — seven per reader, which took the board down at a
+/// hundred and forty-three of them — and then a counter key with an hourly
+/// corrector to avoid the walk. `COUNT(*)` replaces both.
 ///
-/// WHY D1 AT ALL: the library is the one irreplaceable thing here and KV cannot
-/// be asked a question about it — no queries, no transactions, no bulk read,
-/// and listing is the only index. "Which weapons are under-covered" and "how
-/// much did the library grow this month" are what running a board consists of.
-/// D1 is SQLite, and it dumps whole, which an asset with no other copy needs.
-///
-/// A FAILURE HERE MAY NOT REACH THE SUBMITTER. The submission already succeeded
-/// — the authoritative write is above — so a broken mirror must be invisible:
-/// telling a player "sent" and then failing on a copy they do not know exists is
-/// the worst of both. It is caught and dropped, and the next submission of the
-/// same build writes the row again (`INSERT OR REPLACE` on the identity).
-async function mirror(env, key, rec) {
-  if (!env.LIBRARY) return;
-  try {
-    await env.LIBRARY.prepare(
-      "INSERT OR REPLACE INTO builds (identity, at, record) VALUES (?, ?, ?)",
-    ).bind(key, rec.at, JSON.stringify(rec)).run();
-  } catch (e) {
-    // Nothing to tell the caller and nowhere useful to put it: the request is
-    // already answered. It shows up as a row that is in KV and not in D1, which
-    // is what the two-way count in the backup job is for.
-    console.log("library mirror failed:", (e && e.message) || String(e));
-  }
-}
-
-/// HOW MANY BUILDS THE LIBRARY HOLDS — the count the static board cannot carry,
-/// so the page can say "N builds have arrived since this board was scored".
-///
-/// IT READS A COUNTER AND DOES NOT LIST. The free plan meters LIST at a thousand
-/// a day and the walk cost seven per reader, which took the board down at a
-/// hundred and forty-three of them; a READ is metered at a hundred thousand.
-///
-/// ABSENT IS "UNKNOWN", never a fallback walk — that would put the outage back
-/// exactly where it was found, invisibly. docs/BOARD.md carries who writes it.
-export const COUNT_KEY = "meta/submissions";
-
+/// A COUNT, AND NOTHING ELSE. No build, no weapon, no day: the library holds
+/// nothing about a submitter, and this hands back less than it holds.
 async function pending(env) {
-  if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
-  const raw = await env.SUBMISSIONS.get(COUNT_KEY);
-  const n = raw === null ? null : Number.parseInt(raw, 10);
-  const count = Number.isFinite(n) ? n : null;
+  if (!env.LIBRARY) return bad("the library is not configured", 503);
+  let count = null;
+  try {
+    const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM builds").first();
+    const n = Number(r && r.n);
+    if (Number.isFinite(n)) count = n;
+  } catch (e) {
+    console.log("library count failed:", (e && e.message) || String(e));
+  }
   return new Response(JSON.stringify({ ok: true, count, capped: false }), {
     headers: {
       "content-type": "application/json",
-      // A MINUTE. The board itself moves every twenty, so a count that is up to
-      // a minute old is exact enough for the sentence it is in.
+      // A MINUTE. The board moves in hours, so a count up to a minute old is
+      // exact enough for the sentence it is in.
       "cache-control": "public, max-age=60",
     },
   });
 }
-
 /// HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and nothing else.
 ///
 /// Social proof is the one lever on `/support` with a replicated experiment
@@ -317,48 +287,19 @@ async function pending(env) {
 /// replication). It is also the only figure about this project's funding that
 /// can be published without publishing the author's finances.
 ///
-/// SO THE STORE HOLDS A COUNT AND CANNOT HOLD MORE. One key per Ko-fi message
-/// id, an empty value, and the DAY as metadata — no amount, no name, no email,
-/// no message. That is a property of the schema rather than a promise about the
-/// endpoint: asked for a total, this worker could not produce one.
-///
-/// A NAMESPACE OF ITS OWN, not a prefix inside `SUBMISSIONS`: the two stores
-/// answer different questions and each keeps its own counter under `meta/`.
-///
-/// SILENT UNTIL IT IS CONFIGURED. Without the binding this answers 503 and the
-/// page draws no line at all, which is the same rule a channel with no url
-/// follows: an option that does not work yet is worse than one not offered.
-const SUPPORTER = "kofi:";
-
-/// AND IT COUNTS BY READING A COUNTER, for the reason `pending` does: LIST is
-/// metered at a thousand a DAY across the account, so an endpoint that lists
-/// once per reader is an outage waiting for an audience.
-///
-/// SELF-SEEDING, which is what this one can afford and `pending` cannot: the
-/// keys here never expire and the webhook is the only writer, so a count taken
-/// once is right forever after and the bump keeps it so. A missing counter
-/// therefore lists ONCE and writes what it found, rather than listing again.
-const SUPPORT_COUNT_KEY = "meta/supporters";
-
-async function supporterCount(env) {
-  const held = await env.SUPPORT.get(SUPPORT_COUNT_KEY);
-  const n = Number.parseInt(held ?? "", 10);
-  if (Number.isFinite(n)) return n;
-  let count = 0;
-  let cursor;
-  for (let page = 0; page < 20; page++) {
-    const r = await env.SUPPORT.list({ prefix: SUPPORTER, limit: 1000, cursor });
-    count += (r.keys || []).length;
-    if (r.list_complete) break;
-    cursor = r.cursor;
-  }
-  await env.SUPPORT.put(SUPPORT_COUNT_KEY, String(count));
-  return count;
-}
-
+/// THE TABLE CANNOT HOLD MORE. One row per Ko-fi message id and a DAY: no
+/// amount, no name, no email, no message. Asked for a total, this worker
+/// could not produce one.
 async function supporters(env) {
-  if (!env.SUPPORT) return bad("supporter storage is not configured", 503);
-  const count = await supporterCount(env);
+  if (!env.LIBRARY) return bad("the library is not configured", 503);
+  let count = null;
+  try {
+    const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM supporters").first();
+    const n = Number(r && r.n);
+    if (Number.isFinite(n)) count = n;
+  } catch (e) {
+    console.log("supporter count failed:", (e && e.message) || String(e));
+  }
   return new Response(JSON.stringify({ ok: true, count }), {
     headers: {
       "content-type": "application/json",
@@ -372,21 +313,21 @@ async function supporters(env) {
 /// KO-FI'S WEBHOOK, which is what makes the count above automatic.
 ///
 /// Ko-fi POSTs `application/x-www-form-urlencoded` with a single `data` field
-/// carrying json, and the json carries a `verification_token` that only the
-/// account owner can read off their own dashboard. That token is the whole of
-/// the authentication and it is a SECRET (`wrangler secret put KOFI_TOKEN`) —
+/// carrying json, and the json carries a `verification_token` only the account
+/// owner can read off their own dashboard. That token is the whole of the
+/// authentication and it is a SECRET (`wrangler secret put KOFI_TOKEN`) —
 /// without it configured this refuses everything, because an endpoint that
 /// counts anonymous POSTs is a counter anybody can drive.
 ///
 /// IDEMPOTENT ON THE MESSAGE ID. Ko-fi retries a delivery it did not see
 /// acknowledged, and a retry must not be a second supporter — the id is the
-/// key, so a replay writes the same key again and the count does not move.
+/// key, so a replay writes the same row and the count does not move.
 ///
 /// WHAT IS DROPPED, before anything is written: the amount, the supporter's
 /// name and email, the message they typed, and the timestamp's time. What is
 /// kept is that a payment happened, on a day.
 async function kofi(request, env) {
-  if (!env.SUPPORT) return bad("supporter storage is not configured", 503);
+  if (!env.LIBRARY) return bad("the library is not configured", 503);
   if (!env.KOFI_TOKEN) return bad("supporter webhook is not configured", 503);
   let msg;
   try {
@@ -401,23 +342,19 @@ async function kofi(request, env) {
   // A plain id, because it becomes a key: Ko-fi sends a uuid, and anything
   // else is a payload this was not written for.
   if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) return bad("bad message id");
-  // A REPLAY IS NOT A SUPPORTER, so the counter moves only for an id the store
-  // did not already hold — the same guard a resubmitted build gets.
-  const already = await env.SUPPORT.get(SUPPORTER + id);
-  await env.SUPPORT.put(SUPPORTER + id, "", {
-    metadata: { at: new Date().toISOString().slice(0, 10) },
-  });
-  // An ABSENT counter is not written here: the next read lists, and that listing
-  // already holds the key just written. Bumping it too would count it twice.
-  if (already === null) {
-    const held = await env.SUPPORT.get(SUPPORT_COUNT_KEY);
-    const n = Number.parseInt(held ?? "", 10);
-    if (Number.isFinite(n)) await env.SUPPORT.put(SUPPORT_COUNT_KEY, String(n + 1));
+  try {
+    await env.LIBRARY.prepare(
+      "INSERT OR REPLACE INTO supporters (message_id, at) VALUES (?, ?)",
+    ).bind(id, new Date().toISOString().slice(0, 10)).run();
+  } catch (e) {
+    console.log("supporter write failed:", (e && e.message) || String(e));
+    return bad("the supporter could not be recorded", 503);
   }
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
   });
 }
+
 
 export default {
   async fetch(request, env) {
