@@ -52,6 +52,11 @@
 # the next scheduled run's job, minutes away.
 set -euo pipefail
 
+# THE SCRIPT'S OWN PATH, RESOLVED BEFORE ANYTHING CHANGES DIRECTORY. The
+# self-test runs in a temp directory and drives the whole script end to end, and
+# a relative `$0` does not survive that `cd`.
+SELF=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+
 # ---- the library, from a key list and whatever is already held --------------
 #
 # Split out from the fetching so the self-test can drive it with a stub `curl`.
@@ -455,6 +460,19 @@ STUB2
   guard_shrink 2 > /dev/null 2>&1 && say ok "...and an intact one passes" \
     || say FAIL "the tripwire fired on a full library"
 
+  # …AND THE WHOLE SCRIPT EXITS ZERO ON A RESCORE, which is the one path where
+  # the counter is not written. Driven end to end rather than function by
+  # function, because what failed was the SCRIPT'S last statement: a false
+  # `[ ... ] && cmd` there is the exit status under `set -e`, so a rescore did
+  # all of its work and then reported failure.
+  printf '{"k1":{"weapon":"a"},"k2":{"weapon":"b"}}' > library.json
+  if SKIP_LISTING=1 CF_ACCOUNT=a CF_NAMESPACE=n CF_TOKEN=t FLOOR=1 \
+      bash "$SELF" > /dev/null 2>&1; then
+    say ok "a rescore, which writes no counter, still exits zero"
+  else
+    say FAIL "a rescore exited non-zero having done all of its work"
+  fi
+
   cd /; rm -rf "$dir"
   if [ "$fails" -gt 0 ]; then echo "$fails failed"; return 1; fi
   echo "the library is fetched once and then only added to"
@@ -478,4 +496,11 @@ guard_shrink "${FLOOR:-0}"
 # …AND ONLY A RUN THAT LISTED MAY CORRECT THE COUNTER. A rescore reused the
 # cached keys, so its number is whatever the last listing found — writing it
 # back would be the counter reporting itself.
-[ -n "$LISTED" ] && publish_count "$API"
+#
+# AN `if`, NOT `[ ... ] && cmd`. As the LAST statement of a script under
+# `set -e`, a false test is the script's exit status: every rescore — the one
+# path where `LISTED` is empty — failed at this line having done all of its
+# work, and the run above it reported "library floor: ok" and then exit 1.
+if [ -n "$LISTED" ]; then
+  publish_count "$API"
+fi
