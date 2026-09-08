@@ -54,13 +54,22 @@ CREATE TABLE IF NOT EXISTS scores (
   -- ranking. Without this column a melee build's seven measurements collapse
   -- into one row and six of them are lost on write.
   mode         TEXT NOT NULL,
-  -- TWO FINGERPRINTS, BECAUSE THEY ANSWER DIFFERENT QUESTIONS and a run acts on
-  -- them differently. `data_fp` is what this row READ, so a data change dirties
-  -- exactly the rows that read the file that moved. `code_fp` is what MEASURED
-  -- it, so a generation is every row sharing one — and the board publishes the
-  -- newest COMPLETE generation rather than a mixture of two engines.
+  -- WHAT THIS ROW READ. A data change dirties exactly the rows that read the
+  -- file that moved, which is the cheap half of invalidation and is asked per
+  -- row.
   data_fp      TEXT NOT NULL,
-  code_fp      TEXT NOT NULL,
+  -- WHICH GENERATION IT BELONGS TO, AND A GENERATION IS OPENED DELIBERATELY.
+  -- Not a source hash: 55.6% of commits touch the engine, and a hash in this
+  -- key would make each of them a full rescore — 8,008 CPU minutes against a
+  -- day's budget of 960 CPU hours, thirteen times over on a working day. So
+  -- most commits ride in the generation that is open, and one is opened when
+  -- the AUDIT measures that a change actually moved numbers. The board
+  -- publishes the newest COMPLETE generation, never a mixture of two.
+  generation   TEXT NOT NULL,
+  -- …AND WHICH BUILD ACTUALLY MEASURED IT, which is a different question and
+  -- not part of the key. It is forensics: when a generation turns out to have
+  -- been measured by something broken, this is what says which rows it wrote.
+  measured_by  TEXT NOT NULL,
   score        REAL NOT NULL,
   -- The riven corner the search settled on, when there is one: a score alone
   -- cannot publish a riven row, because the reader has to be able to BUILD that
@@ -77,12 +86,12 @@ CREATE TABLE IF NOT EXISTS scores (
   -- board is, ordering repairs oldest first, and saying afterwards which rows a
   -- bad engine wrote. Nothing branches on it.
   computed_at  TEXT NOT NULL,
-  PRIMARY KEY (identity, ruler, mode, data_fp, code_fp)
+  PRIMARY KEY (identity, ruler, mode, data_fp, generation)
 );
 
 -- "How complete is this generation" is one query rather than a walk, which is
 -- the whole of the generation rule's cost.
-CREATE INDEX IF NOT EXISTS scores_generation ON scores (code_fp, ruler);
+CREATE INDEX IF NOT EXISTS scores_generation ON scores (generation, ruler);
 
 -- …and "what has gone longest without being measured" is the order to repair
 -- in, which is the one thing `computed_at` is allowed to decide.

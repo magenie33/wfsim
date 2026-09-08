@@ -509,7 +509,7 @@ fn sort_store_files(files: &mut [std::path::PathBuf], bench_id: &str) {
 /// ever once computed, so it is written down when it is computed rather than
 /// when a batch ends. What ships it to the database is
 /// `scripts/ship_facts.sh`, running beside the scorer, so a shard killed at
-/// nine tenths keeps nine tenths — where it used to keep nothing at all.
+/// nine tenths keeps nine tenths, rather than nothing at all.
 ///
 /// `measured_by` is handed in rather than derived: the scorer cannot see which
 /// commit built it, and a hash it invented would be a second answer to a
@@ -1852,9 +1852,9 @@ fn main() {
                     computed.insert(key.clone(), s);
                     costs.insert(key.clone(), began.elapsed().as_secs_f64());
                     // …AND THE FACT IS DURABLE HERE, not when the run ends. A
-                    // shard used to become useful only once it FINISHED and then
-                    // UPLOADED, so a whole rescore was lost to an artifact
-                    // service timing out on one of 128 shards — see
+                    // shard whose work becomes useful only once it FINISHES and
+                    // then UPLOADS is a shard a service timeout can empty: one
+                    // of 128 did exactly that, and cost a whole rescore — see
                     // docs/BOARD.md §"The pipeline, designed around one rule".
                     facts.write(
                         &bench_id,

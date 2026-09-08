@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+# WHAT A SHARD HAS COMPUTED, PUT WHERE NOTHING CAN DESTROY IT.
+#
+#   scripts/ship_facts.sh --generation <id> facts.ndjson
+#   scripts/ship_facts.sh --self-test
+#
+# `wfsim-board --facts` appends one row per score and flushes per row. This
+# reads that file and writes the rows into `scores`, and it is meant to run
+# BESIDE the scorer, again and again, so a shard killed at nine tenths keeps
+# nine tenths — where before it kept nothing at all (docs/BOARD.md §"The
+# pipeline, designed around one rule").
+#
+# THE CURSOR IS AN OPTIMISATION, NOT CORRECTNESS. The write is
+# `INSERT OR REPLACE` on the row's own key, so shipping a line twice writes the
+# same row twice and a lost cursor costs one repeat, never a wrong number.
+set -euo pipefail
+
+# TEN ROWS A STATEMENT: nine bound parameters each, against D1's limit of a
+# hundred per query.
+BATCH=10
+
+configured() {
+  [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
+}
+
+# A REFUSED WRITE HAS TO SAY WHY — the body to a file, the status to a
+# variable. `curl -sf` swallows the body, and a token without D1 permission, a
+# missing table and a malformed statement then arrive as the same silent
+# non-zero.
+D1_OUT=""
+D1_CODE=""
+d1() {
+  [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
+  D1_CODE=$(curl -s -o "$D1_OUT" -w '%{http_code}' -X POST \
+    -H "Authorization: Bearer ${CF_TOKEN:-x}" \
+    -H "content-type: application/json" \
+    --data-binary "$1" \
+    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query") \
+    || D1_CODE="000"
+  [ "$D1_CODE" = "200" ]
+}
+
+# ---- the statements -------------------------------------------------------
+#
+# PARAMETERS ARE BOUND, NEVER INTERPOLATED. An identity is built from ids that
+# arrived at a public endpoint, and this is the one place in the pipeline where
+# that text meets a language.
+#
+# `INSERT OR REPLACE` on (identity, ruler, mode, data_fp, generation): the same
+# row measured twice is one row, and two GENERATIONS' answers are two rows, so
+# a newer measurement can never silently overwrite an older one it disagrees
+# with. That is the property tonight's store did not have.
+batches() {
+  local gen="$1" src="$2"
+  jq -s -c --argjson n "$BATCH" --arg gen "$gen" '
+    . as $all
+    | range(0; ($all | length); $n)
+    | . as $i
+    | $all[$i : $i + $n] as $chunk
+    | {
+        sql: ("INSERT OR REPLACE INTO scores (identity, ruler, mode, data_fp,"
+              + " generation, measured_by, score, rolls, cost_seconds, computed_at)"
+              + " VALUES "
+              + ([$chunk[] | "(?,?,?,?,?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
+                 | join(","))),
+        params: [$chunk[]
+                 | .identity, .ruler, .mode, .data_fp, $gen, (.measured_by // ""),
+                   .score, (if .rolls == null then null else (.rolls | tojson) end),
+                   .cost_seconds]
+      }
+  ' "$src"
+}
+
+# ---- shipping, from wherever it got to last time --------------------------
+ship() {
+  local gen="$1" src="$2" cursor="$2.shipped" from=0 total sent=0 failed=0
+  [ -s "$src" ] || { echo "facts: nothing to ship"; return 0; }
+  [ -f "$cursor" ] && from=$(cat "$cursor")
+  total=$(wc -l < "$src" | tr -d ' ')
+  if [ "$total" -le "$from" ]; then
+    echo "facts: $total rows, all shipped"
+    return 0
+  fi
+  local pending; pending=$(mktemp)
+  tail -n +$((from + 1)) "$src" > "$pending"
+  while IFS= read -r body; do
+    [ -n "$body" ] || continue
+    if d1 "$body"; then
+      sent=$((sent + 1))
+    else
+      failed=$((failed + 1))
+      if [ "$failed" -eq 1 ]; then
+        echo "::error::facts: the database refused a write [HTTP $D1_CODE]"
+        head -c 500 "$D1_OUT" || true
+        echo
+      fi
+    fi
+  done < <(batches "$gen" "$pending")
+  rm -f "$pending"
+  # THE CURSOR MOVES ONLY WHEN EVERY BATCH LANDED. Moving it past a refusal
+  # would turn a retryable failure into a row nobody ships again.
+  if [ "$failed" -eq 0 ]; then
+    echo "$total" > "$cursor"
+    echo "facts: shipped rows $((from + 1))..$total in $sent batches"
+  else
+    echo "facts: $sent batches landed, $failed refused — the cursor stays at $from"
+    return 1
+  fi
+}
+
+# ---- self-test ------------------------------------------------------------
+self_test() {
+  ok=0; bad=0
+  DIR=$(mktemp -d)
+  trap 'rm -rf "$DIR"' EXIT
+  mkdir -p "$DIR/bin" "$DIR/work"
+  say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
+  cd "$DIR/work"
+
+  row() {
+    printf '{"identity":"%s","ruler":"single_target","mode":"%s","data_fp":"fp","measured_by":"abc","score":%s,"cost_seconds":1.5,"rolls":null}\n' "$1" "$2" "$3"
+  }
+  row 'a|b' base 1.0 > facts.ndjson
+  row 'a|b' heavy_slam 2.0 >> facts.ndjson
+  # ESCAPED IN THE FILE, a bare quote after jq has read it — which is what a
+  # build id would look like if one ever carried one.
+  row 'quote\"key' base 3.0 >> facts.ndjson
+  for i in 4 5 6 7 8 9 10 11 12; do row "k$i" base "$i" >> facts.ndjson; done
+
+  BATCH=10
+  local n; n=$(batches gen1 facts.ndjson | wc -l | tr -d ' ')
+  [ "$n" = "2" ] && say ok "twelve rows at ten a batch is two statements" \
+    || say FAIL "batched into $n"
+
+  local first; first=$(batches gen1 facts.ndjson | head -1)
+  [ "$(printf '%s' "$first" | jq -r '.params | length')" = "90" ] \
+    && say ok "...nine bound parameters a row, under D1's hundred" \
+    || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
+
+  printf '%s' "$first" | jq -e '.sql | contains("quote") | not' >/dev/null \
+    && printf '%s' "$first" | jq -e '.params | index("quote\"key")' >/dev/null \
+    && say ok "...and an identity with a quote in it is bound, not interpolated" \
+    || say FAIL "a quoted identity reached the sql"
+
+  # THE GENERATION IS THE SHIPPER'S, NOT THE SCORER'S. It rides in every row so
+  # the same measurement can be filed under a generation the scorer never knew.
+  printf '%s' "$first" | jq -e '[.params[4], .params[13]] == ["gen1","gen1"]' >/dev/null \
+    && say ok "...and every row carries the generation it was filed under" \
+    || say FAIL "generation missing from the parameters"
+
+  # ONE ROW PER MODE. Two modes of one build are two rows, and a statement that
+  # collapsed them would file seven melee measurements as one.
+  printf '%s' "$first" | jq -e '[.params[2], .params[11]] == ["base","heavy_slam"]' >/dev/null \
+    && say ok "...and two modes of one build are two rows" \
+    || say FAIL "the modes collapsed"
+
+  export PATH="$DIR/bin:$PATH"
+  export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
+
+  cat > "$DIR/bin/curl" <<'OK'
+#!/usr/bin/env bash
+out=/dev/null; prev=
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
+printf '200'
+OK
+  chmod +x "$DIR/bin/curl"
+  ship gen1 facts.ndjson > out.txt 2>&1 \
+    && grep -q "rows 1..12" out.txt \
+    && say ok "a first run ships every row" || say FAIL "$(cat out.txt)"
+  [ "$(cat facts.ndjson.shipped)" = "12" ] \
+    && say ok "...and records how far it got" || say FAIL "cursor: $(cat facts.ndjson.shipped)"
+
+  # …AND THE SECOND RUN SHIPS ONLY WHAT IS NEW, which is the whole point of
+  # running this again and again beside a scorer that keeps appending.
+  ship gen1 facts.ndjson > out.txt 2>&1 && grep -q "all shipped" out.txt \
+    && say ok "...and a second run with nothing new ships nothing" || say FAIL "$(cat out.txt)"
+  row 'later' base 9.9 >> facts.ndjson
+  ship gen1 facts.ndjson > out.txt 2>&1 && grep -q "rows 13..13" out.txt \
+    && say ok "...and a row appended after it ships alone" || say FAIL "$(cat out.txt)"
+
+  cat > "$DIR/bin/curl" <<'DEAD'
+#!/usr/bin/env bash
+out=/dev/null; prev=
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}' > "$out"
+printf '403'
+DEAD
+  chmod +x "$DIR/bin/curl"
+  row 'refused' base 1.0 >> facts.ndjson
+  if ship gen1 facts.ndjson > out.txt 2>&1; then
+    say FAIL "a refused write passed"
+  elif grep -q "D1 not authorized" out.txt; then
+    say ok "a refused write reports what the database said"
+  else
+    say FAIL "$(cat out.txt)"
+  fi
+  # THE CURSOR MAY NOT MOVE PAST A REFUSAL, or the row is never shipped again.
+  [ "$(cat facts.ndjson.shipped)" = "13" ] \
+    && say ok "...and the cursor stays where it was" \
+    || say FAIL "cursor moved to $(cat facts.ndjson.shipped)"
+
+  unset CF_D1_DATABASE
+  configured && say FAIL "unconfigured read as configured" \
+    || say ok "no database configured is a working state"
+
+  echo
+  echo "$ok ok, $bad failed"
+  [ "$bad" -eq 0 ]
+}
+
+if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
+
+GEN=""
+while [ "${1:-}" = "--generation" ]; do GEN="$2"; shift 2; done
+: "${GEN:?--generation <id> is required: a fact is filed under the generation it belongs to}"
+
+# UNCONFIGURED IS SILENT AND GREEN, the rule every job here follows: without a
+# database there is nowhere to ship to, and reddening a scoring run for a copy
+# nothing reads yet teaches people to ignore the colour.
+if ! configured; then
+  echo "no database configured — nothing shipped (docs/BOARD.md §Setup)"
+  exit 0
+fi
+
+ship "$GEN" "${1:?the fact log to ship, one row a line}"

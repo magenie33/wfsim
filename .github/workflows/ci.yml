@@ -100,3 +100,11 @@ jobs:
       # holding more is the library being permanent.
       - name: The library mirror is counted, not assumed
         run: bash scripts/mirror_library.sh --self-test
+      # …AND A FACT REACHES THE DATABASE THE MOMENT IT IS COMPUTED. The failure
+      # this guards is the one that lost a whole rescore: work that is durable
+      # only once a run ENDS. Asserted with a stub `curl` — a row appended after
+      # a ship goes alone, an identity with a quote in it is BOUND and not
+      # interpolated, two modes of one build stay two rows, and the cursor may
+      # not move past a refusal or that row is never shipped again.
+      - name: A fact is shipped as it is computed
+        run: bash scripts/ship_facts.sh --self-test
