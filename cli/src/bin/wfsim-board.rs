@@ -1947,8 +1947,28 @@ fn main() {
         let floor = flag("--verify-min")
             .and_then(|s| s.parse::<usize>().ok())
             .unwrap_or(20);
+        // FIVE, BECAUSE THIS IS THE HUMAN'S COPY. A log that prints seven
+        // thousand rows is a log nobody reads, and what a reader wants from a
+        // verdict is a few examples plus the count below.
         for (k, was, now) in moved.iter().take(5) {
             eprintln!("verify: {k} {was} -> {now}");
+        }
+        // …AND THE MACHINE'S COPY IS A FILE, WHOLE. `audit.yml` decides two
+        // things from what moved — whether the finding is large enough to hand
+        // to a person, and which rows to rescore — and it read them off the
+        // lines above, so a DISPLAY cap silently became the answer to both: 225
+        // moved rows arrived as 15, under a cap of 40 that exists for exactly
+        // that case, and the rescore it filed repaired 15 of them.
+        if let Some(path) = flag("--verify-list") {
+            let mut out = String::new();
+            for (k, _, _) in &moved {
+                out.push_str(k);
+                out.push('\n');
+            }
+            if let Err(e) = std::fs::write(&path, out) {
+                eprintln!("verify: could not write {path}: {e}");
+                std::process::exit(1);
+            }
         }
         // HOW FAR IT MOVED, BESIDE THE FACT THAT IT DID. The test itself stays
         // EXACT — a score is a pure function and the carry between processes is

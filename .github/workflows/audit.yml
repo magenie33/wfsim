@@ -108,15 +108,20 @@ jobs:
             # in the step below — a board whose slice held four rows proves
             # little alone and the three together prove what they prove.
             set +e
+            : > "moved-$id.txt"
             ./target/release/wfsim-board "$id" \
               --reuse "$f" --verify --verify-min 0 \
+              --verify-list "moved-$id.txt" \
               < sample.json > /dev/null 2> verify.log
             set -e
             grep -o 'verify-result: .*' verify.log >> result.txt || true
-            # THE ROWS THEMSELVES, so the finding below can be acted on rather
-            # than only counted. A row line is `verify: <key> <was> -> <now>`;
-            # the other `verify:` lines carry no arrow.
-            grep -o 'verify: [^ ]* .* -> .*' verify.log | awk '{print $2}' >> moved.txt || true
+            # THE ROWS THEMSELVES, FROM THE FILE AND NOT FROM THE LOG. The
+            # `verify:` lines are the READER's copy and stop at five, so taking
+            # the finding off them capped it at five a board: 225 moved rows
+            # arrived here as 15, under a cap of 40 whose whole purpose is to
+            # hand a finding that large to a person — and the rescore filed
+            # after it repaired 15 of the 225.
+            cat "moved-$id.txt" >> moved.txt || true
             grep -o 'verify: .* -> .*' verify.log | head -3 || true
           done
           cat result.txt
@@ -179,7 +184,13 @@ jobs:
                 echo "::notice::could not file a rescore — Actions -> board -> Run workflow, weapon = $sel"
               fi
             else
-              echo "::notice::$n rows moved, over the cap of $REPAIR_CAP — read it before rescoring: $sel"
+              # THE WEAPONS, NOT THE ROWS. Past the cap the finding is systemic
+              # and the selector is pages long; what a reader needs first is how
+              # WIDE it is. Nothing is rescored — that is the point of the cap.
+              wide=$(sort -u moved.txt | sed 's/#.*//' | sort -u | tr '\n' ' ')
+              echo "::notice::$n rows moved, over the cap of $REPAIR_CAP — nothing was rescored"
+              echo "::notice::something systemic moved. weapons touched: $wide"
+              echo "::notice::to repair it anyway: Actions -> board -> Run workflow, full = true"
             fi
             exit 1
           fi
