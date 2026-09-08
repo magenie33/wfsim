@@ -2099,6 +2099,39 @@ fn main() {
         held.len(),
         screened.len(),
     );
+    // A BOARD MAY NOT SHRINK BY SURPRISE — the same tripwire `guard_shrink` puts
+    // in front of the library, in front of the thing derived from it.
+    //
+    // THE PRIOR BOARD IS NOT A SOURCE OF NUMBERS HERE. It is the only thing a
+    // short publish can be measured against: the assembly publishes one
+    // generation, and an INCOMPLETE generation publishes a board missing every
+    // row it does not hold. Ninety percent, because rows leave a board honestly
+    // — a build expires, a weapon's rows all fall under the floor — and losing
+    // a tenth of them between two runs is a generation that is not ready.
+    //
+    // IT REFUSES RATHER THAN WARNS. A board committed short is a board the next
+    // run reads as the prior one, and by then the rows are gone from the file
+    // the site serves.
+    if project {
+        if let Some(path) = flag("--reuse") {
+            if let Ok(text) = std::fs::read_to_string(&path) {
+                let prior_rows = wfsim_engine::boards_data::parse(&text)
+                    .map(|b| b.entries.len())
+                    .unwrap_or(0);
+                let floor = prior_rows * 9 / 10;
+                let now = kept.len() + below.len() + probed.len();
+                if prior_rows > 0 && now < floor {
+                    eprintln!(
+                        "::error::the generation would publish {now} rows against {prior_rows} on the board — under the floor of {floor}"
+                    );
+                    eprintln!(
+                        "::error::an incomplete generation is not published; fill it and run again"
+                    );
+                    std::process::exit(1);
+                }
+            }
+        }
+    }
     // HOW MANY GROUPS THE SCREEN COULD EVEN JUDGE. It needs a leader to measure
     // against, and when it has none it silently passes everything — which it
     // does whenever the prior board is unreadable. "0 screened" is
