@@ -1748,6 +1748,113 @@ already per row. 13.6% of commits.
 
 ---
 
+## The pipeline, designed around one rule
+
+> **A FACT IS DURABLE THE INSTANT IT IS COMPUTED, AND NOTHING DOWNSTREAM MAY
+> DESTROY IT.**
+
+Both halves were violated, and the two together lost a full rescore — 8,008 CPU
+minutes, computed correctly and then deleted:
+
+1. A shard's scores became durable only when the shard FINISHED and then
+   UPLOADED. GitHub's artifact service timed out on one of 128, the assembly
+   was skipped, and nothing was published.
+2. The next assembly read the banked scores, silently preferred the older
+   merged set — deltas sorted before it by name — wrote that older set back,
+   and SWEPT the deltas it had just discarded.
+
+Neither step was wrong about anything it could see. The design let a merge whose
+correctness nothing checked gate a delete.
+
+### The four pieces, and what each is allowed to do
+
+**INGEST — the worker.** `POST /api/board/submit` writes one row:
+`INSERT OR REPLACE INTO builds`. The key is the build, so a resubmission is the
+same row. `GET /api/board/pending` is `SELECT COUNT(*)`. It knows nothing about
+scores and writes nothing else.
+
+**COMPUTE — a shard.** Reads the library and the facts under the current
+`code_fp`, takes its share of the difference, and after each row **writes the
+fact immediately**, in batches of about fifty. It produces NO artifact and NO
+blob: its only output is rows. Killed at any point, it keeps everything it
+wrote, and what it did not write is simply missing — which is the same thing as
+never having started it.
+
+**PUBLISH — a projection, and it depends on no run.** One query for the newest
+complete generation, rank, project the top N per (weapon, mode, ruler), write
+`boards/*.yaml` and `site/board/*.json`, commit. It can run at any moment, needs
+nothing from any scoring run, and CANNOT DESTROY ANYTHING because it only reads.
+
+**AUDIT — much smaller than it is now.** The board becomes a projection of facts
+keyed by `code_fp`, so "is the published board what this code computes" is a
+comparison of two strings rather than a sampler that crosses the board in days.
+What is left for it is the question a table cannot answer: is the engine
+DETERMINISTIC — re-fight a few rows and check the fact reproduces.
+
+### A generation, stated precisely
+
+A generation is every fact sharing one `code_fp`.
+
+> **A generation is COMPLETE when every (build, ruler, mode) that has a fact in
+> the PUBLISHED generation also has one here.**
+
+Measured against the PUBLISHED generation and not against the library, because a
+build submitted a minute ago has no fact under any generation: "every build in
+the library" would block publishing for ever, one submission at a time. Under
+this rule a new build blocks nothing — it appears as PENDING, outside the
+ranking, ranked provisionally by the client's own number, and is replaced by its
+fact when one exists.
+
+The swap is atomic. A reader sees one generation or the other, never a board
+whose rows were measured by two engines — which is not a board, and which
+tonight would have ranked a repaired row a quarter of its old score BELOW the
+rows that had not been repaired yet.
+
+### What becomes impossible
+
+| | why |
+| --- | --- |
+| a shard's work lost because a service timed out | the fact is in the table before the shard ends |
+| a correct fact overwritten by an older one | `code_fp` is in the key: two engines' answers are two rows |
+| a correct fact DELETED downstream | nothing deletes facts — no sweep, no merge, no delta |
+| the board mixing two engines | publish selects one `code_fp` |
+| "is this board current" taking days to answer | it is one comparison |
+
+### What it retires
+
+`score_store.sh` and the R2 bucket; artifacts as a data channel; the
+merged-set/delta distinction and the sweep between them; `--scores`,
+`--scored-here` and `--emit-scores`; the KV namespace, the submission counter
+and its hourly corrector; `SKIP_LISTING`; `board_sample.py`, `CROSSING`,
+`REPAIR_CAP` and `--verify-list`.
+
+Every one of them exists because the store underneath could not be asked a
+question, and every one is a seam where one component reads another's FORMATTING
+rather than its data — a log truncated at five lines, a shell message that
+closed its own expansion, a merge decided by filename order.
+
+### The order to move in, and why it is this order
+
+1. **Facts are written to D1 BESIDE R2.** Nothing reads them. Run one whole
+   generation both ways and compare: same rows, same numbers.
+2. **Publish reads D1**, with R2 kept as the fallback for a week.
+3. **Delete the R2 path** — the artifacts, the sweep, `score_store.sh`.
+4. **The board reads the library from D1.** The worker already writes it and the
+   backfill is proven.
+5. **`restore_library.sh` restores INTO D1.** Not tidying-up at the end: a
+   backup that runs, commits and passes its self-test while pointing at a
+   retired store is discovered by somebody who has just lost the library.
+6. **Retire the KV namespace.**
+7. **Restore the clock**, once a run is measured repairing rows at a rate that
+   crosses the board in days.
+
+**STEP 1 IS FIRST BECAUSE IT IS THE ONLY ONE THAT STOPS THE BLEEDING.**
+Everything after it is a simplification; step 1 is a repair, and until it is
+done every expensive run is staked on an artifact service and a merge decided by
+sorting filenames.
+
+---
+
 ## The shape, end to end
 
 ```
