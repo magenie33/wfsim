@@ -502,6 +502,71 @@ fn sort_store_files(files: &mut [std::path::PathBuf], bench_id: &str) {
     });
 }
 
+/// A FACT, WRITTEN THE MOMENT IT IS COMPUTED, to a file that is only ever
+/// APPENDED to and flushed per row.
+///
+/// `(build, ruler, mode, what it read, what measured it) -> score` is true for
+/// ever once computed, so it is written down when it is computed rather than
+/// when a batch ends. What ships it to the database is
+/// `scripts/ship_facts.sh`, running beside the scorer, so a shard killed at
+/// nine tenths keeps nine tenths — where it used to keep nothing at all.
+///
+/// `measured_by` is handed in rather than derived: the scorer cannot see which
+/// commit built it, and a hash it invented would be a second answer to a
+/// question the workflow already knows.
+struct FactLog {
+    out: Option<std::io::BufWriter<std::fs::File>>,
+    measured_by: String,
+}
+
+impl FactLog {
+    fn open(path: Option<String>, measured_by: Option<String>) -> Self {
+        let out = path.and_then(|p| {
+            std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&p)
+                .map_err(|e| eprintln!("facts: cannot append to {p}: {e}"))
+                .ok()
+                .map(std::io::BufWriter::new)
+        });
+        Self { out, measured_by: measured_by.unwrap_or_default() }
+    }
+
+    /// THE KEY IS `identity#mode` and the row needs them apart, because a mode
+    /// is an independent ranking: a melee carries seven and collapsing them
+    /// would keep whichever was written last.
+    fn write(
+        &mut self,
+        ruler: &str,
+        key: &str,
+        data_fp: &str,
+        score: f64,
+        cost_seconds: f64,
+        rolls: Option<&Vec<f64>>,
+    ) {
+        use std::io::Write;
+        let Some(out) = self.out.as_mut() else { return };
+        let (identity, mode) = key.rsplit_once('#').unwrap_or((key, ""));
+        let line = serde_json::json!({
+            "identity": identity,
+            "ruler": ruler,
+            "mode": mode,
+            "data_fp": data_fp,
+            "measured_by": self.measured_by,
+            "score": score,
+            "cost_seconds": cost_seconds,
+            "rolls": rolls,
+        });
+        // FLUSHED PER ROW. A buffer that is written at the end is the batch
+        // this exists to stop being.
+        if writeln!(out, "{line}").and_then(|()| out.flush()).is_err() {
+            eprintln!("facts: the log stopped accepting rows");
+            self.out = None;
+        }
+    }
+}
+
 fn load_scores(spec: Option<String>, bench_id: &str) -> LoadedScores {
     let mut out = std::collections::HashMap::new();
     // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
@@ -996,6 +1061,9 @@ fn main() {
             Err(why) => eprintln!("full rescore: {why}"),
         }
     }
+    // THE DURABLE HALF, and it is not the same thing as `--emit-scores`: that
+    // file is written once at the end, this one is appended to per row.
+    let mut facts = FactLog::open(flag("--facts"), flag("--measured-by"));
     let emit_to = flag("--emit-scores");
     // EVERYTHING THIS RUN KNOWS, not only what it computed. A shard banks its
     // own slice — re-emitting the store it read would make every delta a copy
@@ -1783,6 +1851,19 @@ fn main() {
                     let s = score_in(&out);
                     computed.insert(key.clone(), s);
                     costs.insert(key.clone(), began.elapsed().as_secs_f64());
+                    // …AND THE FACT IS DURABLE HERE, not when the run ends. A
+                    // shard used to become useful only once it FINISHED and then
+                    // UPLOADED, so a whole rescore was lost to an artifact
+                    // service timing out on one of 128 shards — see
+                    // docs/BOARD.md §"The pipeline, designed around one rule".
+                    facts.write(
+                        &bench_id,
+                        &key,
+                        row_fps.get(&key).map(String::as_str).unwrap_or(""),
+                        s,
+                        began.elapsed().as_secs_f64(),
+                        rolls.get(&key),
+                    );
                     // THIRTY SECONDS is a row worth naming: the median row is under
                     // one, so this prints the tail and nothing else — a line per
                     // slow row rather than 2,474 lines nobody reads.
@@ -2570,6 +2651,50 @@ fn priced(
 
 #[cfg(test)]
 mod tests {
+    /// A FACT CARRIES ITS MODE IN A COLUMN OF ITS OWN.
+    ///
+    /// The key is `identity#mode` and a mode is an INDEPENDENT RANKING — a
+    /// melee carries seven — so a fact table that kept them joined, or split on
+    /// the FIRST `#`, would file seven measurements under one row and keep
+    /// whichever was written last.
+    #[test]
+    fn a_fact_carries_its_mode_apart_from_the_build() {
+        let dir = std::env::temp_dir().join(format!("wfsim-facts-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("facts.ndjson");
+        let _ = std::fs::remove_file(&path);
+        let mut log = super::FactLog::open(
+            Some(path.to_string_lossy().into_owned()),
+            Some("abc1234".into()),
+        );
+        log.write("group_clear", "orthos_prime|mods#heavy_slam", "fp1", 12.5, 3.0, None);
+        log.write("group_clear", "no_mode_here", "fp2", 1.0, 0.5, None);
+        drop(log);
+
+        let text = std::fs::read_to_string(&path).unwrap();
+        let rows: Vec<serde_json::Value> =
+            text.lines().map(|l| serde_json::from_str(l).unwrap()).collect();
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(rows.len(), 2, "one line per fact: {text}");
+        assert_eq!(rows[0]["identity"], "orthos_prime|mods");
+        assert_eq!(rows[0]["mode"], "heavy_slam");
+        assert_eq!(rows[0]["measured_by"], "abc1234");
+        assert_eq!(rows[0]["ruler"], "group_clear");
+        // A KEY WITH NO MODE KEEPS THE WHOLE OF ITSELF as the identity, rather
+        // than losing its last segment to an empty mode.
+        assert_eq!(rows[1]["identity"], "no_mode_here");
+        assert_eq!(rows[1]["mode"], "");
+    }
+
+    /// AND WITHOUT A PATH IT WRITES NOTHING AND SAYS NOTHING. The flag is
+    /// optional while the store is migrating, and a scorer that failed without
+    /// it would take the whole pipeline down for a file nothing reads yet.
+    #[test]
+    fn a_fact_log_with_nowhere_to_write_is_a_working_state() {
+        let mut log = super::FactLog::open(None, None);
+        log.write("single_target", "k#base", "fp", 1.0, 1.0, None);
+    }
+
     /// A DELTA IS READ AFTER THE MERGED SET, so it wins the duplicate key.
     ///
     /// This is a NAME ORDER and not a timestamp, which is why it needs an
