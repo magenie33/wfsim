@@ -1765,9 +1765,9 @@ number is wrong, the SCORER is wrong, and that is where it is fixed.
 That is the whole of it. No prior board, no store, no artifacts, no forced
 list, no submissions to score, no fingerprint to check, no reuse to decide.
 
-**WHY IT IS ONE SOURCE AND NOT FIVE.** The publisher used to be handed a prior
-board, a merged store, this run's artifacts, the facts, and the library — five
-sources that can disagree, so it needed a rule for which one wins. Every defect
+**WHY IT IS ONE SOURCE AND NOT FIVE.** A publisher handed a prior board, a
+merged store, a run's artifacts, the facts and the library has five sources
+that can disagree, so it needs a rule for which one wins. Every defect
 this pipeline has produced lives in that rule: a merge decided by filename
 order, an artifact whose absence skipped the assembly, a clock that truncated a
 forced set. **A rule about which source wins is only needed because there is
