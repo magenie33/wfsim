@@ -15,9 +15,9 @@
 # same row twice and a lost cursor costs one repeat, never a wrong number.
 set -euo pipefail
 
-# TEN ROWS A STATEMENT: nine bound parameters each, against D1's limit of a
+# NINE ROWS A STATEMENT: ten bound parameters each, against D1's limit of a
 # hundred per query.
-BATCH=10
+BATCH=9
 
 configured() {
   [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
@@ -51,8 +51,12 @@ d1() {
 # a newer measurement can never silently overwrite an older one it disagrees
 # with. That is the property tonight's store did not have.
 batches() {
-  local gen="$1" src="$2"
-  jq -s -c --argjson n "$BATCH" --arg gen "$gen" '
+  local gen="$1" src="$2" now
+  # THE CLOCK IS THE SHELL'S, NOT THE DATABASE'S. A strftime call inside the
+  # statement is refused by D1 outright — "near %: syntax error at offset 164"
+  # — and a bound value is one less thing for the statement to be parsed for.
+  now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  jq -s -c --argjson n "$BATCH" --arg gen "$gen" --arg now "$now" '
     . as $all
     | range(0; ($all | length); $n)
     | . as $i
@@ -61,12 +65,12 @@ batches() {
         sql: ("INSERT OR REPLACE INTO scores (identity, ruler, mode, data_fp,"
               + " generation, measured_by, score, rolls, cost_seconds, computed_at)"
               + " VALUES "
-              + ([$chunk[] | "(?,?,?,?,?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
+              + ([$chunk[] | "(?,?,?,?,?,?,?,?,?,?)"]
                  | join(","))),
         params: [$chunk[]
                  | .identity, .ruler, .mode, .data_fp, $gen, (.measured_by // ""),
                    .score, (if .rolls == null then null else (.rolls | tojson) end),
-                   .cost_seconds]
+                   .cost_seconds, $now]
       }
   ' "$src"
 }
@@ -127,14 +131,14 @@ self_test() {
   row 'quote\"key' base 3.0 >> facts.ndjson
   for i in 4 5 6 7 8 9 10 11 12; do row "k$i" base "$i" >> facts.ndjson; done
 
-  BATCH=10
+  BATCH=9
   local n; n=$(batches gen1 facts.ndjson | wc -l | tr -d ' ')
-  [ "$n" = "2" ] && say ok "twelve rows at ten a batch is two statements" \
+  [ "$n" = "2" ] && say ok "twelve rows at nine a batch is two statements" \
     || say FAIL "batched into $n"
 
   local first; first=$(batches gen1 facts.ndjson | head -1)
   [ "$(printf '%s' "$first" | jq -r '.params | length')" = "90" ] \
-    && say ok "...nine bound parameters a row, under D1's hundred" \
+    && say ok "...ten bound parameters a row, under D1's hundred" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
 
   printf '%s' "$first" | jq -e '.sql | contains("quote") | not' >/dev/null \
@@ -144,13 +148,13 @@ self_test() {
 
   # THE GENERATION IS THE SHIPPER'S, NOT THE SCORER'S. It rides in every row so
   # the same measurement can be filed under a generation the scorer never knew.
-  printf '%s' "$first" | jq -e '[.params[4], .params[13]] == ["gen1","gen1"]' >/dev/null \
+  printf '%s' "$first" | jq -e '[.params[4], .params[14]] == ["gen1","gen1"]' >/dev/null \
     && say ok "...and every row carries the generation it was filed under" \
     || say FAIL "generation missing from the parameters"
 
   # ONE ROW PER MODE. Two modes of one build are two rows, and a statement that
   # collapsed them would file seven melee measurements as one.
-  printf '%s' "$first" | jq -e '[.params[2], .params[11]] == ["base","heavy_slam"]' >/dev/null \
+  printf '%s' "$first" | jq -e '[.params[2], .params[12]] == ["base","heavy_slam"]' >/dev/null \
     && say ok "...and two modes of one build are two rows" \
     || say FAIL "the modes collapsed"
 
