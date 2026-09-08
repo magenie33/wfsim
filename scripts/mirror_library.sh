@@ -20,12 +20,22 @@ configured() {
   [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
 }
 
+# A REFUSED WRITE HAS TO SAY WHY. `curl -sf` swallows the body on an error
+# status, so a token without D1 permission, a table that does not exist and a
+# malformed statement all arrive as the same silent non-zero — "226 refused",
+# measured, with nothing to act on. The body goes to a FILE and the status into
+# a variable, so the caller can print both.
+D1_OUT=""
+D1_CODE=""
 d1() {
-  curl -sf -X POST \
+  [ -n "$D1_OUT" ] || D1_OUT=$(mktemp)
+  D1_CODE=$(curl -s -o "$D1_OUT" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer ${CF_TOKEN:-x}" \
     -H "content-type: application/json" \
     --data-binary "$1" \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query"
+    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT:-x}/d1/database/${CF_D1_DATABASE:-x}/query") \
+    || D1_CODE="000"
+  [ "$D1_CODE" = "200" ]
 }
 
 # ---- the upsert -------------------------------------------------------------
@@ -62,7 +72,19 @@ upsert() {
   fi
   while IFS= read -r body; do
     [ -n "$body" ] || continue
-    if d1 "$body" > /dev/null 2>&1; then sent=$((sent + 1)); else failed=$((failed + 1)); fi
+    if d1 "$body"; then
+      sent=$((sent + 1))
+    else
+      failed=$((failed + 1))
+      # THE FIRST ONE, WHOLE. They fail for one reason and 226 copies of it is
+      # not more information — but zero copies of it is a number nobody can act
+      # on, which is how this failed the first time.
+      if [ "$failed" -eq 1 ]; then
+        echo "::error::mirror: the database refused a write [HTTP $D1_CODE]"
+        head -c 500 "$D1_OUT" || true
+        echo
+      fi
+    fi
   done < <(batches "$src")
   echo "mirror: $sent batches written, $failed refused"
   [ "$failed" -eq 0 ]
@@ -77,10 +99,13 @@ upsert() {
 two_way_count() {
   local src="$1" here there
   here=$(wc -l < "$src" | tr -d ' ')
-  there=$(d1 '{"sql":"SELECT COUNT(*) AS n FROM builds"}' \
-    | jq -r '.result[0].results[0].n // empty' 2>/dev/null || true)
+  there=""
+  if d1 '{"sql":"SELECT COUNT(*) AS n FROM builds"}'; then
+    there=$(jq -r '.result[0].results[0].n // empty' < "$D1_OUT" 2>/dev/null || true)
+  fi
   if [ -z "$there" ]; then
-    echo "::error::mirror: the database would not say how many rows it holds"
+    echo "::error::mirror: the database would not say how many rows it holds [HTTP $D1_CODE]"
+    [ -s "$D1_OUT" ] && { head -c 500 "$D1_OUT"; echo; }
     return 1
   fi
   if [ "$there" -lt "$here" ]; then
@@ -138,9 +163,15 @@ self_test() {
   export PATH="$DIR/bin:$PATH"
   export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
 
+  # THE STUB ANSWERS THE WAY CURL DOES — body to the `-o` path, status on
+  # stdout — because that shape is what the caller now reads, and a stub that
+  # answered any other way would test a client nobody runs.
   cat > "$DIR/bin/curl" <<'AHEAD'
 #!/usr/bin/env bash
-printf '{"result":[{"results":[{"n":9}],"success":true}],"success":true}'
+out=/dev/null; prev=
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+printf '{"result":[{"results":[{"n":9}],"success":true}],"success":true}' > "$out"
+printf '200'
 AHEAD
   chmod +x "$DIR/bin/curl"
   two_way_count lib.ndjson > out.txt 2>&1 \
@@ -150,7 +181,10 @@ AHEAD
 
   cat > "$DIR/bin/curl" <<'SHORT'
 #!/usr/bin/env bash
-printf '{"result":[{"results":[{"n":4}],"success":true}],"success":true}'
+out=/dev/null; prev=
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+printf '{"result":[{"results":[{"n":4}],"success":true}],"success":true}' > "$out"
+printf '200'
 SHORT
   chmod +x "$DIR/bin/curl"
   # IF/ELIF, NOT A SUBSHELL. `say` in `( ... )` increments a counter the parent
@@ -163,9 +197,15 @@ SHORT
     say FAIL "$(cat out.txt)"
   fi
 
+  # A REFUSAL WITH A BODY, which is what Cloudflare actually sends: a token
+  # without D1 permission answers 403 and says so, and the point of the change
+  # this tests is that the sentence reaches the log.
   cat > "$DIR/bin/curl" <<'DEAD'
 #!/usr/bin/env bash
-exit 22
+out=/dev/null; prev=
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}' > "$out"
+printf '403'
 DEAD
   chmod +x "$DIR/bin/curl"
   two_way_count lib.ndjson > out.txt 2>&1 \
@@ -173,8 +213,10 @@ DEAD
     || say ok "...and a database that will not answer is a failure"
   if upsert lib.ndjson > out.txt 2>&1; then
     say FAIL "a refused write passed"
-  elif grep -q "3 refused" out.txt; then
-    say ok "...and a refused batch is counted and reported"
+  elif grep -q "3 refused" out.txt && grep -q "D1 not authorized" out.txt; then
+    # THE BODY, NOT JUST THE COUNT. "226 refused" with no reason is what the
+    # first real run produced, and it named neither the token nor the table.
+    say ok "...and a refused batch reports what the database said"
   else
     say FAIL "$(cat out.txt)"
   fi
@@ -217,5 +259,16 @@ fi
 # sentence was appended to the PATH — which then failed to open under a name
 # that reads as a corrupted argument rather than as a quoting bug.
 SRC="${1:?the snapshot to mirror, one record a line}"
+
+# CAN THIS TOKEN REACH THAT TABLE — asked once, before 226 writes ask it 226
+# times. A token without D1 permission and a database with no `builds` in it
+# both answer here, in one sentence, instead of as a count of refusals.
+if ! d1 '{"sql":"SELECT COUNT(*) AS n FROM builds"}'; then
+  echo "::error::mirror: cannot read the library table [HTTP $D1_CODE]"
+  [ -s "$D1_OUT" ] && { head -c 500 "$D1_OUT"; echo; }
+  echo "::error::check the api token carries D1:Edit, and that worker/schema.sql has been run"
+  exit 1
+fi
+
 upsert "$SRC"
 two_way_count "$SRC"
