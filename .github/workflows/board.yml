@@ -20,12 +20,13 @@
 # rate that crosses the board in days, not months — `docs/BOARD.md`
 # §"When the code moved" is where that rate is argued.
 #
-# NOTHING AUTOMATIC EVER FIGHTS MORE THAN A SLICE, which is what makes the
-# correctness rule affordable: a fingerprint difference says a stored score is
-# UNVERIFIED, never that it is wrong, so the board CONVERGES at a rate this file
-# sets instead of being re-derived whenever the code moves. A full rescore is a
-# button (`full`), and `weapon` names rows at any precision beside it —
-# docs/BOARD.md §"When the code moved".
+# A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. The score store keys a
+# number by what it READ and never by which binary wrote it, so a run reuses
+# every score whose data still matches: measured on a scheduled run, 10,348
+# reused and 0 scored. `audit.yml` is the only thing that finds a number this
+# code no longer computes, and it finds it by MEASURING rather than by asking a
+# hash. A full rescore is the button (`full`); `weapon` names rows at any
+# precision beside it — docs/BOARD.md §"When the code moved".
 #
 # Scoring is embarrassingly parallel — every row is an independent fight — so it
 # splits `SHARDS` ways and a merge job assembles the board from the scores. What
@@ -34,6 +35,14 @@
 name: board
 
 on:
+  # AUTOMATIC-UPDATES: HELD
+  #
+  # That line is read by `scripts/check_rescore_paths.mjs`, which otherwise
+  # REQUIRES a schedule: nothing waking the board is the kind of state that
+  # goes green everywhere and is discovered by a reader asking why the numbers
+  # stopped. Deleting it without restoring the cron fails the check, so the
+  # hold cannot outlive somebody's memory of it.
+  #
   # HELD, NOT DISABLED — see the header. The trigger is commented out HERE
   # rather than turned off in the repository's settings, because a workflow
   # disabled through the UI is a fact this file does not carry: it survives a

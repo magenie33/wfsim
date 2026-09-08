@@ -46,7 +46,14 @@ env:
   # being a repair and becomes a question: a hundred rows moving at once is a
   # ruler's terms or a fight-wide constant, not a hundred separate defects, and
   # a human should read it before an hour of compute goes into the symptom.
-  REPAIR_CAP: 40
+  #
+  # ZERO WHILE THE BOARD'S CLOCK IS HELD (`board.yml`, AUTOMATIC-UPDATES). This
+  # job is an INSPECTOR either way — it publishes nothing and gates nothing — so
+  # at zero it still reports every moved row, and the only thing it stops doing
+  # is pressing a button nobody is currently letting the clock press. Restore
+  # them together: a cap without a schedule is a board repaired at whatever rate
+  # an inspector happens to sample at, which is nobody's design.
+  REPAIR_CAP: 0
 
 jobs:
   audit:

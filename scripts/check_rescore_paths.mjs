@@ -11,9 +11,11 @@
 // So does pinning the repair slice's offset, the other way the same wheel spins
 // without turning.
 //
-// Ordinary work still reaches the board. The FINGERPRINT carries it: a change
-// marks the rows it reached as unverified, and the slice repairs them at the
-// rate `REFRESH_MINUTES` sets.
+// A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. The score store keys a
+// stored number by what it READ, never by which binary wrote it, so a run
+// reuses every score whose data still matches — measured, 10,348 reused and 0
+// scored. `audit.yml` is the only thing that finds a number the code no longer
+// computes, and it finds it by MEASURING a slice rather than by asking a hash.
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,8 +38,21 @@ const keys = triggers.filter((l) => /^ {2}\S/.test(l)).map((l) => l.trim().repla
 check(!keys.includes("push"), `the board is not woken by a push (${keys.join(" ") || "nothing"})`,
   "a pushed run duplicates the scheduled one and is cancelled by the next push; "
     + "the fingerprint is what carries a change to the board");
-check(keys.includes("schedule"), "the clock wakes it",
-  "with no schedule and no push, nothing automatic updates the board at all");
+// THE CLOCK, OR A DECLARED HOLD — never neither, and never a hold by accident.
+// A board nothing wakes is the state that goes green in every check and is
+// discovered by a reader asking why the numbers stopped, so the hold has to be
+// a line somebody wrote on purpose. Deleting the line without restoring the
+// cron fails here.
+const HELD = "AUTOMATIC-UPDATES: HELD";
+const held = triggers.some((l) => l.includes(HELD));
+check(keys.includes("schedule") || held, "the clock wakes it, or the hold is declared",
+  "with no schedule and no push, nothing automatic updates the board at all — "
+    + `say so with a ${HELD} line in the on: block if that is deliberate`);
+if (held) {
+  console.log(`  --    the clock is HELD, so only the button updates the board`);
+  check(!keys.includes("schedule"), "...and a held clock is not also running",
+    "the hold line says the board is manual; a schedule beside it says it is not");
+}
 check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:"),
   "no path list decides whether the board runs",
   "the fingerprint decides what a change reached; a path list is a second "
