@@ -116,6 +116,17 @@ two_way_count() {
   echo "library: $here live in KV, $there held in the database ($((there - here)) expired but kept)"
 }
 
+reachable() {
+  if d1 '{"sql":"SELECT COUNT(*) AS n FROM builds"}'; then
+    echo "database: reachable, $(jq -r '.result[0].results[0].n // 0' < "$D1_OUT") rows in builds"
+    return 0
+  fi
+  echo "::error::mirror: cannot read the library table [HTTP $D1_CODE]"
+  [ -s "$D1_OUT" ] && { head -c 500 "$D1_OUT"; echo; }
+  echo "::error::check the api token carries D1:Edit, and that worker/schema.sql has been run"
+  return 1
+}
+
 # ---- self-test --------------------------------------------------------------
 #
 # A stub `curl` on PATH, so what is exercised is the batching and the counting
@@ -254,21 +265,17 @@ if ! configured; then
   exit 0
 fi
 
+# CAN THIS TOKEN REACH THAT TABLE — asked once, and asked ALONE by `--probe`.
+# A token without D1 permission and a database with no `builds` in it both
+# answer here in one sentence, instead of as a count of refusals half an hour
+# after a snapshot nobody needed to build to find out.
+if ! reachable; then exit 1; fi
+[ "${1:-}" = "--probe" ] && exit 0
+
 # NO BRACES IN THE MESSAGE. `${1:?...}` ends at the FIRST `}`, so a message
 # naming the record shape closed the expansion early and the tail of the
 # sentence was appended to the PATH — which then failed to open under a name
 # that reads as a corrupted argument rather than as a quoting bug.
 SRC="${1:?the snapshot to mirror, one record a line}"
-
-# CAN THIS TOKEN REACH THAT TABLE — asked once, before 226 writes ask it 226
-# times. A token without D1 permission and a database with no `builds` in it
-# both answer here, in one sentence, instead of as a count of refusals.
-if ! d1 '{"sql":"SELECT COUNT(*) AS n FROM builds"}'; then
-  echo "::error::mirror: cannot read the library table [HTTP $D1_CODE]"
-  [ -s "$D1_OUT" ] && { head -c 500 "$D1_OUT"; echo; }
-  echo "::error::check the api token carries D1:Edit, and that worker/schema.sql has been run"
-  exit 1
-fi
-
 upsert "$SRC"
 two_way_count "$SRC"

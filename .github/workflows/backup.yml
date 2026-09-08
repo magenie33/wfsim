@@ -178,6 +178,29 @@ jobs:
           git push --quiet "$url" library-backups
           echo "committed $COUNT records (was $prev)"
 
+  # CAN THE PIPELINE REACH THE DATABASE — asked BESIDE the snapshot and not
+  # behind it. Building the snapshot is half an hour of cold reads, and finding
+  # out afterwards that the destination refuses the token costs that half hour
+  # every time somebody wants the answer.
+  #
+  # IT WARNS AND DOES NOT FAIL. The backup is the half that matters and it does
+  # not touch the database at all; this job only makes the reason visible in a
+  # minute rather than in thirty.
+  reach:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: can the token reach the library table
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/mirror_library.sh --probe
+
   # THE SECOND COPY, AND THE COUNT THAT PROVES IT — a JOB of its own so that a
   # mirror nobody reads yet cannot red the backup, which is the half that
   # matters. It runs off the snapshot above rather than fetching its own: that
