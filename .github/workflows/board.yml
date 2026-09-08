@@ -82,6 +82,15 @@ on:
       # costs minutes rather than the whole board. `;` separates several,
       # because a mod list is commas. A selector that matches nothing rescores
       # nothing and says so rather than passing quietly.
+      # WHICH GENERATION THESE FACTS ARE FILED UNDER, and it is opened by a
+      # PERSON. A source hash here would make each of the 55.6% of commits
+      # that touch the engine a full rescore; most ride in the generation
+      # that is open, and a new one is opened when the AUDIT measures that a
+      # change actually moved numbers.
+      generation:
+        description: "the generation these scores belong to"
+        type: string
+        default: "g1"
       weapon:
         description: "rescore these rows whatever the fingerprints say — weapon | weapon#mode | weapon#mode:plain | a whole row key; ';' between several"
         type: string
@@ -100,6 +109,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # THE GENERATION EVERY JOB FILES UNDER. One value for the run, so a shard
+  # and the assembly cannot disagree about which generation they are in.
+  GEN: ${{ inputs.generation || 'g1' }}
+
   # HOW MANY WAYS THE SCORING SPLITS, and it is sized against the WORK, not
   # against the ceiling. A shard costs 2.6 minutes before it scores anything —
   # checkout, cache restore, load — so the split is only worth what it saves.
@@ -208,6 +221,8 @@ jobs:
       - name: read the score store
         if: steps.wired.outputs.yes == 'true'
         env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -308,6 +323,23 @@ jobs:
       # ANYTHING IT CANNOT ANSWER MEANS WORK: a build that fails to validate, a
       # board that will not parse, a benchmark with no file. Being wrong that way
       # costs one run; being wrong the other way costs a board nobody updates.
+      # WHAT THIS GENERATION ALREADY HOLDS. One query, ordered and paged,
+      # in place of a directory of files merged by filename order — which is
+      # how a whole rescore came to be discarded and then swept away.
+      #
+      # UNCONFIGURED IS AN EMPTY GENERATION, not a failure: the run then
+      # computes everything, which is what it did before there was one.
+      - name: read this generation's facts
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+
       - name: is there anything to score
         id: work
         if: steps.wired.outputs.yes == 'true'
@@ -330,6 +362,7 @@ jobs:
             line=$(./target/release/wfsim-board "$id" \
                      --reuse "$f" --dry-run $FORCE $SLICE \
                      --scores store \
+                     --facts-in facts-known.ndjson \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
             echo "$id: $line"
@@ -392,9 +425,42 @@ jobs:
       # fight would be spending an hour to reproduce it — and only submissions
       # with no row yet cost anything. The manual buttons are what override it,
       # by FORCING rows rather than by withholding a prior board.
+      # WHAT THIS GENERATION ALREADY HOLDS. One query, ordered and paged,
+      # in place of a directory of files merged by filename order — which is
+      # how a whole rescore came to be discarded and then swept away.
+      #
+      # UNCONFIGURED IS AN EMPTY GENERATION, not a failure: the run then
+      # computes everything, which is what it did before there was one.
+      - name: read this generation's facts
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+
       - name: score this shard of every benchmark
         run: |
           set -euo pipefail
+          # SHIPPED WHILE IT WORKS, not after. Scores that reach safety only
+          # once a shard has FINISHED and UPLOADED are scores one artifact
+          # service timeout can empty — measured, on a whole rescore. A minute
+          # is the most a killed shard loses.
+          : > facts.ndjson
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          ( while sleep 60; do
+              bash scripts/ship_facts.sh --generation "$GEN" facts.ndjson || true
+            done ) &
+          SHIPPER=$!
+          # …AND ONCE MORE AT THE END, whatever happened to the loop: `trap`
+          # rather than a line after it, so a scorer that exits non-zero still
+          # banks what it managed.
+          trap 'kill $SHIPPER 2>/dev/null || true; bash scripts/ship_facts.sh --generation "$GEN" facts.ndjson || true' EXIT
           mkdir -p scores
           # THE FORCED LIST, if the operator named one. It has to reach every
           # process that decides reuse: a shard that keeps a row the publish
@@ -425,6 +491,9 @@ jobs:
               $prior $FORCE \
               $slice \
               --scores store \
+              --facts-in facts-known.ndjson \
+              --facts facts.ndjson \
+              --measured-by "$GITHUB_SHA" \
               --shard "${{ matrix.shard }}/${{ needs.submissions.outputs.shard_count }}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
@@ -539,6 +608,23 @@ jobs:
       # rebuilt to reach anyone — install wasm-bindgen, fetch 300
       # images, recompile, to change a few numbers. The board is fetched at
       # runtime now, so this writes two small files and is done.
+      # WHAT THIS GENERATION ALREADY HOLDS. One query, ordered and paged,
+      # in place of a directory of files merged by filename order — which is
+      # how a whole rescore came to be discarded and then swept away.
+      #
+      # UNCONFIGURED IS AN EMPTY GENERATION, not a failure: the run then
+      # computes everything, which is what it did before there was one.
+      - name: read this generation's facts
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+
       - name: assemble every benchmark
         run: |
           set -euo pipefail
@@ -584,6 +670,7 @@ jobs:
             ./target/release/wfsim-board "$id" site/board.json \
               $prior $FORCE \
               --scores scores --scored-here fresh --project \
+              --facts-in facts-known.ndjson \
               --emit-scores "merged/$id.json" --emit-all \
               < submissions.json > "boards/$id.yaml"
             # THE MERGED SET, which is what the next run starts from. `--emit-all`
