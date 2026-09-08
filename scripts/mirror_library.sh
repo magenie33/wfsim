@@ -53,6 +53,13 @@ batches() {
 
 upsert() {
   local src="$1" sent=0 failed=0
+  # A SNAPSHOT WITH NOTHING IN IT IS A FAILURE, never a quiet success. Zero
+  # batches is what a missing file, an empty artifact and a mangled path all
+  # look like, and every one of them means the mirror did not happen.
+  if [ ! -s "$src" ]; then
+    echo "::error::mirror: $src holds no records — nothing was mirrored"
+    return 1
+  fi
   while IFS= read -r body; do
     [ -n "$body" ] || continue
     if d1 "$body" > /dev/null 2>&1; then sent=$((sent + 1)); else failed=$((failed + 1)); fi
@@ -172,6 +179,20 @@ DEAD
     say FAIL "$(cat out.txt)"
   fi
 
+  : > empty.ndjson
+  if upsert empty.ndjson > out.txt 2>&1; then
+    say FAIL "an empty snapshot passed"
+  elif grep -q "holds no records" out.txt; then
+    say ok "an empty snapshot is a failure, not a quiet success"
+  else
+    say FAIL "$(cat out.txt)"
+  fi
+  if upsert no-such-file.ndjson > out.txt 2>&1; then
+    say FAIL "a missing snapshot passed"
+  else
+    say ok "...and so is one that is not there"
+  fi
+
   unset CF_D1_DATABASE
   configured && say FAIL "unconfigured read as configured" \
     || say ok "no database configured is a working state"
@@ -191,6 +212,10 @@ if ! configured; then
   exit 0
 fi
 
-SRC="${1:?the snapshot to mirror, one {k,v} record a line}"
+# NO BRACES IN THE MESSAGE. `${1:?...}` ends at the FIRST `}`, so a message
+# naming the record shape closed the expansion early and the tail of the
+# sentence was appended to the PATH — which then failed to open under a name
+# that reads as a corrupted argument rather than as a quoting bug.
+SRC="${1:?the snapshot to mirror, one record a line}"
 upsert "$SRC"
 two_way_count "$SRC"
