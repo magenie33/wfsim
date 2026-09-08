@@ -40,28 +40,50 @@ CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 
 -- A SCORE IS A FACT, NOT A STEP IN A PIPELINE (docs/BOARD.md).
 --
--- `(identity, ruler, fingerprint) -> score` is true for ever once computed, so
--- it is written down the moment it is computed rather than when a batch
--- finishes. Nothing writes this table yet — the scorer still keeps its numbers
--- in the board yaml — and it is here so the shape is settled before anything
--- depends on it.
---
--- THE FINGERPRINT IS PART OF THE KEY, which is what makes a rescore a BACKFILL
--- instead of a rebuild: a code change does not invalidate rows, it means the
--- facts for the new fingerprint are simply missing, and the board keeps
--- publishing the newest generation that is COMPLETE while they fill in.
+-- `(build, ruler, mode, what it read, what measured it) -> score` is true for
+-- ever once computed, so it is written down the moment it is computed rather
+-- than when a batch finishes. Nothing writes this table yet — the scorer keeps
+-- its numbers in R2 blobs and the board yaml — and it is here so the shape is
+-- settled before anything depends on it.
 CREATE TABLE IF NOT EXISTS scores (
-  identity    TEXT NOT NULL,
-  ruler       TEXT NOT NULL,
-  fingerprint TEXT NOT NULL,
-  score       REAL NOT NULL,
+  identity     TEXT NOT NULL,
+  ruler        TEXT NOT NULL,
+  -- A ROW IS (build, ruler, MODE). A mode is a property of the WEAPON, not of
+  -- the build — every melee carries seven and the Ballistica Prime four — and
+  -- the cards that win one do not win another, so each is an independent
+  -- ranking. Without this column a melee build's seven measurements collapse
+  -- into one row and six of them are lost on write.
+  mode         TEXT NOT NULL,
+  -- TWO FINGERPRINTS, BECAUSE THEY ANSWER DIFFERENT QUESTIONS and a run acts on
+  -- them differently. `data_fp` is what this row READ, so a data change dirties
+  -- exactly the rows that read the file that moved. `code_fp` is what MEASURED
+  -- it, so a generation is every row sharing one — and the board publishes the
+  -- newest COMPLETE generation rather than a mixture of two engines.
+  data_fp      TEXT NOT NULL,
+  code_fp      TEXT NOT NULL,
+  score        REAL NOT NULL,
   -- The riven corner the search settled on, when there is one: a score alone
   -- cannot publish a riven row, because the reader has to be able to BUILD that
   -- riven and the page cannot re-derive it without paying for the search again.
-  rolls       TEXT,
-  PRIMARY KEY (identity, ruler, fingerprint)
+  rolls        TEXT,
+  -- WHAT THE ROW COST, so the bill is read off the rows rather than estimated.
+  -- The spread is four orders of magnitude wide, so which rows are expensive is
+  -- a question that has to be asked of the data and not guessed.
+  cost_seconds REAL NOT NULL,
+  -- WHEN IT WAS MEASURED, AND IT IS PROVENANCE — NEVER A TEST. A fact does not
+  -- decay: while the fingerprints match, the score is right however old it is,
+  -- and a rule that rescored by age would pay for rows that cannot have moved.
+  -- What this is for: showing a reader how old a ROW is rather than how old the
+  -- board is, ordering repairs oldest first, and saying afterwards which rows a
+  -- bad engine wrote. Nothing branches on it.
+  computed_at  TEXT NOT NULL,
+  PRIMARY KEY (identity, ruler, mode, data_fp, code_fp)
 );
 
 -- "How complete is this generation" is one query rather than a walk, which is
 -- the whole of the generation rule's cost.
-CREATE INDEX IF NOT EXISTS scores_generation ON scores (fingerprint, ruler);
+CREATE INDEX IF NOT EXISTS scores_generation ON scores (code_fp, ruler);
+
+-- …and "what has gone longest without being measured" is the order to repair
+-- in, which is the one thing `computed_at` is allowed to decide.
+CREATE INDEX IF NOT EXISTS scores_oldest ON scores (computed_at);

@@ -1748,6 +1748,84 @@ already per row. 13.6% of commits.
 
 ---
 
+## One database, and the two things that are deliberately not in it
+
+**KV AND R2 BOTH RETIRE. D1 IS THE SYSTEM OF RECORD** and holds two tables:
+`builds`, what players sent, and `scores`, the facts computed from them.
+Nothing else is a live store.
+
+The division is decided by two questions, asked of each piece of data:
+
+> **Do you ever need to ask a QUESTION about the set?** — if so it needs a
+> database, and nothing else will do.
+> **What happens if it is lost?** — that decides how many copies it gets, and
+> where they are.
+
+| | question asked of it | if lost | where |
+| --- | --- | --- | --- |
+| the library | constantly | **gone for ever** | D1 `builds` |
+| the facts | every operational one | recomputed, at 134 CPU hours | D1 `scores` |
+| the published board | none — it is read | regenerated from the facts | git, served from the CDN |
+| the snapshots | none | it IS the last copy | a git branch, at another vendor |
+
+**WHY KV COULD NOT KEEP THE LIBRARY.** It has no queries, so every question
+about the set had to be faked: "how many are there" became a counter key with
+an hourly corrector, "is this build already held" became a read before every
+write, and "which weapons are under-covered" could not be asked at all. Its free
+plan meters LIST and WRITE at a thousand a DAY against D1's hundred thousand
+rows, and it was the listing that took the board down.
+
+**WHY R2 HAS NOTHING LEFT.** It held the score blobs, and a score is a row now.
+The one job it might have inherited is the off-vendor copy, and it is the wrong
+vendor for that (below).
+
+**ONE STORE MEANS ONE POINT OF FAILURE FOR A WRITE**, and that is accepted: a
+submission that fails is a retry, not a loss, and it failed the same way when KV
+was down. What protects the library is not a second live store — it is a copy
+somewhere else, and a gate in front of the damage.
+
+### The library is protected in three layers, and they fail differently
+
+1. **THE LIVE COPY** — D1. Where it is read and written.
+2. **THE GATE** — `guard_shrink`. A run that comes back with materially fewer
+   builds than the last board was built from REFUSES to publish. A backup
+   restores after the damage; this declines to do it, which is the only one of
+   the two that works while nobody is watching.
+3. **THE OFF-VENDOR COPY** — `backup.yml` writes the whole library, one sorted
+   record a line, to the `library-backups` branch every night: for ever,
+   versioned, and about 22 KB a night because the file is sorted and git stores
+   the delta.
+
+**THE COPY MAY NOT LIVE AT THE SAME VENDOR AS THE ORIGINAL.** R2 is Cloudflare
+and so is D1, so one account-level problem — a suspension, a mistaken delete, a
+regional fault — takes both. The branch is at GitHub: another vendor, another
+credential, another failure domain. That is the whole reason the snapshot is
+where it is, and it is why R2 does not inherit the job.
+
+**AND THE SNAPSHOT IS PUBLIC, WHICH IS WHAT MAKES IT FREE.** A record carries
+the build and a DAY, and nothing about whoever sent it — no address, no token,
+no time finer than the date. So the cheapest possible backup is also a legal
+one. The `builds` table inherits that constraint: `at` is a date, and a column
+recording anything finer would quietly retire this whole arrangement.
+
+### A restore that points at a retired store is worse than none
+
+`scripts/restore_library.sh` puts the snapshot back. It is the half that makes
+the branch a backup rather than a hope, and CI runs its self-test — but a
+self-test proves the SHAPE, not the destination.
+
+So the migration is three changes and not two, and the third is not the tidying
+up:
+
+1. the worker writes `builds`
+2. the board reads `builds`
+3. **`restore_library.sh` restores into `builds`**
+
+Left undone, the backup still runs, still commits, still passes its self-test,
+and is discovered pointing at KV by somebody who has just lost the library.
+
+---
+
 ## The store is a library of BUILDS, and every ruler crosses the whole of it
 
 **THE STORE IS A LIBRARY OF BUILDS, AND EVERY RULER CROSSES THE WHOLE OF IT.**
