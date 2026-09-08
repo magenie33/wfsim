@@ -75,25 +75,18 @@ jobs:
       # submitter is told "sent". See docs/BOARD.md.
       - name: The board's submission endpoint keeps the whole build
         run: node scripts/check_board_submit.mjs
-      # …AND THE OTHER END OF THE SAME PIPE: what reads those records back out
-      # of KV. It caches the library between runs, so its failure mode is a
-      # SHORT LIST — which publishes a perfectly valid board with rows missing
-      # and nothing anywhere saying so. Stub `curl`, no network, milliseconds.
-      - name: The library is fetched once and then only added to
-        run: bash scripts/fetch_submissions.sh --self-test
       # …AND IT CAN BE PUT BACK. A backup nobody has restored is a hope: the
       # restore runs once, under pressure, by someone who has just lost data,
       # which is the worst moment to find a typo in it. Stub `curl`, no network.
       - name: The library can be put back
         run: bash scripts/restore_library.sh --self-test
-      # …AND THE COPY IN THE DATABASE IS COUNTED, not assumed. Nothing reads
-      # that copy yet, so the mirror can be wrong without anything published
-      # being wrong — what it may not be is wrong SILENTLY. Asserted: a record
-      # reaches the statement as a bound parameter and never as text, and a
-      # database holding FEWER rows than the snapshot is a failure while one
-      # holding more is the library being permanent.
-      - name: The library mirror is counted, not assumed
-        run: bash scripts/mirror_library.sh --self-test
+      # THE LIBRARY IS ONE QUERY, and the failure mode it replaces is a SHORT
+      # LIST — which publishes a perfectly valid board with rows missing and
+      # nothing anywhere saying so. Stub `curl`, no network: asserted that two
+      # pages cannot overlap or skip, that each record is PARSED rather than
+      # carried as the text the column holds, and that a short read refuses.
+      - name: The library is one query, and a short one refuses
+        run: bash scripts/fetch_library.sh --self-test
       # …AND A FACT REACHES THE DATABASE THE MOMENT IT IS COMPUTED. The failure
       # this guards is the one that lost a whole rescore: work that is durable
       # only once a run ENDS. Asserted with a stub `curl` — a row appended after

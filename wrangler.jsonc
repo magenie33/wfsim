@@ -35,37 +35,23 @@
     // The api is the one thing that must NOT fall through to the SPA.
     "run_worker_first": ["/api/*"]
   },
-  // WHERE SUBMISSIONS GO. In this file and not in the dashboard: a wrangler
-  // deploy REPLACES the worker's bindings with what the config declares, so a
-  // namespace bound through the dashboard is removed by the next push.
+  // WHERE EVERYTHING GOES. One database, and it is the only store: the library
+  // of builds, the scores computed from it, the disagreement reports and the
+  // supporter count. A KV namespace held the library and could not be asked a
+  // question about it — no queries, no transactions, no bulk read, and listing
+  // was the only index, metered at a thousand operations a DAY.
+  //
+  // IN THIS FILE AND NOT IN THE DASHBOARD: a wrangler deploy REPLACES the
+  // worker's bindings with what the config declares, so a binding added through
+  // the dashboard is removed by the next push.
   //
   // The id is an IDENTIFIER, not a secret — it grants nothing without an api
-  // token, and Cloudflare's own docs commit it. Named for what it holds, which
-  // is not the board: the board is the generated yaml in
-  // `data/benchmarks/boards/`, and this is the builds waiting to be scored.
+  // token, and Cloudflare's own docs commit it. It takes the bare product name
+  // because ONE database holds every table this product has: docs/NAMING.md §8.
   //
-  // SUPPORT IS A SECOND NAMESPACE BECAUSE THE WRITE PATHS ARE DIFFERENT: a
-  // public submission endpoint and a payment webhook should not be able to
-  // reach each other's keys (docs/NAMING.md §8). It holds one empty key per
-  // Ko-fi message id and nothing else. Until the namespace exists the two
-  // /api/support/* endpoints answer 503 and the page draws no supporter line.
-  //
-  //   npx wrangler kv namespace create SUPPORT
+  //   npx wrangler d1 create wfsim
+  //   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
   //   npx wrangler secret put KOFI_TOKEN     (from the Ko-fi webhook page)
-  //
-  // …then uncomment the second line below with the id it prints.
-  "kv_namespaces": [
-    { "binding": "SUBMISSIONS", "id": "967ea857dfee4e6290daa2a6cd720889" }
-    // { "binding": "SUPPORT", "id": "<paste the id here>" }
-  ],
-  // THE LIBRARY, AS A DATABASE — `worker/schema.sql`, and docs/BOARD.md
-  // §Setup for what it is for. ONE database holds every table this product
-  // has (`builds`, `scores`), which is why it takes the bare product name:
-  // docs/NAMING.md §8.
-  //
-  // KV IS STILL THE AUTHORITY while this fills. `mirror()` writes a second
-  // copy and nothing reads it, so removing the binding puts the system back
-  // exactly as it was — that is what makes the step reversible.
   "d1_databases": [
     {
       "binding": "LIBRARY",

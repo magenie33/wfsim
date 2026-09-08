@@ -1353,7 +1353,7 @@ made the board fall behind on 2026-08-26.
 
 | | before | after |
 | --- | --- | --- |
-| read the library out of KV | **9 min**, every run, O(store) | seconds, O(new) — `scripts/fetch_submissions.sh` caches it between runs |
+| read the library | **9 min**, every run, one request per build | one ordered query — `scripts/fetch_library.sh` |
 | a scheduled run behind a full rescore | cancelled by its successor | its own concurrency group, keyed by trigger |
 | a truncated library | published a valid board with rows missing | refused — `guard_shrink`, floor at 90% of the last board's `submissions:` |
 | the only copy of the library | one KV namespace | that, plus 30 days of rolling `submissions` artifacts |

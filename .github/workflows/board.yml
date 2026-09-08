@@ -207,22 +207,10 @@ jobs:
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
 
-      # THE LIBRARY IS FETCHED ONCE AND THEN ONLY ADDED TO. `restore-keys` takes
-      # the newest cache whatever run wrote it, while the `key` carries this run
-      # id so every run SAVES one — which is what keeps the chain moving. A
-      # miss costs a full listing and nothing depends on it.
-      - name: restore the library
-        if: steps.wired.outputs.yes == 'true'
-        uses: actions/cache@v4
-        with:
-          path: library.json
-          key: board-library-${{ github.run_id }}
-          restore-keys: board-library-
-
       # WHAT THE LAST BOARD WAS BUILT FROM, as the floor this run may not fall
-      # under. The boards carry `submissions: N`; the largest is the best
-      # estimate of the library's real size, and 90% of it is the tripwire —
-      # see `guard_shrink` in the script for why a short list is the danger.
+      # under. A short read publishes a board built from a short list, and every
+      # row missing from it is gone with nothing saying so — `guard_shrink` in
+      # the script is what refuses that.
       - name: what the last board was built from
         if: steps.wired.outputs.yes == 'true'
         id: floor
@@ -234,30 +222,32 @@ jobs:
           echo "floor=$(( n * 9 / 10 ))" >> "$GITHUB_OUTPUT"
           echo "last board was built from $n submissions"
 
-      # EVERY stored submission, every time — but FETCHED only once each. The
-      # logic is a FILE rather than a block of yaml so that the thing tested is
-      # the thing that runs: `scripts/fetch_submissions.sh --self-test` drives
-      # it against a stub `curl`, and CI runs that.
-      - name: read submissions
+      # THE LIBRARY, IN ONE QUERY. It was a key listing metered at a thousand
+      # operations a DAY plus one request per build, so everything around it
+      # existed to avoid paying twice: a cached `library.json`, a pruning pass, a
+      # three-try retry, and a flag to skip the listing on a rescore. A database
+      # answers it whole, in order, and none of that is needed.
+      #
+      # A FILE RATHER THAN A BLOCK OF YAML, so the thing tested is the thing that
+      # runs: `scripts/fetch_library.sh --self-test` drives it against a stub
+      # `curl`, and CI runs that.
+      - name: read the library
         if: steps.wired.outputs.yes == 'true'
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_NAMESPACE: ${{ secrets.CF_SUBMISSIONS_NAMESPACE_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           FLOOR: ${{ steps.floor.outputs.floor }}
-          # A RESCORE REUSES THE CACHED KEY LIST. Listing is the metered
-          # operation on Cloudflare's free plan and it is metered per DAY, so a
-          # handful of manual rescores can spend what the hourly board needs and
-          # take it down until UTC midnight — measured. The schedule still lists
-          # every hour, which is what finds a new submission and prunes an
-          # expired one; a rescore of rows we already hold does not need either.
-          SKIP_LISTING: ${{ inputs.weapon != '' && '1' || '' }}
-        run: bash scripts/fetch_submissions.sh
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/fetch_library.sh submissions.json
 
       # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one
       # irreplaceable thing in this pipeline — the boards are derived from it,
       # the site is generated, the code is in git, and what players sent lives in
-      # exactly one KV namespace. Thirty days of rolling artifacts costs nothing
+      # exactly one database. Thirty days of rolling artifacts costs nothing
       # and is the difference between "restore yesterday's" and "ask everyone to
       # submit again".
       - name: keep the list for the scorers

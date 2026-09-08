@@ -2,11 +2,11 @@
 #
 # The boards are derived from it, the site is generated, the code is in git —
 # the library is what players sent, and until this workflow it lived in exactly
-# one Cloudflare KV namespace plus whatever `submissions` artifact had not
+# one Cloudflare database plus whatever `submissions` artifact had not
 # expired yet.
 #
 # WHAT THIS IS NOT: it is not the tripwire. `guard_shrink` in
-# `scripts/fetch_submissions.sh` refuses to publish a board from a short list,
+# `scripts/fetch_library.sh` refuses to publish a board from a short list,
 # and that is the protection that works while nobody is watching — a backup
 # restores AFTER the damage. Both, because they fail differently: a tripwire
 # cannot help if Cloudflare loses the namespace, and a backup cannot help if
@@ -54,9 +54,9 @@ on:
     # history — the :17 runs landed at :33-:35), so no minute reliably avoids
     # it. Timing was never the protection. What protects the snapshot is the
     # tripwire in the commit step, which refuses to overwrite a good copy with
-    # a short one, and the retry in `fetch_submissions.sh`, which is there
-    # because a cold read runs AT Cloudflare's rate limit by construction and
-    # a dropped record is otherwise invisible.
+    # a short one. There is no retry to speak of any more: the library is one
+    # ordered query rather than a request per build against a rate limit, so a
+    # dropped record is not a thing this read can produce.
     - cron: "0 0 * * *"
   workflow_dispatch:
 
@@ -84,15 +84,22 @@ jobs:
           if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
-      # NO CACHE IS RESTORED, so `library.json` does not exist and the script
-      # takes its cold path: every key, straight from KV.
-      - name: read the whole library, cold
+      # ONE QUERY, AND IT IS THE SAME ONE THE BOARD RUNS. A backup that shares
+      # its input with the thing it backs up shares its failure mode, which was
+      # the argument for reading KV cold here while the board read a cache. There
+      # is no cache now: the read IS the whole library, in order, every time, so
+      # the two cannot diverge and there is nothing for a cold path to mean.
+      - name: read the whole library
         if: steps.wired.outputs.yes == 'true'
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_NAMESPACE: ${{ secrets.CF_SUBMISSIONS_NAMESPACE_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: bash scripts/fetch_submissions.sh
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/fetch_library.sh submissions.json
 
       # THE SNAPSHOT CARRIES ITS KEYS. `submissions.json` is the values only —
       # enough to score, not enough to restore, because a restore has to put
@@ -105,8 +112,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p out
-          jq -Sc 'to_entries[] | {k: .key, v: .value}' library.json \
-            | LC_ALL=C sort > out/library.ndjson
+          # SORTED, which is what makes the branch cheap: a night's change is a
+          # few added lines and git stores the delta rather than the file.
+          jq -Sc . submissions.json.ndjson | LC_ALL=C sort > out/library.ndjson
           n=$(wc -l < out/library.ndjson | tr -d ' ')
           echo "count=$n" >> "$GITHUB_OUTPUT"
           echo "snapshot: $n records, $(wc -c < out/library.ndjson | tr -d ' ') bytes"
@@ -164,7 +172,7 @@ jobs:
             echo
             echo "Written by .github/workflows/backup.yml and read by"
             echo "scripts/restore_library.sh, which puts it back. Nothing else should"
-            echo "depend on it: the live library is the Cloudflare KV namespace, and"
+            echo "depend on it: the live library is the Cloudflare database, and"
             echo "the board is generated from that."
             echo
             echo "It is sorted so git stores a night as a delta rather than as a file."
@@ -177,57 +185,3 @@ jobs:
           git commit --quiet -m "library: $COUNT records $(date -u +'%Y-%m-%d')"
           git push --quiet "$url" library-backups
           echo "committed $COUNT records (was $prev)"
-
-  # CAN THE PIPELINE REACH THE DATABASE — asked BESIDE the snapshot and not
-  # behind it. Building the snapshot is half an hour of cold reads, and finding
-  # out afterwards that the destination refuses the token costs that half hour
-  # every time somebody wants the answer.
-  #
-  # IT WARNS AND DOES NOT FAIL. The backup is the half that matters and it does
-  # not touch the database at all; this job only makes the reason visible in a
-  # minute rather than in thirty.
-  reach:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - name: can the token reach the library table
-        env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
-          bash scripts/mirror_library.sh --probe
-
-  # THE SECOND COPY, AND THE COUNT THAT PROVES IT — a JOB of its own so that a
-  # mirror nobody reads yet cannot red the backup, which is the half that
-  # matters. It runs off the snapshot above rather than fetching its own: that
-  # file carries the KEY beside each record, and recomputing `identity()` would
-  # be a second implementation of the one thing that must not drift.
-  #
-  # THE DATABASE ID IS READ OUT OF `wrangler.jsonc`, not held as a secret. It is
-  # an identifier and it is already committed there, so a second copy of it is
-  # only a second thing to forget when it changes.
-  mirror:
-    needs: dump
-    if: needs.dump.outputs.wired == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: library-${{ needs.dump.outputs.count }}
-          path: out
-      - name: mirror the library into the database
-        env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          # Only a line whose first non-space is `//` is a comment; a blind
-          # strip of `//` would eat the scheme out of any url in the file.
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
-          bash scripts/mirror_library.sh out/library.ndjson
