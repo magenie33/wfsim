@@ -1748,6 +1748,87 @@ already per row. 13.6% of commits.
 
 ---
 
+## The publisher publishes, and computes nothing
+
+**IT TRUSTS THE DATABASE UNCONDITIONALLY.** Given a generation it reads the
+facts of that generation and the library, joins them, ranks, projects, and
+writes the files. It has no opinion about whether a number is right. If a
+number is wrong, the SCORER is wrong, and that is where it is fixed.
+
+```
+  builds  ─┐
+           ├─►  PUBLISHER  ─►  boards/*.yaml
+  facts(g) ┘   join, rank,     site/board.json
+               project, write  site/board/<weapon>.json
+```
+
+That is the whole of it. No prior board, no store, no artifacts, no forced
+list, no submissions to score, no fingerprint to check, no reuse to decide.
+
+**WHY IT IS ONE SOURCE AND NOT FIVE.** The publisher used to be handed a prior
+board, a merged store, this run's artifacts, the facts, and the library — five
+sources that can disagree, so it needed a rule for which one wins. Every defect
+this pipeline has produced lives in that rule: a merge decided by filename
+order, an artifact whose absence skipped the assembly, a clock that truncated a
+forced set. **A rule about which source wins is only needed because there is
+more than one source.**
+
+### The scorer's side is a set difference
+
+```
+work = (builds × rulers × modes)  MINUS  facts of the open generation
+```
+
+**A RESCORE IS NOT "FORCE THESE ROWS AGAIN", IT IS "OPEN A GENERATION AND FILL
+IT".** Under the difference, the two things a rescore has to do stop fighting:
+an old generation's number is not in the open one, so it is recomputed; a row
+this generation already holds is skipped. Forcing and resuming become one
+sentence.
+
+That is what makes a deadline harmless again. Truncating a run leaves the
+generation incomplete, the board keeps publishing the last COMPLETE one, and
+the next run continues from what is missing rather than from the top of the
+same forced list.
+
+### Which generation is published
+
+The newest COMPLETE one, and completeness is a query: every (build, ruler,
+mode) the published generation holds, the candidate holds too. A build
+submitted since is not in either, so it blocks nothing — it appears as PENDING,
+outside the ranking.
+
+The published generation's id goes in `board.meta.json`. "Is this board what
+this code computes" then compares two strings.
+
+### What this deletes
+
+`--reuse`, `--scores`, `--scored-here`, `--emit-scores`, `--rescore`,
+`--refight-all`; `score_store.sh` and the R2 bucket; the artifact hand-off
+between the scorers and the assembly; the merged-set/delta distinction and the
+sweep between them; `REPAIR_CAP`, `CROSSING`, `board_sample.py` and
+`--verify-list`; the submission counter, its hourly corrector and
+`SKIP_LISTING`.
+
+Three moving parts are left: **a table**, **one generation id**, and **a set
+difference**.
+
+### The order, and the one thing that gates it
+
+1. the scorer writes facts and reads them back (done)
+2. the publisher is extracted: two inputs, three outputs, no computation
+3. **one generation is filled COMPLETELY** — until that exists there is nothing
+   to publish from, because a partial generation would publish a board missing
+   every row it does not hold
+4. the publisher is switched to it, with the old path kept for one week
+5. everything in the list above is deleted
+
+**STEP 3 IS THE GATE, AND IT IS THE ONLY EXPENSIVE ONE.** It is a full rescore
+— 8,008 CPU minutes — but under the set difference it is RESUMABLE, so it is a
+run repeated until the completeness query answers zero, rather than a run that
+must survive five and a half hours to be worth anything.
+
+---
+
 ## The pipeline, designed around one rule
 
 > **A FACT IS DURABLE THE INSTANT IT IS COMPUTED, AND NOTHING DOWNSTREAM MAY
