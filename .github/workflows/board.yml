@@ -3,15 +3,22 @@
 # The repo owner never touches this: the bot scores, the bot commits, and
 # Cloudflare deploys the push.
 #
-# THE CLOCK IS THE ONLY AUTOMATIC TRIGGER. A push does not wake the board, and
-# that is deliberate: under convergence a pushed run does exactly what the next
-# scheduled one does — score what is NEW, repair what this
-# generation has not verified, publish — so it duplicates a run that is coming
-# anyway while competing for the same forty slots. Measured over 95 runs: 21 of
-# 22 pushed runs were cancelled by the next push, and the board published
-# nothing. Ordinary work still reaches the board; the FINGERPRINT is what
-# carries it, marking the rows a change reached as unverified so the slice
-# repairs them.
+# THE BUTTON IS THE ONLY TRIGGER, AND THE CLOCK IS HELD. A push does not wake
+# the board either: under convergence a pushed run does what the next one does —
+# score what is NEW, repair what this generation has not verified, publish — so
+# it duplicates a run that is coming anyway while competing for the same forty
+# slots. Measured over 95 runs: 21 of 22 pushed runs were cancelled by the next
+# push, and the board published nothing.
+#
+# WHY THE CLOCK IS HELD, and what restores it. The slice repairs rows at a rate
+# this file sets, and measured against a published board it is not converging:
+# over six scheduled publishes, 30 of 10,188 rows changed at all and none by
+# more than a fifth — while an engine fix waiting to reach the board moves a
+# group_clear row by four times. So the schedule was spending forty slots an
+# hour to move nothing, against a full rescore that moves everything and needs
+# those slots. RESTORE IT when a scheduled run is measured repairing rows at a
+# rate that crosses the board in days, not months — `docs/BOARD.md`
+# §"When the code moved" is where that rate is argued.
 #
 # NOTHING AUTOMATIC EVER FIGHTS MORE THAN A SLICE, which is what makes the
 # correctness rule affordable: a fingerprint difference says a stored score is
@@ -27,23 +34,30 @@
 name: board
 
 on:
-  schedule:
-    # ONCE AN HOUR, ON THE HOUR. The cadence has to be longer than a run, and a
-    # run is not twenty minutes: measured over 40 scheduled runs, 25 of the 29
-    # that published finished inside twenty and the rest took 29, 38, 82 and 102.
-    # A cadence shorter than the tail means the queued run is cancelled by the
-    # next arrival — GitHub keeps one pending per concurrency group — so two of
-    # every three wake-ups did nothing at all and the board still published at
-    # whatever rate the long runs allowed.
-    #
-    # Naming :00 costs nothing: the scheduler slips ~15 minutes whatever minute
-    # is named, so an off-the-hour minute buys a precision this does not have.
-    - cron: "0 * * * *"
-    # THE WEEKLY FULL RESCORE IS GONE, and `audit.yml` is what replaced it. It
-    # rescored 22,977 rows every Monday whether or not anything had moved. The
-    # audit reads a slice of the published board every hour, crosses all of it
-    # in days, and REPORTS a row that is not what this code computes — without
-    # rescoring anything and without gating this pipeline.
+  # HELD, NOT DISABLED — see the header. The trigger is commented out HERE
+  # rather than turned off in the repository's settings, because a workflow
+  # disabled through the UI is a fact this file does not carry: it survives a
+  # checkout, shows up in no diff, and the way it is discovered is somebody
+  # asking why the board stopped. Uncommenting is the whole of the restore.
+  #
+  # ONCE AN HOUR, ON THE HOUR. The cadence has to be longer than a run, and a
+  # run is not twenty minutes: measured over 40 scheduled runs, 25 of the 29
+  # that published finished inside twenty and the rest took 29, 38, 82 and 102.
+  # A cadence shorter than the tail means the queued run is cancelled by the
+  # next arrival — GitHub keeps one pending per concurrency group — so two of
+  # every three wake-ups did nothing at all and the board still published at
+  # whatever rate the long runs allowed.
+  #
+  # Naming :00 costs nothing: the scheduler slips ~15 minutes whatever minute
+  # is named, so an off-the-hour minute buys a precision this does not have.
+  #
+  # schedule:
+  #   - cron: "0 * * * *"
+  #
+  # NOTHING ELSE RESCORES ON A CLOCK. `audit.yml` reads a slice of the published
+  # board every hour and REPORTS a row that is not what this code computes,
+  # without rescoring anything and without gating this pipeline — so it keeps
+  # running while this is held, and it is what says whether the board is right.
   workflow_dispatch:
     inputs:
       full:
