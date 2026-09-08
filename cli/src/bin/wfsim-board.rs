@@ -483,6 +483,25 @@ type LoadedScores = (
     std::collections::HashMap<String, Partial>,
 );
 
+/// THE MERGED SET IS READ FIRST, SO A DELTA CAN BEAT IT. Later files win a
+/// duplicate key, and the store flattens two kinds into one directory:
+/// `<bench>.json`, the merged set a publish writes, and
+/// `<run>-<bench>-<shard>.json`, what one shard banked. A plain name sort put
+/// every delta BEFORE the merged set — digits sort under letters — so a delta
+/// could only ever ADD a row the merged set did not hold, never UPDATE one.
+///
+/// Measured: a full rescore banked all 128 shards and its own publish was
+/// skipped, so its numbers sat in the store, correct and paid for, while the
+/// next run published the very numbers they replaced. A delta is always newer
+/// than the merged set, because `publish` sweeps the deltas it has merged.
+fn sort_store_files(files: &mut [std::path::PathBuf], bench_id: &str) {
+    let merged = format!("{bench_id}.json");
+    files.sort_by_key(|f| {
+        let name = f.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+        (name != merged, name)
+    });
+}
+
 fn load_scores(spec: Option<String>, bench_id: &str) -> LoadedScores {
     let mut out = std::collections::HashMap::new();
     // …AND WHAT EACH ONE COST THE SHARD THAT PAID. Merged the same way and for
@@ -518,7 +537,20 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> LoadedScores {
     } else {
         files.push(p.to_path_buf());
     }
-    files.sort();
+    // THE MERGED SET IS READ FIRST, SO A DELTA CAN BEAT IT. Later files win a
+    // duplicate key, and the store flattens two kinds of file into one
+    // directory: `<bench>.json`, the merged set a publish writes, and
+    // `<run>-<bench>-<shard>.json`, what a shard banked. A plain name sort put
+    // every delta before the merged set — digits sort under letters — so a
+    // delta could only ever ADD a row the merged set did not hold, and never
+    // UPDATE one it did.
+    //
+    // Measured: a full rescore banked all 128 shards and its own publish was
+    // skipped, so the numbers sat in the store, correct and paid for, and the
+    // next run published the very numbers they replaced. A delta is always
+    // newer than the merged set — `publish` sweeps the deltas it has merged —
+    // so newer winning is the rule, and this is the order that states it.
+    sort_store_files(&mut files, bench_id);
     for f in files {
         let Ok(text) = std::fs::read_to_string(&f) else {
             continue;
@@ -2538,6 +2570,35 @@ fn priced(
 
 #[cfg(test)]
 mod tests {
+    /// A DELTA IS READ AFTER THE MERGED SET, so it wins the duplicate key.
+    ///
+    /// This is a NAME ORDER and not a timestamp, which is why it needs an
+    /// assertion: a delta is `<run>-<bench>-<shard>.json` and starts with a
+    /// digit, and a plain sort therefore put every one of them ahead of
+    /// `<bench>.json`. The board published the number a rescore had replaced.
+    #[test]
+    fn a_banked_delta_is_read_after_the_merged_set_it_replaces() {
+        let mut files: Vec<std::path::PathBuf> = [
+            "34191927725-single_target-7.json",
+            "single_target.json",
+            "34172612935-single_target-118.json",
+        ]
+        .iter()
+        .map(|n| std::path::Path::new("/store").join(n))
+        .collect();
+        super::sort_store_files(&mut files, "single_target");
+        let names: Vec<String> = files
+            .iter()
+            .map(|f| f.file_name().unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names[0], "single_target.json", "the merged set is read first: {names:?}");
+        assert_eq!(
+            names.last().unwrap(),
+            "34191927725-single_target-7.json",
+            "the newest delta is read last: {names:?}"
+        );
+    }
+
     use super::*;
 
     /// A ROW PAID FOR IN SITTINGS IS THE ROW PAID FOR IN ONE.
