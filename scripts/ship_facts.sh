@@ -215,9 +215,21 @@ GEN=""
 while [ "${1:-}" = "--generation" ]; do GEN="$2"; shift 2; done
 : "${GEN:?--generation <id> is required: a fact is filed under the generation it belongs to}"
 
-# UNCONFIGURED IS SILENT AND GREEN, the rule every job here follows: without a
-# database there is nowhere to ship to, and reddening a scoring run for a copy
-# nothing reads yet teaches people to ignore the colour.
+# UNCONFIGURED IS SILENT AND GREEN — but HALF-configured is not, and the two
+# read identically from inside `configured()`.
+#
+# A DATABASE ID WITHOUT A TOKEN IS A MISTAKE, NOT AN ABSENCE. The id comes out
+# of `wrangler.jsonc`, which is committed, so its presence says this repo HAS a
+# database; the token comes from a secret, which a step can simply forget to
+# pass. Measured: a shard wrote its whole fact log, shipped none of it, and
+# reported success — because the env block carrying the secrets had been put on
+# the wrong step.
+if [ -n "${CF_D1_DATABASE:-}" ] && ! configured; then
+  echo "::error::facts: a database is declared but the credentials are not set"
+  echo "::error::CF_ACCOUNT=${CF_ACCOUNT:+set}${CF_ACCOUNT:-MISSING} CF_TOKEN=${CF_TOKEN:+set}${CF_TOKEN:-MISSING}"
+  exit 1
+fi
+
 if ! configured; then
   echo "no database configured — nothing shipped (docs/BOARD.md §Setup)"
   exit 0

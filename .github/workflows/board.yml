@@ -221,8 +221,6 @@ jobs:
       - name: read the score store
         if: steps.wired.outputs.yes == 'true'
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -506,6 +504,11 @@ jobs:
             bash scripts/score_store.sh put "scores/$id-${{ matrix.shard }}.json" "$key" || true
           done
         env:
+          # THE SHIPPER'S HALF. Without these the fact log is written and
+          # never sent, and `ship_facts.sh` calls that unconfigured — silent
+          # and green, which is how a whole shard's rows went nowhere.
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
