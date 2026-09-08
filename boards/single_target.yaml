@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 6668
+submissions: 6722
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -1042,6 +1042,15 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: atomos
     mode: base
+    score: 7.676092650094855
+    fp: 07794fed596d86ce
+    cost: 2.516
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: atomos
+    mode: base
     score: 7.669665986208908
     fp: faf22b0ed0c95ecb
     cost: 2.128
@@ -1091,6 +1100,22 @@ entries:
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
     arcanes: [cascadia_flare]
   - weapon: atomos
+    mode: base
+    score: 6.991454824144928
+    fp: cea21bb1624ced0e
+    cost: 3.076
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, anemic_agility, pistol_elementalist, deep_freeze, jolt, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: atomos
+    mode: base
+    score: 6.919379774499419
+    fp: abf8f59320b6036e
+    cost: 2.985
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, anemic_agility, pistol_elementalist, deep_freeze, jolt, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
+  - weapon: atomos
     mode: cycle
     score: 6.868155876964325
     fp: e2365dc24841d051
@@ -1110,6 +1135,15 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: atomos
     mode: cycle
+    score: 6.641337884014131
+    fp: 07794fed596d86ce
+    cost: 2.674
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: atomos
+    mode: cycle
     score: 6.626043091794165
     fp: 5538a86c77768a3f
     cost: 1.853
@@ -1124,6 +1158,14 @@ entries:
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
     arcanes: [secondary_enervate]
+  - weapon: atomos
+    mode: cycle
+    score: 6.362946267829644
+    fp: abf8f59320b6036e
+    cost: 2.759
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, anemic_agility, pistol_elementalist, deep_freeze, jolt, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: atomos
     mode: cycle
     score: 6.108909342152516
@@ -1142,6 +1184,14 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
     arcanes: [secondary_enervate]
+  - weapon: atomos
+    mode: cycle
+    score: 5.981528399731982
+    fp: cea21bb1624ced0e
+    cost: 2.793
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, anemic_agility, pistol_elementalist, deep_freeze, jolt, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
   - weapon: atomos
     mode: cycle
     score: 5.954787369426212
@@ -17785,12 +17835,108 @@ entries:
     valence: magnetic
   - weapon: dual_coda_torxica
     mode: base
+    score: 12.754188997367267
+    fp: cdce848459beb526
+    cost: 3.344
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 12.174756761156987
+    fp: 5671442ed10d3519
+    cost: 4.705
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 12.174756761156987
+    fp: 1efadbc14a155836
+    cost: 5.713
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 12.05329494720199
+    fp: 931f89816379636f
+    cost: 5.940
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 11.345946037917802
+    fp: de682ca6e04e399d
+    cost: 5.471
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 11.320107306688621
+    fp: 1aaf7d34f4d158cd
+    cost: 5.933
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 11.298448243177674
+    fp: 3705e02ec1ecebab
+    cost: 5.629
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, ice_storm, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 11.098864945368016
+    fp: f6133ef58ed57e59
+    cost: 6.050
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pistol_pestilence, scorch]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 11.098864945368016
+    fp: 69f34e278373fb3c
+    cost: 5.852
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pathogen_rounds, scorch]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 11.005672863301578
+    fp: 2f443559235ff57d
+    cost: 4.632
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, scorch]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
     score: 10.061779616660637
     fp: e7e1eb194c3c1d04
     cost: 5.086
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
     arcanes: [secondary_encumber]
     valence: impact
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 9.679722402291732
+    fp: c62ff8c3d97815b0
+    cost: 5.729
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    arcanes: [secondary_deadhead]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 9.50799070006827
+    fp: 7303cb8d09ac7b3b
+    cost: 6.048
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_deadhead]
+    valence: cold
   - weapon: dual_coda_torxica
     mode: base
     score: 9.48673227890212
@@ -17807,6 +17953,54 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: impact
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 8.267286708649525
+    fp: 2c2e8803fca9f6a9
+    cost: 5.399
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    arcanes: [secondary_deadhead]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 8.122020757778644
+    fp: dd9e9252e04734f4
+    cost: 5.977
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_deadhead]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 7.479459007807202
+    fp: b2598a1476f8e423
+    cost: 3.392
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_deadhead]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 7.237985990618247
+    fp: e505b6bb3a65f580
+    cost: 3.281
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    arcanes: [secondary_deadhead]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 7.0485267646961995
+    fp: 9d4135817b5c3b82
+    cost: 3.605
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_deadhead]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 7.007678490489216
+    fp: 79c9db5c74fd61cf
+    cost: 3.408
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    arcanes: [secondary_deadhead]
+    valence: cold
   - weapon: dual_toxocyst
     mode: cycle
     score: 156.67455993141908
@@ -22903,6 +23097,20 @@ entries:
     cost: 1.344
     mods: [pistol_acuity, hornet_strike, anemic_agility, gunslinger, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_encumber]
+  - weapon: grimoire
+    mode: base
+    score: 1.7354439553903032
+    fp: b8560126ed21b1a9
+    cost: 1.840
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, convulsion, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [cascadia_flare]
+  - weapon: grimoire
+    mode: cycle
+    score: 1.7047104594830702
+    fp: b8560126ed21b1a9
+    cost: 1.899
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, convulsion, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [cascadia_flare]
   - weapon: haalvu
     mode: base
     score: 3.0077681361731883
@@ -73664,6 +73872,15 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 6.6940318953599105
+    fp: 65c030e9df22a23e
+    cost: 4.145
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, anemic_agility, gunslinger, pistol_elementalist, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -75453,6 +75670,15 @@ entries:
       bonuses: [critical_chance, multishot]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 6.043908067208956
+    fp: 60ff71e8ceb7d9d8
+    cost: 1.677
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, anemic_agility, pistol_elementalist, deep_freeze, jolt, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -75632,6 +75858,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, magnum_force, lethal_torrent, perpetual_agony, pistol_elementalist, primed_convulsion, jolt]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
+  - weapon: dual_coda_torxica
+    mode: base
+    listed: false
+    score: 5.987117635410519
+    fp: 66f4610efa4d5853
+    cost: 5.937
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
+    arcanes: [secondary_merciless]
+    valence: cold
   - weapon: torid
     mode: cycle
     listed: false
@@ -75780,6 +76015,15 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 5.942123062342276
+    fp: f3ed70a1210ba7a1
+    cost: 2.801
+    mods: [hornet_strike, lethal_torrent, perpetual_agony, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
     listed: false
@@ -76428,6 +76672,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_enervate]
+  - weapon: dual_coda_torxica
+    mode: base
+    listed: false
+    score: 5.674572629054666
+    fp: 617fc8ee1a6ac6cc
+    cost: 5.794
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, convulsion, pistol_pestilence, frostbite]
+    arcanes: [secondary_shiver]
+    valence: cold
   - weapon: vectis_prime
     mode: cycle
     listed: false
@@ -77019,6 +77272,15 @@ entries:
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, critical_delay, rifle_elementalist, speed_trigger, vital_sense, hellfire]
     arcanes: [primary_crux]
     valence: impact
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 5.51918457523071
+    fp: 8fadc2978d1b46e4
+    cost: 2.064
+    mods: [galvanized_shot, primed_pistol_gambit, barrel_diffusion, gunslinger, magnetic_might, frostbite, pathogen_rounds, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: torid
     mode: cycle
     listed: false
@@ -77224,6 +77486,15 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, speed_trigger, vile_acceleration, high_voltage, malignant_force]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 5.399073118262023
+    fp: 1d76fbede672b8d5
+    cost: 2.717
+    mods: [hornet_strike, lethal_torrent, perpetual_agony, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [secondary_enervate]
   - weapon: furis
     mode: base
     listed: false
@@ -77269,6 +77540,15 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, frail_momentum, primed_charged_shell, toxic_barrage, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 5.369501629082861
+    fp: 8fadc2978d1b46e4
+    cost: 2.636
+    mods: [galvanized_shot, primed_pistol_gambit, barrel_diffusion, gunslinger, magnetic_might, frostbite, pathogen_rounds, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: torid
     mode: cycle
     listed: false
@@ -77548,6 +77828,15 @@ entries:
     mods: [split_chamber, serration, critical_delay, vital_sense, magnetic_capacity, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_frostbite]
+  - weapon: dual_coda_torxica
+    mode: base
+    listed: false
+    score: 5.314675065610115
+    fp: a881f78e5fe98a88
+    cost: 6.263
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_merciless]
+    valence: cold
   - weapon: torid
     mode: cycle
     listed: false
@@ -78177,6 +78466,15 @@ entries:
     mods: [galvanized_chamber, primed_firestorm, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 5.0014621039689615
+    fp: f3ed70a1210ba7a1
+    cost: 1.888
+    mods: [hornet_strike, lethal_torrent, perpetual_agony, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: torid
     mode: cycle
     listed: false
@@ -78292,6 +78590,15 @@ entries:
     mods: [primary_acuity, serration, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 4.963602400279935
+    fp: a82eea40a3f55a34
+    cost: 3.500
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, anemic_agility, gunslinger, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     listed: false
@@ -78388,6 +78695,15 @@ entries:
       bonuses: [critical_damage, fire_rate, status_chance]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 4.9286028116371625
+    fp: 60ff71e8ceb7d9d8
+    cost: 2.134
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, anemic_agility, pistol_elementalist, deep_freeze, jolt, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -78690,6 +79006,15 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, radiated_reload, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 4.848579617190934
+    fp: 2544465707f5a9bd
+    cost: 2.645
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, anemic_agility, deep_freeze, pistol_pestilence, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: base
     listed: false
@@ -79033,6 +79358,15 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 4.690911927118408
+    fp: 2544465707f5a9bd
+    cost: 2.417
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, anemic_agility, deep_freeze, pistol_pestilence, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
     listed: false
@@ -79083,6 +79417,15 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_outburst]
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 4.674401275546809
+    fp: 1d76fbede672b8d5
+    cost: 1.872
+    mods: [hornet_strike, lethal_torrent, perpetual_agony, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
     listed: false
@@ -80012,6 +80355,15 @@ entries:
     cost: 1.347
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     arcanes: [primary_compression]
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 4.375279028913297
+    fp: b02988d28964057d
+    cost: 2.365
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, anemic_agility, deep_freeze, pathogen_rounds, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: braton_vandal
     mode: cycle
     listed: false
@@ -80374,6 +80726,15 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, clip_delegation, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     arcanes: [primary_frostbite]
     valence: cold
+  - weapon: atomos
+    mode: base
+    listed: false
+    score: 4.277260161372615
+    fp: b02988d28964057d
+    cost: 2.672
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, anemic_agility, deep_freeze, pathogen_rounds, heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: boar_prime
     mode: base
     listed: false
@@ -81285,6 +81646,15 @@ entries:
     cost: 1.998
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, primed_convulsion, primed_heated_charge]
     arcanes: [secondary_encumber]
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 3.9579900880495575
+    fp: 65c030e9df22a23e
+    cost: 4.212
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, anemic_agility, gunslinger, pistol_elementalist, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: strun_prime
     mode: cycle
     listed: false
@@ -82130,6 +82500,15 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, rifle_elementalist, vital_sense, rime_rounds, high_voltage, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
+  - weapon: atomos
+    mode: cycle
+    listed: false
+    score: 3.67005732119197
+    fp: a82eea40a3f55a34
+    cost: 3.533
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, anemic_agility, gunslinger, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: burston_prime
     mode: base
     listed: false
@@ -89728,6 +90107,14 @@ entries:
     mods: [galvanized_hell, primed_ravage, critical_deceleration, frail_momentum, incendiary_coat, toxic_barrage, primed_chilling_grasp, primed_charged_shell]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: grimoire
+    mode: cycle
+    listed: false
+    score: 1.6421843615172895
+    fp: 7c8f233f8a0274c2
+    cost: 1.562
+    mods: [hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, convulsion, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
   - weapon: larkspur_prime
     mode: alternate
     listed: false
@@ -89794,6 +90181,14 @@ entries:
     mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
+  - weapon: grimoire
+    mode: cycle
+    listed: false
+    score: 1.636640650993295
+    fp: 6c1a24dd31f57aff
+    cost: 1.532
+    mods: [primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, convulsion, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [cascadia_flare]
   - weapon: torid
     mode: cycle
     listed: false
@@ -89867,6 +90262,14 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, semi_shotgun_cannonade, shotgun_savvy, frigid_blast, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_debilitate]
+  - weapon: grimoire
+    mode: base
+    listed: false
+    score: 1.6223769806029127
+    fp: 6c1a24dd31f57aff
+    cost: 1.476
+    mods: [primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, convulsion, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [cascadia_flare]
   - weapon: torid
     mode: base
     listed: false
@@ -89895,6 +90298,14 @@ entries:
       bonuses: [damage, heat, multishot]
       malus: projectile_speed
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: grimoire
+    mode: base
+    listed: false
+    score: 1.618470244355102
+    fp: 7c8f233f8a0274c2
+    cost: 1.501
+    mods: [hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, convulsion, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
   - weapon: torid
     mode: base
     listed: false
@@ -105201,3 +105612,23 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
+  - weapon: dual_coda_torxica
+    mode: base
+    listed: false
+    probe: true
+    score: 0.8578213591357393
+    fp: 5e863d7952b53356
+    cost: 0.456
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, convulsion, pistol_pestilence, frostbite]
+    arcanes: [secondary_shiver]
+    valence: cold
+  - weapon: dual_coda_torxica
+    mode: base
+    listed: false
+    probe: true
+    score: 0.44621091465005847
+    fp: 733fd51c93fc8b73
+    cost: 0.522
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, convulsion]
+    arcanes: [secondary_deadhead]
+    valence: cold
