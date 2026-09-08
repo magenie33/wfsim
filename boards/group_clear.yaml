@@ -19680,30 +19680,30 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: rubico_prime
     mode: base
-    score: 117.89440344319613
+    score: 79.35351149429675
     fp: 92b90892564ee692
-    cost: 7.563
+    cost: 7.724
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 115.0383100640962
-    fp: cd0f22644621cc29
-    cost: 3.847
-    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
-    arcanes: [primary_crux]
-  - weapon: rubico_prime
-    mode: base
-    score: 113.63298082045256
+    score: 72.33333333333333
     fp: 212a7f2ad7e60424
-    cost: 4.845
+    cost: 5.193
     mods: [primary_acuity, galvanized_aptitude, bladed_rounds, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
-    score: 59.65728157532372
+    score: 59.049216904462924
+    fp: cd0f22644621cc29
+    cost: 6.346
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
+    arcanes: [primary_crux]
+  - weapon: rubico_prime
+    mode: base
+    score: 43.296884713320075
     fp: 0c9f2e48a6350773
-    cost: 6.704
+    cost: 6.050
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
   - weapon: sancti_magistar
@@ -29678,6 +29678,18 @@ entries:
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1276.2074358523978
+    fp: 58e6214d11163dc2
+    cost: 39.157
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, riven]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: ballistica_prime
     mode: cycle
     listed: false
     score: 1275.5705406847908
@@ -29713,6 +29725,19 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, blaze, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1269.605427248158
+    fp: 7498f51bd81a4f72
+    cost: 57.394
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, magnetic_might, riven, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 0.9]
   - weapon: ballistica_prime
     mode: cycle
     listed: false
@@ -29812,12 +29837,37 @@ entries:
   - weapon: ballistica_prime
     mode: cycle
     listed: false
+    score: 1227.22185584022
+    fp: 7498f51bd81a4f72
+    cost: 71.837
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, magnetic_might, riven, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
     score: 1226
     fp: d26bae89a7c798c4
     cost: 30.189
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1217.208695448249
+    fp: 58e6214d11163dc2
+    cost: 37.182
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, riven]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: felarx
     mode: cycle
     listed: false
@@ -29827,6 +29877,18 @@ entries:
     mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, shotgun_elementalist, magnetic_strafe, incendiary_coat, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate_cycle
+    listed: false
+    score: 1205.2331058519364
+    fp: d23a0b8c6288d886
+    cost: 47.078
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: felarx
     mode: base
     listed: false
@@ -29866,6 +29928,18 @@ entries:
       bonuses: [damage, heat, projectile_speed]
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: ballistica_prime
+    mode: cycle
+    listed: false
+    score: 1165.063126828148
+    fp: d23a0b8c6288d886
+    cost: 44.213
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: ballistica_prime
     mode: alternate_cycle
     listed: false
@@ -46300,15 +46374,6 @@ entries:
       bonuses: [cold, multishot, toxin]
       malus: zoom
       rolls: [0.9, 1.1, 0.9, 0.9]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 40.333333333333336
-    fp: fe8d5d53b039d841
-    cost: 4.087
-    exilus: vigilante_supplies
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
-    arcanes: [primary_crux]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -46997,24 +47062,6 @@ entries:
       bonuses: [critical_damage, electricity, toxin]
       malus: ammo_maximum
       rolls: [1.1, 0.9, 0.9, 0.9]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 39.2507751528678
-    fp: 2dc4307af5e729d9
-    cost: 4.030
-    exilus: ammo_drum
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
-    arcanes: [primary_crux]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 39.2507751528678
-    fp: bc7f5450bccbf410
-    cost: 3.153
-    exilus: stabilizer
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
-    arcanes: [primary_crux]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -47599,15 +47646,6 @@ entries:
       bonuses: [critical_chance, damage_to_corpus, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 37.97374996634163
-    fp: ef25c25ae445246f
-    cost: 4.120
-    exilus: vigilante_supplies
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
-    arcanes: [primary_crux]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -47951,33 +47989,6 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 37.205406778811806
-    fp: 616a57cc3a1fd0b7
-    cost: 4.169
-    exilus: ammo_drum
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
-    arcanes: [primary_crux]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 37.205406778811806
-    fp: c44db95e44a1eb82
-    cost: 4.155
-    exilus: stabilizer
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
-    arcanes: [primary_crux]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 37.205406778811806
-    fp: dba71fcba944e88a
-    cost: 3.250
-    exilus: terminal_velocity
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
-    arcanes: [primary_crux]
   - weapon: torid
     mode: cycle
     listed: false
@@ -50909,14 +50920,6 @@ entries:
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_awakened_readiness, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
-  - weapon: rubico_prime
-    mode: base
-    listed: false
-    score: 32.56782087845961
-    fp: c60e1607fce23884
-    cost: 4.000
-    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, radiated_reload, cryo_rounds, infected_clip]
-    arcanes: [primary_crux]
   - weapon: kuva_nukor
     mode: base
     listed: false
@@ -51202,7 +51205,7 @@ entries:
     listed: false
     score: 32.161602289119415
     fp: fb02e3f005ce756e
-    cost: 3.403
+    cost: 5.267
     mods: [heavy_caliber, primary_acuity, serration, point_strike, vile_acceleration, vital_sense, radiated_reload, hellfire]
     arcanes: [primary_crux]
   - weapon: strun_prime
@@ -51338,6 +51341,15 @@ entries:
       bonuses: [critical_damage, heat, multishot]
       malus: impact
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 31.993688571407205
+    fp: fe8d5d53b039d841
+    cost: 5.181
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
+    arcanes: [primary_crux]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -51736,8 +51748,26 @@ entries:
     mode: base
     listed: false
     score: 31.56349672602402
+    fp: 2dc4307af5e729d9
+    cost: 5.164
+    exilus: ammo_drum
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
+    arcanes: [primary_crux]
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 31.56349672602402
+    fp: bc7f5450bccbf410
+    cost: 5.248
+    exilus: stabilizer
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
+    arcanes: [primary_crux]
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 31.56349672602402
     fp: 7f707f1a1c283f94
-    cost: 3.620
+    cost: 5.340
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -52344,6 +52374,14 @@ entries:
       bonuses: [damage, magazine_capacity, multishot]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 30.703243316467358
+    fp: c60e1607fce23884
+    cost: 5.247
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, radiated_reload, cryo_rounds, infected_clip]
+    arcanes: [primary_crux]
   - weapon: laetum
     mode: cycle
     listed: false
@@ -52654,6 +52692,15 @@ entries:
     mods: [primary_acuity, serration, critical_delay, vital_sense, gilded_truth, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 30.434146797752145
+    fp: ef25c25ae445246f
+    cost: 5.373
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
+    arcanes: [primary_crux]
   - weapon: latron_prime
     mode: base
     listed: false
@@ -52816,7 +52863,7 @@ entries:
     listed: false
     score: 30.26741817856148
     fp: 9098cb0602226a3c
-    cost: 3.561
+    cost: 0.356
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, serration, point_strike, vile_acceleration, vital_sense, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -52989,7 +53036,7 @@ entries:
     listed: false
     score: 30.07516533302991
     fp: 17a7e51121fa1e27
-    cost: 3.537
+    cost: 0.339
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, serration, point_strike, vile_acceleration, vital_sense, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -53002,6 +53049,33 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 30.03325149981881
+    fp: 616a57cc3a1fd0b7
+    cost: 5.231
+    exilus: ammo_drum
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
+    arcanes: [primary_crux]
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 30.03325149981881
+    fp: c44db95e44a1eb82
+    cost: 5.202
+    exilus: stabilizer
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
+    arcanes: [primary_crux]
+  - weapon: rubico_prime
+    mode: base
+    listed: false
+    score: 30.03325149981881
+    fp: dba71fcba944e88a
+    cost: 5.309
+    exilus: terminal_velocity
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
+    arcanes: [primary_crux]
   - weapon: akarius_prime
     mode: base
     listed: false
@@ -53351,7 +53425,7 @@ entries:
     listed: false
     score: 29.544025308034968
     fp: f71809d13c612981
-    cost: 5.189
+    cost: 0.601
     mods: [heavy_caliber, split_chamber, serration, point_strike, semi_rifle_cannonade, vital_sense, radiated_reload, hellfire]
     arcanes: [primary_crux]
   - weapon: atomos
@@ -56609,6 +56683,19 @@ entries:
       bonuses: [critical_chance, critical_damage]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 26.232473850245686
+    fp: 99181ac4f15aa52e
+    cost: 29.466
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     listed: false
@@ -56659,6 +56746,18 @@ entries:
       bonuses: [critical_damage, damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 26.21792618741049
+    fp: 58e6214d11163dc2
+    cost: 21.335
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, riven]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: burston_prime
     mode: cycle
     listed: false
@@ -58242,7 +58341,7 @@ entries:
     listed: false
     score: 24.558039540969045
     fp: 57020bf06ae9de16
-    cost: 0.313
+    cost: 0.501
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -58810,7 +58909,7 @@ entries:
     listed: false
     score: 24.027907222619017
     fp: 474359426a19de19
-    cost: 2.806
+    cost: 0.395
     mods: [heavy_caliber, primary_acuity, split_chamber, serration, point_strike, vital_sense, radiated_reload, hellfire]
     arcanes: [primary_crux]
   - weapon: burston_prime
@@ -59192,7 +59291,7 @@ entries:
     listed: false
     score: 23.704885860434313
     fp: 9971fbc29b09697c
-    cost: 4.235
+    cost: 0.500
     exilus: ammo_drum
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -59201,7 +59300,7 @@ entries:
     listed: false
     score: 23.704885860434313
     fp: 8df854758bbe77df
-    cost: 4.606
+    cost: 0.495
     exilus: stabilizer
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -59210,7 +59309,7 @@ entries:
     listed: false
     score: 23.704885860434313
     fp: 8a46089db4052639
-    cost: 3.452
+    cost: 0.512
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -60340,6 +60439,18 @@ entries:
       bonuses: [damage, fire_rate, status_chance]
       malus: damage_to_corpus
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 22.649334010187815
+    fp: d23a0b8c6288d886
+    cost: 22.715
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: vectis_prime
     mode: cycle
     listed: false
@@ -61131,7 +61242,7 @@ entries:
     listed: false
     score: 21.917322839696457
     fp: aa907e3903b4ede0
-    cost: 2.466
+    cost: 0.433
     exilus: vigilante_supplies
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_crux]
@@ -61413,6 +61524,19 @@ entries:
     mods: [amalgam_barrel_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_deadhead]
+  - weapon: ballistica_prime
+    mode: alternate
+    listed: false
+    score: 21.66099347683469
+    fp: 7498f51bd81a4f72
+    cost: 32.765
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, magnetic_might, riven, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     listed: false
@@ -61428,7 +61552,7 @@ entries:
     listed: false
     score: 21.62413997755499
     fp: e8722a8969c078e3
-    cost: 3.893
+    cost: 0.470
     exilus: terminal_velocity
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_crux]
@@ -71932,7 +72056,7 @@ entries:
     listed: false
     score: 13.172258798231496
     fp: a5fd6d751c057166
-    cost: 0.336
+    cost: 0.427
     exilus: vigilante_supplies
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -72077,7 +72201,7 @@ entries:
     listed: false
     score: 13.042613203727258
     fp: fb8d038027c061ac
-    cost: 3.542
+    cost: 0.433
     exilus: ammo_drum
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -72086,7 +72210,7 @@ entries:
     listed: false
     score: 13.042613203727258
     fp: 69d036ec75a3b5af
-    cost: 3.598
+    cost: 0.372
     exilus: stabilizer
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -72095,7 +72219,7 @@ entries:
     listed: false
     score: 13.042613203727258
     fp: 294f5937a680a989
-    cost: 2.918
+    cost: 0.429
     exilus: terminal_velocity
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -75662,7 +75786,7 @@ entries:
     listed: false
     score: 11.242943112069389
     fp: 31995d898b8a6173
-    cost: 3.260
+    cost: 0.399
     exilus: vile_precision
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -80976,7 +81100,7 @@ entries:
     listed: false
     score: 8.266736464556107
     fp: bb9cc9af96923418
-    cost: 5.066
+    cost: 0.620
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, thermite_rounds, infected_clip, high_voltage]
     arcanes: [primary_crux]
@@ -81090,7 +81214,7 @@ entries:
     listed: false
     score: 8.208611272874245
     fp: bb9cc9af96923418
-    cost: 2.683
+    cost: 0.413
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -82357,7 +82481,7 @@ entries:
     listed: false
     score: 7.55497698299386
     fp: cd671e77860ccbdd
-    cost: 5.266
+    cost: 0.586
     exilus: stabilizer
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, thermite_rounds, infected_clip, high_voltage]
     arcanes: [primary_crux]
@@ -82806,7 +82930,7 @@ entries:
     listed: false
     score: 7.30011864774102
     fp: 37479b26835a2d46
-    cost: 2.942
+    cost: 0.413
     exilus: ammo_drum
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -82815,7 +82939,7 @@ entries:
     listed: false
     score: 7.30011864774102
     fp: cd671e77860ccbdd
-    cost: 3.358
+    cost: 0.412
     exilus: stabilizer
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -82824,7 +82948,7 @@ entries:
     listed: false
     score: 7.30011864774102
     fp: 1f9cbc7e5abcac3b
-    cost: 3.388
+    cost: 0.429
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -83596,7 +83720,7 @@ entries:
     listed: false
     score: 6.8736030246770286
     fp: aa907e3903b4ede0
-    cost: 0.347
+    cost: 0.446
     exilus: vigilante_supplies
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, high_voltage, hellfire, rime_rounds]
     arcanes: [primary_crux]
@@ -84648,7 +84772,7 @@ entries:
     listed: false
     score: 6.396186731434936
     fp: d42f621f361913b5
-    cost: 3.120
+    cost: 0.452
     exilus: stabilizer
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, high_voltage, hellfire, rime_rounds]
     arcanes: [primary_crux]

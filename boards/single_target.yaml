@@ -38539,42 +38539,42 @@ entries:
     mode: base
     score: 19.879288894134092
     fp: d6830e25ad07cbc9
-    cost: 1.980
+    cost: 2.457
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
     score: 14.73294079300728
     fp: 8a8a5ed642e4ded3
-    cost: 1.798
+    cost: 2.354
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
     score: 13.883852385277756
     fp: 4166ee9a1c6d6ef2
-    cost: 1.196
+    cost: 1.616
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
     score: 12.603059006485505
     fp: dcbf21bad4876104
-    cost: 1.076
+    cost: 0.808
     mods: [primary_acuity, galvanized_aptitude, bladed_rounds, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
     score: 11.210324465798267
     fp: ab9a980db93f6cce
-    cost: 0.990
+    cost: 1.312
     mods: [heavy_caliber, primary_acuity, serration, point_strike, vile_acceleration, vital_sense, radiated_reload, hellfire]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
     score: 10.886654994516302
     fp: 48f6aca651a06861
-    cost: 1.013
+    cost: 1.304
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -38582,7 +38582,7 @@ entries:
     mode: base
     score: 10.645044721996985
     fp: 96beaaeeff904379
-    cost: 1.307
+    cost: 1.157
     exilus: ammo_drum
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -38606,7 +38606,7 @@ entries:
     mode: base
     score: 10.45024306518036
     fp: 82ef1a15000eea8f
-    cost: 0.746
+    cost: 1.302
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
     arcanes: [primary_crux]
@@ -38614,14 +38614,14 @@ entries:
     mode: base
     score: 10.407651494393336
     fp: 2a26d2e5f1b8c4e4
-    cost: 1.259
+    cost: 1.287
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, radiated_reload, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
   - weapon: rubico_prime
     mode: base
     score: 10.249613857392859
     fp: f871617711eacdd7
-    cost: 1.297
+    cost: 1.008
     exilus: ammo_drum
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
     arcanes: [primary_crux]
@@ -38629,7 +38629,7 @@ entries:
     mode: base
     score: 10.249613857392859
     fp: f3eb5c3896babd22
-    cost: 1.004
+    cost: 1.011
     exilus: stabilizer
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
     arcanes: [primary_crux]
@@ -38637,7 +38637,7 @@ entries:
     mode: base
     score: 10.249613857392859
     fp: 51f9884f27bc842a
-    cost: 0.998
+    cost: 1.340
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
     arcanes: [primary_crux]
@@ -68101,7 +68101,7 @@ entries:
     listed: false
     score: 9.885265314796166
     fp: 369db96dcd190c1c
-    cost: 1.145
+    cost: 1.166
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, serration, point_strike, vile_acceleration, vital_sense, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -68422,7 +68422,7 @@ entries:
     listed: false
     score: 9.666666666666666
     fp: de8673ac62521b07
-    cost: 1.141
+    cost: 1.137
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, serration, point_strike, vile_acceleration, vital_sense, cryo_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -71855,7 +71855,7 @@ entries:
     listed: false
     score: 7.992818579759821
     fp: c073a7daea9503f9
-    cost: 1.046
+    cost: 1.037
     mods: [heavy_caliber, primary_acuity, split_chamber, serration, point_strike, vital_sense, radiated_reload, hellfire]
     arcanes: [primary_crux]
   - weapon: burston_prime
@@ -73356,7 +73356,7 @@ entries:
     listed: false
     score: 7.32817150075745
     fp: fd3687591fb45536
-    cost: 1.048
+    cost: 1.360
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -73550,7 +73550,7 @@ entries:
     listed: false
     score: 7.233498537543063
     fp: 793700224a6ea11c
-    cost: 1.360
+    cost: 1.054
     exilus: ammo_drum
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -73559,7 +73559,7 @@ entries:
     listed: false
     score: 7.233498537543063
     fp: 80a4e688e4e676ff
-    cost: 1.072
+    cost: 1.369
     exilus: stabilizer
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -73568,7 +73568,7 @@ entries:
     listed: false
     score: 7.233498537543063
     fp: e82913a6af2b6e59
-    cost: 1.370
+    cost: 1.354
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, magazine_warp, vigilante_fervor, vital_sense, magnetic_capacity, radiated_reload, wildfire]
     arcanes: [primary_crux]
@@ -79730,7 +79730,7 @@ entries:
     listed: false
     score: 4.919356169451329
     fp: 496b1a3057bd3dc6
-    cost: 1.227
+    cost: 0.112
     exilus: vigilante_supplies
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -80053,7 +80053,7 @@ entries:
     listed: false
     score: 4.796683648881027
     fp: 4d6f49dacbe81061
-    cost: 0.129
+    cost: 0.127
     mods: [heavy_caliber, split_chamber, serration, point_strike, semi_rifle_cannonade, vital_sense, radiated_reload, hellfire]
     arcanes: [primary_crux]
   - weapon: torid
@@ -80226,7 +80226,7 @@ entries:
     listed: false
     score: 4.7258815537770795
     fp: 1ec7cffdb8a3cb0c
-    cost: 0.086
+    cost: 0.112
     exilus: ammo_drum
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -80244,7 +80244,7 @@ entries:
     listed: false
     score: 4.7258815537770795
     fp: 6297209f2e25ce69
-    cost: 0.111
+    cost: 0.112
     exilus: terminal_velocity
     mods: [galvanized_chamber, primary_acuity, internal_bleeding, serration, rupture, speed_trigger, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
@@ -81585,7 +81585,7 @@ entries:
     listed: false
     score: 4.316358718046616
     fp: 591b5e036acfbac0
-    cost: 0.102
+    cost: 0.101
     exilus: vigilante_supplies
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_crux]
@@ -81994,7 +81994,7 @@ entries:
     listed: false
     score: 4.235913073081421
     fp: e9f9b34b9921a043
-    cost: 0.101
+    cost: 0.103
     exilus: terminal_velocity
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_crux]
@@ -85335,7 +85335,7 @@ entries:
     listed: false
     score: 2.9298873299760992
     fp: da5ee2c6c4bb59b8
-    cost: 0.107
+    cost: 0.104
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, thermite_rounds, infected_clip, high_voltage]
     arcanes: [primary_crux]
@@ -85572,7 +85572,7 @@ entries:
     listed: false
     score: 2.858776945318253
     fp: da5ee2c6c4bb59b8
-    cost: 0.103
+    cost: 0.102
     exilus: vigilante_supplies
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -86194,7 +86194,7 @@ entries:
     listed: false
     score: 2.6502312453780794
     fp: 7171e65e268e3d66
-    cost: 0.103
+    cost: 0.106
     exilus: ammo_drum
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -86203,7 +86203,7 @@ entries:
     listed: false
     score: 2.6502312453780794
     fp: bd692d89b33e90fd
-    cost: 0.079
+    cost: 0.102
     exilus: stabilizer
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -86212,7 +86212,7 @@ entries:
     listed: false
     score: 2.6502312453780794
     fp: 2d6f7a498a02eedb
-    cost: 0.103
+    cost: 0.104
     exilus: terminal_velocity
     mods: [heavy_caliber, primary_acuity, crash_course, vital_sense, radiated_reload, high_voltage, thermite_rounds, infected_clip]
     arcanes: [primary_crux]
@@ -91809,7 +91809,7 @@ entries:
     listed: false
     score: 1.5387401121451376
     fp: 591b5e036acfbac0
-    cost: 0.074
+    cost: 0.100
     exilus: vigilante_supplies
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, high_voltage, hellfire, rime_rounds]
     arcanes: [primary_crux]
@@ -92587,7 +92587,7 @@ entries:
     listed: false
     score: 1.38089093944937
     fp: 968c5a43cc5fd795
-    cost: 0.096
+    cost: 0.103
     exilus: stabilizer
     mods: [primary_acuity, serration, crash_course, shred, catalyzer_link, high_voltage, hellfire, rime_rounds]
     arcanes: [primary_crux]
