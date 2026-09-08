@@ -4,18 +4,17 @@
 --   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
 --
 -- …then declare the binding in `wrangler.jsonc` (see docs/BOARD.md §Setup) and
--- deploy. Until the binding exists the mirror in `worker/index.js` is a no-op,
--- so this file can land long before the database does.
+-- deploy. Without the binding every endpoint that reads or writes answers 503,
+-- which is the honest state rather than a silent one.
 --
--- WHY THIS EXISTS. KV holds the library today and cannot be asked a question
--- about it: no queries, no transactions, no bulk read, and listing is the only
--- index. The library is the one thing here that cannot be regenerated — the
--- boards are derived from it, the site is generated, the code is in git — so it
--- has to be the thing that is easiest to inspect, count and dump, and in KV it
--- is the hardest (docs/BOARD.md, 2026-08-26).
+-- WHY A DATABASE. The library is the one thing here that cannot be regenerated
+-- — the boards are derived from it, the site is generated, the code is in git —
+-- so it has to be the thing that is easiest to inspect, count and dump. A key
+-- store is the hardest: no queries, no transactions, no bulk read, and listing
+-- as the only index (docs/BOARD.md §"One database").
 
--- ONE ROW PER BUILD, keyed by the same identity KV uses, so the two stores can
--- be compared row for row without a join key having to be invented.
+-- ONE ROW PER BUILD, keyed by `identity(rec)` — a function of the canonical
+-- build, so a resubmission is the same row and there is nothing to keep in step.
 --
 -- The RECORD is kept whole as json rather than exploded into columns. The axes
 -- are declared once, in `AXES` in worker/index.js, and a build has gained an
@@ -42,9 +41,9 @@ CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 --
 -- `(build, ruler, mode, what it read, what measured it) -> score` is true for
 -- ever once computed, so it is written down the moment it is computed rather
--- than when a batch finishes. Nothing writes this table yet — the scorer keeps
--- its numbers in R2 blobs and the board yaml — and it is here so the shape is
--- settled before anything depends on it.
+-- than when a batch finishes. `scripts/ship_facts.sh` writes it beside the
+-- running scorer; `scripts/fetch_facts.sh` reads one generation back out. This
+-- table is the only source the publisher has.
 CREATE TABLE IF NOT EXISTS scores (
   identity     TEXT NOT NULL,
   ruler        TEXT NOT NULL,

@@ -79,7 +79,7 @@ number**. Everything else follows from it:
 | ranked across weapons | `site/board/index.json` | derived from the files beside it |
 | which board this is | `site/board.meta.json` | a digest per file, plus the generation |
 | consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
-| the library | one D1 database, `wfsim-db` (binding `LIBRARY`) | written by the endpoint |
+| the library | one D1 database, `wfsim` (binding `LIBRARY`) | written by the endpoint |
 | the facts | the `scores` table in it | written by `ship_facts.sh` |
 | the deploy | `wrangler.jsonc` | `scripts/deploy.sh`, from a git push |
 | the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
@@ -902,15 +902,15 @@ assets, and until the board there was no script at all. Two consequences:
 1. **The database** — one D1 database holds everything:
 
    ```sh
-   npx wrangler d1 create wfsim-db
-   npx wrangler d1 execute wfsim-db --remote --file worker/schema.sql
+   npx wrangler d1 create wfsim
+   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
    ```
 
    …then declare it in `wrangler.jsonc`:
 
    ```jsonc
    "d1_databases": [
-     { "binding": "LIBRARY", "database_name": "wfsim-db",
+     { "binding": "LIBRARY", "database_name": "wfsim",
        "database_id": "<id from the create above>" }
    ]
    ```
@@ -958,7 +958,7 @@ assets, and until the board there was no script at all. Two consequences:
    ASK IT A QUESTION, which is most of why it is a database:
 
    ```sh
-   npx wrangler d1 execute wfsim-db --remote --command \
+   npx wrangler d1 execute wfsim --remote --command \
      "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2 DESC LIMIT 20"
    ```
 

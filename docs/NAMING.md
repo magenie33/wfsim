@@ -144,9 +144,7 @@ it and not a container per thing. The CONTENT is named one level down.
 | resource | name | what is inside |
 | --- | --- | --- |
 | Worker | `wfsim` | the site and its api |
-| R2 bucket | `wfsim` | `scores/`, and the next prefix |
-| D1 database | `wfsim` | `builds`, `scores` |
-| KV, a second namespace | `wfsim-supporters` | supporter records |
+| D1 database | `wfsim` | `builds`, `scores`, `disagreements`, `supporters` |
 
 **A NAME DESCRIBES THE RESOURCE, NOT WHAT HAPPENS TO BE IN IT.** A bucket named
 for one prefix is false the day a second prefix is added, and opening a second
@@ -156,9 +154,8 @@ belongs.
 
 **A SECOND RESOURCE OF ONE TYPE NEEDS A BOUNDARY**, and takes its name from
 that boundary: a different lifecycle, a different write path, a blast radius
-worth separating. `wfsim-supporters` is its own namespace because a public
-submission endpoint and a payment webhook should not be able to reach each
-other's keys.
+worth separating — `wfsim-staging`, not `wfsim-2`. Without one, the second
+resource is a table or a prefix inside the first.
 
 **THE TYPE IS NEVER IN THE NAME, AND NEITHER IS THE VENDOR.** A console lists
 one type per section and a command carries its own (`wrangler d1 execute`, `aws
