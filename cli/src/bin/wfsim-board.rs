@@ -1016,7 +1016,7 @@ fn main() {
     // merged by filename order never could.
     let ((facts_scores, facts_costs, _, facts_fps, _), facts_rolls) =
         load_facts(flag("--facts-in"), &bench_id);
-    store_scores.extend(facts_scores);
+    store_scores.extend(facts_scores.iter().map(|(k, v)| (k.clone(), *v)));
     known_costs.extend(facts_costs);
     store_fps.extend(facts_fps);
     // …AND WHICH OF THEM THIS RUN COMPUTED ITSELF, which is a different fact
@@ -1099,6 +1099,13 @@ fn main() {
     // fill a gap. A verify run takes none, for the reason stated below.
     if !verify {
         known.extend(here_scores.iter().map(|(k, v)| (k.clone(), *v)));
+        // …AND THE OPEN GENERATION'S FACTS BEHIND THEM, ahead of everything
+        // else. A fact is not a cached copy of a number: it IS the number this
+        // generation holds for that row, so it beats the prior board and a
+        // forced list both. Reached through the store instead, it lost to both
+        // — a rescore's own results sat in the table while the board went on
+        // publishing what they replaced.
+        take_where_unknown(&mut known, facts_scores.clone());
     }
     let mut verify_against: ScoreMap = Default::default();
     if let Some(path) = flag("--reuse") {
@@ -1216,7 +1223,10 @@ fn main() {
         // FORCING DROPS WHAT WAS STORED, NEVER WHAT THIS RUN COMPUTED. The
         // point of the flag is to refight a row; throwing away the fight is
         // the one thing it must not do.
-        known.retain(|k, _| !hit(k) || here_scores.contains_key(k));
+        // A FACT OF THE OPEN GENERATION IS NOT "WHAT WAS STORED". Forcing means
+        // refight what an OLDER generation measured; a row this generation has
+        // already measured is the thing the force was asking for.
+        known.retain(|k, _| !hit(k) || here_scores.contains_key(k) || facts_scores.contains_key(k));
         rolls.retain(|k, _| !hit(k));
         // …AND THE HALF-FINISHED FIGHTS WITH THEM. A partial is held to the
         // row's DATA hash, which a forced rescore does not move, so a resumed
