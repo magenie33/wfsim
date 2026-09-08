@@ -1034,8 +1034,6 @@ fn main() {
     // WHAT THE LAST RUN MEASURED, per row — the input to the shard packing.
     let mut prior_costs: ScoreMap = Default::default();
     let mut prior_present: std::collections::HashSet<String> = Default::default();
-    // …AND WHAT THE ROWS WHOSE DATA MOVED LAST SCORED, for the assembly alone.
-    let mut prior_stale: ScoreMap = Default::default();
     // …AND WHAT EACH GROUP'S BEST WAS, the threshold the probe screens against.
     let mut prior_leaders: std::collections::HashMap<(String, String, bool), f64> =
         Default::default();
@@ -1097,14 +1095,24 @@ fn main() {
 
     // THIS RUN'S OWN ANSWERS GO IN FIRST, so every stored copy below can only
     // fill a gap. A verify run takes none, for the reason stated below.
-    if !verify {
+    // THE ASSEMBLY TAKES ITS NUMBERS FROM THE FACTS AND NOWHERE ELSE.
+    //
+    // `--project` is the pass that PUBLISHES, and a publisher with more than
+    // one source needs a rule for which one wins — which is where every defect
+    // this pipeline has produced has lived. So under it there is one source: a
+    // row with a fact is published from that fact, and a row without one is not
+    // a row. An incomplete generation therefore publishes a SHORT board, which
+    // is what the completeness gate is for; it does not quietly fall back to
+    // numbers this engine never computed.
+    //
+    // Measured before this: the three highest rows of a Ballistica group were
+    // 3992.29, 3934.90 and 3928.68, and not one of them had a fact — they were
+    // the prior board's, published beside freshly measured ones half their
+    // size.
+    if project {
+        known = facts_scores.clone();
+    } else if !verify {
         known.extend(here_scores.iter().map(|(k, v)| (k.clone(), *v)));
-        // …AND THE OPEN GENERATION'S FACTS BEHIND THEM, ahead of everything
-        // else. A fact is not a cached copy of a number: it IS the number this
-        // generation holds for that row, so it beats the prior board and a
-        // forced list both. Reached through the store instead, it lost to both
-        // — a rescore's own results sat in the table while the board went on
-        // publishing what they replaced.
         take_where_unknown(&mut known, facts_scores.clone());
     }
     let mut verify_against: ScoreMap = Default::default();
@@ -1120,13 +1128,12 @@ fn main() {
                 prior_rolls = p.rolls;
                 prior_costs = p.costs;
                 prior_present = p.present;
-                prior_stale = p.stale_scores;
                 prior_leaders = p.leaders;
                 if verify {
                     // NOT into `known`: a verify run has to MEASURE the sample,
                     // and a seeded score is a row that is never fought.
                     verify_against = p.scores;
-                } else {
+                } else if !project {
                     reused = take_where_unknown(&mut known, p.scores);
                 }
             }
@@ -1508,7 +1515,8 @@ fn main() {
             // `or_insert`, because the prior board and this run's own shards
             // were validated on their own way in and must win.
             if let Some(&stored) = store_scores.get(&key) {
-                if store_fps.get(&key).map(String::as_str) == Some(build_fp.as_str())
+                if !project
+                    && store_fps.get(&key).map(String::as_str) == Some(build_fp.as_str())
                     && !is_forced(&key)
                 {
                     known.entry(key.clone()).or_insert(stored);
@@ -1537,10 +1545,7 @@ fn main() {
             // to nothing else. The pass that can refight it sees the row
             // missing and does; the pass that cannot sees it and keeps it, so a
             // corrected data file never takes a published row off the board.
-            let score = match known
-                .get(&key)
-                .or_else(|| if project { prior_stale.get(&key) } else { None })
-            {
+            let score = match known.get(&key) {
                 // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
                 // map only ever travels between processes built from one commit.
                 Some(&s) => s,
