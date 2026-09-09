@@ -36,11 +36,11 @@ CREATE TABLE IF NOT EXISTS inbox (
   record TEXT NOT NULL
 );
 
--- ONE ROW PER BUILD, keyed by a HASH OF WHAT MAKES IT ONE — the canonical build
--- that `engine::builds::identity` states, so a resubmission is the same row and
--- there is nothing to keep in step. Derived and not allocated: the same build
--- always hashes the same, so nothing has to look the row up before writing it,
--- and no two writers can disagree about whether they are holding one build.
+-- ONE ROW PER BUILD, keyed by what makes it one: the canonical build that
+-- `engine::builds::identity` states, derived by `wfsim-intake` and not by the
+-- door. Derived and not allocated — the same build always keys the same, so
+-- nothing has to look the row up before writing it, and no two writers can
+-- disagree about whether they are holding one build.
 --
 -- The RECORD is kept whole as json rather than exploded into columns. The axes
 -- are declared once, in `AXES` in worker/index.js, and a build has gained an
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS inbox (
 -- first, because "how well covered is this weapon" is the question the board is
 -- actually run on.
 CREATE TABLE IF NOT EXISTS builds (
-  id       TEXT PRIMARY KEY,
+  identity TEXT PRIMARY KEY,
   -- The submission DAY, and nothing finer. The store records nothing about
   -- submitters — no IP, no token, no timestamp that could order one person's
   -- submissions against another's — and a schema is a place that promise could
@@ -73,7 +73,7 @@ CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 -- running scorer; `scripts/fetch_facts.sh` reads them back out. This
 -- table is the only source the publisher has.
 CREATE TABLE IF NOT EXISTS scores (
-  build_id     TEXT NOT NULL,
+  identity     TEXT NOT NULL,
   ruler        TEXT NOT NULL,
   -- A ROW IS (build, ruler, MODE). A mode is a property of the WEAPON, not of
   -- the build -- every melee carries seven and the Ballistica Prime four -- and
@@ -103,6 +103,10 @@ CREATE TABLE IF NOT EXISTS scores (
   -- deletes it, so a row can be older than the ruler's current terms, and
   -- reading one back without this means checking out the commit that made it.
   metric       TEXT NOT NULL,
+  -- The riven corner the search settled on, when there is one: a score alone
+  -- cannot publish a riven row, because the reader has to be able to BUILD that
+  -- riven and the page cannot re-derive it without paying for the search again.
+  rolls        TEXT,
   -- WHAT THE ROW COST, so the bill is read off the rows rather than estimated,
   -- and so the next run can pack its shards by work rather than by count. NOT
   -- derivable from the two clocks below: a row paid for in sittings spans a wall
@@ -122,7 +126,7 @@ CREATE TABLE IF NOT EXISTS scores (
   -- number is right — not the clock, not the build that wrote it, and no hash of
   -- what it read. Only another measurement can, and a person deleting the row is
   -- what asks for one.
-  PRIMARY KEY (build_id, ruler, mode)
+  PRIMARY KEY (identity, ruler, mode)
 );
 
 -- "What has this ruler measured" is one indexed query, which is what the set
