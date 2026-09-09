@@ -1048,53 +1048,22 @@ assets, and until the board there was no script at all. Two consequences:
    `scripts/fetch_facts.sh` reads it back. Both carry their own self-tests,
    driven against a stub `curl`, so every hop is testable without a network.
 
-   A DATABASE THAT ALREADY HOLDS ROWS is migrated by hand, because
-   `CREATE TABLE IF NOT EXISTS` cannot evolve one. **Two, IN THIS ORDER**, and
-   the second is what makes the first whole.
-
-   ① the `metric` column. ON ONE LINE, because this one is pasted and a
+   ASK IT A QUESTION, which is most of why it is a database. ON ONE LINE: a
    continuation is the one piece of shell syntax that differs between the two
-   shells it might be pasted into — `\` is an argument to PowerShell, which
-   reports an unknown one and never says why.
+   shells this might be pasted into, and `\` is an ARGUMENT to PowerShell, which
+   then reports an unknown one and never says which.
 
    ```sh
-   npx wrangler d1 execute wfsim --remote -y --command "ALTER TABLE scores ADD COLUMN metric TEXT; UPDATE scores SET metric = 'kpm'"
+   npx wrangler d1 execute wfsim --remote --command "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2 DESC LIMIT 20"
    ```
 
-   THE BACKFILL IS EXACT, NOT A GUESS: every ruler that has ever scored a row
-   declares `metric: kpm`. The two statements are independent — if the second is
-   what failed, re-run it alone — and `SELECT metric, count(*) FROM scores GROUP
-   BY metric` says whether it landed. The column arrives NULLABLE, because
-   SQLite cannot add a NOT NULL one without a DEFAULT and a default is the worse
-   divergence: it would silently fill the first row of the first ruler that ranks
-   by something else.
-
-   ② the key, which lost `data_fp`. SQLite cannot do that in place, so the table
-   is rebuilt — and the rebuilt one declares `metric TEXT NOT NULL`, which is
-   where ①'s divergence ends. A FILE rather than a pasted command, because a
-   destructive statement against the only copy of 132 CPU-hours should be
-   reviewable before it is run:
-
-   ```sh
-   npx wrangler d1 execute wfsim --remote -y --file worker/migrate_one_fact_per_row.sql
-   ```
-
-   It is the one migration here that DROPS facts, and it drops only ones nothing
-   could read: a reader asks a row for its own fingerprint, so a second row under
-   the same key was already unreachable. Take `SELECT count(*) FROM scores`
-   before and after — the difference is how many generations the old key held.
-
-   **UNTIL ① HAS RUN, EVERY WRITE IS REFUSED.** The shipper binds a column the
-   table does not have, so the batch errors and the cursor stays where it was;
-   nothing is lost and nothing lands. That is the loud direction, and
-   `ship_facts.sh --self-test` is what holds the bind itself.
-
-   ASK IT A QUESTION, which is most of why it is a database:
-
-   ```sh
-   npx wrangler d1 execute wfsim --remote --command \
-     "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2 DESC LIMIT 20"
-   ```
+   **AND IT NEEDS AN API TOKEN, NOT THE LOGIN.** `wrangler login` is enough to
+   `d1 list` this database and not enough to QUERY it: the same account, holding
+   a `d1 (write)` scope, is answered `7403 — not authorized to access this
+   service` on `/d1/database/<id>/query`. Set `CLOUDFLARE_API_TOKEN` to a token
+   with *Account · D1 · Edit* — which is what the workflows use, and what makes
+   them work where a laptop does not — and wrangler stops consulting the login
+   at all.
 
 The token only READS on the publishing path. What the board says is computed in
 the repo from data in the repo; nothing secret decides a rank.
