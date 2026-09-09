@@ -1229,19 +1229,6 @@ pub fn identity(b: &ValidBuild) -> String {
             r.malus.as_ref().map_or(String::new(), |m| format!("-{m}"))
         ),
     };
-    // THE ROLLS, appended for the same reason: every identity already computed
-    // for a build that states only a shape is unchanged byte for byte.
-    let key = match b.riven_rolls.as_slice() {
-        [] => key,
-        rolls => {
-            let mut key = key;
-            for r in rolls {
-                key.push('|');
-                key.push_str(&r.to_string());
-            }
-            key
-        }
-    };
     // THE EXILUS SLOT'S MOD, appended for the same reason the valence and the
     // riven shape were: every identity already computed for a build without one
     // is unchanged byte for byte, so the board is not re-keyed by a feature most
@@ -1261,9 +1248,29 @@ pub fn identity(b: &ValidBuild) -> String {
     // takes no parts is keyed byte for byte as it was, so the board is not
     // re-keyed by a feature almost none of it uses. The CHAMBER is not here —
     // it is the weapon, and `b.weapon` already carries it.
-    match &b.assembly {
+    let key = match &b.assembly {
         None => key,
         Some(a) => format!("{key}|a:{}+{}", a.grip, a.loader),
+    };
+    // THE ROLLS, AND THEY GO LAST. Every identity already computed for a build
+    // that states only a shape is unchanged byte for byte — the same reason the
+    // three above are appended rather than inserted.
+    //
+    // LAST RATHER THAN BESIDE THE SHAPE, because that makes re-keying the facts
+    // a SUFFIX: a stored score already carries the corner it was measured at, so
+    // moving it onto the build that names that corner is one statement over the
+    // column rather than a map of every row in the library. A field inserted in
+    // the middle would need the whole identity rebuilt to say the same thing.
+    match b.riven_rolls.as_slice() {
+        [] => key,
+        rolls => {
+            let mut key = key;
+            for r in rolls {
+                key.push('|');
+                key.push_str(&r.to_string());
+            }
+            key
+        }
     }
 }
 
