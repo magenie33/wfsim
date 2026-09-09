@@ -112,15 +112,18 @@ for (const [l, i] of assigns) {
   const name = l.trim().startsWith("SLICE") ? "SLICE" : "slice";
   if (!firstOf.has(name)) firstOf.set(name, l);
 }
-const deadlineFirst = [...firstOf.values()].every((l) => l.includes("--deadline"));
-const countExtends = assigns
-  .filter(([l]) => l.includes("--new-limit"))
-  .every(([l]) => /\$\{?(slice|SLICE)\}?/.test(l));
-check(firstOf.size > 0 && deadlineFirst && countExtends,
-  `the clock bounds every scoring call, and the count extends it (${firstOf.size} of them)`,
-  "the deadline must be assigned unconditionally and the count must prepend to "
-    + "it: a branch setting --new-limit without carrying the clock forward is a "
-    + "run bounded by a number that means nothing");
+// ASSERTED ON THE PROPERTY AND NOT ON THE SHAPE: what has to hold is that the
+// CLOCK is in every bound, whether one assignment carries both or a later one
+// extends an earlier that has it. Insisting on the two-step form outlawed the
+// simpler single assignment that satisfies it outright.
+const carriesClock = assigns.every(([l]) =>
+  l.includes("--deadline") || /\$\{?(slice|SLICE)\}?/.test(l));
+const counted = assigns.some(([l]) => l.includes("--new-limit"));
+check(firstOf.size > 0 && carriesClock && counted,
+  `the clock bounds every scoring call, and the count rides with it (${firstOf.size} of them)`,
+  "a bound naming --new-limit without the clock is a run bounded by a number "
+    + "that means nothing: rows differ 79x in cost, so a count of 150 is nine "
+    + "minutes or fifty");
 
 // THE MATRIX AND THE DENOMINATOR ARE ONE NUMBER. A shard is told `i/N` while
 // the matrix is a list, so a list of 32 against an N of 128 tells 32 jobs they

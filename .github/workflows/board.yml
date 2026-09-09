@@ -25,7 +25,7 @@
 # every score whose data still matches: measured on a scheduled run, 10,348
 # reused and 0 scored. `audit.yml` is the only thing that finds a number this
 # code no longer computes, and it finds it by MEASURING rather than by asking a
-# hash. A full rescore is the button (`full`); `weapon` names rows at any
+# hash. What retires a fact is a person deleting its row, which is SQL and
 # precision beside it — docs/BOARD.md §"When the code moved".
 #
 # Scoring is embarrassingly parallel — every row is an independent fight — so it
@@ -67,36 +67,11 @@ on:
   # board every hour and REPORTS a row that is not what this code computes,
   # without rescoring anything and without gating this pipeline — so it keeps
   # running while this is held, and it is what says whether the board is right.
+  # A PERSON, AND NOTHING ELSE, STARTS A RUN. It takes no input: what a run
+  # does is decided by what the database holds — a build with no fact is
+  # computed, a build with one is not — so there is nothing here to name.
+  # Retiring a fact is `DELETE`, which is SQL and not a button.
   workflow_dispatch:
-    inputs:
-      # THE ONE INPUT, AND IT NAMES ROWS. A fingerprint answers "did an INPUT
-      # move", so a correction it cannot see leaves a published number nobody can
-      # argue the board out of — and an older `measured_by` is NOT such a
-      # correction, because an older engine is a reference and not a verdict. Only
-      # the audit MEASURING a difference is.
-      #
-      # IT GOES AS FINE AS THE CASE DEMANDS: a weapon, one of its modes, the riven
-      # or the plain half of that mode, or a single row by its key, `;` between
-      # several because a mod list is commas. "Every row" is this with a selector
-      # that matches everything, which is why there is no second button for it:
-      # a wide rescore and a narrow one are the same operation.
-      #
-      # A SELECTOR THAT MATCHES NOTHING RESCORES NOTHING AND SAYS SO, rather than
-      # passing quietly — a misspelled id reads exactly like a run that did the
-      # work you asked for.
-      weapon:
-        description: "rescore these rows whatever the fingerprints say — weapon | weapon#mode | weapon#mode:plain | a whole row key; ';' between several"
-        type: string
-        default: ""
-
-# THE SCHEDULE AND THE BUTTON KEEP SEPARATE GROUPS. The schedule is what drives
-# convergence — every one of its runs repairs a slice — and standing those down
-# behind a manual `full` would pause the mechanism the board updates by, which
-# is the shape that starved it before.
-#
-# Splitting is safe because `publish` takes whatever `main` is now, writes the
-# generated files on top and retries three times: two runs landing a board is
-# last-writer-wins BY DESIGN, the same reasoning that made it refuse to rebase.
 concurrency:
   group: board-${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
   cancel-in-progress: false
@@ -277,25 +252,15 @@ jobs:
         if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
-          # THE SAME FORCING AND THE SAME BOUNDS THE SCORERS WILL APPLY, or this
-          # step answers a question the run is not asking: it would count work
-          # the run is not going to do, and the gate below would read it as busy.
-          FORCE=""
-          if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
-          # A RUN THAT NAMES ROWS IS BOUNDED BY WHAT IT NAMES, so it takes no
-          # backlog limit — but it keeps the CLOCK, because the split below is
-          # sized so the clock is not reached. Bounding a named run by a count
-          # would leave half of what a person asked for undone with nothing
-          # saying so.
-          SLICE="--deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
-          if [ -z "${{ inputs.weapon }}" ]; then
-            SLICE="--new-limit $NEW_ROWS $SLICE"
-          fi
+          # THE SAME BOUNDS THE SCORERS WILL APPLY, or this step answers a
+          # question the run is not asking: it would count work the run is not
+          # going to do, and the gate below would read it as busy.
+          SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
           todo=0 work=0
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
-                     --dry-run $FORCE $SLICE \
+                     --dry-run $SLICE \
                      --facts-in facts-known.ndjson \
                      < submissions.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 work=0 (no answer)")
@@ -431,19 +396,13 @@ jobs:
           # rather than a line after it, so a scorer that exits non-zero still
           # banks what it managed.
           trap 'kill $SHIPPER 2>/dev/null || true; bash scripts/ship_facts.sh facts.ndjson || true' EXIT
-          # THE SAME FORCING AND THE SAME BOUNDS THE PLAN COUNTED WITH. A shard
-          # that took on a different set from the one the split was sized for is
-          # a shard doing somebody else's slice.
-          FORCE=""
-          if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
-          slice="--deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
-          if [ -z "${{ inputs.weapon }}" ]; then
-            slice="--new-limit $NEW_ROWS $slice"
-          fi
+          # THE SAME BOUNDS THE PLAN COUNTED WITH. A shard that took on a
+          # different set from the one the split was sized for is a shard doing
+          # somebody else's slice.
+          slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             ./target/release/wfsim-board "$id" \
-              $FORCE \
               $slice \
               --facts-in facts-known.ndjson \
               --facts facts.ndjson \
@@ -531,11 +490,6 @@ jobs:
       - name: assemble every benchmark
         run: |
           set -euo pipefail
-          # THE FORCED LIST, if the operator named one. It has to reach every
-          # process that decides reuse: a shard that keeps a row the publish
-          # pass drops leaves publish to compute it alone, at the end.
-          FORCE=""
-          if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             # NO SLICE AND NO BUDGET: this pass fights nothing. `--project`
@@ -550,7 +504,6 @@ jobs:
             # written with all of them in hand. A weapon with an unmeasured
             # row keeps the rows it has.
             ./target/release/wfsim-board "$id" site/board \
-              $FORCE \
               --project \
               --facts-in facts-known.ndjson \
               < submissions.json > /dev/null || {
