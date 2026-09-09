@@ -413,7 +413,7 @@ would say whether a FILE moved, where the question is which BUILDS contain a
 thing.
 
 ```
-python scripts/board_select.py --element heat --selectors
+python scripts/board_select.py --element heat --delete
 python scripts/board_select.py --mod 'galvanized_*' --board single_target --plain
 python scripts/board_select.py --weapon 'torid*' --mode cycle --rows
 ```
@@ -422,15 +422,23 @@ python scripts/board_select.py --weapon 'torid*' --mode cycle --rows
 weapon whose file grants it, so a card added tomorrow is found by the same walk.
 The rest are globs, repeatable, any-of within a flag and all-of across them.
 
-IT PRICES THE ANSWER BEFORE THE BUTTON. Every row records what it cost to
-measure, so the summary is rows, published rows, groups and CPU minutes — `heat`
-reaches 14,664 of 22,977 rows and 3,578 CPU minutes, `heat` on one board and
-without rivens reaches 548. That difference is a decision, and it belongs on
-screen rather than in the bill afterwards.
+IT PRICES THE ANSWER BEFORE THE DELETE, and the price comes from the one place
+that holds it. A published row does not carry what it cost, so `--delete` prints
+a SELECT over exactly the rows the DELETE names — run that first. `heat` reaches
+7,099 of the 10,867 published rows and 238 groups; `heat` on one board and
+without rivens reaches far fewer, and that difference is a decision.
+
+`--delete` prints one statement per (ruler, weapon, mode), which is the GROUP —
+a published row names no build id, because the id is DERIVED from the build and
+a stored copy of a derived fact is the one that goes stale. So it retires the
+whole group rather than only the rows that matched, and over-deleting costs
+TIME: the rows that did not need it come back the same. The other way round
+leaves a repaired mechanic under a stale number nobody can argue the board out
+of.
 
 BATCH THE FIXES, THEN RESCORE ONCE. Ten corrections landing separately are ten
 rescores of overlapping rows; landing together they are one. That is the whole
-reason this prints a selector instead of starting anything.
+reason this prints SQL instead of running anything.
 
 ### Why it is sharded
 

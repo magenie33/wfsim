@@ -1,39 +1,39 @@
 #!/usr/bin/env python3
 """WHICH PUBLISHED ROWS CARRY A THING, and what rescoring them would cost.
 
-THE BOARD DOES NOT DECIDE THIS ANY MORE, and that is the point. A fingerprint
-answers "did an input move", which is a question about FILES; a person fixing a
-mechanic asks "which rows can this reach", which is a question about BUILDS, and
-no hash answers it. Nothing automatic re-scores more than a bounded slice
-(docs/BOARD.md), so repairing a mechanic on purpose means naming the rows —
-and naming them by hand across 22,977 is not a thing anyone does twice.
+WHAT RETIRES A FACT IS A PERSON DELETING ITS ROW (docs/BOARD.md), so repairing a
+mechanic on purpose means finding the rows it reached. No hash answers that: a
+hash says whether an input MOVED, which is a question about files, where this is
+a question about BUILDS — and finding them by hand across 22,977 is not a thing
+anyone does twice.
 
-It prints what `--rescore` takes, so the two halves compose:
+It prints the DELETE, so the two halves compose:
 
-    python scripts/board_select.py --element heat --selectors
-    # …paste into Actions -> board -> Run workflow -> weapon
+    python scripts/board_select.py --element heat --delete
+    # …run against the database, then press the board's button
 
-AND IT PRICES THE ANSWER BEFORE ANYONE PRESSES ANYTHING. Every row records what
-it cost to measure, so the summary says how many rows, how many groups and how
-many CPU minutes the rescore is. A change that reaches eight thousand rows is a
-different decision from one that reaches forty, and the difference should be on
-screen before the button, not in the bill afterwards.
+AND IT PRICES THE ANSWER FIRST. Every row records what it cost to measure, so
+the summary says how many rows, how many groups and how many CPU minutes the
+rescore is. A change that reaches eight thousand rows is a different decision
+from one that reaches forty, and the difference belongs on screen rather than in
+the bill afterwards.
 
 BATCH THE FIXES, THEN RESCORE ONCE. Ten corrections landing separately are ten
 rescores of overlapping rows; landing them together is one. That is the whole
-economy of doing this by hand, and it is why this prints a selector rather than
-starting anything.
+economy of doing this by hand, and it is why this prints SQL rather than running
+anything.
 
     --weapon/--mod/--arcane/--evolution   glob, repeatable, any-of within a flag
     --element <name>                      any entity whose data grants it
     --mode <id> --riven --plain --board <id>
-    --selectors                           print what `--rescore` accepts
-    --rows                                print one key per line instead
+    --delete                              print the DELETE that retires them
+    --rows                                print one row per line instead
 """
 from __future__ import annotations
 
 import argparse
 import fnmatch
+import json
 import re
 import sys
 from collections import defaultdict
@@ -100,12 +100,12 @@ def globbed(names: set[str], patterns: list[str]) -> bool:
 
 
 def identity(row: dict) -> str:
-    """The row's key, rebuilt the way `builds::identity` writes it.
+    """The GROUP a published row belongs to: `(weapon, mode)`.
 
-    IT IS NOT REBUILT, IT IS READ: the board stores `fp` and the axes, and the
-    scorer's own key is what `--rescore` matches, so this prints the coarsest
-    selector that covers a row rather than a key it might spell differently.
-    A group is `(weapon, mode)` and that is what the coarse form names.
+    A weapon with n modes is n independent rankings (docs/BOARD.md), and the
+    group is the coarsest thing a published row names about itself — it carries
+    no build id, because the id is derived from the build and a stored copy of a
+    derived fact is the one that goes stale.
     """
     return f"{row.get('weapon', '')}#{row.get('mode') or 'base'}"
 
@@ -122,7 +122,7 @@ def main() -> int:
     ap.add_argument("--board", action="append", default=[])
     ap.add_argument("--riven", action="store_true")
     ap.add_argument("--plain", action="store_true")
-    ap.add_argument("--selectors", action="store_true")
+    ap.add_argument("--delete", action="store_true")
     ap.add_argument("--rows", action="store_true")
     a = ap.parse_args()
 
@@ -137,15 +137,19 @@ def main() -> int:
             print(f"nothing in data/ grants '{a.element}' — check the name", file=sys.stderr)
             return 2
 
+    # THE PUBLISHED BOARD IS ONE FILE PER WEAPON, and the file's NAME is the
+    # weapon: a row states the build and nothing that is derivable from where it
+    # sits. So the weapon is put back on the row here, once, and everything
+    # below asks a whole row.
     matched: list[tuple[str, dict]] = []
     seen = 0
-    for f in sorted((ROOT / "boards").glob("*.yaml")):
-        board = load(f)
-        bid = board.get("benchmark") or f.stem
-        if a.board and bid not in a.board:
+    for f in sorted((ROOT / "site" / "board").glob("*.json")):
+        if f.stem in ("index", "meta"):
             continue
-        for row in board.get("entries") or []:
-            if row.get("probe"):
+        for row in json.loads(f.read_text(encoding="utf-8")):
+            row = dict(row, weapon=f.stem)
+            bid = row.get("benchmark") or ""
+            if a.board and bid not in a.board:
                 continue
             seen += 1
             names = row_names(row)
@@ -165,24 +169,40 @@ def main() -> int:
                     continue
                 matched.append((bid, row))
 
-    cost = sum(float(r.get("cost") or 0) for _, r in matched)
     groups = sorted({identity(r) for _, r in matched})
-    listed = sum(1 for _, r in matched if r.get("listed", True))
-    print(f"{len(matched)} of {seen} rows, {listed} of them published, "
-          f"{len(groups)} group(s), {cost / 60:.0f} CPU minutes to rescore",
+    print(f"{len(matched)} of {seen} published rows, {len(groups)} group(s)",
           file=sys.stderr)
 
     if a.rows:
         for bid, r in matched:
             print(f"{bid} {identity(r)} {r.get('score')}")
-    elif a.selectors:
-        # THE COARSEST FORM THAT COVERS THEM. A group whose rows all matched is
-        # named once; anything else would hand the operator a wall of keys to
-        # paste and no way to read what they add up to.
-        by_group: dict[str, int] = defaultdict(int)
-        for _, r in matched:
-            by_group[identity(r)] += 1
-        print(";".join(sorted(by_group)))
+    elif a.delete:
+        # ONE STATEMENT PER (ruler, weapon, mode), WHICH IS THE GROUP.
+        #
+        # IT RETIRES THE WHOLE GROUP AND NOT ONLY THE ROWS THAT MATCHED, because
+        # a published row names no build id — it states the build, and the id is
+        # derived from that by the engine. Over-deleting costs TIME: the rows
+        # that did not need it are measured again and come back the same. The
+        # other way round would leave a repaired mechanic sitting under a stale
+        # number nobody can argue the board out of.
+        wanted: set[tuple[str, str, str]] = set()
+        for bid, r in matched:
+            wanted.add((bid, r.get("weapon", ""), r.get("mode") or "base"))
+        where = " OR ".join(
+            f"(s.ruler = '{ruler}' AND s.mode = '{mode}' AND b.weapon = '{weapon}')"
+            for ruler, weapon, mode in sorted(wanted))
+        # WHAT IT COSTS, FROM THE ONE PLACE THAT KNOWS. Every fact records what
+        # it took to measure; the published file does not carry that, so the
+        # price is a SELECT over the same rows the DELETE names. Run it first —
+        # a change reaching eight thousand rows is a different decision from one
+        # reaching forty, and that belongs on screen rather than in the bill.
+        print("SELECT count(*) AS rows, sum(s.cost_seconds) / 60 AS cpu_minutes")
+        print("FROM scores s JOIN builds b ON b.id = s.identity")
+        print(f"WHERE {where};")
+        print()
+        print("DELETE FROM scores WHERE rowid IN (")
+        print("  SELECT s.rowid FROM scores s JOIN builds b ON b.id = s.identity")
+        print(f"  WHERE {where});")
     return 0
 
 
