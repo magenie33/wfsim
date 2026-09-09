@@ -78,7 +78,7 @@ second source.
 | a build is legal | `engine::builds::validate_for_board` | the page's door, the worker's door — both ASK it |
 | a build's axes | `engine::builds::BUILD_AXES` | every surface's fields, `/api/meta` |
 | a ruler's terms | `data/benchmarks/*.yaml` | the picker, the arena, the scenario bar |
-| a row's score | the `scores` row of the open generation | everything below |
+| a row's score | the `scores` row for what the build READS | everything below |
 | what is published | `site/board/<weapon>.json` | `board/index.json`, `board.meta.json`, `data/board_state.yaml` |
 
 **DERIVED IS NOT A SECOND SOURCE, and the difference is whether it can
@@ -96,15 +96,15 @@ one of the three.
 | | who runs it | reads | writes | may not |
 | --- | --- | --- | --- | --- |
 | **INGEST** | the Worker, one request | — | one `builds` row | know what a score is |
-| **COMPUTE** | 32 Actions shards | `builds`, the open generation | `scores`, row by row | write a file anyone reads |
-| **PUBLISH** | one Actions job | the open generation | `site/board/` | compute a number |
-| **AUDIT** | one Actions job, hourly | `builds`, the generation | nothing | publish, or gate anything |
+| **COMPUTE** | Actions shards, as many as the work needs | `builds`, `scores` | `scores`, row by row | write a file anyone reads |
+| **PUBLISH** | one Actions job | `scores` | `site/board/` | compute a number |
+| **AUDIT** | one Actions job, hourly | `builds`, `scores` | nothing | publish, or gate anything |
 
 **THEY ARE JOINED BY A QUERY, NOT BY A HAND-OFF.** Nothing is enqueued and
 nothing is passed:
 
 ```
-what is outstanding = (builds x rulers x modes)  MINUS  the open generation
+what is outstanding = (builds x rulers x modes)  MINUS  what is measured
 ```
 
 Four consequences, and they are the point of the shape:
@@ -130,7 +130,7 @@ back fails CI rather than being discovered in a published number.
 | the ruler | `data/benchmarks/*.yaml` | — |
 | the board | `site/board/<weapon>.json` | generated, committed, fetched at runtime |
 | ranked across weapons | `site/board/index.json` | derived from the files beside it |
-| which board this is | `site/board.meta.json` | a digest per file, plus the generation |
+| which board this is | `site/board.meta.json` | a digest per published file |
 | consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
 | the library | one D1 database, `wfsim` (binding `LIBRARY`) | written by the endpoint |
 | the facts | the `scores` table in it | written by `ship_facts.sh` |
@@ -343,8 +343,8 @@ TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 moved is wrong immediately, not in an hour. A cooldown would be both too slow
 and too fast at once.
 
-**TWO BACKLOGS, AND ONE BOUND.** Rows the board holds under an older data
-generation are one; builds it has no score for at all are the other. Measured
+**TWO BACKLOGS, AND ONE BOUND.** Rows whose data moved are one; builds with no
+score at all are the other. Measured
 against the submissions the pipeline is handed: 984 rows of repair against
 **4,570 never scored** — 1,523 on each of the three boards.
 
@@ -362,8 +362,9 @@ corrected data file never takes a published row off the board. Handing both the
 same map is what made a slice necessary in the first place.
 
 **A PUSH NEVER RESCORES THE BOARD, AND THE BOARD CONVERGES INSTEAD.** A
-fingerprint difference says a stored score is UNVERIFIED under this generation,
-not that it is wrong. So every run scores a bounded share of what is NEW and
+fingerprint difference says a stored score was measured against data that has
+moved, not that every other row is suspect. So every run scores a bounded share
+of what is NEW and
 repairs what it reaches before the clock runs out, walked in `fp` order. A
 repaired row leaves the stale set, so the next run starts where the work still
 is — no rotation to steer and none to get wrong.
@@ -421,16 +422,16 @@ cancelled at 95% has banked 95% of its work**, and what it did not write is
 simply missing — which is the same thing as never having started it.
 
 **THE FACT IS THE UNIT, AND IT IS IDENTIFIED BY EVERYTHING THAT DETERMINES IT:**
-`(identity, ruler, mode, data_fp, generation)`. A row carries the hash of what it
-READ, so a data correction dirties exactly the rows that read the file that
-moved; it carries the GENERATION, so two engines' answers are two rows and
-neither can overwrite the other. Measured: with a generation holding 24 rows,
-1,556 rows to do without it, 1,532 with it, and 1,533 with one row's data
-fingerprint altered — that row refought and no other.
+`(identity, ruler, mode, data_fp)`. `data_fp` is in the key, so a data correction
+produces a NEW row rather than overwriting one — which means reverting the file
+restores the old answer without recomputing it, and a row whose data moved is
+still there to be published while no current measurement exists. Measured: with
+24 rows recorded, 1,556 rows to do without them, 1,532 with them, and 1,533 with
+one row's data fingerprint altered — that row refought and no other.
 
 **NOTHING DOWNSTREAM MAY DESTROY A FACT.** No sweep, no merge, no delta, no
-expiry. The only thing that removes a row is a migration somebody writes, and a
-generation nobody publishes from costs storage and nothing else.
+expiry. Two things remove one: a migration somebody writes, and `--rescore`,
+which is a person saying a number is wrong for a reason no hash can see.
 
 Provenance rides along and decides nothing: `measured_by` says which build wrote
 the row, `cost_seconds` is what the split packs the next run by, `computed_at`
@@ -498,8 +499,7 @@ job, and the board says how old it is.
 **THE PUBLICATION UNIT IS A WEAPON, AND A FILE IS WRITTEN WHOLE.** The directory
 the publisher is handed is both what it writes and where a weapon's rows under
 every OTHER ruler are read back from, so a file is only ever written with all of
-them in hand. A weapon this generation cannot speak for — one row of it
-unmeasured — keeps the rows it has, because a file written from an incomplete
+them in hand. A weapon with one unmeasured row keeps the rows it has, because a file written from an incomplete
 source is a file missing whatever the source lacks. A carried row is COPIED
 rather than reparsed, so a publish that measures nothing changes nothing: one
 ULP either way is a number the engine did not produce.
@@ -597,7 +597,7 @@ where their build went, never by anything watching.
 Two things it cannot audit, and both are stated rather than papered over: a
 riven row, whose stored number is the argmax of a search rather than a
 measurement, and a row whose DATA fingerprint moved, which carries no number
-under the current generation yet — reported as `stale`, so "nothing to audit"
+against the data it reads today — reported as `stale`, so "nothing to audit"
 cannot read as "nothing was wrong".
 
 ### Why it is sharded
@@ -619,8 +619,8 @@ where that build actually scores **0.170**.
 
 It read as a scenario leak and was not one — every score was computed under its
 own ruler's terms, then overwritten on the way out. The `scores` table keys on
-`(identity, ruler, mode, data_fp, generation)`, and `load_facts` filters on the
-ruler as it reads, so the two cannot meet. That is the general shape of every
+`(identity, ruler, mode, data_fp)`, and `load_facts` filters on the ruler as it
+reads, so the two cannot meet. That is the general shape of every
 defect this pipeline has produced: a value identified by less than what
 determines it.
 
@@ -1274,8 +1274,8 @@ coded.
 ### A new ruler costs nothing to add
 
 Nothing on the path holds a prior board to copy or an empty file to hand-write.
-The scorer is handed the facts of the open generation, and a ruler with none
-yet produces a board with no rows — which is what a ruler nobody has submitted
+The scorer is handed the facts, and a ruler with none yet produces a board with
+no rows — which is what a ruler nobody has submitted
 to should look like.
 
 ## The library has a copy, and the copy has a restore
@@ -1408,6 +1408,33 @@ between runs. The reason it is not the `scores` table is that a partial is not a
 fact — it is a fact under construction, and putting the two in one table would
 give the publisher something to filter out.
 
+### The fight IS the run, measured
+
+There is no overhead to schedule around, which is worth knowing before
+optimising anything else. One run of 4,441 rows:
+
+| | |
+| --- | --- |
+| whole run, wall clock | **39.2 min** |
+| reading the library and the facts | 48 s |
+| the shards | 37.2 min wall clock, 1,178 shard-minutes |
+| publishing | 1 min, of which the assembly itself is **6 s** |
+
+And inside a shard: 44 s of checkout, cache and build, then 2,088 s of fighting.
+The rows those shards wrote record **1,177 CPU-minutes** of measured fight against
+the 1,178 they were billed — so the scheduling, the reading and the carrying
+together are under 2%.
+
+**THE ONLY LEVER IS COMPUTING FEWER ROWS.** Batching saves nothing, because
+nothing per-run is being wasted: a run with no work costs one job and 44 seconds.
+The spread is what to aim at instead — 15.9 s average in that run, 1,434 s for
+its worst row, and one row is indivisible.
+
+**AND THE BINDING QUOTA IS WRITES, not reads or minutes.** Per run: 44,133 D1
+rows read (the library once, the facts twice — the shards read the artifact, not
+the database) and 4,441 written. At 24 runs a day that is 1.06M reads against a
+free 5M/day, and 107k writes against a free 100k/day.
+
 ### The next wall, named in advance
 
 1. **Reading the library is one unsharded job**, and it is now one paged query
@@ -1533,42 +1560,40 @@ The board is recomputed as a batch today, and every symptom traces back to that:
 | a new submission | one cron period | seconds |
 | adding a ruler | rescore everything | the missing facts enqueue; nothing else moves |
 
-#### GENERATIONS — the least obvious part, and the most valuable
+#### A MIXTURE IS ALLOWED, AND THAT IS WHAT MAKES A BACKFILL INVISIBLE
 
-There is a real invariant here that must not bend: *a board whose rows were
-measured by different engine versions is not a board.* It appears to conflict
-with backfilling, since a half-finished backfill is a mixture.
+The tempting invariant is *a board whose rows were measured by different builds
+is not a board*, enforced by publishing only a COMPLETE set of one build's
+measurements. It was tried, and it is the wrong trade:
 
-It does not, and the resolution is one rule: **publish the newest COMPLETE
-generation.**
+- it pays a **full rescore on every code change** — 130 CPU-hours — to confirm
+  numbers that almost never move, since 55.6% of commits touch the engine and
+  nearly none of them can move one;
+- while that runs, **the board cannot move at all**, so a six-hour backfill is a
+  six-hour freeze on new builds;
+- and the guarantee is not even achievable by declaration: one label over a
+  store written by six different commits is a claim the data does not support.
+
+**THE BOARD IS A RECORD OF WHAT WAS MEASURED.** Its reliability comes from the
+AUDIT measuring, not from an atomicity property of the publish:
 
 ```
-fingerprint A (old):  22656 / 22656 facts   <- publish this one
-fingerprint B (new):   9430 / 22656 facts   <- backfilling
+   within a weapon      never mixed   — a weapon's file is written whole
+   across weapons       may be mixed  — and every row in it is a real measurement
+   how wrong it can be  bounded by    — the audit's crossing, one job an hour
 ```
 
-When B completes it replaces A atomically. A reader never sees a mixed board,
-AND never sees the board stop moving: new submissions keep landing under A,
-because A is complete.
-
-That rule is what turns a rescore from an EVENT into background noise. Without
-it a six-hour backfill is a six-hour outage; with it, it is invisible. It
-matters more than any hardware choice.
-
-**A GENERATION INHERITS EVERY FACT WHOSE KEY DID NOT MOVE**, which is what
-makes it affordable to wait for a complete one. Under a per-row code
-fingerprint a melee change leaves 98.6% of the pairs keyed exactly as they were,
-so B opens already almost complete and closes in minutes rather than hours. The
-two ideas are not independent: generations without §"A row's code dependency is
-measured" means holding a stale board for three hours on every push, and a
-subset dependency without generations means publishing a mixture.
+A row measured by an older build is not a wrong row; it is a row nothing has
+DISPROVED. `measured_by` says which build wrote it, which is what makes a broken
+build's rows findable afterwards — `WHERE measured_by = ?` — and that is the
+whole of what an engine version is for here.
 
 **A NEW SUBMISSION IS PENDING, NOT A GENERATION.** It has no fact yet, so it
 cannot enter the ranking — but the submitter's own client already computed a
 number to show them, and holding the row back entirely would be less honest than
 showing it as what it is. A submitted row appears immediately, marked as
 unverified, ranked provisionally by the client's number and OUTSIDE the
-generation, and is replaced by its fact when one exists. The client's number is
+ranking, and is replaced by its fact when one exists. The client's number is
 never a score: it is a placeholder that the board is required to overwrite, and
 a placeholder that does not match the fact is a signal worth recording rather
 than a row worth trusting.
@@ -1681,9 +1706,9 @@ moment it is computed rather than when a batch ends (§"A score is a fact").
 instead of an afternoon, which does not make a long run shorter — it stops the
 length of a run from being a question anyone has to answer.
 
-**4. PUBLISHING IS A PROJECTION.** Read the facts, rank, write the file:
-seconds, and independent of whether any scoring is in flight. The newest
-COMPLETE generation is what ships (§"Generations").
+**4. PUBLISHING IS A PROJECTION.** Read the facts, rank, write the files:
+seconds, and independent of whether any scoring is in flight. A weapon whose
+every row is measured ships; one with a gap keeps what it has.
 
 **5. THE AUDIT** — it runs (§"The audit"), and it is what makes step 2's
 under-approximation something to hold rather than something to fear.
@@ -1778,9 +1803,8 @@ already per row. 13.6% of commits.
 
 ## The publisher publishes, and computes nothing
 
-**IT TRUSTS THE DATABASE UNCONDITIONALLY.** Given a generation it reads the
-facts of that generation and the library, joins them, ranks, projects, and
-writes the files. It has no opinion about whether a number is right. If a
+**IT TRUSTS THE DATABASE UNCONDITIONALLY.** It reads the facts and the library,
+joins them, ranks, projects, and writes the files. It has no opinion about whether a number is right. If a
 number is wrong, the SCORER is wrong, and that is where it is fixed.
 
 ```
@@ -1804,30 +1828,18 @@ more than one source.**
 ### The scorer's side is a set difference
 
 ```
-work = (builds × rulers × modes)  MINUS  facts of the open generation
+work = (builds × rulers × modes)  MINUS  the facts
 ```
 
-**A RESCORE IS NOT "FORCE THESE ROWS AGAIN", IT IS "OPEN A GENERATION AND FILL
-IT".** Under the difference, the two things a rescore has to do stop fighting:
-an old generation's number is not in the open one, so it is recomputed; a row
-this generation already holds is skipped. Forcing and resuming become one
-sentence.
+**A RESCORE IS "MEASURE THESE ROWS AGAIN", AND THERE IS NO SECOND KIND.** Under
+the difference, a row without a fact is work; `--rescore <sel>` makes the rows it
+names behave as if they had none. A wide selector and a narrow one are the same
+operation, which is why there is no separate button for "everything".
 
-That is what makes a deadline harmless again. Truncating a run leaves the
-generation incomplete, the board keeps publishing the last COMPLETE one, and
-the next run continues from what is missing rather than from the top of the
-same forced list.
-
-### Which generation is published
-
-The newest COMPLETE one, and completeness is a query: every (build, ruler,
-mode) the published generation holds, the candidate holds too. A build
-submitted since is not in either, so it blocks nothing — it appears as PENDING,
-outside the ranking.
-
-The published generation's id goes in `board.meta.json`. "Is this board what
-this code computes" then compares two strings.
-
+That is also what makes a deadline harmless. Truncating a run leaves rows
+unmeasured, the board keeps publishing the weapons that are complete, and the
+next run continues from what is missing rather than from the top of the same
+forced list.
 
 ---
 
@@ -1856,57 +1868,70 @@ correctness nothing checked gate a delete.
 same row. `GET /api/board/pending` is `SELECT COUNT(*)`. It knows nothing about
 scores and writes nothing else.
 
-**COMPUTE — a shard.** Reads the library and the open generation's facts,
-takes its share of the difference, and after each row **writes the fact
-immediately** — appended to a log and flushed per row, shipped by a process
+**COMPUTE — a shard.** Reads the library and the facts, takes its share of
+the difference, and after each row **writes the fact immediately** — appended to a log and flushed per row, shipped by a process
 running beside it. It produces NO artifact and NO blob: its only output is rows. Killed at any point, it keeps everything it
 wrote, and what it did not write is simply missing — which is the same thing as
 never having started it.
 
-**PUBLISH — a projection, and it depends on no run.** One read of the
-generation, rank, keep everything within half of each group's own leader, write
+**PUBLISH — a projection, and it depends on no run.** One read of the facts,
+rank, keep everything within half of each group's own leader, write
 `site/board/<weapon>.json` and the index beside it, commit. It can run at any
 moment, needs nothing from any scoring run, and CANNOT DESTROY ANYTHING because
 the only thing it reads that it also writes is a weapon's own carried rows.
 
-**AUDIT — the one question a table cannot answer.** "Which generation is
-published" is a string in `board.meta.json`; what no query can say is whether
+**AUDIT — the one question a table cannot answer.** No query can say whether
 the code still computes the number it recorded, because what a row READS is
 enumerable from the row and what it EXECUTES is not. So the audit re-fights a
 cost-balanced slice of the library under the current code and compares exactly.
-It publishes nothing and gates nothing.
+It publishes nothing and gates nothing, and it is the whole of why an older
+`measured_by` does not have to mean a rescore.
 
-### A generation, stated precisely
+### An older engine is a REFERENCE, never a verdict
 
-A generation is a label meaning "these rows were measured by the same engine",
-and it is OPENED DELIBERATELY rather than derived. No hash can say whether a
-code change moved a number — 55.6% of commits touch the engine and almost none
-of them can move one — so most commits ride in the generation that is open,
-and one is opened when the AUDIT measures that a change actually moved numbers.
+> **A SCORE DOES NOT EXPIRE, AND THE BUILD THAT MEASURED IT DOES NOT DECIDE
+> WHETHER IT IS RIGHT.**
 
-> **A generation is COMPLETE when every (build, ruler, mode) that has a fact in
-> the PUBLISHED generation also has one here.**
+A fact's validity rests on one thing this code can check exactly: `data_fp`, the
+hash of what the row READ. What a row reads is enumerable from the row, so a data
+correction dirties exactly the rows that read the file that moved — and produces
+a NEW row, because `data_fp` is in the key, which means reverting that file
+restores the old answer without recomputing it.
 
-Measured against the PUBLISHED generation and not against the library, because a
-build submitted a minute ago has no fact under any generation: "every build in
-the library" would block publishing for ever, one submission at a time. Under
-this rule a new build blocks nothing — it appears as PENDING, outside the
-ranking, ranked provisionally by the client's own number, and is replaced by its
-fact when one exists.
+What a row EXECUTES is not enumerable, and **no hash can stand in for it.** 55.6%
+of commits touch the engine and almost none of them can move a number, so
+treating "measured by an older build" as "wrong" means spending 130 CPU-hours to
+confirm numbers that were already right. `measured_by` is therefore FORENSICS: it
+is what says which rows a build wrote, once a build is found to have been broken.
 
-The swap is atomic. A reader sees one generation or the other, never a board
-whose rows were measured by two engines — which is not a board, and which
-tonight would have ranked a repaired row a quarter of its old score BELOW the
-rows that had not been repaired yet.
+**SO INVALIDATION IS A MEASUREMENT, NOT A DECLARATION.** The audit re-fights a
+cost-balanced slice of the library under the current code and compares exactly;
+what it finds MOVED is what gets recomputed, by name, through `--rescore`. That
+is the only operation in this pipeline that destroys a fact, which is why it is a
+person's and why a selector matching nothing says so out loud.
+
+### The board is a record, and a mixture is allowed
+
+The cross-weapon ranking can hold rows measured by different builds at the same
+time, and that is a property rather than a defect:
+
+- **A WEAPON IS NEVER INTERNALLY MIXED.** A weapon's file is written whole or not
+  at all, so every row in it was measured against the data the build reads today.
+- **THE ALTERNATIVE IS WITHHOLDING CORRECT ROWS.** Guaranteeing one engine across
+  the whole board means publishing nothing until every row has been re-measured
+  — a full rescore before a single new build can appear.
+- **RELIABILITY COMES FROM THE AUDIT**, which crosses the board every `CROSSING`
+  runs at one job an hour. Shortening that window is one knob and costs one job;
+  the atomic-swap alternative costs 130 CPU-hours per code change.
 
 ### What becomes impossible
 
 | | why |
 | --- | --- |
 | a shard's work lost because a service timed out | the fact is in the table before the shard ends |
-| a correct fact overwritten by an older one | the generation is in the key: two engines' answers are two rows |
+| a correct fact overwritten by one read from older data | `data_fp` is in the key: two data versions are two rows |
 | a correct fact DELETED downstream | nothing deletes facts — no sweep, no merge, no delta |
-| the board mixing two engines | publish selects one generation |
+| a row published from data the build no longer reads | the assembly keeps it only while no current measurement exists |
 | "is this board current" taking days to answer | it is one comparison |
 
 
@@ -1929,13 +1954,12 @@ rows that had not been repaired yet.
 
   COMPUTE — the queue is a query
      GitHub Actions
-       what is outstanding = builds MINUS scores WHERE generation = open
+       what is outstanding = builds MINUS scores, joined on what a row reads
        32-128 shards, each fighting rows
        every fact written the MOMENT it is computed
 
-  PUBLISH — a generation completes, not a clock strikes
-     when the newest generation is COMPLETE:
-       one read, rank, write a file per weapon and the index, commit
+  PUBLISH — a weapon completes, not a clock strikes
+     one read, rank, write a file per weapon that has every row, commit
        Cloudflare deploys the push
 
   PROTECT — a gate in front, a copy at another vendor behind
@@ -1957,10 +1981,11 @@ score twice costs time and nothing else because `f` is deterministic.
 **PROGRESS IS MONOTONIC.** A fact is written when it is computed rather than
 when a batch ends, so a run cancelled at 95% has kept 95%.
 
-**A GENERATION, NEVER A MIXTURE.** A board whose rows were measured by different
-engine versions is not a board — measured: an engine fix moved a `group_clear`
-row by four times, so a repaired row ranks BELOW rows that have not been
-repaired yet. Publish the newest COMPLETE generation.
+**A WEAPON IS NEVER INTERNALLY MIXED, AND ACROSS WEAPONS IT MAY BE.** A file is
+written whole, so every row in it was measured against the data the build reads
+today; the cross-weapon ranking can hold rows from different builds while a
+repair is in flight, which is bounded by the audit rather than by withholding
+correct rows — §"A mixture is allowed".
 
 ### What it costs, at each tier
 
@@ -1969,7 +1994,7 @@ repaired yet. Publish the newest COMPLETE generation.
 | serve | Cloudflare static assets | unmetered | — |
 | write | Worker + D1 | 100k requests/day; 100k rows written/day | tens of submissions |
 | compute | GitHub Actions | unmetered minutes, 40 jobs = 960 CPU hours/day | ~160 CPU minutes |
-| store | D1 | 500 MB per database; the library is 4.4 MB and a generation about 5 | — |
+| store | D1 | 500 MB per database; the library is 4.4 MB and the facts about 5 | — |
 | backup | a git branch | ~22 KB a night | — |
 
 **The free tier carries all of this**, and the one thing that would not fit it
@@ -1983,7 +2008,7 @@ for Workers Builds concurrency rather than for any of these numbers.
 > EXISTS.**
 
 Finding the work becomes an indexed query, publishing becomes one query, and
-and finding a row an older engine measured becomes `WHERE generation != ?`.
+and finding the rows a broken build wrote becomes `WHERE measured_by = ?`.
 
 **THE ONE STEP THAT STAYS O(EXISTS) IS A FULL RESCORE**, and no store changes
 that: forty jobs is the account's ceiling and one 121-minute row is a floor no

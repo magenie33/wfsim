@@ -155,9 +155,9 @@ const named = Object.keys(meta.files || {}).sort().join(",");
 check(named === Object.keys(files).sort().join(","),
   "…and names every file of it",
   `${Object.keys(meta.files || {}).length} named, ${Object.keys(files).length} present`);
-check(meta.rows > 0 && meta.weapons > 0 && meta.generation,
-  "…and counts what is in it and says which generation it is",
-  `${meta.rows} rows, ${meta.weapons} weapons, generation ${meta.generation || "(none)"}`);
+check(meta.rows > 0 && meta.weapons > 0,
+  "…and counts what is in it",
+  `${meta.rows} rows, ${meta.weapons} weapons`);
 
 // …AND THE PAGE READS THAT STAMP RATHER THAN THE ONE IN THE BINARY. The same
 // fields are `data/board_state.yaml`, which is compiled into the wasm, so a

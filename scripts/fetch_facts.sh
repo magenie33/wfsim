@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# THE FACTS OF ONE GENERATION, READ BACK OUT OF THE DATABASE.
+# THE FACTS, READ BACK OUT OF THE DATABASE.
 #
-#   scripts/fetch_facts.sh --generation <id> facts.ndjson
+#   scripts/fetch_facts.sh facts.ndjson
 #   scripts/fetch_facts.sh --self-test
 #
-# The other half of `ship_facts.sh`. A scoring run asks what this generation
-# already holds so it can compute the difference, and the assembly asks the same
-# question so it can rank. One query, paged — where the store it replaces was a
-# directory of files merged by filename order (docs/BOARD.md §"The pipeline,
-# designed around one rule").
+# The other half of `ship_facts.sh`. A scoring run asks what is already measured
+# so it can compute the difference, and the assembly asks the same question so it
+# can rank. One query, paged.
 #
 # THE SCORER NEVER SPEAKS TO THE DATABASE. It reads and writes files, and the
 # network lives in scripts that a stub `curl` can drive — which is what makes
@@ -17,14 +15,15 @@ set -euo pipefail
 
 # A PAGE, AND THE LOOP IS BOUNDED. D1 answers a query whole, so the page is
 # about the size of the answer rather than about a cursor: 5,000 rows is a few
-# megabytes of json, and a generation is about 22,656 rows.
+# megabytes of json, and the table is about 22,656 rows once every row of the
+# library has been measured.
 #
 # READ ONCE A RUN, NEVER ONCE A JOB. D1 meters rows READ — five million a day on
-# the free plan — and thirty-two shards each asking for the same generation is
-# thirty-two times the rows for one answer: about a million a run, which spends
-# the day's allowance in five. The submissions job reads it and hands it down as
-# an artifact; only the ASSEMBLY reads again, because the shards were still
-# shipping when that artifact was taken.
+# the free plan — and thirty-two shards each asking the same question is
+# thirty-two times the rows for one answer: about half a million a run, which
+# spends the day's allowance in ten. The submissions job reads it and hands it
+# down as an artifact; only the ASSEMBLY reads again, because the shards were
+# still shipping when that artifact was taken.
 PAGE=5000
 MAX_PAGES=200
 
@@ -50,20 +49,20 @@ d1() {
 # ORDERED, so paging is stable: without an ORDER BY, two pages of the same
 # query may overlap or skip, and the gap is a row the run recomputes for ever.
 page_body() {
-  jq -n -c --arg gen "$1" --argjson limit "$2" --argjson offset "$3" '
+  jq -n -c --argjson limit "$1" --argjson offset "$2" '
     {
       sql: ("SELECT identity, ruler, mode, data_fp, measured_by, score, rolls,"
-            + " cost_seconds, computed_at FROM scores WHERE generation = ?"
-            + " ORDER BY identity, ruler, mode LIMIT ? OFFSET ?"),
-      params: [$gen, $limit, $offset]
+            + " cost_seconds, started_at, finished_at FROM scores"
+            + " ORDER BY identity, ruler, mode, data_fp LIMIT ? OFFSET ?"),
+      params: [$limit, $offset]
     }'
 }
 
 fetch() {
-  local gen="$1" out="$2" offset=0 got total=0 page
+  local out="$1" offset=0 got total=0 page
   : > "$out"
   for page in $(seq 1 "$MAX_PAGES"); do
-    if ! d1 "$(page_body "$gen" "$PAGE" "$offset")"; then
+    if ! d1 "$(page_body "$PAGE" "$offset")"; then
       echo "::error::facts: the database refused the read [HTTP $D1_CODE]"
       [ -s "$D1_OUT" ] && { head -c 500 "$D1_OUT"; echo; }
       return 1
@@ -73,14 +72,14 @@ fetch() {
     total=$((total + got))
     [ "$got" -lt "$PAGE" ] && break
     offset=$((offset + PAGE))
-    # THE LOOP IS BOUNDED AND SAYS SO. A generation larger than this is a
-    # finding, not a page to fetch quietly.
+    # THE LOOP IS BOUNDED AND SAYS SO. A table larger than this is a finding,
+    # not a page to fetch quietly.
     if [ "$page" -eq "$MAX_PAGES" ]; then
-      echo "::error::facts: stopped at $MAX_PAGES pages — the generation is larger than this reads"
+      echo "::error::facts: stopped at $MAX_PAGES pages — the table is larger than this reads"
       return 1
     fi
   done
-  echo "facts: read $total rows of generation $gen"
+  echo "facts: read $total rows"
 }
 
 # ---- self-test ------------------------------------------------------------
@@ -92,16 +91,22 @@ self_test() {
   say() { if [ "$1" = ok ]; then ok=$((ok + 1)); else bad=$((bad + 1)); fi; echo "  $1    $2"; }
   cd "$DIR/work"
 
-  local body; body=$(page_body gen1 10 20)
-  printf '%s' "$body" | jq -e '.params == ["gen1", 10, 20]' >/dev/null \
-    && say ok "the generation, the page and the offset are all bound" \
+  local body; body=$(page_body 10 20)
+  printf '%s' "$body" | jq -e '.params == [10, 20]' >/dev/null \
+    && say ok "the page and the offset are both bound" \
     || say FAIL "params: $(printf '%s' "$body" | jq -c .params)"
   printf '%s' "$body" | jq -e '.sql | contains("ORDER BY")' >/dev/null \
     && say ok "...and the read is ORDERED, so two pages cannot overlap or skip" \
     || say FAIL "no ORDER BY: $(printf '%s' "$body" | jq -r .sql)"
-  printf '%s' "$body" | jq -e '.sql | contains("gen1") | not' >/dev/null \
-    && say ok "...and the generation is a parameter, not text in the statement" \
-    || say FAIL "the generation reached the sql"
+  # THE ORDER HAS TO REACH `data_fp`. Two rows of one row key differ only in it
+  # — a data change writes a second — so a key that stopped at the mode leaves
+  # their order to the engine, and two pages can then overlap or skip.
+  printf '%s' "$body" | jq -e '.sql | contains("ORDER BY identity, ruler, mode, data_fp")' >/dev/null \
+    && say ok "...down to data_fp, which is the last thing that separates two rows" \
+    || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
+  printf '%s' "$body" | jq -e '.sql | contains("generation") | not' >/dev/null \
+    && say ok "...and no generation is asked for: an older engine is not a wrong score" \
+    || say FAIL "the statement still names a generation"
 
   export PATH="$DIR/bin:$PATH"
   export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
@@ -116,18 +121,18 @@ for a in "$@"; do
   [ "$prev" = "--data-binary" ] && body="$a"
   prev="$a"
 done
-off=$(printf '%s' "$body" | jq -r '.params[2]')
+off=$(printf '%s' "$body" | jq -r '.params[1]')
 if [ "$off" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"single_target",mode:"base",data_fp:"fp",measured_by:"abc",score:1.5,rolls:null,cost_seconds:2.0,computed_at:"t"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"single_target",mode:"base",data_fp:"fp",measured_by:"abc",score:1.5,rolls:null,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
 else
-  jq -n -c '{result:[{results:[{identity:"last",ruler:"single_target",mode:"base",data_fp:"fp",measured_by:"abc",score:9.0,rolls:null,cost_seconds:1.0,computed_at:"t"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[{identity:"last",ruler:"single_target",mode:"base",data_fp:"fp",measured_by:"abc",score:9.0,rolls:null,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
 fi
 printf '200'
 PAGES
   chmod +x "$DIR/bin/curl"
   PAGE=3
-  fetch gen1 got.ndjson > out.txt 2>&1 && grep -q "read 4 rows" out.txt \
-    && say ok "a generation longer than one page is read whole" || say FAIL "$(cat out.txt)"
+  fetch got.ndjson > out.txt 2>&1 && grep -q "read 4 rows" out.txt \
+    && say ok "a table longer than one page is read whole" || say FAIL "$(cat out.txt)"
   [ "$(wc -l < got.ndjson | tr -d ' ')" = "4" ] \
     && say ok "...one line a row" || say FAIL "$(wc -l < got.ndjson) lines"
   jq -e -s '.[3].identity == "last" and .[0].identity == "k0"' < got.ndjson >/dev/null \
@@ -142,7 +147,7 @@ printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}
 printf '403'
 DEAD
   chmod +x "$DIR/bin/curl"
-  if fetch gen1 got.ndjson > out.txt 2>&1; then
+  if fetch got.ndjson > out.txt 2>&1; then
     say FAIL "a refused read passed"
   elif grep -q "D1 not authorized" out.txt; then
     say ok "a refused read reports what the database said"
@@ -161,11 +166,7 @@ DEAD
 
 if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
 
-GEN=""
-while [ "${1:-}" = "--generation" ]; do GEN="$2"; shift 2; done
-: "${GEN:?--generation <id> is required}"
-
-# UNCONFIGURED IS AN EMPTY GENERATION, not a failure: a run with no database
+# UNCONFIGURED IS AN EMPTY TABLE, not a failure: a run with no database
 # computes everything, which is what it did before there was one.
 if ! configured; then
   : > "${1:?the file to write}"
@@ -173,4 +174,4 @@ if ! configured; then
   exit 0
 fi
 
-fetch "$GEN" "${1:?the file to write}"
+fetch "${1:?the file to write}"

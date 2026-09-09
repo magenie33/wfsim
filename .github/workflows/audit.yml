@@ -108,17 +108,12 @@ jobs:
         run: |
           set -euo pipefail
           scripts/fetch_library.sh submissions.json
-          # THE GENERATION THE BOARD SAYS IT IS. Read off the published stamp
-          # rather than declared here: the board publishes one generation, and a
-          # generation named in two workflows is one of them left behind.
-          GEN=$(python3 -c "import json;print(json.load(open('site/board.meta.json'))['generation'])")
-          [ -n "$GEN" ] || { echo "::error::site/board.meta.json names no generation"; exit 1; }
-          echo "auditing generation $GEN"
-          scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+          scripts/fetch_facts.sh facts-known.ndjson
 
       # THE SLICE. It runs whatever the code has done since the facts were
       # measured, because that is the question: a published number either is what
-      # this code computes or it is not, and no hash can answer it.
+      # this code computes or it is not, and no hash can answer it — which is
+      # why an older `measured_by` is a REFERENCE and never a verdict.
       #
       # `--shard k/CROSSING` IS THE SAMPLER, and it is the scoring run's own. It
       # packs by what each row COST when it was measured, because rows differ by

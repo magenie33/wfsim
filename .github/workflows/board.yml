@@ -5,7 +5,7 @@
 #
 # THE BUTTON IS THE ONLY TRIGGER, AND THE CLOCK IS HELD. A push does not wake
 # the board either: under convergence a pushed run does what the next one does —
-# score what is NEW, repair what this generation has not verified, publish — so
+# score what is not measured yet, publish what is — so
 # it duplicates a run that is coming anyway while competing for the same forty
 # slots. Measured over 95 runs: 21 of 22 pushed runs were cancelled by the next
 # push, and the board published nothing.
@@ -69,28 +69,21 @@ on:
   # running while this is held, and it is what says whether the board is right.
   workflow_dispatch:
     inputs:
-      full:
-        description: "rescore every row, whatever is stored"
-        type: boolean
-        default: false
-      # THE BACKSTOP FOR A NUMBER THE HASHES CANNOT SEE, and it goes as fine as
-      # the case demands. A fingerprint answers "did an INPUT move", so a
-      # correction it cannot see leaves a published number nobody can argue the
-      # board out of. This names rows at any precision — a weapon, one of its
-      # modes, the riven or the plain half of that mode, or a single row by its
-      # key — and drops what is stored for those and nothing else, so the fix
-      # costs minutes rather than the whole board. `;` separates several,
-      # because a mod list is commas. A selector that matches nothing rescores
-      # nothing and says so rather than passing quietly.
-      # WHICH GENERATION THESE FACTS ARE FILED UNDER, and it is opened by a
-      # PERSON. A source hash here would make each of the 55.6% of commits
-      # that touch the engine a full rescore; most ride in the generation
-      # that is open, and a new one is opened when the AUDIT measures that a
-      # change actually moved numbers.
-      generation:
-        description: "the generation these scores belong to"
-        type: string
-        default: "g1"
+      # THE ONE INPUT, AND IT NAMES ROWS. A fingerprint answers "did an INPUT
+      # move", so a correction it cannot see leaves a published number nobody can
+      # argue the board out of — and an older `measured_by` is NOT such a
+      # correction, because an older engine is a reference and not a verdict. Only
+      # the audit MEASURING a difference is.
+      #
+      # IT GOES AS FINE AS THE CASE DEMANDS: a weapon, one of its modes, the riven
+      # or the plain half of that mode, or a single row by its key, `;` between
+      # several because a mod list is commas. "Every row" is this with a selector
+      # that matches everything, which is why there is no second button for it:
+      # a wide rescore and a narrow one are the same operation.
+      #
+      # A SELECTOR THAT MATCHES NOTHING RESCORES NOTHING AND SAYS SO, rather than
+      # passing quietly — a misspelled id reads exactly like a run that did the
+      # work you asked for.
       weapon:
         description: "rescore these rows whatever the fingerprints say — weapon | weapon#mode | weapon#mode:plain | a whole row key; ';' between several"
         type: string
@@ -109,26 +102,17 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # THE GENERATION EVERY JOB FILES UNDER. One value for the run, so a shard
-  # and the assembly cannot disagree about which generation they are in.
-  GEN: ${{ inputs.generation || 'g1' }}
-
-  # HOW MANY WAYS THE SCORING SPLITS, and it is sized against the WORK, not
-  # against the ceiling. A shard costs 2.6 minutes before it scores anything —
-  # checkout, cache restore, load — so the split is only worth what it saves.
-  # Forty jobs run at once whatever these say, and one 121-minute row is a floor
-  # no split goes under: docs/BOARD.md §"Two ceilings, and neither is the shard
-  # count".
+  # THE CEILING ON THE SPLIT, and the only thing about it that is a constant.
+  # How many shards a run actually takes is COMPUTED from the work it is about
+  # to do — see the `shards` step — because rows differ by 79x and a count
+  # cannot tell a two-hour slice from a two-minute one.
   #
-  # A FULL RESCORE IS 8,008 CPU MINUTES and stays above forty on purpose — the
-  # extra shards are the tail, and dealing the long rows out early is what keeps
-  # the last wave short.
-  FULL_SHARDS: 128
-  # AN ORDINARY RUN IS 5,553 ROWS, and the repair slice is the small half of it:
-  # 984, against ~4,570 builds carrying no score yet. Splitting that 128 ways
-  # pays 2.6 minutes of startup 128 times — 333 minutes of it, against 83 at
-  # thirty-two — through the dozen-odd runners a free account is granted.
-  SLICE_SHARDS: 32
+  # ABOVE `max-parallel`, on purpose: a runner that finishes its slice picks up
+  # the next one, which is what keeps the last wave short when a few rows are
+  # very expensive. Bounded because each shard pays ~2.6 minutes of startup
+  # before it scores anything, and one 121-minute row is a floor no split goes
+  # under whatever this says: docs/BOARD.md §"Two ceilings".
+  MAX_SHARDS: 64
 
   # HOW MANY NEVER-SCORED ROWS A RUN MAY TAKE ON. A ceiling, not a plan: the
   # CLOCK below is what actually stops a run, and this only keeps one from
@@ -159,21 +143,9 @@ jobs:
       wired: ${{ steps.wired.outputs.yes }}
       shards: ${{ steps.shards.outputs.list }}
       shard_count: ${{ steps.shards.outputs.count }}
-      full: ${{ steps.full.outputs.yes }}
       work: ${{ steps.work.outputs.yes }}
     steps:
       - uses: actions/checkout@v4
-
-      # THE MATRIX AND THE COUNT COME FROM ONE PLACE, and they have to. The
-      # scorer is told `--shard i/N` while the matrix is a list, so a list of
-      # eight against an N of thirty-two tells eight jobs they are one of
-      # thirty-two — and three quarters of the board is silently never scored.
-      # Nothing fails; the rows keep their old numbers.
-      - id: shards
-        run: |
-          if [ "${{ inputs.full }}" = "true" ]; then n=$FULL_SHARDS; else n=$SLICE_SHARDS; fi
-          echo "count=$n" >> "$GITHUB_OUTPUT"
-          N=$n python3 -c "import json,os;print('list='+json.dumps(list(range(int(os.environ['N'])))))" >> "$GITHUB_OUTPUT"
 
       # WHAT A SCORE DEPENDS ON THAT IS NOT THE BUILD, as one hash: the code
       # that simulates, the data it simulates with, and the rulers. `data/`
@@ -185,16 +157,6 @@ jobs:
       # time is not an input to a score. Untouched, a row is valid forever;
       # moved, it is wrong immediately. This asks the only question that matters
       # — "is anything different" — and answers it exactly.
-      # A FULL RESCORE IGNORES EVERY STORED SCORE. Two things ask for one: the
-      # manual button, and the weekly backstop above.
-      - id: full
-        run: |
-          if [ "${{ inputs.full }}" = "true" ] || [ "${{ github.event.schedule }}" = "0 0 * * 1" ]; then
-            echo "yes=true" >> "$GITHUB_OUTPUT"; echo "FULL rescore"
-          else
-            echo "yes=false" >> "$GITHUB_OUTPUT"
-          fi
-
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
       # nothing to read, and a job that fails hourly for a reason nobody is
       # acting on trains you to ignore the one that matters.
@@ -290,7 +252,7 @@ jobs:
       #
       # UNCONFIGURED IS AN EMPTY GENERATION, not a failure: the run then
       # computes everything, which is what it did before there was one.
-      - name: read this generation's facts
+      - name: read what is already measured
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -299,7 +261,7 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+          bash scripts/fetch_facts.sh facts-known.ndjson
 
 
       # …AND HANDED TO EVERY JOB BELOW, so the database is read ONCE a run.
@@ -310,43 +272,90 @@ jobs:
           path: facts-known.ndjson
           retention-days: 1
           if-no-files-found: ignore
-      - name: is there anything to score
+      - name: what is there to score, and what will it cost
         id: work
         if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
-          # THE SAME FORCING THE SCORERS WILL APPLY, or this step answers a
-          # question the run is not asking: without it a full rescore counts
-          # every row as reusable, reports nothing to do, and the button is a
-          # run that never starts.
+          # THE SAME FORCING AND THE SAME BOUNDS THE SCORERS WILL APPLY, or this
+          # step answers a question the run is not asking: it would count work
+          # the run is not going to do, and the gate below would read it as busy.
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
-          if [ "${{ inputs.full }}" = "true" ]; then FORCE="$FORCE --refight-all"; fi
-          # THE SAME SLICE THE SCORERS WILL TAKE, or this step counts work the
-          # run is not going to do and the gate below reads it as busy.
-          SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
-          if [ "${{ inputs.full }}" = "true" ] || [ -n "${{ inputs.weapon }}" ]; then
-            SLICE=""
+          # A RUN THAT NAMES ROWS IS BOUNDED BY WHAT IT NAMES, so it takes no
+          # backlog limit — but it keeps the CLOCK, because the split below is
+          # sized so the clock is not reached. Bounding a named run by a count
+          # would leave half of what a person asked for undone with nothing
+          # saying so.
+          SLICE="--deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
+          if [ -z "${{ inputs.weapon }}" ]; then
+            SLICE="--new-limit $NEW_ROWS $SLICE"
           fi
-          todo=0
+          todo=0 work=0
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             line=$(./target/release/wfsim-board "$id" \
                      --dry-run $FORCE $SLICE \
                      --facts-in facts-known.ndjson \
                      < submissions.json 2>&1 >/dev/null \
-                   | grep -o 'dry-run: .*' || echo "dry-run: todo=1 (no answer)")
+                   | grep -o 'dry-run: .*' || echo "dry-run: todo=1 work=0 (no answer)")
             echo "$id: $line"
             n=$(printf '%s' "$line" | grep -o 'todo=[0-9]*' | cut -d= -f2 || echo 1)
+            w=$(printf '%s' "$line" | grep -o 'work=[0-9]*' | cut -d= -f2 || echo 0)
             todo=$(( todo + ${n:-1} ))
+            work=$(( work + ${w:-0} ))
           done
+          echo "todo=$todo" >> "$GITHUB_OUTPUT"
+          echo "work=$work" >> "$GITHUB_OUTPUT"
           if [ "$todo" -gt 0 ]; then
             echo "yes=true" >> "$GITHUB_OUTPUT"
-            echo "$todo rows to score"
+            echo "$todo rows to score, about $(( work / 60 )) CPU-minutes of fight"
           else
             echo "yes=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::every row is what this code computes — nothing to score"
+            echo "::notice::every row is measured — nothing to score"
           fi
+
+      # HOW MANY WAYS TO SPLIT IT, computed from the work rather than from which
+      # button was pressed.
+      #
+      #   shards = clamp( ceil(seconds / one shard's budget), 1, min(rows, MAX) )
+      #
+      # ONE SHARD'S BUDGET IS THE CLOCK IT IS GIVEN, times the rulers it walks:
+      # the scoring step runs the binary once per ruler and each gets its own
+      # deadline. Sizing to that is what makes the clock a bound the run does not
+      # reach — which is why a NAMED rescore can keep the clock and still finish
+      # what it named.
+      #
+      # MEASURED, 2026-09-08: 4,441 rows at 15.9 s average came to 1,177
+      # CPU-minutes and the 32 shards were billed 1,178 — the fight IS the run,
+      # with startup at 44 s a shard against a 36-minute budget. So there is no
+      # overhead to schedule around, and the only thing worth getting right is
+      # not asking for more shards than there is work for.
+      #
+      # NEVER MORE SHARDS THAN ROWS: one row is indivisible, so a shard past the
+      # row count pays 2.6 minutes of startup to score nothing.
+      - id: shards
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          WORK: ${{ steps.work.outputs.work }}
+          TODO: ${{ steps.work.outputs.todo }}
+        run: |
+          set -euo pipefail
+          rulers=$(ls data/benchmarks/*.yaml | wc -l)
+          budget=$(( SCORE_DEADLINE_MINUTES * 60 * rulers ))
+          n=$(( ( ${WORK:-0} + budget - 1 ) / budget ))
+          [ "$n" -lt 1 ] && n=1
+          [ "$n" -gt "${TODO:-1}" ] && n=${TODO:-1}
+          [ "$n" -gt "$MAX_SHARDS" ] && n=$MAX_SHARDS
+          [ "$n" -lt 1 ] && n=1
+          echo "$(( ${WORK:-0} / 60 )) CPU-minutes over $n shard(s), $(( budget / 60 )) min each"
+          # THE MATRIX AND THE COUNT COME FROM ONE PLACE, and they have to. The
+          # scorer is told `--shard i/N` while the matrix is a list, so a list of
+          # eight against an N of thirty-two tells eight jobs they are one of
+          # thirty-two — and three quarters of the board is silently never
+          # scored. Nothing fails; the rows keep their old numbers.
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+          N=$n python3 -c "import json,os;print('list='+json.dumps(list(range(int(os.environ['N'])))))" >> "$GITHUB_OUTPUT"
 
   # ---- 2. score, N ways at once -----------------------------------------
   #
@@ -415,39 +424,24 @@ jobs:
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
           ( while sleep 60; do
-              bash scripts/ship_facts.sh --generation "$GEN" facts.ndjson || true
+              bash scripts/ship_facts.sh facts.ndjson || true
             done ) &
           SHIPPER=$!
           # …AND ONCE MORE AT THE END, whatever happened to the loop: `trap`
           # rather than a line after it, so a scorer that exits non-zero still
           # banks what it managed.
-          trap 'kill $SHIPPER 2>/dev/null || true; bash scripts/ship_facts.sh --generation "$GEN" facts.ndjson || true' EXIT
-          # THE FORCED LIST, if the operator named one. It has to reach every
-          # process that decides reuse: a shard that keeps a row the publish
-          # pass drops leaves publish to compute it alone, at the end.
+          trap 'kill $SHIPPER 2>/dev/null || true; bash scripts/ship_facts.sh facts.ndjson || true' EXIT
+          # THE SAME FORCING AND THE SAME BOUNDS THE PLAN COUNTED WITH. A shard
+          # that took on a different set from the one the split was sized for is
+          # a shard doing somebody else's slice.
           FORCE=""
           if [ -n "${{ inputs.weapon }}" ]; then FORCE="--rescore ${{ inputs.weapon }}"; fi
-          # A FULL RESCORE IS EVERY ROW FORCED. There is no "run with no prior"
-          # to fall back on any more: the facts of the open generation are the
-          # only source, so what a full run says is "refight every row whatever
-          # this generation holds" — and the facts it drops still answer what
-          # each row COST, which is what the split packs by.
-          if [ "${{ needs.submissions.outputs.full }}" = "true" ]; then
-            FORCE="$FORCE --refight-all"
+          slice="--deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
+          if [ -z "${{ inputs.weapon }}" ]; then
+            slice="--new-limit $NEW_ROWS $slice"
           fi
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            # WHAT THIS RUN TAKES ON. A repair slice is UNBOUNDED — it walks
-            # the stale set from the top — so the clock is what says when to
-            # stop. A `full` run and a `weapon` run are both already bounded by
-            # what they name, and a clock on top of a bounded job does not
-            # bound it, it TRUNCATES it: measured, a five-weapon rescore left
-            # 110 of 190 rows done and the board unmoved, and running it again
-            # would have walked the same 110 into the same twelve minutes.
-            slice=""
-            if [ "${{ needs.submissions.outputs.full }}" != "true" ]                && [ -z "${{ inputs.weapon }}" ]; then
-              slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
-            fi
             ./target/release/wfsim-board "$id" \
               $FORCE \
               $slice \
@@ -517,12 +511,12 @@ jobs:
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
-      # THE GENERATION AS IT IS NOW, not as it was when this run started. The
+      # THE FACTS AS THEY ARE NOW, not as they were when this run started. The
       # shards were still shipping while the artifact above was taken, so an
-      # assembly handed that copy publishes a generation without this run's own
+      # assembly handed that copy publishes a board without this run's own
       # measurements in it. ONE job reads fresh, which is one read and not
       # thirty-two.
-      - name: read this generation's facts
+      - name: read what is measured now
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -531,7 +525,7 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          bash scripts/fetch_facts.sh --generation "$GEN" facts-known.ndjson
+          bash scripts/fetch_facts.sh facts-known.ndjson
 
 
       - name: assemble every benchmark
@@ -553,12 +547,11 @@ jobs:
             # IT PUBLISHES A WEAPON AT A TIME, WHOLE. The directory it is
             # handed is both what it writes and where a weapon's rows under
             # every OTHER ruler are read back from, so a file is only ever
-            # written with all of them in hand. A weapon this generation
-            # cannot speak for keeps the rows it has.
+            # written with all of them in hand. A weapon with an unmeasured
+            # row keeps the rows it has.
             ./target/release/wfsim-board "$id" site/board \
               $FORCE \
               --project \
-              --generation "$GEN" \
               --facts-in facts-known.ndjson \
               < submissions.json > /dev/null || {
                 code=$?

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # WHAT A SHARD HAS COMPUTED, PUT WHERE NOTHING CAN DESTROY IT.
 #
-#   scripts/ship_facts.sh --generation <id> facts.ndjson
+#   scripts/ship_facts.sh facts.ndjson
 #   scripts/ship_facts.sh --self-test
 #
 # `wfsim-board --facts` appends one row per score and flushes per row. This
@@ -46,38 +46,40 @@ d1() {
 # arrived at a public endpoint, and this is the one place in the pipeline where
 # that text meets a language.
 #
-# `INSERT OR REPLACE` on (identity, ruler, mode, data_fp, generation): the same
-# row measured twice is one row, and two GENERATIONS' answers are two rows, so
-# a newer measurement can never silently overwrite an older one it disagrees
-# with. That is the property tonight's store did not have.
+# `INSERT OR REPLACE` on (identity, ruler, mode, data_fp): the same row measured
+# twice is one row, and a data change produces a NEW row because `data_fp` is in
+# the key — so correcting a data file cannot destroy the answer the old file
+# produced, and reverting it restores that answer without recomputing.
+#
+# THE CLOCKS ARE THE SCORER'S, NOT THE SHIPPER'S AND NOT THE DATABASE'S. A row
+# may be shipped minutes after it was measured, so a timestamp invented here
+# would be the shipping time wearing the fight's name; the fact log carries both
+# ends of the fight and this binds them. A strftime call inside the statement is
+# refused by D1 outright — "near %: syntax error at offset 164".
 batches() {
-  local gen="$1" src="$2" now
-  # THE CLOCK IS THE SHELL'S, NOT THE DATABASE'S. A strftime call inside the
-  # statement is refused by D1 outright — "near %: syntax error at offset 164"
-  # — and a bound value is one less thing for the statement to be parsed for.
-  now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-  jq -s -c --argjson n "$BATCH" --arg gen "$gen" --arg now "$now" '
+  local src="$1"
+  jq -s -c --argjson n "$BATCH" '
     . as $all
     | range(0; ($all | length); $n)
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
         sql: ("INSERT OR REPLACE INTO scores (identity, ruler, mode, data_fp,"
-              + " generation, measured_by, score, rolls, cost_seconds, computed_at)"
+              + " measured_by, score, rolls, cost_seconds, started_at, finished_at)"
               + " VALUES "
               + ([$chunk[] | "(?,?,?,?,?,?,?,?,?,?)"]
                  | join(","))),
         params: [$chunk[]
-                 | .identity, .ruler, .mode, .data_fp, $gen, (.measured_by // ""),
+                 | .identity, .ruler, .mode, .data_fp, (.measured_by // ""),
                    .score, (if .rolls == null then null else (.rolls | tojson) end),
-                   .cost_seconds, $now]
+                   .cost_seconds, .started_at, .finished_at]
       }
   ' "$src"
 }
 
 # ---- shipping, from wherever it got to last time --------------------------
 ship() {
-  local gen="$1" src="$2" cursor="$2.shipped" from=0 total sent=0 failed=0
+  local src="$1" cursor="$1.shipped" from=0 total sent=0 failed=0
   [ -s "$src" ] || { echo "facts: nothing to ship"; return 0; }
   [ -f "$cursor" ] && from=$(cat "$cursor")
   total=$(wc -l < "$src" | tr -d ' ')
@@ -99,7 +101,7 @@ ship() {
         echo
       fi
     fi
-  done < <(batches "$gen" "$pending")
+  done < <(batches "$pending")
   rm -f "$pending"
   # THE CURSOR MOVES ONLY WHEN EVERY BATCH LANDED. Moving it past a refusal
   # would turn a retryable failure into a row nobody ships again.
@@ -122,7 +124,7 @@ self_test() {
   cd "$DIR/work"
 
   row() {
-    printf '{"identity":"%s","ruler":"single_target","mode":"%s","data_fp":"fp","measured_by":"abc","score":%s,"cost_seconds":1.5,"rolls":null}\n' "$1" "$2" "$3"
+    printf '{"identity":"%s","ruler":"single_target","mode":"%s","data_fp":"fp","measured_by":"abc","score":%s,"cost_seconds":1.5,"rolls":null,"started_at":"T0","finished_at":"T1"}\n' "$1" "$2" "$3"
   }
   row 'a|b' base 1.0 > facts.ndjson
   row 'a|b' heavy_slam 2.0 >> facts.ndjson
@@ -132,11 +134,11 @@ self_test() {
   for i in 4 5 6 7 8 9 10 11 12; do row "k$i" base "$i" >> facts.ndjson; done
 
   BATCH=9
-  local n; n=$(batches gen1 facts.ndjson | wc -l | tr -d ' ')
+  local n; n=$(batches facts.ndjson | wc -l | tr -d ' ')
   [ "$n" = "2" ] && say ok "twelve rows at nine a batch is two statements" \
     || say FAIL "batched into $n"
 
-  local first; first=$(batches gen1 facts.ndjson | head -1)
+  local first; first=$(batches facts.ndjson | head -1)
   [ "$(printf '%s' "$first" | jq -r '.params | length')" = "90" ] \
     && say ok "...ten bound parameters a row, under D1's hundred" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
@@ -146,11 +148,15 @@ self_test() {
     && say ok "...and an identity with a quote in it is bound, not interpolated" \
     || say FAIL "a quoted identity reached the sql"
 
-  # THE GENERATION IS THE SHIPPER'S, NOT THE SCORER'S. It rides in every row so
-  # the same measurement can be filed under a generation the scorer never knew.
-  printf '%s' "$first" | jq -e '[.params[4], .params[14]] == ["gen1","gen1"]' >/dev/null \
-    && say ok "...and every row carries the generation it was filed under" \
-    || say FAIL "generation missing from the parameters"
+  # THE CLOCKS ARE THE SCORER'S. A shipper that invented them would be writing
+  # the shipping time under the fight's name, and a row may be shipped minutes
+  # after it was measured.
+  printf '%s' "$first" | jq -e '[.params[8], .params[9]] == ["T0","T1"]' >/dev/null \
+    && say ok "...and the fight's own two clocks are what is bound" \
+    || say FAIL "the clocks did not come from the log: $(printf '%s' "$first" | jq -c '.params[8:10]')"
+  printf '%s' "$first" | jq -e '.sql | test("[0-9]{4}-[0-9]{2}-[0-9]{2}") | not' >/dev/null \
+    && say ok "...and no clock of this shell's reached the statement" \
+    || say FAIL "a timestamp was interpolated into the sql"
 
   # ONE ROW PER MODE. Two modes of one build are two rows, and a statement that
   # collapsed them would file seven melee measurements as one.
@@ -169,7 +175,7 @@ printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
 printf '200'
 OK
   chmod +x "$DIR/bin/curl"
-  ship gen1 facts.ndjson > out.txt 2>&1 \
+  ship facts.ndjson > out.txt 2>&1 \
     && grep -q "rows 1..12" out.txt \
     && say ok "a first run ships every row" || say FAIL "$(cat out.txt)"
   [ "$(cat facts.ndjson.shipped)" = "12" ] \
@@ -177,10 +183,10 @@ OK
 
   # …AND THE SECOND RUN SHIPS ONLY WHAT IS NEW, which is the whole point of
   # running this again and again beside a scorer that keeps appending.
-  ship gen1 facts.ndjson > out.txt 2>&1 && grep -q "all shipped" out.txt \
+  ship facts.ndjson > out.txt 2>&1 && grep -q "all shipped" out.txt \
     && say ok "...and a second run with nothing new ships nothing" || say FAIL "$(cat out.txt)"
   row 'later' base 9.9 >> facts.ndjson
-  ship gen1 facts.ndjson > out.txt 2>&1 && grep -q "rows 13..13" out.txt \
+  ship facts.ndjson > out.txt 2>&1 && grep -q "rows 13..13" out.txt \
     && say ok "...and a row appended after it ships alone" || say FAIL "$(cat out.txt)"
 
   cat > "$DIR/bin/curl" <<'DEAD'
@@ -192,7 +198,7 @@ printf '403'
 DEAD
   chmod +x "$DIR/bin/curl"
   row 'refused' base 1.0 >> facts.ndjson
-  if ship gen1 facts.ndjson > out.txt 2>&1; then
+  if ship facts.ndjson > out.txt 2>&1; then
     say FAIL "a refused write passed"
   elif grep -q "D1 not authorized" out.txt; then
     say ok "a refused write reports what the database said"
@@ -215,10 +221,6 @@ DEAD
 
 if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
 
-GEN=""
-while [ "${1:-}" = "--generation" ]; do GEN="$2"; shift 2; done
-: "${GEN:?--generation <id> is required: a fact is filed under the generation it belongs to}"
-
 # UNCONFIGURED IS SILENT AND GREEN — but HALF-configured is not, and the two
 # read identically from inside `configured()`.
 #
@@ -239,4 +241,4 @@ if ! configured; then
   exit 0
 fi
 
-ship "$GEN" "${1:?the fact log to ship, one row a line}"
+ship "${1:?the fact log to ship, one row a line}"

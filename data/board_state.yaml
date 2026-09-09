@@ -5,10 +5,6 @@
 # every visitor downloads. The rows live in `site/board/<weapon>.json`, which
 # the page FETCHES, and durably in the `scores` table they were published from.
 #
-# `generation` is which facts these rows were measured from, and it is the one
-# thing here that is not derived from the run: the workflow opens a generation
-# deliberately, so it is handed in and recorded rather than invented.
-#
 # `submissions` paired with the library's own size (`/api/board/pending`) is how
 # a STATIC board says how far behind it is. `listed` and `held` say how much of
 # what it scored it is showing — a board that reports only what it shows cannot
@@ -19,16 +15,13 @@ boards:
     listed: 3212
     held: 6280
     scored_at_epoch_seconds: 1788887647
-    generation: g1
   single_target:
     submissions: 6992
     listed: 3752
     held: 2645
     scored_at_epoch_seconds: 1788887648
-    generation: g1
   single_target_no_aim:
     submissions: 6992
     listed: 1679
     held: 3015
     scored_at_epoch_seconds: 1788887650
-    generation: g1

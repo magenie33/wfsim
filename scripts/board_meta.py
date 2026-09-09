@@ -38,7 +38,7 @@ OUT = ROOT / "site" / "board.meta.json"
 # What a board's row in `board_state.yaml` publishes. Named rather than copied
 # wholesale: the yaml is also where fields the page has no business reading
 # would land, and a stamp that mirrors a file grows whatever that file grows.
-STATE_FIELDS = ("scored_at_epoch_seconds", "submissions", "listed", "held", "generation")
+STATE_FIELDS = ("scored_at_epoch_seconds", "submissions", "listed", "held")
 
 # THE PUBLISHER'S OWN DERIVED FILE, under the same directory as the weapons and
 # therefore not one of them. It has a digest here like any other file a client
@@ -76,13 +76,6 @@ def build() -> dict:
 
     scored = [b["scored_at_epoch_seconds"] for b in boards.values()
               if b.get("scored_at_epoch_seconds")]
-    # WHICH FACTS THIS BOARD WAS PUBLISHED FROM, lifted to the top because the
-    # board publishes ONE generation and a mixture is the thing the generation
-    # rule exists to prevent. The audit reads it here rather than being told it:
-    # a generation named in two places is one place to forget.
-    gens = {b["generation"] for b in boards.values() if b.get("generation")}
-    generation = gens.pop() if len(gens) == 1 else ""
-
     weapons = [f for f in sorted(BOARD.glob("*.json")) if f.stem != INDEX]
     rows = 0
     for f in weapons:
@@ -96,7 +89,6 @@ def build() -> dict:
         # files that differ rather than the board.
         "files": files,
         "bytes": sum(f.stat().st_size for f in BOARD.glob("*.json")),
-        "generation": generation,
         "weapons": len(weapons),
         "rows": rows,
         # The FRESHEST of the boards, for a page that shows one line. The

@@ -87,24 +87,40 @@ for (const wfName of ["board.yml", "audit.yml"]) {
     early.join(" | "));
 }
 
-// BOTH BACKLOGS ARE BOUNDED AND THE CLOCK IS BEHIND THEM, or the run does not
-// fit the cadence that starts the next one. `--refresh` bounds the repair of
-// rows the board already holds, in seconds the last run MEASURED; `--new-limit`
-// bounds the builds it has no score for at all, and can only count them, since
-// a row nobody has scored has no cost. `--deadline` is what turns that count
-// into a promise: rows differ 79x, so 150 of them is nine minutes or fifty.
+// THE CLOCK IS UNCONDITIONAL, AND THE COUNT ONLY EXTENDS IT.
+//
+// `--deadline` is the bound that always holds: rows differ 79x in cost, so a
+// COUNT of them is nine minutes or fifty depending on which builds arrived, and
+// only the clock turns a bound into a promise. `--new-limit` bounds the backlog
+// of never-measured rows on top of it, and is left off a run that NAMED rows —
+// a person who asked for a weapon should get the weapon, not the first 3,000
+// rows of it.
+//
+// ASSERTED AS AN ORDER, not as a line: the deadline is assigned first and the
+// count PREPENDS itself to the same variable, so a line carrying `--new-limit`
+// carries the clock by reference. Checking each line for both strings would
+// pass a version that dropped the clock on the branch that sets the count.
 //
 // Leaving the backlog unbounded is what kept the board from publishing for 35
 // hours — a run had 4,570 never-scored rows to clear before `publish` assembled
 // anything, and was cancelled before it got there, every run green.
-const scoring = wf.filter((l) => /(slice|SLICE)="--new-limit/.test(l));
-check(scoring.length > 0
-  && scoring.every((l) => l.includes("--deadline")),
-  `both backlogs are bounded, and the clock is behind them (${scoring.length} scoring call${scoring.length === 1 ? "" : "s"})`,
-  "a run must bound its repair slice, its never-scored rows AND its wall clock: "
-    + "the first is spent in measured seconds, the second can only COUNT rows "
-    + "that differ 79x in cost, and the deadline is what makes the second a "
-    + "promise rather than a guess");
+const assigns = wf
+  .map((l, i) => [l, i])
+  .filter(([l]) => /^\s*(slice|SLICE)="/.test(l));
+const firstOf = new Map();
+for (const [l, i] of assigns) {
+  const name = l.trim().startsWith("SLICE") ? "SLICE" : "slice";
+  if (!firstOf.has(name)) firstOf.set(name, l);
+}
+const deadlineFirst = [...firstOf.values()].every((l) => l.includes("--deadline"));
+const countExtends = assigns
+  .filter(([l]) => l.includes("--new-limit"))
+  .every(([l]) => /\$\{?(slice|SLICE)\}?/.test(l));
+check(firstOf.size > 0 && deadlineFirst && countExtends,
+  `the clock bounds every scoring call, and the count extends it (${firstOf.size} of them)`,
+  "the deadline must be assigned unconditionally and the count must prepend to "
+    + "it: a branch setting --new-limit without carrying the clock forward is a "
+    + "run bounded by a number that means nothing");
 
 // THE MATRIX AND THE DENOMINATOR ARE ONE NUMBER. A shard is told `i/N` while
 // the matrix is a list, so a list of 32 against an N of 128 tells 32 jobs they

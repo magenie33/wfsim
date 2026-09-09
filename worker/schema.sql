@@ -39,62 +39,64 @@ CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 
 -- A SCORE IS A FACT, NOT A STEP IN A PIPELINE (docs/BOARD.md).
 --
--- `(build, ruler, mode, what it read, what measured it) -> score` is true for
--- ever once computed, so it is written down the moment it is computed rather
--- than when a batch finishes. `scripts/ship_facts.sh` writes it beside the
--- running scorer; `scripts/fetch_facts.sh` reads one generation back out. This
+-- `(build, ruler, mode, what it read) -> score` is true for ever once computed,
+-- so it is written down the moment it is computed rather than when a batch
+-- finishes. `scripts/ship_facts.sh` writes it beside the
+-- running scorer; `scripts/fetch_facts.sh` reads them back out. This
 -- table is the only source the publisher has.
 CREATE TABLE IF NOT EXISTS scores (
   identity     TEXT NOT NULL,
   ruler        TEXT NOT NULL,
   -- A ROW IS (build, ruler, MODE). A mode is a property of the WEAPON, not of
-  -- the build — every melee carries seven and the Ballistica Prime four — and
+  -- the build -- every melee carries seven and the Ballistica Prime four -- and
   -- the cards that win one do not win another, so each is an independent
   -- ranking. Without this column a melee build's seven measurements collapse
   -- into one row and six of them are lost on write.
   mode         TEXT NOT NULL,
-  -- WHAT THIS ROW READ. A data change dirties exactly the rows that read the
-  -- file that moved, which is the cheap half of invalidation and is asked per
-  -- row.
+  -- WHAT THIS ROW READ, and it is the only thing here that decides validity.
+  -- A data change dirties exactly the rows that read the file that moved, which
+  -- is the cheap half of invalidation and is asked per row. It is in the KEY, so
+  -- a correction produces a NEW row and the old one survives: reverting the data
+  -- file restores the old answer without recomputing it.
   data_fp      TEXT NOT NULL,
-  -- WHICH GENERATION IT BELONGS TO, AND A GENERATION IS OPENED DELIBERATELY.
-  -- Not a source hash: 55.6% of commits touch the engine, and a hash in this
-  -- key would make each of them a full rescore — 8,008 CPU minutes against a
-  -- day's budget of 960 CPU hours, thirteen times over on a working day. So
-  -- most commits ride in the generation that is open, and one is opened when
-  -- the AUDIT measures that a change actually moved numbers. The board
-  -- publishes the newest COMPLETE generation, never a mixture of two.
-  generation   TEXT NOT NULL,
-  -- …AND WHICH BUILD ACTUALLY MEASURED IT, which is a different question and
-  -- not part of the key. It is forensics: when a generation turns out to have
-  -- been measured by something broken, this is what says which rows it wrote.
+  -- WHICH BUILD MEASURED IT, AND IT DECIDES NOTHING. An engine version being
+  -- older does not make a score wrong -- the two are a REFERENCE relation, not a
+  -- validity one. What a row READS is enumerable from the row, so that is
+  -- checked exactly above; what the code DOES to it is not, and no hash can
+  -- answer it. Only a MEASUREMENT can, which is the audit's job, and this is
+  -- what says which rows a build wrote once one is found to be broken.
   measured_by  TEXT NOT NULL,
   score        REAL NOT NULL,
   -- The riven corner the search settled on, when there is one: a score alone
   -- cannot publish a riven row, because the reader has to be able to BUILD that
   -- riven and the page cannot re-derive it without paying for the search again.
   rolls        TEXT,
-  -- WHAT THE ROW COST, so the bill is read off the rows rather than estimated.
-  -- The spread is four orders of magnitude wide, so which rows are expensive is
-  -- a question that has to be asked of the data and not guessed.
+  -- WHAT THE ROW COST, so the bill is read off the rows rather than estimated,
+  -- and so the next run can pack its shards by work rather than by count. NOT
+  -- derivable from the two clocks below: a row paid for in sittings spans a wall
+  -- clock much longer than the fight it contains.
   cost_seconds REAL NOT NULL,
-  -- WHEN IT WAS MEASURED, AND IT IS PROVENANCE — NEVER A TEST. A fact does not
-  -- decay: while the fingerprints match, the score is right however old it is,
-  -- and a rule that rescored by age would pay for rows that cannot have moved.
-  -- What this is for: showing a reader how old a ROW is rather than how old the
-  -- board is, ordering repairs oldest first, and saying afterwards which rows a
-  -- bad engine wrote. Nothing branches on it.
-  computed_at  TEXT NOT NULL,
-  PRIMARY KEY (identity, ruler, mode, data_fp, generation)
+  -- WHEN THE FIGHT STARTED AND WHEN IT ENDED. Provenance, and nothing branches
+  -- on either: a fact does not decay, so while `data_fp` matches the score is
+  -- right however old it is. What they are for is showing a reader how old a ROW
+  -- is rather than how old the board is, ordering repairs oldest first, and
+  -- saying afterwards which rows a bad build wrote and when.
+  --
+  -- A ROW MIGRATED FROM BEFORE THEY EXISTED CARRIES THE SAME VALUE IN BOTH,
+  -- which is how "we do not know when this started" is spelled. Deriving a
+  -- start by subtracting the cost would invent precision the old row never had.
+  started_at   TEXT NOT NULL,
+  finished_at  TEXT NOT NULL,
+  PRIMARY KEY (identity, ruler, mode, data_fp)
 );
 
--- "How complete is this generation" is one query rather than a walk, which is
--- the whole of the generation rule's cost.
-CREATE INDEX IF NOT EXISTS scores_generation ON scores (generation, ruler);
+-- "What has this ruler measured" is one indexed query, which is what the set
+-- difference is asked through.
+CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
 
 -- …and "what has gone longest without being measured" is the order to repair
--- in, which is the one thing `computed_at` is allowed to decide.
-CREATE INDEX IF NOT EXISTS scores_oldest ON scores (computed_at);
+-- in, which is the one thing a clock here is allowed to decide.
+CREATE INDEX IF NOT EXISTS scores_oldest ON scores (finished_at);
 
 -- TWO MEASUREMENTS OF ONE ROW DISAGREE, and the board should look again.
 --
