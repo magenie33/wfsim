@@ -53,14 +53,13 @@ d1() {
 # mode)` is the primary key, so it is total.
 #
 # `metric` IS WRITTEN AND NOT READ BACK, deliberately. It says what a stored
-# number is IN, which only a reader of the archive needs; what decides whether
-# this run may REUSE a row is `data_fp`, and a ruler that changed its core
-# changed its file and therefore that hash. Selecting it would carry a second
-# answer beside the one that decides, on every row of every run.
+# number is IN, which only a reader of the archive needs; nothing in a run
+# decides on it, so selecting it would carry that weight on every row of every
+# run for a question no caller asks.
 page_body() {
   jq -n -c --argjson limit "$1" --argjson offset "$2" '
     {
-      sql: ("SELECT identity, ruler, mode, data_fp, measured_by, score, rolls,"
+      sql: ("SELECT identity, ruler, mode, measured_by, score, rolls,"
             + " cost_seconds, started_at, finished_at FROM scores"
             + " ORDER BY identity, ruler, mode LIMIT ? OFFSET ?"),
       params: [$limit, $offset]
@@ -132,9 +131,9 @@ for a in "$@"; do
 done
 off=$(printf '%s' "$body" | jq -r '.params[1]')
 if [ "$off" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"single_target",mode:"base",data_fp:"fp",measured_by:"abc",score:1.5,rolls:null,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),ruler:"single_target",mode:"base",measured_by:"abc",score:1.5,rolls:null,cost_seconds:2.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
 else
-  jq -n -c '{result:[{results:[{identity:"last",ruler:"single_target",mode:"base",data_fp:"fp",measured_by:"abc",score:9.0,rolls:null,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[{identity:"last",ruler:"single_target",mode:"base",measured_by:"abc",score:9.0,rolls:null,cost_seconds:1.0,started_at:"t0",finished_at:"t1"}],success:true}],success:true}' > "$out"
 fi
 printf '200'
 PAGES

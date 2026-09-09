@@ -389,75 +389,6 @@ fn exact_score(line: &str) -> Option<f64> {
 }
 
 
-/// WHICH ROWS A `--rescore` NAMES, at whatever precision the operator has.
-///
-/// The backstop has to cover the extreme case, and the extreme case is ONE
-/// build. A row key is `identity#mode` and an identity is `weapon|mods|…`, so a
-/// selector is read as `<identity prefix>[#<mode>][:riven|:plain]` and the
-/// prefix is matched at a COMPONENT BOUNDARY — `felarx` names every row of the
-/// weapon and cannot half-match `felarx_prime`, while pasting a whole identity
-/// names exactly one build.
-///
-///   `felarx`                       every mode, every build
-///   `felarx#cycle`                 one mode
-///   `felarx#cycle:plain`           one mode, the rows without a riven
-///   `felarx|galvanized_hell,…`     one build, every mode
-///   `felarx|galvanized_hell,…#base`  one row
-///
-/// SEPARATED BY `;` AND NOT `,`, because a mod list is commas and a selector
-/// that ended at the first one could not name a build at all.
-struct Selector {
-    ident: String,
-    mode: Option<String>,
-    riven: Option<bool>,
-}
-
-impl Selector {
-    fn parse(text: &str) -> Option<Selector> {
-        let text = text.trim();
-        if text.is_empty() {
-            return None;
-        }
-        // `:riven` / `:plain` last, then `#mode`: an identity holds neither
-        // character, so the split is unambiguous whatever the build is called.
-        let (head, riven) = match text.rsplit_once(':') {
-            Some((h, "riven")) => (h, Some(true)),
-            Some((h, "plain")) => (h, Some(false)),
-            _ => (text, None),
-        };
-        let (ident, mode) = match head.split_once('#') {
-            Some((i, m)) => (i, Some(m.to_string())),
-            None => (head, None),
-        };
-        Some(Selector { ident: ident.to_string(), mode, riven })
-    }
-
-    fn matches(&self, key: &str) -> bool {
-        let (ident, mode) = key.rsplit_once('#').unwrap_or((key, "base"));
-        if let Some(want) = &self.mode {
-            if want != mode {
-                return false;
-            }
-        }
-        if let Some(want) = self.riven {
-            // THE MODS COMPONENT HOLDS THE RIVEN SLOT BY NAME, so membership is
-            // exact where a substring would match a card merely spelled like
-            // one. `builds::RIVEN_SLOT` is that name and this is the only place
-            // outside the engine that has to know it.
-            let mods = ident.split('|').nth(1).unwrap_or("");
-            let has = mods.split(',').any(|m| m == wfsim_engine::builds::RIVEN_SLOT);
-            if has != want {
-                return false;
-            }
-        }
-        // AT A COMPONENT BOUNDARY. `felarx` may not name `felarx_prime`, and a
-        // half-typed mod list may not name the build it is a prefix of.
-        ident == self.ident
-            || (ident.starts_with(&self.ident)
-                && ident[self.ident.len()..].starts_with('|'))
-    }
-}
-
 /// THE BUILD A ROW KEY NAMES, which is the key without its mode. The accounting
 /// asks whether a BUILD reached a row, and a run that defers work answers with
 /// identities rather than keys.
@@ -489,11 +420,6 @@ fn group_of(key: &str) -> String {
 #[derive(Clone)]
 struct Fact {
     score: f64,
-    /// WHAT THIS MEASUREMENT READ. The whole of invalidation this code can
-    /// derive: a data correction moves it, and the row is refought. What the
-    /// CODE does to a row is not enumerable and no hash answers it — only the
-    /// audit measuring it can.
-    data_fp: String,
     cost_seconds: f64,
     /// The riven corner the search settled on, when there is one. It travels
     /// WITH the score because it was found by the same fight: reusing one
@@ -602,7 +528,6 @@ impl FactLog {
             // be a second answer to a question that has one.
             "metric": metric,
             "mode": mode,
-            "data_fp": f.data_fp,
             "measured_by": self.measured_by,
             "score": f.score,
             "cost_seconds": f.cost_seconds,
@@ -650,7 +575,6 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
         let key = if mode.is_empty() { id.to_string() } else { format!("{id}#{mode}") };
         let fact = Fact {
             score,
-            data_fp: v.get("data_fp").and_then(Value::as_str).unwrap_or_default().to_string(),
             cost_seconds: v.get("cost_seconds").and_then(Value::as_f64).unwrap_or_default(),
             // THE ROLLS TRAVEL AS TEXT, because the column is one and a riven
             // corner is a list. A row without one is a plain row, not a broken
@@ -755,7 +679,7 @@ fn main() {
         eprintln!(
             "usage: wfsim-board <benchmark-id> [site/board] [--shard i/n] \
                    [--facts-in <file>] [--facts <file>] [--measured-by <sha>] \
-                   [--project] [--rescore <sel>]  (library on stdin)"
+                   [--project]  (library on stdin)"
         );
         std::process::exit(2);
     });
@@ -784,12 +708,10 @@ fn main() {
     let mut reused = 0usize;
     // ROWS WHOSE FACT IS HELD BY A HASH THAT NO LONGER MATCHES. Counted in the
     // walk below, where the row's own fingerprint is computed.
-    let mut stale = 0usize;
     // …AND ROWS A PERSON NAMED. Forcing is applied AT THE ROW rather than by
     // emptying a map first, because a map can be refilled from a second source
     // and a predicate cannot: a `kuva_nukor` rescore once came back green having
     // refought no row, because the store put every one back.
-    let mut forced_rows = 0usize;
     // ---- WHAT THIS RUN IS ALLOWED TO FIGHT ----------------------------
     //
     // HOW MANY UNMEASURED ROWS A RUN TAKES ON. Without it the backlog is
@@ -858,23 +780,6 @@ fn main() {
     // WHAT THIS RUN MEASURED, for the accounting line at the end.
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
 
-    // FORCING A ROW BACK THROUGH THE FIGHT, and it is the backstop rather than
-    // a tool. A fingerprint answers "did an INPUT move", so a correction the
-    // hashes cannot see leaves a published number nobody can argue the board
-    // out of. `--rescore <sel>` makes this run measure the rows it names even
-    // where a fact for them exists, and the new measurement REPLACES that fact
-    // — the one operation in this pipeline that destroys one, which is why it is
-    // named rather than derived.
-    //
-    // …AND NEVER ON THE ASSEMBLY. Forcing is how a SHARD is told to refight;
-    // a pass that fights nothing can only drop the row. Measured, and live:
-    // `--rescore kuva_nukor` took all 56 of its rows off the published board
-    // because the merge honoured a flag it cannot act on.
-    let forced: Vec<Selector> = flag("--rescore")
-        .filter(|_| !project)
-        .map(|list| list.split(';').filter_map(Selector::parse).collect())
-        .unwrap_or_default();
-    let is_forced = |k: &String| forced.iter().any(|sel| sel.matches(k));
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
         eprintln!("unknown benchmark: {bench_id}");
         std::process::exit(2);
@@ -1060,19 +965,6 @@ fn main() {
         // modes are enumerated, because what has to be provable is that a
         // VALIDATED build was ranked — not that some particular mode of it was.
         scored_ids.insert(wfsim_engine::builds::identity(&v));
-        // WHAT EVERY ROW OF THIS BUILD READS. Per BUILD and not per row: the
-        // hash is taken from the canonical build and the ruler, and a mode is
-        // how the same build is fired, so the seven rows of a melee share one.
-        let build_fp = wfsim_engine::data_fingerprint::row_fingerprint(
-            &bench_id,
-            &v.weapon,
-            &v.mods,
-            &v.arcanes,
-            &v.evolutions,
-            v.exilus.as_deref(),
-            v.assembly.as_ref(),
-        );
-
         // EVERY MODE THIS WEAPON CAN BE PLAYED IN, and not the one the
         // submitter happened to try.
         //
@@ -1125,38 +1017,27 @@ fn main() {
             // A FACT IS HELD TO THE HASH OF WHAT IT READ, and that is the whole
             // of invalidation this code can derive. What a row READS is
             // enumerable from the row, so a data correction is caught exactly
-            // here; what the code DOES to it is not, and no hash can answer
-            // that — only the audit MEASURING it can, which is why an older
-            // `measured_by` does not make a score wrong.
+            // A FACT IS REUSED BECAUSE IT EXISTS, and that is the whole of
+            // the rule. Nothing here asks how old it is or which build wrote
+            // it: age is not evidence, and a hash of the INPUTS was tried and
+            // was a worse instrument than the one it replaced — it fired on
+            // every edit to a file no entity owns, including files that cannot
+            // move a number, and stayed silent on the one case that matters,
+            // a code change that does.
             //
-            // A PERSON CAN OVERRIDE IT, and that is the only other way a fact
-            // stops counting: `--rescore` names rows whose number is wrong for a
-            // reason the hashes cannot see.
-            let held = (!verify && !is_forced(&key)).then(|| facts.get(&key)).flatten();
-            let current = held.filter(|f| f.data_fp == build_fp);
-            if current.is_none() && is_forced(&key) {
-                forced_rows += 1;
-            }
-            // …AND THE SAME FACT READ THE OTHER WAY, when its data has moved.
-            // One fact, two questions: a pass that can REFIGHT must not reuse a
-            // number whose inputs moved out from under it, and a pass that only
-            // ASSEMBLES must publish it anyway, or the row leaves the board
-            // because a file it reads was corrected.
-            let carried = held.filter(|_| current.is_none());
-            if current.is_none() && carried.is_some() {
-                stale += 1;
-            }
+            // WHAT RETIRES A FACT IS A PERSON DELETING IT. The row comes back
+            // absent, and an absent row is computed.
+            let current = facts.get(&key);
             // THE SHARD IS A PROPERTY OF THE ROW, not of the submission it came
             // from: a melee weapon is seven rows off one record. `charge`
             // decides which, below, and every shard walks this same sequence
             // and skips only the SIMULATION — so they stay in step.
             //
-            // THE ROLLS COME WITH WHICHEVER FACT IS USED, because they were found
-            // by the same fight: a riven row reused without them loses the riven
-            // the number is for. A row fought here gets them from the search.
+            // THE ROLLS COME WITH THE FACT, because they were found by the same
+            // fight: a riven row reused without them loses the riven the number
+            // is for. A row fought here gets them from the search.
             let mut row_riven: Option<RowRiven> = v.riven.as_ref().and_then(|shape| {
                 current
-                    .or(carried)
                     .and_then(|f| f.rolls.as_ref())
                     .map(|r| RowRiven {
                         bonuses: shape.bonuses.clone(),
@@ -1164,7 +1045,7 @@ fn main() {
                         rolls: r.clone(),
                     })
             });
-            let score = match current.or(carried.filter(|_| project)) {
+            let score = match current {
                 Some(f) => {
                     reused += 1;
                     f.score
@@ -1412,7 +1293,6 @@ fn main() {
                         &key,
                         &Fact {
                             score: s,
-                            data_fp: build_fp.clone(),
                             cost_seconds: began.elapsed().as_secs_f64(),
                             rolls: row_riven.as_ref().map(|rv| rv.rolls.clone()),
                             started_at: began_at,
@@ -1471,7 +1351,7 @@ fn main() {
     // than a count in a log nobody keeps: those rows are in the yaml, carrying
     // `listed: false`.
     eprintln!(
-        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {stale} rescored for a data change, {} scored here, {} below the floor)",
+        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here, {} below the floor)",
         kept.len(),
         computed.len(),
         below.len(),
@@ -1487,15 +1367,6 @@ fn main() {
     // the next run, which is what makes an arbitrarily slow row finishable.
     if paused > 0 {
         eprintln!("paused: {paused} row(s) banked partway — they resume on the next run");
-    }
-    // WHAT A PERSON ASKED FOR, and whether the selector found it. A misspelled
-    // id matching nothing is the failure mode this exists to name: it reads as a
-    // green run that rescored the thing you asked about.
-    if let Some(named) = flag("--rescore").filter(|_| !project) {
-        eprintln!("rescore: forced {forced_rows} row(s) back through the fight for {named}");
-        if forced_rows == 0 {
-            eprintln!("rescore: nothing matched {named} — check the selector");
-        }
     }
     if fresh_left > 0 {
         let why = if deadline.is_some_and(|d| started.elapsed() > d) { "clock" } else { "count" };
@@ -1525,7 +1396,7 @@ fn main() {
     // that scores and false by construction of one that only counts.
     if dry {
         eprintln!(
-            "dry-run: todo={todo} work={work_seconds:.0} reused={reused} stale={stale} seen={seen}"
+            "dry-run: todo={todo} work={work_seconds:.0} reused={reused} seen={seen}"
         );
         return;
     }
@@ -1624,7 +1495,7 @@ fn main() {
         // broken, while rows whose DATA moved have no number under this
         // generation yet and are not a claim anything can be held to.
         eprintln!(
-            "verify-result: compared={compared} moved={} stale={stale} worst={worst:e}",
+            "verify-result: compared={compared} moved={} worst={worst:e}",
             moved.len()
         );
         // WHICH GROUPS CLEARED, and not merely how many rows did. A whole-board
@@ -2061,8 +1932,6 @@ mod tests {
         assert_eq!(facts.len(), 1, "one row, one fact");
         // THE NEWER ONE, though the file ends with the older.
         assert_eq!(facts["braton|m#base"].score, 9.0);
-        // …AND IT KNOWS WHAT IT READ, which is what decides reuse.
-        assert_eq!(facts["braton|m#base"].data_fp, "new");
         // …AND ANOTHER RULER'S ROWS ARE NOT HERE AT ALL.
         let other = load_facts(Some(path.to_string_lossy().into_owned()), "group_clear");
         assert!(other.is_empty());
@@ -2106,7 +1975,6 @@ mod tests {
         );
         let at = || Fact {
             score: 12.5,
-            data_fp: "fp1".into(),
             cost_seconds: 3.0,
             rolls: None,
             started_at: "T0".into(),
@@ -2117,7 +1985,7 @@ mod tests {
             "group_clear",
             "kpm",
             "no_mode_here",
-            &Fact { score: 1.0, data_fp: "fp2".into(), ..at() },
+            &Fact { score: 1.0, ..at() },
         );
         drop(log);
 
@@ -2151,7 +2019,6 @@ mod tests {
             "k#base",
             &Fact {
                 score: 1.0,
-                data_fp: "fp".into(),
                 cost_seconds: 1.0,
                 rolls: None,
                 started_at: "T0".into(),
@@ -2792,53 +2659,5 @@ mod page_row_tests {
         }
     }
 
-    /// THE BACKSTOP REACHES EVERY PRECISION, down to one row.
-    ///
-    /// It is the button for the case nothing automatic covers, so what it can
-    /// NAME is the whole of its worth: a weapon, one of that weapon's modes,
-    /// one riven category within a mode, or a single build. Each line below is
-    /// one of those four, and the negatives are the ways a looser match would
-    /// quietly rescore rows nobody asked for.
-    #[test]
-    fn a_selector_names_rows_at_every_precision() {
-        let felarx = "felarx|galvanized_chamber,serration#cycle";
-        let prime = "felarx_prime|galvanized_chamber,serration#cycle";
-        let riven = "felarx|riven,serration#cycle";
-        let base = "felarx|galvanized_chamber,serration#base";
-
-        let hits = |sel: &str, key: &str| Selector::parse(sel).unwrap().matches(key);
-
-        // A weapon: every mode, every build.
-        assert!(hits("felarx", felarx));
-        assert!(hits("felarx", base));
-        // AND NOT THE PRIME. A prefix that stops mid-component names a weapon
-        // whose rows the mechanic never touched, and the operator paying for
-        // the rescore has no way to see it happened.
-        assert!(!hits("felarx", prime));
-
-        // One mode of it.
-        assert!(hits("felarx#cycle", felarx));
-        assert!(!hits("felarx#cycle", base));
-
-        // One riven category within that mode.
-        assert!(hits("felarx#cycle:plain", felarx));
-        assert!(!hits("felarx#cycle:plain", riven));
-        assert!(hits("felarx#cycle:riven", riven));
-        assert!(!hits("felarx#cycle:riven", felarx));
-
-        // A single build, and a single row of it.
-        assert!(hits("felarx|galvanized_chamber,serration", felarx));
-        assert!(hits("felarx|galvanized_chamber,serration", base));
-        assert!(!hits("felarx|galvanized_chamber,serration#base", felarx));
-        assert!(!hits("felarx|galvanized_chamber", felarx));
-
-        // SEPARATED BY `;`, because a mod list is commas: splitting on those
-        // would leave the backstop unable to name a build at all.
-        let many: Vec<Selector> = "felarx#base;torid#cycle".split(';')
-            .filter_map(Selector::parse)
-            .collect();
-        assert_eq!(many.len(), 2);
-        assert!(many.iter().any(|s| s.matches(base)));
-    }
 
 }

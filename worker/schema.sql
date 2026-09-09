@@ -55,18 +55,6 @@ CREATE TABLE IF NOT EXISTS scores (
   -- ranking. Without this column a melee build's seven measurements collapse
   -- into one row and six of them are lost on write.
   mode         TEXT NOT NULL,
-  -- WHAT THIS ROW READ, and it is the only thing here that decides anything.
-  -- A data change dirties exactly the rows that read the file that moved, which
-  -- is asked per row and is the whole of the invalidation this pipeline can
-  -- derive.
-  --
-  -- NOT IN THE KEY. A row has ONE fact, the last measurement of it, and this
-  -- travels ON that fact — so the same row measured under three generations of
-  -- data is one row and not three. Keeping the older ones bought one thing,
-  -- that reverting a data file restored its answer without recomputing, and
-  -- cost an unbounded table: every edit to a file no entity owns mints a fresh
-  -- copy of every row on the board.
-  data_fp      TEXT NOT NULL,
   -- WHICH BUILD MEASURED IT, AND IT DECIDES NOTHING. An engine version being
   -- older does not make a score wrong -- the two are a REFERENCE relation, not a
   -- validity one. What a row READS is enumerable from the row, so that is
@@ -84,13 +72,10 @@ CREATE TABLE IF NOT EXISTS scores (
   -- row per metric would put two answers under one key and hand the publisher a
   -- ranking with two units in it.
   --
-  -- IT IS NOT IN THE KEY AND DECIDES NOTHING, the same terms as `measured_by`.
-  -- A ruler that changes its core changes its file, which moves `data_fp`,
-  -- which is already the whole of invalidation; branching on this as well would
-  -- be a second answer to a question that has one. What it is for is the ROW
-  -- OUTLIVING THAT FILE: a fact is kept until its inputs move, so a row can be
-  -- older than the ruler's current terms, and reading one back without this
-  -- means checking out the commit that produced it.
+  -- IT DECIDES NOTHING, the same terms as `measured_by`. What it is for is the
+  -- ROW OUTLIVING THE FILE it was measured under: a fact is kept until somebody
+  -- deletes it, so a row can be older than the ruler's current terms, and
+  -- reading one back without this means checking out the commit that made it.
   metric       TEXT NOT NULL,
   -- The riven corner the search settled on, when there is one: a score alone
   -- cannot publish a riven row, because the reader has to be able to BUILD that
@@ -102,20 +87,19 @@ CREATE TABLE IF NOT EXISTS scores (
   -- clock much longer than the fight it contains.
   cost_seconds REAL NOT NULL,
   -- WHEN THE FIGHT STARTED AND WHEN IT ENDED. Provenance, and nothing branches
-  -- on either: a fact does not decay, so while `data_fp` matches the score is
-  -- right however old it is. What they are for is showing a reader how old a ROW
-  -- is rather than how old the board is, ordering repairs oldest first, and
-  -- saying afterwards which rows a bad build wrote and when.
+  -- on either: a fact does not decay, and age is not evidence that a number is
+  -- wrong. What they are for is showing a reader how old a ROW is rather than
+  -- how old the board is, and saying afterwards which rows a bad build wrote.
   --
   -- A ROW MIGRATED FROM BEFORE THEY EXISTED CARRIES THE SAME VALUE IN BOTH,
   -- which is how "we do not know when this started" is spelled. Deriving a
   -- start by subtracting the cost would invent precision the old row never had.
   started_at   TEXT NOT NULL,
   finished_at  TEXT NOT NULL,
-  -- ONE FACT PER ROW: the last measurement of it. Neither the clock nor the
-  -- build that wrote it says anything about whether the number is right, so
-  -- neither is here; what a stored score can still be asked is whether its
-  -- INPUTS hold, and that rides on the row as `data_fp`.
+  -- ONE FACT PER ROW: the last measurement of it. Nothing here says whether a
+  -- number is right — not the clock, not the build that wrote it, and no hash of
+  -- what it read. Only another measurement can, and a person deleting the row is
+  -- what asks for one.
   PRIMARY KEY (identity, ruler, mode)
 );
 
