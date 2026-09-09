@@ -42,7 +42,7 @@ d1() {
 page_body() {
   jq -n -c --argjson limit "$1" --argjson offset "$2" '
     {
-      sql: ("SELECT identity, record FROM builds ORDER BY identity LIMIT ? OFFSET ?"),
+      sql: ("SELECT id, record FROM builds ORDER BY id LIMIT ? OFFSET ?"),
       params: [$limit, $offset]
     }'
 }
@@ -60,7 +60,7 @@ fetch() {
     got=$(jq -r '.result[0].results | length' < "$D1_OUT")
     # ONE RECORD A LINE, key beside value. `record` is stored as json TEXT, so
     # it is parsed here rather than handed on as a string.
-    jq -c '.result[0].results[] | {k: .identity, v: (.record | fromjson)}' \
+    jq -c '.result[0].results[] | {k: .id, v: (.record | fromjson)}' \
       < "$D1_OUT" >> "$out.ndjson"
     total=$((total + got))
     [ "$got" -lt "$PAGE" ] && break
@@ -109,7 +109,7 @@ self_test() {
   printf '%s' "$body" | jq -e '.params == [10, 20]' >/dev/null \
     && say ok "the page and the offset are bound" \
     || say FAIL "params: $(printf '%s' "$body" | jq -c .params)"
-  printf '%s' "$body" | jq -e '.sql | contains("ORDER BY identity")' >/dev/null \
+  printf '%s' "$body" | jq -e '.sql | contains("ORDER BY id")' >/dev/null \
     && say ok "...and the read is ORDERED, so two pages cannot overlap or skip" \
     || say FAIL "no ORDER BY"
 
@@ -127,9 +127,9 @@ for a in "$@"; do
 done
 off=$(printf '%s' "$body" | jq -r '.params[1]')
 if [ "$off" = "0" ]; then
-  jq -n -c '{result:[{results:[range(0;3)|{identity:("k"+(.|tostring)),record:("{\"weapon\":\"w" + (.|tostring) + "\",\"at\":\"2026-01-01\"}")}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[range(0;3)|{id:("k"+(.|tostring)),record:("{\"weapon\":\"w" + (.|tostring) + "\",\"at\":\"2026-01-01\"}")}],success:true}],success:true}' > "$out"
 else
-  jq -n -c '{result:[{results:[{identity:"last",record:"{\"weapon\":\"zzz\",\"at\":\"2026-01-02\"}"}],success:true}],success:true}' > "$out"
+  jq -n -c '{result:[{results:[{id:"last",record:"{\"weapon\":\"zzz\",\"at\":\"2026-01-02\"}"}],success:true}],success:true}' > "$out"
 fi
 printf '200'
 PAGES

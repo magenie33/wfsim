@@ -36,11 +36,11 @@ CREATE TABLE IF NOT EXISTS inbox (
   record TEXT NOT NULL
 );
 
--- ONE ROW PER BUILD, keyed by what makes it one: the canonical build that
--- `engine::builds::identity` states, derived by `wfsim-intake` and not by the
--- door. Derived and not allocated — the same build always keys the same, so
--- nothing has to look the row up before writing it, and no two writers can
--- disagree about whether they are holding one build.
+-- ONE ROW PER BUILD, keyed by a HASH of what makes it one: the canonical build
+-- `engine::builds::identity` states, hashed by `wfsim-intake` — which has the
+-- engine, where the door does not. DERIVED AND NOT ALLOCATED, so the same build
+-- always keys the same: nothing looks the row up before writing it, and two
+-- writers cannot disagree about whether they hold one build.
 --
 -- The RECORD is kept whole as json rather than exploded into columns. The axes
 -- are declared once, in `AXES` in worker/index.js, and a build has gained an
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS inbox (
 -- first, because "how well covered is this weapon" is the question the board is
 -- actually run on.
 CREATE TABLE IF NOT EXISTS builds (
-  identity TEXT PRIMARY KEY,
+  id       TEXT PRIMARY KEY,
   -- The submission DAY, and nothing finer. The store records nothing about
   -- submitters — no IP, no token, no timestamp that could order one person's
   -- submissions against another's — and a schema is a place that promise could

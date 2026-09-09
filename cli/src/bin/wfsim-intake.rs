@@ -161,9 +161,17 @@ fn intake(lines: impl Iterator<Item = String>) -> (Vec<Value>, Vec<String>, usiz
         };
         let at = id(&row, "at");
         let key = wfsim_engine::builds::build_id(&v);
-        built
+        // …AND WHICH QUEUE ROWS PRODUCED IT. Two records can be one build —
+        // a resubmission, or two spellings of one pairing — so the build knows
+        // what it came from, and the write that lands it is the write that
+        // spends them. It is not stored: it is true of this pass, not of the
+        // build.
+        let entry = built
             .entry(key.clone())
-            .or_insert_with(|| json!({ "id": key, "at": at, "record": canonical(&v) }));
+            .or_insert_with(|| json!({ "id": key, "at": at, "record": canonical(&v), "from": [] }));
+        if let Some(from) = entry.get_mut("from").and_then(Value::as_array_mut) {
+            from.push(json!(id(&row, "id")));
+        }
     }
     (built.into_values().collect(), done, seen, refused)
 }
