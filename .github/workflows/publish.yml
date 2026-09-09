@@ -3,7 +3,7 @@
 #
 #   queue.yml    inbox -> builds -> queue   hourly, computes nothing
 #   scores.yml    queue -> scores            a person presses it
-#   this file    scores -> site/board       06:00 and 18:00, every day
+#   this file    scores -> site/board       00:00 and 12:00 UTC, every day
 #
 # IT IS A PROJECTION, AND THAT IS THE WHOLE OF IT. It fights nothing, waits for
 # nothing and asks nothing about whether a number is being replaced right now.
@@ -22,10 +22,12 @@ name: publish
 
 on:
   schedule:
-    # 06:00 AND 18:00 IN CHINA, which is 22:00 and 10:00 UTC — GitHub's cron is
-    # UTC and has no timezone. The scheduler slips about fifteen minutes
-    # whatever minute is named, so the hour is the cadence and not a promise.
-    - cron: "0 22,10 * * *"
+    # MIDNIGHT AND NOON UTC. GitHub's cron has no timezone, so naming the hours
+    # in UTC is the only way they stay the hours they say — a local time here
+    # would silently be two different clocks half the year. The scheduler slips
+    # about fifteen minutes whatever minute is named, so the hour is the cadence
+    # and not a promise.
+    - cron: "0 0,12 * * *"
   workflow_dispatch:
 
 # ONE PUBLISH AT A TIME, ACROSS EVERY RUN. Two assemblies writing the board is

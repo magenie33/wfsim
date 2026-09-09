@@ -212,7 +212,7 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | --- | --- | --- | --- |
 | `queue.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
 | `scores.yml` | the clock, hourly at `:20` | what is asked for is MEASURED | as many shards as the work needs |
-| `publish.yml` | the clock, 06:00 and 18:00 | `scores` is ranked and written to `site/board` | one runner, seconds |
+| `publish.yml` | the clock, 00:00 and 12:00 UTC | `scores` is ranked and written to `site/board` | one runner, seconds |
 
 **EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
 input, so a hand-started run and a scheduled one differ in nothing at all.
