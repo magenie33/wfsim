@@ -101,7 +101,11 @@ send() {
 
 ship() {
   local batch="$1" why="$2" file="$3" n r
-  n=$(grep -c . < "$file" 2>/dev/null || echo 0)
+  # `grep -c` PRINTS ZERO AND EXITS 1 on an empty file, so a `|| echo 0` after
+  # it appends a SECOND zero: the count reads as two lines, never equals "0",
+  # and the early return below never fires. An hourly reconciliation with
+  # nothing to ask for then minted an empty batch every hour.
+  n=$(grep -c . < "$file" 2>/dev/null) || n=0
   if [ "$n" = "0" ]; then
     echo "queue: nothing to ask for"
     return 0
@@ -160,6 +164,25 @@ self_test() {
 
   export PATH="$DIR/bin:$PATH"
   export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t
+  cat > "$DIR/bin/curl" <<'COUNT'
+#!/usr/bin/env bash
+prev=; body=; out=/dev/null
+for a in "$@"; do
+  [ "$prev" = "-o" ] && out="$a"
+  [ "$prev" = "--data-binary" ] && body="$a"
+  prev="$a"
+done
+printf '%s\n' "$body" >> "$PWD/sent.log"
+printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
+printf '200'
+COUNT
+  chmod +x "$DIR/bin/curl"
+  # NOTHING TO ASK FOR IS NOT AN EMPTY BATCH. An hourly reconciliation finds
+  # nothing most hours, and a group with no rows in it is a row in a table a
+  # person reads — twenty-four of them a day.
+  : > sent.log; : > none.ndjson
+  ship "arrivals" "nothing" none.ndjson > out.txt 2>&1     && grep -q "nothing to ask for" out.txt     && say ok "nothing to ask for asks for nothing" || say FAIL "$(cat out.txt)"
+  [ ! -s sent.log ]     && say ok "...and writes no batch at all" || say FAIL "$(head -c 200 sent.log)"
   cat > "$DIR/bin/curl" <<'OK'
 #!/usr/bin/env bash
 prev=; body=; out=/dev/null

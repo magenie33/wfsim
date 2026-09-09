@@ -105,8 +105,10 @@ send() {
 
 ship() {
   local builds="$1" done_ids="$2"
-  local n_builds; n_builds=$(grep -c . < "$builds" 2>/dev/null || echo 0)
-  local n_done; n_done=$(grep -c . < "$done_ids" 2>/dev/null || echo 0)
+  # `grep -c` PRINTS ZERO AND EXITS 1 on an empty file, so a `|| echo 0` after
+  # it appends a SECOND zero: the count reads as two lines and never equals "0".
+  local n_builds; n_builds=$(grep -c . < "$builds" 2>/dev/null) || n_builds=0
+  local n_done; n_done=$(grep -c . < "$done_ids" 2>/dev/null) || n_done=0
   if [ "$n_builds" = "0" ] && [ "$n_done" = "0" ]; then
     echo "builds: nothing to ship"
     return 0
