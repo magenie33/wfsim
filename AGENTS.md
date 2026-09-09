@@ -104,6 +104,9 @@ Each of these fails silently. That is why it is here and not in a document.
   simulator's code and add only its own scope and budget. `parse_fight` is the
   shared parse, and anything that is a property of the FIGHT goes in it. A
   shared helper is not enough — the DECISIONS around it have to be shared too.
+- **EVERY FACT HAS ONE AUTHORITATIVE SOURCE.** A second copy — a cache, a prior
+  output read back as input, an artifact carrying data — needs a rule for which
+  wins, and that rule is where this repo's defects have lived. `docs/BOARD.md`.
 - **Golden values only change with an in-game measurement** justifying it. New
   mechanics need golden tests; a faithful-looking implementation without a
   measurement is not correct.
@@ -119,8 +122,8 @@ Each of these fails silently. That is why it is here and not in a document.
   at `/api/meta.build_axes`. Every surface declares which axis its own fields
   cover; `buildState()` REQUIRES a value for every state key.
 - **Data discipline** (`data/`): define once, reference by `id` (stable English
-  slugs, never translated). YAML fields are consumed data; narrative belongs in
-  comments. Violations fail the build.
+  slugs, never translated); yaml fields are consumed data and narrative belongs
+  in comments. Violations fail the build.
 
 ### The page
 

@@ -29,20 +29,6 @@ number**. Everything else follows from it:
   where a build happens to be good somewhere its submitter never tried it.
   `transformed` and its kind are still refused: a gauge you must fill and run
   dry is not a way to play for three hundred seconds;
-- **A ROW IS SCREENED BEFORE IT IS MEASURED.** Most of what the mode fan-out
-  adds is a build in a mode nobody tuned it for, and paying the ruler's full
-  1000 runs to rediscover that every hour is the cost that grows fastest. So a
-  row is probed at 100 runs first, and the full measurement is skipped only
-  where it reads under a QUARTER of its group's leader — `PROBE_MARGIN x FLOOR`,
-  a 2x margin on top of a floor that is itself half the leader. A probe is the
-  same fight at a tenth of the precision, so its error is about 3x larger and
-  4x is far outside it. It is the same two-decision structure the riven search
-  already uses to cost 2.6x a plain row instead of 16x: **search cheaply, then
-  measure the winner.** A screened row is RECORDED (`probe: true`) and never
-  published and never reused as a score — a probe is not a measurement — so the
-  board still holds nothing but full ones. Riven rows are not screened: their
-  riven is chosen by the search that follows, so a probe before it would measure
-  the build without the thing it is built around;
 - **EVERY FINALIST OF A SEARCH IS UPLOADED**, not just the build somebody ran in
   the simulator. A path to the store that runs off a simulator run alone takes
   one build at a time, so a search ranking twenty sends none of them and the
@@ -69,6 +55,73 @@ number**. Everything else follows from it:
   back through `serde_json`'s number parser, which is not correctly rounding,
   publishes `1.1070976928071057` where the engine computes `...055`, and a
   reader reproducing the row is right while the board is wrong.
+
+## Four actions, and ONE SOURCE FOR EACH FACT
+
+**THE RULE THE WHOLE PIPELINE IS BUILT ON:**
+
+> **EVERY FACT HAS EXACTLY ONE AUTHORITATIVE SOURCE. A value with two sources
+> needs a rule for which one wins, and that rule is where every defect this
+> pipeline has produced has lived.**
+
+The answer is never "pick a better rule" — it is **delete the second source.**
+The defects, each one a second source and the rule that arbitrated it: a merge
+decided by sorting filenames, which published one ruler's score under another's
+name; an artifact whose absence skipped the assembly, which then preferred the
+older merged set, wrote it back and swept the deltas; a prior board republished
+beside freshly measured rows half its size. None was a wrong rule. Each was a
+second source.
+
+| the fact | its one source | what is DERIVED from it |
+| --- | --- | --- |
+| a build exists | `builds` | the count at `/api/board/pending` |
+| a build is legal | `engine::builds::validate_for_board` | the page's door, the worker's door — both ASK it |
+| a build's axes | `engine::builds::BUILD_AXES` | every surface's fields, `/api/meta` |
+| a ruler's terms | `data/benchmarks/*.yaml` | the picker, the arena, the scenario bar |
+| a row's score | the `scores` row of the open generation | everything below |
+| what is published | `site/board/<weapon>.json` | `board/index.json`, `board.meta.json`, `data/board_state.yaml` |
+
+**DERIVED IS NOT A SECOND SOURCE, and the difference is whether it can
+DISAGREE.** `index.json` is computed FROM the weapon files in the same pass that
+writes them, so no state of the world makes the two differ. A cross-weapon file
+written BESIDE them from the same facts would be a second source: same inputs, a
+second code path, and nothing stopping it from drifting. That is the whole test
+to apply — *can this disagree with the thing it is about?*
+
+### The four actions
+
+Three produce the board. The fourth produces nothing, and that is why it is not
+one of the three.
+
+| | who runs it | reads | writes | may not |
+| --- | --- | --- | --- | --- |
+| **INGEST** | the Worker, one request | — | one `builds` row | know what a score is |
+| **COMPUTE** | 32 Actions shards | `builds`, the open generation | `scores`, row by row | write a file anyone reads |
+| **PUBLISH** | one Actions job | the open generation | `site/board/` | compute a number |
+| **AUDIT** | one Actions job, hourly | `builds`, the generation | nothing | publish, or gate anything |
+
+**THEY ARE JOINED BY A QUERY, NOT BY A HAND-OFF.** Nothing is enqueued and
+nothing is passed:
+
+```
+what is outstanding = (builds x rulers x modes)  MINUS  the open generation
+```
+
+Four consequences, and they are the point of the shape:
+
+- **nobody waits for anybody.** Publish can run at any moment; it needs no
+  scoring run to have finished.
+- **nobody can destroy anybody's output.** No sweep, no merge, no delta, no
+  expiry. The only writer of a fact is the thing that measured it.
+- **computing a row twice costs time and nothing else**, because a score is a
+  pure function of (build, ruler, mode, what it read, what measured it).
+- **a shard killed at 95% keeps 95%**, because a fact is written when it is
+  computed rather than when a batch ends.
+
+**AND IT IS RATCHETED, NOT TRUSTED.** `scripts/check_rescore_paths.mjs` asserts
+that the assembly is handed `--facts-in` and that no second source reaches it;
+the flags a second source would arrive on are named in the check, so adding one
+back fails CI rather than being discovered in a published number.
 
 ## The pieces
 
@@ -278,11 +331,11 @@ against an N of 128 scores a quarter of the board and fails nothing.
 reaches only sometimes, and the wave count is set by what is granted rather than
 by what is asked.
 
-AN INSPECTOR THAT CAN STOP THE LINE STOPS BEING AN INSPECTOR. A group probe on
-the critical path buys a priority hint for 25 minutes of wall clock and 280 CPU
-minutes, and leaves the run behind it to be cancelled while it works. Its
-question — *does the file still say what the code computes* — is the audit's
-question, and the audit asks it continuously, over the whole board rather than
+AN INSPECTOR THAT CAN STOP THE LINE STOPS BEING AN INSPECTOR. A verification
+pass on the critical path buys a priority hint for 25 minutes of wall clock and
+280 CPU minutes, and leaves the run behind it to be cancelled while it works.
+Its question — *does the file still say what the code computes* — is the
+audit's, and the audit asks it continuously, over the whole board rather than
 one row per group.
 
 TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
@@ -509,9 +562,10 @@ reason this prints a selector instead of starting anything.
 
 ### The audit: does the FILE still say what the code computes
 
-The probe above runs when the code MOVED. `audit.yml` is the same machinery
-pointed at the hour it did not, which is a different question and the only one
-that catches a score reused when it should not have been. It publishes nothing
+**NO HASH CAN ANSWER THIS, which is why it is measured.** What a row READS is
+enumerable from the row; what it EXECUTES is not, so a fingerprint that agreed
+proves nothing about the code. `audit.yml` re-fights published rows instead, and
+it is the only thing that catches a score reused when it should not have been. It publishes nothing
 and gates nothing: one job out of the account's forty, hourly, in its own
 concurrency group so it can never cancel a board run.
 
@@ -1424,26 +1478,11 @@ assumed" is where that lever is.
 ### Not paying for rows that cannot be listed
 
 A third of the bill goes on rows scoring under a quarter of their group's
-leader — rows the floor will never list. The screen exists for exactly this and
-turns two things on:
-
-- **It needs a group LEADER**, which comes from the last board. A prior board
-  whose scores are unusable is still READ for its leaders and its per-row costs,
-  so a full rescore is screened like any other run. Without that, a full rescore
-  screens nothing at all: measured, ZERO rows of 22,479. The `screen:` line in
-  the log says how many thresholds a run had, because "0 screened" and "nothing
-  deserved screening" are otherwise the same sentence.
-- **A riven row is screened on the corner search's own best probe.** It cannot
-  be screened before that — its riven is not chosen yet — but the search already
-  prices every corner, so the best of them is a number already paid for. If it
-  reads under the cut, no corner of that shape can be listed and the full
-  measurement buys nothing: 38% off every riven row that is not going to place.
-  This is sounder than the plain-row screen, since what is judged is the corner
-  that would have been measured.
-
-Measured on a real group, full rescore, published rows and every score
-identical: 12.4 s → 7.5 s over 61 plain rows, and 16 of 41 rows screened where
-none had been.
+leader — rows the floor will never list, and the largest cheapening still
+available. **There is no screen today**: the one that was here wrote a second
+kind of number onto the same board, and what it cost to keep the two apart is
+§"Three cheapenings that are deliberately not here", which also says what a
+second attempt has to get right.
 
 ### What this system actually is
 
