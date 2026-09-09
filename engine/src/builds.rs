@@ -219,7 +219,10 @@ pub fn canonical_mods_with(
         }
         def(id).and_then(|m| m.primary_element()).into_iter().collect()
     };
-    let (mut plain, elemental): (Vec<&String>, Vec<&String>) =
+    // POSITIONAL: the mods whose PLACE is part of the build. Only the
+    // element-bearing ones are today; the split is by that property rather than
+    // by the property's one current cause.
+    let (mut plain, positional): (Vec<&String>, Vec<&String>) =
         mods.iter().partition(|id| elements_of(id).is_empty());
     // Biggest drain first, then DE's own English name — stable and readable.
     let rank = |a: &&String, b: &&String| {
@@ -243,7 +246,6 @@ pub fn canonical_mods_with(
     //
     // So: pool first, decide the canonical ELEMENT order, then lay the mods
     // out to match it.
-    let element_of = |x: &&String| elements_of(x).first().copied();
     // Distinct elements in first-appearance order — exactly what `push` builds.
     // A riven contributes its own in one go, which is what makes it an atom.
     let seq_of = |order: &[&String]| {
@@ -255,92 +257,99 @@ pub fn canonical_mods_with(
         }
         seq
     };
-    let mut seq = seq_of(&elemental);
-    // Two freedoms, both provably free, and one hard constraint.
-    //
-    // FREE: the order inside a pair (`combined_of` is symmetric and pools both
-    // amounts) and the order of the pairs among themselves (`combine` ADDS each
-    // secondary into a vector). Measured on the Torid: the same four mods with
-    // their two pairs swapped give 12,773.473 DPS either way.
+    let mut seq = seq_of(&positional);
+    // ONE CONSTRAINT, AND EVERYTHING ELSE IS FREE.
     //
     // FIXED: which elements share a pair, and which one trails. Moving an
-    // element across a boundary re-pairs everything after it — 12,424 against
-    // 46,583 on the same weapon — so the PARTITION is never touched.
+    // element across a boundary re-pairs everything after it — 12,424 DPS
+    // against 46,583 on the Torid — so the PARTITION is never touched, and the
+    // trailing element stays LAST because chunking reads from the front.
+    //
+    // FREE: everything inside that. The order within a pair (`combined_of` is
+    // symmetric and pools both amounts), the order of the pairs among
+    // themselves (`combine` ADDS each secondary into a vector — the same four
+    // mods with their pairs swapped give 12,773.473 either way), and the order
+    // of the mods that feed one pair, since pooling makes their sequence one
+    // entry per element however they are arranged.
     let odd = seq.len() % 2;
     let tail: Vec<crate::damage::DamageType> = seq.split_off(seq.len() - odd);
-    let mut pairs: Vec<[crate::damage::DamageType; 2]> =
+    let pairs: Vec<[crate::damage::DamageType; 2]> =
         seq.chunks(2).map(|c| [c[0], c[1]]).collect();
-    for p in &mut pairs {
-        p.sort_by_key(|&t| crate::elements::wiki_order(t));
-    }
-    // By the element each pair MAKES, in the wiki's own table order. Pooling guarantees the two are distinct, so `combined_of`
-    // always answers here — unlike the reverted version, which asked it about
-    // two mods rather than two elements and had to invent a fallback.
-    pairs.sort_by_key(|p| {
-        crate::elements::wiki_order(
-            crate::elements::combined_of(p[0], p[1]).expect("pooled elements are distinct"),
-        )
-    });
-    let canonical_elements: Vec<crate::damage::DamageType> =
-        pairs.clone().into_iter().flatten().chain(tail.clone()).collect();
 
-    // AN ATOM CANNOT BE LAID OUT ELEMENT BY ELEMENT. A riven bringing Heat AND
-    // Cold occupies two consecutive places in the pool, in its own order, and
-    // the sort above is free to put those two elements apart or the other way
-    // round — an arrangement no mod order can produce.
+    // SO THE REPRESENTATIVE IS THE RANK-SMALLEST ARRANGEMENT THAT KEEPS THE
+    // PARTITION, and one rule decides every position on the card: biggest drain
+    // first, then DE's own English name. It is the rule the plain mods take and
+    // the one the riven search below picks by, so the whole card answers to one
+    // question rather than to the wiki's element table for half of it.
+    //
+    // BUILT AS BLOCKS. A pair owns every mod whose element is in it; sort the
+    // block, then order the blocks the same way. That IS the smallest valid
+    // arrangement rather than an approximation of it: an ordering that
+    // interleaved two pairs would pool a different sequence and therefore a
+    // different pairing, so every legal arrangement is block-shaped already.
+    //
+    // WHAT IT LOOKS LIKE, which is the point: the cards that have to combine sit
+    // together at the front, heaviest first, and the odd one out follows. Two
+    // Cold cards and a Toxin come out `Cold(10) / Toxin(5) / Cold(1)` rather
+    // than grouped by element — they pool either way, and reading it back is
+    // what a person does with it.
+    let block_of = |want: &[crate::damage::DamageType]| -> Vec<&String> {
+        let mut g: Vec<&String> = positional
+            .iter()
+            .copied()
+            .filter(|m| elements_of(m).iter().any(|e| want.contains(e)))
+            .collect();
+        g.sort_by(rank);
+        g
+    };
+    let smaller = |a: &Vec<&String>, b: &Vec<&String>| {
+        a.iter()
+            .zip(b.iter())
+            .find_map(|(x, y)| match rank(x, y) {
+                std::cmp::Ordering::Equal => None,
+                o => Some(o),
+            })
+            .unwrap_or_else(|| a.len().cmp(&b.len()))
+    };
+
+    // AN ATOM CANNOT BE LAID OUT BLOCK BY BLOCK. A riven bringing Heat AND Cold
+    // occupies two consecutive places in the pool, in its own order, and it
+    // belongs to one block only if both land in one pair — an arrangement no
+    // mod order can produce.
     //
     // So when one is present the representative is SEARCHED instead of built:
-    // every ordering of the elemental mods, keeping the ones whose pooled
-    // sequence makes the SAME pairing, and the smallest of those by the usual
-    // rank. The submitted order is always one of them, so the search cannot
-    // come back empty — and the invariant it matches on is the same
-    // `(pairs, tail)` the direct construction uses, so both paths agree about
-    // what "the same build" means.
-    //
-    // The fast path is kept rather than folded into the search because it is
-    // the one every existing row was keyed under, and a representative that
-    // moved would re-key the whole board for no reason.
-    let elemental: Vec<&String> = if elemental.iter().all(|m| elements_of(m).len() <= 1) {
-        // Lay the mods out in that element order, same-element mods together
-        // (they pool anyway, so their order among themselves changes nothing)
-        // and ranked by the usual rule so the representative is stable.
-        canonical_elements
-            .iter()
-            .flat_map(|&want| {
-                let mut group: Vec<&String> = elemental
-                    .iter()
-                    .copied()
-                    .filter(|m| element_of(m) == Some(want))
-                    .collect();
-                group.sort_by(rank);
-                group
-            })
-            .collect()
+    // every ordering of the positional mods, keeping those whose pooled
+    // sequence makes the SAME pairing, and the smallest of those by the same
+    // rank. The submitted order is always one of them, so the search cannot come
+    // back empty, and both paths now compute the same thing — the fast path is
+    // an optimisation of the search rather than a second answer.
+    let positional: Vec<&String> = if positional.iter().all(|m| elements_of(m).len() <= 1) {
+        let mut blocks: Vec<Vec<&String>> = pairs.iter().map(|p| block_of(p)).collect();
+        blocks.sort_by(|a, b| smaller(a, b));
+        blocks.into_iter().flatten().chain(block_of(&tail)).collect()
     } else {
-        let want = (pairs, tail);
+        // THE INVARIANT IS `pairing_of`'S, on both sides. Built by hand from the
+        // partition above it would be the SUBMITTED order's — `[Cold, Toxin]`
+        // and `[Toxin, Cold]` are one pairing and two tuples — so a candidate
+        // that matched would compare unequal and one fight would come back with
+        // three representatives.
+        let want = pairing_of(&seq_of(&positional));
         let mut best: Option<Vec<&String>> = None;
-        for cand in orderings(&elemental) {
+        for cand in orderings(&positional) {
             if pairing_of(&seq_of(&cand)) != want {
                 continue;
             }
-            let better = match &best {
-                None => true,
-                Some(b) => cand
-                    .iter()
-                    .zip(b.iter())
-                    .find_map(|(x, y)| match rank(x, y) {
-                        std::cmp::Ordering::Equal => None,
-                        o => Some(o),
-                    })
-                    .is_some_and(std::cmp::Ordering::is_lt),
-            };
+            let better = best.as_ref().is_none_or(|b| smaller(&cand, b).is_lt());
             if better {
                 best = Some(cand);
             }
         }
-        best.unwrap_or(elemental)
+        best.unwrap_or(positional)
     };
-    plain.into_iter().chain(elemental).cloned().collect()
+    // THE POSITION-BEARING CARDS FIRST. Their places are what the build IS, so
+    // they sit at a fixed offset — `0..k` whatever else is carried — rather than
+    // drifting every time a plain mod is added or dropped.
+    positional.into_iter().chain(plain).cloned().collect()
 }
 
 /// THE PAIRING A POOLED ELEMENT SEQUENCE MAKES — which elements share a pair,
@@ -1881,7 +1890,7 @@ mod tests {
     /// reshuffling the non-elementals among themselves. So position is not the
     /// build — only the elementals' order relative to EACH OTHER is.
     #[test]
-    fn one_representative_per_build_elements_last_in_their_own_order() {
+    fn one_representative_per_build_positional_first_in_rank_order() {
         let mods = |x: &[&str]| canonical_mods("torid", &v(x));
         let want = mods(&["split_chamber", "serration", "point_strike", "hellfire", "cryo_rounds", "infected_clip"]);
 
@@ -1893,14 +1902,17 @@ mod tests {
         ] {
             assert_eq!(mods(spelling), want, "{spelling:?}");
         }
-        // The elementals are LAST, in canonical element order: Cold before
-        // Heat inside the Blast pair, and Infected Clip is the odd one out so
-        // it stays where its pairing put it — trailing.
-        assert_eq!(&want[3..], &v(&["cryo_rounds", "hellfire", "infected_clip"])[..]);
-        // Ahead of them, biggest MAX-RANK drain first: Split Chamber 15,
+        // THE POSITION-BEARING CARDS COME FIRST, at a fixed offset, and one
+        // rule orders them: biggest drain, then DE's own English name. All three
+        // are 6, so the names decide — Cryo Rounds before Hellfire. Cold and
+        // Heat make the Blast pair and lead; Infected Clip is the odd one out
+        // and trails, because chunking reads from the front and a trailing
+        // element that moved would re-pair everything after it.
+        assert_eq!(&want[..3], &v(&["cryo_rounds", "hellfire", "infected_clip"])[..]);
+        // …and the plain cards follow under the SAME rule: Split Chamber 15,
         // Serration 14, Point Strike 9. (Asserted against the pool rather than
         // from memory — I had Serration first and the pool says otherwise.)
-        assert_eq!(&want[..3], &v(&["split_chamber", "serration", "point_strike"])[..]);
+        assert_eq!(&want[3..], &v(&["split_chamber", "serration", "point_strike"])[..]);
         let pool = crate::mods_data::pool_for_weapon("torid");
         let drain = |id: &str| pool.iter().find(|m| m.id == id).unwrap().base_drain;
         assert!(drain("split_chamber") > drain("serration"));
@@ -1941,12 +1953,13 @@ mod tests {
     fn the_order_of_the_mods_is_part_of_the_identity() {
         let a = validate("torid", &v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]), &[], &[], "").unwrap();
         let b = validate("torid", &v(&["hellfire", "infected_clip", "cryo_rounds", "stormbringer"]), &[], &[], "").unwrap();
-        // Normalisation orders the ELEMENTS and never re-pairs them: Cold
-        // before Heat and Electricity before Toxin inside their pairs, Blast
-        // before Corrosive between them — all table order — while the pairing
-        // itself (Blast + Corrosive) is exactly what arrived.
-        assert_eq!(a.mods, v(&["cryo_rounds", "hellfire", "stormbringer", "infected_clip"]),
-                   "canonical element order, same pairing");
+        // NORMALISATION NEVER RE-PAIRS. The pairing that arrived — Blast and
+        // Corrosive — is exactly the pairing that comes out; what it settles is
+        // the order inside each pair and between them, and the rule is the one
+        // rule: biggest drain, then DE's English name. All four are 6, so the
+        // names decide, and the pair whose first card sorts first leads.
+        assert_eq!(a.mods, v(&["cryo_rounds", "hellfire", "infected_clip", "stormbringer"]),
+                   "one rank rule, same pairing");
         assert_ne!(identity(&a), identity(&b), "two pairings, two rows");
 
         // ...and a different SET is still a different identity.
