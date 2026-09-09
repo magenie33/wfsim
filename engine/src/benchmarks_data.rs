@@ -136,6 +136,34 @@ pub struct Benchmark {
     pub scenario: serde_norway::Value,
 }
 
+impl Benchmark {
+    /// WHAT THIS RULER JUDGES BY. Validated when the benchmark loaded, so every
+    /// consumer reads the core from here rather than resolving one of its own.
+    pub fn metric(&self) -> &'static crate::metrics::MetricDef {
+        core_metric(&self.scenario).expect("a benchmark that loaded named its core")
+    }
+}
+
+/// A TEST HAS ONE CORE, and this is where that rule is applied.
+///
+/// ABSENT IS A MISTAKE, NOT A DEFAULT. `metrics::DEFAULT` serves a SCENARIO
+/// somebody is running for themselves, where leaving the question unsaid is an
+/// ordinary thing to do. A benchmark is not that: a ruler that does not name
+/// what it judges by would publish a whole ranking in the units of a question
+/// nobody asked, and the number would look exactly like a right one.
+///
+/// A ruler may READ more than one metric off the same fight. Only the core
+/// ranks, which is what keeps a ranking a ranking.
+pub fn core_metric(
+    scenario: &serde_norway::Value,
+) -> Result<&'static crate::metrics::MetricDef, String> {
+    let Some(id) = scenario.get("metric").and_then(|v| v.as_str()) else {
+        return Err("names no metric, and a ruler ranks by exactly one".into());
+    };
+    crate::metrics::get(id)
+        .ok_or_else(|| format!("names the metric `{id}`, which `engine::metrics::ALL` does not"))
+}
+
 /// A CROWD IN THREE NUMBERS, expanded HERE and nowhere else.
 ///
 /// `formation_grid: {cols, rows, spacing_m}` lays a regular grid around the
@@ -223,6 +251,11 @@ pub fn all() -> &'static [Benchmark] {
                     serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
                 expand_formation_grid(&mut b.scenario)
                     .unwrap_or_else(|e| panic!("{p}: {e}"));
+                // THE CORE IS CHECKED WHERE THE FILE BECOMES A BENCHMARK, so
+                // no consumer downstream has to decide what an unnamed one
+                // means — and the only two answers available to it, refusing
+                // and defaulting, are both wrong at the point of use.
+                core_metric(&b.scenario).unwrap_or_else(|why| panic!("{p} {why}"));
                 b
             })
             .collect::<Vec<_>>();
@@ -354,6 +387,7 @@ mod tests {
         // term of the claim, not a detail.
         assert_eq!(s("infinite_ammo").and_then(|v| v.as_bool()), Some(true));
         assert_eq!(s("metric").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("kpm"));
+        assert_eq!(b.metric().id, "kpm");
         // AND NO FORM. How a weapon is played belongs to the ENTRANT, not to
         // the ruler: a Torid through its Incarnon cycle and a Torid that never
         // transmutes are two rows here, and a benchmark that pinned one could
@@ -438,5 +472,31 @@ mod tests {
             );
         }
         assert!(checked > 0, "at least one ruler lays a grid, or this checks nothing");
+    }
+
+    /// A TEST HAS ONE CORE, AND NOT NAMING IT IS A MISTAKE.
+    ///
+    /// The failure it refuses is silent by construction: a ruler with no
+    /// `metric:` answered at the point of use can only be defaulted, which
+    /// ranks a whole board in kills per minute whatever it was built to ask,
+    /// and every number on it looks exactly like a right one.
+    ///
+    /// The three cases are the three a benchmark file can be in. Asserted on
+    /// the function rather than on the shipped rulers, which all name `kpm` —
+    /// a test that can only see the good case is not a test.
+    #[test]
+    fn a_ruler_names_the_one_metric_it_ranks_by() {
+        let of = |yaml: &str| {
+            core_metric(&serde_norway::from_str::<serde_norway::Value>(yaml).unwrap())
+                .map(|m| m.id)
+        };
+        assert_eq!(of("metric: kpm\nduration: 180"), Ok("kpm"));
+        assert_eq!(of("metric: dps"), Ok("dps"), "every id in `metrics::ALL`, not a list here");
+
+        let absent = of("duration: 180").expect_err("a ruler with no core is refused");
+        assert!(absent.contains("no metric"), "{absent}");
+
+        let unknown = of("metric: ttk").expect_err("a metric this engine has no definition of");
+        assert!(unknown.contains("ttk"), "{unknown}");
     }
 }

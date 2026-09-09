@@ -48,6 +48,12 @@ d1() {
 #
 # ORDERED, so paging is stable: without an ORDER BY, two pages of the same
 # query may overlap or skip, and the gap is a row the run recomputes for ever.
+#
+# `metric` IS WRITTEN AND NOT READ BACK, deliberately. It says what a stored
+# number is IN, which only a reader of the archive needs; what decides whether
+# this run may REUSE a row is `data_fp`, and a ruler that changed its core
+# changed its file and therefore that hash. Selecting it would carry a second
+# answer beside the one that decides, on every row of every run.
 page_body() {
   jq -n -c --argjson limit "$1" --argjson offset "$2" '
     {

@@ -579,13 +579,24 @@ impl FactLog {
     /// here: the shipper runs beside this and may send a row minutes later, so a
     /// timestamp invented downstream would be the shipping time under the
     /// fight's name.
-    fn write(&mut self, ruler: &str, key: &str, data_fp: &str, f: &Fact) {
+    fn write(&mut self, ruler: &str, metric: &str, key: &str, data_fp: &str, f: &Fact) {
         use std::io::Write;
         let Some(out) = self.out.as_mut() else { return };
         let (identity, mode) = key.rsplit_once('#').unwrap_or((key, ""));
         let line = serde_json::json!({
             "identity": identity,
             "ruler": ruler,
+            // WHAT THE SCORE IS IN, written down beside it because nothing else
+            // can say so later. The ruler's file answers what it ranks by NOW;
+            // a row deliberately outlives the file it was measured under — that
+            // is what `data_fp` in the key is for — and reading an old one back
+            // without this means checking out the commit that produced it.
+            //
+            // IT DECIDES NOTHING, the same terms as `measured_by`: a ruler that
+            // changes its core changes its file, which moves `data_fp`, which
+            // is already the whole of invalidation. Branching on this too would
+            // be a second answer to a question that has one.
+            "metric": metric,
             "mode": mode,
             "data_fp": data_fp,
             "measured_by": self.measured_by,
@@ -874,28 +885,16 @@ fn main() {
     // the SAME map the app sends, which is what stops the board and the page
     // from measuring two different fights.
     let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
-    // The benchmark's own terms, read once — the metric it is measured in and
-    // the length that metric is over.
-    // WHAT THIS RULER JUDGES BY, resolved against the one table that declares
-    // the metrics (`engine::metrics`). Not a match on "dps" with everything
-    // else falling through to kills per minute: a ruler naming a metric this
-    // build has never heard of would then publish a number in the units of a
-    // different question.
-    let metric = wfsim_engine::metrics::get(
-        scenario
-            .get("metric")
-            .and_then(Value::as_str)
-            .unwrap_or(wfsim_engine::metrics::DEFAULT),
-    );
+    // WHAT THIS RULER JUDGES BY, asked of the benchmark rather than resolved
+    // here. A ruler names exactly one core and `benchmarks_data` is where that
+    // rule is applied, so this cannot fall back on anything: a default reached
+    // at the point of use publishes a whole ranking in the units of a question
+    // nobody asked, and the number looks exactly like a right one.
+    let metric = bench.metric();
     let duration = scenario
         .get("duration")
         .and_then(Value::as_f64)
         .unwrap_or(300.0);
-    let metric = metric.unwrap_or_else(|| {
-        panic!(
-            "unknown benchmark metric — a row published in units nobody named is              worse than no row; the metrics are in `engine::metrics::ALL`"
-        )
-    });
     // THE ROW'S NUMBER IN THE RULER'S OWN UNITS, said once. `score` off the
     // wire is kill PROGRESS over the whole engagement — kills plus the fraction
     // of the current target depleted — so a `kpm` ruler turns it into a rate
@@ -1412,6 +1411,7 @@ fn main() {
                     // docs/BOARD.md §"The pipeline, designed around one rule".
                     log.write(
                         &bench_id,
+                        metric.id,
                         &key,
                         &build_fp,
                         &Fact {
@@ -2086,8 +2086,8 @@ mod tests {
             started_at: "T0".into(),
             finished_at: "T1".into(),
         };
-        log.write("group_clear", "orthos_prime|mods#heavy_slam", "fp1", &at());
-        log.write("group_clear", "no_mode_here", "fp2", &Fact { score: 1.0, ..at() });
+        log.write("group_clear", "kpm", "orthos_prime|mods#heavy_slam", "fp1", &at());
+        log.write("group_clear", "kpm", "no_mode_here", "fp2", &Fact { score: 1.0, ..at() });
         drop(log);
 
         let text = std::fs::read_to_string(&path).unwrap();
@@ -2099,6 +2099,9 @@ mod tests {
         assert_eq!(rows[0]["mode"], "heavy_slam");
         assert_eq!(rows[0]["measured_by"], "abc1234");
         assert_eq!(rows[0]["ruler"], "group_clear");
+        // THE UNITS TRAVEL WITH THE NUMBER. A row outlives the ruler file it
+        // was measured under, and nothing else can say what it is in.
+        assert_eq!(rows[0]["metric"], "kpm");
         // A KEY WITH NO MODE KEEPS THE WHOLE OF ITSELF as the identity, rather
         // than losing its last segment to an empty mode.
         assert_eq!(rows[1]["identity"], "no_mode_here");
@@ -2113,6 +2116,7 @@ mod tests {
         let mut log = super::FactLog::open(None, None);
         log.write(
             "single_target",
+            "kpm",
             "k#base",
             "fp",
             &Fact {

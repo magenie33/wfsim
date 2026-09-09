@@ -15,9 +15,13 @@
 # same row twice and a lost cursor costs one repeat, never a wrong number.
 set -euo pipefail
 
-# NINE ROWS A STATEMENT: ten bound parameters each, against D1's limit of a
-# hundred per query.
-BATCH=9
+# AS MANY ROWS A STATEMENT AS D1'S HUNDRED BOUND PARAMETERS ALLOW, and the count
+# is DERIVED so that a column added below shrinks it. Written as a number it
+# goes one parameter over on the twelfth column, and what that buys is every
+# write refused and the cursor never moving — loud, but for a reason nobody
+# would look for here.
+FACT_COLUMNS=11
+BATCH=$((100 / FACT_COLUMNS))
 
 configured() {
   [ -n "${CF_ACCOUNT:-}" ] && [ -n "${CF_D1_DATABASE:-}" ] && [ -n "${CF_TOKEN:-}" ]
@@ -65,13 +69,15 @@ batches() {
     | $all[$i : $i + $n] as $chunk
     | {
         sql: ("INSERT OR REPLACE INTO scores (identity, ruler, mode, data_fp,"
-              + " measured_by, score, rolls, cost_seconds, started_at, finished_at)"
+              + " measured_by, score, metric, rolls, cost_seconds,"
+              + " started_at, finished_at)"
               + " VALUES "
-              + ([$chunk[] | "(?,?,?,?,?,?,?,?,?,?)"]
+              + ([$chunk[] | "(?,?,?,?,?,?,?,?,?,?,?)"]
                  | join(","))),
         params: [$chunk[]
                  | .identity, .ruler, .mode, .data_fp, (.measured_by // ""),
-                   .score, (if .rolls == null then null else (.rolls | tojson) end),
+                   .score, .metric,
+                   (if .rolls == null then null else (.rolls | tojson) end),
                    .cost_seconds, .started_at, .finished_at]
       }
   ' "$src"
@@ -124,7 +130,7 @@ self_test() {
   cd "$DIR/work"
 
   row() {
-    printf '{"identity":"%s","ruler":"single_target","mode":"%s","data_fp":"fp","measured_by":"abc","score":%s,"cost_seconds":1.5,"rolls":null,"started_at":"T0","finished_at":"T1"}\n' "$1" "$2" "$3"
+    printf '{"identity":"%s","ruler":"single_target","mode":"%s","data_fp":"fp","measured_by":"abc","score":%s,"metric":"kpm","cost_seconds":1.5,"rolls":null,"started_at":"T0","finished_at":"T1"}\n' "$1" "$2" "$3"
   }
   row 'a|b' base 1.0 > facts.ndjson
   row 'a|b' heavy_slam 2.0 >> facts.ndjson
@@ -139,9 +145,12 @@ self_test() {
     || say FAIL "batched into $n"
 
   local first; first=$(batches facts.ndjson | head -1)
-  [ "$(printf '%s' "$first" | jq -r '.params | length')" = "90" ] \
-    && say ok "...ten bound parameters a row, under D1's hundred" \
+  [ "$(printf '%s' "$first" | jq -r '.params | length')" = "$((9 * FACT_COLUMNS))" ] \
+    && say ok "...$FACT_COLUMNS bound parameters a row" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
+  [ $((9 * FACT_COLUMNS)) -le 100 ] \
+    && say ok "...and a batch stays inside D1's hundred" \
+    || say FAIL "$((9 * FACT_COLUMNS)) parameters is over D1's hundred"
 
   printf '%s' "$first" | jq -e '.sql | contains("quote") | not' >/dev/null \
     && printf '%s' "$first" | jq -e '.params | index("quote\"key")' >/dev/null \
@@ -151,18 +160,26 @@ self_test() {
   # THE CLOCKS ARE THE SCORER'S. A shipper that invented them would be writing
   # the shipping time under the fight's name, and a row may be shipped minutes
   # after it was measured.
-  printf '%s' "$first" | jq -e '[.params[8], .params[9]] == ["T0","T1"]' >/dev/null \
+  printf '%s' "$first" | jq -e --argjson n "$FACT_COLUMNS" \
+      '[.params[$n - 2], .params[$n - 1]] == ["T0","T1"]' >/dev/null \
     && say ok "...and the fight's own two clocks are what is bound" \
-    || say FAIL "the clocks did not come from the log: $(printf '%s' "$first" | jq -c '.params[8:10]')"
+    || say FAIL "the clocks did not come from the log: $(printf '%s' "$first" | jq -c '.params[-2:]')"
   printf '%s' "$first" | jq -e '.sql | test("[0-9]{4}-[0-9]{2}-[0-9]{2}") | not' >/dev/null \
     && say ok "...and no clock of this shell's reached the statement" \
     || say FAIL "a timestamp was interpolated into the sql"
 
   # ONE ROW PER MODE. Two modes of one build are two rows, and a statement that
   # collapsed them would file seven melee measurements as one.
-  printf '%s' "$first" | jq -e '[.params[2], .params[12]] == ["base","heavy_slam"]' >/dev/null \
+  printf '%s' "$first" | jq -e --argjson n "$FACT_COLUMNS" \
+      '[.params[2], .params[2 + $n]] == ["base","heavy_slam"]' >/dev/null \
     && say ok "...and two modes of one build are two rows" \
     || say FAIL "the modes collapsed"
+
+  # THE UNITS TRAVEL WITH THE NUMBER, or a score is a bare float whose meaning
+  # lives in a file that moves under it.
+  printf '%s' "$first" | jq -e '.params[6] == "kpm"' >/dev/null \
+    && say ok "...and the score's own metric is bound beside it" \
+    || say FAIL "the metric did not reach the statement: $(printf '%s' "$first" | jq -c '.params[6]')"
 
   export PATH="$DIR/bin:$PATH"
   export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t

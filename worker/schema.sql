@@ -67,6 +67,22 @@ CREATE TABLE IF NOT EXISTS scores (
   -- what says which rows a build wrote once one is found to be broken.
   measured_by  TEXT NOT NULL,
   score        REAL NOT NULL,
+  -- WHAT `score` IS IN — the ruler's CORE metric, an id from
+  -- `engine::metrics::ALL` and never a label, which is translated on the page.
+  --
+  -- A TEST HAS ONE CORE, and that one is what ranks. A ruler may read more than
+  -- one metric off the same fight; those are readings OF this row and belong
+  -- beside it in a column of their own, never in rows of their own — a second
+  -- row per metric would put two answers under one key and hand the publisher a
+  -- ranking with two units in it.
+  --
+  -- IT IS NOT IN THE KEY AND DECIDES NOTHING, the same terms as `measured_by`.
+  -- A ruler that changes its core changes its file, which moves `data_fp`,
+  -- which is already the whole of invalidation; branching on this as well would
+  -- be a second answer to a question that has one. What it is for is the ROW
+  -- OUTLIVING THAT FILE — the key keeps the old answer on purpose, and without
+  -- this, reading one back means checking out the commit that produced it.
+  metric       TEXT NOT NULL,
   -- The riven corner the search settled on, when there is one: a score alone
   -- cannot publish a riven row, because the reader has to be able to BUILD that
   -- riven and the page cannot re-derive it without paying for the search again.

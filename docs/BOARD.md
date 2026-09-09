@@ -88,6 +88,31 @@ written BESIDE them from the same facts would be a second source: same inputs, a
 second code path, and nothing stopping it from drifting. That is the whole test
 to apply — *can this disagree with the thing it is about?*
 
+**AND A COPY IS NOT A SECOND SOURCE WHEN IT ANSWERS A DIFFERENT QUESTION.** The
+ruler's file says what it ranks by NOW; the `metric` on a score row says what
+THAT NUMBER is in. They cannot disagree: a ruler changing its core changes its
+file, which moves `data_fp`, which is in the key — so the new answer is a new
+row and the old one keeps its own units. The column exists because the row
+OUTLIVES the file. The key holds old answers on purpose (reverting a data file
+restores its answer without recomputing), and without the metric written beside
+the number, reading one back means checking out the commit that produced it.
+Apply the same test: it cannot disagree with the thing it is about, because it
+is not about the ruler — it is about the number. It therefore decides nothing,
+on the same terms as `measured_by`.
+
+**A TEST HAS ONE CORE.** A ruler names exactly one metric and that one is what
+ranks; `engine::benchmarks_data::core_metric` is where the rule is applied, at
+the moment a file becomes a benchmark, so no consumer downstream has to decide
+what an unnamed one means — and both answers available there are wrong. Refusing
+at the point of use is a whole run wasted on a file that could have been read in
+a millisecond; defaulting ranks a whole board in kills per minute whatever it
+was built to ask, every number on it looking exactly like a right one. A
+SCENARIO may still leave the metric unsaid:
+somebody running one for themselves is not publishing a ranking. A ruler may
+also READ more than one metric off the same fight — those are readings of the
+row and belong beside it, never in rows of their own, which would put two
+answers under one key and hand the publisher a ranking with two units in it.
+
 ### The four actions
 
 Three produce the board. The fourth produces nothing, and that is why it is not
@@ -1008,6 +1033,22 @@ assets, and until the board there was no script at all. Two consequences:
    provisioned: the scorer writes a log, `scripts/ship_facts.sh` sends it, and
    `scripts/fetch_facts.sh` reads it back. Both carry their own self-tests,
    driven against a stub `curl`, so every hop is testable without a network.
+
+   A DATABASE THAT ALREADY HOLDS ROWS is migrated by hand, because
+   `CREATE TABLE IF NOT EXISTS` cannot evolve one. The column added since:
+
+   ```sh
+   npx wrangler d1 execute wfsim --remote --command \
+     "ALTER TABLE scores ADD COLUMN metric TEXT; UPDATE scores SET metric = 'kpm'"
+   ```
+
+   THE BACKFILL IS EXACT, NOT A GUESS: every ruler that has ever scored a row
+   declares `metric: kpm`. It is left NULLABLE on the live copy where the schema
+   above says `NOT NULL`, because SQLite cannot add a NOT NULL column without a
+   DEFAULT and a default is the worse divergence — it would silently fill the
+   first row of the first ruler that ranks by something else. What actually
+   holds the bind is `ship_facts.sh --self-test`, which asserts the metric
+   reaches the statement.
 
    ASK IT A QUESTION, which is most of why it is a database:
 
