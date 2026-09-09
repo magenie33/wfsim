@@ -101,3 +101,13 @@ jobs:
       # assumed.
       - name: A generation is read back whole
         run: bash scripts/fetch_facts.sh --self-test
+      # THE OTHER HALF OF THE DOOR. A submission arrives verbatim because the
+      # endpoint has no game data; these two carry it to `wfsim-intake`, which
+      # has the engine, and put what it derived in the library. The order is the
+      # safety argument and is asserted: every build is written BEFORE any queue
+      # row is spent, so a refusal leaves the submission where the next run will
+      # find it rather than dropping it.
+      - name: What arrived is read out of the queue
+        run: bash scripts/fetch_inbox.sh --self-test
+      - name: ...and what intake made of it reaches the library
+        run: bash scripts/ship_builds.sh --self-test
