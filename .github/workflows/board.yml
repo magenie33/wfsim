@@ -118,19 +118,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # WHAT A SCORE DEPENDS ON THAT IS NOT THE BUILD, as one hash: the code
-      # that simulates, the data it simulates with, and the rulers. `data/`
-      # MINUS the boards themselves — those are this job's own output, so
-      # including them would move the fingerprint on every run and nothing would
-      # ever be reused.
-      #
-      # A COOLDOWN WOULD HAVE BEEN THE WRONG AXIS:
-      # time is not an input to a score. Untouched, a row is valid forever;
-      # moved, it is wrong immediately. This asks the only question that matters
-      # — "is anything different" — and answers it exactly.
-      # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
-      # nothing to read, and a job that fails hourly for a reason nobody is
-      # acting on trains you to ignore the one that matters.
+      # NOT CONFIGURED YET IS NOT A FAILURE. Without the credentials there is
+      # nothing to read, and a job that fails for a reason nobody is acting on
+      # trains you to ignore the one that matters.
       - name: is the board wired up?
         id: wired
         env:
@@ -144,6 +134,11 @@ jobs:
       # under. A short read publishes a board built from a short list, and every
       # row missing from it is gone with nothing saying so — `guard_shrink` in
       # the script is what refuses that.
+      #
+      # A LIBRARY THAT SHRANK ON PURPOSE TRIPS IT TOO, and that is the guard
+      # working: a migration that dedupes or re-keys the table has to land
+      # before the next run, and until it does the run stops loudly instead of
+      # publishing a board missing whatever the read did not return.
       - name: what the last board was built from
         if: steps.wired.outputs.yes == 'true'
         id: floor
