@@ -1037,10 +1037,18 @@ assets, and until the board there was no script at all. Two consequences:
    A DATABASE THAT ALREADY HOLDS ROWS is migrated by hand, because
    `CREATE TABLE IF NOT EXISTS` cannot evolve one. The column added since:
 
+   ON ONE LINE, because this one is run by hand and a continuation is the one
+   piece of shell syntax that differs between the two a person might paste it
+   into — `\` is an argument to PowerShell, which then reports an unknown one
+   and never says why.
+
    ```sh
-   npx wrangler d1 execute wfsim --remote --command \
-     "ALTER TABLE scores ADD COLUMN metric TEXT; UPDATE scores SET metric = 'kpm'"
+   npx wrangler d1 execute wfsim --remote -y --command "ALTER TABLE scores ADD COLUMN metric TEXT; UPDATE scores SET metric = 'kpm'"
    ```
+
+   The two statements are independent: if the second is what failed, re-run it
+   alone. `SELECT metric, count(*) FROM scores GROUP BY metric` says whether it
+   landed.
 
    THE BACKFILL IS EXACT, NOT A GUESS: every ruler that has ever scored a row
    declares `metric: kpm`. It is left NULLABLE on the live copy where the schema
