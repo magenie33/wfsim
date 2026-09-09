@@ -54,7 +54,8 @@ d1() {
 batch_body() {
   jq -n -c --arg id "$1" --arg why "$2" --argjson total "$3" '
     {
-      sql: "INSERT OR REPLACE INTO batches (id, at, why, total) VALUES (?,?,?,?)",
+      sql: ("INSERT INTO batches (id, at, why, total) VALUES (?,?,?,?)"
+            + " ON CONFLICT(id) DO UPDATE SET total = total + excluded.total"),
       params: [$id, $id, $why, $total]
     }'
 }
@@ -147,8 +148,15 @@ self_test() {
     && say ok "...never interpolated into the statement" \
     || say FAIL "an id reached the sql"
   printf '%s' "$(batch_body b why 4)" | jq -e '.params == ["b","b","why",4]' >/dev/null \
-    && say ok "a batch carries the count it was created with" \
+    && say ok "a batch carries the count it was asked for with" \
     || say FAIL "$(printf '%s' "$(batch_body b why 4)" | jq -c .params)"
+  # …AND A SECOND PASS INTO ONE BATCH ADDS TO IT rather than replacing it. Two
+  # runs in one day both find arrivals; `total` is a statement about the past —
+  # how many rows this group was ever asked for — so progress is that minus what
+  # is still owed, and a replace would report the group shrinking as it worked.
+  printf '%s' "$(batch_body b why 4)" | jq -e '.sql | contains("total = total + excluded.total")' >/dev/null \
+    && say ok "...and a second pass into it adds rather than replaces" \
+    || say FAIL "$(printf '%s' "$(batch_body b why 4)" | jq -r .sql)"
 
   export PATH="$DIR/bin:$PATH"
   export CF_ACCOUNT=a CF_D1_DATABASE=d CF_TOKEN=t

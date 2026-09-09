@@ -164,8 +164,10 @@ CREATE TABLE IF NOT EXISTS batches (
   -- WHAT THIS GROUP IS FOR, for the person who finds it a week later. A batch
   -- with no reason is a batch nobody can decide to cancel.
   why   TEXT,
-  -- HOW MANY ROWS IT WAS CREATED WITH. A statement about the past, so it cannot
-  -- drift: progress is `total` minus what is still in `queue`.
+  -- HOW MANY ROWS IT WAS EVER ASKED FOR WITH — a statement about the PAST, so
+  -- it cannot drift: progress is this minus what is still in `queue`. A second
+  -- pass into one batch ADDS to it, because two runs in a day both find
+  -- arrivals and a replace would report the group shrinking as it worked.
   total INTEGER NOT NULL
 );
 

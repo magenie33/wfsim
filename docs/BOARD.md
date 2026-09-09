@@ -1714,16 +1714,34 @@ order, an artifact whose absence skipped the assembly, a clock that truncated a
 forced set. **A rule about which source wins is only needed because there is
 more than one source.**
 
-### The scorer's side is a set difference
+### The scorer's side is a list somebody wrote
 
 ```
-work = (builds × rulers × modes)  MINUS  the facts
+scores  what has been measured — one row per (build, ruler, mode), the latest,
+        no history and no state. The site is built from this and nothing else.
+queue   what somebody asked for. Empty at rest. Ordered by its batch.
 ```
 
-**A RESCORE IS "MEASURE THESE ROWS AGAIN", AND THERE IS NO SECOND KIND.** Under
-the difference, a row without a fact is work — so DELETING a fact is the whole of
-asking for it again, and one row and the whole board are the same operation.
-There is nothing to force and no button to name.
+**A RESCORE IS "MEASURE THESE ROWS AGAIN", AND THERE IS NO SECOND KIND** — but
+it is now an INSERT rather than a DELETE, and that is what stops a rescore from
+putting a hole in the board: the old number stays published until the new one
+replaces it. `--queue-in` is what makes a stored score stop being a reason to
+skip a row.
+
+**THE ORDER IS A COLUMN.** `batches.at` decides which group goes first, so
+jumping the line is one UPDATE — no flag, no deploy, and the run still takes no
+input. Progress is `total` minus what is still owed; nothing stores it, so
+nothing can be wrong about it.
+
+**THE ONE RULE THAT KEEPS TWO TABLES FROM DISAGREEING:** the queue may only ever
+CAUSE work. It may not prevent work and it may not decide a number. So losing it
+costs an ordering and never a fact, a stale row costs one recomputation that
+returns the same number, and the publisher never reads it at all.
+
+**AND A HAND-WRITTEN LIST CANNOT QUIETLY LOSE A ROW.** `builds × rulers × modes`
+is the DEFINITION of what should exist; `--queue-missing` names everything with
+neither a score nor a queue row and the run puts it in a batch, in seconds. That
+is not a second source — it only ever ADDS, and only what has no score.
 
 That is also what makes a deadline harmless. Truncating a run leaves rows
 unmeasured, the board keeps publishing the weapons that are complete, and the
