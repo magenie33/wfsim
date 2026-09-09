@@ -2,7 +2,7 @@ id: charged_shell
 name: Charged Shell
 rarity: uncommon
 polarity: naramon
-base_drain: 4                 # max drain 9 at rank 5
+base_drain: 6                 # max drain 11 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponElectricityDamageMod
 description: "+X% Electricity"
