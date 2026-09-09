@@ -299,8 +299,7 @@ fn main() {
     let _ = out.flush();
 
     if let Some(path) = done_path {
-        if let Err(e) = std::fs::write(&path, done.join("
-")) {
+        if let Err(e) = std::fs::write(&path, done.join("\n")) {
             eprintln!("intake: cannot write {path}: {e}");
             std::process::exit(1);
         }

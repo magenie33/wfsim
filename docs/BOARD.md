@@ -7,10 +7,8 @@ number**. Everything else follows from it:
 
 - a forged score is impossible, because no score is ever accepted;
 - a change RE-SCORES stored builds instead of invalidating them, and nobody is
-  ever asked to resubmit — a CODE change rescores everything, and a DATA change
-  rescores only the rows that READ the file that moved. Adding a
-  weapon costs 0 of 885 rows; correcting one mod costs the rows carrying it.
-  See `engine::data_fingerprint`;
+  ever asked to resubmit. What retires a stored score is a person deleting its
+  row — §"A stored score is reused because it EXISTS";
 - **THE STORE IS A LIBRARY OF BUILDS AND EVERY RULER CROSSES THE WHOLE OF IT**. A submission carries no score, so the ruler it happened to be
   measured under was never a property of the record — it was a gate, and the
   gate was expensive: of 914 distinct builds players had sent, only 46 had ever
@@ -90,15 +88,12 @@ to apply — *can this disagree with the thing it is about?*
 
 **AND A COPY IS NOT A SECOND SOURCE WHEN IT ANSWERS A DIFFERENT QUESTION.** The
 ruler's file says what it ranks by NOW; the `metric` on a score row says what
-THAT NUMBER is in. They cannot disagree: a ruler changing its core changes its
-file, which moves `data_fp`, which is in the key — so the new answer is a new
-row and the old one keeps its own units. The column exists because the row
-OUTLIVES the file. The key holds old answers on purpose (reverting a data file
-restores its answer without recomputing), and without the metric written beside
-the number, reading one back means checking out the commit that produced it.
-Apply the same test: it cannot disagree with the thing it is about, because it
-is not about the ruler — it is about the number. It therefore decides nothing,
-on the same terms as `measured_by`.
+THAT NUMBER is in. The column exists because the row OUTLIVES the file: a
+measurement a year old is still what that fight produced, and without its units
+written down beside it, reading one back means checking out the commit that
+produced it. Apply the same test: it cannot disagree with the thing it is about,
+because it is not about the ruler — it is about the number. It therefore decides
+nothing, on the same terms as `measured_by`.
 
 **A TEST HAS ONE CORE.** A ruler names exactly one metric and that one is what
 ranks; `engine::benchmarks_data::core_metric` is where the rule is applied, at
@@ -211,233 +206,81 @@ including the empty ones, because a 404 and an empty list are the same thing to
 
 ## When it updates
 
-**THE CLOCK IS THE ONLY AUTOMATIC TRIGGER.** A push does not wake the board.
-
-| trigger | scope | cost |
-| --- | --- | --- |
-| `:00` every hour | `NEW_ROWS` of what has no score, plus `REFRESH_MINUTES` of what is unverified | ~1,218 rows a run, 32 ways |
-| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | ~2h20m, 128 ways |
-| Actions → board → Run workflow, **weapon = …** | the rows the selector names, whatever the fingerprints say | minutes; `board_select.py` prices it first |
+**A PERSON STARTS A RUN, AND NOTHING ELSE DOES.** The clock is held and a push
+does not wake the board — Actions → board → Run workflow, which takes no input.
+There is nothing to name: what a run does is decided entirely by what the
+database holds. A build with no fact is computed, a build with one is not.
 
 A PUSHED RUN DID EXACTLY WHAT THE NEXT SCHEDULED ONE DOES, so it duplicated a
 run that was coming anyway while competing for the same forty slots. Over 95
 measured runs, 21 of 22 pushed runs were cancelled by the next push and the
-board published nothing. Ordinary work still reaches it: a change moves the
-fingerprint, the rows it reached become unverified, and the slice repairs them.
-
-**THE FULL RESCORE GOT MUCH BIGGER WHEN THE LIBRARY LANDED, and that is the
-price of it**: 2,223 builds crossed with three rulers rather than 967 rows each
-scored once. Measured on the two runs that completed on 2026-08-25: 137 and 138
-minutes. The per-row fingerprint above is what keeps that off the ordinary day —
-a data change costs the rows that read it and nothing else — but a CODE change
-still pays in full.
+board published nothing.
 
 **ONE PENDING RUN, AND THE REST ARE CANCELLED.** That is GitHub's rule, not a
 setting, and it is why a run has to fit inside the cadence that starts the next
-one. An hourly slot is what makes that affordable: a run has the whole hour, and
-a row too expensive to finish inside it is PAUSED and resumed by the next run
-rather than cancelled — §"A row is paid for in sittings".
+one. A row too expensive to finish inside its budget is PAUSED and resumed by
+the next run rather than cancelled — §"A row is paid for in sittings".
 
-**The clock is a best effort, not a promise.** GitHub delays scheduled runs
-under load and says so, and this repo's own history is the evidence: while the
-job was set to `:17` its commits landed at `:33`–`:35`. So the hour is the
-cadence, not the latency — what the page promises is "at the next re-score",
-and it prints how old the board it is showing actually is. If you want a result
-NOW, Actions → board → Run workflow.
+### A stored score is reused because it EXISTS
 
-The maintainer's ordinary work — fixing a bug, correcting a number, changing the
-benchmark to 480 s — reaches the board through the FINGERPRINT rather than
-through a trigger: it marks the rows the change reached as unverified, and the
-next run's slice repairs them. What it never does is start a run of its own.
+That is the whole of the rule, and there is nothing else in the key: not a
+clock, not a fingerprint, not the binary that wrote it. `scores` is keyed by
+`(build, ruler, mode)` and holds one row per key, the last one taken.
 
-### What decides "new" — the DATA FINGERPRINT, and nothing about the code
+**A FACT IS NOT WRONG FOR BEING OLD.** A measurement a year old, taken by a
+binary a thousand commits behind, is still what that fight produced — and the
+board publishes from `scores` and from nothing else, so a rule that quietly
+withheld old rows would be a board with no source at all.
 
-A score is a pure function of `(build, the ruler's terms, the code, the data)`.
-Three of those four are hashed per ROW — `engine::data_fingerprint` — because
-what a row READS is enumerable from the row: it names its weapon, its mods, its
-arcanes, its evolutions, and the ruler names itself. A mod correction restores
-the rows carrying that mod and no others.
+**WHAT RETIRES A FACT IS A PERSON DELETING ITS ROW.** That is SQL, and precision
+comes with it: one row, one weapon, one ruler, whatever the case needs. The row
+comes back absent on the next run, and an absent row is computed.
 
-**THERE IS NO CODE FINGERPRINT**, and there never honestly could be. A hash of
-`engine/` says the BYTES moved, which is a different question from whether any
-NUMBER did — and most edits that move it cannot move one: a comment, a test, a
-validation rule, a field only the page reads. It cost a full rescore on 55.6% of
-commits to answer a question it was not answering.
-
-HASHING CODE MORE FINELY WOULD NOT FIX IT, because the failure inverts. A data
-file a row forgets to name lands in the global bucket and costs one wasted
-rescore — slow, never wrong. A code path a row forgets to name silently reuses a
-score the change moved. One is a schedule; the other is a published lie.
-
-**SO CODE IS MEASURED, NOT HASHED.** The audit re-fights published rows and
-compares exactly; what it finds moved is what gets recomputed. A stored score is
-valid until something PROVES it moved — a stronger claim than "valid until a
-hash moved", because a hash moving proves nothing.
-
-The fingerprint's failure polarity is what makes the data half safe to keep:
-anything not attributed to an entity falls into a GLOBAL bucket every row
-carries, so forgetting an entry is slow and never wrong. Fourteen data families
-are still in that bucket against five attributed, which is the next thing worth
-narrowing — `rivens/` reaches only rows carrying a riven, `kitguns/` only kitgun
-rows.
-
-### When the code moved: nothing rescores, and two backstops watch
-
-The fingerprint is a hash of three whole trees, so any edit to them declares
-every stored score stale. Most edits cannot move a number: a comment, a test, a
-validation rule, a field only the page reads. Measured, the cost of assuming
-otherwise was **7,808 minutes across 128 shards, median shard 55 minutes and
-worst 192, four hours of wall clock** — against a schedule firing every twenty,
-so every successor was discarded. Eleven engine commits in one morning produced
-no completed run for ten hours.
-
-So a fingerprint difference means UNVERIFIED, never wrong, and the pipeline
-answers it by repairing a bounded slice per run. Nothing in it re-fights a
-published row to decide anything — `check_rescore_paths.mjs` refuses a
-`--verify` in the board workflow.
-
-**THE TWO BACKSTOPS ARE A PERSON AND AN INSPECTOR**, and neither is the
-pipeline:
-
-| | who decides | what it does | what it costs |
-| --- | --- | --- | --- |
-| **the button** | a person | rescores exactly the rows a selector names, at any precision | minutes; `board_select.py` prices it first |
-| **the audit** | nobody — it reports | re-fights a slice of the PUBLISHED board hourly, exact comparison, crosses all of it in 3.5 days | one job, under 2% of a day's free CPU |
-
-The audit publishes nothing and gates nothing. When the numbers agree its
-output is a count; when they do not it fails, names the rows, and **presses the
-button itself** — `gh workflow run board.yml -f weapon=<the rows it measured>`.
-
-**THAT IS THE WHOLE INVALIDATION MECHANISM.** No hash declares a row stale; a
-MEASUREMENT does, and only the rows it measured. The inspector still publishes
-nothing — its token cannot write to the repository — it files a warrant the
-board acts on, which is the manual backstop fired by evidence instead of by a
-person noticing.
-
-**A BACKSTOP IS ONLY WORTH WHAT REACHES THE BOARD, AND THERE IS NOTHING FOR IT
-TO LOSE A RACE WITH.** The shards refight the rows they are told to and ship each
-fact as it is computed; the assembly reads the facts and nothing else, so there
-is no "which copy wins" for a rescore to lose. A store that needed such a rule
-republished the number it was called to replace, with the run green, the work
-banked and the board unchanged. The same rule spells the `full` button: it FORCES
-every row (`--refight-all`), which under a set difference is the only thing it
-could mean — and the facts it drops still answer what each row COST, which is
-what the split packs by.
-
-**AND IT REACHES A BOARD NOBODY IS OVERWRITING.** The workflow's groups keep the
-schedule and the buttons apart so a long manual rescore cannot stand the
-schedule down, which means their runs overlap — and two assemblies is
-last-writer-wins over a whole run's KNOWLEDGE rather than over one file. The
-loser is whichever read the score store first, and what it publishes is the
-store as it was then, rolling back the board and the store together. So the
-ASSEMBLY is serialised and reads the store last; the scoring may overlap freely,
-since it only ever adds.
-
-A CAP OF `REPAIR_CAP` ROWS, because a finding that large is not a repair but a
-question. A hundred rows moving at once is a ruler's terms or a fight-wide
-constant, not a hundred separate defects, and burying that under an hour of
-compute is how the symptom gets treated and the cause does not.
-
-**THE SPLIT IS SIZED AGAINST THE WORK, NOT THE CEILING.** A shard costs 2.6
-minutes before it scores anything — checkout, cache restore, load — so past a
-point the split is buying startup rather than parallelism: 128 shards pay 333
-minutes of it, 32 pay 83. An ordinary run is 5,553 rows, and **repair is the
-small half of it** — 984 rows against ~4,570 builds carrying no score
-yet, which is the backlog and a one-time cost. A shard of that backlog measured
-18 to 36 minutes at 32 ways.
-
-`SLICE_SHARDS` is 32; `FULL_SHARDS` stays at 128 because 8,008 minutes is a
-different problem and its tail is what the extra shards deal out early. The
-matrix and the `i/N` denominator come from one output, because a list of 32
-against an N of 128 scores a quarter of the board and fails nothing.
-
-**THE CEILING IS NOT FORTY IN PRACTICE.** Counted on live runs, GitHub granted
-12 to 26 concurrent jobs, so `max-parallel: 32` is an upper bound the account
-reaches only sometimes, and the wave count is set by what is granted rather than
-by what is asked.
-
-AN INSPECTOR THAT CAN STOP THE LINE STOPS BEING AN INSPECTOR. A verification
-pass on the critical path buys a priority hint for 25 minutes of wall clock and
-280 CPU minutes, and leaves the run behind it to be cancelled while it works.
-Its question — *does the file still say what the code computes* — is the
-audit's, and the audit asks it continuously, over the whole board rather than
-one row per group.
+**A HASH OF THE INPUTS WAS TRIED AND WAS A WORSE INSTRUMENT.** It fired on every
+edit to a file no entity owns — comments, tests, validation rules, fields only
+the page reads — and stayed silent on the one case that matters, a code change
+that moves a number. Measured, the cost of assuming a fingerprint difference
+meant "wrong" was **7,808 minutes across 128 shards, median shard 55 minutes and
+worst 192, four hours of wall clock** against a schedule firing every twenty, so
+every successor was discarded: eleven engine commits in one morning produced no
+completed run for ten hours. A hash of `engine/` is worse still — it says the
+BYTES moved, which is a different question from whether any NUMBER did, and it
+cost a full rescore on 55.6% of commits to answer a question it was not asking.
 
 TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
 (asked and answered). An untouched row is valid forever; a row whose engine
 moved is wrong immediately, not in an hour. A cooldown would be both too slow
 and too fast at once.
 
-**TWO BACKLOGS, AND ONE BOUND.** Rows whose data moved are one; builds with no
-score at all are the other. Measured
-against the submissions the pipeline is handed: 984 rows of repair against
-**4,570 never scored** — 1,523 on each of the three boards.
+### One backlog, and one bound
 
-`NEW_ROWS` counts the second, because a row nobody has scored has no cost to
-spend, and it is counted BEFORE the shard filter so every shard stops at the
-same row and they agree on the deal. `SCORE_DEADLINE_MINUTES` bounds everything,
-including repairs.
+Builds with no fact are the only work a run has. `NEW_ROWS` caps how many it may
+take on — a ceiling, not a plan — and `SCORE_DEADLINE_MINUTES` is what actually
+stops it. The cap is counted BEFORE the shard filter, so every shard stops at
+the same row and they agree on the deal without talking.
 
-**THERE IS NO REPAIR SLICE AND NO CURSOR.** A repaired row leaves the stale set,
-so a run that walks it from the top converges; what a run does not reach keeps
-the number it has until the next one. That is safe only because the two readers
-of a stale row now see opposite things — the pass that can REFIGHT it sees it
-missing and does, the pass that only ASSEMBLES sees it and keeps it — so a
-corrected data file never takes a published row off the board. Handing both the
-same map is what made a slice necessary in the first place.
+**THERE IS NO SLICE AND NO CURSOR.** A computed row leaves the backlog, so a run
+that walks it from the top converges; what a run does not reach is computed by
+the next one, and until then the assembly publishes what the facts already say.
 
-**A PUSH NEVER RESCORES THE BOARD, AND THE BOARD CONVERGES INSTEAD.** A
-fingerprint difference says a stored score was measured against data that has
-moved, not that every other row is suspect. So every run scores a bounded share
-of what is NEW and
-repairs what it reaches before the clock runs out, walked in `fp` order. A
-repaired row leaves the stale set, so the next run starts where the work still
-is — no rotation to steer and none to get wrong.
+**THE SPLIT IS SIZED AGAINST THE WORK, NOT THE CEILING.** A shard costs 2.6
+minutes before it scores anything — checkout, cache restore, load — so past a
+point the split buys startup rather than parallelism: 128 shards pay 333 minutes
+of it, 32 pay 83. `MAX_SHARDS` is the ceiling; how many a run actually takes is
+computed from the work in front of it, because rows differ by 79x and a count
+cannot tell a two-hour slice from a two-minute one.
 
-The alternative was to treat unverified as wrong, and that is what it cost: over
-one day, five cancelled full rescores, thousands of CPU minutes, and **the board
-published nothing at all**, because each was superseded before it finished. A
-rescore that never lands is not a slow update, it is no update and a bill.
+**THE CEILING IS NOT FORTY IN PRACTICE.** Counted on live runs, GitHub granted
+12 to 26 concurrent jobs, so `max-parallel` is an upper bound the account
+reaches only sometimes, and the wave count is set by what is granted rather than
+by what is asked.
 
-So a full rescore is a BUTTON. `full` does all of it, `weapon` does one weapon,
-and both are somebody deciding rather than a push implying. Nothing automatic
-ever fights more than a slice. What the sample can
-still miss — a change that moves only SOME builds of one group — is what
-§"The audit" is for: it reads a slice of the published board every hour and
-crosses all of it in days, reporting a row that is not what this code computes
-without rescoring anything.
-
-TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
-(asked and answered). An untouched row is valid forever; a row
-whose engine moved is wrong immediately, not in an hour. A cooldown would be
-both too slow and too fast at once.
-
-**The manual button is the escape hatch, and it has two settings.** Actions →
-board → Run workflow. `full` ignores the fingerprint and rescores every row —
-for when something outside the hash changed, or when you simply want to see it
-done. `weapon` names rows at whatever precision the case needs and rescores just
-those, whatever the fingerprints say:
-
-```
-felarx                     every mode, every build of the weapon
-felarx#cycle               one mode
-felarx#cycle:plain         one mode, the rows carrying no riven
-<a whole row key>          one row — the smallest unit there is
-```
-
-A row key is `identity#mode`, so any prefix of one names the rows under it and
-the whole of one names exactly that row. The prefix is matched at a COMPONENT
-BOUNDARY, so `felarx` cannot half-match `felarx_prime`. Several are separated by
-`;`, because a mod list is commas.
-
-THE SECOND EXISTS BECAUSE A FINGERPRINT ANSWERS THE WRONG QUESTION FOR THIS
-CASE. It says whether an INPUT moved, so a correction it cannot see, or a run
-this pipeline lost, leaves a published number nobody can argue the board out of
-— and the only answer then was to rescore all of it. Naming a weapon drops what
-is stored for that weapon and nothing else, so every other row still reuses and
-the fix costs minutes. The rolls go with the scores: a riven row's rolls are the
-argmax of its score, so keeping them would re-measure the corner a stale number
-chose. A misspelled id rescores nothing and says so rather than passing quietly.
+**AND IT REACHES A BOARD NOBODY IS OVERWRITING.** Two assemblies is
+last-writer-wins over a whole run's KNOWLEDGE rather than over one file: the
+loser is whichever read the score store first, and what it publishes is the
+store as it was then, rolling back the board and the store together. So the
+ASSEMBLY is serialised and reads the store last; the scoring may overlap freely,
+since it only ever adds.
 
 ### A fact is durable the instant it is computed
 
@@ -447,16 +290,9 @@ cancelled at 95% has banked 95% of its work**, and what it did not write is
 simply missing — which is the same thing as never having started it.
 
 **A ROW HAS ONE FACT: THE LAST MEASUREMENT OF IT.** The key is
-`(identity, ruler, mode)` — what makes it a different question — and measuring
-it again overwrites. Everything else the row carries DESCRIBES that measurement
-and decides nothing, with one exception.
-
-**THE EXCEPTION IS `data_fp`, AND IT IS THE ONLY ONE.** It says what the
-measurement read, so a data correction retires exactly the rows that read the
-file that moved. Measured: with 24 rows recorded, 1,556 rows to do without them,
-1,532 with them, and 1,533 with one row's data fingerprint altered — that row
-refought and no other. It rides ON the fact rather than in the key: a row
-measured under three generations of data is one row, not three.
+`(build, ruler, mode)` — what makes it a different question — and measuring it
+again overwrites. Everything else the row carries DESCRIBES that measurement and
+decides nothing.
 
 **AGE IS NOT EVIDENCE.** A fact measured a year ago, by a build a thousand
 commits behind, is not thereby wrong — it is a measurement, and only another
@@ -465,17 +301,15 @@ branches on a clock. What they are for is finding a broken build's rows
 afterwards (`WHERE measured_by = ?`) and showing a reader how old a row is.
 
 **NOTHING DOWNSTREAM MAY DESTROY A FACT.** No sweep, no merge, no delta, no
-expiry. Two things remove one: a migration somebody writes, and `--rescore`,
-which is a person saying a number is wrong for a reason no hash can see.
+expiry, and no generation. One thing removes one: a person deleting its row.
 Overwriting a row with a newer measurement of the same row is not destroying a
 fact — it IS the fact.
 
-**WHAT IT COST TO KEEP THE OLD ONES** was the reason to stop. Keeping every
-generation bought one thing — reverting a data file restored its answer without
-recomputing — and the bill was an unbounded table: `data_fp` folds a GLOBAL
-bucket that every row carries, so one edit to a file no entity owns mints a
-fresh copy of the whole board. Measured over five weeks: 72 commits touched that
-bucket, against a generation of 23,260 rows.
+**KEEPING SEVERAL GENERATIONS OF ONE ROW WAS THE ALTERNATIVE, AND ITS BILL WAS
+UNBOUNDED.** It bought one thing — reverting a data file restored its answer
+without recomputing — against a table that minted a fresh copy of the whole
+board whenever a file no entity owns was edited. Measured over five weeks: 72
+such commits, against a generation of 23,260 rows.
 
 ### A row is paid for in sittings
 
@@ -503,8 +337,9 @@ at a time into one `Shard`; float addition is not associative, so a coarser
 piece regroups the sums and moves the last bit of everything derived from one.
 Measured over a 200-run crowd fight: pieces of 1 come out identical to a single
 call and pieces of 2, 5, 10, 25, 50 and 100 all differ. A ULP is not below
-notice here — the audit below compares exactly, on purpose — so a row that was
-interrupted would report as moved for ever. It costs 2.5% of a crowd fight.
+notice here — a score is a pure function and the carry between processes is
+lossless — so an interrupted row that regrouped its sums would not be the same
+number. It costs 2.5% of a crowd fight.
 
 A paused row is a FOURTH outcome beside listed, held and refused: the build
 reached no row on this board and is not lost either. The run says so
@@ -568,16 +403,14 @@ A PROJECTION IS NOT A ROW. It is against the board as it stands, it is shown to
 the submitter alone, and nothing about it is sent anywhere. The ranking holds
 numbers this project measured — that is the whole of where it gets its
 authority, and a client-supplied figure inside it would end that. It is the same
-line §"When the code moved" draws: unverified is a state a number this project
-computed may be in, never a place to put one it did not.
+row that reached no board is not a row with a number nobody computed.
 
 ### Which rows carry the thing you just fixed
 
-`scripts/board_select.py` answers that, and prints the selector above. The
-button names rows; this finds their names. Nothing automatic decides the scope
-any more, so the scope has to be findable by hand, and a fingerprint cannot help
-here — it says whether a FILE moved, where the question is which BUILDS contain
-a thing.
+`scripts/board_select.py` answers that. What retires a fact is a person deleting
+its row, so the rows have to be findable by hand — and no hash can help here: it
+would say whether a FILE moved, where the question is which BUILDS contain a
+thing.
 
 ```
 python scripts/board_select.py --element heat --selectors
@@ -599,46 +432,6 @@ BATCH THE FIXES, THEN RESCORE ONCE. Ten corrections landing separately are ten
 rescores of overlapping rows; landing together they are one. That is the whole
 reason this prints a selector instead of starting anything.
 
-### The audit: does the FILE still say what the code computes
-
-**NO HASH CAN ANSWER THIS, which is why it is measured.** What a row READS is
-enumerable from the row; what it EXECUTES is not, so a fingerprint that agreed
-proves nothing about the code. `audit.yml` re-fights published rows instead, and
-it is the only thing that catches a score reused when it should not have been. It publishes nothing
-and gates nothing: one job out of the account's forty, hourly, in its own
-concurrency group so it can never cancel a board run.
-
-`--shard k/CROSSING` cuts the library into slices of equal WORK — by what
-each row COST when it was measured and not by count, since the rows differ by
-four orders of magnitude — so `CROSSING` is both the budget and the number the
-audit is judged by: how many runs it takes to read the whole board. It is the
-scoring run's own packing, which is what keeps the slice deterministic and the
-audit free of a sampler that would re-derive it.
-
-Riven rows are not audited. Their rolls are the argmax of a search, so
-re-fighting one pays for sixteen corner probes to compare a number that was
-chosen rather than measured — expensive, and a weaker statement than the plain
-rows give for free.
-
-**THE TEST IS EXACT, AND A TOLERANCE WOULD HAVE HIDDEN THE ONE DEFECT IT HAS
-FOUND.** A score is a pure function and the carry between the scoring processes
-is lossless (`exact_score`), so any difference at all is one. The first ULP-scale
-disagreement measured here read like the host's arithmetic and was the carry —
-a tolerance sized to "noise" would have absorbed it and left the board
-publishing numbers the engine never computed. `worst` is reported beside the
-count because it is the first thing a reader wants when a row is named: a defect
-moves a number by orders of magnitude, an artefact by a bit.
-
-**AND IT ANSWERS THE QUESTION NO CHECK ASKED**: a board that has not moved in
-`STALE_HOURS` fails the run. That state has been found by a reader wondering
-where their build went, never by anything watching.
-
-Two things it cannot audit, and both are stated rather than papered over: a
-riven row, whose stored number is the argmax of a search rather than a
-measurement, and a row whose DATA fingerprint moved, which carries no number
-against the data it reads today — reported as `stale`, so "nothing to audit"
-cannot read as "nothing was wrong".
-
 ### Why it is sharded
 
 Every row is an independent fight, so the scoring splits across `SHARDS` jobs —
@@ -658,8 +451,8 @@ where that build actually scores **0.170**.
 
 It read as a scenario leak and was not one — every score was computed under its
 own ruler's terms, then overwritten on the way out. The `scores` table keys on
-`(identity, ruler, mode, data_fp)`, and `load_facts` filters on the ruler as it
-reads, so the two cannot meet. That is the general shape of every
+`(build, ruler, mode)`, and `load_facts` filters on the ruler as it reads, so
+the two cannot meet. That is the general shape of every
 defect this pipeline has produced: a value identified by less than what
 determines it.
 
@@ -862,10 +655,10 @@ deciding which subset each weapon's shown row is drawn from.
 **TAKING A RIVEN ROW GIVES YOU THE RIVEN.** The record names no item, so the
 page creates one, named after the shape so taking the same row twice reuses it.
 
-**WHAT IT COSTS.** Sixteen corners per riven row, probed at 60 runs to choose
-and then measured once at the ruler's own count — about 2.6× a plain row rather
-than 16×. The chosen rolls travel beside the score and reuse on the same
-fingerprint, because they *are* its argmax.
+**WHAT IT COSTS, AND WHO PAYS IT.** `wfsim-intake` does, once, when the record
+enters the library: it probes the corners at a hundredth of a ruler's run count
+and stores the winner AS the build. A riven build is then an ordinary build with
+numbers on it, scored once like any other, and the scorer probes nothing.
 
 ## What is not on the board
 
@@ -1406,9 +1199,9 @@ costs are the wrong SHAPE. The rule the whole pipeline is measured against:
 > **Every step's cost should be proportional to what CHANGED, not to what
 > EXISTS.**
 
-Scoring has obeyed it since the per-row fingerprint: a data change
-costs the rows that read the file that moved. Reading did not, and that is what
-made the board fall behind on 2026-08-26.
+Scoring obeys it: a build with a fact costs nothing, so a run's bill is the
+builds that arrived. Reading did not, and that is what made the board fall
+behind on 2026-08-26.
 
 ### What was fixed, and what it was
 
@@ -1595,10 +1388,10 @@ invented.
 
 #### A SCORE IS A FACT, NOT A STEP IN A PIPELINE
 
-This is the one idea the rest follows from. `(build, ruler, fingerprint) ->
-score` is true for ever once computed. It is a fact, not an intermediate result,
-and a fact should be written down THE MOMENT IT IS COMPUTED rather than when a
-batch finishes.
+This is the one idea the rest follows from. `(build, ruler, mode) -> score` is
+true for ever once computed. It is a fact, not an intermediate result, and a
+fact should be written down THE MOMENT IT IS COMPUTED rather than when a batch
+finishes.
 
 The board is recomputed as a batch today, and every symptom traces back to that:
 
@@ -1623,13 +1416,13 @@ measurements. It was tried, and it is the wrong trade:
 - and the guarantee is not even achievable by declaration: one label over a
   store written by six different commits is a claim the data does not support.
 
-**THE BOARD IS A RECORD OF WHAT WAS MEASURED.** Its reliability comes from the
-AUDIT measuring, not from an atomicity property of the publish:
+**THE BOARD IS A RECORD OF WHAT WAS MEASURED**, and its reliability comes from
+every row being a real measurement rather than from an atomicity property of the
+publish:
 
 ```
    within a weapon      never mixed   — a weapon's file is written whole
    across weapons       may be mixed  — and every row in it is a real measurement
-   how wrong it can be  bounded by    — the audit's crossing, one job an hour
 ```
 
 A row measured by an older build is not a wrong row; it is a row nothing has
@@ -1759,9 +1552,6 @@ length of a run from being a question anyone has to answer.
 seconds, and independent of whether any scoring is in flight. A weapon whose
 every row is measured ships; one with a gap keeps what it has.
 
-**5. THE AUDIT** — it runs (§"The audit"), and it is what makes step 2's
-under-approximation something to hold rather than something to fear.
-
 **TRIGGERING AND SCHEDULING**, which is where the failure direction was
 inverted: the trigger is an EXCLUSION list naming only what the board itself
 generates, a run that finds nothing to do costs one job rather than a hundred
@@ -1774,11 +1564,12 @@ Each of these is a plausible answer that measurement turned down. They are here
 so the next reading does not have to re-derive the refusal.
 
 **Per-unit code fingerprints, and the refactor under them.** Attributing code
-units to weapon classes so a melee change dirties melee rows: the group probe
-reaches the same selectivity by measuring, without a table to keep. And the
-refactor it needs is real — every melee commit touches `engine/src/dummy.rs`,
-32,146 lines of the engine's 78,003, which holds the gun logic too, so a
-file-level attribution buys nothing until melee is moved out of it.
+units to weapon classes so a melee change retires melee rows: a hash of what a
+row READ says the bytes moved, which is a different question from whether a
+number did. And the refactor it needs is real — every melee commit touches
+`engine/src/dummy.rs`, 32,146 lines of the engine's 78,003, which holds the gun
+logic too, so a file-level attribution buys nothing until melee is moved out of
+it.
 
 **A message queue.** The pipeline wears every sign of one — durable work,
 stateless workers scaled sideways, at-least-once semantics, backpressure, a
@@ -1803,10 +1594,9 @@ hundredfold and that walk becomes the cost, and an index of what is missing
 starts to earn its keep — most likely a query against the store rather than a
 queue, but that is the first moment the question is worth asking again.
 
-THE ONE THING THAT IS A MESSAGE is `/api/board/disagree`: a browser reporting
-that two measurements of a row differ. Nobody can derive it from anything, so it
-has a store, a key and an expiry of its own. The only queue-shaped thing here is
-the only event-shaped thing here, and that is not a coincidence.
+THE ONE THING THAT IS NOT DERIVABLE IS A SUBMISSION, and that is the one thing
+with a queue: `inbox` holds what a player sent until `wfsim-intake` has made a
+build of it. Everything downstream of the library is a set difference.
 
 **Adaptive precision — fewer runs for rows far from a boundary.** The run count
 is the RULER'S OWN TERM and is where a published number's authority comes from.
@@ -1881,9 +1671,9 @@ work = (builds × rulers × modes)  MINUS  the facts
 ```
 
 **A RESCORE IS "MEASURE THESE ROWS AGAIN", AND THERE IS NO SECOND KIND.** Under
-the difference, a row without a fact is work; `--rescore <sel>` makes the rows it
-names behave as if they had none. A wide selector and a narrow one are the same
-operation, which is why there is no separate button for "everything".
+the difference, a row without a fact is work — so DELETING a fact is the whole of
+asking for it again, and one row and the whole board are the same operation.
+There is nothing to force and no button to name.
 
 That is also what makes a deadline harmless. Truncating a run leaves rows
 unmeasured, the board keeps publishing the weapons that are complete, and the
@@ -1929,35 +1719,23 @@ rank, keep everything within half of each group's own leader, write
 moment, needs nothing from any scoring run, and CANNOT DESTROY ANYTHING because
 the only thing it reads that it also writes is a weapon's own carried rows.
 
-**AUDIT — the one question a table cannot answer.** No query can say whether
-the code still computes the number it recorded, because what a row READS is
-enumerable from the row and what it EXECUTES is not. So the audit re-fights a
-cost-balanced slice of the library under the current code and compares exactly.
-It publishes nothing and gates nothing, and it is the whole of why an older
-`measured_by` does not have to mean a rescore.
-
 ### An older engine is a REFERENCE, never a verdict
 
 > **A SCORE DOES NOT EXPIRE, AND THE BUILD THAT MEASURED IT DOES NOT DECIDE
 > WHETHER IT IS RIGHT.**
 
-A fact's validity rests on one thing this code can check exactly: `data_fp`, the
-hash of what the row READ. What a row reads is enumerable from the row, so a data
-correction dirties exactly the rows that read the file that moved — and produces
-a NEW row, because `data_fp` is in the key, which means reverting that file
-restores the old answer without recomputing it.
+A fact's validity rests on nothing this code can check. What a row READS is
+enumerable from the row; what it EXECUTES is not, and **no hash can stand in for
+it.** 55.6% of commits touch the engine and almost none of them can move a
+number, so treating "measured by an older build" as "wrong" means spending 130
+CPU-hours to confirm numbers that were already right. `measured_by` is therefore
+FORENSICS: it is what says which rows a build wrote, once a build is found to
+have been broken.
 
-What a row EXECUTES is not enumerable, and **no hash can stand in for it.** 55.6%
-of commits touch the engine and almost none of them can move a number, so
-treating "measured by an older build" as "wrong" means spending 130 CPU-hours to
-confirm numbers that were already right. `measured_by` is therefore FORENSICS: it
-is what says which rows a build wrote, once a build is found to have been broken.
-
-**SO INVALIDATION IS A MEASUREMENT, NOT A DECLARATION.** The audit re-fights a
-cost-balanced slice of the library under the current code and compares exactly;
-what it finds MOVED is what gets recomputed, by name, through `--rescore`. That
-is the only operation in this pipeline that destroys a fact, which is why it is a
-person's and why a selector matching nothing says so out loud.
+**SO INVALIDATION IS A JUDGEMENT, AND A PERSON MAKES IT.** Deleting a row is the
+only operation in this pipeline that destroys a fact, and it is SQL — which is
+also what makes it precise: one row, one weapon, one ruler, whatever the case
+actually is.
 
 ### The board is a record, and a mixture is allowed
 
@@ -1969,18 +1747,17 @@ time, and that is a property rather than a defect:
 - **THE ALTERNATIVE IS WITHHOLDING CORRECT ROWS.** Guaranteeing one engine across
   the whole board means publishing nothing until every row has been re-measured
   — a full rescore before a single new build can appear.
-- **RELIABILITY COMES FROM THE AUDIT**, which crosses the board every `CROSSING`
-  runs at one job an hour. Shortening that window is one knob and costs one job;
-  the atomic-swap alternative costs 130 CPU-hours per code change.
+- **EVERY ROW IS A REAL MEASUREMENT**, which is where the board's authority
+  comes from. The atomic-swap alternative — one engine across the whole board at
+  every moment — costs 130 CPU-hours per code change to buy a property no reader
+  asked for.
 
 ### What becomes impossible
 
 | | why |
 | --- | --- |
 | a shard's work lost because a service timed out | the fact is in the table before the shard ends |
-| a correct fact overwritten by one read from older data | `data_fp` is in the key: two data versions are two rows |
 | a correct fact DELETED downstream | nothing deletes facts — no sweep, no merge, no delta |
-| a row published from data the build no longer reads | the assembly keeps it only while no current measurement exists |
 | "is this board current" taking days to answer | it is one comparison |
 
 
@@ -2032,9 +1809,8 @@ when a batch ends, so a run cancelled at 95% has kept 95%.
 
 **A WEAPON IS NEVER INTERNALLY MIXED, AND ACROSS WEAPONS IT MAY BE.** A file is
 written whole, so every row in it was measured against the data the build reads
-today; the cross-weapon ranking can hold rows from different builds while a
-repair is in flight, which is bounded by the audit rather than by withholding
-correct rows — §"A mixture is allowed".
+today; the cross-weapon ranking can hold rows measured by different builds, and
+every one of them is a real measurement — §"A mixture is allowed".
 
 ### What it costs, at each tier
 
@@ -2061,18 +1837,18 @@ and finding the rows a broken build wrote becomes `WHERE measured_by = ?`.
 
 **THE ONE STEP THAT STAYS O(EXISTS) IS A FULL RESCORE**, and no store changes
 that: forty jobs is the account's ceiling and one 121-minute row is a floor no
-split goes under. The lever is not paying for one — the audit MEASURES which
-rows actually moved, and only those are rescored.
+split goes under. The lever is not paying for one — a person deletes the rows a
+change actually reached, and only those are rescored.
 
 
 ---
 
 ## One database, and the two things that are deliberately not in it
 
-**ONE D1 DATABASE IS THE SYSTEM OF RECORD**, and it holds four tables: `builds`,
-what players sent; `scores`, the facts computed from them; `disagreements`, the
-one event in this system; and `supporters`, a count. Nothing else is a live
-store — there is no KV namespace and no R2 bucket.
+**ONE D1 DATABASE IS THE SYSTEM OF RECORD**, and it holds four tables: `inbox`,
+what players sent, verbatim, until intake has made a build of it; `builds`, the
+library; `scores`, the facts computed from it; and `supporters`, a count.
+Nothing else is a live store — there is no KV namespace and no R2 bucket.
 
 The division is decided by two questions, asked of each piece of data:
 
@@ -2155,17 +1931,13 @@ door about EVERY ruler and reports "2 of 3 boards will take it"; it never
 predicts a SCORE. A new ruler costs no community effort — it is scored from
 the library the day it lands.
 
-## A rescore costs the rows that read what changed
+## A rescore costs the rows somebody deleted
 
-**A RESCORE COSTS THE ROWS THAT READ WHAT CHANGED.**
-`engine::data_fingerprint` hashes what a row actually reads (its ruler, its
-weapon and every form it fires, each mod, arcane and evolution, plus
-everything no entity owns), the board stores it per row, and `--engine` is the
-CODE alone. Measured on 24 real rows: 26.0 s full, **0.075 s** when nothing
-changed, 2 of 24 for a Heavy Caliber edit, **0 of 24** for a whole new weapon.
-The one hand list (`AFFECTS_NO_NUMBER`) can only cost TIME — anything
-unclassified falls into the global bucket every row carries. Comments are
-free, since `build.rs` embeds each file with them stripped.
+**AND NOTHING ELSE.** A stored score is reused because it exists, so a run's
+bill is the builds with no fact plus whatever a person retired — `WHERE weapon =
+?`, `WHERE ruler = ?`, one row. `scripts/board_select.py` says which builds carry
+the thing that was fixed, so the DELETE can be written by hand and priced before
+it is run.
 
 
 **THE BOARD STAYS A STATIC FILE, AND SAYS HOW FAR BEHIND IT IS.** Committed to

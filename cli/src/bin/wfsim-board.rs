@@ -36,12 +36,13 @@ fn family(id: &str) -> &str {
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
-    /// THE BUILD THIS ROW IS, without the mode — `builds::identity`.
+    /// THE BUILD THIS ROW IS, without the mode — `builds::build_id`, which is
+    /// what the `builds` table is keyed by.
     ///
     /// Carried so the run can prove every validated build ended up somewhere:
     /// listed, or held below the floor. It is NOT written to the yaml, which
-    /// states the build itself and from which the identity is recomputed — a
-    /// stored copy of a derived fact is the one that goes stale.
+    /// states the build itself and from which the id is recomputed — a stored
+    /// copy of a derived fact is the one that goes stale.
     identity: String,
     /// HOW the weapon was played — `base`, `cycle`, `alternate`. Part of the
     /// entrant's identity, not of the fight: a Torid through its Incarnon
@@ -396,18 +397,6 @@ fn identity_of(key: &str) -> String {
     key.rsplit_once('#').map_or_else(|| key.to_string(), |(i, _)| i.to_string())
 }
 
-/// THE GROUP A ROW BELONGS TO — `(weapon, mode)`, read off the row key.
-///
-/// A weapon with n modes is n independent rankings (docs/BOARD.md), so a mode
-/// is the unit a probe can clear and a rescore can skip. The key is
-/// `identity#mode` and an identity opens with the weapon and a `|`, so the two
-/// ends are the group and nothing has to carry it separately.
-fn group_of(key: &str) -> String {
-    let (identity, mode) = key.rsplit_once('#').unwrap_or((key, "base"));
-    let weapon = identity.split('|').next().unwrap_or(identity);
-    format!("{weapon}|{mode}")
-}
-
 /// ONE MEASUREMENT, as the database holds it — and there is exactly ONE per
 /// row, the last one taken.
 ///
@@ -699,7 +688,6 @@ fn main() {
     // false ON PURPOSE — a build the budget did not reach this time is queued,
     // not lost, which is a FOURTH outcome and has to be one the check knows.
     let mut deferred_ids: std::collections::BTreeSet<String> = Default::default();
-    let verify = has_flag("--verify");
     // THE ASSEMBLY TAKES ITS NUMBERS FROM THE FACTS AND NOWHERE ELSE.
     //
     // `--project` is the pass that PUBLISHES, and a publisher with more than
@@ -917,7 +905,7 @@ fn main() {
         // IT PASSED THE DOOR, so it owes a row somewhere. Recorded before the
         // modes are enumerated, because what has to be provable is that a
         // VALIDATED build was ranked — not that some particular mode of it was.
-        scored_ids.insert(wfsim_engine::builds::identity(&v));
+        scored_ids.insert(wfsim_engine::builds::build_id(&v));
         // EVERY MODE THIS WEAPON CAN BE PLAYED IN, and not the one the
         // submitter happened to try.
         //
@@ -1013,17 +1001,6 @@ fn main() {
                     if project {
                         absent += 1;
                         unready.insert(v.weapon.clone());
-                        deferred_ids.insert(identity_of(&key));
-                        continue;
-                    }
-                    // A RIVEN ROW IS NOT AUDITABLE, and skipping it is a
-                    // property of the verification rather than of a sampler.
-                    // Its rolls are the argmax of a search, so re-fighting it
-                    // pays for sixteen corner probes to compare a number that
-                    // was chosen rather than measured — expensive, and a weaker
-                    // statement than the plain rows give for free. Counted
-                    // BEFORE the shard filter, like every other verdict here.
-                    if verify && v.riven.is_some() {
                         deferred_ids.insert(identity_of(&key));
                         continue;
                     }
@@ -1293,7 +1270,7 @@ fn main() {
             };
             let exilus_for_row = v.exilus.clone().unwrap_or_default();
             rows.push(Row {
-                identity: wfsim_engine::builds::identity(&v),
+                identity: wfsim_engine::builds::build_id(&v),
                 weapon: v.weapon,
                 mode: played.id.to_string(),
                 score,
@@ -1365,8 +1342,8 @@ fn main() {
     // own `kept` covers a fraction by construction — the question "did every
     // build get ranked" is only meaningful where every row was in scope, which
     // is the unsharded PUBLISH run.
-    // ONE MACHINE-READABLE LINE, the way `verify-result` is: the workflow reads
-    // it to decide whether to fan out at all. It stands BEFORE the accounting
+    // ONE MACHINE-READABLE LINE, because the workflow reads it to decide
+    // whether to fan out at all. It stands BEFORE the accounting
     // below, which asserts every validated build reached a row — true of a run
     // that scores and false by construction of one that only counts.
     if dry {
@@ -1402,113 +1379,6 @@ fn main() {
         listed.len(),
         held.len(),
     );
-
-    // ---- THE VERDICT, and nothing is written on this path -------------
-    //
-    // EXACT EQUALITY, because a score is a pure function of (build, ruler,
-    // code, data) and an f64 round-trips through the yaml: "close enough" would
-    // be a tolerance nobody can defend, and a change that moves a rank by a
-    // thousandth still moves the board.
-    //
-    // TOO FEW ROWS COMPARED IS NOT A PASS. A sample that the floor screened
-    // away, or one whose rows are no longer on the board, proves nothing — and
-    // a verification that cannot fail is worse than none, so it answers "moved"
-    // and the run does what it would have done anyway.
-    if verify {
-        let mut compared = 0usize;
-        let mut moved: Vec<(&String, f64, f64)> = Vec::new();
-        for (k, &now) in &computed {
-            if let Some(was) = facts.get(k).map(|f| f.score) {
-                compared += 1;
-                if now != was {
-                    moved.push((k, was, now));
-                }
-            }
-        }
-        let floor = flag("--verify-min")
-            .and_then(|s| s.parse::<usize>().ok())
-            .unwrap_or(20);
-        // FIVE, BECAUSE THIS IS THE HUMAN'S COPY. A log that prints seven
-        // thousand rows is a log nobody reads, and what a reader wants from a
-        // verdict is a few examples plus the count below.
-        for (k, was, now) in moved.iter().take(5) {
-            eprintln!("verify: {k} {was} -> {now}");
-        }
-        // …AND THE MACHINE'S COPY IS A FILE, WHOLE. `audit.yml` decides two
-        // things from what moved — whether the finding is large enough to hand
-        // to a person, and which rows to rescore — and it read them off the
-        // lines above, so a DISPLAY cap silently became the answer to both: 225
-        // moved rows arrived as 15, under a cap of 40 that exists for exactly
-        // that case, and the rescore it filed repaired 15 of them.
-        if let Some(path) = flag("--verify-list") {
-            let mut out = String::new();
-            for (k, _, _) in &moved {
-                out.push_str(k);
-                out.push('\n');
-            }
-            if let Err(e) = std::fs::write(&path, out) {
-                eprintln!("verify: could not write {path}: {e}");
-                std::process::exit(1);
-            }
-        }
-        // HOW FAR IT MOVED, BESIDE THE FACT THAT IT DID. The test itself stays
-        // EXACT — a score is a pure function and the carry between processes is
-        // now lossless (`num_out`), so any difference at all is a difference —
-        // and `worst` is the first thing a reader wants when one is reported:
-        // a defect moves a number by orders of magnitude where a numerical
-        // artefact moves it by a bit.
-        let rel = |was: f64, now: f64| {
-            let scale = was.abs().max(now.abs());
-            if scale == 0.0 { 0.0 } else { (was - now).abs() / scale }
-        };
-        let worst = moved.iter().map(|&(_, w, n)| rel(w, n)).fold(0.0f64, f64::max);
-        // ONE MACHINE-READABLE LINE, because the workflow shards this and has to
-        // SUM the counts before it can apply a floor: a shard comparing three
-        // rows proves nothing on its own and everything together.
-        // `stale` RIDES ALONG because "nothing was compared" has two causes and
-        // they are opposite findings: a sampler that drew an empty slice is
-        // broken, while rows whose DATA moved have no number under this
-        // generation yet and are not a claim anything can be held to.
-        eprintln!(
-            "verify-result: compared={compared} moved={} worst={worst:e}",
-            moved.len()
-        );
-        // WHICH GROUPS CLEARED, and not merely how many rows did. A whole-board
-        // verdict spends the entire board on one row that moved; a per-group one
-        // spends the groups that moved and reuses the rest, which is the whole
-        // saving. A group is cleared only when it was COMPARED and nothing in it
-        // moved — an absent group is not a cleared one, so a sample that never
-        // reached a group leaves it to be rescored.
-        let bad: std::collections::BTreeSet<String> =
-            moved.iter().map(|(k, _, _)| group_of(k)).collect();
-        let mut seen_groups: std::collections::BTreeSet<String> = Default::default();
-        for k in computed.keys() {
-            if facts.contains_key(k) {
-                seen_groups.insert(group_of(k));
-            }
-        }
-        // BOTH SIDES, because a shard's view is a slice. Two shards can sample
-        // one group, and a group clear in one and moved in the other is MOVED —
-        // so the collector needs what moved as well as what cleared, or the
-        // clear half of a split group would carry the whole of it.
-        for g in seen_groups.difference(&bad) {
-            println!("verified-group: {bench_id} {g}");
-        }
-        for g in &bad {
-            println!("moved-group: {bench_id} {g}");
-        }
-        if compared < floor {
-            eprintln!("verify: only {compared} rows compared (want {floor}) — inconclusive");
-            std::process::exit(1);
-        }
-        eprintln!(
-            "verify: {} of {compared} rows moved, {} of {} groups clear",
-            moved.len(),
-            seen_groups.len() - bad.len(),
-            seen_groups.len()
-        );
-        std::process::exit(i32::from(!moved.is_empty()));
-    }
 
 
     // WHAT THE PAGE FETCHES, and the only thing published: one file per weapon,

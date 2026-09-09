@@ -11,11 +11,10 @@
 // So does pinning the repair slice's offset, the other way the same wheel spins
 // without turning.
 //
-// A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. The score store keys a
-// stored number by what it READ, never by which binary wrote it, so a run
-// reuses every score whose data still matches — measured, 10,348 reused and 0
-// scored. `audit.yml` is the only thing that finds a number the code no longer
-// computes, and it finds it by MEASURING a slice rather than by asking a hash.
+// A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. A stored score is reused
+// because it EXISTS — no clock, no fingerprint, no binary in the key — so a run
+// that changed a formula reuses every row it already has. What retires a fact
+// is a person deleting its row.
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,8 +35,8 @@ const triggers = wf.slice(from + 1, to < 0 ? wf.length : to);
 const keys = triggers.filter((l) => /^ {2}\S/.test(l)).map((l) => l.trim().replace(":", ""));
 
 check(!keys.includes("push"), `the board is not woken by a push (${keys.join(" ") || "nothing"})`,
-  "a pushed run duplicates the scheduled one and is cancelled by the next push; "
-    + "the fingerprint is what carries a change to the board");
+  "a pushed run duplicates the one a person is about to start and is cancelled "
+    + "by the next push");
 // THE CLOCK, OR A DECLARED HOLD — never neither, and never a hold by accident.
 // A board nothing wakes is the state that goes green in every check and is
 // discovered by a reader asking why the numbers stopped, so the hold has to be
@@ -55,8 +54,8 @@ if (held) {
 }
 check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:"),
   "no path list decides whether the board runs",
-  "the fingerprint decides what a change reached; a path list is a second "
-    + "answer to that question and the two can disagree");
+  "what a run does is decided by what the database holds; a path list is a "
+    + "second answer to that question and the two can disagree");
 
 // A STEP MAY NOT READ AN OUTPUT NOTHING HAS SET YET.
 //
@@ -65,7 +64,7 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
 // downstream quietly gets nothing. It cost the score store its first run: the
 // fetch sat above the check that gates it, never ran, and three jobs pointed
 // `--scores` at a directory nobody had filled. Every run stayed green.
-for (const wfName of ["board.yml", "audit.yml"]) {
+for (const wfName of ["board.yml"]) {
   const lines = readFileSync(resolve(ROOT, ".github/workflows", wfName), "utf8").split(NL);
   const definedAt = new Map();
   lines.forEach((l, i) => {
@@ -196,16 +195,6 @@ check(!pub.some((l, i) => /name:\s*store/.test(l)
   && pub.slice(Math.max(0, i - 4), i).some((p) => p.includes("download-artifact"))),
   "…rather than the snapshot the scorers were handed",
   "the artifact is as old as the run; the assembly is the last thing it does");
-
-// THE BOARD PUBLISHES; THE AUDIT INSPECTS. `--verify` re-fights published rows
-// and compares them, which is an inspector's job and costs 25 minutes of wall
-// clock — on the board's critical path it delayed every publish to decide a
-// priority hint, and the run behind it was cancelled while it worked. The audit
-// asks the same question hourly, gating nothing.
-const verifies = wf.filter((l) => l.includes("--verify"));
-check(verifies.length === 0, "the board does not stop to verify itself",
-  `the pipeline re-fights published rows (${verifies.map((l) => l.trim()).join(" | ")}) `
-    + "instead of leaving that to audit.yml");
 
 console.log(NL + (bad ? `${bad} failed` : "only the clock and a person start a board run"));
 process.exit(bad ? 1 : 0);

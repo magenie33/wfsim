@@ -599,25 +599,37 @@ asked for.
 
 ## `check_rescore_paths`
 
-Only the clock and a person may start a board run, and the run must not stop to
-judge itself. Plain node, no browser: it reads `.github/workflows/board.yml` and
-refuses a `push` trigger, requires the `schedule`, refuses any path list,
-refuses a `--verify` anywhere in the file, refuses a pinned
-`--refresh-from`, requires the `--shard i/N` denominator to name the same output
-the matrix is built from, refuses an `if:` that gates a step on an output set
-BELOW it, and requires every scoring call to bound both
-backlogs and the clock behind them — `--refresh` for rows already held (spent in
-measured seconds), `--new-limit` for builds with no score at all (a count, since
-they have no cost), and `--deadline` to make that count a promise.
+Only the clock and a person may start a board run. Plain node, no browser: it
+reads `.github/workflows/board.yml` and refuses a `push` trigger, requires
+either the `schedule` or a declared hold, refuses any path list, requires the
+`--shard i/N` denominator to name the same output the matrix is built from,
+refuses an `if:` that gates a step on an output set BELOW it, keeps the pass
+that PUBLISHES from also being one that scores, and requires every scoring call
+to bound its backlog and the clock behind it — `--new-limit` for builds with no
+score at all (a count, since they have no cost), and `--deadline` to make that
+count a promise.
 
 Each of those spins the wheel without turning it while every run stays green. A
-pushed run duplicates the scheduled one and is cancelled by the next push; a
-path list is a second answer to the question the fingerprint already answers;
-`--verify` re-fights published rows, which is the audit's job and costs 25
-minutes of wall clock on the critical path; a pinned offset hands the next run
-the rows the last one just repaired.
+pushed run duplicates the one a person is about to start and is cancelled by the
+next push; a path list is a second answer to a question the database already
+answers; a bound naming a count without a clock is a bound that means nothing,
+because rows differ 79x in cost.
 
-It fails on each of the seven.
+## `check_submission_hop`
+
+A submission survives the whole hop, and every hop in it is the real one: the
+page's own `boardPayload()` in headless Chrome, then `worker/index.js` against a
+stub D1, then the inbox row it stores, then the `wfsim-intake` binary, then the
+build that would land in the library. Only the network and D1 are stubbed —
+nothing about what a build IS is.
+
+It asserts that the door stores the record VERBATIM and under a random id, that
+a riven travels as a shape and never as rolls, that intake derives the id from
+the build, that no `mode` survives into the library, and that the PAIRING the
+player built is the pairing that is stored while the ORDER is the canonical one.
+
+Each end already had its own check, and all of them passed on the day `mode` was
+in the door's key — because no check looked at what came out the far end.
 
 ## `check_comment_style`
 

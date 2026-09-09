@@ -20,13 +20,11 @@
 # rate that crosses the board in days, not months — `docs/BOARD.md`
 # §"When the code moved" is where that rate is argued.
 #
-# A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. The score store keys a
-# number by what it READ and never by which binary wrote it, so a run reuses
-# every score whose data still matches: measured on a scheduled run, 10,348
-# reused and 0 scored. `audit.yml` is the only thing that finds a number this
-# code no longer computes, and it finds it by MEASURING rather than by asking a
-# hash. What retires a fact is a person deleting its row, which is SQL and
-# precision beside it — docs/BOARD.md §"When the code moved".
+# A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. A stored score is reused
+# because it EXISTS: there is no clock, no fingerprint and no binary in the key,
+# so a run that changed a formula reuses every row it already holds. WHAT
+# RETIRES A FACT IS A PERSON DELETING ITS ROW, which is SQL and precision beside
+# it — docs/BOARD.md §"When the code moved".
 #
 # Scoring is embarrassingly parallel — every row is an independent fight — so it
 # splits `SHARDS` ways and a merge job assembles the board from the scores. What
@@ -63,10 +61,8 @@ on:
   # schedule:
   #   - cron: "0 * * * *"
   #
-  # NOTHING ELSE RESCORES ON A CLOCK. `audit.yml` reads a slice of the published
-  # board every hour and REPORTS a row that is not what this code computes,
-  # without rescoring anything and without gating this pipeline — so it keeps
-  # running while this is held, and it is what says whether the board is right.
+  # NOTHING ELSE RESCORES, ON A CLOCK OR OTHERWISE. This is the only pipeline
+  # that fights anything.
   # A PERSON, AND NOTHING ELSE, STARTS A RUN. It takes no input: what a run
   # does is decided by what the database holds — a build with no fact is
   # computed, a build with one is not — so there is nothing here to name.
