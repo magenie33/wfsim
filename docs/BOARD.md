@@ -211,17 +211,24 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | | who starts it | what it does | what it costs |
 | --- | --- | --- | --- |
 | `queue.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
-| `scores.yml` | the clock, hourly at `:20` | what is asked for is MEASURED | as many shards as the work needs |
+| `scores.yml` | the clock, hourly at `:30` | what is asked for is MEASURED | as many shards as the work needs |
 | `publish.yml` | the clock, 00:00 and 12:00 UTC | `scores` is ranked and written to `site/board` | one runner, seconds |
 
 **EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
 input, so a hand-started run and a scheduled one differ in nothing at all.
 
-**HOURLY SCORING IS SAFE BY CONSTRUCTION**, and the budget is what makes it so:
-each shard stops taking rows after `SCORE_DEADLINE_MINUTES`, so a run is about
-forty minutes however deep the queue is. What it does not reach stays owed. An
-hour with nothing owed costs ONE job — the gate answers `todo=0` and the fan-out
-never happens.
+**AN HOUR THAT DOES NOT FINISH LOSES NOTHING.** A queue row is deleted in
+exactly one place — beside the fact that settles it, after the score is banked —
+so a row a run did not reach, did not take, or was killed halfway through is
+still owed when the next hour reads the list. **A cancelled tick costs a tick,
+never a row.** GitHub keeps one run pending per concurrency group and drops a
+second; the rows it would have taken are the rows the next one takes.
+
+That is what the cadence rests on, rather than on any run being long enough.
+How many hours it takes to drain a deep queue is a question about the WORK — the
+clock does not have to answer it. The budget still bounds a run at about forty
+minutes whatever the depth, and an hour with nothing owed costs ONE job, because
+the gate answers `todo=0` and the fan-out never happens.
 
 **AND NOTHING ELSE BOUNDS THE CADENCE.** The repository is public, so Actions
 minutes are unlimited. One run reads about 40,000 rows of D1 against a free five
