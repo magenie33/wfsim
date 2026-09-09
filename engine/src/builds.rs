@@ -105,7 +105,7 @@ pub const BUILD_AXES: &[BuildAxis] = &[
 ];
 
 /// A build that passed, and what it costs to actually own.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ValidBuild {
     /// Weapon id.
     pub weapon: String,
@@ -143,6 +143,19 @@ pub struct ValidBuild {
     /// of the build: an elemental riven pairs with the build's other elementals
     /// and where it sits decides what it pairs with.
     pub riven: Option<crate::rivens_data::RivenShape>,
+    /// THE NUMBERS THAT RIVEN ROLLED, when they are known. Empty on a build
+    /// without one, and on a record that states only a shape.
+    ///
+    /// PART OF THE FIGHT, so part of [`identity`]. Which END of the 0.9–1.1
+    /// band a stat sits at changes the number, and two ends of one shape are
+    /// two builds — `wfsim-intake` resolves them by asking every ruler and
+    /// stores each winner as its own build. An identity that could not tell
+    /// them apart would file the second under the first's number.
+    ///
+    /// SET AFTER VALIDATION rather than passed through it, because legality is
+    /// a question about the SHAPE: which stats a riven may carry, and which of
+    /// them may be the malus. What they rolled cannot make a card illegal.
+    pub riven_rolls: Vec<f64>,
     /// THE PARTS A MODULAR WEAPON IS ASSEMBLED FROM. `None` on everything that
     /// takes none, which is all but the Kitguns.
     ///
@@ -1043,6 +1056,9 @@ pub fn validate_with(
     };
 
     Ok(ValidBuild {
+        // WHAT IT ROLLED IS NOT A LEGALITY QUESTION, so nothing here has one.
+        // `with_riven_rolls` is where a caller that knows them says so.
+        riven_rolls: Vec::new(),
         weapon: weapon.to_string(),
         exilus: exilus_id.map(|m| m.id.to_string()),
         mods: multishot,
@@ -1121,6 +1137,20 @@ fn check_riven_shape(
     Ok(())
 }
 
+impl ValidBuild {
+    /// THE NUMBERS THIS RIVEN ROLLED, once somebody knows them.
+    ///
+    /// A record states a SHAPE and `wfsim-intake` resolves it by asking every
+    /// ruler which end of each band the fight likes; a record that already
+    /// carries the answer hands it straight over. Either way it lands here
+    /// before [`identity`] is taken, because the rolls are part of the fight.
+    #[must_use]
+    pub fn with_riven_rolls(mut self, rolls: Vec<f64>) -> Self {
+        self.riven_rolls = rolls;
+        self
+    }
+}
+
 /// THE BOARD'S OWN ROW KEY: an [`identity`] and the MODE it was played in.
 ///
 /// One row per (build, mode) — a build played two ways is two entrants, and
@@ -1146,7 +1176,7 @@ pub fn board_key(b: &ValidBuild, mode: &str) -> String {
 /// give 128 bits: the identity it folds is up to ~300 bytes of ids and rides on
 /// every score row, and a library four orders of magnitude under the birthday
 /// bound will not see a collision.
-pub fn build_id(b: &ValidBuild, rolls: &[f64]) -> String {
+pub fn build_id(b: &ValidBuild) -> String {
     const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     const PRIME: u64 = 0x0000_0100_0000_01b3;
     let fold = |mut h: u64, bytes: &[u8]| {
@@ -1156,16 +1186,7 @@ pub fn build_id(b: &ValidBuild, rolls: &[f64]) -> String {
         }
         h
     };
-    // THE ROLLS ARE PART OF IT, when there are any. `identity` states the
-    // SHAPE — which stats, and which is the malus — because that is what a
-    // player goes and obtains; two ENDS of one shape's band are two different
-    // builds with two different numbers, and an id that could not tell them
-    // apart would file the second under the first's.
-    let mut text = identity(b);
-    for r in rolls {
-        text.push('|');
-        text.push_str(&format!("{r}"));
-    }
+    let text = identity(b);
     let lo = fold(OFFSET, text.as_bytes());
     let hi = fold(OFFSET ^ 0xffff_ffff_ffff_ffff, text.as_bytes());
     format!("{hi:016x}{lo:016x}")
@@ -1207,6 +1228,19 @@ pub fn identity(b: &ValidBuild) -> String {
             r.bonuses.join("+"),
             r.malus.as_ref().map_or(String::new(), |m| format!("-{m}"))
         ),
+    };
+    // THE ROLLS, appended for the same reason: every identity already computed
+    // for a build that states only a shape is unchanged byte for byte.
+    let key = match b.riven_rolls.as_slice() {
+        [] => key,
+        rolls => {
+            let mut key = key;
+            for r in rolls {
+                key.push('|');
+                key.push_str(&r.to_string());
+            }
+            key
+        }
     };
     // THE EXILUS SLOT'S MOD, appended for the same reason the valence and the
     // riven shape were: every identity already computed for a build without one

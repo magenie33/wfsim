@@ -909,8 +909,12 @@ impl RivenShape {
         Self { bonuses, malus: spec.malus.as_ref().map(|m| m.id.clone()) }
     }
 
-    /// This shape as a rolled riven, every stat at `roll`.
-    fn at(&self, class: &str, rolls: &[f64]) -> RivenSpec {
+    /// This shape as a rolled riven, at the rolls given.
+    ///
+    /// PUBLIC because a stored build names its own corner. `wfsim-intake`
+    /// resolves a shape once, by asking every ruler, and the scorer then builds
+    /// the card the record names rather than searching for it again.
+    pub fn at(&self, class: &str, rolls: &[f64]) -> RivenSpec {
         RivenSpec {
             class: class.to_string(),
             bonuses: self

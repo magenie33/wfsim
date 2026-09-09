@@ -900,6 +900,20 @@ fn main() {
             }
         };
 
+        // …AND THE NUMBERS ITS RIVEN ROLLED, if the record names them. They are
+        // part of the fight, so they are part of the identity every key here is
+        // taken from: two ends of one shape are two builds with two numbers.
+        //
+        // A RECORD THAT NAMES NONE STATES ONLY A SHAPE, which is what the
+        // library held before `wfsim-intake` resolved them, and the branch in
+        // the scoring loop below searches for the corner as it always did.
+        let v = match s.get("riven_rolls").and_then(Value::as_array) {
+            Some(rolls) => v.with_riven_rolls(
+                rolls.iter().filter_map(Value::as_f64).collect::<Vec<_>>(),
+            ),
+            None => v,
+        };
+
         // IT PASSED THE DOOR, so it owes a row somewhere. Recorded before the
         // modes are enumerated, because what has to be provable is that a
         // VALIDATED build was ranked — not that some particular mode of it was.
@@ -1132,6 +1146,27 @@ fn main() {
                     if let Some(shape) = &v.riven {
                         let cls =
                             wfsim_engine::rivens_data::class_for_weapon(&v.weapon).unwrap_or("");
+                        // THE BUILD MAY ALREADY SAY WHICH CORNER IT IS, and then
+                        // there is nothing to search: `wfsim-intake` asked every
+                        // ruler once and stored each winner as its own build, so
+                        // the row measures the card the record names.
+                        //
+                        // A RECORD THAT STATES ONLY A SHAPE takes the branch
+                        // below, which is what the library held before intake
+                        // resolved them. It goes when nothing states a shape any
+                        // more, and not before — every riven row on the board
+                        // would lose the numbers it was published with.
+                        if !v.riven_rolls.is_empty() {
+                            let spec = shape.at(cls, &v.riven_rolls);
+                            row_riven = Some(RowRiven {
+                                bonuses: shape.bonuses.clone(),
+                                malus: shape.malus.clone(),
+                                rolls: v.riven_rolls.clone(),
+                            });
+                            if let Some(o) = req.as_object_mut() {
+                                o.insert("rivens".into(), wfsim_webapi::riven_request(&spec));
+                            }
+                        } else {
                         // THE BEST CORNER'S OWN PROBE SCORE, kept rather than
                         // thrown away: it is the screen, and it is already paid
                         // for. IN THE BOARD'S OWN METRIC, so it can be compared
@@ -1186,6 +1221,7 @@ fn main() {
                         });
                         if let Some(o) = req.as_object_mut() {
                             o.insert("rivens".into(), wfsim_webapi::riven_request(&best));
+                        }
                         }
                     }
                     // THE MEASUREMENT, IN AS MANY SITTINGS AS THE CLOCK ALLOWS.
@@ -2072,6 +2108,7 @@ mod tests {
             valence: String::new(),
             exilus: None,
             riven: None,
+            riven_rolls: Vec::new(),
             assembly: None,
             forma: 0,
             drain: 0,
@@ -2129,6 +2166,7 @@ mod tests {
                 valence: String::new(),
                 exilus: None,
                 riven: None,
+            riven_rolls: Vec::new(),
                 assembly: None,
                 forma: 0,
                 drain: 0,
@@ -2174,6 +2212,7 @@ mod tests {
             valence: String::new(),
             exilus: None,
             riven: None,
+            riven_rolls: Vec::new(),
             assembly: None,
             forma: 0,
             drain: 0,

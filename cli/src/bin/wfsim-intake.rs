@@ -256,7 +256,11 @@ fn intake(lines: impl Iterator<Item = String>) -> (Vec<Value>, Vec<String>, usiz
         }
         let variants: Vec<Vec<f64>> = if corners.is_empty() { vec![Vec::new()] } else { corners };
         for rolls in variants {
-            let key = wfsim_engine::builds::build_id(&v, &rolls);
+            // THE ROLLS GO ON THE BUILD BEFORE THE KEY IS TAKEN. They are part
+            // of the fight, so they are part of the identity the id hashes —
+            // two ends of one shape are two builds with two numbers.
+            let v = v.clone().with_riven_rolls(rolls.clone());
+            let key = wfsim_engine::builds::build_id(&v);
             let rec = if rolls.is_empty() {
                 canonical(&v)
             } else {
