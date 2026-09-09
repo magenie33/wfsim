@@ -815,7 +815,7 @@ pub fn validate_with(
     // what does it drain. A riven has no family and drains 18 at max rank, and
     // both of those are the mod's own answer rather than a special case here.
     let riven_def = riven.map(|shape| {
-        crate::rivens_data::perfect(shape, riven_class(weapon), |_, _| 0.0)
+        crate::rivens_data::god_roll(shape, riven_class(weapon))
             .to_mod_def(RIVEN_SLOT, spec.disposition.unwrap_or(1.0))
     });
     let (multishot, evos) = normalize_with(weapon, mods, evolutions, riven);
@@ -1096,7 +1096,7 @@ fn check_riven_shape(
     // SHAPE FIRST: two or three bonuses, at most one malus. Asked through
     // `RivenSpec::illegal` so there is one answer to "could this exist", and
     // this function only has to carry the part that is about the WEAPON.
-    let spec = crate::rivens_data::perfect(shape, class, |_, _| 0.0);
+    let spec = crate::rivens_data::god_roll(shape, class);
     let bad = spec.illegal();
     if !bad.is_empty() {
         return Err(bad.join("; "));
@@ -1280,24 +1280,24 @@ pub fn identity(b: &ValidBuild) -> String {
 /// THE CARD'S SIGN IS NOT THE BUILD'S DIRECTION — the case the whole design
 /// rests on, measured through the simulator rather than argued.
 ///
-/// Three weapons pay *"50% chance to deal +2000% damage on non-critical hits"*
-/// in their Incarnon form (Felarx, Laetum, Phenmor). On those, critical chance
-/// is a LIABILITY — a Laetum Incarnon crit is worth x2.2 where a non-crit is
-/// worth `0.5 x 21 + 0.5 x 1 = 11` — so a riven whose MALUS is critical chance
-/// wants that malus as DEEP as it goes, and the same shape on an ordinary
-/// weapon wants it as shallow as it goes.
+/// Three weapons pay *"50% chance to deal +2000% damage on non-critical hits"* in
+/// their Incarnon form. On those, critical chance is a LIABILITY — a Laetum
+/// Incarnon crit is worth x2.2 where a non-crit is worth `0.5 x 21 + 0.5 x 1 =
+/// 11` — so a riven whose MALUS is critical chance wants it as DEEP as it goes,
+/// and the same shape on an ordinary weapon wants it as shallow. The perk says
+/// the stat is one to ask about; the fight says which end. Neither is ever told
+/// which way is up.
 ///
-/// `perfect` is handed the fight and asked; it is never told which way is up.
-///
-/// A MALUS'S ROLL SCALES ITS MAGNITUDE, NOT ITS VALUE, and that caught the
-/// first version of this test: `ROLL_MAX` on a malus is the DEEPEST one, so
-/// "the top of the band" and "the better stat" are opposites there. The band
-/// ends are named by their roll below for exactly that reason — `deep` and
-/// `shallow` are a reading of the number and belong in prose, not in a
-/// variable somebody has to get right twice.
+/// A MALUS'S ROLL SCALES ITS MAGNITUDE, NOT ITS VALUE, so `ROLL_MAX` on a malus
+/// is the DEEPEST one and "the top of the band" and "the better stat" are
+/// opposites there. The band ends are named by their roll below for that
+/// reason: `deep` and `shallow` are a reading of the number and belong in
+/// prose, not in a variable somebody has to get right twice.
 #[cfg(test)]
 mod riven_perfection_tests {
-    use crate::rivens_data::{perfect, RivenShape, RivenSpec, ROLL_MAX, ROLL_MIN};
+    use crate::rivens_data::{
+        ambiguous_stats, best_roll, god_roll, RivenShape, RivenSpec, ROLL_MAX, ROLL_MIN,
+    };
 
     /// THE WHOLE LADDER, because Devouring Attrition is TIER 5 and a tier is
     /// only open when the ones below it are filled — a set with a gap is
@@ -1322,7 +1322,7 @@ mod riven_perfection_tests {
 
     /// That shape with every bonus at its ceiling and the malus at `malus_roll`.
     fn at(shape: &RivenShape, malus_roll: f64) -> RivenSpec {
-        let mut sp = perfect(shape, "pistol", |_, _| 0.0);
+        let mut sp = god_roll(shape, "pistol");
         for b in sp.bonuses.iter_mut() {
             b.roll = ROLL_MAX;
         }
@@ -1372,15 +1372,32 @@ mod riven_perfection_tests {
              ({shallow_p} vs {deep_p})"
         );
 
-        // AND `perfect` FINDS BOTH WITHOUT BEING TOLD — handed the fight and
-        // nothing else. No per-stat table, no sign convention.
-        let with = perfect(&shape, "pistol", |_, sp| fight("laetum_incarnon", ATTRITION, sp));
+        // AND THE PIPELINE FINDS BOTH WITHOUT BEING TOLD. The perk declares
+        // that it takes the sign off critical chance; the fight then says which
+        // end. No per-stat table, no sign convention, and no search on the
+        // build that has no such perk — there the stat is not ambiguous at all,
+        // which is the CHEAP half of the same answer.
+        let evos: Vec<String> = ATTRITION.iter().map(|s| (*s).to_string()).collect();
+        let asked = ambiguous_stats(&shape, &evos);
+        assert_eq!(
+            asked.iter().map(String::as_str).collect::<Vec<_>>(),
+            vec!["critical_chance"],
+            "the perk names the stat it inverts"
+        );
+        let with = best_roll(&shape, "pistol", &asked, |sp| {
+            Some((fight("laetum_incarnon", ATTRITION, sp), 0.0))
+        });
         assert_eq!(
             with.malus.as_ref().unwrap().roll,
             ROLL_MAX,
             "on Devouring Attrition the malus belongs at its deepest"
         );
-        let without = perfect(&shape, "pistol", |_, sp| fight("laetum", &[], sp));
+        // …AND WITHOUT THE PERK NOTHING IS ASKED. The god roll is the answer
+        // and it is the right one: no perk pays for not critting, so a deeper
+        // crit malus is just a worse card.
+        let none = ambiguous_stats(&shape, &[]);
+        assert!(none.is_empty(), "{none:?}");
+        let without = best_roll(&shape, "pistol", &none, |_| unreachable!("no fight is run"));
         assert_eq!(
             without.malus.as_ref().unwrap().roll,
             ROLL_MIN,

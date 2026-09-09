@@ -105,40 +105,37 @@ fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
     rec
 }
 
-/// HOW MANY RUNS A CORNER GETS. A hundredth of what a ruler asks of a real
-/// measurement, and it buys the same answer because the comparison is PAIRED:
-/// the engine derives every run's dice from one seed, so run `i` of one corner
-/// and run `i` of another are drawn from the same luck, and the difference
-/// between them is the corner rather than the noise.
+/// THE ROLLS A RIVEN IS STORED WITH — the god roll, unless a stat's sign has
+/// stopped saying which end of its band is better.
 ///
-/// IT NEVER BECOMES A SCORE. Its whole output is which of `2^n` roll sets a
-/// fight likes, and the build that comes out of it is measured at the ruler's
-/// own count like every other.
-const CORNER_RUNS: u32 = 10;
-
-/// THE ROLLS A RIVEN SHOULD BE STORED WITH — every corner this build wins on,
-/// across every ruler and every mode it can be played in.
+/// THE DEFAULT IS THE GOD ROLL AND IT COSTS NOTHING. Every bonus at its ceiling
+/// and the malus at its floor is the same rule that scores every row at full
+/// Forma, every mod at max rank and every valence at the roll's maximum:
+/// anything a player can eventually reach is not part of what a row states.
+/// 1,948 of the library's 2,418 riven builds are answered by that sentence and
+/// never reach a fight.
 ///
-/// WHY IT IS ASKED AT ALL, and asked here. Which END of the 0.9–1.1 band is best
-/// is decided by the FIGHT and not by the sign on the card: a riven whose malus
-/// is critical chance is a BONUS on the three weapons whose Incarnon form pays
-/// "+2000% damage on non-critical hits", and on those same weapons a `+`
-/// critical chance riven is worst at the bottom of its positive band. A per-stat
-/// table states neither; asking the fight states both.
+/// A STAT LOSES ITS SIGN FOR A DECLARED REASON — `rivens_data::ambiguous_stats`
+/// holds both, and there is no third. Only those stats are asked about, both
+/// ends, everything else pinned at the god roll.
 ///
-/// SO IT IS ASKED OF EVERY FIGHT, AND THE ANSWERS ARE DEDUPED. One ruler cannot
-/// speak for another, and the corner that wins a crowd need not win one target
-/// — so each `(ruler, mode)` names its own, and what comes back is the SET.
-/// Usually one, and then a riven is one build like any other.
-///
-/// ONCE, HERE, RATHER THAN PER ROW IN THE SCORER. The scorer searched the same
-/// sixteen corners again for every `(ruler, mode)` of every riven build; this
-/// asks each corner once and hands the winners on as ordinary builds.
+/// AND EACH `(ruler, mode)` ANSWERS FOR ITSELF. One ruler cannot speak for
+/// another and the corner that wins a crowd need not win one target, so what
+/// comes back is the SET — usually one, and then a riven is a build like any
+/// other.
 fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<f64>> {
     let Some(shape) = &v.riven else { return Vec::new() };
     let Some(class) = wfsim_engine::rivens_data::class_for_weapon(&v.weapon) else {
         return Vec::new();
     };
+    let rolls_of = |spec: &wfsim_engine::rivens_data::RivenSpec| -> Vec<f64> {
+        spec.bonuses.iter().map(|b| b.roll).chain(spec.malus.iter().map(|m| m.roll)).collect()
+    };
+    let ambiguous = wfsim_engine::rivens_data::ambiguous_stats(shape, &v.evolutions);
+    if ambiguous.is_empty() {
+        return vec![rolls_of(&wfsim_engine::rivens_data::god_roll(shape, class))];
+    }
+
     let modes: Vec<wfsim_engine::weapons_data::WeaponPlayMode> =
         wfsim_engine::weapons_data::play_modes(&v.weapon)
             .into_iter()
@@ -149,28 +146,39 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<f64>> {
         let metric = bench.metric();
         let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
         let duration = scenario.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
+        // THE MEAN AND ITS OWN STANDARD ERROR, which is what the response
+        // carries them for: `metric.field` is the MEDIAN run, the right
+        // headline for "what a fight looks like" and the wrong number to rank
+        // two cards by. The ruler's run count is a term of the scenario, so the
+        // request already carries it and nothing here overrides it — at a
+        // cheaper count the answer is about the probe rather than about the
+        // cards.
+        let (mean_of, se_of) =
+            (format!("{}_mean", metric.field), format!("{}_se", metric.field));
         for played in &modes {
             let base = wfsim_webapi::simulate_request(&scenario, v, *played);
-            let best = wfsim_engine::rivens_data::perfect(shape, class, |_, spec| {
-                let mut req = base.clone();
-                if let Some(o) = req.as_object_mut() {
-                    o.insert("rivens".into(), wfsim_webapi::riven_request(spec));
-                    o.insert("runs".into(), json!(CORNER_RUNS));
-                }
-                let out = wfsim_webapi::simulate_json(&req);
-                if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-                    return f64::NEG_INFINITY;
-                }
-                metric.of(out.get(metric.field).and_then(Value::as_f64).unwrap_or(0.0), duration)
-            });
-            let rolls: Vec<f64> = best
-                .bonuses
-                .iter()
-                .map(|b| b.roll)
-                .chain(best.malus.iter().map(|m| m.roll))
-                .collect();
-            // KEYED ON THE ROLLS THEMSELVES, so two rulers landing on one corner
+            let best =
+                wfsim_engine::rivens_data::best_roll(shape, class, &ambiguous, |spec| {
+                    let mut req = base.clone();
+                    if let Some(o) = req.as_object_mut() {
+                        o.insert("rivens".into(), wfsim_webapi::riven_request(spec));
+                    }
+                    let out = wfsim_webapi::simulate_json(&req);
+                    if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+                        return None;
+                    }
+                    // A FIGHT THAT REPORTS NO SPREAD IS NOT ASKED, and the god
+                    // roll stands: without one there is nothing to say whether
+                    // a gap is a difference or a draw.
+                    let read = |k: &str| out.get(k).and_then(Value::as_f64);
+                    Some((
+                        metric.of(read(&mean_of)?, duration),
+                        metric.of(read(&se_of)?, duration),
+                    ))
+                });
+            // KEYED ON THE ROLLS THEMSELVES, so two rulers landing on one card
             // leave one build. The text is only a key; the numbers are the value.
+            let rolls = rolls_of(&best);
             found.insert(format!("{rolls:?}"), rolls);
         }
     }

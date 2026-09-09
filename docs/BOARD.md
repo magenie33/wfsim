@@ -632,25 +632,43 @@ numbers never leave the browser. It is a statement anybody can act on ("roll
 this weapon for these stats"), and it carries no free-text field a player
 authors.
 
-**AND THE LIBRARY HOLDS A BUILD**, which needs numbers. `wfsim-intake` searches
-every corner of the roll band — `rivens_data::perfect` — and stores the winner
-AS the build, which is the same rule that scores every row at full Forma, every
-mod at max rank and every valence at the roll's maximum: anything a player can
-eventually reach is not part of what a row states. Two players who rolled the
-same stats submitted the same build.
+**AND THE LIBRARY HOLDS A BUILD**, which needs numbers. `wfsim-intake` stores
+the GOD ROLL — every bonus at its ceiling, the malus at its floor — which is the
+same rule that scores every row at full Forma, every mod at max rank and every
+valence at the roll's maximum: anything a player can eventually reach is not
+part of what a row states. Two players who rolled the same stats submitted the
+same build.
 
-**AND WHEN TWO FIGHTS DISAGREE, THAT IS TWO BUILDS.** One ruler cannot speak for
-another and the corner that wins a crowd need not win one target, so each
-`(ruler, mode)` names its own and what enters the library is the SET. Measured
-over the whole library: 2,418 riven shapes became 3,275 builds, and 1,688 of
-them — seven in ten — resolved to a single corner and are one build like any
-other. The rolls are part of the id, so two ends of one shape cannot be filed
-under one another.
+**AND A FIGHT IS ASKED ONLY WHERE THE SIGN HAS STOPPED ANSWERING**
+(`rivens_data::ambiguous_stats`). Two sources and no third:
 
-**A STAT THE FIGHT CANNOT READ GOES TO THE PLAYER.** Zoom scores the same at
-both ends against one standing target, so the tie is broken toward the card that
-is easier to live with: least of it on a malus, most of it on a bonus. The board
-is publishing a riven somebody will go and try to obtain.
+- **the three physical stats, on every weapon.** A physical bonus does not add
+  damage beside the rest, it changes the SHARE each damage type holds of the
+  total — and a status proc is drawn in proportion to that share, so more Impact
+  is fewer Viral and Corrosive procs.
+- **a stat a PERK on this build takes the sign off**, which each evolution
+  answers for itself (`EvolutionDef::riven_stats_it_inverts`). A perk that pays
+  for NOT having something inverts whatever supplies it: `+2000% on non-critical
+  hits` makes critical chance a cost, a crit multiplier granted only BELOW a
+  threshold makes crossing it a loss, and a bonus earned by reloading from empty
+  is earned less often the bigger the magazine.
+
+Measured over the library: 1,948 of 2,418 riven builds are answered by the god
+roll and never reach a fight; 470 name a stat worth asking about, and all but
+five of those name exactly one — two fights, not sixteen.
+
+**WHAT IT TAKES TO MOVE A STAT OFF THE GOD ROLL** is beating it by more than the
+RULER'S OWN standard error, at the ruler's own run count. Two cards the published
+measurement cannot separate are not two builds, and between them the player gets
+the better one. That threshold is fixed by the ruler rather than by the probe: a
+test against the probe's own noise gets sharper the more you spend on it, so
+every stat eventually "separates" and the corner count grows without ever
+settling — measured, a build went from 2 corners at 40 runs to 4 at 2,560.
+
+**AND WHEN TWO RULERS DISAGREE, THAT IS TWO BUILDS.** One cannot speak for
+another and the card that wins a crowd need not win one target, so each
+`(ruler, mode)` names its own and what enters the library is the SET. The rolls
+are part of the id, so two ends of one shape cannot be filed under one another.
 
 **WHICH END IS "BEST" IS ASKED OF THE FIGHT, NEVER OF THE CARD.** DE's `+` and
 `-` describe the STAT, not the build. A riven whose malus is critical chance is
@@ -679,9 +697,9 @@ deciding which subset each weapon's shown row is drawn from.
 page creates one, named after the shape so taking the same row twice reuses it.
 
 **WHAT IT COSTS, AND WHO PAYS IT.** `wfsim-intake` does, once, when the record
-enters the library: it probes the corners at a hundredth of a ruler's run count
-and stores the winner AS the build. A riven build is then an ordinary build with
-numbers on it, scored once like any other, and the scorer probes nothing.
+enters the library, and for four builds in five it costs nothing at all — the
+god roll needs no fight. A riven build is then an ordinary build with numbers on
+it, scored once like any other, and the scorer probes nothing.
 
 ## What is not on the board
 

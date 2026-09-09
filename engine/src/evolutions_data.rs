@@ -987,6 +987,30 @@ impl EvolutionDef {
             .filter(move |_| !self.currently_broken)
     }
 
+    /// WHICH RIVEN STATS THIS PERK TAKES THE SIGN OFF — the stats whose `+`
+    /// stops meaning "roll it high" while this evolution is equipped.
+    ///
+    /// A perk that PAYS FOR NOT HAVING SOMETHING inverts the stat that supplies
+    /// it: `+2000% on non-critical hits` makes crit chance a cost, a crit
+    /// multiplier granted only BELOW a threshold makes crossing it a loss, and
+    /// a bonus earned by reloading from empty is earned less often the bigger
+    /// the magazine. `rivens_data::ambiguous_stats` is the only caller; it is
+    /// here because the reason is a property of the EFFECT, so a new effect
+    /// kind meets this match rather than a list somewhere else going stale.
+    pub fn riven_stats_it_inverts(&self) -> Vec<&'static str> {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::ChanceDamageOnNoncrit { .. }
+                | EvoEffect::CritMultiplierBelowCritChance { .. } => Some("critical_chance"),
+                EvoEffect::CritDamageBelowStatusCount { .. } => Some("status_chance"),
+                EvoEffect::FlatBaseDamageOnEmptyReload(_)
+                | EvoEffect::FieldDurationOnEmptyReload(_)
+                | EvoEffect::MagGrowthOnEmptyReload { .. } => Some("magazine_capacity"),
+                _ => None,
+            })
+            .collect()
+    }
+
     /// WHAT THIS PERK DOES NOT DO YET — the effects that loaded as `Inert`,
     /// named.
     ///

@@ -19,6 +19,7 @@
 //! legal and astronomically unlikely. This is a CONSTRUCTOR rather than a
 //! roller and must reach that corner: it is the ceiling the optimizer wants.
 
+use std::collections::BTreeSet;
 use std::sync::OnceLock;
 
 use serde::Deserialize;
@@ -963,129 +964,191 @@ impl RivenShape {
     }
 }
 
-/// THE BEST ROLL THIS SHAPE CAN HAVE, for a caller who can score one.
+/// THE CARD A PLAYER WOULD WANT — every bonus at its ceiling, the malus at its
+/// floor. The default, and the answer for all but a few hundred builds.
+pub fn god_roll(shape: &RivenShape, class: &str) -> RivenSpec {
+    let rolls: Vec<f64> = (0..shape.stat_count())
+        .map(|i| if i < shape.bonuses.len() { ROLL_MAX } else { ROLL_MIN })
+        .collect();
+    shape.at(class, &rolls)
+}
+
+/// THE STATS WHOSE SIGN IS ALWAYS AMBIGUOUS: the three physical types.
 ///
-/// Every stat goes to one END of the 0.9-1.1 band, and which end is decided by
-/// the SCORE rather than by the card's sign. That distinction is the whole of
-/// this function: DE's `+` and `-` describe the STAT, not the build. A riven
-/// whose malus is critical chance is a BONUS on the three weapons whose
-/// Incarnon form pays "+2000% damage on non-critical hits" — Felarx, Laetum
-/// and Phenmor — and on those same weapons a `+` critical chance riven is
-/// worst at the BOTTOM of its positive band. A per-stat table could not state
-/// either case; asking the fight states both, and states the next one for free.
+/// A physical bonus does not add damage beside the rest, it changes the SHARE
+/// each damage type holds of the total — and a status proc is drawn in
+/// proportion to that share. More Impact is fewer Viral and Corrosive procs, so
+/// which end of the band is better is a property of the build rather than of
+/// the sign, on every weapon.
+pub const PHYSICAL_STATS: [&str; 3] = ["impact", "puncture", "slash"];
+
+/// WHICH OF THIS SHAPE'S STATS THE SIGN DOES NOT DECIDE — the only ones a fight
+/// has to be asked about.
 ///
-/// `score` is called at most `2^n` times, n <= 4, so at most sixteen. The
-/// corners are searched exhaustively rather than by climbing: sixteen is
-/// cheap, and a climb would have to assume monotonicity, which is exactly the
-/// assumption this function exists to avoid making.
+/// Two sources and no third. The physical three above, always; and the stats a
+/// perk on this build TAKES THE SIGN OFF, which each evolution answers for
+/// itself (`EvolutionDef::riven_stats_it_inverts`) so a new perk meets that
+/// match rather than a list here going stale.
 ///
-/// A TIE GOES TO THE PLAYER — every bonus at its ceiling, the malus at its
-/// floor. That is the whole rule for a stat the fight cannot read; the tie site
-/// below says why it is exact rather than a tolerance.
-pub fn perfect(
+/// EMPTY IS THE COMMON CASE, and it means no fight at all: the card is the god
+/// roll. Measured over the library: 1,948 of 2,418 riven builds.
+pub fn ambiguous_stats(shape: &RivenShape, evolutions: &[String]) -> BTreeSet<String> {
+    let named: BTreeSet<&str> = shape
+        .bonuses
+        .iter()
+        .map(String::as_str)
+        .chain(shape.malus.as_deref())
+        .collect();
+    let inverted = evolutions
+        .iter()
+        .filter_map(|id| crate::evolutions_data::get(id))
+        .flat_map(|e| e.riven_stats_it_inverts());
+    PHYSICAL_STATS
+        .into_iter()
+        .chain(inverted)
+        .filter(|s| named.contains(s))
+        .map(String::from)
+        .collect()
+}
+
+/// THE ROLLS TO STORE THIS SHAPE WITH, asked of the fight only where the sign
+/// cannot answer.
+///
+/// `score` returns the fight's number and ITS OWN standard error, and the
+/// second is what makes this deterministic without a tolerance anybody picked:
+/// a corner takes the card off the god roll only by beating it by more than the
+/// published measurement could tell apart. Two rolls the ruler cannot separate
+/// are not two builds, and between them the player gets the better card.
+///
+/// `None` from `score` is a fight that did not run; the god roll stands.
+pub fn best_roll(
     shape: &RivenShape,
     class: &str,
-    mut score: impl FnMut(u32, &RivenSpec) -> f64,
+    ambiguous: &BTreeSet<String>,
+    mut score: impl FnMut(&RivenSpec) -> Option<(f64, f64)>,
 ) -> RivenSpec {
-    let n = shape.stat_count();
-    let n_bonus = shape.bonuses.len();
-    // HOW GOOD THIS CORNER IS FOR THE PLAYER, all else equal: every bonus at its
-    // ceiling and the malus at its floor. Bits 0..n_bonus are the bonuses and
-    // the last one is the malus, which is the order `RivenShape::at` reads.
-    let preference = |corner: u32| -> u32 {
-        (0..n)
-            .filter(|i| {
-                let high = corner >> i & 1 == 1;
-                if *i < n_bonus { high } else { !high }
-            })
-            .count() as u32
+    let stats: Vec<&str> = shape
+        .bonuses
+        .iter()
+        .map(String::as_str)
+        .chain(shape.malus.as_deref())
+        .collect();
+    // THE ENDS THE GOD ROLL SITS AT, and the positions that may leave them.
+    let god: Vec<f64> = (0..stats.len())
+        .map(|i| if i < shape.bonuses.len() { ROLL_MAX } else { ROLL_MIN })
+        .collect();
+    let asked: Vec<usize> =
+        (0..stats.len()).filter(|&i| ambiguous.contains(stats[i])).collect();
+    if asked.is_empty() {
+        return shape.at(class, &god);
+    }
+    let Some((base, base_err)) = score(&shape.at(class, &god)) else {
+        return shape.at(class, &god);
     };
-    let mut best: Option<(f64, u32, RivenSpec)> = None;
-    for corner in 0..(1u32 << n) {
-        let rolls: Vec<f64> = (0..n)
-            .map(|i| if corner >> i & 1 == 1 { ROLL_MAX } else { ROLL_MIN })
-            .collect();
+    let mut best: Option<(f64, Vec<f64>)> = None;
+    // EVERY COMBINATION OF THE ASKED STATS AND NOTHING ELSE. `2^k` where k is
+    // one on all but five builds in the library, so this is two fights.
+    for m in 1..(1u32 << asked.len()) {
+        let mut rolls = god.clone();
+        for (bit, &i) in asked.iter().enumerate() {
+            if m >> bit & 1 == 1 {
+                rolls[i] = if rolls[i] == ROLL_MAX { ROLL_MIN } else { ROLL_MAX };
+            }
+        }
         let spec = shape.at(class, &rolls);
-        // THE INDEX GOES WITH THE SPEC so a caller banking a partial search
-        // can key on it. Keyed on the order this callback was invoked in, a
-        // resumed score would land on the wrong corner the day the walk changes.
-        let s = score(corner, &spec);
-        let p = preference(corner);
-        // **A TIE GOES TO THE PLAYER**. A stat this fight
-        // cannot read — Zoom, Recoil, Ammo Maximum against one standing target
-        // — scores the same at both ends, and the board is publishing a riven
-        // somebody will go and try to obtain. Keeping the FIRST corner means
-        // every bit clear, i.e. every bonus at its MINIMUM, so a shape with one
-        // dead stat would be published asking for a worse card than it needs.
-        //
-        // THE TIE IS EXACT, not "within noise", and that is what makes this
-        // deterministic rather than a tolerance somebody picked: every corner is
-        // probed under the ruler's own PINNED SEED, so two corners that differ
-        // only in something the fight ignores return the same f64 bit for bit.
-        // The same pairing the quick calc's gain band rests on.
-        if best.as_ref().is_none_or(|(b, bp, _)| s > *b || (s == *b && p > *bp)) {
-            best = Some((s, p, spec));
+        let Some((s, err)) = score(&spec) else { continue };
+        // TWO STANDARD ERRORS OF THE DIFFERENCE, which is the ruler's own
+        // resolution and not a number chosen here.
+        if s - base > 2.0 * (base_err * base_err + err * err).sqrt()
+            && best.as_ref().is_none_or(|(b, _)| s > *b)
+        {
+            best = Some((s, rolls));
         }
     }
-    best.map(|(_, _, spec)| spec).unwrap_or_else(|| shape.at(class, &[]))
+    shape.at(class, &best.map_or(god, |(_, r)| r))
 }
 
 #[cfg(test)]
 mod tests {
 
-/// PERFECTION IS A SEARCH OVER CORNERS, and these pin the machinery before any
-/// weapon is involved: the count, the ends, and the tie rule.
+/// THE GOD ROLL IS THE DEFAULT, AND A FIGHT IS ASKED ONLY WHERE THE SIGN HAS
+/// STOPPED ANSWERING. These pin the machinery before any weapon is involved:
+/// the ends, which stats are asked about, and what it takes to move one.
 #[test]
-fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
-    let shape = RivenShape {
+fn a_card_is_the_god_roll_unless_a_fight_can_prove_otherwise() {
+    let plain = RivenShape {
         bonuses: vec!["critical_damage".into(), "multishot".into(), "damage".into()],
         malus: Some("critical_chance".into()),
     };
-    assert_eq!(shape.stat_count(), 4);
+    assert_eq!(plain.stat_count(), 4);
 
-    // A SCORE THAT WANTS EVERY BONUS HIGH AND THE MALUS LOW — the ordinary
-    // reading, and the one a per-stat table would have hard-coded.
-    let mut seen = 0;
-    let want_high = perfect(&shape, "rifle", |_, r| {
-        seen += 1;
-        r.bonuses.iter().map(|b| b.roll).sum::<f64>() - r.malus.as_ref().map_or(0.0, |m| m.roll)
+    // EVERY BONUS AT ITS CEILING, THE MALUS AT ITS FLOOR — the card a player
+    // would want, and what all but a few hundred builds are stored with.
+    let god = god_roll(&plain, "rifle");
+    assert!(god.bonuses.iter().all(|b| b.roll == ROLL_MAX));
+    assert_eq!(god.malus.as_ref().unwrap().roll, ROLL_MIN);
+    // …at the ceiling of its investment, like every board row.
+    assert_eq!(god.rank, MAX_RANK);
+
+    // NOTHING HERE IS AMBIGUOUS, so nothing is asked and no fight runs. The
+    // malus being critical chance does not make it ambiguous on its own: what
+    // does is a PERK that pays for not critting, which this build has none of.
+    let none = ambiguous_stats(&plain, &[]);
+    assert!(none.is_empty(), "{none:?}");
+    let mut asked = 0;
+    let out = best_roll(&plain, "rifle", &none, |_| {
+        asked += 1;
+        Some((1.0, 0.0))
     });
-    assert_eq!(seen, 16, "four stats is sixteen corners");
-    assert!(want_high.bonuses.iter().all(|b| b.roll == ROLL_MAX));
-    assert_eq!(want_high.malus.as_ref().unwrap().roll, ROLL_MIN);
+    assert_eq!(asked, 0, "a shape with nothing ambiguous never reaches a fight");
+    assert_eq!(rolls(&out), rolls(&god));
 
-    // …AND ONE THAT WANTS THE OPPOSITE OF ALL FOUR. Nothing about the stats
-    // changed — only the fight — and every end flips, which is the property
-    // that makes a per-stat rule impossible.
-    let want_low = perfect(&shape, "rifle", |_, r| {
-        -(r.bonuses.iter().map(|b| b.roll).sum::<f64>())
-            + r.malus.as_ref().map_or(0.0, |m| m.roll)
+    // A PHYSICAL STAT IS ALWAYS AMBIGUOUS, on every weapon: it moves the SHARE
+    // each damage type holds of the total, and a status proc is drawn in
+    // proportion to that share.
+    let phys = RivenShape {
+        bonuses: vec!["impact".into(), "damage".into()],
+        malus: Some("zoom".into()),
+    };
+    assert_eq!(
+        ambiguous_stats(&phys, &[]).into_iter().collect::<Vec<_>>(),
+        vec!["impact".to_string()],
+        "the physical stat, and only it"
+    );
+
+    // …AND ONLY THAT STAT LEAVES ITS END. The fight below wants everything at
+    // its floor; `damage` and `zoom` are not asked, so they do not move.
+    let asked_set = ambiguous_stats(&phys, &[]);
+    let low = best_roll(&phys, "rifle", &asked_set, |r| {
+        Some((-r.bonuses.iter().map(|b| b.roll).sum::<f64>(), 0.0))
     });
-    assert!(want_low.bonuses.iter().all(|b| b.roll == ROLL_MIN));
-    assert_eq!(want_low.malus.as_ref().unwrap().roll, ROLL_MAX);
+    assert_eq!(rolls(&low), vec![ROLL_MIN, ROLL_MAX, ROLL_MIN], "{:?}", rolls(&low));
 
-    // A STAT THE FIGHT CANNOT READ COMES BACK AT THE END THAT IS BETTER FOR THE
-    // PLAYER — every bonus at its ceiling, the malus at its floor.
-    //
-    // Coming back at the BOTTOM is what a first-corner tiebreak gives: every
-    // bit clear, so every BONUS at its minimum. Determinism is the right thing
-    // to want and the wrong end to take it at — a board row is a riven somebody
-    // will go and
-    // try to obtain, so a shape with one dead stat was published asking for a
-    // worse card than it needs.
-    let flat = perfect(&shape, "rifle", |_, _| 1.0);
-    assert!(flat.bonuses.iter().all(|b| b.roll == ROLL_MAX));
-    assert_eq!(flat.malus.as_ref().unwrap().roll, ROLL_MIN);
-    // …AND IT IS STILL DETERMINISTIC, which is the half worth keeping.
-    let again = perfect(&shape, "rifle", |_, _| 1.0);
-    assert_eq!(again.bonuses.iter().map(|b| b.roll).collect::<Vec<_>>(),
-               flat.bonuses.iter().map(|b| b.roll).collect::<Vec<_>>());
-    // …AND A REAL SCORE STILL WINS OVER THE PREFERENCE: the tie-break only
-    // speaks when the fight has nothing to say, which `want_low` above proves
-    // from the other side — every end flipped because the score asked for it.
+    // A GAP THE RULER COULD NOT SEE IS NOT A GAP. The other end scores higher
+    // and the difference is inside the published measurement's own standard
+    // error, so the player keeps the better card — the same rule as a stat the
+    // fight cannot read at all, which returns an identical number twice.
+    let draw = best_roll(&phys, "rifle", &asked_set, |r| {
+        let flipped = r.bonuses[0].roll == ROLL_MIN;
+        Some((if flipped { 1.001 } else { 1.0 }, 0.01))
+    });
+    assert_eq!(rolls(&draw), rolls(&god_roll(&phys, "rifle")));
+    // …and the same gap against a sharper ruler DOES move it.
+    let seen = best_roll(&phys, "rifle", &asked_set, |r| {
+        let flipped = r.bonuses[0].roll == ROLL_MIN;
+        Some((if flipped { 1.001 } else { 1.0 }, 0.0001))
+    });
+    assert_eq!(rolls(&seen), vec![ROLL_MIN, ROLL_MAX, ROLL_MIN]);
 
-    // AND IT IS SCORED AT THE CEILING OF ITS INVESTMENT, like every board row.
-    assert_eq!(want_high.rank, MAX_RANK);
+    // A FIGHT THAT DID NOT RUN LEAVES THE GOD ROLL STANDING.
+    let dead = best_roll(&phys, "rifle", &asked_set, |_| None);
+    assert_eq!(rolls(&dead), rolls(&god_roll(&phys, "rifle")));
+}
+
+/// Bonuses then the malus — the order `RivenShape::at` reads them back in.
+#[cfg(test)]
+fn rolls(spec: &RivenSpec) -> Vec<f64> {
+    spec.bonuses.iter().map(|b| b.roll).chain(spec.malus.iter().map(|m| m.roll)).collect()
 }
 
 /// A SHAPE IS THE LUCK REMOVED, and two rolls of one shape are one shape.

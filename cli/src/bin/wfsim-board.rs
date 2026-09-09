@@ -1103,7 +1103,6 @@ fn main() {
                     // half-measured row is a fact under construction and the
                     // table holds facts. A row the clock stopped starts again.
                     let part = std::cell::RefCell::new(Partial::default());
-                    let paused_here = std::cell::Cell::new(false);
                     // EVERY ROW IS MEASURED AT THE RULER'S OWN PRECISION. There
                     // is no screen: a list is published when every build in it
                     // has been measured, and a cheap probe deciding which ones
@@ -1123,82 +1122,31 @@ fn main() {
                     if let Some(shape) = &v.riven {
                         let cls =
                             wfsim_engine::rivens_data::class_for_weapon(&v.weapon).unwrap_or("");
-                        // THE BUILD MAY ALREADY SAY WHICH CORNER IT IS, and then
-                        // there is nothing to search: `wfsim-intake` asked every
-                        // ruler once and stored each winner as its own build, so
-                        // the row measures the card the record names.
+                        // THE BUILD NAMES ITS OWN CARD. `wfsim-intake`
+                        // resolved the shape when the record entered the
+                        // library — the god roll, unless a stat's sign had
+                        // stopped saying which end was better — so the row
+                        // measures the riven the record states and searches
+                        // for nothing.
                         //
-                        // A RECORD THAT STATES ONLY A SHAPE takes the branch
-                        // below, which is what the library held before intake
-                        // resolved them. It goes when nothing states a shape any
-                        // more, and not before — every riven row on the board
-                        // would lose the numbers it was published with.
-                        if !v.riven_rolls.is_empty() {
-                            let spec = shape.at(cls, &v.riven_rolls);
-                            row_riven = Some(RowRiven {
-                                bonuses: shape.bonuses.clone(),
-                                malus: shape.malus.clone(),
-                                rolls: v.riven_rolls.clone(),
-                            });
-                            if let Some(o) = req.as_object_mut() {
-                                o.insert("rivens".into(), wfsim_webapi::riven_request(&spec));
-                            }
+                        // A RECORD THAT NAMES NO ROLLS IS SCORED AT THE GOD
+                        // ROLL, which is what it would have resolved to on
+                        // every build the library holds.
+                        let rolls = if v.riven_rolls.is_empty() {
+                            let g = wfsim_engine::rivens_data::god_roll(shape, cls);
+                            g.bonuses.iter().map(|b| b.roll)
+                                .chain(g.malus.iter().map(|m| m.roll)).collect()
                         } else {
-                        // THE BEST CORNER'S OWN PROBE SCORE, kept rather than
-                        // thrown away: it is the screen, and it is already paid
-                        // for. IN THE BOARD'S OWN METRIC, so it can be compared
-                        // with the cut without a second conversion — which for
-                        // `kpm` is a positive linear rescale of what this
-                        // returned before, so the corner it picks, and every
-                        // number published, are unchanged.
-                        let top_probe = std::cell::Cell::new(f64::NEG_INFINITY);
-                        // THE CORNER'S OWN INDEX IS THE CACHE KEY — never the
-                        // order this closure was called in, which would map a
-                        // banked score onto the wrong corner the day the search
-                        // is walked differently, silently, into a number this
-                        // board publishes.
-                        //
-                        // ONCE THE CLOCK IS GONE THE REST COST NOTHING. `perfect`
-                        // walks every corner and cannot be stopped, so the
-                        // remaining ones answer with the losing value and the row
-                        // is deferred below — its result is never read.
-                        let best = wfsim_engine::rivens_data::perfect(shape, cls, |corner, sp| {
-                            if paused_here.get() {
-                                return f64::NEG_INFINITY;
-                            }
-                            let mut probe = req.clone();
-                            if let Some(o) = probe.as_object_mut() {
-                                o.insert("rivens".into(), wfsim_webapi::riven_request(sp));
-                                o.insert("runs".into(), json!(PROBE_RUNS));
-                            }
-                            let Some((_, s)) = priced(
-                                &mut part.borrow_mut(), &corner.to_string(), &probe,
-                                PROBE_RUNS, row_deadline, &score_in,
-                            ) else {
-                                paused_here.set(true);
-                                return f64::NEG_INFINITY;
-                            };
-                            top_probe.set(top_probe.get().max(s));
-                            s
-                        });
-                        if paused_here.get() {
-                            pause_row(&key, &part.borrow(), &mut partials_out, &mut deferred_ids);
-                            paused += 1;
-                            continue;
-                        }
+                            v.riven_rolls.clone()
+                        };
+                        let spec = shape.at(cls, &rolls);
                         row_riven = Some(RowRiven {
                             bonuses: shape.bonuses.clone(),
                             malus: shape.malus.clone(),
-                            rolls: best
-                                .bonuses
-                                .iter()
-                                .map(|b| b.roll)
-                                .chain(best.malus.iter().map(|m| m.roll))
-                                .collect(),
+                            rolls,
                         });
                         if let Some(o) = req.as_object_mut() {
-                            o.insert("rivens".into(), wfsim_webapi::riven_request(&best));
-                        }
+                            o.insert("rivens".into(), wfsim_webapi::riven_request(&spec));
                         }
                     }
                     // THE MEASUREMENT, IN AS MANY SITTINGS AS THE CLOCK ALLOWS.
@@ -1526,27 +1474,6 @@ fn main() {
 }
 
 
-/// HOW MANY RUNS A CORNER PROBE GETS. Only ever used to pick BETWEEN corners,
-/// never to publish: the winner is then measured at the ruler's own count.
-///
-/// The corners of a roll band are far apart — a stat at 0.9 against the same
-/// stat at 1.1 — so choosing between them does not need the precision the
-/// published number does, and paying for it sixteen times would make a riven
-/// row cost sixteen plain ones on a board that already takes an hour.
-///
-/// A HUNDRED, not sixty: the board is the reference and a
-/// corner search that decides which card to tell people to go and get should
-/// read like one. It is still a fraction of the ruler's own 1000, and the
-/// sixteen probes are what the two-decision structure buys — the CHOICE is made
-/// here and the published NUMBER is measured afterwards at full precision.
-///
-/// A CORNER THAT THE FIGHT CANNOT SEPARATE COSTS NOTHING EXTRA, because every
-/// probe runs under the ruler's own pinned seed: two corners differing only in
-/// something this arena ignores return the same f64 bit for bit, and
-/// `rivens_data::perfect` then breaks the tie toward the PLAYER rather than
-/// toward whichever end noise happened to favour.
-const PROBE_RUNS: u32 = 100;
-
 /// HOW MANY RUNS A PIECE OF A ROW IS, and it is ONE because nothing else
 /// reproduces the number.
 ///
@@ -1661,35 +1588,6 @@ fn pause_row(
 ) {
     out.insert(key.to_string(), part.clone());
     deferred.insert(identity_of(key));
-}
-
-/// …and the same thing where only the SCORE is wanted, cached by label.
-///
-/// The conversion is handed in rather than repeated: `score_in` is the ruler's
-/// own, and a second copy of it here would publish a 180-second total under a
-/// per-minute name the day the two drifted.
-///
-/// A REFUSAL IS NOT CACHED. `ok` false is a build the engine would not
-/// simulate, and banking a zero for it would carry the refusal into every later
-/// run as if it were a measurement.
-fn priced(
-    part: &mut Partial,
-    label: &str,
-    req: &Value,
-    want: u32,
-    deadline: Option<std::time::Instant>,
-    score_in: &dyn Fn(&Value) -> f64,
-) -> Option<(bool, f64)> {
-    if let Some(&s) = part.priced.get(label) {
-        return Some((true, s));
-    }
-    let out = run_budgeted(part, label, req, want, deadline)?;
-    if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-        return Some((false, 0.0));
-    }
-    let s = score_in(&out);
-    part.priced.insert(label.to_string(), s);
-    Some((true, s))
 }
 
 #[cfg(test)]
