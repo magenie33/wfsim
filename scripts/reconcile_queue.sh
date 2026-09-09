@@ -13,7 +13,7 @@
 # score, so the worst it can do is ask for something already owed — which the
 # queue's own primary key absorbs.
 #
-# ONE COPY, TWO TRIGGERS. `intake.yml` runs it on the clock and `board.yml` runs
+# ONE COPY, TWO TRIGGERS. `queue.yml` runs it on the clock and `board.yml` runs
 # it before it scores, so a button press is self-sufficient and an hourly run
 # keeps the queue current. The same operation from two triggers is not two
 # sources: running it twice is running it once.

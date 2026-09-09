@@ -92,9 +92,9 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          bash scripts/fetch_library.sh submissions.json
+          bash scripts/fetch_library.sh library.json
 
-      # THE SNAPSHOT CARRIES ITS KEYS. `submissions.json` is the values only —
+      # THE SNAPSHOT CARRIES ITS KEYS. `library.json` is the values only —
       # enough to score, not enough to restore, because a restore has to put
       # each record back under the key it came from. Recomputing `identity()`
       # in a restore script would be a second implementation of the one thing
@@ -107,7 +107,7 @@ jobs:
           mkdir -p out
           # SORTED, which is what makes the branch cheap: a night's change is a
           # few added lines and git stores the delta rather than the file.
-          jq -Sc . submissions.json.ndjson | LC_ALL=C sort > out/library.ndjson
+          jq -Sc . library.json.ndjson | LC_ALL=C sort > out/library.ndjson
           n=$(wc -l < out/library.ndjson | tr -d ' ')
           echo "count=$n" >> "$GITHUB_OUTPUT"
           echo "snapshot: $n records, $(wc -c < out/library.ndjson | tr -d ' ') bytes"

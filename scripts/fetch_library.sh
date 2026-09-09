@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # THE LIBRARY, READ OUT OF THE DATABASE.
 #
-#   scripts/fetch_library.sh submissions.json
+#   scripts/fetch_library.sh library.json
 #   scripts/fetch_library.sh --self-test
 #
 # Replaces a listing, a cache and a retry. KV had no bulk read and no index but
@@ -135,23 +135,23 @@ printf '200'
 PAGES
   chmod +x "$DIR/bin/curl"
   PAGE=3
-  fetch submissions.json > out.txt 2>&1 && grep -q "4 builds" out.txt \
+  fetch library.json > out.txt 2>&1 && grep -q "4 builds" out.txt \
     && say ok "a library longer than one page is read whole" || say FAIL "$(cat out.txt)"
-  [ "$(jq 'length' submissions.json)" = "4" ] \
-    && say ok "...as the array the scorer takes" || say FAIL "$(jq 'length' submissions.json)"
+  [ "$(jq 'length' library.json)" = "4" ] \
+    && say ok "...as the array the scorer takes" || say FAIL "$(jq 'length' library.json)"
   # THE RECORD IS PARSED, not handed on as the text the column holds: a scorer
   # given a string where a build should be refuses every row.
-  jq -e '.[0].weapon == "w0"' < submissions.json >/dev/null \
+  jq -e '.[0].weapon == "w0"' < library.json >/dev/null \
     && say ok "...with each record parsed, not carried as text" \
-    || say FAIL "$(head -c 120 submissions.json)"
+    || say FAIL "$(head -c 120 library.json)"
   # …AND THE SNAPSHOT BESIDE IT, key and value, which is what a restore needs.
-  jq -e -s '.[3].k == "last" and .[0].k == "k0"' < submissions.json.ndjson >/dev/null \
+  jq -e -s '.[3].k == "last" and .[0].k == "k0"' < library.json.ndjson >/dev/null \
     && say ok "...and the snapshot carries the key beside each record" \
-    || say FAIL "$(head -c 120 submissions.json.ndjson)"
+    || say FAIL "$(head -c 120 library.json.ndjson)"
 
-  guard_shrink 3 submissions.json > /dev/null 2>&1 \
+  guard_shrink 3 library.json > /dev/null 2>&1 \
     && say ok "a library at its floor passes" || say FAIL "the tripwire fired on a full library"
-  if guard_shrink 100 submissions.json > /dev/null 2>&1; then
+  if guard_shrink 100 library.json > /dev/null 2>&1; then
     say FAIL "a truncated library was allowed to publish"
   else
     say ok "...and a short one refuses"
@@ -165,7 +165,7 @@ printf '{"success":false,"errors":[{"code":7403,"message":"D1 not authorized"}]}
 printf '403'
 DEAD
   chmod +x "$DIR/bin/curl"
-  if fetch submissions.json > out.txt 2>&1; then
+  if fetch library.json > out.txt 2>&1; then
     say FAIL "a refused read passed"
   elif grep -q "D1 not authorized" out.txt; then
     say ok "a refused read reports what the database said"

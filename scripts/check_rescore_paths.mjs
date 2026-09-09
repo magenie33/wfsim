@@ -64,7 +64,7 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
 // downstream quietly gets nothing. It cost the score store its first run: the
 // fetch sat above the check that gates it, never ran, and three jobs pointed
 // `--scores` at a directory nobody had filled. Every run stayed green.
-for (const wfName of ["board.yml", "intake.yml"]) {
+for (const wfName of ["board.yml", "queue.yml"]) {
   const lines = readFileSync(resolve(ROOT, ".github/workflows", wfName), "utf8").split(NL);
   const definedAt = new Map();
   lines.forEach((l, i) => {

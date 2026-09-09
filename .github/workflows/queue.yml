@@ -1,12 +1,16 @@
-# THE QUEUE IS KEPT CURRENT ON THE CLOCK. NOTHING HERE FIGHTS A BOARD ROW.
+# THE WORK LIST IS KEPT CURRENT ON THE CLOCK. NOTHING HERE COMPUTES A ROW.
 #
-# Two jobs live on this database and they are deliberately not the same one:
+# The pipeline is five tables and this file drives the first half of it:
 #
-#   this file   what has ARRIVED becomes a build, and what has no score is asked
-#               for. Hourly, one runner, minutes.
-#   board.yml   what is asked for is MEASURED, and the board is published. A
-#               person presses it, and it fans out to as many shards as the work
-#               needs.
+#   inbox   what a player sent, verbatim   ─┐ this file, hourly, one runner
+#   builds  the library, one row a build    │
+#   queue   what is owed                   ─┘
+#   scores  the facts                      ─┐ board.yml, on the button, as many
+#   board   the published files            ─┘ shards as the work needs
+#
+# NAMED FOR WHERE IT ENDS, the same way `board.yml` is. `intake` is the hop from
+# `inbox` to `builds` and it is one STEP here — the word is also already spoken
+# for by `docs/WEAPON_INTAKE.md`, which is a different subject entirely.
 #
 # WHY THE CLOCK BELONGS ON THIS HALF. A submission is the one thing in this
 # system nobody can derive — an inbox row is its only record — so the sooner it
@@ -18,7 +22,7 @@
 # — about four core-minutes for the one submission in ten that needs it — which
 # is an hour's lump once a day and two or three minutes on the hour. The same
 # work, paid in a size that fits beside everything else.
-name: intake
+name: queue
 
 on:
   schedule:
@@ -33,7 +37,7 @@ on:
 # everything the first has not finished measuring. Cancelling the NEW one keeps
 # the hour that is already paid for.
 concurrency:
-  group: board-intake
+  group: board-queue
   cancel-in-progress: false
 
 jobs:
@@ -105,9 +109,9 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          bash scripts/fetch_library.sh submissions.json
+          bash scripts/fetch_library.sh library.json
           bash scripts/fetch_facts.sh facts-known.ndjson
-          bash scripts/reconcile_queue.sh submissions.json facts-known.ndjson queue.ndjson
+          bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
           # WHAT IS OWED, SAID OUT LOUD, because this job publishes nothing and
           # a reader has to be able to see it did something.
           echo "::notice::$(grep -c . queue.ndjson || echo 0) row(s) owed after this hour"

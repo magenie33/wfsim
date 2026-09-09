@@ -210,7 +210,7 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          bash scripts/fetch_library.sh submissions.json
+          bash scripts/fetch_library.sh library.json
 
       # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one
       # irreplaceable thing in this pipeline — the boards are derived from it,
@@ -222,8 +222,8 @@ jobs:
         if: steps.wired.outputs.yes == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: submissions
-          path: submissions.json
+          name: library
+          path: library.json
           retention-days: 30
 
       # THE SCORER, HERE TOO. One build against the shared cache, so the step
@@ -294,7 +294,7 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          bash scripts/reconcile_queue.sh submissions.json facts-known.ndjson queue.ndjson
+          bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
 
       # …AND HANDED TO EVERY JOB BELOW, so the database is read ONCE a run.
       - uses: actions/upload-artifact@v4
@@ -331,7 +331,7 @@ jobs:
                      --dry-run $SLICE \
                      --facts-in facts-known.ndjson \
                      --queue-in queue.ndjson \
-                     < submissions.json 2>&1 >/dev/null \
+                     < library.json 2>&1 >/dev/null \
                    | grep -o 'dry-run: .*' || echo "dry-run: todo=1 work=0 (no answer)")
             echo "$id: $line"
             n=$(printf '%s' "$line" | grep -o 'todo=[0-9]*' | cut -d= -f2 || echo 1)
@@ -424,7 +424,7 @@ jobs:
           key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
       - uses: actions/download-artifact@v4
         with:
-          name: submissions
+          name: library
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
@@ -478,7 +478,7 @@ jobs:
               --facts facts.ndjson \
               --measured-by "$GITHUB_SHA" \
               --shard "${{ matrix.shard }}/${{ needs.submissions.outputs.shard_count }}" \
-              < submissions.json > /dev/null
+              < library.json > /dev/null
           done
         env:
           # THE SHIPPER'S HALF. Without these the fact log is written and
@@ -536,7 +536,7 @@ jobs:
           key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
       - uses: actions/download-artifact@v4
         with:
-          name: submissions
+          name: library
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
@@ -576,7 +576,7 @@ jobs:
             ./target/release/wfsim-board "$id" site/board \
               --project \
               --facts-in facts-known.ndjson \
-              < submissions.json > /dev/null || {
+              < library.json > /dev/null || {
                 code=$?
                 # TWO IS "NOT YET", ANYTHING ELSE IS BROKEN. Three boards are
                 # three rankings and they differ sixfold in cost —

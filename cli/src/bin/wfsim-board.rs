@@ -16,7 +16,7 @@
 //! `scripts/ship_facts.sh` and `scripts/fetch_facts.sh`, which a stub `curl`
 //! can drive — which is what makes every hop of the chain testable.
 //!
-//!   cat submissions.json | wfsim-board single_target site/board //!     --facts-in facts-known.ndjson --facts facts.ndjson
+//!   cat library.json | wfsim-board single_target site/board //!     --facts-in facts-known.ndjson --facts facts.ndjson
 
 use std::io::Read;
 

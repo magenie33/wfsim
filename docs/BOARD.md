@@ -210,15 +210,15 @@ including the empty ones, because a 404 and an empty list are the same thing to
 
 | | who starts it | what it does | what it costs |
 | --- | --- | --- | --- |
-| `intake.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
+| `queue.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
 | `board.yml` | a person, no input | what is asked for is MEASURED, and the board is published | as many shards as the work needs |
 
-**WHY THE CLOCK IS ON THE INTAKE HALF.** A submission is the one thing here
+**WHY THE CLOCK IS ON THE FIRST HALF.** A submission is the one thing here
 nobody can derive — an inbox row is its only record — so the sooner it becomes a
 build the sooner it is safe. A row with no score has no such urgency: it keeps
 not having one until somebody asks.
 
-**AND HOURLY IS WHAT MAKES INTAKE CHEAP.** Resolving a riven's card is a FIGHT,
+**AND HOURLY IS WHAT MAKES THE INTAKE HOP CHEAP.** Resolving a riven's card is a FIGHT,
 about four core-minutes for the one submission in ten that needs it. That is an
 hour's lump once a day and two or three minutes on the hour — the same work,
 paid in a size that fits beside everything else.
@@ -1215,7 +1215,7 @@ that guessed, because a board row does not carry every axis. The conclusion
 survives the correction by a wide margin, which is the only reason it is a
 footnote rather than a redesign.)
 
-**THE SNAPSHOT CARRIES ITS KEYS**, which `submissions.json` does not — that file
+**THE SNAPSHOT CARRIES ITS KEYS**, which `library.json` does not — that file
 is the values, which is enough to score and not enough to restore. Recomputing
 `identity()` in a restore script would be a second implementation of the one
 thing that must not drift.
