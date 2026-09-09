@@ -5858,6 +5858,93 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     })
 }
 
+// ---- THE REQUEST A BOARD ROW MAKES ----------------------------------------
+//
+// Here rather than in the scorer because there are two callers now: the one
+// that MEASURES a build and the one that resolves a riven's numbers before the
+// build is stored. A request built twice is two answers to what a fight IS, and
+// the pair would drift a field at a time — the assembly went missing from one
+// of them once already, and the number published was for a weapon nobody built.
+
+/// The mod id a RIVEN takes in a simulate request. A record spells it `riven`
+/// (the endpoint's ids are `[a-z0-9_]`); the request names an ITEM.
+pub const RIVEN_ITEM: &str = "riven:board";
+
+/// One riven, as the `rivens` array of a simulate request.
+pub fn riven_request(spec: &wfsim_engine::rivens_data::RivenSpec) -> Value {
+    let stat = |s: &wfsim_engine::rivens_data::RolledStat| json!({ "id": s.id, "roll": s.roll });
+    json!([{
+        "name": RIVEN_ITEM.trim_start_matches("riven:"),
+        "spec": {
+            "bonuses": spec.bonuses.iter().map(stat).collect::<Vec<_>>(),
+            "malus": spec.malus.as_ref().map(stat),
+            "rank": spec.rank,
+            "polarity": "madurai",
+        }
+    }])
+}
+
+/// THE RULER'S TERMS PLUS THE ENTRANT, as the request the simulator answers.
+///
+/// **IT NAMES THE MODE, NEVER THE FORM THE MODE RESOLVES TO.** `form()` maps
+/// every cycle onto the one policy word `gauge_cycle`, which does not say in
+/// which half the gauge is filled — so a weapon with two cycles sent one
+/// request for both and `parse_fight` fell back to the arsenal's own form.
+///
+/// Extracted so the assertion can be made on the REQUEST: a decision taken
+/// inline in a scoring loop is one no test can reach.
+pub fn simulate_request(
+    scenario: &Value,
+    v: &wfsim_engine::builds::ValidBuild,
+    played: wfsim_engine::weapons_data::WeaponPlayMode,
+) -> Value {
+    let mut req = scenario.clone();
+    let Some(o) = req.as_object_mut() else {
+        return req;
+    };
+    o.insert("weapon".into(), json!(v.weapon));
+    // THE RIVEN'S SLOT IS SPELLED DIFFERENTLY ON THE WIRE. A record carries the
+    // bare `riven` because the endpoint's ids are `[a-z0-9_]`; a simulate
+    // request names the riven ITEM, which is `riven:<name>`. The translation is
+    // one line and lives here so neither protocol has to bend for the other.
+    o.insert(
+        "mods".into(),
+        json!(v
+            .mods
+            .iter()
+            .map(|m| if m == wfsim_engine::builds::RIVEN_SLOT {
+                RIVEN_ITEM.to_string()
+            } else {
+                m.clone()
+            })
+            .chain(v.exilus.iter().cloned())
+            .collect::<Vec<_>>()),
+    );
+    o.insert("evolutions".into(), json!(v.evolutions));
+    o.insert("arcane".into(), json!(v.arcanes));
+    // THE VALENCE, at the ruler's own terms: the element the entrant named, and
+    // the roll's MAXIMUM whatever they said it was. Every player can fuse to
+    // 60%, so ranking a lower roll would be ranking how many duplicates someone
+    // farmed — the same reason every row here is scored at full Forma.
+    if !v.valence.is_empty() {
+        o.insert("valence_element".into(), json!(v.valence));
+        let max = wfsim_engine::weapons_data::valence_of(&v.weapon).map_or(0.0, |s| s.max);
+        o.insert("valence_bonus".into(), json!(max));
+    }
+    // THE PARTS. Without them the fight is fought with the chamber's DEFAULT
+    // assembly, so a submitted grip is stored, validated and then silently not
+    // used — the number published would be for a weapon nobody built.
+    if let Some(a) = &v.assembly {
+        o.insert("assembly".into(), json!({ "grip": a.grip, "loader": a.loader }));
+    }
+    o.insert("mode".into(), json!(played.id));
+    // ONE SPELLING OF ONE FACT. `form` is what a request carries when it names
+    // no mode, and a ruler that carried both would be two answers to one
+    // question with the loser silent.
+    o.remove("form");
+    req
+}
+
 
 pub fn simulate_json(v: &Value) -> Value {
     simulate_json_reporting(v, &mut |_, _| {})

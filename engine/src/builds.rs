@@ -1146,7 +1146,7 @@ pub fn board_key(b: &ValidBuild, mode: &str) -> String {
 /// give 128 bits: the identity it folds is up to ~300 bytes of ids and rides on
 /// every score row, and a library four orders of magnitude under the birthday
 /// bound will not see a collision.
-pub fn build_id(b: &ValidBuild) -> String {
+pub fn build_id(b: &ValidBuild, rolls: &[f64]) -> String {
     const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     const PRIME: u64 = 0x0000_0100_0000_01b3;
     let fold = |mut h: u64, bytes: &[u8]| {
@@ -1156,7 +1156,16 @@ pub fn build_id(b: &ValidBuild) -> String {
         }
         h
     };
-    let text = identity(b);
+    // THE ROLLS ARE PART OF IT, when there are any. `identity` states the
+    // SHAPE — which stats, and which is the malus — because that is what a
+    // player goes and obtains; two ENDS of one shape's band are two different
+    // builds with two different numbers, and an id that could not tell them
+    // apart would file the second under the first's.
+    let mut text = identity(b);
+    for r in rolls {
+        text.push('|');
+        text.push_str(&format!("{r}"));
+    }
     let lo = fold(OFFSET, text.as_bytes());
     let hi = fold(OFFSET ^ 0xffff_ffff_ffff_ffff, text.as_bytes());
     format!("{hi:016x}{lo:016x}")

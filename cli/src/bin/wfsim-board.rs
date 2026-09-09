@@ -613,67 +613,6 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
 
 
 
-/// THE RULER'S TERMS PLUS THE ENTRANT, as the request the simulator answers.
-///
-/// **IT NAMES THE MODE, NEVER THE FORM THE MODE RESOLVES TO.** `form()` maps
-/// every cycle onto the one policy word `gauge_cycle`, which does not say in
-/// which half the gauge is filled — so a weapon with two cycles sent one
-/// request for both and `parse_fight` fell back to the arsenal's own form.
-///
-/// Extracted so the assertion can be made on the REQUEST: a decision taken
-/// inline in a scoring loop is one no test can reach.
-fn simulate_request(
-    scenario: &Value,
-    v: &wfsim_engine::builds::ValidBuild,
-    played: wfsim_engine::weapons_data::WeaponPlayMode,
-) -> Value {
-    let mut req = scenario.clone();
-    let Some(o) = req.as_object_mut() else {
-        return req;
-    };
-    o.insert("weapon".into(), json!(v.weapon));
-    // THE RIVEN'S SLOT IS SPELLED DIFFERENTLY ON THE WIRE. A record carries the
-    // bare `riven` because the endpoint's ids are `[a-z0-9_]`; a simulate
-    // request names the riven ITEM, which is `riven:<name>`. The translation is
-    // one line and lives here so neither protocol has to bend for the other.
-    o.insert(
-        "mods".into(),
-        json!(v
-            .mods
-            .iter()
-            .map(|m| if m == wfsim_engine::builds::RIVEN_SLOT {
-                RIVEN_ITEM.to_string()
-            } else {
-                m.clone()
-            })
-            .chain(v.exilus.iter().cloned())
-            .collect::<Vec<_>>()),
-    );
-    o.insert("evolutions".into(), json!(v.evolutions));
-    o.insert("arcane".into(), json!(v.arcanes));
-    // THE VALENCE, at the ruler's own terms: the element the entrant named, and
-    // the roll's MAXIMUM whatever they said it was. Every player can fuse to
-    // 60%, so ranking a lower roll would be ranking how many duplicates someone
-    // farmed — the same reason every row here is scored at full Forma.
-    if !v.valence.is_empty() {
-        o.insert("valence_element".into(), json!(v.valence));
-        let max = wfsim_engine::weapons_data::valence_of(&v.weapon).map_or(0.0, |s| s.max);
-        o.insert("valence_bonus".into(), json!(max));
-    }
-    // THE PARTS. Without them the fight is fought with the chamber's DEFAULT
-    // assembly, so a submitted grip is stored, validated and then silently not
-    // used — the number published would be for a weapon nobody built.
-    if let Some(a) = &v.assembly {
-        o.insert("assembly".into(), json!({ "grip": a.grip, "loader": a.loader }));
-    }
-    o.insert("mode".into(), json!(played.id));
-    // ONE SPELLING OF ONE FACT. `form` is what a request carries when it names
-    // no mode, and a ruler that carried both would be two answers to one
-    // question with the loser silent.
-    o.remove("form");
-    req
-}
-
 fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!(
@@ -999,7 +938,7 @@ fn main() {
             // ONE BUILD, SCORED ONCE PER MODE. The clone is the row's own copy:
             // `Row` takes the vectors by value and there is a row per mode.
             let v = v.clone();
-            let mut req = simulate_request(&scenario, &v, played);
+            let mut req = wfsim_webapi::simulate_request(&scenario, &v, played);
             // ONE ROW PER BUILD, and the identity is computed BEFORE the fight
             // because it decides whether there is one to run at all, rather than
             // being computed afterwards for dedup alone.
@@ -1217,7 +1156,7 @@ fn main() {
                             }
                             let mut probe = req.clone();
                             if let Some(o) = probe.as_object_mut() {
-                                o.insert("rivens".into(), riven_request(sp));
+                                o.insert("rivens".into(), wfsim_webapi::riven_request(sp));
                                 o.insert("runs".into(), json!(PROBE_RUNS));
                             }
                             let Some((_, s)) = priced(
@@ -1246,7 +1185,7 @@ fn main() {
                                 .collect(),
                         });
                         if let Some(o) = req.as_object_mut() {
-                            o.insert("rivens".into(), riven_request(&best));
+                            o.insert("rivens".into(), wfsim_webapi::riven_request(&best));
                         }
                     }
                     // THE MEASUREMENT, IN AS MANY SITTINGS AS THE CLOCK ALLOWS.
@@ -1719,24 +1658,6 @@ const PROBE_RUNS: u32 = 100;
 /// makespan and a resumable row are worth.
 const CHUNK_RUNS: u32 = 1;
 
-/// The mod id a RIVEN takes in a simulate request. A record spells it `riven`
-/// (the endpoint's ids are `[a-z0-9_]`); the request names an ITEM.
-const RIVEN_ITEM: &str = "riven:board";
-
-/// One riven, as the `rivens` array of a simulate request.
-fn riven_request(spec: &wfsim_engine::rivens_data::RivenSpec) -> Value {
-    let stat = |s: &wfsim_engine::rivens_data::RolledStat| json!({ "id": s.id, "roll": s.roll });
-    json!([{
-        "name": RIVEN_ITEM.trim_start_matches("riven:"),
-        "spec": {
-            "bonuses": spec.bonuses.iter().map(stat).collect::<Vec<_>>(),
-            "malus": spec.malus.as_ref().map(stat),
-            "rank": spec.rank,
-            "polarity": "madurai",
-        }
-    }])
-}
-
 /// `webapi::simulate_json` under a name that says the crate boundary is
 /// deliberate: the scorer runs the SAME entry point the web api runs, so the
 /// board cannot drift from what the page computes.
@@ -2162,8 +2083,8 @@ mod tests {
             for (i, a) in modes.iter().enumerate() {
                 for b in modes.iter().skip(i + 1) {
                     let (ra, rb) = (
-                        simulate_request(&scenario, &v, *a),
-                        simulate_request(&scenario, &v, *b),
+                        wfsim_webapi::simulate_request(&scenario, &v, *a),
+                        wfsim_webapi::simulate_request(&scenario, &v, *b),
                     );
                     if a.form() == b.form() {
                         shared += 1;
@@ -2262,7 +2183,7 @@ mod tests {
             .iter()
             .find(|m| m.id == "alternate_cycle")
             .expect("alternate_cycle");
-        let req = simulate_request(&scenario, &v, *m);
+        let req = wfsim_webapi::simulate_request(&scenario, &v, *m);
         assert_eq!(
             req.get("mode").and_then(Value::as_str),
             Some("alternate_cycle")

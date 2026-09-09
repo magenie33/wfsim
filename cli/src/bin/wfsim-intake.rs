@@ -92,6 +92,91 @@ fn canonical(v: &wfsim_engine::builds::ValidBuild) -> Value {
     rec
 }
 
+/// …AND THE ROLLS THE RIVEN IS STORED WITH. Bonuses first, then the malus,
+/// which is the order `RivenShape::at` reads them back in.
+///
+/// A BUILD WITH A RIVEN IS NOT COMPLETE WITHOUT THEM. The shape says which
+/// stats; a fight needs numbers, and a row published without them names a card
+/// nobody can go and obtain.
+fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
+    if let Some(o) = rec.as_object_mut() {
+        o.insert("riven_rolls".into(), json!(rolls));
+    }
+    rec
+}
+
+/// HOW MANY RUNS A CORNER GETS. A hundredth of what a ruler asks of a real
+/// measurement, and it buys the same answer because the comparison is PAIRED:
+/// the engine derives every run's dice from one seed, so run `i` of one corner
+/// and run `i` of another are drawn from the same luck, and the difference
+/// between them is the corner rather than the noise.
+///
+/// IT NEVER BECOMES A SCORE. Its whole output is which of `2^n` roll sets a
+/// fight likes, and the build that comes out of it is measured at the ruler's
+/// own count like every other.
+const CORNER_RUNS: u32 = 10;
+
+/// THE ROLLS A RIVEN SHOULD BE STORED WITH — every corner this build wins on,
+/// across every ruler and every mode it can be played in.
+///
+/// WHY IT IS ASKED AT ALL, and asked here. Which END of the 0.9–1.1 band is best
+/// is decided by the FIGHT and not by the sign on the card: a riven whose malus
+/// is critical chance is a BONUS on the three weapons whose Incarnon form pays
+/// "+2000% damage on non-critical hits", and on those same weapons a `+`
+/// critical chance riven is worst at the bottom of its positive band. A per-stat
+/// table states neither; asking the fight states both.
+///
+/// SO IT IS ASKED OF EVERY FIGHT, AND THE ANSWERS ARE DEDUPED. One ruler cannot
+/// speak for another, and the corner that wins a crowd need not win one target
+/// — so each `(ruler, mode)` names its own, and what comes back is the SET.
+/// Usually one, and then a riven is one build like any other.
+///
+/// ONCE, HERE, RATHER THAN PER ROW IN THE SCORER. The scorer searched the same
+/// sixteen corners again for every `(ruler, mode)` of every riven build; this
+/// asks each corner once and hands the winners on as ordinary builds.
+fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<f64>> {
+    let Some(shape) = &v.riven else { return Vec::new() };
+    let Some(class) = wfsim_engine::rivens_data::class_for_weapon(&v.weapon) else {
+        return Vec::new();
+    };
+    let modes: Vec<wfsim_engine::weapons_data::WeaponPlayMode> =
+        wfsim_engine::weapons_data::play_modes(&v.weapon)
+            .into_iter()
+            .filter(|m| m.sustainable)
+            .collect();
+    let mut found: BTreeMap<String, Vec<f64>> = BTreeMap::new();
+    for bench in wfsim_engine::benchmarks_data::all() {
+        let metric = bench.metric();
+        let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
+        let duration = scenario.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
+        for played in &modes {
+            let base = wfsim_webapi::simulate_request(&scenario, v, *played);
+            let best = wfsim_engine::rivens_data::perfect(shape, class, |_, spec| {
+                let mut req = base.clone();
+                if let Some(o) = req.as_object_mut() {
+                    o.insert("rivens".into(), wfsim_webapi::riven_request(spec));
+                    o.insert("runs".into(), json!(CORNER_RUNS));
+                }
+                let out = wfsim_webapi::simulate_json(&req);
+                if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+                    return f64::NEG_INFINITY;
+                }
+                metric.of(out.get(metric.field).and_then(Value::as_f64).unwrap_or(0.0), duration)
+            });
+            let rolls: Vec<f64> = best
+                .bonuses
+                .iter()
+                .map(|b| b.roll)
+                .chain(best.malus.iter().map(|m| m.roll))
+                .collect();
+            // KEYED ON THE ROLLS THEMSELVES, so two rulers landing on one corner
+            // leave one build. The text is only a key; the numbers are the value.
+            found.insert(format!("{rolls:?}"), rolls);
+        }
+    }
+    found.into_values().collect()
+}
+
 fn flag(name: &str) -> Option<String> {
     let a: Vec<String> = std::env::args().collect();
     a.iter().position(|x| x == name).and_then(|i| a.get(i + 1).cloned())
@@ -160,17 +245,37 @@ fn intake(lines: impl Iterator<Item = String>) -> (Vec<Value>, Vec<String>, usiz
             }
         };
         let at = id(&row, "at");
-        let key = wfsim_engine::builds::build_id(&v);
-        // …AND WHICH QUEUE ROWS PRODUCED IT. Two records can be one build —
-        // a resubmission, or two spellings of one pairing — so the build knows
-        // what it came from, and the write that lands it is the write that
-        // spends them. It is not stored: it is true of this pass, not of the
-        // build.
-        let entry = built
-            .entry(key.clone())
-            .or_insert_with(|| json!({ "id": key, "at": at, "record": canonical(&v), "from": [] }));
-        if let Some(from) = entry.get_mut("from").and_then(Value::as_array_mut) {
-            from.push(json!(id(&row, "id")));
+        // A RIVEN BECOMES ITS CORNERS, and a build without one is itself. The
+        // record that arrives states a SHAPE; what is stored is a build a player
+        // could go and assemble, which needs numbers.
+        let corners = corners_for(&v);
+        if v.riven.is_some() && corners.is_empty() {
+            eprintln!("refused {weapon}: its riven names a shape this engine cannot resolve");
+            refused += 1;
+            continue;
+        }
+        let variants: Vec<Vec<f64>> = if corners.is_empty() { vec![Vec::new()] } else { corners };
+        for rolls in variants {
+            let key = wfsim_engine::builds::build_id(&v, &rolls);
+            let rec = if rolls.is_empty() {
+                canonical(&v)
+            } else {
+                with_rolls(canonical(&v), &rolls)
+            };
+            // …AND WHICH QUEUE ROWS PRODUCED IT. Two records can be one build —
+            // a resubmission, or two spellings of one pairing — so the build
+            // knows what it came from, and the write that lands it is the write
+            // that spends them. It is not stored: it is true of this pass, not
+            // of the build.
+            let entry = built
+                .entry(key.clone())
+                .or_insert_with(|| json!({ "id": key, "at": at, "record": rec, "from": [] }));
+            if let Some(from) = entry.get_mut("from").and_then(Value::as_array_mut) {
+                let was = json!(id(&row, "id"));
+                if !from.contains(&was) {
+                    from.push(was);
+                }
+            }
         }
     }
     (built.into_values().collect(), done, seen, refused)
@@ -322,6 +427,53 @@ mod tests {
         );
         assert_eq!((seen, refused, builds.len()), (2, 1, 1));
         assert_eq!(done, vec!["bad", "good"], "both rows are spent");
+    }
+
+    /// A RIVEN ARRIVES AS A SHAPE AND LEAVES AS A BUILD.
+    ///
+    /// What a player sends is which stats the card rolled; what a fight needs is
+    /// numbers, and which END of the band is best is the fight's answer rather
+    /// than the sign on the card. So every corner is asked, on every ruler and
+    /// every mode, and what is stored is the winner — or the winnerS, when two
+    /// fights disagree.
+    ///
+    /// THE ROLLS ARE IN THE ID, and the assertion below is why: two ends of one
+    /// shape are two builds with two numbers, and an id that could not tell them
+    /// apart would file the second under the first's.
+    ///
+    /// IT RUNS FIGHTS, which is what makes it slow and what makes it worth
+    /// having — the alternative is a per-stat table that is wrong on the three
+    /// weapons whose Incarnon pays for NOT critting.
+    #[test]
+    fn a_riven_is_stored_with_the_numbers_a_fight_chose() {
+        let rec = json!({
+            "weapon": "braton_prime",
+            "mods": ["serration", "split_chamber", "riven"],
+            "riven_pos": ["critical_damage", "damage"],
+            "riven_neg": "zoom",
+        });
+        let line = json!({ "id": "u1", "at": "2026-01-01", "record": rec }).to_string();
+        let (builds, .., refused) = intake(vec![line].into_iter());
+        assert_eq!(refused, 0, "a legal riven build is not refused");
+        assert!(!builds.is_empty(), "a riven shape resolves to at least one build");
+
+        for b in &builds {
+            let rolls = b["record"]["riven_rolls"].as_array().expect("rolls are stored");
+            assert_eq!(rolls.len(), 3, "two bonuses and a malus: {rolls:?}");
+            // EVERY CORNER IS AN END OF THE BAND, never something between.
+            for r in rolls {
+                let r = r.as_f64().unwrap_or_default();
+                assert!(r == 0.9 || r == 1.1, "a corner is an end of the band: {r}");
+            }
+            // A STAT THE FIGHT CANNOT READ GOES TO THE PLAYER. Zoom scores the
+            // same at both ends against one standing target, and the board is
+            // publishing a card somebody will go and try to obtain.
+            assert_eq!(rolls[2].as_f64(), Some(0.9), "the malus is at its floor: {rolls:?}");
+        }
+        // …AND TWO CORNERS ARE TWO IDS, which is what keeps them apart.
+        let ids: std::collections::BTreeSet<&str> =
+            builds.iter().filter_map(|b| b["id"].as_str()).collect();
+        assert_eq!(ids.len(), builds.len(), "each corner has its own id");
     }
 
     /// ADMISSION IS THE RULER'S, NOT THIS FILE'S. A thin build is legal to
