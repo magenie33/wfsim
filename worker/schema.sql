@@ -39,9 +39,11 @@ CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 
 -- A SCORE IS A FACT, NOT A STEP IN A PIPELINE (docs/BOARD.md).
 --
--- `(build, ruler, mode, what it read) -> score` is true for ever once computed,
--- so it is written down the moment it is computed rather than when a batch
--- finishes. `scripts/ship_facts.sh` writes it beside the
+-- `(build, ruler, mode) -> score` is true for ever once computed, so it is
+-- written down the moment it is computed rather than when a batch finishes. It
+-- does not stop being true later: neither the clock nor a thousand commits of
+-- distance is evidence that a measurement was wrong, and the only thing that
+-- retires one is its INPUTS moving. `scripts/ship_facts.sh` writes it beside the
 -- running scorer; `scripts/fetch_facts.sh` reads them back out. This
 -- table is the only source the publisher has.
 CREATE TABLE IF NOT EXISTS scores (
@@ -53,11 +55,17 @@ CREATE TABLE IF NOT EXISTS scores (
   -- ranking. Without this column a melee build's seven measurements collapse
   -- into one row and six of them are lost on write.
   mode         TEXT NOT NULL,
-  -- WHAT THIS ROW READ, and it is the only thing here that decides validity.
+  -- WHAT THIS ROW READ, and it is the only thing here that decides anything.
   -- A data change dirties exactly the rows that read the file that moved, which
-  -- is the cheap half of invalidation and is asked per row. It is in the KEY, so
-  -- a correction produces a NEW row and the old one survives: reverting the data
-  -- file restores the old answer without recomputing it.
+  -- is asked per row and is the whole of the invalidation this pipeline can
+  -- derive.
+  --
+  -- NOT IN THE KEY. A row has ONE fact, the last measurement of it, and this
+  -- travels ON that fact — so the same row measured under three generations of
+  -- data is one row and not three. Keeping the older ones bought one thing,
+  -- that reverting a data file restored its answer without recomputing, and
+  -- cost an unbounded table: every edit to a file no entity owns mints a fresh
+  -- copy of every row on the board.
   data_fp      TEXT NOT NULL,
   -- WHICH BUILD MEASURED IT, AND IT DECIDES NOTHING. An engine version being
   -- older does not make a score wrong -- the two are a REFERENCE relation, not a
@@ -80,8 +88,9 @@ CREATE TABLE IF NOT EXISTS scores (
   -- A ruler that changes its core changes its file, which moves `data_fp`,
   -- which is already the whole of invalidation; branching on this as well would
   -- be a second answer to a question that has one. What it is for is the ROW
-  -- OUTLIVING THAT FILE — the key keeps the old answer on purpose, and without
-  -- this, reading one back means checking out the commit that produced it.
+  -- OUTLIVING THAT FILE: a fact is kept until its inputs move, so a row can be
+  -- older than the ruler's current terms, and reading one back without this
+  -- means checking out the commit that produced it.
   metric       TEXT NOT NULL,
   -- The riven corner the search settled on, when there is one: a score alone
   -- cannot publish a riven row, because the reader has to be able to BUILD that
@@ -103,7 +112,11 @@ CREATE TABLE IF NOT EXISTS scores (
   -- start by subtracting the cost would invent precision the old row never had.
   started_at   TEXT NOT NULL,
   finished_at  TEXT NOT NULL,
-  PRIMARY KEY (identity, ruler, mode, data_fp)
+  -- ONE FACT PER ROW: the last measurement of it. Neither the clock nor the
+  -- build that wrote it says anything about whether the number is right, so
+  -- neither is here; what a stored score can still be asked is whether its
+  -- INPUTS hold, and that rides on the row as `data_fp`.
+  PRIMARY KEY (identity, ruler, mode)
 );
 
 -- "What has this ruler measured" is one indexed query, which is what the set

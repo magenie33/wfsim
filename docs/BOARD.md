@@ -446,22 +446,36 @@ process running beside it ships the log to the `scores` table in batches. **A ru
 cancelled at 95% has banked 95% of its work**, and what it did not write is
 simply missing — which is the same thing as never having started it.
 
-**THE FACT IS THE UNIT, AND IT IS IDENTIFIED BY EVERYTHING THAT DETERMINES IT:**
-`(identity, ruler, mode, data_fp)`. `data_fp` is in the key, so a data correction
-produces a NEW row rather than overwriting one — which means reverting the file
-restores the old answer without recomputing it, and a row whose data moved is
-still there to be published while no current measurement exists. Measured: with
-24 rows recorded, 1,556 rows to do without them, 1,532 with them, and 1,533 with
-one row's data fingerprint altered — that row refought and no other.
+**A ROW HAS ONE FACT: THE LAST MEASUREMENT OF IT.** The key is
+`(identity, ruler, mode)` — what makes it a different question — and measuring
+it again overwrites. Everything else the row carries DESCRIBES that measurement
+and decides nothing, with one exception.
+
+**THE EXCEPTION IS `data_fp`, AND IT IS THE ONLY ONE.** It says what the
+measurement read, so a data correction retires exactly the rows that read the
+file that moved. Measured: with 24 rows recorded, 1,556 rows to do without them,
+1,532 with them, and 1,533 with one row's data fingerprint altered — that row
+refought and no other. It rides ON the fact rather than in the key: a row
+measured under three generations of data is one row, not three.
+
+**AGE IS NOT EVIDENCE.** A fact measured a year ago, by a build a thousand
+commits behind, is not thereby wrong — it is a measurement, and only another
+measurement can disprove it. So nothing branches on `measured_by` and nothing
+branches on a clock. What they are for is finding a broken build's rows
+afterwards (`WHERE measured_by = ?`) and showing a reader how old a row is.
 
 **NOTHING DOWNSTREAM MAY DESTROY A FACT.** No sweep, no merge, no delta, no
 expiry. Two things remove one: a migration somebody writes, and `--rescore`,
 which is a person saying a number is wrong for a reason no hash can see.
+Overwriting a row with a newer measurement of the same row is not destroying a
+fact — it IS the fact.
 
-Provenance rides along and decides nothing: `measured_by` says which build wrote
-the row, `cost_seconds` is what the split packs the next run by, `computed_at`
-says how old a row is. A fact does not decay — while the fingerprints match,
-the score is right however old it is — so nothing branches on the clock.
+**WHAT IT COST TO KEEP THE OLD ONES** was the reason to stop. Keeping every
+generation bought one thing — reverting a data file restored its answer without
+recomputing — and the bill was an unbounded table: `data_fp` folds a GLOBAL
+bucket that every row carries, so one edit to a file no entity owns mints a
+fresh copy of the whole board. Measured over five weeks: 72 commits touched that
+bucket, against a generation of 23,260 rows.
 
 ### A row is paid for in sittings
 
@@ -1049,6 +1063,20 @@ assets, and until the board there was no script at all. Two consequences:
    The two statements are independent: if the second is what failed, re-run it
    alone. `SELECT metric, count(*) FROM scores GROUP BY metric` says whether it
    landed.
+
+   AND THE KEY LOST `data_fp`, which SQLite cannot do in place. That one is a
+   FILE rather than a pasted command, because it rebuilds the table and a
+   destructive statement against the only copy of 132 CPU-hours should be
+   reviewable before it is run:
+
+   ```sh
+   npx wrangler d1 execute wfsim --remote -y --file worker/migrate_one_fact_per_row.sql
+   ```
+
+   It is the one migration here that DROPS facts, and it drops only ones nothing
+   could read: a reader asks a row for its own fingerprint, so a second row under
+   the same key was already unreachable. Take `SELECT count(*) FROM scores`
+   before and after — the difference is how many generations the old key held.
 
    THE BACKFILL IS EXACT, NOT A GUESS: every ruler that has ever scored a row
    declares `metric: kpm`. It is left NULLABLE on the live copy where the schema

@@ -477,10 +477,23 @@ fn group_of(key: &str) -> String {
     format!("{weapon}|{mode}")
 }
 
-/// ONE MEASUREMENT, as the database holds it.
+/// ONE MEASUREMENT, as the database holds it — and there is exactly ONE per
+/// row, the last one taken.
+///
+/// A FACT IS NOT WRONG FOR BEING OLD. Neither the clock nor the build that
+/// wrote it says anything about whether the number is right, so neither is in
+/// the key and neither decides anything here. The one question that can be
+/// asked of a stored score is whether its INPUTS still hold, which is
+/// `data_fp` — carried ON the fact rather than in the key, so a row that has
+/// been measured under three generations of data is one row and not three.
 #[derive(Clone)]
 struct Fact {
     score: f64,
+    /// WHAT THIS MEASUREMENT READ. The whole of invalidation this code can
+    /// derive: a data correction moves it, and the row is refought. What the
+    /// CODE does to a row is not enumerable and no hash answers it — only the
+    /// audit measuring it can.
+    data_fp: String,
     cost_seconds: f64,
     /// The riven corner the search settled on, when there is one. It travels
     /// WITH the score because it was found by the same fight: reusing one
@@ -493,24 +506,15 @@ struct Fact {
     finished_at: String,
 }
 
-/// EVERY MEASUREMENT THE DATABASE HOLDS FOR ONE RULER, indexed the two ways a
-/// run asks about one.
-#[derive(Default)]
-struct Facts {
-    /// BY EVERYTHING THAT DECIDES THE SCORE: the row, and what the row READ.
-    /// A hit here is a measurement this build can still stand behind.
-    by_fp: std::collections::HashMap<(String, String), Fact>,
-    /// …AND BY THE ROW ALONE, holding the most recently finished measurement of
-    /// it whatever it read.
-    ///
-    /// TWO READERS WANT OPPOSITE THINGS OF A ROW WHOSE DATA MOVED. A pass that
-    /// can REFIGHT it must not publish the old number; a pass that only
-    /// ASSEMBLES must, or the row leaves the board because a file it reads was
-    /// corrected. This is what the assembly keeps, and it is also where the
-    /// COST comes from either way — the fight has to be redone, but how long it
-    /// takes is a property of the build and the ruler, and those did not move.
-    latest: std::collections::HashMap<String, Fact>,
-}
+/// WHAT THE DATABASE HOLDS FOR ONE RULER: the last measurement of each row.
+///
+/// ONE INDEX, because there is one fact. It was two — by `(row, what it read)`
+/// and by the row alone — and every reader had to be told which of the two it
+/// was: a pass that can REFIGHT must not reuse a number whose data moved, a
+/// pass that only ASSEMBLES must publish it anyway or the row leaves the board.
+/// That is not two facts, it is one fact and two questions, and the fact
+/// carries what both of them need.
+type Facts = std::collections::HashMap<String, Fact>;
 
 
 /// A WALL CLOCK AS THE DATABASE WANTS IT: seconds, UTC, no fraction. The
@@ -579,7 +583,7 @@ impl FactLog {
     /// here: the shipper runs beside this and may send a row minutes later, so a
     /// timestamp invented downstream would be the shipping time under the
     /// fight's name.
-    fn write(&mut self, ruler: &str, metric: &str, key: &str, data_fp: &str, f: &Fact) {
+    fn write(&mut self, ruler: &str, metric: &str, key: &str, f: &Fact) {
         use std::io::Write;
         let Some(out) = self.out.as_mut() else { return };
         let (identity, mode) = key.rsplit_once('#').unwrap_or((key, ""));
@@ -598,7 +602,7 @@ impl FactLog {
             // be a second answer to a question that has one.
             "metric": metric,
             "mode": mode,
-            "data_fp": data_fp,
+            "data_fp": f.data_fp,
             "measured_by": self.measured_by,
             "score": f.score,
             "cost_seconds": f.cost_seconds,
@@ -646,6 +650,7 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
         let key = if mode.is_empty() { id.to_string() } else { format!("{id}#{mode}") };
         let fact = Fact {
             score,
+            data_fp: v.get("data_fp").and_then(Value::as_str).unwrap_or_default().to_string(),
             cost_seconds: v.get("cost_seconds").and_then(Value::as_f64).unwrap_or_default(),
             // THE ROLLS TRAVEL AS TEXT, because the column is one and a riven
             // corner is a list. A row without one is a plain row, not a broken
@@ -665,21 +670,19 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
                 .unwrap_or_default()
                 .to_string(),
         };
-        // THE NEWEST WINS THE ROW, and it is decided by the clock rather than by
-        // the order the file happens to be in: two rows of one key differ only
-        // in what they READ, so which of them is the carry is a question about
-        // when they were measured and nothing else.
+        // THE NEWEST WINS THE ROW, decided by the clock rather than by the
+        // order the file happens to be in. The database holds one row per key,
+        // so this only ever arbitrates between what the run FETCHED and what
+        // its own shards have measured since — and the newer of those is the
+        // one the database is about to hold.
         let newer = facts
-            .latest
             .get(&key)
-            .is_none_or(|held| held.finished_at <= fact.finished_at);
+            .is_none_or(|held: &Fact| held.finished_at <= fact.finished_at);
         if newer {
-            facts.latest.insert(key.clone(), fact.clone());
+            facts.insert(key, fact);
         }
-        let fp = v.get("data_fp").and_then(Value::as_str).unwrap_or_default().to_string();
-        facts.by_fp.insert((key, fp), fact);
     }
-    eprintln!("facts: {} rows read for {bench_id}", facts.by_fp.len());
+    eprintln!("facts: {} rows read for {bench_id}", facts.len());
     facts
 }
 
@@ -1129,22 +1132,17 @@ fn main() {
             // A PERSON CAN OVERRIDE IT, and that is the only other way a fact
             // stops counting: `--rescore` names rows whose number is wrong for a
             // reason the hashes cannot see.
-            let current = (!verify && !is_forced(&key))
-                .then(|| facts.by_fp.get(&(key.clone(), build_fp.clone())))
-                .flatten();
+            let held = (!verify && !is_forced(&key)).then(|| facts.get(&key)).flatten();
+            let current = held.filter(|f| f.data_fp == build_fp);
             if current.is_none() && is_forced(&key) {
                 forced_rows += 1;
             }
-            // …AND WHAT THE ROW LAST MEASURED, whatever it read. Two readers want
-            // opposite things of it: a pass that can REFIGHT must not publish a
-            // number whose data moved out from under it, and a pass that only
-            // ASSEMBLES must, or the row leaves the board because a file it
-            // reads was corrected. So the assembly keeps it and a shard does not.
-            let carried = current
-                .is_none()
-                .then(|| facts.latest.get(&key))
-                .flatten()
-                .filter(|_| !verify && !is_forced(&key));
+            // …AND THE SAME FACT READ THE OTHER WAY, when its data has moved.
+            // One fact, two questions: a pass that can REFIGHT must not reuse a
+            // number whose inputs moved out from under it, and a pass that only
+            // ASSEMBLES must publish it anyway, or the row leaves the board
+            // because a file it reads was corrected.
+            let carried = held.filter(|_| current.is_none());
             if current.is_none() && carried.is_some() {
                 stale += 1;
             }
@@ -1223,7 +1221,6 @@ fn main() {
                     // is already known costs nothing to publish and must not be
                     // charged to anybody.
                     let cost = facts
-                        .latest
                         .get(&key)
                         .map(|f| f.cost_seconds)
                         .filter(|c| *c > 0.0)
@@ -1413,9 +1410,9 @@ fn main() {
                         &bench_id,
                         metric.id,
                         &key,
-                        &build_fp,
                         &Fact {
                             score: s,
+                            data_fp: build_fp.clone(),
                             cost_seconds: began.elapsed().as_secs_f64(),
                             rolls: row_riven.as_ref().map(|rv| rv.rolls.clone()),
                             started_at: began_at,
@@ -1575,7 +1572,7 @@ fn main() {
         let mut compared = 0usize;
         let mut moved: Vec<(&String, f64, f64)> = Vec::new();
         for (k, &now) in &computed {
-            if let Some(was) = facts.latest.get(k).map(|f| f.score) {
+            if let Some(was) = facts.get(k).map(|f| f.score) {
                 compared += 1;
                 if now != was {
                     moved.push((k, was, now));
@@ -1640,7 +1637,7 @@ fn main() {
             moved.iter().map(|(k, _, _)| group_of(k)).collect();
         let mut seen_groups: std::collections::BTreeSet<String> = Default::default();
         for k in computed.keys() {
-            if facts.latest.contains_key(k) {
+            if facts.contains_key(k) {
                 seen_groups.insert(group_of(k));
             }
         }
@@ -2005,10 +2002,39 @@ mod tests {
     /// melee carries seven — so a fact table that kept them joined, or split on
     /// the FIRST `#`, would file seven measurements under one row and keep
     /// whichever was written last.
-    /// TWO FACTS OF ONE ROW ARE A DATA CHANGE, and which of them is which is
-    /// decided by what each READ — never by the order the file happens to be in.
+    /// …AND THE DATABASE AGREES, which is the half this file cannot assume.
+    ///
+    /// `load_facts` holds one fact per row because the table does. Put anything
+    /// back in that key — `data_fp` was there — and the table holds several
+    /// while every reader here can return only one, so which of them a run sees
+    /// is decided by a `SELECT` nobody wrote down. Nothing fails; the board
+    /// publishes whichever the paging happened to reach.
+    ///
+    /// READ FROM THE SCHEMA ITSELF, so the two cannot drift.
     #[test]
-    fn a_row_measured_under_two_data_versions_keeps_both_and_knows_which_is_which() {
+    fn the_scores_table_holds_one_fact_per_row() {
+        let schema = include_str!("../../../worker/schema.sql");
+        let key = schema
+            .lines()
+            .map(str::trim)
+            .find(|l| l.starts_with("PRIMARY KEY (identity, ruler, mode"))
+            .expect("the scores table names its key");
+        assert_eq!(
+            key, "PRIMARY KEY (identity, ruler, mode)",
+            "a row must key on what makes it a different QUESTION and nothing else — \
+             anything more and one row holds several facts"
+        );
+    }
+
+    /// A ROW HAS ONE FACT: THE LAST MEASUREMENT OF IT.
+    ///
+    /// Two lines for one row is the same row measured twice, and the newer one
+    /// is the fact — decided by the CLOCK, never by the order the file happens
+    /// to be in. What each read travels ON the fact, so the one row answers
+    /// both questions asked of it: may this be reused (its `data_fp` still
+    /// holds), and what does the assembly publish while nothing current exists.
+    #[test]
+    fn a_row_measured_twice_keeps_the_newer_and_what_it_read() {
         let dir = std::env::temp_dir().join("wfsim-facts-two");
         std::fs::create_dir_all(&dir).expect("tmp");
         let path = dir.join("facts.ndjson");
@@ -2032,15 +2058,14 @@ mod tests {
         .expect("write");
 
         let facts = load_facts(Some(path.to_string_lossy().into_owned()), "single_target");
-        assert_eq!(facts.by_fp.len(), 2, "both measurements are held");
-        assert_eq!(facts.by_fp[&("braton|m#base".into(), "new".into())].score, 9.0);
-        assert_eq!(facts.by_fp[&("braton|m#base".into(), "old".into())].score, 4.0);
-        // THE CARRY IS THE NEWEST, which is the only row an assembly should
-        // publish when neither matches what the build reads today.
-        assert_eq!(facts.latest["braton|m#base"].score, 9.0);
+        assert_eq!(facts.len(), 1, "one row, one fact");
+        // THE NEWER ONE, though the file ends with the older.
+        assert_eq!(facts["braton|m#base"].score, 9.0);
+        // …AND IT KNOWS WHAT IT READ, which is what decides reuse.
+        assert_eq!(facts["braton|m#base"].data_fp, "new");
         // …AND ANOTHER RULER'S ROWS ARE NOT HERE AT ALL.
         let other = load_facts(Some(path.to_string_lossy().into_owned()), "group_clear");
-        assert!(other.by_fp.is_empty() && other.latest.is_empty());
+        assert!(other.is_empty());
         let _ = std::fs::remove_file(&path);
     }
 
@@ -2081,13 +2106,19 @@ mod tests {
         );
         let at = || Fact {
             score: 12.5,
+            data_fp: "fp1".into(),
             cost_seconds: 3.0,
             rolls: None,
             started_at: "T0".into(),
             finished_at: "T1".into(),
         };
-        log.write("group_clear", "kpm", "orthos_prime|mods#heavy_slam", "fp1", &at());
-        log.write("group_clear", "kpm", "no_mode_here", "fp2", &Fact { score: 1.0, ..at() });
+        log.write("group_clear", "kpm", "orthos_prime|mods#heavy_slam", &at());
+        log.write(
+            "group_clear",
+            "kpm",
+            "no_mode_here",
+            &Fact { score: 1.0, data_fp: "fp2".into(), ..at() },
+        );
         drop(log);
 
         let text = std::fs::read_to_string(&path).unwrap();
@@ -2118,9 +2149,9 @@ mod tests {
             "single_target",
             "kpm",
             "k#base",
-            "fp",
             &Fact {
                 score: 1.0,
+                data_fp: "fp".into(),
                 cost_seconds: 1.0,
                 rolls: None,
                 started_at: "T0".into(),
