@@ -975,10 +975,9 @@ impl RivenShape {
 /// cheap, and a climb would have to assume monotonicity, which is exactly the
 /// assumption this function exists to avoid making.
 ///
-/// Ties keep the FIRST corner, which is every stat at `ROLL_MIN` — so a stat
-/// the fight cannot read at all (a magazine stat on a build that never
-/// reloads) comes back at the bottom of its band rather than at an arbitrary
-/// end, and two runs of this cannot disagree.
+/// A TIE GOES TO THE PLAYER — every bonus at its ceiling, the malus at its
+/// floor. That is the whole rule for a stat the fight cannot read; the tie site
+/// below says why it is exact rather than a tolerance.
 pub fn perfect(
     shape: &RivenShape,
     class: &str,
