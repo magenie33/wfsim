@@ -974,9 +974,11 @@ fn main() {
             // decides which, below, and every shard walks this same sequence
             // and skips only the SIMULATION — so they stay in step.
             //
-            // THE ROLLS COME WITH THE FACT, because they were found by the same
-            // fight: a riven row reused without them loses the riven the number
-            // is for. A row fought here gets them from the search.
+            // THE ROLLS COME WITH THE FACT, because they were measured with it:
+            // a riven row reused without them loses the riven its number is
+            // for. A row fought here reads them off the BUILD, which is where
+            // they belong — this path is what a fact taken before the library
+            // named its own cards still carries.
             let mut row_riven: Option<RowRiven> = v.riven.as_ref().and_then(|shape| {
                 current
                     .and_then(|f| f.rolls.as_ref())

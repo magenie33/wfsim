@@ -245,7 +245,7 @@ jobs:
       # A run where every row is reusable still fanned out to `SHARDS` jobs and
       # paid a checkout, a build and a cache restore for each, to write the board
       # it already had. `--dry-run` walks the boards exactly as a scoring run
-      # does — the same validation, the same row fingerprints, the same reuse —
+      # does — the same validation and the same reuse —
       # and counts what is left instead of fighting it, so the answer is the
       # SCORER'S OWN. A second opinion computed here could disagree with it, and
       # the direction it would disagree in is a board that quietly stops moving.
