@@ -599,6 +599,36 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
     facts
 }
 
+/// WHAT SOMEBODY ASKED THIS RULER TO MEASURE, in the order they will be done —
+/// as `scripts/fetch_queue.sh` wrote it, one json object a line.
+///
+/// A RUN DOES NOT DECIDE WHAT TO COMPUTE, IT READS IT. The order is the
+/// database's (a batch's `at`, then the key), taken once and never re-derived,
+/// so every shard is handed the same list and they agree on it without talking.
+///
+/// AN ABSENT FILE IS NOT AN EMPTY QUEUE — it is "no queue was given", which is
+/// what `--project` and a local run mean, and there the fact alone decides.
+fn load_queue(spec: Option<String>, bench_id: &str) -> Option<Vec<(String, String)>> {
+    let path = spec?;
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        eprintln!("queue: cannot read {path}");
+        return Some(Vec::new());
+    };
+    let owed: Vec<(String, String)> = text
+        .lines()
+        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+        .filter(|v| v.get("ruler").and_then(Value::as_str) == Some(bench_id))
+        .filter_map(|v| {
+            Some((
+                v.get("build_id").and_then(Value::as_str)?.to_string(),
+                v.get("mode").and_then(Value::as_str).unwrap_or("base").to_string(),
+            ))
+        })
+        .collect();
+    eprintln!("queue: {} row(s) owed on {bench_id}", owed.len());
+    Some(owed)
+}
+
 
 
 
@@ -634,20 +664,37 @@ fn main() {
     // disagree, and a rule about which of them won.
     let facts = load_facts(flag("--facts-in"), &bench_id);
     let mut reused = 0usize;
-    // ROWS WHOSE FACT IS HELD BY A HASH THAT NO LONGER MATCHES. Counted in the
-    // walk below, where the row's own fingerprint is computed.
-    // …AND ROWS A PERSON NAMED. Forcing is applied AT THE ROW rather than by
-    // emptying a map first, because a map can be refilled from a second source
-    // and a predicate cannot: a `kuva_nukor` rescore once came back green having
-    // refought no row, because the store put every one back.
+
     // ---- WHAT THIS RUN IS ALLOWED TO FIGHT ----------------------------
     //
-    // HOW MANY UNMEASURED ROWS A RUN TAKES ON. Without it the backlog is
+    // HOW MANY OF THE QUEUE'S ROWS A RUN TAKES ON. Without it the backlog is
     // unbounded, so a run has to clear all of it before anything is published
     // — 4,570 rows and hours of it, during which the board shows the number it
     // showed yesterday. Bounded, each run publishes a board with more rows on
-    // it than the last, and the rates are `docs/BOARD.md` §"The pipeline".
+    // it than the last.
     let new_limit = flag("--new-limit").and_then(|s| s.parse::<usize>().ok());
+    // WHAT IS OWED, AND WHAT THIS RUN TAKES OF IT — the front of the queue,
+    // which is where the ORDER lives: a batch jumps the line by its own `at`,
+    // and truncating here is what makes that ordering mean something when the
+    // run cannot do all of it.
+    let queued = load_queue(flag("--queue-in"), &bench_id);
+    let owed: Option<std::collections::HashSet<(String, String)>> =
+        queued.as_ref().map(|q| q.iter().cloned().collect());
+    let taking: Option<std::collections::HashSet<(String, String)>> = queued.as_ref().map(|q| {
+        q.iter().take(new_limit.unwrap_or(usize::MAX)).cloned().collect()
+    });
+    // …AND WHAT NOTHING HAS ASKED FOR YET, written out for the reconciliation.
+    // The queue is written by hand — intake for an arrival, a person for a
+    // rescore — and a hand-written list's one failure is a row nobody wrote,
+    // which would never be computed and never be noticed. This names them; the
+    // shipper puts them in a batch.
+    let mut missing_out = flag("--queue-missing").and_then(|p| {
+        std::fs::File::create(&p)
+            .map_err(|e| eprintln!("queue: cannot write {p}: {e}"))
+            .ok()
+            .map(std::io::BufWriter::new)
+    });
+    let mut missing = 0usize;
     // WHEN THE RUN STOPS TAKING ON WORK, in seconds of wall clock.
     //
     // A BUDGET PREDICTS AND A DEADLINE GUARANTEES, and a count can only
@@ -955,9 +1002,6 @@ fn main() {
             if !seen_ids.insert(key.clone()) {
                 continue;
             }
-            // A FACT IS HELD TO THE HASH OF WHAT IT READ, and that is the whole
-            // of invalidation this code can derive. What a row READS is
-            // enumerable from the row, so a data correction is caught exactly
             // A FACT IS REUSED BECAUSE IT EXISTS, and that is the whole of
             // the rule. Nothing here asks how old it is or which build wrote
             // it: age is not evidence, and a hash of the INPUTS was tried and
@@ -966,9 +1010,34 @@ fn main() {
             // move a number, and stayed silent on the one case that matters,
             // a code change that does.
             //
-            // WHAT RETIRES A FACT IS A PERSON DELETING IT. The row comes back
-            // absent, and an absent row is computed.
-            let current = facts.get(&key);
+            // WHAT ASKS FOR A ROW AGAIN IS THE QUEUE. A stored number is not a
+            // reason to skip a row somebody asked to have measured again, so a
+            // row this run is TAKING is fought whatever it already carries —
+            // and the old number stays published until the new one replaces it,
+            // which is why asking costs the board nothing where deleting the
+            // fact would have left a hole.
+            let asked = (
+                wfsim_engine::builds::build_id(&v),
+                if played.id.is_empty() { "base".to_string() } else { played.id.to_string() },
+            );
+            let take = taking.as_ref().is_some_and(|t| t.contains(&asked));
+            // …AND A ROW NOBODY ASKED FOR IS NOT WORK. Where there is no queue
+            // at all — `--project`, a local run — the fact alone decides, which
+            // is what this said before there was one.
+            let current = if take { None } else { facts.get(&key) };
+            if missing_out.is_some()
+                && !facts.contains_key(&key)
+                && !owed.as_ref().is_some_and(|o| o.contains(&asked))
+            {
+                use std::io::Write;
+                let line = json!({
+                    "build_id": asked.0, "ruler": bench_id, "mode": asked.1,
+                });
+                if let Some(out) = missing_out.as_mut() {
+                    let _ = writeln!(out, "{line}");
+                }
+                missing += 1;
+            }
             // THE SHARD IS A PROPERTY OF THE ROW, not of the submission it came
             // from: a melee weapon is seven rows off one record. `charge`
             // decides which, below, and every shard walks this same sequence
@@ -1003,6 +1072,17 @@ fn main() {
                     if project {
                         absent += 1;
                         unready.insert(v.weapon.clone());
+                        deferred_ids.insert(identity_of(&key));
+                        continue;
+                    }
+                    // A ROW THIS RUN IS NOT TAKING IS NOT ITS WORK. Under a
+                    // queue that is the whole selection: what is owed and what
+                    // this run took of it are decided before the walk, in the
+                    // ORDER a person set, and a row outside that is left for a
+                    // later run. The reconciliation is what guarantees it is
+                    // owed at all, so nothing here can be forgotten.
+                    if taking.is_some() && !take {
+                        fresh_left += 1;
                         deferred_ids.insert(identity_of(&key));
                         continue;
                     }
@@ -1296,6 +1376,16 @@ fn main() {
     // whether to fan out at all. It stands BEFORE the accounting
     // below, which asserts every validated build reached a row — true of a run
     // that scores and false by construction of one that only counts.
+
+    // WHAT NOTHING HAS ASKED FOR YET, flushed before anything reads the file.
+    // The reconciliation is the reason a hand-written queue cannot quietly lose
+    // a row, so the count is said out loud on every run: a number that is not
+    // zero after the first pass is a writer that is forgetting to enqueue.
+    if let Some(out) = missing_out.as_mut() {
+        use std::io::Write;
+        let _ = out.flush();
+        eprintln!("queue-missing: {missing} row(s) nothing has asked for on {bench_id}");
+    }
     if dry {
         eprintln!(
             "dry-run: todo={todo} work={work_seconds:.0} reused={reused} seen={seen}"

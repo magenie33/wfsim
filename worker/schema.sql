@@ -140,6 +140,50 @@ CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
 -- in, which is the one thing a clock here is allowed to decide.
 CREATE INDEX IF NOT EXISTS scores_oldest ON scores (finished_at);
 
+-- WHAT SOMEBODY ASKED TO BE COMPUTED, AND HOW FAR IT GOT.
+--
+-- THE ONE RULE THAT KEEPS TWO TABLES FROM DISAGREEING: the queue may only ever
+-- CAUSE work. It may not prevent work, and it may not decide a number. So
+-- losing it costs an ordering and never a fact, a stale row costs one
+-- recomputation that produces the same number, and the publisher never reads
+-- it at all.
+--
+-- A ROW IS DELETED WHEN ITS SCORE LANDS, and in that order — the score is
+-- written first. Interrupted between the two, the row is computed again, which
+-- is free: a score is a pure function of what it measured.
+--
+-- WHY IT IS NOT A COLUMN ON `scores`. That table is what the site is built
+-- from: one row per (build, ruler, mode), the latest measurement, no history
+-- and no state. A `pending` flag on it would make the data source carry the
+-- work list, and every reader would have to know which rows are real.
+CREATE TABLE IF NOT EXISTS batches (
+  id    TEXT PRIMARY KEY,
+  -- THE ORDER, AND THE ONLY THING THAT SETS IT. Sorted as text, so a batch
+  -- jumps the line by being renamed rather than by a priority nobody can see.
+  at    TEXT NOT NULL,
+  -- WHAT THIS GROUP IS FOR, for the person who finds it a week later. A batch
+  -- with no reason is a batch nobody can decide to cancel.
+  why   TEXT,
+  -- HOW MANY ROWS IT WAS CREATED WITH. A statement about the past, so it cannot
+  -- drift: progress is `total` minus what is still in `queue`.
+  total INTEGER NOT NULL
+);
+
+-- ONE ROW PER (batch, build, ruler, mode). The same row may sit in two batches
+-- at once — two people asking for one thing — and computing it deletes it from
+-- both, which is why the delete does not name a batch.
+CREATE TABLE IF NOT EXISTS queue (
+  batch    TEXT NOT NULL,
+  build_id TEXT NOT NULL,
+  ruler    TEXT NOT NULL,
+  mode     TEXT NOT NULL,
+  PRIMARY KEY (batch, build_id, ruler, mode)
+);
+
+-- "WHAT IS LEFT, IN ORDER" is one indexed read, and it is the only question a
+-- run asks of this table.
+CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
+
 -- HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and the schema cannot hold more.
 --
 -- One row per Ko-fi message id, a DAY, and nothing else: no amount, no name, no

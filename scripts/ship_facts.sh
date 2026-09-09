@@ -81,6 +81,34 @@ batches() {
   ' "$src"
 }
 
+# …AND THE QUEUE ROW THE FACT PAYS FOR, in the same pass and never before it.
+#
+# THE ROW IS DERIVED FROM THE FACT, not carried beside it: the key of a fact IS
+# the key of the queue row it settles, so there is no third file to keep in step
+# and no way for the two to name different rows.
+#
+# NO `batch` IN THE `WHERE`. Two groups can ask for one row, and computing it
+# answers both — a delete that named a batch would leave the other group owing
+# something that is already measured.
+#
+# AFTER THE INSERTS, ALWAYS. Stopped in between, the score is banked and the row
+# is still owed: the next run computes it again, which is free, because a score
+# is a pure function of what it measured. The other order loses work.
+spends() {
+  local src="$1"
+  jq -s -c --argjson n "$BATCH" '
+    . as $all
+    | range(0; ($all | length); $n)
+    | . as $i
+    | $all[$i : $i + $n] as $chunk
+    | {
+        sql: ("DELETE FROM queue WHERE (build_id, ruler, mode) IN (VALUES "
+              + ([$chunk[] | "(?,?,?)"] | join(",")) + ")"),
+        params: [$chunk[] | .identity, .ruler, .mode]
+      }
+  ' "$src"
+}
+
 # ---- shipping, from wherever it got to last time --------------------------
 ship() {
   local src="$1" cursor="$1.shipped" from=0 total sent=0 failed=0
@@ -106,13 +134,27 @@ ship() {
       fi
     fi
   done < <(batches "$pending")
+  local pending2="$pending.spend"
+  cp "$pending" "$pending2"
   rm -f "$pending"
   # THE CURSOR MOVES ONLY WHEN EVERY BATCH LANDED. Moving it past a refusal
   # would turn a retryable failure into a row nobody ships again.
   if [ "$failed" -eq 0 ]; then
+    # …AND ONLY THEN IS THE QUEUE SPENT. A row whose score did not land is a row
+    # still owed, which is the whole safety of the two writes being in this
+    # order.
+    local spent=0
+    while IFS= read -r body; do
+      [ -n "$body" ] || continue
+      d1 "$body" && spent=$((spent + 1)) || {
+        echo "::warning::queue: a spent row would not delete [HTTP $D1_CODE] — it will be computed again"
+      }
+    done < <(spends "$pending2")
+    rm -f "$pending2"
     echo "$total" > "$cursor"
-    echo "facts: shipped rows $((from + 1))..$total in $sent batches"
+    echo "facts: shipped rows $((from + 1))..$total in $sent batches, $spent queue statement(s)"
   else
+    rm -f "$pending2"
     echo "facts: $sent batches landed, $failed refused — the cursor stays at $from"
     return 1
   fi
@@ -184,17 +226,37 @@ self_test() {
 
   cat > "$DIR/bin/curl" <<'OK'
 #!/usr/bin/env bash
-out=/dev/null; prev=
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+out=/dev/null; prev=; body=
+for a in "$@"; do
+  [ "$prev" = "-o" ] && out="$a"
+  [ "$prev" = "--data-binary" ] && body="$a"
+  prev="$a"
+done
+printf '%s\n' "$body" >> "$PWD/sent.log"
 printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
 printf '200'
 OK
   chmod +x "$DIR/bin/curl"
+  : > sent.log
   ship facts.ndjson > out.txt 2>&1 \
     && grep -q "rows 1..12" out.txt \
     && say ok "a first run ships every row" || say FAIL "$(cat out.txt)"
   [ "$(cat facts.ndjson.shipped)" = "12" ] \
     && say ok "...and records how far it got" || say FAIL "cursor: $(cat facts.ndjson.shipped)"
+
+  # THE QUEUE IS SPENT AFTER THE SCORE IS BANKED, never before. Stopped between
+  # the two, the row is still owed and the next run computes it again — free,
+  # because a score is a pure function. The other order loses work.
+  i=$(grep -n "INTO scores" sent.log | tail -1 | cut -d: -f1)
+  d=$(grep -n "DELETE FROM queue" sent.log | head -1 | cut -d: -f1)
+  [ -n "$i" ] && [ -n "$d" ] && [ "$i" -lt "$d" ] \
+    && say ok "...and spends the queue row only after the score landed" \
+    || say FAIL "the delete went first (insert $i, delete $d)"
+  # NO `batch` IN THE `WHERE`: two groups can ask for one row, and computing it
+  # answers both.
+  grep "DELETE FROM queue" sent.log | head -1 | jq -e '.sql | contains("batch") | not' >/dev/null \
+    && say ok "...for every group that asked for it, not one" \
+    || say FAIL "the delete named a batch"
 
   # …AND THE SECOND RUN SHIPS ONLY WHAT IS NEW, which is the whole point of
   # running this again and again beside a scorer that keeps appending.
