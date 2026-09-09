@@ -1717,7 +1717,7 @@ fn main() {
         }
         if !unready.is_empty() {
             eprintln!(
-                "held: {} weapon(s) carry a row this generation has not measured — {}{}",
+                "held: {} weapon(s) carry a row nothing has measured yet — {}{}",
                 unready.len(),
                 unready.iter().take(6).cloned().collect::<Vec<_>>().join(" "),
                 if unready.len() > 6 { " …" } else { "" },
