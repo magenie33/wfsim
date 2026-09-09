@@ -46,8 +46,11 @@ d1() {
 
 # ---- the read -------------------------------------------------------------
 #
-# ORDERED, so paging is stable: without an ORDER BY, two pages of the same
-# query may overlap or skip, and the gap is a row the run recomputes for ever.
+# ORDERED BY THE KEY, so paging is stable. Without an ORDER BY two pages of one
+# query may overlap or skip, and the gap is a row the run recomputes for ever —
+# and an order that is not UNIQUE is the same bug wearing an ORDER BY, since
+# rows that tie may come back in either order on either page. `(identity, ruler,
+# mode)` is the primary key, so it is total.
 #
 # `metric` IS WRITTEN AND NOT READ BACK, deliberately. It says what a stored
 # number is IN, which only a reader of the archive needs; what decides whether
@@ -59,7 +62,7 @@ page_body() {
     {
       sql: ("SELECT identity, ruler, mode, data_fp, measured_by, score, rolls,"
             + " cost_seconds, started_at, finished_at FROM scores"
-            + " ORDER BY identity, ruler, mode, data_fp LIMIT ? OFFSET ?"),
+            + " ORDER BY identity, ruler, mode LIMIT ? OFFSET ?"),
       params: [$limit, $offset]
     }'
 }
@@ -104,11 +107,11 @@ self_test() {
   printf '%s' "$body" | jq -e '.sql | contains("ORDER BY")' >/dev/null \
     && say ok "...and the read is ORDERED, so two pages cannot overlap or skip" \
     || say FAIL "no ORDER BY: $(printf '%s' "$body" | jq -r .sql)"
-  # THE ORDER HAS TO REACH `data_fp`. Two rows of one row key differ only in it
-  # — a data change writes a second — so a key that stopped at the mode leaves
-  # their order to the engine, and two pages can then overlap or skip.
-  printf '%s' "$body" | jq -e '.sql | contains("ORDER BY identity, ruler, mode, data_fp")' >/dev/null \
-    && say ok "...down to data_fp, which is the last thing that separates two rows" \
+  # THE ORDER HAS TO BE THE KEY, and the key has to be TOTAL. Rows that tie may
+  # come back in either order on either page, so an order finer than the key is
+  # unnecessary and one coarser is the no-ORDER-BY bug with an ORDER BY on it.
+  printf '%s' "$body" | jq -e '.sql | contains("ORDER BY identity, ruler, mode LIMIT")' >/dev/null \
+    && say ok "...by the primary key, which is total, so no two rows can tie" \
     || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
   printf '%s' "$body" | jq -e '.sql | contains("generation") | not' >/dev/null \
     && say ok "...and no generation is asked for: an older engine is not a wrong score" \

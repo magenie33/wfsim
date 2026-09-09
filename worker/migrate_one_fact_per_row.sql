@@ -18,6 +18,11 @@
 -- THE NEWEST SURVIVES, by `finished_at`. Two measurements of one row differ
 -- only in what they read and when, and the later one is the one this pipeline
 -- would have written.
+--
+-- IF IT STOPS HALFWAY, `scores` is untouched and `scores_one` exists: nothing
+-- is lost, and the retry is `DROP TABLE scores_one` and run this again. The
+-- destructive statement is the fifth, and by then every row it needs has been
+-- copied.
 
 -- THE COLUMNS ARE SPELLED OUT, and the key with them. `CREATE TABLE … AS
 -- SELECT` carries neither, so a rebuild that used it would leave a table with

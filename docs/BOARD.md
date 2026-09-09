@@ -1049,23 +1049,29 @@ assets, and until the board there was no script at all. Two consequences:
    driven against a stub `curl`, so every hop is testable without a network.
 
    A DATABASE THAT ALREADY HOLDS ROWS is migrated by hand, because
-   `CREATE TABLE IF NOT EXISTS` cannot evolve one. The column added since:
+   `CREATE TABLE IF NOT EXISTS` cannot evolve one. **Two, IN THIS ORDER**, and
+   the second is what makes the first whole.
 
-   ON ONE LINE, because this one is run by hand and a continuation is the one
-   piece of shell syntax that differs between the two a person might paste it
-   into — `\` is an argument to PowerShell, which then reports an unknown one
-   and never says why.
+   ① the `metric` column. ON ONE LINE, because this one is pasted and a
+   continuation is the one piece of shell syntax that differs between the two
+   shells it might be pasted into — `\` is an argument to PowerShell, which
+   reports an unknown one and never says why.
 
    ```sh
    npx wrangler d1 execute wfsim --remote -y --command "ALTER TABLE scores ADD COLUMN metric TEXT; UPDATE scores SET metric = 'kpm'"
    ```
 
-   The two statements are independent: if the second is what failed, re-run it
-   alone. `SELECT metric, count(*) FROM scores GROUP BY metric` says whether it
-   landed.
+   THE BACKFILL IS EXACT, NOT A GUESS: every ruler that has ever scored a row
+   declares `metric: kpm`. The two statements are independent — if the second is
+   what failed, re-run it alone — and `SELECT metric, count(*) FROM scores GROUP
+   BY metric` says whether it landed. The column arrives NULLABLE, because
+   SQLite cannot add a NOT NULL one without a DEFAULT and a default is the worse
+   divergence: it would silently fill the first row of the first ruler that ranks
+   by something else.
 
-   AND THE KEY LOST `data_fp`, which SQLite cannot do in place. That one is a
-   FILE rather than a pasted command, because it rebuilds the table and a
+   ② the key, which lost `data_fp`. SQLite cannot do that in place, so the table
+   is rebuilt — and the rebuilt one declares `metric TEXT NOT NULL`, which is
+   where ①'s divergence ends. A FILE rather than a pasted command, because a
    destructive statement against the only copy of 132 CPU-hours should be
    reviewable before it is run:
 
@@ -1078,13 +1084,10 @@ assets, and until the board there was no script at all. Two consequences:
    the same key was already unreachable. Take `SELECT count(*) FROM scores`
    before and after — the difference is how many generations the old key held.
 
-   THE BACKFILL IS EXACT, NOT A GUESS: every ruler that has ever scored a row
-   declares `metric: kpm`. It is left NULLABLE on the live copy where the schema
-   above says `NOT NULL`, because SQLite cannot add a NOT NULL column without a
-   DEFAULT and a default is the worse divergence — it would silently fill the
-   first row of the first ruler that ranks by something else. What actually
-   holds the bind is `ship_facts.sh --self-test`, which asserts the metric
-   reaches the statement.
+   **UNTIL ① HAS RUN, EVERY WRITE IS REFUSED.** The shipper binds a column the
+   table does not have, so the batch errors and the cursor stays where it was;
+   nothing is lost and nothing lands. That is the loud direction, and
+   `ship_facts.sh --self-test` is what holds the bind itself.
 
    ASK IT A QUESTION, which is most of why it is a database:
 
