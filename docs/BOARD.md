@@ -206,10 +206,25 @@ including the empty ones, because a 404 and an empty list are the same thing to
 
 ## When it updates
 
-**A PERSON STARTS A RUN, AND NOTHING ELSE DOES.** The clock is held and a push
-does not wake the board — Actions → board → Run workflow, which takes no input.
-There is nothing to name: what a run does is decided entirely by what the
-database holds. A build with no fact is computed, a build with one is not.
+**TWO JOBS, AND ONLY ONE OF THEM FIGHTS.**
+
+| | who starts it | what it does | what it costs |
+| --- | --- | --- | --- |
+| `intake.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
+| `board.yml` | a person, no input | what is asked for is MEASURED, and the board is published | as many shards as the work needs |
+
+**WHY THE CLOCK IS ON THE INTAKE HALF.** A submission is the one thing here
+nobody can derive — an inbox row is its only record — so the sooner it becomes a
+build the sooner it is safe. A row with no score has no such urgency: it keeps
+not having one until somebody asks.
+
+**AND HOURLY IS WHAT MAKES INTAKE CHEAP.** Resolving a riven's card is a FIGHT,
+about four core-minutes for the one submission in ten that needs it. That is an
+hour's lump once a day and two or three minutes on the hour — the same work,
+paid in a size that fits beside everything else.
+
+**THE BOARD RUN TAKES NO INPUT.** There is nothing to name: what it does is
+decided entirely by what `queue` holds and in what order.
 
 A PUSHED RUN DID EXACTLY WHAT THE NEXT SCHEDULED ONE DOES, so it duplicated a
 run that was coming anyway while competing for the same forty slots. Over 95

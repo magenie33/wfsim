@@ -95,12 +95,16 @@ env:
   # deadline and absorbed thirty rows against a backlog of 1,758. Seventeen
   # hours to catch up on work the machine had already been given time for.
   NEW_ROWS: 3000
-  # …AND THE CLOCK BEHIND IT, which is the only bound on a REPAIR. There is no
-  # slice and no cursor: a repaired row leaves the stale set, so a run walking
-  # it from the top converges, and what a run does not reach keeps the number
-  # it has until the next one — the assembly publishes a stale row rather than
-  # dropping it, which is what made a wall-clock bound safe here at all.
-  SCORE_DEADLINE_MINUTES: 12
+  # HOW LONG A RUN MAY TAKE, and it is the ONE number here that is a choice
+  # rather than a measurement: "how long after the button do I want the board".
+  # The shard count is COMPUTED from it and the work, and the same figure is the
+  # deadline each shard reads for itself.
+  #
+  # A HEALTHY RUN NEVER REACHES IT. Every row is priced from what whoever last
+  # measured it paid, so the split is sized to finish inside this; the clock is
+  # the error bar on that estimate, and a run that hits it is a finding rather
+  # than a number to raise. What a run does not reach stays owed.
+  SCORE_DEADLINE_MINUTES: 30
 
 jobs:
   # ---- 1. what is there to score ----------------------------------------
@@ -290,23 +294,7 @@ jobs:
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
-          bash scripts/fetch_queue.sh queue.ndjson
-          : > missing.ndjson
-          for f in data/benchmarks/*.yaml; do
-            id=$(basename "$f" .yaml)
-            ./target/release/wfsim-board "$id" \
-              --dry-run \
-              --facts-in facts-known.ndjson \
-              --queue-in queue.ndjson \
-              --queue-missing "missing-$id.ndjson" \
-              < submissions.json > /dev/null
-            cat "missing-$id.ndjson" >> missing.ndjson
-          done
-          # ONE BATCH A DAY, named by the day, so a day's arrivals are one group
-          # a person can see, reorder and cancel.
-          bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
-            "builds nothing had asked for yet" missing.ndjson
-          bash scripts/fetch_queue.sh queue.ndjson
+          bash scripts/reconcile_queue.sh submissions.json facts-known.ndjson queue.ndjson
 
       # …AND HANDED TO EVERY JOB BELOW, so the database is read ONCE a run.
       - uses: actions/upload-artifact@v4
