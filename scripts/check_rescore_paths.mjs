@@ -185,6 +185,21 @@ check(gated.length === 0, "a full rescore is every row forced, not a missing pri
 // So the assembly is serialised and reads the store LAST. The scoring may
 // overlap freely; it only ever adds.
 const pub = pubWf.slice(pubWf.findIndex((l) => /^ {2}publish:/.test(l)));
+// A FILE A JOB IS TOLD TO READ MUST REACH IT. `--queue-in queue.ndjson` in a job
+// that downloads no `queue` artifact reads nothing, and reading nothing is
+// indistinguishable from an empty queue: every shard reports "0 scored here",
+// the run goes green and the board does not move. Measured — it is how the
+// first run of the queue went.
+const scoreJob = wf
+  .slice(wf.findIndex((l) => /^  score:$/.test(l)))
+  .join(NL);
+for (const [flag, artifact] of [["--queue-in", "queue"], ["--facts-in", "facts"],
+                                ["< library.json", "library"]]) {
+  check(!scoreJob.includes(flag) || new RegExp(`name: ${artifact}\s*$`, "m").test(scoreJob),
+    `a shard given ${flag} downloads the ${artifact} it names`,
+    "a file the scorer cannot read is an empty one, and an empty one is silent");
+}
+
 // THE CLOCK IS ON THE PUBLISH, and it is what makes the board move at all now
 // that scoring is a button. Without it nothing writes `site/board` ever again,
 // which goes green everywhere and is discovered by a reader asking why the

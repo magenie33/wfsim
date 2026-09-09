@@ -443,6 +443,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: facts
+      # …AND THE SAME QUEUE, WHICH IS THE ORDER. Every shard takes its slice of
+      # ONE list, so they agree on who owns which row without talking — and a
+      # shard that re-read it would get a different one, because the shards
+      # ahead of it are spending rows as they go.
+      - uses: actions/download-artifact@v4
+        with:
+          name: queue
 
       - name: score this shard of every benchmark
         run: |
