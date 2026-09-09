@@ -646,12 +646,21 @@ same build.
   damage beside the rest, it changes the SHARE each damage type holds of the
   total — and a status proc is drawn in proportion to that share, so more Impact
   is fewer Viral and Corrosive procs.
-- **a stat a PERK on this build takes the sign off**, which each evolution
-  answers for itself (`EvolutionDef::riven_stats_it_inverts`). A perk that pays
-  for NOT having something inverts whatever supplies it: `+2000% on non-critical
-  hits` makes critical chance a cost, a crit multiplier granted only BELOW a
-  threshold makes crossing it a loss, and a bonus earned by reloading from empty
-  is earned less often the bigger the magazine.
+- **a stat the WEAPON takes the sign off**, one row each in
+  `rivens_data::SIGN_IS_NOT_THE_ANSWER`. A weapon earns a row by paying for NOT
+  having something, which makes whatever supplies it a cost: `+2000% on
+  non-critical hits` or a crit multiplier granted only BELOW a threshold makes
+  critical chance one, a multiplier granted below a status count makes status
+  chance one, and a bonus earned by reloading from EMPTY makes magazine capacity
+  one — a bigger magazine earns it less often.
+
+  **BY WEAPON AND NOT BY PERK**, so it stays a list a person can read and audit.
+  A build on one of those weapons that never took the perk is asked anyway and
+  the fight answers "the god roll": a few hundred extra fights against a rule
+  that cannot go stale differently from the weapon it is about. What keeps the
+  list honest is a test that DERIVES membership from the effects and fails when
+  a row is missing — an extra row costs two fights, a missing one publishes a
+  card the fight would have argued with.
 
 Measured over the library: 1,948 of 2,418 riven builds are answered by the god
 roll and never reach a fight; 470 name a stat worth asking about, and all but

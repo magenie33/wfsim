@@ -982,30 +982,67 @@ pub fn god_roll(shape: &RivenShape, class: &str) -> RivenSpec {
 /// the sign, on every weapon.
 pub const PHYSICAL_STATS: [&str; 3] = ["impact", "puncture", "slash"];
 
+/// …AND THE WEAPONS THAT TAKE THE SIGN OFF ONE MORE, one row each.
+///
+/// A weapon EARNS A ROW by paying for NOT having something, which makes
+/// whatever supplies it a cost:
+///
+///   - `critical_chance` — an Incarnon form paying `+2000% damage on
+///     non-critical hits`, or a crit multiplier granted only BELOW a crit
+///     chance threshold, which crossing it loses.
+///   - `status_chance` — a crit multiplier granted only below a status count.
+///   - `magazine_capacity` — a bonus earned by reloading from EMPTY, which a
+///     bigger magazine earns less often.
+///
+/// BY WEAPON AND NOT BY PERK, so this stays a list a person can read and audit.
+/// A build on one of these that never took the perk is asked anyway and the
+/// fight answers "the god roll" — a few hundred fights against a rule that
+/// cannot go stale differently from the weapon it is about.
+pub const SIGN_IS_NOT_THE_ANSWER: &[(&str, &[&str])] = &[
+    ("atomos", &["magazine_capacity"]),
+    ("boar", &["magazine_capacity"]),
+    ("boar_prime", &["magazine_capacity"]),
+    ("braton", &["critical_chance"]),
+    ("braton_prime", &["critical_chance"]),
+    ("braton_vandal", &["critical_chance"]),
+    ("felarx", &["critical_chance"]),
+    ("furis", &["critical_chance"]),
+    ("gorgon", &["magazine_capacity"]),
+    ("gorgon_wraith", &["magazine_capacity"]),
+    ("laetum", &["critical_chance"]),
+    ("lato", &["magazine_capacity"]),
+    ("lato_prime", &["magazine_capacity"]),
+    ("lato_vandal", &["magazine_capacity"]),
+    ("mk1_braton", &["critical_chance"]),
+    ("mk1_furis", &["critical_chance"]),
+    ("phenmor", &["critical_chance", "status_chance"]),
+    ("prisma_gorgon", &["magazine_capacity"]),
+    ("stug", &["magazine_capacity"]),
+    ("torid", &["magazine_capacity"]),
+];
+
 /// WHICH OF THIS SHAPE'S STATS THE SIGN DOES NOT DECIDE — the only ones a fight
 /// has to be asked about.
 ///
-/// Two sources and no third. The physical three above, always; and the stats a
-/// perk on this build TAKES THE SIGN OFF, which each evolution answers for
-/// itself (`EvolutionDef::riven_stats_it_inverts`) so a new perk meets that
-/// match rather than a list here going stale.
+/// Two sources and no third: [`PHYSICAL_STATS`], always, and the weapon's own
+/// row in [`SIGN_IS_NOT_THE_ANSWER`].
 ///
 /// EMPTY IS THE COMMON CASE, and it means no fight at all: the card is the god
-/// roll. Measured over the library: 1,948 of 2,418 riven builds.
-pub fn ambiguous_stats(shape: &RivenShape, evolutions: &[String]) -> BTreeSet<String> {
+/// roll. Measured over the library: four riven builds in five.
+pub fn ambiguous_stats(shape: &RivenShape, weapon: &str) -> BTreeSet<String> {
     let named: BTreeSet<&str> = shape
         .bonuses
         .iter()
         .map(String::as_str)
         .chain(shape.malus.as_deref())
         .collect();
-    let inverted = evolutions
+    let by_weapon = SIGN_IS_NOT_THE_ANSWER
         .iter()
-        .filter_map(|id| crate::evolutions_data::get(id))
-        .flat_map(|e| e.riven_stats_it_inverts());
+        .find(|(w, _)| *w == weapon)
+        .map_or(&[][..], |(_, s)| *s);
     PHYSICAL_STATS
         .into_iter()
-        .chain(inverted)
+        .chain(by_weapon.iter().copied())
         .filter(|s| named.contains(s))
         .map(String::from)
         .collect()
@@ -1090,11 +1127,18 @@ fn a_card_is_the_god_roll_unless_a_fight_can_prove_otherwise() {
     // …at the ceiling of its investment, like every board row.
     assert_eq!(god.rank, MAX_RANK);
 
-    // NOTHING HERE IS AMBIGUOUS, so nothing is asked and no fight runs. The
-    // malus being critical chance does not make it ambiguous on its own: what
-    // does is a PERK that pays for not critting, which this build has none of.
-    let none = ambiguous_stats(&plain, &[]);
+    // A CRIT MALUS IS NOT AMBIGUOUS ON ITS OWN. What makes it so is the WEAPON
+    // — one that pays for not critting, or whose crit multiplier is granted only
+    // below a crit chance threshold. The Lex Prime does neither, so nothing
+    // here is asked; the Braton Prime has a row for that threshold and the same
+    // shape on it names one.
+    let none = ambiguous_stats(&plain, "lex_prime");
     assert!(none.is_empty(), "{none:?}");
+    assert_eq!(
+        ambiguous_stats(&plain, "braton_prime").into_iter().collect::<Vec<_>>(),
+        vec!["critical_chance".to_string()],
+        "the same shape, on a weapon whose row names that stat"
+    );
     let mut asked = 0;
     let out = best_roll(&plain, "rifle", &none, |_| {
         asked += 1;
@@ -1105,20 +1149,21 @@ fn a_card_is_the_god_roll_unless_a_fight_can_prove_otherwise() {
 
     // A PHYSICAL STAT IS ALWAYS AMBIGUOUS, on every weapon: it moves the SHARE
     // each damage type holds of the total, and a status proc is drawn in
-    // proportion to that share.
+    // proportion to that share. The Torid's own row names `magazine_capacity`,
+    // which this shape does not carry — a row only speaks about its stats.
     let phys = RivenShape {
         bonuses: vec!["impact".into(), "damage".into()],
         malus: Some("zoom".into()),
     };
     assert_eq!(
-        ambiguous_stats(&phys, &[]).into_iter().collect::<Vec<_>>(),
+        ambiguous_stats(&phys, "torid").into_iter().collect::<Vec<_>>(),
         vec!["impact".to_string()],
         "the physical stat, and only it"
     );
 
     // …AND ONLY THAT STAT LEAVES ITS END. The fight below wants everything at
     // its floor; `damage` and `zoom` are not asked, so they do not move.
-    let asked_set = ambiguous_stats(&phys, &[]);
+    let asked_set = ambiguous_stats(&phys, "torid");
     let low = best_roll(&phys, "rifle", &asked_set, |r| {
         Some((-r.bonuses.iter().map(|b| b.roll).sum::<f64>(), 0.0))
     });

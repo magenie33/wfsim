@@ -1372,17 +1372,16 @@ mod riven_perfection_tests {
              ({shallow_p} vs {deep_p})"
         );
 
-        // AND THE PIPELINE FINDS BOTH WITHOUT BEING TOLD. The perk declares
-        // that it takes the sign off critical chance; the fight then says which
-        // end. No per-stat table, no sign convention, and no search on the
-        // build that has no such perk — there the stat is not ambiguous at all,
-        // which is the CHEAP half of the same answer.
-        let evos: Vec<String> = ATTRITION.iter().map(|s| (*s).to_string()).collect();
-        let asked = ambiguous_stats(&shape, &evos);
+        // AND THE PIPELINE FINDS BOTH WITHOUT BEING TOLD. The weapon's row
+        // says critical chance is a stat to ask about; the fight says which
+        // end. No per-stat table and no sign convention — and on a weapon with
+        // no row the stat is not ambiguous at all, which is the CHEAP half of
+        // the same answer.
+        let asked = ambiguous_stats(&shape, "laetum");
         assert_eq!(
             asked.iter().map(String::as_str).collect::<Vec<_>>(),
             vec!["critical_chance"],
-            "the perk names the stat it inverts"
+            "the weapon's own row names the stat it takes the sign off"
         );
         let with = best_roll(&shape, "pistol", &asked, |sp| {
             Some((fight("laetum_incarnon", ATTRITION, sp), 0.0))
@@ -1392,10 +1391,10 @@ mod riven_perfection_tests {
             ROLL_MAX,
             "on Devouring Attrition the malus belongs at its deepest"
         );
-        // …AND WITHOUT THE PERK NOTHING IS ASKED. The god roll is the answer
-        // and it is the right one: no perk pays for not critting, so a deeper
-        // crit malus is just a worse card.
-        let none = ambiguous_stats(&shape, &[]);
+        // …AND ON A WEAPON WITH NO ROW, NOTHING IS ASKED. The god roll is the
+        // answer and it is the right one: nothing there pays for not critting,
+        // so a deeper crit malus is just a worse card.
+        let none = ambiguous_stats(&shape, "lex_prime");
         assert!(none.is_empty(), "{none:?}");
         let without = best_roll(&shape, "pistol", &none, |_| unreachable!("no fight is run"));
         assert_eq!(

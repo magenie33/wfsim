@@ -115,9 +115,9 @@ fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
 /// 1,948 of the library's 2,418 riven builds are answered by that sentence and
 /// never reach a fight.
 ///
-/// A STAT LOSES ITS SIGN FOR A DECLARED REASON — `rivens_data::ambiguous_stats`
-/// holds both, and there is no third. Only those stats are asked about, both
-/// ends, everything else pinned at the god roll.
+/// A STAT LOSES ITS SIGN FOR A LISTED REASON — `rivens_data::ambiguous_stats`
+/// holds both sources and there is no third. Only those stats are asked about,
+/// both ends, everything else pinned at the god roll.
 ///
 /// AND EACH `(ruler, mode)` ANSWERS FOR ITSELF. One ruler cannot speak for
 /// another and the corner that wins a crowd need not win one target, so what
@@ -131,7 +131,7 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<f64>> {
     let rolls_of = |spec: &wfsim_engine::rivens_data::RivenSpec| -> Vec<f64> {
         spec.bonuses.iter().map(|b| b.roll).chain(spec.malus.iter().map(|m| m.roll)).collect()
     };
-    let ambiguous = wfsim_engine::rivens_data::ambiguous_stats(shape, &v.evolutions);
+    let ambiguous = wfsim_engine::rivens_data::ambiguous_stats(shape, &v.weapon);
     if ambiguous.is_empty() {
         return vec![rolls_of(&wfsim_engine::rivens_data::god_roll(shape, class))];
     }

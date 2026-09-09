@@ -987,30 +987,6 @@ impl EvolutionDef {
             .filter(move |_| !self.currently_broken)
     }
 
-    /// WHICH RIVEN STATS THIS PERK TAKES THE SIGN OFF — the stats whose `+`
-    /// stops meaning "roll it high" while this evolution is equipped.
-    ///
-    /// A perk that PAYS FOR NOT HAVING SOMETHING inverts the stat that supplies
-    /// it: `+2000% on non-critical hits` makes crit chance a cost, a crit
-    /// multiplier granted only BELOW a threshold makes crossing it a loss, and
-    /// a bonus earned by reloading from empty is earned less often the bigger
-    /// the magazine. `rivens_data::ambiguous_stats` is the only caller; it is
-    /// here because the reason is a property of the EFFECT, so a new effect
-    /// kind meets this match rather than a list somewhere else going stale.
-    pub fn riven_stats_it_inverts(&self) -> Vec<&'static str> {
-        self.active_effects()
-            .filter_map(|e| match e {
-                EvoEffect::ChanceDamageOnNoncrit { .. }
-                | EvoEffect::CritMultiplierBelowCritChance { .. } => Some("critical_chance"),
-                EvoEffect::CritDamageBelowStatusCount { .. } => Some("status_chance"),
-                EvoEffect::FlatBaseDamageOnEmptyReload(_)
-                | EvoEffect::FieldDurationOnEmptyReload(_)
-                | EvoEffect::MagGrowthOnEmptyReload { .. } => Some("magazine_capacity"),
-                _ => None,
-            })
-            .collect()
-    }
-
     /// WHAT THIS PERK DOES NOT DO YET — the effects that loaded as `Inert`,
     /// named.
     ///
@@ -2772,6 +2748,59 @@ pub fn tier_count(weapon: &str) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE HAND LIST MAY BE LONG; IT MAY NOT BE SHORT.
+    ///
+    /// `rivens_data::SIGN_IS_NOT_THE_ANSWER` is read by weapon on purpose — a list
+    /// a person can audit beats a rule assembled per build — and a hand list's one
+    /// failure is going stale, silently, the day a Genesis lands. So membership is
+    /// DERIVED here from the effects themselves and the list is held to it.
+    ///
+    /// A ROW MORE THAN THIS FINDS IS FINE: it costs two fights that answer "the god
+    /// roll". A row FEWER publishes a card the fight would have argued with.
+    #[test]
+    fn every_weapon_that_pays_for_not_having_something_is_on_the_riven_list() {
+        let mut want: std::collections::BTreeMap<&str, std::collections::BTreeSet<&str>> =
+            Default::default();
+        for e in pool() {
+            // WHAT EARNS A WEAPON A ROW: a perk that pays for NOT having something,
+            // which makes whatever supplies it a cost rather than a gain.
+            let stat = match e.effects.iter().find(|x| {
+                matches!(
+                    x,
+                    EvoEffect::ChanceDamageOnNoncrit { .. }
+                        | EvoEffect::CritMultiplierBelowCritChance { .. }
+                        | EvoEffect::CritDamageBelowStatusCount { .. }
+                        | EvoEffect::FlatBaseDamageOnEmptyReload(_)
+                        | EvoEffect::FieldDurationOnEmptyReload(_)
+                        | EvoEffect::MagGrowthOnEmptyReload { .. }
+                )
+            }) {
+                Some(EvoEffect::ChanceDamageOnNoncrit { .. })
+                | Some(EvoEffect::CritMultiplierBelowCritChance { .. }) => "critical_chance",
+                Some(EvoEffect::CritDamageBelowStatusCount { .. }) => "status_chance",
+                Some(_) => "magazine_capacity",
+                None => continue,
+            };
+            want.entry(e.weapon.as_str()).or_default().insert(stat);
+        }
+        assert!(want.len() >= 20, "the walk found {} weapons", want.len());
+
+        let listed: std::collections::BTreeMap<&str, std::collections::BTreeSet<&str>> =
+            crate::rivens_data::SIGN_IS_NOT_THE_ANSWER
+                .iter()
+                .map(|(w, s)| (*w, s.iter().copied().collect()))
+                .collect();
+        let missing: Vec<String> = want
+            .iter()
+            .filter(|(w, stats)| !listed.get(*w).is_some_and(|got| stats.is_subset(got)))
+            .map(|(w, stats)| format!("{w} {stats:?}"))
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "these weapons pay for not having something and no riven row says so: {missing:?}"
+        );
+    }
 
     /// NOTHING IN THE ROSTER RESIZES AN INCARNON CHARGE POOL — no evolution,
     /// under any combination.
