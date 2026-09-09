@@ -5,18 +5,18 @@
 #   inbox   what a player sent, verbatim   ─┐ queue.yml, hourly
 #   builds  the library, one row a build    │
 #   queue   what is owed                   ─┘
-#   scores  the facts                      ─── this file, on the button
+#   scores  the facts                      ─── this file, hourly at :20
 #   board   the published files            ─── publish.yml, 06:00 and 18:00
 #
 # NAMED FOR WHERE IT ENDS, like the other two. It empties the queue into
 # `scores` and stops; whether that reaches a reader is the publisher's clock,
 # not this one's.
 #
-# A PERSON PRESSES IT, AND IT TAKES NO INPUT. What a run does is decided by what
+# IT TAKES NO INPUT, whoever starts it. What a run does is decided by what
 # `queue` holds and in what order — `batches.at` — so jumping the line is an
-# UPDATE against the database rather than a flag here. A push does not wake it
-# either: measured over 95 runs, 21 of 22 pushed runs were cancelled by the next
-# push and the board published nothing.
+# UPDATE against the database rather than a flag here, and a hand-started run
+# and a scheduled one are the same run. A push does not wake it: measured over
+# 95 runs, 21 of 22 pushed runs were cancelled by the next push.
 #
 # A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. A stored score is reused
 # because it EXISTS: no clock, no fingerprint and no binary in the key. What
@@ -29,31 +29,31 @@
 name: scores
 
 on:
-  # AUTOMATIC-UPDATES: HELD
+  schedule:
+  # EVERY HOUR, AT :20 — twenty minutes after `queue.yml` fills the list, so a
+  # run reads a queue that already holds this hour's arrivals.
   #
-  # That line is read by `scripts/check_rescore_paths.mjs`, which otherwise
-  # REQUIRES a schedule. HELD, NOT DISABLED: a workflow turned off through the
-  # repository's settings is a fact this file does not carry — it survives a
-  # checkout, shows up in no diff, and is discovered by somebody asking why the
-  # board stopped. Uncommenting is the whole of the restore.
+  # HOURLY IS SAFE BY CONSTRUCTION, and the thing that makes it safe is the
+  # budget: `SCORE_DEADLINE_MINUTES` stops each shard taking rows after thirty
+  # minutes, so a run is about forty minutes however deep the queue is. What it
+  # does not reach stays owed and the next hour takes it. A cadence shorter
+  # than a run is what cancels the queued one — GitHub keeps one pending per
+  # concurrency group — and this cannot be shorter than a run.
   #
-  # WHAT THE HOLD COSTS IS NOW SMALL, which is why it is still here. The board
-  # MOVES on `publish.yml`'s clock whatever this does, and the queue fills on
-  # `queue.yml`'s — so a held clock here means the board keeps publishing what
-  # is measured while the queue grows, and a reader is told how far behind it
-  # is. Before the split, holding this meant nothing moved at all.
+  # AND IT COSTS ALMOST NOTHING WHEN THERE IS NOTHING TO DO. The gate walks the
+  # queue and answers `todo=0`, which skips the fan-out entirely: an idle hour
+  # is one job, not thirty-two.
   #
-  # RESTORE IT when the queue is regularly deeper than a person remembers to
-  # press a button for. Twice a day is the shape to start from: the cadence has
-  # to be longer than a run, and a run is not twenty minutes — measured over 40
-  # scheduled runs, the tail took 29, 38, 82 and 102.
+  # WHAT THE HOUR IS *NOT* BOUNDED BY: this repository is public, so Actions
+  # minutes are unlimited. One run reads ~40k rows of D1 against a free five
+  # million a day, and writes two rows per score against a hundred thousand —
+  # which caps a day at 50,000 scores, or 221 core-hours of fighting. The CPU
+  # gives out an order of magnitude before either quota does.
+  - cron: "20 * * * *"
   #
-  # schedule:
-  #   - cron: "0 2,14 * * *"
-  #
-  # A PERSON, AND NOTHING ELSE, STARTS A RUN. It takes no input: what a run
-  # does is decided by what `queue` holds and in what order, so there is
-  # nothing here to name.
+  # A PERSON CAN ALSO PRESS IT, and it is the same run: no input, no flag, no
+  # difference in behaviour. What a run does is decided by what `queue` holds
+  # and in what order.
   workflow_dispatch:
 concurrency:
   group: board-${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
@@ -412,12 +412,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: library
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: store
-          path: store
-
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 

@@ -211,8 +211,28 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | | who starts it | what it does | what it costs |
 | --- | --- | --- | --- |
 | `queue.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
-| `scores.yml` | a person, no input | what is asked for is MEASURED | as many shards as the work needs |
+| `scores.yml` | the clock, hourly at `:20` | what is asked for is MEASURED | as many shards as the work needs |
 | `publish.yml` | the clock, 06:00 and 18:00 | `scores` is ranked and written to `site/board` | one runner, seconds |
+
+**EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
+input, so a hand-started run and a scheduled one differ in nothing at all.
+
+**HOURLY SCORING IS SAFE BY CONSTRUCTION**, and the budget is what makes it so:
+each shard stops taking rows after `SCORE_DEADLINE_MINUTES`, so a run is about
+forty minutes however deep the queue is. What it does not reach stays owed. An
+hour with nothing owed costs ONE job — the gate answers `todo=0` and the fan-out
+never happens.
+
+**AND NOTHING ELSE BOUNDS THE CADENCE.** The repository is public, so Actions
+minutes are unlimited. One run reads about 40,000 rows of D1 against a free five
+million a day, and writes two per score against a hundred thousand — which caps
+a day at 50,000 scores, or 221 core-hours of fighting. The CPU gives out an
+order of magnitude before either quota does.
+
+**A RUN'S WORK IS DECIDED AT ITS START AND NEVER CHANGES.** The queue is read
+once, in the first job, and handed to every shard as an artifact — which is what
+lets them agree on who owns which row without talking. Builds that arrive while
+a run is fighting are picked up by the next hour's reconciliation.
 
 **THE PUBLISH DOES NOT CARE WHAT IS BEING COMPUTED.** It reads the table, ranks
 it, writes the files and commits if they moved. A scoring run may be halfway
