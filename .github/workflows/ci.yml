@@ -111,3 +111,10 @@ jobs:
         run: bash scripts/fetch_inbox.sh --self-test
       - name: ...and what intake made of it reaches the library
         run: bash scripts/ship_builds.sh --self-test
+      # THE WHOLE HOP, IN ONE. Each end of it has its own test and all of them
+      # passed on the day `mode` was in the door's key, because no test looked at
+      # what came out the far end. What a player PLACES and what the library
+      # HOLDS is one question; this is the only place it is asked.
+      - run: cargo build --release --bin wfsim-intake
+      - name: A submission survives the hop into the library
+        run: node scripts/check_submission_hop.mjs
