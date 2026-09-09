@@ -226,9 +226,10 @@ second; the rows it would have taken are the rows the next one takes.
 
 That is what the cadence rests on, rather than on any run being long enough.
 How many hours it takes to drain a deep queue is a question about the WORK — the
-clock does not have to answer it. The budget still bounds a run at about forty
-minutes whatever the depth, and an hour with nothing owed costs ONE job, because
-the gate answers `todo=0` and the fan-out never happens.
+clock does not have to answer it. The budget still bounds a shard at
+`SCORE_DEADLINE_MINUTES` whatever the depth — shared out across the rulers,
+because the binary runs once each — and an hour with nothing owed costs ONE job,
+because the gate answers `todo=0` and the fan-out never happens.
 
 **AND NOTHING ELSE BOUNDS THE CADENCE.** The repository is public, so Actions
 minutes are unlimited. One run reads about 40,000 rows of D1 against a free five

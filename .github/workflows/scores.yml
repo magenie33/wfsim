@@ -99,10 +99,12 @@ env:
   # deadline and absorbed thirty rows against a backlog of 1,758. Seventeen
   # hours to catch up on work the machine had already been given time for.
   NEW_ROWS: 3000
-  # HOW LONG A RUN MAY TAKE, and it is the ONE number here that is a choice
-  # rather than a measurement: "how long after the button do I want the board".
-  # The shard count is COMPUTED from it and the work, and the same figure is the
-  # deadline each shard reads for itself.
+  # HOW LONG A SHARD MAY WORK, and it is the ONE number here that is a choice
+  # rather than a measurement: "how long is a run". The shard count is COMPUTED
+  # from it and the work, and it is SHARED OUT across the rulers — the binary
+  # runs once each, so handing every one the whole figure made a shard take
+  # three times as long as this says, and a run longer than the cadence is a
+  # tick cancelled every hour.
   #
   # A HEALTHY RUN NEVER REACHES IT. Every row is priced from what whoever last
   # measured it paid, so the split is sized to finish inside this; the clock is
@@ -327,7 +329,8 @@ jobs:
           # THE SAME BOUNDS THE SCORERS WILL APPLY, or this step answers a
           # question the run is not asking: it would count work the run is not
           # going to do, and the gate below would read it as busy.
-          SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
+          rulers=$(ls data/benchmarks/*.yaml | wc -l)
+          SLICE="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 / rulers ))"
           todo=0 work=0
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
@@ -380,7 +383,7 @@ jobs:
         run: |
           set -euo pipefail
           rulers=$(ls data/benchmarks/*.yaml | wc -l)
-          budget=$(( SCORE_DEADLINE_MINUTES * 60 * rulers ))
+          budget=$(( SCORE_DEADLINE_MINUTES * 60 ))
           n=$(( ( ${WORK:-0} + budget - 1 ) / budget ))
           [ "$n" -lt 1 ] && n=1
           [ "$n" -gt "${TODO:-1}" ] && n=${TODO:-1}
@@ -473,7 +476,12 @@ jobs:
           # THE SAME BOUNDS THE PLAN COUNTED WITH. A shard that took on a
           # different set from the one the split was sized for is a shard doing
           # somebody else's slice.
-          slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 ))"
+          # THE BUDGET IS THE SHARD'S, SHARED OUT ACROSS THE RULERS. The
+          # binary runs once per ruler, so handing each the whole figure
+          # makes a shard take THREE times as long as the number says — and
+          # a run longer than the cadence is a tick cancelled every hour.
+          rulers=$(ls data/benchmarks/*.yaml | wc -l)
+          slice="--new-limit $NEW_ROWS --deadline $(( SCORE_DEADLINE_MINUTES * 60 / rulers ))"
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             ./target/release/wfsim-board "$id" \
