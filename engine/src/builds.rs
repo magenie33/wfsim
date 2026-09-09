@@ -1260,11 +1260,10 @@ pub fn identity(b: &ValidBuild) -> String {
     // that states only a shape is unchanged byte for byte — the same reason the
     // three above are appended rather than inserted.
     //
-    // LAST RATHER THAN BESIDE THE SHAPE, because that makes re-keying the facts
-    // a SUFFIX: a stored score already carries the corner it was measured at, so
-    // moving it onto the build that names that corner is one statement over the
-    // column rather than a map of every row in the library. A field inserted in
-    // the middle would need the whole identity rebuilt to say the same thing.
+    // THEY ARE IN HERE AT ALL because two ends of one shape are two builds with
+    // two numbers: a riven at 1.1 damage and the same card at 0.9 are different
+    // fights, and an id that could not tell them apart would file the second
+    // under the first's.
     match b.riven_rolls.as_slice() {
         [] => key,
         rolls => {

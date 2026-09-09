@@ -1370,7 +1370,7 @@ fn main() {
         .collect();
     assert!(
         shards > 1 || unaccounted.is_empty(),
-        "{} validated build(s) produced no row at all — neither listed nor below the              floor. The library holds them and this board never looked at them: {:?}",
+        "{} validated build(s) produced no row at all — neither listed nor below the floor. The library holds them and this board never looked at them: {:?}",
         unaccounted.len(),
         &unaccounted[..unaccounted.len().min(5)],
     );

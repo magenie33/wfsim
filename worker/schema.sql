@@ -37,8 +37,9 @@ CREATE TABLE IF NOT EXISTS inbox (
 );
 
 -- ONE ROW PER BUILD, keyed by a HASH of what makes it one: the canonical build
--- `engine::builds::identity` states, hashed by `wfsim-intake` — which has the
--- engine, where the door does not. DERIVED AND NOT ALLOCATED, so the same build
+-- `engine::builds::identity` states — its riven's ROLLS included, because two
+-- ends of one shape are two builds with two numbers — hashed by `wfsim-intake`,
+-- which has the engine where the door does not. DERIVED AND NOT ALLOCATED, so the same build
 -- always keys the same: nothing looks the row up before writing it, and two
 -- writers cannot disagree about whether they hold one build.
 --
@@ -69,10 +70,13 @@ CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 -- written down the moment it is computed rather than when a batch finishes. It
 -- does not stop being true later: neither the clock nor a thousand commits of
 -- distance is evidence that a measurement was wrong, and the only thing that
--- retires one is its INPUTS moving. `scripts/ship_facts.sh` writes it beside the
--- running scorer; `scripts/fetch_facts.sh` reads them back out. This
+-- retires one is a person deleting the row. `scripts/ship_facts.sh` writes it
+-- beside the running scorer; `scripts/fetch_facts.sh` reads them back out. This
 -- table is the only source the publisher has.
 CREATE TABLE IF NOT EXISTS scores (
+  -- THE BUILD, BY ITS `builds.id`. The name is the one the column was created
+  -- with and the wire keeps the names it has; what it holds is the id, because
+  -- two spellings of "which build" is the one thing a foreign key may not have.
   identity     TEXT NOT NULL,
   ruler        TEXT NOT NULL,
   -- A ROW IS (build, ruler, MODE). A mode is a property of the WEAPON, not of
@@ -83,10 +87,9 @@ CREATE TABLE IF NOT EXISTS scores (
   mode         TEXT NOT NULL,
   -- WHICH BUILD MEASURED IT, AND IT DECIDES NOTHING. An engine version being
   -- older does not make a score wrong -- the two are a REFERENCE relation, not a
-  -- validity one. What a row READS is enumerable from the row, so that is
-  -- checked exactly above; what the code DOES to it is not, and no hash can
-  -- answer it. Only a MEASUREMENT can, which is the audit's job, and this is
-  -- what says which rows a build wrote once one is found to be broken.
+  -- validity one. What the code DOES to a row is not enumerable from the row and
+  -- no hash can answer it, so this is FORENSICS: it says which rows a build
+  -- wrote, once that build is found to have been broken.
   measured_by  TEXT NOT NULL,
   score        REAL NOT NULL,
   -- WHAT `score` IS IN — the ruler's CORE metric, an id from
