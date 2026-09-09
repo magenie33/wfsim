@@ -626,16 +626,31 @@ slots.
 A riven was off the board until now, and the reason still holds: *"they are
 personal random items, so a board that counted them would rank luck"*. What is on the board is not the item.
 
-**A ROW HOLDS A SHAPE** — which stats it rolled, and which one is the malus.
-Nothing else. It is a statement anybody can act on ("roll this weapon for these
-stats"), where a roll is one person's luck, and it carries no free-text field a
-player authors.
+**A SUBMISSION CARRIES A SHAPE** — which stats the card rolled, and which one
+is the malus. Nothing else: a roll is one person's luck, and the player's own
+numbers never leave the browser. It is a statement anybody can act on ("roll
+this weapon for these stats"), and it carries no free-text field a player
+authors.
 
-**AND THE SHAPE IS SCORED AT ITS OWN CEILING.** `rivens_data::perfect` searches
-every corner of the roll band and keeps the best — which is the same rule that
-scores every row at full Forma, every mod at max rank and every valence at the
-roll's maximum: anything a player can eventually reach is not part of what a
-row states. Two players who rolled the same stats submitted the same build.
+**AND THE LIBRARY HOLDS A BUILD**, which needs numbers. `wfsim-intake` searches
+every corner of the roll band — `rivens_data::perfect` — and stores the winner
+AS the build, which is the same rule that scores every row at full Forma, every
+mod at max rank and every valence at the roll's maximum: anything a player can
+eventually reach is not part of what a row states. Two players who rolled the
+same stats submitted the same build.
+
+**AND WHEN TWO FIGHTS DISAGREE, THAT IS TWO BUILDS.** One ruler cannot speak for
+another and the corner that wins a crowd need not win one target, so each
+`(ruler, mode)` names its own and what enters the library is the SET. Measured
+over the whole library: 2,418 riven shapes became 3,275 builds, and 1,688 of
+them — seven in ten — resolved to a single corner and are one build like any
+other. The rolls are part of the id, so two ends of one shape cannot be filed
+under one another.
+
+**A STAT THE FIGHT CANNOT READ GOES TO THE PLAYER.** Zoom scores the same at
+both ends against one standing target, so the tie is broken toward the card that
+is easier to live with: least of it on a malus, most of it on a bonus. The board
+is publishing a riven somebody will go and try to obtain.
 
 **WHICH END IS "BEST" IS ASKED OF THE FIGHT, NEVER OF THE CARD.** DE's `+` and
 `-` describe the STAT, not the build. A riven whose malus is critical chance is
