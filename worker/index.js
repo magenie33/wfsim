@@ -27,20 +27,18 @@ const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 export const MAX_MODS = 9;
 const ID = /^[a-z0-9_]{1,64}$/;
 
-/// WHAT A BUILD IS, declared ONCE. Three things are derived from it — the shape
-/// check, the stored record and the identity key — because three hand-written
-/// lists is a defect generator: adding an axis to some and not the others
-/// produces an INCOMPLETE record and a scorer that quietly refuses it.
+/// WHAT A SUBMISSION CARRIES, declared ONCE. Two things are derived from it —
+/// the shape check and the stored record — because two hand-written lists is a
+/// defect generator: adding an axis to one and not the other stores an
+/// INCOMPLETE record, and what is missing is missing for ever.
 ///
 /// `kind`: `id` is a single slug — `required` ones present and non-empty, the
 /// rest optional, and an EMPTY optional axis is not written at all — and `ids`
-/// is a list, always written. `set` means the ORDER does not matter, so the key
-/// sorts it: evolutions are a set, mods are not.
+/// is a list, always written.
 ///
-/// SHAPE ONLY: whether these ids exist and whether the build is legal are the
-/// engine's questions, answered by `engine::builds::validate_for_board` in the
-/// scoring job. The cost is a little junk in KV; the alternative is two rules
-/// that drift.
+/// SHAPE ONLY: whether these ids exist, whether the build is legal, and which
+/// of them make it a DIFFERENT build are all questions about game data this
+/// service has not got. `wfsim-intake` asks the engine all three.
 // EXPORTED for `scripts/check_board_submit.mjs`, which asserts this table
 // against the keys the PAGE actually sends, so a name added to `boardPayload()`
 // and not here fails immediately. `axis` names which of
@@ -60,7 +58,7 @@ export const AXES = [
   // and is `identity: false`, which is what lets the same build arriving from
   // two different fights be one record instead of two. It is optional because a
   // build uploaded from a scenario of the player's own has no ruler to name.
-  { key: "benchmark", kind: "id", identity: false },
+  { key: "benchmark", kind: "id" },
   // Not a build axis either, but it IS the record's identity: a build is a
   // statement about one weapon.
   { key: "weapon", kind: "id", required: true },
@@ -114,24 +112,6 @@ const bad = (msg, status = 400) =>
     status, headers: { "content-type": "application/json" },
   });
 
-/// The BUILD this is, as one stable key — every axis of it, in `AXES` order.
-///
-/// EVERY axis, which is the whole point of deriving it: a key that cannot tell
-/// two builds apart files the second under the first's number, silently, and
-/// the build that loses is the one submitted second. Writes stay idempotent
-/// because the same build always produces the same key.
-const identity = (b) =>
-  // `identity: false` marks an axis the record CARRIES and is not IDENTIFIED by
-  // — provenance rather than a choice inside the build. Read off the same table
-  // as everything else, so an axis cannot be identity-bearing here and absent
-  // from storage, which is how a build was lost twice.
-  AXES.filter((a) => a.identity !== false).map((a) => {
-    const v = b[a.key];
-    if (a.kind === "id") return v || "";
-    const list = v || [];
-    return (a.set ? [...list].sort() : list).join(",");
-  }).join("|");
-
 /// THE BODY, PARSED AND SIZED, or the refusal to send back. Shared because two
 /// endpoints take a build and must not disagree about what one is.
 async function body(request) {
@@ -144,9 +124,10 @@ async function body(request) {
 
 /// A BUILD AS THIS SERVICE STORES ONE, or the name of the axis that failed.
 ///
-/// Extracted so `/submit` and `/disagree` are held to ONE definition. A report
-/// about a row the scorer would never file under that key is a report nobody
-/// can act on, and two copies of this loop is how the two would drift apart.
+/// SHAPE ONLY, and that is the whole of what this service can check. Whether
+/// the build is LEGAL — how many mods a weapon may carry, whether a stance
+/// hands capacity back, which evolutions exist — is a question about game data
+/// this worker does not have, and `wfsim-intake` asks the engine it instead.
 function record(b) {
   const rec = { at: new Date().toISOString().slice(0, 10) };
   for (const a of AXES) {
@@ -179,76 +160,38 @@ async function submit(request, env) {
   if (built.err) return bad(built.err);
   const rec = built.rec;
 
-  // ONE ROW, AND NOTHING ELSE TO KEEP IN STEP. The key is the build, so a
-  // resubmission is the same row — `INSERT OR REPLACE`, with no read to ask
-  // whether it is new and no counter to bump: "how many builds are there" is
-  // a COUNT, which is most of why the library lives in a database at all
-  // (docs/BOARD.md §"One database").
+  // INTO THE INBOX, VERBATIM, under an id that means nothing.
   //
-  // A FAILURE HERE REACHES THE SUBMITTER, and must. This is the
-  // authoritative write, and telling somebody "sent" when it was not is the
-  // one answer a submission endpoint may never give.
+  // WHAT A BUILD IS CANNOT BE DECIDED HERE. Telling two apart needs the mod
+  // POOL — an elemental card enters the element sequence and a plain one does
+  // not, and the sequence decides the pairing (Torid, six mods: 12,424 DPS
+  // against 46,583) — and this service has no game data. A key derived without
+  // it would be a SECOND answer to the question that must have one, computed by
+  // the half with no evidence. So the record is stored as it arrived and
+  // `wfsim-intake` derives the key with the engine.
+  //
+  // AND THE CLIENT MAY NOT DERIVE IT EITHER, though it has the engine: an id
+  // that arrives over the wire is an id an attacker chooses, and choosing one
+  // is choosing which stored build to overwrite.
+  //
+  // A RESUBMISSION IS A SECOND ROW HERE and one row in `builds`. This is a
+  // queue: two rows costing one intake is cheaper than a read to find out.
+  //
+  // A FAILURE HERE REACHES THE SUBMITTER, and must. This is the authoritative
+  // write, and telling somebody "sent" when it was not is the one answer a
+  // submission endpoint may never give.
   try {
     await env.LIBRARY.prepare(
-      "INSERT OR REPLACE INTO builds (identity, at, record) VALUES (?, ?, ?)",
-    ).bind(identity(rec), rec.at, JSON.stringify(rec)).run();
+      "INSERT INTO inbox (id, at, record) VALUES (?, ?, ?)",
+    ).bind(crypto.randomUUID(), rec.at, JSON.stringify(rec)).run();
   } catch (e) {
-    console.log("library write failed:", (e && e.message) || String(e));
+    console.log("inbox write failed:", (e && e.message) || String(e));
     return bad("the library could not be written", 503);
   }
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
   });
 }
-/// TWO MEASUREMENTS OF ONE ROW DISAGREE, and the board should look again.
-///
-/// A HASH CANNOT ASK THIS. What a row READS is enumerable from the row, so a
-/// data change is caught exactly; what the code DOES to it is not, and a
-/// change that moves a number leaves every fingerprint agreeing. The audit
-/// re-fights published rows to find those and crosses the board in days —
-/// while a player runs the one build they care about and finds it at once.
-///
-/// NOTHING HERE IS TRUSTED AS A SCORE. The numbers are a REPORT that two
-/// measurements differ; the board answers by measuring again, and only its
-/// own measurement can move a row. The worst a forged report buys is one
-/// wasted rescore, which is why this needs no authentication and never will.
-///
-/// THE ONE EVENT IN THIS SYSTEM. Nobody can derive it from anything else, so
-/// it gets a table of its own — keyed by the ROW, so a thousand players
-/// finding one disagreement leave one report.
-async function disagree(request, env) {
-  if (!env.LIBRARY) return bad("the library is not configured", 503);
-  const { b, err } = await body(request);
-  if (err) return bad(err);
-
-  const num = (x) => (typeof x === "number" && Number.isFinite(x) && x > 0 ? x : null);
-  const client = num(b.client);
-  const board = num(b.board);
-  if (client === null || board === null) return bad("client and board must be positive numbers");
-  // THE RULER IS REQUIRED HERE, unlike on a submission. A build carries no
-  // ruler because every ruler crosses the library; a DISAGREEMENT is about
-  // one row, and a row is a build under one ruler.
-  if (typeof b.benchmark !== "string" || !ID.test(b.benchmark)) return bad("bad benchmark");
-
-  const built = record(b);
-  if (built.err) return bad(built.err);
-  try {
-    await env.LIBRARY.prepare(
-      "INSERT OR REPLACE INTO disagreements (ruler, identity, at, client, board, record)"
-      + " VALUES (?, ?, ?, ?, ?, ?)",
-    ).bind(
-      b.benchmark, identity(built.rec), built.rec.at, client, board,
-      JSON.stringify(built.rec),
-    ).run();
-  } catch (e) {
-    console.log("disagreement write failed:", (e && e.message) || String(e));
-    return bad("the report could not be written", 503);
-  }
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { "content-type": "application/json" },
-  });
-}
-
 /// HOW MANY BUILDS THE LIBRARY HOLDS — the count the static board cannot
 /// carry, so the page can say "N builds have arrived since this board was
 /// scored".
@@ -264,7 +207,12 @@ async function pending(env) {
   if (!env.LIBRARY) return bad("the library is not configured", 503);
   let count = null;
   try {
-    const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM builds").first();
+    // BOTH TABLES. A submission that has arrived but has not been through
+    // intake yet is in the library as far as the submitter is concerned, and
+    // the sentence this feeds is "N have arrived since this board was scored".
+    const r = await env.LIBRARY.prepare(
+      "SELECT (SELECT COUNT(*) FROM builds) + (SELECT COUNT(*) FROM inbox) AS n",
+    ).first();
     const n = Number(r && r.n);
     if (Number.isFinite(n)) count = n;
   } catch (e) {
@@ -367,14 +315,6 @@ export default {
     }
     if (path === "/api/board/pending") {
       return request.method === "GET" ? pending(env) : bad("GET only", 405);
-    }
-    // A DISAGREEMENT IS NOT A SCORE. What it stores is a REPORT that two
-    // measurements of one row differ, which the board answers by measuring
-    // again — the number a browser sends never reaches a ranking.
-    if (path === "/api/board/disagree") {
-      return request.method === "POST"
-        ? disagree(request, env)
-        : bad("POST only", 405);
     }
     if (path === "/api/board/submit") {
       // A GET here is somebody looking for the board itself, which is a STATIC

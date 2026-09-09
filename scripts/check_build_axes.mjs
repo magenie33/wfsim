@@ -110,26 +110,24 @@ if (axesBlock) {
   // `valence` were lost. `check_board_submit` proves the derivation end to end
   // against a KV stub; this asserts the shape it depends on has not been
   // unpicked into hand-written lists again.
-  // ASSERTED AS A PROPERTY, NOT AS A SPELLING. Requiring the literal
-  // `AXES.map((a) =>` reddens on code that is still entirely derived the moment
-  // an axis becomes provenance rather than identity —
-  // `AXES.filter((a) => a.identity !== false).map(…)`. A check that
-  // fails on a refactor it should not care about is a check people learn to
-  // edit rather than to read.
+  // ASSERTED AS A PROPERTY, NOT AS A SPELLING. What matters is that the stored
+  // record is WALKED off `AXES` rather than assembled from names typed out
+  // again — the second list is the one that goes stale, and it is how `mode`
+  // and then `valence` were lost.
   //
-  // What actually matters is two things: the record loop walks `AXES`, and the
-  // identity key is built FROM `AXES` rather than from a list of names typed
-  // out again. The second half is what was lost twice.
-  const idAt = workerJs.indexOf("const identity =");
-  const idBody = idAt < 0 ? "" : workerJs.slice(idAt, workerJs.indexOf("async function", idAt));
+  // THE KEY IS NOT DERIVED HERE ANY MORE, and must not be. Telling two builds
+  // apart needs the mod POOL, which this service has not got, so the door
+  // stores the record verbatim and `wfsim-intake` derives the key with the
+  // engine. A key computed here would be a second answer to the one question
+  // that must have one, from the half with no evidence — and the last time this
+  // service tried, `mode` was in it, so one build sent from two modes was two
+  // rows in a table whose whole promise is one row per build.
   const loops = /for \(const a of AXES\)/.test(workerJs);
-  const fromAxes = /AXES/.test(idBody);
-  const noList = !/["'](benchmark|weapon|mods|evolutions|arcanes)["']\s*,/.test(idBody);
-  check("...and the stored record and identity key are still derived from it",
-    loops && fromAxes && noList,
-    idAt < 0
-      ? "no `identity` in worker/index.js"
-      : `record loop ${loops}, identity reads AXES ${fromAxes}, no name list ${noList}`);
+  check("...and the stored record is still walked off it", loops,
+    "the record loop no longer reads AXES: a second list of names is what goes stale");
+  check("...and the door derives no key of its own",
+    !/const identity\s*=/.test(workerJs),
+    "worker/index.js computes an identity: that is `wfsim-intake`'s, with the engine");
 }
 
 // ---- 4. THE ONE THAT CANNOT GO STALE, NAMED ----------------------------

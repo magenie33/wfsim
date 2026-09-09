@@ -1124,6 +1124,35 @@ pub fn board_key(b: &ValidBuild, mode: &str) -> String {
     format!("{}#{}", identity(b), mode)
 }
 
+/// A BUILD'S ID: [`identity`], hashed.
+///
+/// DERIVED AND NOT ALLOCATED. The same build always hashes the same, so nothing
+/// reads the table before writing to it, two writers cannot disagree about
+/// whether they hold one build, and a resubmission is the same row with no
+/// lookup and no race. A random id would need all three.
+///
+/// FNV-1a, WRITTEN OUT, TWICE. The answer is a permanent key, so it has to be
+/// stable across machines, across runs and across Rust versions —
+/// `DefaultHasher` guarantees none of those. Two passes from different offsets
+/// give 128 bits: the identity it folds is up to ~300 bytes of ids and rides on
+/// every score row, and a library four orders of magnitude under the birthday
+/// bound will not see a collision.
+pub fn build_id(b: &ValidBuild) -> String {
+    const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
+    const PRIME: u64 = 0x0000_0100_0000_01b3;
+    let fold = |mut h: u64, bytes: &[u8]| {
+        for byte in bytes {
+            h ^= u64::from(*byte);
+            h = h.wrapping_mul(PRIME);
+        }
+        h
+    };
+    let text = identity(b);
+    let lo = fold(OFFSET, text.as_bytes());
+    let hi = fold(OFFSET ^ 0xffff_ffff_ffff_ffff, text.as_bytes());
+    format!("{hi:016x}{lo:016x}")
+}
+
 /// The FIGHT this build is, as one stable string.
 ///
 /// Everything that changes the number and nothing that does not — see the

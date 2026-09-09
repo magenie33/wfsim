@@ -13,8 +13,34 @@
 -- store is the hardest: no queries, no transactions, no bulk read, and listing
 -- as the only index (docs/BOARD.md §"One database").
 
--- ONE ROW PER BUILD, keyed by `identity(rec)` — a function of the canonical
--- build, so a resubmission is the same row and there is nothing to keep in step.
+-- WHERE A SUBMISSION LANDS, AND THE ONLY DOOR THERE IS.
+--
+-- The endpoint that writes it runs on Cloudflare and has no game data, so it
+-- cannot say what a build IS: telling two builds apart needs the mod POOL — an
+-- elemental card enters the element sequence and a plain one does not, and the
+-- sequence decides the pairing (Torid, six mods: 12,424 DPS against 46,583). A
+-- key derived without it would be a SECOND answer to the one question that must
+-- have one, and the endpoint would be the half with no evidence.
+--
+-- So the door stores the record VERBATIM and nothing more, and `wfsim-intake`
+-- — which has the engine — canonicalises it, resolves what a riven's numbers
+-- must be, and writes the builds that come out. The row is deleted the moment
+-- they land.
+--
+-- A QUEUE, NOT A LIBRARY. `id` is random and means nothing: it exists so one
+-- row can be deleted, and two submissions of the same build are two rows here
+-- and one row in `builds`. Nothing reads this table but intake.
+CREATE TABLE IF NOT EXISTS inbox (
+  id     TEXT PRIMARY KEY,
+  at     TEXT NOT NULL,
+  record TEXT NOT NULL
+);
+
+-- ONE ROW PER BUILD, keyed by a HASH OF WHAT MAKES IT ONE — the canonical build
+-- that `engine::builds::identity` states, so a resubmission is the same row and
+-- there is nothing to keep in step. Derived and not allocated: the same build
+-- always hashes the same, so nothing has to look the row up before writing it,
+-- and no two writers can disagree about whether they are holding one build.
 --
 -- The RECORD is kept whole as json rather than exploded into columns. The axes
 -- are declared once, in `AXES` in worker/index.js, and a build has gained an
@@ -24,7 +50,7 @@
 -- first, because "how well covered is this weapon" is the question the board is
 -- actually run on.
 CREATE TABLE IF NOT EXISTS builds (
-  identity TEXT PRIMARY KEY,
+  id       TEXT PRIMARY KEY,
   -- The submission DAY, and nothing finer. The store records nothing about
   -- submitters — no IP, no token, no timestamp that could order one person's
   -- submissions against another's — and a schema is a place that promise could
@@ -47,7 +73,7 @@ CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 -- running scorer; `scripts/fetch_facts.sh` reads them back out. This
 -- table is the only source the publisher has.
 CREATE TABLE IF NOT EXISTS scores (
-  identity     TEXT NOT NULL,
+  build_id     TEXT NOT NULL,
   ruler        TEXT NOT NULL,
   -- A ROW IS (build, ruler, MODE). A mode is a property of the WEAPON, not of
   -- the build -- every melee carries seven and the Ballistica Prime four -- and
@@ -77,10 +103,6 @@ CREATE TABLE IF NOT EXISTS scores (
   -- deletes it, so a row can be older than the ruler's current terms, and
   -- reading one back without this means checking out the commit that made it.
   metric       TEXT NOT NULL,
-  -- The riven corner the search settled on, when there is one: a score alone
-  -- cannot publish a riven row, because the reader has to be able to BUILD that
-  -- riven and the page cannot re-derive it without paying for the search again.
-  rolls        TEXT,
   -- WHAT THE ROW COST, so the bill is read off the rows rather than estimated,
   -- and so the next run can pack its shards by work rather than by count. NOT
   -- derivable from the two clocks below: a row paid for in sittings spans a wall
@@ -100,7 +122,7 @@ CREATE TABLE IF NOT EXISTS scores (
   -- number is right — not the clock, not the build that wrote it, and no hash of
   -- what it read. Only another measurement can, and a person deleting the row is
   -- what asks for one.
-  PRIMARY KEY (identity, ruler, mode)
+  PRIMARY KEY (build_id, ruler, mode)
 );
 
 -- "What has this ruler measured" is one indexed query, which is what the set
@@ -110,29 +132,6 @@ CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
 -- …and "what has gone longest without being measured" is the order to repair
 -- in, which is the one thing a clock here is allowed to decide.
 CREATE INDEX IF NOT EXISTS scores_oldest ON scores (finished_at);
-
--- TWO MEASUREMENTS OF ONE ROW DISAGREE, and the board should look again.
---
--- The only EVENT in this system: nobody can derive it from anything, so it has
--- a row of its own. Everything else here is a fact or a build.
---
--- NOTHING HERE IS TRUSTED AS A SCORE. The numbers are a REPORT that two
--- measurements differ; the board answers by measuring again, and only its own
--- measurement moves a row. The worst a forged report buys is one wasted
--- rescore, which is why the endpoint needs no authentication.
---
--- KEYED BY THE ROW, so a thousand players finding one disagreement leave one
--- report. `at` is the DAY, and a report the board has acted on is swept by the
--- nightly job rather than expiring on its own.
-CREATE TABLE IF NOT EXISTS disagreements (
-  ruler    TEXT NOT NULL,
-  identity TEXT NOT NULL,
-  at       TEXT NOT NULL,
-  client   REAL NOT NULL,
-  board    REAL NOT NULL,
-  record   TEXT NOT NULL,
-  PRIMARY KEY (ruler, identity)
-);
 
 -- HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and the schema cannot hold more.
 --

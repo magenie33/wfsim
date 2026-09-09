@@ -1888,10 +1888,10 @@ mod tests {
         let key = schema
             .lines()
             .map(str::trim)
-            .find(|l| l.starts_with("PRIMARY KEY (identity, ruler, mode"))
+            .find(|l| l.starts_with("PRIMARY KEY (build_id, ruler, mode"))
             .expect("the scores table names its key");
         assert_eq!(
-            key, "PRIMARY KEY (identity, ruler, mode)",
+            key, "PRIMARY KEY (build_id, ruler, mode)",
             "a row must key on what makes it a different QUESTION and nothing else — \
              anything more and one row holds several facts"
         );

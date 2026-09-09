@@ -273,6 +273,31 @@ pub struct Assembly {
     pub loader: String,
 }
 
+/// THE ASSEMBLY A RECORD NAMES — the chamber read off the WEAPON, the two parts
+/// off the record.
+///
+/// One function because there were three copies of it: the page's door, the
+/// scorer's record reader and intake all had to turn a flat `grip`/`loader`
+/// pair into this, and the chamber is the half none of them carries. A record
+/// that named its own chamber would be a second source for a fact the weapon
+/// already states.
+///
+/// `None` when neither part is named, which is every weapon but the Kitguns.
+pub fn assembly_of(weapon: &str, grip: &str, loader: &str) -> Option<Assembly> {
+    if grip.is_empty() && loader.is_empty() {
+        return None;
+    }
+    Some(Assembly {
+        chamber: crate::weapons_data::spec(weapon)
+            .and_then(|sp| sp.kitgun.clone())
+            .and_then(|r| default_assembly(&r))
+            .map(|d| d.chamber)
+            .unwrap_or_default(),
+        grip: grip.to_string(),
+        loader: loader.to_string(),
+    })
+}
+
 impl Assembly {
     /// Is every part chosen? A Kitgun with a hole in it has no numbers.
     pub fn complete(&self) -> bool {

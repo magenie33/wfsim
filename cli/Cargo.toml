@@ -17,6 +17,14 @@ path = "src/main.rs"
 name = "wfsim-board"
 path = "src/bin/wfsim-board.rs"
 
+# Intake, which is the other half of the door: the endpoint that takes a
+# submission has no game data, so it stores the record verbatim and this derives
+# the key with the engine. Its own bin for the same reason the scorer is one —
+# it is a pipeline step, and it writes `builds` where the scorer writes `scores`.
+[[bin]]
+name = "wfsim-intake"
+path = "src/bin/wfsim-intake.rs"
+
 [dependencies]
 wfsim-engine = { path = "../engine" }
 wfsim-optimizer = { path = "../optimizer" }

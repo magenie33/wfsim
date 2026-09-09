@@ -77,7 +77,7 @@ const database = (fail = false) => {
   const tables = new Map();
   const calls = [];
   const rows = new Map();
-  tables.set("builds", rows);
+  tables.set("inbox", rows);
   return {
     rows,
     tables,
@@ -94,7 +94,7 @@ const database = (fail = false) => {
           if (into) {
             if (!tables.has(into[1])) tables.set(into[1], new Map());
             const t = tables.get(into[1]);
-            t.set(args[0], into[1] === "builds" ? JSON.parse(args[2]) : args);
+            t.set(args[0], into[1] === "inbox" ? JSON.parse(args[2]) : args);
           }
           return { success: true };
         },
@@ -102,8 +102,13 @@ const database = (fail = false) => {
       first: async () => {
         if (fail) throw new Error("D1 is down");
         calls.push({ sql, args: [] });
-        const from = sql.match(/COUNT\(\*\) AS n FROM ([a-z_]+)/);
-        return from ? { n: (tables.get(from[1]) || new Map()).size } : null;
+        // EVERY TABLE THE STATEMENT COUNTS, summed. The library is `builds`
+        // plus what has arrived and not been through intake yet, so the count
+        // is a sum and a stub that answered one table would make the second
+        // half untestable.
+        const of = [...sql.matchAll(/COUNT\(\*\)(?: AS n)? FROM ([a-z_]+)/g)].map((m) => m[1]);
+        if (!of.length) return null;
+        return { n: of.reduce((n, t) => n + (tables.get(t) || new Map()).size, 0) };
       },
     }),
   };
@@ -192,40 +197,31 @@ console.log("the board's submission endpoint\n");
     kept_empty.length === 0, `stored empty: ${kept_empty.join(", ")}`);
 }
 
-// ---- 2. THE KEY TELLS TWO BUILDS APART ------------------------------------
+// ---- 2. THE DOOR KEEPS NO KEY OF ITS OWN ----------------------------------
 //
-// One per axis, walked rather than spelled out. Two submissions differing in
-// ANY axis must land on two keys — a shared key is a silent overwrite, and the
-// build that loses is the one the player submitted second.
+// Telling two builds apart needs the mod POOL — an elemental card enters the
+// element sequence and a plain one does not, and the sequence decides the
+// pairing — and this service has no game data. It stores the record verbatim
+// under an id that means nothing, and `wfsim-intake` derives the real key with
+// the engine. Two builds differing in one axis are two rows, and one build
+// twice is one row: both are asserted in that binary's own tests, where the
+// answer is the engine's.
+//
+// The failure this refuses: a key computed here would be a SECOND answer to the
+// question that must have one, from the half with no evidence. The last one had
+// `mode` in it, so the same cards sent from two modes were two rows.
 {
-  const variants = {
-    weapon: "kuva_bramma",
-    mode: "cycle",
-    valence: "toxin",
-    arcanes: ["secondary_encumber"],
-    evolutions: ["laetum_devastating_attrition"],
-    // The ORDER is the build: the same mods in two orders combine to two
-    // different elements, so this must key differently too.
-    mods: [PAYLOAD.mods[1], PAYLOAD.mods[0], ...PAYLOAD.mods.slice(2)],
-    // A RIVEN'S SHAPE. Two players who rolled different stats did not submit
-    // the same build, and a key that could not tell them apart would file the
-    // second under the first's number — the failure this file exists for.
-    riven_pos: ["critical_damage", "multishot"],
-    riven_neg: "recoil",
-  };
-  for (const [axis, value] of Object.entries(variants)) {
-    const kv = database();
-    await post(PAYLOAD, kv);
-    await post({ ...PAYLOAD, [axis]: value }, kv);
-    check(`two builds differing only in \`${axis}\` are two records`,
-      kv.rows.size === 2, `${kv.rows.size} record(s): ${[...kv.rows.keys()].join("  |  ")}`);
-  }
-  // ...and the control: the SAME build twice is one record, or the board would
-  // fill with duplicates of whoever pressed the button twice.
   const kv = database();
   await post(PAYLOAD, kv);
   await post(PAYLOAD, kv);
-  check("the same build twice is one record", kv.rows.size === 1, String(kv.rows.size));
+  check("the same build twice is two queue rows, not one",
+    kv.rows.size === 2, `${kv.rows.size} row(s)`);
+  const keys = [...kv.rows.keys()];
+  check("...under ids that say nothing about the build",
+    keys.every((k) => /^[0-9a-f-]{36}$/i.test(k)), keys.join("  |  "));
+  const sql = kv.calls.map((c) => c.sql).join(" ");
+  check("...and nothing is written to `builds`",
+    !/INTO builds/.test(sql) && /INTO inbox/.test(sql), sql);
 }
 
 // ---- 3. AN ORDINARY WEAPON IS UNAFFECTED ----------------------------------
@@ -269,40 +265,21 @@ console.log("the board's submission endpoint\n");
   check("...and reaches storage under its own name",
     rec && rec.benchmark === fresh.benchmark, JSON.stringify(rec && rec.benchmark));
 
-  // …AND ONE BUILD IS ONE RECORD, whichever ruler it arrived from. Two rulers
-  // scoring one build are two records only while the identity key carries the
-  // benchmark, which is right only while a submission is bound to the fight it
-  // was measured under. It is not: the store is a LIBRARY OF BUILDS and every
-  // ruler
-  // crosses the whole of it, so the ruler is provenance (`identity: false`) and
-  // the same build arriving from two fights is the same build.
-  //
-  // LAST WRITE WINS, which is what "the same build always produces the same
-  // key" has always meant here — a resubmission overwrites the record rather
-  // than adding one. That is the right way round for the two fields that are
-  // not the build: `at` is the day, so a build somebody is still submitting
-  // stays current, and `benchmark` is only where the last submitter happened to
-  // be standing. Neither is ranked.
+  // …AND THE RULER IS NOT BAKED INTO WHAT IS STORED. The store is a LIBRARY OF
+  // BUILDS and every ruler crosses the whole of it, so where the submitter was
+  // standing is PROVENANCE — the same cards from two fights are one build, and
+  // it is `wfsim-intake` that says so, from records that differ only in a field
+  // no build has.
   await post(PAYLOAD, kv);
-  check("...and the same build from another ruler is the SAME record",
-    kv.rows.size === 1, `${kv.rows.size} records`);
-  const only = [...kv.rows.values()][0];
-  check("...still carrying a provenance, and the same build",
-    !!only && !!only.benchmark && only.weapon === PAYLOAD.weapon,
-    JSON.stringify(only && { benchmark: only.benchmark, weapon: only.weapon }));
+  const rows = [...kv.rows.values()];
+  check("...and a second submission of it is a second queue row",
+    rows.length === 2, `${rows.length} rows`);
+  check("...differing in the ruler and in nothing a build is made of",
+    rows[0].benchmark !== rows[1].benchmark
+      && JSON.stringify(rows.map((r) => [r.weapon, r.mods]))
+        === JSON.stringify(rows.map(() => [PAYLOAD.weapon, PAYLOAD.mods])),
+    JSON.stringify(rows));
 
-  // THE NEGATIVE CONTROL FOR THAT COLLAPSE: dropping the ruler must not make
-  // every build one record. A build with no ruler at all is legal now — that is
-  // what an upload from a scenario of the player's own is — and it is still a
-  // record of its own build.
-  const kv2 = database();
-  const nameless = { ...PAYLOAD };
-  delete nameless.benchmark;
-  const res2 = await post(nameless, kv2);
-  check("a build uploaded from no ruler at all is accepted", res2.ok, String(res2.status));
-  await post({ ...nameless, weapon: "braton_prime" }, kv2);
-  check("...and two different builds are still two records",
-    kv2.rows.size === 2, `${kv2.rows.size} records`);
 }
 
 // ---- and the library can say how big it is -----------------------------------
@@ -329,36 +306,15 @@ console.log("the board's submission endpoint\n");
   await post({ ...PAYLOAD, weapon: "braton_prime" }, db);
   check("...and otherwise counts what it holds", (await ask()) === 2, String(await ask()));
 
-  // A RESUBMISSION IS NOT A SECOND BUILD. The key IS the build, so the count
-  // cannot drift up for ever the way a bumped counter could.
+  // A RESUBMISSION MOVES IT, and that is the honest answer at the door. The
+  // sentence this feeds is "N have arrived since this board was scored", and
+  // what has arrived is what has arrived: whether two of them are one build is
+  // a question about the mod pool, which is `wfsim-intake`'s and not this
+  // service's.
   await post(PAYLOAD, db);
-  check("...and a resubmission does not move it", (await ask()) === 2, String(await ask()));
+  check("...and every arrival is counted, because that is what it counts",
+    (await ask()) === 3, String(await ask()));
 
-  const res = await worker.fetch(
-    new Request("https://wfsim.app/api/board/pending"),
-    { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") } },
-  );
-  const body = res.ok ? await res.json() : null;
-  check("...and reports nothing else about it",
-    !!body && Object.keys(body).sort().join(",") === "capped,count,ok",
-    JSON.stringify(body && Object.keys(body)));
-  const post_ = await worker.fetch(
-    new Request("https://wfsim.app/api/board/pending", { method: "POST" }),
-    { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") } },
-  );
-  check("...and it is a READ, so a POST is refused", post_.status === 405,
-    String(post_.status));
-
-  // A DATABASE THAT WILL NOT ANSWER SAYS "UNKNOWN", never a number. The page
-  // draws no footnote on a null and a wrong number is worse than none.
-  const dead = database(true);
-  const r = await worker.fetch(
-    new Request("https://wfsim.app/api/board/pending"),
-    { LIBRARY: dead, ASSETS: { fetch: async () => new Response("site") } },
-  );
-  const j = r.ok ? await r.json() : null;
-  check("a database that will not answer says it does not know",
-    !!j && j.ok === true && j.count === null, JSON.stringify(j));
 }
 
 
