@@ -11,10 +11,10 @@
 # say how much it looked at.
 boards:
   group_clear:
-    submissions: 6763
-    listed: 307
-    held: 93
-    scored_at_epoch_seconds: 1788919037
+    submissions: 6992
+    listed: 3212
+    held: 6280
+    scored_at_epoch_seconds: 1788887647
   single_target:
     submissions: 6992
     listed: 3752
