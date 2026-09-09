@@ -89,7 +89,7 @@ Each of these fails silently. That is why it is here and not in a document.
 - **CI is `cargo clippy --workspace --all-targets -- -D warnings` + `cargo test
   --workspace`.** Run both before pushing. Deploy = push to `main`; Cloudflare
   picks up `site/` in 1–2 minutes and there is no deploy step in CI.
-- **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/board.yml` does it and
+- **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/scores.yml` does it and
   the bot commits `site/board/`; the numbers come from the `scores` table and
   nothing local may write one. Running `wfsim-board` by hand in the repo
   rewrites `data/board_state.yaml` and the published files under it.

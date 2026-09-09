@@ -1,72 +1,59 @@
-# THE BOARD RUNS ITSELF. Nobody commits a leaderboard by hand.
+# WHAT IS OWED IS MEASURED. NOTHING HERE PUBLISHES ANYTHING.
 #
-# The repo owner never touches this: the bot scores, the bot commits, and
-# Cloudflare deploys the push.
+# The pipeline is five tables and this file drives one hop of it:
 #
-# THE BUTTON IS THE ONLY TRIGGER, AND THE CLOCK IS HELD. A push does not wake
-# the board either: under convergence a pushed run does what the next one does —
-# score what is not measured yet, publish what is — so
-# it duplicates a run that is coming anyway while competing for the same forty
-# slots. Measured over 95 runs: 21 of 22 pushed runs were cancelled by the next
-# push, and the board published nothing.
+#   inbox   what a player sent, verbatim   ─┐ queue.yml, hourly
+#   builds  the library, one row a build    │
+#   queue   what is owed                   ─┘
+#   scores  the facts                      ─── this file, on the button
+#   board   the published files            ─── publish.yml, 06:00 and 18:00
 #
-# WHY THE CLOCK IS HELD, and what restores it. The slice repairs rows at a rate
-# this file sets, and measured against a published board it is not converging:
-# over six scheduled publishes, 30 of 10,188 rows changed at all and none by
-# more than a fifth — while an engine fix waiting to reach the board moves a
-# group_clear row by four times. So the schedule was spending forty slots an
-# hour to move nothing, against a full rescore that moves everything and needs
-# those slots. RESTORE IT when a scheduled run is measured repairing rows at a
-# rate that crosses the board in days, not months — `docs/BOARD.md`
-# §"When the code moved" is where that rate is argued.
+# NAMED FOR WHERE IT ENDS, like the other two. It empties the queue into
+# `scores` and stops; whether that reaches a reader is the publisher's clock,
+# not this one's.
+#
+# A PERSON PRESSES IT, AND IT TAKES NO INPUT. What a run does is decided by what
+# `queue` holds and in what order — `batches.at` — so jumping the line is an
+# UPDATE against the database rather than a flag here. A push does not wake it
+# either: measured over 95 runs, 21 of 22 pushed runs were cancelled by the next
+# push and the board published nothing.
 #
 # A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. A stored score is reused
-# because it EXISTS: there is no clock, no fingerprint and no binary in the key,
-# so a run that changed a formula reuses every row it already holds. WHAT
-# RETIRES A FACT IS A PERSON DELETING ITS ROW, which is SQL and precision beside
-# it — docs/BOARD.md §"When the code moved".
+# because it EXISTS: no clock, no fingerprint and no binary in the key. What
+# asks for a row again is a QUEUE row somebody wrote — docs/BOARD.md.
 #
 # Scoring is embarrassingly parallel — every row is an independent fight — so it
-# splits `SHARDS` ways and a merge job assembles the board from the scores. What
-# that can and cannot buy is measured in docs/BOARD.md §"Two ceilings, and
-# neither is the shard count".
-name: board
+# splits as many ways as the work needs and each shard takes its slice of one
+# ordered list. What that can and cannot buy is measured in docs/BOARD.md
+# §"Two ceilings, and neither is the shard count".
+name: scores
 
 on:
   # AUTOMATIC-UPDATES: HELD
   #
   # That line is read by `scripts/check_rescore_paths.mjs`, which otherwise
-  # REQUIRES a schedule: nothing waking the board is the kind of state that
-  # goes green everywhere and is discovered by a reader asking why the numbers
-  # stopped. Deleting it without restoring the cron fails the check, so the
-  # hold cannot outlive somebody's memory of it.
+  # REQUIRES a schedule. HELD, NOT DISABLED: a workflow turned off through the
+  # repository's settings is a fact this file does not carry — it survives a
+  # checkout, shows up in no diff, and is discovered by somebody asking why the
+  # board stopped. Uncommenting is the whole of the restore.
   #
-  # HELD, NOT DISABLED — see the header. The trigger is commented out HERE
-  # rather than turned off in the repository's settings, because a workflow
-  # disabled through the UI is a fact this file does not carry: it survives a
-  # checkout, shows up in no diff, and the way it is discovered is somebody
-  # asking why the board stopped. Uncommenting is the whole of the restore.
+  # WHAT THE HOLD COSTS IS NOW SMALL, which is why it is still here. The board
+  # MOVES on `publish.yml`'s clock whatever this does, and the queue fills on
+  # `queue.yml`'s — so a held clock here means the board keeps publishing what
+  # is measured while the queue grows, and a reader is told how far behind it
+  # is. Before the split, holding this meant nothing moved at all.
   #
-  # ONCE AN HOUR, ON THE HOUR. The cadence has to be longer than a run, and a
-  # run is not twenty minutes: measured over 40 scheduled runs, 25 of the 29
-  # that published finished inside twenty and the rest took 29, 38, 82 and 102.
-  # A cadence shorter than the tail means the queued run is cancelled by the
-  # next arrival — GitHub keeps one pending per concurrency group — so two of
-  # every three wake-ups did nothing at all and the board still published at
-  # whatever rate the long runs allowed.
-  #
-  # Naming :00 costs nothing: the scheduler slips ~15 minutes whatever minute
-  # is named, so an off-the-hour minute buys a precision this does not have.
+  # RESTORE IT when the queue is regularly deeper than a person remembers to
+  # press a button for. Twice a day is the shape to start from: the cadence has
+  # to be longer than a run, and a run is not twenty minutes — measured over 40
+  # scheduled runs, the tail took 29, 38, 82 and 102.
   #
   # schedule:
-  #   - cron: "0 * * * *"
+  #   - cron: "0 2,14 * * *"
   #
-  # NOTHING ELSE RESCORES, ON A CLOCK OR OTHERWISE. This is the only pipeline
-  # that fights anything.
   # A PERSON, AND NOTHING ELSE, STARTS A RUN. It takes no input: what a run
-  # does is decided by what the database holds — a build with no fact is
-  # computed, a build with one is not — so there is nothing here to name.
-  # Retiring a fact is `DELETE`, which is SQL and not a button.
+  # does is decided by what `queue` holds and in what order, so there is
+  # nothing here to name.
   workflow_dispatch:
 concurrency:
   group: board-${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
@@ -486,207 +473,3 @@ jobs:
           # and green, which is how a whole shard's rows went nowhere.
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-
-  # ---- 3. assemble the board and commit ---------------------------------
-  #
-  # With every score already computed this job simulates nothing: it validates,
-  # deduplicates, ranks and writes. Measured locally at 0.064 s for the rows it
-  # was given, against the 1.5 s the shards spent computing them.
-  publish:
-    needs: [submissions, score]
-    # A SHARD THAT DID THE WORK AND FAILED TO UPLOAD IT MUST NOT COST THE RUN.
-    # Every shard BANKS its scores to the store before it uploads anything, so
-    # the store is the authority and the artifact is a convenience — and an
-    # `if:` with no status function implies `success()`, which made one
-    # shard's failure skip the assembly. Measured: a full rescore computed all
-    # 128 shards, banked all of them, and published nothing because GitHub's
-    # artifact service timed out on one of them after five retries. Five and a
-    # half hours of correct work, thrown away by a transient service.
-    #
-    # `!cancelled()` is what lifts the implied `success()`; `submissions` is
-    # still required, because without the library there is nothing to assemble.
-    if: ${{ !cancelled() && needs.submissions.result == 'success'
-      && needs.submissions.outputs.wired == 'true'
-      && needs.submissions.outputs.work != 'false' }}
-    runs-on: ubuntu-latest
-    # ONE PUBLISH AT A TIME, ACROSS EVERY RUN. The workflow's own groups keep
-    # the schedule and the buttons apart so a long manual rescore cannot stand
-    # the schedule down — which means they overlap, and two assemblies writing
-    # the board is last-writer-wins over a whole run's knowledge. Measured: a
-    # rescore landed a repaired row at 18:02 and the run that had read the
-    # store at 18:01 published over it at 18:07, twice, so the button appeared
-    # to do nothing at all. The SCORING may overlap freely; only this may not.
-    concurrency:
-      group: board-publish
-      cancel-in-progress: false
-    permissions:
-      contents: write
-      # NAMING ONE PERMISSION SETS EVERY OTHER TO NONE, so the CI check below
-      # needs its own line or the API answers 403, the check reads "unknown",
-      # and a guard that fails open never fires at all.
-      actions: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: library
-      - name: build the scorer
-        run: cargo build --release --bin wfsim-board
-
-      # THE FACTS AS THEY ARE NOW, not as they were when this run started. The
-      # shards were still shipping while the artifact above was taken, so an
-      # assembly handed that copy publishes a board without this run's own
-      # measurements in it. ONE job reads fresh, which is one read and not
-      # thirty-two.
-      - name: read what is measured now
-        env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
-            | jq -r '.d1_databases[0].database_id // empty')
-          export CF_D1_DATABASE
-          bash scripts/fetch_facts.sh facts-known.ndjson
-
-
-      - name: assemble every benchmark
-        run: |
-          set -euo pipefail
-          for f in data/benchmarks/*.yaml; do
-            id=$(basename "$f" .yaml)
-            # NO SLICE AND NO BUDGET: this pass fights nothing. `--project`
-            # makes that a guarantee, so a shard that fell over costs a row
-            # on this board rather than an hour on the merge — and the row
-            # lands on the next one, which is the convergence rule applied
-            # to the assembly.
-            #
-            # IT PUBLISHES A WEAPON AT A TIME, WHOLE. The directory it is
-            # handed is both what it writes and where a weapon's rows under
-            # every OTHER ruler are read back from, so a file is only ever
-            # written with all of them in hand. A weapon with an unmeasured
-            # row keeps the rows it has.
-            ./target/release/wfsim-board "$id" site/board \
-              --project \
-              --facts-in facts-known.ndjson \
-              < library.json > /dev/null || {
-                code=$?
-                # TWO IS "NOT YET", ANYTHING ELSE IS BROKEN. Three boards are
-                # three rankings and they differ sixfold in cost —
-                # single_target settles in an hour where group_clear takes
-                # six — so an incomplete one may not hold a complete one back.
-                if [ "$code" = "2" ]; then
-                  echo "::notice::$id is not complete yet — left as it was"
-                else
-                  echo "::error::$id: the assembly failed with $code"
-                  exit "$code"
-                fi
-              }
-          done
-
-      # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
-      # hour that says nothing is history nobody can read.
-      #
-      # AND IT NEVER REBASES THE RESULT. These files are GENERATED: there is no
-      # sense in which two versions both hold something worth keeping, so a
-      # three-way merge can only ever produce a conflict — which is exactly what
-      # happened on 2026-08-11, throwing away 83 minutes of completed scoring at
-      # the last step. The run that just scored holds the newest numbers; it
-      # takes whatever base is current and writes them on top.
-      # THE BOARD DOES NOT PUBLISH NUMBERS FROM CODE THAT FAILED ITS TESTS.
-      #
-      # CI ran red for two days and thirty-five pushes on a real defect — a
-      # geometric boundary decided by the host's `acos`, so the runner swept one
-      # body fewer than the rule says — and every hour of that the board went on
-      # publishing melee numbers computed with it. Nothing connected the two:
-      # scoring is hours, CI is minutes, and by publish time the answer has been
-      # THE JOB THAT BEARS ON A NUMBER, and not the whole workflow. `test`
-      # runs clippy and the suite, which is what can make a published score
-      # wrong. `parity` compares how two PAGES render one weapon: it cannot
-      # move a number, and while this read the workflow's own conclusion a race
-      # in a browser check froze the leaderboard — a UI flake stopping the
-      # board from publishing measurements trades a loud problem for a silent
-      # one, which is the trade this guard exists to refuse.
-      - name: did this commit's tests pass
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          # THE TWO WAYS THIS LEARNS NOTHING ARE DIFFERENT FACTS. "No CI run
-          # for this sha" is ordinary; "the API would not answer" means the
-          # guard is not working, and a fail-open check that cannot say which
-          # has quietly stopped being a check.
-          runs='repos/${{ github.repository }}/actions/runs?head_sha=${{ github.sha }}&per_page=50'
-          if ! ids=$(gh api "$runs" --jq '[.workflow_runs[] | select(.name == "CI") | .id] | join(" ")' 2>&1); then
-            echo "::warning::could not read CI for ${{ github.sha }} — publishing without that check"
-            printf "%s" "$ids" | head -3
-            exit 0
-          fi
-          got=""
-          for id in $ids; do
-            if ! j=$(gh api "repos/${{ github.repository }}/actions/runs/$id/jobs?per_page=100" \
-                     --jq '[.jobs[] | select(.name == "test") | .conclusion // "running"] | join(",")' 2>&1); then
-              echo "::warning::could not read the jobs of CI run $id — publishing without that check"
-              exit 0
-            fi
-            got="$got,$j"
-          done
-          echo "the test job for ${{ github.sha }}: ${got#,}"
-          case "$got," in
-            *,failure,*|*,timed_out,*)
-              echo "::error::the test job failed for this commit — the board will not publish numbers from it"
-              exit 1 ;;
-          esac
-
-      - name: commit if the board moved
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # WHAT THIS RUN GENERATED, named ONCE. The same list is diffed, held
-          # across the reset, put back and added — and while it was four
-          # literals, `data/board_state.yaml` was held by none of them: the
-          # reset took it back to main's copy and `git add` then staged a file
-          # identical to HEAD. The counts the PAGE reads froze on the day that
-          # file landed while the boards beside it moved on, so the board
-          # reported 1,168 builds waiting where 344 were.
-          # THE STAMP IS WRITTEN BY WHOEVER WRITES THE BOARD, and this is the
-          # writer that runs once an hour. A stamp only the site build
-          # maintains would name the board of whenever somebody last rebuilt
-          # locally, which is a worse answer than none — docs/DISTRIBUTION.md.
-          python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
-          python3 scripts/board_meta.py
-          GENERATED="site/board data/board_state.yaml site/board.meta.json"
-          if git diff --quiet -- $GENERATED; then
-            echo "board unchanged — nothing to commit"
-            exit 0
-          fi
-          for attempt in 1 2 3; do
-            # Hold the generated files, take whatever main is now, put them back.
-            rm -rf /tmp/out && mkdir -p /tmp/out
-            cp -r --parents $GENERATED /tmp/out/
-            git fetch origin main
-            git reset --hard origin/main
-            cp -r /tmp/out/. .
-            if git diff --quiet -- $GENERATED; then
-              echo "board already current on main — nothing to commit"
-              exit 0
-            fi
-            git add $GENERATED
-            # THE TIME, not just the date. Three runs an hour means a day of
-            # "board: rescore 2026-08-09" is a wall of identical subjects, and the
-            # one thing you want from this line is WHICH rescore you are looking
-            # at.
-            git commit -m "board: rescore $(date -u +'%Y-%m-%d %H:%M') UTC"
-            if git push; then exit 0; fi
-            echo "push raced (attempt $attempt) — taking the new base and rewriting"
-          done
-          echo "::error::could not land the board after three attempts"
-          exit 1

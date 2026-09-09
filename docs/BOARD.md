@@ -170,7 +170,7 @@ now asserts both properties against every axis, derived from a real payload
 rather than listed — the stranded records themselves are unrecoverable, since
 what they are missing was never stored.
 | the scorer | `cli/src/bin/wfsim-board.rs` | the scheduled job |
-| the automation | `.github/workflows/board.yml` | GitHub Actions |
+| the automation | `.github/workflows/scores.yml` | GitHub Actions |
 
 **The board is in the repo AND in the database, and they are different
 things.** `site/board/` is what is PUBLISHED — committed, diffable, served
@@ -206,12 +206,30 @@ including the empty ones, because a 404 and an empty list are the same thing to
 
 ## When it updates
 
-**TWO JOBS, AND ONLY ONE OF THEM FIGHTS.**
+**THREE FILES, ONE HOP EACH, AND ONLY ONE OF THEM FIGHTS.**
 
 | | who starts it | what it does | what it costs |
 | --- | --- | --- | --- |
 | `queue.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
-| `board.yml` | a person, no input | what is asked for is MEASURED, and the board is published | as many shards as the work needs |
+| `scores.yml` | a person, no input | what is asked for is MEASURED | as many shards as the work needs |
+| `publish.yml` | the clock, 06:00 and 18:00 | `scores` is ranked and written to `site/board` | one runner, seconds |
+
+**THE PUBLISH DOES NOT CARE WHAT IS BEING COMPUTED.** It reads the table, ranks
+it, writes the files and commits if they moved. A scoring run may be halfway
+through a batch when it fires; it publishes what is there, and the next one
+publishes what is there then. It has no `needs:` and waits for nothing.
+
+**NOTHING IS LOST BY PUBLISHING EARLY**, and that is what makes the indifference
+safe. It was not always: while asking for a row again meant DELETING its fact, a
+publish over a half-finished rescore would have written those rows out of
+existence, which is what the old `unready` hold-back protected against. Asking
+is a QUEUE row now and `scores` only ever grows — a build being re-measured
+keeps its old number until the new one replaces it, and a build with no number
+was never on the board.
+
+**AND IF NOTHING MOVED IT DOES NOT PUBLISH.** The commit is guarded on the diff
+of the generated files, so a run over an unchanged table costs one job and
+leaves no line in a history nobody can read.
 
 **WHY THE CLOCK IS ON THE FIRST HALF.** A submission is the one thing here
 nobody can derive — an inbox row is its only record — so the sooner it becomes a

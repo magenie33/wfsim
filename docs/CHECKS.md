@@ -600,7 +600,7 @@ asked for.
 ## `check_rescore_paths`
 
 Only the clock and a person may start a board run. Plain node, no browser: it
-reads `.github/workflows/board.yml` and refuses a `push` trigger, requires
+reads `.github/workflows/scores.yml` and refuses a `push` trigger, requires
 either the `schedule` or a declared hold, refuses any path list, requires the
 `--shard i/N` denominator to name the same output the matrix is built from,
 refuses an `if:` that gates a step on an output set BELOW it, keeps the pass

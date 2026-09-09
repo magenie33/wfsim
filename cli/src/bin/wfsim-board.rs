@@ -3,7 +3,7 @@
 //! Reads the library as a JSON array on stdin, reads the open generation's
 //! FACTS as a file, and writes one file per weapon plus a cross-weapon index.
 //! Fetching either and committing the result are the workflow's job
-//! (`.github/workflows/board.yml`), and neither needs the engine. What needs
+//! (`.github/workflows/scores.yml`), and neither needs the engine. What needs
 //! the engine is the only thing here — running each build under the benchmark
 //! and reading the number off.
 //!
@@ -707,11 +707,6 @@ fn main() {
     // costs a row on this board rather than an hour on the merge.
     let project = has_flag("--project");
     let mut absent = 0usize;
-    // WHICH WEAPONS THIS GENERATION CANNOT SPEAK FOR YET. The publication unit
-    // is a WEAPON, because that is the file the page fetches, and a file is only
-    // ever written whole — so a weapon with one unmeasured row keeps the rows it
-    // has until every one of them is measured.
-    let mut unready: std::collections::BTreeSet<String> = Default::default();
     let deadline = flag("--deadline")
         .and_then(|s| s.parse::<u64>().ok())
         .map(std::time::Duration::from_secs);
@@ -1071,7 +1066,6 @@ fn main() {
                     // construction rather than by whichever shard fell over.
                     if project {
                         absent += 1;
-                        unready.insert(v.weapon.clone());
                         deferred_ids.insert(identity_of(&key));
                         continue;
                     }
@@ -1452,29 +1446,30 @@ fn main() {
                 }
                 let Ok(text) = std::fs::read_to_string(e.path()) else { continue };
                 let Ok(rows) = serde_json::from_str::<Vec<Box<RawValue>>>(&text) else { continue };
-                let hold_all = unready.contains(weapon);
+                // THIS RULER'S ROWS ARE REPLACED FROM THE FACTS; every OTHER
+                // ruler's are read back and kept, because a weapon's file is
+                // written whole and this pass measured none of them.
                 let keep: Vec<Box<RawValue>> = rows
                     .into_iter()
                     .filter(|r| {
-                        hold_all
-                            || published(r).is_none_or(|p| family(p.benchmark) != family(&bench_id))
+                        published(r).is_none_or(|p| family(p.benchmark) != family(&bench_id))
                     })
                     .collect();
                 by_weapon.insert(weapon.to_string(), keep);
             }
         }
-        // …AND A READY WEAPON'S ROWS FOR THIS RULER COME FROM THE FACTS, WHOLE.
-        for r in kept.iter().filter(|r| !unready.contains(&r.weapon)) {
+        // …AND WHAT THE FACTS HOLD IS PUBLISHED, WHOLE AND UNCONDITIONALLY.
+        //
+        // A WEAPON IS NEVER HELD BACK FOR HAVING AN UNMEASURED ROW. It was, and
+        // the reason was that asking for a row again meant DELETING its fact,
+        // which left a hole a publish would have written out as rows
+        // disappearing. Asking is a queue row now and `scores` only ever grows,
+        // so there is no hole to protect against: a build with no fact was
+        // never on this board, and one with an old fact keeps the number it
+        // has until a new one replaces it.
+        for r in &kept {
             let row = serde_json::value::to_raw_value(&page_row(&bench_id, r)).expect("json");
             by_weapon.entry(r.weapon.clone()).or_default().push(row);
-        }
-        if !unready.is_empty() {
-            eprintln!(
-                "held: {} weapon(s) carry a row nothing has measured yet — {}{}",
-                unready.len(),
-                unready.iter().take(6).cloned().collect::<Vec<_>>().join(" "),
-                if unready.len() > 6 { " …" } else { "" },
-            );
         }
         for (weapon, rows) in &by_weapon {
             let f = dir.join(format!("{weapon}.json"));

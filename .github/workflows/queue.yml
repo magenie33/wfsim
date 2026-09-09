@@ -5,10 +5,10 @@
 #   inbox   what a player sent, verbatim   ─┐ this file, hourly, one runner
 #   builds  the library, one row a build    │
 #   queue   what is owed                   ─┘
-#   scores  the facts                      ─┐ board.yml, on the button, as many
+#   scores  the facts                      ─┐ scores.yml, on the button, as many
 #   board   the published files            ─┘ shards as the work needs
 #
-# NAMED FOR WHERE IT ENDS, the same way `board.yml` is. `intake` is the hop from
+# NAMED FOR WHERE IT ENDS, the same way `scores.yml` is. `intake` is the hop from
 # `inbox` to `builds` and it is one STEP here — the word is also already spoken
 # for by `docs/WEAPON_INTAKE.md`, which is a different subject entirely.
 #

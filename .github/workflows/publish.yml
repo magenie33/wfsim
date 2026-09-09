@@ -1,0 +1,214 @@
+# THE BOARD IS PUBLISHED ON A CLOCK, AND IT DOES NOT CARE WHAT IS BEING
+# COMPUTED. Read `scores`, rank, write the files, commit if they moved.
+#
+#   queue.yml    inbox -> builds -> queue   hourly, computes nothing
+#   scores.yml    queue -> scores            a person presses it
+#   this file    scores -> site/board       06:00 and 18:00, every day
+#
+# IT IS A PROJECTION, AND THAT IS THE WHOLE OF IT. It fights nothing, waits for
+# nothing and asks nothing about whether a number is being replaced right now.
+# Scoring may be halfway through a batch when this fires; it publishes what the
+# table holds at that moment, and the next one publishes what it holds then.
+#
+# NOTHING IS EVER LOST BY PUBLISHING EARLY, and that is what makes the
+# indifference safe: asking for a row again is a QUEUE row, not a delete, so
+# `scores` only ever grows. A build being re-measured keeps its old number until
+# the new one replaces it, and a build with no number was never on the board.
+#
+# IF NOTHING MOVED IT DOES NOT PUBLISH. The commit is guarded on the diff of the
+# generated files, so a run over an unchanged table is a no-op — no commit, no
+# deploy, no line in a history nobody can read.
+name: publish
+
+on:
+  schedule:
+    # 06:00 AND 18:00 IN CHINA, which is 22:00 and 10:00 UTC — GitHub's cron is
+    # UTC and has no timezone. The scheduler slips about fifteen minutes
+    # whatever minute is named, so the hour is the cadence and not a promise.
+    - cron: "0 22,10 * * *"
+  workflow_dispatch:
+
+# ONE PUBLISH AT A TIME, ACROSS EVERY RUN. Two assemblies writing the board is
+# last-writer-wins over a whole run's KNOWLEDGE rather than over one file: the
+# loser is whichever read the store first, and what it publishes is the store as
+# it was then, rolling the board back. Measured: a rescore landed a repaired row
+# at 18:02 and the run that had read the store at 18:01 published over it at
+# 18:07, twice, so the button appeared to do nothing at all.
+concurrency:
+  group: board-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # IT NEEDS NOTHING AND WAITS FOR NOTHING. A scoring run may be halfway
+    # through, or may have fallen over an hour ago; neither changes what this
+    # does, which is read the table and write what it says.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # NAMING ONE PERMISSION SETS EVERY OTHER TO NONE, so the CI check below
+      # needs its own line or the API answers 403, the check reads "unknown",
+      # and a guard that fails open never fires at all.
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - name: build the assembler
+        run: cargo build --release --bin wfsim-board
+      - name: read the library and the facts
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc             | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          # THE FACTS AS THEY ARE AT THIS MOMENT, which is the whole promise
+          # of this file: a scoring run may be shipping rows while it reads,
+          # and the next publish carries those.
+          #
+          # NO FLOOR ON THE LIBRARY. `guard_shrink` protects a SCORING run
+          # from ranking a short read; this pass publishes what the FACTS
+          # hold, and a fact whose build did not come back has no row to
+          # write.
+          FLOOR=0 bash scripts/fetch_library.sh library.json
+          bash scripts/fetch_facts.sh facts-known.ndjson
+
+      - name: assemble every benchmark
+        run: |
+          set -euo pipefail
+          for f in data/benchmarks/*.yaml; do
+            id=$(basename "$f" .yaml)
+            # NO SLICE AND NO BUDGET: this pass fights nothing. `--project`
+            # makes that a guarantee, so a shard that fell over costs a row
+            # on this board rather than an hour on the merge — and the row
+            # lands on the next one, which is the convergence rule applied
+            # to the assembly.
+            #
+            # IT PUBLISHES A WEAPON AT A TIME, WHOLE. The directory it is
+            # handed is both what it writes and where a weapon's rows under
+            # every OTHER ruler are read back from, so a file is only ever
+            # written with all of them in hand.
+            ./target/release/wfsim-board "$id" site/board \
+              --project \
+              --facts-in facts-known.ndjson \
+              < library.json > /dev/null || {
+                code=$?
+                # TWO IS "NOT YET", ANYTHING ELSE IS BROKEN. Three boards are
+                # three rankings and they differ sixfold in cost —
+                # single_target settles in an hour where group_clear takes
+                # six — so an incomplete one may not hold a complete one back.
+                if [ "$code" = "2" ]; then
+                  echo "::notice::$id is not complete yet — left as it was"
+                else
+                  echo "::error::$id: the assembly failed with $code"
+                  exit "$code"
+                fi
+              }
+          done
+
+      # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
+      # hour that says nothing is history nobody can read.
+      #
+      # AND IT NEVER REBASES THE RESULT. These files are GENERATED: there is no
+      # sense in which two versions both hold something worth keeping, so a
+      # three-way merge can only ever produce a conflict — which is exactly what
+      # happened on 2026-08-11, throwing away 83 minutes of completed scoring at
+      # the last step. The run that just scored holds the newest numbers; it
+      # takes whatever base is current and writes them on top.
+      # THE BOARD DOES NOT PUBLISH NUMBERS FROM CODE THAT FAILED ITS TESTS.
+      #
+      # CI ran red for two days and thirty-five pushes on a real defect — a
+      # geometric boundary decided by the host's `acos`, so the runner swept one
+      # body fewer than the rule says — and every hour of that the board went on
+      # publishing melee numbers computed with it. Nothing connected the two:
+      # scoring is hours, CI is minutes, and by publish time the answer has been
+      # THE JOB THAT BEARS ON A NUMBER, and not the whole workflow. `test`
+      # runs clippy and the suite, which is what can make a published score
+      # wrong. `parity` compares how two PAGES render one weapon: it cannot
+      # move a number, and while this read the workflow's own conclusion a race
+      # in a browser check froze the leaderboard — a UI flake stopping the
+      # board from publishing measurements trades a loud problem for a silent
+      # one, which is the trade this guard exists to refuse.
+      - name: did this commit's tests pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # THE TWO WAYS THIS LEARNS NOTHING ARE DIFFERENT FACTS. "No CI run
+          # for this sha" is ordinary; "the API would not answer" means the
+          # guard is not working, and a fail-open check that cannot say which
+          # has quietly stopped being a check.
+          runs='repos/${{ github.repository }}/actions/runs?head_sha=${{ github.sha }}&per_page=50'
+          if ! ids=$(gh api "$runs" --jq '[.workflow_runs[] | select(.name == "CI") | .id] | join(" ")' 2>&1); then
+            echo "::warning::could not read CI for ${{ github.sha }} — publishing without that check"
+            printf "%s" "$ids" | head -3
+            exit 0
+          fi
+          got=""
+          for id in $ids; do
+            if ! j=$(gh api "repos/${{ github.repository }}/actions/runs/$id/jobs?per_page=100" \
+                     --jq '[.jobs[] | select(.name == "test") | .conclusion // "running"] | join(",")' 2>&1); then
+              echo "::warning::could not read the jobs of CI run $id — publishing without that check"
+              exit 0
+            fi
+            got="$got,$j"
+          done
+          echo "the test job for ${{ github.sha }}: ${got#,}"
+          case "$got," in
+            *,failure,*|*,timed_out,*)
+              echo "::error::the test job failed for this commit — the board will not publish numbers from it"
+              exit 1 ;;
+          esac
+
+      - name: commit if the board moved
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # WHAT THIS RUN GENERATED, named ONCE. The same list is diffed, held
+          # across the reset, put back and added — and while it was four
+          # literals, `data/board_state.yaml` was held by none of them: the
+          # reset took it back to main's copy and `git add` then staged a file
+          # identical to HEAD. The counts the PAGE reads froze on the day that
+          # file landed while the boards beside it moved on, so the board
+          # reported 1,168 builds waiting where 344 were.
+          # THE STAMP IS WRITTEN BY WHOEVER WRITES THE BOARD, and this is the
+          # writer that runs once an hour. A stamp only the site build
+          # maintains would name the board of whenever somebody last rebuilt
+          # locally, which is a worse answer than none — docs/DISTRIBUTION.md.
+          python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+          python3 scripts/board_meta.py
+          GENERATED="site/board data/board_state.yaml site/board.meta.json"
+          if git diff --quiet -- $GENERATED; then
+            echo "board unchanged — nothing to commit"
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            # Hold the generated files, take whatever main is now, put them back.
+            rm -rf /tmp/out && mkdir -p /tmp/out
+            cp -r --parents $GENERATED /tmp/out/
+            git fetch origin main
+            git reset --hard origin/main
+            cp -r /tmp/out/. .
+            if git diff --quiet -- $GENERATED; then
+              echo "board already current on main — nothing to commit"
+              exit 0
+            fi
+            git add $GENERATED
+            # THE TIME, not just the date. Three runs an hour means a day of
+            # "board: rescore 2026-08-09" is a wall of identical subjects, and the
+            # one thing you want from this line is WHICH rescore you are looking
+            # at.
+            git commit -m "board: rescore $(date -u +'%Y-%m-%d %H:%M') UTC"
+            if git push; then exit 0; fi
+            echo "push raced (attempt $attempt) — taking the new base and rewriting"
+          done
+          echo "::error::could not land the board after three attempts"
+          exit 1

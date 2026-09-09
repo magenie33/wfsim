@@ -27,7 +27,7 @@ const check = (ok, name, detail) => {
   if (!ok) bad += 1;
 };
 
-const wf = readFileSync(resolve(ROOT, ".github/workflows/board.yml"), "utf8").split(NL);
+const wf = readFileSync(resolve(ROOT, ".github/workflows/scores.yml"), "utf8").split(NL);
 // The `on:` block, which is every line up to the next top-level key.
 const from = wf.findIndex((l) => l.trim() === "on:");
 const to = wf.findIndex((l, i) => i > from && /^[a-z]/.test(l));
@@ -64,7 +64,7 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
 // downstream quietly gets nothing. It cost the score store its first run: the
 // fetch sat above the check that gates it, never ran, and three jobs pointed
 // `--scores` at a directory nobody had filled. Every run stayed green.
-for (const wfName of ["board.yml", "queue.yml"]) {
+for (const wfName of ["scores.yml", "queue.yml"]) {
   const lines = readFileSync(resolve(ROOT, ".github/workflows", wfName), "utf8").split(NL);
   const definedAt = new Map();
   lines.forEach((l, i) => {
@@ -140,8 +140,9 @@ check(denom.length > 0 && denom.every((l) => l.includes("outputs.shard_count")),
 // skipped the assembly, a prior board republished beside rows half its size.
 //
 // Read over the whole step, because the flags sit on their own lines.
-const assembleStep = wf
-  .slice(wf.findIndex((l) => l.includes("- name: assemble every benchmark")))
+const pubWf = readFileSync(resolve(ROOT, ".github/workflows/publish.yml"), "utf8").split(NL);
+const assembleStep = pubWf
+  .slice(pubWf.findIndex((l) => l.includes("- name: assemble every benchmark")))
   .slice(0, 80)
   .filter((l) => !l.trim().startsWith("#"))
   .join(NL);
@@ -183,8 +184,23 @@ check(gated.length === 0, "a full rescore is every row forced, not a missing pri
 //
 // So the assembly is serialised and reads the store LAST. The scoring may
 // overlap freely; it only ever adds.
-const pub = wf.slice(wf.findIndex((l) => /^ {2}publish:/.test(l)));
-check(pub.some((l) => /group:\s*board-publish/.test(l)),
+const pub = pubWf.slice(pubWf.findIndex((l) => /^ {2}publish:/.test(l)));
+// THE CLOCK IS ON THE PUBLISH, and it is what makes the board move at all now
+// that scoring is a button. Without it nothing writes `site/board` ever again,
+// which goes green everywhere and is discovered by a reader asking why the
+// numbers stopped.
+check(pubWf.some((l) => /^\s+- cron:/.test(l)),
+  "the publish runs on a clock",
+  "nothing else writes site/board, so with no schedule the board never moves");
+// …AND IT PUBLISHES WHAT THE TABLE HOLDS, waiting for no scoring run. `needs:`
+// would make the board's freshness a property of whether somebody pressed a
+// button, which is the coupling this file was split to remove.
+check(!pub.some((l) => /^\s+needs:/.test(l)),
+  "…and waits for no scoring run",
+  "a publish gated on a scorer publishes only when somebody scored");
+// ASKED OF THE WHOLE FILE, because a workflow-level `concurrency:` is what
+// serialises across RUNS; one declared inside the job only serialises the job.
+check(pubWf.some((l) => /group:\s*board-publish/.test(l)),
   "one assembly at a time, across every run",
   "two publishes overlap, and the later one writes the store it read at its own start");
 check(pub.some((l) => l.includes("fetch_facts.sh")),
