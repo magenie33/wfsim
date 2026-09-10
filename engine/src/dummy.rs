@@ -3604,9 +3604,9 @@ impl DummyParams {
         // and which is not a reason to invent a maximum.
         //
         // It is rostered only when the fight can BUILD one, and `resolve` has
-        // already emptied it for a hip-fired scenario — so the no-aim ruler
-        // shows a sniper no card, which is correct and is the only place in
-        // the app where that ruler changes what a weapon HAS.
+        // already emptied it for a hip-fired scenario — so a hip-fired fight
+        // shows a sniper no card at all, which is the one place in the app
+        // where not aiming changes what a weapon HAS rather than what it hits.
         // BOTH FORMS ARE ASKED. In an Incarnon cycle the OUTER params are the
         // Incarnon panel's — `incarnon_cycle_from_panels` builds it that way —
         // so a counter declared on the base form is invisible from here, and

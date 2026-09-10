@@ -1728,10 +1728,10 @@ so the counter runs slightly generous, and each sniper says so on its card.
 
 **Where the gate is.** *"Building combo and benefiting from its multiplier
 requires being scoped in."* `loadout::resolve` empties `sniper_combo` when the
-Tenno is not aiming, and it is the only place that decides — so the simulator,
-the optimizer and the board's no-aim ruler all agree without any of them
-knowing what a sniper is. It is also the one mechanic where that ruler changes
-what a weapon HAS rather than what it hits.
+Tenno is not aiming, and it is the only place that decides — so the simulator
+and the optimizer agree without either of them knowing what a sniper is. It is
+also the one mechanic where not aiming changes what a weapon HAS rather than
+what it hits.
 
 **In an Incarnon cycle** the counter is the base form's. `DummyParams` for a
 cycle is built from the INCARNON panel with the base form hung off

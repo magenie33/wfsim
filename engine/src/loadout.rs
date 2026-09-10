@@ -3748,9 +3748,9 @@ pub struct ResolvedPanel {
     /// THE SHOT COMBO COUNTER, or `None` — and `None` is what a sniper fired
     /// from the hip resolves to, because *"building combo and benefiting from
     /// its multiplier requires being scoped in"* (wiki `Sniper Rifle`). That is
-    /// the whole gate: it is answered once, here, so the simulator, the
-    /// optimizer and the board's no-aim ruler all get the same answer without
-    /// any of them knowing what a sniper is.
+    /// the whole gate: it is answered once, here, so the simulator and the
+    /// optimizer get the same answer for a hip-fired scenario without either of
+    /// them knowing what a sniper is.
     pub sniper_combo: Option<crate::weapons_data::SniperCombo>,
     /// Sentient Surge: crit chance added PER ACTIVE TENDRIL, relative to the
     /// unmodded base — "Additive to other crit chance and status chance mods"
@@ -7031,7 +7031,7 @@ mod tests {
     /// from its multiplier requires being scoped in"* (wiki `Sniper Rifle`),
     /// and the zoom buff is a property of a zoom level — so a hip-fired
     /// scenario gets neither, and it is `resolve` that says so, once, for the
-    /// simulator and the optimizer and the board's no-aim ruler alike.
+    /// simulator and the optimizer alike.
     #[test]
     fn a_sniper_fired_from_the_hip_has_no_combo_and_no_scope() {
         let base = WeaponBase::from_data("vectis_prime", false, &[]);

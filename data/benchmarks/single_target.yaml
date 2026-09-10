@@ -217,10 +217,10 @@ scenario:
   # is where the shots land. They are different facts and a board that means
   # "played at the ceiling" has to say both.
   #
-  # A SENTINEL WEAPON IS EXEMPT from both and scores the same here as on the
-  # no-aim board: its companion picks its own targets and never aims for a
-  # head, so `parse_fight` pins its rate at 0 and `tenno_from` its stance —
-  # neither is the player's to set. Two identical rows are the honest answer.
+  # A SENTINEL WEAPON IS EXEMPT from both: its companion picks its own targets
+  # and never aims for a head, so `parse_fight` pins its rate at 0 and
+  # `tenno_from` its stance — neither is the player's to set, and pinning them
+  # here does not reach it.
   headshot_pct: 100
 
   # NO FORM, AND NO MODE. How a weapon is played is part of the ENTRANT, not
