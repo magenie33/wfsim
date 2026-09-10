@@ -47,6 +47,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
     let w = 1.0 / bodies.len().max(1) as f64;
     Scenario {
         arena: Arena {
+            squad_size: 1,
             target_id: "e1".to_string(),
             abilities: Vec::new(),
             ability_picks: Vec::new(),

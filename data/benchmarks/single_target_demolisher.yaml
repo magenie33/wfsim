@@ -1,0 +1,123 @@
+# THE THIRD RULER — the aimed single-target fight, against a Demolisher.
+#
+# `single_target.yaml` is the full definition and the reasoning behind every
+# term; this file is that fight with the TARGET changed, and it says only what
+# is different. Read them together, not this one alone.
+#
+# WHY THIS ONE EXISTS. Both Thrax boards ask one question between them — how
+# fast does this weapon take apart a Corrupted body with Overguard in front of
+# it — and a Thrax is the GENERAL case on purpose. This is the specialised one,
+# specialised the way players actually are: Disruption is a farm people run for
+# hours, and the cards that win it are not the cards that win a corridor.
+#
+# WHAT MAKES IT A DIFFERENT FIGHT, and every one of these is already on the
+# unit (`data/enemies/demolisher_devourer.yaml`) rather than invented here:
+#
+#   * ARMOUR INSTEAD OF OVERGUARD — 250 armour, no shield, no Overguard. The
+#     question stops being "can you break the Overguard" and becomes "can you
+#     strip the armour", which is a different set of cards.
+#   * RADIATION CANNOT PROC. The type is dropped from the DRAW, so a Radiation
+#     build loses its status half and every other type it carries gets likelier.
+#   * COLD NEVER CONVERTS. The unit cannot be Frozen, so the ladder climbs to
+#     its ten-stack cap and STAYS — the Cold crit-damage bonus is up for the
+#     whole engagement instead of in bursts around a 3-second window.
+#   * IMPACT PROCS LAND AND DO NOTHING. They still take their share of the roll
+#     and still count as a status type for Condition Overload; they simply do
+#     not move this unit.
+#   * A 3.0x HEAD.
+#
+# AND IT IS GRINEER, where the Thrax is Corrupted — so the two boards pay
+# different halves of the Bane family. A card that discriminates by faction is
+# worth nothing on a general ruler and is most of a build here.
+#
+# TWO TERMS DIFFER FROM THE AIMED BOARD AND NO MORE: `enemy` and `squad_size`.
+# A third unnamed difference between them would be a bug, not a ruler.
+id: single_target_demolisher
+
+name: "Single Target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM"
+
+rules:
+  # MECHANICAL LANGUAGE, AND NO WEAPON IN IT — the standard all three rulers are
+  # held to. These lines say what is done to EVERY entry.
+  - "The target is one Demolisher Devourer at level 9999 on Steel Path, carrying the health a four-player squad gives it. The fight lasts 180 seconds."
+  - "ONE WEAPON FIRES. A four-player squad is a harder TARGET here, not three more guns — this arena has one shooter — so what is ranked is how much of that Demolisher your weapon alone takes off."
+  - "One target, so nothing here rewards clearing a room."
+  - "Every shot is aimed and every one lands on the weak point, which is worth 3x. This is the specialised fight, not the floor."
+  - "Radiation cannot proc on this unit: the type is dropped from the draw, and every other type on the build gets likelier for it."
+  - "It can never be Frozen, so Cold climbs to its cap and stays there. An Impact proc lands and counts as a status type, and does not stagger it."
+  - "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one Demolisher in 180 seconds scores 0.03 and still ranks."
+  - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is optional: a row may wear one and a row without one is not a lesser build, so the two sit on the same board and the better number wins."
+  - "The stance slot is optional too, and it is not a discount but a GRANT: a stance hands the weapon 10 mod capacity on a matching polarity, 5 on a bare slot and 4 on the wrong colour. A row without one is not a lesser build; it is a build that spent the capacity elsewhere."
+  - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
+  - "Ammo pickups are modelled, at the rate a four-player squad drops them. An entry that cannot be resupplied runs on its own reserve."
+  - "The melee weapon is DRAWN, not quick-melee: a card that says \"With Melee Weapon Equipped\" pays here. A build swung out of a gun is a different fight and the simulator has a switch for it; the ruler does not."
+  - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
+  - "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today."
+  - "Its nullifying pulse is not applied. The wiki describes it dispelling every Warframe ability within 6.5 m every five seconds; it does not do so in game today, and this simulation matches the game rather than the card — so Roar, Eclipse and Nourish are up here exactly as they are on the other boards."
+  - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo."
+
+build:
+  mods: full
+  evolutions: full
+  arcanes: full
+  exilus: optional
+  valence: full
+
+scenario:
+  # THE FIRST OF THE TWO CHANGED TERMS.
+  enemy: demolisher_devourer
+  level: 9999
+  steel_path: true
+
+  # …AND THE SECOND. The unit's health ladder is its own
+  # (`squad_health_bonus` — +0/+50/+100/+200% for 1/2/3/4), and this names which
+  # rung: four, because that is the squad Disruption is actually run in.
+  #
+  # IT ALSO SETS THE AMMO DROP RATE, which FALLS as a squad grows
+  # (`engine::ammo`). One number, both answers — so the fight cannot be
+  # four-player in its target and solo in what the floor gives back.
+  squad_size: 4
+
+  # POINT BLANK, and the SAME value as the aimed board's — see
+  # `single_target.yaml` for the argument. A Demolisher is fought in a corridor.
+  player_at: [0, 0]
+  target_at: [0, 0.4]
+  duration: 180
+  runs: 1000
+  seed: 12648430
+  metric: kpm
+  infinite_ammo: true
+
+  # AIMED, AND EVERY SHOT ON THE WEAK POINT — pinned exactly as the aimed board
+  # pins them, because they are terms of the claim and a reader should find them
+  # here. A SENTINEL WEAPON IS EXEMPT from both: its companion picks its own
+  # targets and never aims for a head, so `parse_fight` pins its rate at 0 and
+  # `tenno_from` its stance, and neither is the player's to set.
+  headshot_pct: 100
+
+  # THE NEUTRAL PLAYER, every field named including the ones already sitting at
+  # that value — the same block and the same rule as the other two rulers, so
+  # that a default which moves cannot move this board. `wf_sprint` is the one
+  # that would bite: the Latron family's Swift Punishment pays only at 1.2 or
+  # higher.
+  aiming: true
+  invisible: false
+  airborne: false
+  overshields: false
+  channeling: false
+  melee_equipped: true
+  solo_weapon: false
+  # THE AIMED BOARD'S VALUE, because this ruler is that ruler with the target
+  # changed. It reaches nothing while `wf_energy` is 0 — its only reader is a
+  # `tenno_scaled` arcane whose grant is a fraction of an empty pool — but the
+  # two boards must not differ in a term neither of them declares.
+  wf_energy_pct: 1.0
+  # THE FIGHT'S OWN STAT BONUSES — empty. A board row is a statement about the
+  # WEAPON, so the fight hands it nothing its build did not earn.
+  extra_stats: {}
+  # NO `frame`: the wielder's floor is pinned by a test
+  # (`the_default_tenno_is_the_floor_of_every_released_frame`), so naming it
+  # here would only make every override box arrive ticked for a reader.
+
+source:
+  url: https://wiki.warframe.com/w/Disruption

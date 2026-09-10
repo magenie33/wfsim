@@ -80,6 +80,15 @@ pub struct Arena {
     /// which is why the optimizer needs it while needing neither run count nor
     /// metric.
     pub duration_seconds: f64,
+    /// HOW MANY PEOPLE ARE IN THE SQUAD — 1, and always was, until a ruler
+    /// asked for the target a full squad meets.
+    ///
+    /// ONE PLAYER STILL FIRES. This is not three more guns: the arena has one
+    /// shooter and this number changes what is SHOT AT — how often a body drops
+    /// ammo (`crate::ammo`), and the health of a unit whose health reads the
+    /// squad (a Demolisher). It rides here for the reason `duration_seconds`
+    /// does, and so the optimizer inherits it from the same constructor.
+    pub squad_size: u32,
     /// WARFRAME ABILITY BUFFS the player brought — Roar, Eclipse, Nourish and
     /// the four elemental augments (`data/abilities/`).
     ///
@@ -140,6 +149,8 @@ impl Arena {
         Self {
             target_id: "e1".to_string(),
             tenno: crate::tenno_data::default_tenno().clone(),
+            // SOLO, like every fight that does not say otherwise.
+            squad_size: 1,
             target: TargetParams::training_dummy(),
             body_parts: crate::dummy::DummyParams::humanoid_parts(),
             // CONTACT — as close as two bodies can stand (`space`), which is

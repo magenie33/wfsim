@@ -42,6 +42,7 @@ fn arena(weapon_bodies: usize, spacing_m: f64) -> Arena {
         });
     }
     Arena {
+        squad_size: 1,
         target_id: "e1".to_string(),
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         target: e

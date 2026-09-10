@@ -5418,6 +5418,17 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
+    // HOW MANY PEOPLE ARE SHOOTING — a property of the FIGHT, so it is parsed
+    // here and nowhere else. It decides two things that must not disagree: how
+    // often a body drops ammo (`engine::ammo`), and how much health a unit
+    // whose health reads the squad has (a Demolisher, and nothing else).
+    //
+    // ONE PLAYER STILL FIRES. A bigger squad is a HARDER TARGET here, not three
+    // more guns — this arena has one shooter and always has — so a ruler that
+    // names four is asking what one weapon takes off the Demolisher a full
+    // squad meets. That is a real fight and a stated one; it is not a claim
+    // about squad DPS.
+    let squad_size = get_u32(v, "squad_size", 1).clamp(1, 4);
     // A SENTINEL'S HEADSHOT RATE IS NOT THE PLAYER'S TO SET. Its companion
     // picks its own targets and never aims for a head, so this is 0 whatever
     // the request says — the same shape as `tenno_from` forcing its stance.
@@ -5596,10 +5607,14 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // be — and an explicit `true` on a unit that cannot still fails, which is
     // the rigor being kept rather than worked around.
     let eximus = get_bool(v, "eximus", spec.can_be_eximus);
-    let target = match spec.target_params(level, steel_path, eximus, TargetMode::InstantRespawn) {
+    let mut target = match spec.target_params(level, steel_path, eximus, TargetMode::InstantRespawn) {
         Ok(t) => t,
         Err(e) => return Err(err_json(e)),
     };
+    // …AND THE SQUAD'S SHARE OF IT, applied to the BASE so the level curve
+    // carries it exactly as it carries the unit's own health. A unit with no
+    // ladder multiplies by 1 and this line is not a special case for it.
+    target.base_health *= spec.squad_health_multiplier(squad_size);
     // (The target's pools are read off the ARENA by whoever reports them —
     // one target, one place it lives.)
     let body_parts = build_body_parts(spec, headshot_pct);
@@ -5776,6 +5791,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // once and handed whole to whichever constructor runs, so the two forms
     // of a cycle cannot end up fighting two different fights.
     let arena = wfsim_engine::arena::Arena {
+        // THE SQUAD THE SCENARIO NAMED. It rides on the arena so the optimizer
+        // inherits it from the same constructor rather than re-deriving it.
+        squad_size,
         // THE BODY THE WEAPON IS ON, by name. It may be any of them: the shot
         // goes where it is pointed, and the nearest body on the LINE is the one
         // it hits — which need not be the fight's nominal target.
@@ -10922,6 +10940,112 @@ mod one_picture_one_weapon {
 /// worth NOTHING with the augment up — and, as the control that makes that
 /// meaningful, that it is worth a great deal without it. A test that only
 /// asserted the first would pass on an engine that had lost the perk entirely.
+#[cfg(test)]
+mod the_demolisher_ruler {
+    use serde_json::json;
+
+    /// **THE SQUAD THE RULER NAMES REACHES THE TARGET, AND NOTHING ELSE MOVES.**
+    ///
+    /// `squad_size` is parsed in `parse_fight` and rides on the Arena, so this
+    /// asserts the whole path a ruler's term takes: yaml -> scenario ->
+    /// `parse_fight` -> the pools the fight actually has. A term that stopped
+    /// anywhere along it would leave the board ranking a solo Demolisher under
+    /// a name that says four.
+    ///
+    /// HEALTH ONLY. A squad makes the unit fatter and does not touch its armour
+    /// — asserted rather than assumed, because a multiplier applied to the
+    /// wrong field is the one mistake that still reads as "the number went up".
+    #[test]
+    fn a_squads_share_reaches_the_demolishers_health_and_no_other_pool() {
+        let fight = |squad: u32| {
+            let v = json!({
+                "weapon": "braton",
+                "enemy": "demolisher_devourer",
+                "level": 9999,
+                "steel_path": true,
+                "squad_size": squad,
+                "duration": 10,
+            });
+            let f = super::parse_fight(&v).expect("the demolisher fight parses");
+            (f.arena.target.max_health(), f.arena.target.armor(), f.arena.squad_size)
+        };
+        let (solo_hp, solo_armor, solo_n) = fight(1);
+        let (full_hp, full_armor, full_n) = fight(4);
+        assert_eq!((solo_n, full_n), (1, 4), "the arena carries the squad it was given");
+        assert!(
+            (full_hp / solo_hp - 3.0).abs() < 1e-6,
+            "+200% health at four: {full_hp} against {solo_hp}"
+        );
+        assert!(
+            (full_armor - solo_armor).abs() < 1e-6,
+            "armour is not the squad's business: {full_armor} against {solo_armor}"
+        );
+
+        // …AND A UNIT WITH NO LADDER IS UNMOVED, which is what keeps the two
+        // Thrax boards where they were when this term was added.
+        let thrax = |squad: u32| {
+            let v = json!({
+                "weapon": "braton",
+                "enemy": "thrax_centurion",
+                "level": 9999,
+                "steel_path": true,
+                "squad_size": squad,
+                "duration": 10,
+            });
+            super::parse_fight(&v).expect("the thrax fight parses").arena.target.max_health()
+        };
+        assert!((thrax(4) - thrax(1)).abs() < 1e-6, "a Thrax does not read the squad");
+    }
+
+    /// **THE RULER SAYS FOUR, AND IT DIFFERS FROM THE AIMED BOARD IN TWO TERMS.**
+    ///
+    /// The file claims exactly that in its own header, and a claim about a
+    /// ruler's terms is the one thing a reader cannot check for themselves
+    /// without diffing two files by eye.
+    #[test]
+    fn the_demolisher_ruler_changes_the_target_and_the_squad_and_nothing_else() {
+        let of = |id: &str| {
+            wfsim_engine::benchmarks_data::all()
+                .iter()
+                .find(|b| b.id == id)
+                .unwrap_or_else(|| panic!("no ruler {id}"))
+                .scenario
+                .clone()
+        };
+        let (aimed, demo) = (of("single_target"), of("single_target_demolisher"));
+        let get = |s: &serde_norway::Value, k: &str| s.get(k).cloned();
+
+        assert_eq!(
+            get(&demo, "enemy").and_then(|v| v.as_str().map(String::from)).as_deref(),
+            Some("demolisher_devourer")
+        );
+        assert_eq!(get(&demo, "squad_size").and_then(|v| v.as_u64()), Some(4));
+        // The aimed board names no squad at all, which is what "solo" is.
+        assert_eq!(get(&aimed, "squad_size"), None);
+
+        // EVERY OTHER KEY IS THE AIMED BOARD'S, both directions — a key added to
+        // one and not the other is the third difference this ruler promises not
+        // to have.
+        let keys = |s: &serde_norway::Value| -> Vec<String> {
+            s.as_mapping()
+                .expect("a scenario is a mapping")
+                .keys()
+                .filter_map(|k| k.as_str().map(String::from))
+                .collect()
+        };
+        let (ka, kd) = (keys(&aimed), keys(&demo));
+        for k in &ka {
+            assert!(kd.contains(k), "the demolisher ruler drops `{k}`");
+        }
+        for k in &kd {
+            assert!(k == "squad_size" || ka.contains(k), "the demolisher ruler invents `{k}`");
+        }
+        for k in ka.iter().filter(|k| *k != "enemy") {
+            assert_eq!(get(&aimed, k), get(&demo, k), "`{k}` differs and is not a declared term");
+        }
+    }
+}
+
 #[cfg(test)]
 mod valence_formation_blocks_attrition {
     use serde_json::json;

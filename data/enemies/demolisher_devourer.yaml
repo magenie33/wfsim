@@ -62,6 +62,17 @@ nullified_status_effects: [impact]
 # to matter to — and it is the one effect the nullifying pulse cannot cleanse.
 cannot_be_frozen: true
 
+# HEALTH GROWS WITH THE SQUAD, and it is the only stat that does. VERBATIM
+# (wiki, Disruption): *"Demolysts and Demolishers gain increased health based on
+# squad size. Squad Size 1: +0% health / Squad Size 2: +50% health / Squad Size
+# 3: +100% health / Squad Size 4: +200% health"*.
+#
+# THE FIGHT PICKS THE ENTRY, not this file: `scenario.squad_size` says how many
+# people are shooting, and a fight that names none is solo. So the same unit is
+# the one a lone player meets and the one a full squad meets, which is what it
+# is in game.
+squad_health_bonus: [0.0, 0.5, 1.0, 2.0]
+
 # Base stats at base_level. Health is the DEMOLISHER variant's 2500, not the
 # Ghoul Devourer's 600 — a Demolisher is its own stat block, not a tag.
 stats:
@@ -91,7 +102,6 @@ live_bugs:
 unmodeled:
   - "its nullifying pulse is not applied here: in game it dispels every Warframe ability within 6.5 m every 5 seconds, and this fight leaves Roar, Eclipse, Nourish and the elemental augments running"
   - "the mines on its back are a 0.5x hitbox the sim never aims at — shots land on the body or the head, and a player would not choose the mines"
-  - "squad size is not modelled: a Demolisher gains +50%/+100%/+200% health with 2/3/4 players, and this is the solo figure"
   - "it is not stopped or slowed here — a Cold status greatly slows a Demolisher in game (and is the one effect its pulse cannot cleanse), and this sim has no movement for that to matter to"
   - "the conduit it is walking towards is not modelled: a Disruption run is a race against its arrival, and this fight has no clock but its own"
 

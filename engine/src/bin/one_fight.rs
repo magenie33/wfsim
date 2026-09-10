@@ -218,6 +218,7 @@ fn arena_for(c: &Cfg) -> Arena {
     // fixed length, and it reaches a state — every body at its cap for the whole
     // engagement — that a build killing 537 bodies a run never sees.
     crowd(Arena {
+        squad_size: 1,
         target_id: "e1".to_string(),
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         target: e

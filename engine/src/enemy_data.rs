@@ -212,6 +212,16 @@ pub struct EnemySpec {
     /// rather than a type, so it says so on its own.
     #[serde(default)]
     pub cannot_be_frozen: bool,
+    /// HOW MUCH HEALTH A SQUAD ADDS, indexed by `squad_size - 1`, so `[0]` is
+    /// solo and is always 0. Empty on every unit whose health is what it is
+    /// however many people are shooting it — which is all of them but a
+    /// Demolisher.
+    ///
+    /// A PROPERTY OF THE UNIT, spent by the FIGHT: `scenario.squad_size` is
+    /// what picks the entry, and everything that does not name one stays solo
+    /// by construction rather than by remembering to pass a 1.
+    #[serde(default)]
+    pub squad_health_bonus: Vec<f64>,
     /// A DEMOLISHER'S NULLIFYING PULSE. VERBATIM (wiki, Disruption):
     /// *"Demolysts and Demolishers will pulse out a red aura every 5 seconds
     /// with a radius of 6.5 meters, immediately dispelling and disabling all
@@ -285,6 +295,20 @@ impl EnemySpec {
             .as_deref()
             .or(self.combat_faction.as_deref())
             .unwrap_or("unknown")
+    }
+
+    /// WHAT A SQUAD OF `squad` DOES TO THIS UNIT'S HEALTH — 1.0 unless the
+    /// unit carries a ladder for it.
+    ///
+    /// CLAMPED AT THE LADDER'S END rather than extrapolated: the table is four
+    /// entries because a Warframe squad is four, and a fifth number would be
+    /// invented rather than read.
+    pub fn squad_health_multiplier(&self, squad: u32) -> f64 {
+        if self.squad_health_bonus.is_empty() {
+            return 1.0;
+        }
+        let i = (squad.max(1) as usize - 1).min(self.squad_health_bonus.len() - 1);
+        1.0 + self.squad_health_bonus[i]
     }
 
     /// Build the simulation target. Fails on combinations that do not exist
@@ -540,6 +564,53 @@ source: { url: "synthetic" }
             slashes, 4000,
             "…and the rest RENORMALISE onto the roll — Slash takes all of it,              not its old quarter"
         );
+    }
+
+    /// **A SQUAD MAKES THE DEMOLISHER FATTER AND NOTHING ELSE.**
+    ///
+    /// VERBATIM (wiki, Disruption): *"Demolysts and Demolishers gain increased
+    /// health based on squad size. Squad Size 1: +0% health / Squad Size 2:
+    /// +50% health / Squad Size 3: +100% health / Squad Size 4: +200% health"*.
+    ///
+    /// THE LADDER IS THE UNIT'S AND THE RUNG IS THE FIGHT'S, which is the whole
+    /// reason this is a multiplier a caller asks for rather than a stat baked
+    /// into the block: the same Demolisher is the one a lone player meets and
+    /// the one a full squad meets.
+    ///
+    /// AND EVERY OTHER UNIT ANSWERS 1. A ladder nobody else carries must not
+    /// become a silent scale on the roster — the Thrax boards would have moved
+    /// under the change that introduced it.
+    #[test]
+    fn a_squad_scales_a_demolishers_health_and_no_one_elses() {
+        let of = |id: &str| {
+            super::all()
+                .iter()
+                .find(|e| e.id == id)
+                .unwrap_or_else(|| panic!("no enemy {id}"))
+                .clone()
+        };
+        let demo = of("demolisher_devourer");
+        for (squad, want) in [(1u32, 1.0), (2, 1.5), (3, 2.0), (4, 3.0)] {
+            let got = demo.squad_health_multiplier(squad);
+            assert!((got - want).abs() < 1e-9, "squad {squad}: {got} against {want}");
+        }
+        // PAST THE LADDER'S END IT CLAMPS rather than extrapolating: a squad is
+        // four, and a fifth number would be invented rather than read.
+        assert!((demo.squad_health_multiplier(9) - 3.0).abs() < 1e-9);
+        // …AND A SQUAD OF ZERO IS A SQUAD OF ONE, so no caller can divide the
+        // roster by accident.
+        assert!((demo.squad_health_multiplier(0) - 1.0).abs() < 1e-9);
+
+        // THE NEGATIVE CONTROL, and it is the one that matters: every other
+        // unit on the roster is unmoved at every squad size.
+        for e in super::all().iter().filter(|e| e.id != "demolisher_devourer") {
+            for squad in 1..=4 {
+                assert!(
+                    (e.squad_health_multiplier(squad) - 1.0).abs() < 1e-9,
+                    "{} moved at squad {squad}", e.id
+                );
+            }
+        }
     }
 
     use super::*;

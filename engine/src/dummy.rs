@@ -4284,6 +4284,7 @@ impl DummyParams {
             target,
             body_parts,
             duration_seconds,
+            squad_size,
             abilities,
             ability_picks,
             ability_strength,
@@ -4403,9 +4404,10 @@ impl DummyParams {
             // The meter binds in the CYCLE, where you have to earn the throw —
             // `tome_cycle_from_panels`.
             meter: None,
-            // SOLO. This arena has one player, and the ammo drop table is a
-            // function of the squad rather than of the enemy.
-            squad_size: 1,
+            // THE ARENA'S, because the squad is a property of the FIGHT — and
+            // the ammo drop table is a function of the squad rather than of the
+            // enemy, so this is the one place that answer comes from.
+            squad_size,
             // THE TWO PARTS AN ORB DELIVERS, derived from the attack rather
             // than declared beside it. A strike is the attack's own hit and the
             // detonation is its own explosion; the `orb:` block in the data is

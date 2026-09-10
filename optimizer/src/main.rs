@@ -81,6 +81,7 @@ fn main() {
 
     let scenario = Scenario {
         arena: wfsim_engine::arena::Arena {
+            squad_size: 1,
             target_id: "e1".to_string(),
             // The CLI has no scenario UI, so it fights the NEUTRAL Tenno:
             // aiming, no frame, nothing running — resolve()'s own default.
