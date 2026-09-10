@@ -36,12 +36,34 @@ const rel = JSON.parse(read("release.json"));
 check(/^[0-9a-f]{12}$/.test(rel.release || ""), "site/release.json names a release",
   `release is ${JSON.stringify(rel.release)}`);
 
+// WHICH FILES ARE THIS BUILD'S, and it is the MANIFEST that says so.
+//
+// `keep_one_generation` in build_site_app.py keeps the PREVIOUS generation on
+// purpose: a deploy is not atomic at the client, an edge holding the old page
+// hands a reader names this build would otherwise have deleted, and the SPA
+// fallback answers a deleted `/asset/app.<old>.js` with index.html and a 200 —
+// which the browser then runs as JavaScript. So these directories hold TWO
+// generations by design, and `generation.json` is the only thing that says
+// which one is ours.
+//
+// Taking the first match by name instead read the OLDER script here and
+// compared it against the NEW release, so the identity assertions failed on
+// every build whose output changed.
+const generation = (dir) => {
+  const p = resolve(SITE, dir, "generation.json");
+  return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")).names || [] : [];
+};
+const ours = (dir, re) => {
+  const named = generation(dir).filter((f) => re.test(f));
+  // NO MANIFEST IS A BUILD FROM BEFORE THIS RULE, and what is on disk is then
+  // the only answer there is.
+  return named.length ? named : readdirSync(resolve(SITE, dir)).filter((f) => re.test(f));
+};
+
 // STAMPED INTO THE SCRIPT, not only served beside it. `release.json` is what a
 // mirror is asked; `RELEASE_ID` is what the running page can print, and a build
 // that shipped one without the other answers only half of a bug report.
-// FOUND BY LOOKING, because the script's name carries a digest that changes
-// every release — naming it here would go stale on the first build.
-const appName = readdirSync(resolve(SITE, "asset")).find((f) => /^app\..*\.js$/.test(f));
+const appName = ours("asset", /^app\..*\.js$/)[0];
 check(!!appName, "site/asset holds the page's script", "nothing matches app.<digest>.js");
 const app = read(`asset/${appName}`);
 check(app.includes(`const RELEASE_ID = "${rel.release}";`),
@@ -52,11 +74,19 @@ check(!app.includes('const RELEASE_ID = "dev";'),
 
 // ── the engine module is content-addressed ────────────────────────────────
 const pkg = readdirSync(resolve(SITE, "pkg"));
-const wasm = pkg.filter((f) => f.endsWith(".wasm"));
-const glue = pkg.filter((f) => f.endsWith(".js"));
+const wasm = ours("pkg", /\.wasm$/);
+const glue = ours("pkg", /^wfsim_wasm\..*\.js$/);
 check(wasm.length === 1 && glue.length === 1,
-  "site/pkg holds exactly one module and one glue script",
-  `pkg/ holds ${pkg.join(" ") || "nothing"} — a stale copy is payload nothing references`);
+  "this build's pkg/ is one module and one glue script",
+  `this generation names ${[...wasm, ...glue].join(" ") || "nothing"}`);
+// …AND ONE PREVIOUS GENERATION BESIDE IT, NEVER TWO. One is the width of a
+// deploy and is deliberate; two is a stale module nothing references, which is
+// 5 MB of payload sitting there until somebody notices.
+const generations = new Set(
+  pkg.map((f) => (f.match(/\.([0-9a-f]{12})\./) || [])[1]).filter(Boolean),
+);
+check(generations.size <= 2, "…beside at most one previous generation",
+  `pkg/ holds ${generations.size} generations: ${[...generations].join(" ")}`);
 
 const digest = (wasm[0] || "").match(/\.([0-9a-f]{12})\.wasm$/);
 check(!!digest, "the module is named by its digest",
@@ -73,7 +103,7 @@ if (digest) {
 // THE WORKER ASKS FOR THE NAMES THAT EXIST. A substitution that half ran leaves
 // a 404 the page reports as "could not start", which reads as a broken build
 // rather than a broken rename.
-const workerName = readdirSync(resolve(SITE, "asset")).find((f) => /^worker\..*\.js$/.test(f));
+const workerName = ours("asset", /^worker\..*\.js$/)[0];
 check(!!workerName, "site/asset holds the compute worker", "nothing matches worker.<digest>.js");
 const worker = read(`asset/${workerName}`);
 // …AND THE SCRIPT ASKS FOR THAT WORKER. Both names carry a digest, so the pair
