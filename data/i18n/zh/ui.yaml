@@ -306,8 +306,6 @@ ui:
   "No matches": 无匹配
   "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
     没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。
-  "There is no account system and no login, so nothing here is tied to a person. The only place a visit is counted is Cloudflare's own request log, which is what serves the page.":
-    没有账号，也不用登录，所以这里没有任何东西绑在某个人头上。你的访问只在一个地方留下记录——Cloudflare 自己的请求日志，页面本来就是它发的。
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。
   "Noise Reduction": 消音
   "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 mod 卡的是姿势。
@@ -1577,14 +1575,24 @@ ui:
     "到现在为止，你从这儿拿走了 {n} 个答案，一分钱没收过。"
   "What it costs to run →":
     "它的运营成本 →"
+  "Everyone gets the same thing":
+    "所有人拿到的都一样"
+  "An in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it — so the way to move a number here is to go and measure one.":
+    "能改这个引擎的只有实测，谁报的都算数——想让这里的数字变，就去测一个回来。"
+  "Building, simulating and optimizing are the same for everyone, and what guarantees that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own copy.":
+    "构建、模拟、优化对谁都一样，而且保证这件事的不是我：项目是 AGPL-3.0，引擎、游戏数据、wasm 全部公开，你随时可以自己开一份跑。"
+  "Every fix ships to everybody at once. There is no earlier version, no larger version, and nothing held back for later.":
+    "修好了就一次发给所有人。没有抢先版，没有加强版，也没有什么是留着以后再放的。"
+  "There is no account and no login, so nothing here is tied to a person. The only place a visit is counted is Cloudflare's own request log, which is what serves the page.":
+    "没有账号，也不用登录，所以这里没有任何东西绑在某个人头上。你的访问只在一个地方留下记录——Cloudflare 自己的请求日志，页面本来就是它发的。"
+  "One-off, in USD. Card or PayPal, no account needed.":
+    "一次性，美元。信用卡或 PayPal，不用注册。"
+  "Monthly, in USD. The channel where the work is discussed, and your reports read first.":
+    "按月，美元。能进聊开发的频道，你的反馈会被先看到。"
   "Chip in":
     "投喂一下"
   "One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.":
     "一杯咖啡的钱就够，不用觉得少。这儿没有目标金额，也没有要填满的进度条。给一次就行，想按月也行。"
-  "One-off, in USD, from $3. Card or PayPal, no account needed.":
-    "一次性，美元，$3 起。信用卡或 PayPal，不用注册。"
-  "Monthly, in USD, from $5. The channel where the work is discussed, and your reports read first.":
-    "按月，美元，$5 起。能进聊开发的频道，你的反馈会被先看到。"
   "One-off or monthly, in CNY, through Alipay or WeChat — no card, and no new account.":
     "单次或包月，人民币，支付宝或微信直接付——不用信用卡，也不用注册新号。"
   "One-off or monthly, in CNY, from inside Bilibili — no card, and no new account.":
@@ -1601,14 +1609,6 @@ ui:
     "还没有人投喂过。这份名单从第一个人开始。"
   "How to chip in →":
     "怎么投喂 →"
-  "What it never buys":
-    "给了钱也买不到什么"
-  "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it.":
-    "买不到一个数字。给多少钱，结果也不会动一位小数——能改这个引擎的只有实测，谁报的都一样，实测说了算。"
-  "A feature. Building, simulating and optimizing stay the same for everyone, and the guarantor of that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own.":
-    "买不到一个功能。构建、模拟、优化对谁都一样，而且这事不是我说了算：项目是 AGPL-3.0，引擎、游戏数据、wasm 全部公开，你随时可以自己开一份跑。"
-  "A monthly subscription buys order and company, never product: a channel where the work is discussed, and your reports read before the rest of the queue. Every fix still ships to everyone at once.":
-    "按月订阅买到的是优先和参与感，不是功能：一个聊开发的频道，你的反馈会被先看到。修好了照样是所有人同时拿到。"
   "The wfsim.app domain, and its renewal — the one bill that arrives whether anybody visits or not.":
     "wfsim.app 这个域名，还有每年的续费——不管有没有人来，这笔都得付。"
   "Serving this site costs nothing, and that is worth saying plainly: Cloudflare does not meter what it hands out, so the pages, the art and the board are free however many of you turn up. What is metered is the update channel behind the Windows client, billed by the byte every time a copy updates itself.":

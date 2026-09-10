@@ -281,18 +281,18 @@ it can be checked, what the reader has already got out of it, the door, and
 then — directly under the door — what giving never buys, which is the answer
 to the question the door has just raised rather than small print two sections
 below it. Only after that does the money go anywhere. The evidence behind that
-shape and behind the $3 floor is NextAfter's donation-page experiments (a
-stated value proposition; naming what the money does; video loses), Wikimedia's
-banner testing (a facts appeal over a personal one, and a low suggested
-amount), Cialdini & Schroeder 1976 (legitimising a small gift raises
-participation without lowering the mean gift) and Adena/Huck/Rasul (a higher
-suggestion buys a higher mean at the cost of participation).
+shape is NextAfter's donation-page experiments (a stated value proposition;
+naming what the money does; video loses), Wikimedia's banner testing (a facts
+appeal over a personal one) and Cialdini & Schroeder 1976 (legitimising a small
+gift raises participation without lowering the mean gift), which is what "one
+coffee is enough" carries now that no figure does.
 
-NO LADDER OF AMOUNTS IS DRAWN ON THE PAGE. The one amount it states is the
-FLOOR, and it is stated on the card of the channel that has it, because the
-ladder above the floor belongs to the channel — a second copy here would be a
-copy that goes stale and that no click can honour, since none of these
-platforms takes an amount in a link.
+NO SUM APPEARS ON THE PAGE — no ladder, no floor, no bill. Every channel shows
+its own minimum and its own ladder at the moment of paying, one screen away and
+always current, so a number written here is a staler copy of one; and a page
+that names a sum reads as a price list, which is the shape DE's non-commercial
+rule does not allow. `check_support` asserts the whole page against a currency
+pattern, because a digit comes back on a card unnoticed.
 
 "WHERE IT GOES" NAMES THE COSTS AND NEVER PRICES THEM. No amount is published
 for the domain, the update channel or the hours — a bill is the author's
@@ -308,6 +308,14 @@ Patreon the month, and for a Chinese reader 爱发电 comes first — it settles
 Alipay or WeChat, and the payee is the project rather than an uploader, which
 Bilibili's own charge flow cannot be. THE ACCOUNT IS THE PROJECT
 (`ko-fi.com/wfsim`) and the first-person half lives in the platform's own bio.
+
+THE PAGE STATES WHAT IS TRUE, IT DOES NOT DENY WHAT ISN'T. "Everyone gets the
+same thing" carries the four facts that were once a row of refusals — it never
+buys a number, it never buys a feature. A page that braces against its own
+visitors reads as one with something to brace about, and the same facts said
+forwards are the strongest thing on it. Nothing describes the subscription
+while its channel has no url: what a month buys is a rule for the day Patreon
+opens, not a paragraph about an option nobody can take.
 
 A SUBSCRIPTION BUYS ORDER AND COMPANY, NEVER PRODUCT — a channel where the
 work is discussed, and reports read first. DE's Content Policy forbids

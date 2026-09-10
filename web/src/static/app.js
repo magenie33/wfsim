@@ -2614,9 +2614,6 @@ const SUPPORT_CHANNELS = [
     // into; a deep link into that flow is a url only Bilibili may build.
     url: "https://space.bilibili.com/1965302",
     locale: "zh",
-    // NO FLOOR STATED, unlike Ko-fi's. The floor on this one is Bilibili's and
-    // it is shown at the moment of paying; repeating it here would be a second
-    // copy of a number this repo has not measured.
     what: "One-off or monthly, in CNY, from inside Bilibili — no card, and no new account.",
   },
   {
@@ -2633,16 +2630,11 @@ const SUPPORT_CHANNELS = [
     // is the one shape DE's non-commercial rule does not allow — they stay
     // switched off in the account, and so do its shop and commissions.
     //
-    // $3 IS THE FLOOR, chosen from evidence rather than picked. Cialdini & Schroeder 1976: a request that legitimises a
-    // paltry contribution takes compliance from 29% to 50% with NO drop in the
-    // mean gift. Wikimedia's banner testing settles on a $3 suggestion.
-    // Adena/Huck/Rasul: a higher suggestion raises the mean and LOWERS the
-    // participation rate — and at this size participation is the one that
-    // compounds.
-    //
-    // The ladder above the floor is Ko-fi's (x1/x3/x5 plus a free field), so
-    // nothing here repeats it — a second copy of a ladder is a staler copy.
-    what: "One-off, in USD, from $3. Card or PayPal, no account needed.",
+    // NO AMOUNT, HERE OR ON ANY CARD. Every channel shows its own minimum and
+    // its own ladder at the moment of paying, which is one screen away and
+    // always current; a number repeated here is a staler copy of that, and a
+    // page that names a sum has set an expectation it did not mean to.
+    what: "One-off, in USD. Card or PayPal, no account needed.",
   },
   {
     id: "patreon",
@@ -2662,7 +2654,7 @@ const SUPPORT_CHANNELS = [
     // and a perk that quietly expires is worse than none.
     url: "",
     locale: null,
-    what: "Monthly, in USD, from $5. The channel where the work is discussed, and your reports read first.",
+    what: "Monthly, in USD. The channel where the work is discussed, and your reports read first.",
   },
 ];
 

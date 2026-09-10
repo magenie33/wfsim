@@ -111,11 +111,14 @@ check(`${tag} every channel that has a link is offered`,
 check(`${tag} ...and one that does not is not (negative control)`,
   withoutUrl.length === 0 || chans.cards.length === withUrl.length,
   JSON.stringify(chans.declared));
-// THE FLOOR IS ON THE CARD. It is the one amount this page states, and it is
-// stated where the reader is about to act rather than in the prose.
-check(`${tag} ...and the one-off card states the floor`,
-  chans.cards.some((c) => /ko-?fi/i.test(c.name) && c.what.includes("$3")),
-  JSON.stringify(chans.cards));
+// NO SUM ANYWHERE ON THE PAGE. Each channel shows its own minimum and ladder at
+// the moment of paying; a number written here is a staler copy of one, and it
+// makes the page read as a price list — the shape DE's rule does not allow. A
+// digit reappearing on a card is exactly how that comes back unnoticed.
+const money = await evaluate(`[...document.querySelectorAll("#support-page")]
+  .map((el) => el.innerText).join(" ").match(/[$¥£€]\s?[0-9]|[0-9]+\s?(元|美元|USD|CNY)/g) || []`);
+check(`${tag} ...and no card, and no sentence, names a sum`,
+  money.length === 0, JSON.stringify(money));
 
 // ---------------------------------------------------------------------------
 // 4. WHAT THE READER HAS RUN. Absent on a fresh browser, then a real run.
