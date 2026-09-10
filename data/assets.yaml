@@ -676,12 +676,12 @@ mods:
   charged_shell: ShotgunElectricityDamageMod.jpg
   chilling_grasp: ShotgunFreezeDamageMod.jpg
   chilling_reload: ColdDmgReloadSpeedMod.jpg
-  clip_delegation: SobekNightwaveMod.jpg
   cleanse_corpus: ShotgunDamageCorpus.jpg
   cleanse_grineer: ShotgunDamageGrineer.jpg
   cleanse_infested: ShotgunDamageInfested.jpg
   cleanse_orokin: ShotgunDamageCorrupted.jpg
   cleanse_the_murmur: WeaponShotgunFactionDamageMurmurs.jpg
+  clip_delegation: SobekNightwaveMod.jpg
   collision_force: EventImpactDamageMeleeMod.jpg
   combustion_beam: WeaponBeamExplodeOnDeathMod.jpg
   combustion_rounds: ArchwingWeaponFireDamageModRifle.jpg
@@ -953,6 +953,7 @@ mods:
   sawtooth_clip: BleedDamageRifleMod.jpg
   saxum_spittle: FemurSpittle.jpg
   saxum_thorax: FemurThorax.jpg
+  scattered_justice: Hek.jpg
   scattering_inferno: DualStatFireProcShotgun.jpg
   scorch: DualStatFireProcPistol.jpg
   seeker: PistolPunctureDepthMod.jpg
@@ -967,8 +968,8 @@ mods:
   serration: RifleDamageAmountMod.jpg
   sharpened_bullets: CritDamageWhileAimingMods.jpg
   shattering_impact: WeaponMeleeArmorShatterMod.jpg
-  shattering_storm: HammerCombo1a.jpg
   shattering_justice: Sobek.jpg
+  shattering_storm: HammerCombo1a.jpg
   shell_compression: ShotgunAmmoMaxMod.jpg
   shell_rush: ArchwingRifleChargeSpeedMod.jpg
   shell_shock: ElectEventShotgunMod.jpg
@@ -1046,6 +1047,7 @@ mods:
   winds_of_purity: Furis.jpg
   xata_invocation: ImmortalRuneTruth.png
   zodiac_shred: ArchwingDualStatSlashStatusRifleMod.jpg
+
 arcanes:
 
   # THE EIGHT KITGUN ARCANES. WFCD's export carries no `imageName` for any of

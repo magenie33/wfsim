@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: a229088e8f0df063
-count: 1749
+digest: d136f7d79865789a
+count: 1750
 ids:
   - acceltra
   - acceltra_prime
@@ -1759,3 +1759,4 @@ ids:
   - range
   - clip_delegation
   - shattering_justice
+  - scattered_justice

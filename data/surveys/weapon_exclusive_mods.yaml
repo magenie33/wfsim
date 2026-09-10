@@ -11,7 +11,7 @@
 # refuse on purpose, and the reason rides beside it. The export answers "does
 # a mod for this weapon exist", which is not "may a player equip it here".
 #
-# 88 of 199 carried, 7 excluded on purpose, 104 still to transcribe.
+# 91 of 199 carried, 7 excluded on purpose, 101 still to transcribe.
 #
 # THE ROSTER THIS WAS JOINED AGAINST, because a survey nobody re-runs
 # reports the question it was asked LAST time. This file sat at 20 rows
@@ -185,7 +185,7 @@ mods:
     compat: Sobek
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Nightwave/SobekNightwaveMod
-    carried: ~
+    carried: data/mods/shotgun/clip_delegation.yaml
   - name: Combat Reload
     compat: Tigris
     kind: Primary Mod
@@ -758,7 +758,7 @@ mods:
     compat: Hek
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/HekMod
-    carried: ~
+    carried: data/mods/shotgun/scattered_justice.yaml
   - name: Semi-Rifle Cannonade
     compat: Rifle
     kind: Primary Mod
@@ -803,7 +803,7 @@ mods:
     compat: Sobek
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/SobekMod
-    carried: ~
+    carried: data/mods/shotgun/shattering_justice.yaml
   - name: Shrapnel Rounds
     compat: Marelok
     kind: Secondary Mod

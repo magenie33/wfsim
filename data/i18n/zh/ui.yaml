@@ -365,7 +365,6 @@ ui:
   "Builds you run here are added to the official board.": 在这里跑过的配装会被加入官方榜单。
   "Runs": 次数
   "SEVEN OF THE EIGHT TARGETS. The mode locks \"up to 8 enemies within 60 meters on the reticle\" and fires a 2-round burst at each; this entry fires the burst ONE enemy receives, because the engine aims at a place and never picks targets. Against a lone enemy that is the whole attack and correct; in a crowd this weapon does up to eight times what is shown": "八个目标里的七个。该模式会锁定「准星上 60 米内最多 8 个敌人」，并对每个打出一轮 2 发连射；本条目打出的是「一个」敌人所承受的那一轮，因为引擎瞄准的是一个位置，从不挑选目标。对着孤立的一个敌人，这就是攻击的全部，且是正确的；在人群里，这把武器最多能做到屏幕上数字的八倍"
-  "Scattered Justice, the Hek-exclusive mod (+200% multishot) — a weapon-exclusive card outside the pools this roster loads, and the single largest thing missing from this weapon's real numbers": "「Scattered Justice」，Hek 的专属 MOD（+200% 多重射击）——这是一张武器专属卡，不在本武器库载入的卡池里，也是这把武器真实数值里缺得最多的一项"
   "Scenario": 场景
   "Scenarios": 场景
   "Scoped in, consecutive hits build a Shot Combo Counter: 1 landing hit multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit, and it pays nothing at all from the hip.": 瞄准状态下连续命中会累积射击连击：命中 1 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中就掉 1 层，腰射则完全不生效。
@@ -1106,7 +1105,6 @@ ui:
   "this target nullifies Warframe abilities — it pulses every 5 seconds and dispels everything in range, so none of these are running and the sim scores it that way": 这个目标会驱散战甲技能 —— 它每 5 秒脉冲一次、清除范围内的一切,所以下面勾选的都没有生效,模拟也是按没有生效来算的
   "this unit's faction takes more or less of these damage types, whatever its armor and shields do": 这个单位所属阵营对这些伤害类型更脆弱或更抗性，与它的护甲和护盾无关
   "this weapon CANNOT BE MODDED here — it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw) and this app models guns, so it has no pool to draw from. Its base numbers are real; a build is not": 这把武器在这里无法配装 —— 它使用近战与投掷近战 mod（压迫点、狂怒、旋风、强力投掷），而这个 app 建模的是枪械，没有任何池子可供它抽取。它的基础数值是真实的，配装不是
-  "this weapon CANNOT use Scattered Justice, which its page states outright — so unlike the ordinary Hek it is missing nothing from the pools this roster loads": "这把武器不能装备「Scattered Justice」，页面直接写明了这一点 —— 所以和普通 Hek 不同，它并没有因为卡池而少掉任何东西"
   "this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for": 这把武器无法补给——储备打光后会被收回，五分钟后才能再次召唤，所以这个选项没有可代表的东西
   "this weapon cannot equip Concealed Explosives, the thrown-exclusive mod — a card outside the pools this roster loads either way": "这把武器装不了投掷专属 MOD「隐藏炸药」——那张卡本来也不在本武器库载入的卡池里"
   "this weapon does NOT inflict self-stagger, which is a real advantage over every other explosive in this batch and is worth nothing here, because the arena never charges any of them for it either": "这把武器「不会」自我踉跄，这相对本批次其它每一件爆炸武器都是实打实的优势，但在这里一文不值，因为本场对它们所有人都不收这笔账"

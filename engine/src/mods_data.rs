@@ -2335,6 +2335,54 @@ mod card_values_tests {
 
 #[cfg(test)]
 mod weapon_exclusive_survey {
+    /// **SCATTERED JUSTICE REACHES THREE HEK ENTRIES AND REFUSES THE FOURTH.**
+    ///
+    /// The pellet count IS this weapon, so which copies may carry the card is
+    /// the whole of what it does. Three of the four are one statement and one
+    /// is the opposite:
+    ///
+    ///   * the **Hek** by id, and the wiki does the arithmetic — *"This mod
+    ///     alone will provide the Hek a total pellet count of 21"*, which is
+    ///     7 x (1 + 2.0) and therefore the SAME bucket Hell's Chamber writes
+    ///     to, not a multiplier of its own;
+    ///   * BOTH **Kuva Hek** entries off one name, because `kuva_hek` is their
+    ///     transform group — the single barrel and the four-barrel volley are
+    ///     one weapon holding one card, and listing only the default form
+    ///     would arm the entry nobody scores;
+    ///   * NOT the **Vaykor Hek**: *"Can not be equipped on Vaykor Hek"*, which
+    ///     already carries a built-in Justice effect. A negative control that
+    ///     is a real game rule rather than a fixture.
+    #[test]
+    fn scattered_justice_reaches_every_hek_that_may_carry_it() {
+        let carries = |weapon: &str| {
+            crate::mods_data::pool_for_weapon(weapon)
+                .iter()
+                .any(|m| m.id == "scattered_justice")
+        };
+        for w in ["hek", "kuva_hek", "kuva_hek_quad"] {
+            assert!(carries(w), "{w} may equip Scattered Justice and its pool does not offer it");
+        }
+        assert!(!carries("vaykor_hek"), "the Vaykor Hek cannot equip Scattered Justice");
+
+        // …AND IT LANDS IN THE MULTISHOT BUCKET, which is what makes the wiki's
+        // 21 pellets reproduce. A grant of its own would read the same on a
+        // bare weapon and diverge the moment Hell's Chamber goes in.
+        let pool = crate::mods_data::pool_for_weapon("kuva_hek");
+        let def = pool
+            .iter()
+            .find(|m| m.id == "scattered_justice")
+            .expect("the Kuva Hek can equip it");
+        let ms: f64 = def
+            .effects
+            .iter()
+            .filter_map(|e| match *e {
+                crate::loadout::ModEffect::Multishot(v) => Some(v),
+                _ => None,
+            })
+            .sum();
+        assert!((ms - 2.0).abs() < 1e-9, "+200% multishot at max rank, got {ms}");
+    }
+
     /// **DREADFUL KILLSHOT PAYS IN WHOLE STEPS, AND STOPS AT THE CAP.**
     ///
     /// The Basmu's augment: *"increases Damage and Status Chance for every 75
@@ -2422,14 +2470,13 @@ mod weapon_exclusive_survey {
     /// well as real gaps, because the honest number includes deciding.
     #[test]
     fn the_weapon_exclusive_mods_we_still_owe_only_goes_down() {
-        // RAISED FROM 102 ON 2026-08-28, and not by melee. The survey had gone
-        // stale against a roster that grew underneath it, and re-running it
-        // found two exclusives for weapons already in the file: Overpressured
-        // Rounds (EFV-5 Jupiter) and Prototype Shock Coils. THE MAGISTAR ADDS
-        // NONE — a melee weapon with no augment of its own — which is worth
-        // recording, because "the first melee weapon raised the debt" is what a
-        // reader would otherwise assume from the date.
-        const OWED: usize = 104;
+        // WHAT THE ROSTER STILL OWES, and the number only goes DOWN by
+        // transcribing a card. A survey re-run can find MORE than it did last
+        // time — the roster grows underneath it and a weapon added after the
+        // last run can only ever be absent — so raising this line is a
+        // deliberate edit whose reason goes in the commit, never the way to
+        // make a red run green.
+        const OWED: usize = 101;
         let text = crate::data::file("surveys/weapon_exclusive_mods.yaml")
             .expect("data/surveys/weapon_exclusive_mods.yaml — run scripts/survey_weapon_mods.py");
         let mut total = 0usize;

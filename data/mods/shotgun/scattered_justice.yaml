@@ -1,0 +1,51 @@
+id: scattered_justice
+name: Scattered Justice
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/HekMod
+description: "+X% Multishot\n+X Justice"
+
+# A SYNDICATE AUGMENT (Steel Meridian, rank Protector, 25,000 credits).
+#
+# THE VAYKOR HEK IS NOT ON THIS LIST and the exclusion is the game's, not a
+# transcription gap: "Can not be equipped on Vaykor Hek", because that weapon
+# already carries a built-in Justice effect. Its own entry says so.
+#
+# BOTH KUVA ENTRIES ARE ONE NAME HERE — `kuva_hek` is the transform group, so
+# the alt-fire volley (`kuva_hek_quad`) is covered by it. The Kuva Hek was
+# deliberately excluded until Update 35.6 and is compatible now.
+exclusive_to: [hek, kuva_hek]
+
+#   Rank | Multishot | Justice | Cost
+#     0  |    50%    |  0.25   |  4
+#     1  |   100%    |  0.5    |  5
+#     2  |   150%    |  0.75   |  6
+#     3  |   200%    |  1      |  7
+
+effects:
+  # THE SAME BUCKET HELL'S CHAMBER WRITES INTO, and the wiki does the addition
+  # itself: "This mod alone will provide the Hek a total pellet count of 21.
+  # Combining this with Hell's Chamber will give the Hek a pellet count of 29
+  # with a 40% chance to give 30." Seven pellets at 1 + 2.0 is 21, and at
+  # 1 + 2.0 + 1.2 is 29.4 — additive, and the fractional pellet is a roll.
+  - kind: multishot_bonus
+    rank0: 0.5
+    rankMax: 2.0
+
+  # THE SYNDICATE RADIAL — payload in data/syndicates/justice.yaml, the same
+  # half its Sobek twin carries.
+  - kind: syndicate_radial
+    syndicate: justice
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Scattered_Justice
+  # Rank table and Notes; the Justice effect's own numbers from
+  # https://wiki.warframe.com/w/Justice. WFCD cross-check on `uniqueName`:
+  # madurai, Rare, baseDrain 4, fusionLimit 3, compatName Hek — agrees on every
+  # field. Its `levelStats` round the Justice ladder to 0.3 / 0.5 / 0.8 / 1
+  # where the rank table is the linear 0.25 / 0.5 / 0.75 / 1; the table is the
+  # number.

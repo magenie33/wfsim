@@ -2,8 +2,8 @@ id: hek
 name: Hek
 slot: primary
 # SEVEN PELLETS OF 75 — 525 a shot out of four rounds, and the weapon the Vaykor
-# variant is built from. Its exclusive mod raises the pellet count by four,
-# which is outside the pools this roster loads.
+# variant is built from. Its exclusive mod trebles the pellet count
+# (data/mods/shotgun/scattered_justice.yaml).
 class: shotgun
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -51,9 +51,6 @@ attack:
     end_m: 20.0
     reduction: 0.8
   damage: { impact: 11.25, puncture: 48.75, slash: 15 }   # 75 a pellet, 525 a shot
-
-unmodeled:
-  - "Scattered Justice, the Hek-exclusive mod (+200% multishot) — a weapon-exclusive card outside the pools this roster loads, and the single largest thing missing from this weapon's real numbers"
 
 source:
   url: https://wiki.warframe.com/w/Hek
