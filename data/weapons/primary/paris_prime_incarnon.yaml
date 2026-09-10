@@ -33,6 +33,8 @@ pseudo_reload:
 # lists this weapon's named attack as "Multiplying", so the bonus is a
 # free-standing final multiplier rather than a member of the base-damage
 # bucket. Applied to every variant: the form belongs to the ADAPTER.
+# MEASURED (M84): the term reads ALL 614 of the evolved base and multiplies,
+# where the charged entry reads half of its own 360 and adds (M83).
 co_behavior: independent
 
 attack:

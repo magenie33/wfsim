@@ -166,6 +166,8 @@ path, so an entry may be renamed but never renumbered.
 | [M80](measurements/M80-denominator-is-base-damage-only.md) | the quantization denominator is `base × (1 + base-damage mods)` and nothing else | ✅ 2026-09-04 (owner) |
 | [M81](measurements/M81-independent-co-applies-after-quantization.md) | an `Independent` Condition Overload multiplier applies AFTER quantization | ✅ 2026-09-04 (owner) |
 | [M82](measurements/M82-enemy-overguard-carries-over.md) | an enemy's Overguard carries its excess into what is under it; the depletion gate is the PLAYER's alone | ✅ 2026-09-07 (owner) |
+| [M83](measurements/M83-gated-flat-add-and-the-co-base.md) | a Tenno-gated flat base add stays out of the Condition Overload base, exactly as the unconditional half of the same card does | ✅ 2026-09-10 (owner) |
+| [M84](measurements/M84-paris-prime-incarnon-co-reads-the-evolved-base.md) | the Paris Prime's Incarnon form computes Condition Overload on ALL of its evolved base, and applies it as a multiplier | ✅ 2026-09-10 (owner) |
 
 ## By weapon
 
@@ -200,6 +202,7 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Ocucor | `ocucor` | [M39](measurements/M39-secondary-fortifier-level-shaped.md) |
 | Opticor | `opticor` | [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) |
 | Opticor Vandal | `opticor_vandal` | [M72](measurements/M72-opticor-vandal-co-base-and-ramp.md) |
+| Paris Prime | `paris_prime` | [M83](measurements/M83-gated-flat-add-and-the-co-base.md) · [M84](measurements/M84-paris-prime-incarnon-co-reads-the-evolved-base.md) |
 | Phantasma | `phantasma` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
 | Phenmor | `phenmor` | [M9](measurements/M09-incarnon-transition-timings.md) |
 | Praedos | `praedos` | [M73](measurements/M73-heavy-attack-two-clocks.md) |

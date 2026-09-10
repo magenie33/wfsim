@@ -110,7 +110,7 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         // Hata-Satya's pile, Secondary Enervate's.
         "sniper_combo" | "crit_per_hit" | "arcane:secondary_enervate" | "on_hit_damage" => "hit",
         "on_plain_hit_damage" => "plain_hit",
-        "on_punch_through_crit_chance" => "punch_through",
+        "on_punch_through_crit_chance" | "on_punch_through_fire_rate" => "punch_through",
         "on_reload_fr" | "on_reload_bd" | "on_reload_damage" | "on_reload_fire_rate"
         | "per_shell_fire_rate" => "reload_complete",
         "evo_reload_damage" | "on_empty_reload_damage"

@@ -338,11 +338,13 @@ notes:
     at the loader default of 1.0 — the same split the Cernos Prime's
     two entries carry.
   co_half_base_catalog: |
-    CO ON HALF THE BASE. The catalog lists this family's Charged Attack as
-    "Adding, 25-50%", and for a bow the number is derivable: the drawn shot
-    deals exactly TWICE the tapped one in DE's export, so the 2x is a charge
-    multiplier outside the additive bracket and CO computes on half. The
-    Cernos Prime carries 0.5 for the same reason.
+    CO ON HALF THE BASE — the CO catalog's own figure for this Charged Attack
+    row, and NOT derived from a charge multiplier. These entries have none to
+    divide out: a partial draw deals the tapped panel and a full draw REPLACES
+    it, so there is no ramp and nothing sitting outside the additive bracket.
+    The number is per ROW and does not generalise — the Ballistica's 25% and the
+    Miter's 40% are the same kind of statement, and Cernos Prime carries 0.5
+    because its own row says so.
   columns_are_braton_mk1: |
     THE COLUMNS ARE Braton | Mk1-Braton | Braton Vandal | Braton Prime, from the
     table's `! class=unsortable` header rows — NOT from the page's opening

@@ -949,16 +949,18 @@ struct TargetState {
     atten_window_damage: f64,
 }
 
-/// VICIOUS PROMISE'S CONDITION. VERBATIM (wiki, Paris Incarnon Genesis):
-/// *"Enemies are undamaged as long as their health and shield have not been
-/// damaged. Damaging Overguard is not taken into account."*
+/// THE UNDAMAGED TEST, and every perk that asks the question asks it here.
+/// VERBATIM (wiki, Paris Incarnon Genesis): *"Enemies are undamaged as long as
+/// their health and shield have not been damaged. Damaging Overguard is not
+/// taken into account."*
 ///
-/// A free function rather than an inline expression because the OVERGUARD
-/// EXCLUSION is the whole subtlety and it has to be assertable. It cannot be
-/// asserted through a sim: every fixture that leaves health intact long enough
-/// to see the difference does so by freezing every pool at once
-/// (`TargetMode::InfiniteHealth`), and then a wrong implementation reads the
-/// same "undamaged" a right one does.
+/// IT READS LIVE STATE, NOT HISTORY: a pool restored to full is undamaged
+/// again, and a target whose overguard absorbs everything never stops being.
+///
+/// A free function because the OVERGUARD EXCLUSION has to be assertable
+/// DIRECTLY: no sim can catch it, since every fixture that keeps health intact
+/// long enough freezes all three pools at once (`TargetMode::InfiniteHealth`),
+/// and there a wrong implementation reads the same "undamaged" a right one does.
 fn target_undamaged(t: &TargetState, p: &TargetParams) -> bool {
     t.health >= p.max_health() - 1e-9 && t.shield >= p.max_shield() - 1e-9
 }
@@ -20236,6 +20238,64 @@ mod tests {
             at: crate::space::Vec2::new(6.0, 4.0),
         }];
         assert_eq!(run_once(&side, &mut Rng::new(0x5EED)).spread.touched(), 1);
+    }
+
+    /// ARDENT TRIGGER PAYS OFF A COLUMN AND NOTHING OFF A LONE TARGET.
+    ///
+    /// *"On Punch Through Hit: +40% Fire Rate for 6 seconds."* The trigger asks
+    /// for a body BEHIND the one you hit, so a one-target ruler is where this
+    /// perk is worth exactly zero — and the Paris Prime carries 3 m of innate
+    /// punch through, which is what makes the column reachable with no mod in.
+    ///
+    /// ON A BOW THE RATE IS THE DRAW, so the whole of what the buff buys is
+    /// shorter charge time. That is why this is a SHOT COUNT and not a damage
+    /// total: the perk moves how often the weapon fires and nothing about what
+    /// a shot is worth, and a damage assertion would be reading the wrong
+    /// number for the right reason.
+    #[test]
+    fn ardent_trigger_buys_draw_speed_and_only_against_a_column() {
+        let shots = |evo: &[&str], behind: usize| {
+            let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.others = (1..=behind)
+                .map(|i| crate::formation::FoeSpec {
+                    id: String::new(),
+                    params: TargetParams::training_dummy(),
+                    body_parts: DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(
+                        0.0,
+                        crate::space::CONTACT_RANGE_M * (1.0 + i as f64),
+                    ),
+                })
+                .collect();
+            let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            monte_carlo(&p, 8, 0x5017).mean_shots
+        };
+        let perk = ["paris_prime_ardent_trigger"];
+
+        // A LONE TARGET EARNS IT NOTHING — the mechanic, not an admission.
+        let alone = shots(&perk, 0);
+        assert!(
+            (alone - shots(&[], 0)).abs() / alone < 1e-6,
+            "nothing behind the target, so nothing to punch through: {alone} against {}",
+            shots(&[], 0)
+        );
+
+        // …AND A COLUMN EARNS IT EVERY SHOT. 40% off a 0.5 s draw is the whole
+        // gain, so the count rises by less than 40% — the reload and the
+        // between-shot time it does not touch are the rest of the cycle.
+        let (with, without) = (shots(&perk, 2), shots(&[], 2));
+        assert!(
+            with > without * 1.02,
+            "a column arms it every shot: {with} against {without}"
+        );
+        assert!(
+            with < without * 1.40,
+            "…and it can only buy the DRAW, not the whole cycle: {with} against {without}"
+        );
     }
 
     /// AN AoE ATTACK TAKES NO PUNCH THROUGH, from its weapon or from a mod.

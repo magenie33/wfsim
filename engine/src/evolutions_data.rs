@@ -2191,11 +2191,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // condition is answered in `resolve_for`, which has the Tenno.
                 EvoEffect::ConditionOverload { per_type, min_sprint } => {
                     if *min_sprint > 0.0 {
-                        base.gated.push((
-                            crate::loadout::TennoGate::SprintAtLeast(*min_sprint),
-                            crate::loadout::GatedGrant::ConditionOverload,
-                            *per_type,
-                        ));
+                        base.gated.push(crate::loadout::GatedTerm {
+                            gate: crate::loadout::TennoGate::SprintAtLeast(*min_sprint),
+                            grant: crate::loadout::GatedGrant::ConditionOverload,
+                            value: *per_type,
+                            into_co: 0.0,
+                        });
                     } else {
                         base.innate_co_per_type += per_type;
                     }
@@ -2207,8 +2208,19 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.crit_chance_on_undamaged += crit_chance;
                     base.crit_damage_on_undamaged += crit_multiplier;
                 }
+                // THE PERK ANSWERS FOR ITS OWN GATED HALF, here where it still
+                // exists. `resolve_for` opens the gate long after `e` is gone,
+                // so a flat add that decided this there would answer
+                // differently from the unconditional half of the same card.
                 EvoEffect::GatedByTenno { gate, grant, value } => {
-                    base.gated.push((*gate, *grant, *value));
+                    let feeds = *grant == crate::loadout::GatedGrant::FlatBaseDamage
+                        && !e.excludes_co_base(base.form, base.co_behavior);
+                    base.gated.push(crate::loadout::GatedTerm {
+                        gate: *gate,
+                        grant: *grant,
+                        value: *value,
+                        into_co: if feeds { *value } else { 0.0 },
+                    });
                 }
                 EvoEffect::MagGrowthOnEmptyReload { per_stack, max_stacks } => {
                     base.magazine_growth_on_empty_reload = Some((*per_stack, *max_stacks));
@@ -2249,7 +2261,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     };
                     match gate {
                         Some(g) => {
-                            base.gated.push((g, crate::loadout::GatedGrant::FireRate, *value));
+                            base.gated.push(crate::loadout::GatedTerm {
+                                gate: g,
+                                grant: crate::loadout::GatedGrant::FireRate,
+                                value: *value,
+                                into_co: 0.0,
+                            });
                         }
                         None => base.evo_fire_rate_bonus += value,
                     }
@@ -2525,6 +2542,7 @@ fn stacking_card_id(
         (T::ReloadFromEmpty, G::FlatBaseDamage) => "on_empty_reload_damage",
         (T::ReloadFromEmpty, G::BaseCritDamage) => "on_empty_reload_crit_damage",
         (T::PunchThrough, G::CritChance) => "on_punch_through_crit_chance",
+        (T::PunchThrough, G::FireRate) => "on_punch_through_fire_rate",
         // A pair nobody has written a card for yet. It is still a real buff and
         // still runs; it just shares one generic id, which is visible the first
         // time two of them appear on one weapon and is the point at which the

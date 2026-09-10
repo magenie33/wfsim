@@ -8,8 +8,28 @@ selection: choose_one
 
 effects:
   # see notes: one_target_is_not_an_edge
-  # from: "On Punch Through Hit: +40% Fire Rate for 6 seconds"
-  - kind: unmodelled_fire_rate_on_a_punch_through_hit
+  # IT DOES NOT STACK, and the notes cell is why the cap is 1 rather than
+  # unstated: "The fire rate bonus stacks additively with fire rate mods such as
+  # Speed Trigger but DOES NOT APPLY TWICE." So a shot that punches through four
+  # bodies refreshes one window four times and grants one bonus, where the
+  # Ballistica's Prolific Perforation earns a stack per bolt.
+  #
+  # ADDITIVE WITH FIRE-RATE MODS is the same sentence's first half, and it is
+  # what `BuffGrant::FireRate` already does: `resolve` converts the fraction
+  # into the absolute rate it is worth on the BASE, and the sim adds it inside
+  # the bracket Speed Trigger writes to.
+  #
+  # ON A BOW THE RATE IS THE DRAW, so this buys charge time — and it can only
+  # ever earn itself against a FORMATION, since a lone target has nothing behind
+  # it for the arrow to reach.
+  #
+  # ALL THREE VARIANTS — the row's variant cells are one `colspan="3" | -`.
+  - kind: stacking_buff
+    trigger: punch_through
+    per_stack:
+      fire_rate_bonus: 0.40
+    max_stacks: 1
+    duration_seconds: 6.0
 
 source:
   url: https://wiki.warframe.com/w/Paris_Incarnon_Genesis

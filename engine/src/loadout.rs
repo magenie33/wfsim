@@ -684,8 +684,9 @@ pub enum IndirectStat {
     DodgeSpeed,
     AcrobaticSpeed,
     Accuracy,
-    /// Punch-through depth in METERS (multi-target only; no single-target DPS
-    /// effect until the 2D multi-target model lands).
+    /// Punch-through depth in METERS. It joins `punch_through_m` on the panel
+    /// and `space::struck_along` spends it per body crossed, so it pays only
+    /// against a formation — a lone target has nothing behind it.
     PunchThrough,
     /// Aim zoom (FOV) — pistol zoom carries no damage bonus (unlike snipers).
     Zoom,
@@ -1716,6 +1717,25 @@ pub enum TennoGate {
     SoloWeapon,
 }
 
+/// ONE GRANT THE PLAYER'S STATE GATES, carried until `resolve_for` has a Tenno
+/// to ask.
+///
+/// `into_co` is the second sum [`WeaponBase::add_flat_base_damage`] takes, and
+/// it rides HERE because the question it answers — [`crate::evolutions_data::
+/// EvolutionDef::excludes_co_base`] — is the granting perk's, and the perk is
+/// gone by the time the gate is opened. A gated flat add that decided this in
+/// `resolve_for` instead would answer it differently from the ungated add on
+/// the very same card (MEASUREMENTS M83).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GatedTerm {
+    pub gate: TennoGate,
+    pub grant: GatedGrant,
+    pub value: f64,
+    /// How much of `value` the GunCO term's base grows by — 0 on every grant
+    /// that is not [`GatedGrant::FlatBaseDamage`].
+    pub into_co: f64,
+}
+
 /// A BONUS THE PLAYER'S OWN STATS DECIDE, carried on the panel until a fight
 /// says who is holding the gun. `base.gated`'s scaled sibling: that one answers
 /// yes or no, this one answers HOW MUCH.
@@ -2033,7 +2053,7 @@ pub struct WeaponBase {
     /// `(gate, grant, value)`. Carried rather than spent because `apply` works
     /// on the raw weapon and the Tenno is not there; folded in `resolve_for`,
     /// which has both.
-    pub gated: Vec<(TennoGate, GatedGrant, f64)>,
+    pub gated: Vec<GatedTerm>,
     /// King's Gambit: a MULTIPLIER on crit chance for a hit that did NOT land on
     /// a weak point. 1.0 = ordinary.
     ///
@@ -4083,12 +4103,16 @@ pub fn resolve_for(
         adjusted = Some(t);
     }
     let tenno = adjusted.as_ref().unwrap_or(tenno);
-    let gated_flat: f64 = base
-        .gated
-        .iter()
-        .filter(|(c, k, _)| *k == GatedGrant::FlatBaseDamage && c.open(tenno))
-        .map(|(_, _, v)| v)
-        .sum();
+    let open_flat = || {
+        base.gated
+            .iter()
+            .filter(|t| t.grant == GatedGrant::FlatBaseDamage && t.gate.open(tenno))
+    };
+    let gated_flat: f64 = open_flat().map(|t| t.value).sum();
+    // …AND HOW MUCH OF IT THE GunCO TERM'S BASE GROWS BY, which is the perk's
+    // own answer carried on the term. Two sums, for the reason `apply` keeps
+    // two: a build can hold one gated add that feeds and one that does not.
+    let gated_into_co: f64 = open_flat().map(|t| t.into_co).sum();
     // …AND THE SAME QUESTION FOR THE MAGAZINE. Folded into the BASE here rather
     // than into the modded size below, so a gated +14 and a plain +14 are the
     // same weapon everywhere the magazine is read — the mods multiply it, the
@@ -4102,8 +4126,8 @@ pub fn resolve_for(
     let gated_mag: f64 = if base.gauge_form.is_none() {
         base.gated
             .iter()
-            .filter(|(c, k, _)| *k == GatedGrant::FlatBaseMagazine && c.open(tenno))
-            .map(|(_, _, v)| v)
+            .filter(|t| t.grant == GatedGrant::FlatBaseMagazine && t.gate.open(tenno))
+            .map(|t| t.value)
             .sum()
     } else {
         0.0
@@ -4112,12 +4136,12 @@ pub fn resolve_for(
     let base = if gated_flat > 0.0 || gated_mag > 0.0 {
         let mut b = base.clone();
         if gated_flat > 0.0 {
-            // A GATED FLAT ADD FEEDS THE CO BASE, which is what it did
-            // before this became a choice: the old code left the fraction
-            // alone and grew the panel, so the absolute the term read grew
-            // with it. Preserved rather than decided — no gated perk is on
-            // the CO catalog and none has been measured.
-            b.add_flat_base_damage(gated_flat, gated_flat);
+            // A GATED FLAT ADD ASKS THE SAME QUESTION THE UNGATED ONE DOES,
+            // and Guardian's Might is why it must: one card, +20 unconditional
+            // and +74 with overshields, and answering the two halves
+            // differently made the perk's own gate move the CO base
+            // (MEASUREMENTS M83).
+            b.add_flat_base_damage(gated_flat, gated_into_co);
         }
         b.magazine_size += gated_mag;
         owned = b;
@@ -4215,8 +4239,8 @@ pub fn resolve_for(
     let gate = |g: GatedGrant| -> f64 {
         base.gated
             .iter()
-            .filter(|(c, k, _)| *k == g && c.open(tenno))
-            .map(|(_, _, v)| v)
+            .filter(|t| t.grant == g && t.gate.open(tenno))
+            .map(|t| t.value)
             .sum()
     };
     let mut co = base.innate_co_per_type + gate(GatedGrant::ConditionOverload);
@@ -6539,7 +6563,7 @@ mod tests {
         // 20 + 74 is what the card pays a player who has them, so a base panel
         // carrying that flat outright must resolve to the same numbers.
         let mut plain = WeaponBase::from_data("paris_prime", true, &[]);
-        plain.add_flat_base_damage(20.0 + 74.0, 20.0 + 74.0);
+        plain.add_flat_base_damage(20.0 + 74.0, 0.0);
         let want = resolve_for(&plain, &[], StackPolicy::AssumedMax, neutral);
         assert!((on.modified_base - want.modified_base).abs() < 1e-9,
             "gated {} vs plain {}", on.modified_base, want.modified_base);
@@ -6556,10 +6580,89 @@ mod tests {
         // with only the perk's unconditional +20 — which is what the card says,
         // and what a build that never picks up an overshield actually gets.
         let mut just_x = WeaponBase::from_data("paris_prime", true, &[]);
-        just_x.add_flat_base_damage(20.0, 20.0);
+        just_x.add_flat_base_damage(20.0, 0.0);
         let x_only = resolve_for(&just_x, &[], StackPolicy::AssumedMax, neutral);
         assert!((off.modified_base - x_only.modified_base).abs() < 1e-9,
             "shut: {} vs {}", off.modified_base, x_only.modified_base);
+
+        // …AND THE CO BASE IS WHAT "EXACTLY" MEANS HERE. `modified_base` and the
+        // vector agree under either answer, which is how a gate that moved the
+        // CO base rode along unseen: the absolute the term reads is the ONLY
+        // number the overshield may not touch (MEASUREMENTS M83).
+        let reads = |p: &ResolvedPanel| p.co_base.fraction() * p.co_base.of();
+        assert!((reads(&on) - reads(&off)).abs() < 1e-9,
+            "the gate moved the CO base: {} shielded vs {}", reads(&on), reads(&off));
+        assert!((reads(&on) - 0.5 * 360.0).abs() < 1e-9,
+            "the catalog's half-base survives the gate: {}", reads(&on));
+        // The share SHRINKS as the panel grows, because the absolute does not.
+        assert!(on.co_base_fraction() < off.co_base_fraction());
+    }
+
+    /// THE SAME WEAPON ANSWERS THE CO QUESTION TWO OPPOSITE WAYS, and one
+    /// build reads both (MEASUREMENTS M83, M84).
+    ///
+    /// Paris Prime, +155% base damage, Galvanized Aptitude at 2 stacks,
+    /// Guardian's Might and Striking Succession at its 4-stack cap. The base
+    /// form is `Adding` on HALF its base and every flat add — the gated +74
+    /// included — stays out of it; the Incarnon form is `Multiplying` on ALL of
+    /// its evolved base, so the very same adds feed in full.
+    ///
+    /// QUANTIZATION IS A FLAT FACTOR HERE and each form has its own, which is
+    /// the whole of the residual between the bracket and the pop-up: the
+    /// charged shot's 2.5 / 17.5 / 80 lands on 0.8 + 5.6 + 25.6 units and
+    /// rounds to 33 for a x1.03125 gain, while the Incarnon's 100 / 420 lands
+    /// on 6.15 + 25.85 and rounds back to 32 for nothing at all. It cannot be
+    /// left out and called a target multiplier — the two forms would then need
+    /// two different targets in one session.
+    #[test]
+    fn paris_prime_reads_its_co_base_one_way_charged_and_the_other_incarnon() {
+        let neutral = crate::tenno_data::default_tenno();
+        let shielded = tenno_who(|s| s.overshields = true);
+        let evos = ["paris_prime_guardians_might", "paris_prime_striking_succession"];
+        let (serration, galvanized) = (1.55f64, 0.4 * 2.0);
+
+        let hit = |id: &str, is_base: bool, t: &crate::tenno_data::Tenno, types: f64| -> f64 {
+            let base = WeaponBase::from_data(id, is_base, &evos);
+            let p = resolve_for(&base, &[], StackPolicy::AssumedMax, t);
+            // The panel with the gate answered, before a damage mod goes in.
+            let unmodded = p.modified_base;
+            let striking = 4.0 * 15.0 * (1.0 + serration) / unmodded;
+            let co = galvanized * types * p.co_base.fraction();
+            // `Adding` puts the CO term in the base bucket, so it is inside the
+            // number quantization divides by; `Multiplying` applies after it
+            // (M81).
+            let bracket = if is_base { 1.0 + serration + striking + co } else { 1.0 + serration + striking };
+            let modded_base = unmodded * bracket;
+            let quantized = p
+                .damage
+                .scale(modded_base / p.damage.total())
+                .quantized_against(modded_base);
+            quantized.total() * if is_base { 1.0 } else { 1.0 + co }
+        };
+
+        for (id, is_base, t, types, measured) in [
+            ("paris_prime", true, &shielded, 1.0, 1501.0),
+            ("paris_prime", true, neutral, 1.0, 1306.0),
+            ("paris_prime_incarnon", false, &shielded, 1.0, 3095.0),
+            ("paris_prime_incarnon", false, &shielded, 2.0, 4470.0),
+        ] {
+            let got = hit(id, is_base, t, types);
+            assert!(
+                (got - measured).abs() / measured < 0.002,
+                "{id} at {types} status types: {got:.1} against a measured {measured}"
+            );
+        }
+
+        // …AND THE TWO BASES ARE THE CLAIM. Half the charged shot's own 360,
+        // untouched by 94 points of flat add; the whole of the Incarnon's
+        // evolved 614, which is those same adds inside it.
+        let reads = |id: &str, is_base: bool| {
+            let base = WeaponBase::from_data(id, is_base, &evos);
+            let p = resolve_for(&base, &[], StackPolicy::AssumedMax, &shielded);
+            p.co_base.fraction() * p.co_base.of()
+        };
+        assert!((reads("paris_prime", true) - 180.0).abs() < 1e-9);
+        assert!((reads("paris_prime_incarnon", false) - 614.0).abs() < 1e-9);
     }
 
     /// EVERY CARD THAT ASKS ABOUT OVERSHIELDS, and what each one pays.
@@ -6612,7 +6715,7 @@ mod tests {
                 WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()])
                     .gated
                     .iter()
-                    .any(|(g, _, _)| *g == TennoGate::HasOvershields)
+                    .any(|t| t.gate == TennoGate::HasOvershields)
             })
             .map(|e| e.id.as_str())
             .collect();
@@ -6694,7 +6797,7 @@ mod tests {
                 WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()])
                     .gated
                     .iter()
-                    .any(|(g, _, _)| *g == TennoGate::SoloWeapon)
+                    .any(|t| t.gate == TennoGate::SoloWeapon)
             })
             .map(|e| e.id.as_str())
             .collect();
