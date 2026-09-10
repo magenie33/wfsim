@@ -1339,6 +1339,10 @@ function defaultScenario() {
     // targets keeps giving you the elite unit wherever one exists rather than
     // carrying a decision made about a different enemy.
     eximus: d.eximus ?? null,
+    // HOW MANY THE TARGET WAS BROUGHT FOR. One unless a scenario says
+    // otherwise — every fight this app has ever run is one player against one
+    // enemy, and this changes the ENEMY, never the number of guns.
+    squad_size: d.squad_size || 1,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
     // WHERE THE TWO OF THEM STAND, metres. Contact by default — as close as
     // two bodies can be, which is what point blank means once they have a size.
@@ -3119,6 +3123,36 @@ const eximusField = (en) => {
   if (!en || !en.can_be_eximus) return "";
   return `<label class="check" title="${escHtml(tr("the elite variant: more health, and a pool of Overguard in front of it"))}"><input type="checkbox" data-k="eximus" ${eximusOn(en) ? "checked" : ""}> ${escHtml(tr("Eximus"))}</label>`;
 };
+
+/// HOW MANY PEOPLE THE TARGET WAS BROUGHT FOR — offered only where the unit's
+/// health reads it, which today is a Demolisher and nothing else.
+///
+/// ONE PLAYER STILL FIRES. This is a HARDER TARGET, not three more guns: the
+/// arena has one shooter and always has, so what four means here is the
+/// Demolisher a full squad walks into, measured against your weapon alone. The
+/// title says so, because a control called "squad" invites the other reading.
+///
+/// THE LADDER IS THE UNIT'S. `squad_health_bonus` comes off `/api/meta` rather
+/// than being written here — a second copy of +0/+50/+100/+200 would be a
+/// second answer the day DE changes it — and it is also what decides whether
+/// this control exists at all.
+const squadField = (en) => {
+  const ladder = (en && en.squad_health_bonus) || [];
+  if (ladder.length < 2) return "";
+  const opts = ladder
+    .map((bonus, i) => {
+      const n = i + 1;
+      const label = bonus > 0
+        ? `${n} (+${Math.round(bonus * 100)}% ${tr("health")})`
+        : `${n}`;
+      return `<option value="${n}"${squadOf() === n ? " selected" : ""}>${escHtml(label)}</option>`;
+    })
+    .join("");
+  return `<label title="${escHtml(tr("the target a squad of this size meets — it is a fatter enemy, not more guns: one weapon still fires, and what is ranked is how much of it yours takes off"))}">${
+    escHtml(tr("Squad"))} <select data-k="squad_size" data-num>${opts}</select></label>`;
+};
+/// SOLO UNLESS SAID, which is what every fight in this app has always been.
+const squadOf = () => Number(sim.squad_size) || 1;
 
 /// WHAT THIS WEAPON SETTLES THIS FIELD TO, AND WHY — or null when the choice is
 /// the reader's.
@@ -14040,6 +14074,7 @@ function renderScenarioFields(ids, opts = {}) {
             <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
             <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
             ${eximusField(en)}
+            ${squadField(en)}
           </div>
           ${brushNote(sim)}
         </div>
@@ -14217,7 +14252,11 @@ function renderScenarioFields(ids, opts = {}) {
           return;
         }
         if (applyClassRule(el)) { renderSim(); return; }
-        if (el.dataset.wfovnum) { sim[k] = Number(el.value); }
+        // A NUMBER THAT IS NOT A NUMBER INPUT SAYS SO. A `<select>` reaches the
+        // `else` below as a STRING, and a scenario field the server reads with
+        // `get_u32` would silently fall back to its default — the control would
+        // move and the fight would not.
+        if (el.dataset.wfovnum || el.dataset.num) { sim[k] = Number(el.value); }
         else if (el.type === "checkbox") sim[k] = el.checked;
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;

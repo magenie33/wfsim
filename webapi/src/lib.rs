@@ -1641,6 +1641,12 @@ pub fn meta_json() -> Value {
                 "image": e.image,
                 "base_level": e.stats.base_level,
                 "can_be_eximus": e.can_be_eximus,
+                // WHAT A SQUAD DOES TO THIS UNIT, and empty on every unit a
+                // squad does nothing to. The page offers the control only where
+                // there is something to choose, for the reason it offers an
+                // Eximus box only where an Eximus exists: a control that cannot
+                // change the answer is a claim that it can.
+                "squad_health_bonus": e.squad_health_bonus,
                 // What the TARGET PICKER searches and shows. A name alone is
                 // not enough to pick between units that differ in the two
                 // things a build cares about — who they belong to and what

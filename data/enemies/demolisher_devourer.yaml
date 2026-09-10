@@ -11,8 +11,12 @@ scaling_faction: grineer
 can_be_eximus: false
 mercy_eligible: false
 type: melee
-planets: [earth]
-tilesets: [grineer_forest]
+# WHERE THE DEMOLISHER IS MET, which is not where the Ghoul it is built from
+# lives: the Demolisher page's Grineer list names Olympus, Mars, whose infobox
+# reads "Disruption", "Grineer Settlement", "15 - 20 (Normal)" — the same 15
+# `spawn_level` carries.
+planets: [mars]
+tilesets: [grineer_settlement]
 introduced: "29.0"
 
 # THE PULSE IS NOT TURNED ON HERE, and that is this simulator's choice rather
@@ -31,26 +35,33 @@ introduced: "29.0"
 # Until then a fight here keeps Roar, Eclipse, Nourish and the augments running,
 # and `unmodeled` says so where a player reads it.
 
-# TWO KINDS OF RESTRICTION, AND THEY ARE DIFFERENT ARITHMETIC. The wiki words
-# them differently and that is the tell.
+# NOTHING IS DROPPED FROM THE DRAW. VERBATIM, and the word that decides it is
+# the last one: *"Confusion, Knockdown, Lifted, Stagger, Stun EFFECTS."* Those
+# are what a proc DOES, not whether it lands, so every type this weapon rolls
+# still rolls here.
 #
-# THE CODEX'S "Proc Immunity: Radiation" — the proc cannot land. The type is
-# dropped from the DRAW, so the remaining types renormalise onto the roll and
-# each becomes MORE likely (Status_Effect §Status Immunity Interactions). The
-# damage is untouched: this is not a x0 column.
-status_immunities: [radiation]
+# THE ONE PROC IMMUNITY ON THE PAGE IS SOMEBODY ELSE'S: *"All Infested
+# Demolishers are immune to Viral status, and Demolisher Juggernauts and
+# Demolisher Chargers are also immune to Viral and Toxin damage."* This unit is
+# Grineer, so none of it reaches it.
+status_immunities: []
 
-# THE DEMOLISHER PAGE'S CROWD-CONTROL LIST — "Confusion, Knockdown, Lifted,
-# Stagger, Stun" — is about EFFECTS, and only two of the five have a weapon
-# status behind them at all. Confusion is Radiation's, already covered above as
-# a proc immunity. Stagger is Impact's, and it is the other kind: the proc still
-# lands, still takes its share of the rolls, and still counts as a status type
-# for Condition Overload — it simply does not move this unit.
+# TWO OF THE FIVE HAVE A WEAPON STATUS BEHIND THEM, and both are this kind: the
+# proc lands, takes its share of the rolls and counts as a status type for
+# Condition Overload — it simply does not move this unit. Confusion is
+# Radiation's and Stagger is Impact's.
 #
-# Putting Impact in the list above instead would have been wrong twice: every
-# other status would have got rarer, and a CO build would have lost a type it
-# actually has.
-nullified_status_effects: [impact]
+# Reading either as a proc immunity is wrong twice: every other status gets
+# rarer because the draw renormalises without it, and a Condition Overload build
+# loses a type it actually has.
+nullified_status_effects: [radiation, impact]
+
+# DAMAGE ATTENUATION IS NOT MODELLED BECAUSE THIS UNIT NO LONGER HAS IT.
+# VERBATIM (Ghoul Devourer, patch history): `{{Ver|40.0.2}}` *"Enemies that no
+# longer have Damage Attenuation:"* — and the list under it is *"Demolishers"*.
+# Written down because every older source says they attenuate, so its absence
+# here reads as a gap until somebody checks. The Acolytes still have it and
+# still carry the admission for it.
 
 # IT IS NEVER FROZEN, and that makes Cold BETTER here rather than worse. The
 # ladder normally spends itself: the tenth proc consumes all stacks for a

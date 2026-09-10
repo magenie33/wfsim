@@ -184,6 +184,7 @@ ui:
   "Exilus slot": Exilus 槽
   "Eximus possible": 可以是精英
   "Eximus": 精英
+  "Squad": 小队人数
   "Explosion on Kill": 击杀爆炸
   "Extra hit (ability)": 技能附加伤害
   "Extra stats": 额外属性
@@ -970,6 +971,7 @@ ui:
   "the discharge also removes Sentient and Shadow Stalker damage resistances, which is worth nothing against any target in this roster — no Sentient here has one to strip": 这次放电还会移除 Sentient 和暗影 Stalker 的伤害抗性，对这个名册里的任何目标都毫无价值 —— 这里没有任何 Sentient 有抗性可剥
   "the duplex trigger is not modelled — one pull fires TWO rounds in game and this entry paces one per pull": 双发扳机尚未建模 —— 游戏里扣一次扳机打出两发，这个条目按一次一发计算射速
   "the elite variant: more health, and a pool of Overguard in front of it": 精英变体：更高生命，且生命前面还有一层超宏护盾
+  "the target a squad of this size meets — it is a fatter enemy, not more guns: one weapon still fires, and what is ranked is how much of it yours takes off": 这个人数的小队会遇到的目标——它只是更厚的敌人，不是更多的枪：开火的仍然只有一把武器，排名比的是你这一把能把它削掉多少
   "the embedded detonation also forces a RAGDOLL, which is not a damage type and is not applied here": "黏住后的引爆还会必定造成布娃娃效果，而布娃娃不是一种伤害类型，这里没有应用"
   "the escalating ammo cost the wiki files under Bugs (2/2/2/3/3/4/6 through a magazine, and -1 damage per extra ammo): a bug is not a rule, and this one takes AWAY what the charge is supposed to buy": wiki 归在「漏洞」条目下的递增弹药消耗（一个弹匣内 2/2/2/3/3/4/6，且每多消耗一发就少 1 点伤害）：漏洞不是规则，而且这一个夺走的正是蓄力本该买到的东西
   "the explosion STAGGERS enemies, opening them to melee finishers and stealth multipliers (wiki) — this arena has no melee and no stealth state, so that half of the weapon pays nothing": "爆炸会使敌人踉跄，从而可以被近战处决、也会吃到潜行伤害倍率（维基）—— 这个战场没有近战、也没有潜行状态，所以这一半的武器在这里一分不值"
