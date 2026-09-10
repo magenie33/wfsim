@@ -2588,6 +2588,21 @@ function renderBenchBoard() {
 const chRank = (c) => (c.locale === LANG ? 0 : c.locale ? 2 : 1);
 const SUPPORT_CHANNELS = [
   {
+    id: "afdian",
+    name: "爱发电",
+    // EMPTY UNTIL THE ACCOUNT EXISTS, the rule above: filling this url in is
+    // the whole of adding the channel.
+    //
+    // FIRST FOR A CHINESE READER, ahead of Bilibili, because it is the only
+    // one of the two where the payee is the PROJECT rather than an uploader —
+    // the same reason Ko-fi's account is `wfsim` and not a person. It settles
+    // in Alipay or WeChat, which is how the reader already pays for
+    // everything, and it keeps 94% of the gift against Bilibili's 70%.
+    url: "",
+    locale: "zh",
+    what: "One-off or monthly, in CNY, through Alipay or WeChat — no card, and no new account.",
+  },
+  {
     id: "bilibili",
     name: "Bilibili",
     // THE ONE CHANNEL A MAINLAND READER CAN ACTUALLY PAY THROUGH, which is the
@@ -2679,6 +2694,36 @@ function noteSimRun(engagements) {
   v.sims += 1;
   v.engagements += Math.max(1, engagements | 0);
   try { localStorage.setItem(SUPPORT_USE, JSON.stringify(v)); } catch (_) { /* private mode */ }
+}
+
+/// THE ONE TIME THIS APP ASKS, AND IT ASKS WHERE THE ANSWER LANDED. /support
+/// is a footer link, read only by somebody who went looking; the moment worth
+/// asking in is the one straight after an answer the reader waited for.
+///
+/// ONCE PER BROWSER, EVER. A line that comes back is an advertisement, which
+/// DE's Content Policy permits only while it stays out of the way of the
+/// content — so it is one sentence, it carries no button, and the flag that
+/// retires it is set the first time it is drawn.
+///
+/// AN OPTIMIZER RUN IS THE OCCASION, NEVER THE QUALIFICATION: it is one click
+/// and thousands of engagements nobody watched, so qualifying on it would ask
+/// a reader who has run nothing. `SUPPORT_USE`'s own count is the gate.
+const SUPPORT_ASKED = "wfsim-asked";
+const NUDGE_AFTER = 10;
+function offerSupportOnce(host) {
+  const u = supportUse();
+  if (!host || u.sims < NUDGE_AFTER) return;
+  // A BROWSER THAT CANNOT REMEMBER IS NEVER ASKED, which is the safe half of
+  // the choice: the alternative asks it on every run.
+  try {
+    if (localStorage.getItem(SUPPORT_ASKED)) return;
+    localStorage.setItem(SUPPORT_ASKED, "1");
+  } catch (_) { return; }
+  const p = document.createElement("p");
+  p.className = "sup-nudge";
+  p.innerHTML = `${escHtml(trF("{n} answers out of this so far, and not one of them cost you anything.",
+    { n: u.sims.toLocaleString() }))} <a href="/support">${escHtml(tr("What it costs to run →"))}</a>`;
+  host.appendChild(p);
 }
 
 /// WHO HAS CHIPPED IN, BY NAME — the only thing that ever leaves the ledger.
@@ -16172,6 +16217,7 @@ async function runSim() {
     // A run under the OFFICIAL scenario is the only thing that can reach the
     // board, and only after you have said so. Never blocks the result.
     offerBoardSubmit();
+    offerSupportOnce($("sim-results"));
   } catch (e) {
     $("sim-results").innerHTML = `<div class="error">sim failed: ${e}</div>`;
   } finally {
@@ -19817,6 +19863,7 @@ async function pollOptimize() {
       // A cancel is not necessarily the end of the search — the run stopped,
       // but its resume point is still on disk. Offer it under the results.
       if (st.phase === "cancelled") appendResumeOffer();
+      offerSupportOnce($("opt-results"));
     } else {
       $("opt-results").innerHTML = `<div class="placeholder">cancelled before anything had been ranked — no results</div>`;
     }

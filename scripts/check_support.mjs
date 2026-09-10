@@ -174,7 +174,35 @@ check(`${tag} ...and the page says so, in both figures`,
   JSON.stringify(shown));
 
 // ---------------------------------------------------------------------------
-// 5. THE WHOLE PAGE IN CHINESE. A number filled into an untranslated template
+// 5. THE ASK, WHERE THE ANSWER LANDED. Three things a line allowed to appear
+//    inside a result panel has to get right, and all three fail silently:
+//    nothing before the gate, exactly one line on the run that reaches it, and
+//    never again after that. The gate is read from the page rather than typed,
+//    so moving `NUDGE_AFTER` moves this check with it.
+const nudge = await evaluate(`(async () => {
+  const line = () => document.querySelectorAll("#sim-results .sup-nudge").length;
+  // THE NEGATIVE CONTROL IS THE RUN ABOVE: one run, and the flag that retires
+  // the ask must still be unset — a gate that never gates asks everybody.
+  const beforeGate = { asked: localStorage.getItem("wfsim-asked"), drawn: line() };
+  localStorage.removeItem("wfsim-asked");
+  // ONE SHORT OF THE GATE, so the run below is the one that reaches it.
+  localStorage.setItem("wfsim-use", JSON.stringify({ sims: NUDGE_AFTER - 1, engagements: 99 }));
+  setSimRuns(1);
+  sim.duration = 4; sim.level = 30; sim.steel_path = false; sim.eximus = false;
+  await runSim();
+  const atGate = line();
+  await runSim();
+  return { beforeGate, atGate, after: line(), gate: NUDGE_AFTER, asked: localStorage.getItem("wfsim-asked") };
+})()`);
+check(`${tag} a reader short of the gate is never asked (negative control)`,
+  nudge.beforeGate.asked === null && nudge.beforeGate.drawn === 0, JSON.stringify(nudge));
+check(`${tag} ...the ask is drawn under the result that reaches it`,
+  nudge.atGate === 1 && nudge.asked === "1", JSON.stringify(nudge));
+check(`${tag} ...and never a second time`,
+  nudge.after === 0, JSON.stringify(nudge));
+
+// ---------------------------------------------------------------------------
+// 6. THE WHOLE PAGE IN CHINESE. A number filled into an untranslated template
 //    is invisible in English and is half an English sentence on a zh page,
 //    which is `check_mode_def`'s own lesson one page over.
 await app.setLang("zh", 20000);

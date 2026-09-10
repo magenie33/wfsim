@@ -276,18 +276,36 @@ A FIGURE IS CLAIMED ONLY IF A READER CAN CHECK IT against the public
 repository. A count of in-game measurements cannot be, so it is not on the
 page.
 
-THE ORDER IS THE ARGUMENT: what this is and what it holds, why it can be
-checked, what the reader has already got out of it, then the door. The
-evidence behind that shape and behind the $3 floor is NextAfter's
-donation-page experiments (a stated value proposition; video loses),
-Wikimedia's banner testing (a facts appeal over a personal one, and a low
-suggested amount), Cialdini & Schroeder 1976 (legitimising a small gift raises
+THE ORDER IS THE ARGUMENT: what this is and how it works, what it holds, why
+it can be checked, what the reader has already got out of it, the door, and
+then — directly under the door — what giving never buys, which is the answer
+to the question the door has just raised rather than small print two sections
+below it. Only after that does the money go anywhere. The evidence behind that
+shape and behind the $3 floor is NextAfter's donation-page experiments (a
+stated value proposition; naming what the money does; video loses), Wikimedia's
+banner testing (a facts appeal over a personal one, and a low suggested
+amount), Cialdini & Schroeder 1976 (legitimising a small gift raises
 participation without lowering the mean gift) and Adena/Huck/Rasul (a higher
 suggestion buys a higher mean at the cost of participation).
 
-TWO CHANNELS, TWO JOBS: Ko-fi is the one-off, Patreon the month. THE ACCOUNT
-IS THE PROJECT (`ko-fi.com/wfsim`) and the first-person half lives in the
-platform's own bio.
+NO LADDER OF AMOUNTS IS DRAWN ON THE PAGE. The one amount it states is the
+FLOOR, and it is stated on the card of the channel that has it, because the
+ladder above the floor belongs to the channel — a second copy here would be a
+copy that goes stale and that no click can honour, since none of these
+platforms takes an amount in a link.
+
+SERVING THIS SITE COSTS NOTHING, and "Where it goes" says so. Cloudflare does
+not meter static assets, so the pages, the art and the board are free at any
+traffic this site sees; the metered path is the desktop update channel, billed
+per outbound byte. A page whose claim is that its figures are checkable may not
+be vague about the one figure that is about itself, and naming the zero is
+worth more than the sentence it replaces.
+
+A CHANNEL IS A JOB, AND THE PAYEE IS THE PROJECT. Ko-fi is the one-off,
+Patreon the month, and for a Chinese reader 爱发电 comes first — it settles in
+Alipay or WeChat, and the payee is the project rather than an uploader, which
+Bilibili's own charge flow cannot be. THE ACCOUNT IS THE PROJECT
+(`ko-fi.com/wfsim`) and the first-person half lives in the platform's own bio.
 
 A SUBSCRIPTION BUYS ORDER AND COMPANY, NEVER PRODUCT — a channel where the
 work is discussed, and reports read first. DE's Content Policy forbids
@@ -315,6 +333,15 @@ list at an address meant to be PASTED — a video description, the group. Empty,
 the block is absent and the page says so in a sentence: a list of nobody is
 social proof pointing the wrong way, but a page somebody navigated to owes them
 more than a blank.
+
+THE APP ASKS ONCE, WHERE THE ANSWER LANDED. `/support` is otherwise reached
+only by somebody who went looking for it, so `offerSupportOnce` appends one
+note-weight sentence under a finished simulator or optimizer result — after
+`NUDGE_AFTER` runs of the reader's own, once per browser ever, with no button.
+An optimizer run is the OCCASION but never the QUALIFICATION: it is one click
+and thousands of engagements nobody watched. Anything louder or repeating is an
+advertisement, which DE's Content Policy permits only while it stays out of the
+way of the content.
 
 WHAT THE READER HAS RUN NEVER LEAVES THE BROWSER. `wfsim-use` is two integers
 written by `runSim` and read by `/support` alone; the page says so where it

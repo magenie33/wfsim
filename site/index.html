@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.cf56646f017e.css" />
+  <link rel="stylesheet" href="/asset/style.86e9a9a58f6b.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -460,6 +460,13 @@
          about the THREE MODULES and about the LICENCE — the two things that
          are true today and can be checked by the reader today. -->
     <p class="hero-sub" data-i18n>A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone: no account, no payment, no part held back.</p>
+    <!-- THE ONE SENTENCE ABOUT METHOD, and it is on this page because it is
+         what a reader deciding whether any of this is worth anything is
+         actually asking. It names a MECHANISM rather than a virtue — whether a
+         calculator scores an opening state or runs the fight is something you
+         can go and read in the engine — which is the only shape of claim this
+         page is allowed to make about itself. -->
+    <p class="hero-sub" data-i18n>It does not score an opening state. It runs the engagement — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.</p>
 
     <!-- THE FACTS STRIP. Filled by `projectFacts()` — the roster and the pools
          from META, the tests, checks and measurements from the site build. It
@@ -526,17 +533,11 @@
       </div>
     </section>
 
-    <section class="block">
-      <div class="bh"><h2 data-i18n>Where it goes</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>The wfsim.app domain, and its renewal.</li>
-          <li data-i18n>Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin, so that nothing this page needs is fetched from somewhere that might be unreachable where you are.</li>
-          <li data-i18n>Time, which is most of it: new weapons, new mechanics, and the hours in the game that every calibrated number is measured against.</li>
-        </ul>
-      </div>
-    </section>
-
+    <!-- DIRECTLY UNDER THE DOOR, because it answers the question the door has
+         just put in the reader's head — "so what does giving get me?" — and the
+         answer, nothing, is this project's whole position rather than its small
+         print. Read two sections later it is a disclaimer; read here it is the
+         reason the page can be believed. -->
     <section class="block">
       <div class="bh"><h2 data-i18n>What it never buys</h2></div>
       <div class="bb">
@@ -545,6 +546,23 @@
           <li data-i18n>A feature. Building, simulating and optimizing stay the same for everyone, and the guarantor of that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own.</li>
           <li data-i18n>A monthly subscription buys order and company, never product: a channel where the work is discussed, and your reports read before the rest of the queue. Every fix still ships to everyone at once.</li>
           <li data-i18n>There is no account system and no login, so nothing here is tied to a person. The only place a visit is counted is Cloudflare's own request log, which is what serves the page.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Where it goes</h2></div>
+      <div class="bb">
+        <!-- NAMED, AND THE ZERO NAMED WITH THEM. A page whose whole claim is
+             that its figures can be checked cannot hand-wave the one figure
+             that is about itself, and "serving the site" is NOT where the money
+             goes: Cloudflare does not meter static assets and this site's bill
+             there is nothing. The metered path is the desktop update channel —
+             `docs/UI.md` §"The page that asks for something" holds the rule. -->
+        <ul class="sup-costs">
+          <li data-i18n>The wfsim.app domain, and its renewal — the one bill that arrives whether anybody visits or not.</li>
+          <li data-i18n>Serving this site costs nothing, and that is worth saying plainly: Cloudflare does not meter what it hands out, so the pages, the art and the board are free however many of you turn up. What is metered is the update channel behind the Windows client, billed by the byte every time a copy updates itself.</li>
+          <li data-i18n>Time, which is most of it: new weapons, new mechanics, and the hours in the game that every calibrated number is measured against.</li>
         </ul>
       </div>
     </section>
@@ -1087,13 +1105,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">7672f36d</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">8576a89f</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.110d14df3b23.js"></script>
+  <script src="/asset/app.42a6440bc8bf.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is

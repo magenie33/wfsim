@@ -864,9 +864,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .sup-fact b{display:block;font-size:22px;font-variant-numeric:tabular-nums;line-height:1.2}
 .sup-fact span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
 /* What the reader has already run here. Gold, because it is the one line on
-   the page that is about them. */
-.sup-usage{font-size:13px;color:var(--gold);border-left:2px solid var(--gold);
-  padding:2px 0 2px 12px;margin:22px 0 0;max-width:760px;line-height:1.6}
+   the page that is about them — and set at reading size rather than as a note,
+   since it sits immediately above the ask and is the only sentence there that
+   the reader cannot dispute. */
+.sup-usage{font-size:15px;color:var(--gold);border-left:2px solid var(--gold);
+  padding:6px 0 6px 14px;margin:26px 0 0;max-width:760px;line-height:1.6}
 .thx-block{margin:22px 0 0}
 .thx-head{font-size:13px;color:var(--text-2);font-weight:600;margin:0 0 10px}
 /* EVERY NAME IS DRAWN THE SAME. The order carries the ranking and nothing else
@@ -884,6 +886,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .sup-costs a{color:var(--accent)}
 .sup-note{font-size:11px;color:var(--muted);margin:10px 0 0}
 .sup-fine{font-size:11px;color:var(--muted);max-width:760px;margin:18px 0 0;line-height:1.7}
+/* THE ASK, WHERE THE ANSWER LANDED — drawn once per browser under a finished
+   result. Note weight and no button: it sits inside the panel the reader came
+   for, so anything louder is in the way of the thing they asked for. */
+.sup-nudge{font-size:12px;color:var(--muted);margin:14px 0 0;line-height:1.6;
+  border-top:1px solid var(--line);padding-top:12px}
+.sup-nudge a{color:var(--accent);white-space:nowrap}
 
 .block-lock.dis{opacity:.45}
 .opt-meta .warn{color:var(--critical)}
