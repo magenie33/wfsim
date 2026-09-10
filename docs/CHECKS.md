@@ -94,9 +94,12 @@ and passives, not just mods (MEASUREMENTS M30).
 ## `check_board_link`
 
 A board row opens THAT row: the build it names AND the
-ruler it is on. It walks every ruler and asserts against `BOARD` itself. It
-holds a case the live board has never had — ONE WEAPON, TWO MODES — by
-injecting a synthetic second-mode row. IT ALSO WATCHES THE ORDER one level
+ruler it is on. It walks every ruler and asserts against `BOARD` itself. THE
+EXILUS SLOT IS ITS OWN ASSERTION, because a row carries that card in a field of
+its own: comparing everything the page opened against the row's flat mod list
+read as agreement while the ninth card was dropped, and on a melee that card is
+the Tennokai one. It holds a case the live board has never had — ONE WEAPON,
+TWO MODES — by injecting a synthetic second-mode row. IT ALSO WATCHES THE ORDER one level
 down: the builder's picker groups a weapon's deeper ranks by mode and numbers
 each inside its group, asserted over EVERY weapon the board holds in more than
 one mode, picking the WORST-INTERLEAVED one for the DOM half. The rank

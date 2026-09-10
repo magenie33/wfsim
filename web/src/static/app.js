@@ -8949,14 +8949,23 @@ const builtinBuilds = () => {
         // TEN SLOTS, because a melee row's mod list carries its STANCE with the
         // rest — appended, and told apart by looking at it. A row from a gun
         // has nine of these empty and is unchanged.
+        // …AND THE EXILUS SLOT IS ITS OWN FIELD, which this has to put back in
+        // it: `mods` carries the MAINS, so a row read as a flat list restores
+        // eight cards where the board scored nine. The number then disagrees
+        // with the row it was opened from — and on a melee that card is the
+        // Tennokai one, which is most of what the row is.
         slots: (() => {
           const ids = (row.mods || []).slice();
           const si = ids.findIndex((id) => (modById(id) || {}).stance);
           const stance = si >= 0 ? ids.splice(si, 1)[0] : null;
-          const out = Array.from({ length: 10 }, (_, k) => {
-            const id = ids[k] || null;
-            return { mod: id, pol: null, rank: null };
-          });
+          const ex = row.exilus && row.exilus !== "none" ? row.exilus : null;
+          const main = ids.filter((id) => id !== ex);
+          const out = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
+          main.slice(0, 8).forEach((id, i) => { out[i].mod = id; });
+          // A ROW WRITTEN BEFORE THE SLOT WAS RECORDED packed nine into `mods`,
+          // and its ninth card is the exilus one by position — the same
+          // fallback `stateFromBuild` keeps for a share link.
+          out[EXILUS].mod = ex || main[8] || null;
           if (stance) out[STANCE].mod = stance;
           return out;
         })().map((s, k) => {
@@ -9986,8 +9995,9 @@ function buildPayload() {
 /// flat list of mod ids — which is what the engine resolves, and the number
 /// never depends on which slot they sat in — so the ninth slot is a matter of
 /// LAYOUT (its polarity, the Forma plan) and the caller that knows says so. An
-/// optimizer row does; a share link and a board row do not, and take the order
-/// the list is in.
+/// optimizer row does and a share link does not, so the link takes the order
+/// the list is in. A BOARD ROW DOES: it carries `exilus` as its own field, and
+/// `builtinBuilds` is where that is read back into the slot.
 function stateFromBuild(p, weapon, exilusId) {
   const w = weaponInfo(weapon) || {};
   const ids = (p.mods || []).filter(Boolean);

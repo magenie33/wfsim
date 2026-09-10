@@ -55,8 +55,13 @@ const r = await evaluate(`(async () => {
       // Normalised rather than compared raw: the name is generated and
       // localized ("榜单 · critical_chance / …"), so a raw comparison would be
       // asserting the label rather than the build.
-      rec.mods = slots.filter(x => x.mod)
+      // THE EXILUS SLOT IS ASSERTED SEPARATELY, so this is the MAINS and the
+      // stance — which is exactly what a row's own mod list holds. Comparing a flat
+      // list of everything the page opened against it read as agreement while
+      // the ninth card was being dropped on the floor.
+      rec.mods = slots.filter((x, i) => x.mod && i !== EXILUS)
         .map(x => (String(x.mod).startsWith('riven') ? 'riven' : x.mod));
+      rec.exilus = (slots[EXILUS] || {}).mod || null;
       rec.arcanes = arcanes.filter(a => a && a !== 'none');
       rec.mode = mode;
       // BY MODE, not "the first row for this weapon". A weapon can hold a
@@ -78,6 +83,7 @@ const r = await evaluate(`(async () => {
       rec.wantRiven = !!(want[0] || {}).riven;
       rec.openedRiven = slots.some(x => String(x.mod || '').startsWith('riven'));
       rec.wantMods = (want[0] || {}).mods || null;
+      rec.wantExilus = (want[0] || {}).exilus || null;
       rec.wantArcanes = (want[0] || {}).arcanes || null;
       rec.wantMode = (want[0] || {}).mode || null;
       // Back to the board for the next ruler.
@@ -166,9 +172,11 @@ const r = await evaluate(`(async () => {
       // A RIVEN'S SLOT ID IS ITS LOCAL NAME, and a board row carries the bare
       // word - the same normalisation boardPayload does, because a riven's
       // name is what ONE player called their own item and cannot travel.
-      out.otherOpenedMods = slots.filter(x => x.mod)
+      out.otherOpenedMods = slots.filter((x, i) => x.mod && i !== EXILUS)
         .map(x => (isRivenId(x.mod) ? BOARD_RIVEN_SLOT : x.mod));
       out.otherWantMods = have.mods || [];
+      out.otherOpenedExilus = (slots[EXILUS] || {}).mod || null;
+      out.otherWantExilus = have.exilus || null;
     }
   }
   return out;
@@ -198,6 +206,13 @@ for (const e of r.each.filter((x) => x.href)) {
   check(`${tag} ...with the mods that row holds`,
     JSON.stringify(e.mods) === JSON.stringify(e.wantMods),
     `${JSON.stringify(e.mods)} vs ${JSON.stringify(e.wantMods)}`);
+  // THE NINTH CARD. A row carries its exilus in a field of its own, because an
+  // exilus-eligible mod is legal in a main slot and a flat list cannot say which
+  // one came out of the +1. A melee row's is the TENNOKAI mod — most of what the
+  // row scores — and a build reopened without it disagrees with its own number.
+  check(`${tag} ...and the exilus mod that row holds`,
+    (e.exilus || null) === (e.wantExilus || null),
+    `${e.exilus} vs ${e.wantExilus}`);
   check(`${tag} ...and its arcane`,
     JSON.stringify(e.arcanes) === JSON.stringify(e.wantArcanes || []),
     `${JSON.stringify(e.arcanes)} vs ${JSON.stringify(e.wantArcanes)}`);
@@ -219,10 +234,15 @@ for (const e of r.each.filter((x) => x.href)) {
 // WHICH CASE RAN, in the title. A live two-mode weapon and an injected one are
 // two different amounts of evidence, and a check that does not say which it
 // found reads as the stronger one on the day it silently becomes the weaker.
+// ONCE PER MODE, AND AT LEAST TWICE — not exactly twice. The board lists a
+// weapon once for every mode it can be played in, and the live two-mode weapon
+// this finds is now a melee, which has seven. An equality here asserted the
+// roster rather than the property, and went red the day a melee won the search.
 check(`a weapon with two modes is on the board twice (${r.synthetic ? "injected" : "LIVE"})`,
-  r.bothListed === 2, `${r.twoModeWeapon}: ${r.bothListed} rows`);
+  r.bothListed >= 2, `${r.twoModeWeapon}: ${r.bothListed} rows`);
 check("...both measured, so both are rows and not placeholders",
-  r.bothMeasured === 2, `${r.bothMeasured} measured`);
+  r.bothMeasured >= 2 && r.bothMeasured === r.bothListed,
+  `${r.bothMeasured} measured of ${r.bothListed}`);
 check("...and the second one's link names ITS mode",
   !!r.otherHref && r.otherHref.includes(`mode=${r.otherMode}`), String(r.otherHref));
 check("...it opens that weapon", r.otherOpenedWeapon === r.twoModeWeapon,
@@ -236,6 +256,9 @@ check("...under the ruler it was measured on", r.otherOpenedRuler === r.rulers[0
 check("...carrying that row's build",
   JSON.stringify(r.otherOpenedMods) === JSON.stringify(r.otherWantMods),
   `${JSON.stringify(r.otherOpenedMods)} vs ${JSON.stringify(r.otherWantMods)}`);
+check("...its exilus slot included",
+  (r.otherOpenedExilus || null) === (r.otherWantExilus || null),
+  `${r.otherOpenedExilus} vs ${r.otherWantExilus}`);
 
 // ---- and the RANK a picker shows is a rank WITHIN a mode ---------------
 //
