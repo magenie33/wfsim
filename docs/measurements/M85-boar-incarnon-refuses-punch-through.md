@@ -2,10 +2,6 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-Verbatim:
-
-> 我刚刚测试了，野猪的平常穿透是有效的，但是灵化下是无效的，不会穿透，我穿透叠满了，总共还是打9个。初始的那个就是没有穿透
-
 ### What it settles
 
 **PUNCH THROUGH PAYS NOTHING IN INCARNON FORM.** The base form takes it
@@ -27,11 +23,8 @@ body it acquired for itself, each chaining two more:
 reading confirms it independently — the number did not come from the page's
 arithmetic, it came from counting bodies in a fight.
 
-**ONLY THE AIMED BODY CAN HEADSHOT.** Verbatim:
-
-> 只有准信的那个敌人可以爆头，其余的都是自动锁定到身体的，灵化下
-
-The two beams the weapon acquires for itself lock BODIES. So a headshot is a
+**ONLY THE AIMED BODY CAN HEADSHOT.** The two beams the weapon acquires for
+itself lock BODIES. So a headshot is a
 property of where the player is pointing and not of the weapon, which is the
 rule `chain::Instance` already carried for every other spread — a splash, a
 chain hop, a tendril — and it now has a reading behind it here rather than an
