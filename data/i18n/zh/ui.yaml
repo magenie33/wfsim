@@ -1576,12 +1576,24 @@ ui:
     "投喂一下"
   "One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.":
     "一杯咖啡就够了，它不是任何东西的缩水版——这里没有目标金额，也没有要填满的进度条。你可以只给一次，也可以按月。"
-  "{n} people have chipped in so far.":
-    "目前已经有 {n} 个人投喂过。"
   "One-off, in USD, from $3. Card or PayPal, no account needed.":
     "一次性，美元结算，$3 起。信用卡或 PayPal，不用注册账号。"
   "Monthly, in USD, from $5. The channel where the work is discussed, and your reports read first.":
     "按月，美元结算，$5 起。可以进讨论开发的频道，你的报告会被优先阅读。"
+  "One-off or monthly, in CNY, from inside Bilibili — no card, and no new account.":
+    "单次或包月，人民币结算，在 B 站里直接完成——不用信用卡，也不用注册新账号。"
+  "Thank you":
+    "感谢"
+  "WFSim is free for everyone and always will be. These are the people who chipped in anyway, earliest and largest first — no tiers, no ranks, and no numbers beside a name.":
+    "WFSim 对所有人免费，以后也是。这些是仍然投喂了的人，最早和最多的排在前面——没有档位，没有名次，名字旁边不会有数字。"
+  "The people who have chipped in":
+    "投喂过的人"
+  "Everyone who has →":
+    "全部名单 →"
+  "Nobody has chipped in yet. The list starts with whoever is first.":
+    "还没有人投喂过。这份名单从第一个人开始。"
+  "How to chip in →":
+    "怎么投喂 →"
   "What it never buys":
     "它永远买不到什么"
   "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it.":

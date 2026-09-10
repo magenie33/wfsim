@@ -1992,7 +1992,11 @@ async function route() {
   const support = /^\/support\/?$/.test(location.pathname);
   const bench = /^\/benchmark\/?$/.test(location.pathname);
   const dl = /^\/download\/?$/.test(location.pathname);
-  const m = (support || bench || dl) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
+  // `/thanks` is a page of the SHELL like the three above it, and it is a URL
+  // meant to be PASTED — into a video description, into the group — so it is a
+  // real address rather than a section somebody has to scroll to.
+  const thx = /^\/thanks\/?$/.test(location.pathname);
+  const m = (support || bench || dl || thx) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -2005,21 +2009,23 @@ async function route() {
     || (META.weapons || []).find((x) => wikiSlug(x).toLowerCase() === slug));
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
-  document.body.classList.toggle("on-home", !w && !support && !bench && !dl);
+  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx);
   document.body.classList.toggle("on-support", support);
+  document.body.classList.toggle("on-thanks", thx);
   document.body.classList.toggle("on-benchmark", bench);
   document.body.classList.toggle("on-download", dl);
   document.body.classList.toggle("on-simulator", mod === "simulator");
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
   document.body.classList.toggle("on-enemies", mod === "enemies");
-  $("home-page").hidden = !!w || support || bench || dl;
+  $("home-page").hidden = !!w || support || bench || dl || thx;
   $("support-page").hidden = !support;
+  $("thanks-page").hidden = !thx;
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : (!w && !support && !dl) ? "home" : "";
+  const here = bench ? "benchmark" : (!w && !support && !dl && !thx) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
@@ -2030,11 +2036,14 @@ async function route() {
   // that has to be found rather than enjoyed. The joke
   // stays on the page, which is where a player meets it.
   document.title = support ? `${tr("Support")} — WFSim`
+    : thx ? `${tr("Thank you")} — WFSim`
     : dl ? `${tr("WFSim for Windows")} — WFSim`
     : bench ? `${tr("Benchmark")} — WFSim`
     : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Warframe Calculator";
   if (support) {
     renderSupport();
+  } else if (thx) {
+    renderThanksPage();
   } else if (dl) {
     renderDownloadPage();
   } else if (bench) {
@@ -2575,11 +2584,26 @@ function renderBenchBoard() {
 // ORDERED, NEVER FILTERED, which is the rule the topbar's community links
 // follow and for the same reason: a reader who can use the other one still has
 // to be able to find it. `locale: null` means "works anywhere" and sorts
-// between the two. The per-locale ORDER is all that lives here — the shape a
-// domestic channel wants (a scan code rather than a link) is not knowable
-// until there is a real payload to draw, so that waits for one.
+// between the two, and the per-locale ORDER is all that lives here.
 const chRank = (c) => (c.locale === LANG ? 0 : c.locale ? 2 : 1);
 const SUPPORT_CHANNELS = [
+  {
+    id: "bilibili",
+    name: "Bilibili",
+    // THE ONE CHANNEL A MAINLAND READER CAN ACTUALLY PAY THROUGH, which is the
+    // whole reason `locale` exists: the other two want a card or PayPal, so a
+    // Chinese reader was shown a page of options and offered none of them.
+    //
+    // THE AUTHOR'S SPACE PAGE, not a payment url. Bilibili's charge button
+    // lives there and the flow never leaves an app the reader is already signed
+    // into; a deep link into that flow is a url only Bilibili may build.
+    url: "https://space.bilibili.com/1965302",
+    locale: "zh",
+    // NO FLOOR STATED, unlike Ko-fi's. The floor on this one is Bilibili's and
+    // it is shown at the moment of paying; repeating it here would be a second
+    // copy of a number this repo has not measured.
+    what: "One-off or monthly, in CNY, from inside Bilibili — no card, and no new account.",
+  },
   {
     id: "kofi",
     // THE ACCOUNT IS THE PROJECT, AND THE PAGE BEHIND IT IS A PERSON. `ko-fi.com/wfsim` reads as the same thing as `wfsim.app` at
@@ -2657,29 +2681,66 @@ function noteSimRun(engagements) {
   try { localStorage.setItem(SUPPORT_USE, JSON.stringify(v)); } catch (_) { /* private mode */ }
 }
 
-/// HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and nothing else.
+/// WHO HAS CHIPPED IN, BY NAME — the only thing that ever leaves the ledger.
 ///
-/// Social proof is the one lever here with a replicated experiment behind it
-/// (Cialdini & Schroeder's paltry-contribution request is strongest when it is
-/// paired with it), and it is also the only figure about this project's money
-/// that can be published without publishing the author's finances: the worker
-/// stores one row per Ko-fi message id and no amount, no name and no email, so
-/// a count is the most it could report even if it were asked for more.
+/// A FILE, NOT AN ENDPOINT. `scripts/publish_thanks.py` reads the ledger, works
+/// out the order and writes `site/thanks.json`, which is committed the way
+/// `site/board/` is. Nothing at the edge is bound to the ledger, so no request
+/// to this site can ask what anybody gave.
 ///
-/// SILENT UNTIL IT IS CONFIGURED, and silent at zero. A "0 supporters" line is
-/// social proof pointing the wrong way, and a channel that has just opened has
-/// nothing to be ashamed of.
-let supportCount = null;
-function supportCountAsk() {
-  if (supportCount !== null) return;
-  supportCount = "asking";
-  fetch("/api/support/count")
+/// ORDERED, NEVER NUMBERED, and no rank, no band, no size. The order combines
+/// what somebody gave with how long ago they first gave it; printing a position
+/// beside a name would turn a thank-you into a leaderboard, which is the one
+/// thing the page above it promises it is not.
+///
+/// SILENT WHEN IT IS EMPTY, the rule every count on `/support` follows: a
+/// heading over nothing is worse than no heading.
+let thanksDoc = null;
+const thanksWaiting = [];
+function thanksAsk(then) {
+  if (thanksDoc !== null && thanksDoc !== "asking") { then(); return; }
+  thanksWaiting.push(then);
+  if (thanksDoc === "asking") return;
+  thanksDoc = "asking";
+  const land = (v) => { thanksDoc = v; thanksWaiting.splice(0).forEach((f) => f()); };
+  fetch("/thanks.json")
     .then((r) => (r.ok ? r.json() : null))
-    .then((j) => {
-      supportCount = j && j.ok ? j : "failed";
-      if (!$("support-page").hidden) renderSupport();
-    })
-    .catch(() => { supportCount = "failed"; });
+    // AN UNPUBLISHED LIST ARRIVES AS THE APP'S OWN HTML, with a 200: the SPA
+    // fallback answers every unmatched path with index.html. `.json()` is what
+    // tells a missing file from an empty one, so the catch IS the not-found.
+    .then((j) => land(j && Array.isArray(j.supporters) ? j : "failed"))
+    .catch(() => land("failed"));
+}
+function thanksNames() {
+  return (thanksDoc && typeof thanksDoc === "object" && thanksDoc.supporters) || [];
+}
+
+/// HOW MANY NAMES `/support` SHOWS BEFORE IT DEFERS TO `/thanks`. The block
+/// sits under the channels rather than over them: it is there to say that
+/// people do this, not to be read instead of the thing above it.
+const THANKS_PEEK = 24;
+function drawThanks(block, list, limit) {
+  const all = thanksNames();
+  block.hidden = all.length === 0;
+  if (!all.length) return;
+  const shown = limit ? all.slice(0, limit) : all;
+  list.innerHTML = shown.map((s) => `<li class="thx-one">`
+    + `<span class="thx-name">${escHtml(s.name)}</span>`
+    + `<span class="thx-since">${escHtml(s.since || "")}</span></li>`).join("");
+  const more = block.querySelector(".thx-more");
+  if (more) more.hidden = all.length <= shown.length;
+}
+function renderThanksPage() {
+  const block = $("thanks-block");
+  const list = $("thanks-list");
+  if (!block || !list) return;
+  const draw = () => {
+    drawThanks(block, list, 0);
+    const none = $("thanks-none");
+    if (none) none.hidden = thanksNames().length > 0;
+  };
+  thanksAsk(draw);
+  draw();
 }
 
 /// THE FACTS STRIP — what this repository holds, counted rather than claimed.
@@ -2805,15 +2866,12 @@ function renderSupport() {
         <span class="run-btn">${escHtml(tr("Open"))} ↗</span>
       </a>`).join("");
   }
-  const count = $("support-count");
-  if (count) {
-    supportCountAsk();
-    const ok = supportCount && typeof supportCount === "object" && supportCount.count > 0;
-    count.hidden = !ok;
-    if (ok) {
-      count.textContent = tr("{n} people have chipped in so far.")
-        .replace("{n}", supportCount.count.toLocaleString());
-    }
+  const thanksBlock = $("support-thanks");
+  const thanksList = $("support-thanks-list");
+  if (thanksBlock && thanksList) {
+    const draw = () => drawThanks(thanksBlock, thanksList, THANKS_PEEK);
+    thanksAsk(draw);
+    draw();
   }
 }
 
@@ -9997,7 +10055,7 @@ function buildPayload() {
 /// LAYOUT (its polarity, the Forma plan) and the caller that knows says so. An
 /// optimizer row does and a share link does not, so the link takes the order
 /// the list is in. A BOARD ROW DOES: it carries `exilus` as its own field, and
-/// `builtinBuilds` is where that is read back into the slot.
+/// `boardEntries` is where that is read back into the slot.
 function stateFromBuild(p, weapon, exilusId) {
   const w = weaponInfo(weapon) || {};
   const ids = (p.mods || []).filter(Boolean);

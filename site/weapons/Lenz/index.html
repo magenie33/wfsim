@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.630c7deafbbe.css" />
+  <link rel="stylesheet" href="/asset/style.cf56646f017e.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -438,6 +438,29 @@
        NO RESPONSE TIME IS PROMISED ANYWHERE, in any language. "Read first" is
        an order; "within N hours" is an obligation that grows with every
        subscriber, and that is the shape maintainers are buried by. -->
+  <!-- THE THANKS PAGE. A URL meant to be PASTED — a video description, the
+       group — so it is a real address with its own title and its own preview
+       rather than a section of /support somebody has to be told to scroll to.
+       It carries no figure: `publish_thanks.py` writes names and a month, and
+       the order is the only thing the ranking is allowed to say. -->
+  <main id="thanks-page" class="support-page" hidden>
+    <h1 id="h-thanks" class="hero-h" data-i18n>Thank you</h1>
+    <p class="hero-sub" data-i18n>WFSim is free for everyone and always will be. These are the people who chipped in anyway, earliest and largest first — no tiers, no ranks, and no numbers beside a name.</p>
+    <section class="block">
+      <div class="bb">
+        <div id="thanks-block" class="thx-block" hidden>
+          <ul id="thanks-list" class="thx-list thx-full"></ul>
+        </div>
+        <!-- WHAT AN EMPTY LIST SAYS. On /support the block is simply absent —
+             a list of nobody is social proof pointing the wrong way — but a
+             page somebody navigated TO owes them a sentence rather than a
+             blank. -->
+        <p id="thanks-none" class="sup-note" hidden data-i18n>Nobody has chipped in yet. The list starts with whoever is first.</p>
+        <p class="sup-note"><a href="/support" data-i18n>How to chip in →</a></p>
+      </div>
+    </section>
+  </main>
+
   <main id="support-page" class="support-page" hidden>
     <h2 id="h-support" class="hero-h" data-i18n>Support WFSim</h2>
     <!-- What this says nothing about is accounts, or anything else that does
@@ -497,7 +520,17 @@
              refuses to state a target: a target turns a thank-you into a
              fundraiser, and there is nothing here that a sum unlocks. -->
         <p class="sup-note" data-i18n>One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.</p>
-        <p id="support-count" class="sup-count" hidden></p>
+        <!-- THE NAMES, UNDER THE DOOR AND NOT OVER IT. Social proof is the one
+             lever here with a replicated experiment behind it, and a name
+             carries it where a count could not: a reader recognises the kind
+             of person who does this. It sits BELOW the channels because it is
+             there to say that people do this, not to be read instead of the
+             thing above it. Drawn only when there is somebody to draw. -->
+        <div id="support-thanks" class="thx-block" hidden>
+          <h3 class="thx-head" data-i18n>The people who have chipped in</h3>
+          <ul id="support-thanks-list" class="thx-list"></ul>
+          <p class="thx-more" hidden><a href="/thanks" data-i18n>Everyone who has →</a></p>
+        </div>
       </div>
     </section>
 
@@ -1062,13 +1095,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">30648267</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">7672f36d</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.c5cd097ba3e1.js"></script>
+  <script src="/asset/app.110d14df3b23.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is

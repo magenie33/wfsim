@@ -867,7 +867,17 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    the page that is about them. */
 .sup-usage{font-size:13px;color:var(--gold);border-left:2px solid var(--gold);
   padding:2px 0 2px 12px;margin:22px 0 0;max-width:760px;line-height:1.6}
-.sup-count{font-size:12px;color:var(--text-2);margin:10px 0 0}
+.thx-block{margin:22px 0 0}
+.thx-head{font-size:13px;color:var(--text-2);font-weight:600;margin:0 0 10px}
+/* EVERY NAME IS DRAWN THE SAME. The order carries the ranking and nothing else
+   may: a larger or brighter name at the top is a price list drawn rather than
+   written, and the page above promises there are no tiers. */
+.thx-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.thx-one{display:inline-flex;align-items:baseline;gap:6px;padding:4px 10px;
+  border:1px solid var(--line);border-radius:999px;font-size:13px}
+.thx-name{color:var(--text)}
+.thx-since{color:var(--text-2);font-size:11px;font-variant-numeric:tabular-nums}
+.thx-more{font-size:12px;margin:12px 0 0}
 .sup-costs,.dl-page .sup-costs{list-style:none;margin:0;padding:0;font-size:13px}
 .sup-costs li{padding:7px 0;color:var(--text-2)}
 .sup-costs li+li{border-top:1px solid var(--line)}

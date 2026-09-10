@@ -36,9 +36,9 @@
     "run_worker_first": ["/api/*"]
   },
   // WHERE EVERYTHING GOES. One database, and it is the only store: the library
-  // of builds, the scores computed from it, the disagreement reports and the
-  // supporter count. A KV namespace held the library and could not be asked a
-  // question about it — no queries, no transactions, no bulk read, and listing
+  // of builds, the scores computed from it, and the money that has come in. A
+  // KV namespace held the library and could not be asked a question about it —
+  // no queries, no transactions, no bulk read, and listing
   // was the only index, metered at a thousand operations a DAY.
   //
   // IN THIS FILE AND NOT IN THE DASHBOARD: a wrangler deploy REPLACES the
@@ -51,7 +51,7 @@
   //
   //   npx wrangler d1 create wfsim
   //   npx wrangler d1 execute wfsim --remote --file worker/schema.sql
-  //   npx wrangler secret put KOFI_TOKEN     (from the Ko-fi webhook page)
+  //   npx wrangler d1 execute wfsim --remote --file ledger/schema.sql
   "d1_databases": [
     {
       "binding": "LIBRARY",

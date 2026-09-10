@@ -15,9 +15,8 @@
 // absent on a browser that has run nothing, present and CORRECT after a real
 // run, and absent from the request that run sent.
 //
-// AND THE NEGATIVE CONTROLS ARE THE CHANNELS: an entry with no url must draw
-// nothing, which is what makes an unopened Patreon safe to declare, and the
-// supporter line must stay silent while its store is unconfigured.
+// AND THE NEGATIVE CONTROL IS THE CHANNELS: an entry with no url must draw
+// nothing, which is what makes an unopened Patreon safe to declare.
 import { openApp, sleep } from "./cdp.mjs";
 
 const app = await openApp({ boot: 20000 });
@@ -101,7 +100,6 @@ const chans = await evaluate(`(() => {
   return {
     cards,
     declared: SUPPORT_CHANNELS.map((c) => ({ id: c.id, hasUrl: !!c.url })),
-    countHidden: $("support-count").hidden,
   };
 })()`);
 
@@ -118,8 +116,6 @@ check(`${tag} ...and one that does not is not (negative control)`,
 check(`${tag} ...and the one-off card states the floor`,
   chans.cards.some((c) => /ko-?fi/i.test(c.name) && c.what.includes("$3")),
   JSON.stringify(chans.cards));
-check(`${tag} the supporter count is silent while its store is unconfigured`,
-  chans.countHidden === true, `hidden=${chans.countHidden}`);
 
 // ---------------------------------------------------------------------------
 // 4. WHAT THE READER HAS RUN. Absent on a fresh browser, then a real run.

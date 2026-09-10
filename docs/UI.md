@@ -296,19 +296,25 @@ advertising instead; this project's own promise is that nothing bought moves a
 result. NO RESPONSE TIME IS PROMISED IN ANY LANGUAGE: "read first" is an
 order, "within N hours" is an obligation that grows with every subscriber.
 
-THE SUPPORTER COUNT IS THE ONLY MONEY FIGURE PUBLISHED, and the store cannot
-hold more: `SUPPORT` is one empty KV key per Ko-fi message id with the DAY as
-metadata — no amount, no name, no email. A namespace of its OWN, so that what
-each store holds is one kind of thing.
+NO MONEY FIGURE IS PUBLISHED, and no endpoint serves one. What arrives is
+recorded by hand in `ledger/schema.sql`'s tables; the only thing that ever
+leaves them is a list of NAMES, written to `site/thanks.json` by
+`scripts/publish_thanks.py` and committed the way `site/board/` is. Nothing at
+the edge is bound to the ledger, so no request to this site can ask what
+anybody gave.
 
-IT READS A COUNTER AND DOES NOT LIST, at `meta/supporters`. KV meters LIST at a
-thousand a DAY across the ACCOUNT, so an endpoint that lists once per reader
-spends the same budget the board's pipeline runs on — measured, on the day
-`/api/board/pending` did exactly that and took the board down until UTC
-midnight. This one SEEDS ITSELF: a supporter key never expires and the webhook
-is the only writer, so the first read lists once, writes what it found, and
-every read after it is a read. A replay of a Ko-fi delivery does not bump it —
-the message id is the key.
+THE ORDER IS THE ONLY THING THE RANKING SAYS. It combines what somebody gave
+with how long ago they first gave it — the rule is stated beside the constant
+that sets it — and the page prints no position, no band and no figure, because
+`/support` promises in so many words that there are no tiers and nothing is
+bought. An ordered list is a list; the same list numbered is a leaderboard.
+`check_thanks` holds both lines.
+
+THE BLOCK SITS BELOW THE CHANNELS on `/support`, and `/thanks` is the whole
+list at an address meant to be PASTED — a video description, the group. Empty,
+the block is absent and the page says so in a sentence: a list of nobody is
+social proof pointing the wrong way, but a page somebody navigated to owes them
+more than a blank.
 
 WHAT THE READER HAS RUN NEVER LEAVES THE BROWSER. `wfsim-use` is two integers
 written by `runSim` and read by `/support` alone; the page says so where it

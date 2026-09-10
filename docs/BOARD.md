@@ -2003,9 +2003,10 @@ change actually reached, and only those are rescored.
 
 ## One database, and the two things that are deliberately not in it
 
-**ONE D1 DATABASE IS THE SYSTEM OF RECORD**, and it holds four tables: `inbox`,
-what players sent, verbatim, until intake has made a build of it; `builds`, the
-library; `scores`, the facts computed from it; and `supporters`, a count.
+**ONE D1 DATABASE IS THE SYSTEM OF RECORD**, and the board holds three tables
+in it: `inbox`, what players sent, verbatim, until intake has made a build of
+it; `builds`, the library; and `scores`, the facts computed from it. `batches`
+and `queue` are the work list beside them, and they may only ever CAUSE work.
 Nothing else is a live store — there is no KV namespace and no R2 bucket.
 
 The division is decided by two questions, asked of each piece of data:

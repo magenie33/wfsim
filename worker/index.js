@@ -248,92 +248,10 @@ async function pending(env) {
     },
   });
 }
-/// HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and nothing else.
-///
-/// Social proof is the one lever on `/support` with a replicated experiment
-/// behind it: a request that legitimises a small gift performs best beside a
-/// statement that others have given (Cialdini & Schroeder 1976, and its 2007
-/// replication). It is also the only figure about this project's funding that
-/// can be published without publishing the author's finances.
-///
-/// THE TABLE CANNOT HOLD MORE. One row per Ko-fi message id and a DAY: no
-/// amount, no name, no email, no message. Asked for a total, this worker
-/// could not produce one.
-async function supporters(env) {
-  if (!env.LIBRARY) return bad("the library is not configured", 503);
-  let count = null;
-  try {
-    const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM supporters").first();
-    const n = Number(r && r.n);
-    if (Number.isFinite(n)) count = n;
-  } catch (e) {
-    console.log("supporter count failed:", (e && e.message) || String(e));
-  }
-  return new Response(JSON.stringify({ ok: true, count }), {
-    headers: {
-      "content-type": "application/json",
-      // An hour. This changes a handful of times a week at best, and the line
-      // it feeds is a footnote beside the channels rather than a live figure.
-      "cache-control": "public, max-age=3600",
-    },
-  });
-}
-
-/// KO-FI'S WEBHOOK, which is what makes the count above automatic.
-///
-/// Ko-fi POSTs `application/x-www-form-urlencoded` with a single `data` field
-/// carrying json, and the json carries a `verification_token` only the account
-/// owner can read off their own dashboard. That token is the whole of the
-/// authentication and it is a SECRET (`wrangler secret put KOFI_TOKEN`) —
-/// without it configured this refuses everything, because an endpoint that
-/// counts anonymous POSTs is a counter anybody can drive.
-///
-/// IDEMPOTENT ON THE MESSAGE ID. Ko-fi retries a delivery it did not see
-/// acknowledged, and a retry must not be a second supporter — the id is the
-/// key, so a replay writes the same row and the count does not move.
-///
-/// WHAT IS DROPPED, before anything is written: the amount, the supporter's
-/// name and email, the message they typed, and the timestamp's time. What is
-/// kept is that a payment happened, on a day.
-async function kofi(request, env) {
-  if (!env.LIBRARY) return bad("the library is not configured", 503);
-  if (!env.KOFI_TOKEN) return bad("supporter webhook is not configured", 503);
-  let msg;
-  try {
-    const form = await request.formData();
-    msg = JSON.parse(form.get("data") || "null");
-  } catch (_) {
-    return bad("not a Ko-fi payload");
-  }
-  if (!msg || typeof msg !== "object") return bad("not a Ko-fi payload");
-  if (msg.verification_token !== env.KOFI_TOKEN) return bad("bad token", 403);
-  const id = String(msg.message_id || "");
-  // A plain id, because it becomes a key: Ko-fi sends a uuid, and anything
-  // else is a payload this was not written for.
-  if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) return bad("bad message id");
-  try {
-    await env.LIBRARY.prepare(
-      "INSERT OR REPLACE INTO supporters (message_id, at) VALUES (?, ?)",
-    ).bind(id, new Date().toISOString().slice(0, 10)).run();
-  } catch (e) {
-    console.log("supporter write failed:", (e && e.message) || String(e));
-    return bad("the supporter could not be recorded", 503);
-  }
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { "content-type": "application/json" },
-  });
-}
-
 
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
-    if (path === "/api/support/count") {
-      return request.method === "GET" ? supporters(env) : bad("GET only", 405);
-    }
-    if (path === "/api/support/kofi") {
-      return request.method === "POST" ? kofi(request, env) : bad("POST only", 405);
-    }
     if (path === "/api/board/pending") {
       return request.method === "GET" ? pending(env) : bad("GET only", 405);
     }

@@ -28,41 +28,6 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-// A KV stub that records what it was asked to store. The worker touches `put`,
-// `get` — it asks whether a build is already held before bumping the counter —
-// and `list`.
-//
-// `get` RETURNS A STRING, like KV does, and the counter is stored as one:
-// a stub that handed back a number would let `Number.parseInt` be dropped and
-// nothing would notice until the endpoint answered `null` in production.
-const store = () => {
-  const rows = new Map();
-  return {
-    rows,
-    // A VALUE THAT IS NOT JSON IS STILL A VALUE. The build records are objects
-    // and the assertions below read them as objects, but a supporter key holds
-    // the empty string — so what does not parse is kept as it arrived.
-    put: async (k, v) => { let p; try { p = JSON.parse(v); } catch { p = v; } rows.set(k, p); },
-    // …AND GIVES BACK A STRING, like KV does. The rows are held parsed for the
-    // assertions below; what `get` hands the worker is what KV would.
-    get: async (k) => {
-      if (!rows.has(k)) return null;
-      const v = rows.get(k);
-      return typeof v === "string" ? v : JSON.stringify(v);
-    },
-    // KV LISTS IN PAGES and a caller may page through them; the stub answers in
-    // one page, which is the shape a store this size really has. The PREFIX is
-    // honoured because the supporter count leans on it to leave its own counter
-    // key out of what it is counting.
-    list: async (o) => ({
-      keys: [...rows.keys()]
-        .filter((k) => !(o && o.prefix) || k.startsWith(o.prefix))
-        .map((name) => ({ name })),
-      list_complete: true,
-    }),
-  };
-};
-
 // A D1 STUB, AND IT IS THE WHOLE STORE NOW. `prepare(sql).bind(...).run()` and
 // `.first()` are the whole surface the worker touches.
 //
@@ -315,57 +280,6 @@ console.log("the board's submission endpoint\n");
   check("...and every arrival is counted, because that is what it counts",
     (await ask()) === 3, String(await ask()));
 
-}
-
-
-// ---- and the supporter count is the same shape ------------------------------
-//
-// THE SAME QUESTION, THE SAME ANSWER. A supporter row holds a Ko-fi message id
-// and a DAY and cannot hold more — no amount, no name, no email — so the count
-// is the only figure about this project's funding that exists, and it is a
-// `COUNT(*)` like the library's.
-//
-// IDEMPOTENT ON THE MESSAGE ID, because Ko-fi redelivers what it did not see
-// acknowledged and a retry must not be a second supporter.
-{
-  const db = database();
-  const env = { LIBRARY: db, KOFI_TOKEN: "t", ASSETS: { fetch: async () => new Response("site") } };
-  const ask = async () => {
-    const r = await worker.fetch(new Request("https://wfsim.app/api/support/count"), env);
-    return r.ok ? (await r.json()).count : `not ok ${r.status}`;
-  };
-  const kofi = async (id) => worker.fetch(
-    new Request("https://wfsim.app/api/support/kofi", {
-      method: "POST",
-      body: new URLSearchParams({
-        data: JSON.stringify({ verification_token: "t", message_id: id }),
-      }),
-    }),
-    env,
-  );
-  check("an empty supporter table counts zero", (await ask()) === 0, String(await ask()));
-  await kofi("bbbbbbbb-1");
-  await kofi("bbbbbbbb-2");
-  check("...and two deliveries count two", (await ask()) === 2, String(await ask()));
-  await kofi("bbbbbbbb-1");
-  check("...and a redelivery of the same message does not",
-    (await ask()) === 2, String(await ask()));
-
-  // THE TOKEN IS THE WHOLE OF THE AUTHENTICATION, so a payload without it is
-  // refused before anything is written: an endpoint that counts anonymous POSTs
-  // is a counter anybody can drive.
-  const bogus = await worker.fetch(
-    new Request("https://wfsim.app/api/support/kofi", {
-      method: "POST",
-      body: new URLSearchParams({
-        data: JSON.stringify({ verification_token: "wrong", message_id: "cccccccc-1" }),
-      }),
-    }),
-    env,
-  );
-  check("a delivery with the wrong token is refused", bogus.status === 403,
-    String(bogus.status));
-  check("...and counted as nothing", (await ask()) === 2, String(await ask()));
 }
 
 

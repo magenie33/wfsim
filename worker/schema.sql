@@ -181,16 +181,3 @@ CREATE TABLE IF NOT EXISTS queue (
 -- "WHAT IS LEFT, IN ORDER" is one indexed read, and it is the only question a
 -- run asks of this table.
 CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
-
--- HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and the schema cannot hold more.
---
--- One row per Ko-fi message id, a DAY, and nothing else: no amount, no name, no
--- email, no message. That is a property of the table rather than a promise
--- about the endpoint — asked for a total, this worker could not produce one.
---
--- IDEMPOTENT ON THE MESSAGE ID, because Ko-fi retries a delivery it did not see
--- acknowledged and a retry must not be a second supporter.
-CREATE TABLE IF NOT EXISTS supporters (
-  message_id TEXT PRIMARY KEY,
-  at         TEXT NOT NULL
-);

@@ -959,64 +959,59 @@ def prerender(flagged: str) -> None:
         "Weapons",
     ))
 
-    # /support — a URL people paste, so it gets the same treatment. Its OG
-    # description says what the page IS (running costs, nothing sold); a link
-    # that previews as "WFSim — Warframe Calculator" and opens on a donation
-    # page is the kind of mismatch that reads as a scam.
-    sup_desc = (
-        "What it costs to run WFSim, and where to chip in. WFSim is a free, "
-        "open-source Warframe calculator: no ads, and no feature locked behind "
-        "a payment. A donation covers the domain, the CDN and the measurement "
-        "work — it buys no feature and no perk, and nothing here is for sale."
-    )
-    (APP / "support").mkdir(parents=True, exist_ok=True)
-    (APP / "support" / "index.html").write_text(
-        shell(
-            flagged,
-            "Support WFSim — running costs",
-            sup_desc,
-            SITE + "/support",
-            f"{SITE}/logo.svg",
-            f"    <p>{html_mod.escape(sup_desc)}</p>\n"
-            f'    <p><a href="{SITE}/">wfsim.app</a></p>\n',
-            "h-support",
-            "Support",
+    # THE SHELL PAGES, AND THIS LIST IS THE ONLY PLACE THEY ARE NAMED.
+    #
+    # Each is a URL people paste, so each needs its own title, description and
+    # canonical: a link that previews as "WFSim — Warframe Calculator" and opens
+    # on a donation page is the kind of mismatch that reads as a scam.
+    #
+    # THE SITEMAP READS THE SAME LIST. Written out page by page, a fourth one
+    # got a file and no sitemap row — which is a page no crawler is ever told
+    # exists, and nothing anywhere would have said so.
+    shell_pages = [
+        (
+            "support", "Support WFSim — running costs", "h-support", "Support",
+            "What it costs to run WFSim, and where to chip in. WFSim is a free, "
+            "open-source Warframe calculator: no ads, and no feature locked behind "
+            "a payment. A donation covers the domain, the CDN and the measurement "
+            "work — it buys no feature and no perk, and nothing here is for sale.",
         ),
-        encoding="utf-8",
-        newline="\n",
-    )
-
-    # /download — the URL a reader types after seeing it in a video, so it is
-    # prerendered like /support: without its own title, description and
-    # canonical it previews as the app's own headline, and a link that says
-    # "WFSim — Warframe Calculator" and opens on an executable download is the
-    # kind of mismatch that reads as a scam.
-    dl_desc = (
-        "WFSim as a Windows app: the same calculator on your own machine, "
-        "opening instantly, working with no connection and updating itself. "
-        "It is not a cut-down version — it carries the same engine the site "
-        "serves. Free and open source, AGPL-3.0."
-    )
-    (APP / "download").mkdir(parents=True, exist_ok=True)
-    (APP / "download" / "index.html").write_text(
-        shell(
-            flagged,
-            "Download WFSim for Windows",
-            dl_desc,
-            SITE + "/download",
-            f"{SITE}/logo.svg",
-            f"    <p>{html_mod.escape(dl_desc)}</p>\n"
-            f'    <p><a href="{SITE}/">wfsim.app</a></p>\n',
-            "h-download",
-            "Download",
+        (
+            "download", "Download WFSim for Windows", "h-download", "Download",
+            "WFSim as a Windows app: the same calculator on your own machine, "
+            "opening instantly, working with no connection and updating itself. "
+            "It is not a cut-down version — it carries the same engine the site "
+            "serves. Free and open source, AGPL-3.0.",
         ),
-        encoding="utf-8",
-        newline="\n",
-    )
-
-    urls = [SITE + "/", SITE + "/weapons", SITE + "/support", SITE + "/download"] + [
-        SITE + wiki_path(s) for s in roster()
+        (
+            "thanks", "Thank you — the people who chipped in", "h-thanks", "Thank you",
+            "The people who have chipped in to keep WFSim running. WFSim is a free, "
+            "open-source Warframe calculator and nothing on it is for sale: a "
+            "donation buys no feature, no perk and no place in any queue. This is "
+            "everyone who gave anyway.",
+        ),
     ]
+    for path, title, hero, nav, desc in shell_pages:
+        (APP / path).mkdir(parents=True, exist_ok=True)
+        (APP / path / "index.html").write_text(
+            shell(
+                flagged,
+                title,
+                desc,
+                f"{SITE}/{path}",
+                f"{SITE}/logo.svg",
+                f"    <p>{html_mod.escape(desc)}</p>\n"
+                f'    <p><a href="{SITE}/">wfsim.app</a></p>\n',
+                hero,
+                nav,
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+
+    urls = ([SITE + "/", SITE + "/weapons"]
+            + [f"{SITE}/{path}" for path, *_ in shell_pages]
+            + [SITE + wiki_path(s) for s in roster()])
     put(
         APP / "sitemap.xml",
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -1027,8 +1022,10 @@ def prerender(flagged: str) -> None:
     # Without this file the SPA fallback answered /robots.txt with HTML and a
     # 200, which is a soft 404 for every crawler that asks.
     put(APP / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n")
-    print(f"prerendered {len(urls) - 4} weapon pages + /weapons + /support + /download + "
-          f"sitemap.xml + robots.txt — {WROTE[0]} written, {WROTE[1]} already current")
+    named = ", ".join("/" + path for path, *_ in shell_pages)
+    print(f"prerendered {len(urls) - 2 - len(shell_pages)} weapon pages + /weapons + "
+          f"{named} + sitemap.xml + robots.txt — "
+          f"{WROTE[0]} written, {WROTE[1]} already current")
 
 
 WROTE = [0, 0]  # [written, already current]
