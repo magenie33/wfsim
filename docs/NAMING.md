@@ -144,7 +144,7 @@ it and not a container per thing. The CONTENT is named one level down.
 | resource | name | what is inside |
 | --- | --- | --- |
 | Worker | `wfsim` | the site and its api |
-| D1 database | `wfsim` | `builds`, `scores`, `disagreements`, `supporters` |
+| D1 database | `wfsim` | the board's `inbox`, `builds`, `scores`, `batches`, `queue`; the money's `donations`, `donors`, `rates` |
 
 **A NAME DESCRIBES THE RESOURCE, NOT WHAT HAPPENS TO BE IN IT.** A bucket named
 for one prefix is false the day a second prefix is added, and opening a second
