@@ -1873,6 +1873,11 @@ async function init() {
     e.preventDefault();
     nav(a.getAttribute("href"));
   });
+  // EVERY BLOCK AND EVERY SECTION FOLDS, and the menu that indexes them is one
+  // panel for the whole page — so both are wired once, before the first route
+  // draws anything for them to report on.
+  wireStaticFolds();
+  wireJump();
   route();
   // A language switch reloads the page; the pre-switch build is stashed in
   // sessionStorage and restored here so nothing is lost.
@@ -2109,6 +2114,9 @@ async function route() {
   } else {
     renderHome();
   }
+  // LAST: the jump menu indexes whatever the page has just become, and which
+  // blocks a module shows is decided above.
+  renderJump();
 }
 
 // The current module's path suffix — weapon switches (search, select,
@@ -16302,20 +16310,241 @@ function foldBlock(id, title, hint, body) {
   </div>`;
 }
 
-/// Wire every block on the page. Called once per render, and delegated from the
+/// SHUT OR OPEN ONE FOLD, whatever shape it has. A `.block` keeps its state on
+/// the section and its caret in the `.bh` it already had; a `.fold` keeps both
+/// on itself. One function, so the two wiring passes, the jump menu and
+/// "collapse all" cannot disagree about what shut means.
+function setFold(box, shut) {
+  box.classList.toggle("shut", shut);
+  foldState[box.dataset.fold] = shut;
+  saveFolds();
+}
+
+const foldCaret = () => {
+  const c = document.createElement("span");
+  c.className = "fold-c";
+  c.textContent = "▾";
+  return c;
+};
+
+/// A CLICK ON A CONTROL IN THE HEADING IS THAT CONTROL'S. The Buffs section's
+/// "all", the mods axis's filter box, the Forma buttons in `.bh`: a heading is
+/// allowed to carry them, and folding the thing they belong to instead is the
+/// one way this feature can make the page worse.
+const foldsOnClick = (e) => !e.target.closest("button,input,select,a,label");
+
+/// Wire every fold on the page. Called once per render, and delegated from the
 /// heading rather than the whole block, so a click inside the body — a scrub
 /// bar, a mod row — never folds the thing it is inside.
+///
+/// The caret and the saved state are applied HERE rather than written into the
+/// markup: `.fold.sect` is authored in `index.html`, where neither is knowable.
 function wireFolds(root) {
   (root || document).querySelectorAll(".fold > .fold-h").forEach((h) => {
-    h.onclick = () => {
-      const box = h.parentElement;
-      const id = box.dataset.fold;
-      const shut = !box.classList.contains("shut");
-      box.classList.toggle("shut", shut);
-      foldState[id] = shut;
-      saveFolds();
+    const box = h.parentElement;
+    if (!h.querySelector(":scope > .fold-c")) h.insertBefore(foldCaret(), h.firstChild);
+    box.classList.toggle("shut", folded(box.dataset.fold));
+    h.onclick = (e) => {
+      if (!foldsOnClick(e)) return;
+      setFold(box, !box.classList.contains("shut"));
+      renderJump();
     };
   });
+}
+
+/// THE PAGE'S OWN BLOCKS FOLD TOO, from the header they already have. They are
+/// in the markup and outlive every render, so this runs once at boot; the
+/// result panel's `foldBlock`s are rebuilt on each render and rewired there.
+function wireStaticFolds() {
+  document.querySelectorAll(".config-page section.block").forEach((b) => {
+    const h = b.querySelector(":scope > .bh");
+    if (!h) return;
+    // The block's own id IS its fold id — a block that is renamed or added
+    // needs nothing said here or in `index.html`.
+    b.dataset.fold = b.id;
+    h.insertBefore(foldCaret(), h.firstChild);
+    b.classList.toggle("shut", folded(b.id));
+    h.addEventListener("click", (e) => {
+      if (!foldsOnClick(e)) return;
+      setFold(b, !b.classList.contains("shut"));
+      renderJump();
+    });
+  });
+  wireFolds();
+}
+
+// ---- THE JUMP MENU -----------------------------------------------------
+//
+// Every section on a weapon page folds, which makes "where is the one I want"
+// the question the page suddenly answers worst: a shut section is one line, and
+// twenty of them are twenty lines that all look alike. This is the page's own
+// index — the module's blocks, the sections inside each, and the other tabs —
+// and a row OPENS what it jumps to.
+//
+// IT DRAGS, because no corner is free on every window, and it remembers where
+// it was put. The position is clamped back into the viewport on every resize:
+// a spot chosen on a wide monitor is off-screen on a laptop, and a menu nobody
+// can reach is worse than no menu.
+const JUMP_KEY = "wfsim-jump";
+let jump = { x: null, y: 96, open: false };
+try { jump = { ...jump, ...(JSON.parse(localStorage.getItem(JUMP_KEY)) || {}) }; } catch (_) {}
+const saveJump = () => localStorage.setItem(JUMP_KEY, JSON.stringify(jump));
+
+/// EVERY FOLD ON THE PAGE, in the order the reader meets them: this module's
+/// blocks, and the sections inside each. Read off the DOM, so a section added
+/// tomorrow is in the menu — and in "collapse all" — with no edit here.
+///
+/// A SHUT BLOCK STILL LISTS ITS SECTIONS. `offsetParent` answers "is this the
+/// module on screen" for a block; asked of a section it would answer "is the
+/// block above it open", which would make the menu change shape as you fold and
+/// leave "expand all" with sections it never reached.
+function pageFolds() {
+  const out = [];
+  document.querySelectorAll(".config-page section.block").forEach((b) => {
+    if (b.offsetParent === null) return;
+    const n = b.querySelector(".bh .n"), h2 = b.querySelector(".bh h2");
+    out.push({ box: b, depth: 0,
+      name: [n && n.textContent.trim(), h2 && h2.textContent.trim()].filter(Boolean).join(" · ") });
+    b.querySelectorAll(".fold.sect").forEach((s) => {
+      // `hidden` is how an axis a weapon does not have is taken off the page.
+      if (s.closest("[hidden]")) return;
+      let depth = 0;
+      for (let p = s.parentElement; p && p !== b; p = p.parentElement) {
+        if (p.classList.contains("sect")) depth += 1;
+      }
+      out.push({ box: s, depth: depth + 1, name: foldTitle(s) });
+    });
+  });
+  return out;
+}
+
+/// WHAT A SECTION IS CALLED, with everything that is not its name removed: the
+/// hint, the caret, the controls, and the sub-label the Warframe buffs carry.
+/// The optimizer's axes keep their name in an `.axh` stamped from the builder's
+/// own block, which is text like any other once it is there.
+function foldTitle(box) {
+  const h = box.querySelector(":scope > .fold-h");
+  if (!h) return box.dataset.fold || "";
+  const c = h.cloneNode(true);
+  c.querySelectorAll(".sim-hint,.sim-h-sub,.fold-c,button").forEach((x) => x.remove());
+  return c.textContent.replace(/\s+/g, " ").trim();
+}
+
+/// The module whose blocks are on screen — the same fact `route()` states in a
+/// body class, read back rather than parsed out of the path a second time.
+const jumpMod = () => ["simulator", "optimizer", "rivens", "enemies"]
+  .find((m) => document.body.classList.contains("on-" + m)) || "";
+
+const JUMP_TABS = [["", "Builder"], ["simulator", "Simulator"], ["optimizer", "Optimizer"],
+                   ["rivens", "Rivens"], ["enemies", "Enemies"]];
+
+function jumpRows() {
+  const here = jumpMod();
+  const base = weaponPath($("weapon").value);
+  let h = `<div class="jump-mods">` + JUMP_TABS.map(([m, label]) =>
+    `<a class="jump-mod${m === here ? " sel" : ""}" href="${base}${m ? "/" + m : ""}">${
+      escHtml(tr(label))}</a>`).join("") + `</div>`;
+  h += pageFolds().map((f) => {
+    const shut = f.box.classList.contains("shut");
+    return `<button class="jump-row ${f.depth ? "sub" : "blk"}${f.depth > 1 ? " deep" : ""}${
+      shut ? " is-shut" : ""}" data-jump="${escHtml(f.box.dataset.fold)}">`
+      + `<span class="jr-n">${escHtml(f.name)}</span>`
+      + `<span class="jr-c">${shut ? "▸" : "▾"}</span></button>`;
+  }).join("");
+  return h + `<div class="jump-foot">`
+    + `<button class="ghost-btn small" data-jump-all="shut">${escHtml(tr("Collapse all"))}</button>`
+    + `<button class="ghost-btn small" data-jump-all="open">${escHtml(tr("Expand all"))}</button>`
+    + `</div>`;
+}
+
+/// Where the menu sits, clamped into the window it is being drawn in.
+function placeJump() {
+  const el = $("jump");
+  if (!el || el.hidden) return;
+  const mx = Math.max(8, window.innerWidth - el.offsetWidth - 8);
+  const my = Math.max(8, window.innerHeight - el.offsetHeight - 8);
+  if (jump.x == null) jump.x = mx;
+  jump.x = Math.min(Math.max(8, jump.x), mx);
+  jump.y = Math.min(Math.max(8, jump.y), my);
+  el.style.left = `${jump.x}px`;
+  el.style.top = `${jump.y}px`;
+}
+
+/// Drawn on every route and after every fold, because the carets it shows are
+/// the page's state and a menu that reports the wrong one is worse than none.
+/// The rows are built only while it is OPEN — shut, it is one button.
+function renderJump() {
+  const el = $("jump");
+  if (!el) return;
+  const on = !document.querySelector(".config-page").hidden;
+  el.hidden = !on;
+  if (!on) return;
+  el.classList.toggle("open", !!jump.open);
+  if (jump.open) $("jump-body").innerHTML = jumpRows();
+  placeJump();
+}
+
+/// OPEN WHAT YOU JUMPED TO, and everything it is inside. Scrolling to a shut
+/// section lands on a heading with nothing under it, which reads as a jump that
+/// did nothing — and jumping to a section inside a shut block would not move at
+/// all, since the block hides it.
+function jumpTo(id) {
+  const box = document.querySelector(`[data-fold="${CSS.escape(id)}"]`);
+  if (!box) return;
+  for (let el = box; el; el = el.parentElement && el.parentElement.closest("[data-fold]")) {
+    if (el.classList.contains("shut")) setFold(el, false);
+  }
+  renderJump();
+  // UNDER THE STICKY TOPBAR, not behind it: the heading is the thing being
+  // jumped to, and a bar covering it is a jump that missed.
+  const bar = document.querySelector(".topbar");
+  const top = box.getBoundingClientRect().top + window.scrollY - ((bar ? bar.offsetHeight : 0) + 10);
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+}
+
+/// The whole page at once — the reason the menu earns its space. Every section
+/// shut is one screen, and the one you want is then a click, not a scroll.
+function foldAll(shut) {
+  pageFolds().forEach((f) => setFold(f.box, shut));
+  renderJump();
+}
+
+/// Wired once. The grip is BOTH the handle and the switch: a pointer that never
+/// moved is a click, which is how a one-button panel can also be dragged.
+function wireJump() {
+  const el = $("jump"), grip = $("jump-grip");
+  if (!el || !grip) return;
+  let from = null;
+  grip.addEventListener("pointerdown", (e) => {
+    placeJump();                    // so a drag starts from a real position
+    from = { x: e.clientX, y: e.clientY, ox: jump.x, oy: jump.y, moved: false };
+    grip.setPointerCapture(e.pointerId);
+    el.classList.add("dragging");
+  });
+  grip.addEventListener("pointermove", (e) => {
+    if (!from) return;
+    const dx = e.clientX - from.x, dy = e.clientY - from.y;
+    if (!from.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+    from.moved = true;
+    jump.x = from.ox + dx;
+    jump.y = from.oy + dy;
+    placeJump();
+  });
+  grip.addEventListener("pointerup", () => {
+    if (!from) return;
+    el.classList.remove("dragging");
+    if (!from.moved) jump.open = !jump.open;
+    from = null;
+    saveJump();
+    renderJump();
+  });
+  $("jump-body").addEventListener("click", (e) => {
+    const all = e.target.closest("[data-jump-all]");
+    if (all) return foldAll(all.dataset.jumpAll === "shut");
+    const row = e.target.closest("[data-jump]");
+    if (row) jumpTo(row.dataset.jump);
+  });
+  window.addEventListener("resize", placeJump);
 }
 
 // ---- WHAT A SPEEDRUNNER READS ------------------------------------------

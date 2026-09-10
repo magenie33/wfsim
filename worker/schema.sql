@@ -106,10 +106,6 @@ CREATE TABLE IF NOT EXISTS scores (
   -- deletes it, so a row can be older than the ruler's current terms, and
   -- reading one back without this means checking out the commit that made it.
   metric       TEXT NOT NULL,
-  -- The riven corner the search settled on, when there is one: a score alone
-  -- cannot publish a riven row, because the reader has to be able to BUILD that
-  -- riven and the page cannot re-derive it without paying for the search again.
-  rolls        TEXT,
   -- WHAT THE ROW COST, so the bill is read off the rows rather than estimated,
   -- and so the next run can pack its shards by work rather than by count. NOT
   -- derivable from the two clocks below: a row paid for in sittings spans a wall

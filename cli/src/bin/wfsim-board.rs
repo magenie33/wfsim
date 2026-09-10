@@ -397,6 +397,27 @@ fn identity_of(key: &str) -> String {
     key.rsplit_once('#').map_or_else(|| key.to_string(), |(i, _)| i.to_string())
 }
 
+/// THE CARD A BUILD NAMES — its own rolls, or the god roll if it names none.
+///
+/// ONE READER, so a row's card cannot depend on whether the row was fought or
+/// reused. The fact carried a copy while a record could state only a shape;
+/// nothing made the two agree, and two copies of one truth is a rule about
+/// which wins waiting to be needed.
+///
+/// A RECORD NAMING NO ROLLS is what the library held before `wfsim-intake`
+/// resolved them, and the god roll is what it would resolve to today.
+fn card_of(
+    v: &wfsim_engine::builds::ValidBuild,
+    shape: &wfsim_engine::rivens_data::RivenShape,
+) -> Vec<f64> {
+    if !v.riven_rolls.is_empty() {
+        return v.riven_rolls.clone();
+    }
+    let cls = wfsim_engine::rivens_data::class_for_weapon(&v.weapon).unwrap_or("");
+    let g = wfsim_engine::rivens_data::god_roll(shape, cls);
+    g.bonuses.iter().map(|b| b.roll).chain(g.malus.iter().map(|m| m.roll)).collect()
+}
+
 /// ONE MEASUREMENT, as the database holds it — and there is exactly ONE per
 /// row, the last one taken.
 ///
@@ -413,7 +434,6 @@ struct Fact {
     /// The riven corner the search settled on, when there is one. It travels
     /// WITH the score because it was found by the same fight: reusing one
     /// without the other would publish a number for a riven nobody can build.
-    rolls: Option<Vec<f64>>,
     /// BOTH ENDS OF THE FIGHT. `cost_seconds` is not derivable from them: a row
     /// the clock stopped and resumed spans a wall clock longer than the runs it
     /// contains, and what the packing needs is the runs.
@@ -520,7 +540,6 @@ impl FactLog {
             "measured_by": self.measured_by,
             "score": f.score,
             "cost_seconds": f.cost_seconds,
-            "rolls": f.rolls,
             "started_at": f.started_at,
             "finished_at": f.finished_at,
         });
@@ -568,10 +587,6 @@ fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
             // THE ROLLS TRAVEL AS TEXT, because the column is one and a riven
             // corner is a list. A row without one is a plain row, not a broken
             // one.
-            rolls: v
-                .get("rolls")
-                .and_then(Value::as_str)
-                .and_then(|r| serde_json::from_str::<Vec<f64>>(r).ok()),
             started_at: v
                 .get("started_at")
                 .and_then(Value::as_str)
@@ -1050,19 +1065,15 @@ fn main() {
             // decides which, below, and every shard walks this same sequence
             // and skips only the SIMULATION — so they stay in step.
             //
-            // THE ROLLS COME WITH THE FACT, because they were measured with it:
-            // a riven row reused without them loses the riven its number is
-            // for. A row fought here reads them off the BUILD, which is where
-            // they belong — this path is what a fact taken before the library
-            // named its own cards still carries.
-            let mut row_riven: Option<RowRiven> = v.riven.as_ref().and_then(|shape| {
-                current
-                    .and_then(|f| f.rolls.as_ref())
-                    .map(|r| RowRiven {
-                        bonuses: shape.bonuses.clone(),
-                        malus: shape.malus.clone(),
-                        rolls: r.clone(),
-                    })
+            // THE CARD IS THE BUILD'S, whether this row is fought or reused.
+            // It was on the FACT as well while a record could state only a
+            // shape, and two copies of one truth is a rule about which wins
+            // waiting to be needed: a reused row read the fact's, a fought one
+            // read the build's, and nothing made them agree.
+            let row_riven: Option<RowRiven> = v.riven.as_ref().map(|shape| RowRiven {
+                bonuses: shape.bonuses.clone(),
+                malus: shape.malus.clone(),
+                rolls: card_of(&v, shape),
             });
             let score = match current {
                 Some(f) => {
@@ -1220,19 +1231,7 @@ fn main() {
                         // A RECORD THAT NAMES NO ROLLS IS SCORED AT THE GOD
                         // ROLL, which is what it would have resolved to on
                         // every build the library holds.
-                        let rolls = if v.riven_rolls.is_empty() {
-                            let g = wfsim_engine::rivens_data::god_roll(shape, cls);
-                            g.bonuses.iter().map(|b| b.roll)
-                                .chain(g.malus.iter().map(|m| m.roll)).collect()
-                        } else {
-                            v.riven_rolls.clone()
-                        };
-                        let spec = shape.at(cls, &rolls);
-                        row_riven = Some(RowRiven {
-                            bonuses: shape.bonuses.clone(),
-                            malus: shape.malus.clone(),
-                            rolls,
-                        });
+                        let spec = shape.at(cls, &card_of(&v, shape));
                         if let Some(o) = req.as_object_mut() {
                             o.insert("rivens".into(), wfsim_webapi::riven_request(&spec));
                         }
@@ -1282,7 +1281,6 @@ fn main() {
                         &Fact {
                             score: s,
                             cost_seconds: began.elapsed().as_secs_f64(),
-                            rolls: row_riven.as_ref().map(|rv| rv.rolls.clone()),
                             started_at: began_at,
                             finished_at: stamp(&std::time::SystemTime::now()),
                         },
@@ -1800,7 +1798,6 @@ mod tests {
         let at = || Fact {
             score: 12.5,
             cost_seconds: 3.0,
-            rolls: None,
             started_at: "T0".into(),
             finished_at: "T1".into(),
         };
@@ -1844,8 +1841,7 @@ mod tests {
             &Fact {
                 score: 1.0,
                 cost_seconds: 1.0,
-                rolls: None,
-                started_at: "T0".into(),
+                    started_at: "T0".into(),
                 finished_at: "T1".into(),
             },
         );

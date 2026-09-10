@@ -17,10 +17,10 @@ set -euo pipefail
 
 # AS MANY ROWS A STATEMENT AS D1'S HUNDRED BOUND PARAMETERS ALLOW, and the count
 # is DERIVED so that a column added below shrinks it. Written as a number it
-# goes one parameter over on the twelfth column, and what that buys is every
+# goes one parameter over on the eleventh column, and what that buys is every
 # write refused and the cursor never moving — loud, but for a reason nobody
 # would look for here.
-FACT_COLUMNS=10
+FACT_COLUMNS=9
 BATCH=$((100 / FACT_COLUMNS))
 
 configured() {
@@ -67,15 +67,14 @@ batches() {
     | $all[$i : $i + $n] as $chunk
     | {
         sql: ("INSERT OR REPLACE INTO scores (identity, ruler, mode,"
-              + " measured_by, score, metric, rolls, cost_seconds,"
+              + " measured_by, score, metric, cost_seconds,"
               + " started_at, finished_at)"
               + " VALUES "
-              + ([$chunk[] | "(?,?,?,?,?,?,?,?,?,?)"]
+              + ([$chunk[] | "(?,?,?,?,?,?,?,?,?)"]
                  | join(","))),
         params: [$chunk[]
                  | .identity, .ruler, .mode, (.measured_by // ""),
                    .score, .metric,
-                   (if .rolls == null then null else (.rolls | tojson) end),
                    .cost_seconds, .started_at, .finished_at]
       }
   ' "$src"
@@ -170,7 +169,7 @@ self_test() {
   cd "$DIR/work"
 
   row() {
-    printf '{"identity":"%s","ruler":"single_target","mode":"%s","measured_by":"abc","score":%s,"metric":"kpm","cost_seconds":1.5,"rolls":null,"started_at":"T0","finished_at":"T1"}\n' "$1" "$2" "$3"
+    printf '{"identity":"%s","ruler":"single_target","mode":"%s","measured_by":"abc","score":%s,"metric":"kpm","cost_seconds":1.5,"started_at":"T0","finished_at":"T1"}\n' "$1" "$2" "$3"
   }
   row 'a|b' base 1.0 > facts.ndjson
   row 'a|b' heavy_slam 2.0 >> facts.ndjson

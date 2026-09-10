@@ -116,6 +116,7 @@ ui:
   "Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin.":
     Cloudflare：让应用和它的全部素材从同一个源站发出所需的带宽与构建时长。
   "Cold never converts on this unit, so the stacks climb to their cap and STAY — the bonus is up all fight instead of being spent on a 3-second Frozen window": 冷冻在这个单位上永远不会转化,所以层数会一路叠到上限并保持 —— 加成全程有效,而不是被 3 秒的冰冻窗口消耗掉
+  "Collapse all": 全部收起
   "Combat Reload, the Tigris-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Combat Reload」，Tigris 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Condition Overload bracket": 异常超载档
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
@@ -167,6 +168,7 @@ ui:
   "Environment": 环境
   "Erase": "擦除"
   "Eroding Blight and Vile Discharge, the Embolist-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Eroding Blight」和「Vile Discharge」，Embolist 的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
+  "Expand all": 全部展开
   "Every formula cites its source, and every golden test is calibrated against a real in-game run.":
     每一条公式都注明出处，每一个 golden test 都对着一次真实的游戏内实测校准。
   "Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.":
@@ -570,6 +572,7 @@ ui:
   "damage reduction": 伤害减免
   dealt: 打出
   "delete": 删除
+  "drag to move — click to open or close": 拖动可移动 —— 点击展开或收起
   "direct hit": 直接命中
   "direct hits": 直接命中
   "does not work in game": 游戏内无效
