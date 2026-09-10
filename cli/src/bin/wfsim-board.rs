@@ -688,6 +688,18 @@ fn main() {
     // rescore — and a hand-written list's one failure is a row nobody wrote,
     // which would never be computed and never be noticed. This names them; the
     // shipper puts them in a batch.
+    // …AND THE WEAPONS A SWEEP NAMED, whose rows go in the same file whatever
+    // they already carry.
+    //
+    // A SAFETY NET RATHER THAN A CORRECTION. Nothing here says a stored number
+    // is wrong: it says nobody has looked at that weapon in a long time, and a
+    // board is a claim about what this code computes TODAY. Whole weapons,
+    // because a weapon is the publication unit — half a weapon re-measured is a
+    // file ranking two generations against each other.
+    let sweep: std::collections::BTreeSet<String> = flag("--queue-weapons")
+        .and_then(|p| std::fs::read_to_string(&p).ok())
+        .map(|t| t.lines().map(str::trim).filter(|l| !l.is_empty()).map(String::from).collect())
+        .unwrap_or_default();
     let mut missing_out = flag("--queue-missing").and_then(|p| {
         std::fs::File::create(&p)
             .map_err(|e| eprintln!("queue: cannot write {p}: {e}"))
@@ -1021,7 +1033,7 @@ fn main() {
             // is what this said before there was one.
             let current = if take { None } else { facts.get(&key) };
             if missing_out.is_some()
-                && !facts.contains_key(&key)
+                && (sweep.contains(&v.weapon) || !facts.contains_key(&key))
                 && !owed.as_ref().is_some_and(|o| o.contains(&asked))
             {
                 use std::io::Write;

@@ -22,6 +22,14 @@
 # — about four core-minutes for the one submission in ten that needs it — which
 # is an hour's lump once a day and two or three minutes on the hour. The same
 # work, paid in a size that fits beside everything else.
+#
+# ONCE A NIGHT IT ALSO SWEEPS. Nothing in this pipeline retires a fact on its
+# own — a board is a claim about what the code computes TODAY, and a row nobody
+# has looked at since an engine six weeks ago is a claim nobody has checked. The
+# sweep asks for the weapons that have gone longest, whole, up to a fifth of the
+# library a night, so forgetting to rescore by hand costs days rather than
+# months. It only ever ADDS to the queue; the hourly scorer pays for it in the
+# hours after.
 name: queue
 
 on:
@@ -29,7 +37,16 @@ on:
     # ON THE HOUR. The scheduler slips about fifteen minutes whatever minute is
     # named, so an off-the-hour one buys a precision this does not have.
     - cron: "0 * * * *"
+    # …AND ONCE A NIGHT, THE SWEEP. 16:00 UTC is midnight in China, the quiet
+    # hour: a night's batch is up to a fifth of the library and the hourly
+    # scorer spends the rest of the night on it.
+    - cron: "0 16 * * *"
   workflow_dispatch:
+    inputs:
+      sweep:
+        description: "also enqueue the nightly sweep"
+        type: boolean
+        default: false
 
 # ONE AT A TIME, AND THE RUNNING ONE WINS. Two of these would both read the same
 # inbox and derive the same builds — writing one row twice, which is harmless —
@@ -115,3 +132,54 @@ jobs:
           # WHAT IS OWED, SAID OUT LOUD, because this job publishes nothing and
           # a reader has to be able to see it did something.
           echo "::notice::$(grep -c . queue.ndjson || echo 0) row(s) owed after this hour"
+
+      # ---- …AND ONCE A NIGHT, WHAT HAS GONE LONGEST -----------------------
+      #
+      # THE SAFETY NET, AND IT SAYS NOTHING ABOUT WHETHER A NUMBER IS WRONG. A
+      # board is a claim about what this code computes TODAY, and a row measured
+      # under an engine six weeks old is a claim nobody has checked since. What
+      # retires a fact on purpose is still a person deleting or enqueueing it;
+      # this is what happens when nobody remembers to be that person.
+      #
+      # WHOLE WEAPONS, up to a FIFTH of the library a night — a weapon's file is
+      # written whole, so half of one re-measured ranks two generations against
+      # each other, and a fifth a night crosses all of it in five. It only ever
+      # ADDS to the queue; the hourly scorer pays for it in the hours after,
+      # which is what spreads the bill.
+      #
+      # ITS OWN BATCH, NAMED FOR THE NIGHT, so a person can see it, reorder it
+      # ahead of the arrivals, or drop it — `DELETE FROM batches WHERE id = ?`.
+      - name: ask for what has gone longest
+        if: steps.wired.outputs.yes == 'true'
+          && (github.event.schedule == '0 16 * * *' || inputs.sweep)
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          STALE_DAYS: 7
+          SWEEP_SHARE: 5
+        run: |
+          set -euo pipefail
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          bash scripts/pick_stale.sh "$STALE_DAYS" "$SWEEP_SHARE" > weapons.txt
+          if [ ! -s weapons.txt ]; then
+            echo "::notice::sweep: nothing has gone $STALE_DAYS days unmeasured"
+            exit 0
+          fi
+          : > sweep.ndjson
+          for f in data/benchmarks/*.yaml; do
+            id=$(basename "$f" .yaml)
+            ./target/release/wfsim-board "$id" \
+              --dry-run \
+              --facts-in facts-known.ndjson \
+              --queue-in queue.ndjson \
+              --queue-weapons weapons.txt \
+              --queue-missing "sweep-$id.ndjson" \
+              < library.json > /dev/null
+            cat "sweep-$id.ndjson" >> sweep.ndjson
+          done
+          bash scripts/ship_queue.sh "sweep-$(date -u +'%Y-%m-%d')" \
+            "$(wc -l < weapons.txt) weapon(s) nobody had measured in $STALE_DAYS days" \
+            sweep.ndjson
+          echo "::notice::sweep: $(grep -c . sweep.ndjson || echo 0) row(s) from $(wc -l < weapons.txt) weapon(s)"

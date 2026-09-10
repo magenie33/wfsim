@@ -211,8 +211,9 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | | who starts it | what it does | what it costs |
 | --- | --- | --- | --- |
 | `queue.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
+| `queue.yml` | the clock, once at 16:00 UTC | …and the weapons that have gone LONGEST are asked for again | the same runner |
 | `scores.yml` | the clock, hourly at `:30` | what is asked for is MEASURED | as many shards as the work needs |
-| `publish.yml` | the clock, every four hours | `scores` is ranked and written to `site/board` | one runner, seconds |
+| `publish.yml` | the clock, 00/04/08/12 UTC | `scores` is ranked and written to `site/board` | one runner, seconds |
 
 **EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
 input, so a hand-started run and a scheduled one differ in nothing at all.
@@ -241,6 +242,22 @@ order of magnitude before either quota does.
 once, in the first job, and handed to every shard as an artifact — which is what
 lets them agree on who owns which row without talking. Builds that arrive while
 a run is fighting are picked up by the next hour's reconciliation.
+
+**AND ONCE A NIGHT, WHAT HAS GONE LONGEST IS ASKED FOR AGAIN.** Nothing here
+retires a fact on its own: a board is a claim about what the code computes
+TODAY, and a row measured under an engine six weeks old is a claim nobody has
+checked. The sweep says nothing about whether that number is WRONG — it says
+nobody has looked.
+
+**WHOLE WEAPONS, UP TO A FIFTH OF THE LIBRARY A NIGHT.** A weapon's file is
+written whole, so half of one re-measured ranks two generations against each
+other; and a fifth a night crosses the library in five. It only ADDS to the
+queue — the hourly scorer pays for it in the hours after, which is what spreads
+the bill. `scripts/pick_stale.sh` is the choice: oldest first, greedy, and a
+weapon too big for the share is stepped over rather than ending the walk.
+
+**IT LANDS IN ITS OWN BATCH**, named for the night, so it can be reordered ahead
+of the arrivals or dropped — `DELETE FROM batches WHERE id = ?`.
 
 **THE PUBLISH DOES NOT CARE WHAT IS BEING COMPUTED.** It reads the table, ranks
 it, writes the files and commits if they moved. A scoring run may be halfway
