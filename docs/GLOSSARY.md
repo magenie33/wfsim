@@ -60,6 +60,16 @@ conflate them:
   identifies such weapons). Each entry simulates standalone; the live
   weapon-1→weapon-2 transformation cycle is future work.
 
+  **A FORM IS NOT A WEAPON.** Every weapon-level question about a form entry
+  is answered by the WEAPON — the default form of its `transform_group`,
+  which is the entry the arsenal lists. That is the trigger a mod's rule is
+  judged against, and it is the MOD POOL: modding happens on the weapon, so
+  naming a form resolves the weapon's pool. `mods_data::weapon_of` is the one
+  spelling of it, and `weapons_data::INHERITED` is the list of which facts are
+  the weapon's. An empty pool is indistinguishable from a weapon that refuses
+  everything, which is why no form has one:
+  `every_form_is_modded_as_the_weapon_it_is_a_form_of` walks all of them.
+
 ### FORMS: the closed vocabulary a weapon registers
 
 The last two rows above are both **forms** — an attack profile with its own

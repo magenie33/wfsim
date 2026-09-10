@@ -892,6 +892,30 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
     pool_for_build(weapon_id, &[])
 }
 
+/// THE WEAPON AN ENTRY BELONGS TO — itself, or the DEFAULT form of its
+/// transform group. `default_form: true` is "the arsenal's form" (the module's
+/// `_TooltipAttackDisplay`), the entry the weapon comparison lists.
+///
+/// A FORM IS NOT A WEAPON, and every weapon-level question about one is a
+/// question about the weapon: the trigger a mod's rule is judged against
+/// (`cernos_prime_uncharged` fires semi-auto and the bow it belongs to is
+/// listed "Charge"), and the POOL that decides what may be equipped at all,
+/// because modding happens on the weapon and not on a firing mode.
+///
+/// ONE SPELLING, because two drift silently: a form answering a mod's trigger
+/// rule with its weapon's answer and then having no pool to apply it to is a
+/// refusal that names no reason.
+fn weapon_of(spec: &'static crate::weapons_data::WeaponSpec)
+    -> &'static crate::weapons_data::WeaponSpec
+{
+    let group = spec.transform_group.as_deref().unwrap_or(&spec.id);
+    crate::weapons_data::all()
+        .iter()
+        .find(|x| x.transform_group.as_deref().unwrap_or(&x.id) == group && x.default_form)
+        .unwrap_or(spec)
+}
+
+
 /// Every trigger a BUILD can FIRE: the weapon's own, plus that of any form an
 /// installed evolution UNLOCKS.
 ///
@@ -910,19 +934,10 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
 /// trigger when the Genesis goes in, not when you hold the button down.
 fn triggers_of(weapon_id: &str, evolutions: &[&str]) -> Vec<&'static str> {
     let mut out: Vec<&'static str> = Vec::new();
-    // THE WEAPON'S OWN trigger is its DEFAULT form's — `default_form: true` is
-    // "the arsenal's form (module _TooltipAttackDisplay)", i.e. the one the
-    // weapon comparison lists a trigger for. Asking the entry directly would
-    // make `cernos_prime_uncharged` (semi-auto) a semi-auto WEAPON, when the
-    // bow it is a form of is listed "Charge" — a form is not a weapon, and only
-    // an Incarnon mode gets a second trigger of its own.
+    // THE WEAPON'S OWN trigger is its DEFAULT form's, and only an Incarnon mode
+    // gets a second trigger of its own — see `weapon_of`.
     if let Some(s) = crate::weapons_data::spec(weapon_id) {
-        let group = s.transform_group.as_deref().unwrap_or(&s.id);
-        let default = crate::weapons_data::all()
-            .iter()
-            .find(|x| x.transform_group.as_deref().unwrap_or(&x.id) == group && x.default_form)
-            .unwrap_or(s);
-        out.push(default.attack.trigger.as_str());
+        out.push(weapon_of(s).attack.trigger.as_str());
     }
     for id in evolutions {
         let Some(form) = crate::evolutions_data::get(id).and_then(|e| e.unlocks_form()) else {
@@ -963,14 +978,23 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
     // one fact that says so — `ammo_max` absent. A mod is dropped only when
     // ammo maximum is ALL it does: a dual-stat keeps its other half, whose
     // ammo share is already inert.
-    let no_ammo_pool = spec.ammo_max.is_none();
+    // EVERY WEAPON-LEVEL FACT IS READ THROUGH `weapon_of`, and the list of
+    // which facts those are is not this function's to invent: it is
+    // `weapons_data::INHERITED`, which already says a form takes its weapon's
+    // `class`, `magazine` and `ammo_max`. A form that read its own answered
+    // "no ammo pool" and dropped every ammo mod off a weapon that has one.
+    let weapon = weapon_of(spec);
+    let no_ammo_pool = weapon.ammo_max.is_none();
     let only_ammo_max = |m: &ModDef| {
         !m.effects.is_empty()
             && m.effects.iter().all(|e| {
                 matches!(e, ModEffect::Indirect(crate::loadout::IndirectStat::AmmoMax, _))
             })
     };
-    pool_union(&spec.mod_pools)
+    // THE POOL IS THE WEAPON'S, whatever entry was named — `weapon_of`. A form
+    // states no `mod_pools` of its own, and an empty pool is indistinguishable
+    // from a weapon that refuses everything.
+    pool_union(&weapon.mod_pools)
         .into_iter()
         .filter(|m| match m.requires_weapon {
             None => true,
@@ -986,7 +1010,7 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
             //
             // `magazine` on the spec IS the base magazine — the mod layer never
             // writes it — which is what makes this the right number to read.
-            Some("magazine_6") => spec.magazine.is_some_and(|m| m >= 6.0),
+            Some("magazine_6") => weapon.magazine.is_some_and(|m| m >= 6.0),
             // An unknown requirement hides the mod rather than ignoring the
             // restriction — a mod offered where it cannot go is the worse bug.
             Some(_) => false,
@@ -1012,7 +1036,7 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
         // equipped on Sentinel weapons", tags `SENTINEL_WEAPON, POWER_WEAPON`.
         // We model no exalted weapon, so `power_weapon` is carried and unused.
         .filter(|m| {
-            !(spec.class.contains("sentinel") && m.excludes_weapon.contains(&"sentinel_weapon"))
+            !(weapon.class.contains("sentinel") && m.excludes_weapon.contains(&"sentinel_weapon"))
         })
         .collect()
 }
@@ -1718,13 +1742,41 @@ mod tests {
             "the tapped shot really is semi-auto — that is the trap"
         );
         assert!(!has("cernos_prime_uncharged", "semi_rifle_cannonade"), "...but the bow is not");
-        // It is the only form entry that can show this: `mod_pools` is declared
-        // on the WEAPON, so every other form resolves to an empty pool and has
-        // no answer to give either way.
-        assert!(
-            pool_for_build("dual_toxocyst_incarnon", &[]).is_empty(),
-            "a form declares no pool of its own — modding is the weapon's"
+        // AND THE POOL IS THE WEAPON'S TOO, which is the same sentence one
+        // question along: a form declares no `mod_pools` and modding happens on
+        // the weapon, so naming a form resolves the weapon's pool.
+        assert_eq!(
+            pool_for_build("dual_toxocyst_incarnon", &[]).len(),
+            pool_for_build("dual_toxocyst", &[]).len(),
+            "a form is modded as its weapon"
         );
+    }
+
+    /// …AND NOT ONE FORM IS AN EXCEPTION.
+    ///
+    /// `mod_pools` is on the INHERITED list, so an `inherits:` line is enough
+    /// to give a form a pool of its own — which would make "can this form be
+    /// modded" a question about whether its file carries that line. THE WALK IS
+    /// THE ASSERTION: one witness cannot see a rule broken by a seventh of the
+    /// roster, and the two tests above hold one witness each.
+    #[test]
+    fn every_form_is_modded_as_the_weapon_it_is_a_form_of() {
+        let mut off = Vec::new();
+        for s in crate::weapons_data::all() {
+            let Some(parent) = s.transforms_from.as_deref() else { continue };
+            let (a, b) = (pool_for_weapon(&s.id).len(), pool_for_weapon(parent).len());
+            if a != b {
+                off.push(format!("{} has {a} against {parent}'s {b}", s.id));
+            }
+        }
+        assert!(off.is_empty(), "a form's pool is not its weapon's:\n  {}", off.join("\n  "));
+        // …and the walk has to have walked: a filter that matched nothing would
+        // pass the line above without asserting anything at all.
+        let forms = crate::weapons_data::all()
+            .iter()
+            .filter(|s| s.transforms_from.is_some())
+            .count();
+        assert!(forms > 60, "the roster has forms to check: {forms}");
     }
 
     /// INSTALLING THE GENESIS IS WHAT TAKES THE CANNONADE OFF. "Weapons with an Incarnon mode must have Semi-Auto trigger
@@ -2664,12 +2716,12 @@ mod chamber_tests {
         for w in ["braton_prime", "paris_prime", "boar_prime", "lex", "kuva_nukor"] {
             assert!(!has(w), "{w} is not a sniper");
         }
-        // A FORM DECLARES NO POOL AT ALL — modding is the WEAPON's, and every
-        // form entry resolves to an empty one (see
-        // `a_form_entry_answers_with_its_weapons_trigger`). So the pool goes on
-        // the weapon and the Incarnon halves need nothing, which is also why
-        // this edit touched fifteen files and not thirty.
-        assert!(crate::mods_data::pool_for_weapon("vectis_incarnon").is_empty());
+        // A FORM DECLARES NO POOL AT ALL — modding is the WEAPON's — so the
+        // pool goes on the weapon and the Incarnon halves need nothing, which
+        // is why this edit touched fifteen files and not thirty. Naming the
+        // form resolves the weapon's pool (`weapon_of`), so the sniper mods
+        // reach it exactly as they reach the rifle it is a form of.
+        assert!(has("vectis_incarnon"), "a form is modded as its weapon");
     }
 }
 
