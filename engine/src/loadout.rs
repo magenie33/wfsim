@@ -7237,8 +7237,8 @@ mod tests {
     ///
     /// Three distances on this attack and only two of them move: Fulmination
     /// enlarges the orb's REACH and its detonation RADIUS, and leaves a chain
-    /// HOP at the six metres the page gives it (owner — his
-    /// *"不受增益"* was about the range bucket, not the damage one).
+    /// HOP at the six metres the page gives it. "Takes no bonus" was about the
+    /// RANGE bucket, not the damage one.
     ///
     /// Asserted as an asymmetry rather than as three numbers, because the three
     /// are all six metres unmodded and a test that only read them apart would

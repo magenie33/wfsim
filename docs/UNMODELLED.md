@@ -566,11 +566,10 @@ share of what the beam delivered rather than a shot of its own.
 
 ## A BUFF CAN DEPEND ON THE WEAPON BEING IN YOUR HANDS
 
-**Open decision**. Reported off the Grimoire's Invocations:
-
-> 次要射击的时候，如果我装了一个vome的，是不是理论上每次攻击都会叠层，但是如果我
-> 期间切换武器，整个叠层就不会生效，但是我切回去，叠层又可以了。那就说明有些东西
-> 生效完全取决于当前的武器是不是在场的
+**Open decision**. Reported off the Grimoire's Invocations: with a Vome
+Invocation equipped, the alt fire stacks it on every attack — but swapping
+weapons mid-way stops the stacks paying, and swapping back makes them pay again.
+Some things are worth something only while the weapon that earned them is out.
 
 An Invocation's stacks are earned by the tome's alt fire and are worth something
 only while the tome is OUT. Swap to the primary and the buff stops paying; swap

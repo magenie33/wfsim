@@ -8954,9 +8954,9 @@ fn throw_orb(
     t: f64,
     live: &mut Vec<OrbState>,
 ) {
-    // ONE ORB AT A TIME. *"如果在前一个球存在的期间，再放，原来的球立刻消失"*
-    // — the one already out vanishes, with no detonation and
-    // no strikes it had left.
+    // ONE ORB AT A TIME. Throw again while the previous orb is alive and the one
+    // already out vanishes at once, with no detonation and no strikes it had
+    // left.
     //
     // It matters most where you would least expect it: in the CYCLE the meter
     // puts throws tens of seconds apart and nothing ever overlaps, so this is
@@ -13500,8 +13500,8 @@ pub fn run_once_traced(
     // and transform immediately, and the TRANSFORM is faster too — which it
     // could only be if the buff was already on the weapon before any reload
     // started. It is then spent by the next reload, and coming out of Incarnon
-    // form counts as one ("退出灵化以后，这时候相当于reload了一次，这个buff消
-    // 失了").
+    // form counts as one — leaving Incarnon is a reload as far as this buff is
+    // concerned, and it is spent.
     //
     // So it is a flag rather than a clock. This card states a bonus and no
     // duration, and that is not an omission — there is nothing to time.

@@ -443,7 +443,7 @@ pub struct AttackSpec {
     ///
     /// Zero on every gun in this roster and 0.1 s on the Grimoire's primary
     /// fire, which is what makes it a field rather than a
-    /// constant: *"其他的枪械类武器都是0s子弹出膛，但是这个是0.1s"*.
+    /// constant: every other gun here fires at 0 s, and this one at 0.1 s.
     ///
     /// IT DOES NOT CHANGE THE CADENCE. The interval between shots is the fire
     /// rate's, exactly — so a sustained engagement fires the same number of
@@ -854,8 +854,8 @@ pub struct OrbSpec {
     pub recovery_seconds: f64,
     /// What a hop deals relative to the hop before it.
     ///
-    /// 1.0 — UNDILUTED — for the Grimoire: *"chain 起来没有衰减的 beam chain
-    /// 那种方式"*, which is also what the page supports on
+    /// 1.0 — UNDILUTED — for the Grimoire, which chains the way a beam chain with
+    /// no falloff does. It is also what the page supports on
     /// its own (it names a count and no reduction). Per entry rather than a
     /// constant, because a chain's falloff is per weapon everywhere else in
     /// this roster — the Atomos compounds at 0.75 and the Kuva Nukor does not
@@ -4777,7 +4777,7 @@ mod tests {
             assert!(all().iter().any(|s| s.id == *id), "no weapon entry {id}");
         }
 
-        // AN AoE PART TAKES NO CO unless its own row says so — "只对direct".
+        // AN AoE PART TAKES NO CO unless its own row says so — direct only.
         // Named, not counted, for the same reason the list above is.
         const RADIAL_CO: &[&str] = &[
             // Braton / Mk1 / Prime / Vandal — Incarnon Form Radial Attack
