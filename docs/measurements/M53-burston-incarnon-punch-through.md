@@ -4,9 +4,14 @@
 
 Verbatim, both messages, in the order they arrived:
 
-> 我刚刚测试了一下burston是可以punch through的，子弹会传过去，然后爆炸（也就是会在别人的身后爆炸，就是穿过后飞行距离达到极限），也就是说纯单体伤害可能还会降低，你顺便也实现了
+**THE READING.** The Burston Incarnon DOES punch through. The round passes
+through the enemy and detonates BEHIND it, where its flight ends — so pure
+single-target damage may even go DOWN.
 
-> 我们给burston这种的面板带上aoe，但是实际上可以穿透的得定义一种类型（他的aoe算法还不吃多重，我认为是一种假aoe，你应该可以归类一下，这样有些计算更好处理，名字你来定）
+**AND IT WANTS A TYPE, NOT AN EXCEPTION.** Its blast takes no multishot, which
+makes it a FAKE AoE: a weapon whose panel carries an area component and whose
+projectile still punches through is a KIND, and treating it as one keeps the
+rest of the arithmetic simple.
 
 ### What it overturns
 

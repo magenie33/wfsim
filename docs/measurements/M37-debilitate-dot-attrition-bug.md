@@ -6,16 +6,18 @@
 elemental hit that triggers Primary Debilitate can also trigger the Felarx's
 20x, and the calculator said no:
 
-> 大佬游戏里衰弱触发的dot可以再次触发逐枭凤歿的外围20倍但是网站里的计算器
-> 显示不出来
+**THE REPORT.** A DoT that Debilitate triggered can itself roll Devouring
+Attrition's outer x21 — and the site's calculator could not show it.
 
 He tried it:
 
-> 刚刚试了一下，确实是可以触发的！直伤一次，附加伤害一次，dot一次一共3次牛吼，
-> 强袭损耗在吃两次，最终的触发的dot会吃到三次方牛吼和441倍强袭损耗的伤害加成
+**THE READING.** It does trigger. Three Roar layers in the chain — direct hit,
+extra hit, DoT — and Attrition applies TWICE, so the DoT that lands carries Roar
+cubed and 441x.
 
-> 大概测一下三次牛吼，两次强袭损耗，元素师，元素mod都能吃到。用凤殁测了一下，
-> 只有牛吼增伤的情况下，dot跳一下，爆破使就没了
+Roughly read: three Roar layers, two Attrition layers, Elementalist and the
+elemental mods are all taken. With ONLY Roar equipped the DoT ticks once and
+Debilitate is gone.
 
 So the chain is **直伤 → 附加伤害 → dot** with a Roar layer at each step (the
 `f³` this engine already applied as `DEPTH_DERIVED_PROC`, see M33), and
@@ -27,9 +29,10 @@ The owner's reading, and the reason this is filed as DE's bug rather than as an
 interaction (2026-08-08: "有bug，你理解吗，这个+21好像还会作用在由衰弱产生的dot
 上面（非本意）"):
 
-> 衰弱触发成功后，会进行一次伤害为0的伤害，但是是 0×bane乘区×以及概率的21倍乘区
-> （50%概率触发，因为这个也没暴击），但是在算这个伤害产生的dot的伤害的时候，0的
-> 部分被替换为上一级，但是又把这2个乘区也带进来了
+**HOW THE ZERO CARRIES.** A successful Debilitate fires one instance of ZERO
+damage, multiplied by that instance's own faction bracket and its own 50%
+Attrition roll (it cannot crit). When the DoT is computed from it the zero is
+replaced by the previous tier's damage — and those two multipliers come along.
 
 The split fires a damage instance whose damage is **zero** — which is why the
 wiki can call it a separate instance and say it "has no damage" in the same
@@ -133,8 +136,8 @@ interaction is invisible in any scenario where the weapon simply wins.
 
 ### THE SPLIT'S ROLL IS ITS OWN COIN ✅ (owner, 2026-08-10)
 
-> 衰弱自己再判定一次是否触发21倍伤害（自己的）……只有直击先触发21，衰弱自己的那个
-> 0 伤害 extra hit 要自己再判断一次
+**AND THE SPLIT ROLLS ITS OWN COIN.** Only the direct hit's x21 is the direct
+hit's; Debilitate's zero-damage extra hit rolls Attrition again for itself.
 
 Which is what the engine does, and now what a test says. The forced-chance runs
 above cannot see it — with the perk pinned at 1.0 every roll succeeds, so "rolls
@@ -168,8 +171,9 @@ bookkeeping error rather than a mechanic.
 
 ### A CRIT COSTS THE SPLIT A COIN ✅ (owner, 2026-08-10)
 
-> 如果直击是暴击的，但是后面的衰弱 dot 还是可以 roll 出 21，那么此时会带着前面的
-> 各种 multiplier（暴击伤害，弱点暴击）……因为衰弱永远不暴击
+**A CRITICAL DIRECT HIT STILL LEAVES A x21 DoT**, carrying the crit's own
+multipliers (crit damage, weak-point crit) — because Debilitate itself never
+crits.
 
 Both halves are true and they pull opposite ways:
 
@@ -208,9 +212,9 @@ it.
 
 ### ✅ CONFIRMED IN GAME on a second weapon (owner, 2026-08-10)
 
-> 就是 Debilitate 的那个 0 的 extra hit，是永远视为不暴击的，而不是一个可能暴击
-> 的 0 伤害。我刚刚用凤殁的暴击提升到了必爆，debilitate 触发的 dot 伤害还是有几
-> 率 ×21 的
+**THE SPLIT IS PERMANENTLY NON-CRITICAL**, not a zero-damage hit that may roll
+one. Read with crit chance raised to guaranteed: the DoT Debilitate triggers
+still comes out x21 some of the time.
 
 Everything above rests on the split instance being **permanently non-critical**
 rather than **a zero-damage hit that happens to roll crit against a zero**. The

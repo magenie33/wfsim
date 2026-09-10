@@ -21,8 +21,9 @@ This roster already had two: a MAGAZINE you spend and reload, and an INCARNON
 GAUGE you fill with hits. A meter is neither — it fills with TIME. The owner's
 call on where to put it (2026-08-28):
 
-> 这个机制目前不多的，你完全可以单独一个类型，等我们真的全部做完，再思考可不可
-> 以重构为一种类型
+**IT GETS ITS OWN TYPE.** Few weapons carry this mechanic, so it is modelled
+as one rather than bent into an existing shape; whether it can be folded into a
+type later is a question for when the roster is finished.
 
 So `MeterSpec` is its own type rather than a bent `GaugeSpec`. One weapon has it;
 guessing the shared shape from one is how a wrong abstraction gets built.
@@ -77,11 +78,11 @@ almost always, and the pack is on the floor either way (owner, 2026-08-28).
 
 Two corrections that arrived after the meter did (owner, 2026-08-28):
 
-> 同一时间只能有一个球，如果在前一个球存在的期间，再放，原来的球立刻消失。并且这
-> 个球是有一个前摇时间的（类似投掷类武器那样），这个前摇时间是可以被fire rate降低）
->
-> 主要应该是点击以后0.1s后射出去，间隔反正完美对应射击rate，次要是0.15s后射出去，
-> 接着0.85s硬直，才可以继续主要模式。射速mod可以加速这两个动作
+**ONE ORB AT A TIME.** Throwing again while the previous orb is alive makes it
+vanish at once. The throw has a wind-up, the way a thrown weapon does, and fire
+rate shortens it: primary fires 0.1 s after the click with the interval matching
+the fire rate exactly; the alternate fires 0.15 s after it and is followed by
+0.85 s before primary is available again. Fire-rate mods speed up both.
 
 **One orb at a time.** A new throw makes the old one vanish — no detonation, no
 strikes it had left. In the cycle this is free, because the meter puts throws
@@ -99,8 +100,8 @@ not. It was written off here as latency on the reasoning that the interval
 *"corresponds exactly to the fire rate"*, so a sustained engagement fires the
 same rounds and the mean does not move. The owner's answer:
 
-> 为啥不建模啊，其他的枪械类武器都是0s子弹出膛，但是这个是0.1s啊，不也是变量吗 …
-> 我们要严谨肯定要建模的
+**AND THE 0.1 s IS MODELLED.** Every other gun here puts its round out at 0 s
+and this one does not, which makes it a variable like any other.
 
 He is right, and the reason is the one this app is built on: the combat record's
 claim is that a row can be laid beside a recording and checked number for
@@ -122,9 +123,9 @@ apart.
 
 ### Two modes, and `transformed` is not one of them
 
-> transformed注意一点，不能套用！！！这个是灵化模式专属的 … 这本书我们应该有2个
-> mode，一个是只使用主要射击模式，另外一个是使用主要射击，次要槽满了，再使用次
-> 要，然后继续使用主要射击，就这两种
+**`transformed` MAY NOT BE REUSED FOR IT** — that state belongs to the
+Incarnon form. This weapon has TWO modes: primary alone, and primary until the
+alternate's meter is full, then the alternate, then primary again.
 
 `Transformed` is a state you are IN — an Incarnon window, a form that fires its
 own magazine for a few seconds — and the builder shows its numbers because

@@ -6,7 +6,9 @@ An unmodded **Laetum in its BASE form** (the same gun as [M60](#m60--headshot-bo
 
 The owner's report, verbatim:
 
-> 刚刚我发现了一个问题，那就是敌人的超短暂的破盾保护好像很多时候是不触发的，或者选择性触发（例如震地的出场在会触发）。但是打枪的时候，例如我造成1w伤害，这个人只有100盾100血，那么这一枪会直接秒了。
+**THE REPORT.** An enemy's very brief post-shield-break invulnerability often
+does not fire at all, or fires selectively — a ground-slam's arrival triggers it
+where other things do not.
 
 ```
 奏凯普通

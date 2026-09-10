@@ -11,7 +11,9 @@ second hands it the least uptime of any way to play the weapon.
 
 **Reported, verbatim:**
 
-> 然后我测试发现，之前投掷过留下的东西，会在我投掷发起的那一刻消失
+**THE READING.** What a previous throw left behind disappears the instant the
+next throw is INITIATED — the removal is keyed to the throw ACTION, not to the
+new spear's impact.
 
 (*"then I tested it and found that what a previous throw left behind disappears
 the instant I initiate a throw"* — the removal is keyed to the throw ACTION.)
@@ -31,7 +33,8 @@ to hold one for its full 20 s is to throw ONCE and then fire the primary.
 **Then the second half, which reverses that for the part that matters** (owner,
 same day, answering the question this measurement had left open):
 
-> 消失的只是立场，消失前被附加的立场是不影响的，这个立场效果就是虚空的特效
+Only the FIELD disappears. What it had already applied is unaffected, and the
+field effect IS the Void effect.
 
 (*only the FIELD disappears; what it had already applied is unaffected — and the
 field effect IS the Void effect.*)

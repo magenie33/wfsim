@@ -12,7 +12,8 @@ Fass Canticle were out of scope on the reasoning that this arena has one Tenno
 and every point of those cards is spent on other people; the owner plays the
 weapon and says the wielder gets it:
 
-> 因为这个有个是可以增加射速的，我们是可以吃到的，因为我们现在已经存在tenno了
+**THE READING.** One of them raises fire rate and this build does take it,
+because a Tenno is present.
 
 The wiki settles nothing either way — it says "ally" and does not say whether
 the caster is one — so the measurement decides. Lohk is +7.5% to +30% fire rate

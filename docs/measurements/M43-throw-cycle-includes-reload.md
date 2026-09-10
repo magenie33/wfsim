@@ -11,7 +11,8 @@ fire-rate one, because a reload that never happens is a floor that never bites.
 
 **Reported, verbatim:**
 
-> throw的流程是这样的，当按下投掷的时候，先有一个蓄力的时间，然后投掷出去，接着换弹。蓄力的时间和射速有关。默认的蓄力时间是1s。
+**THE READING.** Press → a WIND-UP, whose length is set by fire rate and is
+1 s at base → release → RELOAD.
 
 (*press → a WIND-UP, whose length is set by fire rate and is 1 s at base →
 release → RELOAD.*)

@@ -30,11 +30,10 @@ exemption was the rule.** See below.
 
 ### ✅ RESOLVED, and it was never a Blast rule (2026-08-10)
 
-> 如果当前是9层，下一发是10层的话，就可以立刻触发其中一个（根据等级），而不是要
-> 等到10级后，再打才触发。这样爆炸实际上是可以触发火或者冰的，而且并不像wiki说
-> 的那么rarely
->
-> 全部都是这种情况的，我实际测试了
+**THE READING.** At 9 stacks, the instance applying the 10th fires the split
+immediately — it does not wait until the target is already at 10 and is hit
+again. So Blast reaches Heat and Cold far more often than the wiki's "rarely"
+suggests. Read on ALL SIX combined elements rather than inferred from one.
 
 — owner, 2026-08-10, on all six combinations.
 

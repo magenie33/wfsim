@@ -21,9 +21,8 @@ build says otherwise:
                              3层-115-346！
 ```
 
-> 这个是选了40的那个直伤天赋，加上卡的一层的co（那么应该是80的加成）
->
-> 确实是3个异常是158，这是实测的
+**THE READING.** With the 40% direct-damage talent and one stack of the card's
+Condition Overload — 80% of bonus in all — three statuses reads 158.
 
 ### The three-point set is what settles it
 

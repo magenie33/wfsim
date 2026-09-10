@@ -7,25 +7,25 @@ repo had written down. Galvanized Shot throughout (40% a stack per status type).
 
 **THE READINGS, verbatim:**
 
-> 啥没有，125，250
-> 原来是75
-> 3层是，+120%
-> 3层，2debuff，305（+50base）
->
-> 实际是，125*（1+2*1.2*（75/（125）） = 305
->
-> 3层，2debuff，315 630
-> 3层，1debuff，225 450
-> 1层，1debuff，165
->
-> 135*（1+2*(0.4*3*（75/135）+0.33)） = 315
-> 135*（1+1*(0.4*3*（75/135)） = 225
->
-> 2*1.53*75/135==1.33
->
-> 大概意思是2个evo实际上计算gunCO的时候，都不考虑灵化带来的加成，而且+60的evo
-> 的那个33%也完全不生效。我试过卸下gunCO的mod去打带状态的敌人，也没有加成，伤害
-> 和原来一摸一样。并且平常和incarnon都是生效的
+**THE READINGS.** Base 125 / 250, up from an unmodded 75. Three stacks is
++120%.
+
+    3 stacks, 2 debuffs   305      (+50 base)
+    3 stacks, 2 debuffs   315  630
+    3 stacks, 1 debuff    225  450
+    1 stack,  1 debuff    165
+
+…and what fits them:
+
+    125 * (1 + 2 * 1.2 * (75 / 125))          = 305
+    135 * (1 + 2 * (0.4 * 3 * (75 / 135) + 0.33)) = 315
+    135 * (1 + 1 * (0.4 * 3 * (75 / 135)))    = 225
+    2 * 1.53 * 75 / 135                        = 1.33
+
+**WHAT IT MEANS.** Both evolutions compute gun Condition Overload WITHOUT the
+Incarnon form's own bonus, and the +60 evolution's 33% does not apply at all.
+Read again with the gun-CO mod unequipped against a statused enemy: no bonus,
+damage identical. Both are live in the base form and in Incarnon.
 
 (The `1.53` in the last line is a slip for `1.2`; the `1.33` it produces is
 right. The `+0.33` inside the 315 line is the term being ruled OUT — carried

@@ -13,17 +13,17 @@ BLAST                       TOXIN (on a Runner)
         1385 — 126
 ```
 
-> 打身体/头，爆炸会有10条（相当于原本身上的10层都爆了，而不是一个）
-> 周围会受到1次伤害
->
-> 打身体的时候10层
-> 周围1260 （暴击过1次）
-> 周围1050 （完全没暴击）
->
-> 打头 (暴击情况各异）
-> 周围3675
-> 3150
-> 3380
+**THE READINGS.** A detonation fires TEN instances, one per stack, rather than
+one — and each surrounding body takes ONE of them.
+
+    body shot, 10 stacks
+      surrounding  1260   (one crit in the set)
+      surrounding  1050   (no crit at all)
+
+    head shot, crits varying
+      surrounding  3675
+                   3150
+                   3380
 
 ### What the direct column pins first
 
@@ -69,7 +69,7 @@ rather than reasoning about.
 
 ### A TOXIN DoT DOES NOT TAKE THE WEAK POINT
 
-> 我确定毒不吃爆头
+**AND TOXIN DOES NOT TAKE HEADSHOTS** — stated flatly, and read.
 
 This contradicts the wiki's Toxin page, which lists *"Enemy Body Parts
 multipliers"* among the additional multipliers on a Toxin tick. A measurement
@@ -84,7 +84,9 @@ in-game reading and says so.
 
 ### Electricity and Gas tick on ONE clock
 
-> 电也是一个大dot的模式，无论多少层，只会跳一下…毒气也是这种，伤害频率和第一次上dot的时候保持一致
+**ELECTRICITY IS ONE BIG DoT.** However many stacks are on the target it
+ticks ONCE, and Gas is the same shape: the damage frequency stays at whatever it
+was when the first DoT landed.
 
 Confirmed on the wiki for Electricity with a dated patch note — Update 33.6,
 *"multiple procs on an enemy no longer deal their respective damage separately,

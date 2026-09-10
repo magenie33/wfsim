@@ -19,8 +19,9 @@ Both are five hops, both repeat exactly, and **hitting (1,1) and (2,1) at the
 same time perturbs neither** — two seeds, two independent paths, each the same
 one it walks alone.
 
-> 我发现如果生成的敌人，是规整在这几个位置的，那么无论什么敌人，都是这样的规律。
-> 但是如果模型不是人形，或者展位稍微错位，那么路径也会不一样。
+**AND THE PATH IS A PROPERTY OF THE PLACEMENT.** With bodies standing in those
+exact positions the path repeats for any enemy type; a non-humanoid model, or a
+placement nudged slightly off, changes it.
 
 ### What it CONFIRMS: nearest
 

@@ -7,28 +7,30 @@ in the order it arrived — the last three messages CORRECT the first, and the
 corrections are kept rather than folded in, because two of them caught a wrong
 model that had already been built:
 
-> 我发现一个武器和wiki写的完全不一样，那就是grimorie，次要射击完全就不是面板上
-> 写的样子，例如我测试实际上次要射击的点球是每下280而不是350，最好的爆炸也是另
-> 外一个伤害，我很有理由怀疑，里面的百分比还是不对的
+**THE REPORT.** The Grimoire's alternate fire does not behave as its panel
+says: the orb strikes for 280 a hit rather than 350, its final explosion is a
+different damage again, and the published percentages look wrong.
 
-> 实际会有6下直击加最后一个爆炸 … 数值上就是官方的*0.8，直击的时候会强
-> 制触发电，但是爆炸的时候没有这个强制触发
+**THE SHAPE.** Six strikes and then one explosion, every figure 0.8x the
+official one. A strike forces Electricity; the explosion does not.
 
-> 然后那个球，完全不吃GunCO，直击部分以及爆炸部分都不吃，因为这个算范围直击
-> （也就是变相的范围，类似于field）
+**IT TAKES NO GUN CONDITION OVERLOAD**, neither the strikes nor the
+explosion, because it counts as an area hit — an area in disguise, the way a
+field is.
 
-> 还有这个球无法multishot，永远只有一个
+**AND IT CANNOT MULTISHOT.** There is only ever one orb.
 
-> 这个球实际上碰到以后马上开始电第一下，这个第一下就是field啊，和后面的5下是
-> 一摸一样的，然后结束爆炸（有正常falloff），range_m这个没有错，标识的是自己的攻
-> 击范围，飞行6m/s和总共飞6s也都是没错的数据
+**THE FIRST STRIKE IS THE FIRST TICK.** The orb strikes the moment it arrives
+and that strike is identical to the five that follow; then it explodes, with
+ordinary falloff. `range_m` is right and describes the orb's own reach, as do
+the 6 m/s flight and the 6 s of it.
 
-> 我修正一下，电球实际上是选半径6m随机一个人射一下，只有一条chain，chain默认是2个，
-> 后续的multishot加成是1*multishot+2，也就是如果面板的multishot面板是2.6，那么就
-> 说明稳定4个，概率5个意思
->
-> 后续爆炸才是范围内的全部（因为有falloff），电球的射程和最终爆炸的范围都是
-> 6m，受范围增益影响
+**CORRECTED: IT IS A CHAIN, NOT A FIELD.** The orb picks ONE body at random
+within 6 m and strikes it — one chain, two hops by default, and multishot adds
+hops as `1 * multishot + 2`, so a panel multishot of 2.6 means four for certain
+and a fifth on the roll. Only the final explosion reaches everything in range,
+which is why that one has falloff. Both the orb's reach and the explosion's are
+6 m and both scale with range mods.
 
 The wiki page agrees with all of it and adds the two lines nobody had read:
 *"Orb will shock 1 enemy within 6 meters of it every 1 second. Each enemy hit
@@ -97,9 +99,10 @@ assumption rather than a measurement, on the page as well as in the yaml.
 The first two attempts filed the orb as a lingering FIELD, and the owner
 rejected the type rather than the numbers:
 
-> 我觉得这个不能算是field，因为field是殴打范围内全部的，有falloff的。这个应该是
-> 其他类型，是一个实体有范围的，打击范围内一个目标的，前6下伤害都是一样。以及严
-> 谨我们发射的时候，发射点是圆心你应该搞一个更准确的
+**IT IS NOT A FIELD.** A field beats everything in its radius and has falloff;
+this is a body with a reach of its own that strikes ONE target inside it, and
+its first six instances are equal. The launch point is the orb's centre, which
+the model should place exactly.
 
 He is right, and the distinction is not cosmetic. A `lingering:` field is an
 AREA: it sits where it landed and burns everyone standing in it, each at their
@@ -222,7 +225,8 @@ reach of **9.75 m or more**, or an orb that stays near what it touched.
 
 ### …and it is the third one, for a reason the arena cannot have
 
-> 我确定这是对的，之前可以打6个是因为有墙，碰见墙就反弹
+**CONFIRMED, AND THE SIX WAS A WALL.** The orb bounces off walls, which is
+what let a reading reach six.
 
 **The orb bounces off walls.** Every number in the entry is right and the model
 is right; what produced six in game is a room. An orb thrown at a body at
@@ -258,9 +262,9 @@ the old answer was worth.
 
 *"不受增益"* meant the RANGE bucket, not the damage one:
 
-> 这里的增益，是指范围增益，就是跳的距离永远是6m，那些其他的什么暴击等等的都是
-> 正常加成的 … 你就认为是chain起来没有衰减的beam chain那种方式就可以，并且存在
-> multishot增加跳数的机制
+**THE ONLY BONUS A HOP READS IS RANGE.** The hop distance is always 6 m; crit
+and the rest scale normally. Treat it as a beam chain with no falloff, with
+multishot adding hops.
 
 So a hop deals the strike in full — a beam chain with no falloff — and takes
 crit, status and every damage mod normally. What it does NOT take is a range

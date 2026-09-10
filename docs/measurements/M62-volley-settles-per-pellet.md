@@ -10,9 +10,12 @@ Four numbers popped and the target finished on **four Viral stacks**.
 
 The owner's report, verbatim:
 
-> 还有一个问题 奏凯 100直击 300范围 200%病毒加成，每下强制一下病毒 顺序 200 450 1200 1500 最终4层病毒 你可以推测一下顺序吗 是弹头1和弹头2 你帮我推理一下，是怎么样的顺序
+**THE READING.** A weapon at 100 direct / 300 radial with +200% Viral, forcing
+one Viral proc per instance, lands in this order — and ends on four Viral stacks:
 
-> 就是纯伤害加成200%，你可以假设带了一张200的病毒mod，同时还有个特效是让没一下伤害必定触发病毒，还有概率再出发病毒（因为武器自己有tsatus chance，只是这次没有）。mod只带了110多重，目标完全没减伤，打的是身体。那你推理顺序
+The +200% is plain damage, as though a 200% Viral mod were equipped, alongside
+an effect forcing a Viral proc on every instance and a further chance to roll
+one.
 
 ```
 200   450   1200   1500      (4 Viral stacks at the end)
