@@ -6,7 +6,7 @@
 #   builds  the library, one row a build    │
 #   queue   what is owed                   ─┘
 #   scores  the facts                      ─── this file, hourly at :30
-#   board   the published files            ─── publish.yml, 00:00 and 12:00 UTC
+#   board   the published files            ─── publish.yml, every four hours
 #
 # NAMED FOR WHERE IT ENDS, like the other two. It empties the queue into
 # `scores` and stops; whether that reaches a reader is the publisher's clock,
