@@ -53,7 +53,7 @@ for (const lang of ["en", "zh"]) {
     // across weapons and is what the optimizer reads off the fight, so
     // inside is where it belongs.
     out.insideFight = !!document.querySelector('#sim-block #wfbuff-block #sim-wfbuffs');
-    out.wrapped = !!document.querySelector('#wfbuff-block.sim-panel');
+    out.wrapped = !!document.querySelector('#wfbuff-block.fold.sect');
     // …and LAST, right above the run: it is the final input before you press it.
     const panel = document.getElementById('wfbuff-block');
     const runh = [...document.querySelectorAll('#sim-block .sim-h')].pop();

@@ -316,6 +316,51 @@ prints them.
 
 ---
 
+## Every box folds, and a floating menu indexes them
+
+**A WEAPON PAGE IS ONE LONG SCROLL, AND THE READER WANTS THREE LINES OF IT.**
+So every box on it shuts from the header it already has: a `.block` from its
+`.bh`, a `.fold.sect` from its `h3.sim-h`. Collapsed, the simulator is two
+header rows and the optimizer is one.
+
+**ONE MECHANISM, THREE SHAPES, ONE STATE.** The result panel's `foldBlock`s,
+the sections authored in `index.html` and the blocks themselves all resolve to
+`setFold`, and all of them are keyed in `wfsim-folds` — so what you shut stays
+shut across a run, a tab switch and a reload. A block's fold id is its own
+`id`, stamped by `wireStaticFolds`; nothing lists the blocks anywhere.
+
+**THE BODY IS EVERY CHILD BUT THE HEADING** (`.fold.sect.shut > :not(.fold-h)`)
+rather than a `.fold-b` the markup has to remember to wrap. A section that
+gains an element tomorrow folds with it; one that gains a wrapper does not
+quietly stop folding.
+
+**A CONTROL IN A HEADING IS THAT CONTROL'S CLICK.** The Buffs section's "all",
+the Forma buttons in the mods block's `.bh`, the mods axis's filter box: the
+heading is allowed to carry them, and folding the thing they belong to instead
+is the one way this feature can make the page worse (`foldsOnClick`).
+
+**THE JUMP MENU IS READ OFF THE PAGE, NEVER LISTED.** `pageFolds()` walks the
+visible module's blocks and the sections inside each, so a section added
+tomorrow is in the menu, in "collapse all" and reachable with no edit — and
+each row is named by its own heading, already translated, rather than by our
+id. Two things it must do and a plain anchor list would not: a row OPENS its
+target and every fold above it (scrolling to a shut section lands on a heading
+with nothing under it, and a section inside a shut block does not move the page
+at all), and it says which rows are currently shut.
+
+**IT DRAGS, AND THE CLAMP IS APPLIED TO THE DRAWING, NOT TO THE WISH.** No
+corner is free on every window, so the position is the reader's and is
+remembered; but a spot chosen on a wide monitor is off-screen on a laptop, so
+`placeJump` clamps what it writes and leaves `jump.x/y` alone — a window
+narrowed and widened again puts the menu back where it was. The grip is BOTH
+the handle and the switch: a pointer that never moved 4px is a click. The drag
+is tracked on the WINDOW, because a pointer that leaves a 30px button stops
+sending its events and `setPointerCapture` throws on a pointer the browser does
+not consider active — an uncaught throw there puts up the boot-failure notice
+on a page that booted perfectly well.
+
+`check_folds` holds all of it.
+
 ## A finger scrolls; it does not drag the fight
 
 **A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT.** A browser decides who owns a

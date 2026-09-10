@@ -40,6 +40,22 @@ Plain node against a KV stub, no browser. Every key
 table knows how to keep; every key survives into storage; two builds differing
 in any one axis are two records.
 
+## `check_folds`
+
+Every block and every section on a weapon page folds, and the jump menu is READ
+OFF them. Both halves derive from the DOM, so the check asserts the property
+rather than a list of sections: each box carries a fold id and a caret (both
+applied by the wiring pass — a box it never reached looks identical and does
+nothing when clicked), shutting one hides its body by COMPUTED STYLE, a control
+in a heading keeps its own click, what you shut survives a reload, and the menu
+lists exactly the folds the page has under their own translated names. Then it
+jumps into the deepest section of a fully collapsed page and asserts the target
+AND the block above it opened. The menu is dragged with a real pointer
+(`Input.dispatchMouseEvent` — a page-side `PointerEvent` carries no active
+pointer id), and dragged off the edge to see it stop at the edge. Verified to
+bite: removing the heading-control guard, the section half of `pageFolds` and
+the clamp reddened twelve assertions between them, each naming its own half.
+
 ## `check_metrics`
 
 Every metric `engine::metrics::ALL` declares reaches the page, and the check

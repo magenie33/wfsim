@@ -16458,16 +16458,19 @@ function jumpRows() {
 }
 
 /// Where the menu sits, clamped into the window it is being drawn in.
+///
+/// THE CLAMP IS APPLIED TO THE DRAWING, NOT TO THE WISH. Writing it back means
+/// a window narrowed once and widened again leaves the menu in the corner it
+/// was squeezed into — the reader's chosen spot destroyed by a resize they
+/// have already undone.
 function placeJump() {
   const el = $("jump");
   if (!el || el.hidden) return;
   const mx = Math.max(8, window.innerWidth - el.offsetWidth - 8);
   const my = Math.max(8, window.innerHeight - el.offsetHeight - 8);
   if (jump.x == null) jump.x = mx;
-  jump.x = Math.min(Math.max(8, jump.x), mx);
-  jump.y = Math.min(Math.max(8, jump.y), my);
-  el.style.left = `${jump.x}px`;
-  el.style.top = `${jump.y}px`;
+  el.style.left = `${Math.min(Math.max(8, jump.x), mx)}px`;
+  el.style.top = `${Math.min(Math.max(8, jump.y), my)}px`;
 }
 
 /// Drawn on every route and after every fold, because the carets it shows are
@@ -16511,17 +16514,17 @@ function foldAll(shut) {
 
 /// Wired once. The grip is BOTH the handle and the switch: a pointer that never
 /// moved is a click, which is how a one-button panel can also be dragged.
+///
+/// THE DRAG IS TRACKED ON THE WINDOW, not on the grip. A pointer that leaves a
+/// 30px button — which is every drag — stops sending the button events, and
+/// `setPointerCapture` is not the fix: it THROWS on a pointer the browser does
+/// not consider active, and an uncaught throw here puts up the boot-failure
+/// notice on a page that booted perfectly well.
 function wireJump() {
   const el = $("jump"), grip = $("jump-grip");
   if (!el || !grip) return;
   let from = null;
-  grip.addEventListener("pointerdown", (e) => {
-    placeJump();                    // so a drag starts from a real position
-    from = { x: e.clientX, y: e.clientY, ox: jump.x, oy: jump.y, moved: false };
-    grip.setPointerCapture(e.pointerId);
-    el.classList.add("dragging");
-  });
-  grip.addEventListener("pointermove", (e) => {
+  const onMove = (e) => {
     if (!from) return;
     const dx = e.clientX - from.x, dy = e.clientY - from.y;
     if (!from.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
@@ -16529,14 +16532,26 @@ function wireJump() {
     jump.x = from.ox + dx;
     jump.y = from.oy + dy;
     placeJump();
-  });
-  grip.addEventListener("pointerup", () => {
-    if (!from) return;
+  };
+  const onUp = () => {
+    window.removeEventListener("pointermove", onMove);
     el.classList.remove("dragging");
-    if (!from.moved) jump.open = !jump.open;
+    if (from && !from.moved) jump.open = !jump.open;
     from = null;
     saveJump();
     renderJump();
+  };
+  grip.addEventListener("pointerdown", (e) => {
+    e.preventDefault();             // no text selection while dragging
+    placeJump();                    // so a drag starts from a real position
+    // FROM WHERE IT IS DRAWN, not from where it was asked to be: the two differ
+    // whenever the clamp above is doing anything, and a drag that starts from
+    // the wish jumps under the pointer by exactly that much.
+    from = { x: e.clientX, y: e.clientY, moved: false,
+      ox: parseFloat(el.style.left) || 0, oy: parseFloat(el.style.top) || 0 };
+    el.classList.add("dragging");
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp, { once: true });
   });
   $("jump-body").addEventListener("click", (e) => {
     const all = e.target.closest("[data-jump-all]");

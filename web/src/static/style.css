@@ -1656,6 +1656,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   padding:0 12px 12px;background:var(--surface)}
 .fold.sect.shut{padding-bottom:0}
 .fold.sect.shut> :not(.fold-h){display:none}
+.fold.sect>.fold-h .fold-c{font-size:13px;color:var(--text-2)}
 .fold.sect>.fold-h{margin:0 -12px 10px;padding:8px 12px;flex-wrap:wrap;align-items:baseline;
   border-bottom:1px solid var(--line);background:var(--panel3);border-radius:9px 9px 0 0}
 .fold.sect.shut>.fold-h{margin-bottom:0;border-bottom:0;border-radius:9px}
@@ -1670,7 +1671,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    (auto Forma, clear) keep their own clicks. Only on the weapon page — a
    support or download section is three lines and has nothing to hide. */
 .config-page .block>.bh{cursor:pointer;user-select:none}
-.bh .fold-c{display:inline-block;transition:transform .12s;color:var(--muted);font-size:11px}
+.bh .fold-c{display:inline-block;transition:transform .12s;color:var(--text-2);font-size:13px}
 .block.shut>.bh .fold-c{transform:rotate(-90deg)}
 .block.shut>.bh{border-bottom:0}
 .block.shut>.bb{display:none}

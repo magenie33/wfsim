@@ -121,8 +121,6 @@ body.on-enemies [data-module="builder"]{display:none}
    travels with it across weapons and is what the optimizer reads off the
    fight, so it belongs INSIDE — and it is a layer nobody else in this panel
    is, so it gets an edge. It needs no hiding rule of
-.sim-panel{margin:14px 0 4px;padding:2px 12px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2)}
-.sim-panel .sim-h{margin-top:12px}
 .sim-h-sub{margin-left:8px;color:var(--text-2);font-size:11px;font-weight:400}
 /* The simulator's read-only build summary */
 .sb-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
@@ -1089,12 +1087,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    tell a reader WHICH preset bar owns the thing they are editing. A box says
    it without a sentence: one holds the search, the other holds the fight the
    search is scored under, and anything outside both is in neither preset. */
-.opt-half{margin:14px 0 4px;padding:2px 13px 13px;border:1px solid var(--line);border-radius:10px}
-.opt-half-h{font-size:12px;margin:13px 0 9px;color:var(--text);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
-.opt-half-h .sim-hint{display:block;font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0;line-height:1.45;color:var(--muted);margin:3px 0 0;max-width:66ch}
-/* The half's own heading is the first thing in it, so the section heading
-   under it does not need the 16px a section break wants. */
-.opt-half > .sim-h:first-of-type{margin-top:10px}
+/* A HALF IS A `.fold.sect` (the box, the fold, the header strip); what is its
+   own is the heading's weight — it is the parent of the sections inside it. */
+.opt-half{margin:16px 0 4px}
+.opt-half-h{font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.opt-half-h .sim-hint{font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0;line-height:1.45;color:var(--muted);margin:3px 0 0;max-width:66ch}
 
 /* A tier that cannot be chosen yet: the one before it is not installed. */
 .opt-tier-block.locked .opt-tier-h{opacity:.45}
@@ -1647,6 +1644,37 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .fold>.fold-h .fold-c{display:inline-block;transition:transform .12s;color:var(--muted);font-size:11px}
 .fold.shut>.fold-h .fold-c{transform:rotate(-90deg)}
 .fold.shut>.fold-b{display:none}
+
+/* A SECTION FOLDS, AND IT IS A BOX SO THAT ITS HEADING READS AS A CONTROL.
+   The numbered headings inside a block are where the page's length actually
+   is — the simulator's seven, the optimizer's five axes and its two halves —
+   and a bare label gives a reader no reason to think it can be shut. A
+   bordered header row does, at the cost of one nesting level.
+   EVERY CHILD BUT THE HEADING GOES, rather than a `.fold-b` the markup has to
+   remember to wrap: a section that gains an element tomorrow folds with it. */
+.fold.sect{border:1px solid var(--line);border-radius:10px;margin:12px 0;
+  padding:0 12px 12px;background:var(--surface)}
+.fold.sect.shut{padding-bottom:0}
+.fold.sect.shut> :not(.fold-h){display:none}
+.fold.sect>.fold-h .fold-c{font-size:13px;color:var(--text-2)}
+.fold.sect>.fold-h{margin:0 -12px 10px;padding:8px 12px;flex-wrap:wrap;align-items:baseline;
+  border-bottom:1px solid var(--line);background:var(--panel3);border-radius:9px 9px 0 0}
+.fold.sect.shut>.fold-h{margin-bottom:0;border-bottom:0;border-radius:9px}
+/* A long hint wraps under the title instead of stretching the row. */
+.fold.sect>.fold-h>.sim-hint{margin-left:0;min-width:0}
+.fold.sect>.opt-half-h>.sim-hint{flex:1 0 100%}
+/* The heading's own controls (the Buffs section's "all") keep their click. */
+.fold>.fold-h button{align-self:center}
+
+/* A BLOCK FOLDS FROM THE HEADER IT ALREADY HAS, and the row gains nothing but
+   the caret: `.bh` is what a reader reaches for anyway, and the buttons in it
+   (auto Forma, clear) keep their own clicks. Only on the weapon page — a
+   support or download section is three lines and has nothing to hide. */
+.config-page .block>.bh{cursor:pointer;user-select:none}
+.bh .fold-c{display:inline-block;transition:transform .12s;color:var(--text-2);font-size:13px}
+.block.shut>.bh .fold-c{transform:rotate(-90deg)}
+.block.shut>.bh{border-bottom:0}
+.block.shut>.bb{display:none}
 /* WHAT EACH MODE IS. A definition list under the Mode control: one entry per
    mode this weapon has, the picked one marked. It sits inside the builder's
    own block, so it takes the block's width and wraps rather than pushing the
@@ -2279,3 +2307,46 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .calc-status .cs-row b{color:var(--text);font-weight:600;text-align:right;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
 .calc-status .cs-why{color:var(--gold);line-height:1.35}
+
+/* ---- THE JUMP MENU ---------------------------------------------------
+   A floating index of the sections on the page. It is a GRIP until it is
+   opened, like the status tab above: the reader wants it when they are looking
+   for something, and furniture the rest of the time is what makes a page feel
+   crowded. It DRAGS, so whichever corner is free on this window is where it
+   can live; `left`/`top` are written by `renderJump` and clamped to the
+   viewport on every resize, because a remembered position on a wide monitor is
+   off-screen on a laptop. */
+.jump{position:fixed;z-index:66;display:flex;flex-direction:column;align-items:flex-start;
+  gap:0;font-size:12px;max-width:min(240px,calc(100vw - 24px))}
+.jump-grip{font:inherit;font-size:13px;line-height:1;padding:6px 9px;cursor:grab;
+  border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text-2);
+  touch-action:none}
+.jump-grip:hover{border-color:var(--accent);color:var(--text)}
+.jump.dragging .jump-grip{cursor:grabbing}
+.jump.open .jump-grip{border-bottom-left-radius:0}
+.jump-body{display:none;width:min(240px,calc(100vw - 24px));max-height:min(62vh,520px);
+  overflow-y:auto;padding:7px 8px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:0 8px 8px 8px;box-shadow:0 8px 28px rgba(0,0,0,.28);margin-top:-1px}
+.jump.open .jump-body{display:block}
+.jump-mods{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.jump-mod{font-size:11px;padding:3px 8px;border-radius:999px;text-decoration:none;
+  border:1px solid var(--line);background:var(--surface);color:var(--text-2)}
+.jump-mod:hover{border-color:var(--accent);color:var(--text)}
+.jump-mod.sel{color:var(--text);border-color:var(--accent)}
+/* One row per fold on the page. A BLOCK is the outdented row and its sections
+   are indented under it, which is the page's own shape said in one column. */
+.jump-row{display:flex;align-items:center;gap:6px;width:100%;font:inherit;font-size:12px;
+  text-align:left;padding:4px 6px;border:0;border-radius:6px;background:none;
+  color:var(--text-2);cursor:pointer}
+.jump-row:hover{background:var(--surface);color:var(--text)}
+.jump-row.blk{font-weight:600;color:var(--text);margin-top:3px}
+.jump-row.sub{padding-left:18px}
+.jump-row.deep{padding-left:30px}
+.jump-row .jr-n{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* WHETHER THE THING YOU ARE ABOUT TO JUMP TO IS OPEN. A menu that jumped you
+   to a shut section without saying so read as a jump that did nothing — the
+   caret opens it from here, and the row itself opens it on the way. */
+.jump-row .jr-c{flex:0 0 auto;color:var(--muted);font-size:10px}
+.jump-row.is-shut{color:var(--muted)}
+.jump-foot{display:flex;gap:5px;margin-top:7px;padding-top:6px;border-top:1px solid var(--line)}
+.jump-foot .ghost-btn{flex:1 1 0;font-size:11px;padding:3px 6px}

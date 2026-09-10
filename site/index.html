@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.5711e6c47fdc.css" />
+  <link rel="stylesheet" href="/asset/style.630c7deafbbe.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -711,34 +711,42 @@
         <!-- The board's consent line. Shown only under the OFFICIAL scenario,
              because that is the only fight whose results can reach a board. -->
         <div id="board-consent" class="official-note" hidden></div>
-        <h3 class="sim-h" data-i18n>1 · The fight <span class="sim-hint" data-i18n>who you are shooting at, where, and for how long</span></h3>
-        <div id="sim-target" class="sub-block"></div>
-<!-- Block 1 is the other actor; this is YOU. What the player is doing
+        <div class="fold sect" data-fold="sim-fight">
+          <h3 class="sim-h fold-h" data-i18n>1 · The fight <span class="sim-hint" data-i18n>who you are shooting at, where, and for how long</span></h3>
+          <div id="sim-target" class="sub-block"></div>
+        </div>
+        <!-- Block 1 is the other actor; this is YOU. What the player is doing
              and what frame is behind the gun, which is one answer to "who is
              shooting". It comes before Buffs because it GATES them: aiming
              decides whether the while-aiming mods pay out at all. -->
-        <h3 class="sim-h" data-i18n>2 · The wielder <span class="sim-hint" data-i18n>whoever is holding the weapon and what they are doing — this gates the buffs below</span></h3>
-        <div id="sim-technique" class="field-grid"></div>
-        <!-- THE SQUAD's AURA and the frame's ARCHON SHARDS. Both are the
-             WARFRAME's rather than the weapon's, which is why they are in this
-             block and not in a build: two players with the same gun and
-             different squads are two different fights, the same rule the
-             ability buffs follow. They are OFFERED rather than typed, because a
-             named shard has a source that can be checked against the wiki and a
-             typed +45% has nothing. -->
-        <div id="sim-squad" class="sub-block"></div>
+        <div class="fold sect" data-fold="sim-wielder">
+          <h3 class="sim-h fold-h" data-i18n>2 · The wielder <span class="sim-hint" data-i18n>whoever is holding the weapon and what they are doing — this gates the buffs below</span></h3>
+          <div id="sim-technique" class="field-grid"></div>
+          <!-- THE SQUAD's AURA and the frame's ARCHON SHARDS. Both are the
+               WARFRAME's rather than the weapon's, which is why they are in
+               this block and not in a build: two players with the same gun and
+               different squads are two different fights, the same rule the
+               ability buffs follow. They are OFFERED rather than typed, because
+               a named shard has a source that can be checked against the wiki
+               and a typed +45% has nothing. -->
+          <div id="sim-squad" class="sub-block"></div>
+        </div>
         <!-- NOT a technique: nobody plays "infinite ammo". These say what the
              run does not model, which is a different kind of claim. -->
-        <h3 class="sim-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
-        <div id="sim-limits" class="field-grid"></div>
+        <div class="fold sect" data-fold="sim-limits">
+          <h3 class="sim-h fold-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
+          <div id="sim-limits" class="field-grid"></div>
+        </div>
         <!-- What this block sets is the START of the run, not the buff's
              worth: the fight goes on to grant and decay these on their own
              triggers. The old hint said "locked = 100% uptime", which reads as
              "this box decides how much of the buff you get" — the opposite of
              what the sim does. -->
-        <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
-          <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
-        <div id="sim-buffs"></div>
+        <div class="fold sect" data-fold="sim-buffs">
+          <h3 class="sim-h fold-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
+            <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
+          <div id="sim-buffs"></div>
+        </div>
         <!-- THE FIGHT'S OWN STAT BONUSES. Everything this weapon is handed by
              something that is not its build, expressed as what it is WORTH:
 . No trigger, no clock, no stack count — the
@@ -746,8 +754,10 @@
              without one. It sits BEFORE the Warframe buffs because it is the
              simpler claim
              and because that block is still the last input before you run. -->
-        <h3 class="sim-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
-        <div id="sim-extra" class="field-grid"></div>
+        <div class="fold sect" data-fold="sim-extra">
+          <h3 class="sim-h fold-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
+          <div id="sim-extra" class="field-grid"></div>
+        </div>
         <!-- WARFRAME ABILITY BUFFS — INSIDE the fight, and wrapped so it still
              reads as its own thing. It is a section of the
              scenario because that is where it already lives — it saves with
@@ -756,13 +766,15 @@
              the final input before you run.
              EARLY ACCESS: the strength is typed in here today and comes from
              the frame once frames land. Said on screen, not only here. -->
-        <div class="sim-panel" id="wfbuff-block">
-          <h3 class="sim-h" data-i18n>6 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
+        <div class="fold sect" id="wfbuff-block" data-fold="sim-wfbuffs">
+          <h3 class="sim-h fold-h" data-i18n>6 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
             <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
           <div id="sim-wfbuffs"></div>
         </div>
-        <h3 class="sim-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
-        <div id="sim-run" class="field-grid"></div>
+        <div class="fold sect" data-fold="sim-measure">
+          <h3 class="sim-h fold-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
+          <div id="sim-run" class="field-grid"></div>
+        </div>
         <!-- THE RUN COUNT — ITS OWN DIV, and deliberately outside every block
              above. It is not part of the fight, so an
              OFFICIAL ruler does not pin it: reading the board's scenario still
@@ -807,8 +819,10 @@
         <div id="riven-stats"></div>
         <div id="riven-foot" class="rv-foot"></div>
         <div id="riven-card" class="rv-card"></div>
-        <h3 class="sim-h" id="riven-all-h" data-i18n>All rivens <span class="sim-hint" data-i18n>every riven you have made for this weapon, with what it actually rolls</span></h3>
-        <div id="riven-all"></div>
+        <div class="fold sect" data-fold="riven-all">
+          <h3 class="sim-h fold-h" id="riven-all-h" data-i18n>All rivens <span class="sim-hint" data-i18n>every riven you have made for this weapon, with what it actually rolls</span></h3>
+          <div id="riven-all"></div>
+        </div>
       </div>
     </section>
 
@@ -822,8 +836,10 @@
       <div class="bb">
         <div class="cu-tools" id="enemy-tools"></div>
         <div id="enemy-form"></div>
-        <h3 class="sim-h" id="enemy-all-h" data-i18n>All targets <span class="sim-hint" data-i18n>every enemy you have made — pick one in the simulator's target list like any other</span></h3>
-        <div id="enemy-all"></div>
+        <div class="fold sect" data-fold="enemy-all">
+          <h3 class="sim-h fold-h" id="enemy-all-h" data-i18n>All targets <span class="sim-hint" data-i18n>every enemy you have made — pick one in the simulator's target list like any other</span></h3>
+          <div id="enemy-all"></div>
+        </div>
       </div>
     </section>
 
@@ -838,8 +854,8 @@
              are editing. A container says it without a sentence: everything
              inside this box is what a search preset saves, everything inside
              the next one belongs to the simulator and is read-only here. -->
-        <div class="opt-half" id="opt-plan">
-          <div class="opt-half-h" data-i18n>The search <span class="sim-hint" data-i18n>what to look through, and how hard to look — all of it, and only it, is what a search preset saves</span></div>
+        <div class="opt-half fold sect" id="opt-plan" data-fold="opt-plan">
+          <div class="opt-half-h fold-h" data-i18n>The search <span class="sim-hint" data-i18n>what to look through, and how hard to look — all of it, and only it, is what a search preset saves</span></div>
           <!-- ONE preset per weapon: the whole search (scope + finalists).
                Not the scenario — the optimizer runs the simulator's. -->
           <div class="preset-bar" id="preset-bar-optimizer"></div>
@@ -860,15 +876,15 @@
                  such axis shows nothing here — heading included. The builder
                  already hides the matching BLOCK; these are the same facts,
                  asked in the module that searches them. -->
-            <div id="opt-modes-sect">
-              <h3 class="sim-h"><span class="axh"></span> <span class="sim-hint" data-i18n>how it is played — pool = searched, req = pin one</span></h3>
+            <div id="opt-modes-sect" class="fold sect" data-fold="opt-modes">
+              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>how it is played — pool = searched, req = pin one</span></h3>
               <div id="opt-modes" class="combo-menu opt-modlist"></div>
             </div>
             <!-- MODS, and the EXILUS slot inside it — the builder's `mod-block`
                  holds its exilus slot the same way, and an axis that is a
                  sub-slot there must not be a peer heading here. -->
-            <div id="opt-mods-sect">
-              <h3 class="sim-h"><span class="axh"></span> <span class="sim-hint" data-i18n>search by name or effect; mark each as pool (search) or required</span></h3>
+            <div id="opt-mods-sect" class="fold sect" data-fold="opt-mods">
+              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>search by name or effect; mark each as pool (search) or required</span></h3>
               <div class="opt-mods-head">
                 <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" data-i18n-ph autocomplete="off">
               </div>
@@ -911,28 +927,30 @@
                 <div id="opt-exilus-range"></div>
               </div>
             </div>
-            <div id="opt-arcanes-sect">
-              <h3 class="sim-h"><span class="axh"></span> <span class="sim-hint" data-i18n>pool = searched options, req = pin the slot</span></h3>
+            <div id="opt-arcanes-sect" class="fold sect" data-fold="opt-arcanes">
+              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>pool = searched options, req = pin the slot</span></h3>
               <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" data-i18n-ph autocomplete="off">
               <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
             </div>
-            <div id="opt-evos-sect">
-              <h3 class="sim-h"><span class="axh"></span> <span class="sim-hint" data-i18n>per tier: pool = searched options, req = pin</span></h3>
+            <div id="opt-evos-sect" class="fold sect" data-fold="opt-evos">
+              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>per tier: pool = searched options, req = pin</span></h3>
               <div id="opt-evos"></div>
             </div>
             <!-- THE VALENCE AXIS — an adversary weapon's progenitor element,
                  searched the way the mode is. Hidden on every weapon that has
                  none, exactly as the builder's own block is. -->
-            <div id="opt-valence-sect">
-              <h3 class="sim-h"><span class="axh"></span> <span class="sim-hint" data-i18n>the progenitor element — pool = searched, req = pin one</span></h3>
+            <div id="opt-valence-sect" class="fold sect" data-fold="opt-valence">
+              <h3 class="sim-h fold-h"><span class="axh"></span> <span class="sim-hint" data-i18n>the progenitor element — pool = searched, req = pin one</span></h3>
               <div id="opt-valence" class="combo-menu opt-modlist"></div>
             </div>
           </div>
           <!-- CLOSING THE FIRST HALF. Everything from the search's preset bar
                down to here is the SEARCH and is saved in the search preset. -->
-          <h3 class="sim-h" data-i18n>Search <span class="sim-hint" data-i18n>how many builds survive to the last round</span></h3>
-          <div id="opt-search" class="field-grid">
-            <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
+          <div class="fold sect" data-fold="opt-search">
+            <h3 class="sim-h fold-h" data-i18n>Search <span class="sim-hint" data-i18n>how many builds survive to the last round</span></h3>
+            <div id="opt-search" class="field-grid">
+              <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
+            </div>
           </div>
           <!-- CPU THREADS IS GONE. How much of the machine
                the page may use is ONE setting and it is in the topbar
@@ -944,21 +962,31 @@
 
         <!-- HALF TWO: THE FIGHT. Not the optimizer's — the SIMULATOR's, shown
              read-only, because a preset is edited in exactly one place. -->
-        <div class="opt-half" id="opt-fight-half">
-          <div class="opt-half-h" data-i18n>The fight <span class="sim-hint" data-i18n>the simulator's, shown read-only — every candidate is scored under it, and it is edited over there</span></div>
+        <div class="opt-half fold sect" id="opt-fight-half" data-fold="opt-fight">
+          <div class="opt-half-h fold-h" data-i18n>The fight <span class="sim-hint" data-i18n>the simulator's, shown read-only — every candidate is scored under it, and it is edited over there</span></div>
           <div class="preset-bar" id="opt-scenario-ref"></div>
           <div id="opt-target" class="sub-block"></div>
-          <h3 class="sim-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
-          <div id="opt-technique" class="field-grid"></div>
-          <div id="opt-squad" class="sub-block"></div>
-          <h3 class="sim-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
-          <div id="opt-wfbuffs"></div>
-          <h3 class="sim-h" data-i18n>Extra stats <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored with them</span></h3>
-          <div id="opt-extra" class="field-grid"></div>
-          <h3 class="sim-h" data-i18n>Limits <span class="sim-hint" data-i18n>what the search is allowed to assume</span></h3>
-          <div id="opt-limits" class="field-grid"></div>
-          <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>
-          <div id="opt-buffs"></div>
+          <div class="fold sect" data-fold="opt-tenno">
+            <h3 class="sim-h fold-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
+            <div id="opt-technique" class="field-grid"></div>
+            <div id="opt-squad" class="sub-block"></div>
+          </div>
+          <div class="fold sect" data-fold="opt-wfbuffs">
+            <h3 class="sim-h fold-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
+            <div id="opt-wfbuffs"></div>
+          </div>
+          <div class="fold sect" data-fold="opt-extra">
+            <h3 class="sim-h fold-h" data-i18n>Extra stats <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored with them</span></h3>
+            <div id="opt-extra" class="field-grid"></div>
+          </div>
+          <div class="fold sect" data-fold="opt-limits">
+            <h3 class="sim-h fold-h" data-i18n>Limits <span class="sim-hint" data-i18n>what the search is allowed to assume</span></h3>
+            <div id="opt-limits" class="field-grid"></div>
+          </div>
+          <div class="fold sect" data-fold="opt-buffs">
+            <h3 class="sim-h fold-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>
+            <div id="opt-buffs"></div>
+          </div>
         </div>
 
         <!-- IN NEITHER HALF, AND THAT IS THE POINT. The
@@ -1026,18 +1054,29 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">c6a1dd7c</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">30648267</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.610dd84a4351.js"></script>
+  <script src="/asset/app.5d9765e27c58.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is
      what let one bad minute read as "the quick calc is broken". See
      renderCalcStatus. -->
 <div class="calc-status" id="calc-status" hidden></div>
+<!-- THE JUMP MENU — a floating index of the page the reader is on, because a
+     weapon page is one long scroll and the section they want is rarely the one
+     on screen. Every row is a fold on the page, read off the DOM rather than
+     listed here, so a section added tomorrow is in the menu with no edit.
+     IT DRAGS, and it remembers where it was put: which corner is free depends
+     on the window, and a panel that cannot be moved covers whatever it lands
+     on. See renderJump. -->
+<div class="jump" id="jump" hidden>
+  <button class="jump-grip" id="jump-grip" title="drag to move — click to open or close" data-i18n-title>☰</button>
+  <div class="jump-body" id="jump-body"></div>
+</div>
 </body>
 </html>
