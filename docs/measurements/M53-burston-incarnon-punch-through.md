@@ -44,9 +44,9 @@ night before:
 
 ### The classification he asked for
 
-He named the smell before the mechanic: the blast *"不吃多重"* — takes no
-multishot — so it is a **假 AoE**, a fake one, and it should be a TYPE rather
-than a pile of per-weapon exceptions.
+The smell was named before the mechanic was: the blast takes NO MULTISHOT, so
+it is a FAKE AoE, and it should be a TYPE rather than a pile of per-weapon
+exceptions.
 
 `weapons_data::BlastKind`, two values:
 
@@ -98,8 +98,8 @@ saved the Ferrox and got the CROWD wrong: it put the blast a fixed 2.1 m past
 the first body instead of on the fifth. Only the material accounting fits the
 measurement, the Ferrox and a line of enemies at once.
 
-**THE DIRECTION IS MEASURED; THE MAGNITUDE IS NOT.** The owner reported that
-single-target damage *"可能还会降低"* — may even decrease — and gave no number, so
+**THE DIRECTION IS MEASURED; THE MAGNITUDE IS NOT.** Single-target damage was
+reported as possibly DECREASING, with no number attached, so
 what is pinned here is that it drops and that the weapon's own blast radius
 decides by how much. A figure from in game would tighten it and nothing in the
 model would have to move to accept one.

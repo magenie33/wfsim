@@ -2,9 +2,10 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-Audited because the owner did not feel the arcane in game: *"我打200级的eximus的
-堕落重型机枪手感觉没那么强啊，你是不是什么地方多算了"*. **Nothing is
-over-counted** — at his level the model agrees with him.
+Audited because the arcane did not FEEL as strong in game as the model said —
+against a level 200 Corrupted Heavy Gunner Eximus, with over-counting the
+suspicion. **Nothing is over-counted** — at that level the model agrees with the
+reading.
 
 Ocucor, the board's own top build, against a Corrupted Heavy Gunner, 40 runs of
 300 s per cell:
@@ -51,7 +52,8 @@ on the board.
 ### The premise that had to be checked, and was ✅
 
 The whole result rests on damaging statuses applying while the Overguard is up.
-They do — owner-confirmed in game (2026-08-09: "可以在敌人身上啊"). Overguard
+They do — confirmed in game (2026-08-09): the statuses land on the enemy while
+it is up. Overguard
 blocks CROWD CONTROL, not damage. Had it blocked damaging status too, the model
 would have been over-crediting every DoT weapon against every Eximus in the
 roster, which is a far larger error than the arcane this audit started from.

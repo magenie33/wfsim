@@ -29,8 +29,8 @@ now has a measurement under it rather than a shrug.
 
 ### AMENDED 2026-08-20 — the radius is 0.25 after all, and there is only one number
 
-The owner: the Tenno's radius and an enemy's are both **0.25 m**, and
-`BODY_RADIUS_M` and `BODY_MATERIAL_M` *"就应该是一个数字"* — should be one number.
+**THE READING.** The Tenno's radius and an enemy's are both **0.25 m**, and
+`BODY_RADIUS_M` and `BODY_MATERIAL_M` should be ONE number.
 They now are: the material is `2r`, the diameter, because a body is a circle.
 
 **THE PENETRATION TABLE IS WHAT DECIDES IT, and it was in the repo the whole

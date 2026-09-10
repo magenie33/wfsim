@@ -56,13 +56,15 @@ at all. It explains all three observations at once: a fixed layout gives fixed
 cell assignments and therefore a fixed path; nudging a body across a cell
 boundary changes it; and so does a collider of a different size.
 
-The owner's guess (*"猜测和怪的坐标有关系？"*) was right, with one correction:
+The guess that it has to do with the enemies' COORDINATES was right, with one
+correction:
 the ABSOLUTE world coordinates, not the positions within the formation.
 
 ### What the model does instead
 
-Not reproduce it (owner, 2026-08-17): *"我们不要求100%还原，但是思路是一致的
-… 如果多个敌人是永远不动的，那么这个链接的路径是永远固定的，就做到这点就可以了。"*
+Not reproduce it (2026-08-17). A 100% reproduction is not asked for, only that
+the THINKING match: if the bodies never move, the chain path is fixed for ever —
+holding that property is enough.
 
 So `chain::resolve` breaks ties by the lowest body index — arbitrary, and
 STABLE, which is the honest pair when the real rule is unknowable. A formation

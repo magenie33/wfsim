@@ -45,7 +45,7 @@ gets). Neither is the number.
 
 **Question.** What is an EXTRA HIT worth, and specifically what happens when one
 fires off a Blast detonation — the interaction the owner named as the reason to
-implement the ability at all ("注意这个和blast的联动").
+implement the ability at all — its interaction with Blast is the point.
 
 **Answer: measured, and the model reproduces every number.** The owner supplied
 a player's capture with video (2026-08-09). Per

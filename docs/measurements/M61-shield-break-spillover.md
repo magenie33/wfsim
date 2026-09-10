@@ -11,47 +11,47 @@ does not fire at all, or fires selectively — a ground-slam's arrival triggers 
 where other things do not.
 
 ```
-奏凯普通
+Laetum, unmodded
 96slash+64impact=160
 critical damage 2.2x
 
-1级crew man无钢铁加成
+level 1 Crewman, no Steel Path
 shield 120
 health 90
 
-无mod
-爆头
-暴击 120+1776=1896
-无暴击 120+620=740
+no mods
+head
+crit 120+1776=1896
+no crit 120+620=740
 
-无盾爆头
-暴击 2015
-无暴击 860
+no shield, head
+crit 2015
+no crit 860
 
-身体
-爆击 341+12
-无暴击 158+2
+body
+crit 341+12
+no crit 158+2
 
-无盾身体
-无暴击 160
-暴击 353
+no shield, body
+no crit 160
+crit 353
 
-有+220+165基伤
-爆头
-暴击  120+ 9920
-无暴击 120+4316
+with +220 +165 base damage
+head
+crit  120+ 9920
+no crit 120+4316
 
-无盾爆头
-暴击 10160
-无暴击 4556
+no shield, head
+crit 10160
+no crit 4556
 
-身体
-爆击 1630+80
-无暴击 743+33
+body
+crit 1630+80
+no crit 743+33
 
-无盾身体
-无暴击 776
-暴击 1710
+no shield, body
+no crit 776
+crit 1710
 ```
 
 ### What it settles, and it does not need a model to settle it
@@ -103,15 +103,15 @@ The owner's follow-up, on the same Laetum and the same level 1 Crewman with
 remained:
 
 ```
-220+165基伤
-打掉41的盾
-爆头
-暴击  79+10002
-无暴击 79+4398
+220 + 165 base damage
+41 of shield removed
+head
+crit  79+10002
+no crit 79+4398
 
-身体
-爆击 1628+82
-无暴击 741+35
+body
+crit 1628+82
+no crit 741+35
 ```
 
 **It settles the body rule outright.** `health = 0.05 × (damage − shield

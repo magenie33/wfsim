@@ -47,8 +47,8 @@ number has already used. So the two small numbers are the COLLISIONS and the
 two large ones the EXPLOSIONS, and from there only one ordering has
 multipliers that climb.
 
-The owner's own question was which of the two middle instances comes first —
-*"我就在纠结是范围1先还是直击2先"*. It is **explosion 1**: if it were direct 2
+The open question was which of the two middle instances comes first, explosion
+1 or direct 2. It is **explosion 1**: if it were direct 2
 the second number would be `200 x 2.00 = 400`, which is not among the four,
 while `600 x 2.00 = 1,200` is.
 

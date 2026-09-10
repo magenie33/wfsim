@@ -4,7 +4,7 @@
 
 The owner brought a community formula for a Primary Debilitate build, with an
 in-game number beside it, and asked whether the case it describes generalises
-(2026-08-08: "我们是否可以反推到一般情况呢").
+(2026-08-08: can it be generalised back to the ordinary case?).
 
 ```
 Damage x Cyte% x Dot% x (1+Elemental) x (1+DotElemental) x Bane^4 x Elementalist
@@ -81,9 +81,9 @@ formula does and does not demonstrate.
 
 ### THE CRUX — and it is narrower than it looked (2026-08-08)
 
-Shipped for one commit, then reverted, because the owner put his finger on what
-the evidence actually covers: **"那个resupply的例子就是说明，类似toxic lash的例子
-啊，不是常规武器的"**.
+Shipped for one commit, then reverted, because of what the evidence actually
+covers: **the resupply example is an example of the Toxic Lash KIND, not of an
+ordinary weapon.**
 
 The source's own analogy is the reason. Toxic Lash's page carries the worked
 example:
@@ -132,7 +132,7 @@ published board rows by up to **+112%** (Torid, no-aim) on an inference.
 
 ### More material, and what it changed (2026-08-08)
 
-Asked to collect more (owner: "你再多搜集点资料"), and the sources changed the
+More sources were asked for, and they changed the
 shape of the question rather than answering it.
 
 **The weapon-status rule is documented to the digit, and we match it.** The
@@ -147,8 +147,9 @@ damage bonuses**". Its worked example — 100 Puncture, Serration, Infected Clip
 Rifle Elementalist, Bane of Infested — comes out at `0.5 x 344.5 x 4.693 =
 808.37`, which is this engine's arithmetic exactly.
 
-**MELEE INFLUENCE SAYS A THIRD THING — AND IT IS FILED SEPARATELY** (owner,
-2026-08-08: "melee influence是传染比较特别，你单记"). It is a SPREAD: the damage
+**MELEE INFLUENCE SAYS A THIRD THING — AND IT IS FILED SEPARATELY**
+(2026-08-08: its contagion is its own special case and is recorded on its own).
+It is a SPREAD: the damage
 it names is dealt to OTHER enemies, as the price of contagion, and a mechanic
 that moves an effect sideways is not the same kind of thing as one that splits a
 status on the target in front of you. Recorded here as a data point about how DE
@@ -169,7 +170,7 @@ though nobody there measured anything — and a thread is not a page.
 
 ### DECIDED: (a), the weapon's own algorithm (owner, 2026-08-08)
 
-"a版本吧，我觉得是对的，先按照a来设计". The weapon is the SOURCE, so the base is
+**(a) is the one to design against.** The weapon is the SOURCE, so the base is
 computed the weapon's way — which is also the only one of the three that is
 documented for a weapon-applied status, matched to the digit on the Toxin page's
 own worked example, and already what ships. Nothing changes; what changes is
@@ -191,8 +192,9 @@ video therefore rules out (a) for the ABILITY case and separates nothing else.
 
 ### THE EXPONENT IS NOW THE OPEN ONE — 3 or 2 (2026-08-08)
 
-Choosing (a) puts a second question in relief, and the owner raised it in the
-same breath: "我们已经多吃一次bane加成了，理论应该是只有2的，而不是3". If the
+Choosing (a) puts a second question in relief, raised in the same breath: the
+faction bonus is already being taken one time too many — there should be TWO
+layers of it and not three. If the
 split's base is the WEAPON's `ModifiedBase` — the same base an ordinary weapon
 status uses — then the arcane's instance is not acting as a damage layer, and
 an ordinary weapon status double-dips faction, `f^2`. Charging `f^3` while
@@ -270,8 +272,9 @@ status-damage mods, those are far enough apart to tell by eye.
 
 ### Also settled by this: the split deals no damage of its own
 
-The owner's other half — "殴打的那一下，是没有伤害的…就是直接上dot（电还是会立刻
-电一下）" — is what the engine already does, and only the DATA said otherwise.
+The other half — the striking instance itself deals NO damage and simply applies
+the DoT, with Electricity still ticking once immediately — is what the engine
+already does, and only the DATA said otherwise.
 `settle_procs` applies the split as a status and never calls `target.apply`; the
 Electricity tick that lands immediately is the DoT's own first tick (delay-0),
 not a hit. `primary_debilitate.yaml` opened with "IT DEALS AN INSTANCE", which
@@ -288,17 +291,20 @@ status follows: *"Damage over Time status effects created by an Extra Hit will
 use the Extra Hit Damage as Modded Base Damage"*, which is also why such a
 status takes the ELEMENTAL bonuses an ordinary one is denied.
 
-Read literally that gives ZERO here. The rule that covers both members (owner,
-2026-08-09: "如果为0，那么就找上一级去找base") is that an Extra Hit **replaces**
+Read literally that gives ZERO here. The rule that covers both members
+(2026-08-09: when it is 0, go one level up for the base) is that an Extra Hit
+**replaces**
 the base its status would have used — so a 0% one replaces nothing and the level
 above stands, which is the `ModifiedBase` this engine already used.
 
 It also explains why the third reading — the full modded hit — decoded the 29551
 above and still moved published board rows by +112% when shipped: that reading
 is CORRECT, for an Extra Hit with damage. The Cyte-09 chain it came from is a
-10–25% Extra Hit, and *上一级被 resupply 替换了*. Debilitate is the one member
+10–25% Extra Hit, and the level above it is the one resupply REPLACED.
+Debilitate is the one member
 with nothing to replace. See docs/EXTRA_HIT.md.
 
 The exponent is closed with it: the same page derives `f³` rather than asserting
-it, so the "理论应该是只有2的" doubt is answered — the missing rung is the Extra
+it, so the doubt above — that there should be only TWO layers — is answered: the
+missing rung is the Extra
 Hit itself, which carries the bonus twice before its status carries it again.

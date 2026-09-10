@@ -9,27 +9,28 @@ is the reason this entry exists.
 ### The reports, verbatim
 
 ```
-220基伤
+220 base damage
 512/10752
 
 2/2 768 160*（1+2.2+0.4*2*2）
 2/1 640 160*（1+2.2+0.4*1*2）
 
-灵化后
-0基伤   100/300
-220基伤 320/960
+in Incarnon form
+0 base     100/300
+220 base   320/960
 3/1-440/960
 3/2-560/960
 100*(1+2.2+1*3*0.4)=440
 100*(1+2.2+2*3*0.4)=560
 300*(1+2.2)=960
 
-照射测试
-灵化前 1536 / 隔壁 2764.8
-       (可以受到这个伤害，并且也可以 x21，互相独立不影响，
-        相当于旁边单独一次 1.8x)
-灵化下 320/960   隔壁 1152/24192
-       960/2880  隔壁 3456/24192
+Irradiate test
+base form    1536 / neighbour 2764.8
+             (the neighbour takes this damage and can roll x21 too;
+              the two are independent, which comes to a separate 1.8x
+              on the body beside it)
+Incarnon     320/960    neighbour 1152/24192
+             960/2880   neighbour 3456/24192
 ```
 
 ### What confirms the model
@@ -93,8 +94,9 @@ Devouring Attrition's own rule is "per damage instance that did not crit", and
 an extra hit IS a second instance — so a second roll was the reading a careful
 person would have argued for, and it would reach **×441**.
 
-It does not. **"真理密语不能再继续触发那个 x21，从而达成 x441。只能简单的 x21，
-就是原本的实现"** (owner, 2026-08-24). The extra hit inherits the ×21 the
+It does not (2026-08-24). **Xata's Whisper cannot go on to trigger that x21 a
+second time and reach x441 — it is a plain x21, which is what was already
+implemented.** The extra hit inherits the x21 the
 trigger already took, through the `raw` it is a percentage of, and stops there
 — which is what this engine already did, on the strength of a comment about
 crit and the body part rather than about this perk. Now measured rather than

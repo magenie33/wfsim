@@ -19,15 +19,16 @@ Roughly read: three Roar layers, two Attrition layers, Elementalist and the
 elemental mods are all taken. With ONLY Roar equipped the DoT ticks once and
 Debilitate is gone.
 
-So the chain is **直伤 → 附加伤害 → dot** with a Roar layer at each step (the
+So the chain is **direct hit → extra hit → DoT** with a Roar layer at each step
+(the
 `f³` this engine already applied as `DEPTH_DERIVED_PROC`, see M33), and
 **Devouring/Devastating Attrition applies twice**: 21 x 21 = **441**.
 
 ### It is not a design — it is a leak, and the leak names the rule
 
-The owner's reading, and the reason this is filed as DE's bug rather than as an
-interaction (2026-08-08: "有bug，你理解吗，这个+21好像还会作用在由衰弱产生的dot
-上面（非本意）"):
+The reading, and the reason this is filed as DE's bug rather than as an
+interaction: the +21 also lands on the DoT Debilitate produced, and that is not
+intended (2026-08-08).
 
 **HOW THE ZERO CARRIES.** A successful Debilitate fires one instance of ZERO
 damage, multiplied by that instance's own faction bracket and its own 50%
@@ -53,8 +54,9 @@ predictable rather than a second measurement.
 2. **The split rolls a second one of its own**, on the zero.
 3. **The split's roll lands even when the parent hit CRIT.** The zero instance
    has no crit of its own — there is nothing to crit — so "on a hit that is
-   neither Critical nor…" is satisfied whatever the parent did ("50%概率触发，因
-   为这个也没暴击"). A critting build therefore gets 1 x 21 here, never 1. This is
+   neither Critical nor…" is satisfied whatever the parent did — it fires on a
+   50% roll, and it does not crit either. A critting build therefore gets 1 x 21
+   here, never 1. This is
    the ruling that matters in practice, since the parent hit on a real Felarx
    build usually crits and its own roll is then worth nothing.
 
@@ -86,9 +88,9 @@ hold:
   Attrition is not also three.
 - **It predicts the crit ruling**, which is the counter-intuitive one, and it
   was implemented from the prediction rather than from a measurement.
-- **It is consistent about Cold** (owner, 2026-08-08): the roll picks one of the
-  two components, and "万一roll到是冰，那就是一个带441倍率的冰（没有效果），要是
-  是其他的毒/火/电，那就是个441的dot". A 441x multiplier on a status that has no
+- **It is consistent about Cold** (2026-08-08): the roll picks one of the two
+  components — roll Cold and it is a 441x Cold with no payload, roll Toxin, Heat
+  or Electricity and it is a 441x DoT. A 441x multiplier on a status that has no
   damage payload is worth nothing — which is what this engine does anyway, since
   only a DoT type reaches `push_dot`. A theory that has to special-case Cold
   would be a worse theory.
@@ -97,8 +99,9 @@ hold:
   zero.
 
 **THE CARRIER IS NOT GENERALISED, and that is a decision rather than an
-omission** (owner, 2026-08-08: "我确信目前就这个21是非本意的，其他的还是按照之前
-的建模来做"). The obvious next question was whether every free-standing final
+omission** (2026-08-08): this x21 is the one that is unintended, and everything
+else stays modelled as it was. The obvious next question was whether every
+free-standing final
 multiplier double-dips — **Condition Overload** being the candidate M36 already
 established is its own bracket on this weapon. It is not asked, and CO stays
 CO¹: the owner plays this weapon and the 21 is the only term he has seen behave
@@ -106,8 +109,9 @@ this way. Should that change, the measurement is one run — hold the status cou
 fixed, compare the DoT with and without CO — and the term to add sits next to
 `attrition` in the same struct.
 
-The same shape showed up in M33's Cyte-09 chain (owner: "昨天的cyte-09的resupply
-好像也有类似的情况，感觉有个东西被层层传递了"). That is what makes "a carrier
+The same shape showed up in M33's Cyte-09 chain — its resupply looked like the
+same case, as though something were being handed down layer by layer. That is
+what makes "a carrier
 passed down the chain" worth treating as the model rather than as a story about
 one arcane.
 
@@ -126,7 +130,8 @@ level-9999 Steel Path eximus Corrupted Heavy Gunner, 60 runs of 30s through
 
 The split's DoT grows **44x** while the direct damage grows 6.2x — the gap is
 the second layer — and it ends up **larger than every direct hit in the fight
-combined**, which is the shape of the owner's "dot 跳一下，爆破使就没了".
+combined**, which is the shape of the reading: the DoT ticks once and
+Debilitate is gone.
 
 THE TARGET HAS TO SURVIVE TO 10 STACKS. On a level-150 gunner the same build
 shows NO split at all with Attrition equipped and a healthy one without it: the
@@ -160,7 +165,7 @@ is the top of that spread rather than the rule.
 
 The same independence is why a COLD split is worth nothing however it rolls: it
 takes its own coin like any other, and then has no damage payload to spend it on
-(owner, 2026-08-08: "万一 roll 到是冰，那就是一个带 441 倍率的冰（没有效果）").
+(2026-08-08: roll Cold and it is a 441x Cold, which has no payload).
 
 **A note on how this was nearly mis-read.** The first version of the test
 compared 400 runs against a 200-run baseline and reported x243 — close enough to
@@ -239,8 +244,9 @@ reading of "on a hit that is not critical" to a run.
   removes both extra layers at once. That is a reason to keep it in one place
   (the split's `InstanceScale`) rather than to generalise it — and the reason
   the arcane's card SAYS SO: `live_bugs:` on `primary_debilitate.yaml` is a
-  fourth kind of admission, the only one that is not a shortfall (owner: "我要建
-  立啊，但是标记可能非本意，我要忠实原本游戏，如果修了那我就改"). The other
+  fourth kind of admission, the only one that is not a shortfall: build it, mark
+  it as possibly unintended, stay faithful to the game as it is, and change it if
+  DE fixes it. The other
   three tell a player the number is lower than the card promises; this one tells
   them it is right today and rests on something DE can take away.
 - **The lingering FIELD's ticks** (Torid's cloud) roll their own crit tier, so by

@@ -2,7 +2,8 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-From "还有blast是可触发冰和火的" (owner, 2026-08-08). It is a one-line statement
+From a one-line report that BLAST can trigger Heat and Cold (2026-08-08). It is
+a statement
 of fact about a combination the arcane is supposed to cover, and the engine did
 not cover it — not by omitting Blast from a table, but by making it unreachable.
 

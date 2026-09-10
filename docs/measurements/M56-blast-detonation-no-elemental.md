@@ -9,27 +9,27 @@ status damage?* — which is why they are recorded together.
 ### The reports, verbatim
 
 ```
-90冰mod+90火mod
-爆炸98-11
+90% Cold mod + 90% Heat mod
+explosion 98-11
 
-200爆炸+90冰mod+90火mod
-爆炸337-21
+200 explosion + 90% Cold mod + 90% Heat mod
+explosion 337-21
 168-11
-1011-63（爆头）
+1011-63 (head)
 ```
 
 ```
-200毒气+90毒mod
-毒137-34 / 毒气137-54 / 火137-18
+200 Gas + 90% Toxin mod
+Toxin 137-34 / Gas 137-54 / Heat 137-18
 
-200毒气+90毒mod+90火mod
-毒168-34 / 毒气168-54 / 火168-34
+200 Gas + 90% Toxin mod + 90% Heat mod
+Toxin 168-34 / Gas 168-54 / Heat 168-34
 
-90毒mod+90火mod
-毒气98-18
+90% Toxin mod + 90% Heat mod
+Gas 98-18
 ```
 
-The `200<element>` source is **Valence Formation** (效价炼成), Lavos's passive
+The `200<element>` source is **Valence Formation**, Lavos's passive
 augment: +200% of one element, and the ONLY source that can add a COMBINED
 element as its own.
 
@@ -78,7 +78,7 @@ Toxin and Heat sources, and the burn is Gas. Only Valence Formation, which adds
 Gas *as Gas*, moves it. The wiki states the mechanism from the other side:
 *"Bonus Elemental Damage will be added parallel to the weapon's Elemental
 Damage, meaning it will NOT combine with elements on the weapon."* DE's own card
-says 附加, not 合成.
+says ADDED, not COMBINED.
 
 The split rows are the same rule seen three times over: adding a 90% Heat mod to
 the second build moved the HEAT split DoT 18 → 34 and left the Gas DoT at 54,

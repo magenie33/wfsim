@@ -2,9 +2,11 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-**Reported** (owner, 2026-08-08, relaying a player): *"紫卡负面没投射速度。我们的
-紫卡解析，还应该考虑灵化情况"* and then *"这个是盗贼的紫卡哈，灵化吃这个，所以就
-可以装备"* — a real Furis riven carries Projectile Speed, the editor would not
+**Reported** (2026-08-08, relayed from a player): the riven editor offers no
+Projectile Speed as a negative, and riven parsing has to account for the
+Incarnon form — the card in question is a Furis riven, and the Incarnon form
+uses that stat, which is why it can appear. A real Furis riven carries Projectile
+Speed, the editor would not
 offer it, and the reason given is that the Incarnon form uses it.
 
 ### What the editor was doing
@@ -50,8 +52,9 @@ Three sources, in order: **a real card** → **a count over live listings** →
 
 **WHICH FILE DECIDES:** the RULES do. `data/rivens/exceptions.yaml` overrides
 them per family with each entry naming its evidence, and `data/rivens/pools.yaml`
-— the survey — is read by a TEST and by nothing else (owner: "抓取只是来当验证
-才对"; DATA_SOURCES §"Riven pools"). Everything below is what the survey FOUND,
+— the survey — is read by a TEST and by nothing else: a scrape is there to
+VERIFY, never to be the source (DATA_SOURCES §"Riven pools"). Everything below is
+what the survey FOUND,
 and every finding became an exception entry carrying its count.
 
 Why the survey does not decide: a re-run of the scrape came back "nothing rolls

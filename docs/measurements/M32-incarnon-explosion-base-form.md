@@ -2,8 +2,9 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-From "两个benchmark存的东西是不对的… torid的数据是完全不对的" (owner,
-2026-08-07). The board was the symptom; this is what was under it.
+From a report that both benchmarks were storing the wrong thing, and that the
+Torid's rows were wrong outright (2026-08-07). The board was the symptom; this
+is what was under it.
 
 A cycle fires TWO weapons in turn, and the shot loop switches to the active
 form's params (`ap`) for damage, crit, status and forced procs. Two lines did

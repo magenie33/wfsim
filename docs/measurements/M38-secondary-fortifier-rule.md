@@ -52,11 +52,12 @@ hits, and the same page says DoTs trigger the steal half.
 **"Not inheritable" is not evidence against it.** It names `Heat_Inherit` — the
 mechanic that attributes later Heat damage to whoever applied the first Heat
 status — and says the damage bonus does not travel down THAT path. The owner
-read it first (2026-08-09: "这里的继承应该是说……在 warframe 引擎看来，还是这把枪
-造成的，所以战甲的 heat 伤害也可以吃到加成"), and it is the reading that makes
+read first (2026-08-09): the inheritance means that to Warframe's own engine
+the damage is still THIS WEAPON'S, so the Warframe's Heat damage takes the bonus
+too. It is the reading that makes
 both sentences say something rather than one of them contradicting the card.
 
-**ONCE, not squared** (owner: "那dot也是9倍，而不是9*9倍率吧"). Faction damage is
+**ONCE, not squared** — the DoT is x9, not x9 squared. Faction damage is
 re-applied per derivation step because DE re-applies it — `faction_at(f, depth)`
 — and nothing says that here. A tick is not a derivation; it is the same
 instance's payload landing later.
@@ -72,13 +73,13 @@ table reads as the total (**x8**). There is no worked example on the page and no
 datamined figure to hand.
 
 This engine read it as the TOTAL until now (`rank0: 2.0` … `rankMax: 7.0`).
-**The owner's call is ×9** ("应该是9倍，你先执行"), on the plain reading of the
+**The call is x9**, on the plain reading of the
 word DE chose: `x8 Extra` is eight times extra, on top of the hit. The ladder
 moves with it — `x3 Extra` … `x8 Extra` is ×4 … ×9 — so the stored bonus is now
 the number DE prints rather than one less than it.
 
-**DECIDED: ×9 at max, ×7 at rank 3** (owner, 2026-08-09 "应该证明了，就是*7",
-reaffirmed 2026-08-10 "是*9"). The rows are NOT four matched pairs — they are
+**DECIDED: ×9 at max, ×7 at rank 3** (read x7 on 2026-08-09, and the x9 at max
+reaffirmed on 2026-08-10). The rows are NOT four matched pairs — they are
 eight independent samples of a beam whose ramp and crit tier move under it, so
 nothing here is meant to be divided row by row.
 

@@ -2,13 +2,16 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-From "带元素紫卡的最终元素适配可能有点问题" (owner, 2026-08-07), with one
-weapon, one riven and two slot arrangements:
+From a report that a riven carrying elemental stats resolves its final elements
+wrongly (2026-08-07), with one weapon, one riven and two slot arrangements:
 
 - riven card, top to bottom: **Multishot 87.9 · Toxin 71.2 · Electricity 72.9 ·
-  Crit Damage −55.3** (owner, asked and answered: 先毒再电，从上往下)
-- **A** — Magnetic / Cold / riven / Electricity → in game **磁力 / 毒 / 辐射**
-- **B** — the Cold and the Magnetic swapped → in game **腐蚀 / 冰 / 辐射**
+  Crit Damage −55.3** (asked and answered: Toxin then Electricity, read top to
+  bottom)
+- **A** — Magnetic / Cold / riven / Electricity → the client showed **Magnetic /
+  Toxin / Radiation**
+- **B** — the Cold and the Magnetic swapped → the client showed **Corrosive /
+  Cold / Radiation**
 
 ### What A settles
 
@@ -26,7 +29,8 @@ the one that reaches up to the Cold above it:
 |---|---|---|
 | A | Viral + Electricity + Magnetic + Radiation | **Magnetic + Toxin + Radiation** |
 
-which is his 磁力/毒/辐射 exactly. Only a riven can carry two elemental stats —
+which is the client's Magnetic/Toxin/Radiation exactly. Only a riven can carry
+two elemental stats —
 no mod under `data/mods/` has more than one, and one element reversed is itself
 — so this changes the reading of riven builds and nothing else; the board did
 not drift and no row on it carries a riven. The wiki's other half needed no
@@ -49,8 +53,8 @@ reach a primary below it.
 
 | | order | walk | result |
 |---|---|---|---|
-| A | Magnetic(c), Cold, Elec, Toxin | Magnetic passes · Cold+Elec = Magnetic · Toxin alone | 磁力/毒 ✓ |
-| B | Cold, Magnetic(c), Elec, Toxin | Cold flushed pure · Elec+Toxin = Corrosive | 腐蚀/冰(/磁力) ✓ |
+| A | Magnetic(c), Cold, Elec, Toxin | Magnetic passes · Cold+Elec = Magnetic · Toxin alone | Magnetic/Toxin ✓ |
+| B | Cold, Magnetic(c), Elec, Toxin | Cold flushed pure · Elec+Toxin = Corrosive | Corrosive/Cold(/Magnetic) ✓ |
 
 It is plausible as an implementation — one ordered list of every elemental
 entry, walked once, keeping at most one primary pending — and it is

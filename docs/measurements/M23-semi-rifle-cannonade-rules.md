@@ -32,7 +32,7 @@ condition test from that pass exists.
 carried the bare zero-valued `fire_rate_bonus` — so the card rendered
 "+0% Fire Rate" under a sentence that forbids modifying it, on a mod that Boar
 Prime (full-auto) could equip and the optimizer could return as a winner
-(user: "半自动野猪是装不了的").
+(a semi-auto Boar cannot equip it).
 
 The lesson is about the METHOD, not the mod: comparing a file against its twin
 finds a difference between two files and stops there. The family invariant is
@@ -55,8 +55,9 @@ mode must have Semi-Auto trigger type for **both firing modes** in order to
 equip this mod, such as Bronco / Lato / Lex Incarnon Genesis." Dual Toxocyst,
 Laetum and the Torid are all semi-auto and all transform into something that is
 not (full-auto, full-auto, a held beam), so all three lose the Cannonade the
-moment the Genesis goes in — and keep it while it does not (user, 2026-08-04:
-"只要没点第一个 evo 就视为还是纯半自动，那就可以带，如果装上了就不可以带").
+moment the Genesis goes in — and keep it while it does not. **UNTIL THE FIRST
+EVOLUTION IS TAKEN THE WEAPON COUNTS AS PURELY SEMI-AUTO**, so the Cannonade is
+equippable; once it is taken, it is not.
 
 So the pool is a question about the BUILD, not about the weapon:
 `mods_data::pool_for_build(weapon, evolutions)` is the rule and

@@ -7,9 +7,9 @@ element. Numbers as typed, `direct — status`:
 
 ```
 BLAST                       TOXIN (on a Runner)
-打身体  115 — 11            打身体  115 — 107
-        231 — 21            打头    346 — 159
-打头    346 — 32
+body  115 — 11             body  115 — 107
+      231 — 21             head  346 — 159
+head  346 — 32
         1385 — 126
 ```
 
@@ -55,7 +55,8 @@ And `1050 / 10.5 = 100`, i.e. ten stacks at 300% each against the same ten at
 30% each — the published 10× between the radial and the single-target halves,
 confirmed rather than assumed.
 
-The shape is confirmed too: *"爆炸会有10条…周围会受到1次伤害"* — ten separate
+The shape is confirmed too — the detonation fires TEN instances and each
+surrounding body takes ONE of them: ten separate
 numbers on the host, ONE combined instance on the neighbours, which is the
 wiki's *"The radial damage of all procs will be combined into one damage
 instance"*.

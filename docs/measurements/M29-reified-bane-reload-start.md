@@ -2,9 +2,10 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-**The claim** (user, in game): Boar Prime's REIFIED BANE evolution grants its
-conditional +14 base damage **the moment an empty reload begins** — "换弹的那一
-刻就有了，不需要等待换弹完成". The wiki says the opposite: the bonus is
+**The claim**, read in game: Boar Prime's REIFIED BANE evolution grants its
+conditional +14 base damage **the moment an empty reload begins** — it is there
+at the instant the reload starts and does not wait for the reload to finish. The
+wiki says the opposite: the bonus is
 "applied after finishing a reload while the magazine is empty".
 
 A measurement beats the wiki, so the measurement is what the repo records.

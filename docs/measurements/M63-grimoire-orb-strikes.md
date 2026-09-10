@@ -65,9 +65,10 @@ drops to 2 m/s once it touches something, which changes WHERE the later strikes
 happen and not how many there are. `range_m: 6.0` is the strike's reach, not a
 flight distance.
 
-**All six strikes are the same thing.** The owner said it twice, the second time
-to correct a model that had made the first one special: *"碰到以后马上开始电第
-一下，这个第一下就是field啊"*. That is the property the engine now has to hold
+**All six strikes are the same thing.** Said twice, the second time to correct a
+model that had made the first one special: the orb strikes the instant it
+arrives, and that first strike is the same as the rest. That is the property the
+engine now has to hold
 rather than a description of it.
 
 ### Four rules, each a different mechanism
@@ -176,9 +177,9 @@ shows directly: three of the eight in one strike, two in another.
 
 It is a small sample, so the weapon says "about 10%" rather than 10.4%, and it
 is an AVERAGE over a crowd rather than geometry — a fight where the enemies line
-up beats it and one against a single tall target may not reach it. The owner's
-own framing: *"因为视觉上chain很少，但是实际上应该是这么计算的"* — the chain looks
-rare and is not.
+up beats it and one against a single tall target may not reach it. The framing
+that settles it: the chain LOOKS rare on screen and is not — this is how it
+computes.
 
 Both the collision path and the orb path draw their body part through one helper
 (`unaimed_part`), so the six strikes cannot answer differently. A head strike
@@ -201,9 +202,9 @@ the reach for a bounded window:
 ```
 
 Six strikes a second apart need the body in reach for more than five seconds,
-and 4.17 s is the most these numbers can buy. The owner proposed that a
-mid-range throw would fix it — *"如果是有一定距离，例如10m，那么飞行4m以后，就会
-开始第一下（因为半径是6m），那应该就可以完整打完"* — and the model says it does
+and 4.17 s is the most these numbers can buy. A mid-range throw was proposed as
+the fix — at, say, 10 m the orb would strike after 4 m of flight, since its reach
+is 6 m, and should then finish the set — and the model says it does
 not: the approach is worth at most another second, so the count goes 4, 4, 5, 4,
 5, 4… across the whole range and never six. Measured every metre from contact to
 30 m.
@@ -260,7 +261,7 @@ the old answer was worth.
 
 ### The chain, settled
 
-*"不受增益"* meant the RANGE bucket, not the damage one:
+"takes no bonus" meant the RANGE bucket, not the damage one:
 
 **THE ONLY BONUS A HOP READS IS RANGE.** The hop distance is always 6 m; crit
 and the rest scale normally. Treat it as a beam chain with no falloff, with
@@ -298,8 +299,9 @@ and it would have been silently wrong on every chaining orb in a crowd.
 
 ### Still open
 
-**`AttackSpec::locks` came and went.** It was added on *"这个球无法multishot，永
-远只有一个"* and removed on the correction two messages later: multishot does not
+**`AttackSpec::locks` came and went.** It was added on "the orb cannot multishot,
+there is only ever one" and removed on the correction two messages later:
+multishot does not
 add orbs, it adds CHAIN TARGETS (`multishot + 2` bodies a strike). Pinning the
 bucket would have been the right answer to the wrong question, and would have
 told a reader the mod is worthless where it is in fact most of what a crowd

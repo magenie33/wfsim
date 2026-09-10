@@ -2,7 +2,8 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-Two findings from one session on 毒囊双枪, and each overturns something this
+Two findings from one session on the Dual Toxocyst, and each overturns something
+this
 repo had written down. Galvanized Shot throughout (40% a stack per status type).
 
 **THE READINGS, verbatim:**

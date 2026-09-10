@@ -2,7 +2,7 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-**Measured in game** ("我已经测试过了"). Devastating Attrition's 50% chance of
+**Measured in game.** Devastating Attrition's 50% chance of
 +2000% on a non-critical hit and CONDITION OVERLOAD are two independent
 multipliers on this weapon; they do not share a bracket.
 

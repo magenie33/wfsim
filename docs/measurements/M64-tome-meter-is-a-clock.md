@@ -69,8 +69,9 @@ Only SECONDARY counts for a tome's meter, and universal packs are placed in a
 Simulacrum rather than dropped, so a kill contributes through half its roll:
 `0.45 × 0.5 × 10 = 2.25` seconds a kill.
 
-EVERY DROP ARRIVES INSTANTLY (owner: *"我们的场景就假设怪物死掉以后所有的pickup
-立刻马上到"*) — no vacuum radius, no walking back. And INFINITE AMMO does not
+EVERY DROP ARRIVES INSTANTLY — the scenario assumes every pickup reaches the
+player the moment the enemy dies, with no vacuum radius and no walking back. And
+INFINITE AMMO does not
 remove it: the house rule is about the reserve, a real fight is under its cap
 almost always, and the pack is on the floor either way (owner, 2026-08-28).
 
@@ -160,7 +161,7 @@ could throw an orb every second forever, and reported **8,113 DPS**.
 * **Health and energy orbs.** The same page lists them and publishes no drop
   chance for either, and they would pay nothing here — this arena has no ability
   economy and the player has no health.
-* **Resources.** The owner asked (*"甚至可不可以模拟素材掉落啊"*). A per-enemy
+* **Resources.** Asked for: could material drops be simulated too? A per-enemy
   table, and it feeds none of BUILD, SIMULATE or SOLVE — a farming calculator is
   a different product, which is the rule AGENTS.md states for anything new.
 * **Heavy ammo**, the one ammo kind that IS per enemy (5.01% on specific heavy

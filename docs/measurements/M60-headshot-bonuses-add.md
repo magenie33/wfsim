@@ -7,19 +7,20 @@ Babau** (wiki: *"Head: 1.5x"*, faction Techrot, 10,000 health, 500 shield, no
 armour). Two numbers per line, the crit tier the pop-up was:
 
 ```
-全无
-爆头 1058/1876
-50%爆头伤害
-爆头 1587/2812
-50%爆头伤害+死首
-爆头 1904/3376
+none at all
+head 1058/1876
++50% headshot damage
+head 1587/2812
++50% headshot damage + Deadhead
+head 1904/3376
 ```
 
-and a second capture on a built weapon — *"死首3层+50%爆头伤害 / 187%爆率+镀层
-液压准星满层+复仇者(45%暴击加算)"*:
+and a second capture on a built weapon — Deadhead at 3 stacks, +50% headshot
+damage, 187% crit chance, Galvanized Scope at full stacks and Avenger (+45% crit
+chance, additive):
 
 ```
-15529（橙色）/22300（红）
+15529 (orange crit) / 22300 (red crit)
 ```
 
 ### What it settles: the two headshot bonuses are ONE ADDITIVE BUCKET
@@ -59,7 +60,8 @@ All six numbers of the first capture sit **+0.14% to +0.21%** above
 error: every RATIO above is exact to three decimals. The three published inputs
 were checked against the wiki and all match what `data/` holds (160 = 64 Impact
 + 96 Slash, head 1.5x, crit multiplier 2.20x), so the factor is not in any of
-them. Left open deliberately (owner, 2026-08-25: *"有小误差就有，不用管"*).
+them. Left open deliberately (2026-08-25): a small discrepancy is acceptable and
+is not worth chasing.
 
 What would close it is three pop-ups from an unmodded gun on the same target: a
 body white (should be 160), a body yellow (352), and a head white (240). Between

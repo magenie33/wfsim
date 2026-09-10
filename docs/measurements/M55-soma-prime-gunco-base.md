@@ -13,12 +13,12 @@ out.
 build says otherwise:
 
 ```
-3.0爆伤                      3.0爆伤                      1层/2buff- 158-475
-36基伤（12+12）+6*2          24基伤（12+12）
-200腐蚀                      200腐蚀（40天赋）
-0层0buff: 108-324            1层-86
-1层2buff：137-411            2层-101-302
-                             3层-115-346！
+3.0 crit damage             3.0 crit damage             1 stack / 2 buffs - 158-475
+36 base (12+12) + 6*2       24 base (12+12)
+200 Corrosive               200 Corrosive (40% talent)
+0 stacks 0 buffs: 108-324   1 stack - 86
+1 stack 2 buffs: 137-411    2 stacks - 101-302
+                            3 stacks - 115-346
 ```
 
 **THE READING.** With the 40% direct-damage talent and one stack of the card's
@@ -26,7 +26,7 @@ Condition Overload — 80% of bonus in all — three statuses reads 158.
 
 ### The three-point set is what settles it
 
-`24基伤` with one 40% source, at one, two and three status types. Solved as an
+`24 base` with one 40% source, at one, two and three status types. Solved as an
 absolute — `co_base = (hit/E − base) / (0.40 × types)`, with `E = 3.00` fixed by
 `24 × 3 = 72`:
 

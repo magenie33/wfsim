@@ -2,8 +2,9 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-From "Pistol Acuity 这个计算是不是有问题，应该要锁定的，好像没锁" (user,
-2026-08-04). Five mods in the data carry a `disables:` lock, in two families
+From a report that Pistol Acuity's arithmetic looked wrong — the stat it names
+should be LOCKED and did not appear to be (2026-08-04). Five mods in the data
+carry a `disables:` lock, in two families
 that say the same sentence:
 
 | mod | card | locks |
