@@ -53,4 +53,11 @@ bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
   "builds nothing had asked for yet" "$missing"
 rm -f "$missing"
 
+# …AND THE OTHER HALF OF THE SAME DEFINITION. The loop above adds every
+# (build, ruler, mode) that should exist and does not; this forgets the ones
+# that exist and should not, which is a row under a ruler `data/benchmarks/`
+# no longer has. Nothing else can: a queue row is deleted beside the fact that
+# settles it, and a retired ruler never produces one.
+bash scripts/purge_queue.sh
+
 bash scripts/fetch_queue.sh "$OUT"

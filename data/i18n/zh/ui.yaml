@@ -204,7 +204,7 @@ ui:
   "Gain": 提升
   "Game data derived from the community": 游戏数据来自社区
   "Grineer": Grineer
-  "Group Clear · 19x19 at 1.5 m · Thrax Centurion Lv 9999 SP · 180 s · KPM": 群体清场 · 19x19 间隔 1.5 米 · 萨克斯百夫长 9999 级 钢铁之路 · 180 秒 · KPM
+  "Group Clear · 19x19 at 1.5 m · Thrax Centurion Lv 9999 SP · 180 s · KPM": 群体清场 · 19x19 间隔 1.5 米 · 凶魂百夫长 9999 级 钢铁之路 · 180 秒 · KPM
   "Headshot %": 爆头率 %
   "Headshot rate": 爆头率
   "Headshot": 爆头
@@ -350,7 +350,6 @@ ui:
   "Radial explosion": 范围爆炸
   "Range": 射程
   "Range Advantage, the Akjagara-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Range Advantage」，Akjagara 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
-  "Read it against the aimed board rather than alone. A weapon high on both is strong; one high there and low here is being carried by precision, and the gap between its two positions is how much of it is your aim.": 请和瞄准榜对照着看，不要单独看。两个榜都靠前的是真强；那边高、这边低的，是被你的准头抬着的——两个名次之间的差距，就是这把武器有多少是你的瞄准。
   "Recoil": 后坐力
   "Reload": 装填时间
   "Reloads": 装填次数
@@ -389,7 +388,7 @@ ui:
   "Shrapnel Rounds, the Marelok-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Shrapnel Rounds」，Marelok 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Sim": 模拟
   "Simulator": 模拟器
-  "Single Target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM": 单体 · Demolisher Devourer 9999 钢铁 · 四人血量 · 180 秒 · KPM
+  "Single Target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM": 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 180 秒 · KPM
   "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
   "Skull Shots and Stinging Truth, the Viper-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Skull Shots」和「Stinging Truth」，Viper 家族的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
   "Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.":
@@ -443,11 +442,10 @@ ui:
   "The fight": 这场仗
   "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with.": 方阵用三个数字描述而不是 361 个坐标，这样它的条款才读得懂、争得动。
   "The real Simulacrum Prime.": 真正的幻影装置 Prime。
-  "The same fight as the aimed board: one Thrax Centurion at level 9999 on Steel Path, for 180 seconds, scored in kills per minute.": 和瞄准榜是同一场仗：一只凶魂百夫长，9999 级，钢铁之路，180 秒，按每分钟击杀计分。
   "The Tenno": 使用者
   "The score is kills per minute across the whole formation, counting the fraction of each target already gone.": 分数是整个阵型的每分钟击杀数，并计入每个目标已被削掉的比例。
   "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces.": 射手贴身站在前排正中那个目标前，沿着该排面对的方向射击。
-  "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 1.5 metres centre to centre. The fight lasts 180 seconds.": 目标是 361 个 9999 级钢铁之路萨克斯百夫长组成的阵型，19×19 的方阵，圆心间隔 1.5 米。战斗持续 180 秒。
+  "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 1.5 metres centre to centre. The fight lasts 180 seconds.": 目标是 361 个 9999 级钢铁之路凶魂百夫长组成的阵型，19×19 的方阵，圆心间隔 1.5 米。战斗持续 180 秒。
   "There is no transition animation either way.": 两个方向都没有切换动作。
   "Thermagnetic Shells, the Detron family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「热磁弹壳」，Detron 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Time to first kill": 首杀耗时
@@ -1327,7 +1325,6 @@ ui:
   "The target is one Thrax Centurion at level 9999 on Steel Path. The fight lasts 180 seconds.": 目标是一只 9999 级钢铁之路的 Thrax Centurion。战斗持续 180 秒。
   "One target, so nothing here rewards clearing a room.": 只有一个目标，所以这里的任何东西都不因清场而得分。
   "Every shot is aimed and lands on the weak point. The companion board removes the aim; between them they are the ceiling and the floor.": 每一发都瞄准并命中弱点。姊妹榜取消瞄准；两者一个是上限、一个是下限。
-  "No shot is aimed and none lands on a weak point. The companion board aims every shot; between them they are the floor and the ceiling.": 没有一发瞄准，也没有一发命中弱点。姊妹榜每发都瞄准；两者一个是下限、一个是上限。
   "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one target in 180 seconds scores 0.03 and still ranks.": 分数是每分钟击杀数，并计入当前目标已被削去的比例。180 秒内削掉一个目标的 3%，得分 0.03，仍然进榜。
   "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is never counted.": 每个主槽都装满，该条目拥有的每一阶进化都选，每一个赋能位都填。Exilus 槽从不计入。
   "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates.": 投入不参与排名：每个条目都按满 Forma、满等级、以及任何可以靠刷重复品提升的加成的最大值来计分。

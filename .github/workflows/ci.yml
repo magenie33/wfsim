@@ -109,6 +109,13 @@ jobs:
       # find it rather than dropping it.
       - name: What arrived is read out of the queue
         run: bash scripts/fetch_inbox.sh --self-test
+      # …AND WHAT CAN NEVER BE PAID IS FORGOTTEN. A queue row is deleted beside
+      # the fact that settles it, so a row under a retired ruler is owed for
+      # ever and the "N row(s) owed" signal never returns to zero. Its statement
+      # is built without a database, which is the half that could empty the
+      # queue and the half a self-test can reach.
+      - name: A row owed under a retired ruler is forgotten
+        run: bash scripts/purge_queue.sh --self-test
       - name: ...and what intake made of it reaches the library
         run: bash scripts/ship_builds.sh --self-test
       # THE WHOLE HOP, IN ONE. Each end of it has its own test and all of them

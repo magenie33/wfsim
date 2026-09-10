@@ -1434,13 +1434,21 @@ free 5M/day, and 107k writes against a free 100k/day.
 ### Where the 132 hours go, measured
 
 Every row records what it cost, so the bill can be read straight off the boards
-rather than estimated. Across the three:
+rather than estimated. READ AT 7,493 ROWS A RULER, across the three the board
+held then — `single_target_no_aim` has since been retired and
+`single_target_demolisher` has taken its place, and neither the row counts nor
+the totals below have been re-read since:
 
 | ruler | rows | total | median row | worst row |
 | --- | --- | --- | --- | --- |
 | `group_clear` | 7,493 | **6,153 min** | 20.0 s | **121 min** |
 | `single_target` | 7,493 | 999 min | 3.6 s | 4.2 min |
 | `single_target_no_aim` | 7,493 | 759 min | 2.6 s | 1.7 min |
+
+WHAT CARRIES IS THE SHAPE, not the figures: the bill is dominated by the ruler
+with the most bodies in it, and a single-target ruler costs an order of
+magnitude less however many of them there are. That is a fact about 361 bodies
+against one, and it does not depend on which single-target rulers exist.
 
 **`group_clear` is 78% of it**, and inside that a handful of rows are the tail:
 the top 100 rows of 7,493 are 31% of that ruler's bill, and thirteen of the

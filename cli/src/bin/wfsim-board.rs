@@ -33,6 +33,28 @@ fn family(id: &str) -> &str {
     }
 }
 
+/// DOES A ROW ALREADY IN A WEAPON'S FILE SURVIVE THIS PASS?
+///
+/// A weapon's file is written WHOLE by a tool that measures one ruler, so every
+/// other ruler's rows are read back and carried. Two of them are not:
+///
+///   * THIS RULER'S, which are replaced from the facts — by FAMILY, so a
+///     `_vN` row is the same ruler at another version and goes with it;
+///   * A RETIRED RULER'S. Nothing ever invokes this tool with an id the roster
+///     no longer has, so such a row would be carried for ever, and
+///     `every_published_row_is_a_legal_build` would fail on it with no pass
+///     able to clear it. Retiring a ruler is deleting its file; this is what
+///     makes that enough.
+///
+/// A row that does not parse is carried: this pass measured nothing about it,
+/// and dropping what it cannot read would lose a row to a shape change.
+fn carried(row_benchmark: Option<&str>, bench_id: &str, live: &std::collections::BTreeSet<&str>)
+    -> bool
+{
+    let Some(b) = row_benchmark else { return true };
+    family(b) != family(bench_id) && live.contains(family(b))
+}
+
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
@@ -1445,6 +1467,11 @@ fn main() {
         // measured, 21 of 387 weapon files moved on a publish that measured
         // nothing. `RawValue` hands the bytes through untouched, which is also
         // the honest meaning of a carry.
+        // EVERY RULER THE ROSTER STILL HAS, by FAMILY — a `_vN` row belongs to
+        // the ruler it is a version of, so a live ruler's older version is not
+        // an orphan.
+        let live_rulers: std::collections::BTreeSet<&str> =
+            wfsim_engine::benchmarks_data::all().iter().map(|b| family(&b.id)).collect();
         let mut by_weapon: std::collections::BTreeMap<String, Vec<Box<RawValue>>> =
             Default::default();
         if let Ok(rd) = std::fs::read_dir(dir) {
@@ -1459,10 +1486,17 @@ fn main() {
                 // THIS RULER'S ROWS ARE REPLACED FROM THE FACTS; every OTHER
                 // ruler's are read back and kept, because a weapon's file is
                 // written whole and this pass measured none of them.
+                //
+                // …EXCEPT A ROW WHOSE RULER NO LONGER EXISTS. This tool is
+                // invoked one ruler at a time, so nothing ever visits a retired
+                // one — its rows would be read back and written out for ever,
+                // and `every_published_row_is_a_legal_build` would fail on
+                // them with no pass able to clear it. Retiring a ruler is
+                // deleting its file, and this is what makes that enough.
                 let keep: Vec<Box<RawValue>> = rows
                     .into_iter()
                     .filter(|r| {
-                        published(r).is_none_or(|p| family(p.benchmark) != family(&bench_id))
+                        carried(published(r).map(|p| p.benchmark), &bench_id, &live_rulers)
                     })
                     .collect();
                 by_weapon.insert(weapon.to_string(), keep);
@@ -2298,6 +2332,46 @@ mod tests {
 #[cfg(test)]
 mod page_row_tests {
     use super::*;
+
+    /// **A RETIRED RULER'S ROWS LEAVE THE BOARD; A LIVE RULER'S ARE CARRIED.**
+    ///
+    /// The carry is what makes a weapon's file writable by a tool that measured
+    /// one ruler, and it is also what kept a retired ruler alive: nothing
+    /// invokes this tool with an id the roster no longer has, so its rows were
+    /// read back and rewritten on every publish. That deadlocked a retirement —
+    /// `every_published_row_is_a_legal_build` fails on such a row, and
+    /// `publish.yml` will not run from a commit whose tests failed.
+    #[test]
+    fn a_row_under_a_ruler_the_roster_no_longer_has_is_not_carried() {
+        let live: std::collections::BTreeSet<&str> = wfsim_engine::benchmarks_data::all()
+            .iter()
+            .map(|b| family(&b.id))
+            .collect();
+        assert!(live.contains("single_target"), "the roster has its primary ruler: {live:?}");
+
+        // ANOTHER LIVE RULER IS CARRIED — the whole reason this pass reads the
+        // file back rather than truncating it.
+        for other in live.iter().filter(|b| **b != "single_target") {
+            assert!(carried(Some(other), "single_target", &live), "{other} was dropped");
+        }
+        // THIS RULER'S ARE NOT: they are replaced from the facts.
+        assert!(!carried(Some("single_target"), "single_target", &live));
+        // …AND NEITHER IS ANOTHER VERSION OF IT, which is what `family` is for.
+        assert!(!carried(Some("single_target_v2"), "single_target", &live));
+
+        // A RETIRED RULER GOES, whichever ruler is being assembled.
+        assert!(!live.contains("single_target_no_aim"), "it was retired");
+        for driving in live.iter() {
+            assert!(
+                !carried(Some("single_target_no_aim"), driving, &live),
+                "assembling {driving} carried a retired ruler's row"
+            );
+        }
+
+        // A ROW THIS PASS CANNOT READ IS CARRIED. Dropping what it cannot parse
+        // would lose rows to a shape change rather than to a retirement.
+        assert!(carried(None, "single_target", &live));
+    }
 
     /// WHAT IS PUBLISHED, READ FROM DISK. `site/board/` is outside `data/`, so
     /// it is not embedded and there is nothing to reach through the binary —
