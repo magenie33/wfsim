@@ -979,6 +979,28 @@ pub struct BeamSpec {
     #[serde(default)]
     pub radius_takes_multishot: bool,
     pub chain: ChainSpec,
+    /// Beams that pick their OWN target — absent for every weapon that fires
+    /// where it is pointed, which is almost all of them.
+    #[serde(default)]
+    pub beams: Option<BeamsSpec>,
+}
+
+/// AN ATTACK THAT AIMS ITSELF — `chain::Acquire`, as a data file states it.
+///
+/// The Boar Incarnon: *"can fire up to 3 beams that automatically target
+/// enemies within 10° of the reticle"*. This is NOT multishot: multishot puts
+/// more instances on one body, and this puts one instance on more bodies. The
+/// difference is a factor of three against a crowd and nothing at all against
+/// one target, which is exactly backwards from what multishot 3 would do.
+#[derive(Debug, Clone, Deserialize)]
+pub struct BeamsSpec {
+    /// Beams in total, THE AIMED ONE INCLUDED.
+    pub count: u32,
+    /// Half-angle off the reticle inside which a beam will take a body.
+    pub acquire_deg: f64,
+    /// How far a beam reaches. Ordinarily the same as the beam's own range,
+    /// stated again because the page states it about the beams.
+    pub range_m: f64,
 }
 
 fn chain_compounds_default() -> bool {
@@ -3860,6 +3882,11 @@ pub fn base_panel_assembled(
             chain_compounds: b.chain.compounds,
             chain_takes_multishot: b.chain.takes_multishot,
             chain_nodes_have_radius: b.chain.nodes_have_radius,
+            // ABSENT MEANS ONE, which is every weapon that fires where it is
+            // pointed. A default of zero would read as "no beams at all".
+            beams_count: b.beams.as_ref().map_or(1, |x| x.count.max(1)),
+            beams_acquire_deg: b.beams.as_ref().map_or(0.0, |x| x.acquire_deg),
+            beams_range_m: b.beams.as_ref().map_or(0.0, |x| x.range_m),
         }),
         field_duration_on_empty_reload: 1.0, // raised by Renewed Horror
         multishot_on_last_round: 0.0,

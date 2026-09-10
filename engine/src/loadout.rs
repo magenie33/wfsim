@@ -3283,6 +3283,11 @@ pub struct BeamGeometry {
     /// Does every chain NODE carry a sphere too? UNVERIFIED (MEASUREMENTS
     /// M15) — one line of weapon data so a measurement flips it.
     pub chain_nodes_have_radius: bool,
+    /// BEAMS THAT AIM THEMSELVES — `chain::Acquire`. 1 is an ordinary weapon
+    /// and the aimed body is one of the count, never extra to it.
+    pub beams_count: u32,
+    pub beams_acquire_deg: f64,
+    pub beams_range_m: f64,
 }
 
 /// The Incarnon form's charge economy, for the panel's stat display (see

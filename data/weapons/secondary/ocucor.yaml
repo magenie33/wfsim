@@ -39,27 +39,28 @@ reload_seconds: 1.6
 # the class, and it is absent.
 co_behavior: additive_with_base_damage
 
-# THE PASSIVE — TENDRILS, and they are worth NOTHING in this arena.
+# THE PASSIVE — TENDRILS, AND THEY ARE EXTRA BEAMS.
 #
 #   "Kills with this weapon releases an energy tendril that can home-in on
 #    enemies close to the targeting reticle, up to a maximum of 4 tendrils."
+#   "their base damage equals the primary beam's, and they roll their own crits
+#    and status"
 #
-# The line that decides it, verbatim from the same page:
+# A FULL INSTANCE EACH, on a body of its own — `spread_from_tendrils`, which
+# picks that body by `chain::acquired`, the same rule the Boar Incarnon's three
+# beams are picked by. Two weapons, two pages saying the same thing, one rule.
+#
+# AGAINST ONE TARGET THEY ARE WORTH NOTHING, and the page says why:
 #
 #   "Tendrils homing in on the main beam's target are only COSMETIC, and
 #    don't deal any additional damage or status effects."
 #
-# So a tendril is worth something only when there is a SECOND enemy for it to
-# reach. This sim has one target, and the tendrils that reach it are explicitly
-# nothing — which makes "not modelled as damage" the CORRECT answer here rather
-# than a gap being confessed. Modelling them would inflate the weapon by up to
-# five beams' worth of damage that the wiki says do not exist on this target.
+# Which falls out rather than being arranged: the beam's own body is not a
+# candidate, so a tendril with nowhere else to go takes nothing.
 #
-# The COUNT is a different matter and is modelled (`tendrils` below), because
-# Sentient Surge reads it: that mod's crit and status bonuses scale with how
-# many tendrils are up, and those bonuses land on the main beam, which is
-# real single-target damage. So the passive contributes to this fight through
-# the MOD and not through its own damage.
+# THE COUNT IS READ TWICE. Sentient Surge scales its crit and status with how
+# many are up, and those bonuses land on the MAIN beam; the count is also how
+# many extra beams fire. One number, two readers.
 #
 # The rules, transcribed:
 #  - a kill by the primary beam, or by a status effect from any source

@@ -8382,23 +8382,23 @@ fn spread_from_tendrils(
         return;
     }
     let aim = params.aim_at.unwrap_or(params.target_at);
-    let muzzle = crate::space::muzzle(params.player_at, aim);
-    // EVERY BODY A TENDRIL COULD TAKE, nearest to the reticle first.
-    let mut cand: Vec<(f64, usize)> = params
-        .others
-        .iter()
-        .enumerate()
-        .filter_map(|(i, f)| {
-            if !crate::space::within(f.at.distance(params.player_at), params.tendril_range_m) {
-                return None;
-            }
-            let off = crate::space::off_axis_deg(muzzle, aim, f.at);
-            crate::space::within(off, params.tendril_acquire_deg).then_some((off, i))
-        })
-        .collect();
-    cand.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
+    // EVERY BODY A TENDRIL COULD TAKE, nearest to the RETICLE first —
+    // `chain::acquired`, which is also how the Boar Incarnon's three beams pick
+    // theirs. Two weapons, two pages saying the same thing, one rule.
+    let bodies: Vec<crate::space::Vec2> =
+        std::iter::once(params.target_at).chain(params.others.iter().map(|f| f.at)).collect();
+    let cand = crate::chain::acquired(
+        &bodies,
+        params.player_at,
+        aim,
+        params.tendril_acquire_deg,
+        params.tendril_range_m,
+    );
 
-    for (_, i) in cand.into_iter().take(live as usize) {
+    // …AND THE BEAM'S OWN TARGET IS NOT ONE OF THEM: "Tendrils homing in on the
+    // main beam's target are only COSMETIC, and don't deal any additional
+    // damage or status effects". Index 0 is that body.
+    for i in cand.into_iter().filter(|&i| i != 0).map(|i| i as usize - 1).take(live as usize) {
         let inst = crate::chain::Instance {
             target: i + 1,
             // A WHOLE BEAM, not a share of one.
@@ -12969,7 +12969,7 @@ pub fn run_once_traced(
             // THE SPLASH CENTRE IS STATIC TOO: the round goes off on the aimed
             // body's surface facing the shooter, and neither of them moves.
             let at = crate::space::detonation_point(params.target_at, params.player_at);
-            Some(crate::chain::Layout::build(
+            let layout = crate::chain::Layout::build(
                 &bodies,
                 crate::chain::Splash { at, radius_m: b.damage_radius_m },
                 crate::chain::Spec {
@@ -12977,6 +12977,18 @@ pub fn run_once_traced(
                     range_m: b.chain_range_m,
                     falloff: b.chain_damage_per_hop,
                     compounds: b.chain_compounds,
+                },
+            );
+            // AND WHO ELSE THE SHOT TAKES ON ITS OWN — `chain::acquired`, the
+            // same rule the Ocucor's tendrils are picked by.
+            Some(layout.acquiring(
+                &bodies,
+                params.player_at,
+                params.aim_at.unwrap_or(params.target_at),
+                crate::chain::Acquire {
+                    count: b.beams_count,
+                    cone_deg: b.beams_acquire_deg,
+                    range_m: b.beams_range_m,
                 },
             ))
         }

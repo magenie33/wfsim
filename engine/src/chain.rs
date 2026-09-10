@@ -78,6 +78,27 @@ pub struct Splash {
     pub radius_m: f64,
 }
 
+/// AN ATTACK THAT PICKS ITS OWN TARGETS, beside the one it was aimed at.
+///
+/// NOT MULTISHOT, and the difference is the whole of it: multishot puts more
+/// instances on ONE body, this puts one instance on MORE BODIES. The Boar
+/// Incarnon *"can fire up to 3 beams that automatically target enemies within
+/// 10° of the reticle"* — written as multishot 3 that trebles a single-target
+/// number the game does not treble; written here it is inert against one body
+/// and worth three times as much against a crowd, which is what the page says.
+///
+/// The aimed body is ONE OF THE `count`, not extra to it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Acquire {
+    /// Beams the attack fires in total, the aimed one included. 1 is an
+    /// ordinary weapon and the whole of this is skipped.
+    pub count: u32,
+    /// Half-angle off the aim line inside which a beam will take a body.
+    pub cone_deg: f64,
+    /// How far a beam reaches from the muzzle.
+    pub range_m: f64,
+}
+
 /// Every damage instance one shot produces against `bodies`.
 ///
 /// `aimed` is the index the beam struck directly — the one instance that may
@@ -107,6 +128,13 @@ pub struct Layout {
     /// Per body, every body within the chain's range, NEAREST FIRST and ties by
     /// index. A hop reads this and takes the first one it has not visited.
     near: Vec<Vec<u32>>,
+    /// Bodies a SELF-AIMING attack will take, in the order it takes them, and
+    /// empty for every weapon that does not aim itself. Another per-engagement
+    /// constant: the cone is measured off an aim line that does not move,
+    /// against bodies that do not move.
+    acquired: Vec<u32>,
+    /// [`Acquire::count`], or 1 when nothing here aims itself.
+    beams: u32,
 }
 
 impl Layout {
@@ -133,8 +161,58 @@ impl Layout {
                 v.into_iter().map(|(_, j)| j).collect()
             })
             .collect();
-        Self { caught, near }
+        Self { caught, near, acquired: Vec::new(), beams: 1 }
     }
+
+    /// Record which bodies a self-aiming attack will take — see [`Acquire`].
+    pub fn acquiring(mut self, bodies: &[Vec2], player_at: Vec2, aim_at: Vec2, spec: Acquire) -> Self {
+        self.beams = spec.count.max(1);
+        if spec.count > 1 {
+            self.acquired = acquired(bodies, player_at, aim_at, spec.cone_deg, spec.range_m);
+        }
+        self
+    }
+}
+
+/// WHICH BODIES A SELF-AIMING ATTACK TAKES, and the ONE rule for it.
+///
+/// Two weapons ask this question and both pages answer it the same way — the
+/// Boar Incarnon's beams *"automatically target enemies within 10° of the
+/// reticle"*, the Ocucor's tendrils *"home-in on enemies close to the targeting
+/// reticle"*. CLOSE TO THE RETICLE IS AN ANGLE, so the order is nearest by
+/// angle and not by distance: a body three metres away at forty degrees is
+/// further from the reticle than one twenty metres away straight ahead.
+///
+/// TIES GO TO THE LOWEST INDEX, the same stand-in this module uses for the
+/// chain — a square grid puts a whole column at zero degrees, and the real
+/// order is the game's spatial query returning bodies in broadphase order.
+/// What is guaranteed is that one formation always produces one answer.
+///
+/// THE RANGE IS FROM THE PLAYER and the ANGLE is from the MUZZLE, which is what
+/// each of them means: how far a beam reaches, and where the reticle points.
+pub fn acquired(
+    bodies: &[Vec2],
+    player_at: Vec2,
+    aim_at: Vec2,
+    cone_deg: f64,
+    range_m: f64,
+) -> Vec<u32> {
+    let muzzle = crate::space::muzzle(player_at, aim_at);
+    let mut v: Vec<(f64, u32)> = bodies
+        .iter()
+        .enumerate()
+        .filter_map(|(i, b)| {
+            if !crate::space::within(b.distance(player_at), range_m) {
+                return None;
+            }
+            let off = crate::space::off_axis_deg(muzzle, aim_at, *b);
+            crate::space::within(off, cone_deg).then_some((off, i as u32))
+        })
+        .collect();
+    v.sort_by(|x, y| {
+        x.0.partial_cmp(&y.0).unwrap_or(std::cmp::Ordering::Equal).then(x.1.cmp(&y.1))
+    });
+    v.into_iter().map(|(_, i)| i).collect()
 }
 
 /// THE PATH A DEFLECTED PROJECTILE TAKES — the same walk a chain does, with no
@@ -187,6 +265,23 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     let struck: Vec<usize> = struck.iter().copied().filter(|&i| i < n).collect();
     let mut seeds: Vec<usize> = struck.clone();
     seeds.extend(layout.caught.iter().map(|&i| i as usize).filter(|i| !struck.contains(i)));
+    // THE BEAMS THAT AIMED THEMSELVES, and the aimed body is one of the count —
+    // so a weapon firing three takes two more than it was pointed at, and one
+    // that struck nobody takes three. Each is a seed like any other: its own
+    // chain, its own path, `seen` of its own.
+    if layout.beams > 1 {
+        let mut extra = (layout.beams as usize).saturating_sub(struck.len());
+        for &i in &layout.acquired {
+            if extra == 0 {
+                break;
+            }
+            let i = i as usize;
+            if i < n && !seeds.contains(&i) {
+                seeds.push(i);
+                extra -= 1;
+            }
+        }
+    }
 
     let mut seen = vec![false; n];
     for &s in &seeds {
@@ -390,6 +485,174 @@ mod tests {
 
     fn total(v: &[Instance]) -> f64 {
         v.iter().map(|i| i.share).sum()
+    }
+
+    /// The Boar Incarnon's: three beams, 10 degrees off the reticle, 20 m.
+    const BOAR: Acquire = Acquire { count: 3, cone_deg: 10.0, range_m: 20.0 };
+    const BOAR_CHAIN: Spec = Spec { hops: 2, range_m: 10.0, falloff: 0.80, compounds: true };
+
+    /// A LINE THE PLAYER IS LOOKING DOWN, and one body off to the side.
+    ///
+    /// The shooter stands at the origin facing +x. Bodies 0..3 are on the line
+    /// at 5 m intervals; body 4 sits 5 m off it at the same depth, which is
+    /// 45 degrees away and outside every cone this module is asked about.
+    fn firing_line() -> (Vec2, Vec2, Vec<Vec2>) {
+        let player = Vec2::new(0.0, 0.0);
+        let aim_at = Vec2::new(5.0, 0.0);
+        let bodies = vec![
+            Vec2::new(5.0, 0.0),
+            Vec2::new(10.0, 0.0),
+            Vec2::new(15.0, 0.0),
+            Vec2::new(5.0, 5.0),
+        ];
+        (player, aim_at, bodies)
+    }
+
+    fn boar_layout(bodies: &[Vec2], player: Vec2, aim_at: Vec2, spec: Acquire) -> Layout {
+        Layout::build(bodies, Splash { at: aim_at, radius_m: 0.0 }, BOAR_CHAIN)
+            .acquiring(bodies, player, aim_at, spec)
+    }
+
+    /// THREE BEAMS ARE THREE SEEDS, and the aimed body is one of them — so a
+    /// shot pointed at one body starts chains from THREE.
+    #[test]
+    fn a_self_aiming_weapon_seeds_one_chain_per_beam() {
+        let (player, aim_at, bodies) = firing_line();
+        let layout = boar_layout(&bodies, player, aim_at, BOAR);
+        let v = resolve_in(&layout, bodies.len(), &[0], BOAR_CHAIN);
+        let seeds: Vec<usize> = v.iter().filter(|i| i.share == 1.0).map(|i| i.target).collect();
+        assert_eq!(seeds, vec![0, 1, 2], "seeds: {v:?}");
+    }
+
+    /// ONE BEAM IS THE WEAPON EVERY OTHER ENTRY IN THE ROSTER IS — the negative
+    /// control, and the thing that must not have moved.
+    #[test]
+    fn one_beam_takes_only_what_it_was_pointed_at() {
+        let (player, aim_at, bodies) = firing_line();
+        let one = Acquire { count: 1, ..BOAR };
+        let layout = boar_layout(&bodies, player, aim_at, one);
+        let v = resolve_in(&layout, bodies.len(), &[0], BOAR_CHAIN);
+        let seeds: Vec<usize> = v.iter().filter(|i| i.share == 1.0).map(|i| i.target).collect();
+        assert_eq!(seeds, vec![0], "seeds: {v:?}");
+        // …and it is exactly what a layout that was never told about beams does.
+        let plain = Layout::build(&bodies, Splash { at: aim_at, radius_m: 0.0 }, BOAR_CHAIN);
+        assert_eq!(v, resolve_in(&plain, bodies.len(), &[0], BOAR_CHAIN));
+    }
+
+    /// ONLY THE BODY THE PLAYER POINTED AT MAY HEADSHOT. The beams the weapon
+    /// took for itself hit bodies, and they do not carry merged multishot
+    /// either — they are separate beams, not more instances of one.
+    #[test]
+    fn a_beam_that_aimed_itself_never_headshots() {
+        let (player, aim_at, bodies) = firing_line();
+        let layout = boar_layout(&bodies, player, aim_at, BOAR);
+        let v = resolve_in(&layout, bodies.len(), &[0], BOAR_CHAIN);
+        // ONE HEADSHOT, and it is the body the player pointed at.
+        let heads: Vec<usize> = v.iter().filter(|i| i.headshot).map(|i| i.target).collect();
+        assert_eq!(heads, vec![0], "{v:?}");
+        // MERGED MULTISHOT REACHES ONE BEAM AND ITS OWN CHAIN — the aimed seed
+        // plus its two hops, and neither of the beams that aimed themselves.
+        assert_eq!(v.iter().filter(|i| i.multishot).count(), 3, "{v:?}");
+        // …and the two beams that aimed themselves are the other six instances.
+        assert_eq!(v.len(), 9, "three seeds, two hops each: {v:?}");
+    }
+
+    /// OUTSIDE THE CONE IS OUTSIDE. Body 3 sits 45 degrees off the aim line, so
+    /// no widening of the roster's numbers reaches it — and the beam that would
+    /// have taken it takes nothing rather than taking the next thing along.
+    #[test]
+    fn a_body_off_the_reticle_is_not_taken() {
+        let (player, aim_at, bodies) = firing_line();
+        let layout = boar_layout(&bodies, player, aim_at, BOAR);
+        let v = resolve_in(&layout, bodies.len(), &[0], BOAR_CHAIN);
+        let seeds: Vec<usize> = v.iter().filter(|i| i.share == 1.0).map(|i| i.target).collect();
+        assert!(!seeds.contains(&3), "body 3 is 45 deg off the line: {seeds:?}");
+        // Widen the cone past it and it becomes a candidate, which is what makes
+        // the exclusion above a property of the ANGLE and not of the ordering.
+        let wide = boar_layout(&bodies, player, aim_at, Acquire { cone_deg: 50.0, ..BOAR });
+        let v = resolve_in(&wide, bodies.len(), &[0], BOAR_CHAIN);
+        let seeds: Vec<usize> = v.iter().filter(|i| i.share == 1.0).map(|i| i.target).collect();
+        // …AND IT IS STILL LAST. Bodies 1 and 2 are further away — 10 m and
+        // 15 m against 7.07 m — and they are taken first because they are ON
+        // the reticle. Close to the reticle is an ANGLE, which is the rule the
+        // Ocucor's tendrils were already picked by.
+        assert_eq!(seeds, vec![0, 1, 2], "{seeds:?}");
+        let widest = boar_layout(&bodies, player, aim_at,
+                                 Acquire { count: 4, cone_deg: 50.0, ..BOAR });
+        let v = resolve_in(&widest, bodies.len(), &[0], BOAR_CHAIN);
+        let seeds: Vec<usize> = v.iter().filter(|i| i.share == 1.0).map(|i| i.target).collect();
+        assert_eq!(seeds, vec![0, 1, 2, 3], "a fourth beam reaches it: {seeds:?}");
+    }
+
+    /// THE BOARD'S OWN GEOMETRY, counted rather than reasoned about.
+    ///
+    /// The group-clear ruler stands the shooter at CONTACT with the middle body
+    /// of the front rank — 0.4 m — and a 10 degree cone from there covers the
+    /// column ahead and nothing beside it. Three beams down one line is still
+    /// three beams: the paths are independent, `seen` is per seed, and a body
+    /// two of them reach takes two instances. That is the chain's rule
+    /// everywhere, not a special case here.
+    #[test]
+    fn the_boards_geometry_still_pays_for_three_beams() {
+        let spacing = 3.0;
+        let mut bodies = vec![Vec2::new(0.0, 0.4)];
+        for k in -9..=9 {
+            for j in 0..19 {
+                if k == 0 && j == 0 {
+                    continue;
+                }
+                bodies.push(Vec2::new(k as f64 * spacing, 0.4 + j as f64 * spacing));
+            }
+        }
+        let player = Vec2::new(0.0, 0.0);
+        let aim_at = bodies[0];
+        let build = |count: u32| {
+            Layout::build(&bodies, Splash { at: aim_at, radius_m: 0.0 }, BOAR_CHAIN).acquiring(
+                &bodies,
+                player,
+                aim_at,
+                Acquire { count, ..BOAR },
+            )
+        };
+        let one = resolve_in(&build(1), bodies.len(), &[0], BOAR_CHAIN);
+        let three = resolve_in(&build(3), bodies.len(), &[0], BOAR_CHAIN);
+        assert_eq!(one.len(), 3, "one beam is a seed and two hops: {one:?}");
+        assert_eq!(three.len(), 9, "three beams are three of those: {three:?}");
+        assert!(
+            (total(&three) - 3.0 * total(&one)).abs() < 1e-9,
+            "{} against {}",
+            total(&three),
+            total(&one)
+        );
+    }
+
+    /// THE RANGE IS THE BEAM'S OWN. A body inside the cone but past the reach
+    /// is not a beam's target, and the beam is spent rather than moved on.
+    #[test]
+    fn a_body_past_the_beams_reach_is_not_taken() {
+        let (player, aim_at, bodies) = firing_line();
+        let short = boar_layout(&bodies, player, aim_at, Acquire { range_m: 12.0, ..BOAR });
+        let v = resolve_in(&short, bodies.len(), &[0], BOAR_CHAIN);
+        let seeds: Vec<usize> = v.iter().filter(|i| i.share == 1.0).map(|i| i.target).collect();
+        assert_eq!(seeds, vec![0, 1], "15 m is past a 12 m beam: {seeds:?}");
+    }
+
+    /// THREE BEAMS ARE THREE TIMES THE SHOT, which is the number the whole
+    /// change is about: one path is `1 + f + f^2` and three of them is that
+    /// three times over, once every seed can find a next body.
+    #[test]
+    fn three_beams_are_three_paths_worth() {
+        let bodies = grid(3.0);
+        let player = Vec2::new(-20.0, 3.0);
+        let aim_at = bodies[3];
+        let one = Layout::build(&bodies, Splash { at: aim_at, radius_m: 0.0 }, BOAR_CHAIN)
+            .acquiring(&bodies, player, aim_at, Acquire { count: 1, ..BOAR });
+        let three = Layout::build(&bodies, Splash { at: aim_at, radius_m: 0.0 }, BOAR_CHAIN)
+            .acquiring(&bodies, player, aim_at, Acquire { range_m: 40.0, ..BOAR });
+        let a = total(&resolve_in(&one, bodies.len(), &[3], BOAR_CHAIN));
+        let b = total(&resolve_in(&three, bodies.len(), &[3], BOAR_CHAIN));
+        assert!((a - 2.44).abs() < 1e-9, "one path is 1 + 0.8 + 0.64: {a}");
+        assert!((b - 3.0 * a).abs() < 1e-9, "three beams: {b} against {a}");
     }
 
     /// A PATH'S WHOLE OUTPUT IS A CONSTANT once it can always find a next body:

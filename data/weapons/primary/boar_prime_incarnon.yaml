@@ -75,19 +75,23 @@ pseudo_reload:
 # reason: absence from a table that lists only discrepancies means normal.
 co_behavior: additive_with_base_damage
 
-# ONE attack part, and the three beams are NOT it. The wiki page describes
-# "up to 3 beams that automatically target enemies within 10° of the reticle",
-# but the data module gives this attack `Multishot = 1` and WFCD's attack entry
-# carries no multishot of its own — so the extra beams are ACQUISITION of extra
-# TARGETS, not extra instances on one target. Writing 3 here would treble a
-# single-target number that neither source supports.
+# THREE BEAMS, AND THEY ARE NOT MULTISHOT. The page: "can fire up to 3 beams
+# that automatically target enemies within 10° of the reticle". The data module
+# gives this attack `Multishot = 1`, and it is right to — multishot puts three
+# instances on ONE body, and these are three bodies taking one each. Written as
+# multishot it would treble a single-target number the game does not treble;
+# written as `beam.beams` it is worth nothing against one target and three times
+# as much against a crowd, which is what the page describes. THE AIMED BODY IS
+# ONE OF THE THREE.
 #
-# Also inert in a single-target arena, recorded so nobody looks for them:
-#  - each beam chains to 2 more enemies within 10 m, each chain at 80% of the
-#    previous one's damage, chaining onward through punch-through targets;
-#  - beams stay locked while the target is within 50° of the reticle;
-#  - 20 m maximum range on the main beam, extendable with Galvanized
-#    Acceleration (Sinister Reach cannot be equipped on this weapon).
+# NINE BODIES IN ALL — `3 x (1 + 2 chain hops)`, counted in a fight (M85)
+# rather than read off the page's arithmetic.
+#
+# Recorded and not modelled:
+#  - beams stay locked while the target is within 50° of the reticle — nobody
+#    moves here, so a body inside the acquire cone never leaves it;
+#  - the range is extendable with Galvanized Acceleration (Sinister Reach
+#    cannot be equipped on this weapon).
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -112,10 +116,12 @@ attack:
   #   "with each chain doing 80% of the previous one's damage"
   #   "the main beam has a maximum range of 20 meters"
   #
-  # THE PUNCH-THROUGH CLAUSE IS NOT MODELLED and is not a chain rule: it says
-  # the chain also starts from bodies a punched-through beam hit, and this
-  # engine has no punch-through geometry (docs/UNMODELLED.md). What is modelled
-  # is the ordinary case — the body the beam struck starts the chain.
+  # PUNCH THROUGH DOES NOTHING HERE — MEASURED, with the mods stacked to
+  # maximum, against a base form where they work (M85). So the Genesis page's
+  # *"and subsequent targets struck by punch through"* describes a premise this
+  # form does not have; it is the chain rule for a weapon that CAN punch
+  # through, transcribed onto one that cannot.
+  punch_through_mods: false
   beam:
     range_m: 20.0
     damage_radius_m: 0.0
@@ -125,14 +131,14 @@ attack:
       range_m: 10.0
       damage_per_hop: 0.80
       origin: radius_targets
+    # SELF-AIMING, and the aimed body is one of the three. ONLY THE BODY THE
+    # PLAYER POINTED AT MAY HEADSHOT — measured (M85); the two the weapon took
+    # for itself lock BODIES, which is what `chain::Acquire` seeds.
+    beams:
+      count: 3
+      acquire_deg: 10.0
+      range_m: 20.0
   damage: { heat: 30.0 }
-  # NO `beam:` BLOCK, deliberately. That block's `damage_radius_m` is required
-  # because it is what Firestorm scales, and the Torid's Incarnon has a real
-  # 2.3 m sphere for it to describe. Nothing states a damage radius for the
-  # Boar's beams — they CHAIN (2 more enemies within 10 m at 80% each) rather
-  # than splash — so writing one, even a zero, would be inventing a fact to
-  # satisfy a schema. The 20 m main-beam range lives in the note above; the
-  # engine reads neither.
 
 # incarnon_evolutions: see data/weapons/primary/boar_prime.yaml (shared group)
 

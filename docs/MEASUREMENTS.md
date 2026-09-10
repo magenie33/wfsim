@@ -168,6 +168,7 @@ path, so an entry may be renamed but never renumbered.
 | [M82](measurements/M82-enemy-overguard-carries-over.md) | an enemy's Overguard carries its excess into what is under it; the depletion gate is the PLAYER's alone | ✅ 2026-09-07 (owner) |
 | [M83](measurements/M83-gated-flat-add-and-the-co-base.md) | a Tenno-gated flat base add stays out of the Condition Overload base, exactly as the unconditional half of the same card does | ✅ 2026-09-10 (owner) |
 | [M84](measurements/M84-paris-prime-incarnon-co-reads-the-evolved-base.md) | the Paris Prime's Incarnon form computes Condition Overload on ALL of its evolved base, and applies it as a multiplier | ✅ 2026-09-10 (owner) |
+| [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) | the Boar Incarnon takes NO punch through, where its base form does; its three self-aiming beams reach nine bodies in all, and only the aimed one can headshot | ✅ 2026-09-10 (owner) |
 
 ## By weapon
 
@@ -183,6 +184,8 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Boar Prime | `boar_prime` | [M29](measurements/M29-reified-bane-reload-start.md) |
 | Braton | `braton` | [M1](measurements/M01-toxin-shield-bypass-gate.md) |
 | Braton Prime | `braton_prime` | [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) · [M56](measurements/M56-blast-detonation-no-elemental.md) · [M57](measurements/M57-quantization-divides-by-moddedbase.md) · [M58](measurements/M58-status-tick-accumulator.md) |
+| Boar | `boar` | [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) |
+| Boar Prime | `boar_prime` | [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) |
 | Burston | `burston` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) · [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) · [M53](measurements/M53-burston-incarnon-punch-through.md) |
 | Burston Prime | `burston_prime` | [M48](measurements/M48-burston-prime-co-direct-share.md) · [M54](measurements/M54-blast-detonation-weak-point.md) · [M68](measurements/M68-primary-compression-evolved-base.md) |
 | Cernos Prime | `cernos_prime` | [M16](measurements/M16-cernos-prime-tap-rate.md) · [M20](measurements/M20-primary-frostbite-never-stacked.md) · [M28](measurements/M28-primary-frostbite-proc-source.md) |
