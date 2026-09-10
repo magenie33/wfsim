@@ -34,7 +34,9 @@ ui:
   "'using Alternate Fire without a full gauge still drains it completely' (wiki) — this engine only fires the form once the gauge is full, so it never wastes one": "「在能量槽没满时使用副攻击仍然会把它清空」（维基）—— 本引擎只在能量槽满了之后才发射这个形态，所以它永远不会浪费一次"
   "'weak point hits have +250% CRITICAL CHANCE, additive with mods like Point Strike' (wiki). This engine has no headshot-conditional crit bucket — a crit is rolled for the hit and the body part is drawn beside it — so this arena's crit chance is the unaimed 40% where a headshot lands at 290%. It is the larger half of the weapon": "「爆头命中获得 +250% 暴击率，与 Point Strike 这类 MOD 加算」（维基）。本引擎没有以爆头为条件的暴击池 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这个战场用的是不带这一条的 40%，而一次爆头本该落在 290%。这是这把武器更大的那一半"
   "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads": 瞄准时 +30% 移动速度，以及爆炸对自身的踉跄：这两项都不是这个战场会读取的数字
-  "+{n} more took damage and are not followed": 另有 {n} 个吃到伤害但没有被跟踪
+  "+{n} more took damage — click one to follow it too": 另有 {n} 个吃到伤害，点一下就能跟踪它
+  "following…": 正在跟踪…
+  "could not follow that one — try the run again": 跟踪失败，重跑一次试试
   ", ": "、"
   "1 · Enemy": 1 · 敌人
   "1 · The fight": 1 · 这场仗

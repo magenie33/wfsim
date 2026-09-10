@@ -18049,6 +18049,36 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
     // took: it is the one the rest of the report is about.
     let mut follow: Vec<usize> = vec![0];
     follow.extend(ranked.into_iter().take(REPLAY_TRACKED - 1).map(|(i, _)| i));
+    replay_following(params, rng_state, frames, &follow)
+}
+
+/// [`replay`], FOLLOWING BODIES SOMEBODY ASKED FOR — the whole of on-demand
+/// tracking, and the reason a cap costs a reader nothing but a wait.
+///
+/// EXACT, NOT AN ESTIMATE. The run is reproducible bit-for-bit from
+/// `rng_state`, so a body followed on the second asking gets the series it
+/// would have had on the first. That is the same property the scout run above
+/// already leans on, read the other way round: if you can re-run a fight to
+/// RANK its bodies, you can re-run it to RECORD one.
+///
+/// CHEAPER THAN THE DEFAULT, because there is nothing to rank: one engagement
+/// rather than the scout plus one. The aimed body is prepended whatever the
+/// caller asked for — every series is read against it — and the list is
+/// deduplicated and capped, since the wire's budget is a property of the
+/// REPLAY and not of who is asking.
+pub fn replay_following(
+    params: &DummyParams,
+    rng_state: u64,
+    frames: usize,
+    want: &[usize],
+) -> Replay {
+    let mut follow: Vec<usize> = vec![0];
+    for &i in want {
+        if i != 0 && i <= params.others.len() && !follow.contains(&i) {
+            follow.push(i);
+        }
+    }
+    follow.truncate(REPLAY_TRACKED);
 
     let frames = frames.max(1);
     let mut rep = Replay {
@@ -30442,8 +30472,81 @@ mod tests {
         }
     }
 
+    /// FOLLOWING A BODY ON THE SECOND ASKING GIVES THE SERIES IT WOULD HAVE HAD
+    /// ON THE FIRST — the whole of on-demand tracking, and the only thing that
+    /// makes a cap cost a reader nothing but a wait.
+    ///
+    /// A REPLAY FOLLOWS EIGHT because a series is 18 KB and a 19x19 ruler would
+    /// be 6.5 MB of them. That is a wire budget and not an answer, so the ninth
+    /// body is one engagement away — re-run from the state the fight started
+    /// at, which is the same property the scout run already leans on, read the
+    /// other way round.
     #[test]
+    fn a_body_followed_on_asking_gets_the_series_it_would_have_had() {
+        // CRIT AND STATUS ON PURPOSE. A fixture with neither is a DETERMINISTIC
+        // fight, and a deterministic fight agrees with itself under any seed —
+        // which would make "the same run" an assertion about nothing.
+        let mut p = DummyParams {
+            base_crit_chance: 0.5,
+            crit_multiplier: 2.0,
+            status_chance: 0.6,
+            base_status_chance: 0.6,
+            body_parts: mono_body(1.0),
+            arcane: ArcaneFx::none(),
+            ..DummyParams::default()
+        };
+        p.duration_seconds = 12.0;
+        // A LINE THE SHOT PUNCHES THROUGH, which is the cheapest way to make a
+        // crowd take damage: every body on it is struck, so the replay has more
+        // than the aimed one to rank.
+        p.punch_through_m = 20.0;
+        p.player_at = crate::space::Vec2::ORIGIN;
+        p.target_at = crate::space::Vec2::new(0.0, 2.0);
+        let (x, y) = (p.target_at.x, p.target_at.y);
+        p.others = (1..=12)
+            .map(|i| crate::formation::FoeSpec {
+                id: format!("e{}", i + 1),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(x, y + f64::from(i) * 0.6),
+            })
+            .collect();
+        let state = Rng::new(0x5EED).state();
 
+        let all = replay(&p, state, 40);
+        assert!(all.tracked.len() > 1, "the fixture has to reach a crowd: {:?}", all.tracked);
+        // ASK FOR ONE THE DEFAULT ALREADY FOLLOWED, which is the only pairing
+        // that can be compared at all — and the claim is that asking changes
+        // nothing about what comes back.
+        let want = all.follow[1];
+        let one = replay_following(&p, state, 40, &[want]);
+        assert_eq!(one.tracked, vec![all.tracked[0].clone(), all.tracked[1].clone()]);
+        assert_eq!(one.frames.len(), all.frames.len());
+        for (a, b) in one.frames.iter().zip(all.frames.iter()) {
+            assert_eq!(a.debuffs[1], b.debuffs[1], "the asked body's series moved");
+            assert_eq!(a.damage.to_bits(), b.damage.to_bits(), "a different fight");
+        }
+    }
+
+    /// THE AIMED BODY IS ALWAYS FIRST, whatever was asked for, and asking twice
+    /// for one body does not follow it twice.
+    #[test]
+    fn asking_never_drops_the_aimed_body_or_repeats_one() {
+        let mut p = flat_base();
+        p.duration_seconds = 6.0;
+        p.others = (1..=3)
+            .map(|i| crate::formation::FoeSpec {
+                id: format!("e{}", i + 1),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(f64::from(i) * 0.6, p.target_at.y),
+            })
+            .collect();
+        let rep = replay_following(&p, 7, 8, &[2, 2, 0, 99]);
+        assert_eq!(rep.follow, vec![0, 2], "aimed first, asked once, nonsense dropped");
+    }
+
+    #[test]
     fn a_replay_reproduces_the_run_it_came_from() {
         let p = DummyParams {
             arcane: arc_stacked("secondary_merciless"),

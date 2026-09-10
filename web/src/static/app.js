@@ -17561,18 +17561,25 @@ function replayMarkup(r) {
           const top = Math.max(...bodyRows.map((x) => x.damage)) || 1;
           const share = b.damage / top;
           const on = (rp.tracked || []).indexOf(b.id);
+          // A ROW THE REPLAY DID NOT FOLLOW IS STILL A QUESTION, and it has an
+          // answer: `data-rpask` re-runs the SAME fight following that body.
+          // `off` stays as the styling hook for "no series in hand yet".
           return `<tr class="rp-rollrow${on === dBody ? " sel" : ""}${
-            on < 0 ? " off" : ""}"${on >= 0 ? ` data-rpfoe="${on}"` : ""}>`
+            on < 0 ? " off" : ""}"${
+            on >= 0 ? ` data-rpfoe="${on}"` : ` data-rpask="${escHtml(b.id)}"`}>`
             + `<td class="nm">${escHtml(b.id)}${
               b.aimed ? ` <span class="sm">${escHtml(tr("aimed"))}</span>` : ""}</td>`
             + `<td class="bar"><span style="width:${(share * 100).toFixed(1)}%"></span></td>`
             + `<td class="num">${Math.round(b.damage).toLocaleString()}</td></tr>`;
         }).join("")}</tbody></table>`
-      // WHAT IS NOT CLICKABLE, and why. A row the replay did not follow has no
-      // debuff series to show, and saying so beats a dead click.
+      // WHAT IS NOT IN HAND, and what a click there costs. The replay follows
+      // a few bodies because a series is 18 KB and a 19x19 ruler would be 6.5
+      // MB of them; the rest are one engagement away, re-run from the state
+      // this fight started at, so what comes back is THIS fight's series and
+      // not a second fight's.
       + ((rp.tracked || []).length < bodyRows.length
         ? `<div class="rp-foe-more">${escHtml(
-            tr("+{n} more took damage and are not followed")
+            tr("+{n} more took damage — click one to follow it too")
               .replace("{n}", bodyRows.length - (rp.tracked || []).length))}</div>`
         : "")
     : "";
@@ -17830,6 +17837,44 @@ function wireReplay(r) {
   // The debuff table is the only thing that changes: the buffs are the
   // PLAYER's and belong to no body, and the clock does not move — you are
   // asking "what was on THAT one at this instant", not replaying anything.
+  /// FOLLOW A BODY THE REPLAY DID NOT — one engagement, and the same one.
+  ///
+  /// `run` PINS THE FIGHT. The endpoint answers with the state its median run
+  /// started from, and handing that back makes this a question about the report
+  /// on screen rather than a second report that merely agrees with it. With
+  /// `runs: 1` beside it there is no Monte Carlo to pay for: the aggregate that
+  /// comes back is one run's and is thrown away — only the frames are kept.
+  ///
+  /// THE ROW SAYS IT IS WORKING and says so if it fails. A click that produces
+  /// nothing and no reason is the worst of the three outcomes.
+  const askFoe = async (id, el) => {
+    if (!shownResult || !id || el.dataset.busy) return;
+    el.dataset.busy = "1";
+    const was = el.querySelector(".nm").innerHTML;
+    el.querySelector(".nm").textContent = tr("following…");
+    try {
+      const r = await api("/api/simulate", {
+        ...buildPayload(),
+        ...theFight({ replay: true, replay_follow: [id], runs: 1, run: shownResult.r.run }),
+      });
+      const rp = r && r.replay;
+      const k = rp && (rp.tracked || []).indexOf(id);
+      if (!rp || k < 0) throw new Error("not followed");
+      // MERGED INTO THE RESULT IN HAND, never swapped for it: everything else
+      // on screen belongs to the run the reader asked for, and this call's
+      // single run has no business replacing any of it.
+      const cur = shownResult.r.replay;
+      cur.tracked = [...(cur.tracked || []), id];
+      cur.dstacks = [...(cur.dstacks || []), rp.dstacks[k]];
+      replayFoe = cur.tracked.length - 1;
+      renderResults(shownResult.r, shownResult.at);
+    } catch (_) {
+      el.querySelector(".nm").innerHTML = was;
+      el.dataset.busy = "";
+      presetToast(tr("could not follow that one — try the run again"));
+    }
+  };
+
   const pickFoe = (k) => {
     replayFoe = k;
     // FROM THE RESULT IN HAND. No simulation, and no storage lookup either —
@@ -17840,6 +17885,9 @@ function wireReplay(r) {
   };
   document.querySelectorAll("[data-rpfoe]").forEach((el) => {
     el.onclick = () => pickFoe(Number(el.dataset.rpfoe));
+  });
+  document.querySelectorAll("[data-rpask]").forEach((el) => {
+    el.onclick = () => askFoe(el.dataset.rpask, el);
   });
   // THE MAP, mounted last because it measures the box it was given. It is the
   // RESULT's copy of the scene: read-only, shaded by what each body took, and

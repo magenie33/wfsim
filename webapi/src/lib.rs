@@ -6737,11 +6737,46 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // shows none of it. Only the Simulator's own Run asks for it, and pays one
     // extra engagement plus the frames on the wire.
     let replay = if get_bool(v, "replay", false) {
-        let rep = wfsim_engine::dummy::replay(
-            &params,
-            m.rng_state,
-            wfsim_engine::dummy::REPLAY_FRAMES,
-        );
+        // WHO THE READER ASKED FOR, by `formation::FoeSpec::id`. Absent, the
+        // replay picks the aimed body and the hardest-hit few, which is what a
+        // first Run wants; present, it follows exactly these — the same fight,
+        // re-run from the same `rng_state`, so a body followed on the second
+        // asking gets the series it would have had on the first.
+        //
+        // AN UNKNOWN ID IS NOT AN ERROR: it drops out of the list, and a list
+        // that empties falls back to the default. A reader clicking a body that
+        // took nothing gets the ordinary report rather than a failure.
+        let want: Vec<usize> = v
+            .get("replay_follow")
+            .and_then(|a| a.as_array())
+            .into_iter()
+            .flatten()
+            .filter_map(|x| x.as_str())
+            .filter_map(|id| {
+                params.others.iter().position(|f| f.id == id).map(|i| i + 1)
+            })
+            .collect();
+        // THE FIGHT TO REPLAY, and by default it is this call's own median run.
+        // A caller that already HAS a run — the `run` key this endpoint answers
+        // with — hands it back, and gets that fight's frames rather than a new
+        // fight's: which is what makes following one more body a question about
+        // the report on screen instead of a second report that merely agrees.
+        // With `runs: 1` beside it the whole call is one engagement.
+        let pinned = v.get("run").and_then(|x| x.as_array()).map(|a| {
+            let half = |i: usize| a.get(i).and_then(Value::as_u64).unwrap_or(0);
+            (half(0) << 32) | (half(1) & 0xffff_ffff)
+        });
+        let state = pinned.unwrap_or(m.rng_state);
+        let rep = if want.is_empty() {
+            wfsim_engine::dummy::replay(&params, state, wfsim_engine::dummy::REPLAY_FRAMES)
+        } else {
+            wfsim_engine::dummy::replay_following(
+                &params,
+                state,
+                wfsim_engine::dummy::REPLAY_FRAMES,
+                &want,
+            )
+        };
         // The panel's OWN shapes, one array per series instead of one number.
         // A frame is not a separate format: `kpi` mirrors the KPI row and
         // `sources` mirrors `damage_sources` key for key, so the client draws
@@ -6861,6 +6896,12 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             // followed and `bodies` says who took damage, so a reader can see
             // that five more were hit and not followed. A cap nobody is told
             // about reads as "that is everyone".
+            // WHICH FIGHT THESE FRAMES ARE FROM. Ordinarily this call's own
+            // median run and the same as the top-level `run`; when a caller
+            // PINNED one it is that, and the two differ — so the frames say
+            // which they came from rather than leaving a reader to assume they
+            // match the numbers beside them.
+            "run": [(state >> 32) as u32, (state & 0xffff_ffff) as u32],
             "tracked": rep.tracked,
             "dstacks": (0..rep.tracked.len())
                 .map(|b| {

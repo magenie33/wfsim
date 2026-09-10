@@ -1064,8 +1064,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rp-rollrow{cursor:pointer}
 /* A ROW THE REPLAY DID NOT FOLLOW has no series to show, so it does not offer
    a click it cannot honour. */
-.rp-rollrow.off{cursor:default;opacity:.55}
-.rp-rollrow:not(.off):hover td{background:var(--line)}
+/* DIMMED BECAUSE ITS SERIES IS NOT IN HAND YET, not because it is dead: a
+   click re-runs the fight following it. */
+.rp-rollrow.off{opacity:.55}
+.rp-rollrow.off:hover{opacity:1}
+.rp-rollrow:hover td{background:var(--line)}
 .rp-rollrow.sel td{background:var(--line)}
 .rp-roll .nm{white-space:nowrap;font-variant-numeric:tabular-nums}
 .rp-roll .nm .sm{opacity:.6}

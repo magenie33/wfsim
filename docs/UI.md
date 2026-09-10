@@ -442,9 +442,16 @@ followed, the panel draws a chip per body, and picking one redraws the table
 from the stored result at no simulation cost. It follows the aimed body plus
 the hardest-hit few (`REPLAY_TRACKED = 8`), because a series is 600 frames ×
 15 debuffs = 18 KB a body and a 19x19 would be 6.5 MB. The cap is SAID ON
+SCREEN, never applied silently. One body draws no chips at all.
 
-SCREEN ("+N more took damage and are not followed"), never applied silently.
-One body draws no chips at all.
+**AND THE CAP COSTS A READER A WAIT, NOT AN ANSWER.** Every other row of the
+roll call is clickable too: the click re-runs the SAME engagement following
+that body — `replay_follow: [id]`, `runs: 1`, and the `run` key handed back so
+the endpoint replays the fight on screen rather than a new one that merely
+agrees with it. What comes back is merged into the result in hand, never
+swapped for it. It is EXACT rather than an estimate, because a run is
+reproducible bit-for-bit from its `rng_state` — the same property the scout run
+that ranks bodies already leans on, read the other way round.
 
 ## There is one fight, and every module sends it
 
