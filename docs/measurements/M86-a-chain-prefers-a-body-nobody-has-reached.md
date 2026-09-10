@@ -38,6 +38,22 @@ But the two paths it read were **disjoint** — `1,1-1,2-1,3-1,4-2,4-3,4` agains
 The reading is silent on the question this one answers, and it took a formation
 dense enough to force the collision to notice.
 
+### The ordering bug it uncovered
+
+The first ship of this rule marked a seed as TAKEN when its own turn came round,
+so the first beam could hop onto a body the second was about to stand on. Read
+on the live site, group-clear, the Incarnon cycle: eight bodies where nine were
+expected, and the signature was in the totals — one body carrying **1.8x** a
+plain seed (its own 1.0 plus another beam's 0.8) while a ninth body took
+nothing.
+
+The seeds are all known before a single hop is chosen, so this is an ordering
+bug with a fixed answer rather than a tie-break: every seed is marked before any
+path walks. `a_beam_never_hops_onto_another_beams_seed` holds it, on a line of
+bodies where the nearest thing to the first beam IS the second beam's seed —
+coverage cannot see it there (six bodies on a line are all reached either way),
+so the assertion is about WHICH bodies each path took.
+
 ### What it costs, and the direction is the surprise
 
 Measured with `one_fight`, 361 bodies at 3 m, Thrax Centurion level 60, 180 s,

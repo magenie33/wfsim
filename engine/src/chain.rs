@@ -290,7 +290,16 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     // rather than a ban: the wiki's *"The chain from the target hit after the
     // Punch Through can deal damage to the first target, and vice versa"* is
     // what a crowded corner still produces.
+    //
+    // EVERY SEED IS TAKEN BEFORE ANY PATH WALKS. Marking one as its own turn
+    // came round let the FIRST beam hop onto a body the third was about to
+    // stand on — a body two beams reach and one that nothing reaches, from a
+    // rule whose whole point is to spread. It is not a tie-break: the seeds are
+    // known before a single hop is chosen, so nothing has to be guessed.
     let mut taken = vec![false; n];
+    for &s in &seeds {
+        taken[s] = true;
+    }
     for &s in &seeds {
         let direct = struck.contains(&s);
         out.push(Instance {
@@ -303,7 +312,6 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
         // reallocated: this runs once per landing pellet.
         seen.iter_mut().for_each(|x| *x = false);
         seen[s] = true;
-        taken[s] = true;
         let (mut cur, mut share) = (s, 1.0);
         for _ in 0..spec.hops {
             // NEAREST FIRST, so the first entry that qualifies IS the answer the
@@ -347,7 +355,8 @@ pub fn resolve_with(
         return out;
     }
     // EVERY BODY THIS SHOT HAS REACHED — see `resolve_in`, which this has to
-    // answer instance for instance.
+    // answer instance for instance, and which pre-marks the seeds for the same
+    // reason: a path may not step onto a body another beam is about to stand on.
     let mut taken = vec![false; bodies.len()];
     // A SHOT THAT STRUCK NOBODY STILL SPLASHES: aim is a direction and the
     // place it lands may be bare floor — *"a 2.3 meter damage radius from the
@@ -387,6 +396,9 @@ pub fn resolve_with(
     }));
 
     for &s in &seeds {
+        taken[s] = true;
+    }
+    for &s in &seeds {
         // …AND THE SPLASH IS NOT A SECOND INSTANCE. "A target that is directly
         // struck by the beam is still only hit once", so a seed takes ONE
         // full-share instance whether the beam or the radius reached it.
@@ -404,7 +416,6 @@ pub fn resolve_with(
         let (mut cur, mut share) = (s, 1.0);
         let mut seen = vec![false; bodies.len()];
         seen[s] = true;
-        taken[s] = true;
         for _ in 0..spec.hops {
             // TWO SCANS, AND THE FIRST ONE WINS WHEN IT FINDS ANYTHING: a body
             // nobody has reached yet is preferred over a nearer body that has
@@ -682,6 +693,33 @@ mod tests {
         hit.dedup();
         assert_eq!(v.len(), 9, "still nine instances: {v:?}");
         assert_eq!(hit.len(), 9, "and now nine bodies: {hit:?}");
+    }
+
+    /// A PATH MAY NOT STEP ONTO A BODY ANOTHER BEAM IS ABOUT TO STAND ON.
+    ///
+    /// Every body here is on the shot line, three metres apart, so the nearest
+    /// thing to the first beam is the SECOND beam's own seed. Marking a seed as
+    /// its turn came round let the first beam hop straight onto it: two beams
+    /// on one body, another body reached by nothing, out of a rule whose whole
+    /// point is to spread. The seeds are known before a single hop is chosen,
+    /// so this is not a tie-break — it is an ordering bug with a fixed answer.
+    #[test]
+    fn a_beam_never_hops_onto_another_beams_seed() {
+        let bodies: Vec<Vec2> = (0..6).map(|j| Vec2::new(0.0, 0.4 + 3.0 * f64::from(j))).collect();
+        let layout = Layout::build(&bodies, Splash { at: bodies[0], radius_m: 0.0 }, BOAR_CHAIN)
+            .acquiring(&bodies, Vec2::ORIGIN, bodies[0], BOAR);
+        let v = resolve_in(&layout, bodies.len(), &[0], BOAR_CHAIN);
+        let seeds: Vec<usize> = v.iter().filter(|i| i.share == 1.0).map(|i| i.target).collect();
+        assert_eq!(seeds, vec![0, 1, 2], "the three nearest on the line: {seeds:?}");
+        assert_eq!(v.len(), 9, "{v:?}");
+        // THE FIRST BEAM'S OWN TWO HOPS, and neither may be a seed. Coverage
+        // cannot say it — six bodies on a line are all reached either way — so
+        // the assertion is about WHICH bodies, which is where the bug lived.
+        let first_path: Vec<usize> = v[1..3].iter().map(|i| i.target).collect();
+        assert!(
+            first_path.iter().all(|t| !seeds.contains(t)),
+            "the first beam hopped onto another beam's seed: {first_path:?} against {seeds:?}"
+        );
     }
 
     /// …AND IT IS A PREFERENCE, NOT A BAN. With nowhere fresh left in range a
