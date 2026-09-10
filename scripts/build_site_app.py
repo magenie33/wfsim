@@ -332,6 +332,44 @@ EDGE_REDIRECTS = """\
 """
 
 
+# WHAT THE LAST BUILD WROTE, remembered beside the files themselves. It is the
+# only way to tell one generation from another on disk: a digest says what a
+# file IS, never when it arrived, and an mtime is a claim about when rather than
+# an answer about which.
+GENERATION = "generation.json"
+
+
+def keep_one_generation(out: Path, wrote: list[str]) -> None:
+    """Delete everything under `out` except this build's files and the LAST
+    build's.
+
+    A DEPLOY IS NOT ATOMIC AT THE CLIENT. The page and the files it names ship
+    together, but they are CACHED apart — an edge holding the previous page
+    hands a reader names this build has already deleted, and the SPA fallback
+    answers a deleted `/asset/app.<old>.js` with index.html and a 200. The
+    browser runs that HTML as JavaScript, the app never boots, and every surface
+    on it is simply gone. Keeping the previous generation is what carries those
+    readers across; their next revalidation moves them on.
+
+    ONE GENERATION AND NOT MORE. Two builds of slack is a stale module nothing
+    references for a week; one is the width of a deploy.
+    """
+    # NO MANIFEST MEANS THE FIRST BUILD UNDER THIS RULE, and what is on disk is
+    # exactly what the last build left — so it is the previous generation and it
+    # is kept. Starting from an empty set instead would delete it, which is the
+    # tear this exists to prevent, happening once on the way to preventing it.
+    manifest = out / GENERATION
+    previous = [f.name for f in out.iterdir() if f.is_file()]
+    if manifest.exists():
+        previous = json.loads(manifest.read_text(encoding="utf-8")).get("names", [])
+    keep = {*wrote, *previous, GENERATION}
+    for old in out.iterdir():
+        if old.name not in keep:
+            old.unlink()
+    manifest.write_text(json.dumps({"names": sorted(wrote)}, indent=1) + "\n",
+                        encoding="utf-8", newline="\n")
+
+
 def ship_wasm_pkg() -> dict:
     """Publish `site/pkg/` under CONTENT-ADDRESSED names, and say what they are.
 
@@ -342,17 +380,17 @@ def ship_wasm_pkg() -> dict:
     with nothing on either side able to see it. A name carrying the digest
     cannot be served from a cache filled by a different build.
 
-    The directory is CLEARED first: a stale hashed module is 5 MB of payload
-    that nothing references and that every client would still download.
+ONE PREVIOUS GENERATION IS KEPT — `keep_one_generation` says why. A stale
+    module is 5 MB nothing references, which is worth one build of slack and not
+    two.
     """
     digest = hashlib.sha256((WASM_PKG / "wfsim_wasm_bg.wasm").read_bytes()).hexdigest()[:12]
     out = APP / "pkg"
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
+    out.mkdir(parents=True, exist_ok=True)
     names = {"glue": f"wfsim_wasm.{digest}.js", "wasm": f"wfsim_wasm_bg.{digest}.wasm"}
     shutil.copy2(WASM_PKG / "wfsim_wasm.js", out / names["glue"])
     shutil.copy2(WASM_PKG / "wfsim_wasm_bg.wasm", out / names["wasm"])
+    keep_one_generation(out, [names["glue"], names["wasm"]])
     names["digest"] = digest
     return names
 
@@ -380,18 +418,20 @@ def publish_hashed(html: str) -> str:
 
     THE UNHASHED COPIES ARE REMOVED, not left beside them. Nothing references
     one, and a file the page never asks for is payload every client downloads.
-    That a page holding the old names cannot appear is the same property
-    `pkg/` has always leaned on — it is cleared every build too.
+
+    THE PREVIOUS GENERATION STAYS, which is not the same thing: those files ARE
+    referenced, by every cached page that has not revalidated yet.
+    `keep_one_generation` says what that buys.
     """
     out = APP / ASSET_DIR
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
+    out.mkdir(parents=True, exist_ok=True)
+    wrote: list[str] = []
 
     def place(src: Path, stem: str, ext: str) -> str:
         body = src.read_bytes()
         name = f"{stem}.{hashlib.sha256(body).hexdigest()[:12]}{ext}"
         (out / name).write_bytes(body)
+        wrote.append(name)
         src.unlink()
         return f"/{ASSET_DIR}/{name}"
 
@@ -411,6 +451,7 @@ def publish_hashed(html: str) -> str:
         if was not in html:
             sys.exit(f"index.html: {was} not found — the page would name a file that is gone")
         html = html.replace(was, now)
+    keep_one_generation(out, wrote)
     print(f"assets: {app_url}  {css_url}  {worker_url}")
     return html
 

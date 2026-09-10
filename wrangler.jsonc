@@ -32,8 +32,13 @@
     // and redirects the twin, which is the direction the whole site already
     // points.
     "html_handling": "drop-trailing-slash",
-    // The api is the one thing that must NOT fall through to the SPA.
-    "run_worker_first": ["/api/*"]
+    // WHAT MUST NOT FALL THROUGH TO THE SPA. The api, because an endpoint that
+    // answers with index.html and a 200 is the quietest failure a client can
+    // get — and the two CONTENT-ADDRESSED prefixes for the same reason one step
+    // down: a page cached from the previous build asks for a hashed file this
+    // one has deleted, and HTML served under that name is executed as script.
+    // The worker turns those into a real 404; see worker/index.js.
+    "run_worker_first": ["/api/*", "/asset/*", "/pkg/*"]
   },
   // WHERE EVERYTHING GOES. One database, and it is the only store: the library
   // of builds, the scores computed from it, and the money that has come in. A

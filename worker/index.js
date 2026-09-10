@@ -263,9 +263,26 @@ export default {
         ? submit(request, env)
         : bad("the board is a static file — see /weapons/<name>, or data/benchmarks/boards/ in the repo", 405);
     }
+    // A HASHED FILE THAT IS GONE IS A 404, AND NOT THE APP.
+    //
+    // `not_found_handling: single-page-application` answers every unmatched
+    // path with index.html and a 200, which is right for a route and wrong for
+    // a content-addressed file: an edge holding a page from the previous build
+    // asks for `/asset/app.<old>.js`, gets HTML, runs it as JavaScript, and the
+    // app never boots — every surface on the site simply gone, with nothing in
+    // the console but a syntax error in a file that looks like it loaded.
+    //
+    // `build_site_app.py` keeps the previous generation so this is rare; this
+    // is what makes it LOUD when it happens anyway. Nothing under these two
+    // prefixes is ever html, so html here is the fallback and never the file.
+    const asset = await env.ASSETS.fetch(request);
+    if ((path.startsWith("/asset/") || path.startsWith("/pkg/"))
+        && (asset.headers.get("content-type") || "").includes("text/html")) {
+      return new Response("not found", { status: 404, headers: { "content-type": "text/plain" } });
+    }
     // EVERYTHING ELSE IS THE SITE, unchanged. Handing the request to the assets
     // binding is what keeps this script from becoming a thing the site depends
     // on: it adds one path and forwards the rest.
-    return env.ASSETS.fetch(request);
+    return asset;
   },
 };

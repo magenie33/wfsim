@@ -582,6 +582,25 @@ weapon's leading row, so the page only ever suppresses an upload it can prove
 is redundant. Its NEGATIVE CONTROL is the half that matters — a build the
 board does not hold must still be offered.
 
+## `check_missing_asset`
+
+**A HASHED FILE THAT IS GONE IS A 404, AND NOT THE APP.** `not_found_handling:
+single-page-application` answers every unmatched path with index.html and a
+200, which is right for a route and catastrophic for a content-addressed file.
+The check drives the worker with an ASSETS stub that behaves as the platform
+does — the shell, 200, `text/html`, for anything with no file behind it — and
+asserts a miss under `/asset/` or `/pkg/` comes back a 404 whose body is not the
+shell. Status alone is not the assertion: what must never happen is the app's
+own html arriving under a script's name.
+
+**THE NEGATIVE CONTROL IS EVERY ROUTE.** `/weapons/Torid`, `/benchmark`,
+`/thanks` and `/` are all paths with no file behind them, so a worker that 404s
+those has taken down every deep link on the site — a bigger outage shipped as
+the fix. It also reads `build_site_app.py` for the other half, since keeping one
+previous generation only shows up across two builds: a `rmtree` on either
+directory is the bug, and the check names it. Verified to bite by restoring the
+fall-through and by restoring the wholesale clear, one per half.
+
 ## `check_thanks`
 
 **THE LIST SAYS WHO, AND MAY NEVER SAY HOW MUCH.** The ledger behind it holds

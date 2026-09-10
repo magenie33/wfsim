@@ -67,6 +67,16 @@ its assets are named by content:
   layer down and invisible from both ends.
 - `index.html` is the only mutable document of a release, and it is replaced
   atomically with it.
+- **A DEPLOY IS ATOMIC AT THE ORIGIN AND NOT AT THE CLIENT.** The page and the
+  files it names ship together and are CACHED apart, so an edge holding the
+  previous page hands a reader names the new build has already deleted. Two
+  things stop that being an outage: the build keeps ONE previous generation of
+  `asset/` and `pkg/`, and the worker answers a miss under either prefix with a
+  real 404. Without the second, `not_found_handling: single-page-application`
+  returns index.html and a 200 for a deleted script, the browser runs HTML as
+  JavaScript, and the app does not boot — every surface gone, the site up, and
+  nothing in the console but a syntax error in a file that looks like it
+  loaded. `check_missing_asset` holds both halves.
 
 ## Identity, and where it is shown
 
