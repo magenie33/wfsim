@@ -284,6 +284,13 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     }
 
     let mut seen = vec![false; n];
+    // EVERY BODY THIS SHOT HAS ALREADY REACHED, across all of its paths. A hop
+    // prefers a body nobody has touched yet and settles for a repeat only when
+    // there is nothing fresh in range — measured (M86), and it is a PREFERENCE
+    // rather than a ban: the wiki's *"The chain from the target hit after the
+    // Punch Through can deal damage to the first target, and vice versa"* is
+    // what a crowded corner still produces.
+    let mut taken = vec![false; n];
     for &s in &seeds {
         let direct = struck.contains(&s);
         out.push(Instance {
@@ -291,19 +298,25 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
             part_factor: 1.0,
         });
 
-        // ONE `seen` PER SEED — the paths are independent, which is the wiki's
-        // own rule and the owner's. Cleared rather than reallocated: this runs
-        // once per landing pellet.
+        // ONE `seen` PER SEED — a path never revisits its OWN bodies, and one
+        // path running out does not stop another. Cleared rather than
+        // reallocated: this runs once per landing pellet.
         seen.iter_mut().for_each(|x| *x = false);
         seen[s] = true;
+        taken[s] = true;
         let (mut cur, mut share) = (s, 1.0);
         for _ in 0..spec.hops {
-            // NEAREST FIRST, so the first unvisited entry IS the answer the
+            // NEAREST FIRST, so the first entry that qualifies IS the answer the
             // scan computes. `near` excludes `cur` itself only by `seen`.
-            let Some(&next) = layout.near[cur].iter().find(|&&j| !seen[j as usize]) else {
+            let fresh = layout.near[cur]
+                .iter()
+                .find(|&&j| !seen[j as usize] && !taken[j as usize]);
+            let Some(&next) = fresh.or_else(|| layout.near[cur].iter().find(|&&j| !seen[j as usize]))
+            else {
                 break;
             };
             let next = next as usize;
+            taken[next] = true;
             share = if spec.compounds { share * spec.falloff } else { spec.falloff };
             out.push(Instance {
                 target: next, share, multishot: direct, headshot: false,
@@ -333,6 +346,9 @@ pub fn resolve_with(
     if bodies.is_empty() {
         return out;
     }
+    // EVERY BODY THIS SHOT HAS REACHED — see `resolve_in`, which this has to
+    // answer instance for instance.
+    let mut taken = vec![false; bodies.len()];
     // A SHOT THAT STRUCK NOBODY STILL SPLASHES: aim is a direction and the
     // place it lands may be bare floor — *"a 2.3 meter damage radius from the
     // point of impact against a SURFACE"*. Every body the sphere catches is an
@@ -388,29 +404,41 @@ pub fn resolve_with(
         let (mut cur, mut share) = (s, 1.0);
         let mut seen = vec![false; bodies.len()];
         seen[s] = true;
+        taken[s] = true;
         for _ in 0..spec.hops {
-            let mut best = f64::INFINITY;
-            let mut tied: Vec<usize> = Vec::new();
-            for j in 0..bodies.len() {
-                if seen[j] {
-                    continue;
+            // TWO SCANS, AND THE FIRST ONE WINS WHEN IT FINDS ANYTHING: a body
+            // nobody has reached yet is preferred over a nearer body that has
+            // been (M86). The second is the fallback, which is what a corner
+            // with nothing fresh left in range still produces.
+            let mut next = None;
+            for fresh in [true, false] {
+                let mut best = f64::INFINITY;
+                let mut tied: Vec<usize> = Vec::new();
+                for j in 0..bodies.len() {
+                    if seen[j] || (fresh && taken[j]) {
+                        continue;
+                    }
+                    let d = bodies[cur].distance(bodies[j]);
+                    if d > spec.range_m + 1e-9 {
+                        continue;
+                    }
+                    if d < best - 1e-9 {
+                        best = d;
+                        tied.clear();
+                        tied.push(j);
+                    } else if (d - best).abs() <= 1e-9 {
+                        tied.push(j);
+                    }
                 }
-                let d = bodies[cur].distance(bodies[j]);
-                if d > spec.range_m + 1e-9 {
-                    continue;
-                }
-                if d < best - 1e-9 {
-                    best = d;
-                    tied.clear();
-                    tied.push(j);
-                } else if (d - best).abs() <= 1e-9 {
-                    tied.push(j);
+                if !tied.is_empty() {
+                    next = Some(tied[tie(tied.len()).min(tied.len() - 1)]);
+                    break;
                 }
             }
-            if tied.is_empty() {
+            let Some(next) = next else {
                 break;
-            }
-            let next = tied[tie(tied.len()).min(tied.len() - 1)];
+            };
+            taken[next] = true;
             share = if spec.compounds { share * spec.falloff } else { spec.falloff };
             out.push(Instance {
                 target: next, share, multishot: direct, headshot: false,
@@ -624,6 +652,52 @@ mod tests {
             total(&three),
             total(&one)
         );
+    }
+
+    /// NINE BODIES, NOT SEVEN. A hop prefers one nobody has reached, so three
+    /// beams down one column spread into the ranks beside it instead of
+    /// doubling back onto each other's seeds (M86).
+    #[test]
+    fn three_beams_reach_nine_bodies_rather_than_seven() {
+        let spacing = 3.0;
+        let mut bodies = vec![Vec2::new(0.0, 0.4)];
+        for k in -9..=9 {
+            for j in 0..19 {
+                if k == 0 && j == 0 {
+                    continue;
+                }
+                bodies.push(Vec2::new(k as f64 * spacing, 0.4 + j as f64 * spacing));
+            }
+        }
+        let layout =
+            Layout::build(&bodies, Splash { at: bodies[0], radius_m: 0.0 }, BOAR_CHAIN).acquiring(
+                &bodies,
+                Vec2::new(0.0, 0.0),
+                bodies[0],
+                BOAR,
+            );
+        let v = resolve_in(&layout, bodies.len(), &[0], BOAR_CHAIN);
+        let mut hit: Vec<usize> = v.iter().map(|i| i.target).collect();
+        hit.sort_unstable();
+        hit.dedup();
+        assert_eq!(v.len(), 9, "still nine instances: {v:?}");
+        assert_eq!(hit.len(), 9, "and now nine bodies: {hit:?}");
+    }
+
+    /// …AND IT IS A PREFERENCE, NOT A BAN. With nowhere fresh left in range a
+    /// hop takes a body that has already been hit, which is the wiki's own
+    /// *"can deal damage to the first target, and vice versa"*.
+    #[test]
+    fn a_hop_repeats_only_once_nothing_fresh_is_in_range() {
+        let bodies = vec![Vec2::ORIGIN, Vec2::new(0.0, 2.0)];
+        let spec = Spec { hops: 1, range_m: 5.0, falloff: 0.5, compounds: true };
+        let layout = Layout::build(&bodies, Splash { at: bodies[0], radius_m: 5.0 }, spec);
+        let v = resolve_in(&layout, bodies.len(), &[0], spec);
+        // Two seeds, one hop each, and only two bodies to share: the second
+        // path has nothing fresh and doubles back.
+        assert_eq!(v.len(), 4, "{v:?}");
+        assert_eq!(v.iter().filter(|i| i.target == 0).count(), 2, "{v:?}");
+        assert_eq!(v.iter().filter(|i| i.target == 1).count(), 2, "{v:?}");
     }
 
     /// THE RANGE IS THE BEAM'S OWN. A body inside the cone but past the reach
@@ -843,12 +917,22 @@ mod tests {
         let mut moved = bodies.clone();
         moved[0] = Vec2::new(30.0, 30.0);
         assert_ne!(resolve(&moved, &[FRONT_MIDDLE], splash, TORID), first);
-        let mut untouched = bodies.clone();
-        untouched[8] = Vec2::new(30.0, 30.0);
+        // A BODY OFF THE MAP, and it has to be off the map from the START: a
+        // hop prefers a body nobody has reached, so the paths push OUTWARD and
+        // there is no longer a corner of a 3x3 that nothing touches. Eighteen
+        // instances over nine bodies leaves none of them spare.
+        let mut far = bodies.clone();
+        far.push(Vec2::new(30.0, 30.0));
+        let with_far = resolve(&far, &[FRONT_MIDDLE], splash, TORID);
+        far[9] = Vec2::new(60.0, 60.0);
         assert_eq!(
-            resolve(&untouched, &[FRONT_MIDDLE], splash, TORID),
-            first,
-            "the far corner is reached by nothing, so moving it may not matter"
+            resolve(&far, &[FRONT_MIDDLE], splash, TORID),
+            with_far,
+            "a body no path reaches may be moved without changing one"
+        );
+        assert!(
+            !with_far.iter().any(|i| i.target == 9),
+            "…and it is unreached, which is what makes that a control"
         );
     }
 
