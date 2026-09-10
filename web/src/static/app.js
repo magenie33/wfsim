@@ -2408,15 +2408,30 @@ function benchPendingNote(cur) {
     ? ` <span class="bench-pending">${escHtml(tr("· scored {t} ago").replace("{t}", age))}</span>`
     : "";
   if (!benchPending || typeof benchPending !== "object") return aged;
+  const note = (text) => ` <span class="bench-pending">${escHtml(text)}</span>`;
+  let out = aged;
   const scored = st.submissions || 0;
   const waiting = benchPending.count - scored;
   // AND NEVER A NEGATIVE ONE. A ruler that has just been added has scored
   // nothing, and a store that has expired records can sit below what the last
   // run read; both are real and neither is "builds are waiting".
-  if (!(waiting > 0) || !scored) return aged;
-  return aged + ` <span class="bench-pending">${escHtml(
-    tr("· {n} more submitted since this board was scored")
-      .replace("{n}", waiting))}</span>`;
+  if (waiting > 0 && scored) {
+    out += note(tr("· {n} more submitted since this board was scored")
+      .replace("{n}", waiting));
+  }
+  // …AND WHAT IS STILL BEING MEASURED, which is a different question and the
+  // one a reader of the BOARD has. They part company exactly when somebody asks
+  // for rows to be measured again: nothing has arrived, the line above says
+  // nothing, and the board is about to change anyway.
+  //
+  // ABSENT MEANS "CANNOT SAY", NEVER "NOTHING LEFT" — a door that could not
+  // answer sends no `owed` at all, and a page that read that as zero would
+  // promise a finished board it knows nothing about.
+  const owed = benchPending.owed && cur ? benchPending.owed[cur.id] : undefined;
+  if (Number.isFinite(owed) && owed > 0) {
+    out += note(tr("· {n} rows still being measured").replace("{n}", owed));
+  }
+  return out;
 }
 
 function renderBenchBoard() {

@@ -206,6 +206,7 @@ async function submit(request, env) {
 async function pending(env) {
   if (!env.LIBRARY) return bad("the library is not configured", 503);
   let count = null;
+  let owed = null;
   try {
     // BOTH TABLES. A submission that has arrived but has not been through
     // intake yet is in the library as far as the submitter is concerned, and
@@ -218,7 +219,27 @@ async function pending(env) {
   } catch (e) {
     console.log("library count failed:", (e && e.message) || String(e));
   }
-  return new Response(JSON.stringify({ ok: true, count, capped: false }), {
+  try {
+    // …AND WHAT IS STILL OWED, PER RULER. The count above answers "did my
+    // build arrive"; this answers "is this board finished", which is a
+    // different question and the one a reader of the board has. They part
+    // company exactly when a person asks for rows to be measured again: nothing
+    // has arrived, and the board is about to change anyway.
+    //
+    // BY RULER, because the page shows one at a time and the three differ
+    // sixfold in what they have left.
+    const q = await env.LIBRARY.prepare(
+      "SELECT ruler, COUNT(*) AS n FROM queue GROUP BY ruler",
+    ).all();
+    owed = {};
+    for (const row of (q && q.results) || []) owed[String(row.ruler)] = Number(row.n);
+  } catch (e) {
+    // AN ABSENT QUEUE IS NOT ZERO OWED, it is "this cannot be answered" — so
+    // `null` travels and the page says nothing rather than "all done".
+    console.log("queue count failed:", (e && e.message) || String(e));
+    owed = null;
+  }
+  return new Response(JSON.stringify({ ok: true, count, owed, capped: false }), {
     headers: {
       "content-type": "application/json",
       // A MINUTE. The board moves in hours, so a count up to a minute old is
