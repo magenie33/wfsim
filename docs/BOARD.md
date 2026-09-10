@@ -249,12 +249,24 @@ TODAY, and a row measured under an engine six weeks old is a claim nobody has
 checked. The sweep says nothing about whether that number is WRONG — it says
 nobody has looked.
 
-**WHOLE WEAPONS, UP TO A FIFTH OF THE LIBRARY A NIGHT.** A weapon's file is
-written whole, so half of one re-measured ranks two generations against each
-other; and a fifth a night crosses the library in five. It only ADDS to the
-queue — the hourly scorer pays for it in the hours after, which is what spreads
-the bill. `scripts/pick_stale.sh` is the choice: oldest first, greedy, and a
-weapon too big for the share is stepped over rather than ending the walk.
+**WHOLE WEAPONS, AND A FIFTH OF THE LIBRARY IS A TARGET RATHER THAN A CEILING.**
+A weapon's file is written whole, so half of one re-measured ranks two
+generations against each other — splitting one is off the table. Weapons go in
+until the share is PASSED, which makes every night a little over it, by at most
+the last weapon in. Used as a ceiling instead, a weapon bigger than a fifth
+would fit no night ever, and that would be the BIGGEST weapon: the one most
+people submit to.
+
+**WHICH ONES IS A DRAW, NOT A SORT.** Everything in the pool has already passed
+the age threshold, so which of them goes tonight has no right answer — and the
+same answer every night means the same weapons are always sampled and the rest
+reached only when those go quiet. `scripts/pick_stale.sh` draws them WEIGHTED BY
+HOW OVERDUE: uniformly random, a weapon can be unlucky for a month; weighted,
+the longer one waits the harder it is to keep missing. `SWEEP_SEED` pins a draw,
+because a run nobody can reproduce is a run nobody can ask "why that weapon".
+
+A fifth a night crosses the library in five. It only ADDS to the queue — the
+hourly scorer pays for it in the hours after, which is what spreads the bill.
 
 **IT LANDS IN ITS OWN BATCH**, named for the night, so it can be reordered ahead
 of the arrivals or dropped — `DELETE FROM batches WHERE id = ?`.
