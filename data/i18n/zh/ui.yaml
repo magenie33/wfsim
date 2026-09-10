@@ -52,7 +52,7 @@ ui:
   "A TOME'S MOD POOL IS ITS OWN and this roster does not load it — `mod_pools: []` here means the builder offers NOTHING, which is honest rather than offering pistol cards a Tome cannot wear. The weapon's numbers are right and no build can be put on it yet": "法典（Tome）有它自己的 MOD 池，而本武器库没有载入它 —— 这里的 `mod_pools: []` 意味着配装页什么都不提供，这比提供一堆法典装不了的手枪卡要诚实。这把武器的数值是对的，只是暂时还没法给它配 MOD"
   "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
   "A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.":
-    捐助仅用于本站的运营成本，除此以外没有别的用途——它不是一次购买，本站也没有任何东西在出售。
+    投喂只用在本站的运营开销上，没有别的去处——它不是一次购买，本站也没有任何东西在卖。
   "A desktop version is available for Windows.": "桌面版目前只支持 Windows。"
   "hosted on {name} — this is where the file comes from": "文件存放在{name}，这就是它的源头"
   "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
@@ -76,7 +76,7 @@ ui:
   "Ammo Reserve": 备弹
   "Ammo pickups are modelled, because a real player is being resupplied over three minutes. A weapon that cannot be resupplied runs on its real reserve.": 弹药拾取是计入的，因为三分钟里真实玩家一直在补给。而无法补给的武器，用的就是它真实的备弹。
   "And if your own in-game measurement disagrees with it, the measurement wins. That is a bug report about reality, and it is the one thing that changes what this engine does.":
-    而如果你自己的游戏内实测和它对不上，那么以实测为准。那是一份关于现实的 bug 报告，也是唯一能改变这个引擎的东西。
+    要是你自己实测的结果跟它对不上，以你的为准。那是拿现实给它报 bug，也是唯一能让这个引擎改的东西。
   "Arcane (on status)": 赋能附加伤害
   "Arcane presets": 赋能预设
   "Arcane": 赋能
@@ -172,7 +172,7 @@ ui:
   "Every formula cites its source, and every golden test is calibrated against a real in-game run.":
     每一条公式都注明出处，每一个 golden test 都对着一次真实的游戏内实测校准。
   "Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.":
-    引擎里每一条公式都注明来源——wiki 页面、数据挖掘，或一次实测——每一个 golden test 都对着一次真实的游戏内运行校准。
+    引擎里每条公式都写明出处——wiki、数据挖掘，或者一次实测；每个 golden 测试都拿真实的游戏内跑测校准过。
   "Every hit, sorted": 每一次命中，分类
   "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted.": 主槽位全部装满，武器有几层进化就点几层，有几个赋能位就装几个。Exilus 一律不计。
   "Every shot is aimed and lands on the weak point of whatever it strikes directly. Nothing a chain, a blast or a cloud reaches can be a weak point hit.": 每一发都在瞄准状态下命中所直接击中目标的弱点。链接、爆炸和云雾波及到的一律不算弱点命中。
@@ -256,7 +256,7 @@ ui:
   "this build is already on the board ({row}) — nothing was sent": 这套配装已经在榜上了（{row}），所以没有上传。
   "It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.": 它本身就是榜上的一行，所以这里什么都改不了，跑出来的结果也不会提交。复制一份，全部就都能改了——mod、赋能、进化，还有形态——而且你跑出来的成绩会作为你自己的一行进榜。
   "It tells you what it cannot model, on the card where you are standing: on a weapon, an evolution, a mod, an arcane, an enemy. It lists those itself rather than waiting to be asked.":
-    它会在你正看着的那张卡上告诉你它算不准什么：武器上、进化词条上、MOD 上、赋能上、敌人上。这些是它自己列出来的，不用你来问。
+    算不准的地方，它就写在你正看着的那张卡上：武器、进化词条、MOD、赋能、敌人。不用你问，它自己列。
   "Its fire rate FALLS while the trigger is held — to 60% of the listed rate over 51 shots — and rebuilds the moment you stop firing. This is simulated; the sim holds the trigger until the magazine is dry.": 持续按住扳机时射速会下降——51 发之内降到标称射速的 60%，一停火就立刻回满。这条已经建模；模拟里是一直按到弹匣打空为止。
   "Its fire rate SPOOLS UP while the trigger is held — from 20% of the listed rate, full from the 6th shot. This is simulated, and it rebuilds after every reload.": 持续按住扳机时射速会往上爬——从标称射速的 20% 起步，到第 6发拉满。这条已经建模，每次换弹后重新爬。
   "Its fire rate SPOOLS UP while the trigger is held — from 20% of the listed rate, full from the 7th shot. This is simulated, and it rebuilds after every reload.": 持续按住扳机时射速会往上爬——从标称射速的 20% 起步，到第 7发拉满。这条已经建模，每次换弹后重新爬。
@@ -307,7 +307,7 @@ ui:
   "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
     没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。
   "There is no account system and no login, so nothing here is tied to a person. The only place a visit is counted is Cloudflare's own request log, which is what serves the page.":
-    没有账号系统，也不用登录，所以这里没有任何东西是绑在某个人身上的。一次访问唯一被记下的地方，是 Cloudflare 自己的请求日志——页面就是它发出去的。
+    没有账号，也不用登录，所以这里没有任何东西绑在某个人头上。你的访问只在一个地方留下记录——Cloudflare 自己的请求日志，页面本来就是它发的。
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。
   "Noise Reduction": 消音
   "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 mod 卡的是姿势。
@@ -356,7 +356,7 @@ ui:
   "Reloads": 装填次数
   Replay: 回放
   "Report a number that disagrees with your own in-game measurement. That is the one contribution nothing else can replace — every formula here is calibrated against a real run, and a discrepancy is a bug report on reality.":
-    报告一个和你自己游戏内实测对不上的数字。这是唯一无可替代的贡献——这里每一条公式都以真实实测校准，一处对不上就是一份来自现实的 bug 报告。
+    报一个跟你自己实测对不上的数字。这是唯一没法被替代的贡献——这里每条公式都拿实测校准过，对不上就是现实在给它报 bug。
   "Result": 结果
   "Ruinous Extension's reach — the page states the beam is 'extendable to 36 meters', and beam-range mods are shown on the card without being applied until a measurement settles the flat-versus-percent bracket (docs/UNMODELLED.md)": "「毁灭延伸」带来的射程——页面写明这道光束「可延长至 36 米」。光束射程类 MOD 会显示在卡片上但不会被施加，直到有一次实测确定它是固定值还是百分比那一档为止（见 docs/UNMODELLED.md）"
   "Run Optimizer": 运行优化
@@ -394,7 +394,7 @@ ui:
   "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
   "Skull Shots and Stinging Truth, the Viper-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Skull Shots」和「Stinging Truth」，Viper 家族的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
   "Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.":
-    有时候它会说：这个数字是对的，是游戏本身错了——并指明那个热修可能会拿掉的 bug。
+    有时候它会说：数字没错，是游戏错了——顺带指出那个下次热修可能就没了的 bug。
   "Sort": 排序
   "Spring-Loaded Broadhead and the bow-exclusive Thunderbolt are outside the pools this roster loads — Thunderbolt in particular turns every bolt into a grenade, which is a whole second damage source": "「Spring-Loaded Broadhead」以及弓专属的「Thunderbolt」都不在本武器库载入的卡池里 —— 尤其是「Thunderbolt」，它把每一发弩箭变成一颗手雷，那是一整个第二伤害来源"
   "Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt are outside the pools this roster loads": "「Spring-Loaded Broadhead」「Amalgam Daikyu Target Acquired」以及弓专属的「Thunderbolt」都不在本武器库载入的卡池里"
@@ -483,7 +483,7 @@ ui:
   "Where it goes": 钱花在哪
   "Where the damage went": 伤害落在哪里
   "Which means no Incarnon, for all but one weapon: eight of the nine Incarnon forms charge their gauge on weak-point hits, so at this rate they never fill it. The Torid charges on direct hits and still cycles.": 这也意味着除一把之外都进不了灵化：九个灵化形态里有八个靠弱点命中充能，在这个爆头率下永远填不满。托里德靠直接命中充能，照常循环。
-  "Why you can check it": 为什么你可以检验它
+  "Why you can check it": 为什么它经得起查
   "Zazvat-Kar, the Akstiletto Prime-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Zazvat-Kar」，Akstiletto Prime 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Zoom": 变焦
   "a MISSED shot drops the combo counter and this entry cannot miss — the only thing that misses here is SPREAD, and this one lands on the reticle, so nothing but its {seconds} s timer ever takes a stack off. A player who pulls the shot loses the combo and this sim never pulls one": 打空一枪会掉连击，而这把在这里打不空 —— 这里唯一会失手的是散布，而它弹着点就在准星上，所以除了 {seconds} 秒计时之外没有任何东西会拿走一层。手抖打偏的玩家会掉连击，而这个模拟不会手抖
@@ -1568,31 +1568,31 @@ ui:
   "checks on the page":
     "个页面检查"
   "Built in the open since {day} — {n} commits, every one of them public.":
-    "自 {day} 起全程公开开发，{n} 次提交，每一次都是公开的。"
+    "自 {day} 起一直公开开发，{n} 次提交，每一次都能查。"
   "It does not score an opening state. It runs the engagement — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.":
-    "它不是给一个初始状态打分。它把整场战斗跑完 —— 每一次爬坡、每一次换弹、每一个必须先挂上去才能吃到加成的异常状态 —— 然后告诉你这一场里到底发生了什么。"
+    "它不是拿一个初始状态去套公式。它把这一场从头打到尾——起转、换弹、那些得先挂上去才吃得到加成的异常——然后告诉你这一场到底打出了什么。"
   "You have run {n} simulations on this machine — {e} engagements. That number is in this browser and has never been sent anywhere.":
-    "你在这台机器上跑过 {n} 次模拟，合计 {e} 场战斗。这个数字存在你自己的浏览器里，从未被发送到任何地方。"
+    "你在这台机器上跑了 {n} 次模拟，一共 {e} 场战斗。这个数只存在你自己的浏览器里，没往任何地方发过。"
   "{n} answers out of this so far, and not one of them cost you anything.":
-    "到目前为止，你从这里拿走了 {n} 个答案，一个都没收过你的钱。"
+    "到现在为止，你从这儿拿走了 {n} 个答案，一分钱没收过。"
   "What it costs to run →":
     "它的运营成本 →"
   "Chip in":
     "投喂一下"
   "One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.":
-    "一杯咖啡就够了，它不是任何东西的缩水版——这里没有目标金额，也没有要填满的进度条。你可以只给一次，也可以按月。"
+    "一杯咖啡的钱就够，不用觉得少。这儿没有目标金额，也没有要填满的进度条。给一次就行，想按月也行。"
   "One-off, in USD, from $3. Card or PayPal, no account needed.":
-    "一次性，美元结算，$3 起。信用卡或 PayPal，不用注册账号。"
+    "一次性，美元，$3 起。信用卡或 PayPal，不用注册。"
   "Monthly, in USD, from $5. The channel where the work is discussed, and your reports read first.":
-    "按月，美元结算，$5 起。可以进讨论开发的频道，你的报告会被优先阅读。"
+    "按月，美元，$5 起。能进聊开发的频道，你的反馈会被先看到。"
   "One-off or monthly, in CNY, through Alipay or WeChat — no card, and no new account.":
-    "单次或包月，人民币结算，走支付宝或微信 —— 不用信用卡，也不用注册新账号。"
+    "单次或包月，人民币，支付宝或微信直接付——不用信用卡，也不用注册新号。"
   "One-off or monthly, in CNY, from inside Bilibili — no card, and no new account.":
-    "单次或包月，人民币结算，在 B 站里直接完成——不用信用卡，也不用注册新账号。"
+    "单次或包月，人民币，在 B 站里直接充——不用信用卡，也不用注册新号。"
   "Thank you":
     "感谢"
   "WFSim is free for everyone and always will be. These are the people who chipped in anyway, earliest and largest first — no tiers, no ranks, and no numbers beside a name.":
-    "WFSim 对所有人免费，以后也是。这些是仍然投喂了的人，最早和最多的排在前面——没有档位，没有名次，名字旁边不会有数字。"
+    "WFSim 对所有人免费，以后也一样。这些是还是投喂了的人，最早和最多的排前面——没有档位，没有名次，名字边上不会有数字。"
   "The people who have chipped in":
     "投喂过的人"
   "Everyone who has →":
@@ -1602,19 +1602,19 @@ ui:
   "How to chip in →":
     "怎么投喂 →"
   "What it never buys":
-    "它永远买不到什么"
+    "给了钱也买不到什么"
   "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it.":
-    "买不到一个数字。这里花的钱不会让任何结果动一位小数——能改变这个引擎的只有游戏内实测，而且不管是谁报上来的，实测都赢。"
+    "买不到一个数字。给多少钱，结果也不会动一位小数——能改这个引擎的只有实测，谁报的都一样，实测说了算。"
   "A feature. Building, simulating and optimizing stay the same for everyone, and the guarantor of that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own.":
-    "买不到一个功能。构建、模拟、优化对所有人都一样，而担保这件事的不是我：本项目采用 AGPL-3.0，引擎、游戏数据和 wasm 全部公开，你随时可以自己跑一份。"
+    "买不到一个功能。构建、模拟、优化对谁都一样，而且这事不是我说了算：项目是 AGPL-3.0，引擎、游戏数据、wasm 全部公开，你随时可以自己开一份跑。"
   "A monthly subscription buys order and company, never product: a channel where the work is discussed, and your reports read before the rest of the queue. Every fix still ships to everyone at once.":
-    "按月订阅买到的是顺序和陪伴，不是产品：一个讨论开发的频道，以及你的报告排在队列前面被读到。每一个修复仍然是同时发给所有人的。"
+    "按月订阅买到的是优先和参与感，不是功能：一个聊开发的频道，你的反馈会被先看到。修好了照样是所有人同时拿到。"
   "The wfsim.app domain, and its renewal — the one bill that arrives whether anybody visits or not.":
-    "wfsim.app 这个域名，以及它的续费 —— 这是唯一一笔不管有没有人来都要付的账。"
+    "wfsim.app 这个域名，还有每年的续费——不管有没有人来，这笔都得付。"
   "Serving this site costs nothing, and that is worth saying plainly: Cloudflare does not meter what it hands out, so the pages, the art and the board are free however many of you turn up. What is metered is the update channel behind the Windows client, billed by the byte every time a copy updates itself.":
-    "把这个网站发出去是不花钱的，这一点值得直说：Cloudflare 不对发出去的流量计费，所以页面、美术资源和榜单，来多少人都是免费的。真正按量计费的是 Windows 客户端背后的更新通道，每有一份客户端自我更新一次，就按字节付一次钱。"
+    "把站开着其实不花钱，这点得说清楚：Cloudflare 的静态流量不计费，所以页面、图片、榜单，来多少人都一样免费。真正按量收钱的是 Windows 客户端的更新通道，每更新一次就按流量付一次。"
   "Time, which is most of it: new weapons, new mechanics, and the hours in the game that every calibrated number is measured against.":
-    "时间，而且这是大头：新武器、新机制，以及每一个校准过的数字背后那些泡在游戏里的小时数。"
+    "时间，这才是大头：新武器、新机制，还有每个校准过的数字背后泡在游戏里的那些小时。"
   "WFSim for Windows": "WFSim Windows 桌面版"
   "The same calculator on your own machine — it opens instantly, works with no connection, and keeps itself up to date. It is not a cut-down version: the engine is the same wasm module this site serves.": "同一个计算器，跑在你自己的电脑上 —— 秒开、可离线、自动更新。它不是缩水版：引擎就是本站在用的同一个 wasm 模块。"
   "The first time you open it": "第一次打开"

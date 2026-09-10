@@ -294,12 +294,14 @@ ladder above the floor belongs to the channel — a second copy here would be a
 copy that goes stale and that no click can honour, since none of these
 platforms takes an amount in a link.
 
-SERVING THIS SITE COSTS NOTHING, and "Where it goes" says so. Cloudflare does
-not meter static assets, so the pages, the art and the board are free at any
-traffic this site sees; the metered path is the desktop update channel, billed
-per outbound byte. A page whose claim is that its figures are checkable may not
-be vague about the one figure that is about itself, and naming the zero is
-worth more than the sentence it replaces.
+"WHERE IT GOES" NAMES THE COSTS AND NEVER PRICES THEM. No amount is published
+for the domain, the update channel or the hours — a bill is the author's
+own finances, publishing one invites a total, and a total is the target this
+page refuses to have. What it may say is which item costs NOTHING: Cloudflare
+does not meter static assets, so the pages, the art and the board are free at
+any traffic this site sees, and the one metered path is the desktop update
+channel. Naming that zero is not a figure and it answers what a reader actually
+wonders about a free tool asking for money.
 
 A CHANNEL IS A JOB, AND THE PAYEE IS THE PROJECT. Ko-fi is the one-off,
 Patreon the month, and for a Chinese reader 爱发电 comes first — it settles in
