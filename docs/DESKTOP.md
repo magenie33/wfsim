@@ -247,10 +247,12 @@ answers it before.
 The URL is also the half that can be said out loud: a reader who saw this in a
 video types `wfsim.app/download`.
 
-The home hero carries **one line** pointing at it. That page is read by someone
-who has not yet seen the tool work, which is the worst moment to ask them to run
-an unsigned executable; the people who want the client are the ones already
-using the site.
+**The topbar's overflow menu is the only entry.** The home page offers no
+download at all — it is read by somebody who has not yet seen the tool work,
+which is the worst moment to ask them to run an unsigned executable, and the
+people who want the client are the ones already using the site and will go
+looking for it. Nothing reads the user agent outside /download, which is the
+surface that tells a Mac, Linux or phone reader it will not run there.
 
 **Windows only.** The release workflow can cut `WFSim.AppImage` too — a
 `workflow_dispatch` box, off by default, because `release` needs `build` and a

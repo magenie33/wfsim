@@ -20403,39 +20403,6 @@ function downloadFor(ua) {
   return DOWNLOADS.find((d) => d.detect(ua || "")) || false;
 }
 
-/// THE HOME HERO'S POINTER, one line. The offer is a page of questions — what
-/// SmartScreen does, why the program is unsigned, what updating costs — and
-/// the hero is read by someone who has not yet seen the tool work, which is the
-/// worst moment to ask them to run an unsigned executable.
-///
-/// A DESKTOP WE DO NOT BUILD FOR IS TOLD SO, rather than handed a link it
-/// cannot use. Warframe has no macOS client either, so that reader is rarely
-/// anyone — which is exactly why the case would go unnoticed.
-function renderDownloads() {
-  const host = document.getElementById("hero-dl");
-  if (!host) return;
-  // ALREADY RUNNING IT. A line inviting the reader to install what they are
-  // already inside reads as a page that does not know where it is — and the
-  // same index.html serves both, so the element is here either way. It is
-  // decided HERE, in the function that decides what the hero offers, rather
-  // than by whoever else happens to run in the client.
-  if (window.__WFSIM_DESKTOP__) {
-    host.hidden = true;
-    return;
-  }
-  const mine = downloadFor(navigator.userAgent);
-  if (mine === null) {
-    host.hidden = true;
-    return;
-  }
-  host.innerHTML = mine
-    ? `<a class="dl-line" href="/download">${escHtml(
-      trF("{os} app — opens instantly, works offline, updates itself", { os: mine.os }))}`
-      + ` <span class="dl-go">→</span></a>`
-    : `<span class="dl-why">${escHtml(tr("A desktop version is available for Windows."))}</span>`;
-  host.hidden = false;
-}
-
 /// The page at /download: the offer, above the questions the markup asks.
 function renderDownloadPage() {
   const host = document.getElementById("dl-offer");
@@ -20587,13 +20554,12 @@ init()
     window.__wfsimReady = true;
     const b = document.getElementById("booting");
     if (b) b.remove();
-    // THE DOWNLOAD OFFER IS FOR THE WEB. Inside the desktop app it would be an
-    // invitation to install what is already running, so that build draws
-    // nothing at all rather than drawing it and hiding it.
+    // THE DESKTOP BUILD IS THE ONLY ONE WITH ANYTHING TO MOUNT HERE. The web
+    // build's download entry is a static link in the topbar's overflow panel,
+    // so there is nothing for it to draw.
     try {
       if (window.__WFSIM_DESKTOP__) mountDesktopUpdater();
-      else renderDownloads();
-    } catch (_) { /* the app runs without either */ }
+    } catch (_) { /* the app runs without it */ }
   })
   .catch((e) => {
     // …unless the reason already put its own, better sentence on the page.

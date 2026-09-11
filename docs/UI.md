@@ -602,10 +602,14 @@ what SmartScreen does on first run, why the program is unsigned, what updating
 costs, what uninstalling means, where the source is. Its SmartScreen section
 is the OWNER'S OWN WORDING, transcribed from the notes file that ships beside
 the binary: the notes answer the warning after the download, the page answers
-it before. The home hero carries one LINE pointing at it — that page is read
-by someone who has not yet seen the tool work, which is the worst moment to
-ask them to run an unsigned executable, and the people who want the client are
-the ones already using the site. See `docs/DESKTOP.md`.
+it before. THE ONLY ENTRY IS THE TOPBAR'S OVERFLOW MENU, and no surface of the
+site offers a download anywhere else: the home page is read by somebody who has
+not yet seen the tool work, which is the worst moment to put an unsigned
+executable in front of them, and the people who want the client are the ones
+already using the site and will go looking. `check_downloads` asserts the home
+page offers nothing on every user agent it drives, and that /download is the
+one surface telling a Mac, Linux or phone reader it will not run there. See
+`docs/DESKTOP.md`.
 
 ## The page is three modules, plus editors
 

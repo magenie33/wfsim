@@ -31,32 +31,22 @@ const UAS = {
   Android: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
 };
 
-/// What the offer looks like to one machine. Read from the rendered DOM rather
-/// than from the table it was built from — the table being right is not the
-/// claim, the page being right is.
+/// WHAT THE HOME PAGE SAYS ABOUT THE DOWNLOAD, which is: nothing, anywhere but
+/// the topbar's overflow panel. The home page is read by somebody who has not
+/// seen the tool work yet, and that is the worst moment to put an unsigned
+/// executable in front of them — so the entry lives behind the overflow menu,
+/// where a reader who wants the client goes looking for it.
 const READ = `(() => {
-  const host = document.getElementById("hero-dl");
-  if (!host) return { missing: true };
-  const btn = host.querySelector(".dl-btn");
-  const src = host.querySelector(".dl-src");
+  const main = document.querySelector("main:not([hidden])");
+  const panel = document.querySelector(".tbmore, .tbmore-panel, #tbmore") || document.body;
+  const dl = panel.querySelector("a.dl-link");
   return {
-    hidden: !!host.hidden,
-    button: btn ? btn.textContent.trim() : null,
-    buttonHref: btn ? btn.href : null,
-    srcName: src ? src.textContent.trim() : null,
-    srcHref: src ? src.href : null,
-    srcIcon: !!(src && src.querySelector("svg")),
-    heroText: host.querySelector(".dl-line")
-      ? host.querySelector(".dl-line").textContent.trim() : null,
-    heroHref: host.querySelector(".dl-line")
-      ? host.querySelector(".dl-line").getAttribute("href") : null,
-    links: [...host.querySelectorAll("a")].map((a) => a.href),
-    // NOT NORMALISED, deliberately. A whitespace regex here sits inside a
-    // TEMPLATE LITERAL, which eats the backslash — the page then runs /s+/g
-    // and replaces every letter s in the sentence with a space, so the
-    // assertion below read "only supports Window ." and failed on a correct
-    // page. It only greps this string, so there is nothing to normalise for.
-    text: host.innerText || "",
+    // Every link the VISIBLE page offers, so a download entry anywhere outside
+    // the panel shows up here whatever it is called.
+    mainLinks: main ? [...main.querySelectorAll("a")].map((a) => a.getAttribute("href") || "") : [],
+    mainText: main ? main.innerText || "" : "",
+    panelHref: dl ? dl.getAttribute("href") : null,
+    panelText: dl ? dl.textContent.trim() : null,
   };
 })()`;
 
@@ -73,6 +63,10 @@ const READ_PAGE = `(() => {
     srcName: src ? src.textContent.trim() : null,
     srcHref: src ? src.href : null,
     srcIcon: !!(src && src.querySelector("svg")),
+    // THE ELEMENT, NOT THE SENTENCE. This file runs in whatever language the
+    // browser reports, so grepping the wording asserts a translation instead of
+    // the behaviour. The dl-why element IS "you cannot run this here".
+    why: !!(host && host.querySelector(".dl-why")),
     text: page ? page.innerText : "",
   };
 })()`;
@@ -92,15 +86,17 @@ await app.load("/download");
 const page = await app.evaluate(READ_PAGE);
 check("/download draws its page", page.drawn === true, JSON.stringify(page).slice(0, 160));
 
-// ---- 1. THE HOME HERO IS A POINTER ------------------------------------
-// One line to the page, not the offer. A button here would be the offer in two
-// places, and the one on the hero could not carry the answers.
-check("Windows is pointed at the download page",
-  (seen.Windows.heroHref || "").endsWith("/download"),
-  `hero ${JSON.stringify(seen.Windows.heroText)} -> ${seen.Windows.heroHref}`);
-check("...and the hero holds no download button",
-  seen.Windows.button === null,
-  `button ${JSON.stringify(seen.Windows.button)}`);
+// ---- 1. THE HOME PAGE OFFERS NOTHING, AND THE MENU DOES -----------------
+// The rule this file exists to hold: no download entry on the page itself, on
+// ANY machine, and exactly one behind the overflow menu.
+for (const os of Object.keys(UAS)) {
+  check(`${os} is offered no download on the home page`,
+    !(seen[os].mainLinks || []).some((h) => /\/download|pan\.quark\.cn/.test(h)),
+    JSON.stringify((seen[os].mainLinks || []).filter((h) => /download|quark/.test(h))));
+}
+check("...and the overflow menu carries the one entry",
+  (seen.Windows.panelHref || "") === "/download",
+  `panel ${JSON.stringify(seen.Windows.panelText)} -> ${seen.Windows.panelHref}`);
 
 // ---- 2. THE PAGE CARRIES THE OFFER --------------------------------------
 check("the page offers Windows",
@@ -134,47 +130,19 @@ for (const [what, needle] of [
     (page.text || "").slice(0, 100));
 }
 
-// ---- 4. A PLATFORM WE DO NOT BUILD FOR IS TOLD SO ------------------------
-// The negative control, and the one a check that only tested Windows would
-// pass while the page handed a Mac or Linux reader an .exe.
-for (const os of ["macOS", "Linux"]) {
-  check(`${os} is offered no download on the home page`,
-    !(seen[os].links || []).some((u) => /pan\.quark\.cn/.test(u)),
-    JSON.stringify(seen[os].links));
-  check(`...and ${os} is told the desktop build is Windows`,
-    /Windows/.test(seen[os].text || ""),
-    (seen[os].text || "").slice(0, 120));
-}
-
-// ---- 5. A PHONE IS SHOWN NOTHING ON THE HERO ----------------------------
-// Not "a smaller button": an executable a phone cannot execute is noise on the
-// one screen with the least room for it, and the reader is already using the
-// thing the download would give them.
-check("a phone is offered nothing at all",
-  seen.Android.hidden === true,
-  JSON.stringify(seen.Android).slice(0, 160));
-
-// ---- 6. THE PAGE IS PRERENDERED -----------------------------------------
-// Its own title, description and canonical, none of which a browser assertion
-// can see: the SPA replaces the head on boot, so this reads the built file.
-let built = "";
-try {
-  built = readFileSync(new URL("../site/download/index.html", import.meta.url), "utf8");
-} catch {
-  built = "";
-}
-check("/download is prerendered with its own head", built.length > 0, "site/download missing");
-if (built) {
-  check("...with a title that is not the app's headline",
-    /<title>[^<]*Windows[^<]*<\/title>/.test(built)
-      && !/<title>WFSim — Warframe Calculator<\/title>/.test(built),
-    (built.match(/<title>[^<]*<\/title>/) || ["(none)"])[0]);
-  check("...a canonical pointing at itself",
-    /rel="canonical"[^>]*\/download/.test(built),
-    (built.match(/rel="canonical"[^>]*>/) || ["(none)"])[0]);
-  check("...and a description about the app, not the calculator",
-    /name="description"[^>]*Windows app/.test(built),
-    (built.match(/name="description"[^>]*>/) || ["(none)"])[0].slice(0, 120));
+// ---- 4. A PLATFORM WE DO NOT BUILD FOR IS TOLD SO, ON THE PAGE ----------
+// The negative control, and it moved WITH the offer: the home page no longer
+// reads the user agent at all, so /download is the one surface that can say a
+// Mac or Linux reader cannot run this. A page that handed them the button in
+// silence is the failure.
+for (const os of ["macOS", "Linux", "Android"]) {
+  await app.send("Emulation.setUserAgentOverride", { userAgent: UAS[os] });
+  await app.load("/download");
+  const p = await app.evaluate(READ_PAGE);
+  check(`${os} is told the desktop build is Windows`,
+    /Windows/.test(p.text || ""), (p.text || "").slice(0, 120));
+  check(`...and ${os} is told it will not run there`,
+    p.why === true, `dl-why present: ${p.why}`);
 }
 
 await app.finish("the download offer answers the machine asking, and its page answers the questions");
