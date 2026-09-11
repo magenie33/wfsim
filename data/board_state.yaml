@@ -11,17 +11,17 @@
 # say how much it looked at.
 boards:
   group_clear:
-    submissions: 6631
-    listed: 3209
-    held: 7315
-    scored_at_epoch_seconds: 1789083023
+    submissions: 6632
+    listed: 3219
+    held: 7356
+    scored_at_epoch_seconds: 1789085865
   single_target:
-    submissions: 6631
-    listed: 5550
+    submissions: 6632
+    listed: 5552
     held: 6504
-    scored_at_epoch_seconds: 1789083024
+    scored_at_epoch_seconds: 1789085867
   single_target_demolisher:
-    submissions: 6631
-    listed: 2142
-    held: 4086
-    scored_at_epoch_seconds: 1789083025
+    submissions: 6632
+    listed: 2394
+    held: 4830
+    scored_at_epoch_seconds: 1789085868
