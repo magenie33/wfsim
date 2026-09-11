@@ -52,9 +52,9 @@ attack:
   shot_type: hit_scan
   fire_rate: 12.0
   multishot: 1.0
-  # ONE PER TICK, the weapon's own stat (wiki, Ammo Cost 1) over the beam
-  # family's usual 0.5, which the page qualifies "although not true for some
-  # continuous weapons". The reserve is infinite; the 80-round MAGAZINE is not,
+  # ONE PER TICK, MEASURED (MEASUREMENTS M18): the 80-round magazine lasts
+  # ≈6.7 s of held fire, not the ≈13.3 s the beam family's usual 0.5 would give.
+  # The wiki agrees (Ammo Cost 1). The reserve is infinite; the MAGAZINE is not,
   # so this sets how often it reloads.
   ammo_cost: 1
   crit_chance: 0.14

@@ -54,8 +54,15 @@ that moved every other beam's line to "Ammo consumption decreased from 1.0 to
 Prime reads 1 per tick, not the family's 0.5. A base weapon and its Prime may
 differ; these two do not.
 
+**Verglas Prime: MEASURED at 1 per tick** (owner, 2026-09-11). Bare weapon in
+the Simulacrum against a stationary target, timing held fire between the
+regular 1.6 s reload pauses. The two answers are a factor of two apart — the
+80-round magazine at 12 ticks/s lasts ≈6.7 s at 1 per tick and ≈13.3 s at 0.5 —
+and the run gave 1.
+
 **What settles it:** fire a full Larkspur Prime magazine on the ground and
 count the ticks — 100 rounds should give 200. Then one alt-fire shot and read
 the magazine: 100 → 90.
 
-**Result:** _not yet run._
+**Result:** the Larkspur Prime run is _not yet done_; the Verglas Prime one is,
+below.
