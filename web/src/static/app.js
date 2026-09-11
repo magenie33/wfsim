@@ -2809,8 +2809,12 @@ function rosterSize() {
 function boardCount(field) {
   const all = Object.values((BOARD_META && BOARD_META.boards) || {});
   if (!all.length) return 0;
+  // BOTH BRANCHES READ `field`, which is also what keeps the one spelling of
+  // `.submissions` in this file on the binding `check_release_identity` guards:
+  // that field must be read from the FETCHED stamp, never the copy compiled
+  // into the wasm, or the board dates itself by the build.
   return field === "submissions"
-    ? Math.max(...all.map((b) => b.submissions | 0))
+    ? Math.max(...all.map((b) => b[field] | 0))
     : all.reduce((t, b) => t + (b[field] | 0), 0);
 }
 
