@@ -47,6 +47,10 @@ on:
         description: "also enqueue the nightly sweep"
         type: boolean
         default: false
+      rescore:
+        description: "ask for EVERY row of one ruler again (a benchmark id)"
+        type: string
+        default: ""
 
 # ONE AT A TIME, AND THE RUNNING ONE WINS. Two of these would both read the same
 # inbox and derive the same builds — writing one row twice, which is harmless —
@@ -183,3 +187,58 @@ jobs:
             "$(wc -l < weapons.txt) weapon(s) nobody had measured in $STALE_DAYS days" \
             sweep.ndjson
           echo "::notice::sweep: $(grep -c . sweep.ndjson || echo 0) row(s) from $(wc -l < weapons.txt) weapon(s)"
+
+      # ---- …AND A RULER WHOSE MODEL MOVED --------------------------------
+      #
+      # A MEASUREMENT CORRECTS THE MODEL AND EVERY ROW UNDER IT IS OWED AGAIN,
+      # and nothing else asks for those. A stored score is reused because it
+      # EXISTS — no clock, no fingerprint, no binary in the key — and the
+      # nightly sweep only reaches what has gone STALE_DAYS unmeasured, which a
+      # row measured this week has not. This is the button docs/BOARD.md means
+      # by "what retires a fact is a person".
+      #
+      # ONE RULER, EVERY WEAPON. A model change is not a property of a weapon,
+      # so half a board re-measured is a ranking of two generations against each
+      # other — the same reason the sweep takes whole weapons.
+      #
+      # IT ONLY ADDS. The old numbers stay published until a new one replaces
+      # each row, so asking costs the board nothing while it is being paid; the
+      # hourly scorer spends it down like any other batch, and the batch is its
+      # own so a person can drop it — `DELETE FROM batches WHERE id = ?`.
+      - name: ask for every row of one ruler again
+        if: steps.wired.outputs.yes == 'true' && inputs.rescore != ''
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          # THE INPUT NEVER REACHES THE SHELL AS TEXT. A `workflow_dispatch`
+          # string interpolated into `run:` is executed by it; through the
+          # environment it is only ever a value.
+          RULER: ${{ inputs.rescore }}
+        run: |
+          set -euo pipefail
+          # AN ID, AND THEN A RULER THAT EXISTS. The pattern is what keeps this
+          # out of the filesystem, and the file is what keeps it a real board:
+          # the name becomes a path and a batch id below.
+          case "$RULER" in
+            *[!a-z0-9_]*|"") echo "::error::not a benchmark id: $RULER"; exit 1 ;;
+          esac
+          [ -f "data/benchmarks/$RULER.yaml" ] \
+            || { echo "::error::no such ruler: $RULER"; exit 1; }
+          CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
+            | jq -r '.d1_databases[0].database_id // empty')
+          export CF_D1_DATABASE
+          # EVERY WEAPON THE LIBRARY HOLDS, which is what makes `--queue-weapons`
+          # list a row that already has a fact — the one path in this tool that
+          # asks for something already measured.
+          jq -r '.[].weapon' library.json | sort -u > weapons.txt
+          ./target/release/wfsim-board "$RULER" \
+            --dry-run \
+            --facts-in facts-known.ndjson \
+            --queue-in queue.ndjson \
+            --queue-weapons weapons.txt \
+            --queue-missing rescore.ndjson \
+            < library.json > /dev/null
+          bash scripts/ship_queue.sh "rescore-$RULER-$(date -u +'%Y-%m-%d')" \
+            "every row of $RULER, asked again after a model change" \
+            rescore.ndjson
+          echo "::notice::rescore: $(grep -c . rescore.ndjson || echo 0) row(s) of $RULER from $(wc -l < weapons.txt) weapon(s)"
