@@ -1,0 +1,78 @@
+# Gaze, as a PRIMARY — one of the two forms of ONE weapon.
+#
+# see notes: kitgun_has_no_published
+#
+# see notes: why_separate_file_from
+#
+# A BEAM, and the grip trades REACH for damage rather than fire rate: "the Grip
+# chosen with the Gaze affects the range of the beam, and not the fire rate".
+# Its 3 m sphere at the beam's end is the BEAM's geometry (the entry's `beam:`
+# block), not an explosion — so no `blast:` here, the Ignis's shape exactly.
+id: gaze_primary
+name: Gaze
+chamber: gaze
+slot: primary
+
+# see notes: stats_are_chambers_own
+crit_chance: 0.25
+crit_multiplier: 2
+status_chance: 0.25
+multishot: 1
+accuracy: 100
+ammo_cost: 0.5
+ammo_max: 200
+ammo_pickup: 40
+trigger: "Held"
+shot_type: "Hit-Scan"
+# see notes: kitgun_disposition_source
+riven_disposition: 1.1
+silent: false
+spread:
+  min_deg: 0
+  max_deg: 0
+# see notes: de_s_own_compatibility
+tags: ["BEAM"]
+
+# see notes: damage_per_grip_published
+damage:
+  base: { radiation: 11 }
+  brash: { radiation: 29 }
+  palmaris: { radiation: 30 }
+  shrewd: { radiation: 31 }
+  steadyslam: { radiation: 35 }
+  tremor: { radiation: 37 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  brash: 12
+  palmaris: 12
+  shrewd: 12
+  steadyslam: 12
+  tremor: 12
+
+# THE GRIP SETS THE REACH ON A BEAM, published per grip beside the
+# damage: a grip that hits harder reaches less far.
+range_m:
+  brash: 30
+  palmaris: 28
+  shrewd: 26
+  steadyslam: 20
+  tremor: 16
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 113
+  high: 43
+  highest: 51
+  low: 31
+  lowest: 23
+  med: 37
+  megahighest: 85
+  superhighest: 49
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 50
+
+source:
+  url: https://wiki.warframe.com/w/Gaze
+  module: https://wiki.warframe.com/w/Module:Modular/data

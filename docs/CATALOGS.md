@@ -149,6 +149,24 @@ in yaml comments instead. That is how five of them came to be wrong.
 | Burston / Burston Prime | Incarnon Form Radial | 24% | Adding | derived: 13 + 42 = 55, 13/55 |
 
 
+### THE KITGUNS — a row names a chamber in ONE slot
+
+The catalog writes a Kitgun row as `Chamber (Slot) (Grip)`. The slot is the
+entry, and the grip is the assembly the row was measured on — not a scope,
+since no other grip has a row of its own.
+
+| row | attack | unmodded | relative | type | our entry |
+| --- | --- | --- | --- | --- | --- |
+| Catchmoon (Primary) (Tremor) | Normal Attack | 216 | 100% | Multiplying | `catchmoon_primary` → `independent` |
+| Catchmoon (Secondary) | Normal Attack | 256 | 100% | Multiplying | `catchmoon_secondary` → `independent` |
+| Sporelacer (Primary) (Tremor) | Normal Attack | 127 | 100% | Multiplying | `sporelacer_primary` → `independent`; 127 is Tremor's Impact, the projectile alone |
+| Sporelacer (Secondary) | Normal Attack | 90.5 | **57 / 63%** | Adding — *"Some reason CO-bonus uses 57 damage value for any configuration"* | **not expressible**: a fixed base no fraction can say; ordinary, and admitted on the weapon |
+| Sporelacer (Secondary) | Bomblet Impact | 9 | **57 / 633%** | Adding — *"CO-bonus uses parent projectile damage value"* | the bomblets are not fired |
+| Tombfinger (Primary) (Brash) | Normal Attack | 38 | 100% | Multiplying | `tombfinger_primary` → `independent` |
+| Tombfinger (Secondary) | Normal Attack | 18 | 100% | Multiplying | `tombfinger_secondary` → `independent` |
+
+Gaze, Rattleguts and Vermisplicer have no row, in either slot, and are ordinary.
+
 ### THE 2026-08-20 SWEEP — forty-four entries the catalog named and the roster contradicted
 
 **A method error, and it is the useful part of this entry.** Every weapon yaml
@@ -767,7 +785,7 @@ the additions are a tested **0%** ("Archguns cannot equip", the beam
 exclusion), which is a ROW and not an omission: saying so is the difference
 between "checked" and "nobody looked".
 
-103 rows.
+106 rows.
 
 | our entry | eff | base radius | max bonus | stacking | radius calc |
 | --- | --- | --- | --- | --- | --- |
@@ -803,6 +821,7 @@ between "checked" and "nobody looked".
 | `evensong` | 100% | 4 m | +320% | Multiplies | snapshot |
 | `ferrox` | 100% | 3.6 m | +288% | Adds | snapshot |
 | `ferrox_thrown` | 0% | 10 m | — | Doesn't Work | doesnt_work |
+| `gaze_primary` | 0% | 3 m | — | Doesn't Work | doesnt_work |
 | `glaxion_vandal` | 0% | 2 m | — | Doesn't Work | doesnt_work |
 | `gorgon_incarnon` | 100% | 5 m | +400% | Multiplies | snapshot |
 | `gorgon_wraith_incarnon` | 100% | 5 m | +400% | Multiplies | snapshot |
@@ -853,6 +872,7 @@ between "checked" and "nobody looked".
 | `secura_penta` | 100% | 6 m | +480% | Multiplies | snapshot |
 | `shedu` | 100% | 6.6 m | +528% | Multiplies | snapshot |
 | `simulor` | 100% | 5 m | +400% | Multiplies | snapshot |
+| `sporelacer_primary` | 100% | 2.1 m | +168% | Multiplies | snapshot |
 | `sporothrix` | 100% | 1.7 m | +136% | Multiplies | snapshot |
 | `stahlta_charged` | 0% | 7.2 m | — | Doesn't Work | doesnt_work |
 | `strun_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
@@ -864,6 +884,7 @@ between "checked" and "nobody looked".
 | `tenet_ferrox_thrown` | 0% | 10 m | — | Doesn't Work | doesnt_work |
 | `tenet_quanta_cube` | 100% | 0.5 m | +40% | Multiplies | snapshot |
 | `tenet_tetra_grenade` | 100% | 8 m | +640% | Multiplies | snapshot |
+| `tombfinger_primary` | 100% | 6.2 m | +496% | Multiplies | snapshot |
 | `tonkor` | 100% | 7 m | +560% | Multiplies | snapshot |
 | `torid` | 100% | 3 m | +240% | Multiplies | snapshot |
 | `torid_incarnon` | 0% | 2.3 m | — | Doesn't Work | doesnt_work |

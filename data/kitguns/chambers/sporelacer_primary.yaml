@@ -1,0 +1,95 @@
+# Sporelacer, as a PRIMARY — one of the two forms of ONE weapon.
+#
+# see notes: kitgun_has_no_published
+#
+# see notes: why_separate_file_from
+#
+# THE MODULE TAGS NO `AOE` AND THE CHAMBER EXPLODES. `Module:Weapons/data/modular`
+# lists an `Explosion` under the projectile, dealing Toxin where the projectile
+# deals Impact, and the page gives the radius — see `blast:` below.
+id: sporelacer_primary
+name: Sporelacer
+chamber: sporelacer
+slot: primary
+
+# see notes: stats_are_chambers_own
+crit_chance: 0.21
+crit_multiplier: 2
+status_chance: 0.21
+multishot: 1
+accuracy: 5.9
+ammo_cost: 1
+ammo_max: 60
+ammo_pickup: 15
+trigger: "Auto"
+shot_type: "Projectile"
+# see notes: kitgun_disposition_source
+riven_disposition: 1.15
+silent: false
+# "Linear Damage Falloff from 100% to ~7.8% from 8m to 16m" (page). DE's
+# `Reduction` is the fraction REMOVED; the module flags its own number as
+# unknown and the page's ~7.8% is the same one.
+falloff:
+  start_m: 8
+  end_m: 16
+  reduction: 0.922
+spread:
+  min_deg: 12
+  max_deg: 22
+# see notes: de_s_own_compatibility
+tags: ["MODULAR_GUN", "SEMI_AUTO"]
+
+# see notes: damage_per_grip_published
+damage:
+  base: { impact: 21, toxin: 69 }
+  brash: { impact: 21, toxin: 69 }
+  palmaris: { impact: 27, toxin: 75 }
+  shrewd: { impact: 33, toxin: 81 }
+  steadyslam: { impact: 86, toxin: 134 }
+  tremor: { impact: 127, toxin: 175 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  brash: 5.67
+  palmaris: 5.17
+  shrewd: 4.67
+  steadyslam: 3.33
+  tremor: 3
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 39
+  high: 11
+  highest: 13
+  low: 7
+  lowest: 5
+  med: 9
+  megahighest: 23
+  superhighest: 17
+
+# ================= THE EXPLOSION =================
+#
+# "Shots explode in a 2.1 meter radius on impact with a surface or enemy, and
+# bounce up to 2 times", with "Linear Damage Falloff from 100% to 80% from
+# central impact". The bounces are admitted on the entry, not modelled.
+blast:
+  # THE PAGE NAMES NO RADIUS MOD. Firestorm is a RIFLE card and this slot
+  # takes Shotgun mods, so nothing in its pool reaches the bucket.
+  radius_mods: []
+  self_stagger: true
+  forms:
+    base:
+      radius_m: 2.1
+      falloff_to: 0.80
+      # THE WHOLE TOXIN IS THE EXPLOSION: the module's `Normal Attack` deals
+      # Impact and its `Explosion` Toxin, and the CO catalog's Tremor row reads
+      # 127 for the Normal Attack — Tremor's Impact exactly.
+      splash_share_of: toxin
+      splash_share: 1.0
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 5
+
+source:
+  url: https://wiki.warframe.com/w/Sporelacer
+  module: https://wiki.warframe.com/w/Module:Modular/data

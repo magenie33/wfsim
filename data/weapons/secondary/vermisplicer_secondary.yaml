@@ -1,0 +1,79 @@
+# Vermisplicer, as a SECONDARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# FIVE TENDRILS: "Innate multishot of 5 tendrils", which is the module's own
+# `Multishot = 5`, with 1 m of innate punch through. The GRIP sets the reach
+# (12 m on Haymaker to 31 m on Gibber), composed into `beam.range_m`.
+id: vermisplicer_secondary
+name: Vermisplicer
+wiki_name: Vermisplicer
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: vermisplicer_secondary
+transform_group: vermisplicer_secondary
+
+# see notes: kitgun_disposition_source
+disposition: 1.15
+riven_family: Vermisplicer
+traits: [infested]
+
+polarities: []
+exilus_polarity: madurai
+introduced: "29.5"
+noise: alarming
+ammo_type: secondary
+ammo_max: 90
+ammo_pickup: 20
+# `Module:Weapons/data/modular`'s 5.4, which is 100 over the mean of its own
+# 0-37 degree cone; `Module:Modular/data` says 80 beside the same cone.
+accuracy: 5.4
+
+magazine: 51
+reload_seconds: 2.1
+
+# see notes: no_co_catalog_row
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 0
+    max_deg: 37
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 5.0
+  ammo_cost: 0.5
+  crit_chance: 0.25
+  crit_multiplier: 2
+  status_chance: 0.25
+  # "Has innate 1m Punch Through."
+  punch_through_m: 1.0
+  # NO CHAIN AND NO SPHERE: the tendrils latch rather than chain.
+  beam:
+    # The default grip's reach; an assembly replaces it with its own grip's.
+    range_m: 31
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+  damage: { impact: 1.5, puncture: 3.5, slash: 4.5, toxin: 4.5 }
+
+unmodeled:
+  - "the tendrils AIM THEMSELVES: 'three tendrils can latch onto different enemies and stay locked onto them', and 'some tendrils can frequently fail to lock anything leading to a variable loss of DPS'. All five land on the target here, which the page says is what 'staying at melee range of a target and directly aiming at it' forces"
+  - "an auto-targeted tendril 'will always aim at an enemy's center and will not headshot'; only one aimed above the enemy can"
+
+source:
+  url: https://wiki.warframe.com/w/Vermisplicer
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

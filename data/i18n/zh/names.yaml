@@ -552,6 +552,21 @@ weapons:
   trumna_prime: 灭杀者 Prime
   zarr: 沙皇
   zymos: 邪莫斯
+  # THE KITGUN CHAMBERS, off the CN wiki's own 组合枪 article (its chamber table
+  # links `[[Catchmoon|捕月]]` and so on). One chamber is one weapon and two
+  # entries, so both slots carry the one name; the Slot control says which.
+  catchmoon_primary: 捕月
+  catchmoon_secondary: 捕月
+  gaze_primary: 凝目
+  gaze_secondary: 凝目
+  rattleguts_primary: 响胆
+  rattleguts_secondary: 响胆
+  sporelacer_primary: 孢射
+  sporelacer_secondary: 孢射
+  tombfinger_primary: 墓指
+  tombfinger_secondary: 墓指
+  vermisplicer_primary: 虫置
+  vermisplicer_secondary: 虫置
 
 enemies:
   demolisher_devourer: 爆破型吞噬者

@@ -1041,6 +1041,12 @@ fn assembly_meta(id: &str) -> Value {
                 "damage": d.values().sum::<f64>(),
                 "fire_rate": c.fire_rate.get(&g.id).copied().unwrap_or(0.0),
                 "charge_seconds": c.charge_seconds.get(&g.id),
+                // ON A BEAM THE GRIP TRADES REACH, not fire rate (Gaze,
+                // Vermisplicer) — null where the reach is not the grip's.
+                "range_m": match &c.range_m {
+                    Some(kg::Reach::PerGrip(t)) => t.get(&g.id).copied(),
+                    _ => None,
+                },
             })))
             .collect::<serde_json::Map<String, Value>>(),
         "loaders": kg::loaders()

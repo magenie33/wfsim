@@ -652,6 +652,19 @@ notes:
   inherited_co_catalog_gives_4: |
     NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
     this weapon's is named. Absence means ORDINARY.
+  kitgun_disposition_source: |
+    RIVEN DISPOSITION is `Module:Weapons/data/modular`'s — the module behind the
+    chamber page's OWN infobox, one record per (chamber, slot). The wiki has two
+    other answers: `Module:Modular/data` (Tombfinger's secondary 0.7 against the
+    infobox's 0.85), and the Kitgun page's overview table, last edited in 39.1,
+    lower on four secondaries (Catchmoon 0.70, Gaze 0.95, Rattleguts 0.90,
+    Vermisplicer 1.10). The weapon's own page wins; a riven reading settles it.
+  kitgun_entry_is_default_assembly: |
+    A KITGUN HAS NO PUBLISHED STAT LINE, so the numbers in this entry are its
+    DEFAULT ASSEMBLY's (`kitguns_data::default_assembly`: the grip nearest the
+    chamber's own `base` preview, and the first loader that changes nothing) —
+    what a request naming no parts is fought with. A build that names parts gets
+    its own from `weapons_data::spec_assembled`, composed over these.
   kitgun_has_no_published: |
     A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
     and `engine::kitguns_data` composes them. This file is the CHAMBER's half —
@@ -802,6 +815,12 @@ notes:
     arcanes" (`Kitgun` §Kitgun Arcanes) — so filing this family under the weapon's
     own slot made the two compete for one seat and the reader pick between a Pax
     and a Merciless, which the game never asks.
+  pax_charge_recharge_rate: |
+    PAX CHARGE's RATE, rounds a second once the battery refills — per chamber
+    AND per slot, off that arcane's own table, and "**not** affected by mods or
+    abilities", so a constant rather than a bucket. The DELAY is not the
+    chamber's: "base recharge delay is equal to the reload time displayed on the
+    weapon", which is the LOADER's, shortened by reload speed like any reload.
   personal_shields_break_when: |
     Personal shields break when something SHOOTS YOU, and nothing does here
     (UNMODELLED.md §6). So this pays exactly zero in every fight this simulator

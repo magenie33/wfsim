@@ -1,0 +1,77 @@
+# Vermisplicer, as a SECONDARY — one of the two forms of ONE weapon.
+#
+# see notes: kitgun_has_no_published
+#
+# see notes: why_separate_file_from
+#
+# FIVE TENDRILS, which is the module's own `Multishot = 5`, in a 0-37 degree
+# cone. The grip trades REACH for damage: 12 m on Haymaker, 31 m on Gibber.
+id: vermisplicer_secondary
+name: Vermisplicer
+chamber: vermisplicer
+slot: secondary
+
+# see notes: stats_are_chambers_own
+crit_chance: 0.25
+crit_multiplier: 2
+status_chance: 0.25
+multishot: 5
+accuracy: 5.4
+ammo_cost: 0.5
+ammo_max: 90
+ammo_pickup: 20
+trigger: "Held"
+shot_type: "Hit-Scan"
+# see notes: kitgun_disposition_source
+riven_disposition: 1.15
+silent: false
+punch_through_m: 1
+spread:
+  min_deg: 0
+  max_deg: 37
+# see notes: de_s_own_compatibility
+tags: ["BEAM"]
+
+# see notes: damage_per_grip_published
+damage:
+  base: { impact: 1.5, puncture: 3.5, slash: 4.5, toxin: 4.5 }
+  gibber: { impact: 1.5, puncture: 3.5, slash: 4.5, toxin: 4.5 }
+  haymaker: { impact: 2.5, puncture: 4.5, slash: 5.5, toxin: 5.5 }
+  lovetap: { impact: 2.25, puncture: 4.25, slash: 5.25, toxin: 5.25 }
+  ramble: { impact: 1.75, puncture: 3.75, slash: 4.75, toxin: 4.75 }
+  ulnaris: { impact: 2, puncture: 4, slash: 5, toxin: 5 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  gibber: 12
+  haymaker: 12
+  lovetap: 12
+  ramble: 12
+  ulnaris: 12
+
+# THE GRIP SETS THE REACH ON A BEAM, published per grip beside the
+# damage: a grip that hits harder reaches less far.
+range_m:
+  gibber: 31
+  haymaker: 12
+  lovetap: 15
+  ramble: 28
+  ulnaris: 21
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 113
+  high: 43
+  highest: 51
+  low: 31
+  lowest: 23
+  med: 37
+  megahighest: 85
+  superhighest: 49
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 25
+
+source:
+  url: https://wiki.warframe.com/w/Vermisplicer
+  module: https://wiki.warframe.com/w/Module:Modular/data

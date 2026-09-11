@@ -455,3 +455,15 @@ checked:
   # "an accurate and powerful semi-auto chamber, with no damage falloff".
   tombfinger_secondary:        { range: null, type: read, note: 'no Range row in the modular module; Projectile with travel time, and the page states no falloff' }
   tombfinger_primary:          { range: null, type: read, note: 'no Range row in the modular module; Projectile with travel time, and the page states no falloff' }
+  # THE OTHER FIVE. A beam chamber's reach is PER GRIP in the module and on the
+  # page, and lives in the chamber record; the entry states its default grip's.
+  catchmoon_primary:           { range: 42.0, type: read, note: 'page: "Limited range of 42 meters"; module Range = 42' }
+  catchmoon_secondary:         { range: 20.0, type: read, note: 'page: "Limited range of 20 meters"; module Range = 20' }
+  gaze_primary:                { range: 30.0, type: read, note: 'per grip, 16 m (Tremor) to 30 m (Brash); the page lists all five and the module agrees' }
+  gaze_secondary:              { range: 30.0, type: read, note: 'per grip, 22 m (Haymaker) to 41 m (Gibber); the page lists all five and the module agrees' }
+  rattleguts_primary:          { range: null, type: read, note: 'no Range row in the modular module and none on the page; Hit-Scan' }
+  rattleguts_secondary:        { range: null, type: read, note: 'no Range row in the modular module and none on the page; Hit-Scan' }
+  sporelacer_primary:          { range: null, type: read, note: 'no Range row; its 2.1 m is the explosion RADIUS. Projectile at 50 m/s' }
+  sporelacer_secondary:        { range: null, type: read, note: 'no Range row; its 4.7 m is the explosion RADIUS. Projectile at 57 m/s' }
+  vermisplicer_primary:        { range: 30.0, type: read, note: 'per grip, 16 m (Tremor) to 30 m (Brash); its 6 m is the TENDRIL split, not a reach' }
+  vermisplicer_secondary:      { range: 31.0, type: read, note: 'per grip, 12 m (Haymaker) to 31 m (Gibber)' }

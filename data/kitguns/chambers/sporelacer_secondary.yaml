@@ -1,0 +1,89 @@
+# Sporelacer, as a SECONDARY — one of the two forms of ONE weapon.
+#
+# see notes: kitgun_has_no_published
+#
+# see notes: why_separate_file_from
+#
+# THE MODULE TAGS NO `AOE` AND THE CHAMBER EXPLODES, then bursts into three
+# bomblets — `Module:Weapons/data/modular` lists `Explosion`, `Bomblet Impact`
+# and `Bomblet Explosion` under the projectile, all Toxin. See `blast:` below.
+id: sporelacer_secondary
+name: Sporelacer
+chamber: sporelacer
+slot: secondary
+
+# see notes: stats_are_chambers_own
+crit_chance: 0.21
+crit_multiplier: 3
+status_chance: 0.21
+multishot: 1
+accuracy: 5.9
+ammo_cost: 1
+ammo_max: 130
+ammo_pickup: 20
+trigger: "Semi-Auto"
+shot_type: "Projectile"
+# see notes: kitgun_disposition_source
+riven_disposition: 0.6
+silent: false
+# NO FALLOFF STATED, deliberately. The page gives "100% to ?% from 13m to 26m",
+# the module's 0.9 carries its author's own "TODO: Unknown falloff reduction",
+# and `Module:Weapons/data/modular` gives 0 — three answers, none of them one.
+spread:
+  min_deg: 12
+  max_deg: 22
+# see notes: de_s_own_compatibility
+tags: ["MODULAR_GUN", "SEMI_AUTO"]
+
+# see notes: damage_per_grip_published
+damage:
+  base: { impact: 21, toxin: 69 }
+  gibber: { toxin: 103 }
+  haymaker: { impact: 261, toxin: 403 }
+  lovetap: { impact: 159, toxin: 301 }
+  ramble: { impact: 9, toxin: 151 }
+  ulnaris: { impact: 91, toxin: 233 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  gibber: 3.17
+  haymaker: 1.17
+  lovetap: 1.5
+  ramble: 2.5
+  ulnaris: 1.83
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 39
+  high: 11
+  highest: 13
+  low: 7
+  lowest: 5
+  med: 9
+  megahighest: 23
+  superhighest: 17
+
+# ================= THE EXPLOSION =================
+#
+# "Shots explode in a 4.7 meter radius on impact with a surface or enemy, then
+# split into 3 smaller bomblets", falloff "100% to 50% from central impact",
+# and it "Can benefit from Fulmination (Primed)".
+blast:
+  radius_mods: [fulmination]
+  self_stagger: true
+  forms:
+    base:
+      radius_m: 4.7
+      falloff_to: 0.50
+      # THE WHOLE TOXIN IS THE FIRST EXPLOSION. The module splits the types
+      # (Impact to the projectile, Toxin to every child) and publishes no share
+      # for the bomblets, so they are admitted on the entry rather than carved.
+      splash_share_of: toxin
+      splash_share: 1.0
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 25
+
+source:
+  url: https://wiki.warframe.com/w/Sporelacer
+  module: https://wiki.warframe.com/w/Module:Modular/data

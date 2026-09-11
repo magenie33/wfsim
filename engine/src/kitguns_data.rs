@@ -48,8 +48,12 @@ pub struct Chamber {
     pub shot_type: String,
     pub riven_disposition: f64,
     pub silent: bool,
+    /// HOW FAR IT REACHES — one number, or one PER GRIP on a beam chamber,
+    /// where the grip trades reach for damage instead of fire rate.
     #[serde(default)]
-    pub range_m: Option<f64>,
+    pub range_m: Option<Reach>,
+    /// Only where the MODULE states one. A roster entry whose page states a
+    /// different depth (Catchmoon's infinite body punch through) keeps its own.
     #[serde(default)]
     pub punch_through_m: Option<f64>,
     pub spread: Spread,
@@ -144,7 +148,14 @@ impl BlastForm {
                 }
                 let mut direct = shot.clone();
                 let whole = *direct.get(t)?;
-                direct.insert(t.clone(), whole * (1.0 - share));
+                // A WHOLE TYPE CARVED LEAVES NO ZERO BEHIND: Sporelacer's Toxin
+                // is all explosion, and a `toxin: 0` on the direct hit would be a
+                // type that competes for nothing and reads as a transcription slip.
+                if share < 1.0 {
+                    direct.insert(t.clone(), whole * (1.0 - share));
+                } else {
+                    direct.remove(t);
+                }
                 Some((BTreeMap::from([(t.clone(), whole * share)]), direct))
             }
             (None, None) => {
@@ -162,11 +173,42 @@ pub struct Spread {
     pub max_deg: f64,
 }
 
+/// A chamber's reach. PER GRIP on Gaze and Vermisplicer: *"the Grip chosen
+/// with the Gaze affects the range of the beam, and not the fire rate"*.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(untagged)]
+pub enum Reach {
+    Metres(f64),
+    PerGrip(BTreeMap<String, f64>),
+}
+
+impl Reach {
+    /// `None` for a grip a per-grip table does not price — a hole in the table,
+    /// which `assemble` refuses rather than filling.
+    pub fn for_grip(&self, grip_id: &str) -> Option<f64> {
+        match self {
+            Reach::Metres(m) => Some(*m),
+            Reach::PerGrip(t) => t.get(grip_id).copied(),
+        }
+    }
+}
+
+/// DE's own falloff, as the module states it. `reduction` is the fraction
+/// REMOVED at `end_m` — Catchmoon's 0.9416 is the page's *"100% to 5.84%"* — which
+/// is the opposite reading to `weapons_data::FalloffSpec::reduction`; [`Falloff::keep`]
+/// converts.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct Falloff {
     pub start_m: f64,
     pub end_m: f64,
     pub reduction: f64,
+}
+
+impl Falloff {
+    /// The fraction KEPT at `end_m`, which is what a roster entry states.
+    pub fn keep(&self) -> f64 {
+        1.0 - self.reduction
+    }
 }
 
 /// A grip. Its ONLY stat of its own is recoil: what it does to damage and fire
@@ -364,6 +406,7 @@ pub struct Assembled {
     pub trigger: String,
     pub shot_type: String,
     pub silent: bool,
+    /// This GRIP's reach, where the chamber prices one per grip.
     pub range_m: Option<f64>,
     pub punch_through_m: Option<f64>,
     pub spread: Spread,
@@ -478,7 +521,12 @@ pub fn assemble(a: &Assembly) -> Option<Assembled> {
         trigger: c.trigger.clone(),
         shot_type: c.shot_type.clone(),
         silent: c.silent,
-        range_m: c.range_m,
+        // A PER-GRIP REACH IS PRICED FOR EVERY GRIP or the assembly has no
+        // answer, exactly as a damage row missing a grip does.
+        range_m: match &c.range_m {
+            None => None,
+            Some(r) => Some(r.for_grip(&g.id)?),
+        },
         punch_through_m: c.punch_through_m,
         spread: c.spread,
         forced_procs: c.forced_procs.clone(),
@@ -514,7 +562,7 @@ mod tests {
     /// EVERY PART LOADS, AND THE TWO SLOTS ARE TWO LISTS.
     #[test]
     fn the_parts_load_and_the_slots_are_told_apart() {
-        assert_eq!(chambers().len(), 4, "two chambers, both slots");
+        assert_eq!(chambers().len(), 12, "six chambers, both slots");
         assert_eq!(grips().len(), 10, "five grips a slot");
         assert_eq!(loaders().len(), 20);
         let prim: Vec<&str> = grips().iter().filter(|g| g.slot == "primary")
@@ -582,7 +630,7 @@ mod tests {
         let s = chamber("catchmoon_secondary").unwrap();
         assert_eq!(p.chamber, s.chamber, "one weapon");
         assert_ne!(p.riven_disposition, s.riven_disposition,
-            "disposition is per SLOT — 1.05 against 0.5");
+            "disposition is per SLOT — 1.1 against 0.75");
         assert_ne!(p.accuracy, s.accuracy);
         assert_ne!(p.range_m, s.range_m);
         // …AND THE POOL KEY MOVES WITH IT, which is what the builder's lock and
@@ -612,7 +660,9 @@ mod tests {
         assert!(assemble(&Assembly { loader: "no_such_loader".into(), ..a.clone() }).is_none());
     }
 
-    /// EVERY ASSEMBLY COMPOSES — 2 chambers x 2 slots x 5 grips x 20 loaders.
+    /// EVERY ASSEMBLY COMPOSES — 6 chambers x 2 slots x 5 grips x 20 loaders,
+    /// which is the Kitgun page's own count: *"there are currently a total of
+    /// 1,200 possible Kitgun combinations available"*.
     ///
     /// The rule is exact, so there is no combination it may decline: a `None`
     /// here is a missing table entry, which is the one way this data can be
@@ -640,29 +690,82 @@ mod tests {
                         assert!(k.charge_seconds.is_some(),
                             "{} is a charge trigger and {} has no charge time", c.id, g.id);
                     }
+                    // A BEAM'S GRIP SETS ITS REACH, so a beam with no reach for
+                    // a grip is that grip's row missing.
+                    if c.tags.iter().any(|t| t == "BEAM") {
+                        assert!(k.range_m.is_some(), "{} + {}: a beam with no reach", c.id, g.id);
+                    }
                     n += 1;
                 }
             }
         }
-        assert_eq!(n, 400, "2 chambers x 2 slots x 5 grips x 20 loaders");
+        assert_eq!(n, 1200, "6 chambers x 2 slots x 5 grips x 20 loaders");
     }
     /// A chamber DE tags `AOE` explodes, and this file has to say how. The
     /// module publishes neither a radius nor a radial damage for any of them,
     /// so a transcription that reads the module alone produces a weapon with a
     /// silent hole in it — which is exactly what the first pass at Tombfinger
     /// did, and this is what stops the next one.
+    ///
+    /// ONE DIRECTION ONLY. Sporelacer explodes in both slots and carries no
+    /// `AOE` tag; `Module:Weapons/data/modular` lists its `Explosion` attack, so
+    /// the tag is a sufficient sign and not a necessary one.
     #[test]
     fn an_aoe_chamber_states_its_explosion() {
         for c in chambers() {
-            let tagged = c.tags.iter().any(|t| t == "AOE");
-            assert_eq!(
-                tagged,
-                c.blast.is_some(),
-                "{}: tagged AOE {tagged} but blast {}",
-                c.id,
-                c.blast.is_some()
-            );
+            if c.tags.iter().any(|t| t == "AOE") {
+                assert!(c.blast.is_some(), "{}: tagged AOE and states no explosion", c.id);
+            }
         }
+    }
+
+    /// THE GRIP SETS A BEAM'S REACH AND NOT ITS FIRE RATE, off each page's
+    /// own per-grip list — Gaze as a secondary: *"When paired with the Haymaker
+    /// grip, the range of the beam is 22 m"* … *"Gibber grip … 41 m"*.
+    #[test]
+    fn a_beam_chambers_grip_sets_its_reach() {
+        let a = |chamber: &str, grip: &str| {
+            assemble(&Assembly { chamber: chamber.into(), grip: grip.into(), loader: "bellows".into() })
+                .unwrap_or_else(|| panic!("{chamber} + {grip}"))
+        };
+        assert_eq!(a("gaze", "haymaker").range_m, Some(22.0));
+        assert_eq!(a("gaze", "gibber").range_m, Some(41.0));
+        assert_eq!(a("gaze", "tremor").range_m, Some(16.0));
+        assert_eq!(a("vermisplicer", "haymaker").range_m, Some(12.0));
+        assert_eq!(a("vermisplicer", "brash").range_m, Some(30.0));
+        // …AND THE FIRE RATE DOES NOT MOVE: twelve ticks a second on every grip.
+        for g in ["haymaker", "gibber"] {
+            assert_eq!(a("gaze", g).fire_rate, 12.0);
+        }
+        // A flat reach is the same on every grip.
+        assert_eq!(a("catchmoon", "tremor").range_m, Some(42.0));
+        assert_eq!(a("catchmoon", "gibber").range_m, Some(20.0));
+    }
+
+    /// A WHOLE TYPE CARVED: Sporelacer's Impact is the projectile and its Toxin
+    /// is the explosion, which is `Module:Weapons/data/modular`'s own split — its
+    /// `Normal Attack` deals Impact and its `Explosion` Toxin. On the Gibber grip
+    /// the secondary publishes no Impact at all, and the direct hit is EMPTY
+    /// rather than a zero.
+    #[test]
+    fn sporelacers_toxin_is_all_explosion() {
+        let b = assemble(&Assembly {
+            chamber: "sporelacer".into(),
+            grip: "tremor".into(),
+            loader: "bellows".into(),
+        })
+        .expect("tremor sporelacer");
+        let x = &b.blasts["base"];
+        assert_eq!(x.direct, BTreeMap::from([("impact".to_string(), 127.0)]));
+        assert_eq!(x.damage, BTreeMap::from([("toxin".to_string(), 175.0)]));
+        let g = assemble(&Assembly {
+            chamber: "sporelacer".into(),
+            grip: "gibber".into(),
+            loader: "bellows".into(),
+        })
+        .expect("gibber sporelacer");
+        assert!(g.blasts["base"].direct.is_empty(), "{:?}", g.blasts["base"].direct);
+        assert_eq!(g.blasts["base"].damage["toxin"], 103.0);
     }
 
     /// An explosion gets its damage in exactly ONE of two ways, and a form that

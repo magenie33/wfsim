@@ -1,0 +1,84 @@
+# Vermisplicer, as a PRIMARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# A TENDRIL THAT SPLITS: "Long-range proboscis attaches to a target and then
+# splits off to attack up to three more enemies." The GRIP sets the reach (30 m
+# on Brash to 16 m on Tremor), and `spec_assembled` composes it into
+# `beam.range_m`.
+id: vermisplicer_primary
+name: Vermisplicer
+wiki_name: Vermisplicer
+slot: primary
+class: rifle
+form: base
+default_form: true
+# "Uses Rifle mods" (wiki Vermisplicer §Primary, verbatim).
+mod_pools: [primary, rifle]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: vermisplicer_primary
+transform_group: vermisplicer_primary
+
+# see notes: kitgun_disposition_source
+disposition: 0.9
+riven_family: Vermisplicer
+traits: [infested]
+
+polarities: []
+exilus_polarity: madurai
+introduced: "29.5"
+noise: alarming
+ammo_type: primary
+ammo_max: 90
+ammo_pickup: 40
+accuracy: 80
+
+magazine: 51
+reload_seconds: 2.1
+
+# see notes: no_co_catalog_row
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 1
+    max_deg: 1.5
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.25
+  crit_multiplier: 2
+  status_chance: 0.25
+  punch_through_m: 0.0
+  # THE SPLIT. "Upon striking an enemy, the tendril chains up to 3 enemies
+  # within 6 meters of the main target. Each tendril does 70% of the main
+  # tendril's damage" — of the MAIN one, so it does not compound, the Kuva
+  # Nukor's shape. "Only 1 enemy hit by the primary beam will create the chain
+  # beams", so the beam's own target seeds it.
+  beam:
+    # The default grip's reach; an assembly replaces it with its own grip's.
+    range_m: 30
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 3
+      range_m: 6.0
+      damage_per_hop: 0.7
+      compounds: false
+      origin: beam_target
+  damage: { impact: 5, puncture: 6, slash: 10, toxin: 12 }
+
+unmodeled:
+  - "the three tendrils FAN OUT from the struck enemy ('within 6 meters of the main target'), where the chain here is a path whose every hop measures 6 m from the last. Against a tight group the two agree; a third enemy 6-12 m from the first is reached here and not in game"
+  - "with PUNCH THROUGH the chains come off 'the furthest target hit by the primary beam that can spawn the chain beams', and only one target spawns them; here every body the beam crosses seeds its own"
+  - "the tendril auto-targets, which leaves 'a noticeable delay between opening fire and actually dealing damage', ammo spent all the while"
+
+source:
+  url: https://wiki.warframe.com/w/Vermisplicer
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

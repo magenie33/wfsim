@@ -1,0 +1,86 @@
+# Catchmoon, as a PRIMARY — one chamber, two roster entries; data/kitguns/README.md
+# says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# AN ARCA PLASMOR IN A KITGUN: a wide energy projectile with infinite body punch
+# through, a hard range, a steep falloff and no head. As a primary it is fully
+# automatic with "significantly smaller projectiles".
+id: catchmoon_primary
+name: Catchmoon
+wiki_name: Catchmoon
+slot: primary
+class: shotgun
+form: base
+default_form: true
+# "Uses Shotgun mods" (wiki Catchmoon §Primary, verbatim); the module's Class is
+# Shotgun.
+mod_pools: [primary, shotgun]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: catchmoon_primary
+transform_group: catchmoon_primary
+
+# see notes: kitgun_disposition_source
+disposition: 1.1
+riven_family: Catchmoon
+
+polarities: []
+exilus_polarity: madurai
+introduced: "28"
+noise: alarming
+ammo_type: primary
+ammo_max: 70
+ammo_pickup: 15
+accuracy: 22.2
+
+magazine: 13
+reload_seconds: 2.1
+
+# A HEAD IS WORTH 1x: "no bonus damage on headshots" (wiki Catchmoon), which the
+# module encodes as `ExtraHeadshotDmg = -2`, the Arca Plasmor's spelling of it.
+headshot_multiplier: 1.0
+
+#   Catchmoon (Primary) (Tremor) | Normal Attack | Projectile | 216 | 216 | 100% | Multiplying
+# The grip in brackets is the assembly measured; the row names the chamber in
+# this slot.
+co_behavior: independent
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 3
+    max_deg: 6
+  trigger: auto
+  shot_type: projectile
+  fire_rate: 3
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 2
+  status_chance: 0.21
+  # "an energy projectile with Infinite Body Punch Through" (wiki Catchmoon).
+  # The module states no depth, which is why the chamber leaves this alone.
+  # see notes: infinite_body_punch_through
+  punch_through_m: infinite
+  # "Limited range of 42 meters."
+  range_m: 42
+  # "linear damage falloff from 100% to 5.84% from 20m to 40m" — the fraction
+  # KEPT; the module's 0.9416 is the fraction removed.
+  falloff:
+    start_m: 20
+    end_m: 40
+    reduction: 0.0584
+  # "a guaranteed Impact proc against enemies within 9 meters".
+  forced_procs: [impact]
+  damage: { heat: 126, impact: 90 }
+
+unmodeled:
+  - "the guaranteed Impact proc reaches only 9 metres (further with Projectile Speed mods) and is applied at every distance here, since a forced proc carries no range of its own"
+  - "the projectile is WIDE — the page likens it to the Arca Plasmor's — and this arena fires a ray, so with the infinite punch through above only the bodies on the line are struck"
+  - reason: projectile_must_be_led
+
+source:
+  url: https://wiki.warframe.com/w/Catchmoon
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

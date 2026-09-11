@@ -1,0 +1,79 @@
+# Catchmoon, as a SECONDARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# SEMI-AUTOMATIC AND WIDE: "As a secondary, it semi-automatically fires a wide
+# projectile" — the primary's infinite body punch through, over half the range
+# and half the falloff window.
+id: catchmoon_secondary
+name: Catchmoon
+wiki_name: Catchmoon
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: catchmoon_secondary
+transform_group: catchmoon_secondary
+
+# see notes: kitgun_disposition_source
+disposition: 0.75
+riven_family: Catchmoon
+
+polarities: []
+exilus_polarity: madurai
+introduced: "24"
+noise: alarming
+ammo_type: secondary
+ammo_max: 70
+ammo_pickup: 20
+accuracy: 5.9
+
+magazine: 13
+reload_seconds: 2.1
+
+# "no bonus damage on headshots" (wiki Catchmoon); `ExtraHeadshotDmg = -2`.
+headshot_multiplier: 1.0
+
+#   Catchmoon (Secondary) | Normal Attack | Projectile | 256 | 256 | 100% | Multiplying
+co_behavior: independent
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 12
+    max_deg: 22
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 1.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 2
+  status_chance: 0.21
+  # see notes: infinite_body_punch_through
+  punch_through_m: infinite
+  # "Limited range of 20 meters."
+  range_m: 20
+  # "linear damage falloff from 100% to 6.25% from 8m to 16m" — the fraction
+  # KEPT; the module's 0.9375 is the fraction removed.
+  falloff:
+    start_m: 8
+    end_m: 16
+    reduction: 0.0625
+  # "a guaranteed Impact proc against enemies within 9 meters".
+  forced_procs: [impact]
+  damage: { heat: 184, impact: 106 }
+
+unmodeled:
+  - "the guaranteed Impact proc reaches only 9 metres (further with Projectile Speed mods) and is applied at every distance here, since a forced proc carries no range of its own"
+  - "the projectile is WIDE — the page likens it to the Arca Plasmor's — and this arena fires a ray, so with the infinite punch through above only the bodies on the line are struck"
+  - reason: projectile_must_be_led
+
+source:
+  url: https://wiki.warframe.com/w/Catchmoon
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

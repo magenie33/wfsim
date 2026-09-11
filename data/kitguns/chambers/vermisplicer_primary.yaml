@@ -1,0 +1,76 @@
+# Vermisplicer, as a PRIMARY — one of the two forms of ONE weapon.
+#
+# see notes: kitgun_has_no_published
+#
+# see notes: why_separate_file_from
+#
+# A BEAM WHOSE TENDRIL SPLITS: three more enemies within 6 m of the one it
+# strikes, each at 70% of it. The grip trades REACH for damage, as on the Gaze.
+id: vermisplicer_primary
+name: Vermisplicer
+chamber: vermisplicer
+slot: primary
+
+# see notes: stats_are_chambers_own
+crit_chance: 0.25
+crit_multiplier: 2
+status_chance: 0.25
+multishot: 1
+accuracy: 80
+ammo_cost: 0.5
+ammo_max: 90
+ammo_pickup: 40
+trigger: "Held"
+shot_type: "Hit-Scan"
+# see notes: kitgun_disposition_source
+riven_disposition: 0.9
+silent: false
+spread:
+  min_deg: 1
+  max_deg: 1.5
+# see notes: de_s_own_compatibility
+tags: ["BEAM"]
+
+# see notes: damage_per_grip_published
+damage:
+  base: { impact: 5, puncture: 6, slash: 10, toxin: 12 }
+  brash: { impact: 5, puncture: 6, slash: 10, toxin: 12 }
+  palmaris: { impact: 5.3, puncture: 6.3, slash: 10.3, toxin: 12.3 }
+  shrewd: { impact: 5.5, puncture: 6.5, slash: 10.5, toxin: 12.5 }
+  steadyslam: { impact: 5, puncture: 6, slash: 10, toxin: 12 }
+  tremor: { impact: 6.5, puncture: 7.5, slash: 11.5, toxin: 13.5 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  brash: 12
+  palmaris: 12
+  shrewd: 12
+  steadyslam: 12
+  tremor: 12
+
+# THE GRIP SETS THE REACH ON A BEAM, published per grip beside the
+# damage: a grip that hits harder reaches less far.
+range_m:
+  brash: 30
+  palmaris: 28
+  shrewd: 26
+  steadyslam: 20
+  tremor: 16
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 113
+  high: 43
+  highest: 51
+  low: 31
+  lowest: 23
+  med: 37
+  megahighest: 85
+  superhighest: 49
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 50
+
+source:
+  url: https://wiki.warframe.com/w/Vermisplicer
+  module: https://wiki.warframe.com/w/Module:Modular/data

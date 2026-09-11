@@ -24,7 +24,8 @@ ammo_max: 70
 ammo_pickup: 15
 trigger: "Auto"
 shot_type: "Projectile"
-riven_disposition: 1.05
+# see notes: kitgun_disposition_source
+riven_disposition: 1.1
 silent: false
 range_m: 42
 spread:
@@ -65,6 +66,9 @@ magazine:
   med: 9
   megahighest: 23
   superhighest: 17
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 5
 
 source:
   url: https://wiki.warframe.com/w/Catchmoon

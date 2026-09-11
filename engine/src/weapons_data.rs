@@ -3443,7 +3443,21 @@ pub fn spec_assembled<'a>(
     out.attack.status_chance = built.status_chance;
     out.attack.multishot = built.multishot;
     out.attack.ammo_cost = built.ammo_cost;
-    out.attack.punch_through_m = built.punch_through_m.unwrap_or(0.0);
+    // ONLY WHERE THE MODULE STATES A DEPTH. Catchmoon's page states infinite
+    // body punch through and its module states none; a zero composed over the
+    // entry would erase the page's number with the module's silence.
+    if let Some(p) = built.punch_through_m {
+        out.attack.punch_through_m = p;
+    }
+    // THE GRIP'S REACH, where the chamber publishes one. A beam carries its
+    // reach in `beam:` (the radius and the chain read it too); anything else on
+    // the attack.
+    if let Some(r) = built.range_m {
+        match out.attack.beam.as_mut() {
+            Some(b) => b.range_m = r,
+            None => out.attack.range_m = Some(RangeSpec::Metres(r)),
+        }
+    }
     out.attack.spread = Some(SpreadSpec {
         min_deg: built.spread.min_deg,
         max_deg: built.spread.max_deg,
@@ -4657,6 +4671,21 @@ mod tests {
             ("corvas_prime", "independent", 1.0),
             ("corvas_prime_uncharged", "independent", 1.0),
             ("mandonel_uncharged", "independent", 1.0),
+            // THE KITGUNS. A row names a chamber IN ONE SLOT, and the grip in
+            // brackets is the assembly it was measured on, not a scope:
+            //   Catchmoon (Primary) (Tremor)  | Normal Attack | 216 | 216 | 100% | Multiplying
+            //   Catchmoon (Secondary)         | Normal Attack | 256 | 256 | 100% | Multiplying
+            //   Sporelacer (Primary) (Tremor) | Normal Attack | 127 | 127 | 100% | Multiplying
+            //   Tombfinger (Primary) (Brash)  | Normal Attack |  38 |  38 | 100% | Multiplying
+            //   Tombfinger (Secondary)        | Normal Attack |  18 |  18 | 100% | Multiplying
+            // The Sporelacer SECONDARY's row is `Adding` against a base of 57
+            // "for any configuration", which no fraction can say — it stays
+            // ordinary and its `unmodeled:` quotes the row.
+            ("catchmoon_primary", "independent", 1.0),
+            ("catchmoon_secondary", "independent", 1.0),
+            ("sporelacer_primary", "independent", 1.0),
+            ("tombfinger_primary", "independent", 1.0),
+            ("tombfinger_secondary", "independent", 1.0),
 
             // THE 2026-08-20 SWEEP, and the reason it found so many at once:
             // every one of these was filed ORDINARY because the check for a row
@@ -6976,6 +7005,7 @@ mod play_mode_tests {
             ("corinth_prime_airburst", 7.84),
             ("enkaus_alt", 0.0),
             ("evensong", 3.20),
+            ("gaze_primary", 0.0),
             ("grattler", 0.0),
             ("ignis", 0.0),
             ("ignis_wraith", 0.0),
@@ -7006,9 +7036,11 @@ mod play_mode_tests {
             ("proboscis_cernos", 5.60),
             ("secura_penta", 4.80),   // table prints +320%
             ("simulor", 4.00),
+            ("sporelacer_primary", 1.68),
             ("sporothrix", 1.36),
             ("stahlta_charged", 0.0),
             ("synoid_simulor", 4.00),
+            ("tombfinger_primary", 4.96),
             ("tonkor", 5.60),
             ("trumna", 1.28),
             ("trumna_prime", 1.28),
@@ -7844,59 +7876,44 @@ mod url_tests {
     /// qualifier is OURS rather than the page's ("Larkspur Prime (Atmosphere)"
     /// is one wiki page with two stat columns and we ship the ground one).
     ///
-    /// TWO ENTRIES ON ONE SLUG IS SILENT DATA LOSS both ways: the route
-    /// resolves to whichever the lookup finds first, and one prerendered
-    /// `index.html` overwrites the other's.
-    ///
-    /// TOMBFINGER IS THE FIRST OF A KIND: a kitgun chamber is TWO roster
-    /// entries because the SLOT is the weapon, and the wiki gives a chamber ONE
-    /// page — so the next dual-slot kitgun collides the same way.
-    ///
-    /// SO IT IS A RATCHET RATHER THAN A FLAT ASSERTION, since the fix is a URL
-    /// DECISION that changes what an already posted link means.
-    /// `KNOWN_URL_CLASHES` MAY ONLY SHRINK, the way `naming::FROZEN` may. The
-    /// non-breaking shape of that fix is an OBSERVATION: `check_pages` reports
-    /// the loser as `tombfinger_secondary WRONG WEAPON tombfinger_primary`, so
-    /// the bare slug already means the PRIMARY and the qualifier belongs on the
-    /// SECONDARY.
-    const KNOWN_URL_CLASHES: &[&str] = &[
-        // The kitgun chamber built into both Gunsmith slots. One wiki page,
-        // two roster entries, and `/weapons/Tombfinger` can only be one.
-        "/weapons/Tombfinger <- tombfinger_primary, tombfinger_secondary",
-    ];
-
+    /// TWO ENTRIES ON ONE SLUG IS A NAMING SLIP — with ONE exception, and it
+    /// is a rule rather than a list: a Kitgun chamber is two roster entries
+    /// (the slot is the weapon) and one wiki page. The site gives the lower id
+    /// the wiki name and the other its id (`url_slug` in build_site_app.py,
+    /// `urlSlug` in app.js), and `check_every_weapon_has_a_url` holds that. Any
+    /// other pair on one slug fails here.
     #[test]
     fn no_two_weapons_want_the_same_url() {
         use std::collections::BTreeMap;
-        let mut by_slug: BTreeMap<String, Vec<&str>> = BTreeMap::new();
+        let mut by_slug: BTreeMap<String, Vec<&super::WeaponSpec>> = BTreeMap::new();
         for w in super::roster() {
             let slug = w.name.split(" (").next().unwrap_or(&w.name).replace(' ', "_");
-            by_slug.entry(slug).or_default().push(&w.id);
+            by_slug.entry(slug).or_default().push(w);
         }
+        let chamber = |w: &super::WeaponSpec| {
+            let r = w.kitgun.as_deref()?;
+            crate::kitguns_data::chamber(r).map(|c| c.chamber.as_str())
+        };
         let clashes: Vec<String> = by_slug
             .iter()
-            .filter(|(_, ids)| ids.len() > 1)
-            .map(|(slug, ids)| format!("/weapons/{slug} <- {}", ids.join(", ")))
+            .filter(|(_, ws)| ws.len() > 1)
+            .filter(|(_, ws)| {
+                let first = chamber(ws[0]);
+                first.is_none() || ws.iter().any(|w| chamber(w) != first)
+            })
+            .map(|(slug, ws)| {
+                let ids: Vec<&str> = ws.iter().map(|w| w.id.as_str()).collect();
+                format!("/weapons/{slug} <- {}", ids.join(", "))
+            })
             .collect();
-        let fresh: Vec<&String> =
-            clashes.iter().filter(|c| !KNOWN_URL_CLASHES.contains(&c.as_str())).collect();
         assert!(
-            fresh.is_empty(),
-            "two roster entries want one URL, so one of them is unreachable \
-             and its prerendered page is overwritten:\n{}",
-            fresh.iter().map(|c| c.as_str()).collect::<Vec<_>>().join("\n")
+            clashes.is_empty(),
+            "two roster entries that are not one Kitgun chamber want one URL:\n{}",
+            clashes.join("\n")
         );
-        // AND THE LIST MAY ONLY SHRINK. A fixed collision left written down
-        // here would silently re-admit the next one that spells itself the
-        // same way, which is the exact failure this exists to end.
-        let stale: Vec<&&str> =
-            KNOWN_URL_CLASHES.iter().filter(|k| !clashes.iter().any(|c| c == *k)).collect();
-        assert!(
-            stale.is_empty(),
-            "these URL collisions are FIXED — delete them from \
-             KNOWN_URL_CLASHES:\n{}",
-            stale.iter().map(|s| **s).collect::<Vec<_>>().join("\n")
-        );
+        // …AND THE EXCEPTION IS USED: every chamber is two entries on one slug.
+        let shared = by_slug.values().filter(|ws| ws.len() == 2 && chamber(ws[0]).is_some()).count();
+        assert_eq!(shared, 6, "six chambers, each one page for its two slots");
     }
 }
 
@@ -8032,7 +8049,91 @@ mod modular_tests {
                     b.forms.keys().collect::<Vec<_>>()
                 );
             }
+            // THE FACTS BOTH FILES STATE, which `spec_assembled` composes none
+            // of — so a disagreement here is a weapon that fights with the
+            // entry's number while the parts file says another.
+            let trigger = match c.trigger.as_str() {
+                "Semi-Auto" => "semi_auto",
+                "Auto" => "auto",
+                "Held" => "held",
+                "Charge" => "charge",
+                t => panic!("{}: chamber trigger {t:?}", c.id),
+            };
+            assert_eq!(s.attack.trigger, trigger, "{}: trigger", s.id);
+            assert_eq!(s.disposition, Some(c.riven_disposition), "{}: disposition", s.id);
+            assert_eq!(s.ammo_max, Some(c.ammo_max), "{}: ammo_max", s.id);
+            assert_eq!(s.accuracy, Some(c.accuracy), "{}: accuracy", s.id);
+            // A BEAM CHAMBER IS A BEAM ENTRY: the reach it prices per grip has
+            // nowhere to land on an entry without a `beam:` block.
+            assert_eq!(
+                c.tags.iter().any(|t| t == "BEAM"),
+                s.attack.beam.is_some(),
+                "{}: beam block",
+                s.id
+            );
+            // THE FALLOFF, in two spellings — the module's REMOVED fraction and
+            // the entry's KEPT one — and a slip between them is silent.
+            match (&c.falloff, &s.attack.falloff) {
+                (None, None) => {}
+                (Some(k), Some(e)) => {
+                    assert_eq!((k.start_m, k.end_m), (e.start_m, e.end_m), "{}: falloff window", s.id);
+                    assert!((k.keep() - e.reduction).abs() < 1e-9,
+                        "{}: the chamber keeps {} and the entry {}", s.id, k.keep(), e.reduction);
+                }
+                (k, e) => panic!("{}: chamber falloff {k:?}, entry falloff {e:?}", s.id),
+            }
+            if let Some(p) = c.punch_through_m {
+                assert_eq!(s.attack.punch_through_m, p, "{}: punch through", s.id);
+            }
+            for p in &c.forced_procs {
+                assert!(s.attack.forced_procs.contains(p), "{}: the module forces {p}", s.id);
+            }
         }
+    }
+
+    /// EVERY GRIP OF EVERY MODULAR ENTRY BUILDS AND FIRES. `every_entry_builds_
+    /// and_fires` reaches only the DEFAULT assembly; a grip whose row is the odd
+    /// one — Sporelacer's Gibber publishes no Impact, so its direct hit is empty —
+    /// is exactly the panel nobody built until a player picked it.
+    #[test]
+    fn every_grip_of_every_modular_entry_builds_and_fires() {
+        use crate::kitguns_data::Assembly;
+        let arena = crate::arena::Arena::training(3.0);
+        let mut ran = 0;
+        for s in super::all().iter().filter(|s| s.kitgun.is_some()) {
+            let c = crate::kitguns_data::chamber(s.kitgun.as_deref().unwrap()).unwrap();
+            for g in crate::kitguns_data::grips().iter().filter(|g| g.slot == c.slot) {
+                let a = Assembly { chamber: c.chamber.clone(), grip: g.id.clone(), loader: "bellows".into() };
+                let base = crate::loadout::WeaponBase::from_data_assembled(&s.id, false, &[], Some(&a));
+                let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+                let p = crate::dummy::DummyParams::from_panel(
+                    &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+                let r = crate::dummy::monte_carlo(&p, 2, 3);
+                assert!(r.mean_damage > 0.0, "{} on {}: fires nothing", s.id, g.id);
+                ran += 1;
+            }
+        }
+        assert_eq!(ran, 60, "twelve entries, five grips each");
+    }
+
+    /// A BEAM'S GRIP REACHES THE PANEL as the beam's range — Gaze, secondary,
+    /// on Haymaker is 22 m and on Gibber 41 m, whatever the entry's preview says.
+    #[test]
+    fn a_beam_kitguns_reach_is_its_grips() {
+        use crate::kitguns_data::Assembly;
+        let reach = |grip: &str| {
+            let a = Assembly { chamber: "gaze".into(), grip: grip.into(), loader: "bellows".into() };
+            let s = spec_assembled(spec("gaze_secondary").unwrap(), Some(&a)).expect("composes");
+            s.attack.beam.as_ref().expect("a beam").range_m
+        };
+        assert_eq!(reach("haymaker"), 22.0);
+        assert_eq!(reach("gibber"), 41.0);
+        // A FLAT REACH LANDS ON THE ATTACK: Catchmoon's 42 m wall.
+        let a = Assembly { chamber: "catchmoon".into(), grip: "brash".into(), loader: "bellows".into() };
+        let s = spec_assembled(spec("catchmoon_primary").unwrap(), Some(&a)).expect("composes");
+        assert_eq!(s.attack.range_m.as_ref().map(super::RangeSpec::metres), Some(42.0));
+        // …AND THE PAGE'S INFINITE PUNCH THROUGH SURVIVES a module that states none.
+        assert_eq!(s.attack.punch_through_m, crate::space::INFINITE_BODY_PUNCH_THROUGH_M);
     }
     /// PAX CHARGE REMOVES THE RELOAD, and this is that end to end: the arcane
     /// grants nothing but a reload-speed bonus and a flag, the CHAMBER states
@@ -8064,8 +8165,11 @@ mod modular_tests {
                 "{w} is offered a Kitgun arcane"
             );
         }
-        // All eight, on both entries, in the Kitgun seat and nowhere else.
-        for w in ["tombfinger_primary", "tombfinger_secondary"] {
+        // All eight, on every modular entry, in the Kitgun seat and nowhere else.
+        let modular: Vec<&str> =
+            super::all().iter().filter(|s| s.kitgun.is_some()).map(|s| s.id.as_str()).collect();
+        assert_eq!(modular.len(), 12, "six chambers, two slots each");
+        for w in modular {
             let kit = crate::arcanes_data::pool_for_weapon(w, "kitgun");
             assert_eq!(kit.len(), 8, "{w}: the four Pax and four Residual arcanes");
             let own = crate::weapons_data::arcane_pools(w);

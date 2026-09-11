@@ -1,0 +1,60 @@
+# Rattleguts, as a SECONDARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# Hit-scan and fully automatic. The Impact share is the grip's choice more than
+# anything's: "roughly 16% of the total base damage with the Haymaker Grip, to
+# having none whatsoever with the Gibber Grip".
+id: rattleguts_secondary
+name: Rattleguts
+wiki_name: Rattleguts
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: rattleguts_secondary
+transform_group: rattleguts_secondary
+
+# see notes: kitgun_disposition_source
+disposition: 1.0
+riven_family: Rattleguts
+
+polarities: []
+exilus_polarity: madurai
+introduced: "24"
+noise: alarming
+ammo_type: secondary
+ammo_max: 700
+ammo_pickup: 40
+accuracy: 20
+
+magazine: 83
+reload_seconds: 2.1
+
+# see notes: no_co_catalog_row
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 4
+    max_deg: 6
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 8.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.19
+  crit_multiplier: 2
+  status_chance: 0.19
+  punch_through_m: 0.0
+  damage: { impact: 0.5, puncture: 8.5, radiation: 11.5, slash: 6.5 }
+
+source:
+  url: https://wiki.warframe.com/w/Rattleguts
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

@@ -1,0 +1,75 @@
+# Gaze, as a SECONDARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# A BEAM THAT CHAINS where the primary splashes, with 1 m of innate punch
+# through. The GRIP sets the reach (22 m on Haymaker to 41 m on Gibber), and
+# `spec_assembled` composes it into `beam.range_m`.
+id: gaze_secondary
+name: Gaze
+wiki_name: Gaze
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: gaze_secondary
+transform_group: gaze_secondary
+
+# see notes: kitgun_disposition_source
+disposition: 1.0
+riven_family: Gaze
+
+polarities: []
+exilus_polarity: madurai
+introduced: "24"
+noise: alarming
+ammo_type: secondary
+ammo_max: 200
+ammo_pickup: 20
+accuracy: 100
+
+magazine: 51
+reload_seconds: 2.1
+
+# see notes: no_co_catalog_row
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 0
+    max_deg: 0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.25
+  crit_multiplier: 2
+  status_chance: 0.25
+  # "Has innate 1m Punch Through."
+  punch_through_m: 1.0
+  # THE CHAIN. "The beam will chain to the closest living enemy with 5m on
+  # contact with an enemy. From there it will chain again, up to a maximum of 2
+  # chains in total. A chain will do 0.2^n times the main beams damage" — the
+  # COMPOUNDING shape, the Atomos's wording with a steeper base. No sphere.
+  beam:
+    # The default grip's reach; an assembly replaces it with its own grip's.
+    range_m: 30
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 2
+      range_m: 5.0
+      damage_per_hop: 0.2
+      origin: radius_targets
+  damage: { puncture: 7, radiation: 11 }
+
+source:
+  url: https://wiki.warframe.com/w/Gaze
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

@@ -1,0 +1,78 @@
+# Gaze, as a SECONDARY — one of the two forms of ONE weapon.
+#
+# see notes: kitgun_has_no_published
+#
+# see notes: why_separate_file_from
+#
+# A BEAM THAT CHAINS where the primary splashes, and the damage TYPE differs
+# too: Puncture and Radiation here, Radiation alone there. The grip trades
+# REACH for damage, 22 m on Haymaker to 41 m on Gibber.
+id: gaze_secondary
+name: Gaze
+chamber: gaze
+slot: secondary
+
+# see notes: stats_are_chambers_own
+crit_chance: 0.25
+crit_multiplier: 2
+status_chance: 0.25
+multishot: 1
+accuracy: 100
+ammo_cost: 0.5
+ammo_max: 200
+ammo_pickup: 20
+trigger: "Held"
+shot_type: "Hit-Scan"
+# see notes: kitgun_disposition_source
+riven_disposition: 1
+silent: false
+punch_through_m: 1
+spread:
+  min_deg: 0
+  max_deg: 0
+# see notes: de_s_own_compatibility
+tags: ["BEAM"]
+
+# see notes: damage_per_grip_published
+damage:
+  base: { puncture: 7, radiation: 11 }
+  gibber: { puncture: 6, radiation: 10 }
+  haymaker: { puncture: 8, radiation: 12 }
+  lovetap: { puncture: 7.5, radiation: 11.5 }
+  ramble: { puncture: 6.5, radiation: 10.5 }
+  ulnaris: { puncture: 7, radiation: 11 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  gibber: 12
+  haymaker: 12
+  lovetap: 12
+  ramble: 12
+  ulnaris: 12
+
+# THE GRIP SETS THE REACH ON A BEAM, published per grip beside the
+# damage: a grip that hits harder reaches less far.
+range_m:
+  gibber: 41
+  haymaker: 22
+  lovetap: 25
+  ramble: 38
+  ulnaris: 30
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 113
+  high: 43
+  highest: 51
+  low: 31
+  lowest: 23
+  med: 37
+  megahighest: 85
+  superhighest: 49
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 50
+
+source:
+  url: https://wiki.warframe.com/w/Gaze
+  module: https://wiki.warframe.com/w/Module:Modular/data

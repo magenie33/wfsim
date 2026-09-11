@@ -1,0 +1,68 @@
+# Rattleguts, as a SECONDARY — one of the two forms of ONE weapon.
+#
+# see notes: kitgun_has_no_published
+#
+# see notes: why_separate_file_from
+#
+# Hit-scan and fully automatic. The Impact share is the grip's most of all: the
+# page puts it at "roughly 16% of the total base damage with the Haymaker Grip,
+# to having none whatsoever with the Gibber Grip" — the zero below is DE's.
+id: rattleguts_secondary
+name: Rattleguts
+chamber: rattleguts
+slot: secondary
+
+# see notes: stats_are_chambers_own
+crit_chance: 0.19
+crit_multiplier: 2
+status_chance: 0.19
+multishot: 1
+accuracy: 20
+ammo_cost: 1
+ammo_max: 700
+ammo_pickup: 40
+trigger: "Auto"
+shot_type: "Hit-Scan"
+# see notes: kitgun_disposition_source
+riven_disposition: 1
+silent: false
+spread:
+  min_deg: 4
+  max_deg: 6
+# The module states NO compatibility tags for this chamber.
+tags: []
+
+# see notes: damage_per_grip_published
+damage:
+  base: { impact: 2, puncture: 10, radiation: 13, slash: 8 }
+  gibber: { impact: 0, puncture: 7, radiation: 10, slash: 5 }
+  haymaker: { impact: 11.5, puncture: 19.5, radiation: 22.5, slash: 17.5 }
+  lovetap: { impact: 6.75, puncture: 14.75, radiation: 17.75, slash: 12.75 }
+  ramble: { impact: 0.5, puncture: 8.5, radiation: 11.5, slash: 6.5 }
+  ulnaris: { impact: 3.5, puncture: 11.5, radiation: 14.5, slash: 9.5 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  gibber: 11
+  haymaker: 3.67
+  lovetap: 5.17
+  ramble: 8.83
+  ulnaris: 6.67
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 153
+  high: 64
+  highest: 83
+  low: 45
+  lowest: 29
+  med: 57
+  megahighest: 111
+  superhighest: 75
+
+# see notes: pax_charge_recharge_rate
+recharge_per_second: 50
+
+source:
+  url: https://wiki.warframe.com/w/Rattleguts
+  module: https://wiki.warframe.com/w/Module:Modular/data

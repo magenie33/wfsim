@@ -61,6 +61,7 @@ damage        = chamber.damage[grip]              # published per grip
 fire_rate     = chamber.fire_rate[grip]           # published per grip
 charge_seconds= chamber.charge_seconds[grip]      # a charged chamber only
 magazine      = chamber.magazine[loader.magazine] # size class -> a number
+range_m       = chamber.range_m[grip]             # a beam chamber only
 crit_chance   = chamber.crit_chance     + loader.crit_chance
 crit_multiplier = chamber.crit_multiplier + loader.crit_multiplier
 status_chance = chamber.status_chance   + loader.status_chance
@@ -72,11 +73,25 @@ everything else is the chamber's
 The three deltas are ADDITIVE and can be negative: Flutterfire is −8% crit
 chance and +14% status. Nothing is a percentage of anything.
 
-## WHAT IS HERE, AND WHAT IS NOT
+ON A BEAM THE GRIP TRADES REACH, not fire rate: Gaze and Vermisplicer tick 12
+times a second on every grip and publish a range per grip instead.
 
-`chambers/` holds Catchmoon and Tombfinger, each in both slots — four files. The
-other four chambers (Gaze, Rattleguts, Sporelacer, Vermisplicer) are the same
-shape and are not transcribed yet.
+## WHAT IS HERE
+
+`chambers/` holds all six chambers in both slots — twelve files, which with
+five grips a slot and twenty loaders is the Kitgun page's own 1,200
+assemblies. Each has a roster entry in `data/weapons/` of the same id.
+
+WHAT A CHAMBER FILE DOES NOT CARRY, and the entry does: what the module never
+states — Catchmoon's infinite body punch through, a guaranteed proc the page
+names, a headshot multiplier, the Condition Overload class. A fact both files
+state (trigger, accuracy, disposition, falloff) is checked for agreement by
+`every_modular_entry_matches_its_chamber`.
+
+An EXPLOSION is off the chamber's own page, since the module publishes no
+radius and no radial damage: Tombfinger (both slots) and Sporelacer (both slots,
+with no `AOE` tag). Gaze's primary sphere is the beam's geometry, not an
+explosion, and lives in the entry's `beam:` block.
 
 `grips_primary.yaml` and `grips_secondary.yaml` hold all ten grips. A grip's only
 stat of its own is RECOIL: its effect on damage and fire rate is already resolved

@@ -1,0 +1,85 @@
+# Gaze, as a PRIMARY — one chamber, two roster entries; data/kitguns/README.md
+# says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# A BEAM WITH A SPHERE AT ITS END — the Ignis's shape: "The zone of impact or
+# maximum beam range creates a spherical area of effect of 3 meters, dealing the
+# weapon's full damage." The GRIP sets the reach (30 m on Brash to 16 m on
+# Tremor), and `spec_assembled` composes it into `beam.range_m`.
+id: gaze_primary
+name: Gaze
+wiki_name: Gaze
+slot: primary
+class: rifle
+form: base
+default_form: true
+# "Uses Rifle mods" (wiki Gaze §Primary, verbatim). Its only tag is BEAM, so no
+# assault-rifle pool.
+mod_pools: [primary, rifle]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: gaze_primary
+transform_group: gaze_primary
+
+# see notes: kitgun_disposition_source
+disposition: 1.1
+riven_family: Gaze
+
+polarities: []
+exilus_polarity: madurai
+introduced: "28"
+noise: alarming
+ammo_type: primary
+ammo_max: 200
+ammo_pickup: 40
+accuracy: 100
+
+magazine: 51
+reload_seconds: 2.1
+
+# see notes: no_co_catalog_row
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 0
+    max_deg: 0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.25
+  crit_multiplier: 2
+  status_chance: 0.25
+  punch_through_m: 0.0
+  # THE BEAM AND ITS SPHERE. "The area of effect radius can be increased with
+  # Firestorm" and "The radial damage is not affected by multishot". NO chain.
+  beam:
+    # The default grip's reach; an assembly replaces it with its own grip's.
+    range_m: 30
+    damage_radius_m: 3.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+  # PRIMARY COMPRESSION — the published table names this attack:
+  #   Gaze (Primary) | Primary Fire + AoE | 0% | Doesn't Work | N/A
+  # see notes: zero_row_omission_arcane
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
+  damage: { radiation: 29 }
+
+unmodeled:
+  - "punch through MOVES the sphere: 'The weapon's area of effect is applied at the final point of contact rather than whenever an enemy is struck', so a punch-through build drops the sphere behind the last body it crosses"
+
+source:
+  url: https://wiki.warframe.com/w/Gaze
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

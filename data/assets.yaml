@@ -382,6 +382,16 @@ weapons:
   # which is what both slots show because the chamber IS the weapon.
   tombfinger_primary: wiki:Tombfinger.png
   tombfinger_secondary: wiki:Tombfinger.png
+  catchmoon_primary: wiki:Catchmoon.png
+  catchmoon_secondary: wiki:Catchmoon.png
+  gaze_primary: wiki:Gaze.png
+  gaze_secondary: wiki:Gaze.png
+  rattleguts_primary: wiki:Rattleguts.png
+  rattleguts_secondary: wiki:Rattleguts.png
+  sporelacer_primary: wiki:Sporelacer.png
+  sporelacer_secondary: wiki:Sporelacer.png
+  vermisplicer_primary: wiki:Vermisplicer.png
+  vermisplicer_secondary: wiki:Vermisplicer.png
   tonkor: Tonkor.png
   trumna: ThanotechRifle.png
   trumna_grenade: ThanotechRifle.png

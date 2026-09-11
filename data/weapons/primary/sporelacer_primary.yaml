@@ -1,0 +1,93 @@
+# Sporelacer, as a PRIMARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# "Launches spore-sacs that explode with toxic mist on each bounce. Automatic
+# trigger." The sac's IMPACT is the direct hit and its TOXIN is the explosion —
+# `Module:Weapons/data/modular`'s own split — which the chamber's carve states.
+id: sporelacer_primary
+name: Sporelacer
+wiki_name: Sporelacer
+slot: primary
+class: shotgun
+form: base
+default_form: true
+# "Uses Shotgun mods" (wiki Sporelacer §Primary, verbatim).
+mod_pools: [primary, shotgun]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: sporelacer_primary
+transform_group: sporelacer_primary
+
+# see notes: kitgun_disposition_source
+disposition: 1.15
+riven_family: Sporelacer
+traits: [infested]
+
+polarities: []
+exilus_polarity: madurai
+introduced: "29.5"
+noise: alarming
+ammo_type: primary
+ammo_max: 60
+ammo_pickup: 15
+accuracy: 5.9
+
+magazine: 13
+reload_seconds: 2.1
+
+#   Sporelacer (Primary) (Tremor) | Normal Attack | Projectile | 127 | 127 | 100% | Multiplying
+# 127 is Tremor's IMPACT alone, which is the catalog confirming the split above.
+co_behavior: independent
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 12
+    max_deg: 22
+  trigger: auto
+  shot_type: projectile
+  fire_rate: 5.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 2
+  status_chance: 0.21
+  punch_through_m: 0.0
+  # "linear Damage Falloff from 100% to ~7.8% from 8m to 16m" — the fraction
+  # KEPT; the module's 0.922 is the fraction removed.
+  falloff:
+    start_m: 8
+    end_m: 16
+    reduction: 0.078
+  # PRIMARY COMPRESSION — the published table names this attack:
+  #   Sporelacer (Primary) | Primary Fire + AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+  damage: { impact: 21 }
+
+  # THE EXPLOSION: "Shots explode in a 2.1 meter radius on impact with a surface
+  # or enemy", "linear Damage Falloff from 100% to 80% from central impact", and
+  # "Initial hit and explosion apply status separately".
+  radial:
+    damage: { toxin: 69 }
+    radius_m: 2.1
+    blast_kind: contact
+    # The bucket reaches it; no card in a SHOTGUN pool fills it (Firestorm is a
+    # rifle mod), and the page names none.
+    takes_blast_radius_mods: true
+    falloff_start_m: 0.0
+    falloff_reduction: 0.20
+
+unmodeled:
+  - "the sac BOUNCES up to twice and explodes on each bounce ('Shots explode in a 2.1 meter radius on impact with a surface or enemy, and bounce up to 2 times'); only the first explosion is fired here, because where a bounce lands is room geometry"
+  - reason: projectile_must_be_led
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Sporelacer
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

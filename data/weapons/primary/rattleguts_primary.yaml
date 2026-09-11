@@ -1,0 +1,62 @@
+# Rattleguts, as a PRIMARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# THE PLAIN ONE: hit-scan, fully automatic, four physical-and-Radiation types,
+# no explosion and no chain. "The grip will also affect fire rate the most, out
+# of all the Kitgun chambers" — 9 a second on Tremor, 17 on Brash.
+id: rattleguts_primary
+name: Rattleguts
+wiki_name: Rattleguts
+slot: primary
+class: rifle
+form: base
+default_form: true
+# The module's Class is Rifle, and DE's own patch note says so: "Tombfinger and
+# Rattleguts are Rifles". It carries no compatibility tags at all.
+mod_pools: [primary, rifle]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: rattleguts_primary
+transform_group: rattleguts_primary
+
+# see notes: kitgun_disposition_source
+disposition: 1.0
+riven_family: Rattleguts
+
+polarities: []
+exilus_polarity: madurai
+introduced: "28"
+noise: alarming
+ammo_type: primary
+ammo_max: 700
+ammo_pickup: 80
+accuracy: 20
+
+magazine: 83
+reload_seconds: 2.1
+
+# see notes: no_co_catalog_row
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 4
+    max_deg: 6
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 9
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.19
+  crit_multiplier: 2
+  status_chance: 0.19
+  punch_through_m: 0.0
+  damage: { impact: 6.5, puncture: 9.5, radiation: 13.5, slash: 7.5 }
+
+source:
+  url: https://wiki.warframe.com/w/Rattleguts
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

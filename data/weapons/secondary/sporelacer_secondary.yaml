@@ -1,0 +1,82 @@
+# Sporelacer, as a SECONDARY — one chamber, two roster entries;
+# data/kitguns/README.md says why the slot is the weapon.
+#
+# see notes: kitgun_entry_is_default_assembly
+#
+# "Fires spore-sacs that rupture into three smaller toxic projectiles on
+# impact. Semi-automatic trigger." The sac's IMPACT is the direct hit and its
+# TOXIN the explosion. THE DEFAULT GRIP IS GIBBER, whose row publishes no Impact
+# at all — so the default assembly's direct hit deals nothing, which is DE's.
+id: sporelacer_secondary
+name: Sporelacer
+wiki_name: Sporelacer
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: sporelacer_secondary
+transform_group: sporelacer_secondary
+
+# see notes: kitgun_disposition_source
+disposition: 0.6
+riven_family: Sporelacer
+traits: [infested]
+
+polarities: []
+exilus_polarity: madurai
+introduced: "29.5"
+noise: alarming
+ammo_type: secondary
+ammo_max: 130
+ammo_pickup: 20
+accuracy: 5.9
+
+magazine: 13
+reload_seconds: 2.1
+
+# ORDINARY, and not because there is no row — see `unmodeled:`.
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from
+  spread:
+    min_deg: 12
+    max_deg: 22
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 3.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 3
+  status_chance: 0.21
+  punch_through_m: 0.0
+  damage: {}
+
+  # THE EXPLOSION: "Shots explode in a 4.7 meter radius on impact", "linear
+  # Damage Falloff from 100% to 50% from central impact", "Can benefit from
+  # Fulmination (Primed)", and "Initial hit and explosion apply status
+  # separately".
+  radial:
+    damage: { toxin: 103 }
+    radius_m: 4.7
+    blast_kind: contact
+    takes_blast_radius_mods: true
+    falloff_start_m: 0.0
+    falloff_reduction: 0.50
+
+unmodeled:
+  - "the THREE BOMBLETS the sac splits into are not fired. The module lists a 'Bomblet Impact' and a 2.1 m 'Bomblet Explosion' (falloff to 80%), both Toxin, and neither it nor the page says what share of the chamber's Toxin they carry — so the whole of it goes to the first explosion and the bomblets add nothing"
+  - "the CO catalog's row is 'Sporelacer (Secondary) | Normal Attack | 90.5 | 57 | 63% | Adding | Some reason CO-bonus uses 57 damage value for any configuration' — a term on a FIXED 57 whatever the grip, which no fraction of the direct hit can say. The direct hit takes the ordinary term on its own Impact instead: none at all on the default Gibber grip, 261 on Haymaker"
+  - "the projectile falls off from 13 m to 26 m to an amount nobody publishes ('100% to ?%' on the page; the module's author marks its own figure unknown), so no falloff is applied"
+  - "the sac ARCS heavily, 'reduced by Projectile Speed'"
+  - reason: projectile_must_be_led
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Sporelacer
+  module: https://wiki.warframe.com/w/Module:Weapons/data/modular

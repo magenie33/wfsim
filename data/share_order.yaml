@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: d136f7d79865789a
-count: 1750
+digest: fbe30278f4def350
+count: 1760
 ids:
   - acceltra
   - acceltra_prime
@@ -1760,3 +1760,13 @@ ids:
   - clip_delegation
   - shattering_justice
   - scattered_justice
+  - catchmoon_primary
+  - catchmoon_secondary
+  - gaze_primary
+  - gaze_secondary
+  - rattleguts_primary
+  - rattleguts_secondary
+  - sporelacer_primary
+  - sporelacer_secondary
+  - vermisplicer_primary
+  - vermisplicer_secondary

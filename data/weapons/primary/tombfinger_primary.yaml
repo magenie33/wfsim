@@ -32,21 +32,27 @@ kitgun: tombfinger_primary
 
 transform_group: tombfinger_primary
 
-# THE SAME RIVEN, A DIFFERENT DISPOSITION: 1.0 here against the secondary's 0.7.
+# THE SAME RIVEN, A DIFFERENT DISPOSITION: 1.0 here against the secondary's 0.85.
+# see notes: kitgun_disposition_source
 disposition: 1.0
 riven_family: Tombfinger
 
 polarities: []
+exilus_polarity: madurai
 introduced: "24.2"
 noise: alarming
 ammo_type: primary
 ammo_max: 120
 ammo_pickup: 20
+accuracy: 50
 
 magazine: 19
 reload_seconds: 1.4
 
-co_behavior: additive_with_base_damage
+#   Tombfinger (Primary) (Brash) | Normal Attack | Projectile | 38 | 38 | 100% | Multiplying
+# 38 is Brash's 30 + 8, the projectile alone — the row names the chamber in this
+# slot, and the grip in brackets is the assembly it was measured on.
+co_behavior: independent
 
 attack:
   spread:
@@ -63,6 +69,12 @@ attack:
   crit_multiplier: 2
   status_chance: 0.24
   punch_through_m: 0.0
+  # PRIMARY COMPRESSION — the published table names this attack:
+  #   Tombfinger (Primary) | Primary Fire Fully Charged + AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   # THE PROJECTILE IS THE MODULE'S TABLE, whole — this explosion is ADDED
   # beside it rather than carved out of it, which is the one structural way
   # the two slots differ.

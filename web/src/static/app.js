@@ -13350,7 +13350,8 @@ function defaultAssembly(id, st) {
 /// drawn: every weapon is fired in some mode, and only a Kitgun has parts.
 ///
 /// EACH OPTION CARRIES ITS OWN NUMBERS, because that is the whole decision. A
-/// grip is damage, fire rate and (on a charge chamber) charge time; a loader is
+/// grip is damage, fire rate or a beam's reach, and (on a charge chamber) charge
+/// time; a loader is
 /// three additive deltas that may be NEGATIVE, plus a magazine and a reload.
 /// A list of twenty names would say none of it, which is the Mode control's own
 /// lesson.
@@ -13374,8 +13375,11 @@ function renderAssembly() {
   const pc = (v) => Math.round(Number(v) * 1000) / 10;
   const gripItem = (g) => {
     const d = s.grip_stats && s.grip_stats[g.id];
+    // A BEAM GRIP'S TRADE IS REACH, and its fire rate is the same on all five,
+    // so the reach is what the hint shows in its place.
     const bits = d
-      ? [`${n(d.damage)} ${tr("damage")}`, `${n(d.fire_rate)}/s`,
+      ? [`${n(d.damage)} ${tr("damage")}`,
+         d.range_m != null ? `${n(d.range_m)} m` : `${n(d.fire_rate)}/s`,
          d.charge_seconds != null ? `${n(d.charge_seconds)} s ${tr("charge")}` : ""]
         .filter(Boolean)
       : [];
