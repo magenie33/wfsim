@@ -53,8 +53,6 @@ ui:
   "A Status Effect has a 15% chance to SET the next hit's crit chance to 300% — ignoring every other crit bonus. Rolled per pellet.": 异常状态有 15% 几率把下一次命中的暴击率设定为 300%——无视其他一切暴击加成。逐弹丸判定。
   "A TOME'S MOD POOL IS ITS OWN and this roster does not load it — `mod_pools: []` here means the builder offers NOTHING, which is honest rather than offering pistol cards a Tome cannot wear. The weapon's numbers are right and no build can be put on it yet": "法典（Tome）有它自己的 MOD 池，而本武器库没有载入它 —— 这里的 `mod_pools: []` 意味着配装页什么都不提供，这比提供一堆法典装不了的手枪卡要诚实。这把武器的数值是对的，只是暂时还没法给它配 MOD"
   "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
-  "A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.":
-    投喂只用在本站的运营开销上，没有别的去处——它不是一次购买，本站也没有任何东西在卖。
   "A desktop version is available for Windows.": "桌面版目前只支持 Windows。"
   "hosted on {name} — this is where the file comes from": "文件存放在{name}，这就是它的源头"
   "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
@@ -1564,8 +1562,6 @@ ui:
 
   "Run the fight. Don't estimate it.": 把这场仗打一遍，而不是估出来。
   "Builder, simulator, optimizer.": 配装器、模拟器、优化器。
-  "A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone: no account, no payment, no part held back.":
-    "一个奔着对上游戏内实测数字去做的 Warframe 计算器，一项一项地对。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。"
   "items modelled":
     "个条目已建模"
   "builds players have uploaded":
@@ -1600,14 +1596,20 @@ ui:
     "能改这个引擎的只有实测，谁报的都算数——想让这里的数字变，就去测一个回来。"
   "Building, simulating and optimizing are the same for everyone, and what guarantees that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own copy.":
     "构建、模拟、优化对谁都一样，而且保证这件事的不是我：项目是 AGPL-3.0，引擎、游戏数据、wasm 全部公开，你随时可以自己开一份跑。"
-  "Every fix ships to everybody at once. There is no earlier version, no larger version, and nothing held back for later.":
-    "修好了就一次发给所有人。没有抢先版，没有加强版，也没有什么是留着以后再放的。"
-  "There is no account and no login, so nothing here is tied to a person. The only place a visit is counted is Cloudflare's own request log, which is what serves the page.":
-    "没有账号，也不用登录，所以这里没有任何东西绑在某个人头上。你的访问只在一个地方留下记录——Cloudflare 自己的请求日志，页面本来就是它发的。"
   "One-off, in USD. Card or PayPal, no account needed.":
     "一次性，美元。信用卡或 PayPal，不用注册。"
   "Monthly, in USD. The channel where the work is discussed, and your reports read first.":
     "按月，美元。能进聊开发的频道，你的反馈会被先看到。"
+  "A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone — no payment, and no part held back.":
+    "一个奔着对上游戏内实测数字去做的 Warframe 计算器，一项一项地对。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致：不用付费，也没有哪一块是留着不给的。"
+  "A fix to the builder, the simulator or the optimizer ships to everybody at once. There is no earlier copy, and nothing held back for later.":
+    "构建器、模拟器、优化器上的任何一处修复，都是同时发给所有人的。没有抢先版，也没有什么是留着以后再放的。"
+  "What you have run here stays in your own browser and is sent nowhere. The only place a visit is counted at all is Cloudflare's own request log, which is what serves the page.":
+    "你在这里跑过什么，只留在你自己的浏览器里，不会发往任何地方。一次访问唯一被记下的地方，是 Cloudflare 自己的请求日志——页面本来就是它发的。"
+  "Supporting this buys no priority: not over what gets built next, not in the queue, not on a reply. I will read your message knowing you backed this, and it would be dishonest to claim that changes nothing — but that is a courtesy, not an obligation, and it is the whole of what it is.":
+    "投喂买不到优先权：接下来做什么、排队的先后、回不回复，都不会因此改变。我读你的消息时会知道你支持过这个项目，说这毫无影响是不诚实的——但那是我这边的一份心意，不是你手上的一项权利，而且仅止于此。"
+  "Chipping in is a gift rather than a purchase — it covers what this site costs to run, and it buys nobody an advantage.":
+    "投喂是一份心意，不是一笔购买——它用来支付本站的运营开销，不为谁换来优待。"
   "Chip in":
     "投喂一下"
   "One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.":
