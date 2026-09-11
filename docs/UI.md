@@ -320,10 +320,12 @@ any traffic this site sees, and the one metered path is the desktop update
 channel. Naming that zero is not a figure and it answers what a reader actually
 wonders about a free tool asking for money.
 
-A CHANNEL IS A JOB, AND THE PAYEE IS THE PROJECT. Ko-fi is the one-off,
-Patreon the month, and for a Chinese reader 爱发电 comes first — it settles in
-Alipay or WeChat, and the payee is the project rather than an uploader, which
-Bilibili's own charge flow cannot be. THE ACCOUNT IS THE PROJECT
+A CHANNEL IS A JOB, AND EACH AUDIENCE GETS EXACTLY ONE. Ko-fi is the one-off
+and Patreon the month, both in USD; Bilibili is the whole of the Chinese side,
+because that is where those readers already are and its charge button is one
+click from a video they are already watching. A platform with a better fee
+table but no audience here is a road nobody walks: the first payment this
+project ever took came through Bilibili. THE ACCOUNT IS THE PROJECT
 (`ko-fi.com/wfsim`) and the first-person half lives in the platform's own bio.
 
 THE PAGE STATES WHAT IS TRUE, IT DOES NOT DENY WHAT ISN'T. "Everyone gets the

@@ -2592,21 +2592,6 @@ function renderBenchBoard() {
 const chRank = (c) => (c.locale === LANG ? 0 : c.locale ? 2 : 1);
 const SUPPORT_CHANNELS = [
   {
-    id: "afdian",
-    name: "爱发电",
-    // EMPTY UNTIL THE ACCOUNT EXISTS, the rule above: filling this url in is
-    // the whole of adding the channel.
-    //
-    // FIRST FOR A CHINESE READER, ahead of Bilibili, because it is the only
-    // one of the two where the payee is the PROJECT rather than an uploader —
-    // the same reason Ko-fi's account is `wfsim` and not a person. It settles
-    // in Alipay or WeChat, which is how the reader already pays for
-    // everything, and it keeps 94% of the gift against Bilibili's 70%.
-    url: "",
-    locale: "zh",
-    what: "One-off or monthly, in CNY, through Alipay or WeChat — no card, and no new account.",
-  },
-  {
     id: "bilibili",
     name: "Bilibili",
     // THE ONE CHANNEL A MAINLAND READER CAN ACTUALLY PAY THROUGH, which is the
