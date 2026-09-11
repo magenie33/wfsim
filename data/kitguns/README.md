@@ -105,6 +105,6 @@ away.
 ## THE MAGAZINE SIZE CLASSES
 
 A loader names a class and the chamber prices it. Eight classes are in use:
-`lowest`, `low`, `med`, `high`, `highest`, `super_highest`, `mega_highest`,
-`giga_highest`. They are not a scale anyone should read into — they are DE's own
+`lowest`, `low`, `med`, `high`, `highest`, `superhighest`, `megahighest`,
+`gigahighest`. They are not a scale anyone should read into — they are DE's own
 keys, and a chamber may price them however it likes.

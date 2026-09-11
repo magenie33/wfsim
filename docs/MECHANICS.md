@@ -2408,8 +2408,9 @@ The fire-rate STAT is still the stat — it is what fire-rate gates read
 
 A tapped bow shot pays no draw, so the nock alone paces it (`charge_seconds:
 0.0` → 1.54 shots/s on Cernos Prime). That is the bow formula taken at its
-word rather than a measurement — **MEASUREMENTS M16**. The engine does NOT yet
-implement the second formula: the roster has no non-bow charge weapon.
+word rather than a measurement — **MEASUREMENTS M16**. A non-bow charge weapon
+(Tombfinger's primary) takes the second formula, `1 / (Modded Charge Time + 1 /
+Modded Fire Rate)` — `weapons_data::ChargeCadence::DrawThenRate`.
 
 ### Fire rate that MOVES while the trigger is held — the spool
 

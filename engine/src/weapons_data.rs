@@ -364,9 +364,9 @@ pub struct AttackSpec {
     /// Base Charge Time / (1 + Mod Bonus)"*), which is why `fire_rate` stays
     /// the listed stat: it is the number the fire-rate GATES read.
     ///
-    /// The roster has no non-bow charge weapon yet. When one arrives it needs
-    /// the other formula — `1 / fire_rate` in place of the reload — which is a
-    /// second cadence rule, not a tweak to this one.
+    /// A NON-BOW charge weapon (Tombfinger's primary) pays the draw AND the
+    /// listed rate's interval — [`ChargeCadence::DrawThenRate`], a second
+    /// cadence rule rather than a tweak to this one.
     #[serde(default)]
     pub charge_seconds: Option<f64>,
     /// A CHARGE THAT EATS THE MAGAZINE, in ammo per second (the Phantasma's
@@ -1817,12 +1817,11 @@ pub struct WeaponSpec {
     /// in `data/kitguns/chambers/`. Its presence is what makes the weapon
     /// MODULAR, and it is the whole of that difference.
     ///
-    /// A Kitgun has no published stat line: every number on this entry is the
-    /// chamber's own `base` PREVIEW, which is the module's no-grip row and is
-    /// not any grip's answer. [`spec_assembled`] composes the real ones over
-    /// the top the moment a build names an assembly, exactly as an evolution
-    /// overrides a panel — so nothing downstream of `base_panel` has to learn
-    /// what a Kitgun is.
+    /// A Kitgun has no published stat line: every number on this entry is its
+    /// DEFAULT assembly's, which `every_modular_entry_states_its_default_assembly`
+    /// holds. [`spec_assembled`] composes the real ones over the top, exactly
+    /// as an evolution overrides a panel — so nothing downstream of
+    /// `base_panel` has to learn what a Kitgun is.
     #[serde(default)]
     pub kitgun: Option<String>,
     /// ROUNDS A SECOND under Pax Charge, filled in by [`spec_assembled`] from
@@ -3356,9 +3355,8 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
 /// (resolved from the transform group's base entry, where passives live).
 /// THE SPEC A BUILD ACTUALLY FIRES, with a KITGUN's assembly composed into it.
 ///
-/// Everything that is not modular comes back untouched, and so does a modular
-/// weapon with no assembly named — whose numbers are the chamber's `base`
-/// PREVIEW, which its own entry says out loud.
+/// Everything that is not modular comes back untouched. A modular weapon with
+/// no assembly named is composed with its DEFAULT assembly.
 ///
 /// WHY IT REWRITES THE SPEC RATHER THAN THE PANEL: `base_panel` derives a
 /// great deal from `s.attack` on the way past — the cone, the falloff, the CO
@@ -7922,9 +7920,9 @@ mod modular_tests {
     /// `spec_assembled`, asserted on the numbers a fight actually reads rather
     /// than on the spec it was composed from.
     ///
-    /// The roster entry carries the chamber's `base` PREVIEW, so the test is
-    /// that naming an assembly MOVES every number it should and moves them to
-    /// the parts' own values.
+    /// The roster entry carries the DEFAULT assembly, so the test is that
+    /// naming another MOVES every number it should and moves them to the
+    /// parts' own values.
     #[test]
     fn an_assembly_composes_all_the_way_into_a_panel() {
         use crate::kitguns_data::Assembly;
@@ -8084,6 +8082,42 @@ mod modular_tests {
             for p in &c.forced_procs {
                 assert!(s.attack.forced_procs.contains(p), "{}: the module forces {p}", s.id);
             }
+        }
+    }
+
+    /// AN ENTRY'S OWN NUMBERS ARE ITS DEFAULT ASSEMBLY'S (notes:
+    /// `kitgun_entry_is_default_assembly`). A fight never reads them, because
+    /// `spec_assembled` overwrites every one — but the prerendered weapon page
+    /// does, so an entry that drifts publishes a stat line nobody can build.
+    #[test]
+    fn every_modular_entry_states_its_default_assembly() {
+        let near = |a: f64, b: f64| (a - b).abs() < 1e-6;
+        let same = |a: &std::collections::BTreeMap<String, f64>,
+                    b: &std::collections::BTreeMap<String, f64>| {
+            a.len() == b.len() && a.iter().all(|(k, v)| b.get(k).is_some_and(|w| near(*v, *w)))
+        };
+        for s in super::all().iter().filter(|s| s.kitgun.is_some()) {
+            let d = spec_assembled(s, None).unwrap_or_else(|| panic!("{}: no default", s.id));
+            let (a, b) = (&s.attack, &d.attack);
+            assert!(same(&a.damage, &b.damage), "{}: damage {:?}, default {:?}", s.id, a.damage, b.damage);
+            if let (Some(x), Some(y)) = (&a.radial, &b.radial) {
+                assert!(same(&x.damage, &y.damage), "{}: radial {:?}, default {:?}", s.id, x.damage, y.damage);
+            }
+            if let (Some(x), Some(y)) = (&a.beam, &b.beam) {
+                assert!(near(x.range_m, y.range_m), "{}: reach {}, default {}", s.id, x.range_m, y.range_m);
+            }
+            assert!(near(a.fire_rate, b.fire_rate), "{}: fire rate {}, default {}", s.id, a.fire_rate, b.fire_rate);
+            assert_eq!(a.charge_seconds, b.charge_seconds, "{}: charge", s.id);
+            for (what, x, y) in [
+                ("crit chance", a.crit_chance, b.crit_chance),
+                ("crit multiplier", a.crit_multiplier, b.crit_multiplier),
+                ("status chance", a.status_chance, b.status_chance),
+                ("multishot", a.multishot, b.multishot),
+            ] {
+                assert!(near(x, y), "{}: {what} {x}, default {y}", s.id);
+            }
+            assert_eq!(s.magazine, d.magazine, "{}: magazine", s.id);
+            assert_eq!(s.reload_seconds, d.reload_seconds, "{}: reload", s.id);
         }
     }
 
