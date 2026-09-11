@@ -182,7 +182,7 @@ const switched = await evaluate(`(async () => {
   switchWeapon(slotSibling(before.id));
   renderAssembly();
   // LONG ENOUGH FOR THE SIBLING'S BOARD TO LAND: its arrival re-runs the
-  // preset restore, which is what used to move the address after the switch.
+  // preset restore, the one step after the switch that can move the address.
   await new Promise(r => setTimeout(r, 3000));
   const id = $('weapon').value;
   return {
