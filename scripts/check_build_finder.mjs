@@ -41,6 +41,21 @@ const r = await evaluate(`(async () => {
   // scope segments say.
   const scoped = listed().map(byId);
   out.oneCell = scoped.length > 0 && scoped.every((p) => p && p.benchmark === finder.b && p.mode === finder.mo);
+  // A ROW IS THE SIMULATOR'S BUILD CARD, holding every card the build carries.
+  const row0 = box().querySelector('tr.fr');
+  const mods0 = (byId(row0.dataset.frow).board.mods || []).filter(Boolean).length;
+  const secs = [...row0.querySelectorAll('.fd-card .sb-h')];
+  out.cardMods = secs.length ? secs[0].nextElementSibling.querySelectorAll('.sb-chip').length : -1;
+  out.boardMods = mods0;
+  out.cardIcons = row0.querySelectorAll('.fd-card .sb-chip img').length;
+  // FIVE UNTIL ASKED: "more" adds rows, and "back to the top" folds them away.
+  out.inScope = builtinBuilds().filter((p) => p.benchmark === finder.b && p.mode === finder.mo).length;
+  const more = box().querySelector('[data-fmore]');
+  if (more) { more.click(); await sleep(200); }
+  out.afterMore = listed().length;
+  const less = box().querySelector('[data-fless]');
+  if (less) { less.click(); await sleep(200); }
+  out.afterLess = listed().length;
 
   // REQUIRE, THEN EXCLUDE, the most-used card — by clicking it in the usage rail.
   const u = box().querySelector('.fd-use.mods [data-fcyc]');
@@ -120,7 +135,12 @@ const r = await evaluate(`(async () => {
 // against it every assertion below would pass on an empty table.
 check("the weapon under test actually has board rows", r.rows > 0, `${r.rows} rows — is this running against site/?`);
 check("the finder is drawn in the builder", r.drawn === true);
-check("...listing one page of one scope", r.firstPage > 0 && r.firstPage <= 25 && r.oneCell, `${r.firstPage} rows`);
+check("...listing the top five of one scope", r.firstPage === Math.min(5, r.inScope) && r.oneCell,
+  `${r.firstPage} rows of ${r.inScope}`);
+check("...each row drawn as the build card, one chip per card the build carries",
+  r.cardMods === r.boardMods && r.cardIcons > 0, `${r.cardMods} chips for ${r.boardMods} mods, ${r.cardIcons} icons`);
+check("...more on request, and folded back to five", r.inScope <= 5
+  || (r.afterMore === Math.min(25, r.inScope) && r.afterLess === 5), `${r.afterMore} then ${r.afterLess}`);
 check(`requiring ${r.token} lists only builds carrying it`, r.reqAll && r.reqChip);
 check("...excluding it lists none that do", r.excNone && r.excChip);
 check("...and a third click clears the condition", r.cleared);

@@ -35,10 +35,12 @@ ui:
   "'weak point hits have +250% CRITICAL CHANCE, additive with mods like Point Strike' (wiki). This engine has no headshot-conditional crit bucket — a crit is rolled for the hit and the body part is drawn beside it — so this arena's crit chance is the unaimed 40% where a headshot lands at 290%. It is the larger half of the weapon": "「爆头命中获得 +250% 暴击率，与 Point Strike 这类 MOD 加算」（维基）。本引擎没有以爆头为条件的暴击池 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这个战场用的是不带这一条的 40%，而一次爆头本该落在 290%。这是这把武器更大的那一半"
   "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads": 瞄准时 +30% 移动速度，以及爆炸对自身的踉跄：这两项都不是这个战场会读取的数字
   "+{n} more took damage — click one to follow it too": 另有 {n} 个吃到伤害，点一下就能跟踪它
+  "Back to the top {n}": "收起，只看前 {n} 个"
   "Board rank": "排名"
   "Build finder": "配装查找器"
   "click: must have · again: exclude · again: clear": "点一下：必须含 · 再点：排除 · 再点：取消"
   "compare with #1": "对比 #1"
+  "Configuration": "配置"
   "following…": 正在跟踪…
   "could not follow that one — try the run again": 跟踪失败，重跑一次试试
   ", ": "、"
@@ -194,7 +196,6 @@ ui:
   "Mine": "我的"
   "Mod matrix": "MOD 矩阵"
   "Mod usage": "MOD 使用率"
-  "mods, aligned by how often this weapon uses them": "MOD，按这把武器的使用率对齐"
   "No build matches — remove a condition": "没有符合的配装 —— 去掉一个条件试试"
   "Nobody has submitted a build for this weapon yet": "这把武器还没有人提交过配装"
   "must not have": "不含"
@@ -248,6 +249,7 @@ ui:
   "It does take money and time to run. If it has ever saved you a Forma, you can chip in.":
     它确实要花钱和时间来维持。如果它替你省下过一根 Forma，可以来投喂一下。
   "take it out of the bar — the board keeps it": "从栏里拿掉 —— 榜单上它还在"
+  "the cards this weapon uses most come first": "这把武器最常用的卡排在前面"
   "the matrix shows the first {n}": "矩阵只显示前 {n} 个"
   "the record is open in its own window": 战斗记录已在它自己的窗口里打开。
   "Bring it back here": 收回本页

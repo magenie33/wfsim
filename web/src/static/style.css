@@ -336,42 +336,32 @@ body.on-enemies [data-module="builder"]{display:none}
 .fd-sd{font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .fd-sbar{height:4px;border-radius:2px;background:color-mix(in srgb,var(--accent) 12%,transparent);margin-top:4px;overflow:hidden;min-width:96px}
 .fd-sbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
-/* THE CONFIGURATION STRIP — every part of a build in a fixed position, on two
-   lines: Exilus | mods aligned by usage, then arcane | evolutions | riven. */
-.fd-cfg{display:grid;gap:3px;justify-items:start}
-.fd-line{display:flex;align-items:stretch;gap:4px}
-.fd-grp{display:flex;gap:2px;padding:2px;border-radius:7px;background:var(--panel3);border:1px solid var(--line)}
-.fd-c{position:relative;display:grid;place-items:center;width:48px;height:26px;padding:3px 3px 0;border-radius:5px;background:var(--surface);font-size:11px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
-.fd-c.arc{width:58px}
-.fd-c.evo{width:48px}
-.fd-c.vac{background:transparent;border:1px dashed var(--line);color:var(--muted);font-size:10px}
-.fd-c sup,.fd-c sub{position:absolute;top:2px;font-size:8.5px;line-height:1;font-weight:600}
-.fd-c sup{left:3px;color:var(--muted)}
-.fd-c sub{right:3px;color:var(--gold)}
-.fd-c.rv{background:color-mix(in srgb,var(--gold) 14%,var(--surface));color:var(--gold);font-weight:600}
-.fd-cfg.cmp .fd-c.same{color:var(--muted);background:transparent}
-.fd-cfg.cmp .fd-c.diff{background:color-mix(in srgb,var(--good) 16%,var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--good) 55%,transparent)}
-.fd-c.hit{box-shadow:inset 0 0 0 1.5px var(--req)}
-.fd-rv{display:grid;align-content:center;min-width:96px;padding:0 7px;border-radius:7px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));background:color-mix(in srgb,var(--gold) 7%,var(--surface));font-size:11px;line-height:1.35;white-space:nowrap}
-.fd-rv .neg{color:var(--critical)}
-.fd-rv.none{border-style:dashed;border-color:var(--line);background:transparent;color:var(--muted);min-width:56px;text-align:center}
-.fd-legend{display:grid;gap:1px;font-weight:500}
+/* A ROW'S BUILD is the simulator's build card (`.sb-*`), laid out as a table
+   of its own: each section's heading on the left, its chips on the right. */
+.fd-card{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 10px;align-items:center}
+.fd-card .sb-h{margin:0;letter-spacing:.04em}
+.fd-card .sb-chips{gap:4px}
+.fd-card .sb-chip{padding:1px 7px 1px 3px;gap:4px;font-size:11.5px}
+.fd-card .sb-chip img{width:20px;height:20px}
+.fd-card .sb-chip.rv{padding-left:7px;border-color:color-mix(in srgb,var(--gold) 50%,var(--line));color:var(--gold)}
+.fd-card.cmp .sb-chip.same{opacity:.45}
+.fd-card.cmp .sb-chip.diff{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--panel3))}
+.fd-card .sb-chip.hit{box-shadow:inset 0 0 0 1.5px var(--req)}
+.fd-main th small{font-weight:400}
 .fd-open{height:25px;padding:0 10px;border-radius:7px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font:inherit;font-size:12px;white-space:nowrap}
 .fd-open:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .fd-open.in{border-color:var(--line);color:var(--muted)}
 .fd-main tr.fdet td{background:var(--panel3);padding:10px 12px 12px}
 .fd-det{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px}
 @media (max-width:760px){.fd-det{grid-template-columns:1fr}}
-.fd-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.fd-slot{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;min-height:32px;display:flex;align-items:center}
-.fd-slot.rv{border-color:var(--gold);color:var(--gold)}
+
 .fd-dt{font-size:11px;color:var(--muted);margin:9px 0 4px;font-weight:600}
 .fd-dt:first-child{margin-top:0}
 .fd-diff{display:flex;flex-wrap:wrap;gap:4px}
 .fd-diff span{font-size:12px;padding:1px 6px;border-radius:5px;background:var(--surface);border:1px solid var(--line)}
 .fd-diff .plus{color:var(--good-text)}
 .fd-diff .minus{color:var(--critical)}
-.fd-more{display:flex;justify-content:center;padding:9px}
+.fd-more{display:flex;justify-content:center;gap:8px;padding:9px}
 .fd-more button{height:28px;border-radius:8px;border:1px dashed var(--line);background:transparent;padding:0 14px;cursor:pointer;color:var(--text-2);font:inherit;font-size:12px}
 .fd-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px}
 .fd-mx{border-collapse:separate;border-spacing:0}

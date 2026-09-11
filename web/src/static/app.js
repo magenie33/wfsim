@@ -9337,10 +9337,14 @@ function unpinBoardBuild(id) {
 // and never a selection — which build is open is the build bar's to say, and
 // "Open" does one thing: puts that build in the bar and makes it current.
 // Builder only (style.css). docs/UI.md §"The build finder".
+/// FIVE ROWS UNTIL ASKED: the top of a scope is what most readers came for, and
+/// the rest is one click away rather than a page of scrolling.
+const FINDER_FIRST = 5;
+const FINDER_STEP = 20;
 const finder = {
   weapon: null, b: null, mo: null, rv: "all",
   req: new Set(), exc: new Set(),
-  view: "list", open: null, shown: 25, sort: "score", dir: -1, cmp: true, hi: 0,
+  view: "list", open: null, shown: FINDER_FIRST, sort: "score", dir: -1, cmp: true, hi: 0,
 };
 
 /// A RULER'S NAME, SHORT: its first clause and the unit off its last one.
@@ -9388,26 +9392,6 @@ function finderTokenName(t) {
 }
 const finderTokenKind = (t) => ({ mod: "mod", arc: tr("Arcane"), evo: tr("Evolution"), "rv+": tr("Riven"), "rv-": tr("Riven"), part: tr("Parts"), val: tr("Element") })[t.slice(0, t.indexOf(":"))] || "";
 
-/// A NAME PRESSED INTO ONE CELL, its family kept as a corner mark: "Galvanized
-/// Chamber" is "Chamber" marked G, 镀层 分裂膛室 is 分裂膛室 marked 镀, and a
-/// Prime or Primed card is marked P. A CJK name keeps four characters; a Latin
-/// one is cut by the cell. The full name is the tooltip.
-const FINDER_FAMILY = new Set(["Galvanized", "Amalgam", "Vigilante", "Gladiator", "Umbral", "Sacrificial", "Archon",
-  "Primary", "Secondary", "Melee", "Shotgun", "Rifle", "Pistol"]);
-function finderShort(name) {
-  let body = String(name || ""), pre = "", post = "";
-  if (/ Prime$/.test(body)) { post = "P"; body = body.replace(/ Prime$/, ""); }
-  if (/^Primed /.test(body)) { post = "P"; body = body.replace(/^Primed /, ""); }
-  const cjk = /[㐀-鿿]/.test(body);
-  const parts = body.split(/[ ·]+/).filter(Boolean);
-  if (parts.length > 1 && (cjk || FINDER_FAMILY.has(parts[0]))) {
-    pre = parts[0][0];
-    body = parts.slice(1).join(cjk ? "" : " ");
-  }
-  if (cjk && body.length > 4) body = body.slice(0, 4);
-  return { body, pre, post };
-}
-
 function renderBuildFinder() {
   const box = $("build-finder");
   if (!box) return;
@@ -9419,7 +9403,7 @@ function renderBuildFinder() {
     // board's leader, which is where the rows arrive first.
     const act = all.find((p) => presetId(p) === activePreset) || all[0];
     Object.assign(finder, { weapon: w.id, b: act ? act.benchmark : null, mo: act ? act.mode : null,
-      rv: "all", req: new Set(), exc: new Set(), open: null, shown: 25, hi: 0 });
+      rv: "all", req: new Set(), exc: new Set(), open: null, shown: FINDER_FIRST, hi: 0 });
   }
   box.hidden = false;
   const title = `<span class="fd-title">${escHtml(tr("Build finder"))}`;
@@ -9452,64 +9436,50 @@ function renderBuildFinder() {
     return [...c.entries()].sort((a, b) => b[1] - a[1]);
   };
   const isMod = (t) => t.startsWith("mod:");
-  // ONE COLUMN PER CARD ACROSS EVERY ROW: a build's mods are laid out in the
-  // weapon's own usage order, so the same card sits in the same place down the
-  // table and a difference is a gap in a column rather than a word to read.
+  // COMMON CARDS FIRST: a build's mods in the weapon's own usage order, so the
+  // cards a scope shares lead every row and what differs sits at the end.
   const modRank = new Map(usage(all, isMod).map(([t], i) => [t.slice(4), i]));
   const byUse = (a, b) => (modRank.get(a) ?? 999) - (modRank.get(b) ?? 999);
   const benchOf = (id) => (META.benchmarks || []).find((b) => b.id === id) || { name: id };
   const unit = rulerUnit(tr(benchOf(finder.b).name));
-  // Every row pads each group to the widest row's count, so the columns hold.
-  const width = (f) => Math.max(1, ...all.map((p) => f(p.board || {}).length));
-  const nMods = width((r) => (r.mods || []).filter((id) => id !== r.exilus));
-  const nArc = width((r) => (r.arcanes || []).filter((id) => id && id !== "none"));
-  const nEvo = Math.max(0, ...all.map((p) => ((p.board || {}).evolutions || []).length));
-  const hasParts = all.some((p) => (p.board || {}).grip);
-  const hasVal = all.some((p) => (p.board || {}).valence);
-
-  const cell = (id, kind, cls, lead) => {
-    if (!id) return `<span class="fd-c vac ${cls}">${escHtml(tr("empty"))}</span>`;
-    if (id === BOARD_RIVEN_SLOT) {
-      const same = lead ? ((lead.board || {}).mods || []).includes(BOARD_RIVEN_SLOT) : null;
-      return `<span class="fd-c rv${same === true ? " same" : same === false ? " diff" : ""}" title="${escHtml(tr("riven"))}">${escHtml(tr("riven"))}</span>`;
-    }
-    const t = `${kind}:${id}`;
-    const name = finderTokenName(t);
-    const s = finderShort(name);
-    const same = lead ? toks.get(lead).includes(t) : null;
-    return `<span class="fd-c ${cls}${same === true ? " same" : same === false ? " diff" : ""}${finder.req.has(t) ? " hit" : ""}" title="${escHtml(name)}">` +
-      (s.pre ? `<sup>${escHtml(s.pre)}</sup>` : "") + escHtml(s.body) + (s.post ? `<sub>${escHtml(s.post)}</sub>` : "") + `</span>`;
-  };
-  const pad = (cells, n, cls) => cells.concat(Array.from({ length: Math.max(0, n - cells.length) }, () => cell(null, "", cls)));
-  const rivenBox = (r) => !r.riven
-    ? `<span class="fd-rv none">${escHtml(tr("Without riven"))}</span>`
-    : (() => {
-      const pos = (r.riven.bonuses || []).map((s) => finderTokenName("rv+:" + s));
-      const neg = r.riven.malus ? finderTokenName("rv-:" + r.riven.malus) : "";
-      return `<span class="fd-rv" title="${escHtml(pos.join(" ") + (neg ? " " + neg : ""))}"><span>${escHtml(pos.join(" "))}</span>${neg ? `<span class="neg">${escHtml(neg)}</span>` : ""}</span>`;
-    })();
-  // THE CONFIGURATION STRIP, TWO LINES: Exilus | mods above, parts | element |
-  // arcane | evolutions | riven below — every part of the build, each in a fixed
-  // place, inside the width of the page's column.
-  const strip = (p) => {
+  const rivenKey = (r) => JSON.stringify([((r || {}).bonuses || []).slice().sort(), (r || {}).malus || ""]);
+  const mark = (t, lead) => [lead ? (toks.get(lead).includes(t) ? "same" : "diff") : "",
+    finder.req.has(t) ? "hit" : ""].filter(Boolean).join(" ");
+  // THE ROW IS THE SIMULATOR'S BUILD CARD (`buildCardHtml`), fed from the board
+  // row: one picture of a build wherever the page shows one. No ranks — a board
+  // row carries none — and no mode, which the scope above already states.
+  const card = (p) => {
     const r = p.board || {};
     const lead = finder.cmp && leaderOf(p) !== p ? leaderOf(p) : null;
     const ex = r.exilus && r.exilus !== "none" ? r.exilus : null;
-    const mains = (r.mods || []).filter((id) => id && id !== ex).sort(byUse);
-    const g = (cells) => `<span class="fd-grp">${cells.join("")}</span>`;
-    return `<div class="fd-cfg${lead ? " cmp" : ""}"><div class="fd-line">` +
-      g([cell(ex, "mod", "", lead)]) +
-      g(pad(mains.map((id) => cell(id, "mod", "", lead)), nMods, "")) +
-      `</div><div class="fd-line">` +
-      (hasParts ? g([cell(r.grip, "part", "", lead), cell(r.loader, "part", "", lead)]) : "") +
-      (hasVal ? g([cell(r.valence, "val", "", lead)]) : "") +
-      g(pad((r.arcanes || []).filter((id) => id && id !== "none").map((id) => cell(id, "arc", "arc", lead)), nArc, "arc")) +
-      (nEvo ? g(pad((r.evolutions || []).map((id) => cell(id, "evo", "evo", lead)), nEvo, "evo")) : "") +
-      rivenBox(r) + `</div></div>`;
+    const modChip = (id) => {
+      if (id === BOARD_RIVEN_SLOT) {
+        const rv = r.riven || {};
+        const stats = [...(rv.bonuses || []).map((s) => finderTokenName("rv+:" + s)),
+          rv.malus ? finderTokenName("rv-:" + rv.malus) : ""].filter(Boolean).join(" ");
+        const same = lead ? rivenKey((lead.board || {}).riven) === rivenKey(rv) : null;
+        return { label: `${tr("Riven")} ${stats}`, title: stats,
+          cls: ["rv", same === true ? "same" : same === false ? "diff" : ""].filter(Boolean).join(" ") };
+      }
+      const m = modById(id);
+      return { img: m ? IMG(m.image) : null, label: m ? m.name : prettify(id),
+        title: id === ex ? "Exilus" : "", cls: mark("mod:" + id, lead) };
+    };
+    const marked = (chips) => chips.map((c) => ({ ...c, cls: mark(c.key, lead) }));
+    return `<div class="fd-card${lead ? " cmp" : ""}">` + buildCardHtml({
+      mods: (r.mods || []).filter(Boolean).slice().sort(byUse).map(modChip),
+      parts: r.grip ? marked(partChipsOf(w.id, r.grip, r.loader)) : null,
+      arcanes: (w.arcane_slots || 0) >= 1
+        ? (r.arcanes || []).filter((id) => id && id !== "none").map((id) => {
+          const a = arcaneById(id);
+          return { img: a ? IMG(a.image) : null, label: arcName(id), cls: mark("arc:" + id, lead) };
+        })
+        : null,
+      evolutions: w.uses_evo2 ? marked(evoChipsOf(r.evolutions || [])) : null,
+      valence: r.valence ? `${DT(r.valence)} +${Math.round(((valenceSpec(w.id) || {}).max || 0) * 1000) / 10}%` : null,
+    }) + `</div>`;
   };
-  const legend = `<div class="fd-legend"><span>Exilus · ${escHtml(tr("mods, aligned by how often this weapon uses them"))}</span>` +
-    `<span>${escHtml([hasParts ? tr("Parts") : "", hasVal ? tr("Element") : "", tr("Arcane"), nEvo ? tr("Evolutions") : "", tr("Riven")]
-      .filter(Boolean).join(" · "))}</span></div>`;
+  const legend = `<span>${escHtml(tr("Configuration"))}</span> <small>${escHtml(tr("the cards this weapon uses most come first"))}</small>`;
 
   const inBar = new Set(openedBoardBuilds().map(presetId));
   const openBtn = (p) => inBar.has(presetId(p))
@@ -9519,26 +9489,19 @@ function renderBuildFinder() {
   const sbar = (p) => `<div class="fd-sbar"><i style="width:${(score(p) / maxScore * 100).toFixed(1)}%"></i></div>`;
   const shown = (p) => String((p.board || {}).shown != null ? p.board.shown : score(p).toFixed(2));
 
+  // THE EXPANDED ROW says what the card cannot: how it differs from its group's
+  // #1, and what it was measured under.
   const detail = (p) => {
-    const r = p.board || {};
     const lead = leaderOf(p);
-    const ex = r.exilus && r.exilus !== "none" ? r.exilus : null;
-    const slotHtml = (r.mods || []).filter((id) => id !== ex).map((id) => id === BOARD_RIVEN_SLOT
-      ? `<div class="fd-slot rv">${escHtml(tr("riven"))}</div>`
-      : `<div class="fd-slot">${escHtml(finderTokenName("mod:" + id))}</div>`).join("");
     const mine = toks.get(p), theirs = toks.get(lead);
     const plus = mine.filter((t) => !theirs.includes(t)), minus = theirs.filter((t) => !mine.includes(t));
     return `<tr class="fdet"><td colspan="3"><div class="fd-det"><div>` +
-      `<div class="fd-dt">${escHtml(tr("Mods"))}</div><div class="fd-slots">${slotHtml}</div>` +
-      (ex ? `<div class="fd-dt">Exilus</div><div class="fd-slots"><div class="fd-slot">${escHtml(finderTokenName("mod:" + ex))}</div></div>` : "") +
-      `</div><div>` +
       `<div class="fd-dt">${escHtml(trF("vs #1 ({score})", { score: shown(lead) }))}</div>` +
       (lead === p ? `<p class="small">${escHtml(tr("This is #1."))}</p>`
         : `<div class="fd-diff">${plus.map((t) => `<span class="plus">+ ${escHtml(finderTokenName(t))}</span>`).join("")}${
           minus.map((t) => `<span class="minus">− ${escHtml(finderTokenName(t))}</span>`).join("")}${
           !plus.length && !minus.length ? `<span>${escHtml(tr("the same build — the difference is how the riven rolled"))}</span>` : ""}</div>`) +
-      `<div class="fd-dt">${escHtml(tr("Arcane"))} · ${escHtml(tr("Evolutions"))}</div><p class="small">${escHtml(
-        [...(r.arcanes || []).filter((id) => id && id !== "none").map(arcName), ...(r.evolutions || []).map(evoName)].join(" · ") || "—")}</p>` +
+      `</div><div>` +
       `<div class="fd-dt">${escHtml(tr("Ruler"))}</div><p class="small">${escHtml(tr(benchOf(p.benchmark).name))} · ${escHtml(p.modeName || "")}</p>` +
       `</div></div></td></tr>`;
   };
@@ -9552,11 +9515,18 @@ function renderBuildFinder() {
       return `<tr class="fr${finder.open === presetId(p) ? " x" : ""}" data-frow="${escHtml(presetId(p))}">` +
         `<td><div class="fd-sv"><span class="fd-rank">#${p.rank}</span><b>${escHtml(shown(p))}</b></div>` +
         `<div class="fd-sd">${escHtml(unit ? `${unit} · ${d}` : d)}</div>${sbar(p)}</td>` +
-        `<td>${strip(p)}</td><td>${openBtn(p)}</td></tr>` +
+        `<td>${card(p)}</td><td>${openBtn(p)}</td></tr>` +
         (finder.open === presetId(p) ? detail(p) : "");
     }).join("");
-    const more = list.length > finder.shown
-      ? `<div class="fd-more"><button type="button" data-fmore="1">${escHtml(trF("Show {k} more of {n}", { k: Math.min(25, list.length - finder.shown), n: list.length }))}</button></div>`
+    const more = list.length > finder.shown || finder.shown > FINDER_FIRST
+      ? `<div class="fd-more">` +
+        (list.length > finder.shown
+          ? `<button type="button" data-fmore="1">${escHtml(trF("Show {k} more of {n}", { k: Math.min(FINDER_STEP, list.length - finder.shown), n: list.length }))}</button>`
+          : "") +
+        (finder.shown > FINDER_FIRST
+          ? `<button type="button" data-fless="1">${escHtml(trF("Back to the top {n}", { n: FINDER_FIRST }))}</button>`
+          : "") +
+        `</div>`
       : "";
     return `<table><thead><tr><th><span class="sort" data-fsort="rank">${escHtml(tr("Board rank"))}${arrow("rank")}</span> · ` +
       `<span class="sort" data-fsort="score">${escHtml(tr("Score"))}${arrow("score")}</span></th><th>${legend}</th><th></th></tr></thead>` +
@@ -9651,7 +9621,7 @@ function renderBuildFinder() {
     const hs = hits();
     if (e.key === "ArrowDown") { finder.hi = Math.min(finder.hi + 1, hs.length - 1); drawSugg(); e.preventDefault(); }
     else if (e.key === "ArrowUp") { finder.hi = Math.max(finder.hi - 1, 0); drawSugg(); e.preventDefault(); }
-    else if (e.key === "Enter" && hs[finder.hi]) { finder.req.add(hs[finder.hi]); finder.shown = 25; rerender(true); }
+    else if (e.key === "Enter" && hs[finder.hi]) { finder.req.add(hs[finder.hi]); finder.shown = FINDER_FIRST; rerender(true); }
     else if (e.key === "Escape") sugg.hidden = true;
     else if (e.key === "Backspace" && !input.value) {
       const last = [...finder.exc].pop() || [...finder.req].pop();
@@ -9662,13 +9632,13 @@ function renderBuildFinder() {
   box.onclick = (e) => {
     const g = (sel) => e.target.closest(sel);
     let el;
-    if ((el = g("[data-freq]"))) { finder.req.add(el.dataset.freq); finder.shown = 25; return rerender(true); }
-    if ((el = g("[data-fexc]"))) { finder.exc.add(el.dataset.fexc); finder.shown = 25; return rerender(true); }
+    if ((el = g("[data-freq]"))) { finder.req.add(el.dataset.freq); finder.shown = FINDER_FIRST; return rerender(true); }
+    if ((el = g("[data-fexc]"))) { finder.exc.add(el.dataset.fexc); finder.shown = FINDER_FIRST; return rerender(true); }
     if (!g(".fd-q")) sugg.hidden = true;
     if ((el = g("[data-funtok]"))) { finder.req.delete(el.dataset.funtok); finder.exc.delete(el.dataset.funtok); return rerender(); }
     if ((el = g("[data-fseg]"))) {
       finder[el.dataset.fseg] = el.dataset.v;
-      finder.open = null; finder.shown = 25;
+      finder.open = null; finder.shown = FINDER_FIRST;
       if (el.dataset.fseg !== "rv") finder.rv = "all";
       return rerender();
     }
@@ -9677,7 +9647,7 @@ function renderBuildFinder() {
       if (finder.req.has(t)) { finder.req.delete(t); finder.exc.add(t); }
       else if (finder.exc.has(t)) finder.exc.delete(t);
       else finder.req.add(t);
-      finder.shown = 25;
+      finder.shown = FINDER_FIRST;
       return rerender();
     }
     if ((el = g("[data-fsort]"))) {
@@ -9687,7 +9657,8 @@ function renderBuildFinder() {
       return rerender();
     }
     if ((el = g("[data-fview]"))) { finder.view = el.dataset.fview; return rerender(); }
-    if ((el = g("[data-fmore]"))) { finder.shown += 25; return rerender(); }
+    if ((el = g("[data-fmore]"))) { finder.shown += FINDER_STEP; return rerender(); }
+    if ((el = g("[data-fless]"))) { finder.shown = FINDER_FIRST; finder.open = null; return rerender(); }
     if ((el = g("[data-fopen]"))) {
       e.stopPropagation();
       const p = all.find((x) => presetId(x) === el.dataset.fopen);
@@ -14120,68 +14091,66 @@ function renderSimBuild() {
   // (`single_target#cycle#1`) and is not a thing to show anyone.
   const activeLabel = presetLabel(buildNamed(activePreset));
   if (sub) sub.textContent = activeLabel ? `${tr("testing build")}: ${activeLabel}` : "";
-  const chip = (img, label, rk) =>
-    `<span class="sb-chip">${imgTag(img, "sb-img")}<span>${escHtml(label)}</span>${rk != null ? `<span class="rk">R${rk}</span>` : ""}</span>`;
   const w = weaponInfo($("weapon").value);
-  const parts = [];
-  const modChips = slots.map((s) => {
-    const m = s.mod && modById(s.mod);
-    if (!m) return "";
-    return chip(IMG(m.image), m.name, s.rank == null ? m.max_rank : s.rank);
-  }).filter(Boolean);
-  // HOW IT IS PLAYED, first, and READ-ONLY. It is part of the build, so the
-  // simulator shows it and does not offer to change it — the fight owns the
-  // fight and the build owns this. This card is now the ONLY place the mode
-  // appears on this tab: the builder's own control is hidden here, because two
-  // places to read one field with one of them writable is how a build gets
-  // edited somewhere that is not the builder.
-  //
-  // ALWAYS, including a weapon with one way to be fired — the same rule the
-  // builder's block carries ("one mode is stated, not offered"). Drawing it
-  // only where there is a choice makes a summary of the build silently drop a
-  // field the build has.
-  parts.push(`<div class="sb-h">${tr("Mode")}</div>`);
-  parts.push(`<div class="sb-chips"><span class="sb-chip">${
-    escHtml(modeLabel(weaponInfo($("weapon").value), mode))}</span></div>`);
-  parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
-  parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
-  if ((w.arcane_slots || 0) >= 1) {
-    const arcChips = arcanes
-      .map((id, i) => {
+  box.innerHTML = buildCardHtml({
+    mode: modeLabel(w, mode),
+    mods: slots.map((s) => {
+      const m = s.mod && modById(s.mod);
+      return m ? { img: IMG(m.image), label: m.name, rank: s.rank == null ? m.max_rank : s.rank } : null;
+    }).filter(Boolean),
+    arcanes: (w.arcane_slots || 0) >= 1
+      ? arcanes.map((id, i) => {
         const a = id !== "none" && arcaneById(id);
-        return a ? chip(IMG(a.image), a.name, arcaneRanks[i] ?? ((a.ranks || []).length - 1)) : "";
-      })
-      .filter(Boolean);
-    parts.push(`<div class="sb-h">${tr("Arcane")}</div>`);
-    parts.push(`<div class="sb-chips">${arcChips.join("") || `<span class="sb-empty">${tr("no arcane")}</span>`}</div>`);
-  }
-  if (w.uses_evo2) {
-    const evoChips = weaponEvos().map((t) => {
-      const o = evoSel[t.tier] && t.options.find((x) => x.id === evoSel[t.tier]);
-      return o ? chip(o.icon ? IMG(o.icon) : null, `${t.tier} · ${o.name}`) : "";
-    }).filter(Boolean);
-    parts.push(`<div class="sb-h">${tr("Evolutions")}</div>`);
-    parts.push(`<div class="sb-chips">${evoChips.join("") || `<span class="sb-empty">${tr("none selected")}</span>`}</div>`);
-  }
-  // THE VALENCE, LAST — which is where the builder puts it. This card reads in the builder's own order so the two can be
-  // compared line for line, and that makes it the FOURTH block on an adversary
-  // weapon, because such a weapon has no evolutions and the block above it is
-  // not drawn. It sat second for a while, beside the mode, which read as a
-  // different build from the one the builder shows.
-  //
-  // It is part of what this build IS: two Kuva Nukors differing only in
-  // progenitor element are two different builds and two different numbers, so
-  // a card that says "this is what is being tested" and omits it is telling
-  // half of it. Only where the weapon HAS one — the same "no choice, no axis"
-  // rule the builder's block follows — and the percentage rides with the
-  // element, because 60% Heat and 25% Heat are not the same weapon.
-  if (valenceSpec(w.id)) {
-    parts.push(`<div class="sb-h">${tr("Valence")}</div>`);
-    parts.push(`<div class="sb-chips"><span class="sb-chip">${
-      escHtml(DT(valence.element))} +${Math.round(valence.bonus * 1000) / 10}%</span></div>`);
-  }
-  parts.push(`<a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`);
-  box.innerHTML = parts.join("");
+        return a ? { img: IMG(a.image), label: a.name, rank: arcaneRanks[i] ?? ((a.ranks || []).length - 1) } : null;
+      }).filter(Boolean)
+      : null,
+    parts: assembly ? partChipsOf(w.id, assembly.grip, assembly.loader) : null,
+    evolutions: w.uses_evo2 ? evoChipsOf(Object.values(evoSel || {}).filter(Boolean)) : null,
+    valence: valenceSpec(w.id) ? `${DT(valence.element)} +${Math.round(valence.bonus * 1000) / 10}%` : null,
+  }) + `<a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
+}
+
+/// A MODULAR WEAPON'S TWO PARTS AS CHIPS, named from its own assembly spec.
+function partChipsOf(weaponId, grip, loader) {
+  const s = assemblySpec(weaponId) || {};
+  const name = (list, id) => ((list || []).find((x) => x.id === id) || {}).name || prettify(id);
+  return [grip && { label: name(s.grips, grip), key: "part:" + grip },
+    loader && { label: name(s.loaders, loader), key: "part:" + loader }].filter(Boolean);
+}
+
+/// THE CURRENT WEAPON'S EVOLUTIONS AS CHIPS, tier first — by id, so a board
+/// row's list and the live selection read the same way.
+function evoChipsOf(ids) {
+  return weaponEvos().map((t) => {
+    const o = t.options.find((x) => ids.includes(x.id));
+    return o ? { img: o.icon ? IMG(o.icon) : null, label: `${t.tier} · ${o.name}`, key: "evo:" + o.id } : null;
+  }).filter(Boolean);
+}
+
+/// A BUILD AS CHIPS — the simulator's "what is being tested" card, and every
+/// row of the build finder. It takes a DESCRIPTOR, never live state, so the two
+/// cannot drift into two pictures of one build. A section given as null is not
+/// drawn (a weapon without that axis); an empty one says so. A chip's `cls`
+/// carries the finder's comparison marks.
+///
+/// THE BUILDER'S OWN ORDER, so the two read line for line: mode, mods, parts,
+/// arcane, evolutions, and the valence LAST — which on an adversary weapon, with
+/// no evolutions, makes it the fourth block. The mode is stated even where the
+/// weapon has one: a summary that drops a field the build has is not a summary.
+function buildCardHtml(d) {
+  const chip = (c) => `<span class="sb-chip${c.cls ? " " + c.cls : ""}"${c.title ? ` title="${escHtml(c.title)}"` : ""}>` +
+    `${c.img ? imgTag(c.img, "sb-img") : ""}<span>${escHtml(c.label)}</span>${c.rank != null ? `<span class="rk">R${c.rank}</span>` : ""}</span>`;
+  const section = (head, chips, empty) => chips == null ? ""
+    : `<div class="sb-h">${head}</div><div class="sb-chips">${chips.map(chip).join("") || `<span class="sb-empty">${empty}</span>`}</div>`;
+  return [
+    d.mode != null ? section(tr("Mode"), [{ label: d.mode }]) : "",
+    section(`${tr("Mods")} · ${d.mods.length}`, d.mods, tr("no mods equipped")),
+    d.parts ? section(tr("Parts"), d.parts) : "",
+    section(tr("Arcane"), d.arcanes, tr("no arcane")),
+    section(tr("Evolutions"), d.evolutions, tr("none selected")),
+    // Its percentage rides with the element: 60% Heat and 25% Heat are two builds.
+    d.valence ? section(tr("Valence"), [{ label: d.valence }]) : "",
+  ].join("");
 }
 
 // The headshot rate a weapon is played at. A SENTINEL is fired by the

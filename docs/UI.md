@@ -226,17 +226,19 @@ box, the build finder (`renderBuildFinder`), is the board's builds as a table:
 scoped by ruler, mode and riven, filtered by what a build CONTAINS (a mod, an
 arcane, an evolution, a riven stat — each required or excluded, from the search
 box or by clicking a card in the usage rail), sorted, and compared against its
-group's #1. It holds a query and never a selection. "Open" puts the build in the
+group's #1. It lists the top five of a scope until asked for more (twenty at a
+time, folded back in one click). It holds a query and never a selection. "Open" puts the build in the
 build bar as a read-only chip and makes it current; the bar is the one place
 that says which build is open, and `#build-current` says it in words. BUILDER
 ONLY: the simulator keeps the build bar and has no finder.
 
-**A ROW IS ITS WHOLE CONFIGURATION IN ONE LINE.** Exilus | mods | parts |
-element | arcane | evolutions | riven, each group in a fixed place. The mods
-are laid out in the weapon's own usage order, so the same card sits in the same
-column down the table and a difference reads as a gap rather than a word; with
-"compare with #1" on, what the group's #1 also carries is muted and what it does
-not is marked.
+**A ROW IS THE SIMULATOR'S BUILD CARD.** `buildCardHtml` draws a build from a
+descriptor — mods, parts, arcane, evolutions, valence as chips with icons and
+full names — for the simulator's "what is being tested" block and for every
+finder row alike, so the page has one picture of a build. In the finder the mods
+run in the weapon's own usage order (the cards a scope shares lead, what differs
+trails), the riven rides in the mods as its stats, and with "compare with #1" on
+what the group's #1 also carries is muted and what it does not is marked.
 
 **A BOARD BUILD IN THE BAR IS KEPT BY WHAT IT IS.** A builtin id ends in its
 rank, and a rescore renumbers the board, so the bar stores the build's identity
