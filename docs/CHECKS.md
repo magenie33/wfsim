@@ -369,28 +369,30 @@ key, which is now stamped only by a scan that measured everything. On the old
 behaviour it reports `86 of 87 could not be measured`, which is the bug as the
 reader met it.
 
-## `check_build_retriever`
+## `check_build_finder`
 
-**A RETRIEVER'S SHAPE DOES NOT MOVE.** The benchmark bar is four controls —
-ruler, mode, riven, rank — and it draws all four on every weapon: with a hundred
-board rows or with none, and whether or not any of the four has a second answer
-to offer. It grew and shrank before, dropping the riven control entirely wherever
-a mode had one ranking, which taught the reader to read its SHAPE as information
-— and then "no riven control" and "no riven" were the same picture. A dead
-control says "asked, and there was one answer" where an absent one said nothing.
+**THE FINDER FINDS, THE BAR HOLDS.** The build finder is a query over the
+board's builds and never a selection, so every row it lists must satisfy the
+query: a card required from the usage rail is carried by every listed build,
+excluded it is carried by none, and a third click clears it. "Open" makes the
+build current AND puts it in the build bar as a read-only chip, and the finder
+then says it is already there.
 
-**…AND WHAT IS OPEN IS SAID SOMEWHERE ELSE.** The bar's controls fall back to the
-board's leader whenever nothing official is loaded, so a reader on their own
-build was shown a ruler, a mode and a rank belonging to a build that was NOT on
-the page — including on a freshly opened weapon, which opens no row at all. That
-is a sentence the bar was never in a position to say, so `#build-current` says
-it, in each of its three states: a board row (read-only), one of your own, and
-the unsaved build the page starts on.
+**KEPT BY WHAT THE BUILD IS.** A board build's id ends in its rank, so the check
+drops the opened build's score to renumber it, leaves the weapon and comes back:
+the bar must hold that same build once and the page must reopen on it — not on
+whatever now holds the old rank. × takes it out of the bar and leaves an unsaved
+build open rather than another board row.
+
+**…AND WHAT IS OPEN IS SAID SOMEWHERE ELSE.** `#build-current` says it in each
+of its three states: a board row (read-only), one of your own, and the unsaved
+build the page starts on. The scenario bar keeps its single control, and a
+weapon with no rows draws the finder's empty state rather than a stale table.
 
 **IT MUST RUN AGAINST `site/`.** `board/<weapon>.json` is FETCHED at runtime and
 the native dev server does not serve it, so a run pointed at 8787/8799 sees an
-empty board and every assertion passes on placeholder text. The first check asserts the
-weapon under test has rows, which is what makes that loud instead of green.
+empty board and every assertion passes on an empty table. The first check
+asserts the weapon under test has rows, which is what makes that loud.
 
 ## `check_build_size`
 

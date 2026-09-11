@@ -184,20 +184,20 @@ const BUILDS_PROBE = `(async () => {
   out.count = rows.length;
   out.first = rows[0] ? { name: rows[0].name, id: rows[0].builtin, mods: (rows[0].board||{}).mods } : null;
 
-  const bar = $('bench-bar-builder-builds');
+  const box = $('build-finder');
   const own = $('preset-bar-builder-builds');
-  out.barVisible = !bar.hidden;
-  out.notInOwnBar = ![...own.querySelectorAll('.pchip')].some((c) => /^#1/.test(c.dataset.name || ''));
-  bar.querySelector('[data-dd]').click(); await sleep(800);
-  // The FIRST row of the list — its name carries the mode now, so it is picked
-  // by position rather than by a rank that no longer names it alone.
-  const chip = document.querySelector('#dd-menu .opt[data-v]');
-  out.chipFound = !!chip;
-  chip.click(); await sleep(700);
-  // AFTER picking: the copy is offered for the one you are ON, which is the
-  // only build a copy could mean.
-  out.chipMarked = !!bar.querySelector('.pop.dup')
-    && !bar.querySelector('.pop.ren') && !bar.querySelector('.pop.del');
+  // IN THE FINDER, and in the build bar only once it is opened.
+  out.barVisible = !box.hidden && !!box.querySelector('tr.fr');
+  out.notInBarYet = !own.querySelector('.pchip.ro');
+  const open = box.querySelector('[data-fopen]');
+  out.chipFound = !!open;
+  open.click(); await sleep(700);
+  // AFTER opening: a read-only chip, selected, offering the copy and nothing
+  // that would edit it — and never written into your own list.
+  const roSel = () => own.querySelector('.pchip.ro.sel');
+  out.chipMarked = !!roSel() && !!roSel().querySelector('.pop.dup')
+    && !roSel().querySelector('.pop.ren') && !roSel().querySelector('.pop.del');
+  out.notStored = !loadPresetList('builder-builds').some((p) => p.builtin);
   out.isOfficial = officialBuildActive();
   // ...and the BUILD on screen is the board's.
   out.slots = slots.filter((s) => s.mod).map((s) => s.mod).sort();
@@ -217,8 +217,8 @@ const BUILDS_PROBE = `(async () => {
   await sleep(900);
   out.storeUntouched = JSON.stringify(loadPresetList('builder-builds')) === before;
 
-  // ...and the copy button beside the dropdown gives an ordinary editable build.
-  const sel = bar;
+  // ...and the ⧉ on its chip gives an ordinary editable build.
+  const sel = roSel();
   out.hasCopy = !!sel.querySelector('.pop.dup');
   out.hasRename = !!sel.querySelector('.pop.ren');
   sel.querySelector('.pop.dup').click();
@@ -236,7 +236,8 @@ console.log("[board]");
 check("an empty board shows no chips at all", b.emptyBoardChips === 0, String(b.emptyBoardChips));
 check("a board row becomes a chip", b.count === 1, JSON.stringify(b.first));
 check("it offers a copy and nothing that would edit it", b.chipFound && b.chipMarked);
-check("...in the BENCHMARK bar, not yours", b.barVisible && b.notInOwnBar);
+check("...listed in the FINDER, and in the build bar only once opened, never stored as yours",
+  b.barVisible && b.notInBarYet && b.notStored);
 check("opening it puts the board's build on screen",
   b.isOfficial === true
     && JSON.stringify(b.slots) === JSON.stringify(((b.first || {}).mods || []).slice().sort()),

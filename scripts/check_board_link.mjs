@@ -376,33 +376,23 @@ const pick = await evaluate(`(async () => {
   if (deep) {
     const w = (META.weapons || []).find(x => x.id === deep.id);
     history.pushState({}, '', '/weapons/' + wikiSlug(w)); route(); await s(3200);
-    // BY PREFIX, not by the domain's name: each control is the only one whose
-    // id starts this way.
-    const btn = document.querySelector('[id^="dd-bench-row-"]');
-    out.hasPicker = !!btn;
-    const mbtn = document.querySelector('[id^="dd-bench-mode-"]');
-    out.hasModes = !!mbtn;
-    if (mbtn) {
-      mbtn.click(); await s(400);
-      const menu = document.getElementById('dd-menu');
-      out.modeOpts = [...menu.querySelectorAll('.opt[data-v]')].map(el => el.dataset.v);
-      out.modeShown = mbtn.value;
-      document.getElementById('dd-popover').hidden = true;
-      // THE RULER THE BAR IS ON, off its own first control (a shared suffix).
-      const onRuler = (document.getElementById(
-        'dd-bench-' + mbtn.id.slice('dd-bench-mode-'.length)) || {}).value;
+    // THE BUILD FINDER'S SCOPE: one segment button per mode on the ruler it is
+    // on, and a table of the rows under the one that is on.
+    const box = document.getElementById('build-finder');
+    const rows = box ? [...box.querySelectorAll('tr.fr .fd-rank')] : [];
+    out.hasPicker = rows.length > 0;
+    const mbtns = box ? [...box.querySelectorAll('[data-fseg="mo"]')] : [];
+    out.hasModes = mbtns.length > 0;
+    if (mbtns.length) {
+      out.modeOpts = mbtns.map(el => el.dataset.v);
+      out.modeShown = (mbtns.find(el => el.classList.contains('on')) || {}).dataset?.v;
+      const onRuler = ((box.querySelector('[data-fseg="b"].on') || {}).dataset || {}).v;
       out.onRuler = onRuler;
       out.wantModes = [...new Set(builtinBuilds()
         .filter(p => p.benchmark === onRuler).map(p => p.mode))];
     }
-    if (btn) {
-      btn.click(); await s(400);
-      const menu = document.getElementById('dd-menu');
-      out.groups = [...menu.children]
-        .filter(el => el.className.indexOf('ddgroup') >= 0).length;
-      out.rowLabels = [...menu.querySelectorAll('.opt .mn')].map(el => el.textContent.trim());
-      document.getElementById('dd-popover').hidden = true;
-    }
+    out.groups = box ? box.querySelectorAll('.fd-main tbody th').length : 0;
+    out.rowLabels = rows.map(el => (el.firstChild || {}).textContent.trim());
   }
   return out;
 })()`);

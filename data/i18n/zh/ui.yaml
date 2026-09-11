@@ -35,6 +35,10 @@ ui:
   "'weak point hits have +250% CRITICAL CHANCE, additive with mods like Point Strike' (wiki). This engine has no headshot-conditional crit bucket — a crit is rolled for the hit and the body part is drawn beside it — so this arena's crit chance is the unaimed 40% where a headshot lands at 290%. It is the larger half of the weapon": "「爆头命中获得 +250% 暴击率，与 Point Strike 这类 MOD 加算」（维基）。本引擎没有以爆头为条件的暴击池 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这个战场用的是不带这一条的 40%，而一次爆头本该落在 290%。这是这把武器更大的那一半"
   "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads": 瞄准时 +30% 移动速度，以及爆炸对自身的踉跄：这两项都不是这个战场会读取的数字
   "+{n} more took damage — click one to follow it too": 另有 {n} 个吃到伤害，点一下就能跟踪它
+  "Board rank": "排名"
+  "Build finder": "配装查找器"
+  "click: must have · again: exclude · again: clear": "点一下：必须含 · 再点：排除 · 再点：取消"
+  "compare with #1": "对比 #1"
   "following…": 正在跟踪…
   "could not follow that one — try the run again": 跟踪失败，重跑一次试试
   ", ": "、"
@@ -54,6 +58,8 @@ ui:
   "A TOME'S MOD POOL IS ITS OWN and this roster does not load it — `mod_pools: []` here means the builder offers NOTHING, which is honest rather than offering pistol cards a Tome cannot wear. The weapon's numbers are right and no build can be put on it yet": "法典（Tome）有它自己的 MOD 池，而本武器库没有载入它 —— 这里的 `mod_pools: []` 意味着配装页什么都不提供，这比提供一堆法典装不了的手枪卡要诚实。这把武器的数值是对的，只是暂时还没法给它配 MOD"
   "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
   "A desktop version is available for Windows.": "桌面版目前只支持 Windows。"
+  "From the board · read-only": "来自榜单 · 只读"
+  "must have": "含"
   "hosted on {name} — this is where the file comes from": "文件存放在{name}，这就是它的源头"
   "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
   "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.":
@@ -182,6 +188,23 @@ ui:
   "Exilus slot": Exilus 槽
   "Eximus possible": 可以是精英
   "Eximus": 精英
+  "In the bar": "已在栏里"
+  "in {n} builds": "{n} 个配装中"
+  "List": "列表"
+  "Mine": "我的"
+  "Mod matrix": "MOD 矩阵"
+  "Mod usage": "MOD 使用率"
+  "mods, aligned by how often this weapon uses them": "MOD，按这把武器的使用率对齐"
+  "No build matches — remove a condition": "没有符合的配装 —— 去掉一个条件试试"
+  "Nobody has submitted a build for this weapon yet": "这把武器还没有人提交过配装"
+  "must not have": "不含"
+  "nothing is called “{q}”": "没有叫「{q}」的"
+  "Open build": "打开"
+  "Parts": "配件"
+  "Ruler": "基准"
+  "Score": "分数"
+  "search mods, arcanes, evolutions or riven stats": "搜索 MOD、赋能、进化或裂罅词条"
+  "Show {k} more of {n}": "再显示 {k} 个（共 {n} 个）"
   "Squad": 小队人数
   "Explosion on Kill": 击杀爆炸
   "Extra hit (ability)": 技能附加伤害
@@ -224,13 +247,18 @@ ui:
   "Infinite ammo": 无限弹药
   "It does take money and time to run. If it has ever saved you a Forma, you can chip in.":
     它确实要花钱和时间来维持。如果它替你省下过一根 Forma，可以来投喂一下。
+  "take it out of the bar — the board keeps it": "从栏里拿掉 —— 榜单上它还在"
+  "the matrix shows the first {n}": "矩阵只显示前 {n} 个"
   "the record is open in its own window": 战斗记录已在它自己的窗口里打开。
   "Bring it back here": 收回本页
   "Open in its own window": 在新窗口打开
+  "the same build — the difference is how the riven rolled": "同一套配装 —— 差别只在裂罅的数值"
+  "This is #1.": "这就是 #1。"
   "this run measured {v} — #{n} of {of} in {group}, against the board as it stands": 这次跑出 {v} —— 以当前榜单为参照，在 {group} 里排第 {n}，同组共 {of} 套
   "release {r} · commit {c}": 版本 {r} · 提交 {c}
   "board {d} · scored {t} · {n} rows": 榜单 {d} · 结算于 {t} · 共 {n} 行
   "shell {v}": 客户端 {v}
+  "vs #1 ({score})": "对比 #1（{score}）"
   "{a}–{b} of {n}": 第 {a}–{b} 行，共 {n} 行
   "A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It also GRANTS capacity instead of costing it — 10 on a slot of its own polarity, 5 on a bare one, 4 on the wrong colour.": "架势决定这把武器实际挥出的是什么：它按 mode 各发布一套连段，装上就会顶掉武器自己的那套。它还**给予**容量而不是消耗容量——同极性槽位 10 点，无极性 5 点，极性不对 4 点。"
   "the LIFE STEAL this weapon is bought for: a heavy attack grants every attack 5% life steal plus 5% per combo level, permanently and shared with allies within 15 m for the rest of the mission. Nothing damages the Tenno in this arena and there are no allies in it, so what it heals is a number this fight has no use for": "这把武器被买来用的那个**吸血**：一次重击就永久让它的所有攻击获得 5% 吸血，每一级连击再加 5%，并且在剩余任务里对 15 米内的队友共享治疗。这个竞技场里没有任何东西会伤害 Tenno，也没有队友，所以它治的量对这场仗没有用处"
@@ -246,6 +274,7 @@ ui:
   "THE CLIMB IS NOT CHARGED: this loop takes the 150% radius a slam dropped from 15 m gets, and the seconds spent getting up there are free. A player who hops instead trades that radius back down towards the 2.5 m / listed radius floor, and this arena has no vertical axis to tell the two apart": "**爬升的时间没有计费**：这个循环吃的是从 15 米落下所得的 150% 半径，而爬上去花掉的那几秒是白送的。改成小跳的玩家会把这份半径一路交还到 2.5m/面板半径 的下限，而这个竞技场没有垂直轴，分不出这两者"
   "Condition Overload does not apply to slams, heavy slams or radial attacks (the mod's own words), and this entry does not yet exempt it — a build carrying Condition Overload therefore reads HIGH in this mode": 异常状态过载不作用于捶地、重击捶地和径向攻击（mod 卡面原话），而本条目尚未做这个豁免——所以带异常状态过载的配装在这个模式下读数偏高
   "ATTACK SPEED PAYS NOTHING IN THIS MODE. The wiki's own sentence is 'Increasing melee attack speed does not reduce the wind-up time; rather, it reduces the interval between heavy attacks' — and nothing published says how long the swing after the charge takes, so this entry carries no animation for attack speed to shorten and the cadence is the wind-up alone. A build on Fury or Berserker reads LOW here": "**攻速在这个模式里一分钱都不值**：「提高近战攻速不会缩短蓄力时间，它缩短的是两次重击之间的间隔」 —— 而蓄力之后那一挥要多久，没有任何地方发布过，所以本条目没有一段可供攻速缩短的动作时间，节奏就只有蓄力本身。用狂怒或狂战士的配装在这里读数偏低"
+  "{n} of {m} builds": "{n} / {m} 个配装"
   "{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.": 共 {n} 击，合计基伤的 {total}%，在 1.0x 攻速下耗时 {secs} 秒。
   "Neutral Combo": 中立连段
   "Forward Combo": 前冲连段
@@ -1175,6 +1204,7 @@ ui:
   "{n} of {m} mods": "{n}/{m} 个 mod"
   "{n} of {t} entries measured · ranked by {m}": "{t} 个参赛位中已测 {n} 个 · 按 {m} 排名"
   "{n} {what} fill it, and the earned form fires {rounds} before it ends.": 需要 {n} 次{what}才能填满，换来的形态能打 {rounds} 发然后结束。
+  "{p}% use it": "{p}% 在用"
   "{runs} engagements · {rolls} damage instances rolled, on your own machine.":
     "{runs} 次交战 · {rolls} 次伤害判定，全部跑在你自己的机器上。"
   "{what} — the board takes a weapon built as far as it goes, so this one is not sent": "{what} —— 榜单收的是这把武器的最努力配置，所以这一份不会提交"

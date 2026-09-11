@@ -9,10 +9,10 @@
 //     benchmark build showed full drain (91/60, red) until you clicked
 //     something. The check reloads with the benchmark build already active,
 //     which is the exact path that was skipped.
-//  2. IT STAYS IN THE BUILDER. The benchmark bar and its note are the build
-//     collection's read-only half, so the optimizer — which owns no build —
-//     must not show them. Hiding is by CSS id list, which is the kind of thing
-//     a new element silently falls out of.
+//  2. THE FINDER STAYS IN THE BUILDER. The build finder is the builder's alone
+//     and the note is the build collection's, so the simulator shows only the
+//     bar and the optimizer — which owns no build — neither. Hiding is by CSS id
+//     list, which is the kind of thing a new element silently falls out of.
 //
 //   node scripts/check_benchmark_build.mjs
 //
@@ -40,13 +40,9 @@ const SETUP = `(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
   history.pushState({},'','/weapons/${WEAPON.path}'); route(); await sleep(4500);
-  // THE OFFICIAL BAR IS ONE DROPDOWN. It was a row of chips while a weapon had
-  // ten board rows under one ruler; the board is rulers x modes now, so the
-  // rank alone is not a name and the list is picked from rather than scanned.
-  const bar = document.getElementById('bench-bar-builder-builds');
-  bar.querySelector('[data-dd]').click(); await sleep(900);
-  const first = document.querySelector('#dd-menu .opt[data-v]');
-  first.click(); await sleep(1800);
+  // OPENED FROM THE BUILD FINDER, whose first row is the leader of the scope it
+  // starts on.
+  document.querySelector('#build-finder [data-fopen]').click(); await sleep(1800);
   // What it looks like when SELECTED — the path that already worked.
   return { cap: (document.getElementById('capacity')||{}).textContent,
            over: !!document.querySelector('#capacity.over, #capacity.bad'),
@@ -139,20 +135,19 @@ const views = await evaluate(`(async () => {
     history.pushState({}, '', '/weapons/${WEAPON.path}' + suffix); route();
     await sleep(2000);
     out[name] = { body: document.body.className,
-                  bar: vis('bench-bar-builder-builds'), note: vis('build-official'),
+                  finder: vis('build-finder'), note: vis('build-official'),
                   own: vis('preset-bar-builder-builds') };
   }
   return out;
 })()`);
 console.log("");
-check("the benchmark bar shows in the builder", views.builder.bar === true, JSON.stringify(views.builder));
-// The build bar is deliberately visible on the simulator (you test a build
-// there), so its benchmark half follows it — the rule is that the two travel
-// together, not that the bar is builder-only.
-check("...and follows the build bar on the simulator",
-      views.simulator.bar === views.simulator.own, JSON.stringify(views.simulator));
-check("...and is ABSENT from the optimizer, which owns no build",
-      views.optimizer.bar === false && views.optimizer.note === false && views.optimizer.own === false,
+check("the build finder shows in the builder", views.builder.finder === true, JSON.stringify(views.builder));
+// THE FINDER IS THE BUILDER'S, and only the builder's: the simulator keeps the
+// build bar (you test a build there) and finds nothing.
+check("...and is ABSENT from the simulator, which keeps only the build bar",
+      views.simulator.finder === false && views.simulator.own === true, JSON.stringify(views.simulator));
+check("...and from the optimizer, which owns no build",
+      views.optimizer.finder === false && views.optimizer.note === false && views.optimizer.own === false,
       JSON.stringify(views.optimizer));
 
 await app.finish("all good");

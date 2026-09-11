@@ -219,6 +219,35 @@ deleted, and the editor stands down instead of showing a document that is not
 there. Presets are not — the modules behind them always have a state, and "no
 build" is not something the builder can show.
 
+## The build finder
+
+**EVERY BUILD IS IN THE BUILD BAR; THE FINDER ONLY FINDS.** The builder's top
+box, the build finder (`renderBuildFinder`), is the board's builds as a table:
+scoped by ruler, mode and riven, filtered by what a build CONTAINS (a mod, an
+arcane, an evolution, a riven stat — each required or excluded, from the search
+box or by clicking a card in the usage rail), sorted, and compared against its
+group's #1. It holds a query and never a selection. "Open" puts the build in the
+build bar as a read-only chip and makes it current; the bar is the one place
+that says which build is open, and `#build-current` says it in words. BUILDER
+ONLY: the simulator keeps the build bar and has no finder.
+
+**A ROW IS ITS WHOLE CONFIGURATION IN ONE LINE.** Exilus | mods | parts |
+element | arcane | evolutions | riven, each group in a fixed place. The mods
+are laid out in the weapon's own usage order, so the same card sits in the same
+column down the table and a difference reads as a gap rather than a word; with
+"compare with #1" on, what the group's #1 also carries is muted and what it does
+not is marked.
+
+**A BOARD BUILD IN THE BAR IS KEPT BY WHAT IT IS.** A builtin id ends in its
+rank, and a rescore renumbers the board, so the bar stores the build's identity
+(`boardRowIdentity`) plus its cell, per weapon (`wfsim-opened-board-<weapon>`),
+and the OPEN board build is recorded the same way beside the active pointer
+(`wfsim-opened-board-active-<weapon>`) — a page reopens on the build, never on
+whatever holds its old rank. A build that has left the board stops resolving and
+drops out of the bar; nothing is pruned while the weapon's board is not in hand.
+× on its chip takes it out of the bar (the board keeps it) and, if it was open,
+lands on your first build or the blank one.
+
 ## A share link is a build, and never a fight
 
 **A SHARE LINK IS A STATEMENT ABOUT A WEAPON, NEVER ABOUT A FIGHT.**

@@ -147,16 +147,15 @@ for (const lang of ["en", "zh"]) {
 const surfaces = (weapon) => `(async () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   history.pushState({}, '', '/weapons/${weapon}'); route(); await sleep(4000);
-  const bar = document.getElementById('bench-bar-builder-builds');
-  const dd = bar && bar.querySelector('[id^=dd-bench-mode-]');
-  const chip = bar && bar.querySelector('.pmode');
+  const box = document.getElementById('build-finder');
+  const seg = box && box.querySelector('[data-fseg="mo"]');
   return {
     modes: (weaponInfo('${weapon}'.toLowerCase()) || {}).modes || [],
-    // THE BAR NAMES IT — a control where there is a choice, a value where
-    // there is not. Either counts; neither does not.
-    barHidden: !bar || bar.hidden,
-    named: !!(dd || chip),
-    namedText: ((dd || chip || {}).textContent || '').trim(),
+    // THE FINDER NAMES IT — its mode segment is drawn with one button as
+    // readily as with four.
+    barHidden: !box || box.hidden || !!box.querySelector('.fd-empty:only-child, .fd-head + .fd-empty'),
+    named: !!seg,
+    namedText: ((seg || {}).textContent || '').trim(),
     // …AND SO DOES THE ROW'S OWN NAME, which travels to the simulator tab.
     rowNames: builtinBuilds().slice(0, 6).map(p => p.name),
   };
@@ -168,9 +167,9 @@ for (const w of ["Ocucor", "Ballistica_Prime"]) {
     // Nobody has submitted a build for this weapon, which is ordinary — there
     // is no bar to assert about, and saying so beats a green tick that means
     // the check found nothing.
-    check(`${w}: the benchmark bar is absent (no submissions)`, true, "skipped");
+    check(`${w}: the build finder is empty (no submissions)`, true, "skipped");
   } else {
-    check(`${w}: the benchmark bar names the mode (${r.modes.length} mode(s))`,
+    check(`${w}: the build finder names the mode (${r.modes.length} mode(s))`,
       r.named === true, r.namedText || "nothing drawn");
     check(`${w}: ...and every row name carries it`,
       r.rowNames.length > 0 && r.rowNames.every((n) => / · /.test(n)),
