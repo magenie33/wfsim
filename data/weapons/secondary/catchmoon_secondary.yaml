@@ -72,6 +72,8 @@ attack:
 unmodeled:
   - "the guaranteed Impact proc reaches only 9 metres (further with Projectile Speed mods) and is applied at every distance here, since a forced proc carries no range of its own"
   - "the projectile is WIDE — the page likens it to the Arca Plasmor's — and this arena fires a ray, so with the infinite punch through above only the bodies on the line are struck"
+  - "the 20 m range is the projectile's 0.42 s lifetime, so Projectile Speed mods lengthen it in game ('Fatal Acceleration/Lethal Momentum is recommended to increase Catchmoon's limited range'); here they move the falloff and the cut-off stays at 20 m"
+  - "the Eclipse damage buff does not reach this chamber ('Catchmoon Kitguns are not affected by the damage buff from Eclipse', wiki Catchmoon §Bugs), and a buff here reaches every weapon alike — so a fight with Eclipse up pays this weapon a bonus the game does not"
   - reason: projectile_must_be_led
 
 source:

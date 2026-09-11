@@ -70,7 +70,7 @@ attack:
     falloff_reduction: 0.50
 
 unmodeled:
-  - "the THREE BOMBLETS the sac splits into are not fired. The module lists a 'Bomblet Impact' and a 2.1 m 'Bomblet Explosion' (falloff to 80%), both Toxin, and neither it nor the page says what share of the chamber's Toxin they carry — so the whole of it goes to the first explosion and the bomblets add nothing"
+  - "the THREE BOMBLETS the sac splits into are not fired. The module lists a 'Bomblet Impact' and a 2.1 m 'Bomblet Explosion' (Reduction 0.8, so falloff to 20%), both Toxin; the CO catalog prices a Bomblet Impact at 9 on a grip it does not name, and nothing prices the Bomblet Explosion. The whole of the chamber's Toxin goes to the first explosion, which over-pays it if the bomblets share that Toxin and under-pays the shot if they add to it"
   - "the CO catalog's row is 'Sporelacer (Secondary) | Normal Attack | 90.5 | 57 | 63% | Adding | Some reason CO-bonus uses 57 damage value for any configuration' — a term on a FIXED 57 whatever the grip, which no fraction of the direct hit can say. The direct hit takes the ordinary term on its own Impact instead: none at all on the default Gibber grip, 261 on Haymaker"
   - "the projectile falls off from 13 m to 26 m to an amount nobody publishes ('100% to ?%' on the page; the module's author marks its own figure unknown), so no falloff is applied"
   - "the sac ARCS heavily, 'reduced by Projectile Speed'"

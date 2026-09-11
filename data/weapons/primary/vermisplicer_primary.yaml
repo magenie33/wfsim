@@ -77,6 +77,7 @@ attack:
 unmodeled:
   - "the three tendrils FAN OUT from the struck enemy ('within 6 meters of the main target'), where the chain here is a path whose every hop measures 6 m from the last. Against a tight group the two agree; a third enemy 6-12 m from the first is reached here and not in game"
   - "with PUNCH THROUGH the chains come off 'the furthest target hit by the primary beam that can spawn the chain beams', and only one target spawns them; here every body the beam crosses seeds its own"
+  - "'Chain beams will not target an enemy that has already been hit by the primary beam'; here a chain may strike a body the beam punched through"
   - "the tendril auto-targets, which leaves 'a noticeable delay between opening fire and actually dealing damage', ammo spent all the while"
 
 source:

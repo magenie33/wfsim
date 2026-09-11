@@ -72,6 +72,7 @@ attack:
 
 unmodeled:
   - "the tendrils AIM THEMSELVES: 'three tendrils can latch onto different enemies and stay locked onto them', and 'some tendrils can frequently fail to lock anything leading to a variable loss of DPS'. All five land on the target here, which the page says is what 'staying at melee range of a target and directly aiming at it' forces"
+  - "the tendrils auto-target, which leaves 'a slight delay between opening fire and actually dealing damage', ammo spent all the while"
   - "an auto-targeted tendril 'will always aim at an enemy's center and will not headshot'; only one aimed above the enemy can"
 
 source:

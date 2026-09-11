@@ -78,6 +78,7 @@ attack:
   damage: { radiation: 29 }
 
 unmodeled:
+  - "the sphere also forms at the beam's MAXIMUM RANGE ('The zone of impact or maximum beam range creates a spherical area of effect of 3 meters'); here the reach is a wall, so a target up to 3 m past it takes nothing"
   - "punch through MOVES the sphere: 'The weapon's area of effect is applied at the final point of contact rather than whenever an enemy is struck', so a punch-through build drops the sphere behind the last body it crosses"
 
 source:
