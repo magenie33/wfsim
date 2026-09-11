@@ -157,21 +157,21 @@ body.on-enemies [data-module="builder"]{display:none}
 .tl-x{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-top:2px}
 .tl-ymax{position:absolute;top:0;left:4px;color:var(--muted);font-size:10px}
 .tl-tip{position:absolute;top:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;pointer-events:none;white-space:nowrap}
-/* The build bar's companions travel WITH it. `#bench-bar-builder-builds` and
-   `#build-official` are the benchmark half of the build collection, so any view
-   that hides the build bar hides them too — listing only the bar put a
-   read-only build chip and its note at the top of the optimizer, which owns no
-   build. */
-/* …and the builder's furniture that is not a `.block`: its preset bars and the
-   quick calc. Named here because they carry no block of their own; the BLOCKS
-   are covered by the derived rule above. */
-.on-optimizer #bench-bar-builder-builds,.on-optimizer #build-official,.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
+/* THE BUILD FINDER IS THE BUILDER'S ALONE. The build bar follows a build onto
+   the simulator; finding one is a builder question, so every other module
+   hides it. */
+.on-simulator #build-finder,.on-optimizer #build-finder,.on-rivens #build-finder,.on-enemies #build-finder{display:none}
+/* The build bar's companions travel WITH it: `#build-official` is the
+   read-only half of the build collection, so any view that hides the bar hides
+   it too. …and the builder's furniture that is not a `.block`: its preset bar
+   and the quick calc. */
+.on-optimizer #build-official,.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
 /* The RIVENS tab is its own bench: the builder's blocks step aside, the same
    way they do for the other two modules. */
-.on-rivens #bench-bar-builder-builds,.on-rivens #build-official,.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mode-block,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
+.on-rivens #build-official,.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mode-block,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
 /* The ENEMIES editor is the same shape as the rivens one: its own bench, the
    builder's blocks step aside. */
-.on-enemies #bench-bar-builder-builds,.on-enemies #build-official,.on-enemies #preset-bar-builder-builds,.on-enemies #quick-calc,.on-enemies #mode-block,.on-enemies #mod-block,.on-enemies #arcane-block,.on-enemies #evo-block,.on-enemies #element-block,.on-enemies #stats-block{display:none}
+.on-enemies #build-official,.on-enemies #preset-bar-builder-builds,.on-enemies #quick-calc,.on-enemies #mode-block,.on-enemies #mod-block,.on-enemies #arcane-block,.on-enemies #evo-block,.on-enemies #element-block,.on-enemies #stats-block{display:none}
 /* THE TARGET EDITOR. A grid of plain fields, a vulnerability column and a
    body-part list — nothing here is a picker, because every value is a number
    the player is stating rather than choosing from what exists. */
@@ -255,25 +255,140 @@ body.on-enemies [data-module="builder"]{display:none}
 
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
-/* The BENCHMARK bar. A gold left edge and a tighter box, so it reads as a
-   header over the bar below rather than as a second collection of your own.
-   ONE DROPDOWN rather than chips: the board is rulers x modes now, and a row
-   of forty chips is neither readable nor searchable. */
+/* The official SCENARIO bar. A gold left edge and a tighter box, so it reads as
+   a header over the bar below rather than as a second collection of your own.
+   ONE DROPDOWN rather than chips: one entry per ruler, picked from a list. */
 .bench-bar{margin-bottom:6px;padding:6px 12px;border-left:2px solid var(--gold)}
 /* Sized to its content, not to the bar: it sits beside a label and a copy
    button, and a full-width control there would read as the bar itself. */
 .bench-bar .dd{height:26px;min-width:150px;max-width:min(360px,60vw)}
-/* A CONTROL WITH NOTHING TO PICK. It stays in the row — the SHAPE of this bar
-   is what says it is a retriever, so a question that had one answer must still
-   look asked — and loses only its affordance: no caret hover, no pointer, and
-   the value in the same place a live one puts it. */
 .bench-bar .dd[disabled]{cursor:default;opacity:.72}
 .bench-bar .dd[disabled]:hover{border-color:var(--line)}
 .bench-bar .dd[disabled] .dd-c{opacity:.35}
-/* TWO CONTROLS, TWO SIZES. The first holds a ruler's whole sentence; the
-   second holds "#7". Giving them the same 150px floor made a rank read as a
-   control with something missing from it. */
-.bench-bar .dd[id*="-row-"]{min-width:76px;flex:0 0 auto}
+/* THE BUILD FINDER — a table of the board's builds. It holds a QUERY and never a
+   selection, so it carries no gold edge and no "selected" chip: what is open is
+   the build bar's to say. */
+.finder{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 12px;--req:var(--s7)}
+.finder[hidden]{display:none}
+.fd-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line)}
+.fd-title{font-weight:700;font-size:13.5px;white-space:nowrap}
+.fd-title small{font-weight:400;color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}
+.fd-q{flex:1 1 320px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:32px;padding:3px 8px;border:1px solid var(--line);border-radius:9px;background:var(--plane);position:relative}
+.fd-q:focus-within{border-color:var(--accent)}
+.fd-q input{flex:1;min-width:150px;border:0;outline:0;background:transparent;font:inherit;font-size:12.5px;color:var(--text);height:24px}
+.fd-tok{display:inline-flex;align-items:center;gap:4px;height:23px;padding:0 3px 0 8px;border-radius:6px;font-size:12px;background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.fd-tok i{font-style:normal;color:var(--req)}
+.fd-tok.exc{border-color:color-mix(in srgb,var(--critical) 45%,var(--line))}
+.fd-tok.exc i{color:var(--critical)}
+.fd-tok.exc b{text-decoration:line-through;font-weight:400}
+.fd-tok.req{border-color:color-mix(in srgb,var(--req) 50%,var(--line))}
+.fd-tok b{font-weight:500}
+.fd-tok button{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0 4px;font-size:13px;line-height:1}
+.fd-tok button:hover{color:var(--critical)}
+.fd-sugg{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 26px rgba(0,0,0,.2);z-index:40;overflow:hidden}
+.fd-sg{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12.5px}
+.fd-sg.hi,.fd-sg:hover{background:var(--panel3)}
+.fd-sg .k{font-size:10.5px;color:var(--muted);min-width:44px}
+.fd-sg .nm{flex:1}
+.fd-sg .pc{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11.5px}
+.fd-sg button{height:22px;border-radius:6px;border:1px solid var(--line);background:transparent;font-size:11.5px;padding:0 7px;cursor:pointer;color:var(--text)}
+.fd-sg button.p{border-color:var(--req);color:var(--req)}
+.fd-sg button.n{color:var(--critical)}
+.fd-cmp{display:inline-flex;flex-direction:row;align-items:center;gap:5px;font-size:12px;color:var(--text-2);white-space:nowrap;cursor:pointer}
+.fd-cmp input{width:auto;margin:0}
+.fd-views{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.fd-views button{border:0;background:transparent;padding:0 10px;height:28px;font:inherit;font-size:12px;cursor:pointer;color:var(--text-2)}
+.fd-views button.on{background:var(--panel2);color:var(--text);font-weight:600}
+.fd-scope{display:flex;flex-wrap:wrap;gap:8px 18px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel3)}
+.fd-seg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.fd-seg > span{font-size:11px;color:var(--muted)}
+.fd-seg button{height:26px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--text)}
+.fd-seg button:hover{border-color:var(--accent)}
+.fd-seg button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;font-weight:600}
+.fd-seg button em{font-style:normal;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums;font-size:11px}
+.fd-seg button[disabled]{opacity:.45;cursor:default}
+.fd-rail{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr) minmax(0,1.2fr);gap:18px;padding:9px 12px 11px;border-bottom:1px solid var(--line)}
+@media (max-width:860px){.fd-rail{grid-template-columns:1fr}}
+.fd-rail h4{margin:0 0 5px;font-size:11px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.fd-rail h4 small{font-weight:400}
+.fd-use{display:grid;gap:2px}
+.fd-use.mods{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:6px}
+@media (max-width:640px){.fd-use.mods{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fd-u{display:grid;grid-template-columns:1fr 34px;align-items:center;gap:6px;padding:2px 6px;border-radius:6px;font:inherit;font-size:12px;cursor:pointer;position:relative;border:1px solid transparent;background:transparent;text-align:left;color:var(--text)}
+.fd-u:hover{background:var(--panel3)}
+.fd-u .ub{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:6px}
+.fd-u span{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-u .pc{text-align:right;color:var(--text-2);font-variant-numeric:tabular-nums;font-size:11.5px}
+.fd-u.req{border-color:var(--req)}
+.fd-u.exc{border-color:var(--critical);opacity:.8}
+.fd-u.exc span:first-of-type{text-decoration:line-through}
+.fd-hint{font-size:11px;color:var(--muted);margin:4px 0 0}
+.fd-main{overflow-x:auto}
+.fd-main table{border-collapse:collapse;width:100%;min-width:640px}
+.fd-main th{font-size:10.5px;color:var(--muted);font-weight:600;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.fd-main th .sort{cursor:pointer}
+.fd-main th .sort:hover{color:var(--text)}
+.fd-main td{padding:6px 8px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+.fd-main tr.fr{cursor:pointer}
+.fd-main tr.fr:hover td,.fd-main tr.fr.x td{background:var(--panel3)}
+.fd-rank{font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-2)}
+.fd-sv{display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fd-sd{font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.fd-sbar{height:4px;border-radius:2px;background:color-mix(in srgb,var(--accent) 12%,transparent);margin-top:4px;overflow:hidden;min-width:96px}
+.fd-sbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+/* THE CONFIGURATION STRIP — every part of a build in a fixed position, on two
+   lines: Exilus | mods aligned by usage, then arcane | evolutions | riven. */
+.fd-cfg{display:grid;gap:3px;justify-items:start}
+.fd-line{display:flex;align-items:stretch;gap:4px}
+.fd-grp{display:flex;gap:2px;padding:2px;border-radius:7px;background:var(--panel3);border:1px solid var(--line)}
+.fd-c{position:relative;display:grid;place-items:center;width:48px;height:26px;padding:3px 3px 0;border-radius:5px;background:var(--surface);font-size:11px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.fd-c.arc{width:58px}
+.fd-c.evo{width:48px}
+.fd-c.vac{background:transparent;border:1px dashed var(--line);color:var(--muted);font-size:10px}
+.fd-c sup,.fd-c sub{position:absolute;top:2px;font-size:8.5px;line-height:1;font-weight:600}
+.fd-c sup{left:3px;color:var(--muted)}
+.fd-c sub{right:3px;color:var(--gold)}
+.fd-c.rv{background:color-mix(in srgb,var(--gold) 14%,var(--surface));color:var(--gold);font-weight:600}
+.fd-cfg.cmp .fd-c.same{color:var(--muted);background:transparent}
+.fd-cfg.cmp .fd-c.diff{background:color-mix(in srgb,var(--good) 16%,var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--good) 55%,transparent)}
+.fd-c.hit{box-shadow:inset 0 0 0 1.5px var(--req)}
+.fd-rv{display:grid;align-content:center;min-width:96px;padding:0 7px;border-radius:7px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));background:color-mix(in srgb,var(--gold) 7%,var(--surface));font-size:11px;line-height:1.35;white-space:nowrap}
+.fd-rv .neg{color:var(--critical)}
+.fd-rv.none{border-style:dashed;border-color:var(--line);background:transparent;color:var(--muted);min-width:56px;text-align:center}
+.fd-legend{display:grid;gap:1px;font-weight:500}
+.fd-open{height:25px;padding:0 10px;border-radius:7px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font:inherit;font-size:12px;white-space:nowrap}
+.fd-open:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.fd-open.in{border-color:var(--line);color:var(--muted)}
+.fd-main tr.fdet td{background:var(--panel3);padding:10px 12px 12px}
+.fd-det{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px}
+@media (max-width:760px){.fd-det{grid-template-columns:1fr}}
+.fd-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.fd-slot{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;min-height:32px;display:flex;align-items:center}
+.fd-slot.rv{border-color:var(--gold);color:var(--gold)}
+.fd-dt{font-size:11px;color:var(--muted);margin:9px 0 4px;font-weight:600}
+.fd-dt:first-child{margin-top:0}
+.fd-diff{display:flex;flex-wrap:wrap;gap:4px}
+.fd-diff span{font-size:12px;padding:1px 6px;border-radius:5px;background:var(--surface);border:1px solid var(--line)}
+.fd-diff .plus{color:var(--good-text)}
+.fd-diff .minus{color:var(--critical)}
+.fd-more{display:flex;justify-content:center;padding:9px}
+.fd-more button{height:28px;border-radius:8px;border:1px dashed var(--line);background:transparent;padding:0 14px;cursor:pointer;color:var(--text-2);font:inherit;font-size:12px}
+.fd-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px}
+.fd-mx{border-collapse:separate;border-spacing:0}
+.fd-main .fd-mx{min-width:0;width:auto}
+.fd-mx th.c{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11.5px;color:var(--text-2);height:118px;padding:6px 2px;width:26px;font-weight:500;text-align:left}
+.fd-mx td{padding:2px;border-bottom:0}
+.fd-mx td.cell i{display:block;width:18px;height:14px;margin:auto;border-radius:3px;background:var(--panel2)}
+.fd-mx td.cell.on i{background:var(--accent)}
+.fd-mx td.cell.on.hit i{background:var(--req)}
+.fd-mx td.lab{white-space:nowrap;font-size:12px;padding:2px 10px 2px 0;font-variant-numeric:tabular-nums}
+.fd-mx td.lab .fd-sbar{width:90px;min-width:0;display:inline-block;vertical-align:middle;margin:0 0 0 6px}
+/* A BOARD BUILD IN THE BUILD BAR: dashed and locked, the same read-only mark
+   the scenario bar's official entries carry; × takes it out of the bar. */
+.preset-bar .pgroup{font-size:10.5px;color:var(--muted)}
+.preset-bar .psep{width:1px;align-self:stretch;background:var(--line);margin:2px 3px}
+.pchip.ro .plock{width:11px;height:11px;color:var(--gold);flex:none}
+.pchip.ro .pop.unpin:hover{color:var(--critical)}
 /* WHAT IS OPEN. Not a bar: the two above are things you operate, and this is a
    sentence about the page, so it carries no box of its own and sits under them
    in the reading order the question arrives in — "what am I looking at" comes
