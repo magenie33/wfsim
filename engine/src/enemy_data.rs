@@ -479,25 +479,24 @@ source: { url: "synthetic" }
         assert!(on.is_empty(), "no unit turns it on today: {on:?}");
     }
 
-    /// A DEMOLISHER'S RESTRICTIONS, and NOT ONE OF THEM STOPS A PROC LANDING.
+    /// A DEMOLISHER'S RESTRICTIONS, and the point is that they are THREE
+    /// different mechanics wearing one word — plus a fourth the GAME does not
+    /// currently apply at all.
     ///
-    /// The wiki's list is *"Confusion, Knockdown, Lifted, Stagger, Stun
-    /// EFFECTS"*, and the last word decides it: an effect is what a proc DOES.
-    /// Two of the five have a weapon status behind them — Confusion is
-    /// Radiation's and Stagger is Impact's — and both land, take their share of
-    /// the rolls and count as a status type for Condition Overload.
+    /// 1. RADIATION CANNOT LAND (MEASUREMENTS M87). Dropped from the proc draw,
+    ///    so every other type renormalises onto the roll and becomes MORE
+    ///    likely.
+    /// 2. IMPACT LANDS AND DOES NOTHING. Its Stagger is crowd control this unit
+    ///    ignores — but the proc still takes its share of the rolls and still
+    ///    counts as a status type for Condition Overload.
+    /// 3. IT IS NEVER FROZEN, which makes Cold BETTER here. The ladder normally
+    ///    spends itself every tenth proc; here it climbs to the cap and stays.
     ///
-    /// READING EITHER AS A PROC IMMUNITY IS WRONG TWICE: the draw renormalises
-    /// without that type so every other status gets rarer, and a Condition
-    /// Overload build loses a type it actually has. Radiation was in the wrong
-    /// list here, which is exactly the failure the Impact note warned about.
-    ///
-    /// THE ONE PROC IMMUNITY THE PAGE STATES IS SOMEBODY ELSE'S: Viral, on the
-    /// INFESTED Demolishers. This unit is Grineer.
-    ///
-    /// IT IS NEVER FROZEN, which is the third kind again — the Cold proc lands
-    /// and one thing it does is missing, so the ladder climbs to its cap and
-    /// stays instead of spending itself every tenth proc.
+    /// ONLY THE GAME TELLS (1) AND (2) APART. The wiki puts both in one
+    /// sentence — "Confusion, Knockdown, Lifted, Stagger, Stun effects" — which
+    /// reads as though neither were a proc immunity, and taking it that way
+    /// turns (1) into (2). That is a change to every status build's numbers
+    /// made from a secondary source, which is what M87 exists to stop.
     #[test]
     fn a_demolishers_three_restrictions_are_three_different_mechanics() {
         let roster = all();
@@ -515,54 +514,51 @@ source: { url: "synthetic" }
             "…and the card says so: {:?}",
             d.unmodeled
         );
-        // NOTHING IS DROPPED FROM THE DRAW. An entry here would make every
-        // other status likelier, which is a change to every status build's
-        // numbers made by a data file nobody re-read.
-        assert!(d.status_immunities.is_empty(), "{:?} cannot land", d.status_immunities);
-        assert_eq!(
-            d.nullified_status_effects, ["radiation", "impact"],
-            "both land and both do nothing"
-        );
+        assert_eq!(d.status_immunities, ["radiation"], "cannot land");
+        assert_eq!(d.nullified_status_effects, ["impact"], "lands, does nothing");
         assert!(d.cannot_be_frozen);
         assert!(
             d.damage_modifiers.is_none(),
             "none of this is a x0 column: the damage is untouched"
         );
 
-        // BOTH NULLIFIED TYPES STILL TAKE THEIR SHARE OF THE ROLLS, which is
-        // the whole difference between the two lists and the thing that was
-        // wrong here.
+        // (1) AND (2) TOLD APART BY THE DRAW, which is the whole reason they
+        // are two fields and not one list.
         let immune: Vec<crate::damage::DamageType> = d
             .status_immunities
             .iter()
             .filter_map(|s| crate::damage::DamageType::from_name(s))
             .collect();
-        let share = |ty: crate::damage::DamageType, immune: &[crate::damage::DamageType]| {
+        let share = |ty: crate::damage::DamageType| {
             let v = crate::damage::DamageVector::new()
                 .with(ty, 75.0)
                 .with(crate::damage::DamageType::Slash, 25.0);
             let mut rng = crate::rng::Rng::new(0xD3E0);
             (0..4000)
-                .filter(|_| crate::status::draw_proc_type(&v, immune, &mut rng) == Some(ty))
+                .filter(|_| crate::status::draw_proc_type(&v, &immune, &mut rng) == Some(ty))
                 .count()
         };
-        for ty in [crate::damage::DamageType::Impact, crate::damage::DamageType::Radiation] {
-            let n = share(ty, &immune);
-            assert!(
-                (2800..3200).contains(&n),
-                "{ty:?} still takes its 3/4 of the rolls on this unit: {n} of 4000"
-            );
-        }
-
-        // …AND WHAT A PROC IMMUNITY WOULD HAVE DONE, on a list this unit does
-        // NOT have. The mechanism is real and belongs to the units that do have
-        // one; asserting it against a fixture is what keeps the difference
-        // visible after the day Radiation was taken out of the real list.
-        let pretend = [crate::damage::DamageType::Radiation];
-        assert_eq!(
-            share(crate::damage::DamageType::Radiation, &pretend), 0,
-            "an immune type is dropped from the draw, not merely made rarer"
+        // IMPACT IS NULLIFIED AND STILL ROLLS — 3/4 of this vector, which it
+        // would lose entirely if it were read as an immunity.
+        let impacts = share(crate::damage::DamageType::Impact);
+        assert!(
+            (2800..3200).contains(&impacts),
+            "Impact still takes its 3/4 of the rolls on this unit: {impacts} of 4000"
         );
+        // …AND RADIATION IS DROPPED, not merely made rarer: the rest
+        // renormalise, so Slash takes every roll rather than its old quarter.
+        assert_eq!(share(crate::damage::DamageType::Radiation), 0, "Radiation cannot land");
+        let vr = crate::damage::DamageVector::new()
+            .with(crate::damage::DamageType::Radiation, 75.0)
+            .with(crate::damage::DamageType::Slash, 25.0);
+        let mut rng = crate::rng::Rng::new(0xD3E0);
+        let slashes = (0..4000)
+            .filter(|_| {
+                crate::status::draw_proc_type(&vr, &immune, &mut rng)
+                    == Some(crate::damage::DamageType::Slash)
+            })
+            .count();
+        assert_eq!(slashes, 4000, "…and the rest RENORMALISE onto the roll");
     }
 
     /// **A SQUAD MAKES THE DEMOLISHER FATTER AND NOTHING ELSE.**

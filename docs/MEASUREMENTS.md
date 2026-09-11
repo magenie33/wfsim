@@ -170,6 +170,7 @@ path, so an entry may be renamed but never renumbered.
 | [M84](measurements/M84-paris-prime-incarnon-co-reads-the-evolved-base.md) | the Paris Prime's Incarnon form computes Condition Overload on ALL of its evolved base, and applies it as a multiplier | ✅ 2026-09-10 (owner) |
 | [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) | the Boar Incarnon takes NO punch through, where its base form does; its three self-aiming beams reach nine bodies in all, and only the aimed one can headshot | ✅ 2026-09-10 (owner) |
 | [M86](measurements/M86-a-chain-prefers-a-body-nobody-has-reached.md) | a chain hop prefers a body no path has reached yet, and repeats one only when nothing fresh is in range — the rule for EVERY chaining weapon | ✅ 2026-09-10 (owner) |
+| [M87](measurements/M87-demolisher-radiation-cannot-land.md) | a Demolisher's Radiation proc never lands; its Impact proc lands and does nothing | ✅ 2026-09-11 (owner) |
 
 ## By weapon
 

@@ -35,26 +35,28 @@ introduced: "29.0"
 # Until then a fight here keeps Roar, Eclipse, Nourish and the augments running,
 # and `unmodeled` says so where a player reads it.
 
-# NOTHING IS DROPPED FROM THE DRAW. VERBATIM, and the word that decides it is
-# the last one: *"Confusion, Knockdown, Lifted, Stagger, Stun EFFECTS."* Those
-# are what a proc DOES, not whether it lands, so every type this weapon rolls
-# still rolls here.
+# TWO KINDS OF RESTRICTION, AND THEY ARE DIFFERENT ARITHMETIC. MEASURED, and
+# the measurement is why this is not read off the wiki (MEASUREMENTS M87).
 #
-# THE ONE PROC IMMUNITY ON THE PAGE IS SOMEBODY ELSE'S: *"All Infested
-# Demolishers are immune to Viral status, and Demolisher Juggernauts and
-# Demolisher Chargers are also immune to Viral and Toxin damage."* This unit is
-# Grineer, so none of it reaches it.
-status_immunities: []
+# RADIATION CANNOT LAND. The proc never appears on this unit, so the type is
+# dropped from the DRAW and the remaining types renormalise onto the roll, each
+# becoming MORE likely (Status_Effect §Status Immunity Interactions). The damage
+# is untouched: this is not a x0 column.
+status_immunities: [radiation]
 
-# TWO OF THE FIVE HAVE A WEAPON STATUS BEHIND THEM, and both are this kind: the
-# proc lands, takes its share of the rolls and counts as a status type for
-# Condition Overload — it simply does not move this unit. Confusion is
-# Radiation's and Stagger is Impact's.
+# IMPACT LANDS AND DOES NOTHING. Its Stagger is crowd control this unit ignores,
+# but the proc is there: it takes its share of the rolls and counts as a status
+# type for Condition Overload.
 #
-# Reading either as a proc immunity is wrong twice: every other status gets
-# rarer because the draw renormalises without it, and a Condition Overload build
-# loses a type it actually has.
-nullified_status_effects: [radiation, impact]
+# THE WIKI DOES NOT SETTLE THIS AND READING IT AS IF IT DID GETS IT BACKWARDS.
+# Its list is "Confusion, Knockdown, Lifted, Stagger, Stun effects", which puts
+# Radiation's Confusion and Impact's Stagger in one sentence as though they were
+# one mechanic. In game they are not, and only the game says so.
+#
+# Swapping them is wrong twice in each direction: a type wrongly dropped makes
+# every other status likelier and costs a Condition Overload build a type it
+# has, and a type wrongly kept lets a build score on a proc it never gets.
+nullified_status_effects: [impact]
 
 # DAMAGE ATTENUATION IS NOT MODELLED BECAUSE THIS UNIT NO LONGER HAS IT.
 # VERBATIM (Ghoul Devourer, patch history): `{{Ver|40.0.2}}` *"Enemies that no
