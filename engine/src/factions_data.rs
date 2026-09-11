@@ -275,6 +275,28 @@ mod tests {
                     vec![(DamageType::Puncture, 1.5), (DamageType::Magnetic, 1.5)],
                     "{key}"
                 ),
+                // THE ROSTER'S FIRST TECHROT UNITS — Magnetic and Gas x1.5,
+                // Cold x0.5 — and the two of them answer DIFFERENTLY, which is
+                // the whole reason they are asserted through the TARGET rather
+                // than through the faction key. The Legacyte carries its own
+                // column, Techrot's three plus Void, and it OUTRANKS the key;
+                // reading `key` alone would report the three it does not use.
+                "techrot_babau" | "legacyte" => {
+                    let tp = e
+                        .target_params(1, false, false, crate::dummy::TargetMode::InstantRespawn)
+                        .expect("it builds a target");
+                    let mut got = tp.type_mods.faction.listed();
+                    got.sort_by_key(|(t, _)| format!("{t:?}"));
+                    let mut want = vec![
+                        (DamageType::Cold, 0.5),
+                        (DamageType::Gas, 1.5),
+                        (DamageType::Magnetic, 1.5),
+                    ];
+                    if e.id == "legacyte" {
+                        want.push((DamageType::Void, 1.5));
+                    }
+                    assert_eq!(got, want, "{}: {key}", e.id);
+                }
                 // The six Acolytes: faction "Stalker", which the table skips.
                 _ => assert!(listed.is_empty(), "{}: unexpected column {key}", e.id),
             }

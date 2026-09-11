@@ -1,0 +1,67 @@
+id: techrot_babau
+name: Techrot Babau
+# Portrait, hosted on the WIKI — enemy art is declared here rather than in
+# data/assets.yaml (WFCD has no usable enemy images); scripts/fetch_images.py
+# pulls it through Special:FilePath.
+#
+# THE FILE IS NAMED FOR THE UNIT'S INTERNAL NAME, not its display name:
+# `TechrotBabau.png` does not exist and `Babau.png` does not either. Every sound
+# file for this unit is `ProtoInfestedBabau*`, and the portrait is the same
+# lineage. The other candidate the wiki holds, `U38TechrotBabau.jpg`, is a 2.3 MB
+# promotional screenshot rather than a portrait.
+image: InfestedBabau.png
+# TECHROT ON BOTH SYSTEMS, which is the ordinary case and not the Thrax's
+# (MECHANICS §8): the combat faction is what a Bane mod matches, and the
+# vulnerability column is Techrot's own — Magnetic and Gas x1.5, Cold x0.5.
+faction: techrot
+scaling_faction: techrot
+# IN THE EXIMUS COMPATIBILITIES TABLE, under Techrot: "Techrot Babau",
+# "Techrot Galliflex", "Techrot Matmas", "Techrot Obsolyte", "Techrot Skuzzi".
+can_be_eximus: true
+# Not in the Parazon §Mercy heavy-unit list — no Mercy window, so an Impact
+# stack's `parazon_mercy_threshold` does nothing on it.
+mercy_eligible: false
+type: melee
+planets: [hollvania]
+tilesets: [old_konderuk, mischta_ramparts]
+introduced: "38.0"
+
+# VIRAL CANNOT LAND: "Babaus are immune to Viral status effect." That is a
+# STATUS immunity and not a x0 column — the damage is untouched, and the type is
+# dropped from the proc DRAW so the remaining types renormalise onto the roll
+# and each becomes MORE likely (Status_Effect §Status Immunity Interactions).
+status_immunities: [viral]
+
+# Base stats at base_level. NO ARMOUR: the Normal tab's infobox lists none, so
+# the 500 shield is the whole of what stands in front of the health.
+stats:
+  base_level: 1
+  spawn_level: 65        # Hell-Scrub runs it at 65-70
+  health: 10000
+  shield: 500
+  armor: 0
+  overguard: 0
+  affinity: 500
+
+# Module Multis: "Head: 1.5x", "Tendril Bulbs: 1.5x". `crit_bonus` on the head
+# is assumed — no wiki exception is listed for this unit — which is the same
+# assumption every other humanoid here carries.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 1.5
+    is_head: true
+    crit_bonus: true
+
+unmodeled:
+  - "its tendril bulbs are a third hitbox the sim never aims at — shots land on the body or the head, and the bulbs answer a gun at 1.5x and a melee swing at 0.1x, which is a per-weapon-class multiplier this roster has no field for"
+  - "it burrows and attacks from underground, and it drains health from what it hits — this arena has no movement to lose the target in and no player health to drain, so both are absent"
+
+source:
+  url: https://wiki.warframe.com/w/Techrot_Babau
+  # note: >-
+  # Stats and Multis from the page's NORMAL tab; the Viral immunity from its
+  # Notes; the Eximus answer from the Eximus §Compatibilities table.

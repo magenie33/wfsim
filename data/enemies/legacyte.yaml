@@ -1,0 +1,62 @@
+id: legacyte
+name: Legacyte
+# Portrait, hosted on the WIKI — enemy art is declared here rather than in
+# data/assets.yaml (WFCD has no usable enemy images); scripts/fetch_images.py
+# pulls it through Special:FilePath.
+image: Legacyte.png
+faction: techrot
+scaling_faction: techrot
+# NOT IN THE EXIMUS COMPATIBILITIES TABLE. Its Techrot section names the Babau,
+# Galliflex, Matmas, Obsolyte and Skuzzi, and this is not one of them — which is
+# what a boss-type unit normally answers.
+can_be_eximus: false
+mercy_eligible: false
+type: melee
+planets: [hollvania]
+tilesets: [kobinn_west]
+introduced: "38.0"
+
+# ITS COLUMN IS TECHROT'S PLUS VOID, WHICH NO TABLE KEY SPELLS. The page shows
+# four rows — Cold "--", Gas "++", Magnetic "++", Void "++" — and the Techrot
+# column in data/factions/damage_modifiers.yaml carries only the first three.
+# So the column rides here, where it OUTRANKS the faction key; `faction` stays
+# Techrot because that is the other question, the one a Bane mod asks.
+damage_modifiers:
+  cold: 0.5
+  gas: 1.5
+  magnetic: 1.5
+  void: 1.5
+
+# Base stats at base_level. No shield, no armour and no Overguard: the health is
+# the whole of it, which is why the attenuation below is this unit's defence
+# rather than a detail of it.
+stats:
+  base_level: 1
+  spawn_level: 65
+  health: 7500
+  shield: 0
+  armor: 0
+  overguard: 0
+  affinity: 1500
+
+# NO WEAK POINT IS PUBLISHED. The page carries no Multis table and names no
+# hitbox, so this is one body at 1x and nothing to aim at — see `unmodeled`,
+# because a reader whose build is built on headshots has to be told.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+
+unmodeled:
+  - "its DAMAGE ATTENUATION is not applied here, and it is this unit's whole defence: the game caps what one instance and what one second can take off it, both as a share of its Max Health, so a build measured here removes far more of it than it would in game — the engine has the machinery and the constants are unpublished, so turning it on would be inventing the numbers rather than measuring them"
+  - "its CAPPED STATUS VULNERABILITY is not applied: the game gives it a partial status immunity, and this roster has only the whole kind — a type either lands here or it does not"
+  - "no weak point is published for it, so nothing on it is a head: a build that lives on headshots scores here as if every shot were a body shot"
+  - "it gains additional random abilities with each generation, from a pool of more than twenty — a fight here is the same Legacyte every time"
+
+source:
+  url: https://wiki.warframe.com/w/Legacyte
+  # note: >-
+  # Stats and the damage-modifier rows from the page's infobox; the attenuation
+  # and the capped status vulnerability from its Tips; the Eximus answer from
+  # the Eximus §Compatibilities table, where it does not appear.
