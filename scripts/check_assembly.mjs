@@ -149,6 +149,22 @@ check("...and the row offers exactly those five",
 check("...and each part says what it is worth",
   /\d/.test(drawn.text), drawn.text.slice(0, 120));
 
+// A BEAM GRIP TRADES REACH, NOT FIRE RATE. Gaze ticks twelve times a second on
+// every grip, so five hints reading "12/s" would say nothing; the metres are the
+// decision. Tombfinger above is the control, whose grips move the fire rate.
+const beam = await evaluate(`(async () => {
+  ${open("Gaze")}
+  renderAssembly();
+  await new Promise(r => setTimeout(r, 300));
+  return { id: $('weapon').value,
+           hints: (ddReg.get('dd-grip') || { items: [] }).items.map(i => i.hint) };
+})()`);
+check("a beam chamber's grips say their reach",
+  beam.hints.length === 5 && beam.hints.every((h) => / m\b/.test(h) && !/\/s/.test(h)),
+  JSON.stringify(beam));
+check("...and a projectile chamber's say their fire rate",
+  /\/s/.test(drawn.text), drawn.text.slice(0, 160));
+
 // ---- ONE PAGE, TWO SLOTS ----------------------------------------------------
 
 // A Kitgun is ONE weapon and TWO roster entries, so `/weapons/Tombfinger`

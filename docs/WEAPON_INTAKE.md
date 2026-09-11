@@ -67,31 +67,22 @@ Necramech ABILITIES that happen to fire, so what they cost, what they scale
 with and what a build for one even means are the Warframe layer's questions,
 which docs/UNMODELLED.md already holds open.
 
-**SELF-MADE weapons — Kitguns — are OUT, and get their own treatment**
-. A Kitgun is not a weapon this roster can hold: it is a
-CHAMBER, a GRIP and a LOADER chosen independently, and the stat line is
-computed from the three rather than published for any one of them. So a Kitgun
-is not one entry, and it is not 60 entries either — it is a BUILDER, which is
-the shape of an editor that feeds the three modules (the rule in AGENTS.md that
-Rivens is the first example of), not a row in `data/weapons/`. Filing the
-chambers as weapons would ship one arbitrary grip's numbers under a name the
-player cannot reproduce, which is the opposite of "matches in-game
-measurements".
+**KITGUNS ARE IN, one roster entry per CHAMBER PER SLOT** — all six chambers,
+twelve entries, `data/kitguns/README.md`. A Kitgun has no published stat line:
+the entry names its chamber record (`kitgun:`) and `weapons_data::spec_assembled`
+composes the chosen grip and loader over it, so the slot — and with it the mod
+pool — is settled before any part is picked. A chamber is TWO files in
+`data/kitguns/chambers/` (off `Module:Modular/data`) and two entries here (off
+the chamber page and its infobox module, `Module:Weapons/data/modular`, which is
+where the disposition, the class and the child attacks live). What the module
+leaves out — an explosion's radius, a chain, a guaranteed proc, the CO and
+Primary Compression rows — is read off the chamber's own page and the catalogs,
+exactly as for any weapon. `every_modular_entry_matches_its_chamber` holds the
+facts both files state.
 
-**The design is `docs/KITGUNS.md`**, and it changes the price
-rather than the decision: the wiki generates those 1,200 stat rows from
-`Module:Modular/data`, a structured table of the same kind as
-`Module:Weapons/data`, so a Kitgun costs **42 part records and one exact
-composition rule** instead of a transcription. It is still not a row in
-`data/weapons/` — it is a CUSTOM that produces a `WeaponSpec`, the way a
-riven produces a mod.
-
-They are built on VENUS (Fortuna), which is the owner's own name for them; the
-same argument applies to Cetus's ZAWS, and those are additionally MELEE and so
-out by class. None of the three families has ever been in the roster — the
-sweep below never touched them, and `spectra_vandal` is the one entry whose
-`internal_name` contains `CorpusModularPistol`, which is DE's folder for the
-Kitgun rig it shares and not a statement that the weapon is modular.
+ZAWS stay out: they are the same shape and MELEE, and out by class.
+`spectra_vandal`'s `internal_name` contains `CorpusModularPistol`, which is DE's
+folder for the Kitgun rig it shares and not a statement that it is modular.
 
 ## The bottleneck is MEASUREMENT, not typing
 
