@@ -7976,7 +7976,13 @@ function restoreState(st, weapon) {
   $("weapon").value = w;
   // Keep the route honest when the restore changes weapon (the stash case);
   // for a preset `w` is already the current weapon, so this is a no-op.
-  if (!document.querySelector(".config-page").hidden) {
+  // …EXCEPT ON A KITGUN, whose two slots are one page: an address naming the
+  // sibling is this entry's address too. Rewriting it is how a board landing
+  // late (`ensureWeaponBoard` re-runs `initPresets`) walked the Slot control off
+  // `/weapons/<Chamber>`.
+  const here = routeWeaponId();
+  const siblingsPage = here && here !== w && slotSibling(here) === w;
+  if (!document.querySelector(".config-page").hidden && !siblingsPage) {
     history.replaceState(null, "", weaponModPath(w));
   }
   applyWeapon(w, null); // resets pool/innate/visibility
@@ -9594,22 +9600,6 @@ function switchWeapon(id) {
   ensureWeaponBoard(id);
   applyWeapon(id, null);
   initPresets();
-}
-
-/// THE OTHER SLOT OF THE SAME CHAMBER, WITHOUT LEAVING THE PAGE.
-///
-/// A Kitgun is ONE weapon — one mastery track, one riven, one wiki page — and
-/// two roster entries, because the slot decides the mod pool. So the Slot
-/// control switches the ENTRY and the address stays where the reader arrived,
-/// which is what makes the two a page rather than two pages sharing a name.
-///
-/// `restoreState` rewrites the address to the incoming weapon's own path, which
-/// is right for every other switch and wrong for this one — and was invisible
-/// only while the sibling had no address of its own to move to.
-function switchSlot(id) {
-  const was = location.pathname;
-  switchWeapon(id);
-  if (location.pathname !== was) history.replaceState(null, "", was);
 }
 
 function applyWeaponInner(id, presetMods) {
@@ -13441,9 +13431,11 @@ function renderAssembly() {
           value: (weaponInfo(id) || {}).slot,
           label: tr(cap1((weaponInfo(id) || {}).slot)),
         })).sort((a, b) => a.value.localeCompare(b.value)),
+        // The address stays put: `restoreState` knows a Kitgun's two slots
+        // are one page, so switching the ENTRY does not move it.
         onPick: (v) => {
           if (v === wSlot) return;
-          switchSlot(sibling);
+          switchWeapon(sibling);
         },
       })}</label>`
     : "";
