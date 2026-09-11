@@ -171,6 +171,7 @@ path, so an entry may be renamed but never renumbered.
 | [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) | the Boar Incarnon takes NO punch through, where its base form does; its three self-aiming beams reach nine bodies in all, and only the aimed one can headshot | ✅ 2026-09-10 (owner) |
 | [M86](measurements/M86-a-chain-prefers-a-body-nobody-has-reached.md) | a chain hop prefers a body no path has reached yet, and repeats one only when nothing fresh is in range — the rule for EVERY chaining weapon | ✅ 2026-09-10 (owner) |
 | [M87](measurements/M87-demolisher-radiation-cannot-land.md) | a Demolisher's Radiation proc never lands; its Impact proc lands and does nothing | ✅ 2026-09-11 (owner) |
+| [M88](measurements/M88-boar-prime-co-base-under-reified-bane.md) | Boar Prime's Condition Overload reads the weapon's own base in both forms; Reified Bane's +10 and +14 stay out, and the gated half is +14 | ✅ 2026-09-11 (owner) |
 
 ## By weapon
 
@@ -183,11 +184,10 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Amprex | `amprex` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
 | Atomos | `atomos` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
 | Ballistica Prime | `ballistica_prime` | [M66](measurements/M66-ballistica-prime-charge-x2.md) · [M67](measurements/M67-ballistica-prime-incarnon-pierce-and-perks.md) · [M80](measurements/M80-denominator-is-base-damage-only.md) · [M81](measurements/M81-independent-co-applies-after-quantization.md) |
-| Boar Prime | `boar_prime` | [M29](measurements/M29-reified-bane-reload-start.md) |
 | Braton | `braton` | [M1](measurements/M01-toxin-shield-bypass-gate.md) |
 | Braton Prime | `braton_prime` | [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) · [M56](measurements/M56-blast-detonation-no-elemental.md) · [M57](measurements/M57-quantization-divides-by-moddedbase.md) · [M58](measurements/M58-status-tick-accumulator.md) |
 | Boar | `boar` | [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) · [M86](measurements/M86-a-chain-prefers-a-body-nobody-has-reached.md) |
-| Boar Prime | `boar_prime` | [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) · [M86](measurements/M86-a-chain-prefers-a-body-nobody-has-reached.md) |
+| Boar Prime | `boar_prime` | [M29](measurements/M29-reified-bane-reload-start.md) · [M85](measurements/M85-boar-incarnon-refuses-punch-through.md) · [M86](measurements/M86-a-chain-prefers-a-body-nobody-has-reached.md) · [M88](measurements/M88-boar-prime-co-base-under-reified-bane.md) |
 | Burston | `burston` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) · [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) · [M53](measurements/M53-burston-incarnon-punch-through.md) |
 | Burston Prime | `burston_prime` | [M48](measurements/M48-burston-prime-co-direct-share.md) · [M54](measurements/M54-blast-detonation-weak-point.md) · [M68](measurements/M68-primary-compression-evolved-base.md) |
 | Cernos Prime | `cernos_prime` | [M16](measurements/M16-cernos-prime-tap-rate.md) · [M20](measurements/M20-primary-frostbite-never-stacked.md) · [M28](measurements/M28-primary-frostbite-proc-source.md) |

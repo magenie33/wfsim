@@ -19050,6 +19050,28 @@ mod tests {
         }
     }
 
+    /// BOAR PRIME'S CO READS ITS OWN BASE IN BOTH FORMS, and Reified Bane's
+    /// +10 and +14 stay out of it (M88): 40 a pellet, 30 a tick. +165% base
+    /// damage, Galvanized Savvy at 40% a stack per type, both halves of the
+    /// perk up — a pellet at 2 stacks x 3 types reads 266 and a tick at 2 x 1
+    /// reads 167, and a CO term that took the +24 reads 323 and 186.
+    #[test]
+    fn boar_prime_co_reads_its_own_base_under_reified_bane_in_both_forms() {
+        for (id, own_base, stacks, types, measured) in [
+            ("boar_prime", 40.0, 2.0, 3.0, 266.0),
+            ("boar_prime_incarnon", 30.0, 2.0, 1.0, 167.0),
+        ] {
+            let b = crate::loadout::WeaponBase::from_data(id, false, &["boar_prime_reified_bane"]);
+            let panel = b.base_vector.total();
+            // THE +14, not the card's +10 — the gated half as the damage reads it.
+            assert!((panel - (own_base + 24.0)).abs() < 1e-9, "{id}: panel {panel}");
+            let f = b.co_base_fraction();
+            assert!((panel * f - own_base).abs() < 1e-9, "{id}: CO reads {}", panel * f);
+            let got = panel * (1.0 + 1.65 + 0.4 * stacks * types * f);
+            assert!((got - measured).abs() < 0.5, "{id}: {got} against a measured {measured}");
+        }
+    }
+
     /// THE TORID'S INCARNON FORM COMPUTES CO ON 51 OF ITS 102 (MEASUREMENTS
     /// M50,) — the second weapon where the catalog's
     /// ABSENCE-MEANS-ORDINARY rule was measured and was wrong, and the
