@@ -195,14 +195,14 @@ EXPECTED = {
     ('cortege_alt', 'attack.ammo_cost'): 'a standalone entry pays for its own shot',
     ('mausolon_charged', 'attack.ammo_cost'): 'a standalone entry pays for its own shot',
     ('morgha_alt', 'attack.ammo_cost'): 'a standalone entry pays for its own shot',
+    # THE PAGE'S OWN SENTENCE OVER THE MODULE'S FIELD. The Kuva Nukor's module
+    # row says 1; its page says "Consumes 0.5 ammo per tick of damage", as the
+    # Nukor's does and as its 77-round magazine lasting 15 s of fire requires.
+    ('kuva_nukor', 'attack.ammo_cost'): 'the page states 0.5 a tick; the module row says 1',
     # THE MAGAZINE IN SHOTS. 32 rounds at 4 a shot is 8 shots, and the entry
     # counts shots — the reload lands in the same place either way.
     ('ballistica_prime', 'magazine'): 'expressed in SHOTS: 32 rounds / 4 a shot',
     ('ballistica_prime', 'attack.ammo_cost'): 'expressed in SHOTS: 32 rounds / 4 a shot',
-    # HALF AN AMMO A SHOT, which is the entry's own decision and is about the
-    # MAGAZINE rather than the reserve: the Verglas Prime's 80-round magazine at
-    # half a round a shot is what halves how often it reloads, and that is DPS.
-    ('verglas_prime', 'attack.ammo_cost'): 'half a round a shot; see the entry',
     # THE DAMAGE TYPE ROTATION, AVERAGED. Both Deconstructors throw 130 of ONE
     # type at a time, cycling Impact then Puncture then Slash, and the entry
     # carries an equal three-way split — so no single module attack matches its

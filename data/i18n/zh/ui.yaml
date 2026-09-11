@@ -255,6 +255,7 @@ ui:
   "Bring it back here": 收回本页
   "Open in its own window": 在新窗口打开
   "the same build — the difference is how the riven rolled": "同一套配装 —— 差别只在裂罅的数值"
+  "the two beams CONVERGE on the crosshair and deal full damage there only once they are aligned (wiki). This arena lands both on the aimed body from the first tick, which is the ceiling": "两道光束会向准星汇聚，只有对齐之后才在准星处打出全额伤害（维基）。这个战场从第一跳起就让两道都落在瞄准的目标上，这是上限"
   "This is #1.": "这就是 #1。"
   "this run measured {v} — #{n} of {of} in {group}, against the board as it stands": 这次跑出 {v} —— 以当前榜单为参照，在 {group} 里排第 {n}，同组共 {of} 套
   "release {r} · commit {c}": 版本 {r} · 提交 {c}

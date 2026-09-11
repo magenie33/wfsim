@@ -31,12 +31,17 @@ reload_seconds: 2
 # see notes: condition_overload_no_row_2
 co_behavior: additive_with_base_damage
 
+# A CONTINUOUS WEAPON, and its ramp starts high: "Damage ramps up from 60%
+# (primary fire)/80% (alt-fire) to 100% over 0.6 seconds when firing" (wiki).
+# Held, so its two beams land on one body as ONE instance, the beam rule.
+beam_ramp_floor: 0.60
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 2.0
     max_deg: 2.0
-  trigger: auto
+  trigger: held                 # continuous: `fire_rate` is TICKS per second
   shot_type: hit_scan
   fire_rate: 12
   multishot: 2.0
@@ -52,6 +57,7 @@ attack:
 
 unmodeled:
   - "Efficient Beams, the Convectrix-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+  - "the two beams CONVERGE on the crosshair and deal full damage there only once they are aligned (wiki). This arena lands both on the aimed body from the first tick, which is the ceiling"
 
 source:
   url: https://wiki.warframe.com/w/Convectrix

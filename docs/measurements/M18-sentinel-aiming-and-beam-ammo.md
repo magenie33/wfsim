@@ -43,10 +43,16 @@ What changed, all exact:
 |---|---|---|
 | Larkspur Prime, primary | 500 ticks to dry | **1000** (500 rounds ÷ 0.5) |
 | Larkspur Prime, alt-fire | 118 shots / 120 s | **50** (500 rounds ÷ 10) |
-| Verglas Prime | 14 reloads / 120 s | **8** (80 magazine ÷ 0.5 = 160 ticks) |
-
 The Torid's Incarnon form keeps 1.0 per tick — that one IS measured (the
 charge pool is not ammo, see MECHANICS "Continuous ammo cost").
+
+**Not every beam is 0.5.** The wiki's continuous-weapon page qualifies its own
+rule ("although not true for some continuous weapons"), and a weapon's OWN stat
+decides: Basmu's held beam states 1, Atomos kept 1 through the 22.13.3 rework
+that moved every other beam's line to "Ammo consumption decreased from 1.0 to
+0.5", and both Verglas and Verglas Prime carry Ammo Cost 1 — so the Verglas
+Prime reads 1 per tick, not the family's 0.5. A base weapon and its Prime may
+differ; these two do not.
 
 **What settles it:** fire a full Larkspur Prime magazine on the ground and
 count the ticks — 100 rounds should give 200. Then one alt-fire shot and read

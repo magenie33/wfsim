@@ -1462,7 +1462,9 @@ weapon stops hitting a target, the damage decays back to its initial point over
 2 seconds. For most weapons, this lower percentage is 20%."* Held fire advances
 the ramp one tick-period at a time; a gap longer than the 0.8 s grace decays it.
 The per-weapon exceptions the page lists (Convectrix 60/80%, Phage 70%, Embolist
-30%) would be weapon data; nothing in the roster needs one yet.
+30%) are weapon data: an entry that ramps from elsewhere states its own
+`beam_ramp_floor`, which is per ENTRY and not inherited — the Convectrix's
+alt-fire is a separate entry with its own 80%.
 
 Applied as a FINAL multiplier on the instance and NOT on ModifiedBase — a
 transient scaling of output, not a weapon-stat change, so the status payloads

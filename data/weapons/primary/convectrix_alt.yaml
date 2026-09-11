@@ -11,12 +11,15 @@ introduced: "17.5"
 # see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
 
+# 80% on the alt-fire against the primary's 60% — see the weapon's entry.
+beam_ramp_floor: 0.80
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 2.0
     max_deg: 2.0
-  trigger: auto
+  trigger: held                 # continuous: `fire_rate` is TICKS per second
   shot_type: hit_scan
   fire_rate: 16
   multishot: 2.0
