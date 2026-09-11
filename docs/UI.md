@@ -268,13 +268,30 @@ not settled, and the code is kept against the answer.
 
 **THE PAGE THAT ASKS FOR SOMETHING ARGUES THE WAY THE REST OF THE SITE DOES.**
 Every figure on `/support` is COUNTED, never typed: `PROJECT_FACTS` is written
-into `app.js` by `build_site_app.py` (engine tests, browser checks, commits,
-the first commit's day) and everything the page can count for itself comes
-from `META` and `BOARD`.
+into `app.js` by `build_site_app.py` (commits and the first commit's day) and
+everything else comes from `META` and `BOARD_META`.
+
+THREE FIGURES, AND THEY ARE THE THREE MODULES: what is modelled
+(`rosterSize()`, a SUM over META's categories so a new one counts itself and
+the function is never edited again), what players built with it
+(`submissions`), and what came back out (`held`). Submissions are ONE pool
+every ruler reads, so they are MAXed; held scores are each ruler's own and are
+ADDED. Test and check counts are gone — a reader deciding whether this is
+worth anything is not moved by how many unit tests it has, and three figures
+an order of magnitude apart read as three facts where two of the same size
+read as one fact printed twice.
 
 A FIGURE IS CLAIMED ONLY IF A READER CAN CHECK IT against the public
-repository. A count of in-game measurements cannot be, so it is not on the
-page.
+repository.
+
+"HOW IT WORKS" COMES BEFORE "WHY YOU CAN CHECK IT", because a guarantee stated
+first is an adjective — it needs something concrete to attach to. Its three
+lines are MECHANISMS a player recognises from their own arsenal (a grenade's
+impact against the cloud it leaves, an on-kill stack starting at zero, the
+Forma a build needs), and none of them carries a number, a build or a word
+about anybody else's product: a figure would bind the claim to one weapon on
+one day. THE PAGE NEVER COMPARES. It states what this does, and a reader who
+wants a comparison makes it themselves.
 
 THE ORDER IS THE ARGUMENT: what this is and how it works, what it holds, why
 it can be checked, what the reader has already got out of it, the door, and

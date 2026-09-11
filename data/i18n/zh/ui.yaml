@@ -1566,16 +1566,24 @@ ui:
   "Builder, simulator, optimizer.": 配装器、模拟器、优化器。
   "A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone: no account, no payment, no part held back.":
     "一个奔着对上游戏内实测数字去做的 Warframe 计算器，一项一项地对。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。"
-  "weapons modelled":
-    "把武器已建模"
-  "mods and rivens":
-    "张 MOD 与紫卡词条"
+  "items modelled":
+    "个条目已建模"
+  "builds players have uploaded":
+    "套玩家上传的配装"
+  "evaluations computed":
+    "次测评已算出"
+  "How it works":
+    "它是怎么算的"
+  "How much of a grenade's damage was the impact and how much was the cloud it left behind is something the fight works out. It is not a ratio you type in.":
+    "一发榴弹里，撞击打了多少、留下的毒云打了多少，是这一场跑出来的结果，不是你填进去的一个比例。"
+  "A mod that stacks on kill starts the fight at zero stacks. It builds during the fight, expires, and decays — so the build's own numbers change while you are shooting.":
+    "击杀叠层的 MOD 从 0 层开始打。层数在这一场里叠起来、到期、往下掉——所以你开着枪的时候，这套配装自己的数值一直在变。"
+  "How many Forma a build needs is computed, and so is whether it fits in the weapon at all.":
+    "一套配装要几个 Forma 是算出来的，装不装得下也是算出来的。"
+  "There are no recommended builds here and no curated list. Every row on the board is what this engine computed under the benchmark's own pinned terms, so anyone with the repository reproduces the same number.":
+    "这里没有推荐配装，也没有精选榜单。榜上的每一行都是这个引擎在该基准自己钉死的条件下算出来的，谁拿到仓库都能跑出同一个数。"
   "in-game measurements":
     "次游戏内实测"
-  "tests on the engine":
-    "个引擎测试"
-  "checks on the page":
-    "个页面检查"
   "Built in the open since {day} — {n} commits, every one of them public.":
     "自 {day} 起一直公开开发，{n} 次提交，每一次都能查。"
   "It does not score an opening state. It runs the engagement — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.":

@@ -464,7 +464,7 @@
          calculator scores an opening state or runs the fight is something you
          can go and read in the engine — which is the only shape of claim this
          page is allowed to make about itself. -->
-    <p class="hero-sub" data-i18n>It does not score an opening state. It runs the engagement — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.</p>
+    <p class="hero-method" data-i18n>It does not score an opening state. It runs the engagement — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.</p>
 
     <!-- THE FACTS STRIP. Filled by `projectFacts()` — the roster and the pools
          from META, the tests, checks and measurements from the site build. It
@@ -473,12 +473,6 @@
          only currency this project accepts. -->
     <div id="support-facts" class="sup-facts"></div>
     <p id="support-built" class="sup-note" hidden></p>
-    <!-- WHAT THIS CLIENT IS RUNNING. Three lines, and they are the answer to
-         the only question two readers comparing numbers can ask each other:
-         the release, the board it is reading, and the shell around it. Without
-         them a version difference and a real defect read identically — see
-         docs/DISTRIBUTION.md §Identity. -->
-    <p id="support-identity" class="sup-note" hidden></p>
 
     <!-- THE EVIDENCE, WHERE SOMEBODY READS IT. This site's
          strongest property is that it says what it CANNOT do — a weapon
@@ -490,6 +484,24 @@
          word. None of these claims is an adjective — each names something
          checkable, which is the only kind of confidence this repo allows
          itself outside the home hero. -->
+    <!-- WHAT IT DOES, BEFORE WHY IT CAN BE TRUSTED. The section below is a
+         guarantee, and a guarantee stated first is an adjective — it has to
+         follow something concrete or a reader has nothing to attach it to.
+         Each line is a MECHANISM a player recognises from their own arsenal
+         and can go and check, and none of them names a number, a build or
+         anybody else's product: a figure here would bind the claim to one
+         weapon on one day, and this is a claim about how the engine works. -->
+    <section class="block">
+      <div class="bh"><h2 data-i18n>How it works</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>How much of a grenade's damage was the impact and how much was the cloud it left behind is something the fight works out. It is not a ratio you type in.</li>
+          <li data-i18n>A mod that stacks on kill starts the fight at zero stacks. It builds during the fight, expires, and decays — so the build's own numbers change while you are shooting.</li>
+          <li data-i18n>How many Forma a build needs is computed, and so is whether it fits in the weapon at all.</li>
+        </ul>
+      </div>
+    </section>
+
     <section class="block">
       <div class="bh"><h2 data-i18n>Why you can check it</h2></div>
       <div class="bb">
@@ -546,6 +558,7 @@
           <li data-i18n>An in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it — so the way to move a number here is to go and measure one.</li>
           <li data-i18n>Building, simulating and optimizing are the same for everyone, and what guarantees that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own copy.</li>
           <li data-i18n>Every fix ships to everybody at once. There is no earlier version, no larger version, and nothing held back for later.</li>
+          <li data-i18n>There are no recommended builds here and no curated list. Every row on the board is what this engine computed under the benchmark's own pinned terms, so anyone with the repository reproduces the same number.</li>
           <li data-i18n>There is no account and no login, so nothing here is tied to a person. The only place a visit is counted is Cloudflare's own request log, which is what serves the page.</li>
         </ul>
       </div>
@@ -582,6 +595,13 @@
          below with the unofficial-fan-project disclaimer, and printing it
          twice on one screen reads as boilerplate rather than as a statement. -->
     <p class="sup-fine" data-i18n>A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.</p>
+    <!-- WHAT THIS CLIENT IS RUNNING — the release, the board it is reading, and
+         the shell around it. It answers the one question two readers comparing
+         numbers ask each other, and without it a version difference and a real
+         defect read identically (docs/DISTRIBUTION.md §Identity). AT THE FOOT,
+         because it is looked UP when there is a disagreement; in the middle of
+         the argument it is three lines of noise to everybody else. -->
+    <p id="support-identity" class="sup-note" hidden></p>
   </main>
 
   <main class="config-page" hidden>

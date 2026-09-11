@@ -43,10 +43,18 @@ const facts = await evaluate(`(() => {
   for (const pool of Object.values(META.mod_pools || {})) {
     for (const m of pool || []) mods.add(m.id);
   }
+  let evo = 0;
+  for (const w of META.weapons || []) {
+    for (const t of w.evolutions || []) evo += (t.options || []).length;
+  }
+  const n = (k) => (META[k] || []).length;
+  const boards = Object.values((BOARD_META && BOARD_META.boards) || {});
   return {
     tiles,
-    weapons: META.weapons.length,
-    mods: mods.size,
+    roster: n("weapons") + n("frames") + mods.size + evo
+      + n("arcanes") + n("abilities") + n("auras") + n("shards") + n("enemies"),
+    uploads: boards.length ? Math.max(...boards.map((b) => b.submissions | 0)) : 0,
+    scored: boards.reduce((t, b) => t + (b.held | 0), 0),
     injected: PROJECT_FACTS,
     built: {
       hidden: $("support-built").hidden,
@@ -64,11 +72,19 @@ check(`${tag} ...every one of them a real number`,
   facts.tiles.length > 0 && facts.tiles.every((t) => num(t.n) > 0)
     && !/null|undefined|NaN/.test(drawn.join(" ")),
   JSON.stringify(facts.tiles));
-// THE ONE THAT A TYPED STRIP FAILS.
-check(`${tag} ...the roster figure is META's own count`,
-  drawn.some((n) => num(n) === facts.weapons), `on screen ${JSON.stringify(drawn)} vs META ${facts.weapons}`);
-check(`${tag} ...and the mod figure is the pools', unioned`,
-  drawn.some((n) => num(n) === facts.mods), `on screen ${JSON.stringify(drawn)} vs pools ${facts.mods}`);
+// THE ONES THAT A TYPED STRIP FAILS. The roster figure is a SUM over every
+// category META carries, so it also fails the day a category stops being
+// counted — which is the way this number goes wrong, not by being mistyped.
+check(`${tag} ...the roster figure is META's own categories, summed`,
+  drawn.some((n) => num(n) === facts.roster), `on screen ${JSON.stringify(drawn)} vs META ${facts.roster}`);
+// SUBMISSIONS ARE ONE POOL, HELD SCORES ARE PER RULER — summing the first or
+// maxing the second is the mistake this pair is here to catch.
+check(`${tag} ...the uploads figure is the board's submission pool`,
+  facts.uploads > 0 && drawn.some((n) => num(n) === facts.uploads),
+  `on screen ${JSON.stringify(drawn)} vs board ${facts.uploads}`);
+check(`${tag} ...and the evaluations figure is every ruler's, added up`,
+  facts.scored > 0 && drawn.some((n) => num(n) === facts.scored),
+  `on screen ${JSON.stringify(drawn)} vs board ${facts.scored}`);
 
 // ---------------------------------------------------------------------------
 // 2. THE BUILD-TIME COUNTS. These cannot come from the page at all — they are

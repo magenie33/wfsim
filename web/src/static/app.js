@@ -2791,32 +2791,63 @@ function renderThanksPage() {
 /// lives outside the shipped data — tests, checks, measurements, commits —
 /// comes from `PROJECT_FACTS`, which the site build writes. A figure that is
 /// missing is DROPPED rather than drawn as a zero.
-function projectFacts() {
+/// EVERYTHING THE ROSTER HOLDS, summed rather than listed — so a category
+/// added to `META` counts itself and this function is not edited again. That
+/// is the whole reason it is a sum: the roster grows sideways (frames today,
+/// companions and Necramechs next) and a hand-written list of categories is a
+/// figure that silently stops being true.
+function rosterSize() {
   const mods = new Set();
   for (const pool of Object.values(META.mod_pools || {})) {
     for (const m of pool || []) mods.add(m.id);
   }
-  const f = PROJECT_FACTS || {};
-  // IDENTIFIED, because the home hero states THREE of these and the support
-  // page states all of them. Picking by label would break the moment a label
-  // is reworded, and a hero silently short of a number is the failure.
+  // A weapon's evolutions arrive as TIERS, and what is modelled is the perks
+  // inside them.
+  let evolutions = 0;
+  for (const w of META.weapons || []) {
+    for (const tier of w.evolutions || []) evolutions += (tier.options || []).length;
+  }
+  const n = (k) => (META[k] || []).length;
+  return n("weapons") + n("frames") + mods.size + evolutions
+    + n("arcanes") + n("abilities") + n("auras") + n("shards") + n("enemies");
+}
+
+/// WHAT THE BOARD HAS BEEN ASKED, and what it answered.
+///
+/// SUBMISSIONS ARE ONE POOL AND SCORES ARE PER RULER, which is why these two
+/// fields are summed differently: every ruler reports the SAME submission
+/// count because they all read the same pool, so adding them would state the
+/// uploads three times. `held` is that ruler's own answers and does add up.
+function boardCount(field) {
+  const all = Object.values((BOARD_META && BOARD_META.boards) || {});
+  if (!all.length) return 0;
+  return field === "submissions"
+    ? Math.max(...all.map((b) => b.submissions | 0))
+    : all.reduce((t, b) => t + (b[field] | 0), 0);
+}
+
+function projectFacts() {
+  // IDENTIFIED, because the home hero states these too. Picking by label would
+  // break the moment a label is reworded, and a hero silently short of a
+  // number is the failure.
+  //
+  // THREE ORDERS OF MAGNITUDE, ON PURPOSE: thousands, thousands, tens of
+  // thousands read as three different facts, where two figures of the same
+  // size read as one fact printed twice. They are also the three modules in
+  // the order a reader meets them — what is modelled, what was built with it,
+  // what came back out.
   const rows = [
-    ["weapons", META.weapons ? META.weapons.length : 0, "weapons modelled"],
-    ["mods", mods.size, "mods and rivens"],
-    ["measurements", f.measurements, "in-game measurements"],
-    ["tests", f.rust_tests, "tests on the engine"],
-    ["checks", f.browser_checks, "checks on the page"],
+    ["roster", rosterSize(), "items modelled"],
+    ["builds", boardCount("submissions"), "builds players have uploaded"],
+    ["evaluations", boardCount("held"), "evaluations computed"],
   ];
   return rows.filter(([, n]) => n > 0).map(([id, n, what]) => ({ id, n, what }));
 }
 
-/// THE HERO'S NUMBERS — what is in the roster, and what it was measured
-/// against. The same counts the support page states, in the order a reader
-/// asks them: how much is in it, then why any of it is worth reading.
-///
-/// A figure the build did not supply is DROPPED, so the dev server draws the
-/// two the page can count for itself rather than a zero or a placeholder.
-const HERO_FACTS = ["weapons", "mods", "measurements"];
+/// THE HERO'S NUMBERS — the same three the support page states, and all of
+/// them. A figure whose source has not landed is DROPPED, so a dev server with
+/// no board draws the roster alone rather than a zero or a placeholder.
+const HERO_FACTS = ["roster", "builds", "evaluations"];
 
 function renderHomeFacts() {
   const el = $("home-facts");
