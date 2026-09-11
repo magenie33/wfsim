@@ -230,7 +230,8 @@ group's #1. It lists the top five of a scope until asked for more (twenty at a
 time, folded back in one click). It holds a query and never a selection. "Open" puts the build in the
 build bar as a read-only chip and makes it current; the bar is the one place
 that says which build is open, and `#build-current` says it in words. BUILDER
-ONLY: the simulator keeps the build bar and has no finder.
+ONLY: the simulator keeps the build bar and has no finder. It folds like every
+box on the page, to its title and count (§"Every box folds").
 
 **A ROW IS THE SIMULATOR'S BUILD CARD.** `buildCardHtml` draws a build from a
 descriptor — mods, parts, arcane, evolutions, valence as chips with icons and
@@ -413,8 +414,9 @@ prints them.
 
 **A WEAPON PAGE IS ONE LONG SCROLL, AND THE READER WANTS THREE LINES OF IT.**
 So every box on it shuts from the header it already has: a `.block` from its
-`.bh`, a `.fold.sect` from its `h3.sim-h`. Collapsed, the simulator is two
-header rows and the optimizer is one.
+`.bh`, a `.fold.sect` from its `h3.sim-h`, the build finder from its `.fd-head`
+(rewired on each of its renders, which redraw the head). Collapsed, the
+simulator is two header rows and the optimizer is one.
 
 **ONE MECHANISM, THREE SHAPES, ONE STATE.** The result panel's `foldBlock`s,
 the sections authored in `index.html` and the blocks themselves all resolve to
@@ -428,12 +430,14 @@ gains an element tomorrow folds with it; one that gains a wrapper does not
 quietly stop folding.
 
 **A CONTROL IN A HEADING IS THAT CONTROL'S CLICK.** The Buffs section's "all",
-the Forma buttons in the mods block's `.bh`, the mods axis's filter box: the
-heading is allowed to carry them, and folding the thing they belong to instead
-is the one way this feature can make the page worse (`foldsOnClick`).
+the Forma buttons in the mods block's `.bh`, the mods axis's filter box, the
+finder's whole search box (`role=search`, its tokens and suggestions with it):
+the heading is allowed to carry them, and folding the thing they belong to
+instead is the one way this feature can make the page worse (`foldsOnClick`).
 
 **THE JUMP MENU IS READ OFF THE PAGE, NEVER LISTED.** `pageFolds()` walks the
-visible module's blocks and the sections inside each, so a section added
+visible module's blocks, the sections inside each and any fold standing beside
+them (`.config-page > section.fold`, the finder), so a section added
 tomorrow is in the menu, in "collapse all" and reachable with no edit — and
 each row is named by its own heading, already translated, rather than by our
 id. Two things it must do and a plain anchor list would not: a row OPENS its

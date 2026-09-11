@@ -36,6 +36,27 @@ const r = await evaluate(`(async () => {
   out.rows = ((typeof BOARD !== 'undefined' && BOARD) ? (BOARD['ballistica_prime'] || []) : []).length;
   out.drawn = !box().hidden && getComputedStyle(box()).display !== 'none';
   out.lineLanding = line();
+
+  // IT FOLDS LIKE EVERY BOX: from its title, to its title line, kept across a
+  // redraw, listed in the jump menu — and a click in its search box is the
+  // search box's. Asked of the computed layout, not the class.
+  const seen = (el) => !!el && el.offsetParent !== null;
+  const head = () => box().querySelector(':scope > .fd-head');
+  box().querySelector('.fd-q').click(); await sleep(120);
+  out.searchKept = !box().classList.contains('shut');
+  head().querySelector('.fd-title').click(); await sleep(120);
+  out.foldShut = box().classList.contains('shut') && !seen(box().querySelector('.fd-main'))
+    && !seen(document.getElementById('fd-input')) && seen(box().querySelector('.fd-title'));
+  out.foldStored = JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] === true;
+  renderBuildFinder(); await sleep(120);
+  out.foldRedrawn = box().classList.contains('shut') && !!head().querySelector(':scope > .fold-c');
+  jump.open = true; renderJump(); await sleep(120);
+  const jr = document.querySelector('.jump-row[data-jump="build-finder"]');
+  out.jumpName = jr ? jr.querySelector('.jr-n').textContent.trim() : '';
+  if (jr) { jr.click(); await sleep(300); }
+  out.jumpOpened = !box().classList.contains('shut') && seen(box().querySelector('.fd-main'));
+  jump.open = false; renderJump();
+
   out.firstPage = listed().length;
   // THE SCOPE IS ONE CELL: every listed row shares the ruler and the mode the
   // scope segments say.
@@ -135,6 +156,12 @@ const r = await evaluate(`(async () => {
 // against it every assertion below would pass on an empty table.
 check("the weapon under test actually has board rows", r.rows > 0, `${r.rows} rows — is this running against site/?`);
 check("the finder is drawn in the builder", r.drawn === true);
+check("...a click in its search box does not fold it", r.searchKept === true);
+check("...it folds from its title to its title line, and remembers it", r.foldShut && r.foldStored,
+  `shut ${r.foldShut}, stored ${r.foldStored}`);
+check("...and stays folded, caret and all, when it redraws", r.foldRedrawn === true);
+check("...the jump menu lists it by name and opens it", r.jumpOpened && /Build finder|配装查找器/.test(r.jumpName),
+  `${JSON.stringify(r.jumpName)}, opened ${r.jumpOpened}`);
 check("...listing the top five of one scope", r.firstPage === Math.min(5, r.inScope) && r.oneCell,
   `${r.firstPage} rows of ${r.inScope}`);
 check("...each row drawn as the build card, one chip per card the build carries",

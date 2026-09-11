@@ -376,7 +376,9 @@ board's builds and never a selection, so every row it lists must satisfy the
 query: a card required from the usage rail is carried by every listed build,
 excluded it is carried by none, and a third click clears it. "Open" makes the
 build current AND puts it in the build bar as a read-only chip, and the finder
-then says it is already there.
+then says it is already there. It folds like every box: from its title to its
+title line, not from a click in its search box, still shut after a redraw, and
+named in the jump menu, whose row opens it again.
 
 **KEPT BY WHAT THE BUILD IS.** A board build's id ends in its rank, so the check
 drops the opened build's score to renumber it, leaves the weapon and comes back:
