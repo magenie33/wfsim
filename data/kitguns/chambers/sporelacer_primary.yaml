@@ -37,6 +37,7 @@ spread:
   min_deg: 12
   max_deg: 22
 # see notes: de_s_own_compatibility
+# see notes: kitgun_tag_is_the_other_slots
 tags: ["MODULAR_GUN", "SEMI_AUTO"]
 
 # see notes: damage_per_grip_published

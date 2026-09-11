@@ -68,7 +68,9 @@ attack:
   status_chance: 0.24
   punch_through_m: 0.0
   # A GUARANTEED IMPACT PROC on the direct hit: the infobox module's Normal
-  # Attack carries `ForcedProcs = { "Impact" }`, which Module:Modular/data omits.
+  # Attack carries `ForcedProcs = { "Impact" }`, as the secondary's does. The
+  # PAGE names the proc for the secondary alone and says nothing either way
+  # about this slot, which is silence rather than a disagreement.
   forced_procs: [impact]
   # PRIMARY COMPRESSION — the published table names this attack:
   #   Tombfinger (Primary) | Primary Fire Fully Charged + AoE | 100% | Multiplies | Snapshot

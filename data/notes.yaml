@@ -416,6 +416,11 @@ notes:
   de_s_own_compatibility: |
     DE's own compatibility tags, transcribed. They are what a mod pool and
     an equip rule are decided from elsewhere in this repo.
+  kitgun_tag_is_the_other_slots: |
+    A PRIMARY CHAMBER'S `SEMI_AUTO` TAG IS THE SECONDARY'S, copied with the
+    internal name the two slots share: this page says the primary fires on
+    full-auto, and the TRIGGER is what an equip rule reads. A mod gated on
+    `semi_auto` does not reach it. docs/DATA_SOURCES.md §"INSIDE THE WIKI".
   de_s_own_incompatibility: |
     DE's own incompatibility tags, from the wiki's `Module:Mods/data`
     (`IncompatibilityTags`) — the same list the mod infobox prints. The

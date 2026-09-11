@@ -67,6 +67,35 @@ held up by its own evidence, and it does not license a second one by analogy.
 duplicates that share a display name. A disagreement is the wiki's to win unless
 the field is the exception above.
 
+## INSIDE THE WIKI: THE PAGE'S PROSE FIRST, THE MODULE SECOND
+
+Read the weapon's own page BEFORE its module, and where the two disagree the
+page wins. The module is a table somebody fills in; the page's Notes are where
+a player writes down what the weapon does, and a field nobody has corrected
+keeps whatever it was seeded with:
+
+- **A module field can be a stale seed.** `AmmoCost` says 0.5 for every beam,
+  and the Kuva Nukor's page says 1 — the page is right (`docs/MECHANICS.md`
+  §beams, MEASUREMENTS).
+- **A module field can be marked unknown by its own author.** Sporelacer's
+  primary carries `Falloff.Reduction = 0.922` under a `-- TODO: Unknown falloff
+  reduction` comment, and the infobox module gives `Reduction = 0` for the same
+  attack. The page states "100% to ~7.8% from 8m to 16m", which is the number
+  the data file carries.
+- **A compatibility TAG is not a trigger.** Both Sporelacer records and the
+  primary Catchmoon carry `SEMI_AUTO` while their pages say the primary fires on
+  full-auto — the tag is the other slot's, copied with the shared internal name.
+  A mod gated on `semi_auto` therefore does NOT reach them.
+
+WHAT THE MODULE IS STILL THE AUTHORITY FOR: everything the prose never states —
+the per-attack tables (damage split, crit, status, fire rate, multishot,
+punch-through), a modular chamber's per-grip tables, and a flag like
+`ForcedProcs` on an attack the page describes without naming its procs. Silence
+in the prose is not a disagreement; a different NUMBER is.
+
+Between two module answers, the weapon's OWN page and infobox module beat a
+family overview table — see `data/notes.yaml` `kitgun_disposition_source`.
+
 ## Primary source: wiki Lua data modules (`?action=raw`)
 
 The wiki stores stats in `Module:*/data*` pages. Append `?action=raw` to fetch
@@ -207,8 +236,9 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
 
 ## Plan (reduce the manual workload)
 
-- For now: transcribe from the **module** (not the summarized page) so numbers
-  are authoritative; cite the module URL in each entry's `source`.
+- For now: read the page, then transcribe the tables it does not state from the
+  **module** (never from a summarizing reader); cite the module URL in each
+  entry's `source`, and §"INSIDE THE WIKI" for which wins on a disagreement.
 - Later: a small **importer** fetches these modules and emits our YAML directly,
   so bulk entry is automated. WFCD's `warframe-items` (JSON, same datamined
   source) is an alternative bulk feed to consider for the importer.
