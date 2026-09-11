@@ -1,4 +1,4 @@
-# M18 — Sentinel aiming (answered), and the beam ammo rule (implemented)
+# M18 — Sentinel aiming (answered), and the beam ammo cost (settled)
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
@@ -29,7 +29,7 @@ Evidence that agrees: Verglas Prime's stat table has no Zoom row and no Recoil
 row, which is what "the player never aims it" looks like from the stat side —
 the aim STATE is not the same thing as an aim-down-sights optic.
 
-### (b) The 0.5-per-trace beam ammo cost — IMPLEMENTED, needs confirming
+### (b) The beam ammo cost — SETTLED
 
 `ammo_cost` was read for the first time on 2026-08-01 (it had sat in every
 weapon file while the sim spent a flat 1.0). The values come from the wiki:
@@ -43,6 +43,10 @@ What changed, all exact:
 |---|---|---|
 | Larkspur Prime, primary | 500 ticks to dry | **1000** (500 rounds ÷ 0.5) |
 | Larkspur Prime, alt-fire | 118 shots / 120 s | **50** (500 rounds ÷ 10) |
+
+**The Larkspur Prime's two numbers need no run** (owner, 2026-09-11): the page
+states both, they are not in doubt, and the entries follow it.
+
 The Torid's Incarnon form keeps 1.0 per tick — that one IS measured (the
 charge pool is not ammo, see MECHANICS "Continuous ammo cost").
 
@@ -59,10 +63,3 @@ the Simulacrum against a stationary target, timing held fire between the
 regular 1.6 s reload pauses. The two answers are a factor of two apart — the
 80-round magazine at 12 ticks/s lasts ≈6.7 s at 1 per tick and ≈13.3 s at 0.5 —
 and the run gave 1.
-
-**What settles it:** fire a full Larkspur Prime magazine on the ground and
-count the ticks — 100 rounds should give 200. Then one alt-fire shot and read
-the magazine: 100 → 90.
-
-**Result:** the Larkspur Prime run is _not yet done_; the Verglas Prime one is,
-below.

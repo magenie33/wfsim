@@ -101,7 +101,7 @@ path, so an entry may be renamed but never renumbered.
 | [M15](measurements/M15-torid-incarnon-chain-nodes.md) | Does every chain NODE carry a damage sphere, or only the beam's contact point? (Torid Incarnon) | · |
 | [M16](measurements/M16-cernos-prime-tap-rate.md) | How fast can a bow be TAPPED? (Cernos Prime, uncharged form) | · |
 | [M17](measurements/M17-arch-gun-exilus-slot.md) | Do Arch-Guns have an exilus slot, and is Zodiac Shred eligible? | · |
-| [M18](measurements/M18-sentinel-aiming-and-beam-ammo.md) | Sentinel aiming, and the beam ammo cost (Verglas Prime: 1 per tick, not 0.5) | ✅ 2026-09-11 |
+| [M18](measurements/M18-sentinel-aiming-and-beam-ammo.md) | Sentinel aiming, and the beam ammo cost (Verglas Prime 1 per tick, measured; Larkspur Prime per its page) | ✅ 2026-09-11 |
 | [M19](measurements/M19-deadhead-stacking.md) | Do two Deadheads stack? (Primary + Secondary on one weapon) | · |
 | [M20](measurements/M20-primary-frostbite-never-stacked.md) | Primary Frostbite could never earn a stack | · 2026-08-02 |
 | [M21](measurements/M21-puncture-weakened-crit-explosions.md) | Puncture's Weakened was critting explosions | · 2026-08-02 |
