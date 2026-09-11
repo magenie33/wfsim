@@ -56,12 +56,12 @@ attack:
   crit_multiplier: 2
   status_chance: 0.21
   punch_through_m: 0.0
-  # "linear Damage Falloff from 100% to ~7.8% from 8m to 16m" — the fraction
-  # KEPT; the module's 0.922 is the fraction removed.
+  # "linear Damage Falloff from 100% to ~7.8% from 8m to 16m" — the module's
+  # 0.922 is the share removed.
   falloff:
     start_m: 8
     end_m: 16
-    reduction: 0.078
+    reduction: 0.922
   # PRIMARY COMPRESSION — the published table names this attack:
   #   Sporelacer (Primary) | Primary Fire + AoE | 100% | Multiplies | Snapshot
   compression:

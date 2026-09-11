@@ -46,11 +46,11 @@ attack:
   crit_multiplier: 2
   status_chance: 0.1286
   punch_through_m: 0.0
-  # see notes: modelled_arena_has_no
+  # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 9
     end_m: 18
-    reduction: 0.74   # fraction KEPT past end_m
+    reduction: 0.74   # fraction REMOVED past end_m
   # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { impact: 40, slash: 5, puncture: 5 }   # total 50

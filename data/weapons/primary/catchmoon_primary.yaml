@@ -66,12 +66,12 @@ attack:
   punch_through_m: infinite
   # "Limited range of 42 meters."
   range_m: 42
-  # "linear damage falloff from 100% to 5.84% from 20m to 40m" — the fraction
-  # KEPT; the module's 0.9416 is the fraction removed.
+  # "linear damage falloff from 100% to 5.84% from 20m to 40m" — the module's
+  # 0.9416 is the share removed.
   falloff:
     start_m: 20
     end_m: 40
-    reduction: 0.0584
+    reduction: 0.9416
   # "a guaranteed Impact proc against enemies within 9 meters".
   forced_procs: [impact]
   damage: { heat: 126, impact: 90 }

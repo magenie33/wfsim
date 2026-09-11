@@ -79,14 +79,11 @@ attack:
   # array says Puncture 6 / Slash 8 — and the wiki module agrees with the
   # `attacks` array. Two of the three say 6/8, and the one that dissents is
   # the derived summary rather than the per-attack record, so 6/8 it is.
-  # NOT MODELLED — the arena has no distance, so this weapon is
-  # simulated at point blank. Recorded because the RIVEN pool reads
-  # it: a hitscan weapon that lists a falloff still rolls Projectile
-  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 18
     end_m: 25
-    reduction: 0.7   # fraction KEPT past end_m
+    reduction: 0.7   # fraction REMOVED past end_m
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 300.0 m", Hit-Scan (its 18-25 m damage falloff is a separate row and already modelled)
   range_m: 300.0

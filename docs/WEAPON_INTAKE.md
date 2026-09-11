@@ -47,9 +47,10 @@ one day, ~250 entries, and the guards caught more than the reading did:
 - The scope card printed "+0% headshot damage" on eight of the ten scoped
   weapons in the roster, because the sentence named one grant and the field was
   another.
-- A `Falloff` whose `Reduction` is ZERO is the module saying there is NONE, and
-  `falloff.reduction` here is the fraction KEPT — so a blind transcription
-  deletes the attack past its start range.
+- A `Falloff` whose `Reduction` is ZERO is the module saying there is NONE, so
+  it is left out rather than transcribed. `Reduction` is the share REMOVED —
+  Hek's 0.8 is its page's "100% to 20%" — and `falloff.reduction` states it as
+  the module does; a direct-hit falloff and a radial one read the same way.
 - An attack NAME is not a trigger. "Air Burst" is semi-auto; "Auto Mode" on the
   Zenith is the mode the arsenal does NOT show.
 

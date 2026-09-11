@@ -62,7 +62,9 @@ attack:
     damage: { slash: 22.0, viral: 19.0 }   # 41 at the centre
     radius_m: 1.7
     falloff_start_m: 0.0
-    falloff_reduction: 0.0
+    # "Explosion has linear Damage Falloff from 100% to 90% from central
+    # impact"; the module's Reduction is 0.1.
+    falloff_reduction: 0.1
     crit_chance: 0.01
     crit_multiplier: 3.0
     status_chance: 0.53

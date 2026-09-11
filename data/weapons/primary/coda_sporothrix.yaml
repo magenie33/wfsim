@@ -65,7 +65,8 @@ attack:
     damage: { slash: 25.0, viral: 23.0 }   # 48 at the centre
     radius_m: 2.0
     falloff_start_m: 0.0
-    falloff_reduction: 0.0
+    # The module's Reduction is 0.1 on this explosion, as on the Sporothrix's.
+    falloff_reduction: 0.1
     crit_chance: 0.05
     crit_multiplier: 3.0
     status_chance: 0.55

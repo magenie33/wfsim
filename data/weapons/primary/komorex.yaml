@@ -69,7 +69,9 @@ attack:
     damage: { viral: 53.0 }
     radius_m: 3.5
     falloff_start_m: 0.0
-    falloff_reduction: 0.0
+    # "Second zoom explosion has linear Damage Falloff from 100% to 60% from
+    # central impact"; the module's Reduction is 0.4.
+    falloff_reduction: 0.4
     crit_chance: 0.16
     crit_multiplier: 2.1
     status_chance: 0.34

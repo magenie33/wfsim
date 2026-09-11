@@ -194,21 +194,13 @@ impl Reach {
 }
 
 /// DE's own falloff, as the module states it. `reduction` is the fraction
-/// REMOVED at `end_m` — Catchmoon's 0.9416 is the page's *"100% to 5.84%"* — which
-/// is the opposite reading to `weapons_data::FalloffSpec::reduction`; [`Falloff::keep`]
-/// converts.
+/// REMOVED at `end_m` — Catchmoon's 0.9416 is the page's *"100% to 5.84%"* —
+/// the same reading as `weapons_data::FalloffSpec::reduction`.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct Falloff {
     pub start_m: f64,
     pub end_m: f64,
     pub reduction: f64,
-}
-
-impl Falloff {
-    /// The fraction KEPT at `end_m`, which is what a roster entry states.
-    pub fn keep(&self) -> f64 {
-        1.0 - self.reduction
-    }
 }
 
 /// A grip. Its ONLY stat of its own is recoil: what it does to damage and fire

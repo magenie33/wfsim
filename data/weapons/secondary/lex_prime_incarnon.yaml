@@ -52,11 +52,11 @@ attack:
   # The page's own list names it: "Lex Prime (Incarnon Form)".
   # see notes: infinite_body_punch_through
   punch_through_m: infinite
-  # see notes: modelled_arena_has_no
+  # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 10
     end_m: 18
-    reduction: 0.3333   # fraction KEPT past end_m
+    reduction: 0.3333   # fraction REMOVED past end_m
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 28.0 m", Projectile — the form trades reach for what it gains
   range_m: 28.0

@@ -568,13 +568,10 @@ pub struct AttackSpec {
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
     /// DAMAGE FALLOFF on the direct hit — the shotgun's, and the one the
-    /// Arsenal lists as a range in metres.
+    /// Arsenal lists as a range in metres. The fight applies it at each body's
+    /// own distance (`loadout::Falloff`).
     ///
-    /// **NOT MODELLED IN THE FIGHT**, and recorded anyway. This arena has no
-    /// distance: every shot lands at point blank, so a weapon with falloff is
-    /// simulated at its best case and says so in `unmodeled:`.
-    ///
-    /// What reads it today is the RIVEN pool. Wiki (`Projectile Speed`),
+    /// The RIVEN pool reads it too. Wiki (`Projectile Speed`),
     /// verbatim: *"Mods including Rivens that have positive or negative
     /// Projectile speeds will affect a weapon's entire Damage Falloff range
     /// accordingly"* and *"Hitscan weapons that do **not** list Damage Falloff
@@ -689,20 +686,20 @@ pub struct AttackSpec {
 }
 
 /// Direct-hit damage falloff: full damage inside `start_m`, decreasing
-/// linearly to `reduction` of it at `end_m` and beyond.
+/// linearly until `reduction` of it is GONE at `end_m`, and flat beyond.
 ///
-/// `reduction` is DE's own field and it is the fraction KEPT, not the fraction
-/// lost — the Boar keeps 0.5 past 25 m. It reads the opposite way to
-/// [`RadialSpec::falloff_reduction`], which is the amount REMOVED, and the two
-/// are kept as their sources state them rather than being normalised into a
-/// shared spelling that would make one of them a lie about its source.
+/// `reduction` is DE's own field, `Module:Weapons/data`'s `Reduction`, and it
+/// is the fraction REMOVED — the same reading as [`RadialSpec::falloff_reduction`].
+/// Hek's is 0.8 and its page says *"from 100% to 20% from 10m to 20m"* — read
+/// as the share kept, it would keep 80% where the game keeps 20%.
+/// `loadout::Falloff::keep` is its complement.
 #[derive(Debug, Clone, Deserialize)]
 pub struct FalloffSpec {
     /// Metres out to which damage is full.
     pub start_m: f64,
     /// Metres past which damage stops dropping.
     pub end_m: f64,
-    /// Fraction of damage KEPT at `end_m` and beyond.
+    /// Fraction of damage REMOVED at `end_m` and beyond.
     pub reduction: f64,
 }
 
@@ -6778,14 +6775,8 @@ mod play_mode_tests {
         }
     }
 
-    /// A weapon that falls off with range is simulated at point blank, and it
-    /// has to SAY so — on the page, not only in the file.
-    ///
-    /// The arena has no distance, so `falloff:` is data nothing in the fight
-    /// reads: a Boar's number is its 0-15 m number and a player comparing it
-    /// to a rifle is comparing a best case to a flat one. The line is derived
-    /// from the field rather than remembered per weapon, so a weapon that
-    /// gains a falloff tomorrow cannot gain it quietly.
+    /// EVERY DIRECT-HIT FALLOFF IS WELL FORMED, and none admits a gap the
+    /// fight now closes.
     #[test]
     fn a_weapon_with_damage_falloff_says_it_is_not_modelled() {
         let mut with = 0;
@@ -6793,18 +6784,9 @@ mod play_mode_tests {
             let Some(f) = &w.attack.falloff else { continue };
             with += 1;
             assert!(f.end_m > f.start_m, "{}: falloff {f:?} does not span", w.id);
-            // `reduction` is the fraction KEPT, so a weapon that keeps all of
-            // its damage has no falloff and should not be carrying the field.
-            assert!(f.reduction < 1.0 && f.reduction > 0.0, "{}: keeps {}", w.id, f.reduction);
-            // …AND IT ADMITS NOTHING. A falloff weapon SAYING it is not
-            // modelled is the right assertion only while the arena has no 2D
-            // layer. An admission that outlives the gap it names is
-            // worse than none: it tells a player to distrust a number that is
-            // now right, and the page is where they would read it.
-            //
-            // The RADIAL's own falloff is a different gap and still open, so a
-            // weapon may still carry `radial_falloff` — this only forbids the
-            // direct-hit line.
+            // `reduction` is the fraction REMOVED, so zero is no falloff at all
+            // and should not be carrying the field.
+            assert!(f.reduction < 1.0 && f.reduction > 0.0, "{}: removes {}", w.id, f.reduction);
             assert!(
                 !w.unmodeled_parts
                     .iter()
@@ -6812,6 +6794,21 @@ mod play_mode_tests {
                 "{} still admits a direct-hit falloff the engine now models",
                 w.id
             );
+        }
+        // …AND NO ENTRY ADMITS ANY FALLOFF AS UNMODELLED. Both the direct hit's
+        // and an explosion's are applied at the body's own distance, and an
+        // admission that outlives its gap tells a player to distrust a number
+        // that is right — on the page, where they read it.
+        for w in all() {
+            for u in &w.unmodeled_parts {
+                let t = u.text.to_lowercase();
+                assert!(
+                    !(t.contains("falloff") && t.contains("no distance")),
+                    "{} admits a falloff the fight applies: {}",
+                    w.id,
+                    u.text
+                );
+            }
         }
         // The Boar is the shape this exists for: hit-scan, and its damage is
         // halved past 25 m.
@@ -8071,14 +8068,13 @@ mod modular_tests {
                 "{}: beam block",
                 s.id
             );
-            // THE FALLOFF, in two spellings — the module's REMOVED fraction and
-            // the entry's KEPT one — and a slip between them is silent.
+            // THE FALLOFF: both state DE's own `Reduction`, the share removed.
             match (&c.falloff, &s.attack.falloff) {
                 (None, None) => {}
                 (Some(k), Some(e)) => {
                     assert_eq!((k.start_m, k.end_m), (e.start_m, e.end_m), "{}: falloff window", s.id);
-                    assert!((k.keep() - e.reduction).abs() < 1e-9,
-                        "{}: the chamber keeps {} and the entry {}", s.id, k.keep(), e.reduction);
+                    assert!((k.reduction - e.reduction).abs() < 1e-9,
+                        "{}: the chamber removes {} and the entry {}", s.id, k.reduction, e.reduction);
                 }
                 (k, e) => panic!("{}: chamber falloff {k:?}, entry falloff {e:?}", s.id),
             }

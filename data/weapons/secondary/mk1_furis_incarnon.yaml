@@ -65,24 +65,17 @@ attack:
   # Furis's status chance (1% against 12%), and in Incarnon form it has a
   # third (8% against 24%). The transformation is worth far more to the
   # weaker weapon, which is the same shape the Boar family shows.
-  # NOT MODELLED — the arena has no distance, so this weapon is
-  # simulated at point blank. Recorded because the RIVEN pool reads
-  # it: a hitscan weapon that lists a falloff still rolls Projectile
-  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 10
     end_m: 16
-    reduction: 0.2167   # fraction KEPT past end_m
+    reduction: 0.2167   # fraction REMOVED past end_m
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 16.0 m"
   range_m: 16.0
   damage: { heat: 60.0 }
-  # The wiki states one falloff rule for the Genesis (100% to 80%, 10-16 m);
-  # WFCD gives this attack 0.2167 and the Furis's 0.48. The wiki takes it, and
-  # nothing reads it single-target. See furis_incarnon.yaml.
-  falloff_start_m: 10.0
-  falloff_end_m: 16.0
-  falloff_reduction: 0.2
+  # THE WIKI DISAGREES WITH ITSELF on the falloff — see furis_incarnon.yaml.
+  # `falloff:` carries this weapon's own module, 0.2167.
 
 # incarnon_evolutions: see data/evolutions/mk1_furis_*.yaml (four tiers)
 

@@ -703,11 +703,12 @@ notes:
     SCENARIO — two builds compared under the same Roar is a comparison, one of
     them getting it is not — and the BOARD carries none of these, which is what
     keeps a board row a statement about the weapon.
-  modelled_arena_has_no: |
-    NOT MODELLED — the arena has no distance, so this weapon is
-    simulated at point blank. Recorded because the RIVEN pool reads
-    it: a hitscan weapon that lists a falloff still rolls Projectile
-    Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff_feeds_the_riven_pool: |
+    THE FALLOFF, as `Module:Weapons/data` states it: `reduction` is the share
+    REMOVED past `end_m`. The fight applies it at each body's own distance,
+    and the RIVEN pool reads it too: a hitscan weapon that lists a falloff
+    still rolls Projectile Speed, which scales the whole window (wiki
+    `Projectile Speed`).
   modelled_declared_rather_than: |
     NOT MODELLED, and declared rather than left undefined — which is the whole
     convention here (see hunter.yaml): a set whose bonus does nothing for the

@@ -27,7 +27,6 @@ co_behavior: additive_with_base_damage
 
 unmodeled:
   - "the five CLUSTER BOMBLETS the bomb throws out (3 Impact each, plus an 18 Radiation explosion each): they fly at 6 m/s in their own directions, so how many reach ONE target is a question this arena has no geometry to answer — and they are roughly half the alt fire's damage, so the number below is a floor"
-  - "damage falloff on the explosion, linear to 50% at 4.8 m — this arena has no distance, so every shot lands at point blank"
   - "the escalating ammo cost the wiki files under Bugs (2/2/2/3/3/4/6 through a magazine, and -1 damage per extra ammo): a bug is not a rule, and this one takes AWAY what the charge is supposed to buy"
 
 attack:

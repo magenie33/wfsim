@@ -3146,9 +3146,8 @@ impl ResolvedRadial {
     /// blast radius IS the falloff's end distance, so the two are one number.
     ///
     /// `falloff_reduction` is the amount REMOVED (the Laetum's 0.2 leaves 80%
-    /// at the rim), which reads the opposite way to [`Falloff::keep`]; both are
-    /// kept as their sources state them rather than normalised into a spelling
-    /// that would make one of them a lie about its source.
+    /// at the rim) — DE's own `Reduction`, the same reading the direct hit's
+    /// `FalloffSpec::reduction` has.
     pub fn falloff_at(&self, d: f64) -> f64 {
         if d >= self.radius_m {
             return 0.0;
@@ -3212,10 +3211,10 @@ impl Spread {
 /// DIRECT-hit damage falloff, resolved: full damage inside `start_m`, decaying
 /// linearly to `keep` of it at `end_m` and flat beyond.
 ///
-/// `keep` is DE's own `reduction` and it is the fraction KEPT — the Boar keeps
-/// 0.5 past 25 m. It reads the opposite way to [`RadialBase::falloff_reduction`]
-/// (the amount REMOVED), and both are kept as their sources state them; see
-/// [`crate::weapons_data::FalloffSpec`].
+/// `keep` is the fraction KEPT, and it is the COMPLEMENT of DE's `Reduction`,
+/// which is the fraction removed: Hek's 0.8 is the page's *"100% to 20%"*. The
+/// data states DE's number, as every radial's `falloff_reduction` does, and this
+/// is the one place it is turned round; see [`crate::weapons_data::FalloffSpec`].
 ///
 /// THE WINDOW IS SCALED BY PROJECTILE SPEED, which is the first thing that
 /// bucket has ever been worth. Wiki (`Projectile Speed`), verbatim: *"Mods
@@ -5337,7 +5336,9 @@ pub fn resolve_for(
                 .find(|(s, _)| *s == IndirectStat::ProjectileSpeed)
                 .map_or(0.0, |(_, v)| *v);
         let ps = ps.max(0.0);
-        Falloff { start_m: f.start_m * ps, end_m: f.end_m * ps, keep: f.reduction }
+        // DE's `Reduction` is the share REMOVED at the far end, so the share
+        // kept is its complement: Hek's 0.8 is the page's "100% to 20%".
+        Falloff { start_m: f.start_m * ps, end_m: f.end_m * ps, keep: 1.0 - f.reduction }
     });
 
     ResolvedPanel {

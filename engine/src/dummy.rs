@@ -10468,6 +10468,30 @@ mod every_form_runs {
         assert!((direct_at(120.0) / full - 0.5).abs() < 1e-12, "flat past the end");
     }
 
+    /// …AND THE FLOOR IS WHAT THE PAGE SAYS REMAINS, which the Boar cannot
+    /// tell: its 0.5 reads the same either way round. The Hek's page is *"from
+    /// 100% to 20% from 10m to 20m"* and its module `Reduction` is 0.8, so past
+    /// 20 m a shot deals a fifth — the share-kept reading gives four times that.
+    #[test]
+    fn a_falloff_floor_is_what_remains_not_what_is_removed() {
+        let direct_at = |gap: f64| {
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target_at =
+                crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
+            let base = crate::loadout::WeaponBase::from_data("hek", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.spread = None; // the aim model has its own tests
+            run_once(&p, &mut Rng::new(0x5EED)).sources.direct
+        };
+        let full = direct_at(0.0);
+        assert!(full > 0.0, "the fixture fired nothing");
+        assert!((direct_at(15.0) / full - 0.6).abs() < 1e-12, "half way: 100% to 20%");
+        assert!((direct_at(30.0) / full - 0.2).abs() < 1e-12, "the page's floor");
+    }
+
     /// …AND A WEAPON THAT LISTS NO FALLOFF NOTICES NO RANGE. Absence is not
     /// "unknown, so guess a curve": the wiki states it from the other side —
     /// *"Hitscan weapons that do not list Damage Falloff values in their UI are

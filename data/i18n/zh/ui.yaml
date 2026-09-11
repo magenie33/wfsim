@@ -565,8 +565,6 @@ ui:
   "current": 当前
   "cycle": 循环
   "damage attenuation": 伤害衰减
-  "damage falloff on the explosion, linear to 40% at 6.6 m — this arena has no distance, so every shot lands at point blank": 爆炸的距离衰减，在 6.6 米处线性降至 40% —— 这个战场没有距离概念，每一发都按贴脸计算
-  "damage falloff on the explosion, linear to 50% at 4.8 m — this arena has no distance, so every shot lands at point blank": 爆炸的距离衰减，在 4.8 米处线性降至 50% —— 这个战场没有距离概念，每一发都按贴脸计算
   "damage on its own multiplier — applied once, to the hit and to the status alike": 独立乘区的伤害加成——只吃一次，直伤和异常都是一次
   "damage reduction": 伤害减免
   dealt: 打出

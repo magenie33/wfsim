@@ -94,27 +94,19 @@ attack:
   # PURE HEAT — five times the base form's 20, and it arrives as one element
   # rather than an IPS split, so elemental mods combine with it (MECHANICS §3
   # rule 2: the innate takes what the mods leave).
-  # NOT MODELLED — the arena has no distance, so this weapon is
-  # simulated at point blank. Recorded because the RIVEN pool reads
-  # it: a hitscan weapon that lists a falloff still rolls Projectile
-  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 10
     end_m: 16
-    reduction: 0.48   # fraction KEPT past end_m
+    reduction: 0.48   # fraction REMOVED past end_m
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 16.0 m"
   range_m: 16.0
   damage: { heat: 100.0 }
-  # RANGE FALLOFF, and the two sources disagree. The wiki: "linear Damage
-  # Falloff from 100% to 80% from 10m to 16m", i.e. a 0.2 reduction. WFCD's
-  # attack entry says 0.48 for this weapon and 0.2167 for the MK1 — which
-  # cannot both be a rounding of one rule. The English wiki takes it, and NOTHING READS IT: this arena has no distance, so the
-  # target is inside 10 m and takes 100% either way. Recorded so a spatial
-  # model finds the disagreement rather than the winner.
-  falloff_start_m: 10.0
-  falloff_end_m: 16.0
-  falloff_reduction: 0.2
+  # THE WIKI DISAGREES WITH ITSELF on the falloff: the Genesis page gives both
+  # Furis weapons "linear Damage Falloff from 100% to 80% from 10m to 16m", and
+  # each weapon's own module states its own Reduction — 0.48 here, 0.2167 on
+  # the MK1. `falloff:` carries this weapon's module; a measurement settles it.
 
 # incarnon_evolutions: see data/evolutions/furis_*.yaml (four tiers)
 

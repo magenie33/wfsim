@@ -54,11 +54,11 @@ attack:
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 2.08
-  # see notes: modelled_arena_has_no
+  # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 15
     end_m: 25
-    reduction: 0.5   # fraction KEPT past end_m
+    reduction: 0.5   # fraction REMOVED past end_m
   multishot: 10.0
   ammo_cost: 1
   crit_chance: 0.075
