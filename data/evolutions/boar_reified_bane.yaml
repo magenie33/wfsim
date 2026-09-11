@@ -4,7 +4,7 @@ weapon: boar
 tier: 2
 icon: ReloadFromEmpty(xWhite).png
 description: "Increase Base Damage by +10.
-On Reload From Empty: Increase Base Damage by +14."
+On Reload From Empty: Increase Base Damage by +10."
 # see notes: genesis_family_s_boar
 #
 # see notes: no_other_variant_says
@@ -33,15 +33,16 @@ effects:
   # the magazine is not empty" (the wiki's own words, and the sim never does
   # that). So held is exact, not an approximation.
   #
-  # The wiki also records that the game MISPRINTS this half as +10 on the card
-  # ("Reload From empty bonus is incorrectly listed as +10 in game"); the
-  # effect is +14, which is what goes in.
   # THE EXCEPTION, not a pattern to copy: a reload-triggered effect fires on
   # reload COMPLETION by default. This one needs the
   # magazine EMPTY and fires at the reload's FIRST FRAME. Only this evolution
   # is known to do it; the next one gets its own kind.
   - kind: flat_base_damage_on_empty_reload
     value: 14.0
+    # THE CARD SAYS +10 AND THE GAME PAYS +14: the wiki's "incorrectly listed
+    # as +10 in game", read in the damage on the Prime (M88).
+    misprint: >-
+      the card prints +10 and the effect is +14, measured in the damage on the Boar Prime, which shares this card
 
 source:
   url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

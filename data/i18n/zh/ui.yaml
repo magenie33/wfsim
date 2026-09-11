@@ -542,6 +542,11 @@ ui:
   "builds you run here are submitted": 你在这里跑的配装会被提交
   "burst": 点射
   "card is wrong": "卡面有误"
+  # What each misprinted clause says, as the chip's tooltip renders it:
+  # `<effect kind> — <the yaml's misprint note>`.
+  "flat base damage on empty reload — the card prints +10 and the effect is +14, measured in the damage: a pellet at 2 Galvanized stacks x 3 status types reads 266, where +10 would read 255": 空弹匣装填时的固定基伤 —— 卡面写 +10，实际是 +14，已在伤害数字里实测：镀层 2 层、目标 3 种异常时每颗弹丸打出 266，按 +10 算只有 255
+  "flat base damage on empty reload — the card prints +10 and the effect is +14, measured in the damage on the Boar Prime, which shares this card": 空弹匣装填时的固定基伤 —— 卡面写 +10，实际是 +14，已在野猪 Prime 的伤害数字里实测，两者共用这张卡
+  "fire rate bonus — the card prints Sprint Speed 1.2 or Higher and the effect requires 1.1 — so it pays on frames the card says it should not, and Amalgam Serration alone carries any Warframe over the line": 射速加成 —— 卡面写冲刺速度 1.2 或以上，实际只要求 1.1 —— 所以卡面说不生效的战甲上它也生效，单装一张「并合 膛线」就能让任何战甲跨过门槛
   "centre": "中心"
   "charged": 蓄力
   "choose the target": 选择目标
