@@ -811,7 +811,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .home-page{max-width:1060px;margin:0 auto;padding:28px 18px}
 .hero-h{font-size:32px;letter-spacing:-.01em;margin:22px 0 10px}
 .hero-h span{color:var(--gold)}
-.hero-sub{color:var(--text-2);font-size:15px;max-width:620px;margin:0 0 34px}
+.hero-sub{color:var(--text-2);font-size:15px;max-width:620px;margin:0 0 10px}
+/* THE METHOD LINE, a step below what it qualifies. It answers "how does it
+   work" where the line above answers "what is it", and at equal weight the two
+   read as one paragraph somebody forgot to join. */
+.hero-method{color:var(--muted);font-size:13px;max-width:620px;margin:0 0 34px;line-height:1.7}
 /* A hero that runs to more than one paragraph: only the last line keeps the
    gap to whatever follows it. */
 .hero-lead{margin-bottom:18px}
@@ -869,17 +873,23 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    the reader cannot dispute. */
 .sup-usage{font-size:15px;color:var(--gold);border-left:2px solid var(--gold);
   padding:6px 0 6px 14px;margin:26px 0 0;max-width:760px;line-height:1.6}
-.thx-block{margin:22px 0 0}
-.thx-head{font-size:13px;color:var(--text-2);font-weight:600;margin:0 0 10px}
+/* THE NAMES, AND THEY ARE THE ONLY PEOPLE ON THIS PAGE. A ground of their own:
+   the block sat between two bullet lists at the same weight and read as a third
+   one, and the single thing it is not is more prose. */
+.thx-block{margin:26px 0 0;padding:20px 22px;border-radius:14px;
+  background:var(--panel2);border:1px solid var(--line)}
+.thx-head{font-size:11px;color:var(--muted);font-weight:600;margin:0 0 16px;
+  letter-spacing:.08em;text-transform:uppercase}
 /* EVERY NAME IS DRAWN THE SAME. The order carries the ranking and nothing else
    may: a larger or brighter name at the top is a price list drawn rather than
    written, and the page above promises there are no tiers. */
-.thx-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
-.thx-one{display:inline-flex;align-items:baseline;gap:6px;padding:4px 10px;
-  border:1px solid var(--line);border-radius:999px;font-size:13px}
-.thx-name{color:var(--text)}
-.thx-since{color:var(--text-2);font-size:11px;font-variant-numeric:tabular-nums}
-.thx-more{font-size:12px;margin:12px 0 0}
+.thx-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;
+  gap:12px 26px}
+.thx-one{display:inline-flex;font-size:19px;line-height:1.35}
+/* GOLD, the colour this page already gives to the one line that is about a
+   PERSON rather than about the software. */
+.thx-name{color:var(--gold)}
+.thx-more{font-size:12px;margin:16px 0 0}
 .sup-costs,.dl-page .sup-costs{list-style:none;margin:0;padding:0;font-size:13px}
 .sup-costs li{padding:7px 0;color:var(--text-2)}
 .sup-costs li+li{border-top:1px solid var(--line)}

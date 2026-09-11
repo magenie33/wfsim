@@ -2750,9 +2750,12 @@ function drawThanks(block, list, limit) {
   block.hidden = all.length === 0;
   if (!all.length) return;
   const shown = limit ? all.slice(0, limit) : all;
+  // THE NAME AND NOTHING ELSE. `since` stays in the published file — it is
+  // what the ordering is derived from and worth keeping as a record — but a
+  // month printed beside a name IS a number beside a name, which is the one
+  // thing /thanks tells the reader it does not do.
   list.innerHTML = shown.map((s) => `<li class="thx-one">`
-    + `<span class="thx-name">${escHtml(s.name)}</span>`
-    + `<span class="thx-since">${escHtml(s.since || "")}</span></li>`).join("");
+    + `<span class="thx-name">${escHtml(s.name)}</span></li>`).join("");
   const more = block.querySelector(".thx-more");
   if (more) more.hidden = all.length <= shown.length;
 }

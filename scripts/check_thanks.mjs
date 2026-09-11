@@ -74,13 +74,14 @@ try {
     page.names.join("|") === FIXTURE.supporters.map((s) => s.name).join("|"),
     page.names.join("|"));
 
-  // A RANK IS A NUMBER THE PAGE ADDED. Each row may carry the name and the
-  // month it published and nothing else, so anything left over after removing
-  // those two is something this page invented.
-  const leftover = page.whole.map((whole, i) => whole
-    .replace(FIXTURE.supporters[i].name, "")
-    .replace(FIXTURE.supporters[i].since, "").trim());
-  check(`${tag} ...and no rank, position or figure is printed beside a name`,
+  // A ROW IS THE NAME AND NOTHING ELSE. Not a rank, not a position, and not
+  // the month either — `since` stays in the published file because the order
+  // is derived from it, and the page's promise is that no number stands beside
+  // a name. Anything left after removing the name is something this page
+  // invented, and the date coming back is the way that happens.
+  const leftover = page.whole.map((whole, i) =>
+    whole.replace(FIXTURE.supporters[i].name, "").trim());
+  check(`${tag} ...and nothing stands beside it — no rank, no figure, no date`,
     leftover.every((rest) => rest === ""), JSON.stringify(leftover));
 
   check(`${tag} every name is drawn the same — no visual tier`,
