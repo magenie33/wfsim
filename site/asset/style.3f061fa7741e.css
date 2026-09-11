@@ -271,8 +271,8 @@ body.on-enemies [data-module="builder"]{display:none}
 .finder{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 12px;--req:var(--s7)}
 .finder[hidden]{display:none}
 .fd-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line)}
-.fd-title{font-weight:700;font-size:13.5px;white-space:nowrap}
-.fd-title small{font-weight:400;color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}
+.fd-title{margin:0;font-weight:700;font-size:13.5px;white-space:nowrap}
+.fd-count{color:var(--muted);margin-left:-4px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .fd-q{flex:1 1 320px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:32px;padding:3px 8px;border:1px solid var(--line);border-radius:9px;background:var(--plane);position:relative}
 .fd-q:focus-within{border-color:var(--accent)}
 .fd-q input{flex:1;min-width:150px;border:0;outline:0;background:transparent;font:inherit;font-size:12.5px;color:var(--text);height:24px}
@@ -1811,6 +1811,13 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .block.shut>.bh .fold-c{transform:rotate(-90deg)}
 .block.shut>.bh{border-bottom:0}
 .block.shut>.bb{display:none}
+/* THE BUILD FINDER FOLDS TO ITS TITLE AND COUNT: the query and the view
+   switch in its head steer a table that is no longer on screen. */
+.finder>.fd-head.fold-h{gap:10px}
+.finder>.fd-head.fold-h .fold-c{font-size:13px;color:var(--text-2)}
+.finder.shut>.fd-head{border-bottom:0}
+.finder.shut> :not(.fd-head),
+.finder.shut>.fd-head> :not(.fold-c):not(.fd-title):not(.fd-count){display:none}
 /* WHAT EACH MODE IS. A definition list under the Mode control: one entry per
    mode this weapon has, the picked one marked. It sits inside the builder's
    own block, so it takes the block's width and wraps rather than pushing the

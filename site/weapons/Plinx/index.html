@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.fbb76c74e11d.css" />
+  <link rel="stylesheet" href="/asset/style.3f061fa7741e.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -637,7 +637,7 @@
          sort. It never says which build is open — the bar below does — and
          opening a row puts that build in the bar. Builder only. See
          renderBuildFinder. -->
-    <section class="finder" id="build-finder" aria-label="Build finder"></section>
+    <section class="finder fold" id="build-finder" data-fold="build-finder" aria-label="Build finder"></section>
     <!-- EVERY BUILD: your own, and the board builds you opened (read-only). -->
     <div class="preset-bar" id="preset-bar-builder-builds"></div>
     <!-- WHAT IS OPEN, as its own line. See renderCurrentBuild. -->
@@ -1133,13 +1133,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">591f46e9</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">275aeed9</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.ed44b1e20be4.js"></script>
+  <script src="/asset/app.f20b61b93bcf.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is
