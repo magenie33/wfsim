@@ -79,6 +79,8 @@
   <url><loc>https://wfsim.app/weapons/Carmine_Penta</loc></url>
   <url><loc>https://wfsim.app/weapons/Castanas</loc></url>
   <url><loc>https://wfsim.app/weapons/Catabolyst</loc></url>
+  <url><loc>https://wfsim.app/weapons/Catchmoon</loc></url>
+  <url><loc>https://wfsim.app/weapons/catchmoon_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Cedo</loc></url>
   <url><loc>https://wfsim.app/weapons/Cedo_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Cernos</loc></url>
@@ -139,6 +141,8 @@
   <url><loc>https://wfsim.app/weapons/Furis</loc></url>
   <url><loc>https://wfsim.app/weapons/Fusilai</loc></url>
   <url><loc>https://wfsim.app/weapons/Gammacor</loc></url>
+  <url><loc>https://wfsim.app/weapons/Gaze</loc></url>
+  <url><loc>https://wfsim.app/weapons/gaze_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Glaxion</loc></url>
   <url><loc>https://wfsim.app/weapons/Glaxion_Vandal</loc></url>
   <url><loc>https://wfsim.app/weapons/Gorgon</loc></url>
@@ -274,6 +278,8 @@
   <url><loc>https://wfsim.app/weapons/Quellor</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Ballistica</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Cernos</loc></url>
+  <url><loc>https://wfsim.app/weapons/Rattleguts</loc></url>
+  <url><loc>https://wfsim.app/weapons/rattleguts_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Rauta</loc></url>
   <url><loc>https://wfsim.app/weapons/Reconifex</loc></url>
   <url><loc>https://wfsim.app/weapons/Riot-848</loc></url>
@@ -304,6 +310,8 @@
   <url><loc>https://wfsim.app/weapons/Spectra_Vandal</loc></url>
   <url><loc>https://wfsim.app/weapons/Spira</loc></url>
   <url><loc>https://wfsim.app/weapons/Spira_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Sporelacer</loc></url>
+  <url><loc>https://wfsim.app/weapons/sporelacer_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Sporothrix</loc></url>
   <url><loc>https://wfsim.app/weapons/Stahlta</loc></url>
   <url><loc>https://wfsim.app/weapons/Staticor</loc></url>
@@ -375,6 +383,8 @@
   <url><loc>https://wfsim.app/weapons/Velox_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Verglas</loc></url>
   <url><loc>https://wfsim.app/weapons/Verglas_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Vermisplicer</loc></url>
+  <url><loc>https://wfsim.app/weapons/vermisplicer_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Vesper_77</loc></url>
   <url><loc>https://wfsim.app/weapons/Vinquibus</loc></url>
   <url><loc>https://wfsim.app/weapons/Viper</loc></url>
