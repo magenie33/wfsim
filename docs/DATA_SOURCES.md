@@ -20,11 +20,16 @@ The one other host that is a source is `warframe.huijiwiki.com`, and only for
 one thing: DE's own CHINESE card text, which the English wiki does not carry.
 See the transcription rule in AGENTS.md.
 
-## THE WIKI WINS
+## OUR OWN MEASUREMENT, THEN THE WIKI, THEN NOTHING
 
-Use the wiki wherever it can answer. WFCD's `warframe-items` export is the
-CROSS-CHECK and the fallback — it is no longer a peer source, and it stopped
-being one on evidence rather than on preference.
+The order of authority for a game number: an **in-game measurement**
+(`docs/MEASUREMENTS.md`), then **the wiki** — its data modules and its pages,
+and the CN wiki for Chinese names. WFCD's `warframe-items` export is **not a
+data source**: it is unreliable, and it is good for images at most. An
+agreement with it is not evidence, it never breaks a tie between two wiki
+sources — settle that inside the wiki, the weapon's OWN page and infobox module
+over a family overview table, or measure — and it is never written into a data
+file as the reason a number is right. It lost its standing on evidence:
 
 **What demoted it.** Its Arch-Gun entries carry the ARCHWING column of a
 two-column infobox. Every Arch-Gun page has an `Archwing` tab and an
@@ -57,9 +62,10 @@ uniqueName is the one the wiki is talking about.
 wiki is wrong for about twenty of them and WFCD is right. It is an exception
 held up by its own evidence, and it does not license a second one by analogy.
 
-**Still cross-check**, and still join by `internal_name` == `uniqueName` and
-never by name — WFCD carries stale duplicates that share a display name. A
-disagreement is now the wiki's to win unless the field is the exception above.
+**Where it is still read** (the exception above, a join, an image), join by
+`internal_name` == `uniqueName` and never by name — WFCD carries stale
+duplicates that share a display name. A disagreement is the wiki's to win unless
+the field is the exception above.
 
 ## Primary source: wiki Lua data modules (`?action=raw`)
 
@@ -263,6 +269,11 @@ the obvious way ("it's just an HTTP GET, do it in the script") will conclude the
 wall is still up and leave names empty that could have been read.
 
     curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36       (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"       --get --data-urlencode "page=盗贼灵化之源"       "https://warframe.huijiwiki.com/api.php?action=parse&prop=wikitext&format=json"
+
+**Percent-encode the title yourself.** Git Bash hands a CJK `--data-urlencode`
+argument to curl in the console code page, and the API answers "The value
+passed for "page" contains invalid or non-normalized data" — which reads as a
+wall and is not one. `page=%E7%BB%84%E5%90%88%E6%9E%AA` (组合枪) goes through.
 
 The evolution pages are `<武器>灵化之源` (伯斯顿灵化之源, 盗贼灵化之源,
 野猪灵化之源); a weapon page transcludes them with `{{#lst:…|Incarnon}}`, so

@@ -110,11 +110,11 @@ Each of these fails silently. That is why it is here and not in a document.
 - **Golden values only change with an in-game measurement** justifying it. New
   mechanics need golden tests; a faithful-looking implementation without a
   measurement is not correct.
-- **THE WIKI WINS — use it wherever it can answer.** WFCD's export (`vendor/`)
-  is the CROSS-CHECK and the fallback, not a peer. Join the two by
-  `internal_name` == `uniqueName`, **never by name** (WFCD has stale duplicates
-  sharing a display name). The ONE standing exception is `base_drain`/`max_rank`
-  on MODS, where the wiki is wrong for ~20 of them and WFCD is right.
+- **OUR OWN MEASUREMENT, THEN THE WIKI, THEN NOTHING.** WFCD (`vendor/`) is
+  unreliable — images at most, never a tiebreaker between wiki sources, never
+  the reason a data file gives for a number. Join to it by `internal_name` ==
+  `uniqueName`, **never by name**. The ONE standing exception is
+  `base_drain`/`max_rank` on MODS (`docs/DATA_SOURCES.md`).
 - **A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE TENNO IS ASSUMED.**
   A data file stating a rule the engine does not apply is worse than one that
   omits it: to anyone auditing, it reads as if the rule were being applied.
