@@ -15925,19 +15925,22 @@ pub fn run_once_traced(
             // none. `takes_multishot` is false on both halves, so the same
             // clause that keeps a once-per-shot explosion off pellets 1.. keeps
             // the bomblets off them (`ClusterSpec`: the count is the bomb's).
-            let mut stages: Vec<Option<crate::loadout::ResolvedRadial>> =
-                Vec::with_capacity(2);
-            stages.push(None);
-            if let Some(r) = radial_stage {
-                stages.push(Some(r));
-                if let Some(c) = ap.cluster.filter(|_| pellet_idx == 0) {
-                    for _ in 0..(c.count.round().max(0.0) as usize) {
-                        stages.push(Some(c.contact));
-                        stages.push(Some(c.blast));
-                    }
-                }
-            }
-            for rad in stages {
+            //
+            // COUNTED, NOT COLLECTED. This is the engine's hottest loop and a
+            // `Vec` of stages is an allocation every pellet fires — the list is
+            // `[direct, radial, (contact, blast) x count]`, which an index
+            // answers for free.
+            let cluster = ap
+                .cluster
+                .filter(|_| pellet_idx == 0 && radial_stage.is_some());
+            let bomblets = cluster.map_or(0, |c| c.count.round().max(0.0) as usize);
+            let n_stages = 1 + usize::from(radial_stage.is_some()) + 2 * bomblets;
+            for stage in 0..n_stages {
+                let rad = match stage {
+                    0 => None,
+                    1 => radial_stage,
+                    s => cluster.map(|c| if s % 2 == 0 { c.contact } else { c.blast }),
+                };
                 let direct = rad.is_none();
                 // EVERY INSTANCE RE-READS THE TARGET — not every shot, and not
                 // even every pellet.
