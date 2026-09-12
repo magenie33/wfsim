@@ -100,7 +100,6 @@ ui:
   "Base form": 基础形态
   "Base level": 基准等级
   "Beam Range": 光束长度
-  "Benchmark build — read-only": 榜单配装——只读
   "Benchmark builds": 基准配装
   "Benchmark scenarios": 基准场景
   "Benchmark": 基准榜
@@ -295,7 +294,6 @@ ui:
   "Slide Attack": 滑行攻击
   "Heavy Slam": 重击震地
   "this build is already on the board ({row}) — nothing was sent": 这套配装已经在榜上了（{row}），所以没有上传。
-  "It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.": 它本身就是榜上的一行，所以这里什么都改不了，跑出来的结果也不会提交。复制一份，全部就都能改了——mod、赋能、进化，还有形态——而且你跑出来的成绩会作为你自己的一行进榜。
   "It tells you what it cannot model, on the card where you are standing: on a weapon, an evolution, a mod, an arcane, an enemy. It lists those itself rather than waiting to be asked.":
     算不准的地方，它就写在你正看着的那张卡上：武器、进化词条、MOD、赋能、敌人。不用你问，它自己列。
   "Its fire rate FALLS while the trigger is held — to 60% of the listed rate over 51 shots — and rebuilds the moment you stop firing. This is simulated; the sim holds the trigger until the magazine is dry.": 持续按住扳机时射速会下降——51 发之内降到标称射速的 60%，一停火就立刻回满。这条已经建模；模拟里是一直按到弹匣打空为止。
@@ -595,7 +593,6 @@ ui:
   "copied": 已复制
   "copy image": 复制图片
   "copy it into a {thing} of your own — the official one cannot be edited": 复制成一份你自己的{thing} —— 官方那份不可编辑
-  "copy it to edit": 复制一份来编辑
   "copy link": 复制链接
   "copy the group number": 复制群号
   "corpses keep conducting the chain, which the page states as 'Enemy corpses will still allow the beam to connect to nearby enemies' — this arena removes a body when it dies": "尸体仍然能导电，页面的原话是「敌人的尸体仍然允许光束连接到附近的敌人」——本场里一个身体死了就会被移走"
@@ -697,7 +694,6 @@ ui:
   "lock-on mode PAINTS SEVERAL TARGETS and sends one missile at each (wiki) — this engine fires the mode at the aimed body alone, so against a crowd it is understated by however many it would have painted": "锁定模式会同时标记多个目标，并向每一个发射一枚导弹（维基）—— 本引擎只朝瞄准的那个身体发射这个模式，所以面对人群它被低估的倍数就是它本该标记的数量"
   "locked at the weapon's default by": 已锁定为武器默认值，来自
   "mean damage per hit and how often it happened — an impossible number hides in an average": 每类命中的平均伤害与出现频率 —— 不可能的数字会藏在平均值里
-  "measured under": 测试标准
   "measured, and it moved nothing in this fight — see what this option's own line says it does not cover": 测过了，它在这场战斗里没有产生任何变化 —— 看这一项自己那行写的、它不涵盖什么
   "median run": 中位数样本
   median: 中位
@@ -863,7 +859,6 @@ ui:
   "scenario": 场景
   "search by name or effect; mark each as pool (search) or required": 按名称或效果搜索；把每张标成候选池（搜索）或必带
   "search": 搜索方案
-  "seeded by the optimizer — not yet a player submission": 由优化器预填，尚非玩家提交
   "seeking rounds must travel 5 metres before they begin to seek, which at contact range makes them ordinary bullets": "追踪弹必须先飞 5 米才开始追踪，所以在贴脸距离它们就是普通子弹"
   "selected": "个已选中"
   "self-stagger is not modelled — the wiki notes an explosion at your feet can interrupt the 2-round burst so only one rocket leaves, and nothing damages the player in this fight": 自身踉跄尚未建模 —— wiki 提到脚下的爆炸会打断这个 2 发点射、让只有一发火箭射出，而这场战斗里没有任何东西会伤到玩家
@@ -1307,11 +1302,6 @@ ui:
   "{n} of {of} finalists uploaded": "{of} 个决赛配装中已上传 {n} 个"
   "{n} could not be sent": "{n} 个发送失败"
   "refused": "被拒绝"
-  "Open now": 当前打开
-  "a board row, so nothing here can be edited — copy it to open everything up": 榜单行，因此这里不能编辑——复制一份即可全部解锁
-  "one of your own builds": 你自己的配装
-  "an unsaved build": 尚未保存的配装
-  "save it to keep it, or send it to the board": 保存它，或者上传到榜单
   "board": "榜单"
   # THE KITGUN FAMILY, off the CN wiki's own page (`组合枪`, reached through its
   # MediaWiki API — DATA_SOURCES §"The CN wiki is reachable through its API").

@@ -227,11 +227,13 @@ scoped by ruler, mode and riven, filtered by what a build CONTAINS (a mod, an
 arcane, an evolution, a riven stat — each required or excluded, from the search
 box or by clicking a card in the usage rail), sorted, and compared against its
 group's #1. It lists the top five of a scope until asked for more (twenty at a
-time, folded back in one click). It holds a query and never a selection. "Open" puts the build in the
-build bar as a read-only chip and makes it current; the bar is the one place
-that says which build is open, and `#build-current` says it in words. BUILDER
-ONLY: the simulator keeps the build bar and has no finder. It folds like every
-box on the page, to its title and count (§"Every box folds").
+time, folded back in one click). It holds a query and never a selection. "Open"
+puts the build in the build bar as a read-only chip and makes it current; THE
+BAR IS THE ONE PLACE THAT SAYS WHICH BUILD IS OPEN — its selected chip names the
+build and a lock marks a board row, so nothing else on the page repeats it.
+BUILDER ONLY: the simulator keeps the build bar and has no finder. It folds like
+every box on the page, to its title and count, and it SHIPS SHUT
+(§"Every box folds").
 
 **A ROW IS THE SIMULATOR'S BUILD CARD.** `buildCardHtml` draws a build from a
 descriptor — mods, parts, arcane, evolutions, valence as chips with icons and
@@ -420,9 +422,17 @@ simulator is two header rows and the optimizer is one.
 
 **ONE MECHANISM, THREE SHAPES, ONE STATE.** The result panel's `foldBlock`s,
 the sections authored in `index.html` and the blocks themselves all resolve to
-`setFold`, and all of them are keyed in `wfsim-folds` — so what you shut stays
-shut across a run, a tab switch and a reload. A block's fold id is its own
-`id`, stamped by `wireStaticFolds`; nothing lists the blocks anywhere.
+`setFold`, and all of them are keyed in `wfsim-folds` — by fold id ALONE, so
+what you shut stays shut across a run, a tab switch, a reload and the next
+WEAPON: what a reader wants to look at is a habit, not a property of a gun. A
+block's fold id is its own `id`, stamped by `wireStaticFolds`; nothing lists the
+blocks anywhere.
+
+**A BOX MAY SHIP SHUT, AND ONLY UNTIL THE READER ANSWERS.** `shut` in the
+markup is the default `folded()` falls back to while `wfsim-folds` holds no
+entry for that box; the stored answer outranks it forever after, "open"
+included. The build finder is the one that ships shut — it is a page of table
+above the build you came to edit.
 
 **THE BODY IS EVERY CHILD BUT THE HEADING** (`.fold.sect.shut > :not(.fold-h)`)
 rather than a `.fold-b` the markup has to remember to wrap. A section that

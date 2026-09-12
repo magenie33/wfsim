@@ -9229,15 +9229,12 @@ function buildBarCfg() {
 
 /// A BUILD'S CONTENTS, IN ONE LINE — every axis it varies on and no other.
 ///
-/// ONE COMPONENT, TWO SURFACES: the simulator says what is OPEN and the
-/// optimizer says what it FOUND, which is the same sentence about different
-/// builds. `engine::builds::BUILD_AXES` declares what a build consists of, so
-/// a describer that omits one is wrong in both places at once — on an adversary
-/// weapon, a ranking that cannot say which ELEMENT it scored.
-/// docs/CHECKS.md `check_opt_row_axes`.
+/// `engine::builds::BUILD_AXES` declares what a build consists of, so a
+/// describer that omits one is a ranking that cannot say what it scored — on an
+/// adversary weapon, which ELEMENT. docs/CHECKS.md `check_opt_row_axes`.
 ///
-/// IT TAKES A DESCRIPTOR RATHER THAN READING STATE: the two callers hold their
-/// build in different shapes, the page's live slots and a result off the wire.
+/// IT TAKES A DESCRIPTOR RATHER THAN READING STATE: a result off the wire is
+/// not the page's live slots, and the sentence is the same either way.
 function buildContentsHtml(b) {
   const modName = (id) => (modById(id) || { name: null }).name || prettify(id);
   const bits = [];
@@ -9269,50 +9266,6 @@ function buildContentsHtml(b) {
     + (b.exilus && b.exilus !== "none" ? `, ${modName(b.exilus)} (exilus)` : "");
   return `<div class="opt-detail">${bits.join(" · ")}</div>`
     + `<div class="opt-mods">${escHtml(mods)}</div>`;
-}
-
-/// WHAT IS OPEN ON THIS PAGE, said in one line — in words, beside the bar's
-/// selected chip, including the unsaved build no chip stands for.
-function renderCurrentBuild() {
-  const box = $("build-current");
-  if (!box) return;
-  const p = buildNamed(activePreset);
-  let what;
-  if (p && p.builtin) {
-    // NAMED THE WAY THE FINDER SCOPES IT — ruler, mode, riven, rank — so the
-    // reader can carry the sentence back up to the table and find it.
-    const bits = [p.group || benchmarkName(p.benchmark || p.builtin)];
-    if (p.modeName) bits.push(p.modeName);
-    bits.push(tr(p.riven ? "With riven" : "Without riven"));
-    if (p.rank != null) bits.push(`#${p.rank}`);
-    what = `<b>${escHtml(bits.join(" · "))}</b><span class="bc-note">${
-      escHtml(tr("a board row, so nothing here can be edited — copy it to open everything up"))}</span>`;
-  } else if (p) {
-    what = `<b>${escHtml(presetLabel(p))}</b><span class="bc-note">${
-      escHtml(tr("one of your own builds"))}</span>`;
-  } else {
-    // THE THIRD STATE IS A STATE. A build nobody has saved is what the page
-    // opens on and what every edit returns you to, and saying nothing there
-    // left the line blank exactly when the reader had least context.
-    what = `<b>${escHtml(tr("an unsaved build"))}</b><span class="bc-note">${
-      escHtml(tr("save it to keep it, or send it to the board"))}</span>`;
-  }
-  // …AND WHAT IT ACTUALLY IS. The sentence above names the build's SOURCE — a
-  // board row, one of yours, an unsaved one — and a reader looking at a page
-  // full of controls still has to reconstruct its contents from them. The same
-  // describer the optimizer's rows use answers it once.
-  const contents = buildContentsHtml({
-    mods: slots.slice(0, boardBuildMods()).map((s) => s.mod).filter(Boolean),
-    exilus: (slots[EXILUS] || {}).mod || "",
-    arcanes,
-    arcaneRanks,
-    evolutions: Object.values(evoSel || {}).filter(Boolean),
-    modeLabel: modeLabel(weaponInfo($("weapon").value) || {}, mode),
-    valence: Object.entries(valence || {}).find(([, v]) => v && v !== "off")?.[0] || "",
-    assembly,
-    riven: slots.some((s) => s.mod === "riven"),
-  });
-  box.innerHTML = `<span class="bc-k">${escHtml(tr("Open now"))}</span>${what}${contents}`;
 }
 
 // ---- THE BOARD BUILDS IN THE BUILD BAR ------------------------------------
@@ -9773,7 +9726,6 @@ function renderBuildFinder() {
 function renderPresetBar() {
   renderBuildFinder();
   renderPresetBarIn($("preset-bar-builder-builds"), buildBarCfg());
-  renderCurrentBuild();
 }
 
 // A scenario is the `sim` object, BUFF CONFIG INCLUDED.
@@ -16314,56 +16266,6 @@ function lockOfficialBuild() {
       b.onclick = null;
     }
   });
-  const note = $("build-official");
-  if (!note) return;
-  note.hidden = !on;
-  if (!on) return;
-  const row = (buildNamed(activePreset) || {}).board || {};
-  const bench = (META.benchmarks || []).find((x) => x.id === row.benchmark);
-  // ACTION FIRST. Opening with what the build IS and mentioning copying as a
-  // clause, pointing at a ⧉ chip somewhere else on the page, gives a reader who
-  // wants to change something no VERB and nothing to click. So: what cannot be
-  // done here, the one action that
-  // fixes all of it, and a real button — which the scenario's own read-only
-  // note has had all along.
-  const parts = [
-    `<b>${escHtml(tr("Benchmark build — read-only"))}</b>`,
-    escHtml(tr("It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.")),
-  ];
-  // WHICH BENCHMARK, stated rather than implied. A board
-  // figure means nothing without the ruler that produced it, and "#1" says
-  // even less — so the name of the scenario is part of the build, not a
-  // caption on the bar it happens to sit in.
-  parts.push(
-    escHtml(tr("measured under")) +
-      ` <span class="official-def">${escHtml(benchmarkName(row.benchmark))}</span>`,
-  );
-  if (row.score != null) {
-    // LABELLED WITH THE BENCHMARK'S OWN METRIC, not a hardcoded one. The
-    // number is published in whatever the benchmark declares — a `dps`
-    // benchmark would have read "kill rate" here, and a kill-progress figure
-    // read as a kill RATE overstated every row by the length of the fight
-    // until 2026-08-04.
-    const unit = metricLabel(metricOf(((bench || {}).scenario || {}).metric));
-    // `shown` is FORMATTED BY THE SCORER (`boards_data::format_score`): at
-    // least four significant figures and at least four decimals. The rule is
-    // not reimplemented here — the page prints what the record says, so a
-    // change to it cannot show one thing in the yaml and another on screen.
-    // `score` is the fallback for a board written before the field existed.
-    const shown = row.shown || Number(row.score).toFixed(4);
-    parts.push(`<span class="official-def">${escHtml(shown)} ${escHtml(unit)}</span>`);
-  }
-  // NOT the Forma cost: the builder's own header already states capacity and
-  // Forma for whatever build is loaded, and this build IS loaded. Two places
-  // showing one number is how they come to disagree.
-  if (row.source === "seed") {
-    parts.push(`<span class="official-seed">${escHtml(tr("seeded by the optimizer — not yet a player submission"))}</span>`);
-  }
-  note.innerHTML = parts.join(" · ") +
-    ` <button class="ghost-btn small" id="build-copy">⧉ ${
-      escHtml(tr("copy it to edit"))}</button>`;
-  const cp = $("build-copy");
-  if (cp) cp.onclick = () => copyActivePreset(buildBarCfg());
 }
 
 // The official scenario, ON SCREEN: every control in the fight goes inert and
@@ -17010,11 +16912,17 @@ let replayState = null; // { data, i, playing, speed, raf }
 // re-close on every Run Sim.
 //
 // The state lives outside the markup, which is what lets `renderResults`
-// rebuild the whole panel without losing what you folded.
+// rebuild the whole panel without losing what you folded. It is keyed by fold
+// id ALONE — not by weapon — so a box you shut on one weapon is shut on the
+// next: what a reader wants to look at is a habit, not a property of a gun.
 let foldState = {};
 try { foldState = JSON.parse(localStorage.getItem("wfsim-folds")) || {}; } catch (_) {}
 const saveFolds = () => localStorage.setItem("wfsim-folds", JSON.stringify(foldState));
-const folded = (id) => foldState[id] === true;
+
+/// SHUT OR OPEN, and what it is UNTIL the reader says. A box that ships shut
+/// carries `shut` in `index.html`; the stored answer outranks it forever after,
+/// including the answer "open", which no default may undo.
+const folded = (id, byDefault) => (foldState[id] == null ? !!byDefault : foldState[id] === true);
 
 /// One collapsible block: a heading, an optional hint, and a body.
 function foldBlock(id, title, hint, body) {
@@ -17060,7 +16968,7 @@ function wireFolds(root) {
   (root || document).querySelectorAll(".fold > .fold-h").forEach((h) => {
     const box = h.parentElement;
     if (!h.querySelector(":scope > .fold-c")) h.insertBefore(foldCaret(), h.firstChild);
-    box.classList.toggle("shut", folded(box.dataset.fold));
+    box.classList.toggle("shut", folded(box.dataset.fold, box.classList.contains("shut")));
     h.onclick = (e) => {
       if (!foldsOnClick(e)) return;
       setFold(box, !box.classList.contains("shut"));
@@ -17080,7 +16988,7 @@ function wireStaticFolds() {
     // needs nothing said here or in `index.html`.
     b.dataset.fold = b.id;
     h.insertBefore(foldCaret(), h.firstChild);
-    b.classList.toggle("shut", folded(b.id));
+    b.classList.toggle("shut", folded(b.id, b.classList.contains("shut")));
     h.addEventListener("click", (e) => {
       if (!foldsOnClick(e)) return;
       setFold(b, !b.classList.contains("shut"));

@@ -66,10 +66,6 @@ const cold = await evaluate(`(async () => {
   const m = /(\\d+)\\s*\\/\\s*(\\d+)/.exec(out.cap || '');
   out.used = m ? Number(m[1]) : null;
   out.total = m ? Number(m[2]) : null;
-  // And the note is on screen, naming the benchmark.
-  const note = document.getElementById('build-official');
-  out.noteShown = note && !note.hidden;
-  out.noteText = note ? (note.textContent||'').replace(/\\s+/g,' ').trim().slice(0,400) : null;
   // EVERY PART OF THE BUILD IS READ-ONLY, mode included. It is the one that was
   // not: switching a #1 row to its base form ran the base form, saved nothing
   // and submitted nothing, with no line anywhere saying why.
@@ -80,19 +76,16 @@ const cold = await evaluate(`(async () => {
   out.consentHidden = (document.getElementById('board-consent')||{}).hidden;
   // The submit path's own verdict, asked the way it asks itself.
   out.wouldSubmit = officialScenarioActive() && !officialBuildActive();
-  // A WAY OUT YOU CAN CLICK, not a note pointing at a ⧉ chip elsewhere on the
-  // page: a reader who wants to change something needs a button, and a locked
-  // block has to say why rather than simply not reacting.
-  out.copyBtn = !!document.getElementById('build-copy');
+  // A WAY OUT YOU CAN CLICK: the locked block itself takes the copy, and says
+  // why on hover. A slot that simply does not react teaches nothing.
   out.lockedTitle = ((document.getElementById('mod-block')||{}).title || '').length;
-  const btn = document.getElementById('build-copy');
-  if (btn) {
-    btn.click();
+  const blk = document.getElementById('mod-block');
+  if (blk) {
+    blk.click();
     await sleep(1600);
     out.afterCopy = { official: officialBuildActive(),
       locked: ['mod-block','arcane-block','evo-block','mode-block']
-        .some(id => ((document.getElementById(id)||{}).className||'').includes('locked-hard')),
-      noteShown: !!(document.getElementById('build-official') || {}).hidden === false };
+        .some(id => ((document.getElementById(id)||{}).className||'').includes('locked-hard')) };
   }
   return out;
 })()`);
@@ -101,8 +94,6 @@ check("a cold load restores the benchmark build", cold.official === true, String
 check("...with its Forma planned, not left unpolarised", cold.pols > 0, `polarities ${cold.pols}`);
 check("...so the build FITS", cold.used !== null && cold.total !== null && cold.used <= cold.total,
       `${cold.cap} (${cold.overCls})`);
-check("...and the note names its benchmark", !!cold.noteShown && /Single Target|单体/.test(cold.noteText||""),
-      cold.noteText);
 check("the cold and warm plans agree", cold.pols === warm.pols, `cold ${cold.pols} vs warm ${warm.pols}`);
 // ---- READ-ONLY MEANS THE WHOLE BUILD ------------------------------------
 // The mode is part of the build (it left the fight on 2026-08-07), so it locks
@@ -112,17 +103,14 @@ check("the cold and warm plans agree", cold.pols === warm.pols, `cold ${cold.pol
 // one, so a base-form test ran, saved nothing and entered nothing.
 check("every part of a benchmark build is read-only, mode included",
       cold.locked.every(Boolean), JSON.stringify(cold.locked));
-// …AND THE PAGE SAYS SO. The consent panel hides itself on a board row, so
-// without this line nothing anywhere explains why a run entered nothing.
-check("...and offers a BUTTON that copies it", cold.copyBtn === true);
+// …AND IT SAYS WHY, on the block a player is trying to click: the consent
+// panel hides itself on a board row, so nothing else on screen mentions it.
 check("...while a locked block says why on hover", cold.lockedTitle > 10,
       `${cold.lockedTitle} chars of title`);
-check("...and clicking the button actually frees the build",
+check("...and clicking it copies the build, which frees every block",
       !!cold.afterCopy && cold.afterCopy.official === false && cold.afterCopy.locked === false,
       JSON.stringify(cold.afterCopy));
-check("...and the note says runs of it are not submitted",
-      cold.wouldSubmit === false && /not submitted|不会提交/.test(cold.noteText || ""),
-      cold.noteText);
+check("...and a run of the board row itself would submit nothing", cold.wouldSubmit === false);
 // ---- and it belongs to the BUILDER, not to every module ----
 const views = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -135,8 +123,7 @@ const views = await evaluate(`(async () => {
     history.pushState({}, '', '/weapons/${WEAPON.path}' + suffix); route();
     await sleep(2000);
     out[name] = { body: document.body.className,
-                  finder: vis('build-finder'), note: vis('build-official'),
-                  own: vis('preset-bar-builder-builds') };
+                  finder: vis('build-finder'), own: vis('preset-bar-builder-builds') };
   }
   return out;
 })()`);
@@ -147,7 +134,7 @@ check("the build finder shows in the builder", views.builder.finder === true, JS
 check("...and is ABSENT from the simulator, which keeps only the build bar",
       views.simulator.finder === false && views.simulator.own === true, JSON.stringify(views.simulator));
 check("...and from the optimizer, which owns no build",
-      views.optimizer.finder === false && views.optimizer.note === false && views.optimizer.own === false,
+      views.optimizer.finder === false && views.optimizer.own === false,
       JSON.stringify(views.optimizer));
 
 await app.finish("all good");

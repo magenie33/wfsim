@@ -202,10 +202,9 @@ const BUILDS_PROBE = `(async () => {
   // ...and the BUILD on screen is the board's.
   out.slots = slots.filter((s) => s.mod).map((s) => s.mod).sort();
 
-  // The note says what it scored and what it costs to own.
-  const note = $('build-official');
-  out.noteShown = !!(note && !note.hidden);
-  out.noteText = (note && note.textContent || '').trim();
+  // WHAT IT SCORED is the finder's row to state — the build bar says which
+  // build is open, and the score belongs to the table it was ranked in.
+  out.finderScore = (box.textContent || '').replace(/\s+/g, ' ');
 
   // The editor is inert — pointer-events, since a slot is a div.
   out.locked = ['mod-block','arcane-block','evo-block']
@@ -242,8 +241,10 @@ check("opening it puts the board's build on screen",
   b.isOfficial === true
     && JSON.stringify(b.slots) === JSON.stringify(((b.first || {}).mods || []).slice().sort()),
   JSON.stringify(b.slots));
-check("a note says what it is and what it scored",
-  b.noteShown && /1\.2345/.test(b.noteText), JSON.stringify(b.noteText.slice(0, 90)));
+// The row prints what the SCORER formatted (`shown`), and falls back to two
+// decimals of the raw score — which is what an injected row without one gets.
+check("the finder's row says what it scored",
+  /1\.23/.test(b.finderScore), JSON.stringify(b.finderScore.slice(0, 120)));
 check("the editor is inert", b.locked === true);
 check("EDITING THE BUILD WRITES NOTHING", b.storeUntouched === true);
 check("it offers copy and not rename", b.hasCopy === true && b.hasRename === false);

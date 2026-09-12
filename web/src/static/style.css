@@ -161,17 +161,15 @@ body.on-enemies [data-module="builder"]{display:none}
    the simulator; finding one is a builder question, so every other module
    hides it. */
 .on-simulator #build-finder,.on-optimizer #build-finder,.on-rivens #build-finder,.on-enemies #build-finder{display:none}
-/* The build bar's companions travel WITH it: `#build-official` is the
-   read-only half of the build collection, so any view that hides the bar hides
-   it too. …and the builder's furniture that is not a `.block`: its preset bar
-   and the quick calc. */
-.on-optimizer #build-official,.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
+/* The builder's furniture that is not a `.block`: its preset bar and the quick
+   calc travel with the blocks the other modules hide. */
+.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
 /* The RIVENS tab is its own bench: the builder's blocks step aside, the same
    way they do for the other two modules. */
-.on-rivens #build-official,.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mode-block,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
+.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mode-block,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
 /* The ENEMIES editor is the same shape as the rivens one: its own bench, the
    builder's blocks step aside. */
-.on-enemies #build-official,.on-enemies #preset-bar-builder-builds,.on-enemies #quick-calc,.on-enemies #mode-block,.on-enemies #mod-block,.on-enemies #arcane-block,.on-enemies #evo-block,.on-enemies #element-block,.on-enemies #stats-block{display:none}
+.on-enemies #preset-bar-builder-builds,.on-enemies #quick-calc,.on-enemies #mode-block,.on-enemies #mod-block,.on-enemies #arcane-block,.on-enemies #evo-block,.on-enemies #element-block,.on-enemies #stats-block{display:none}
 /* THE TARGET EDITOR. A grid of plain fields, a vulnerability column and a
    body-part list — nothing here is a picker, because every value is a number
    the player is stating rather than choosing from what exists. */
@@ -379,14 +377,6 @@ body.on-enemies [data-module="builder"]{display:none}
 .preset-bar .psep{width:1px;align-self:stretch;background:var(--line);margin:2px 3px}
 .pchip.ro .plock{width:11px;height:11px;color:var(--gold);flex:none}
 .pchip.ro .pop.unpin:hover{color:var(--critical)}
-/* WHAT IS OPEN. Not a bar: the two above are things you operate, and this is a
-   sentence about the page, so it carries no box of its own and sits under them
-   in the reading order the question arrives in — "what am I looking at" comes
-   after "what can I pick". */
-.build-current{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin:-4px 0 12px;padding:0 12px;font-size:12px}
-.build-current .bc-k{color:var(--text-2)}
-.build-current b{color:var(--text);font-weight:600}
-.build-current .bc-note{color:var(--muted)}
 /* WHAT WENT TO THE BOARD, above the ranking rather than under it: it is a fact
    about the whole run, and a line under twenty rows is a line nobody scrolls
    to. Quiet by default — uploading is the expected outcome, and only a refusal
@@ -394,10 +384,6 @@ body.on-enemies [data-module="builder"]{display:none}
 .opt-board{font-size:12px;margin:0 0 6px}
 .opt-board .ob-sent{color:var(--muted)}
 .opt-board .ob-off,.opt-board .ob-run{color:var(--text-2)}
-/* THE CONTENTS, on their own lines under the sentence. They reuse the
-   optimizer row's two classes because they ARE the optimizer row's two lines —
-   one describer, one look, so a build reads the same wherever it is shown. */
-.build-current .opt-detail,.build-current .opt-mods{flex-basis:100%;margin:2px 0 0}
 /* THE ELEMENT AND THE RIVEN are marked rather than merely listed: on an
    adversary weapon the element is the difference between two builds that are
    otherwise identical, and it has to survive a glance. */
@@ -1417,7 +1403,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    to the board four times. */
 .locked-hard{opacity:.72;cursor:not-allowed}
 .locked-hard *{pointer-events:none}
-.official-seed{color:var(--muted);font-style:italic}
 /* The board's consent line: the same quiet card as the official note, with its
    two choices inline — never a dialog. */
 #board-consent .ghost-btn{margin-left:6px}

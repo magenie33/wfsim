@@ -22,10 +22,7 @@ const r = await evaluate(`(async () => {
   const bar = () => document.getElementById('preset-bar-builder-builds');
   const listed = () => Array.from(box().querySelectorAll('tr.fr[data-frow]')).map((t) => t.dataset.frow);
   const byId = (id) => builtinBuilds().find((p) => presetId(p) === id);
-  const line = () => {
-    const el = document.getElementById('build-current');
-    return el ? el.textContent.replace(/\\s+/g, ' ').trim() : '';
-  };
+  const selChip = () => bar().querySelector('.pchip.sel');
   const roChips = () => Array.from(bar().querySelectorAll('.pchip.ro')).map((c) => c.dataset.name);
   const open = async (name) => {
     history.pushState({}, '', '/weapons/' + name); route(); await sleep(3500);
@@ -35,26 +32,28 @@ const r = await evaluate(`(async () => {
   await open('Ballistica_Prime');
   out.rows = ((typeof BOARD !== 'undefined' && BOARD) ? (BOARD['ballistica_prime'] || []) : []).length;
   out.drawn = !box().hidden && getComputedStyle(box()).display !== 'none';
-  out.lineLanding = line();
+  // LANDING ON A WEAPON OPENS AN UNSAVED BUILD, which no chip stands for.
+  out.landingActive = activePreset;
+  out.landingSel = !!selChip();
 
-  // IT FOLDS LIKE EVERY BOX: from its title, to its title line, kept across a
-  // redraw, listed in the jump menu — and a click in its search box is the
-  // search box's. Asked of the computed layout, not the class.
+  // IT FOLDS LIKE EVERY BOX, AND IT SHIPS SHUT. The state is the reader's and
+  // outlives the weapon; a click in the search box is the search box's.
+  // Asked of the computed layout, not the class.
   const seen = (el) => !!el && el.offsetParent !== null;
   const head = () => box().querySelector(':scope > .fd-head');
-  box().querySelector('.fd-q').click(); await sleep(120);
+  out.foldDefault = box().classList.contains('shut') && !seen(box().querySelector('.fd-main'))
+    && seen(box().querySelector('.fd-title'));
+  out.foldUnstored = JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] == null;
+  head().querySelector('.fd-title').click(); await sleep(150);
+  out.foldOpened = !box().classList.contains('shut') && seen(box().querySelector('.fd-main'));
+  out.foldStored = JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] === false;
+  renderBuildFinder(); await sleep(150);
+  out.foldRedrawn = !box().classList.contains('shut') && !!head().querySelector(':scope > .fold-c');
+  box().querySelector('.fd-q').click(); await sleep(150);
   out.searchKept = !box().classList.contains('shut');
-  head().querySelector('.fd-title').click(); await sleep(120);
-  out.foldShut = box().classList.contains('shut') && !seen(box().querySelector('.fd-main'))
-    && !seen(document.getElementById('fd-input')) && seen(box().querySelector('.fd-title'));
-  out.foldStored = JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] === true;
-  renderBuildFinder(); await sleep(120);
-  out.foldRedrawn = box().classList.contains('shut') && !!head().querySelector(':scope > .fold-c');
-  jump.open = true; renderJump(); await sleep(120);
+  jump.open = true; renderJump(); await sleep(150);
   const jr = document.querySelector('.jump-row[data-jump="build-finder"]');
   out.jumpName = jr ? jr.querySelector('.jr-n').textContent.trim() : '';
-  if (jr) { jr.click(); await sleep(300); }
-  out.jumpOpened = !box().classList.contains('shut') && seen(box().querySelector('.fd-main'));
   jump.open = false; renderJump();
 
   out.firstPage = listed().length;
@@ -99,14 +98,24 @@ const r = await evaluate(`(async () => {
   out.inBar = roChips().includes(target);
   out.chipSel = !!bar().querySelector('.pchip.ro.sel[data-name="' + target + '"]');
   out.finderSays = (box().querySelector('[data-fopen="' + target + '"]') || {}).className || '';
-  out.lineOfficial = line();
+  // A BOARD ROW SAYS SO WHERE IT IS OPEN: a locked chip in the bar, and every
+  // builder block inert.
+  out.officialChipLocked = !!bar().querySelector('.pchip.ro.sel .plock');
+  out.officialLocked = ['mod-block','arcane-block','evo-block','mode-block']
+    .every((id) => (document.getElementById(id) || { classList: { contains: () => false } })
+      .classList.contains('locked-hard'));
 
   // KEPT BY IDENTITY, NOT BY RANK: a rescore that moves the build down the
   // board renumbers its id, and the bar still holds the same build.
   const p = byId(target);
   const ident = boardRowIdentity(p.board);
   // A RESCORE ARRIVES AS A NEW FILE, so the rows are replaced, never edited.
-  BOARD.ballistica_prime = BOARD.ballistica_prime.map((row) => (row === p.board ? { ...row, score: -1, shown: '-1' } : row));
+  // UPWARDS, past the leader: a row scored DOWN far enough leaves the board's
+  // depth cut altogether, which is the other rule (a build that has left the
+  // board stops resolving) and would leave this one with nothing to follow.
+  const top = Math.max(...BOARD.ballistica_prime.map((row) => row.score || 0)) * 1.5;
+  BOARD.ballistica_prime = BOARD.ballistica_prime.map((row) => (row === p.board
+    ? { ...row, score: top, shown: top.toFixed(4) } : row));
   const moved = builtinBuilds().find((x) => boardRowIdentity(x.board) === ident && x.benchmark === p.benchmark && x.mode === p.mode);
   out.renumbered = !!moved && presetId(moved) !== target;
   out.followed = openedBoardBuilds().some((x) => presetId(x) === presetId(moved));
@@ -123,13 +132,15 @@ const r = await evaluate(`(async () => {
   x.click(); await sleep(1200);
   out.unpinGone = !roChips().includes(unpinned);
   out.unpinActive = activePreset;
-  out.lineAfterUnpin = line();
+  out.unpinSel = !!selChip();
 
   // A COPY is your own.
   const again = listed()[0];
   box().querySelector('[data-fopen="' + again + '"]').click(); await sleep(1200);
   copyActivePreset(buildBarCfg()); await sleep(800);
-  out.lineOwn = line();
+  // A COPY IS YOUR OWN: an ordinary chip, and the blocks open again.
+  out.ownChip = !!bar().querySelector('.pchip.sel:not(.ro)');
+  out.ownEditable = !document.getElementById('mod-block').classList.contains('locked-hard');
 
   // THE SCENARIO BAR ASKS ONE QUESTION.
   const sbar = document.getElementById('bench-bar-simulator-scenarios');
@@ -149,6 +160,11 @@ const r = await evaluate(`(async () => {
     out.bareEmpty = !!box().querySelector('.fd-empty') && !box().querySelector('tr.fr');
     break;
   }
+
+  // Left SHUT, for the cross-weapon half below — which needs a real page load,
+  // not this one's navigation: the section element survives a route() with its
+  // class on it, so nothing there can tell a stored answer from a kept one.
+  if (!box().classList.contains('shut')) { box().querySelector('.fd-title').click(); await sleep(150); }
   return out;
 })()`);
 
@@ -157,11 +173,12 @@ const r = await evaluate(`(async () => {
 check("the weapon under test actually has board rows", r.rows > 0, `${r.rows} rows — is this running against site/?`);
 check("the finder is drawn in the builder", r.drawn === true);
 check("...a click in its search box does not fold it", r.searchKept === true);
-check("...it folds from its title to its title line, and remembers it", r.foldShut && r.foldStored,
-  `shut ${r.foldShut}, stored ${r.foldStored}`);
-check("...and stays folded, caret and all, when it redraws", r.foldRedrawn === true);
-check("...the jump menu lists it by name and opens it", r.jumpOpened && /Build finder|配装查找器/.test(r.jumpName),
-  `${JSON.stringify(r.jumpName)}, opened ${r.jumpOpened}`);
+check("...shut until the reader opens it, with nothing stored yet",
+  r.foldDefault && r.foldUnstored, `shut ${r.foldDefault}, unstored ${r.foldUnstored}`);
+check("...and opening it is what gets stored", r.foldOpened && r.foldStored,
+  `opened ${r.foldOpened}, stored ${r.foldStored}`);
+check("...it stays as it is, caret and all, when it redraws", r.foldRedrawn === true);
+check("...the jump menu lists it by name", /Build finder|配装查找器/.test(r.jumpName), JSON.stringify(r.jumpName));
 check("...listing the top five of one scope", r.firstPage === Math.min(5, r.inScope) && r.oneCell,
   `${r.firstPage} rows of ${r.inScope}`);
 check("...each row drawn as the build card, one chip per card the build carries",
@@ -179,14 +196,40 @@ check("a rescore that renumbers the build leaves the bar on the same build", r.r
 check("...and leaving and coming back reopens that build, not its old rank", r.activeFollowed && r.oneChip,
   `active followed ${r.activeFollowed}, chips ${JSON.stringify(r.chipsAfter)}`);
 check("× takes it out of the bar", r.unpinGone);
-check("...and leaves an unsaved build open, not another board row", r.unpinActive === "" && /unsaved|尚未保存/.test(r.lineAfterUnpin),
-  `${JSON.stringify(r.unpinActive)} · ${r.lineAfterUnpin}`);
+check("...and leaves an unsaved build open, which no chip stands for",
+  r.unpinActive === "" && r.unpinSel === false, JSON.stringify(r.unpinActive));
 
-check("landing on a weapon opens an UNSAVED build", /unsaved|尚未保存/.test(r.lineLanding), r.lineLanding);
-check("a board row says it is one, and cannot be edited", /read-only|cannot be edited|不能编辑|榜单行/.test(r.lineOfficial), r.lineOfficial);
-check("...a copy of it says it is your own", /your own|你自己/.test(r.lineOwn), r.lineOwn);
+check("landing on a weapon opens an UNSAVED build, and selects no chip",
+  r.landingActive === "" && r.landingSel === false, JSON.stringify(r.landingActive));
+check("a board row says it is one WHERE IT IS OPEN: a locked chip, and inert blocks",
+  r.officialChipLocked && r.officialLocked, `chip ${r.officialChipLocked}, locked ${r.officialLocked}`);
+check("...and a copy of it is an ordinary build you can edit",
+  r.ownChip && r.ownEditable, `chip ${r.ownChip}, editable ${r.ownEditable}`);
 check("the SCENARIO bar asks one question", JSON.stringify(r.scenarioShape) === JSON.stringify(["dd-bench"]),
   JSON.stringify(r.scenarioShape));
 check(`a weapon with no rows shows the finder's empty state (${r.bareId || "none found"})`, !!r.bareId && r.bareEmpty === true);
+// ---- ACROSS WEAPONS, ACROSS LOADS ---------------------------------------
+// What a reader folds is a habit, not a property of a gun: the state is keyed
+// by fold id alone. Asserted with REAL page loads on two other weapons, because
+// a route() keeps the section element — and its class — whatever is stored.
+const carried = async (path, then) => {
+  await app.load(path);
+  return evaluate(`(async () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    await sleep(3000);
+    const box = document.getElementById('build-finder');
+    const seen = { shut: box.classList.contains('shut'),
+      stored: JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] };
+    ${then || ""}
+    return seen;
+  })()`);
+};
+const shutElsewhere = await carried("/weapons/Braton",
+  "box.querySelector('.fd-title').click(); await sleep(200);");
+check("shut on one weapon is shut on the next, loaded cold",
+  shutElsewhere.shut === true && shutElsewhere.stored === true, JSON.stringify(shutElsewhere));
+const openElsewhere = await carried("/weapons/Torid");
+check("...and opening it there opens it on a third weapon too",
+  openElsewhere.shut === false && openElsewhere.stored === false, JSON.stringify(openElsewhere));
 
 process.exit(0);

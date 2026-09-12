@@ -389,9 +389,10 @@ board's builds and never a selection, so every row it lists must satisfy the
 query: a card required from the usage rail is carried by every listed build,
 excluded it is carried by none, and a third click clears it. "Open" makes the
 build current AND puts it in the build bar as a read-only chip, and the finder
-then says it is already there. It folds like every box: from its title to its
-title line, not from a click in its search box, still shut after a redraw, and
-named in the jump menu, whose row opens it again.
+then says it is already there. It folds like every box and ships SHUT: opening
+it is what gets stored, the stored answer carries to the next weapon in both
+directions, a redraw keeps it, a click in its search box does not fold it, and
+the jump menu lists it by name.
 
 **KEPT BY WHAT THE BUILD IS.** A board build's id ends in its rank, so the check
 drops the opened build's score to renumber it, leaves the weapon and comes back:
@@ -399,10 +400,11 @@ the bar must hold that same build once and the page must reopen on it — not on
 whatever now holds the old rank. × takes it out of the bar and leaves an unsaved
 build open rather than another board row.
 
-**…AND WHAT IS OPEN IS SAID SOMEWHERE ELSE.** `#build-current` says it in each
-of its three states: a board row (read-only), one of your own, and the unsaved
-build the page starts on. The scenario bar keeps its single control, and a
-weapon with no rows draws the finder's empty state rather than a stale table.
+**…AND THE BAR IS WHERE IT IS SAID.** A board row is a locked chip with every
+builder block inert, a copy of it is an ordinary chip you can edit, and the
+unsaved build the page lands on selects no chip at all. The scenario bar keeps
+its single control, and a weapon with no rows draws the finder's empty state
+rather than a stale table.
 
 **IT MUST RUN AGAINST `site/`.** `board/<weapon>.json` is FETCHED at runtime and
 the native dev server does not serve it, so a run pointed at 8787/8799 sees an
