@@ -6,6 +6,7 @@ polarity: naramon
 # mutation costs nothing to fit at any rank.
 base_drain: 0
 max_rank: 10
+exilus: true                  # "Now an Exilus Weapon mod" (wiki, this card)
 internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponRifleConvertAmmoModExpert
 description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
 

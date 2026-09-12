@@ -4,6 +4,7 @@ rarity: legendary
 polarity: naramon
 base_drain: 0                 # max drain 10 at rank 10
 max_rank: 10
+exilus: true                  # "Now an Exilus Weapon mod" (wiki, this card)
 internal_name: /Lotus/Upgrades/Mods/Shotgun/Expert/WeaponShotgunConvertAmmoModExpert
 description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
 
