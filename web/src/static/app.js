@@ -8918,10 +8918,14 @@ async function boardFromSite() {
 /// `benchmarks x modes` times, by a multiple that is the weapon's mode count.
 /// That makes a row count not merely large but INCOMPARABLE between weapons.
 ///
-/// DERIVED BY EXCLUSION, never by listing the axes — the rule
-/// `build_site_app.py`'s `_ident` states, because a hand-written list is the
-/// copy that drops the next axis in silence. Out comes the cell, the
-/// measurement and the presentation.
+/// DERIVED BY EXCLUSION, never by listing the axes, because a hand-written
+/// list is the copy that drops the next axis in silence. Out comes the cell,
+/// the measurement and the presentation.
+///
+/// A KEY THAT HAS LEFT THE ROW STAYS ON THIS LIST: `source` is no longer
+/// published, and the rows a reader already has still carry it — excluded, the
+/// two hash alike, so a remembered board build survives the rescore that drops
+/// the key rather than falling out of the bar.
 ///
 /// …AND A RIVEN IS ITS SHAPE: each cell searches its own best corner, so the
 /// rolls differ per cell and are a measurement like the score.

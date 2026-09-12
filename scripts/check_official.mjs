@@ -174,7 +174,7 @@ const BUILDS_PROBE = `(async () => {
   // whatever the board happens to hold on the day — a check that only works
   // while data exists stops testing the moment the data is cleared, which is
   // exactly what happened when the seed was removed.
-  const inject = { benchmark: 'single_target', source: 'submissions', score: 1.2345,
+  const inject = { benchmark: 'single_target', score: 1.2345,
                    mods: ['serration','split_chamber','point_strike'],
                    evolutions: [], arcanes: ['none'] };
   BOARD = { torid: [inject] };     // the runtime board, as /board.json would give it
