@@ -23,7 +23,7 @@ rules:
   - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is optional: a row may wear one and a row without one is not a lesser build, so the two sit on the same board and the better number wins."
   - "The stance slot is optional too, and it is not a discount but a GRANT: a stance hands the weapon 10 mod capacity on a matching polarity, 5 on a bare slot and 4 on the wrong colour. A row without one is not a lesser build; it is a build that spent the capacity elsewhere."
   - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
-  - "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve."
+  - "The reserve is not spent: every entry fires as if it were being resupplied, so nothing here ranks ammo economy. An entry that cannot be resupplied at all runs on its own reserve."
   - "The melee weapon is DRAWN, not quick-melee: a card that says \"With Melee Weapon Equipped\" pays here. A build swung out of a gun is a different fight and the simulator has a switch for it; the ruler does not."
   - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
   - "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today."
@@ -40,6 +40,15 @@ scenario:
   enemy: thrax_centurion
   level: 9999
   steel_path: true
+
+  # THE PHYSICAL FORM ALONE. A Thrax's death has a second half — the spectre
+  # only the Operator can empty (data/enemies/thrax_centurion.yaml) — and this
+  # board's answer is that it does not happen: every row ever scored here is a
+  # fight the physical form ends. Ticked, no weapon could finish a single kill,
+  # which is a statement about the Operator rather than about the weapon.
+  # Written down rather than left to the default, for the reason every field in
+  # this block is: a default that moved later would move the board with it.
+  spectral_form: false
 
   # THE SHOOTER AT CONTACT WITH THE MIDDLE OF THE FRONT RANK. 0.4 m is twice the MEASURED 0.2 m body radius (M46,
   # `engine::space`) — as close as two circles go, and the same distance the

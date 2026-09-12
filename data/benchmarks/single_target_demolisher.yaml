@@ -49,7 +49,7 @@ rules:
   - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is optional: a row may wear one and a row without one is not a lesser build, so the two sit on the same board and the better number wins."
   - "The stance slot is optional too, and it is not a discount but a GRANT: a stance hands the weapon 10 mod capacity on a matching polarity, 5 on a bare slot and 4 on the wrong colour. A row without one is not a lesser build; it is a build that spent the capacity elsewhere."
   - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
-  - "Ammo pickups are modelled, at the rate a four-player squad drops them. An entry that cannot be resupplied runs on its own reserve."
+  - "The reserve is not spent: every entry fires as if it were being resupplied by the squad this target was brought for, so nothing here ranks ammo economy. An entry that cannot be resupplied at all runs on its own reserve."
   - "The melee weapon is DRAWN, not quick-melee: a card that says \"With Melee Weapon Equipped\" pays here. A build swung out of a gun is a different fight and the simulator has a switch for it; the ruler does not."
   - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
   - "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today."
@@ -68,6 +68,11 @@ scenario:
   enemy: demolisher_devourer
   level: 9999
   steel_path: true
+
+  # THE PHYSICAL FORM ALONE, as the aimed board states it — and this unit has no
+  # second half at all, so the term is here because the two rulers must differ
+  # in the target and the squad and in nothing else.
+  spectral_form: false
 
   # …AND THE SECOND. The unit's health ladder is its own
   # (`squad_health_bonus` — +0/+50/+100/+200% for 1/2/3/4), and this names which
