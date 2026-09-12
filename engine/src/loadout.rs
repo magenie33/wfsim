@@ -1973,6 +1973,9 @@ pub struct WeaponBase {
     /// `ammo_max`: false only where the weapon states none, which today is
     /// every sentinel weapon ("Ammo Max: ∞ / Ammo Type: None").
     pub has_reserve: bool,
+    /// [`crate::weapons_data::WeaponSpec::ammo_pickup`] — rounds one pickup
+    /// gives. No mod in this roster moves it (the Scavenger auras would).
+    pub ammo_pickup: f64,
     /// Gotva Prime's passive: a status-triggered crit-chance SET. See
     /// `weapons_data::SuperCritSpec`.
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
@@ -3707,6 +3710,11 @@ pub struct ResolvedPanel {
     /// number without the flag is a panel figure, not a limit.
     pub ammo_reserve: f64,
     pub has_reserve: bool,
+    /// See [`WeaponBase::ammo_pickup`].
+    pub ammo_pickup: f64,
+    /// THE MUTATION MOD'S SHARE — *"Converts Secondary ammo pickups to X% of
+    /// Ammo Pick Up"*. 0 with no such card, 0.92 with a maxed Primed one.
+    pub ammo_conversion: f64,
     pub no_resupply: bool,
     /// Untouched by mods — the passive's numbers are the weapon's own.
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
@@ -5686,6 +5694,11 @@ pub fn resolve_for(
                     .map_or(0.0, |(_, v)| *v)))
         .floor(),
         has_reserve: base.has_reserve,
+        ammo_pickup: base.ammo_pickup,
+        ammo_conversion: indirect
+            .iter()
+            .find(|(s, _)| *s == IndirectStat::AmmoConversion)
+            .map_or(0.0, |(_, v)| *v),
         no_resupply: base.no_resupply,
         super_crit_on_status: base.super_crit_on_status,
         weakpoint_stacks: base.weakpoint_stacks,

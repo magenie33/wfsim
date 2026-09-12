@@ -139,6 +139,13 @@ fn dual_toxocyst_baseline() -> DummyParams {
         magazine_size: 12.0,
         reload_seconds: 2.35,
         infinite_reserve: true,
+        // The ammo economy, inert here: an infinite reserve takes no pickups.
+        ammo_drops: false,
+        ammo_pickup: 0.0,
+        ammo_conversion: 0.0,
+        ammo_class: None,
+        pickup_range_m: f64::INFINITY,
+        landscape: false,
         ammo_cost: 1.0,
         headshot_bonus_multiplicative: false,
         applies_microwave: false,

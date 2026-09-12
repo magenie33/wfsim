@@ -1662,6 +1662,9 @@ pub fn meta_json() -> Value {
                 "image": e.image,
                 "base_level": e.stats.base_level,
                 "can_be_eximus": e.can_be_eximus,
+                // DOES THIS UNIT DIE TWICE? The page offers the switch only
+                // where there is a second half to ask about.
+                "has_spectral_form": e.spectral_form.is_some(),
                 // WHAT A SQUAD DOES TO THIS UNIT, and empty on every unit a
                 // squad does nothing to. The page offers the control only where
                 // there is something to choose, for the reason it offers an
@@ -2175,6 +2178,14 @@ pub fn meta_json() -> Value {
             // floor unless told otherwise" and never got the chance.
             // INFINITE AMMO by default — see `simulate_json` for why.
             "infinite_ammo": true,
+            // …AND THE ECONOMY BEHIND IT, which decides nothing until that box
+            // is unticked: the bodies drop as they do in game, and this arena's
+            // Tenno collects at any distance because it never walks.
+            "ammo_drops": true,
+            "pickup_range_m": null,
+            "landscape": false,
+            // A THRAX'S SECOND HALF, off — see `parse_fight`.
+            "spectral_form": false,
             // Test precision, and the optimizer's last
             // round is the run count on the top 10. Kept in step with
             // `simulate_json` / `parse_optimize`, whose own fallbacks are what
@@ -5179,6 +5190,13 @@ pub(crate) struct Fight {
     pub(crate) headshot_pct: f64,
     pub(crate) tenno: wfsim_engine::tenno_data::Tenno,
     pub(crate) infinite_ammo: bool,
+    /// DO THE BODIES DROP AMMO, and how far is a pack collected from — the
+    /// other half of the ammo economy, and the half that decides nothing while
+    /// `infinite_ammo` is on (which is what every ruler is scored under).
+    pub(crate) ammo_drops: bool,
+    pub(crate) pickup_range_m: f64,
+    /// An OPEN-WORLD fight: every drop rate is higher (`engine::ammo`).
+    pub(crate) landscape: bool,
     pub(crate) duration: f64,
     pub(crate) runs: u32,
     pub(crate) seed: u64,
@@ -5524,6 +5542,12 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         rule("infinite_ammo"),
         get_bool(v, "infinite_ammo", true),
     );
+    // THE PICKUPS. On by default because that is what the game does; the reach
+    // is infinite by default because this arena's Tenno does not walk, so a
+    // finite one is a wall rather than a walk (`DummyParams::pickup_range_m`).
+    let ammo_drops = get_bool(v, "ammo_drops", true);
+    let pickup_range_m = get_f64(v, "pickup_range_m", f64::INFINITY).max(0.0);
+    let landscape = get_bool(v, "landscape", false);
     let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
     // WHERE THE TWO OF THEM STAND, in metres — the fight's 2D layer. Two
     // POINTS, which is what the engine takes and what a dragged scene produces;
@@ -5653,6 +5677,14 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // carries it exactly as it carries the unit's own health. A unit with no
     // ladder multiplies by 1 and this line is not a special case for it.
     target.base_health *= spec.squad_health_multiplier(squad_size);
+    // THE SECOND HALF OF A THRAX'S DEATH, and the fight's own switch. OFF by
+    // default, which is what every number this app has published assumes: the
+    // physical form falls and that is the kill. Ticked, the kill — and with it
+    // every on-kill buff and every drop — waits for a spectre no weapon can
+    // reach, so a gun's ceiling on that fight is zero kills.
+    if get_bool(v, "spectral_form", false) {
+        target.spectral = spec.spectral_form;
+    }
     // (The target's pools are read off the ARENA by whoever reports them —
     // one target, one place it lives.)
     let body_parts = build_body_parts(spec, headshot_pct);
@@ -5904,6 +5936,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         headshot_pct,
         tenno,
         infinite_ammo,
+        ammo_drops,
+        pickup_range_m,
+        landscape,
         duration,
         runs,
         seed,
@@ -6071,6 +6106,28 @@ enum Work {
 /// FIGHT" said about the thing `parse_fight` hands over rather than about the
 /// request. Nothing is decided here that is not decided here for both.
 #[allow(clippy::too_many_arguments)]
+/// THE FIGHT'S AMMO ECONOMY — the three settings that travel together because
+/// none of them decides anything on its own: drops pay only into a finite
+/// reserve, a reach only matters once something has fallen, and the squad's
+/// place only moves the rate.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct AmmoEconomy {
+    pub(crate) drops: bool,
+    pub(crate) pickup_range_m: f64,
+    pub(crate) landscape: bool,
+}
+
+impl AmmoEconomy {
+    fn apply(self, p: &mut DummyParams) {
+        p.ammo_drops = self.drops;
+        p.pickup_range_m = self.pickup_range_m;
+        p.landscape = self.landscape;
+    }
+}
+
+// FOURTEEN ARGUMENTS, and they are the fight: grouping them into a struct
+// would move the same list one line down and add a name nobody reads.
+#[allow(clippy::too_many_arguments)]
 fn sim_params(
     v: &Value,
     info: &'static WeaponInfo,
@@ -6082,6 +6139,7 @@ fn sim_params(
     cycle_from: Option<&str>,
     single_form: &str,
     infinite_ammo: bool,
+    ammo: AmmoEconomy,
     frenzy_single: bool,
     cycle_frenzy_lock: wfsim_engine::dummy::LockMode,
     frenzy_locks: &[BuffLock],
@@ -6113,6 +6171,7 @@ fn sim_params(
                 &arcane_fx,
             );
             params.infinite_reserve = base_panel.reserve_is_infinite(infinite_ammo);
+            ammo.apply(&mut params);
             params.frenzy = frenzy_single;
             params.locked_buffs = frenzy_locks.to_vec();
             // THE CYCLE REPORTS THE FORM IT FIRES, which for a Tome is the one
@@ -6132,6 +6191,7 @@ fn sim_params(
         // The cycle reports the form it transforms INTO, as it always has.
         let mut params = params;
         params.infinite_reserve = incarnon_panel.reserve_is_infinite(infinite_ammo);
+        ammo.apply(&mut params);
         (incarnon_panel, params)
     } else {
         let panel = panel_of(single_form);
@@ -6151,6 +6211,7 @@ fn sim_params(
             resolve_for(&base_for(v, single_form, &unarmed), refs, policy, tenno)
         });
         d.infinite_reserve = panel.reserve_is_infinite(infinite_ammo);
+        ammo.apply(&mut d);
         // Frenzy is the WEAPON's passive: it persists across its forms, so it rides whichever one is fired.
         d.frenzy = frenzy_single;
         d.locked_buffs = frenzy_locks.to_vec();
@@ -6182,8 +6243,10 @@ pub fn log_json(v: &Value) -> Value {
     let Fight {
         info, policy, buff_cfg, denied_buff_triggers, arena, evos, cycle_from,
         single_form, tenno,
-        infinite_ammo, frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
+        infinite_ammo, ammo_drops, pickup_range_m, landscape,
+        frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
+    let ammo = AmmoEconomy { drops: ammo_drops, pickup_range_m, landscape };
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
     let mod_ids: Vec<String> = v
         .get("mods")
@@ -6197,7 +6260,7 @@ pub fn log_json(v: &Value) -> Value {
         .collect();
     let (_, mut params) = sim_params(
         v, info, policy, &evo_refs, &refs, &tenno, &arena,
-        cycle_from, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
+        cycle_from, single_form, infinite_ammo, ammo, frenzy_single, cycle_frenzy_lock,
         &frenzy_locks,
     );
     if let Some(cfg) = &buff_cfg {
@@ -6514,8 +6577,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     let Fight {
         info, policy, buff_cfg, denied_buff_triggers, arena, evos, cycle_from, single_form,
         enemy_name, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
+        ammo_drops, pickup_range_m, landscape,
         frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
+    let ammo = AmmoEconomy { drops: ammo_drops, pickup_range_m, landscape };
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
 
     let mod_ids: Vec<String> = v
@@ -6634,7 +6699,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // got one.
     let (report_panel, mut params) = sim_params(
         v, info, policy, &evo_refs, &refs, &tenno, &arena,
-        cycle_from, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
+        cycle_from, single_form, infinite_ammo, ammo, frenzy_single, cycle_frenzy_lock,
         &frenzy_locks,
     );
     // An arcane the weapon cannot seat is an ERROR here, not a silent drop:
@@ -7107,6 +7172,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "ghosts": (m.ghost_kills > 0).then_some(m.ghost_kills),
         "ghosts_peak": (m.ghost_kills > 0).then_some(m.ghosts_peak),
         "reloads": m.reloads,
+        // WHAT THE BODIES RESUPPLIED, in rounds. Absent where nothing was
+        // picked up — an infinite reserve takes none — so the page draws the
+        // row only for a fight the ammo economy decides something in.
+        "picked_up_ammo": (s.mean_picked_up_ammo > 0.0).then_some(r3(s.mean_picked_up_ammo)),
         "duration": s.duration_seconds,
         "runs": s.runs,
         "panel": {

@@ -394,6 +394,8 @@ pub struct Assembled {
     pub accuracy: f64,
     pub ammo_cost: f64,
     pub ammo_max: f64,
+    /// See [`Chamber::ammo_pickup`] — a chamber's, not a grip's.
+    pub ammo_pickup: f64,
     pub riven_disposition: f64,
     pub trigger: String,
     pub shot_type: String,
@@ -509,6 +511,7 @@ pub fn assemble(a: &Assembly) -> Option<Assembled> {
         accuracy: c.accuracy,
         ammo_cost: c.ammo_cost,
         ammo_max: c.ammo_max,
+        ammo_pickup: c.ammo_pickup,
         riven_disposition: c.riven_disposition,
         trigger: c.trigger.clone(),
         shot_type: c.shot_type.clone(),

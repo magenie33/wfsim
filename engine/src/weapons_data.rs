@@ -1910,6 +1910,13 @@ pub struct WeaponSpec {
     /// fight would otherwise run dry for a reason the game does not have.
     #[serde(default)]
     pub ammo_max: Option<f64>,
+    /// ROUNDS ONE AMMO PICKUP GIVES THIS WEAPON — the wiki's "Ammo Pickup",
+    /// which is a per-WEAPON stat and not a per-class constant: *"Area of
+    /// Effect Weapons tend to have lower base Ammo Pickup than normal"*, and
+    /// DE publishes a per-weapon override list. `None` on a weapon with no
+    /// reserve to fill. Read by `engine::ammo` when a kill drops one.
+    #[serde(default)]
+    pub ammo_pickup: Option<f64>,
     /// Can this weapon NOT be refilled mid-fight? A ground Arch-Gun is the
     /// case this exists for: "Archguns only have a limited amount of ammo",
     /// and when it is gone the weapon is removed for a five-minute cooldown
@@ -3461,6 +3468,7 @@ pub fn spec_assembled<'a>(
     out.magazine = Some(built.magazine);
     out.reload_seconds = Some(built.reload_seconds);
     out.ammo_max = Some(built.ammo_max);
+    out.ammo_pickup = Some(built.ammo_pickup);
     // THE DISPOSITION IS THE ENTRY'S, not the assembly's: it is per chamber AND
     // per slot, and this entry already is one chamber in one slot. Restating it
     // from the parts would be the same number written twice.
@@ -3773,6 +3781,7 @@ pub fn base_panel_assembled(
         // REFILL it is the weapon's own business and is declared.
         ammo_reserve: s.ammo_max.unwrap_or(0.0),
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
+        ammo_pickup: s.ammo_pickup.unwrap_or(0.0),
         super_crit_on_status: s.super_crit_on_status,
         weakpoint_stacks: s.weakpoint_stacks,
         spawn_on_kill: s.spawn_on_kill,

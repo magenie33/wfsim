@@ -216,19 +216,37 @@ ruling, and
 the list is CLOSED so a card that spells the condition some other way fails
 rather than paying nothing in silence.
 
-### 5. AMMO IS INFINITE BY DEFAULT
+### 5. AMMO IS INFINITE BY DEFAULT, AND THE ECONOMY BEHIND IT IS NOT
 
-`infinite_ammo` defaults on because the sim models no
-pickups, so a finite reserve is the pessimistic half of a mechanic we only half
-have. Ammo economy perks are therefore worth ~0 in the headline number even
-though the machinery for them exists and works when the setting is off.
+`infinite_ammo` still defaults on — it is what every ruler is scored under, so
+ammo efficiency, ammo mutation and reserve size are worth ~0 in a BOARD number.
+They are no longer worth 0 in a FIGHT: a custom scenario that unticks the box
+gets the real economy, because the bodies now drop ammo where they fall and it
+is credited to the reserve (`docs/MECHANICS.md` §"THE AMMO ECONOMY").
 
-- ammo efficiency perks and arcanes;
-- ammo mutation, reserve size.
+What the drops still do not model:
 
-**What would have to exist first:** ammo pickups, or a scenario that means to
-run the reserve dry. The reserve itself IS modelled — every draw inside the
-Incarnon cycle was made to bill it.
+- **HEALTH AND ENERGY ORBS.** Not the drop — the POOL. The neutral Tenno has
+  250 health nobody shoots at and 0 energy, so an orb would restore nothing; and
+  the wiki's own rates are thin (health orbs are an Eximus-and-container drop,
+  *"Non-eximus enemies have 0% chance to drop health orbs, and 9.43% chance to
+  drop energy orbs"* — one 159-kill community count). What has to exist first is
+  §6's other half: a Tenno who takes damage and spends energy.
+- **HEAVY (Arch-Gun) ammo**, the one class whose rate is per enemy type
+  (*"5.01% chance to drop from Bombards, Heavy Gunners…"*), and which an
+  Arch-Gun's `no_resupply` already settles the other way.
+- **THE SCAVENGER AURAS and Carrier's Ammo Case**, which are the other two
+  multipliers on what a pack gives.
+- **THE RECYCLE BIN.** *"New ammo/health/energy will evict old AHE"* — drops
+  accumulated faster than they are collected delete each other, and the bin's
+  size is unpublished. Here every pack in reach is collected instantly, so
+  nothing is ever left long enough to be evicted.
+- **THE WASTE RULE IS AN ASSUMPTION.** A pack collected with less headroom than
+  it carries is consumed WHOLE here (a reserve one round short takes one round
+  and loses fourteen). The wiki does not say whether the game tops up and leaves
+  the rest; this is the pessimistic reading and it wants a measurement.
+- **WALKING.** The Tenno does not move, so a pack that falls outside
+  `pickup_range_m` is never collected rather than fetched a second later.
 
 ### 6. NOBODY SHOOTS BACK
 

@@ -248,6 +248,10 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     // stored, which is what keeps switching targets giving the elite unit
     // wherever one exists.
     ScenarioAxis { id: "eximus", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
+    // A unit that dies TWICE (a Thrax). FREE: it is a fact about the enemy, so
+    // the page offers it only where the enemy has one, exactly as Eximus is
+    // offered only where `can_be_eximus`.
+    ScenarioAxis { id: "spectral_form", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "custom_enemies", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "formation", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "player_at", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
@@ -260,6 +264,21 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     // THE ORDER IS THE RULE. No reserve at all wins over cannot-refill, because
     // a weapon with nothing to run out of is not a weapon whose pickups you are
     // denied — and the two settle this same box to OPPOSITE values.
+    // THE AMMO ECONOMY BEHIND THE BOX ABOVE. Both are FREE: a weapon with no
+    // reserve simply has nothing to fill, which is a fact about the weapon and
+    // not a rule this fight may argue with, and every weapon's bodies drop the
+    // same way.
+    ScenarioAxis { id: "ammo_drops", kind: AxisKind::Flag, group: Group::Engagement, requires: FREE },
+    ScenarioAxis {
+        id: "pickup_range_m",
+        // NO CEILING BUT THE ARENA'S. Infinite is the default and is sent as
+        // `null`, which is what an absent reach means: the pack is collected
+        // wherever it fell.
+        kind: AxisKind::Number { min: 0.0, max: 1000.0 },
+        group: Group::Engagement,
+        requires: FREE,
+    },
+    ScenarioAxis { id: "landscape", kind: AxisKind::Flag, group: Group::Engagement, requires: FREE },
     ScenarioAxis {
         id: "infinite_ammo",
         kind: AxisKind::Flag,

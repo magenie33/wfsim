@@ -87,6 +87,34 @@ pub fn on_kill(
     (primary, secondary)
 }
 
+/// WHAT ONE PICKUP IS WORTH TO THIS WEAPON, in rounds — the four rules in
+/// docs/MECHANICS.md §"THE AMMO ECONOMY", of which the wiki states only the
+/// first as prose:
+///
+/// 1. the amount is the WEAPON's own *"Ammo Pickup"*;
+/// 2. a FULL reserve refuses the pack and it stays on the floor;
+/// 3. the WHOLE pack is consumed for whatever headroom is left — UNMEASURED,
+///    and the pessimistic of the two readings (docs/UNMODELLED.md);
+/// 4. the other class pays only through a mutation mod, at `conversion` of the
+///    same amount.
+///
+/// Returns 0 for a pack that is refused, unmatched and unconverted.
+pub fn credit(
+    kind: Pickup,
+    weapon_takes: Pickup,
+    reserve: f64,
+    reserve_max: f64,
+    pickup: f64,
+    conversion: f64,
+) -> f64 {
+    let headroom = reserve_max - reserve;
+    if headroom <= 1e-9 {
+        return 0.0;
+    }
+    let offered = if kind == weapon_takes { pickup } else { pickup * conversion };
+    offered.min(headroom).max(0.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,6 +164,25 @@ mod tests {
         let eximus = mean(true);
         assert!((ordinary - 0.45).abs() < 0.01, "solo drops 0.45 an ordinary kill: {ordinary}");
         assert!((eximus - 1.45).abs() < 0.01, "and an Eximus 1.45: {eximus}");
+    }
+
+    /// THE FOUR RULES OF A PICKUP, each on the case that tells it apart.
+    #[test]
+    fn a_pickup_is_worth_the_weapons_own_amount_and_no_more() {
+        let p = |r: f64, conv: f64, kind| credit(kind, Pickup::Primary, r, 330.0, 15.0, conv);
+        // The weapon's own 15, not a class constant.
+        assert!((p(0.0, 0.0, Pickup::Primary) - 15.0).abs() < 1e-9);
+        // A FULL RESERVE REFUSES IT — the pack stays on the floor.
+        assert_eq!(p(330.0, 0.0, Pickup::Primary), 0.0);
+        // THE WHOLE PACK IS CONSUMED: one round of headroom takes one round,
+        // and the other fourteen are gone rather than left for later.
+        assert!((p(329.0, 0.0, Pickup::Primary) - 1.0).abs() < 1e-9);
+        // THE OTHER CLASS IS WORTH NOTHING without a mutation mod…
+        assert_eq!(p(0.0, 0.0, Pickup::Secondary), 0.0);
+        // …and its stated share of the weapon's own pickup with one.
+        assert!((p(0.0, 0.92, Pickup::Secondary) - 13.8).abs() < 1e-9);
+        // A conversion is capped by the headroom exactly as a match is.
+        assert!((p(329.0, 0.92, Pickup::Secondary) - 1.0).abs() < 1e-9);
     }
 
     /// HALF OF THEM ARE SECONDARY, which is what a weapon reading one kind

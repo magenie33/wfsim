@@ -642,6 +642,10 @@ pub struct TargetParams {
     /// the ordinary ten-stack cap and STAY there, so the Cold crit-damage bonus
     /// is up for the whole fight instead of being spent every tenth proc.
     pub cannot_be_frozen: bool,
+    /// THE SECOND HALF OF A THRAX'S DEATH, when the FIGHT asked for it —
+    /// `enemy_data::SpectralForm`. `None` is a unit that dies once, which is
+    /// every other enemy and every fight that leaves the box unticked.
+    pub spectral: Option<crate::enemy_data::SpectralForm>,
     /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
     /// shift is a mission-spawn effect — pick `level` accordingly.
     pub steel_path: bool,
@@ -836,6 +840,8 @@ impl TargetParams {
     pub fn training_dummy() -> Self {
         Self {
             name: "training dummy".into(),
+            // A DUMMY DIES ONCE, like everything but a Thrax.
+            spectral: None,
             base_level: 1,
             level: 1,
             base_health: 1.0,
@@ -935,9 +941,30 @@ impl TargetParams {
     }
 }
 
+/// WHICH HALF OF ITS DEATH A BODY IS IN. Only a Thrax has a second half, and
+/// only when the fight asked for it (`TargetParams::spectral`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Phase {
+    Physical,
+    /// The physical form is down and the spectre has not stood up yet: nothing
+    /// can be damaged, and nothing ticks.
+    Reforming { until: f64 },
+    /// A bar only the OPERATOR can empty. This engine fires weapons, so
+    /// everything it does to a spectre is refused — which is the whole point of
+    /// the switch: it says out loud that no gun finishes a Thrax.
+    Spectral,
+}
+
 /// Live pools of the target during a run.
 #[derive(Clone)]
 struct TargetState {
+    /// See [`Phase`]. `Physical` on every body in every fight but one.
+    phase: Phase,
+    /// WHERE THIS BODY STANDS, so what it drops falls somewhere rather than
+    /// into the Tenno's hand: `engine::ammo` pays a pickup only to a player
+    /// within `pickup_range_m` of it. A respawn puts the new body in the same
+    /// place, which is what `TargetMode::InstantRespawn` means.
+    at: crate::space::Vec2,
     overguard: f64,
     shield: f64,
     health: f64,
@@ -966,15 +993,17 @@ fn target_undamaged(t: &TargetState, p: &TargetParams) -> bool {
 }
 
 impl TargetState {
-    fn spawn(p: &TargetParams) -> Self {
-        Self::spawn_at(p, 0.0)
+    fn spawn(p: &TargetParams, at: crate::space::Vec2) -> Self {
+        Self::spawn_at(p, 0.0, at)
     }
 
-    fn spawn_at(p: &TargetParams, now: f64) -> Self {
+    fn spawn_at(p: &TargetParams, now: f64, at: crate::space::Vec2) -> Self {
         if let Err(e) = p.validate() {
             panic!("invalid target: {e}");
         }
         Self {
+            at,
+            phase: Phase::Physical,
             overguard: p.overguard(),
             shield: p.max_shield(),
             health: p.max_health(),
@@ -1055,6 +1084,20 @@ impl TargetState {
         // 999 runs of a thousand that are never replayed.
         led: Option<&mut Breakdown>,
     ) -> Settled {
+        // A BODY PAST ITS FIRST DEATH TAKES NOTHING FROM A WEAPON. The
+        // reforming window is invulnerable, and the spectre after it is
+        // Operator-only — *"Void damage deals 10x damage to the spectral
+        // form"*, and this engine has no Operator. Refusing here rather than at
+        // the call sites is what makes it hold for a DoT tick, an explosion and
+        // a chain alike.
+        if self.phase != Phase::Physical {
+            if let Phase::Reforming { until } = self.phase {
+                if now >= until {
+                    self.phase = Phase::Spectral;
+                }
+            }
+            return Settled::default();
+        }
         // THE 0.1 s WINDOW IS NOBODY'S, YET. It is set on a shield break below
         // and read by nothing, and that is the measurement rather than an
         // omission: only a melee GROUND SLAM takes it — gunfire does not, and
@@ -1438,7 +1481,22 @@ impl TargetState {
             // minus (the bar), because every instance before it was absorbed
             // whole.
             out.overkill = -self.health;
-            *self = TargetState::spawn_at(p, now); // instant respawn
+            // A THRAX DIES TWICE, and the FIGHT decides whether the second half
+            // happens. The physical form falling is not a kill: no on-kill
+            // buff, no drop, no respawn — every one of those waits for the
+            // spectre, which no weapon can reach. Its bar is what is left of
+            // the individual, and the statuses on the body go with the body.
+            if let Some(sp) = p.spectral {
+                self.phase = Phase::Reforming { until: now + sp.delay_seconds };
+                self.overguard = 0.0;
+                self.shield = 0.0;
+                self.health = p.max_health() * sp.health_share;
+                self.gate_until = 0.0;
+                self.atten_window_start = now;
+                self.atten_window_damage = 0.0;
+                return out;
+            }
+            *self = TargetState::spawn_at(p, now, self.at); // instant respawn, same spot
             out.killed = true;
         }
         out
@@ -2922,6 +2980,26 @@ pub struct DummyParams {
     pub ammo_cost: f64,
     /// Reserve pool, consumed by reloads when `infinite_reserve` is off.
     pub reserve_ammo: f64,
+    /// DO THE BODIES DROP AMMO? The fight's own switch (`engine::ammo` rolls
+    /// it per kill). It decides nothing while `infinite_reserve` is on, which
+    /// is the state the rulers are scored under.
+    pub ammo_drops: bool,
+    /// Rounds one pickup gives this weapon — `ResolvedPanel::ammo_pickup`.
+    pub ammo_pickup: f64,
+    /// A mutation mod's share of the above for the OTHER class's packs.
+    pub ammo_conversion: f64,
+    /// HOW FAR A PACK IS COLLECTED FROM, in metres, measured from where the
+    /// body fell. Infinite by default, which is the arena this engine has:
+    /// the Tenno does not walk (docs/UNMODELLED.md), so a finite reach is a
+    /// wall rather than a delay. The game's own numbers are 3 m on foot and
+    /// 13.5 m with a maxed Vacuum or Fetch.
+    pub pickup_range_m: f64,
+    /// IS THIS A LANDSCAPE? Open-world bodies drop more (`engine::ammo`).
+    pub landscape: bool,
+    /// Which class this weapon's reserve takes. `None` on a weapon outside the
+    /// two classes a body drops (an Arch-Gun takes HEAVY, whose drop is a
+    /// per-enemy table this engine does not model).
+    pub ammo_class: Option<crate::ammo::Pickup>,
     /// Whether BuffBar ammo efficiency (Frenzy's +100%) reduces consumption.
     /// False for charge-backed magazines (Incarnon) - they are outside the
     /// ammo economy entirely.
@@ -3531,6 +3609,14 @@ pub const REPLAY_TRACKED: usize = 8;
 pub type BuffConfig = std::collections::HashMap<String, (u32, bool)>;
 
 impl DummyParams {
+    /// CAN WHAT THIS BODY DROPPED BE COLLECTED? The pack lands where the body
+    /// fell and the Tenno does not walk, so the answer is a distance and
+    /// nothing else — the flight time a real pickup takes is idealised away
+    /// (it is collected the instant the body dies).
+    pub fn drop_is_in_reach(&self, body_at: crate::space::Vec2) -> bool {
+        crate::space::gap(self.player_at, body_at) <= self.pickup_range_m
+    }
+
     /// Is this stat LOCKED at the weapon's default by an equipped mod?
     ///
     /// One reader for every live source, so "even negative effects" cannot end
@@ -4670,6 +4756,21 @@ impl DummyParams {
             infinite_reserve: !panel.has_reserve || !panel.no_resupply,
             ammo_cost: panel.ammo_cost,
             reserve_ammo: panel.ammo_reserve,
+            // THE BODIES DROP unless a scenario says otherwise, which is the
+            // game's own behaviour; `parse_fight` applies the setting on top.
+            ammo_drops: true,
+            ammo_pickup: panel.ammo_pickup,
+            ammo_conversion: panel.ammo_conversion,
+            pickup_range_m: f64::INFINITY,
+            landscape: false,
+            // THE SLOT IS THE CLASS. `ammo_type` states the same thing in 373
+            // weapon files and never disagrees with `slot`, so it is derived
+            // here rather than read twice.
+            ammo_class: match panel.slot {
+                "primary" => Some(crate::ammo::Pickup::Primary),
+                "secondary" => Some(crate::ammo::Pickup::Secondary),
+                _ => None,
+            },
             tenno,
         }
     }
@@ -4848,16 +4949,25 @@ impl RunResult {
     /// kill by a tendril does NOT spawn another."* So a DoT a tendril left
     /// still pays — it is a status kill — and only the tendril's own hit does
     /// not. The counter is the difference between the two.
-    fn note_tendril_kills(&mut self, killed: u32, at: f64) {
+    fn note_tendril_kills(&mut self, killed: u32, at: f64, in_reach: bool) {
         self.kills_by_tendril += killed;
-        self.note_kills(killed, at);
+        self.note_kills(killed, at, in_reach);
     }
 
-    fn note_kills(&mut self, killed: u32, at: f64) {
+    /// A KILL, AND WHETHER WHAT IT DROPPED CAN BE REACHED.
+    ///
+    /// A pickup lands on the BODY (`DummyParams::drop_is_in_reach`) and the
+    /// Tenno does not walk, so a body that fell outside the pickup radius
+    /// leaves a pack nobody collects. Counting kills without that question
+    /// could only ever model an infinite reach.
+    fn note_kills(&mut self, killed: u32, at: f64, in_reach: bool) {
         if killed > 0 && self.first_kill_at.is_none() {
             self.first_kill_at = Some(at);
         }
         self.kills += killed;
+        if in_reach {
+            self.kills_in_reach += killed;
+        }
     }
 }
 
@@ -4934,6 +5044,12 @@ impl Default for DummyParams {
             magazine_size: 12.0,
             reload_seconds: 2.35,
             infinite_reserve: true,
+            ammo_drops: true,
+            ammo_pickup: 0.0,
+            ammo_conversion: 0.0,
+            pickup_range_m: f64::INFINITY,
+            landscape: false,
+            ammo_class: Some(crate::ammo::Pickup::Primary),
             ammo_cost: 1.0,
             reserve_ammo: 72.0,
             ammo_efficiency_applies: true,
@@ -5733,6 +5849,15 @@ pub struct RunResult {
     /// because a field tick is weapon damage, not a status DoT tick.
     pub field_ticks: u32,
     pub reloads: u32,    // magazine reloads performed
+    /// KILLS WHOSE BODY FELL WITHIN REACH of the player — the only ones whose
+    /// drop can be collected (`DummyParams::drop_is_in_reach`). Equal to
+    /// `kills` while the reach is infinite, which is the default.
+    pub kills_in_reach: u32,
+    /// ROUNDS PICKED UP off the bodies — what the reserve was resupplied by,
+    /// after the waste (`ammo::credit` consumes a whole pack for whatever
+    /// headroom is left). 0 with an infinite reserve, which is what the rulers
+    /// are scored under.
+    pub picked_up_ammo: f64,
     pub transforms: u32, // TRANSMUTES into the Incarnon form (reverts don't count)
     /// KILLS THAT LEFT SOMETHING STANDING — `spawn_on_kill`, one per body.
     pub ghost_kills: u32,
@@ -6364,7 +6489,7 @@ fn fire_extra_hits(
                 ..Instance::default()
             },
         );
-        r.note_kills(u32::from(killed), at);
+        r.note_kills(u32::from(killed), at, params.drop_is_in_reach(target.at));
         if let Some(pool) = broke {
             push_break_proc(debuffs, params, at, pool);
         }
@@ -6646,7 +6771,7 @@ fn drain_area_procs(
                     ..Instance::default()
                 },
             );
-            r.note_kills(u32::from(killed), at_now);
+            r.note_kills(u32::from(killed), at_now, params.drop_is_in_reach(target.at));
             if killed {
                 // A CHAIN, and it needs no arranging: this body's own corpse
                 // explosion is queued here and drained on the next pass, which
@@ -7067,7 +7192,7 @@ fn settle_procs(
                             ..Instance::default()
                         },
                     );
-                    r.note_kills(killed as u32, at);
+                    r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
                     if let Some(pool) = broke {
                         push_break_proc(debuffs, params, at, pool);
                     }
@@ -7219,7 +7344,7 @@ fn settle_procs(
                     ..Instance::default()
                 },
             );
-            r.note_kills(killed as u32, at);
+            r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
             if let Some(pool) = broke {
                 push_break_proc(debuffs, params, at, pool);
             }
@@ -7665,7 +7790,9 @@ fn spread_from_influence(
                     ..Instance::default()
                 },
             );
-            r.note_kills(u32::from(killed), t);
+            // `at` IS THIS BODY'S PLACE — the loop is over every body the
+            // sphere caught, not over the aimed one.
+            r.note_kills(u32::from(killed), t, params.drop_is_in_reach(at));
             if killed {
                 // A SPREAD KILL IS THE WEAPON'S KILL. The host is the melee
                 // weapon that swung: Influence copies its number into the
@@ -7875,9 +8002,9 @@ fn spread_hit(
         r.ghost_kills += 1;
     }
     if by.spawns_a_tendril() {
-        r.note_kills(u32::from(killed), t);
+        r.note_kills(u32::from(killed), t, params.drop_is_in_reach(foe.state.at));
     } else {
-        r.note_tendril_kills(u32::from(killed), t);
+        r.note_tendril_kills(u32::from(killed), t, params.drop_is_in_reach(foe.state.at));
     }
     // …AND IT IS STILL THE WEAPON'S KILL, whichever mechanism carried it there.
     // A chain, a blast and a spread all deal the weapon's own number to a
@@ -8739,7 +8866,7 @@ fn fire_syndicate_radial(
             ..Instance::default()
         },
     );
-    r.note_kills(u32::from(killed), at);
+    r.note_kills(u32::from(killed), at, params.drop_is_in_reach(target.at));
     // GUARANTEED, for five of the six — Justice stuns instead of applying
     // Blast, the one place these effects differ in kind rather than in element.
     //
@@ -9653,7 +9780,7 @@ fn field_tick(
     // a fuse running out once is not one of them, and counting it there made
     // the orb report 6.88 strikes an orb when it makes at most six.
     r.field_ticks += u32::from(!is_blast);
-    r.note_kills(killed as u32, at);
+    r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
     if let Some(pool) = broke {
         push_break_proc(debuffs, params, at, pool);
     }
@@ -10093,7 +10220,7 @@ fn process_ticks(
         );
         rec.attribute_to(was);
         r.dot_ticks += is_dot_tick as u32;
-        r.note_kills(killed as u32, now);
+        r.note_kills(killed as u32, now, params.drop_is_in_reach(target.at));
         if let Some(pool) = broke {
             push_break_proc(debuffs, params, now, pool);
         }
@@ -13037,7 +13164,7 @@ pub fn run_once_traced(
         en.seed(params.enervate_stacks, &mut bar);
     }
     let mut frenzy = Frenzy::new();
-    let mut target = TargetState::spawn(&params.target);
+    let mut target = TargetState::spawn(&params.target, params.target_at);
     let mut debuffs = DebuffState::default();
     // THE REST OF THE FORMATION — empty for every fight this engine has run,
     // and every line that reads it below is behind that check.
@@ -13051,7 +13178,7 @@ pub fn run_once_traced(
         .others
         .iter()
         .map(|f| SpreadFoe {
-            state: TargetState::spawn(&f.params),
+            state: TargetState::spawn(&f.params, f.at),
             debuffs: DebuffState::default(),
         })
         .collect();
@@ -13446,7 +13573,8 @@ pub fn run_once_traced(
     // place a body dies — there are nine of those, they are the same nine
     // `ledger::settle` guards, and a tenth would silently stop dropping ammo.
     // The counter cannot be missed because every kill already goes through it.
-    let mut meter_kills_seen = 0u32;
+    // Kills already rolled for drops — the shared tally every reader works off.
+    let mut drop_kills_seen = 0u32;
 
     // Initial locks: one natural-duration grant at t = 0 (at the set
     // stack count); afterwards only the buff's own mechanics govern it.
@@ -15081,6 +15209,48 @@ pub fn run_once_traced(
                 }
             }
         }
+        // WHAT THE BODIES DROPPED since this was last looked at — ONE roll per
+        // kill IN REACH, read by everything that cares (docs/MECHANICS.md
+        // §"THE AMMO ECONOMY"). Rolled whether or not anything reads it, which
+        // is what keeps two builds of one weapon on the same dice.
+        let (mut dropped_primary, mut dropped_secondary) = (0u32, 0u32);
+        for _ in 0..r.kills_in_reach.saturating_sub(drop_kills_seen) {
+            let (p, s) = crate::ammo::on_kill(
+                params.squad_size,
+                params.landscape,
+                params.target.eximus,
+                &mut d.drops,
+            );
+            dropped_primary += p;
+            dropped_secondary += s;
+        }
+        drop_kills_seen = r.kills_in_reach;
+        // …AND WHAT THIS WEAPON DOES WITH THEM (`ammo::credit`). Nothing at all
+        // while the reserve is infinite: the house rule already hands the
+        // weapon everything a pack could.
+        if params.ammo_drops && !params.infinite_reserve {
+            if let Some(takes) = params.ammo_class {
+                for (kind, n) in [
+                    (crate::ammo::Pickup::Primary, dropped_primary),
+                    (crate::ammo::Pickup::Secondary, dropped_secondary),
+                ] {
+                    for _ in 0..n {
+                        let got = crate::ammo::credit(
+                            kind,
+                            takes,
+                            reserve,
+                            params.reserve_ammo,
+                            params.ammo_pickup,
+                            params.ammo_conversion,
+                        );
+                        if got > 0.0 {
+                            reserve += got;
+                            r.picked_up_ammo += got;
+                        }
+                    }
+                }
+            }
+        }
         // THE RECHARGE METER, credited with the seconds since it was last
         // looked at. A shot boundary is where every other clock in this loop is
         // read, and the meter is coarse enough not to care: it is 45 seconds
@@ -15089,28 +15259,17 @@ pub fn run_once_traced(
             meter_seconds += t - meter_clocked;
             meter_clocked = t;
             // …AND WHAT THE BODIES DROPPED. *"Picking up secondary or universal
-            // ammo reduces recharge time by 10 seconds"*, and this arena's rule
-            // is that everything a kill leaves is picked up the instant it dies
-            // — no vacuum radius, no walking back for it.
+            // ammo reduces recharge time by 10 seconds"*.
             //
             // ONLY SECONDARY COUNTS. A primary pickup does nothing for a tome's
             // meter, and universal packs are placed in a Simulacrum rather than
             // dropped by anything, so a kill can only ever contribute through
-            // the secondary half of its roll (`engine::ammo`).
+            // the secondary half of its roll.
             //
             // INFINITE AMMO DOES NOT REMOVE THE PICKUP. The house rule is about
             // the reserve, and a real fight is under its cap almost all of the
             // time — the pack is still on the floor either way.
-            for _ in 0..r.kills.saturating_sub(meter_kills_seen) {
-                let (_, secondary) = crate::ammo::on_kill(
-                    params.squad_size,
-                    false,
-                    params.target.eximus,
-                    &mut d.spine,
-                );
-                meter_seconds += f64::from(secondary) * m.seconds_per_ammo_pickup;
-            }
-            meter_kills_seen = r.kills;
+            meter_seconds += f64::from(dropped_secondary) * m.seconds_per_ammo_pickup;
             // A FULL METER IS ONE THROW. It is not a magazine — the page says
             // "requires a fully filled meter in order to fire", so what is
             // spent is the whole thing and what is bought is a single orb.
@@ -16539,7 +16698,7 @@ pub fn run_once_traced(
                 // THE ONE SITE THAT KNOWS ALL FOUR SHAPES: a hit is plain, a
                 // crit, a weak point, or both — and "both" is its own number in
                 // game, not a crit with a multiplier on it.
-                r.note_kills(killed as u32, t);
+                r.note_kills(killed as u32, t, params.drop_is_in_reach(target.at));
                 // …AND WHAT THE KILL LEAVES STANDING. `direct` because a ghost
                 // is left by the shot rather than by anything it set off, and
                 // the range is the card's own ("within 50 meters of the user").
@@ -18031,7 +18190,17 @@ pub fn run_once_traced(
     // is gone regardless of any overguard/shield left (e.g. a Toxin-bypass
     // kill that never broke the shield) — full credit.
     // InfiniteHealth pools never deplete -> 0.
-    let pool = params.target.overguard() + params.target.max_shield() + params.target.max_health();
+    //
+    // A THRAX'S BAR IS BOTH OF ITS FORMS. With the spectral switch on, emptying
+    // the physical form is real progress and is not the kill, so the spectre's
+    // health joins the denominator: a gun that cannot touch it stalls at the
+    // physical form's share of the individual instead of scoring a kill.
+    let spectral_health =
+        params.target.spectral.map_or(0.0, |sp| params.target.max_health() * sp.health_share);
+    let pool = params.target.overguard()
+        + params.target.max_shield()
+        + params.target.max_health()
+        + spectral_health;
     let remaining = if target.health <= 0.0 {
         0.0
     } else {
@@ -18217,6 +18386,9 @@ pub struct Summary {
     /// large one and no burn at all.
     pub mean_dot_ticks: f64,
     pub mean_reloads: f64,
+    /// MEAN ROUNDS PICKED UP off the bodies — 0 with an infinite reserve, and
+    /// what the ammo economy is worth when there is not one.
+    pub mean_picked_up_ammo: f64,
     pub mean_transforms: f64,
     /// GHOSTS — how many a run left standing, and the most at once. Counted,
     /// and nothing in the fight reads them back.
@@ -18406,6 +18578,8 @@ pub struct Shard {
     field_ticks: u64,
     dot_ticks: u64,
     reloads: u64,
+    /// Rounds picked up off the bodies — see [`RunResult::picked_up_ammo`].
+    picked_up_ammo: f64,
     transforms: u64,
     ghost_kills: u64,
     ghosts_peak: u32,
@@ -18456,6 +18630,7 @@ impl Default for Shard {
             field_ticks: 0,
             dot_ticks: 0,
             reloads: 0,
+            picked_up_ammo: 0.0,
             transforms: 0,
             ghost_kills: 0,
             ghosts_peak: 0,
@@ -18508,6 +18683,7 @@ impl Shard {
         self.field_ticks += o.field_ticks;
         self.dot_ticks += o.dot_ticks;
         self.reloads += o.reloads;
+        self.picked_up_ammo += o.picked_up_ammo;
         self.transforms += o.transforms;
         self.ghost_kills += o.ghost_kills;
         self.ghosts_peak = self.ghosts_peak.max(o.ghosts_peak);
@@ -18640,6 +18816,7 @@ pub fn shard(
         a.field_ticks += u64::from(r.field_ticks);
         a.dot_ticks += u64::from(r.dot_ticks);
         a.reloads += u64::from(r.reloads);
+        a.picked_up_ammo += r.picked_up_ammo;
         a.transforms += u64::from(r.transforms);
         a.ghost_kills += u64::from(r.ghost_kills);
         a.ghosts_peak = a.ghosts_peak.max(r.ghosts_peak);
@@ -18683,6 +18860,7 @@ impl Shard {
         let armor_left_health = self.armor_left_health;
         let (procs, field_ticks, reloads, transforms) =
             (self.procs, self.field_ticks, self.reloads, self.transforms);
+        let picked_up_ammo = self.picked_up_ammo;
         let (ghost_kills, ghosts_peak) = (self.ghost_kills, self.ghosts_peak);
         let dot_ticks = self.dot_ticks;
         let (kills, kills_sq) = (self.kills, self.kills_sq);
@@ -18753,6 +18931,7 @@ impl Shard {
         mean_field_ticks: field_ticks as f64 / n,
         mean_dot_ticks: dot_ticks as f64 / n,
         mean_reloads: reloads as f64 / n,
+        mean_picked_up_ammo: picked_up_ammo / n,
         mean_transforms: transforms as f64 / n,
         mean_ghosts: ghost_kills as f64 / n,
         ghosts_peak,
@@ -21861,6 +22040,121 @@ mod tests {
             s.mean_kills);
     }
 
+    /// A THRAX DIES TWICE, AND NO GUN FINISHES THE SECOND HALF.
+    ///
+    /// With the fight's `spectral_form` switch on, the physical form falling is
+    /// not a kill: nothing on-kill fires, nothing drops, the body does not
+    /// respawn, and every instance after it — a bullet, an explosion, a DoT
+    /// tick — is refused. What is left is the progress term, which stalls at
+    /// the physical form's share of the individual.
+    #[test]
+    fn a_spectral_thrax_cannot_be_finished_by_a_weapon() {
+        let build = |spectral: bool| DummyParams {
+            magazine_size: 100.0,
+            fire_rate: 10.0,
+            duration_seconds: 30.0,
+            body_parts: mono_body(1.0),
+            target: TargetParams {
+                base_health: 10.0,
+                spectral: spectral.then_some(crate::enemy_data::SpectralForm {
+                    health_share: 0.40,
+                    delay_seconds: 2.0,
+                }),
+                ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
+            },
+            ..flat_base()
+        };
+        let plain = run_once(&build(false), &mut Rng::new(9));
+        let ghost = run_once(&build(true), &mut Rng::new(9));
+        assert!(plain.kills > 5, "the fixture has to kill: {}", plain.kills);
+        // NOT ONE KILL, however long it fires — the kill waits for the spectre.
+        assert_eq!(ghost.kills, 0, "a gun cannot finish a Thrax");
+        assert_eq!(ghost.kills_in_reach, 0);
+        assert_eq!(ghost.picked_up_ammo, 0.0, "and nothing drops until it does");
+        // THE PROGRESS STALLS at what the physical form was worth: 10 health of
+        // an individual carrying 10 + 4.
+        let settled = monte_carlo(&build(true), 1, 9);
+        assert!(
+            (settled.mean_kill_progress - 10.0 / 14.0).abs() < 1e-9,
+            "{}",
+            settled.mean_kill_progress
+        );
+        // …AND THE DAMAGE STOPS THERE: everything after the physical form is
+        // refused, so the run's damage is the first body's bar and no more.
+        assert!(ghost.effective_damage() <= plain.effective_damage() / 5.0,
+            "{} vs {}", ghost.effective_damage(), plain.effective_damage());
+    }
+
+    /// THE BODIES RESUPPLY THE RESERVE, and the rules that decide by how much
+    /// (`engine::ammo`).
+    ///
+    /// A weapon that runs dry mid-fight is the only place any of this is
+    /// visible: with the reserve infinite — which is what every ruler is scored
+    /// under — a pack is worth nothing, and that is asserted here too.
+    #[test]
+    fn a_kill_resupplies_the_reserve_and_a_mutation_mod_pays_for_the_other_half() {
+        // A fixture the supply binds rather than the clock: two rounds a pack,
+        // a 20-round reserve, and a body that dies to every shot.
+        let build = |drops: bool, conversion: f64, reach: f64| DummyParams {
+            magazine_size: 10.0,
+            ammo_cost: 1.0,
+            fire_rate: 4.0,
+            reload_seconds: 0.5,
+            duration_seconds: 60.0,
+            infinite_reserve: false,
+            reserve_ammo: 20.0,
+            ammo_drops: drops,
+            ammo_pickup: 2.0,
+            ammo_conversion: conversion,
+            ammo_class: Some(crate::ammo::Pickup::Primary),
+            pickup_range_m: reach,
+            squad_size: 1,
+            body_parts: mono_body(1.0),
+            target: TargetParams {
+                base_health: 1.0,
+                ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
+            },
+            ..flat_base()
+        };
+        let run = |p: &DummyParams| run_once(p, &mut Rng::new(4242));
+        let starved = run(&build(false, 0.0, f64::INFINITY));
+        let dropping = run(&build(true, 0.0, f64::INFINITY));
+        let converting = run(&build(true, 0.92, f64::INFINITY));
+        // WITHOUT DROPS the reserve is the whole engagement: 10 in the magazine
+        // and 20 behind it, and not one round more.
+        assert_eq!(starved.shots, 30, "the fixture has to starve");
+        assert_eq!(starved.picked_up_ammo, 0.0);
+        // WITH THEM it fires for longer — solo is a 45% chance a body drops,
+        // and half of what falls is this weapon's own class.
+        assert!(dropping.picked_up_ammo > 0.0, "a pack has to be worth something");
+        assert!(dropping.shots > starved.shots, "{} vs {}", dropping.shots, starved.shots);
+        // …AND A MUTATION MOD PAYS FOR THE OTHER HALF, which is the whole of
+        // what that card does here: the secondary packs stop being litter.
+        assert!(
+            converting.picked_up_ammo > dropping.picked_up_ammo * 1.5,
+            "conversion has to pay for the other half: {} vs {}",
+            converting.picked_up_ammo, dropping.picked_up_ammo
+        );
+
+        // OUT OF REACH IS NOT PICKED UP. The Tenno does not walk, so a body
+        // five metres off leaves its pack there for a 1 m radius.
+        let far = run(&DummyParams {
+            target_at: crate::space::Vec2::new(0.0, 5.0),
+            ..build(true, 0.92, 1.0)
+        });
+        assert_eq!(far.picked_up_ammo, 0.0, "a pack out of reach pays nothing");
+        assert_eq!(far.shots, starved.shots);
+
+        // AN INFINITE RESERVE IS ALREADY EVERYTHING, so a pack is worth nothing
+        // and the fight is identical with drops on and off.
+        let infinite = |drops: bool| DummyParams {
+            infinite_reserve: true,
+            ..build(drops, 0.92, f64::INFINITY)
+        };
+        assert_eq!(run(&infinite(true)).shots, run(&infinite(false)).shots);
+        assert_eq!(run(&infinite(true)).picked_up_ammo, 0.0);
+    }
+
     /// RESONANT RESTORE: the magazine GROWS, up to the cap, and it does not
     /// FILL.
     ///
@@ -22178,7 +22472,7 @@ mod tests {
         // states of one target: whole, chewed through the overguard, and hit
         // for real. Only the last one ends the perk.
         let tp = TargetParams { base_overguard: 5_000.0, ..TargetParams::training_dummy() };
-        let whole = TargetState::spawn(&tp);
+        let whole = TargetState::spawn(&tp, crate::space::Vec2::ORIGIN);
         assert!(target_undamaged(&whole, &tp), "a fresh target is undamaged");
 
         let mut chewed = whole.clone();
@@ -26833,6 +27127,7 @@ mod tests {
     fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
         TargetParams {
             name: "test target".into(),
+            spectral: None,
             base_level: 1,
             level: 1,
             base_health: 50.0, // below the weakest possible shot (75)
@@ -27632,7 +27927,7 @@ mod tests {
         // 100 of Overguard in front of 50 of health, and no armour: a 1000
         // hit spends 100 and the other 900 has to land.
         let target = frail_target(TargetMode::InstantRespawn, 0.0, 100.0);
-        let mut st = TargetState::spawn(&target);
+        let mut st = TargetState::spawn(&target, crate::space::Vec2::ORIGIN);
         let og = st.overguard;
         let hp = st.health;
         let settled = st.apply(
@@ -28281,7 +28576,7 @@ mod tests {
         // that neither bypasses a shield nor reads a column, so the fixture
         // measures the GATE and nothing else.
         let leak_for = |hit: f64, head: bool| -> (f64, f64) {
-            let mut st = TargetState::spawn(&target);
+            let mut st = TargetState::spawn(&target, crate::space::Vec2::ORIGIN);
             let before_shield = st.shield;
             let before_health = st.health;
             st.apply(

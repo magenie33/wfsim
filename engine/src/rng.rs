@@ -94,6 +94,10 @@ pub struct Draws {
     /// `aim` that would have shifted every subsequent spread roll; off a stream
     /// of its own it shifts nothing, which is what this split is for.
     pub blast_dir: Rng,
+    /// WHAT A BODY LEFT BEHIND — the per-kill ammo drop roll. A meter that
+    /// reads drops and a reserve that spends them are two readers of ONE roll,
+    /// and a stream of its own is what keeps that roll the same for both.
+    pub drops: Rng,
 }
 
 impl Draws {
@@ -118,7 +122,14 @@ impl Draws {
             z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
             Rng::new(z ^ (z >> 31))
         };
-        Self { spine: at(1), status: at(2), extra: at(3), aim: at(4), blast_dir: at(5) }
+        Self {
+            spine: at(1),
+            status: at(2),
+            extra: at(3),
+            aim: at(4),
+            blast_dir: at(5),
+            drops: at(6),
+        }
     }
 }
 

@@ -193,8 +193,9 @@ ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
   (§9), not per-hit damage. *Engine: not modeled yet.*
 - **Zoom** (`zoom_bonus`): pistol zoom is pure FOV — **no damage** (unlike
   sniper zoom's additive headshot-damage bonus). Correctly a no-op.
-- **Ammo mutation / conversion** (recorded `kind: unmodeled`): ammo-economy
-  only, no damage.
+- **Ammo mutation / conversion**: converts the other class's packs at its
+  share of this weapon's Ammo Pickup (§"THE AMMO ECONOMY"). No damage of its
+  own, and worth nothing while the reserve is infinite.
 - **Accuracy / recoil / on-equip handling**: aim inputs for the future
   shooter model (recoil is already an `Indirect` bucket, §mods_data); no
   theoretical-DPS effect (Magnum Force −55% accuracy downside, Reflex Draw
@@ -2485,6 +2486,47 @@ player who taps rather than holds; on the risers, one whose pauses are short
 enough to keep the spool through a reload. Both are on the weapon's card
 (`unmodeled:`) and in docs/UNMODELLED.md, beside the reload-interruption ruling
 they are the same shape as.
+
+### THE AMMO ECONOMY — what a body drops, and what a pack is worth
+
+`engine::ammo` is the whole of it, and it is two halves: what falls, and what
+this weapon can do with it. Both bite only when the reserve is finite — with
+`infinite_ammo` on (every ruler) the weapon already has everything.
+
+**WHAT FALLS.** The rate is a property of the SQUAD and the place rather than of
+the enemy: *"Chance to drop Primary or Secondary Ammo scales with squad size"* —
+solo 45% (60% in a Landscape), falling to 22.5% (37.5%) at four players — and
+*"each roll of their drop table will only result in a maximum of one Ammo
+Pickup"* (wiki `Ammo`). An **Eximus** is *"guaranteed to drop either a Primary
+or Secondary Ammo … This does not overwrite the enemies normal chance"*, so its
+expected drop is 1.45 rather than 1. Which of the two classes falls is half and
+half — stated for the Eximus guarantee, assumed for the ordinary roll
+(`ammo::SECONDARY_SHARE`). **Post-Update-32 there are three ammo classes**
+(Primary, Secondary, Heavy) and one Primary pack serves every primary weapon,
+shotguns and snipers included. Heavy is the one per-enemy rate and is not
+modelled; nor are health and energy ORBS (`docs/UNMODELLED.md`).
+
+**WHERE IT FALLS.** On the body, at the body's own place in the arena, and it is
+collected by a player within `pickup_range_m` of it — infinite by default,
+because this arena's Tenno never walks, which makes a finite reach a wall rather
+than a delay. The game's own numbers are a 3 m innate radius and 13.5 m with a
+maxed Vacuum or Fetch. Collection is instant: no flight time.
+
+**WHAT A PACK IS WORTH** (`ammo::credit`), and only the first of these is stated
+by the wiki as prose:
+
+1. The amount is the WEAPON's own *"Ammo Pickup"* — a Phantasma's 15 against an
+   ordinary rifle's 80, and DE publishes a per-weapon override list.
+2. A FULL reserve refuses it and it stays on the floor. Implied three times
+   (the *"Primary Weapon Ammo full"* notification, a Vacuum that pulled ammo in
+   at maximum being fixed as a bug) and stated nowhere.
+3. The WHOLE pack is consumed: a reserve one round short takes one round and
+   loses the rest. **Unmeasured** — the pessimistic of the two readings.
+4. The other class converts only through a mutation mod, at its share of this
+   weapon's pickup: *"Converts Secondary ammo pickups to X% of Ammo Pick Up"*
+   (50% maxed, 92% Primed). The card's gate — *"as long as the other ammo pool
+   is full"* — is met by construction: this arena fires one weapon, so the other
+   slot's pool never leaves full.
 
 ### Ammo Efficiency — a FRACTIONAL ammo cost
 
