@@ -69,6 +69,21 @@ pub struct Instance {
     /// size as a bodyshot's. Folding one into the other would inflate every DoT
     /// a ricochet headshot leaves.
     pub part_factor: f64,
+    /// THE SAME MULTIPLIER, FOR THE STATUSES THIS INSTANCE LEAVES — a second
+    /// field because the two answers differ exactly where a mechanism carries
+    /// the head factor inside the raw it was handed.
+    ///
+    /// Punch through is that mechanism: `part_factor` is 1.0 there because the
+    /// aimed pellet's head multiplier is ALREADY inside `raw_per_bucket`, and
+    /// applying it again would square it — but `dot_takes_weakpoint` says Heat
+    /// and Blast read the hit's weak point (MEASUREMENTS M54), and those
+    /// payloads are built from the MODDED BASE, which carries no head factor at
+    /// all. Reading `part_factor` for them left a punched body's burn at a
+    /// third of the one the aimed body took from the same round.
+    ///
+    /// 1.0 for every mechanism that lands on a body, and the head's own factor
+    /// for the two that can land on a head.
+    pub status_part_factor: f64,
 }
 
 /// Where the beam landed and how wide its damage radius is, AFTER mods.
@@ -305,6 +320,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
         out.push(Instance {
             target: s, share: 1.0, multishot: direct, headshot: direct,
             part_factor: 1.0,
+            status_part_factor: 1.0,
         });
 
         // ONE `seen` PER SEED — a path never revisits its OWN bodies, and one
@@ -329,6 +345,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
             out.push(Instance {
                 target: next, share, multishot: direct, headshot: false,
                 part_factor: 1.0,
+                status_part_factor: 1.0,
             });
             seen[next] = true;
             cur = next;
@@ -410,6 +427,7 @@ pub fn resolve_with(
         out.push(Instance {
             target: s, share: 1.0, multishot: direct, headshot: direct,
             part_factor: 1.0,
+            status_part_factor: 1.0,
         });
 
         // …and then runs its own path.
@@ -454,6 +472,7 @@ pub fn resolve_with(
             out.push(Instance {
                 target: next, share, multishot: direct, headshot: false,
                 part_factor: 1.0,
+                status_part_factor: 1.0,
             });
             seen[next] = true;
             cur = next;

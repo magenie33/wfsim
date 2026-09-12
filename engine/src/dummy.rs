@@ -8064,7 +8064,15 @@ fn spread_hit(
             // …AND IT IS IN HERE, because Heat and Blast are computed as a
             // fraction of the HIT rather than of the base — the same two the
             // direct path multiplies by its own part factor.
-            part_factor: inst.part_factor,
+            //
+            // `status_part_factor` AND NOT `part_factor`: they are the same
+            // number for every mechanism but punch through, which carries the
+            // head's multiplier inside the raw it was handed and therefore
+            // reads 1.0 for the hit. Reading that 1.0 here burned a punched
+            // body for a third of what the aimed body took from the same
+            // round, on a ruler whose own rule is that a punched body IS a
+            // weak-point hit.
+            part_factor: inst.status_part_factor,
             attrition,
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
@@ -8173,6 +8181,7 @@ fn spread_from_follow_through(
             multishot: true,
             headshot: false,
             part_factor: 1.0,
+            status_part_factor: 1.0,
         };
         let foe = &mut others[idx];
         let landed = spread_hit(
@@ -8198,10 +8207,13 @@ fn spread_from_punch_through(
     status_chance: f64,
     forced: &[DamageType],
     vector: &DamageVector,
-    // WHETHER THE AIMED PELLET FOUND A HEAD. Carried rather than re-rolled;
-    // the head's MULTIPLIER needs no parameter because it is already inside
-    // `raw_per_bucket` — see the instance below.
+    // WHETHER THE AIMED PELLET FOUND A HEAD, and WHAT THE PART WAS WORTH.
+    // Both carried rather than re-rolled: the same round flying in a straight
+    // line enters the same part of whatever is behind. The multiplier is
+    // already inside `raw_per_bucket` for the HIT and is needed all the same
+    // for the STATUSES — see `chain::Instance::status_part_factor`.
     head_direct: bool,
+    head_part_factor: f64,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -8277,6 +8289,11 @@ fn spread_from_punch_through(
             // that was tried on 2026-08-21 and caught by the test below refusing
             // to fail on the old code.
             part_factor: 1.0,
+            // …AND THE STATUSES NEED IT ANYWAY. Heat and Blast read the hit's
+            // weak point and are built from the modded base, which carries no
+            // head factor — so the one place the hit must not see it again is
+            // the one place its payloads must. See `chain::Instance`.
+            status_part_factor: head_part_factor,
         };
         let foe = &mut others[idx];
         spread_hit(
@@ -8359,6 +8376,9 @@ fn spread_from_ricochet(
             multishot: false,
             headshot: head,
             part_factor: if head { head_factor(fs) } else { 1.0 },
+            // A RICOCHET ROLLS ITS OWN, so the hit and its statuses read the
+            // same answer — `raw_per_bucket` is handed to it body-only.
+            status_part_factor: if head { head_factor(fs) } else { 1.0 },
         };
         spread_hit(
             &inst,
@@ -8459,6 +8479,7 @@ fn spread_from_echo(
             multishot: false,
             headshot: false,
             part_factor: 1.0,
+            status_part_factor: 1.0,
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
@@ -8556,6 +8577,7 @@ fn spread_from_tendrils(
             // …and it lands on a body, never a head.
             headshot: false,
             part_factor: 1.0,
+            status_part_factor: 1.0,
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
@@ -8697,6 +8719,7 @@ fn blast_at(
             multishot: false,
             headshot: false,
             part_factor: 1.0,
+            status_part_factor: 1.0,
         };
         spread_hit(
             &inst,
@@ -16650,6 +16673,7 @@ pub fn run_once_traced(
                             forced,
                             &qvec,
                             head_direct,
+                            part_factor,
                             &mut gal,
                             &mut arc,
                             &mut r,
@@ -20664,6 +20688,66 @@ mod tests {
         assert!(
             reaching > bare,
             "beam range buys bodies in a column: {reaching} against {bare}"
+        );
+    }
+
+    /// A PUNCHED BODY'S BURN IS THE SAME SIZE AS THE AIMED BODY'S.
+    ///
+    /// Heat and Blast read the hit's weak point — measured, MEASUREMENTS M54 —
+    /// and their payloads are built from the MODDED BASE, which carries no head
+    /// factor. Punch through reads 1.0 for its hit on purpose (the multiplier
+    /// is already inside the raw it was handed), and that 1.0 reached the
+    /// payloads too: a punched body burned for a third of the aimed body's on a
+    /// ruler whose own rule is that a punched body IS a weak-point hit.
+    ///
+    /// TOXIN IS THE CONTROL AND MUST NOT MOVE: it is the one type
+    /// `dot_takes_weakpoint` excludes, so it was symmetric before this and is
+    /// symmetric after.
+    #[test]
+    fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
+        let burn = |element: &str| {
+            let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("phantasma_prime");
+            let refs: Vec<&crate::loadout::ModDef> = [element]
+                .iter()
+                .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
+                .collect();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.others = vec![crate::formation::FoeSpec {
+                id: String::new(),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(0.0, crate::space::CONTACT_RANGE_M * 2.0),
+            }];
+            let mut p =
+                DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            // EVERY SHOT ON THE HEAD, which is the rulers' own rule and the only
+            // aim under which this question has an answer at all.
+            p.body_parts = vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 3.0,
+                is_head: true,
+                crit_bonus: true,
+            }];
+            let r = run_once(&p, &mut Rng::new(0x5EED));
+            let (aimed, behind) = (r.spread.by_body().0[0], r.spread.by_body().0[1]);
+            assert!(behind > 0.0, "{element}: the beam reaches the body behind");
+            aimed / behind
+        };
+        // Heat is the one that moved: 1.88 before, and the burn is most of the
+        // damage on a build whose only element is one.
+        let heat = burn("incendiary_coat");
+        assert!(
+            (heat - 1.0).abs() < 0.15,
+            "the same round, so the same burn: aimed/behind = {heat}"
+        );
+        let toxin = burn("toxic_barrage");
+        assert!(
+            (toxin - 1.0).abs() < 0.15,
+            "…and the type that takes no weak point never moved: {toxin}"
         );
     }
 
