@@ -165,6 +165,39 @@ fn pol_icon(file: &str) -> Option<(&'static [u8], &'static str)> {
     })
 }
 
+/// THE PUBLISHED BOARD, READ OFF DISK — `site/board*`, written by the scoring
+/// bot and by `build_site_app.py`, never by this server.
+///
+/// SERVING THEM IS WHAT MAKES THE DEV SERVER THE SAME PAGE. Without these
+/// paths a weapon page says nobody has submitted a build, the finder has
+/// nothing to find and a board row cannot be opened — and the worse half is
+/// silent: a board-dependent browser check pointed here PASSES, on a page
+/// where the feature it checks was never drawn.
+///
+/// Read per request rather than embedded, because the bot rewrites these files
+/// between builds and a stale copy compiled into the binary would be a second
+/// source for rows that already have one.
+fn board_response(stream: &mut TcpStream, path: &str) -> std::io::Result<()> {
+    let rel = path.trim_start_matches('/');
+    // One directory deep, `.json` only, and no segment that could climb: this
+    // reads from the working tree, so the name decides which file is opened.
+    let safe = rel.len() < 128
+        && rel.ends_with(".json")
+        && !rel.contains("..")
+        && rel.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '/'));
+    // A repo whose `site/` has never been generated is the ordinary case for a
+    // fresh clone, and an empty board is a state the page already handles.
+    let miss = |s: &mut TcpStream| respond(s, "404 Not Found", "text/plain; charset=utf-8", b"not found");
+    if !safe {
+        return miss(stream);
+    }
+    let file = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../site")).join(rel);
+    match std::fs::read(&file) {
+        Ok(bytes) => respond_asset(stream, "application/json; charset=utf-8", &bytes),
+        Err(_) => miss(stream),
+    }
+}
+
 /// Weapon/mod/arcane art: served from a local on-disk cache (web/cache/img/,
 /// gitignored, pre-warmed by scripts/fetch_images.py) so it loads locally and
 /// works offline. On a cache miss, 302-redirect to the WFCD CDN — so it always
@@ -211,12 +244,6 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
 
     match (req.method.as_str(), path) {
         ("GET", "/") => respond(&mut stream, "200 OK", "text/html; charset=utf-8", INDEX_HTML.as_bytes()),
-        // SPA fallback: /weapons/<Wiki_Name> is a client-side route — serve
-        // the shell and let app.js's router resolve it (mirrors the static
-        // deployment's not_found_handling = single-page-application).
-        ("GET", p) if p.starts_with("/weapons/") || p == "/support" || p == "/support/" => {
-            respond(&mut stream, "200 OK", "text/html; charset=utf-8", INDEX_HTML.as_bytes())
-        }
         ("GET", "/app.js") => respond(
             &mut stream,
             "200 OK",
@@ -285,6 +312,22 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             None => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
         },
         ("GET", p) if p.starts_with("/img/") => img_response(&mut stream, &p[5..]),
+        ("GET", p) if p == "/board.json" || p == "/board.meta.json" || p.starts_with("/board/") => {
+            board_response(&mut stream, p)
+        }
+        // SPA fallback, DERIVED RATHER THAN LISTED. Every page path is a
+        // client-side route, so serve the shell and let app.js's router
+        // resolve it — which is what the static deployment does
+        // (not_found_handling = single-page-application). Naming the routes
+        // here instead makes each new shell page 404 until someone adds it,
+        // on the server that is the only thing anyone develops against.
+        //
+        // A DOT MEANS A FILE. An asset this server does not have must still
+        // 404, or a mistyped script tag arrives as HTML and fails somewhere
+        // else entirely; a page path has no extension.
+        ("GET", p) if !p.rsplit('/').next().unwrap_or("").contains('.') => {
+            respond(&mut stream, "200 OK", "text/html; charset=utf-8", INDEX_HTML.as_bytes())
+        }
         _ => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
     }
 }
