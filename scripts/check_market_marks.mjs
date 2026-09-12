@@ -95,6 +95,43 @@ check("the reader's switch takes EVERY mark off the page, not just the open list
   r.offAnywhere === 0 && r.offStored === false, `${r.offAnywhere} left, stored ${r.offStored}`);
 check("...and they all come back", r.backOn > 0, `${r.backOn} marks`);
 
+// …AND A LONG NAME DOES NOT DELETE WHAT STANDS BEHIND IT.
+//
+// A card's name row carries the wiki link, this mark and any chips AFTER the
+// name. A row that shortens a long name with an ellipsis does not shorten it —
+// it drops everything behind it, so the reader of the one card most worth
+// pricing is the one reader who cannot see the price.
+//
+// A RIVEN IS THE NAME THAT GETS THERE: its card reads "<preset> · <generated>",
+// which is two names and a separator. Rather than farm one, the SEATED card's
+// own name node is given a riven's worth of text — same element, same rules,
+// longer string — and the mark has to still be inside its row afterwards.
+const long = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const filled = document.querySelector('#mod-slots .slot.filled');
+  const mn = filled && filled.querySelector('.mn');
+  const wm = mn && mn.querySelector('a.wm');
+  const nameNode = mn && mn.querySelector('.wl');
+  if (!wm || !nameNode) return { found: false };
+  const was = nameNode.textContent;
+  nameNode.textContent = 'board · damage / heat / multishot − impact · Igni-visican';
+  await sleep(120);
+  const r = mn.getBoundingClientRect(), w = wm.getBoundingClientRect();
+  const out = {
+    found: true,
+    clipped: mn.scrollWidth > mn.clientWidth + 1,
+    inside: w.width > 0 && w.right <= r.right + 0.5,
+    lines: Math.round(r.height),
+  };
+  nameNode.textContent = was;
+  return out;
+})()`);
+check("a name too long for its row WRAPS rather than being cut off",
+  long.found && !long.clipped && long.lines > 20,
+  `clipped=${long.clipped}, row ${long.lines}px tall`);
+check("...so the mark standing behind it is still inside the row", long.inside,
+  `inside=${long.inside}`);
+
 // …AND ONE THAT DOES TRADE, so the rule above is not asserted on absence alone.
 await app.load("/weapons/Ballistica_Prime", 12000);
 const t = await evaluate(`(async () => {
