@@ -2206,6 +2206,8 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .recwin-title{font-size:13px;font-weight:700;letter-spacing:.02em}
 .recwin-sub{font-size:12px;color:var(--muted);margin-left:auto;
   font-variant-numeric:tabular-nums}
+.recwin-top .ghost-btn{height:28px;padding:0 9px;display:inline-flex;
+  align-items:center;justify-content:center;align-self:center}
 .recwin{padding:14px 16px;max-width:none}
 /* THE TABLE GETS THE REST OF THE WINDOW. Its own header is sticky, so growing
    this does not cost the reader the column names. 250px is the chrome above it
