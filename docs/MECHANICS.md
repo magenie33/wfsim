@@ -2854,9 +2854,12 @@ identical. A fraction is enough; a second snap is not needed.
 The fight is two circles on a floor (`engine::space`). Everything below falls
 out of three facts, and none of it is a special case.
 
-**A BODY HAS A RADIUS: 0.2 m**, measured — walking into an enemy stops at 0.4 m
-centre to centre, and two bodies of the same size touching at 0.4 m makes each
-of them 0.2 (MEASUREMENTS M47). One number, and nothing derives from it.
+**A BODY HAS A RADIUS: 0.25 m**, so two of them touch at 0.5 m centre to
+centre — which is what every ruler's `target_at` pins and the floor
+`parse_fight` will not let a fight start inside. The punch-through table below
+is what brackets it: a diameter of 0.4 is EXCLUDED there and 0.5 is exactly
+allowed, which is the paragraph that amends M47's 0.2. One number, and only
+`BODY_MATERIAL_M` — the diameter — derives from it.
 
 **A SHOT LEAVES THE MUZZLE, not the centre**. The muzzle is
 a point on the shooter's own circumference facing what they are aiming at. The
@@ -2894,7 +2897,7 @@ roster, so a weapon added tomorrow with a wider cone is covered.
 **A DISTANCE IS THE GAP, SURFACE TO SURFACE — zero at contact.** That is what
 "how far apart are we" means once bodies have a size, it is what the arena shows
 and what its quick sets set, and it is what point blank has always meant to a
-player. The 0.4 m between the two centres is the model's business and nobody
+player. The 0.5 m between the two centres is the model's business and nobody
 should have to subtract it.
 
 **THE GAP IS ALSO THE FLIGHT**, and that is why damage falloff reads it with

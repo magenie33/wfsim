@@ -86,7 +86,7 @@ scenario:
   # POINT BLANK, and the SAME value as the aimed board's — see
   # `single_target.yaml` for the argument. A Demolisher is fought in a corridor.
   player_at: [0, 0]
-  target_at: [0, 0.4]
+  target_at: [0, 0.5]
   duration: 180
   runs: 1000
   seed: 12648430
