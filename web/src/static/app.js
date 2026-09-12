@@ -3010,6 +3010,10 @@ function rivenMods() {
       // with the crit damage on it without remembering what you called it.
       effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
       unmodeled_effects: (rivenNames[p.id] || {}).unmodeled || [],
+      // THE AUCTIONS THIS CARD COMPETES WITH — built here because this is
+      // where both halves are in scope: the roll, and the weapon it is for.
+      // The cache key covers both, so it cannot outlive either.
+      market_url: rivenMarketUrl(st, (META.weapons || []).find((x) => x.id === w)),
       __spec: st,
     };
   });
@@ -10779,6 +10783,98 @@ const wl = (text, url) => `<a class="wl" href="${url || wikiUrl(text)}" target="
 /// rolling, the stat pools — which is `Riven Mods`.
 const modWikiUrl = (m) => (m.riven ? wikiUrl("Riven Mods") : wikiUrl(m.name_en || m.name));
 
+/// THE ONE NUMBER THIS APP DOES NOT COMPUTE — what a card costs to buy.
+///
+/// warframe.market is the authority there and we are not competing with it, so
+/// a tradeable card carries a mark that opens its page. The slug comes from
+/// `/api/meta` (`engine::market_data`), never from the display name: a name
+/// join pairs "Blaze" the mod with "Blaze" the arcane, and a localized page
+/// has no English name to join on at all.
+///
+/// NO PRICE IS FETCHED. A price needs a refresh rule and a staleness rule, and
+/// the app would then hold a number it cannot stand behind next to numbers it
+/// can.
+const MARKET = "https://warframe.market";
+const marketItemUrl = (slug) => `${MARKET}/items/${encodeURIComponent(slug)}`;
+
+/// THE AUCTION SEARCH FOR A RIVEN — filtered to the stats it actually rolled.
+///
+/// Not the weapon's whole auction list: unfiltered, that page returns its own
+/// 500-result ceiling sorted by nothing a holder cares about. Naming the
+/// stats turns it into the rivens that COMPETE with the one on screen, which
+/// is the comparison the card's own number was asking for.
+///
+/// A stat we cannot translate is not silently dropped — see `rivenMarketUrl`.
+const marketAuctionUrl = (weaponSlug, positives, negatives) => {
+  const q = [["type", "riven"], ["weapon_url_name", weaponSlug]];
+  if (positives.length) q.push(["positive_stats", positives.join(",")]);
+  if (negatives.length) q.push(["negative_stats", negatives.join(",")]);
+  return `${MARKET}/auctions/search?` +
+    q.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+};
+
+/// The auction link for one riven card, or null if it cannot be built HONESTLY.
+///
+/// A missing stat slug would produce a NARROWER search than the riven —
+/// different rivens, presented as the comparable ones — so a stat that does
+/// not translate cancels the link rather than shrinking the query.
+function rivenMarketUrl(spec, weapon) {
+  const slug = (weapon || {}).market_riven_slug;
+  if (!slug || !spec) return null;
+  const table = META.market_riven_stats || {};
+  // An UNFILLED slot is a card still being described, not a stat that failed
+  // to translate — it narrows nothing, so it is skipped and the rest still
+  // search.
+  const named = (xs) => xs.filter((s) => s && s.id).map((s) => table[s.id]);
+  const pos = named(spec.bonuses || []), neg = named(spec.malus ? [spec.malus] : []);
+  if (!pos.length || pos.concat(neg).some((s) => !s)) return null;
+  return marketAuctionUrl(slug, pos, neg);
+}
+
+/// The mark itself. `marketPrefs.on` is the reader's switch (topbar ⋯), and
+/// the link is skipped entirely when it is off — not hidden with CSS, so the
+/// page does not ship a row of dead anchors to a reader who said no.
+const marketLink = (url, title) => (!url || marketPrefs.on === false ? "" :
+  `<a class="wm" href="${url}" target="_blank" rel="noopener" title="${escHtml(title)}"
+      onclick="event.stopPropagation()" aria-label="${escHtml(title)}"><svg viewBox="0 0 24 24" width="12" height="12"
+      aria-hidden="true" focusable="false"><path fill="currentColor" d="M7 4h10a1 1 0 0 1 .97.76l2 8A1 1 0 0 1 19 14H5a1 1 0 0 1-.97-1.24l2-8A1 1 0 0 1 7 4zm0 12h10a1 1 0 0 1 0 2H7a1 1 0 0 1 0-2zm1.5 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg></a>`);
+
+/// THE MARK ON A MOD CARD, drawn by the builder's picker and the optimizer's
+/// scope alike because both go through `modRow`.
+///
+/// A RIVEN'S MARK IS ITS AUCTION, not an item page: warframe.market has no
+/// item to sell for "Argon Critacan", and the same generated-name problem that
+/// sends a riven's wiki link to `Riven Mods` sends its price question to the
+/// auctions for the weapon it is on, filtered to the stats it rolled.
+const modMarketLink = (m) => marketLink(
+  m.riven ? m.market_url : (m.market_slug && marketItemUrl(m.market_slug)),
+  tr(m.riven ? "find rivens with these stats on warframe.market"
+    : "price on warframe.market"));
+
+/// ON BY DEFAULT: the mark is a convenience a reader cannot ask for if they
+/// never see it, and it costs one glyph beside a name.
+let marketPrefs = { on: true };
+try { const s = JSON.parse(localStorage.getItem("wfsim-market")); if (s) marketPrefs = { ...marketPrefs, ...s }; } catch (_) { /* private mode */ }
+
+/// The switch, in the topbar's overflow beside the other page-wide settings.
+/// EVERY LIST IS REDRAWN, not just the open one: the mark sits in the picker,
+/// in the optimizer's scope and on the equipped slots, and a switch that only
+/// reached whichever was on screen would read as broken on the next tab.
+(function () {
+  const box = $("market-on");
+  if (!box) return;
+  box.checked = marketPrefs.on !== false;
+  box.addEventListener("change", (e) => {
+    e.stopPropagation();
+    marketPrefs = { ...marketPrefs, on: box.checked };
+    try { localStorage.setItem("wfsim-market", JSON.stringify(marketPrefs)); } catch (_) { /* private mode */ }
+    if ($("mod-slots")) renderMods();
+    const pop = $("mod-popover");
+    if (pop && !pop.hidden) renderMenu(pickerSlot, $("mod-search").value);
+    if (typeof renderOptModList === "function" && $("opt-mods") && !$("opt-block").hidden) renderOptModList();
+  });
+})();
+
 // Description lines at a rank: the verbatim in-game text with the
 // rank-varying numbers filled server-side (mods and arcanes alike). Null
 // when the pool has no yaml description (hardcoded rifle pool) — callers
@@ -12927,7 +13023,7 @@ const modRow = (m, { cls = "", title = "", attrs = "", chips = "", note = "",
   `<div class="opt ${cls} ${m.rarity ? "rar-" + m.rarity : ""}" ${attrs} title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${
-    wl(m.name, modWikiUrl(m))}${
+    wl(m.name, modWikiUrl(m))}${modMarketLink(m)}${
     exilusChip && m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}${chips}</div><div class="me">${
     cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div>${note}</div>${trailing}</div>`;
 

@@ -1144,6 +1144,10 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 "family": m.family,
                 "category": mod_category(m),
                 "image": assets().mods.get(m.id),
+                // WHAT WARFRAME.MARKET CALLS IT. Absent means it does not trade
+                // there at all — Umbral and Galvanized cards carry no link, and
+                // that absence is the only tradeability rule the app has.
+                "market_slug": wfsim_engine::market_data::mod_slug(m.id),
                 // One line per modeled effect — engine describe() stays the
                 // model's own statement (search + panel attribution).
                 "effects": m.effects.iter().map(|e| e.describe()).collect::<Vec<_>>(),
@@ -1204,6 +1208,10 @@ pub fn meta_json() -> Value {
                 // for modding purposes.
                 "continuous": w.continuous,
                 "disposition": w.disposition,
+                // WHAT WARFRAME.MARKET CALLS THIS WEAPON'S RIVEN AUCTIONS, so
+                // the riven card can offer the one price we do not compute.
+                // Absent where no riven exists for it — see `market_data`.
+                "market_riven_slug": wfsim_engine::market_data::riven_weapon_slug(&w.id),
                 // WHOSE RIVEN THIS IS. A riven belongs to a weapon FAMILY, not
                 // to one entry in it: *"Riven mods can be used on variants of a
                 // particular weapon, including MK1, Prime, Vandal, Wraith, Dex,
@@ -1785,6 +1793,14 @@ pub fn meta_json() -> Value {
             .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
             .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
+        // OUR RIVEN STAT ID → THE SLUG AN AUCTION SEARCH FILTERS ON. The page
+        // sends the stats a riven actually rolled, so the link lands on the
+        // rivens that compete with the one on screen instead of on every
+        // riven for the weapon — which is also the only way past the
+        // auction's own 500-result ceiling.
+        "market_riven_stats": wfsim_engine::market_data::riven_stats()
+            .map(|(k, v)| (k.to_string(), Value::from(v)))
+            .collect::<serde_json::Map<String, Value>>(),
         // WHAT THE WARFRAME BRINGS, so the page can OFFER it rather than make
         // the reader type a number. That is the whole argument for naming these
         // instead of folding them into the custom bonuses: a named shard has a

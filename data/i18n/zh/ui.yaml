@@ -129,6 +129,10 @@ ui:
   "Condition Overload bracket": 异常超载档
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "Cores": 算力
+  "Prices": 价格
+  "find rivens with these stats on warframe.market": 在 warframe.market 找词条相同的紫卡
+  "price on warframe.market": 在 warframe.market 查看价格
+  "show a link to warframe.market beside every tradeable card": 在每张可交易的卡片旁显示 warframe.market 的链接
   "Corpus": Corpus
   "Corrupted": 堕落者
   "Crit Chance": 暴击几率

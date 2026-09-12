@@ -204,6 +204,14 @@
                 <span class="tbl" data-i18n>Cores</span>
                 <span id="compute-select"></span>
               </div>
+              <!-- The one control here that turns something OFF. The price
+                   mark is on by default and a reader who does not trade wants
+                   it gone; it links off-site, so it is theirs to refuse. -->
+              <label class="tbmore-row" id="market-row"
+                     title="show a link to warframe.market beside every tradeable card" data-i18n-title>
+                <span class="tbl" data-i18n>Prices</span>
+                <input type="checkbox" id="market-on" checked>
+              </label>
               <!-- The site's own page, so it leads the row that is otherwise
                    "this project, elsewhere". -->
               <a class="dl-link ghost-btn" href="/download" title="Download the Windows app" data-i18n-title aria-label="Download"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v11m0 0-4-4m4 4 4-4M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/></svg><span class="tbl" data-i18n>Windows app</span></a>

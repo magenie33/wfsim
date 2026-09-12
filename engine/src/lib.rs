@@ -48,6 +48,7 @@ pub mod mercy;
 pub mod metrics;
 pub mod mod_sets_data;
 pub mod mods;
+pub mod market_data;
 pub mod mods_data;
 pub mod perks;
 pub mod shards_data;

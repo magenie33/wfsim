@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.3f061fa7741e.css" />
+  <link rel="stylesheet" href="/asset/style.c2e5e6a67c3e.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -209,6 +209,14 @@
                 <span class="tbl" data-i18n>Cores</span>
                 <span id="compute-select"></span>
               </div>
+              <!-- The one control here that turns something OFF. The price
+                   mark is on by default and a reader who does not trade wants
+                   it gone; it links off-site, so it is theirs to refuse. -->
+              <label class="tbmore-row" id="market-row"
+                     title="show a link to warframe.market beside every tradeable card" data-i18n-title>
+                <span class="tbl" data-i18n>Prices</span>
+                <input type="checkbox" id="market-on" checked>
+              </label>
               <!-- The site's own page, so it leads the row that is otherwise
                    "this project, elsewhere". -->
               <a class="dl-link ghost-btn" href="/download" title="Download the Windows app" data-i18n-title aria-label="Download"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v11m0 0-4-4m4 4 4-4M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/></svg><span class="tbl" data-i18n>Windows app</span></a>
@@ -1130,13 +1138,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">275aeed9</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">1b38a965</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.831315b40440.js"></script>
+  <script src="/asset/app.86ae4c9ca2eb.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is
