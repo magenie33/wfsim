@@ -261,6 +261,8 @@ ui:
   "the record is open in its own window": 战斗记录已在它自己的窗口里打开。
   "Bring it back here": 收回本页
   "Open in its own window": 在新窗口打开
+  "Open the record": 打开战斗记录
+  "one row per number the game popped — it opens in a window of its own, because the table is wider than this column": "每一个游戏里跳出的伤害数字一行 —— 它会在自己的窗口里打开，因为这张表比这一栏宽得多"
   "the same build — the difference is how the riven rolled": "同一套配装 —— 差别只在裂罅的数值"
   "the two beams CONVERGE on the crosshair and deal full damage there only once they are aligned (wiki). This arena lands both on the aimed body from the first tick, which is the ceiling": "两道光束会向准星汇聚，只有对齐之后才在准星处打出全额伤害（维基）。这个战场从第一跳起就让两道都落在瞄准的目标上，这是上限"
   "This is #1.": "这就是 #1。"

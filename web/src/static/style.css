@@ -2196,8 +2196,21 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* THE RECORD IN ITS OWN WINDOW. The child document is this stylesheet over one
    host element, so it needs only the page margin the app's own layout supplies
    here — and the table gets the whole viewport to be long in. */
+/* THE RECORD'S OWN WINDOW. It is a page of this site and is dressed like one:
+   the topbar's wordmark over a heading that says which fight the rows are
+   about, and the table given the whole width — which is the reason the window
+   exists. */
+.recwin-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface);
+  position:sticky;top:0;z-index:20}
+.recwin-title{font-size:13px;font-weight:700;letter-spacing:.02em}
+.recwin-sub{font-size:12px;color:var(--muted);margin-left:auto;
+  font-variant-numeric:tabular-nums}
 .recwin{padding:14px 16px;max-width:none}
-.recwin .rec-scroll{max-height:calc(100vh - 190px)}
+/* THE TABLE GETS THE REST OF THE WINDOW. Its own header is sticky, so growing
+   this does not cost the reader the column names. 250px is the chrome above it
+   — the window's heading, the tools row and the count. */
+.recwin .rec-scroll{max-height:calc(100vh - 250px)}
 /* THE ONE BLOCK THAT NEEDS THE SCREEN.
    The record is a ten-column ledger and the column it exists for — where the
    number comes from — is the widest of them, so inside the page's own reading

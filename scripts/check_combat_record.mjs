@@ -498,10 +498,24 @@ const win = await evaluate(`(() => {
   if (!b) return { noButton: true };
   b.click();
   const d = recWin && recWin.document;
+  const head = d && d.querySelector('.recwin-top');
   return {
     opened: !!(recWin && !recWin.closed),
     childRows: d ? d.querySelectorAll('#rec-host > .rec-scroll > table.rec-t > tbody > tr').length : -1,
-    styled: d ? !!d.querySelector('link[rel="stylesheet"]') : false,
+    // THE SHEET HAS TO HAVE LOADED, not merely been asked for. This asked only
+    // whether a stylesheet LINK existed, and passed for months over a
+    // window that came up as a bare HTML table: the href was a hardcoded
+    // /style.css and the built site serves /asset/style.<digest>.css, so the
+    // one thing the assertion checked was the one thing that was never wrong.
+    // A COMPUTED COLOUR is the honest question — nothing but the stylesheet
+    // can paint the heading's background.
+    sheets: d ? [...d.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href) : [],
+    // …AND IT IS DRESSED LIKE A PAGE OF THIS SITE: the wordmark, the heading,
+    // and which fight the rows below are about.
+    brand: head && head.querySelector('.brand') ? head.querySelector('.brand').textContent : '',
+    heading: head && head.querySelector('.recwin-title')
+      ? head.querySelector('.recwin-title').textContent.trim() : '',
+    what: d && d.getElementById('rec-what') ? d.getElementById('rec-what').textContent : '',
     // …AND OUT OF THIS ONE, which is the whole point: a table that is drawn in
     // both places has moved nothing off the page that was freezing.
     handedOver: !document.querySelector('#rec-host table.rec-t'),
@@ -510,7 +524,28 @@ const win = await evaluate(`(() => {
 })()`, { userGesture: true });
 
 check(`${tag} ...and the whole record opens in a window of its own`,
-  win.opened === true && win.childRows > 0 && win.styled === true, JSON.stringify(win));
+  win.opened === true && win.childRows > 0, JSON.stringify({ ...win, sheets: win.sheets }));
+// A STYLESHEET IS FETCHED, so this is ASKED AGAIN until it answers: reading the
+// computed colour in the same turn as the click reads the moment before the
+// sheet arrived, which is a false red on a window that dresses correctly.
+const styled = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (let i = 0; i < 40; i++) {
+    const d = recWin && recWin.document;
+    const head = d && d.querySelector('.recwin-top');
+    if (head && getComputedStyle(head).backgroundColor !== 'rgba(0, 0, 0, 0)') {
+      return { painted: true, bg: getComputedStyle(head).backgroundColor, waited: i * 100 };
+    }
+    await sleep(100);
+  }
+  return { painted: false };
+})()`);
+check(`${tag} ...wearing this page's own stylesheet, LOADED and not merely linked`,
+  styled.painted === true && (win.sheets || []).length > 0,
+  `${JSON.stringify(styled)}, sheets ${JSON.stringify(win.sheets)}`);
+check(`${tag} ...and dressed like a page of this site: wordmark, heading, and the fight it explains`,
+  win.brand === "WFSim" && !!win.heading && !!win.what,
+  JSON.stringify({ brand: win.brand, heading: win.heading, what: win.what }));
 check(`${tag} ...drawn THERE and not here`,
   win.handedOver === true && win.back === true, JSON.stringify(win));
 
