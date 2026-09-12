@@ -23,9 +23,9 @@ number**. Everything else follows from it:
   sustainable mode: a Ballistica Prime build sent from its Incarnon cycle also
   answers `base`, `alternate` and `alternate_cycle`, and a melee build answers
   all seven. What it carries that pays nothing in a mode costs a low row, which
-  the per-mode dedup drops and the page's depth hides — so the fan-out only ever
-  ADDS the rows where a build happens to be good somewhere its submitter never
-  tried it.
+  the per-mode dedup drops and the entry line refuses outright — so the fan-out
+  only ever ADDS the rows where a build happens to be good somewhere its
+  submitter never tried it.
   `transformed` and its kind are still refused: a gauge you must fill and run
   dry is not a way to play for three hundred seconds;
 - **EVERY FINALIST OF A SEARCH IS UPLOADED**, not just the build somebody ran in
@@ -126,6 +126,7 @@ nothing is passed:
 
 ```
 what is outstanding = (builds x rulers x modes)  MINUS  what is measured
+                                                 MINUS  what the entry line parked
 ```
 
 Four consequences, and they are the point of the shape:
@@ -432,10 +433,11 @@ notice here — a score is a pure function and the carry between processes is
 lossless — so an interrupted row that regrouped its sums would not be the same
 number. It costs 2.5% of a crowd fight.
 
-A paused row is a THIRD outcome beside published and refused: the build
-reached no row on this board and is not lost either. The run says so
-(`paused: N row(s) banked partway`) and the accounting knows about it, because a
-run that quietly dropped a build looks exactly like one that ranked it.
+A paused row is an outcome of its own beside published, refused and under the
+entry line: the build reached no row on this board and is not lost either. The
+run says so (`paused: N row(s) banked partway`) and the accounting knows about
+every one of them, because a run that quietly dropped a build looks exactly like
+one that ranked it.
 
 **What this does NOT bound is the number of benchmarks.** The scoring step runs
 `--deadline` once per ruler, so a shard's ceiling is three deadlines plus three
@@ -859,13 +861,66 @@ in the board row, and in `builds::identity`: the last of those was found by
 scoring two Atomos builds differing only in `ruinous_extension` and getting ONE
 row back.
 
+## The entry line
+
+**A BUILD IS ON THE BOARD ONLY WHERE IT REACHES A TENTH OF ITS GROUP'S LEADER.**
+`boards_data::KEEP_LEADER_SHARE`, and it decides two things at two
+granularities:
+
+| | | |
+| --- | --- | --- |
+| **a ROW** is published | `clears_entry` | it reaches a tenth of its own group's leader |
+| **a BUILD** earns more fights | `keeps_earning` | it reaches a tenth in at LEAST ONE (ruler, mode) it has a fact for |
+
+**THE TWO MAY NOT BE COLLAPSED**, and that is the whole shape of the rule. The
+board asks for one good answer rather than for a build that is good everywhere,
+so a build that leads the crowd ruler keeps earning single-target rows it will
+score badly on — and those rows, measured and under the line, are not published.
+Unified, one bad row would retire a build that leads another board.
+
+**IT IS A SHARE OF THE LEADER, NOT A RANK.** A percentile is a QUOTA: it admits
+a fixed PROPORTION of whatever arrives, so ten thousand junk builds would admit
+a thousand of them, and the quality it enforces drifts with the crowd — measured
+on two Torid groups of identical size, "the top 10%" cut at 0.281 and at 0.687 of
+the leader. A share admits none of a flood at any volume, and it is a statement a
+submitter can act on. Where the data cannot help is the NUMBER: the pooled
+distribution of score-as-a-share-of-leader has no knee, so what places it is the
+margin under the page's shallowest view. A tenth keeps 82.6% of published rows
+and 93.3% of builds; a hundredth keeps 98.0% and gates nothing.
+
+**WHAT IT CANNOT DO IS REFUSE THE FIRST FIGHT.** Knowing whether a build clears
+the line means measuring it, so a build with no fact anywhere is owed one — and
+it is owed exactly one: the (ruler, mode) its submission NAMED, which is the
+fight its submitter actually ran. Clearing the line there earns the other
+eighty-odd rows. A record naming no fight — provenance the endpoint has not
+always stored — widens to every row rather than being stranded.
+
+**EVERY AUTOMATIC PATH OBEYS IT AND THE RESCORE BUTTON DOES NOT.** `--gate` is
+passed by the arrivals reconciliation and by the nightly sweep, which is where
+the line pays for itself: arrivals are a one-off bill and the sweep recurs for
+the life of the board. A person asking for a ruler again after a model
+correction is the one path that may reach a parked build, and
+`check_rescore_paths.mjs` asserts all three.
+
+**NOTHING IS DELETED, AND THAT IS WHAT MAKES THE LINE REVERSIBLE.** A parked
+build keeps its row in `builds` and every fact in `scores`; what stops is the
+spending. The line is relative to a leader and a leader can be CORRECTED
+DOWNWARDS — a group whose best falls from 50 to 1 makes a row that was under the
+line a row well over it — and because the facts are still there, the next
+publish re-ranks it back onto the board and the next reconciliation starts
+asking for it again, with nobody doing anything. Deleting the facts would make
+that recovery impossible and invisible: a board that looks entirely normal and
+is missing the builds that now deserve to be on it.
+
 ## How deep a board goes — the reader decides
 
-**EVERY SCORED ROW IS PUBLISHED.** A row is a fact — a build measured under a
-pinned seed — and `site/board/<weapon>.json` carries all of them. How deep to
-read is a question about what a reader wants to see, not about what is true, so
-the page answers it: it shows builds scoring **at least half their group's
-leader** by default, and offers a quarter and everything.
+**EVERY SCORED ROW THAT CLEARS THE ENTRY LINE IS PUBLISHED.** A row is a fact — a
+build measured under a pinned seed — and `site/board/<weapon>.json` carries all
+of them down to that line. How deep to read is a question about what a reader
+wants to see, not about what is true, so the page answers it: it shows builds
+scoring **at least half their group's leader** by default, and offers a quarter
+and everything. `BOARD_DEPTHS` holds `0` rather than a copy of the line for
+"everything", because "no filter" stays true wherever the line is drawn.
 
 A GROUP IS ONE WEAPON, IN ONE MODE, UNDER ONE RULER, and riven builds are a
 group of their own. A riven build and a plain one compete with each other for

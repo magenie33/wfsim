@@ -8969,9 +8969,13 @@ function boardRowIdentity(row) {
 /// spending slots this fight cannot pay, so half marks where a build stops
 /// being a DIFFERENT answer rather than where it stops being the best one.
 ///
-/// ZERO IS "EVERYTHING", and it is offered because the alternative is a reader
-/// who cannot tell a build that was never submitted from one the page declined
-/// to draw.
+/// ZERO IS "EVERYTHING THE BOARD KEPT", and it is offered because the
+/// alternative is a reader who cannot tell a build that was never submitted
+/// from one the page declined to draw. What it bottoms out at is the board's
+/// own ENTRY LINE — a tenth of the group's leader, `boards_data`'s
+/// `KEEP_LEADER_SHARE` — and the number is not repeated here: zero means "no
+/// filter", which stays true wherever that line is drawn, and a copy of it
+/// would be a second answer to one question the day the line moves.
 const BOARD_DEPTHS = [0.5, 0.25, 0];
 let boardDepth = BOARD_DEPTHS[0];
 try {

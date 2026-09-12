@@ -227,5 +227,46 @@ check(!pub.some((l, i) => /name:\s*store/.test(l)
   "…rather than the snapshot the scorers were handed",
   "the artifact is as old as the run; the assembly is the last thing it does");
 
+// EVERY AUTOMATIC PATH INTO THE QUEUE OBEYS THE ENTRY LINE, AND THE OVERRIDE
+// DOES NOT.
+//
+// `--gate` is what stops a build that reaches a tenth of no group's leader from
+// being asked for more fights, and forgetting it on ONE path is silent: the
+// other paths still gate, the run still goes green, and the bill comes back
+// through whichever path was left open. The nightly sweep is the one that
+// matters most — it recurs for the life of the board where arrivals are a
+// one-off — and it is also the easiest to miss, because it lives in a workflow
+// rather than beside the reconciliation.
+//
+// AND THE RESCORE BUTTON IS THE OVERRIDE. A corrected model is exactly the case
+// where a parked build deserves another look, so a `--gate` appearing on that
+// step would quietly make a person's deliberate ask obey a rule about budgets.
+// ASKED OF THE CODE LINES ALONE. Every one of these paths explains itself in a
+// comment that NAMES `--gate`, so a check reading the prose would pass on a
+// step that had lost the flag and kept the paragraph saying it has it — the
+// exact shape it exists to refuse.
+const passesGate = (text) => text !== null
+  && text.split(NL).some((l) => !l.trim().startsWith("#") && /--gate(\s|\\|$)/.test(l));
+const queueWf = readFileSync(resolve(ROOT, ".github/workflows/queue.yml"), "utf8");
+const step = (name) => {
+  const lines = queueWf.split(NL);
+  const at = lines.findIndex((l) => l.includes(`- name: ${name}`));
+  if (at < 0) return null;
+  const end = lines.findIndex((l, i) => i > at && /^ {6}- name:/.test(l));
+  return lines.slice(at, end < 0 ? lines.length : end).join(NL);
+};
+const reconcile = readFileSync(resolve(ROOT, "scripts/reconcile_queue.sh"), "utf8");
+check(passesGate(reconcile), "the arrivals reconciliation obeys the entry line",
+  "every build that ever arrives would be asked for every ruler and every mode");
+check(passesGate(step("ask for what has gone longest")),
+  "…and so does the nightly sweep",
+  "a build nothing would publish is re-measured every five nights for ever, "
+    + "which is the recurring half of the bill the line exists to stop");
+const rescore = step("ask for every row of one ruler again");
+check(rescore !== null && !passesGate(rescore),
+  "…and the rescore button overrides it",
+  "a person asking for a ruler again is the one thing here that may reach a "
+    + "parked build, and gating it makes a corrected model unable to rescue one");
+
 console.log(NL + (bad ? `${bad} failed` : "only the clock and a person start a board run"));
 process.exit(bad ? 1 : 0);

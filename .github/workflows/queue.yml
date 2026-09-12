@@ -153,6 +153,11 @@ jobs:
       #
       # ITS OWN BATCH, NAMED FOR THE NIGHT, so a person can see it, reorder it
       # ahead of the arrivals, or drop it — `DELETE FROM batches WHERE id = ?`.
+      #
+      # AND IT OBEYS THE ENTRY LINE (`--gate`), which is where that line pays
+      # for itself: arrivals are a one-off bill and this one recurs every five
+      # nights for ever, so a build nothing would publish would be re-measured
+      # for the life of the board.
       - name: ask for what has gone longest
         if: steps.wired.outputs.yes == 'true'
           && (github.event.schedule == '0 16 * * *' || inputs.sweep)
@@ -176,6 +181,7 @@ jobs:
             id=$(basename "$f" .yaml)
             ./target/release/wfsim-board "$id" \
               --dry-run \
+              --gate \
               --facts-in facts-known.ndjson \
               --queue-in queue.ndjson \
               --queue-weapons weapons.txt \
@@ -205,6 +211,11 @@ jobs:
       # each row, so asking costs the board nothing while it is being paid; the
       # hourly scorer spends it down like any other batch, and the batch is its
       # own so a person can drop it — `DELETE FROM batches WHERE id = ?`.
+      #
+      # AND IT DOES NOT PASS `--gate`. A corrected model is exactly the case
+      # where a build the entry line parked may deserve another look, and a
+      # person asking is the one thing in this pipeline that overrides a fact.
+      # Every other path into the queue is gated; this one is the override.
       - name: ask for every row of one ruler again
         if: steps.wired.outputs.yes == 'true' && inputs.rescore != ''
         env:

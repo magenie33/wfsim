@@ -35,8 +35,14 @@ missing=$(mktemp)
 for f in data/benchmarks/*.yaml; do
   id=$(basename "$f" .yaml)
   one=$(mktemp)
+  # `--gate` IS WHAT MAKES THE ARRIVALS PATH OBEY THE ENTRY LINE. A build that
+  # reaches a tenth of some group's leader keeps earning every row it lacks; one
+  # that reaches it nowhere keeps the facts it has and is asked for nothing more.
+  # The RESCORE button in `queue.yml` deliberately does NOT pass it — a model
+  # correction is the case where a parked build may deserve another look.
   "$BOARD" "$id" \
     --dry-run \
+    --gate \
     --facts-in "$FACTS" \
     --queue-in "$OUT" \
     --queue-missing "$one" \

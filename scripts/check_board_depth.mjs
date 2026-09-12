@@ -1,9 +1,10 @@
 // HOW DEEP THE BOARD IS READ is the READER's choice, and this is what holds it.
 //
-// The publisher no longer holds rows back: every scored row is published and
-// the page shows builds within half their group's leader by default
-// (docs/BOARD.md). That moves a rule from a place with unit tests to a place
-// without, so it is checked here, on the real page:
+// The publisher holds back only what no depth would have shown — every scored
+// row down to the ENTRY LINE is published — and the page shows builds within
+// half their group's leader by default (docs/BOARD.md). That moves a rule from a
+// place with unit tests to a place without, so it is checked here, on the real
+// page:
 //
 //   * the default is half, and it is INCLUSIVE — a row exactly on the line
 //     shows, because that is the row a reader goes looking for;
