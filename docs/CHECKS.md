@@ -490,6 +490,16 @@ base damage, band to exactly zero, and order as the cards state — measured
 0.9623 = 2.55/2.65 at every build strength and run count, which survives only
 because the two are paired against the same luck.
 
+## `check_market_marks`
+
+**THE MARK IS A PROPERTY OF A CARD, NOT OF ONE LIST.** warframe.market is the
+authority on what a card costs, so a tradeable one carries a mark that opens
+its page — in the mod picker AND on the equipped mod, in the arcane picker AND
+on the equipped arcane, and in the weapon's own title. The seated mod's mark
+must be the picker row's mark: the same card cannot have two prices. The
+reader's switch (topbar ⋯) then has to take EVERY anchor off the page, not just
+the list that happens to be open, and put them all back.
+
 ## `check_mode_def`
 
 A mode is EXPLAINED, not just named, and its name is

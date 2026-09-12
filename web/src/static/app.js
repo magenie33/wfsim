@@ -10898,8 +10898,9 @@ const marketLink = (url, title) => (!url || marketPrefs.on === false ? "" :
       onclick="event.stopPropagation()" aria-label="${escHtml(title)}"><svg viewBox="0 0 24 24" width="12" height="12"
       aria-hidden="true" focusable="false"><path fill="currentColor" d="M7 4h10a1 1 0 0 1 .97.76l2 8A1 1 0 0 1 19 14H5a1 1 0 0 1-.97-1.24l2-8A1 1 0 0 1 7 4zm0 12h10a1 1 0 0 1 0 2H7a1 1 0 0 1 0-2zm1.5 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg></a>`);
 
-/// THE MARK ON A MOD CARD, drawn by the builder's picker and the optimizer's
-/// scope alike because both go through `modRow`.
+/// THE MARK ON A MOD CARD, wherever a card is drawn: the builder's picker and
+/// the optimizer's scope (both through `modRow`) and the EQUIPPED slot, which
+/// is where a reader decides they want one and is the arcane slot's own rule.
 ///
 /// A RIVEN'S MARK IS ITS AUCTION, not an item page: warframe.market has no
 /// item to sell for "Argon Critacan", and the same generated-name problem that
@@ -11159,7 +11160,7 @@ function buildSlot(i) {
     const matchedPol = s.pol === m.polarity || (s.pol === "Omni" && m.polarity !== "Umbra");
     const fit = !s.pol ? "" : matchedPol ? " matched" : " mismatched";
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
-      `<div class="info"><div class="mn">${wl(m.name, modWikiUrl(m))}</div>${desc.length ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr${fit}"><span class="mpol" title="${escHtml(polCap(m.polarity))}">${polGlyph(m.polarity)}</span>${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
+      `<div class="info"><div class="mn">${wl(m.name, modWikiUrl(m))}${modMarketLink(m)}</div>${desc.length ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="drow"><div class="dr${fit}"><span class="mpol" title="${escHtml(polCap(m.polarity))}">${polGlyph(m.polarity)}</span>${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div></div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openModSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
