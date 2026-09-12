@@ -82,7 +82,11 @@ const r = await evaluate(`(async () => {
   // say which one an assertion is about.
   const state = () => Math.hypot(sim.target_at[0] - sim.player_at[0],
                                  sim.target_at[1] - sim.player_at[1]);
-  const gap = () => Math.max(0, state() - 0.4);
+  // CONTACT IS THE ENGINE'S NUMBER, read off the page rather than written
+  // here: a THIRD copy of a body's radius is the defect this check exists to
+  // catch, not one to commit.
+  const CONTACT = CONTACT_M;
+  const gap = () => Math.max(0, state() - CONTACT);
 
   // 1. IT DRAWS, and it starts at contact.
   // WHO YOU PICKED, in the top right. The id e3 is what the roll call, the heat
@@ -130,8 +134,8 @@ const r = await evaluate(`(async () => {
     const d = Math.hypot(a[0] - you[0], a[1] - you[1]) || 1;
     const u = [(a[0] - you[0]) / d, (a[1] - you[1]) / d];
     const along = (m) => atPoint([you[0] + u[0] * m, you[1] + u[1] * m]);
-    out.muzzle = ink(...along(0.2));
-    out.facing = ink(...along(0.55));
+    out.muzzle = ink(...along(BODY_R_M));
+    out.facing = ink(...along(BODY_R_M + 0.3));
   }
 
   // 2. DRAGGING MOVES THE FIGHT. Pointer events on the enemy body, in the
@@ -231,6 +235,12 @@ const r = await evaluate(`(async () => {
   // they are addressed by their own id, which is the benchmark's.
   pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
   out.officialDistance = gap();
+  // WHAT THE PAGE THINKS A BODY IS, and where it got it: the engine serves it
+  // at /api/meta.body_radius_m and the arena adopts it. A page that kept its
+  // own copy drew a contact-range ruler 0.1 m apart.
+  out.contact = CONTACT;
+  out.bodyRadius = BODY_R_M;
+  out.metaRadius = (META && META.body_radius_m) || null;
   out.official = typeof officialScenarioActive === 'function' && officialScenarioActive();
   const before = state();
   drag(0, 0, -70);
@@ -262,8 +272,8 @@ check("...and both are INK on the floor, where the scene says it put them",
   r.bodyInk === true && r.youInk === true, `enemy ${r.bodyInk}, you ${r.youInk}`);
 check("...and a MUZZLE on the shooter's own circumference, with its facing",
   r.muzzle === true && r.facing === true, `muzzle ${r.muzzle} facing ${r.facing}`);
-check("...and the fight starts at CONTACT — centres 0.4 m apart, and it READS 0 m",
-  Math.abs(r.startState - 0.4) < 1e-6 && Math.abs(r.startLabel) < 0.01,
+check("...and the fight starts at CONTACT — centres two radii apart, and it READS 0 m",
+  Math.abs(r.startState - r.contact) < 1e-6 && Math.abs(r.startLabel) < 0.01,
   `centres ${r.startState}, label ${r.startLabel}`);
 check("dragging the enemy moves it away", r.oneDrag > r.startState + 0.3,
   `${r.startState} -> ${r.oneDrag} m`);
@@ -277,7 +287,7 @@ check("...and what is dragged is EXACTLY what gets sent", r.sentMatches === true
 check("...and out there the shipping build MISSES", r.farHitRate < 0.9,
   `${(r.farHitRate * 100).toFixed(0)}% of pellets landed at ${r.farLabel} m`);
 check("two bodies cannot pass through each other",
-  Math.abs(r.overlapped - 0.4) < 1e-6,
+  Math.abs(r.overlapped - r.contact) < 1e-6,
   `dragged onto the player and landed at ${r.overlapped} m`);
 check("...and the label says ZERO, because that is what point blank means",
   Math.abs(r.overlapLabel) < 0.01, `${r.overlapLabel} m`);
@@ -294,6 +304,10 @@ check("...and there are no quick sets left either", r.noQuickSets === 0,
   `${r.noQuickSets} still drawn`);
 check("...so a drag is the only way, and it lands OFF-AXIS", r.offAxis === true,
   JSON.stringify(r.sentTarget));
+check("the arena measures a body the way the ENGINE does, not with a copy of its own",
+  r.metaRadius > 0 && Math.abs(r.bodyRadius - r.metaRadius) < 1e-9
+  && Math.abs(r.contact - 2 * r.metaRadius) < 1e-9,
+  `page ${r.bodyRadius}, /api/meta ${r.metaRadius}, contact ${r.contact}`);
 check("an official ruler is the active scenario for this part", r.official === true);
 check("...and it opens at the distance the ruler pins — contact, a zero gap",
   Math.abs(r.officialDistance) < 1e-6, `${r.officialDistance} m`);

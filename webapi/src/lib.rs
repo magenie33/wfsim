@@ -2072,6 +2072,13 @@ pub fn meta_json() -> Value {
         // surface without any of them naming it.
         "metrics": wfsim_engine::metrics::ALL,
         "metric_default": wfsim_engine::metrics::DEFAULT,
+        // HOW BIG A BODY IS, because the PAGE draws the same floor the engine
+        // fights on: the muzzle sits one radius forward, two circles touch at
+        // two radii, and the distance a reader is shown is the gap between
+        // their SURFACES. The page carried its own copy of this number and the
+        // two drifted — the arena called a contact-range fight 0.1 m and the
+        // crowd 2.6 m apart where the engine had 0 and 2.5.
+        "body_radius_m": wfsim_engine::space::BODY_RADIUS_M,
         "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
             "request_field": a.request_field,

@@ -1763,6 +1763,8 @@ async function init() {
     }
   }
   META = await api("/api/meta");
+  // …AND THE FLOOR THE ARENA DRAWS ON IS THE ENGINE'S, before anything is drawn.
+  adoptBodyRadius(META);
   {
     let all = null;
     try { all = await api("/api/i18n"); } catch (_) { all = null; }
@@ -4126,8 +4128,19 @@ const customEnemiesFor = (id) => customEnemySpecs().filter((e) => e.id === id);
 //
 // METRES ARE THE UNIT and the view fits itself to them, with a floor on the
 // span so a contact-range fight does not zoom to two enormous discs.
-const BODY_R_M = 0.2;   // measured: contact stops at 0.4 m (M46)
-const CONTACT_M = 2 * BODY_R_M;
+// THE ENGINE'S OWN NUMBER, served at `/api/meta.body_radius_m` and adopted the
+// moment it arrives. The literal here is what the arena draws with before the
+// first fetch answers, and it is the only thing this file is allowed to decide
+// about a body's size: the page carried its own 0.2 while the engine moved to
+// 0.25, so a contact-range ruler drew as 0.1 m apart and a 3 m crowd as 2.6.
+let BODY_R_M = 0.25;
+let CONTACT_M = 2 * BODY_R_M;
+const adoptBodyRadius = (m) => {
+  const r = m && Number(m.body_radius_m);
+  if (!Number.isFinite(r) || r <= 0) return;
+  BODY_R_M = r;
+  CONTACT_M = 2 * r;
+};
 // A FIXED INTERNAL COORDINATE SPACE, and the CSS stretches it. The scene used
 // to be laid out in whatever pixel width the host happened to have, which is
 // ZERO while the panel is on another tab — so the geometry came out NaN and a
