@@ -125,14 +125,33 @@ def main():
     errors = []
 
     items = fetch("/items")
-    # A weapon is listed as its SET (`braton_prime_set` carries the weapon's
-    # own gameRef), so an item's tags decide which table it may land in.
+    # ONE ITEM PER uniqueName, and a SET WINS. A Prime sells as a set, and
+    # `braton_prime_set` is the row carrying the weapon's own gameRef — its
+    # parts carry theirs. Tags do not narrow this beyond that: filtering to
+    # `weapon` lost the Prisma Burst Laser, which they tag `sentinel`.
     by_ref = {}
     for it in items:
         ref = it.get("gameRef")
-        if ref and "mod" in it.get("tags", []):
-            by_ref.setdefault(ref, it["slug"])
+        if not ref:
+            continue
+        if ref in by_ref and "set" not in it.get("tags", []):
+            continue
+        by_ref[ref] = it["slug"]
     mods = resolve(internal_names("data/mods/**/*.yaml"), by_ref, "mods", errors)
+    weapons = resolve(internal_names("data/weapons/**/*.yaml"), by_ref, "weapons", errors)
+    arcanes = resolve(internal_names("data/arcanes/**/*.yaml"), by_ref, "arcanes", errors)
+
+    # AN ADVERSARY WEAPON IS AUCTIONED, NOT SOLD, because the valence bonus it
+    # came out of its Lich with is part of what is being traded — the same
+    # reason a riven is auctioned. Kuva and Tenet are two auction types, so
+    # they are two tables: the table a weapon is in IS the `type=` its link
+    # needs.
+    lich = resolve(internal_names("data/weapons/**/*.yaml"),
+                   {w["gameRef"]: w["slug"] for w in fetch("/lich/weapons") if w.get("gameRef")},
+                   "lich_weapons", errors)
+    sister = resolve(internal_names("data/weapons/**/*.yaml"),
+                     {w["gameRef"]: w["slug"] for w in fetch("/sister/weapons") if w.get("gameRef")},
+                     "sister_weapons", errors)
 
     weapon_refs = {w["gameRef"]: w["slug"] for w in fetch("/riven/weapons") if w.get("gameRef")}
     families = riven_families(weapon_refs, errors)
@@ -158,7 +177,12 @@ def main():
         if slugs:
             stats[ident] = sorted(slugs)[0]
 
+    w_total = len(internal_names("data/weapons/**/*.yaml"))
     print(f"mods           {len(mods):4} / {len(internal_names('data/mods/**/*.yaml'))}")
+    print(f"weapons        {len(weapons):4} / {w_total}")
+    print(f"arcanes        {len(arcanes):4} / {len(internal_names('data/arcanes/**/*.yaml'))}")
+    print(f"lich_weapons   {len(lich):4}")
+    print(f"sister_weapons {len(sister):4}")
     print(f"riven_families {len(families):4}")
     print(f"riven_stats    {len(stats):4} / {len(ours)}")
     for e in errors:
@@ -185,18 +209,28 @@ def main():
         "# source for a number the site already owns.\n"
         "#\n"
         "# AN ABSENT ENTRY IS NOT LISTED THERE, and that is the whole rule for whether\n"
-        "# a link is offered — there is no `tradeable` field anywhere in this repo. All\n"
-        "# four Amalgam cards and both Umbral ones are absent; so are the kitgun\n"
-        "# chambers, whose yaml carries no `internal_name` to join on.\n"
+        "# a link is offered — there is no `tradeable` field anywhere in this repo. The\n"
+        "# Amalgam and Umbral cards are absent, so are the 250 weapons that only ever\n"
+        "# come off a blueprint, and so are the kitgun chambers, whose yaml carries no\n"
+        "# `internal_name` to join on.\n"
         "#\n"
-        "# `riven_weapons` is keyed by our WEAPON ENTRY and valued by the FAMILY's\n"
-        "# auction slug, because that is what a riven fits: Braton Prime and its\n"
-        "# Incarnon form both point at `braton`.\n"
+        "# SOLD OR AUCTIONED, and the table says which. `mods`, `weapons` and `arcanes`\n"
+        "# are item pages. `lich_weapons` and `sister_weapons` are auctions, because the\n"
+        "# valence an adversary weapon came out of its Lich with is part of what is\n"
+        "# being traded — and the table a weapon is in is the `type=` its link needs.\n"
+        "#\n"
+        "# `riven_families` is keyed by our `riven_family` (a weapon with none is its\n"
+        "# own family), because that is what a riven fits: Braton Prime and its Incarnon\n"
+        "# form both reach `braton` through it. The engine walks a weapon to its family.\n"
         "#\n"
         "# `riven_stats` keys are the stat ids in data/rivens/; the slugs are what\n"
         "# `positive_stats` / `negative_stats` take on an auction search.\n"
         "\n"
         + table("mods", mods) + "\n"
+        + table("weapons", weapons) + "\n"
+        + table("arcanes", arcanes) + "\n"
+        + table("lich_weapons", lich) + "\n"
+        + table("sister_weapons", sister) + "\n"
         + table("riven_families", families) + "\n"
         + table("riven_stats", stats)
     )

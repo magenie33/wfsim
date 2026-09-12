@@ -27,9 +27,26 @@ struct Market {
     #[serde(default)]
     mods: BTreeMap<String, String>,
     #[serde(default)]
+    weapons: BTreeMap<String, String>,
+    #[serde(default)]
+    arcanes: BTreeMap<String, String>,
+    #[serde(default)]
+    lich_weapons: BTreeMap<String, String>,
+    #[serde(default)]
+    sister_weapons: BTreeMap<String, String>,
+    #[serde(default)]
     riven_families: BTreeMap<String, String>,
     #[serde(default)]
     riven_stats: BTreeMap<String, String>,
+}
+
+/// The entry a FORM stands in for. A form carries no `internal_name` and no
+/// family of its own, and nothing about a trade changes when one is selected —
+/// the Incarnon Braton Prime is the same card on the same market stall.
+fn base_entry(id: &str) -> Option<&'static crate::weapons_data::WeaponSpec> {
+    let by_id = |want: &str| crate::weapons_data::all().iter().find(|w| w.id == want);
+    let w = by_id(id)?;
+    Some(w.transform_group.as_deref().and_then(by_id).unwrap_or(w))
 }
 
 fn market() -> &'static Market {
@@ -46,17 +63,39 @@ pub fn mod_slug(id: &str) -> Option<&'static str> {
     market().mods.get(id).map(String::as_str)
 }
 
+/// The item slug for a weapon id — a Prime's is its SET, which is the row
+/// that carries the weapon's own uniqueName. Absent for the 250 weapons that
+/// only ever come off a blueprint, and for the adversary weapons below, which
+/// are auctioned instead.
+pub fn weapon_slug(id: &str) -> Option<&'static str> {
+    market().weapons.get(&base_entry(id)?.id).map(String::as_str)
+}
+
+/// The item slug for an arcane id.
+pub fn arcane_slug(id: &str) -> Option<&'static str> {
+    market().arcanes.get(id).map(String::as_str)
+}
+
+/// An adversary weapon's AUCTION — its type and its slug.
+///
+/// Kuva and Tenet weapons are auctioned rather than sold, because the valence
+/// bonus a copy came out of its Lich with is part of what is being traded. The
+/// two are separate auction types, so the table an entry is in IS the `type=`
+/// its link needs; the three weapon tables never overlap (tested).
+pub fn adversary_auction(id: &str) -> Option<(&'static str, &'static str)> {
+    let base = &base_entry(id)?.id;
+    market().lich_weapons.get(base).map(|s| ("lich", s.as_str()))
+        .or_else(|| market().sister_weapons.get(base).map(|s| ("sister", s.as_str())))
+}
+
 /// The riven-auction slug for a weapon id. Absent for a weapon with no riven.
 ///
-/// THE WALK IS OURS, THE SLUG IS THEIRS. A form carries no family of its own,
-/// so it takes the one belonging to the entry it transforms from; a weapon
-/// that declares no family is its own. Doing this here rather than spelling a
-/// row per entry into the generated table means a new form gets its link
-/// without anyone re-running the script.
+/// THE WALK IS OURS, THE SLUG IS THEIRS. A form takes the family of the entry
+/// it transforms from; a weapon that declares no family is its own. Doing this
+/// here rather than spelling a row per entry into the generated table means a
+/// new form gets its link without anyone re-running the script.
 pub fn riven_weapon_slug(id: &str) -> Option<&'static str> {
-    let by_id = |want: &str| crate::weapons_data::all().iter().find(|w| w.id == want);
-    let w = by_id(id)?;
-    let base = w.transform_group.as_deref().and_then(by_id).unwrap_or(w);
+    let base = base_entry(id)?;
     let family = base.riven_family.as_deref().unwrap_or(&base.id);
     market().riven_families.get(family).map(String::as_str)
 }
@@ -98,6 +137,20 @@ mod tests {
         for id in market().mods.keys() {
             assert!(mods.contains(id), "market.yaml names a mod we do not have: {id}");
         }
+        let weapons: Vec<&str> = crate::weapons_data::all().iter().map(|w| w.id.as_str()).collect();
+        for table in [&market().weapons, &market().lich_weapons, &market().sister_weapons] {
+            for id in table.keys() {
+                assert!(weapons.contains(&id.as_str()), "market.yaml names a weapon we do not have: {id}");
+            }
+        }
+        let arcanes: Vec<&str> = crate::arcanes_data::slots()
+            .iter()
+            .flat_map(|s| crate::arcanes_data::slot_pool(s))
+            .map(|a| a.id.as_str())
+            .collect();
+        for id in market().arcanes.keys() {
+            assert!(arcanes.contains(&id.as_str()), "market.yaml names an arcane we do not have: {id}");
+        }
         let families: Vec<&str> = crate::weapons_data::all()
             .iter()
             .map(|w| w.riven_family.as_deref().unwrap_or(&w.id))
@@ -116,6 +169,37 @@ mod tests {
         for id in market().riven_stats.keys() {
             assert!(stats.contains(id), "market.yaml names a riven stat we do not have: {id}");
         }
+    }
+
+    /// ONE MARK PER WEAPON. A weapon is SOLD or AUCTIONED, never both, and the
+    /// page draws one link from whichever table holds it — so a weapon in two
+    /// of them would make the mark's destination depend on lookup order.
+    #[test]
+    fn a_weapon_is_sold_or_auctioned_but_never_both() {
+        let m = market();
+        for id in m.weapons.keys() {
+            assert!(!m.lich_weapons.contains_key(id) && !m.sister_weapons.contains_key(id),
+                "{id} is both sold and auctioned");
+        }
+        for id in m.lich_weapons.keys() {
+            assert!(!m.sister_weapons.contains_key(id), "{id} is both a lich and a sister auction");
+        }
+    }
+
+    #[test]
+    fn a_weapon_and_an_arcane_reach_their_pages() {
+        // A Prime sells as its SET, never as a bare name.
+        assert_eq!(weapon_slug("braton_prime"), Some("braton_prime_set"));
+        // …and a form is the same stall.
+        assert_eq!(weapon_slug("braton_prime_incarnon"), Some("braton_prime_set"));
+        // An adversary weapon is auctioned instead, and carries no item page.
+        assert_eq!(weapon_slug("kuva_bramma"), None);
+        assert_eq!(adversary_auction("kuva_bramma"), Some(("lich", "kuva_bramma")));
+        assert_eq!(adversary_auction("tenet_tetra"), Some(("sister", "tenet_tetra")));
+        // A blueprint-only weapon is listed nowhere, and says so by absence.
+        assert_eq!(weapon_slug("braton"), None);
+        assert_eq!(adversary_auction("braton"), None);
+        assert!(arcane_slug("cascadia_empowered").is_some());
     }
 
     /// A VARIANT AND A FORM REACH THE SAME AUCTIONS, because one riven fits

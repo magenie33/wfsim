@@ -1212,6 +1212,13 @@ pub fn meta_json() -> Value {
                 // the riven card can offer the one price we do not compute.
                 // Absent where no riven exists for it — see `market_data`.
                 "market_riven_slug": wfsim_engine::market_data::riven_weapon_slug(&w.id),
+                // …AND THE WEAPON ITSELF, which is SOLD or AUCTIONED and never
+                // both. A Prime's item is its SET; a Kuva or Tenet weapon has
+                // no item at all, because the valence it rolled is part of what
+                // changes hands, so it is auctioned like a riven.
+                "market_slug": wfsim_engine::market_data::weapon_slug(&w.id),
+                "market_auction": wfsim_engine::market_data::adversary_auction(&w.id)
+                    .map(|(kind, slug)| json!({ "type": kind, "slug": slug })),
                 // WHOSE RIVEN THIS IS. A riven belongs to a weapon FAMILY, not
                 // to one entry in it: *"Riven mods can be used on variants of a
                 // particular weapon, including MK1, Prime, Vandal, Wraith, Dex,
@@ -1746,6 +1753,9 @@ pub fn meta_json() -> Value {
             "si": wfsim_engine::share_order::index_of(&a.id),
             "name": a.name,
             "image": assets().arcanes.get(&a.id),
+            // See the `market_slug` on a mod above — absent means it does not
+            // trade there, and that absence is the whole rule.
+            "market_slug": wfsim_engine::market_data::arcane_slug(&a.id),
             "ranks": ranks,
             "desc_ranks": desc_ranks,
             "max_rank": a.max_rank,

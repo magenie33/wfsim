@@ -6,13 +6,19 @@
 # source for a number the site already owns.
 #
 # AN ABSENT ENTRY IS NOT LISTED THERE, and that is the whole rule for whether
-# a link is offered — there is no `tradeable` field anywhere in this repo. All
-# four Amalgam cards and both Umbral ones are absent; so are the kitgun
-# chambers, whose yaml carries no `internal_name` to join on.
+# a link is offered — there is no `tradeable` field anywhere in this repo. The
+# Amalgam and Umbral cards are absent, so are the 250 weapons that only ever
+# come off a blueprint, and so are the kitgun chambers, whose yaml carries no
+# `internal_name` to join on.
 #
-# `riven_weapons` is keyed by our WEAPON ENTRY and valued by the FAMILY's
-# auction slug, because that is what a riven fits: Braton Prime and its
-# Incarnon form both point at `braton`.
+# SOLD OR AUCTIONED, and the table says which. `mods`, `weapons` and `arcanes`
+# are item pages. `lich_weapons` and `sister_weapons` are auctions, because the
+# valence an adversary weapon came out of its Lich with is part of what is
+# being traded — and the table a weapon is in is the `type=` its link needs.
+#
+# `riven_families` is keyed by our `riven_family` (a weapon with none is its
+# own family), because that is what a riven fits: Braton Prime and its Incarnon
+# form both reach `braton` through it. The engine walks a weapon to its family.
 #
 # `riven_stats` keys are the stat ids in data/rivens/; the slugs are what
 # `positive_stats` / `negative_stats` take on an auction search.
@@ -416,6 +422,219 @@ mods:
   winds_of_purity: winds_of_purity
   xata_invocation: xata_invocation
   zodiac_shred: zodiac_shred
+
+weapons:
+  acceltra_prime: acceltra_prime_set
+  aeolak: aeolak_set
+  afentis_prime: afentis_prime_set
+  afuris_prime: afuris_prime_set
+  akarius_prime: akarius_prime_set
+  akbolto_prime: akbolto_prime_set
+  akbronco_prime: akbronco_prime_set
+  akjagara_prime: akjagara_prime_set
+  aklex_prime: aklex_prime_set
+  akmagnus_prime: akmagnus_prime_set
+  aksomati_prime: aksomati_prime_set
+  akstiletto_prime: akstiletto_prime_set
+  akvasto_prime: akvasto_prime_set
+  alternox_prime: alternox_prime_set
+  ambassador: ambassador_set
+  astilla_prime: astilla_prime_set
+  athodai: athodai_set
+  athodai_prime: athodai_prime_set
+  ballistica_prime: ballistica_prime_set
+  baza_prime: baza_prime_set
+  boar_prime: boar_prime_set
+  boltor_prime: boltor_prime_set
+  braton_prime: braton_prime_set
+  braton_vandal: braton_vandal_set
+  bronco_prime: bronco_prime_set
+  burston_prime: burston_prime_set
+  carmine_penta: carmine_penta_set
+  cedo: cedo_set
+  cedo_prime: cedo_prime_set
+  cernos_prime: cernos_prime_set
+  cinta: cinta_set
+  corinth_prime: corinth_prime_set
+  cortege: cortege_set
+  corvas: corvas_set
+  corvas_prime: corvas_prime_set
+  cyngas: cyngas_set
+  daikyu_prime: daikyu_prime_set
+  dera_vandal: dera_vandal_set
+  dual_decurion: dual_decurion_set
+  efv_5_jupiter: efv_5_jupiter_set
+  efv_8_mars: efv_8_mars_set
+  epitaph: epitaph_set
+  epitaph_prime: epitaph_prime_set
+  euphona_prime: euphona_prime_set
+  fluctus: fluctus_set
+  fulmin_prime: fulmin_prime_set
+  glaxion_vandal: glaxion_vandal
+  gorgon_wraith: gorgon_wraith_set
+  gotva_prime: gotva_prime
+  hikou_prime: hikou_prime_set
+  hystrix_prime: hystrix_prime_set
+  imperator_vandal: imperator_vandal_set
+  karak_wraith: karak_wraith_set
+  knell_prime: knell_prime_set
+  kompressa_prime: kompressa_prime_set
+  larkspur_prime: larkspur_prime_set
+  lato_vandal: lato_vandal_set
+  latron_prime: latron_prime_set
+  latron_wraith: latron_wraith_set
+  lex_prime: lex_prime_set
+  magnus_prime: magnus_prime_set
+  mandonel: mandonel_set
+  mara_detron: mara_detron
+  morgha: morgha_set
+  nagantaka_prime: nagantaka_prime_set
+  opticor_vandal: opticor_vandal
+  pandero_prime: pandero_prime_set
+  panthera_prime: panthera_prime_set
+  paris_prime: paris_prime_set
+  perigale: perigale_set
+  perigale_prime: perigale_prime_set
+  phaedra: phaedra_set
+  phantasma_prime: phantasma_prime_set
+  prisma_angstrum: prisma_angstrum
+  prisma_burst_laser: prisma_burst_laser
+  prisma_dual_decurions: prisma_dual_decurions
+  prisma_gorgon: prisma_gorgon
+  prisma_grakata: prisma_grakata
+  prisma_grinlok: prisma_grinlok
+  prisma_lenz: prisma_lenz
+  prisma_tetra: prisma_tetra
+  prisma_twin_gremlins: prisma_twin_gremlins
+  purgator_1: purgator_1_set
+  pyrana_prime: pyrana_prime_set
+  quanta_vandal: quanta_vandal
+  rakta_ballistica: rakta_ballistica
+  rakta_cernos: rakta_cernos
+  rauta: rauta_set
+  reconifex: reconifex_set
+  riot_848: riot_848_set
+  rubico_prime: rubico_prime_set
+  sancti_castanas: sancti_castanas
+  sancti_magistar: sancti_magistar
+  sancti_tigris: sancti_tigris
+  scourge_prime: scourge_prime_set
+  secura_dual_cestra: secura_dual_cestra
+  secura_penta: secura_penta
+  shedu: shedu_set
+  sicarus_prime: sicarus_prime_set
+  snipetron_vandal: snipetron_vandal_set
+  soma_prime: soma_prime_set
+  spectra_vandal: spectra_vandal_set
+  spira_prime: spira_prime_set
+  sporothrix: sporothrix_set
+  stahlta: stahlta_set
+  steflos: steflos_set
+  stradavar_prime: stradavar_prime_set
+  strun_prime: strun_prime_set
+  strun_wraith: strun_wraith_set
+  supra_vandal: supra_vandal
+  sybaris_prime: sybaris_prime_set
+  synoid_gammacor: synoid_gammacor
+  synoid_simulor: synoid_simulor
+  telos_akbolto: telos_akbolto
+  telos_boltor: telos_boltor
+  tenora_prime: tenora_prime_set
+  tiberon_prime: tiberon_prime_set
+  tigris_prime: tigris_prime_set
+  trumna_prime: trumna_prime_set
+  twin_vipers_wraith: twin_vipers_wraith_set
+  vadarya_prime: vadarya_prime_set
+  vasto_prime: vasto_prime_set
+  vaykor_hek: vaykor_hek
+  vaykor_marelok: vaykor_marelok
+  vectis_prime: vectis_prime_set
+  velocitus: velocitus_set
+  velox: velox_set
+  velox_prime: velox_prime_set
+  vesper_77: vesper_77_set
+  viper_wraith: viper_wraith
+  vulkar_wraith: vulkar_wraith
+  zakti_prime: zakti_prime_set
+  zhuge_prime: zhuge_prime_set
+  zylok: zylok
+  zylok_prime: zylok_prime_set
+
+arcanes:
+  akimbo_slip_shot: akimbo_slip_shot
+  cascadia_accuracy: cascadia_accuracy
+  cascadia_empowered: cascadia_empowered
+  cascadia_flare: cascadia_flare
+  cascadia_overcharge: cascadia_overcharge
+  conjunction_voltage: conjunction_voltage
+  fractalized_reset: fractalized_reset
+  longbow_sharpshot: longbow_sharpshot
+  melee_afflictions: melee_afflictions
+  melee_animosity: melee_animosity
+  melee_assimilation: melee_assimilation
+  melee_careen: melee_careen
+  melee_doughty: melee_doughty
+  melee_vortex: melee_vortex
+  primary_blight: primary_blight
+  primary_bulwark: primary_bulwark
+  primary_compression: primary_compression
+  primary_crux: primary_crux
+  primary_deadhead: primary_deadhead
+  primary_debilitate: primary_debilitate
+  primary_dexterity: primary_dexterity
+  primary_exhilarate: primary_exhilarate
+  primary_frostbite: primary_frostbite
+  primary_merciless: primary_merciless
+  primary_obstruct: primary_obstruct
+  primary_overcharge: primary_overcharge
+  primary_plated_round: primary_plated_round
+  secondary_cryogenic: secondary_cryogenic
+  secondary_deadhead: secondary_deadhead
+  secondary_dexterity: secondary_dexterity
+  secondary_encumber: secondary_encumber
+  secondary_enervate: secondary_enervate
+  secondary_fortifier: secondary_fortifier
+  secondary_irradiate: secondary_irradiate
+  secondary_kinship: secondary_kinship
+  secondary_merciless: secondary_merciless
+  secondary_outburst: secondary_outburst
+  secondary_shiver: secondary_shiver
+  secondary_surge: secondary_surge
+  shotgun_vendetta: shotgun_vendetta
+
+lich_weapons:
+  kuva_ayanga: kuva_ayanga
+  kuva_brakk: kuva_brakk
+  kuva_bramma: kuva_bramma
+  kuva_chakkhurr: kuva_chakkhurr
+  kuva_drakgoon: kuva_drakgoon
+  kuva_grattler: kuva_grattler
+  kuva_hek: kuva_hek
+  kuva_hind: kuva_hind
+  kuva_karak: kuva_karak
+  kuva_kohm: kuva_kohm
+  kuva_kraken: kuva_kraken
+  kuva_nukor: kuva_nukor
+  kuva_ogris: kuva_ogris
+  kuva_quartakk: kuva_quartakk
+  kuva_seer: kuva_seer
+  kuva_sobek: kuva_sobek
+  kuva_tonkor: kuva_tonkor
+  kuva_twin_stubbas: kuva_twin_stubbas
+  kuva_zarr: kuva_zarr
+
+sister_weapons:
+  tenet_arca_plasmor: tenet_arca_plasmor
+  tenet_cycron: tenet_cycron
+  tenet_detron: tenet_detron
+  tenet_diplos: tenet_diplos
+  tenet_envoy: tenet_envoy
+  tenet_flux_rifle: tenet_flux_rifle
+  tenet_glaxion: tenet_glaxion
+  tenet_plinx: tenet_plinx
+  tenet_quanta: tenet_quanta
+  tenet_spirex: tenet_spirex
+  tenet_tetra: tenet_tetra
 
 riven_families:
   AX-52: ax_52
