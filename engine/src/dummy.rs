@@ -7871,6 +7871,7 @@ fn spread_hit(
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -7953,7 +7954,18 @@ fn spread_hit(
     // component — see `DamageVector::dominant`. Computed only while tracing.
     ledger::settle(
         r, rec, t, inst.target, shares.dominant(),
-        if inst.headshot { PopKind::Head } else { PopKind::Direct },
+        // WHAT THE GAME DRAWS THIS AS, and the crit half of it is carried the
+        // way the headshot is: the crit multiplier is already inside
+        // `raw_per_bucket`, so a body a shot punched through takes the crit and
+        // was POPPING A WHITE NUMBER for it. The record is the one output that
+        // can be laid beside a recording, and it was drawing an orange hit as a
+        // plain one on every body but the aimed one.
+        match (inst.headshot, crit_tier > 0) {
+            (true, true) => PopKind::HeadCrit,
+            (true, false) => PopKind::Head,
+            (false, true) => PopKind::Crit,
+            (false, false) => PopKind::Direct,
+        },
         &breakdown, settled, Some(&foe.debuffs),
         ledger::Clock::Hit,
         || Instance {
@@ -7981,6 +7993,10 @@ fn spread_hit(
                 (crate::record::Factor::BodyPart, inst.part_factor),
             ]),
             head: inst.headshot,
+            // …AND THE TIER, so the row states the multiplier it was built
+            // with rather than leaving a reader to infer it from the size.
+            crit_tier,
+            crit_damage: crit_multiplier,
             ..Instance::default()
         },
     );
@@ -8118,6 +8134,7 @@ struct SpreadShot {
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8156,6 +8173,7 @@ fn spread_from_follow_through(
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8185,7 +8203,7 @@ fn spread_from_follow_through(
         };
         let foe = &mut others[idx];
         let landed = spread_hit(
-            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition,
+            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
             modded_base, status_chance, forced, vector, params, ap, gal, arc, r, rec, d, t,
             SpreadBy::FollowThrough,
         );
@@ -8202,6 +8220,7 @@ fn spread_from_punch_through(
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8303,6 +8322,7 @@ fn spread_from_punch_through(
             raw_per_bucket,
             shares,
             crit_multiplier,
+            crit_tier,
             attrition,
             modded_base,
             status_chance,
@@ -8348,6 +8368,7 @@ fn spread_from_ricochet(
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8387,6 +8408,7 @@ fn spread_from_ricochet(
             raw_per_bucket,
             shares,
             crit_multiplier,
+            crit_tier,
             attrition,
             modded_base,
             status_chance,
@@ -8433,6 +8455,7 @@ fn spread_from_echo(
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8489,6 +8512,7 @@ fn spread_from_echo(
             raw_per_bucket,
             shares,
             crit_multiplier,
+            crit_tier,
             attrition,
             modded_base,
             status_chance,
@@ -8535,6 +8559,7 @@ fn spread_from_tendrils(
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8587,6 +8612,7 @@ fn spread_from_tendrils(
             raw_per_bucket,
             shares,
             crit_multiplier,
+            crit_tier,
             attrition,
             modded_base,
             status_chance,
@@ -8636,6 +8662,7 @@ fn spread_from_blast(
     raw_per_bucket_per_falloff: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8657,6 +8684,7 @@ fn spread_from_blast(
         raw_per_bucket_per_falloff,
         shares,
         crit_multiplier,
+        crit_tier,
         attrition,
         modded_base,
         status_chance,
@@ -8688,6 +8716,7 @@ fn blast_at(
     raw_per_bucket_per_falloff: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8728,6 +8757,7 @@ fn blast_at(
             raw_per_bucket_per_falloff,
             shares,
             crit_multiplier,
+            crit_tier,
             attrition,
             modded_base,
             status_chance,
@@ -8771,6 +8801,7 @@ fn spread_from_seeds(
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
+    crit_tier: u32,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -8837,6 +8868,7 @@ fn spread_from_seeds(
             raw_per_bucket,
             shares,
             crit_multiplier,
+            crit_tier,
             attrition,
             modded_base,
             status_chance,
@@ -16454,6 +16486,7 @@ pub fn run_once_traced(
                         },
                         shares,
                         crit_multiplier,
+                        tier,
                         attrition,
                         spread_mb,
                         status_chance,
@@ -16492,6 +16525,7 @@ pub fn run_once_traced(
                             },
                             shares,
                             crit_multiplier,
+                            tier,
                             attrition,
                             spread_mb,
                             status_chance,
@@ -16568,6 +16602,7 @@ pub fn run_once_traced(
                             raw_per_bucket: body_only(raw / bucket),
                             shares,
                             crit_multiplier,
+                            crit_tier: tier,
                             attrition,
                             modded_base: spread_mb,
                             status_chance,
@@ -16587,6 +16622,7 @@ pub fn run_once_traced(
                             body_only(raw / bucket),
                             shares,
                             crit_multiplier,
+                            tier,
                             attrition,
                             spread_mb,
                             status_chance,
@@ -16611,6 +16647,7 @@ pub fn run_once_traced(
                         body_only(raw / bucket),
                         shares,
                         crit_multiplier,
+                        tier,
                         attrition,
                         spread_mb,
                         status_chance,
@@ -16645,6 +16682,7 @@ pub fn run_once_traced(
                             raw / bucket,
                             shares,
                             crit_multiplier,
+                            tier,
                             attrition,
                             spread_mb,
                             status_chance,
@@ -16667,6 +16705,7 @@ pub fn run_once_traced(
                             raw / bucket,
                             shares,
                             crit_multiplier,
+                            tier,
                             attrition,
                             spread_mb,
                             status_chance,
@@ -16695,6 +16734,7 @@ pub fn run_once_traced(
                             body_only(raw / bucket),
                             shares,
                             crit_multiplier,
+                            tier,
                             attrition,
                             spread_mb,
                             status_chance,
@@ -17445,6 +17485,7 @@ pub fn run_once_traced(
                 s.raw_per_bucket,
                 s.shares,
                 s.crit_multiplier,
+                s.crit_tier,
                 s.attrition,
                 s.modded_base,
                 s.status_chance,
@@ -17472,6 +17513,7 @@ pub fn run_once_traced(
                 s.raw_per_bucket,
                 s.shares,
                 s.crit_multiplier,
+                s.crit_tier,
                 s.attrition,
                 s.modded_base,
                 s.status_chance,
@@ -20689,6 +20731,66 @@ mod tests {
             reaching > bare,
             "beam range buys bodies in a column: {reaching} against {bare}"
         );
+    }
+
+    /// ONE ROUND, ONE ANSWER, ALL THE WAY DOWN THE COLUMN.
+    ///
+    /// Punch through is the same round still flying at one height, so a round
+    /// that entered a head enters the head of whatever is behind it and one
+    /// that entered a body stays a body shot the whole way. The DAMAGE has said
+    /// so since the head factor started travelling inside `raw_per_bucket`; the
+    /// RECORD did not, because a spread row was built as Head-or-Direct and
+    /// never Crit — so a body a shot punched through took the crit and popped a
+    /// white number for it.
+    ///
+    /// ASSERTED ON THE STREAM, not on a total: the question is whether the rows
+    /// one tick writes agree, and a sum cannot be asked that.
+    #[test]
+    fn one_round_pops_the_same_kind_of_number_on_every_body_it_crosses() {
+        let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
+        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(6.0);
+        arena.others = (1..=4)
+            .map(|i| crate::formation::FoeSpec {
+                id: String::new(),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(0.0, 3.0 * f64::from(i)),
+            })
+            .collect();
+        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        let rec = record(&p, 0x5EED, 0.0, 6.0, 60_000, 0);
+        // WHAT EACH INSTANT POPPED — the round's own rows only, since a status
+        // tick is on its own clock and not on this one.
+        let mut per_tick: std::collections::BTreeMap<u64, std::collections::BTreeSet<String>> =
+            std::collections::BTreeMap::new();
+        let mut crits = 0;
+        for e in rec.events() {
+            let crate::record::Kind::Damage(d) = &e.kind else { continue };
+            if !matches!(
+                d.origin,
+                crate::record::Origin::Own | crate::record::Origin::PunchThrough
+            ) {
+                continue;
+            }
+            if d.origin == crate::record::Origin::PunchThrough && d.crit_tier > 0 {
+                crits += 1;
+            }
+            per_tick
+                .entry((e.t * 1000.0).round() as u64)
+                .or_default()
+                .insert(format!("{:?}", d.kind));
+        }
+        assert!(per_tick.len() > 20, "the fight ran: {} ticks", per_tick.len());
+        let split: Vec<_> = per_tick.iter().filter(|(_, k)| k.len() > 1).collect();
+        assert!(
+            split.is_empty(),
+            "one round, one answer — these instants disagreed: {split:?}"
+        );
+        // …AND THE CRIT IS ON THE ROW, not merely inside the number. Without
+        // this the assertion above passes on a stream that calls every punched
+        // hit a plain one.
+        assert!(crits > 0, "a punched body's crit is drawn as a crit");
     }
 
     /// A PUNCHED BODY'S BURN IS THE SAME SIZE AS THE AIMED BODY'S.
