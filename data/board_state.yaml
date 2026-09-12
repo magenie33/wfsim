@@ -6,22 +6,19 @@
 # the page FETCHES, and durably in the `scores` table they were published from.
 #
 # `submissions` paired with the library's own size (`/api/board/pending`) is how
-# a STATIC board says how far behind it is. `listed` and `held` say how much of
-# what it scored it is showing — a board that reports only what it shows cannot
-# say how much it looked at.
+# a STATIC board says how far behind it is. `listed` is every row it scored,
+# because every scored row is published — how deep to read is the reader's
+# question and the page answers it (docs/BOARD.md).
 boards:
   group_clear:
-    submissions: 6849
-    listed: 3301
-    held: 8092
-    scored_at_epoch_seconds: 1789172214
+    submissions: 6921
+    listed: 11441
+    scored_at_epoch_seconds: 1789186072
   single_target:
-    submissions: 6849
-    listed: 5716
-    held: 6689
-    scored_at_epoch_seconds: 1789172216
+    submissions: 6921
+    listed: 12558
+    scored_at_epoch_seconds: 1789186073
   single_target_demolisher:
-    submissions: 6849
-    listed: 3772
-    held: 8633
-    scored_at_epoch_seconds: 1789172217
+    submissions: 6921
+    listed: 12558
+    scored_at_epoch_seconds: 1789186075
