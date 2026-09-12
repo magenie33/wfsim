@@ -73,13 +73,12 @@ attack:
   # Module attacks 3 and 4, which carry their OWN crit and status rather than
   # the shell's.
   #
-  # THE BOMBLET'S FALLOFF IS THE MODULE'S, AND THE PAGE DISAGREES. Attack 4
-  # reads `Falloff = { EndRange = 3, Reduction = 0.9, StartRange = 0 }` while
-  # the page says "Explosion and bomblets have linear Damage Falloff from 100%
-  # to 50%" — 0.5, which is the SHELL's own number swept over both. The Kuva
-  # Bramma is the one page that states the two separately, and there the module
-  # matches both; that is what settles which of these two is the generalisation.
-  # A measurement would settle it outright.
+  # THE BOMBLET'S FALLOFF IS THE PAGE'S: "Explosion and bomblets have linear
+  # Damage Falloff from 100% to 50% from central impact", which names the
+  # bomblets rather than sweeping them in — the same sentence the Phantasma's
+  # page writes of its explosion ALONE, where the bomblets then have none. The
+  # module's attack 4 says `Reduction = 0.9` and loses: page before module
+  # (docs/DATA_SOURCES.md).
   cluster:
     count: 6
     damage: { impact: 15.0 }
@@ -90,7 +89,7 @@ attack:
       damage: { blast: 50.0 }
       radius_m: 3.0
       falloff_start_m: 0.0
-      falloff_reduction: 0.9
+      falloff_reduction: 0.5
       crit_chance: 0.15
       crit_multiplier: 2.0
       status_chance: 0.1

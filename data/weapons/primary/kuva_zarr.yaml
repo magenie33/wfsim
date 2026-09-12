@@ -91,13 +91,10 @@ attack:
   # point of impact". Module attacks 3 and 4, which carry the shell's own crit
   # and status.
   #
-  # THE BOMBLET'S FALLOFF IS THE MODULE'S, AND THE PAGE DISAGREES. Attack 4
-  # reads `Falloff = { EndRange = 3, Reduction = 0.1, StartRange = 0 }` — barely
-  # any falloff — while the page says "Explosion and bomblets have linear Damage
-  # Falloff from 100% to 30%", which is the SHELL's 0.7 swept over both. Same
-  # shape as the base Zarr's, and the Kuva Bramma's page — the one that states
-  # the two separately — agrees with its module on both. A measurement would
-  # settle it outright.
+  # THE BOMBLET'S FALLOFF IS THE PAGE'S: "Explosion and bomblets have linear
+  # Damage Falloff from 100% to 30% from central impact", which names the
+  # bomblets. The module's attack 4 says `Reduction = 0.1` — barely any falloff
+  # at all — and loses: page before module (docs/DATA_SOURCES.md).
   cluster:
     count: 3
     damage: { impact: 15.0 }
@@ -108,7 +105,7 @@ attack:
       damage: { blast: 50.0 }
       radius_m: 3.0
       falloff_start_m: 0.0
-      falloff_reduction: 0.1
+      falloff_reduction: 0.7
       crit_chance: 0.25
       crit_multiplier: 2.5
       status_chance: 0.31
