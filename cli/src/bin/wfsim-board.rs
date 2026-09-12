@@ -154,7 +154,6 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
     let mut row = json!({
         "benchmark": bench_id,
         "mode": r.mode,
-        "source": "submissions",
         "score": r.score,
         // The number stays EXACT and the string beside it is what the page
         // prints. Formatting lives in `boards_data::format_score`, so "four
@@ -2320,11 +2319,10 @@ mod page_row_tests {
         let v = page_row("single_target", &row(None));
         assert!(v.get("riven").is_none(), "{v}");
         // …and the fields a page reads by name are all still there, so the
-        // extraction did not quietly drop one of the other nine.
+        // extraction did not quietly drop one of the other eight.
         for k in [
             "benchmark",
             "mode",
-            "source",
             "score",
             "shown",
             "mods",
