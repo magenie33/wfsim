@@ -259,7 +259,7 @@ ui:
   "the cards this weapon uses most come first": "这把武器最常用的卡排在前面"
   "the matrix shows the first {n}": "矩阵只显示前 {n} 个"
   "the record is open in its own window": 战斗记录已在它自己的窗口里打开。
-  "Bring it back here": 收回本页
+  "Show me": 切到那个窗口
   "Open in its own window": 在新窗口打开
   "Open the record": 打开战斗记录
   "one row per number the game popped — it opens in a window of its own, because the table is wider than this column": "每一个游戏里跳出的伤害数字一行 —— 它会在自己的窗口里打开，因为这张表比这一栏宽得多"
@@ -491,6 +491,7 @@ ui:
   "Time: new weapons, new mechanics, and the in-game measurements every golden test is calibrated against.":
     时间：新武器、新机制，以及校准每一条 golden test 所需的游戏内实测。
   "Toggle light / dark": 切换亮色 / 暗色
+  "Toggle theme": 切换主题
   "Tools": "工具"
   "Toxic Sequence, the Acrid-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Toxic Sequence」，Acrid 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Transforms": 形态切换

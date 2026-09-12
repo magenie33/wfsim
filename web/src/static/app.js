@@ -1740,13 +1740,19 @@ applyCommunityOrder();
 (function () {
   const saved = localStorage.getItem("wfsim-theme");
   if (saved) document.documentElement.setAttribute("data-theme", saved);
-  $("theme-toggle").addEventListener("click", () => {
+  // ONE SETTING, WHEREVER IT IS THROWN. The record's own window is a second
+  // document of this app, so the flip reaches it too — and it carries the same
+  // button, which calls this. A window that came up light under a page the
+  // reader had set to dark is the same setting answered twice.
+  window.flipTheme = () => {
     const cur = document.documentElement.getAttribute("data-theme");
     const dark = cur === "dark" || (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
     const next = dark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("wfsim-theme", next);
-  });
+    syncRecordChrome();
+  };
+  $("theme-toggle").addEventListener("click", () => flipTheme());
 })();
 
 async function init() {
@@ -17475,11 +17481,33 @@ const REC_PAGE = 500;
 /// `recordBody`/`wireRecord` against the child's host, so there is ONE
 /// implementation of the table and the window is only where it is drawn.
 let recWin = null;
+/// WHETHER THE BROWSER REFUSED THE WINDOW. The record belongs in a window of its
+/// own and the panel is not a second home for it — so the table is drawn in this
+/// page only when there is nowhere else for it to go.
+let recPopupBlocked = false;
 /// The result the open record explains, so the window can be repainted — and
 /// handed back to the panel — without the caller that opened it.
 let recordResult = null;
 
 const recWinOpen = () => !!(recWin && !recWin.closed && recWin.document);
+
+/// THE READER'S OWN THEME AND LANGUAGE, carried into the record's window rather
+/// than re-derived there — the page decides both and a second answer would be a
+/// second setting. `data-theme` is the one that matters and was the one missing:
+/// the window copied only the class, so an explicitly DARK page opened a light
+/// window and the toggle in the topbar did not reach it.
+///
+/// Called on open and again on every flip, because the window outlives both.
+function syncRecordChrome() {
+  if (!recWinOpen()) return;
+  const src = document.documentElement, dst = recWin.document.documentElement;
+  const theme = src.getAttribute("data-theme");
+  if (theme) dst.setAttribute("data-theme", theme);
+  else dst.removeAttribute("data-theme");
+  dst.lang = src.lang || "en";
+  dst.className = src.className;
+  recWin.document.body.className = document.body.className;
+}
 
 /// WHERE THE TABLE GOES: the child's host while a window is open, this page's
 /// otherwise. Every paint goes through it, so nothing else has to know.
@@ -17498,9 +17526,12 @@ function recordHostEl() {
 function openRecordWindow() {
   if (recWinOpen()) { recWin.focus(); return; }
   const w = window.open("", "wfsim-record", "width=1500,height=900");
-  // A BLOCKED POPUP IS NOT AN ERROR AND NOT A SILENCE: the table stays where it
-  // is and the panel says why, which is the only outcome the reader can act on.
-  if (!w) { recWin = null; paintRecord(recordResult); return; }
+  // A BLOCKED POPUP IS NOT AN ERROR AND NOT A SILENCE: the table falls back into
+  // the panel and the panel says why, which is the only outcome the reader can
+  // act on. It is ALSO the one case the table may be drawn there at all — see
+  // `paintRecord`.
+  if (!w) { recWin = null; recPopupBlocked = true; paintRecord(recordResult); return; }
+  recPopupBlocked = false;
   recWin = w;
   const doc = w.document;
   doc.open();
@@ -17520,16 +17551,19 @@ function openRecordWindow() {
         .map((l) => `<link rel="stylesheet" href="${escHtml(l.href)}">`).join("")
     + `<body><header class="recwin-top"><span class="brand">WF<span>Sim</span></span>`
     + `<span class="recwin-title">${escHtml(tr("Combat record"))}</span>`
-    + `<span class="recwin-sub" id="rec-what"></span></header>`
+    + `<span class="recwin-sub" id="rec-what"></span>`
+    // THE SAME BUTTON AS THE TOPBAR'S, calling the same flip: the window is a
+    // page of this app and the light/dark choice is one setting, so it is
+    // thrown from either document and both follow.
+    + `<button class="ghost-btn" id="rec-theme" title="${escHtml(tr("Toggle light / dark"))}"`
+    + ` aria-label="${escHtml(tr("Toggle theme"))}">◐</button></header>`
     + `<div class="rec recwin" id="rec-host"></div>`);
   doc.close();
-  // THE READER'S OWN THEME AND LANGUAGE, copied rather than re-derived — the
-  // page decides both and a second answer here would be a second setting.
-  doc.documentElement.lang = document.documentElement.lang || "en";
-  doc.documentElement.className = document.documentElement.className;
-  doc.body.className = document.body.className;
-  // CLOSING IT HANDS THE TABLE BACK, rather than leaving the panel showing a
-  // window that is not there any more.
+  syncRecordChrome();
+  const th = doc.getElementById("rec-theme");
+  if (th) th.onclick = () => flipTheme();
+  // CLOSING IT HANDS BACK THE OFFER, not the table: the panel goes to the button
+  // that opens the window again, which is the only thing this column ever shows.
   w.addEventListener("pagehide", () => {
     recWin = null;
     paintRecord(recordResult);
@@ -17567,7 +17601,16 @@ function paintRecord(r) {
     // previous run would be drawn under the new one's heading.
     const st = recordState && recordResult && recordState.key === recordKey(recordResult)
       ? recordState : null;
-    host.innerHTML = st ? recordBody(st) : recordIdle();
+    // THE TABLE IS THE WINDOW'S, AND ONLY THE WINDOW'S. This column is one
+    // column wide and the record is neither — so a loaded record does not get
+    // drawn here just because it is in hand. The panel keeps the button, and
+    // closing the window gives the button back rather than the table.
+    //
+    // THE ONE EXCEPTION IS A REFUSED POPUP, because then there is nowhere else
+    // for it to go and a feature the browser blocked must not simply vanish.
+    const mine = host === $("rec-host");
+    const draw = st && (!mine || recPopupBlocked);
+    host.innerHTML = draw ? recordBody(st) : recordIdle();
     wireRecord(recordResult, host);
   }
   // …AND THE PANEL SAYS WHERE IT WENT. An empty block where the table belongs
@@ -17576,10 +17619,12 @@ function paintRecord(r) {
   if (inline && inline !== host) {
     inline.innerHTML = `<div class="rec-idle">`
       + `<span class="sim-hint">${escHtml(tr("the record is open in its own window"))}</span>`
-      + `<button class="ghost-btn small" id="rec-back">${escHtml(tr("Bring it back here"))}</button>`
+      + `<button class="ghost-btn small" id="rec-focus">${escHtml(tr("Show me"))}</button>`
       + `</div>`;
-    const back = inline.querySelector("#rec-back");
-    if (back) back.onclick = () => { if (recWinOpen()) recWin.close(); recWin = null; paintRecord(recordResult); };
+    // …AND THE WAY BACK IS TO THE WINDOW, not away from it: a window behind the
+    // browser reads exactly like one that never opened.
+    const focus = inline.querySelector("#rec-focus");
+    if (focus) focus.onclick = () => { if (recWinOpen()) recWin.focus(); else paintRecord(recordResult); };
   }
 }
 

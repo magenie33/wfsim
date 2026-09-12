@@ -519,7 +519,9 @@ const win = await evaluate(`(() => {
     // …AND OUT OF THIS ONE, which is the whole point: a table that is drawn in
     // both places has moved nothing off the page that was freezing.
     handedOver: !document.querySelector('#rec-host table.rec-t'),
-    back: !!document.querySelector('#rec-back'),
+    // …AND THE PANEL SAYS WHERE IT WENT, with the way back being TO the window:
+    // one behind the browser reads exactly like one that never opened.
+    says: !!document.querySelector('#rec-focus'),
   };
 })()`, { userGesture: true });
 
@@ -546,18 +548,54 @@ check(`${tag} ...wearing this page's own stylesheet, LOADED and not merely linke
 check(`${tag} ...and dressed like a page of this site: wordmark, heading, and the fight it explains`,
   win.brand === "WFSim" && !!win.heading && !!win.what,
   JSON.stringify({ brand: win.brand, heading: win.heading, what: win.what }));
-check(`${tag} ...drawn THERE and not here`,
-  win.handedOver === true && win.back === true, JSON.stringify(win));
+check(`${tag} ...drawn THERE and not here, with the panel saying where it went`,
+  win.handedOver === true && win.says === true, JSON.stringify(win));
 
-const back = await evaluate(`(() => {
-  // GUARDED, so a build where the window never opened FAILS the assertion
-  // rather than throwing out of the check — a crash reports the wrong thing.
-  const b = document.querySelector('#rec-back');
-  if (b) b.click();
-  return { clicked: !!b, table: !!document.querySelector('#rec-host table.rec-t'),
-           closed: !recWin || recWin.closed };
+// THE READER'S LIGHT/DARK CHOICE IS ONE SETTING, and the window is a second
+// document of this app rather than a second answer. It copied only the class
+// and `data-theme` is where the choice lives, so an explicitly dark page opened
+// a light window — and the topbar's toggle never reached it.
+const theme = await evaluate(`(() => {
+  const flip = () => document.getElementById('theme-toggle').click();
+  const read = () => {
+    const d = recWin && recWin.document;
+    const head = d && d.querySelector('.recwin-top');
+    return {
+      page: document.documentElement.getAttribute('data-theme'),
+      win: d ? d.documentElement.getAttribute('data-theme') : null,
+      bg: head ? getComputedStyle(head).backgroundColor : null,
+    };
+  };
+  const before = read();
+  flip();
+  const after = read();
+  return { before, after, sameToggle: !!(recWin && recWin.document.getElementById('rec-theme')) };
 })()`);
-check(`${tag} ...and comes back when it is closed`,
-  back.clicked === true && back.table === true && back.closed === true, JSON.stringify(back));
+check(`${tag} ...wearing the reader's own light/dark choice, and following it when it changes`,
+  theme.after.page === theme.after.win && theme.before.win !== theme.after.win
+  && theme.after.bg !== theme.before.bg,
+  JSON.stringify(theme));
+check(`${tag} ...and carrying the same toggle, so the choice can be thrown from either`,
+  theme.sameToggle === true);
+
+// CLOSING IT GIVES THE BUTTON BACK, NOT THE TABLE. The panel is one column wide
+// and the record is not — so a loaded record does not get drawn there just
+// because it is in hand, and the reader who closes the window is offered it
+// again rather than handed the thing they closed.
+const closed = await evaluate(`(() => {
+  if (recWin && !recWin.closed) recWin.close();
+  return new Promise((res) => setTimeout(() => {
+    const h = document.getElementById('rec-host');
+    res({
+      gone: !recWin || recWin.closed,
+      table: !!h.querySelector('table.rec-t'),
+      offer: !!h.querySelector('#rec-load'),
+      text: (h.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40),
+    });
+  }, 1200));
+})()`);
+check(`${tag} ...and closing it offers the window again rather than inlining the table`,
+  closed.gone === true && closed.table === false && closed.offer === true,
+  JSON.stringify(closed));
 
 await finish("every row of the record produces its own number");
