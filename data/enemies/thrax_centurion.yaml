@@ -48,13 +48,23 @@ body_parts:
     is_head: true
     crit_bonus: true
 
+# THE SECOND HALF OF A THRAX'S DEATH, and the fight's own switch decides
+# whether it happens (`spectral_form` in the scenario, OFF by default: every
+# number this app has ever published is the physical form alone).
+#
+# "Destroying the physical form reverts it into a spectral form with 40% of the
+# physical form's health. Void damage deals 10x damage to the spectral form
+# (100x while it is consuming an enemy)."
+spectral_form:
+  health_share: 0.40
+  # SECONDS BEFORE THE SPECTRE STANDS UP. ASSUMED, not measured — nothing
+  # published states it, and it decides only when the bar reappears, since no
+  # weapon can touch it either way.
+  delay_seconds: 2.0
+
 # Raw wiki text, not yet modeled in the engine.
 mechanics:
   overguard_crowd_control_immunity: true
-  # spectral_form: >-
-  # Destroying the physical form reverts it into a spectral form with 40% of
-  # the physical form's health. Void damage deals 10x damage to the spectral
-  # form (100x while it is consuming an enemy).
   focus_on_kill: 2500
   # attacks: >-
   # Levitates and dashes three times in quick succession spinning its Hespar

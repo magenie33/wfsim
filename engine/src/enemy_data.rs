@@ -104,6 +104,21 @@ pub struct BodyPartSpec {
     pub crit_bonus: bool,
 }
 
+/// A THRAX'S SPECTRAL FORM — the body that stands up where the physical one
+/// fell. *"Destroying the physical form reverts it into a spectral form with
+/// 40% of the physical form's health. Void damage deals 10x damage to the
+/// spectral form"*, and Void damage is the OPERATOR's: no weapon in this
+/// roster can touch it, which is why a fight with it on has a ceiling of zero
+/// kills for every gun.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct SpectralForm {
+    /// Its health, as a share of the physical form's.
+    pub health_share: f64,
+    /// Seconds between the physical form falling and the spectre standing up.
+    /// ASSUMED — nothing publishes it.
+    pub delay_seconds: f64,
+}
+
 /// An enemy entry from `data/enemies/`. Unknown YAML fields (source,
 /// mechanics, notes, ...) are ignored by the loader.
 #[derive(Debug, Clone, Deserialize)]
@@ -212,6 +227,10 @@ pub struct EnemySpec {
     /// rather than a type, so it says so on its own.
     #[serde(default)]
     pub cannot_be_frozen: bool,
+    /// THE SECOND HALF OF A THRAX'S DEATH — see [`SpectralForm`]. `None` on a
+    /// unit that dies once, which is every other enemy in the roster.
+    #[serde(default)]
+    pub spectral_form: Option<SpectralForm>,
     /// HOW MUCH HEALTH A SQUAD ADDS, indexed by `squad_size - 1`, so `[0]` is
     /// solo and is always 0. Empty on every unit whose health is what it is
     /// however many people are shooting it — which is all of them but a
@@ -362,6 +381,11 @@ impl EnemySpec {
                 impact: c.impact,
             }),
             cannot_be_frozen: self.cannot_be_frozen,
+            // OFF UNLESS THE FIGHT ASKS. `spectral_form` is what the second
+            // half of this unit's death WOULD be; a fight that has never heard
+            // of the switch cannot get it, which is why this is `None` here and
+            // filled by the caller rather than read off the spec.
+            spectral: None,
             steel_path,
             eximus,
             can_be_eximus: self.can_be_eximus,
