@@ -16112,6 +16112,14 @@ pub fn run_once_traced(
                     // whose page never says either way and which therefore
                     // multiplies the instance and leaves `mb_live` alone.
                     * cc_mult;
+                // WHAT A SPREAD'S STATUSES BURN OFF, and it is THIS number
+                // rather than the bare `modded_base` every spread was handed.
+                // `spread_hit` multiplies the arcane ratio back in, so the one
+                // term is divided out here and the rest — the merge above, the
+                // Chamber — travels. A merged beam's DoT was `beam_merge` times
+                // bigger on the body it was aimed at than on the body BEHIND
+                // it, which is the same hit still flying.
+                let spread_mb = mb_live / arc_ratio;
                 // The direct hit always carries CO. An explosion does NOT by
                 // default — the mods say direct hits only — but the engine
                 // supports the case the mods forbid, because some entries do it
@@ -16382,7 +16390,7 @@ pub fn run_once_traced(
                         shares,
                         crit_multiplier,
                         attrition,
-                        modded_base,
+                        spread_mb,
                         status_chance,
                         forced,
                         &qvec,
@@ -16420,7 +16428,7 @@ pub fn run_once_traced(
                             shares,
                             crit_multiplier,
                             attrition,
-                            modded_base,
+                            spread_mb,
                             status_chance,
                             forced,
                             &qvec,
@@ -16496,7 +16504,7 @@ pub fn run_once_traced(
                             shares,
                             crit_multiplier,
                             attrition,
-                            modded_base,
+                            modded_base: spread_mb,
                             status_chance,
                             forced: forced.to_vec(),
                             vector: qvec,
@@ -16515,7 +16523,7 @@ pub fn run_once_traced(
                             shares,
                             crit_multiplier,
                             attrition,
-                            modded_base,
+                            spread_mb,
                             status_chance,
                             forced,
                             &qvec,
@@ -16539,7 +16547,7 @@ pub fn run_once_traced(
                         shares,
                         crit_multiplier,
                         attrition,
-                        modded_base,
+                        spread_mb,
                         status_chance,
                         forced,
                         &qvec,
@@ -16573,7 +16581,7 @@ pub fn run_once_traced(
                             shares,
                             crit_multiplier,
                             attrition,
-                            modded_base,
+                            spread_mb,
                             status_chance,
                             forced,
                             &qvec,
@@ -16595,7 +16603,7 @@ pub fn run_once_traced(
                             shares,
                             crit_multiplier,
                             attrition,
-                            modded_base,
+                            spread_mb,
                             status_chance,
                             forced,
                             &qvec,
@@ -16622,7 +16630,7 @@ pub fn run_once_traced(
                             shares,
                             crit_multiplier,
                             attrition,
-                            modded_base,
+                            spread_mb,
                             status_chance,
                             forced,
                             &qvec,
@@ -20564,6 +20572,47 @@ mod tests {
         assert!(
             with < without * 1.40,
             "…and it can only buy the DRAW, not the whole cycle: {with} against {without}"
+        );
+    }
+
+    /// A MERGED BEAM'S STATUSES ARE THE SAME SIZE ON THE BODY BEHIND.
+    ///
+    /// Multishot on a continuous weapon merges into ONE bigger tick and its
+    /// ModifiedBase carries the merge, which is what makes a damaging status
+    /// *"affected twice by multishot"*. Every spread was handed the UNMERGED
+    /// base, so a body a beam punched through took the same HIT and a DoT
+    /// `beam_merge` times smaller — on the group-clear ruler the aimed Thrax
+    /// read twice the damage of the one standing behind it, out of a Toxin tick
+    /// of 1778 against 32.6.
+    ///
+    /// A RATIO OF TOTALS, and a training dummy so the two bodies differ in
+    /// nothing else: same target, no armour, neither of them dies.
+    #[test]
+    fn a_merged_beams_statuses_are_the_same_size_on_the_body_behind() {
+        let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
+        let pool = crate::mods_data::pool_for_weapon("phantasma_prime");
+        // MULTISHOT AND SOMETHING THAT BURNS: the weapon's own Radiation leaves
+        // no DoT, so the merge has nothing to be read off without a Toxin card.
+        let refs: Vec<&crate::loadout::ModDef> = ["hells_chamber", "toxic_barrage"]
+            .iter()
+            .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
+            .collect();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(10.0);
+        arena.others = vec![crate::formation::FoeSpec {
+            id: String::new(),
+            params: TargetParams::training_dummy(),
+            body_parts: DummyParams::humanoid_parts(),
+            at: crate::space::Vec2::new(0.0, crate::space::CONTACT_RANGE_M * 2.0),
+        }];
+        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        assert!(p.punch_through_m > 0.0, "the innate punch through reaches it");
+        let r = run_once(&p, &mut Rng::new(0x5EED));
+        let (aimed, behind) = (r.spread.by_body().0[0], r.spread.by_body().0[1]);
+        assert!(behind > 0.0, "the beam reaches the body behind at all");
+        assert!(
+            (behind / aimed - 1.0).abs() < 0.15,
+            "the same round, so the same damage: {aimed} aimed against {behind} behind"
         );
     }
 
