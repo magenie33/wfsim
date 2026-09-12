@@ -2805,7 +2805,7 @@ function rosterSize() {
 /// SUBMISSIONS ARE ONE POOL AND SCORES ARE PER RULER, which is why these two
 /// fields are summed differently: every ruler reports the SAME submission
 /// count because they all read the same pool, so adding them would state the
-/// uploads three times. `held` is that ruler's own answers and does add up.
+/// uploads three times. `listed` is that ruler's own answers and does add up.
 function boardCount(field) {
   const all = Object.values((BOARD_META && BOARD_META.boards) || {});
   if (!all.length) return 0;
@@ -2831,7 +2831,7 @@ function projectFacts() {
   const rows = [
     ["roster", rosterSize(), "items modelled"],
     ["builds", boardCount("submissions"), "builds players have uploaded"],
-    ["evaluations", boardCount("held"), "evaluations computed"],
+    ["evaluations", boardCount("listed"), "evaluations computed"],
   ];
   return rows.filter(([, n]) => n > 0).map(([id, n, what]) => ({ id, n, what }));
 }
@@ -8913,6 +8913,56 @@ function boardRowIdentity(row) {
   return JSON.stringify(build);
 }
 
+/// HOW DEEP THE LIST GOES, as a share of each group's leader.
+///
+/// THE BOARD PUBLISHES EVERY ROW IT SCORED; this is the only thing that
+/// decides how many of them a reader sees, and it is theirs to change. Half is
+/// the default for the reasons `docs/BOARD.md` gives: the rows below it carry
+/// 8 of 8 mods like the rows above and differ by taking the worse arcane or by
+/// spending slots this fight cannot pay, so half marks where a build stops
+/// being a DIFFERENT answer rather than where it stops being the best one.
+///
+/// ZERO IS "EVERYTHING", and it is offered because the alternative is a reader
+/// who cannot tell a build that was never submitted from one the page declined
+/// to draw.
+const BOARD_DEPTHS = [0.5, 0.25, 0];
+let boardDepth = BOARD_DEPTHS[0];
+try {
+  const s = Number(localStorage.getItem("wfsim-board-depth"));
+  if (BOARD_DEPTHS.includes(s)) boardDepth = s;
+} catch (_) { /* private mode */ }
+const setBoardDepth = (v) => {
+  boardDepth = v;
+  try { localStorage.setItem("wfsim-board-depth", String(v)); } catch (_) { /* private mode */ }
+};
+
+/// A ROW'S OWN GROUP — one ruler, one mode, one riven-ness — and the best score
+/// in it. That is the denominator `boardDepth` is drawn against, and stating it
+/// once is what keeps the control's counts and the list it filters in step.
+///
+/// A riven build and a plain one compete with each other for nothing, and one
+/// ruler's leader says nothing about another's; a shared reference would let
+/// whichever group is stronger decide what the others may show, which on most
+/// weapons means the builds most players can actually make are the ones to
+/// disappear.
+function boardGroupLeaders(rows) {
+  const key = (r) => `${r.benchmark}#${r.mode || "base"}#${rowHasRiven(r) ? "r" : "p"}`;
+  const best = {};
+  for (const r of rows || []) best[key(r)] = Math.max(best[key(r)] ?? -1, r.score || 0);
+  // INCLUSIVE, and a group whose leader scored ZERO is never emptied: every row
+  // ties it, and a ratio has nothing to say with no scale to say it on.
+  return (r, depth) => (r.score || 0) >= depth * (best[key(r)] || 0);
+}
+
+/// How many rows a weapon's board would show at `depth`. Counted from the raw
+/// rows, because the control has to say what each depth WOULD give, not what
+/// the depth in force already gave.
+const depthCount = (w, depth) => {
+  const rows = BOARD[(w || {}).id] || [];
+  const deep = boardGroupLeaders(rows);
+  return rows.filter((r) => deep(r, depth)).length;
+};
+
 /// ONE CONVERSION PER BOARD, NOT PER CALLER. A render asks for these five times
 /// (finder, bar, the bar's opened chips, the line under it) and a 1,300-row
 /// board is ~60 ms each. Keyed on every input the conversion reads — the rows
@@ -8923,11 +8973,13 @@ let builtinMemo = null;
 const builtinBuilds = () => {
   const w = weaponInfo($("weapon").value) || {};
   const m = builtinMemo;
-  if (m && m.w === w.id && m.rows === BOARD[w.id] && m.pool === currentPool && m.lang === LANG && m.i18n === I18N) {
+  if (m && m.w === w.id && m.rows === BOARD[w.id] && m.pool === currentPool && m.lang === LANG
+      && m.i18n === I18N && m.depth === boardDepth) {
     return m.out;
   }
   const out = builtinBuildsUncached(w);
-  builtinMemo = { w: w.id, rows: BOARD[w.id], pool: currentPool, lang: LANG, i18n: I18N, out };
+  builtinMemo = { w: w.id, rows: BOARD[w.id], pool: currentPool, lang: LANG, i18n: I18N,
+    depth: boardDepth, out };
   return out;
 };
 const builtinBuildsUncached = (w) => {
@@ -8964,7 +9016,20 @@ const builtinBuildsUncached = (w) => {
     const i = (w.modes || []).indexOf(m || "base");
     return i < 0 ? 99 : i;
   };
-  const rows = (BOARD[w.id] || []).slice()
+  // DEEP ENOUGH TO READ, and no deeper — see `BOARD_DEPTHS`. It is drawn
+  // against `best[kindKey]`, which is this row's own group: a riven build and
+  // a plain one compete with each other for nothing, and one ruler's leader
+  // says nothing about another's. The boundary is INCLUSIVE, so a row exactly
+  // on the line is shown — a cut drawn with `>` deletes the one row a reader
+  // is most likely to go looking for. A group whose leader scored ZERO is
+  // never emptied: every row ties it, and a ratio has nothing to say with no
+  // scale to say it on.
+  //
+  // FILTERING BEFORE THE RANK IS WHAT KEEPS `#1` MEANING `#1`: the list is
+  // descending, so what survives is always a prefix of a group and the numbers
+  // below it are the same ones the full list would give.
+  const deep = boardGroupLeaders(BOARD[w.id]);
+  const rows = (BOARD[w.id] || []).filter((r) => deep(r, boardDepth))
     .sort((a, b) =>
       order(a.benchmark) - order(b.benchmark)
       || (best[modeKey(b)] || 0) - (best[modeKey(a)] || 0)
@@ -9587,7 +9652,17 @@ function renderBuildFinder() {
     `<div class="fd-seg"><span>${escHtml(tr("Riven"))}</span>` +
     segBtn("rv", "all", tr("All"), inMode.length) +
     segBtn("rv", "riven", tr("With riven"), inMode.filter((p) => p.riven).length) +
-    segBtn("rv", "plain", tr("Without riven"), inMode.filter((p) => !p.riven).length) + `</div></div>` +
+    segBtn("rv", "plain", tr("Without riven"), inMode.filter((p) => !p.riven).length) + `</div>` +
+    // HOW DEEP THE BOARD IS READ — the one control here that is not a filter on
+    // what is loaded but on what was loaded at all. Every other segment narrows
+    // the rows in hand; this one decides how many the conversion produces, so
+    // it is counted from the raw board rather than from `all`.
+    `<div class="fd-seg fd-depth"><span>${escHtml(tr("Depth"))}</span>` +
+    BOARD_DEPTHS.map((d) => `<button type="button" data-fdepth="${d}" class="${
+      boardDepth === d ? "on" : ""}" title="${escHtml(d
+        ? trF("builds scoring at least {p}% of their group's leader", { p: Math.round(d * 100) })
+        : tr("every build the board has scored"))}">${escHtml(d ? `≥${Math.round(d * 100)}%` : tr("All"))
+      }<em>${depthCount(w, d)}</em></button>`).join("") + `</div></div>` +
     `<div class="fd-rail">` +
     `<div><h4>${escHtml(tr("Mod usage"))}<small>${escHtml(trF("in {n} builds", { n: list.length }))}</small></h4>` +
     `<div class="fd-use mods">${railBlock(withKind(usage(list, isMod), "mod:"), 15)}</div>` +
@@ -9644,6 +9719,14 @@ function renderBuildFinder() {
     if ((el = g("[data-fexc]"))) { finder.exc.add(el.dataset.fexc); finder.shown = FINDER_FIRST; return rerender(true); }
     if (!g(".fd-q")) sugg.hidden = true;
     if ((el = g("[data-funtok]"))) { finder.req.delete(el.dataset.funtok); finder.exc.delete(el.dataset.funtok); return rerender(); }
+    if ((el = g("[data-fdepth]"))) {
+      setBoardDepth(Number(el.dataset.fdepth));
+      finder.open = null; finder.shown = FINDER_FIRST;
+      // EVERY LIST THAT READS THE BOARD, not just this one: the build bar and
+      // its chips are drawn from the same conversion.
+      renderMods();
+      return rerender();
+    }
     if ((el = g("[data-fseg]"))) {
       finder[el.dataset.fseg] = el.dataset.v;
       finder.open = null; finder.shown = FINDER_FIRST;

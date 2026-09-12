@@ -62,7 +62,7 @@ struct Row {
     /// what the `builds` table is keyed by.
     ///
     /// Carried so the run can prove every validated build ended up somewhere:
-    /// listed, or held below the floor. It is NOT written to the yaml, which
+    /// published, or deferred. It is NOT written to the yaml, which
     /// states the build itself and from which the id is recomputed — a stored
     /// copy of a derived fact is the one that goes stale.
     identity: String,
@@ -194,27 +194,6 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
     row
 }
 
-/// THE FLOOR: a row must score at least half its group's leader to be listed.
-/// A COUNT bounds how LONG the list gets and says nothing about whether the
-/// hundredth row is worth reading — the three groups that ever reached a cap of
-/// 100 had a hundredth row at 18.6%, 25.9% and 25.4% of their leader.
-///
-/// WHAT IT REMOVES IS NOT THE CHEAP BUILD: the rows below the line carry 8 of 8
-/// mods like the rows above and differ by taking the WORSE arcane, or by
-/// spending slots on mods this fight cannot pay (docs/UNMODELLED.md).
-///
-/// IT IS MECHANICAL: the seed is pinned and a score reproduces to the last
-/// digit, so 50.3% and 49.5% are two different NUMBERS rather than two
-/// estimates of one, and an exact board has no tie band to grant.
-///
-/// FIFTY IS A CUT LINE rather than a measurement: the pooled distribution has
-/// no knee to sit on (the largest gap below 90% is 1.2 points), so the data
-/// cannot pick the number, only say it is not fragile — about 12 of 1274 rows
-/// per point. It is very generous against F1's 107% rule, which is the intent.
-///
-/// THERE IS NO CEILING, so a group whose builds are close keeps all of them.
-const FLOOR: f64 = 0.5;
-
 /// WHAT A ROW IS ASSUMED TO COST when nothing has measured it — a new build, or
 /// a board written before costs were recorded.
 ///
@@ -248,7 +227,6 @@ const BOARD_STATE: &str = "data/board_state.yaml";
 struct BoardRow {
     submissions: usize,
     listed: usize,
-    held: usize,
     scored_at: usize,
 }
 
@@ -269,7 +247,6 @@ fn stored_state() -> std::collections::BTreeMap<String, BoardRow> {
                 match k.trim() {
                     "submissions" => e.submissions = n,
                     "listed" => e.listed = n,
-                    "held" => e.held = n,
                     "scored_at_epoch_seconds" => e.scored_at = n,
                     _ => {}
                 }
@@ -288,62 +265,10 @@ const BOARD_STATE_HEADER: &str = "# WHAT THE RUNTIME KNOWS ABOUT EACH BOARD — 
 # the page FETCHES, and durably in the `scores` table they were published from.
 #
 # `submissions` paired with the library's own size (`/api/board/pending`) is how
-# a STATIC board says how far behind it is. `listed` and `held` say how much of
-# what it scored it is showing — a board that reports only what it shows cannot
-# say how much it looked at.
+# a STATIC board says how far behind it is. `listed` is every row it scored,
+# because every scored row is published — how deep to read is the reader's
+# question and the page answers it (docs/BOARD.md).
 ";
-
-/// Best first, then everything within `FLOOR` of each WEAPON AND MODE's own
-/// leader. Returns the rows to publish and how many the floor took.
-///
-/// Ties keep the FEWER-Forma build — same fight, cheaper to own.
-///
-/// PER MODE, not per weapon: the two ways to play a Torid compete with each
-/// other for nothing, and a shared reference would let the stronger mode decide
-/// what the weaker one may show, which is the opposite of what the dimension is
-/// for. Per BOARD too, since this binary runs once per ruler.
-///
-/// A group's leader is the FIRST row of it this loop meets, because the sort is
-/// descending and global.
-fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, Vec<Row>) {
-    rows.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-    let mut leader: std::collections::BTreeMap<(String, String, bool), f64> = Default::default();
-    let mut kept = Vec::new();
-    // THE ROWS THE FLOOR TOOK, RETURNED RATHER THAN COUNTED.
-    //
-    // They were dropped here, and dropping them cost twice. A build scored and
-    // not listed is indistinguishable from one that was LOST, which is the
-    // failure this repo has already paid for; and the published yaml is what
-    // the next run REUSES, so a row missing from it has no cached score and is
-    // re-simulated from scratch every hour, for ever, to be discarded again.
-    // The fan-out multiplied that population. They go in the record now.
-    let mut below = Vec::new();
-    for r in rows {
-        // …AND PER RIVEN-NESS, for the reason it is per mode: a riven build and
-        // a plain one compete with each other for nothing, and a shared
-        // reference would let whichever is stronger on this weapon decide what
-        // the other may show. On most weapons that is the riven build, and the
-        // plain ones — the builds most players can actually make — would be the
-        // ones to disappear.
-        //
-        // THE RANKING IS STILL ONE LIST. Only the floor partitions: a riven
-        // build does not always beat a plain one, so ranking them apart would
-        // publish a comparison the fight does not make.
-        let top = *leader
-            .entry((r.weapon.clone(), r.mode.clone(), r.riven.is_some()))
-            .or_insert(r.score);
-        if r.score >= FLOOR * top {
-            kept.push(r);
-        } else {
-            below.push(r);
-        }
-    }
-    (kept, below)
-}
 
 /// WHICH SHARD PAYS FOR THIS ROW — the least loaded one — and the load is
 /// charged to it.
@@ -1342,7 +1267,13 @@ fn main() {
         }
     }
 
-    let (mut kept, below) = keep_above_floor(rows);
+    // EVERY SCORED ROW IS PUBLISHED. A row is a FACT — a build measured under a
+    // pinned seed — and holding one back made it indistinguishable from a build
+    // that was lost, while the page had no way to ask for it. HOW DEEP TO READ
+    // IS THE READER'S QUESTION, and it is theirs to answer: the page shows
+    // builds within half their group's leader by default and will widen to all
+    // of them (docs/BOARD.md).
+    let mut kept = rows;
     kept.sort_by(|a, b| {
         a.weapon.cmp(&b.weapon).then(
             b.score
@@ -1354,15 +1285,10 @@ fn main() {
     // HOW MUCH OF THIS BOARD WAS KEPT rather than recomputed, said out loud. A
     // run that reuses everything and a run that scored everything look
     // identical from the outside, and the difference is an hour.
-    //
-    // AND HOW MANY THE FLOOR TOOK. It is a number you can go and READ rather
-    // than a count in a log nobody keeps: those rows are in the yaml, carrying
-    // `listed: false`.
     eprintln!(
-        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here, {} below the floor)",
+        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here)",
         kept.len(),
         computed.len(),
-        below.len(),
     );
     // HOW MUCH BACKLOG IS LEFT, said out loud. A run that defers rows is not a
     // run that failed to score them: the next one takes the next share, and the
@@ -1385,8 +1311,9 @@ fn main() {
     }
 
     // EVERY STORED SUBMISSION IS ACCOUNTED FOR, and the run says so rather than
-    // being trusted. Four outcomes and no fifth: refused at the door, listed,
-    // scored and held below the floor, or deferred to the next run by a budget. A build that fell out of all three
+    // being trusted. Three outcomes and no fourth: refused at the door,
+    // published, or deferred to the next run by a budget. A build that fell out
+    // of all three
     // would be one the library holds and this board never looked at — the
     // failure mode that has to be impossible rather than unlikely, because from
     // the submitter's side it is indistinguishable from the other two.
@@ -1421,13 +1348,10 @@ fn main() {
 
     let listed: std::collections::BTreeSet<&str> =
         kept.iter().map(|r| r.identity.as_str()).collect();
-    let held: std::collections::BTreeSet<&str> =
-        below.iter().map(|r| r.identity.as_str()).collect();
     let unaccounted: Vec<&String> = scored_ids
         .iter()
         .filter(|id| {
             !listed.contains(id.as_str())
-                && !held.contains(id.as_str())
                 // …AND NOT ONE THE BUDGET DEFERRED. A build queued for the next
                 // run is the fourth outcome, and the only one that is a
                 // statement about this run rather than about the build.
@@ -1436,14 +1360,13 @@ fn main() {
         .collect();
     assert!(
         shards > 1 || unaccounted.is_empty(),
-        "{} validated build(s) produced no row at all — neither listed nor below the floor. The library holds them and this board never looked at them: {:?}",
+        "{} validated build(s) produced no row at all. The library holds them and this board never looked at them: {:?}",
         unaccounted.len(),
         &unaccounted[..unaccounted.len().min(5)],
     );
     eprintln!(
-        "accounted: {} listed, {} held below the floor, {refused} refused at the door",
+        "accounted: {} published, {refused} refused at the door",
         listed.len(),
-        held.len(),
     );
 
 
@@ -1584,7 +1507,7 @@ fn main() {
             .map_or(0, |d| d.as_secs() as usize);
         state.insert(
             bench_id.clone(),
-            BoardRow { submissions: seen, listed: kept.len(), held: below.len(), scored_at: now },
+            BoardRow { submissions: seen, listed: kept.len(), scored_at: now },
         );
         let mut out = String::from(BOARD_STATE_HEADER);
         out.push_str("boards:
@@ -1594,10 +1517,9 @@ fn main() {
                 "  {id}:
     submissions: {}
     listed: {}
-    held: {}
     scored_at_epoch_seconds: {}
 ",
-                r.submissions, r.listed, r.held, r.scored_at,
+                r.submissions, r.listed, r.scored_at,
             ));
         }
         std::fs::write(BOARD_STATE, out).unwrap_or_else(|e| panic!("{BOARD_STATE}: {e}"));
@@ -2184,148 +2106,6 @@ mod tests {
             "packed makespan {} against a floor of {floor}",
             worst(&packed)
         );
-    }
-
-
-    fn row(weapon: &str, mode: &str, score: f64) -> Row {
-        Row {
-            // DISTINCT PER ROW, because the accounting partitions on it: a
-            // fixture where every row shared one identity would make the
-            // "everything was ranked" assertion pass on a single build.
-            identity: format!("{weapon}|{mode}|{score}"),
-            weapon: weapon.into(),
-            mode: mode.into(),
-            score,
-            mods: vec![],
-            evolutions: vec![],
-            arcanes: vec![],
-            valence: String::new(),
-            exilus: String::new(),
-            grip: String::new(),
-            loader: String::new(),
-            riven: None,
-        }
-    }
-
-    /// The same row, carrying a riven — so the floor's groups can be told apart.
-    fn riven_row(weapon: &str, mode: &str, score: f64) -> Row {
-        Row {
-            riven: Some(RowRiven {
-                bonuses: vec!["damage".into(), "multishot".into()],
-                malus: None,
-                rolls: vec![1.1, 1.1],
-            }),
-            ..row(weapon, mode, score)
-        }
-    }
-
-    fn scores(rows: &[Row], weapon: &str, mode: &str) -> Vec<f64> {
-        rows.iter()
-            .filter(|r| r.weapon == weapon && r.mode == mode)
-            .map(|r| r.score)
-            .collect()
-    }
-
-    /// THE FLOOR IS HALF THE GROUP'S LEADER, and the boundary is INCLUSIVE —
-    /// exactly half is listed. A cut line drawn with `>` would delete the one
-    /// row that is precisely on it, which is the row a reader is most likely to
-    /// go looking for.
-    #[test]
-    fn half_of_the_leader_is_kept_and_less_is_not() {
-        let (kept, below) = keep_above_floor(vec![
-            row("torid", "cycle", 80.0),
-            row("torid", "cycle", 40.0),   // exactly half
-            row("torid", "cycle", 39.999), // a hair under
-            row("torid", "cycle", 1.0),
-        ]);
-        assert_eq!(scores(&kept, "torid", "cycle"), vec![80.0, 40.0]);
-        assert_eq!(below.len(), 2);
-    }
-
-    /// PER WEAPON AND MODE, so a strong group cannot decide what a weak one may
-    /// show. A shared reference would have let the Torid's cycle — three times
-    /// its base form here — empty the base form's list entirely, which is the
-    /// opposite of what the mode dimension is for.
-    #[test]
-    fn each_group_is_measured_against_its_own_leader() {
-        let (kept, below) = keep_above_floor(vec![
-            row("torid", "cycle", 90.0),
-            row("torid", "cycle", 50.0),
-            row("torid", "base", 30.0),
-            row("torid", "base", 20.0), // 22% of the cycle's leader, 67% of its own
-            row("lex", "base", 10.0),
-            row("lex", "base", 9.0),
-        ]);
-        assert_eq!(scores(&kept, "torid", "base"), vec![30.0, 20.0]);
-        assert_eq!(scores(&kept, "lex", "base"), vec![10.0, 9.0]);
-        assert_eq!(below.len(), 0);
-    }
-
-    /// THERE IS NO CEILING. The count this replaced was a hundred; a group whose
-    /// builds are genuinely close keeps every one of them, however many arrive.
-    #[test]
-    fn a_close_group_keeps_everything() {
-        let rows: Vec<Row> = (0..250)
-            .map(|i| row("furis", "cycle", 100.0 - i as f64 * 0.1))
-            .collect();
-        let (kept, below) = keep_above_floor(rows);
-        assert_eq!(kept.len(), 250);
-        assert_eq!(below.len(), 0);
-    }
-
-    /// A LEADER OF ZERO SEPARATES NOTHING. Every row ties it, so the group is
-    /// published whole rather than emptied — a ratio has nothing to say when
-    /// there is no scale, and deleting a weapon nobody could make kill would
-    /// read as a weapon nobody had tried.
-    #[test]
-    fn a_group_that_scored_nothing_is_not_emptied() {
-        let (kept, below) =
-            keep_above_floor(vec![row("stug", "base", 0.0), row("stug", "base", 0.0)]);
-        assert_eq!(kept.len(), 2);
-        assert_eq!(below.len(), 0);
-    }
-
-
-
-    /// THE FLOOR PARTITIONS BY RIVEN, and the ranking does not.
-    ///
-    /// A riven build and a plain one compete with each other for nothing, so a
-    /// shared reference would let whichever is stronger on this weapon decide
-    /// what the other may show — and on most weapons that is the riven build,
-    /// which would take the plain ones with it. Those are the builds most
-    /// players can actually make.
-    #[test]
-    fn the_floor_is_drawn_per_riven_ness_and_the_list_is_still_one() {
-        // A strong riven leader and a plain group far below it. Every plain row
-        // survives on its OWN leader; under one shared reference all three
-        // would be gone.
-        let (kept, below) = keep_above_floor(vec![
-            riven_row("torid", "cycle", 100.0),
-            riven_row("torid", "cycle", 60.0),
-            riven_row("torid", "cycle", 40.0), // 40% of the riven leader
-            row("torid", "cycle", 20.0),
-            row("torid", "cycle", 12.0),
-            row("torid", "cycle", 11.0), // 55% of the PLAIN leader, and 11% of the riven one
-        ]);
-        assert_eq!(below.len(), 1, "only the riven row under half its own leader");
-        assert_eq!(kept.len(), 5);
-        assert_eq!(kept.iter().filter(|r| r.riven.is_some()).count(), 2);
-        assert_eq!(kept.iter().filter(|r| r.riven.is_none()).count(), 3);
-
-        // ONE LIST, still sorted by score across both kinds — a riven build
-        // does not always beat a plain one, so ranking them apart would publish
-        // a comparison the fight does not make.
-        let scores: Vec<f64> = kept.iter().map(|r| r.score).collect();
-        assert!(scores.windows(2).all(|w| w[0] >= w[1]), "{scores:?}");
-
-        // AND THE PARTITION IS NOT PER WEAPON ONLY: another weapon's riven
-        // leader must not set this one's floor either.
-        let (kept, _) = keep_above_floor(vec![
-            riven_row("laetum", "base", 1000.0),
-            riven_row("torid", "cycle", 10.0),
-            riven_row("torid", "cycle", 6.0),
-        ]);
-        assert_eq!(kept.len(), 3);
     }
 }
 

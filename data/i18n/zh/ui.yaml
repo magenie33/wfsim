@@ -129,6 +129,9 @@ ui:
   "Condition Overload bracket": 异常超载档
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "Cores": 算力
+  "Depth": 深度
+  "builds scoring at least {p}% of their group's leader": "分数不低于同组第一名 {p}% 的配装"
+  "every build the board has scored": 榜单算过的全部配装
   "Prices": 价格
   "find rivens with these stats on warframe.market": 在 warframe.market 找词条相同的紫卡
   "find this weapon on warframe.market": 在 warframe.market 查这把武器

@@ -47,14 +47,12 @@ pub struct BoardState {
     /// its own size at `/api/board/pending`; the difference is what has arrived
     /// since, which is the one thing a static file cannot say about itself.
     pub submissions: usize,
-    /// Rows published — what `site/board/` carries and the page can rank.
+    /// EVERY ROW THE RUN SCORED, which is also every row it published —
+    /// `site/board/` carries all of them and the page decides how deep to
+    /// read (docs/BOARD.md). A board that published a subset could not say
+    /// how much it had looked at; this one has nothing to hold back.
     #[serde(default)]
     pub listed: usize,
-    /// …AND ROWS SCORED AND HELD BACK by the floor. Reported beside `listed`
-    /// rather than folded into it: the two answer different questions, and a
-    /// board that says only how many it shows cannot say how much it looked at.
-    #[serde(default)]
-    pub held: usize,
     /// WHEN THE RUN THAT WROTE THIS BOARD FINISHED, in seconds since the epoch.
     ///
     /// The counts above say how far behind the board is in BUILDS; this is the

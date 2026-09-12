@@ -23,8 +23,9 @@ number**. Everything else follows from it:
   sustainable mode: a Ballistica Prime build sent from its Incarnon cycle also
   answers `base`, `alternate` and `alternate_cycle`, and a melee build answers
   all seven. What it carries that pays nothing in a mode costs a low row, which
-  the floor and the per-mode dedup drop — so the fan-out only ever ADDS the rows
-  where a build happens to be good somewhere its submitter never tried it.
+  the per-mode dedup drops and the page's depth hides — so the fan-out only ever
+  ADDS the rows where a build happens to be good somewhere its submitter never
+  tried it.
   `transformed` and its kind are still refused: a gauge you must fill and run
   dry is not a way to play for three hundred seconds;
 - **EVERY FINALIST OF A SEARCH IS UPLOADED**, not just the build somebody ran in
@@ -431,7 +432,7 @@ notice here — a score is a pure function and the carry between processes is
 lossless — so an interrupted row that regrouped its sums would not be the same
 number. It costs 2.5% of a crowd fight.
 
-A paused row is a FOURTH outcome beside listed, held and refused: the build
+A paused row is a THIRD outcome beside published and refused: the build
 reached no row on this board and is not lost either. The run says so
 (`paused: N row(s) banked partway`) and the accounting knows about it, because a
 run that quietly dropped a build looks exactly like one that ranked it.
@@ -445,8 +446,8 @@ because it runs out of rows first.
 ### Publish assembles; it does not fight
 
 `--project` is the guarantee rather than the habit. The publish pass groups what
-is known, ranks it, applies the floor and writes the files — **measured at one
-to two seconds** against a board of 7,659 rows — and never simulates. A row
+is known, ranks it and writes the files — **measured at one to two seconds**
+against a board of 7,659 rows — and never simulates. A row
 nobody has banked is absent from this board and lands on the next one, which is
 the convergence rule applied to the assembly.
 
@@ -783,9 +784,10 @@ in the pairing — adjacent, in its own order, unsplittable — and
 `builds::canonical_mods_with` searches for a representative rather than
 constructing one when an atom is present.
 
-**THE RANKING IS ONE LIST; THE FLOOR IS NOT.** A riven build does not always
-beat a plain one, so ranking them apart would publish a comparison the fight
-does not make. But the floor's group gains riven-ness beside weapon and mode,
+**THE RANKING IS ONE LIST; THE DEPTH'S GROUP IS NOT.** A riven build does not
+always beat a plain one, so ranking them apart would publish a comparison the
+fight does not make. But the depth's group gains riven-ness beside weapon and
+mode,
 for the reason it has mode: a shared reference would let whichever is stronger
 on this weapon decide what the other may show, and the rows that would vanish
 are the plain ones — the builds most readers can actually make. The board page
@@ -857,56 +859,53 @@ in the board row, and in `builds::identity`: the last of those was found by
 scoring two Atomos builds differing only in `ruinous_extension` and getting ONE
 row back.
 
-## How deep a board goes — the floor
+## How deep a board goes — the reader decides
 
-A row is listed when it scores **at least half its group's leader**, where a
-group is one weapon, in one mode, under one ruler. There is no count limit; a
-group whose builds are genuinely close keeps all of them.
+**EVERY SCORED ROW IS PUBLISHED.** A row is a fact — a build measured under a
+pinned seed — and `site/board/<weapon>.json` carries all of them. How deep to
+read is a question about what a reader wants to see, not about what is true, so
+the page answers it: it shows builds scoring **at least half their group's
+leader** by default, and offers a quarter and everything.
 
-It replaces a COUNT — the top hundred per weapon and mode, itself raised from
-ten on 2026-08-08. **The two bound different things.** A count bounds how LONG
-the list gets and says nothing about whether the hundredth row is worth reading:
-on the board of 2026-08-19 the three groups that reached the cap had a hundredth
-row at **18.6%, 25.9% and 25.4%** of their leader, so the list had stopped being
-about builds anybody would pick long before the cap cut it.
+A GROUP IS ONE WEAPON, IN ONE MODE, UNDER ONE RULER, and riven builds are a
+group of their own. A riven build and a plain one compete with each other for
+nothing, and one ruler's leader says nothing about another's; a shared
+reference would let whichever group is stronger decide what the others may
+show, which on most weapons means the builds most players can make are the ones
+to disappear. There is no count limit, and a group whose builds are genuinely
+close keeps all of them.
 
-**What it removes is not the cheap build.** That was the objection, and the
-board refutes it — the rows below the line carry 8 of 8 mods exactly like the
-rows above, and differ by taking the worse arcane (Merciless where Deadhead
-wins) or by spending slots on mods this fight cannot pay: Magazine Extension,
-Parallax Scope, Quick Reload, all of which docs/UNMODELLED.md already says are
-worth nothing against one standing target. Of 86 groups, **three** have ever
-held a row with no arcane at all, and in each it was the leader.
-
-**It is mechanical, and that is the decision.** The seed is pinned and a score
-reproduces to the last digit, so 50.3% and 49.5% are two different NUMBERS
-rather than two estimates of one. A board whose rows are exact has no tie band
-to grant, and a ruler separating two builds is what a ruler is for.
-
-**Fifty is a cut line, not a measurement.** The pooled distribution of
+**HALF IS A CUT LINE, NOT A MEASUREMENT.** The pooled distribution of
 score-as-a-fraction-of-leader has no knee to sit on — the largest gap anywhere
-below 90% is 1.2 points — so the data cannot pick the number. What it can say is
-that the number is not fragile: about **12 of 1274 rows per point**, so 45 or 55
-would cost a few per cent rather than a shape. Against the sports that draw the
-same kind of line (F1's 107% qualifying rule, cycling's 3-20% time limit) half
-the leader is very generous, which is the intent — it marks where a build stops
-being a DIFFERENT answer, not where it stops being the best one.
+below 90% is 1.2 points — so the data cannot pick the number. What it can say
+is that the number is not fragile: about **12 of 1274 rows per point**, so 45
+or 55 would cost a few per cent rather than a shape. Against the sports that
+draw the same kind of line (F1's 107% qualifying rule, cycling's 3-20% time
+limit) half the leader is very generous, which is the intent — it marks where a
+build stops being a DIFFERENT answer, not where it stops being the best one.
 
-Measured over the three boards of 2026-08-19: 1274 rows become 740.
+**WHAT IT HIDES IS NOT THE CHEAP BUILD.** That was the objection, and the board
+refutes it — the rows below the line carry 8 of 8 mods exactly like the rows
+above, and differ by taking the worse arcane (Merciless where Deadhead wins) or
+by spending slots on mods this fight cannot pay: Magazine Extension, Parallax
+Scope, Quick Reload, all of which `UNMODELLED.md` already says are worth
+nothing against one standing target. Of 86 groups, **three** have ever held a
+row with no arcane at all, and in each it was the leader.
 
-**NOTHING IS DESTROYED.** The floor is a property of the published board, not of
-the library or the facts: every submission stays in `builds`, every score stays
-in `scores`, and a weapon's file is regenerated whole — so a row displaced by a
-new leader comes back the moment that leader is displaced or an engine fix lowers
-it.
+**IT IS MECHANICAL.** The seed is pinned and a score reproduces to the last
+digit, so 50.3% and 49.5% are two different NUMBERS rather than two estimates
+of one. The boundary is INCLUSIVE: a row exactly on the line is shown, because
+a cut drawn with `>` deletes the one row a reader is most likely to go looking
+for. A group whose leader scored ZERO is never emptied — every row ties it, and
+a ratio has nothing to say with no scale to say it on.
 
-**AND IT IS SAID OUT LOUD, on both sides.** A build below the line is stored,
-scored and then not listed, which from the submitter's side is indistinguishable
-from a submission that was LOST — the exact silence that cost this board `mode`
- and `valence`. So `wfsim-board` reports how many fell
-below it on every run, and the submission panel states the RULE rather than a
-count of hidden rows: the rule is what makes an absence readable, and it is
-checkable against the board on screen.
+**AND `#1` STILL MEANS `#1`.** The list is descending, so what a depth keeps is
+always a prefix of a group: the ranks a reader sees do not move when they widen
+the view, only the rows below them arrive.
+
+`check_board_depth.mjs` holds all of it, on injected rows — the published board
+is whatever the scoring bot last wrote, and a fixture is the only way to ask
+about a row at exactly half.
 
 ## It is a Worker, not Pages
 
@@ -1492,11 +1491,12 @@ Together they say the same thing: **a full rescore cannot be made fast, so the
 lever is not paying for one.** §"A row's code dependency is measured, not
 assumed" is where that lever is.
 
-### Not paying for rows that cannot be listed
+### Not paying for rows almost nobody reads
 
 A third of the bill goes on rows scoring under a quarter of their group's
-leader — rows the floor will never list, and the largest cheapening still
-available. **There is no screen today**: the one that was here wrote a second
+leader. They are PUBLISHED and a reader can widen the depth to them, which is
+why they are not simply dropped — but a reader at the default never sees one,
+and they are the largest cheapening still available. **There is no screen today**: the one that was here wrote a second
 kind of number onto the same board, and what it cost to keep the two apart is
 §"Three cheapenings that are deliberately not here", which also says what a
 second attempt has to get right.

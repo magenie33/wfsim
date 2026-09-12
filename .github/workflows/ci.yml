@@ -60,6 +60,13 @@ jobs:
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.
         run: node scripts/check_parity.mjs
+      # HOW DEEP THE BOARD IS READ, which the publisher no longer decides. The
+      # rule moved from a binary with unit tests to a page without, and its
+      # failure is silent in both directions: a cut drawn with `>` deletes the
+      # row exactly on the line, and an empty group reads as a weapon nobody
+      # tried. Injected rows, so it can ask about exactly half.
+      - name: The board is as deep as the reader asked
+        run: node scripts/check_board_depth.mjs
       # THE DOWNLOAD OFFER, which has three answers and only one of them is
       # visible on the machine it was written on. Its failure modes are silent
       # and plausible — a Mac or Linux reader handed an .exe, a phone reader

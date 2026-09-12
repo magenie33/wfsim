@@ -106,6 +106,19 @@ one mode, picking the WORST-INTERLEAVED one for the DOM half. The rank
 assertion beside it says #1 is that mode's LEADER, because a position counter
 and its rank agree however the list is ordered.
 
+## `check_board_depth`
+
+HOW DEEP THE BOARD IS READ is the reader's choice, and the publisher no longer
+holds anything back — so the rule left a place with unit tests for one without.
+This is that rule on the real page: half is the default and the boundary is
+INCLUSIVE, "All" shows every row, the line is drawn per GROUP (one ruler, one
+mode, one riven-ness) so a strong group cannot empty a weak one, a group whose
+leader scored zero is never emptied, `#1` still means `#1` because a depth
+keeps a PREFIX, and the choice outlives a reload. ROWS ARE INJECTED: the
+published board is whatever the bot last wrote, and a fixture is the only way
+to ask about a row at exactly half. Verified to bite — turning the boundary
+into `>` fails five of its nine assertions.
+
 ## `check_disclosure`
 
 What the app does NOT model is ON THE PAGE, in every
