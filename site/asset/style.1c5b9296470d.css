@@ -523,7 +523,14 @@ body.on-enemies [data-module="builder"]{display:none}
 .slot.filled .pol-btn,.slot.filled .mod{margin-top:2px}
 .slot.filled .dots{margin-top:4px}
 .slot .info{min-width:0;flex:1}
-.slot .mn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* THE NAME ROW WRAPS, and what follows the name is why. A card's name line
+   carries the wiki link, the warframe.market mark and any chips AFTER the
+   name — so `nowrap` + ellipsis did not shorten a long name, it DELETED
+   everything standing behind one. A riven is where that bites: its name is the
+   preset's plus the generated one, and the mark sat 139 px outside a 240 px
+   row. The picker's copy of this card has always wrapped; this is the equipped
+   slot catching up to it. */
+.slot .mn{font-size:12.5px;font-weight:600;overflow-wrap:anywhere}
 .slot .dr{font-size:11px;color:var(--muted)}
 /* THE THREE ANSWERS A SLOT'S COLOUR GIVES, in the colours the arsenal uses. */
 .slot .dr.matched{color:var(--good-text)}
@@ -613,10 +620,9 @@ body.on-enemies [data-module="builder"]{display:none}
 .combo-menu .opt .me div{line-height:1.35}
 /* Configured slot cards show the current-rank description in the same
    small-text style as the picker cards. */
-/* A card's text WRAPS RATHER THAN PUSHES. A mod name is nowrap + ellipsis, but
-   a description line is prose and one long unbreakable token in it — a
-   translation without spaces, an id, a number with a unit — would otherwise set
-   the card's min-content all by itself. */
+/* A card's text WRAPS RATHER THAN PUSHES — the NAME row included. One long
+   unbreakable token — a translation without spaces, an id, a number with a
+   unit — would otherwise set the card's min-content all by itself. */
 .slot .me{font-size:11px;color:var(--text-2);overflow-wrap:anywhere}
 .slot .me div{line-height:1.35}
 /* Item names (mods / arcanes / evolutions) link to their wiki page. */
