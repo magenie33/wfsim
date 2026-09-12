@@ -30,6 +30,8 @@ max_rank: 30
 #      most likely a direct component on the body landed on — is UNKNOWN, and
 #      the slam entries declare it as a gap rather than guessing.
 accuracy: ~
+riven_family: Magistar      # module `Family` — SHARED with the Sancti Magistar,
+#                              so one card fits both and each reads its own disposition
 disposition: 1.35
 polarities: []
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a

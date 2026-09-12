@@ -29,6 +29,7 @@ max_rank: 30
 # `slamAttack` / `heavySlamAttack` pair is a different number for the same
 # attack and is not it.
 accuracy: ~
+riven_family: Magistar      # module `Family` — SHARED with the Magistar
 disposition: 1.25
 polarities: [madurai]
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a

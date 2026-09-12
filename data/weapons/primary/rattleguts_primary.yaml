@@ -19,6 +19,10 @@ mod_pools: [primary, rifle]
 mastery_rank: 0
 max_rank: 30
 
+# THE CHAMBER PART DE SHIPS, and the join key to every external dataset.
+# BOTH SLOT ENTRIES CARRY IT: a Catchmoon is one chamber, and which slot a
+# grip puts it in is ours to model, not a second item to trade.
+internal_name: /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelCPart
 kitgun: rattleguts_primary
 transform_group: rattleguts_primary
 

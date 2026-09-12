@@ -40,10 +40,10 @@ def fetch(path):
         return json.load(r)["data"]
 
 
-def internal_names(pattern):
-    """`id → internal_name` for every data file under `pattern` that has one."""
+def internal_names(*patterns):
+    """`id → internal_name` for every data file under `patterns` that has one."""
     out = {}
-    for f in sorted(ROOT.glob(pattern)):
+    for f in sorted(f for pat in patterns for f in ROOT.glob(pat)):
         text = f.read_text(encoding="utf-8")
         m = re.search(r"^internal_name:\s*(\S+)", text, re.M)
         if m:
@@ -108,17 +108,15 @@ def riven_families(weapon_refs, errors):
 
 
 def resolve(ours, theirs, label, errors):
-    """Join `id → key` against `key → slug`, refusing a slug claimed twice."""
-    out, seen = {}, {}
-    for ident, key in sorted(ours.items()):
-        slug = theirs.get(key)
-        if slug is None:
-            continue
-        if slug in seen:
-            errors.append(f"{label}: {ident} and {seen[slug]} both claim '{slug}'")
-        seen[slug] = ident
-        out[ident] = slug
-    return out
+    """Join `id → key` against `key → slug`.
+
+    TWO ENTRIES MAY LAND ON ONE SLUG, and that is not a collision to refuse: a
+    Catchmoon is ONE chamber part, filed here as a primary entry and a
+    secondary one because the slot decides the mod pool. They share a
+    uniqueName, so by construction they are the same thing to buy. The join is
+    by id, so anything sharing a slug shares DE's own key for it.
+    """
+    return {ident: theirs[key] for ident, key in sorted(ours.items()) if key in theirs}
 
 
 def main():

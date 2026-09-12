@@ -686,6 +686,7 @@ riven_families:
   Cantare: cantare
   Castanas: castanas
   Catabolyst: catabolyst
+  Catchmoon: catchmoon
   Cedo: cedo
   Cernos: cernos
   Cestra: cestra
@@ -727,6 +728,7 @@ riven_families:
   Furis: furis
   Fusilai: fusilai
   Gammacor: gammacor
+  Gaze: gaze
   Glaxion: glaxion
   Gorgon: gorgon
   Gotva Prime: gotva_prime
@@ -767,6 +769,7 @@ riven_families:
   Latron: latron
   Lenz: lenz
   Lex: lex
+  Magistar: magistar
   Magnus: magnus
   Mandonel: mandonel
   Marelok: marelok
@@ -802,6 +805,7 @@ riven_families:
   Quartakk: quartakk
   Quatz: quatz
   Quellor: quellor
+  Rattleguts: rattleguts
   Rauta: rauta
   Reconifex: reconifex
   Riot-848: riot_848
@@ -820,6 +824,7 @@ riven_families:
   Sonicor: sonicor
   Spectra: spectra
   Spira: spira
+  Sporelacer: sporelacer
   Sporothrix: sporothrix
   Stahlta: stahlta
   Staticor: staticor
@@ -843,6 +848,7 @@ riven_families:
   Thornbak: thornbak
   Tiberon: tiberon
   Tigris: tigris
+  Tombfinger: tombfinger
   Tonkor: tonkor
   Torid: torid
   Trumna: trumna
@@ -859,6 +865,7 @@ riven_families:
   Velocitus: velocitus
   Velox: velox
   Verglas: verglas
+  Vermisplicer: vermisplicer
   Vesper 77: vesper_77
   Vinquibus: vinquibus
   Viper: viper
@@ -871,7 +878,6 @@ riven_families:
   Zhuge: zhuge
   Zylok: zylok
   Zymos: zymos
-  magistar: magistar
   praedos: praedos
 
 riven_stats:

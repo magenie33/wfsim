@@ -211,8 +211,15 @@ mod tests {
         assert_eq!(riven_weapon_slug("braton_prime"), Some(base));
         assert_eq!(riven_weapon_slug("braton_prime_incarnon"), Some(base));
         assert_eq!(riven_weapon_slug("mk1_braton"), Some(base));
-        // …and a weapon nobody lists still gets nothing rather than a guess.
-        assert_eq!(riven_weapon_slug("catchmoon_primary"), None);
+        // A KITGUN'S TWO SLOT ENTRIES ARE ONE CHAMBER, and one riven fits it
+        // either way — they carry the chamber part's own `internal_name`, so
+        // both reach the same auctions.
+        let chamber = riven_weapon_slug("catchmoon_primary").expect("the Catchmoon is listed");
+        assert_eq!(riven_weapon_slug("catchmoon_secondary"), Some(chamber));
+        // A SYNDICATE VARIANT IS ITS BASE WEAPON'S FAMILY, which is what lets
+        // one Magistar riven be priced against both.
+        assert_eq!(riven_weapon_slug("sancti_magistar"), riven_weapon_slug("magistar"));
+        assert!(riven_weapon_slug("magistar").is_some());
     }
 
     /// The classes with a stat pool — `data/rivens/` also holds the survey and

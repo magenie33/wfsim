@@ -91,6 +91,8 @@ resolved:
   carmine_penta:                 /Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/CarminePenta
   castanas:                      /Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs
   catabolyst:                    /Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol
+  catchmoon_primary:             /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart
+  catchmoon_secondary:           /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart
   cedo:                          /Lotus/Weapons/Tenno/LongGuns/TnAlchemistShotgun/TnAlchemistShotgun
   cedo_prime:                    /Lotus/Weapons/Tenno/LongGuns/PrimeCedo/PrimeCedoWeapon
   cernos:                        /Lotus/Weapons/Tenno/Bows/AntlerBow/AntlerBow
@@ -151,6 +153,8 @@ resolved:
   furis:                         /Lotus/Weapons/Tenno/Pistol/AutoPistol
   fusilai:                       /Lotus/Weapons/Tenno/ThrowingWeapons/GlassKunai/GlassKunaiWeapon
   gammacor:                      /Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray
+  gaze_primary:                  /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart
+  gaze_secondary:                /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart
   glaxion:                       /Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/CrpFreezeRayRifle
   glaxion_vandal:                /Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/Vandal/CrpFreezeRayVandalRifle
   gorgon:                        /Lotus/Weapons/Tenno/Rifle/HeavyRifle
@@ -286,6 +290,8 @@ resolved:
   quellor:                       /Lotus/Weapons/Tenno/LongGuns/TnRailjackRifle/RailjackRifleGun
   rakta_ballistica:              /Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica
   rakta_cernos:                  /Lotus/Weapons/Syndicates/RedVeil/Bows/RVCernos
+  rattleguts_primary:            /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelCPart
+  rattleguts_secondary:          /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelCPart
   rauta:                         /Lotus/Weapons/Tenno/LongGuns/PaxDuviricusShotgun/PaxDuviricusShotgun
   reconifex:                     /Lotus/Weapons/Tenno/LongGuns/TnBeltFedRifle/TnBeltFedRifleWeapon
   riot_848:                      /Lotus/Weapons/Tenno/Pistols/1999EntHybridPistolWeapon/1999EntHybridPistolWeapon
@@ -316,6 +322,8 @@ resolved:
   spectra_vandal:                /Lotus/Weapons/Corpus/Pistols/CorpusModularPistol/Vandal/CrpLaserPistolVandal
   spira:                         /Lotus/Weapons/Tenno/ThrowingWeapons/LiDagger/LiDagger
   spira_prime:                   /Lotus/Weapons/Tenno/ThrowingWeapons/PrimeLiDagger/PrimeLiDagger
+  sporelacer_primary:            /Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelEgg/InfModularBarrelEggPart
+  sporelacer_secondary:          /Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelEgg/InfModularBarrelEggPart
   sporothrix:                    /Lotus/Weapons/Infested/LongGuns/InfSniperRifle/InfSniperRifle
   stahlta:                       /Lotus/Weapons/Corpus/LongGuns/CrpRubanRifle/CrpRubanRifle
   staticor:                      /Lotus/Weapons/Corpus/Pistols/CrpElectroMag/CrpElectroMag
@@ -361,6 +369,8 @@ resolved:
   tiberon_prime:                 /Lotus/Weapons/Tenno/LongGuns/PrimeTiberon/PrimeTiberonRifle
   tigris:                        /Lotus/Weapons/Tenno/LongGuns/DoubleBarrelShotgun/TennoDoubleBarrelShotgun
   tigris_prime:                  /Lotus/Weapons/Tenno/LongGuns/PrimeTigris/PrimeTigris
+  tombfinger_primary:            /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart
+  tombfinger_secondary:          /Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart
   tonkor:                        /Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher
   torid:                         /Lotus/Weapons/ClanTech/Bio/BioWeapon
   trumna:                        /Lotus/Weapons/Thanotech/ThanoRifle/ThanotechRifle
@@ -385,6 +395,8 @@ resolved:
   velox_prime:                   /Lotus/Weapons/Tenno/Pistols/PrimeVelox/PrimeVeloxPistol
   verglas:                       /Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle
   verglas_prime:                 /Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle
+  vermisplicer_primary:          /Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart
+  vermisplicer_secondary:        /Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart
   vesper_77:                     /Lotus/Weapons/Lasria/LasSilencedPistol/LasSilencedPistolWeapon
   vinquibus:                     /Lotus/Weapons/Tenno/Bayonet/TnBayonetRifleWeapon
   viper:                         /Lotus/Weapons/Grineer/GrineerPistol/GrineerLightPistol
