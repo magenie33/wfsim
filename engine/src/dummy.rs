@@ -2909,6 +2909,10 @@ pub struct DummyParams {
     /// vector. Those procs land on the same target and therefore DO feed
     /// Condition Overload on subsequent direct hits.
     pub radial: Option<crate::loadout::ResolvedRadial>,
+    /// THE BOMBLETS this attack's explosion throws out, when it throws any —
+    /// see [`crate::weapons_data::ClusterSpec`]. Each one is TWO more instances
+    /// on top of the explosion, resolved where the explosion was.
+    pub cluster: Option<crate::loadout::ResolvedCluster>,
     /// DIRECT-hit damage falloff, when this attack lists one. Read against the
     /// distance the shot travelled; `None` = full damage wherever it lands.
     ///
@@ -4461,6 +4465,7 @@ impl DummyParams {
             abilities: abilities.clone(),
             damage: panel.damage,
             radial: panel.radial,
+            cluster: panel.cluster,
             falloff: panel.falloff,
             spread: panel.spread,
             // Straight off the ARENA, like `abilities` and `duration_seconds`.
@@ -4993,6 +4998,7 @@ impl Default for DummyParams {
             range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
+            cluster: None,
             // POINT BLANK, and no falloff to notice it with — every golden
             // value in this file was measured with the two of them standing on
             // the same spot, so the fixture keeps them there.
@@ -8208,6 +8214,21 @@ fn spread_from_punch_through(
     for &s in struck.iter().skip(1) {
         let Some(idx) = s.checked_sub(1) else { continue };
         let Some(fs) = params.others.get(idx) else { continue };
+        // …AND IT HAS TO BE INSIDE THE WEAPON'S RANGE. A range is a WALL, not a
+        // ramp — the aimed path has said so since ranges were modelled, and
+        // this path never asked at all: the gate was computed once off the
+        // AIMED body's gap and every body behind it was punched through
+        // whatever distance it stood at. On the group-clear ruler that is a
+        // Phantasma Prime's 25 m beam reaching all nineteen ranks, the last of
+        // them 54.4 m away — and it is the whole of why a beam-range card was
+        // worth nothing in a crowd.
+        //
+        // BREAK, NOT CONTINUE: `struck_bodies` is in the order the ray meets
+        // them, so the first one out of reach is the end of the line.
+        let gap_here = (params.range_to(fs.at) - crate::space::BODY_RADIUS_M).max(0.0);
+        if gap_here > ap.range_m {
+            break;
+        }
         // ITS OWN DAMAGE FALLOFF, because it is FURTHER. The page names no
         // attenuation per body crossed, but a shot that keeps going keeps
         // flying — and the direct hit reads the GAP it flew (`falloff.factor`).
@@ -8221,9 +8242,7 @@ fn spread_from_punch_through(
         let ratio = match ap.falloff {
             None => 1.0,
             Some(f) => {
-                let here = f.factor(
-                    (params.range_to(fs.at) - crate::space::BODY_RADIUS_M).max(0.0),
-                );
+                let here = f.factor(gap_here);
                 let there = f.factor(params.gap());
                 if there > 0.0 { here / there } else { 0.0 }
             }
@@ -15897,8 +15916,28 @@ pub fn run_once_traced(
                 }),
                 other => other,
             };
-            for stage in 0..(1 + radial_stage.is_some() as usize) {
-                let rad = if stage == 1 { radial_stage } else { None };
+            // THE STAGES OF ONE PELLET, in the order they go off: the bullet,
+            // the explosion, and then each bomblet the explosion threw — a
+            // contact hit and an explosion of its own, `count` times over.
+            //
+            // NO BOMBLETS WITHOUT THE EXPLOSION THAT THREW THEM: they are what
+            // a detonation releases, so a pellet that never detonated releases
+            // none. `takes_multishot` is false on both halves, so the same
+            // clause that keeps a once-per-shot explosion off pellets 1.. keeps
+            // the bomblets off them (`ClusterSpec`: the count is the bomb's).
+            let mut stages: Vec<Option<crate::loadout::ResolvedRadial>> =
+                Vec::with_capacity(2);
+            stages.push(None);
+            if let Some(r) = radial_stage {
+                stages.push(Some(r));
+                if let Some(c) = ap.cluster.filter(|_| pellet_idx == 0) {
+                    for _ in 0..(c.count.round().max(0.0) as usize) {
+                        stages.push(Some(c.contact));
+                        stages.push(Some(c.blast));
+                    }
+                }
+            }
+            for rad in stages {
                 let direct = rad.is_none();
                 // EVERY INSTANCE RE-READS THE TARGET — not every shot, and not
                 // even every pellet.
@@ -20572,6 +20611,56 @@ mod tests {
         assert!(
             with < without * 1.40,
             "…and it can only buy the DRAW, not the whole cycle: {with} against {without}"
+        );
+    }
+
+    /// A RANGE IS A WALL FOR THE BODIES A SHOT PUNCHES THROUGH TOO.
+    ///
+    /// The gate was computed ONCE, off the aimed body's gap, and every body
+    /// behind it was punched through at whatever distance it stood — so a 25 m
+    /// beam reached the whole of the group-clear ruler's column, the last rank
+    /// 54.4 m away, and a beam-range card bought nothing in a crowd.
+    ///
+    /// A COUNT, not a total, for the reason the test above it gives: the
+    /// question is who the beam REACHED.
+    #[test]
+    fn a_beams_range_is_a_wall_for_the_bodies_behind_as_well() {
+        let touched = |mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("phantasma_prime", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("phantasma_prime");
+            let refs: Vec<&crate::loadout::ModDef> = mods
+                .iter()
+                .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
+                .collect();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            // THE RULER'S OWN COLUMN — a body every 3 m, out to 36 m, which is
+            // half again the weapon's 25 m reach.
+            arena.others = (1..=12)
+                .map(|i| crate::formation::FoeSpec {
+                    id: String::new(),
+                    params: TargetParams::training_dummy(),
+                    body_parts: DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(0.0, 3.0 * f64::from(i)),
+                })
+                .collect();
+            let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            assert!(p.range_m.is_finite(), "the wall is a number: {}", p.range_m);
+            run_once(&p, &mut Rng::new(0x5EED)).spread.touched()
+        };
+        let bare = touched(&[]);
+        assert!(
+            bare < 13,
+            "a 25 m beam cannot reach a body 36 m away: {bare} of 13 bodies"
+        );
+        // …AND THE CARD THAT MOVES THE WALL IS WORTH A BODY. Sinister Reach is
+        // the one mod in the pool that buys beam range, and a crowd is the only
+        // place it can be worth anything at all.
+        let reaching = touched(&["sinister_reach"]);
+        assert!(
+            reaching > bare,
+            "beam range buys bodies in a column: {reaching} against {bare}"
         );
     }
 

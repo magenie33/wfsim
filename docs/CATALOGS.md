@@ -70,6 +70,32 @@ until the row is checked for that weapon's own name.
 | Torid | Toxin AoE Cloud (AoE) | 40 | 100% | Multiplying | the cloud's `takes_condition_overload: true` |
 | Shedu | Normal Attack (Projectile) | 71 | 100% | Multiplying | `shedu.yaml` → `independent` |
 
+### THE CLUSTER BOMBLETS — five rows, none of them expressible
+
+The bomblets themselves ARE modelled (`cluster:`, MECHANICS §7). Their CO term
+is not, and the reason is the same for all five: **a CO class is a property of
+the WEAPON in this engine, and a bomblet is an attack PART**. Applying the
+weapon's own class would be applying a class the catalog denies them, so they
+take none at all — recorded on each entry as `cluster_bomblet_co`.
+
+| weapon | attack | unmodded | bonus | relative | type | notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Phantasma | Alt-fire Child Bomb | 3 | 3 | 100% | Multiplying | |
+| Phantasma Prime | Alt-fire Child Bomb | 3 | 3 | 100% | Multiplying | |
+| Zarr | Cannon Child Bomb | 15 | 25 | 167% | Adding | |
+| Kuva Zarr | Cannon Child Bomb | 15 | 50 | 333% | Adding | |
+| Kulstar | Cluster Bombs | 75 | 200 | 257% | Adding | *"CO-bonus uses parent projectile damage value"* |
+
+**THE THREE `Adding` ROWS ARE THE TENET FERROX SHAPE**: the bonus is the PARENT
+projectile's damage, not a share of the bomblet's own, so the relative column
+runs past 100% and `CoBase::fraction` — which clamps at the whole base — cannot
+carry it. The two Phantasmas are the opposite problem: a `Multiplying` part on
+a weapon whose class is `Adding`.
+
+**KUVA BRAMMA HAS NO ROW.** It appears only in the page's "Ranking 2" bucket,
+under *"Child projectiles that spawn from a parent projectile"* — a description
+of a behaviour, not a table row, so by rule 2 its bomblets are ordinary.
+
 ### THE TENET AND CODA BATCH — re-read 2026-08-20
 
 Twenty weapons arrived at once and the two tables name **seven** of their

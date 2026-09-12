@@ -105,6 +105,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         tendrils_held: false,
         magazine_refill_on_kill: 0.0,
         radial: None,
+        cluster: None,
         lingering: None,
         continuous: false,
         field_duration_on_empty_reload: 1.0,

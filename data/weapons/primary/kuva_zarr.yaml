@@ -87,11 +87,35 @@ attack:
     takes_blast_radius_mods: true
     damage: { blast: 673.0 }   # total 673
 
+  # THREE BOMBLETS — "then splits into 3 smaller bomblets that rain down on the
+  # point of impact". Module attacks 3 and 4, which carry the shell's own crit
+  # and status.
+  #
+  # THE BOMBLET'S FALLOFF IS THE MODULE'S, AND THE PAGE DISAGREES. Attack 4
+  # reads `Falloff = { EndRange = 3, Reduction = 0.1, StartRange = 0 }` — barely
+  # any falloff — while the page says "Explosion and bomblets have linear Damage
+  # Falloff from 100% to 30%", which is the SHELL's 0.7 swept over both. Same
+  # shape as the base Zarr's, and the Kuva Bramma's page — the one that states
+  # the two separately — agrees with its module on both. A measurement would
+  # settle it outright.
+  cluster:
+    count: 3
+    damage: { impact: 15.0 }
+    crit_chance: 0.25
+    crit_multiplier: 2.5
+    status_chance: 0.31
+    radial:
+      damage: { blast: 50.0 }
+      radius_m: 3.0
+      falloff_start_m: 0.0
+      falloff_reduction: 0.1
+      crit_chance: 0.25
+      crit_multiplier: 2.5
+      status_chance: 0.31
+
 unmodeled:
-  - reason: cluster_bomblets
-    n: 3
-    damage: "45 on contact and 150 in 3 m explosions"
-    share: "a fifth"
+  - reason: cluster_bomblet_co
+    row: "Kuva Zarr | Cannon Child Bomb | Projectile | 15 | 50 | 333% | Adding"
   - reason: explosion_ignores_cover
   - reason: self_stagger
 

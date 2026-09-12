@@ -4742,6 +4742,49 @@ pub fn panel_json(v: &Value) -> Value {
             }));
         }
 
+        // THE BOMBLETS THE EXPLOSION THREW — two more parts, and they are on
+        // the card for the reason every part is: the damage number above the
+        // card counts them, so a reader who cannot see them is reading a total
+        // that does not add up. Each states its COUNT in the meta line, because
+        // "18 Radiation" and "5 × 18 Radiation" are different weapons.
+        if let (Some(cb), Some(cr)) = (base.cluster.as_ref(), panel.cluster.as_ref()) {
+            let n = display_number(cr.count);
+            let part_rows = |b: &wfsim_engine::loadout::RadialBase,
+                             r: &wfsim_engine::loadout::ResolvedRadial| {
+                vec![
+                    json!({ "key": "base_damage", "label": "Base Damage",
+                        "base": num(b.base_vector.total()), "final": num(r.modified_base),
+                        "sources": sources("base_damage", None) }),
+                    json!({ "key": "crit_chance", "label": "Crit Chance",
+                        "base": pc(b.base_crit_chance), "final": pc(r.crit_chance),
+                        "sources": sources("crit_chance", None) }),
+                    json!({ "key": "crit_damage", "label": "Crit Damage",
+                        "base": format!("×{}", num(b.base_crit_damage)),
+                        "final": format!("×{}", num(r.crit_damage)),
+                        "sources": sources("crit_damage", None) }),
+                    json!({ "key": "status_chance", "label": "Status Chance",
+                        "base": pc(b.base_status_chance), "final": pc(r.status_chance),
+                        "sources": sources("status_chance", None) }),
+                ]
+            };
+            parts.push(json!({
+                "id": "cluster_contact",
+                "label": "Bomblet contact",
+                "meta": format!("×{n}, on contact"),
+                "stats": part_rows(&cb.contact, &cr.contact),
+                "damage": vector_rows(&cr.contact.damage),
+                "damage_total": num(cr.contact.damage.total()),
+            }));
+            parts.push(json!({
+                "id": "cluster_blast",
+                "label": "Bomblet explosion",
+                "meta": format!("×{n}, {} m radius", display_number(cr.blast.radius_m)),
+                "stats": part_rows(&cb.blast, &cr.blast),
+                "damage": vector_rows(&cr.blast.damage),
+                "damage_total": num(cr.blast.damage.total()),
+            }));
+        }
+
         // The lingering FIELD is a THIRD kind of part (MECHANICS §7): it does
         // not land once, it ticks. So it states its own clock — rate, lifetime
         // and the resulting total — on top of the same per-instance stats,

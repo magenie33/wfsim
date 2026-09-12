@@ -1405,6 +1405,46 @@ it. Two (not the cap of 3) is the tell: the count tracks instances. So two
 attack parts on the SAME enemy are two instances, which corroborates the
 verbatim separate-status rule above from the perk side.
 
+### Cluster bomblets — the third layer
+
+Five entries throw **bomblets**: the shell detonates, and its detonation
+releases child projectiles that each land a **contact hit** and an **explosion
+of their own**. It is a third damage layer under the attack's own, declared as
+`cluster:` beside `radial:` (`weapons_data::ClusterSpec`), and it is what made
+those five read as a floor before it existed.
+
+| entry | count | contact | explosion |
+| --- | --- | --- | --- |
+| Phantasma, Phantasma Prime (alt fire) | 5 | 3 Impact | 18 Radiation, 2 m, **no falloff** |
+| Zarr (cannon) | 6 | 15 Impact | 50 Blast, 3 m |
+| Kuva Zarr (cannon) | 3 | 15 Impact | 50 Blast, 3 m |
+| Kuva Bramma | 3 | 49 Impact | 57 Blast, 3.5 m |
+| Kulstar | 3 | 75 Impact | 90 Blast, 3.9 m |
+
+Four rules, and each is a decision a reader can argue with:
+
+1. **THEY GO OFF WHERE THE SHELL WENT OFF.** They are seeking projectiles that
+   fan out and come down on what the shell landed on, which is the arrangement
+   a player sees and the only one this plane can answer. A bomblet that found a
+   body the shell missed is geometry this arena does not hold.
+2. **A CONTACT HIT IS AN EXPLOSION OF ONE BODY RADIUS.** Both halves resolve
+   through the radial machinery so neither re-derives a damage rule, and the
+   contact's radius is `space::BODY_RADIUS_M` — the smallest sphere that means
+   "the body this bomblet touched and nobody else", since `falloff_at` is
+   exclusive at the edge and a zero would reach nobody at all.
+3. **MULTISHOT DOES NOT RAISE THE COUNT**, and two pages say so in words:
+   *"each main projectile will always produce 6 cluster bombs"* (Zarr) and
+   *"the number of bomblets generated per rocket will always be 3"* (Kulstar).
+   The module's `Multishot` on a cluster attack IS that per-parent count.
+   Blast-radius mods DO reach the bomblet's explosion, like any other AoE part.
+4. **NO BOMBLETS WITHOUT THE DETONATION THAT THREW THEM.** They are stages
+   under the radial, so a pellet that never detonated releases none.
+
+**THE ONE THING THEY DO NOT TAKE IS CONDITION OVERLOAD.** The catalog gives
+each of them a rule of its own and a CO class is a property of the WEAPON here,
+so they take none at all rather than take it under a class the catalog denies
+them — recorded per entry as `cluster_bomblet_co` (docs/CATALOGS.md §1).
+
 ### Continuous (beam) weapons
 
 Trigger "Held". Two rules differ from a gun, both from wiki Continuous_Weapon

@@ -657,6 +657,9 @@ pub struct AttackSpec {
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
+    /// The BOMBLETS this attack's explosion throws out — see [`ClusterSpec`].
+    #[serde(default)]
+    pub cluster: Option<ClusterSpec>,
     /// PRIMARY COMPRESSION's row for this attack — see [`CompressionSpec`].
     /// `None` means the weapon is absent from the table, which is not the same
     /// as 0%: absent is untested or inapplicable (every secondary, since the
@@ -1282,6 +1285,46 @@ pub struct RadialSpec {
     /// Declared per entry, never inferred.
     #[serde(default = "yes")]
     pub takes_multishot: bool,
+}
+
+/// THE BOMBLETS AN EXPLOSION THROWS OUT — docs/MECHANICS.md §7.1.
+///
+/// A third damage layer under the attack's own: the shell detonates, and its
+/// detonation releases `count` child projectiles that each land a contact hit
+/// and an explosion of their own. It is a SHAPE the roster has five of (both
+/// Zarrs, the Kuva Bramma, the Kulstar and both Phantasmas) and the reason
+/// each of them read as a floor until it existed.
+///
+/// WHERE THEY GO OFF IS THE EPICENTRE. They are seeking projectiles that fan
+/// out and come back down on what the shell landed on, so this arena detonates
+/// them where the shell detonated — which is the arrangement a player sees and
+/// the only one it can answer. A bomblet that found a body the shell missed is
+/// geometry this plane does not hold.
+///
+/// THE COUNT IS THE BOMB'S, and multishot does not raise it: multishot adds
+/// PROJECTILES, and a bomblet is not one — it is something the projectile
+/// released. Nothing published states this either way.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ClusterSpec {
+    /// How many bomblets one detonation releases.
+    pub count: f64,
+    /// THE CONTACT HIT, per bomblet. Laid out like the attack's own because a
+    /// bomblet IS a little attack: damage and stats here, its explosion under
+    /// `radial:`.
+    pub damage: BTreeMap<String, f64>,
+    #[serde(default)]
+    pub crit_chance: Option<f64>,
+    #[serde(default)]
+    pub crit_multiplier: Option<f64>,
+    #[serde(default)]
+    pub status_chance: Option<f64>,
+    /// The CONTACT hit's forced procs — the bomblet explosion's are its own,
+    /// the same split every `radial:` states.
+    #[serde(default)]
+    pub forced_procs: Vec<String>,
+    /// The bomblet's own explosion.
+    pub radial: RadialSpec,
 }
 
 /// A PROJECTILE THAT DEFLECTS OFF WHAT IT HITS and keeps going.
@@ -3627,6 +3670,44 @@ pub fn base_panel_assembled(
     let radial = s.attack.radial.as_ref().map(&a_radial);
     let slam = s.attack.slam.as_ref().map(&a_radial);
 
+    // THE BOMBLETS, both halves through the same builder — see `ClusterSpec`.
+    // The CONTACT hit is a radial of one BODY RADIUS: the smallest sphere that
+    // means "the body this bomblet touched and nobody else", since `falloff_at`
+    // is exclusive at the edge and a zero would reach nobody at all.
+    let cluster = s.attack.cluster.as_ref().map(|c| {
+        let contact = a_radial(&RadialSpec {
+            damage: c.damage.clone(),
+            radius_m: crate::space::BODY_RADIUS_M,
+            blast_kind: BlastKind::default(),
+            // A CONTACT HIT HAS NO RADIUS TO GROW. Firestorm pays on the
+            // bomblet's explosion below and on nothing else here.
+            takes_blast_radius_mods: false,
+            crit_chance: c.crit_chance,
+            crit_multiplier: c.crit_multiplier,
+            status_chance: c.status_chance,
+            falloff_start_m: None,
+            falloff_reduction: None,
+            forced_procs: c.forced_procs.clone(),
+            takes_condition_overload: false,
+            takes_multishot: false,
+        });
+        crate::loadout::ClusterBase {
+            count: c.count,
+            contact,
+            // MULTISHOT DOES NOT RAISE THE COUNT, and two pages say so in
+            // words: *"each main projectile will always produce 6 cluster
+            // bombs"* (Zarr) and *"the number of bomblets generated per rocket
+            // will always be 3"* (Kulstar). The module's `Multishot` on a
+            // cluster attack IS that per-parent count, not a mod interaction —
+            // so both halves read `false` and the count comes from `count:`.
+            blast: a_radial(&RadialSpec {
+                takes_multishot: false,
+                takes_condition_overload: false,
+                ..c.radial.clone()
+            }),
+        }
+    });
+
     // The lingering FIELD (Torid's Toxin cloud). Each stat falls back to the
     // direct part's when unstated, same rule as the radial.
     let lingering = s.attack.lingering.as_ref().map(|f| {
@@ -3834,6 +3915,7 @@ pub fn base_panel_assembled(
         traits: traits_for(s),
         gauge_form,
         radial,
+        cluster,
         slam,
         spread: s.attack.spread,
         // Only an EVOLUTION grants one (Lone Enforcer); no weapon declares it.

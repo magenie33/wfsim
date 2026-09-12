@@ -59,13 +59,30 @@ attack:
     takes_blast_radius_mods: true
     damage: { blast: 300 }   # total 300
 
+  # THREE BOMBLETS — "then splits into 3 smaller cluster bombs that rain down on
+  # the point of impact". Module attacks 3 and 4. THE COUNT IS FIXED and the
+  # page says so in words: "Multishot mods will only affect the rocket; the
+  # number of bomblets generated per rocket will always be 3".
+  cluster:
+    count: 3
+    damage: { impact: 75.0 }
+    crit_chance: 0.17
+    crit_multiplier: 2.3
+    status_chance: 0.19
+    radial:
+      damage: { blast: 90.0 }
+      radius_m: 3.9
+      falloff_start_m: 0.0
+      falloff_reduction: 0.4
+      crit_chance: 0.17
+      crit_multiplier: 2.3
+      status_chance: 0.19
+
 unmodeled:
   - reason: explosion_ignores_cover
   - reason: self_stagger
-  - reason: cluster_bomblets
-    n: 3
-    damage: 3 x 100 Blast
-    share: a third
+  - reason: cluster_bomblet_co
+    row: "Kulstar | Cluster Bombs | Projectile | 75 | 200 | 257% | Adding — \"CO-bonus uses parent projectile damage value\""
 
 source:
   url: https://wiki.warframe.com/w/Kulstar

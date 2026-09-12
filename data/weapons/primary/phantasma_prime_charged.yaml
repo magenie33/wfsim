@@ -26,7 +26,9 @@ grip_type: ""
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "the five CLUSTER BOMBLETS the bomb throws out (3 Impact each, plus an 18 Radiation explosion each): they fly at 6 m/s in their own directions, so how many reach ONE target is a question this arena has no geometry to answer — and they are roughly half the alt fire's damage, so the number below is a floor"
+  - reason: cluster_bomblet_co
+    row: "Phantasma Prime | Alt-fire Child Bomb | Projectile | 3 | 3 | 100% | Multiplying"
+  - reason: cluster_bomblet_stagger
   - "the escalating ammo cost the wiki files under Bugs (2/2/2/3/3/4/6 through a magazine, and -1 damage per extra ammo): a bug is not a rule, and this one takes AWAY what the charge is supposed to buy"
 
 attack:
@@ -115,28 +117,27 @@ attack:
     crit_chance: 0.03
     crit_multiplier: 1.5
     status_chance: 0.37
-  #
-  # ── THE FIVE CLUSTER BOMBLETS ARE NOT MODELLED ──────────────────────────
-  #
-  # "which then releases 5 seeking projectiles", each doing 3 Impact on contact
-  # (forced Stagger) and then its own 18 Radiation explosion in a 2 m radius
-  # (forced Impact). Module attacks 4 and 5.
-  #
-  # WHY NOT: the engine gives an attack ONE `radial:`, and these are a THIRD
-  # layer under it — a radial's radial, five times over. Writing them into the
-  # existing radial would merge two explosions with different damage, different
-  # radii and, per the CO catalog, DIFFERENT BEHAVIOUR CLASSES: the child bomb
-  # is "Multiplying" where everything else on this weapon is Additive. Merging
-  # them would not be an approximation, it would be a category error.
-  #
-  # AND THE ANSWER IS NOT KNOWN ANYWAY. They are SEEKING projectiles that
-  # spread to find targets; against one enemy it is unstated whether all five
-  # home onto it, some miss, or they scatter. A number here would be a guess
-  # dressed as data, and the guess spans a factor of five.
-  #
-  # CONSEQUENCE, stated plainly: this form's damage is a FLOOR. It is the bomb
-  # plus its explosion and nothing else, and in game a solo target eats some
-  # part of 5 x (3 + 18) on top.
+
+  # THE FIVE CLUSTER BOMBLETS — "which then releases 5 seeking projectiles",
+  # module attacks 4 and 5. They land where the bomb landed, which is what a
+  # player sees: the bomb goes off on the target and the bomblets come down on
+  # it. NO FALLOFF on their explosion — the module gives attack 5 a `Range = 2`
+  # and NO `Falloff` block, where attack 3 (the bomb's own) carries
+  # `Falloff = { EndRange = 4.8, Reduction = 0.5, StartRange = 0 }`.
+  cluster:
+    count: 5
+    # The contact hit, per bomblet. Its forced Stagger is an admission above.
+    damage: { impact: 3.0 }
+    crit_chance: 0.03
+    crit_multiplier: 1.5
+    status_chance: 0.37
+    radial:
+      damage: { radiation: 18.0 }
+      radius_m: 2.0
+      crit_chance: 0.03
+      crit_multiplier: 1.5
+      status_chance: 0.37
+      forced_procs: [impact]
 
 source:
   url: https://wiki.warframe.com/w/Phantasma_Prime

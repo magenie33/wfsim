@@ -68,13 +68,38 @@ attack:
     takes_blast_radius_mods: true
     damage: { blast: 175 }   # total 175
 
+  # SIX BOMBLETS — "then splits into 6 smaller bomblets that rain down on the
+  # point of impact", each "dealing 50 Blast damage within a small radius".
+  # Module attacks 3 and 4, which carry their OWN crit and status rather than
+  # the shell's.
+  #
+  # THE BOMBLET'S FALLOFF IS THE MODULE'S, AND THE PAGE DISAGREES. Attack 4
+  # reads `Falloff = { EndRange = 3, Reduction = 0.9, StartRange = 0 }` while
+  # the page says "Explosion and bomblets have linear Damage Falloff from 100%
+  # to 50%" — 0.5, which is the SHELL's own number swept over both. The Kuva
+  # Bramma is the one page that states the two separately, and there the module
+  # matches both; that is what settles which of these two is the generalisation.
+  # A measurement would settle it outright.
+  cluster:
+    count: 6
+    damage: { impact: 15.0 }
+    crit_chance: 0.15
+    crit_multiplier: 2.0
+    status_chance: 0.2
+    radial:
+      damage: { blast: 50.0 }
+      radius_m: 3.0
+      falloff_start_m: 0.0
+      falloff_reduction: 0.9
+      crit_chance: 0.15
+      crit_multiplier: 2.0
+      status_chance: 0.1
+
 unmodeled:
   - reason: explosion_ignores_cover
   - reason: self_stagger
-  - reason: cluster_bomblets
-    n: 6
-    damage: 6 x 150 Blast
-    share: a third
+  - reason: cluster_bomblet_co
+    row: "Zarr | Cannon Child Bomb | Projectile | 15 | 25 | 167% | Adding"
 
 source:
   url: https://wiki.warframe.com/w/Zarr

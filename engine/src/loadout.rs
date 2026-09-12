@@ -2311,6 +2311,8 @@ pub struct WeaponBase {
     /// crit and status stats; the directly-hit enemy takes both parts.
     /// See MECHANICS §7 "Radial (AoE) attack parts" for the rule set.
     pub radial: Option<RadialBase>,
+    /// The bomblets this attack's explosion throws out — see [`ClusterBase`].
+    pub cluster: Option<ClusterBase>,
     /// THE CONE this attack fires into, as the data states it and before
     /// accuracy mods — see [`crate::weapons_data::SpreadSpec`]. `None` = not
     /// transcribed, and the entry admits it.
@@ -2990,6 +2992,24 @@ pub struct RadialBase {
     pub co_base: f64,
 }
 
+/// THE BOMBLETS AN EXPLOSION THROWS OUT, unmodded — see
+/// [`crate::weapons_data::ClusterSpec`].
+///
+/// BOTH HALVES ARE A [`RadialBase`] so they resolve through exactly the mod
+/// buckets an explosion does, and the CONTACT hit is the one that needs saying:
+/// its radius is [`crate::space::BODY_RADIUS_M`], the smallest sphere that
+/// means "the body this bomblet touched and nobody else". A radius of ZERO
+/// would mean nobody at all — `falloff_at` is exclusive at the edge.
+#[derive(Debug, Clone)]
+pub struct ClusterBase {
+    /// How many bomblets one detonation releases.
+    pub count: f64,
+    /// The contact hit, per bomblet.
+    pub contact: RadialBase,
+    /// The bomblet's own explosion.
+    pub blast: RadialBase,
+}
+
 /// THE CO TERM'S BASE, AND THE BASE IT IS A SHARE OF — carried together.
 ///
 /// The FACT is `absolute`: an evolution's flat add leaves it alone, a valence
@@ -3133,6 +3153,14 @@ pub struct ResolvedRadial {
     pub takes_multishot: bool,
     /// See [`RadialBase::co_base_pair`].
     pub co_base: CoBase,
+}
+
+/// The bomblets after mod resolution — see [`ClusterBase`].
+#[derive(Debug, Clone, Copy)]
+pub struct ResolvedCluster {
+    pub count: f64,
+    pub contact: ResolvedRadial,
+    pub blast: ResolvedRadial,
 }
 
 impl ResolvedRadial {
@@ -3519,6 +3547,8 @@ pub struct ResolvedPanel {
     pub damage: DamageVector,
     /// The resolved radial (AoE) part, when the weapon has one.
     pub radial: Option<ResolvedRadial>,
+    /// The resolved bomblets, when the weapon's explosion throws any.
+    pub cluster: Option<ResolvedCluster>,
     /// THE CONE, accuracy mods applied. A zero-width one lands on the reticle;
     /// `None` = this entry's spread is not transcribed, so no shot of it is
     /// allowed to miss and the entry admits that.
@@ -5124,6 +5154,14 @@ pub fn resolve_for(
     // part seen from a different swing, and a combo that ends on one should not
     // read a different Serration from the swing it ends.
     let slam = base.slam.as_ref().map(&a_resolved);
+    // THE BOMBLETS, both halves through the same buckets: they are the weapon's
+    // damage arriving in a smaller package, so a Serration the shell reads is a
+    // Serration they read.
+    let cluster = base.cluster.as_ref().map(|c| ResolvedCluster {
+        count: c.count,
+        contact: a_resolved(&c.contact),
+        blast: a_resolved(&c.blast),
+    });
 
     // The lingering FIELD (Torid's Toxin cloud): its own base vector, crit and
     // status stats, through the SAME mod buckets — three patch notes settle
@@ -5358,6 +5396,7 @@ pub fn resolve_for(
         range_m: beam_range_m,
         damage,
         radial,
+        cluster,
         spread,
         falloff,
         lingering,
