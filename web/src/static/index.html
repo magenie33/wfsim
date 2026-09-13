@@ -1106,12 +1106,18 @@
         </span>
       </div>
       <div class="bb">
-        <div class="wf-top">
-          <div><div class="exlabel" data-i18n>Aura</div><div id="wf-aura" class="slots one"></div></div>
-          <div><div class="exlabel" data-i18n>Exilus</div><div id="wf-exilus" class="slots one"></div></div>
+        <!-- THE WEAPON BUILDER'S SHAPE: the slot that GRANTS capacity first (a
+             weapon's stance, a frame's aura), the eight, then the exilus. -->
+        <div id="wf-aura-block">
+          <div class="exlabel" data-i18n>Aura</div>
+          <div id="wf-aura" class="slots"></div>
+          <div class="exhint" data-i18n>An aura hands capacity back instead of costing it: twice its drain on its own polarity, 80% of it rounded down on another. A polarity moves between all ten slots, the aura's included.</div>
         </div>
         <div id="wf-mod-slots" class="slots"></div>
-        <div class="exhint" data-i18n>An aura hands capacity back instead of costing it: twice its drain on its own polarity, 80% of it rounded down on another. A polarity moves between all ten slots, the aura's included.</div>
+        <div id="wf-exilus-block">
+          <div class="exlabel" data-i18n>Exilus</div>
+          <div id="wf-exilus" class="slots"></div>
+        </div>
       </div>
     </section>
 

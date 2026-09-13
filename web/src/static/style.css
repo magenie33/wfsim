@@ -2522,11 +2522,10 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .jump-foot .ghost-btn{flex:1 1 0;font-size:11px;padding:3px 6px}
 
 /* THE WARFRAME BUILDER. The weapon builder's slots, rows and dropdowns, and only
-   what a frame has that a weapon does not: an aura beside the exilus, five
-   shard sockets, and ability cards. */
-.wf-top{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.wf-top .exlabel{margin-top:0}
-@media (max-width:560px){.wf-top{grid-template-columns:minmax(0,1fr)}}
+   what a frame has that a weapon does not: five shard sockets and ability
+   cards. The aura sits where a weapon's stance does. */
+#wf-aura-block{margin-bottom:10px}
+#wf-aura-block .exlabel{margin-top:0}
 .wf-shards{display:flex;flex-direction:column;gap:6px}
 .wf-shard{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
 .wf-swatch{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);flex:none}
