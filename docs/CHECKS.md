@@ -49,8 +49,9 @@ applied by the wiring pass — a box it never reached looks identical and does
 nothing when clicked), shutting one hides its body by COMPUTED STYLE, a control
 in a heading keeps its own click, what you shut survives a reload, and the menu
 lists exactly the folds the page has under their own translated names. Then it
-jumps into the deepest section of a fully collapsed page and asserts the target
-AND the block above it opened. The menu is dragged with a real pointer
+jumps into the deepest section of a fully collapsed page and asserts the block
+above it opened while the target kept its own fold, which the row's caret then
+opens without moving the page. The menu is dragged with a real pointer
 (`Input.dispatchMouseEvent` — a page-side `PointerEvent` carries no active
 pointer id): shut by its grip, open by its header, and off the corner to see it
 stop at the window's edge and under the topbar. A click on the grip must still

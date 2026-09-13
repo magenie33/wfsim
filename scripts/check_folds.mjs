@@ -132,9 +132,14 @@ const r = await evaluate(`(async () => {
   out.leaks = sectLeaks(sects());
   out.shortPage = document.documentElement.scrollHeight;
   hit('[data-jump="sim-measure"]'); await sleep(400);
-  out.jumpedOpen = !document.querySelector('[data-fold="sim-measure"]').classList.contains('shut')
+  out.jumpedOpen = document.querySelector('[data-fold="sim-measure"]').classList.contains('shut')
     && !document.getElementById('sim-block').classList.contains('shut');
-  out.jumpedInView = document.getElementById('sim-run').offsetParent !== null;
+  out.jumpedInView = document.querySelector('[data-fold="sim-measure"]').offsetParent !== null;
+  // THE ROW'S CARET IS THE FOLD CONTROL: it opens that section and moves nothing.
+  const y0 = window.scrollY;
+  hit('[data-jump-fold="sim-measure"]'); await sleep(200);
+  out.caretOpened = !document.querySelector('[data-fold="sim-measure"]').classList.contains('shut')
+    && Math.abs(window.scrollY - y0) < 2;
   hit('[data-jump-all="open"]'); await sleep(200);
   out.allOpen = blocks().every(b => !b.classList.contains('shut'))
     && sects().every(s => !s.classList.contains('shut'));
@@ -163,7 +168,8 @@ check("collapse all reaches every block and every section", r.allShut);
 check("...and nothing inside a shut section is still drawn", r.leaks.length === 0, JSON.stringify(r.leaks));
 check("...and it is the point: the page gets shorter",
   r.shortPage * 2 < r.tallPage, `${r.shortPage}px shut vs ${r.tallPage}px open`);
-check("a jump opens its target and every fold above it", r.jumpedOpen && r.jumpedInView);
+check("a jump opens every fold above its target and leaves the target's own", r.jumpedOpen && r.jumpedInView);
+check("...and the row's caret is what opens it, in place", r.caretOpened);
 check("expand all reaches every one back", r.allOpen);
 check("what you folded is stored", r.stored === true);
 check("every control the menu was asked for was drawn", !r.missing, JSON.stringify(r.missing));
@@ -245,6 +251,13 @@ const here = await evaluate(`(async () => {
 check("the section on screen is the marked row", here.row === "sim-buffs", JSON.stringify(here));
 check("...the close button shuts it", here.open === false);
 check("...and the shut grip names it", here.now === here.want && here.topNow !== here.want, JSON.stringify(here));
+
+// A CLICK ON THE HEADER IS A CLICK, the same as on the grip: it shuts the menu.
+await evaluate("jump.open = true; renderJump(); 1");
+await sleep(200);
+const h1 = await centre("jump-head");
+await drag([h1.left + 30, h1.y], [h1.left + 31, h1.y]);
+check("a click on the header shuts the menu", (await evaluate("jump.open")) === false);
 
 // ---- the optimizer: sections two levels down ------------------------------
 

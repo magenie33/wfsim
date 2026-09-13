@@ -618,8 +618,9 @@ ui:
   dealt: 打出
   "delete": 删除
   "drag to move — click to open or close": 拖动可移动 —— 点击展开或收起
-  "drag to move — double-click to put it back": 拖动可移动 —— 双击回到默认位置
   "close the menu": 关闭导航
+  "expand": 展开
+  "collapse": 收起
   "On this page": 页面导航
   "direct hit": 直接命中
   "direct hits": 直接命中
