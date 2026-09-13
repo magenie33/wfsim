@@ -6,6 +6,66 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  # THE WARFRAME BUILDER. The stat names are DE's own, read off the zh card text
+  # of the mods that grant them (Intensify 技能强度, Continuity 技能持续时间 …).
+  "Warframes": 战甲
+  "Exilus": Exilus
+  "Archon Shards": 执刑官源力石
+  "Abilities": 技能
+  "+ add aura": + 添加光环
+  "+ add exilus mod": + 添加 Exilus MOD
+  "+ add mod": + 添加 MOD
+  "empty socket": 空槽
+  "no infusion": 不注入
+  "pick an ability": 选择技能
+  "energy": 能量
+  "Energy": 能量
+  "energy cost": 能量消耗
+  "energy drained per second": 每秒消耗的能量
+  "incompatible with a card already seated": 与已装备的卡牌不兼容
+  "cannot swap: the card in this slot does not fit that one": 无法交换：这个槽位的卡牌放不进那个槽位
+  "augments an ability this loadout does not carry — it would pay nothing": 强化的技能不在当前配置中——装上也没有效果
+  "inert here": 此处无效
+  "this ability's numbers are not transcribed yet": 这个技能的数值还没有录入
+  "What this panel does not compute": 这个面板没有计算的内容
+  "not computed by this panel yet": 这个面板暂未计算
+  "cannot change a number in a Warframe's own panel": 不会改变战甲自身面板上的任何数字
+  "seated, and paying nothing in this build": 已装备，但在这套配装中没有效果
+  "Shield Capacity": 护盾容量
+  "Energy Max": 最大能量
+  "Ability Strength": 技能强度
+  "Ability Duration": 技能持续时间
+  "Ability Efficiency": 技能效率
+  "Ability Range": 技能范围
+  "Casting Speed": 施放速度
+  "no matches": 无匹配结果
+  "auto": 自动
+  "clear": 清空
+  "An aura hands capacity back instead of costing it: twice its drain on its own polarity, 80% of it rounded down on another. A polarity moves between all ten slots, the aura's included.": 光环不消耗容量，而是返还容量：极性相同时返还两倍，极性不同时返还 80%（向下取整）。极性可以在全部十个槽位之间移动，光环槽也包括在内。
+  "Attack Speed": 攻击速度
+  "Normal attack damage": 普通攻击伤害
+  "Health restored per hit": 每次命中恢复生命值
+  "Wall and slide attack damage": 墙面与滑行攻击伤害
+  "Aerial attack damage": 空中攻击伤害
+  "Slam attack damage": 砸地攻击伤害
+  "Slam radius": 砸地半径
+  "Reach": 攻击距离
+  "Critical chance": 暴击几率
+  "Critical multiplier": 暴击倍率
+  "Status chance": 触发几率
+  "Cast time": 施放时间
+  "Duration": 持续时间
+  "Radius": 半径
+  "Impact damage": 冲击伤害
+  "Slow": 减速
+  "Melee damage vulnerability": 近战易伤
+  "Stun": 眩晕
+  "Pull radius": 拉拽半径
+  "Slash damage": 切割伤害
+  "Combo window": 连击窗口
+  "Cooldown": 冷却时间
+  "Armor while Warcry is active": Warcry 生效时的护甲
+  "Armor while Warcry and Hysteria are active": Warcry 与 Hysteria 同时生效时的护甲
   "$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.":
     5 美元起，之后给多少由你说了算。没有档位，也没有目标——上面是账单本身，不是价目表。
   "'3 kills each within 2 seconds of the previous kill summons a second Pyrana Prime for 6 seconds, doubling its magazine size and increasing its fire rate by 1.4x' (wiki). It is a KILL-counting buff — a chain of three, each inside a two-second window — and this engine has no shape for one, so the number here is the weapon before its second gun ever appears. Against a crowd that dies quickly, that is a very large understatement": "「连续 3 次击杀、每次都在上一次击杀后 2 秒内，会召唤出第二把 Pyrana Prime，持续 6 秒，弹匣翻倍且射速 x1.4」（维基）。这是一个按「击杀」累计的增益 —— 三连，每一次都要在两秒的窗口内 —— 而本引擎没有这种形状，所以这里的数字是第二把枪从未出现过的那把武器。面对一群会很快死掉的敌人，这是一个非常大的低估"

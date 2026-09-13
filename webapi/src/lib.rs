@@ -135,6 +135,7 @@ pub fn warframe_catalog_json() -> Value {
             },
             "description": m.description,
             "effects": m.description.lines().collect::<Vec<_>>(),
+            "desc_ranks": (0..=m.max_rank).map(|r| m.card_at(r).join("\n")).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
         "arcanes": wf::arcanes().iter().map(|x| json!({
             "id": x.id,
@@ -144,6 +145,7 @@ pub fn warframe_catalog_json() -> Value {
             "image": a.warframe_arcanes.get(&x.id),
             "description": x.description,
             "effects": x.description.lines().collect::<Vec<_>>(),
+            "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
         "abilities": wf::abilities().iter().map(|x| json!({
             "id": x.id,
@@ -2006,6 +2008,13 @@ pub fn meta_json() -> Value {
                 "modelled": o.at(false).unmodelled_reason().is_none(),
                 "why_not": o.at(false).unmodelled_reason(),
             })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+        // THE FRAMES THE WARFRAME BUILDER SEATS — the home grid and the router
+        // need only these three fields; the rest is `/api/warframe/catalog`.
+        "warframes": wfsim_engine::warframes_data::warframes().iter().map(|f| json!({
+            "id": f.id,
+            "name": f.name,
+            "image": assets().warframes.get(&f.id),
         })).collect::<Vec<_>>(),
         // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the
         // panel fills its fields from whichever is picked.

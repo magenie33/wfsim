@@ -2014,7 +2014,13 @@ async function route() {
   // meant to be PASTED — into a video description, into the group — so it is a
   // real address rather than a section somebody has to scroll to.
   const thx = /^\/thanks\/?$/.test(location.pathname);
-  const m = (support || bench || dl || thx) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
+  // `/warframes/<Wiki_Name>` — the Warframe builder, a page of its own that
+  // belongs to no weapon. Matched by id or by the wiki name, like a weapon.
+  const wfRoute = location.pathname.match(/^\/warframes\/([^/]+?)\/?$/);
+  const wfSlug = wfRoute && decodeURIComponent(wfRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const wfHit = wfSlug && wfFrames().find((f) =>
+    f.id === wfSlug || f.name.toLowerCase().replace(/[\s-]+/g, "_") === wfSlug) || null;
+  const m = (support || bench || dl || thx || wfHit) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -2033,7 +2039,9 @@ async function route() {
   const gen = ++routeGen;
   if (w) await loadWeaponBoard(w.id);
   if (gen !== routeGen) return;
-  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx);
+  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx && !wfHit);
+  document.body.classList.toggle("on-warframe", !!wfHit);
+  $("warframe-page").hidden = !wfHit;
   document.body.classList.toggle("on-support", support);
   document.body.classList.toggle("on-thanks", thx);
   document.body.classList.toggle("on-benchmark", bench);
@@ -2042,14 +2050,14 @@ async function route() {
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
   document.body.classList.toggle("on-enemies", mod === "enemies");
-  $("home-page").hidden = !!w || support || bench || dl || thx;
+  $("home-page").hidden = !!w || support || bench || dl || thx || !!wfHit;
   $("support-page").hidden = !support;
   $("thanks-page").hidden = !thx;
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : (!w && !support && !dl && !thx) ? "home" : "";
+  const here = bench ? "benchmark" : (!w && !support && !dl && !thx && !wfHit) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
@@ -2063,8 +2071,12 @@ async function route() {
     : thx ? `${tr("Thank you")} — WFSim`
     : dl ? `${tr("WFSim for Windows")} — WFSim`
     : bench ? `${tr("Benchmark")} — WFSim`
+    : wfHit ? `${wfHit.name} — WFSim`
     : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Warframe Calculator";
-  if (support) {
+  if (wfHit) {
+    await showWarframe(wfHit.id);
+    if (gen !== routeGen) return;
+  } else if (support) {
     renderSupport();
   } else if (thx) {
     renderThanksPage();
@@ -2201,6 +2213,13 @@ const oneCardPerChamber = (ws) => {
 
 function renderHome() {
   renderHomeFacts();
+  const frames = $("warframe-grid");
+  if (frames) {
+    frames.innerHTML = `<section class="wgroup"><div class="wgrid">${wfFrames().map((f) => `<a class="wcard" href="${warframePath(f)}">
+      ${imgTag(IMG(f.image), "wc-img")}
+      <div class="wc-info"><div class="wc-name">${escHtml(f.name)}</div>
+      <div class="wc-tags"><span class="tag">${escHtml(tr("Builder"))}</span></div></div></a>`).join("")}</div></section>`;
+  }
   const grid = $("weapon-grid");
   if (!grid) return;
   const card = (w) => {
@@ -7721,6 +7740,11 @@ function presetDoc(d) {
     apply: applyOptPreset,
     rerender: renderOptPresetBars,
   };
+  if (d === WF_BUILDS) return {
+    setActive: (n) => { wfActive = n; },
+    apply: wfApply,
+    rerender: renderWfPresetBar,
+  };
   if (d === RIVENS) return {
     setActive: (n) => { activeRiven = n; },
     // An undo can land on a collection that is now empty (the last riven
@@ -7743,7 +7767,7 @@ function restorePresetSnapshot(s) {
     // A step taken on ANOTHER weapon is restored in storage but not applied:
     // yanking the editor to a weapon the user has since left would be a
     // second surprise on top of the one being undone.
-    if (s.weapon !== presetWeapon()) return;
+    if (s.weapon !== undoOwner(s.domain)) return;
     const doc = presetDoc(s.domain);
     const list = JSON.parse(s.list || "[]");
     // WHAT NAMES AN ENTRY is its name in every collection but one: a riven's
@@ -7774,11 +7798,13 @@ const lastIn = (stack, d, w) => {
   }
   return -1;
 };
-const canUndoIn = (d) => lastIn(undoStack, d, presetWeapon()) >= 0;
-const canRedoIn = (d) => lastIn(redoStack, d, presetWeapon()) >= 0;
+/// WHOSE COLLECTION A DOMAIN IS: a weapon's, or the open Warframe's.
+const undoOwner = (d) => (d === WF_BUILDS ? (wf ? wf.frame : "") : presetWeapon());
+const canUndoIn = (d) => lastIn(undoStack, d, undoOwner(d)) >= 0;
+const canRedoIn = (d) => lastIn(redoStack, d, undoOwner(d)) >= 0;
 
 function stepIn(from, to, d, label) {
-  const w = presetWeapon();
+  const w = undoOwner(d);
   const i = lastIn(from, d, w);
   if (i < 0) return;
   const step = from.splice(i, 1)[0];
@@ -7824,6 +7850,7 @@ const PRESET_LABELS = {
   "simulator-scenarios": "Scenarios",
   optimizer: "Searches",
   rivens: "Rivens",
+  warframes: "Builds",
 };
 
 // Inline feedback, never a native dialog (those are blocked in the owner's
@@ -17207,7 +17234,8 @@ const JUMP_TABS = [["", "Builder"], ["simulator", "Simulator"], ["optimizer", "O
 function jumpRows() {
   const here = jumpMod();
   const base = weaponPath($("weapon").value);
-  let h = `<div class="jump-mods">` + JUMP_TABS.map(([m, label]) =>
+  // A WARFRAME PAGE HAS NO TABS, so it has no row of them.
+  let h = document.body.classList.contains("on-warframe") ? "" : `<div class="jump-mods">` + JUMP_TABS.map(([m, label]) =>
     `<a class="jump-mod${m === here ? " sel" : ""}" href="${base}${m ? "/" + m : ""}">${
       escHtml(tr(label))}</a>`).join("") + `</div>`;
   h += pageFolds().map((f) => {
@@ -17279,7 +17307,7 @@ function markJumpHere() {
 function renderJump() {
   const el = $("jump");
   if (!el) return;
-  const on = !document.querySelector(".config-page").hidden;
+  const on = [...document.querySelectorAll(".config-page")].some((p) => !p.hidden);
   el.hidden = !on;
   if (!on) return;
   el.classList.toggle("open", !!jump.open);
@@ -21334,6 +21362,606 @@ function mountDesktopUpdater() {
   // Not at boot: the first seconds belong to the page the reader opened.
   setTimeout(look, 8000);
   setInterval(look, DESKTOP_CHECK_MS);
+}
+
+// ---- THE WARFRAME BUILDER ----------------------------------------------
+//
+// `/warframes/<Wiki_Name>`: a frame's mods, arcanes, shards and Helminth, and
+// what they resolve to. A builder and nothing else. The numbers are the
+// engine's (`/api/warframe/panel`); what this draws of its own is the slot
+// arithmetic the weapon builder also draws. docs/WARFRAMES.md.
+const WF_BUILDS = "warframes";
+const WF_EXILUS = 8;
+const WF_AURA = 9;
+// "30 [Base] × 2 [Orokin Reactor]" (W`Orokin_Reactor`).
+const WF_BASE_CAPACITY = 60;
+const WF_POLS = ["Madurai", "Naramon", "Vazarin", "Zenurik", "Unairu", "Umbra", "Omni"];
+const WF_SCALE_TAG = { strength: "STR", duration: "DUR", range: "RNG", casting_speed: "CAST" };
+const SHARD_HUE = { crimson: "#d64545", azure: "#3d8bfd", amber: "#e8a33d",
+  violet: "#9b59d0", emerald: "#2fb36d", topaz: "#e07b2a" };
+let WFCAT = null;
+let wf = null;
+let wfActive = "";
+let wfWired = false;
+
+const wfFrames = () => (META && META.warframes) || [];
+const wfFrame = (id) => (WFCAT && WFCAT.frames.find((f) => f.id === id)) || null;
+const wfMod = (id) => (WFCAT && id && WFCAT.mods.find((m) => m.id === id)) || null;
+const wfArcane = (id) => (WFCAT && id && WFCAT.arcanes.find((a) => a.id === id)) || null;
+const wfAbility = (id) => (WFCAT && id && WFCAT.abilities.find((a) => a.id === id)) || null;
+const warframePath = (f) => "/warframes/" + String(f.name_en || f.name).replace(/ /g, "_");
+const frameName = (id) => (id === "helminth" ? "Helminth"
+  : ((META.frames || []).find((f) => f.id === id) || {}).name || id);
+
+async function loadWarframeCatalog() {
+  if (WFCAT) return WFCAT;
+  const c = await api("/api/warframe/catalog", {});
+  const over = (x, table) => { x.name_en = x.name; x.name = LN(table, x.id, x.name); };
+  c.mods.forEach((m) => over(m, I18N && (I18N.auras || {})[m.id] ? "auras" : "warframe_mods"));
+  c.arcanes.forEach((a) => over(a, "warframe_arcanes"));
+  c.abilities.forEach((a) => over(a, "warframe_abilities"));
+  WFCAT = c;
+  return c;
+}
+
+// ---- the state ----
+function wfBlank(id) {
+  const f = wfFrame(id);
+  const slots = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
+  (f.polarities || []).forEach((p, i) => { slots[i].pol = p; });
+  slots[WF_EXILUS].pol = f.exilus_polarity || null;
+  slots[WF_AURA].pol = f.aura_polarity || null;
+  return { frame: id, slots, arcanes: [{ id: null, rank: null }, { id: null, rank: null }],
+    shards: [null, null, null, null, null], helminth: { slot: 0, ability: null } };
+}
+
+/// A stored build, repaired against today's catalogue: an id that is gone
+/// becomes an empty slot rather than a card nothing can draw.
+function wfNormalize(st, id) {
+  const b = wfBlank(id);
+  const s = st || {};
+  return {
+    frame: id,
+    slots: b.slots.map((x, i) => {
+      const y = (s.slots || [])[i];
+      return y ? { mod: wfMod(y.mod) ? y.mod : null, pol: y.pol ?? null, rank: y.rank ?? null } : x;
+    }),
+    arcanes: [0, 1].map((i) => {
+      const y = (s.arcanes || [])[i];
+      return y && wfArcane(y.id) ? { id: y.id, rank: y.rank ?? null } : { id: null, rank: null };
+    }),
+    shards: [0, 1, 2, 3, 4].map((i) => {
+      const y = (s.shards || [])[i];
+      const d = y && SHARDS().find((x) => x.id === y.shard);
+      return d && d.options.some((o) => o.id === y.effect)
+        ? { shard: y.shard, effect: y.effect, tauforged: !!y.tauforged } : null;
+    }),
+    helminth: { slot: Number((s.helminth || {}).slot) || 0,
+      ability: wfAbility((s.helminth || {}).ability) ? s.helminth.ability : null },
+  };
+}
+
+/// The four abilities as the loadout carries them, the infused one in its slot.
+const wfLoadout = () => wfFrame(wf.frame).abilities.map((id, i) =>
+  wfAbility(wf.helminth.slot === i + 1 && wf.helminth.ability ? wf.helminth.ability : id));
+
+function wfPayload() {
+  const pick = (s) => (s && s.mod ? { id: s.mod, rank: s.rank } : null);
+  return {
+    frame: wf.frame,
+    mods: wf.slots.slice(0, 8).map(pick).filter(Boolean),
+    exilus: pick(wf.slots[WF_EXILUS]),
+    aura: pick(wf.slots[WF_AURA]),
+    arcanes: wf.arcanes.filter((a) => a.id),
+    shards: wf.shards.filter(Boolean),
+    helminth: wf.helminth.slot && wf.helminth.ability
+      ? { slot: wf.helminth.slot, ability: wf.helminth.ability } : null,
+  };
+}
+
+// ---- capacity and Forma ----
+const wfDrainAt = (m, rank) =>
+  m.drain - m.max_rank + (rank == null ? m.max_rank : Math.max(0, Math.min(m.max_rank, rank)));
+
+/// What the aura hands back: twice its drain on its own polarity, 80% rounded
+/// down on another (W`Aura`). Mirrors `warframes_data::aura_capacity`.
+function wfAuraGrant() {
+  const s = wf.slots[WF_AURA];
+  const m = wfMod(s.mod);
+  if (!m) return 0;
+  const g = wfDrainAt(m, s.rank);
+  if (!s.pol) return g;
+  return s.pol === m.polarity || s.pol === "Omni" ? g * 2 : Math.floor(g * 0.8);
+}
+const wfCapacity = () => WF_BASE_CAPACITY + wfAuraGrant();
+function wfUsed() {
+  let n = 0;
+  for (let i = 0; i <= WF_EXILUS; i++) {
+    const s = wf.slots[i];
+    const m = wfMod(s.mod);
+    if (m) n += slotDrain(wfDrainAt(m, s.rank), m.polarity, s.pol);
+  }
+  return n;
+}
+const wfInnate = () => {
+  const f = wfFrame(wf.frame);
+  return [...(f.polarities || []), f.exilus_polarity, f.aura_polarity].filter(Boolean);
+};
+
+/// Forma owed: the innate colours are one pool across all ten slots, so moving
+/// one is free and each colour added or removed beyond the pool is one Forma.
+function wfFormaCount() {
+  const need = {}, pool = {};
+  let umbra = 0, omni = 0;
+  wf.slots.forEach((s) => {
+    if (!s.pol) return;
+    if (s.pol === "Omni") omni++;
+    else if (s.pol === "Umbra") umbra++;
+    else need[s.pol] = (need[s.pol] || 0) + 1;
+  });
+  wfInnate().forEach((p) => { pool[p] = (pool[p] || 0) + 1; });
+  let added = 0, removed = 0;
+  for (const p of new Set([...Object.keys(need), ...Object.keys(pool)])) {
+    const d = (need[p] || 0) - (pool[p] || 0);
+    if (d > 0) added += d; else removed -= d;
+  }
+  return { regular: Math.max(added, removed), umbra, omni };
+}
+
+/// The fewest Forma that fit. The AURA first — a matched aura slot doubles what
+/// it hands back, which is worth more than halving any single drain — then the
+/// innate colours on the biggest matching drains, then a Forma at a time on the
+/// biggest unmatched ones, Umbra last.
+function wfAutoForma() {
+  const pool = wfInnate().slice();
+  const take = (p) => { const k = pool.indexOf(p); if (k < 0) return false; pool.splice(k, 1); return true; };
+  const filled = [];
+  for (let i = 0; i <= WF_EXILUS; i++) { const m = wfMod(wf.slots[i].mod); if (m) filled.push({ i, m }); }
+  const aura = wfMod(wf.slots[WF_AURA].mod);
+  wf.slots.forEach((s) => { s.pol = null; });
+  if (aura && take(aura.polarity)) wf.slots[WF_AURA].pol = aura.polarity;
+  const order = filled.slice().sort((a, b) => wfDrainAt(b.m, wf.slots[b.i].rank) - wfDrainAt(a.m, wf.slots[a.i].rank));
+  for (const x of order) if (take(x.m.polarity)) wf.slots[x.i].pol = x.m.polarity;
+  // A colour cannot be put in a drawer: what no card wants sits on an empty
+  // slot, or on the smallest unmatched drain when there is none.
+  for (const p of pool) {
+    const k = wf.slots.findIndex((s, i) => i !== WF_AURA && !s.pol && !s.mod);
+    const x = order.slice().reverse().find((y) => !wf.slots[y.i].pol);
+    if (k >= 0) wf.slots[k].pol = p; else if (x) wf.slots[x.i].pol = p;
+  }
+  const matched = (i, m) => wf.slots[i].pol === m.polarity;
+  const buy = [];
+  if (aura && !matched(WF_AURA, aura)) buy.push({ i: WF_AURA, m: aura });
+  buy.push(...order.filter((x) => !matched(x.i, x.m) && x.m.polarity !== "Umbra"));
+  buy.push(...order.filter((x) => !matched(x.i, x.m) && x.m.polarity === "Umbra"));
+  for (const x of buy) {
+    if (wfUsed() <= wfCapacity()) break;
+    wf.slots[x.i].pol = x.m.polarity;
+  }
+}
+
+// ---- drawing ----
+const wfLines = (o, r) => {
+  const all = o.desc_ranks || [o.description || ""];
+  return String(all[Math.max(0, Math.min(all.length - 1, r))] || "").split("\n").filter(Boolean).map(tf);
+};
+const wfNum = (v) => (Number.isFinite(v) ? String(Math.round(v * 100) / 100) : "∞");
+const wfPct = (v) => `${Math.round(v * 1000) / 10}%`;
+const wfSigned = (v) => { const r = Math.round(v * 10) / 10; return (r >= 0 ? "+" : "") + r; };
+const wfUnit = (v, unit) => (unit === "pct" ? wfPct(v) : unit === "m" ? `${wfNum(v)} m`
+  : unit === "seconds" ? `${wfNum(v)} s` : unit === "multiplier" ? `${wfNum(v)}x` : wfNum(v));
+const wfRank = (r, max) => (max > 0
+  ? `<span class="rank ${r < max ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${r < max ? "/" + max : ""}</b><button class="rk" data-d="1">+</button></span>`
+  : "");
+
+function wfSlotEl(i) {
+  const s = wf.slots[i];
+  const m = wfMod(s.mod);
+  const el = document.createElement("div");
+  if (m) {
+    el.className = "slot filled" + (m.rarity ? " rar-" + m.rarity : "");
+    const r = s.rank == null ? m.max_rank : s.rank;
+    const base = wfDrainAt(m, r);
+    const eff = i === WF_AURA ? wfAuraGrant() : slotDrain(base, m.polarity, s.pol);
+    const matched = s.pol === m.polarity || (s.pol === "Omni" && m.polarity !== "Umbra");
+    const fit = !s.pol ? "" : matched ? " matched" : " mismatched";
+    const cost = i === WF_AURA ? `+${eff} ${escHtml(tr("capacity"))}`
+      : `${eff} drain${eff !== base ? ` (base ${base})` : ""}`;
+    el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod")
+      + `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>`
+      + `<div class="me">${wfLines(m, r).map((x) => `<div>${escHtml(x)}</div>`).join("")}</div>`
+      + `<div class="drow"><div class="dr${fit}"><span class="mpol">${polGlyph(m.polarity)}</span>${cost}</div>${wfRank(r, m.max_rank)}</div></div>`
+      + `<button class="dots" title="options">⋯</button>`;
+    el.querySelector(".dots").addEventListener("click", (e) => {
+      e.stopPropagation();
+      openSlotMenu(e.currentTarget, null, {
+        label: tr(i === WF_AURA ? "Aura" : "Mod"), removable: true,
+        onSwap: () => openWfPicker("mod", i, el),
+        onPick: () => { s.mod = null; s.rank = null; wfChanged(); },
+      });
+    });
+    el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      s.rank = Math.max(0, Math.min(m.max_rank, r + Number(b.dataset.d)));
+      wfChanged();
+    }));
+  } else {
+    el.className = "slot empty";
+    const plus = i === WF_AURA ? "+ add aura" : i === WF_EXILUS ? "+ add exilus mod" : "+ add mod";
+    el.innerHTML = polBtn(s.pol, i) + `<span class="plus">${escHtml(tr(plus))}</span>`;
+    el.addEventListener("click", (e) => { e.stopPropagation(); openWfPicker("mod", i, el); });
+  }
+  if (i < WF_EXILUS) {
+    const no = document.createElement("span");
+    no.className = "slotno";
+    no.textContent = String(i + 1);
+    el.appendChild(no);
+  }
+  el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openWfPolMenu(i, el); });
+  return el;
+}
+
+function renderWfMods() {
+  const used = wfUsed(), cap = wfCapacity();
+  $("wf-capacity").textContent = `${used} / ${cap}`;
+  $("wf-capacity").classList.toggle("over", used > cap);
+  const f = wfFormaCount();
+  $("wf-forma").textContent = [`${f.regular} Forma`, f.umbra ? `${f.umbra} Umbra` : null, f.omni ? `${f.omni} Omni` : null]
+    .filter(Boolean).join(" · ");
+  const box = $("wf-mod-slots");
+  box.innerHTML = "";
+  for (let i = 0; i < 8; i++) box.appendChild(wfSlotEl(i));
+  $("wf-exilus").innerHTML = "";
+  $("wf-exilus").appendChild(wfSlotEl(WF_EXILUS));
+  $("wf-aura").innerHTML = "";
+  $("wf-aura").appendChild(wfSlotEl(WF_AURA));
+}
+
+function openWfPolMenu(i, anchor) {
+  closePopovers();
+  const menu = $("slot-menu");
+  const cur = wf.slots[i].pol;
+  menu.innerHTML = WF_POLS.map((p) => `<div class="mi ${p === cur ? "sel" : ""}" data-p="${p}">${polGlyph(p)} ${p === "Omni" ? "Omni (any)" : p}</div>`).join("")
+    + `<div class="mi ${!cur ? "sel" : ""}" data-p="">◇ none</div>`;
+  place(menu, anchor);
+  menu.querySelectorAll(".mi").forEach((o) => o.addEventListener("click", () => {
+    wf.slots[i].pol = o.dataset.p || null;
+    closePopovers();
+    wfChanged();
+  }));
+}
+
+function openWfPicker(kind, idx, anchor) {
+  closePopovers();
+  const pop = $("wf-popover");
+  place(pop, anchor);
+  const s = $("wf-search");
+  s.value = "";
+  s.oninput = () => renderWfMenu(kind, idx, s.value);
+  renderWfMenu(kind, idx, "");
+  s.focus();
+}
+
+function renderWfMenu(kind, idx, query) {
+  const q = query.trim().toLowerCase();
+  const menu = $("wf-menu");
+  const none = `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+  if (kind === "arcane") {
+    const cur = wf.arcanes[idx].id, other = wf.arcanes[1 - idx].id;
+    const hits = WFCAT.arcanes.filter((a) => searchHit(a, q))
+      .sort((a, b) => (b.id === cur) - (a.id === cur) || a.name.localeCompare(b.name));
+    menu.innerHTML = hits.length ? hits.map((a) => `<div class="opt ${a.id === cur ? "cur" : ""} ${a.id === other ? "dis" : ""} rar-${a.rarity}" data-id="${a.id}">
+      ${imgTag(IMG(a.image), "mod")}<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(wfLines(a, a.max_rank).map(escHtml))}</div></div>`).join("") : none;
+    menu.querySelectorAll(".opt[data-id]:not(.dis)").forEach((o) => o.addEventListener("click", () => {
+      wf.arcanes[idx] = { id: o.dataset.id, rank: null };
+      closePopovers();
+      wfChanged();
+    }));
+    return;
+  }
+  const carries = wfLoadout().map((a) => a && a.id);
+  const fits = (m, i) => (i === WF_AURA ? m.aura : i === WF_EXILUS ? m.exilus : !m.aura);
+  const at = (id) => wf.slots.findIndex((s, i) => i !== idx && s.mod === id);
+  const own = wfMod(wf.slots[idx].mod);
+  const hits = WFCAT.mods.filter((m) => fits(m, idx) && searchHit(m, q))
+    .sort((a, b) => (b.id === (own && own.id)) - (a.id === (own && own.id)) || a.name.localeCompare(b.name));
+  menu.innerHTML = hits.length ? hits.map((m) => {
+    const placed = at(m.id);
+    const family = placed < 0 && m.family && wf.slots.some((s, i) => i !== idx && (wfMod(s.mod) || {}).family === m.family);
+    const orphan = m.augments && !carries.includes(m.augments);
+    const noSwap = placed >= 0 && own && !fits(own, placed);
+    const title = family ? tr("incompatible with a card already seated")
+      : noSwap ? tr("cannot swap: the card in this slot does not fit that one")
+      : orphan ? tr("augments an ability this loadout does not carry — it would pay nothing") : "";
+    const chip = placed >= 0 ? ` <span class="slotchip">${escHtml(placed === WF_AURA ? tr("aura") : placed === WF_EXILUS ? tr("exilus") : tr("slot") + " " + (placed + 1))}</span>` : "";
+    return modRow(m, {
+      cls: `${family || noSwap ? "dis" : ""} ${own && own.id === m.id ? "cur" : placed >= 0 ? "placed" : ""}`,
+      attrs: `data-id="${m.id}"`, title: escHtml(title), exilusChip: idx !== WF_EXILUS,
+      chips: chip + (orphan ? ` <span class="exchip unmod">${escHtml(tr("inert here"))}</span>` : ""),
+      trailing: `<span class="dr">${m.drain}</span>`,
+    });
+  }).join("") : none;
+  menu.querySelectorAll(".opt[data-id]:not(.dis)").forEach((o) => o.addEventListener("click", () => {
+    const id = o.dataset.id;
+    const here = wf.slots[idx];
+    const from = at(id);
+    if (here.mod === id) { closePopovers(); return; }
+    if (from >= 0) {
+      const there = wf.slots[from];
+      [here.mod, there.mod] = [there.mod, here.mod];
+      [here.rank, there.rank] = [there.rank, here.rank];
+    } else {
+      here.mod = id;
+      here.rank = null;
+    }
+    closePopovers();
+    wfChanged();
+  }));
+}
+
+function wfArcaneEl(i) {
+  const p = wf.arcanes[i];
+  const a = wfArcane(p.id);
+  const el = document.createElement("div");
+  if (!a) {
+    el.className = "slot empty arc";
+    el.innerHTML = `<span class="plus">+ ${escHtml(tr("add arcane"))}</span>`;
+    el.addEventListener("click", (e) => { e.stopPropagation(); openWfPicker("arcane", i, el); });
+    return el;
+  }
+  const r = p.rank == null ? a.max_rank : p.rank;
+  el.className = "slot filled arc" + (a.rarity ? " rar-" + a.rarity : "");
+  el.innerHTML = imgTag(IMG(a.image), "mod")
+    + `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(wfLines(a, r).map(escHtml))}${wfRank(r, a.max_rank)}</div>`
+    + `<button class="dots" title="options">⋯</button>`;
+  el.querySelector(".dots").addEventListener("click", (e) => {
+    e.stopPropagation();
+    openSlotMenu(e.currentTarget, null, {
+      label: tr("Arcane"), removable: true,
+      onSwap: () => openWfPicker("arcane", i, el),
+      onPick: () => { wf.arcanes[i] = { id: null, rank: null }; wfChanged(); },
+    });
+  });
+  el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    p.rank = Math.max(0, Math.min(a.max_rank, r + Number(b.dataset.d)));
+    wfChanged();
+  }));
+  return el;
+}
+
+function renderWfArcanes() {
+  const box = $("wf-arcane-slots");
+  box.innerHTML = "";
+  [0, 1].forEach((i) => box.appendChild(wfArcaneEl(i)));
+}
+
+const wfShardLine = (d, o, tau) => {
+  const v = tau ? o.tauforged : o.value;
+  const n = o.unit === "pct" ? `+${Math.round(v * 1000) / 10}%` : `+${v}`;
+  return `${n} ${(I18N && (I18N.shards || {})[`${d.id}/${o.id}`]) || o.text}`;
+};
+
+function renderWfShards() {
+  const box = $("wf-shards");
+  box.innerHTML = wf.shards.map((p, i) => {
+    const d = p ? SHARDS().find((x) => x.id === p.shard) : null;
+    const colour = ddButton(`dd-wf-shard-${i}`, {
+      value: p ? p.shard : "",
+      items: [{ value: "", label: tr("empty socket") },
+        ...SHARDS().map((s) => ({ value: s.id, label: LN("shards", s.id, s.name) }))],
+      onPick: (v) => {
+        const s = SHARDS().find((x) => x.id === v);
+        wf.shards[i] = s ? { shard: v, effect: s.options[0].id, tauforged: !!(p && p.tauforged) } : null;
+        wfChanged();
+      },
+    });
+    const effect = d ? ddButton(`dd-wf-shard-effect-${i}`, {
+      value: p.effect,
+      items: d.options.map((o) => ({ value: o.id, label: wfShardLine(d, o, p.tauforged) })),
+      onPick: (v) => { wf.shards[i].effect = v; wfChanged(); },
+    }) : "";
+    const tau = d ? `<label class="wf-tau"><input type="checkbox" data-wf-tau="${i}"${p.tauforged ? " checked" : ""}> ${escHtml(tr("Tauforged"))}</label>` : "";
+    return `<div class="wf-shard"><span class="wf-swatch" style="background:${d ? SHARD_HUE[d.colour] || "var(--line)" : "transparent"}"></span>${colour}${effect}${tau}</div>`;
+  }).join("");
+  box.querySelectorAll("[data-wf-tau]").forEach((c) => c.addEventListener("change", () => {
+    wf.shards[Number(c.dataset.wfTau)].tauforged = c.checked;
+    wfChanged();
+  }));
+}
+
+function renderWfHelminth() {
+  const f = wfFrame(wf.frame);
+  // NEVER HER OWN: a frame offered its own ability would carry two copies of it.
+  const pool = WFCAT.abilities.filter((a) => a.subsumable && !f.abilities.includes(a.id));
+  const items = pool.map((a) => ({ value: a.id, label: a.name, group: frameName(a.frame),
+    hint: `${a.energy_cost} ${tr("energy")}` }))
+    .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label));
+  $("wf-helminth").innerHTML = `<span class="wf-hl">${escHtml(tr("Helminth"))}</span>`
+    + ddButton("dd-wf-helminth-slot", {
+      value: String(wf.helminth.slot || 0),
+      items: [{ value: "0", label: tr("no infusion") },
+        ...f.abilities.map((id, i) => ({ value: String(i + 1), label: `${i + 1} · ${(wfAbility(id) || {}).name || id}` }))],
+      onPick: (v) => {
+        wf.helminth.slot = Number(v);
+        if (!wf.helminth.slot) wf.helminth.ability = null;
+        wfChanged();
+      },
+    })
+    + ddButton("dd-wf-helminth-ability", {
+      value: wf.helminth.ability || "", placeholder: tr("pick an ability"), items, search: true,
+      disabled: !wf.helminth.slot,
+      onPick: (v) => { wf.helminth.ability = v; wfChanged(); },
+    });
+}
+
+const wfArrow = (a, b) => (a != null && Math.abs(a - b) > 1e-9
+  ? `<span class="sbase">${wfNum(a)}</span> → <b>${wfNum(b)}</b>` : `<b>${wfNum(b)}</b>`);
+
+function renderWfAbilities(r) {
+  $("wf-abilities").innerHTML = (r.abilities || []).map((x) => {
+    const a = wfAbility(x.id) || { name: x.id, description: "" };
+    const cost = x.cost_type ? "" : `<span class="wf-cost" title="${escHtml(tr("energy cost"))}">⚡ ${wfArrow(x.base_energy_cost, x.energy_cost)}</span>`;
+    const drain = x.drain_per_second != null
+      ? `<span class="wf-cost" title="${escHtml(tr("energy drained per second"))}">⚡/s ${wfArrow(x.base_drain_per_second, x.drain_per_second)}</span>` : "";
+    const rows = (x.lines || []).map((l) => `<div class="row"><span class="k">${escHtml(tr(l.label))}${
+      WF_SCALE_TAG[l.scales_with] ? ` <span class="wf-scale">${WF_SCALE_TAG[l.scales_with]}</span>` : ""}</span><span class="v">${
+      Math.abs(l.value - l.base) > 1e-9 ? `<span class="sbase">${wfUnit(l.base, l.unit)}</span> → ` : ""}${wfUnit(l.value, l.unit)}</span></div>`).join("")
+      + (x.derived || []).map((d) => `<div class="row wf-der"><span class="k">${escHtml(tr(d.label))}</span><span class="v">${Math.round(d.value)}</span></div>`).join("");
+    return `<div class="wf-ab${x.helminth ? " infused" : ""}">
+      <div class="wf-ab-h"><span class="wf-key">${x.slot}</span>${imgTag(IMG(a.icon), "wf-ab-icon")}
+        <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${x.helminth ? ` <span class="exchip">${escHtml(tr("Helminth"))}</span>` : ""}</div>
+        <div class="wf-costs">${cost}${drain}</div></div></div>
+      <div class="wf-ab-desc">${escHtml(a.description || "")}</div>
+      ${rows ? `<div class="stat-table wf-ab-stats">${rows}</div>`
+        : `<div class="wf-ab-none">${escHtml(tr("this ability's numbers are not transcribed yet"))}</div>`}
+    </div>`;
+  }).join("");
+}
+
+function wfSourceName(from) {
+  const [a, b] = String(from).split("/");
+  if (b) {
+    const d = SHARDS().find((x) => x.id === a);
+    const o = d && d.options.find((x) => x.id === b);
+    return `${LN("shards", a, d ? d.name : a)} · ${(I18N && (I18N.shards || {})[from]) || (o ? o.text : b)}`;
+  }
+  const x = wfMod(from) || wfArcane(from) || wfAbility(from);
+  return x ? x.name : from;
+}
+
+const WF_ADMIT = {
+  unmodelled: ["⊘", "not computed by this panel yet"],
+  out_of_scope: ["◇", "cannot change a number in a Warframe's own panel"],
+  inert: ["⚠", "seated, and paying nothing in this build"],
+};
+
+function renderWfStats(r) {
+  const fmt = (l, v) => (l.ratio ? wfPct(v) : l.id === "sprint_speed" ? wfNum(v) : String(Math.round(v)));
+  $("wf-stats").innerHTML = (r.refused || []).map((x) => `<div class="error">${escHtml(x)}</div>`).join("")
+    + (r.stats || []).map((l) => `<div class="srow"><div class="shead"><span class="sk">${escHtml(tr(l.label))}</span><span class="sv">${
+      Math.abs(l.value - l.base) > 1e-9 ? `<span class="sbase">${fmt(l, l.base)}</span> → ` : ""}<b>${fmt(l, l.value)}</b></span></div>${
+      (l.sources || []).map((c) => `<div class="ssrc">${c.flat ? wfSigned(c.value) : wfSigned(c.value * 100) + "%"} — ${escHtml(wfSourceName(c.from))}</div>`).join("")}</div>`).join("");
+  const by = new Map();
+  (r.admissions || []).forEach((x) => { if (!by.has(x.from)) by.set(x.from, []); by.get(x.from).push(x); });
+  $("wf-admissions").innerHTML = by.size
+    ? `<div class="sdmg-title">${escHtml(tr("What this panel does not compute"))}</div>` + [...by].map(([from, list]) =>
+      `<div class="scond"><b>${escHtml(wfSourceName(from))}</b>: ${list.map((x) => `<span class="wf-adm ${x.kind}" title="${
+        escHtml(tr(WF_ADMIT[x.kind][1]))}">${WF_ADMIT[x.kind][0]} ${escHtml(tr(x.text))}</span>`).join(" ")}</div>`).join("")
+    : "";
+}
+
+let wfPanelTimer = null;
+let wfPanelGen = 0;
+function refreshWfPanel() {
+  clearTimeout(wfPanelTimer);
+  wfPanelTimer = setTimeout(async () => {
+    const gen = ++wfPanelGen;
+    let r = null;
+    try { r = await api("/api/warframe/panel", wfPayload()); } catch (e) { r = { ok: false, error: String(e) }; }
+    if (gen !== wfPanelGen) return;
+    if (!r || r.ok === false) {
+      $("wf-stats").innerHTML = `<div class="error">${escHtml((r && r.error) || "no data")}</div>`;
+      return;
+    }
+    renderWfStats(r);
+    renderWfAbilities(r);
+  }, 120);
+}
+
+// ---- builds ----
+function wfBarCfg() {
+  return {
+    domain: WF_BUILDS,
+    label: tr("Builds"),
+    noun: BUILD_NOUN,
+    load: () => loadPresetList(WF_BUILDS, wf.frame),
+    store: (ps) => storePresetList(WF_BUILDS, ps, wf.frame),
+    active: () => wfActive,
+    setActive: (n) => { wfActive = n; localStorage.setItem(presetActiveKey(WF_BUILDS, wf.frame), n); },
+    snapshot: () => JSON.parse(JSON.stringify(wf)),
+    apply: (st) => wfApply(st),
+    blank: () => wfBlank(wf.frame),
+    rerender: renderWfPresetBar,
+  };
+}
+const renderWfPresetBar = () => renderPresetBarIn($("preset-bar-warframes"), wfBarCfg());
+function wfApply(st) {
+  wf = wfNormalize(st, wf.frame);
+  clearTimeout(wfSaveTimer);
+  renderWarframe();
+}
+
+/// A BUILD IS BORN ON THE FIRST EDIT, as a weapon build is (`markPresetDirty`).
+let wfSaveTimer = null;
+function wfMarkDirty() {
+  if (presetApplying) return;
+  clearTimeout(wfSaveTimer);
+  wfSaveTimer = setTimeout(() => {
+    if (presetApplying || !wf) return;
+    const cfg = wfBarCfg();
+    const ps = cfg.load();
+    const at = ps.findIndex((p) => p.name === wfActive);
+    if (at < 0) {
+      if (sameState(wf, wfBlank(wf.frame))) return;
+      const name = freeName(ps, (n) => autoPresetName(BUILD_NOUN, n));
+      ps.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
+      cfg.store(ps);
+      cfg.setActive(name);
+      renderWfPresetBar();
+      return;
+    }
+    if (sameState(ps[at].state, wf)) return;
+    ps[at] = { ...ps[at], savedAt: Date.now(), state: cfg.snapshot() };
+    cfg.store(ps);
+  }, 400);
+}
+
+function wfChanged() {
+  renderWfMods();
+  renderWfArcanes();
+  renderWfShards();
+  renderWfHelminth();
+  refreshWfPanel();
+  wfMarkDirty();
+}
+
+function renderWarframe() {
+  const f = wfFrame(wf.frame);
+  const img = $("wf-img");
+  img.hidden = !f.image;
+  if (f.image) img.src = IMG(f.image);
+  $("wf-name").textContent = f.name;
+  $("wf-tags").innerHTML = [["Health", f.health], ["Shield", f.shield], ["Armor", f.armor], ["Energy", f.energy], ["Sprint", f.sprint]]
+    .map(([k, v]) => `<span class="tag">${escHtml(tr(k))} ${wfNum(v)}</span>`).join("");
+  $("wf-passive").innerHTML = f.passive ? `<div>${escHtml(f.passive)}</div>` : "";
+  renderWfPresetBar();
+  renderWfMods();
+  renderWfArcanes();
+  renderWfShards();
+  renderWfHelminth();
+  refreshWfPanel();
+}
+
+/// The route's door: the catalogue once, then this frame's open build.
+async function showWarframe(id) {
+  await loadWarframeCatalog();
+  if (!wfWired) {
+    wfWired = true;
+    $("wf-auto-forma").addEventListener("click", () => { wfAutoForma(); wfChanged(); });
+    $("wf-clear").addEventListener("click", () => {
+      wf.slots = wfBlank(wf.frame).slots;
+      wfChanged();
+    });
+  }
+  if (!wf || wf.frame !== id) {
+    const list = loadPresetList(WF_BUILDS, id);
+    const last = localStorage.getItem(presetActiveKey(WF_BUILDS, id));
+    const p = list.find((x) => x.name === last) || list[0] || null;
+    wfActive = p ? p.name : "";
+    wf = wfNormalize(p ? p.state : null, id);
+  }
+  renderWarframe();
 }
 
 // THE BOOT IS OVER, one way or the other, and the page must say which.

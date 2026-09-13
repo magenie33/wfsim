@@ -670,7 +670,7 @@ def guard_board_files() -> None:
 # answers every route, so all five ship in every page and exactly one of them is
 # the heading of the page being served. `w-name` is the weapon route's, empty in
 # the shell and filled by `app.js` on boot.
-ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-support", "w-name")
+ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-support", "w-name", "wf-name")
 
 
 def one_h1(page: str, keep: str | None, text: str | None = None) -> str:
@@ -864,7 +864,7 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
         sys.exit("index.html: ld+json block not found — per-page structured data not set")
     # The weapon route's heading is the weapon, so it is filled rather than
     # left as the shell's placeholder; every other route spells its own out.
-    page = one_h1(lded, keep_h1, name if keep_h1 == "w-name" else None)
+    page = one_h1(lded, keep_h1, name if keep_h1 in ("w-name", "wf-name") else None)
     body = (
         '<div id="seo-fallback">\n' + seo + "  </div>\n"
         "  <script>document.getElementById('seo-fallback').remove()</script>\n  "
@@ -1050,9 +1050,26 @@ def prerender(flagged: str) -> None:
             newline="\n",
         )
 
+    # THE WARFRAME BUILDER'S PAGES, one per `data/warframes/` file, at the wiki's
+    # own name — the same rule a weapon's address follows.
+    frame_urls = []
+    for f in sorted((ROOT / "data" / "warframes").glob("*.yaml")):
+        spec = yload(f.read_text(encoding="utf-8"))
+        name = spec["name"]
+        path = "/warframes/" + wiki_slug(name)
+        desc = (f"{name} — Warframe build: mods, aura, exilus, arcanes, archon shards "
+                "and a Helminth infusion, with the stats and abilities they resolve to.")
+        out = APP / path.lstrip("/") / "index.html"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        put(out, shell(flagged, f"{name} — Warframe build | WFSim", desc, SITE + path,
+                       f"{SITE}/logo.svg", f"    <p>{html_mod.escape(desc)}</p>\n",
+                       "wf-name", name))
+        frame_urls.append(SITE + path)
+
     urls = ([SITE + "/", SITE + "/weapons"]
             + [f"{SITE}/{path}" for path, *_ in shell_pages]
-            + [SITE + wiki_path(s) for s in roster()])
+            + [SITE + wiki_path(s) for s in roster()]
+            + frame_urls)
     put(
         APP / "sitemap.xml",
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -1064,7 +1081,8 @@ def prerender(flagged: str) -> None:
     # 200, which is a soft 404 for every crawler that asks.
     put(APP / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n")
     named = ", ".join("/" + path for path, *_ in shell_pages)
-    print(f"prerendered {len(urls) - 2 - len(shell_pages)} weapon pages + /weapons + "
+    print(f"prerendered {len(urls) - 2 - len(shell_pages) - len(frame_urls)} weapon pages + "
+          f"{len(frame_urls)} Warframe pages + /weapons + "
           f"{named} + sitemap.xml + robots.txt — "
           f"{WROTE[0]} written, {WROTE[1]} already current")
 

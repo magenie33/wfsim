@@ -271,6 +271,34 @@ pub fn mods() -> &'static [WarframeMod] {
     })
 }
 
+impl WarframeMod {
+    /// The card at `rank`: a modelled bonus restated at that rank, every other
+    /// line the card's own max-rank text.
+    pub fn card_at(&self, rank: u32) -> Vec<String> {
+        card_lines(&self.effects, &self.description, rank, self.max_rank)
+    }
+}
+
+/// One line per effect when the card has exactly that many, else the text as
+/// written. A rounded tenth is what the card prints (W`Mod`).
+fn card_lines(effects: &[FrameEffect], description: &str, rank: u32, max_rank: u32) -> Vec<String> {
+    let lines: Vec<&str> = description.lines().collect();
+    if lines.len() != effects.len() {
+        return lines.into_iter().map(str::to_string).collect();
+    }
+    effects
+        .iter()
+        .zip(lines)
+        .map(|(e, line)| match e {
+            FrameEffect::Bonus(s, v) => {
+                let pct = (at_rank(*v, rank, max_rank) * 1000.0).round() / 10.0;
+                format!("{}{}% {}", if pct >= 0.0 { "+" } else { "" }, pct, s.label())
+            }
+            _ => line.to_string(),
+        })
+        .collect()
+}
+
 pub fn mod_by_id(id: &str) -> Option<&'static WarframeMod> {
     mods().iter().find(|m| m.id == id)
 }
@@ -323,6 +351,12 @@ pub fn arcanes() -> &'static [WarframeArcane] {
             })
             .collect()
     })
+}
+
+impl WarframeArcane {
+    pub fn card_at(&self, rank: u32) -> Vec<String> {
+        card_lines(&self.effects, &self.description, rank, self.max_rank)
+    }
 }
 
 pub fn arcane_by_id(id: &str) -> Option<&'static WarframeArcane> {
@@ -1038,6 +1072,20 @@ mod tests {
             }
         }
         assert!(helminth_pool().count() > 70);
+    }
+
+    /// A MODELLED LINE RESTATED AT MAX RANK IS THE CARD ITSELF. The effect list
+    /// was read off each card, so a restatement that disagrees is a line the
+    /// model reads differently from the card.
+    #[test]
+    fn every_card_restates_itself_at_max_rank() {
+        for m in mods() {
+            assert_eq!(m.card_at(m.max_rank).join("\n"), m.description, "{}", m.id);
+        }
+        for a in arcanes() {
+            assert_eq!(a.card_at(a.max_rank).join("\n"), a.description, "{}", a.id);
+        }
+        assert_eq!(mod_by_id("intensify").unwrap().card_at(0), vec!["+5% Ability Strength"]);
     }
 
     #[test]

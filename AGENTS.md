@@ -30,6 +30,7 @@ code, not after.
 | a per-weapon published table (Condition Overload, Primary Compression) | `docs/CATALOGS.md` |
 | melee | `docs/MELEE.md` · kitguns `docs/KITGUNS.md` · incarnons `docs/INCARNON.md` |
 | buffs, Warframe abilities, auras, archon shards | `docs/BUFFS.md` |
+| a Warframe build — its mods, abilities, the Helminth | `docs/WARFRAMES.md` |
 | a second damage instance beside a hit | `docs/EXTRA_HIT.md` |
 | what the app does not model | `docs/UNMODELLED.md` |
 | where a value came from, and how to source the next one | `docs/DATA_SOURCES.md` |
