@@ -54,6 +54,9 @@ const r = await evaluate(`(async () => {
 
   const blocks = () => [...document.querySelectorAll('.config-page section.block')]
     .filter(b => b.offsetParent !== null);
+  window.sectLeaks = (list) => list.flatMap(s => [...s.children]
+    .filter(c => !c.classList.contains('fold-h') && getComputedStyle(c).display !== 'none')
+    .map(c => s.dataset.fold + ' > ' + (c.id || c.className || c.tagName)));
   // THE VISIBLE MODULE'S SECTIONS, not the page's: a block belonging to another
   // tab is hidden by a CSS rule rather than by the attribute, so its sections
   // are still 'not inside anything hidden' and would be counted here while
@@ -124,6 +127,9 @@ const r = await evaluate(`(async () => {
   hit('[data-jump-all="shut"]'); await sleep(200);
   out.allShut = blocks().every(b => b.classList.contains('shut'))
     && sects().every(s => s.classList.contains('shut'));
+  // EVERY SHUT SECTION'S BODY IS GONE, asked of each child's computed style: a
+  // child's own id rule (the Buffs grid) outranks the class rule that hides it.
+  out.leaks = sectLeaks(sects());
   out.shortPage = document.documentElement.scrollHeight;
   hit('[data-jump="sim-measure"]'); await sleep(400);
   out.jumpedOpen = !document.querySelector('[data-fold="sim-measure"]').classList.contains('shut')
@@ -154,6 +160,7 @@ check("the menu lists exactly the folds the page has",
   `menu: ${r.rows.join(",")}\n    page: ${r.want.join(",")}`);
 check("...each under the heading's own name", r.unnamed.length === 0, JSON.stringify(r.unnamed));
 check("collapse all reaches every block and every section", r.allShut);
+check("...and nothing inside a shut section is still drawn", r.leaks.length === 0, JSON.stringify(r.leaks));
 check("...and it is the point: the page gets shorter",
   r.shortPage * 2 < r.tallPage, `${r.shortPage}px shut vs ${r.tallPage}px open`);
 check("a jump opens its target and every fold above it", r.jumpedOpen && r.jumpedInView);
@@ -240,6 +247,15 @@ const opt = await evaluate(`(async () => {
   const box = document.querySelector('[data-fold="opt-mods"]');
   document.getElementById('opt-mod-filter').click(); await sleep(120);
   out.filterKept = !box.classList.contains('shut');
+  // ...AND HERE TOO, where the Buffs grid has a twin. Defined again: the reload
+  // above took the simulator half's page with it.
+  const sectLeaks = (list) => list.flatMap(s => [...s.children]
+    .filter(c => !c.classList.contains('fold-h') && getComputedStyle(c).display !== 'none')
+    .map(c => s.dataset.fold + ' > ' + (c.id || c.className || c.tagName)));
+  [...document.querySelectorAll('.fold.sect')].filter(s => !s.closest('[hidden]'))
+    .forEach(s => s.classList.add('shut'));
+  out.leaks = sectLeaks([...document.querySelectorAll('.config-page .fold.sect')]
+    .filter(s => !s.closest('[hidden]') && s.closest('section.block')?.offsetParent));
   return out;
 })()`);
 
@@ -251,6 +267,7 @@ check("an axis inside a half reads as one level deeper",
 check("shutting a half takes its axes with it", opt.axisGone);
 check("...and a jump to one brings both back", opt.axisBack);
 check("the mods filter is not a fold toggle", opt.filterKept);
+check("nothing inside a shut optimizer section is still drawn", opt.leaks.length === 0, JSON.stringify(opt.leaks));
 check("...and every control the menu was asked for here was drawn too",
   !opt.missing, JSON.stringify(opt.missing));
 

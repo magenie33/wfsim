@@ -1783,11 +1783,13 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    and a bare label gives a reader no reason to think it can be shut. A
    bordered header row does, at the cost of one nesting level.
    EVERY CHILD BUT THE HEADING GOES, rather than a `.fold-b` the markup has to
-   remember to wrap: a section that gains an element tomorrow folds with it. */
+   remember to wrap: a section that gains an element tomorrow folds with it.
+   IMPORTANT, because a child's own `#id{display:grid}` outranks any class
+   selector and kept the Buffs section's cards on screen while it was shut. */
 .fold.sect{border:1px solid var(--line);border-radius:10px;margin:12px 0;
   padding:0 12px 12px;background:var(--surface)}
 .fold.sect.shut{padding-bottom:0}
-.fold.sect.shut> :not(.fold-h){display:none}
+.fold.sect.shut> :not(.fold-h){display:none!important}
 .fold.sect>.fold-h .fold-c{font-size:13px;color:var(--text-2)}
 .fold.sect>.fold-h{margin:0 -12px 10px;padding:8px 12px;flex-wrap:wrap;align-items:baseline;
   border-bottom:1px solid var(--line);background:var(--panel3);border-radius:9px 9px 0 0}
