@@ -345,6 +345,9 @@ ui:
   "source": "源码"
   "the launcher-exclusive Adhesive Blast is outside the pools this roster loads — it sticks the rocket to what it hits, which changes where the explosion goes off and is a placement this arena has no room to be wrong about": "发射器专属的**粘附爆破**不在本 roster 加载的 mod 池里 — 它把火箭黏在命中物上，这会改变爆炸发生的**位置**，而位置是本战场输不起的一个变量"
   "No matches": 无匹配
+  "Loading the board…": 正在加载榜单…
+  "The board could not be reached.": 榜单加载失败。
+  "Retry": 重试
   "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
     没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。

@@ -1790,17 +1790,22 @@ async function init() {
   // the weapon actually being opened. Fetching the default's would leave every
   // deep link a page whose benchmark builds arrive after the presets that were
   // supposed to contain them.
-  const boardBoot = loadBoard(routeWeaponId() || META.defaults.weapon);
+  //
+  // …AND THE EDITOR BOOTS INTO THAT SAME WEAPON. Booting the default and
+  // letting `route` switch drew the roster's first weapon on screen for as long
+  // as anything in between waited on the network.
+  const bootWeapon = routeWeaponId() || META.defaults.weapon;
+  const boardBoot = loadBoard(bootWeapon);
   applyI18n();
   fillSelect("weapon", META.weapons);
   initWeaponSearch();
   const d = META.defaults;
-  $("weapon").value = d.weapon;
-  arcanes = arcanesFor(d.weapon, d.arcane);
+  $("weapon").value = bootWeapon;
+  arcanes = arcanesFor(bootWeapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   sim = defaultScenario();
   await boardBoot;            // before presets: the board's rows ARE build presets
-  applyWeapon(d.weapon, d.mods);
+  applyWeapon(bootWeapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
     switchWeapon($("weapon").value);
@@ -1974,6 +1979,7 @@ function nav(path) {
   // for on top of a navigation.
   if (moved) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 }
+let routeGen = 0;
 async function route() {
   // A SHARED LINK is answered before anything else on the page is drawn for
   // it, and the query is stripped afterwards so a refresh does not import the
@@ -2021,6 +2027,12 @@ async function route() {
     || (META.weapons || []).find((x) => wikiSlug(x).toLowerCase() === slug));
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
+  // THE ROWS BEFORE ANYTHING IS SHOWN. Waiting after the page was unhidden put
+  // the PREVIOUS weapon on screen for the whole round trip. A route that another
+  // navigation overtook while it waited draws nothing.
+  const gen = ++routeGen;
+  if (w) await loadWeaponBoard(w.id);
+  if (gen !== routeGen) return;
   document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx);
   document.body.classList.toggle("on-support", support);
   document.body.classList.toggle("on-thanks", thx);
@@ -2062,8 +2074,7 @@ async function route() {
     // THE ONLY SURFACE THAT RANKS ACROSS WEAPONS, and therefore the only one
     // that needs every weapon's rows. It draws first with whatever is in hand
     // and redraws when the rest lands, so the page is never a spinner.
-    renderBenchBoard();
-    loadFullBoard().then(() => { if ($("bench-board")) renderBenchBoard(); });
+    showBenchBoard();
   } else if (w) {
     // `?mode=` — HOW the linked build is played, carried by the link that made
     // it. A board row is a weapon AND a mode ("Burston Prime, base form"), so a
@@ -2091,9 +2102,7 @@ async function route() {
     // SYNCHRONOUSLY: `switchWeapon` builds this weapon's presets out of them
     // and `applyBenchLink` opens one BY NAME. A board that lands afterwards is
     // a deep link that opens the wrong build, which is what a board link exists
-    // to stop. Already in hand for the weapon boot fetched, so this is a real
-    // wait only when the reader moves to another one.
-    await loadWeaponBoard(w.id);
+    // to stop. Awaited at the top of this function, before the page is shown.
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
@@ -2522,6 +2531,14 @@ function renderBenchBoard() {
     sc.formation = (sc.formation || []).map((f) => ({ ...f, at: [...f.at] }));
     sc.aim_at = sc.aim_at ? [...sc.aim_at] : null;
     mountArena(bar, sc, (allEnemies().find((e) => e.id === sc.enemy) || allEnemies()[0]), { readonly: true });
+  }
+  if (!BOARD_INDEX && (boardIndexAsk || boardIndexUnreachable)) {
+    box.innerHTML = boardIndexAsk
+      ? `<div class="sim-empty">${escHtml(tr("Loading the board…"))}</div>`
+      : `<div class="sim-empty">${escHtml(tr("The board could not be reached."))} <button type="button" class="ghost-btn small" id="bench-retry">${escHtml(tr("Retry"))}</button></div>`;
+    const again = $("bench-retry");
+    if (again) again.onclick = showBenchBoard;
+    return;
   }
   const entries = benchEntries(cur.id);
   // SORTED BY THE BENCHMARK'S OWN METRIC — it says which one it is measured in
@@ -8857,7 +8874,8 @@ let BOARD_INDEX = null;
 /// benchmark page never downloads the rest.
 async function loadWeaponBoard(id) {
   if (!id || BOARD_HAVE.has(id)) return;
-  const rows = await fetchJson(`/board/${id}.json`);
+  let rows = null;
+  try { rows = await fetchJsonPatient(`/board/${id}.json`); } catch (_) { /* unreachable */ }
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
   if (!rows) return;
@@ -8865,10 +8883,52 @@ async function loadWeaponBoard(id) {
   BOARD_HAVE.add(id);
 }
 
+/// A BOARD FILE THROUGH A BAD NETWORK: a request that never arrived is asked
+/// again, and a file that is not there is not. Resolves null for an absent or
+/// unparseable file and THROWS once every try failed to arrive — the page tells
+/// "this board is empty" from "the board could not be reached" by that.
+async function fetchJsonPatient(url, tries = 3) {
+  for (let i = 0; ; i++) {
+    try {
+      const r = await fetch(url, { cache: "no-cache" });
+      if (r.ok) {
+        try { return await r.json(); } catch (e) { if (e instanceof SyntaxError) return null; throw e; }
+      }
+      if (r.status < 500) return null;
+      if (i + 1 >= tries) throw new Error(`HTTP ${r.status}`);
+    } catch (e) {
+      if (i + 1 >= tries) throw e;
+    }
+    await new Promise((res) => setTimeout(res, 600 * 2 ** i));
+  }
+}
+
 /// EVERY WEAPON'S LEADERS. Awaited only where a rank ACROSS weapons is drawn.
-async function loadFullBoard() {
-  if (BOARD_INDEX) return;
-  BOARD_INDEX = await fetchJson("/board/index.json");
+///
+/// ONE REQUEST AT A TIME, and its state is what the benchmark page draws while
+/// it has no index: in flight is "loading", unreachable is "retry" — never the
+/// empty table, which reads as a board nobody has submitted to.
+let boardIndexAsk = null;
+let boardIndexUnreachable = false;
+function loadFullBoard() {
+  if (BOARD_INDEX) return Promise.resolve();
+  if (!boardIndexAsk) {
+    boardIndexUnreachable = false;
+    boardIndexAsk = fetchJsonPatient("/board/index.json")
+      .then((idx) => { BOARD_INDEX = idx; }, () => { boardIndexUnreachable = true; })
+      .finally(() => { boardIndexAsk = null; });
+  }
+  return boardIndexAsk;
+}
+
+/// The benchmark page: ask first, so the first draw already knows a request is
+/// in flight, then draw again when it settles.
+function showBenchBoard() {
+  const ask = loadFullBoard();
+  renderBenchBoard();
+  ask.then(() => {
+    if ($("bench-board") && !$("bench-page").hidden) renderBenchBoard();
+  });
 }
 
 /// SAME-ORIGIN ONLY, BECAUSE BOOT WAITS ON THIS. A client whose own origin has
