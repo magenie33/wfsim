@@ -1298,7 +1298,7 @@ warframe_arcanes:
   arcane_escapist: ArcaneProjectionDR.png
   arcane_expertise: ArcaneProjectionEB.png
   arcane_fury: ArcaneProjectionBC.png
-  arcane_grace: ArcaneProjectionAC.png
+  arcane_grace: wiki:ArcaneGrace.png
   arcane_guardian: ArcaneProjectionAA.png
   arcane_healing: ArcaneProjectionRadiation.png
   arcane_hot_shot: ArcaneProjectionDS.png
