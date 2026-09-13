@@ -2476,7 +2476,7 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
   background:color-mix(in srgb,var(--panel2) 88%,transparent);backdrop-filter:blur(8px);
   box-shadow:0 4px 16px rgba(0,0,0,.22)}
 .jump-grip:hover{border-color:var(--accent);color:var(--text)}
-.jg-h{color:var(--muted);letter-spacing:-2px;font-size:11px;user-select:none}
+.jg-h{color:var(--muted);font-size:14px;line-height:1;user-select:none}
 .jg-i{font-size:13px}
 .jg-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .jg-n:empty{display:none}
