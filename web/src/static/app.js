@@ -21377,6 +21377,12 @@ const WF_AURA = 9;
 const WF_BASE_CAPACITY = 60;
 const WF_POLS = ["Madurai", "Naramon", "Vazarin", "Zenurik", "Unairu", "Umbra", "Omni"];
 const WF_SCALE_TAG = { strength: "STR", duration: "DUR", range: "RNG", casting_speed: "CAST" };
+const WF_CAPS = [["invulnerable", "Invulnerable"], ["status_cleanse", "Status cleanse"], ["damage_cap", "Damage cap"]];
+/// An item's tags as chips, for the card that carries them.
+const wfTagChips = (tags) => (tags || []).map((t) => {
+  const c = WF_CAPS.find(([id]) => id === t.tag);
+  return ` <span class="wf-cap ${t.tag}" title="${escHtml(t.when)}">${escHtml(tr(c ? c[1] : t.tag))}</span>`;
+}).join("");
 const SHARD_HUE = { crimson: "#d64545", azure: "#3d8bfd", amber: "#e8a33d",
   violet: "#9b59d0", emerald: "#2fb36d", topaz: "#e07b2a" };
 let WFCAT = null;
@@ -21572,7 +21578,7 @@ function wfSlotEl(i) {
     const cost = i === WF_AURA ? `+${eff} ${escHtml(tr("capacity"))}`
       : `${eff} drain${eff !== base ? ` (base ${base})` : ""}`;
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod")
-      + `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>`
+      + `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${wfTagChips(m.tags)}</div>`
       + `<div class="me">${wfLines(m, r).map((x) => `<div>${escHtml(x)}</div>`).join("")}</div>`
       + `<div class="drow"><div class="dr${fit}"><span class="mpol">${polGlyph(m.polarity)}</span>${cost}</div>${wfRank(r, m.max_rank)}</div></div>`
       + `<button class="dots" title="options">⋯</button>`;
@@ -21716,7 +21722,7 @@ function wfArcaneEl(i) {
   const r = p.rank == null ? a.max_rank : p.rank;
   el.className = "slot filled arc" + (a.rarity ? " rar-" + a.rarity : "");
   el.innerHTML = imgTag(IMG(a.image), "mod")
-    + `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(wfLines(a, r).map(escHtml))}${wfRank(r, a.max_rank)}</div>`
+    + `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${wfTagChips(a.tags)}</div>${effLines(wfLines(a, r).map(escHtml))}${wfRank(r, a.max_rank)}</div>`
     + `<button class="dots" title="options">⋯</button>`;
   el.querySelector(".dots").addEventListener("click", (e) => {
     e.stopPropagation();
@@ -21814,7 +21820,7 @@ function renderWfAbilities(r) {
       + (x.derived || []).map((d) => `<div class="row wf-der"><span class="k">${escHtml(tr(d.label))}</span><span class="v">${Math.round(d.value)}</span></div>`).join("");
     return `<div class="wf-ab${x.helminth ? " infused" : ""}">
       <div class="wf-ab-h"><span class="wf-key">${x.slot}</span>${imgTag(IMG(a.icon), "wf-ab-icon")}
-        <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${x.helminth ? ` <span class="exchip">${escHtml(tr("Helminth"))}</span>` : ""}</div>
+        <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${x.helminth ? ` <span class="exchip">${escHtml(tr("Helminth"))}</span>` : ""}${wfTagChips(a.tags)}</div>
         <div class="wf-costs">${cost}${drain}</div></div></div>
       <div class="wf-ab-desc">${escHtml((I18N && (I18N.warframe_ability_descriptions || {})[x.id]) || a.description || "")}</div>
       ${rows ? `<div class="stat-table wf-ab-stats">${rows}</div>`
@@ -21870,7 +21876,21 @@ function refreshWfPanel() {
     }
     renderWfStats(r);
     renderWfAbilities(r);
+    renderWfCaps(r);
   }, 120);
+}
+
+/// THE THREE TAGS, each with every source the build carries for it. A tag
+/// nobody grants is drawn dimmed rather than left out: "no invulnerability" is
+/// part of what a build says.
+function renderWfCaps(r) {
+  const by = (id) => (r.tags || []).filter((t) => t.tag === id);
+  $("wf-caps").innerHTML = WF_CAPS.map(([id, label]) => {
+    const src = by(id);
+    return `<div class="wf-capbox ${id}${src.length ? "" : " off"}"><div class="wf-caph">${escHtml(tr(label))}${
+      src.length ? "" : ` <span class="wf-capsrc">${escHtml(tr("none in this build"))}</span>`}</div>${
+      src.map((t) => `<div class="wf-capsrc">${escHtml(wfSourceName(t.from))} — ${escHtml(t.when)}</div>`).join("")}</div>`;
+  }).join("");
 }
 
 // ---- builds ----
@@ -21938,7 +21958,7 @@ function renderWarframe() {
   $("wf-name").textContent = f.name;
   $("wf-tags").innerHTML = [["Health", f.health], ["Shield", f.shield], ["Armor", f.armor], ["Energy", f.energy], ["Sprint", f.sprint]]
     .map(([k, v]) => `<span class="tag">${escHtml(tr(k))} ${wfNum(v)}</span>`).join("");
-  $("wf-passive").innerHTML = f.passive ? `<div>${escHtml(f.passive)}</div>` : "";
+  $("wf-passive").innerHTML = f.passive ? `<div>${escHtml(f.passive)}${wfTagChips(f.passive_tags)}</div>` : "";
   renderWfPresetBar();
   renderWfMods();
   renderWfArcanes();

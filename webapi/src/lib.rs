@@ -97,6 +97,7 @@ fn polarity_label(p: &str) -> String {
 pub fn warframe_catalog_json() -> Value {
     use wfsim_engine::warframes_data as wf;
     let a = assets();
+    let tags = |t: &[wf::TagGrant]| t.iter().map(|g| json!({ "tag": g.tag.id(), "when": g.when })).collect::<Vec<_>>();
     json!({
         "ok": true,
         "frames": wf::warframes().iter().map(|f| json!({
@@ -111,6 +112,7 @@ pub fn warframe_catalog_json() -> Value {
             "aura_polarity": f.aura_polarity.as_deref().map(polarity_label),
             "exilus_polarity": f.exilus_polarity.as_deref().map(polarity_label),
             "passive": f.passive,
+            "passive_tags": tags(&f.passive_tags),
             "abilities": f.abilities,
             "image": a.warframes.get(&f.id),
             "url": f.url,
@@ -136,6 +138,7 @@ pub fn warframe_catalog_json() -> Value {
             "description": m.description,
             "effects": m.description.lines().collect::<Vec<_>>(),
             "desc_ranks": (0..=m.max_rank).map(|r| m.card_at(r).join("\n")).collect::<Vec<_>>(),
+            "tags": tags(&m.tags),
         })).collect::<Vec<_>>(),
         "arcanes": wf::arcanes().iter().map(|x| json!({
             "id": x.id,
@@ -146,6 +149,7 @@ pub fn warframe_catalog_json() -> Value {
             "description": x.description,
             "effects": x.description.lines().collect::<Vec<_>>(),
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
+            "tags": tags(&x.tags),
         })).collect::<Vec<_>>(),
         "abilities": wf::abilities().iter().map(|x| json!({
             "id": x.id,
@@ -158,6 +162,7 @@ pub fn warframe_catalog_json() -> Value {
             "augments": x.augments,
             "icon": x.icon,
             "description": x.description,
+            "tags": tags(&x.tags),
             "url": x.url,
         })).collect::<Vec<_>>(),
     })
@@ -215,6 +220,10 @@ pub fn warframe_panel_json(v: &Value) -> Value {
             "derived": x.derived.iter().map(|d| json!({
                 "label": d.label, "stat": d.stat.id(), "value": d.value,
             })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+        // EVERY TAG WITH EVERY SOURCE, so the page can say where each came from.
+        "tags": r.tags.iter().map(|t| json!({
+            "tag": t.tag.id(), "label": t.tag.label(), "from": t.from, "when": t.when,
         })).collect::<Vec<_>>(),
         "admissions": r.admissions.iter().map(|x| json!({
             "from": x.from,

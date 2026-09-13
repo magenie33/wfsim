@@ -2524,6 +2524,16 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 /* THE WARFRAME BUILDER. The weapon builder's slots, rows and dropdowns, and only
    what a frame has that a weapon does not: five shard sockets and ability
    cards. The aura sits where a weapon's stance does. */
+.wf-caps{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.wf-capbox{flex:1 1 180px;min-width:0;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--surface)}
+.wf-capbox.off{opacity:.55}
+.wf-capbox .wf-caph{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.wf-capbox .wf-capsrc{font-size:11px;color:var(--text-2);line-height:1.4}
+.wf-cap{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:999px;font-size:10px;font-weight:600;
+  border:1px solid var(--line);color:var(--text)}
+.wf-cap.invulnerable,.wf-capbox.invulnerable .wf-caph{color:#e8a33d}
+.wf-cap.status_cleanse,.wf-capbox.status_cleanse .wf-caph{color:#2fb36d}
+.wf-cap.damage_cap,.wf-capbox.damage_cap .wf-caph{color:#3d8bfd}
 #wf-aura-block{margin-bottom:10px}
 #wf-aura-block .exlabel{margin-top:0}
 .wf-shards{display:flex;flex-direction:column;gap:6px}

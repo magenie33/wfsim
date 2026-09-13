@@ -100,6 +100,65 @@ impl FrameStat {
     }
 }
 
+/// WHAT A BUILD CAN DO FOR SURVIVAL, as a tag rather than a number. A frame's
+/// build answers too many questions to rank by one score, so a build states which
+/// of these it carries and where each comes from. docs/WARFRAMES.md §Tags.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Capability {
+    /// Takes no damage at all for a while.
+    Invulnerable,
+    /// Removes status effects already on the Warframe.
+    StatusCleanse,
+    /// Damage taken has a hard ceiling.
+    DamageCap,
+}
+
+impl Capability {
+    pub const ALL: [Capability; 3] =
+        [Capability::Invulnerable, Capability::StatusCleanse, Capability::DamageCap];
+
+    pub fn id(self) -> &'static str {
+        match self {
+            Capability::Invulnerable => "invulnerable",
+            Capability::StatusCleanse => "status_cleanse",
+            Capability::DamageCap => "damage_cap",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Capability::Invulnerable => "Invulnerable",
+            Capability::StatusCleanse => "Status cleanse",
+            Capability::DamageCap => "Damage cap",
+        }
+    }
+
+    fn parse(path: &str, id: &str) -> Capability {
+        Capability::ALL
+            .into_iter()
+            .find(|c| c.id() == id)
+            .unwrap_or_else(|| panic!("{path}: unknown tag `{id}`"))
+    }
+}
+
+/// One item's claim to a tag, and when it holds.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TagGrant {
+    pub tag: Capability,
+    /// The condition and timing, in the card's own terms ("on roll, 3 s").
+    pub when: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawTag {
+    tag: String,
+    when: String,
+}
+
+fn tags_of(path: &str, raw: &[RawTag]) -> Vec<TagGrant> {
+    raw.iter().map(|t| TagGrant { tag: Capability::parse(path, &t.tag), when: t.when.clone() }).collect()
+}
+
 /// One line of a mod's or an arcane's card, typed.
 #[derive(Debug, Clone, PartialEq)]
 pub enum FrameEffect {
@@ -180,11 +239,14 @@ pub struct WarframeMod {
     pub internal_name: Option<String>,
     pub description: String,
     pub effects: Vec<FrameEffect>,
+    pub tags: Vec<TagGrant>,
     pub url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct RawMod {
+    #[serde(default)]
+    tags: Vec<RawTag>,
     id: String,
     name: String,
     rarity: String,
@@ -234,6 +296,7 @@ fn aura_card(a: &crate::auras_data::AuraDef) -> WarframeMod {
         internal_name: a.internal_name.clone(),
         description: a.description.clone(),
         effects,
+        tags: Vec::new(),
         url: None,
     }
 }
@@ -247,6 +310,7 @@ pub fn mods() -> &'static [WarframeMod] {
                 let r: RawMod = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
                 WarframeMod {
                     effects: r.effects.iter().map(|e| effect(p, e)).collect(),
+                    tags: tags_of(p, &r.tags),
                     id: r.id,
                     name: r.name,
                     rarity: r.rarity,
@@ -314,11 +378,14 @@ pub struct WarframeArcane {
     pub internal_name: Option<String>,
     pub description: String,
     pub effects: Vec<FrameEffect>,
+    pub tags: Vec<TagGrant>,
     pub url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct RawArcane {
+    #[serde(default)]
+    tags: Vec<RawTag>,
     id: String,
     name: String,
     rarity: String,
@@ -340,6 +407,7 @@ pub fn arcanes() -> &'static [WarframeArcane] {
                 let r: RawArcane = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
                 WarframeArcane {
                     effects: r.effects.iter().map(|e| effect(p, e)).collect(),
+                    tags: tags_of(p, &r.tags),
                     id: r.id,
                     name: r.name,
                     rarity: r.rarity,
@@ -413,6 +481,7 @@ pub struct Ability {
     pub drain_per_second: Option<f64>,
     pub stats: Vec<AbilityStat>,
     pub unmodelled: Vec<String>,
+    pub tags: Vec<TagGrant>,
     pub internal_name: Option<String>,
     pub url: Option<String>,
 }
@@ -467,6 +536,8 @@ struct RawAbility {
     #[serde(default)]
     unmodelled: Vec<String>,
     #[serde(default)]
+    tags: Vec<RawTag>,
+    #[serde(default)]
     internal_name: Option<String>,
     #[serde(default)]
     source: SourceFile,
@@ -520,6 +591,7 @@ pub fn abilities() -> &'static [Ability] {
                     icon: r.icon,
                     description: r.description,
                     drain_per_second: r.drain_per_second,
+                    tags: tags_of(p, &r.tags),
                     unmodelled: r.unmodelled,
                     internal_name: r.internal_name,
                     url: r.source.url,
@@ -557,6 +629,8 @@ pub struct WarframeDef {
     pub aura_polarity: Option<String>,
     pub exilus_polarity: Option<String>,
     pub passive: String,
+    /// What the passive grants, as tags.
+    pub passive_tags: Vec<TagGrant>,
     /// Ability ids in slot order.
     pub abilities: Vec<String>,
     pub url: Option<String>,
@@ -578,6 +652,8 @@ struct RawFrame {
     exilus_polarity: Option<String>,
     #[serde(default)]
     passive: String,
+    #[serde(default)]
+    passive_tags: Vec<RawTag>,
     abilities: Vec<String>,
     #[serde(default)]
     source: SourceFile,
@@ -603,6 +679,7 @@ pub fn warframes() -> &'static [WarframeDef] {
                     polarities: r.polarities,
                     aura_polarity: r.aura_polarity,
                     exilus_polarity: r.exilus_polarity,
+                    passive_tags: tags_of(p, &r.passive_tags),
                     passive: r.passive,
                     abilities: r.abilities,
                     url: r.source.url,
@@ -716,11 +793,23 @@ pub struct Admission {
     pub kind: AdmissionKind,
 }
 
+/// One tag the build carries, and what carries it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TagSource {
+    pub tag: Capability,
+    /// The mod, arcane or ability id, or the frame's id for its passive.
+    pub from: String,
+    pub when: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct Resolved {
     pub frame: &'static WarframeDef,
     pub stats: Vec<StatLine>,
     pub abilities: Vec<ResolvedAbility>,
+    /// Every tag and every source of it, in tag order. An augment without its
+    /// ability grants nothing, as it pays nothing.
+    pub tags: Vec<TagSource>,
     pub admissions: Vec<Admission>,
     /// What the build asked for and could not seat, each with the reason.
     pub refused: Vec<String>,
@@ -1011,7 +1100,27 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         })
         .collect();
 
-    Ok(Resolved { frame, stats, abilities, admissions, refused })
+    let mut tags: Vec<TagSource> = Vec::new();
+    let mut claim = |from: &str, grants: &[TagGrant]| {
+        tags.extend(grants.iter().map(|g| TagSource { tag: g.tag, from: from.to_string(), when: g.when.clone() }));
+    };
+    claim(&frame.id, &frame.passive_tags);
+    for (m, _) in &seated {
+        if m.augments.as_deref().is_none_or(|a| loadout.iter().any(|(_, x, _)| x.id == a)) {
+            claim(&m.id, &m.tags);
+        }
+    }
+    for id in &arcane_ids {
+        if let Some(a) = arcane_by_id(id) {
+            claim(&a.id, &a.tags);
+        }
+    }
+    for (_, a, _) in &loadout {
+        claim(&a.id, &a.tags);
+    }
+    tags.sort_by(|a, b| a.tag.cmp(&b.tag));
+
+    Ok(Resolved { frame, stats, abilities, tags, admissions, refused })
 }
 
 /// The capacity an aura adds, from W`Aura`: "matching polarity … double of the
