@@ -54,6 +54,25 @@ needs beyond them, and loading one whose id is not in the roster panics.
   freely between the eight slots, the exilus slot and the aura slot: the exilus
   slot's since Techrot Encore, the aura slot's since 38.5.
 
+## Tags
+
+**A FRAME'S BUILD IS READ BY WHAT IT CAN DO, NOT RANKED BY A NUMBER.** A frame
+answers survival, abilities and movement at once, so no single score orders two
+builds. What a build states instead is a closed set of tags
+(`warframes_data::Capability`), each with every source that grants it:
+
+| tag | means |
+| --- | --- |
+| `invulnerable` | takes no damage at all for a while |
+| `status_cleanse` | removes status effects already on the frame |
+| `damage_cap` | damage taken has a hard ceiling, not a percentage reduction |
+
+A tag is DATA on the item that grants it — `tags:` on a mod, arcane or ability,
+`passive_tags:` on a frame — as `{tag, when}`, with the wiki sentence quoted in a
+comment. An unknown tag panics at load. An augment whose ability is not in the
+loadout grants no tag, as it pays nothing. Status IMMUNITY is not one of the
+three: it stops a new status and removes none.
+
 ## Abilities
 
 `data/warframe_abilities/` holds the CARD of an ability — cost, description,

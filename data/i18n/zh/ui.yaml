@@ -9,6 +9,10 @@ ui:
   # THE WARFRAME BUILDER. The stat names are DE's own, read off the zh card text
   # of the mods that grant them (Intensify 技能强度, Continuity 技能持续时间 …).
   "Warframes": 战甲
+  "Invulnerable": 无敌
+  "Status cleanse": 清除异常状态
+  "Damage cap": 限伤
+  "none in this build": 这套配装没有
   "Exilus": Exilus
   "Archon Shards": 执刑官源力石
   "Abilities": 技能
