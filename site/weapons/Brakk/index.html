@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.eeb071951aa0.css" />
+  <link rel="stylesheet" href="/asset/style.e27b289dbefa.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -326,6 +326,8 @@
     <p class="hero-sub hero-lead" data-i18n>Builder, simulator, optimizer.</p>
     <div class="hero-facts" id="home-facts" hidden></div>
     <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support" data-i18n>Why you can check it</a></p>
+    <h2 class="home-h" data-i18n>Warframes</h2>
+    <div id="warframe-grid"></div>
     <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
   </main>
@@ -1087,6 +1089,70 @@
   </main>
 
   <!-- floating popovers (positioned at the active slot) -->
+  <!-- THE WARFRAME BUILDER — `/warframes/<Wiki_Name>`, a builder and nothing
+       else: a frame's mods, arcanes, shards and Helminth, and what they
+       resolve to. `.config-page`, so its blocks fold and the jump menu indexes
+       them like a weapon page's. docs/WARFRAMES.md. -->
+  <main id="warframe-page" class="config-page" hidden>
+    <div class="wstrip">
+      <img id="wf-img" alt="" />
+      <div>
+        <h2 id="wf-name">—</h2>
+        <div id="wf-tags" class="tags"></div>
+        <div id="wf-passive" class="wpassives"></div>
+      </div>
+    </div>
+    <div class="preset-bar" id="preset-bar-warframes"></div>
+
+    <section class="block" id="wf-mod-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mods</h2>
+        <span class="sub">
+          <span class="cap" id="wf-capacity">0 / 0</span>
+          <span class="forma" id="wf-forma">0 Forma</span>
+          <button id="wf-auto-forma" class="ghost-btn small" title="auto-assign polarities for minimum Forma" data-i18n-title>auto</button>
+          <button id="wf-clear" class="ghost-btn small">clear</button>
+        </span>
+      </div>
+      <div class="bb">
+        <div class="wf-top">
+          <div><div class="exlabel" data-i18n>Aura</div><div id="wf-aura" class="slots one"></div></div>
+          <div><div class="exlabel" data-i18n>Exilus</div><div id="wf-exilus" class="slots one"></div></div>
+        </div>
+        <div id="wf-mod-slots" class="slots"></div>
+        <div class="exhint" data-i18n>An aura hands capacity back instead of costing it: twice its drain on its own polarity, 80% of it rounded down on another. A polarity moves between all ten slots, the aura's included.</div>
+      </div>
+    </section>
+
+    <section class="block" id="wf-arcane-block">
+      <div class="bh"><span class="n">2</span><h2 data-i18n>Arcanes</h2></div>
+      <div class="bb"><div id="wf-arcane-slots" class="slots"></div></div>
+    </section>
+
+    <section class="block" id="wf-shard-block">
+      <div class="bh"><span class="n">3</span><h2 data-i18n>Archon Shards</h2></div>
+      <div class="bb"><div id="wf-shards" class="wf-shards"></div></div>
+    </section>
+
+    <section class="block" id="wf-stats-block">
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2></div>
+      <div class="bb"><div id="wf-stats"></div><div id="wf-admissions"></div></div>
+    </section>
+
+    <!-- THE DETAIL: the four abilities at this build's numbers, and the one
+         slot the Helminth may take. -->
+    <section class="block" id="wf-ability-block">
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Abilities</h2></div>
+      <div class="bb">
+        <div id="wf-helminth" class="wf-helminth"></div>
+        <div id="wf-abilities" class="wf-abilities"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="wf-popover" class="popover" hidden>
+    <div class="addbar"><input id="wf-search" type="text" placeholder="Search…" data-i18n-ph autocomplete="off" /></div>
+    <div id="wf-menu" class="combo-menu"></div>
+  </div>
   <div id="mod-popover" class="popover" hidden>
     <div class="addbar"><input id="mod-search" type="text" placeholder="Search a mod…" data-i18n-ph autocomplete="off" /></div>
     <div id="picker-tools" class="picker-tools"></div>
@@ -1138,13 +1204,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">cce8f640</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">203c0b4f</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.d119f08aa009.js"></script>
+  <script src="/asset/app.8173921754ae.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is
