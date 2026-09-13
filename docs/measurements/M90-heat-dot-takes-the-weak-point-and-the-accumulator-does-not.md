@@ -47,7 +47,7 @@ built in its own arm — a singleton accumulator, not a `Dot` — so it never
 passed the list that exception lives in, and its part factor was applied
 unconditionally on the strength of that line alone. Both rulers score every
 shot at the weak point, so the line was worth ×3 on every Heat build on the
-board. It is now known rather than believed, and it holds.
+board. It is now known rather than believed, and it holds — M91 then read the same four rows for Toxin, Electricity and Gas.
 
 **AND IT CONFIRMS M58 FROM A DIRECTION NOBODY HAD PUSHED.** That the `1` sits
 outside the instance's own facts — its crit, its body part — was implemented

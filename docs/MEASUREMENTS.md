@@ -138,7 +138,7 @@ path, so an entry may be renamed but never renumbered.
 | [M51](measurements/M51-multiplying-class-reads-evolved-base.md) | a `Multiplying` entry reads its FULL evolved base, and the two CO classes disagree | ✅ 2026-08-16 (owner) |
 | [M52](measurements/M52-chain-path-is-fixed.md) | a chain's path is FIXED, and its rule is not in the formation | ✅ 2026-08-17 (owner) |
 | [M53](measurements/M53-burston-incarnon-punch-through.md) | the Burston Incarnon PUNCHES THROUGH, and its blast lands behind you | ✅ 2026-08-20 (owner) |
-| [M54](measurements/M54-blast-detonation-weak-point.md) | a BLAST detonation carries the weak point ×3 to everything its sphere reaches, and a TOXIN DoT carries nothing | ✅ 2026-08-22 (owner) |
+| [M54](measurements/M54-blast-detonation-weak-point.md) | a BLAST detonation carries the weak point ×3 to everything its sphere reaches (its Toxin half superseded by M91) | ✅ 2026-08-22 (owner) |
 | [M55](measurements/M55-soma-prime-gunco-base.md) | the Soma Prime's GunCO reads its own 12, and neither Incarnon perk raises it | ✅ 2026-08-22 (owner) |
 | [M56](measurements/M56-blast-detonation-no-elemental.md) | a BLAST detonation takes NO elemental bonus, and Lavos can imbue Gas as its own element | ✅ 2026-08-23 (owner) |
 | [M57](measurements/M57-quantization-divides-by-moddedbase.md) | quantization divides by ModdedBase, not by the vector's total | ✅ 2026-08-23 (owner) |
@@ -175,6 +175,7 @@ path, so an entry may be renamed but never renumbered.
 | [M88](measurements/M88-boar-prime-co-base-under-reified-bane.md) | Boar Prime's Condition Overload reads the weapon's own base in both forms; Reified Bane's +10 and +14 stay out, and the gated half is +14 | ✅ 2026-09-11 (owner) |
 | [M89](measurements/M89-demolisher-flat-multiplier-in-the-faction-bracket.md) | a Demolisher takes a flat 0.8 inside the FACTION bracket, so a hit is ×0.8 and the status it applies is ×0.64 | ✅ 2026-09-13 (group) |
 | [M90](measurements/M90-heat-dot-takes-the-weak-point-and-the-accumulator-does-not.md) | a Heat DoT DOES take the weak point, and the accumulator's 1 does NOT | ✅ 2026-09-13 (owner) |
+| [M91](measurements/M91-one-weapon-five-elements-four-rows.md) | one weapon, five elements, four rows apiece: every damaging DoT takes the weak point (Toxin included, superseding M54) and a full Blast pile is ten numbers on the host | ✅ 2026-09-13 (owner) |
 
 ## By weapon
 

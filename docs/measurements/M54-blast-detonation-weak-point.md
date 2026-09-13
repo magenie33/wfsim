@@ -1,4 +1,6 @@
-# M54 — a BLAST detonation carries the weak point ×3 to everything its sphere reaches, and a TOXIN DoT carries nothing ✅ (owner, 2026-08-22)
+# M54 — a BLAST detonation carries the weak point ×3 to everything its sphere reaches ✅ (owner, 2026-08-22)
+
+> **The Toxin half of this entry is SUPERSEDED by [M91](M91-one-weapon-five-elements-four-rows.md).** A cleaner fixture — one weapon, one base, four rows for each of four elements — has Toxin taking the weak point like the rest of its family. The section below is kept as it was read; what changed is which reading the engine follows.
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
@@ -72,11 +74,11 @@ rather than reasoning about.
 
 **AND TOXIN DOES NOT TAKE HEADSHOTS** — stated flatly, and read.
 
-This contradicts the wiki's Toxin page, which lists *"Enemy Body Parts
-multipliers"* among the additional multipliers on a Toxin tick. A measurement
-beats the wiki (docs/DATA_SOURCES.md), so `dot_takes_weakpoint` returns false for
-Toxin and true for everything else — the others are UNMEASURED and keep the
-wiki's answer rather than inheriting a rule from one case.
+This contradicted the wiki's Toxin page, which lists *"Enemy Body Parts
+multipliers"* among the additional multipliers on a Toxin tick — **and the wiki
+is the one that held**. M91 reads Toxin, Heat, Electricity and Gas on one weapon
+and gets the same four numbers from all of them, so `dot_takes_weakpoint` has no
+exception in it any more.
 
 The two lines quoted above do not settle it on their own — `159/107 = 1.486` is
 neither 1 nor 3, and the samples differ in crit state and carry a faction bonus

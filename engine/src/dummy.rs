@@ -1888,16 +1888,19 @@ const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
 /// Does this status's DoT inherit the WEAK-POINT multiplier of the hit that
 /// applied it?
 ///
-/// TOXIN DOES NOT (M54). Everything this list reaches keeps the wiki's answer,
-/// which is that it does, because nobody has measured them — so it states what
-/// is KNOWN rather than a rule derived from one case.
+/// EVERY ONE OF THEM DOES, and all five are now measured (M91): one weapon,
+/// one base, four rows apiece, and Heat, Toxin, Electricity and Gas produce the
+/// same four numbers. Toxin stood alone here on a reading of M54's that the
+/// cleaner fixture does not reproduce — so the exception is gone rather than
+/// moved, and the wiki's sentence holds for the whole family.
 ///
-/// IT DOES NOT REACH HEAT OR BLAST, and neither is an omission. Heat is a
-/// singleton accumulator built in its own arm, which multiplies the part
-/// factor there and is MEASURED to (M90); a blast is not a DoT at all and was
-/// measured to carry it at exactly x3.00 (M54).
-fn dot_takes_weakpoint(t: DamageType) -> bool {
-    !matches!(t, DamageType::Toxin)
+/// THE SEAM STAYS. It is what makes the next status that turns out not to a
+/// one-line change, and it is the only place the question is asked; a bare
+/// `part_factor` at the call site would put it back into the arithmetic where
+/// nobody can see it. Heat and Blast do not come through here — Heat is a
+/// singleton accumulator with its own arm (M90) and a blast is not a DoT.
+fn dot_takes_weakpoint(_t: DamageType) -> bool {
+    true
 }
 const STATUS_DURATION: f64 = 6.0; // the standard proc duration
 /// LIFTED's duration. Not the standard 6 s: an independent
@@ -7240,37 +7243,61 @@ fn settle_procs(
                         params.armor_strip_per_puncture,
                         params.squad.enemy_armor_multiplier,
                     );
-                    let mut breakdown = Breakdown::default();
-                    let settled = target.apply(
-                        total,
-                        TypeShares::single(DamageType::Blast),
-                        false,
-                        at,
-                        foe,
-                        false,
-                        &mit,
-                        1.0,
-                        watching(rec, &mut breakdown),
-                    );
-                    let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
-                    r.sources.add_status(DamageType::Blast, eff);
-                    ledger::settle(
-                        r, rec, at, 0, DamageType::Blast, PopKind::Blast,
-                        &breakdown, settled, Some(debuffs),
-                        ledger::Clock::Dot,
-                        || Instance {
-                            origin: crate::record::Origin::Status,
-                            // EVERY STACK AT ONCE. Ten stacks detonating
-                            // together are ONE number in game, so the base
-                            // is their sum and the count is what a reader
-                            // checks it against.
-                            base: total,
-                            layers: Vec::new(),
-                            ..Instance::default()
-                        },
-                    );
+                    // TEN NUMBERS, NOT ONE, and the total is the same either
+                    // way — what differs is the INSTANCE, which is the unit
+                    // attenuation clamps, a shield gate multiplies and overkill
+                    // is measured against. Measured: the host pops ten numbers
+                    // and the bodies around it pop one (MEASUREMENTS M91).
+                    //
+                    // IT STOPS AT THE KILL. This arena replaces a dead body at
+                    // once, so paying the eleventh stack into a target that has
+                    // already fallen would land it on a FRESH one — a number the
+                    // game never dealt, to a body that was not there.
+                    let mut killed = false;
+                    let mut broke_any = None;
+                    for b in &fired {
+                        let mut breakdown = Breakdown::default();
+                        let settled = target.apply(
+                            b.value,
+                            TypeShares::single(DamageType::Blast),
+                            false,
+                            at,
+                            foe,
+                            false,
+                            &mit,
+                            1.0,
+                            watching(rec, &mut breakdown),
+                        );
+                        let (eff, k, broke) = (settled.effective, settled.killed, settled.broken);
+                        r.sources.add_status(DamageType::Blast, eff);
+                        let stack = b.value;
+                        ledger::settle(
+                            r, rec, at, 0, DamageType::Blast, PopKind::Blast,
+                            &breakdown, settled, Some(debuffs),
+                            ledger::Clock::Dot,
+                            || Instance {
+                                origin: crate::record::Origin::Status,
+                                // ONE STACK'S OWN NUMBER. The pile is ten of
+                                // these at one instant, which is what the game
+                                // draws and what an attenuated target feels.
+                                base: stack,
+                                layers: Vec::new(),
+                                ..Instance::default()
+                            },
+                        );
+                        if broke.is_some() {
+                            broke_any = broke;
+                        }
+                        if k {
+                            killed = true;
+                            break;
+                        }
+                    }
+                    // ONE MOMENT, ONE KILL, ONE BREAK — however many numbers
+                    // shared it. The same rule M76 states for what an arcane
+                    // counting hits sees.
                     r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
-                    if let Some(pool) = broke {
+                    if let Some(pool) = broke_any {
                         push_break_proc(debuffs, params, at, pool);
                     }
                     if killed {
@@ -20411,6 +20438,58 @@ mod tests {
         assert_eq!(imp.spread.touched(), 1, "{:?}", &imp.spread.by_body().0[..3]);
     }
 
+    /// A FULL PILE PAYS THE HOST AS TEN NUMBERS, NOT ONE — MEASUREMENTS M91.
+    ///
+    /// The total is the same either way, so this asserts the COUNT: an instance
+    /// is the unit attenuation clamps, a shield gate multiplies and overkill is
+    /// measured against, and ten small ones are a different fight from one
+    /// large one on any target that has those.
+    ///
+    /// THE ARCANE STILL SEES ONE, which is the trap this pairs with. What an
+    /// arcane counting hits reads is `blast_pops`, fed per MOMENT (M76) — so
+    /// splitting the damage must not split the count, and the assertion below
+    /// is what says it did not.
+    #[test]
+    fn a_full_blast_pile_pays_the_host_as_ten_numbers_and_the_arcane_as_one() {
+        let mut p = DummyParams {
+            forced_procs: vec![DamageType::Blast],
+            body_parts: mono_body(1.0),
+            crit_multiplier: 1.0,
+            // A PILE FILLS AND NOBODY DIES: ten shots inside the fuse, and a
+            // target the pile cannot finish, so the loop pays every stack.
+            fire_rate: 20.0,
+            duration_seconds: 2.0,
+            magazine_size: 1e9,
+            ..no_status()
+        };
+        p.target.base_health = 1e15;
+        let rec = record(&p, 0, 0.0, f64::INFINITY, 10_000, 0);
+        // THE DETONATION IS THE INSTANT THAT HOLDS MORE THAN ONE BLAST NUMBER.
+        let mut by_t: std::collections::BTreeMap<u64, Vec<f64>> = Default::default();
+        for e in rec.events() {
+            if let crate::record::Kind::Damage(d) = &e.kind {
+                if d.dtype == DamageType::Blast && d.origin == crate::record::Origin::Status {
+                    by_t.entry((e.t * 1e6) as u64).or_default().push(d.base);
+                }
+            }
+        }
+        let pile = by_t.values().find(|v| v.len() > 1).expect("a pile detonates");
+        assert_eq!(pile.len(), TEN_STACK_CAP, "ten stacks are ten numbers: {pile:?}");
+        // …AND THEY ARE THE STACKS, not a tenth of a sum: every one is equal,
+        // because this fixture applies the same stack ten times.
+        let first = pile[0];
+        assert!(
+            pile.iter().all(|v| (v - first).abs() < 1e-9),
+            "each number is one stack's own: {pile:?}"
+        );
+
+        let run = run_once(&p, &mut Rng::new(0));
+        assert_eq!(
+            run.blast_pops, 0,
+            "a pile that reached the cap is not a fuse paying out, so it feeds no ramp"
+        );
+    }
+
     /// A BLAST GOING OFF IS ONE HIT PER MOMENT, NOT PER STACK.
     ///
     /// What an arcane counting hits sees is the damage NUMBER at a moment. Two
@@ -20940,9 +21019,9 @@ mod tests {
     /// payloads too: a punched body burned for a third of the aimed body's on a
     /// ruler whose own rule is that a punched body IS a weak-point hit.
     ///
-    /// TOXIN IS THE CONTROL AND MUST NOT MOVE: it is the one type
-    /// `dot_takes_weakpoint` excludes, so it was symmetric before this and is
-    /// symmetric after.
+    /// TOXIN IS THE SECOND READING OF THE SAME CLAIM. It reads the weak point
+    /// too (M91), so it must land symmetric for the same reason Heat does —
+    /// where it was once the control that could not move at all.
     #[test]
     fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
         let burn = |element: &str| {
@@ -20987,7 +21066,7 @@ mod tests {
         let toxin = burn("toxic_barrage");
         assert!(
             (toxin - 1.0).abs() < 0.15,
-            "…and the type that takes no weak point never moved: {toxin}"
+            "…and the other family member lands the same, for the same reason: {toxin}"
         );
     }
 
@@ -28919,17 +28998,19 @@ mod tests {
             body / host
         );
 
-        // ---- the toxin half, which goes the OTHER way.
-        assert!(!dot_takes_weakpoint(DamageType::Toxin), "M54: measured in game");
-        // The rest are UNMEASURED and keep the wiki's answer. Asserted so that
-        // extending the rule to them is a deliberate edit rather than a drift.
+        // ---- …AND THE DoTs, WHICH NOW ALL GO THE SAME WAY (M91). Toxin was
+        // the one exception here, on a reading of M54's that a cleaner fixture
+        // does not reproduce — Heat, Toxin, Electricity and Gas pop the same
+        // four numbers on one weapon. Asserted as a family so that carving an
+        // exception back out is a deliberate edit rather than a drift.
         for t in [
             DamageType::Slash,
+            DamageType::Toxin,
             DamageType::Electricity,
             DamageType::Gas,
             DamageType::Heat,
         ] {
-            assert!(dot_takes_weakpoint(t), "{t:?} is unmeasured and keeps the wiki's answer");
+            assert!(dot_takes_weakpoint(t), "{t:?}: M91 measured all four alike");
         }
     }
 
