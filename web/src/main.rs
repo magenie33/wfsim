@@ -152,6 +152,9 @@ const POL_MADURAI: &[u8] = include_bytes!("static/pol/Madurai_Pol.svg");
 const POL_NARAMON: &[u8] = include_bytes!("static/pol/Naramon_Pol.svg");
 const POL_VAZARIN: &[u8] = include_bytes!("static/pol/Vazarin_Pol.svg");
 const POL_UMBRA: &[u8] = include_bytes!("static/pol/Umbra_Pol.svg");
+const POL_ZENURIK: &[u8] = include_bytes!("static/pol/Zenurik_Pol.svg");
+const POL_UNAIRU: &[u8] = include_bytes!("static/pol/Unairu_Pol.svg");
+const POL_PENJAGA: &[u8] = include_bytes!("static/pol/Penjaga_Pol.svg");
 const POL_ANY: &[u8] = include_bytes!("static/pol/Any_Pol.png");
 
 /// Serve a vendored polarity icon by filename.
@@ -160,6 +163,9 @@ fn pol_icon(file: &str) -> Option<(&'static [u8], &'static str)> {
         "Madurai_Pol.svg" => (POL_MADURAI, "image/svg+xml"),
         "Naramon_Pol.svg" => (POL_NARAMON, "image/svg+xml"),
         "Vazarin_Pol.svg" => (POL_VAZARIN, "image/svg+xml"),
+        "Zenurik_Pol.svg" => (POL_ZENURIK, "image/svg+xml"),
+        "Unairu_Pol.svg" => (POL_UNAIRU, "image/svg+xml"),
+        "Penjaga_Pol.svg" => (POL_PENJAGA, "image/svg+xml"),
         "Umbra_Pol.svg" => (POL_UMBRA, "image/svg+xml"),
         "Any_Pol.png" => (POL_ANY, "image/png"),
         _ => return None,

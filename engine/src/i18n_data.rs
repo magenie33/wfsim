@@ -76,6 +76,14 @@ pub struct LocaleSpec {
     pub warframe_arcanes: BTreeMap<String, String>,
     #[serde(default)]
     pub warframe_abilities: BTreeMap<String, String>,
+    /// DE's card text for the same three, generated like `mod_descriptions`:
+    /// one entry per rank for a card, one string for an ability.
+    #[serde(default)]
+    pub warframe_mod_descriptions: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    pub warframe_arcane_descriptions: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    pub warframe_ability_descriptions: BTreeMap<String, String>,
     /// UI strings keyed by the English source string.
     #[serde(default)]
     pub ui: BTreeMap<String, String>,
@@ -152,6 +160,9 @@ impl LocaleSpec {
         maps(&mut self.warframe_mods, other.warframe_mods, path, "warframe_mods");
         maps(&mut self.warframe_arcanes, other.warframe_arcanes, path, "warframe_arcanes");
         maps(&mut self.warframe_abilities, other.warframe_abilities, path, "warframe_abilities");
+        lists(&mut self.warframe_mod_descriptions, other.warframe_mod_descriptions, path, "warframe_mod_descriptions");
+        lists(&mut self.warframe_arcane_descriptions, other.warframe_arcane_descriptions, path, "warframe_arcane_descriptions");
+        maps(&mut self.warframe_ability_descriptions, other.warframe_ability_descriptions, path, "warframe_ability_descriptions");
 
         maps(&mut self.ui, other.ui, path, "ui");
         maps(&mut self.evolution_descriptions, other.evolution_descriptions, path, "evolution_descriptions");
@@ -408,6 +419,23 @@ mod tests {
                 assert!(
                     crate::warframes_data::mod_by_id(id).is_some(),
                     "i18n/{code}: unknown Warframe mod id '{id}'"
+                );
+            }
+            // ONE ENTRY PER RANK, or the card shows another rank's numbers.
+            for (id, ranks) in &spec.warframe_mod_descriptions {
+                let m = crate::warframes_data::mod_by_id(id)
+                    .unwrap_or_else(|| panic!("i18n/{code}: unknown Warframe mod id '{id}'"));
+                assert_eq!(ranks.len() as u32, m.max_rank + 1, "i18n/{code}: {id} ranks");
+            }
+            for (id, ranks) in &spec.warframe_arcane_descriptions {
+                let a = crate::warframes_data::arcane_by_id(id)
+                    .unwrap_or_else(|| panic!("i18n/{code}: unknown Warframe arcane id '{id}'"));
+                assert_eq!(ranks.len() as u32, a.max_rank + 1, "i18n/{code}: {id} ranks");
+            }
+            for id in spec.warframe_ability_descriptions.keys() {
+                assert!(
+                    crate::warframes_data::ability(id).is_some(),
+                    "i18n/{code}: unknown Warframe ability id '{id}'"
                 );
             }
             for id in spec.warframe_arcanes.keys() {

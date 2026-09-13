@@ -10482,7 +10482,7 @@ function autoFormaWith(w) {
 // The Vinquibus is why it matters: it is "Innate one Madurai and one Aura
 // polarities", the wiki hosts no Aura_Pol.svg, and an invisible icon would put
 // the page back to claiming the slot is free when it is a +25% penalty. A named letter says more than a missing picture.
-const POL_ART = new Set(["Madurai", "Naramon", "Vazarin", "Umbra", "Omni"]);
+const POL_ART = new Set(["Madurai", "Naramon", "Vazarin", "Zenurik", "Unairu", "Penjaga", "Umbra", "Omni"]);
 // ITS OWN, because `cap` is a LOCAL helper inside two other functions and using
 // it here threw `cap is not defined` on every render (caught by
 // check_debuff_coverage, 2026-08-21).
@@ -21541,7 +21541,11 @@ function wfAutoForma() {
 }
 
 // ---- drawing ----
+/// DE'S OWN CARD in the display language when there is one, else ours.
 const wfLines = (o, r) => {
+  const zh = I18N && ((I18N.warframe_mod_descriptions || {})[o.id]
+    || (I18N.warframe_arcane_descriptions || {})[o.id]);
+  if (zh && zh.length) return String(zh[Math.max(0, Math.min(zh.length - 1, r))]).split("\n").filter(Boolean);
   const all = o.desc_ranks || [o.description || ""];
   return String(all[Math.max(0, Math.min(all.length - 1, r))] || "").split("\n").filter(Boolean).map(tf);
 };
@@ -21812,7 +21816,7 @@ function renderWfAbilities(r) {
       <div class="wf-ab-h"><span class="wf-key">${x.slot}</span>${imgTag(IMG(a.icon), "wf-ab-icon")}
         <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${x.helminth ? ` <span class="exchip">${escHtml(tr("Helminth"))}</span>` : ""}</div>
         <div class="wf-costs">${cost}${drain}</div></div></div>
-      <div class="wf-ab-desc">${escHtml(a.description || "")}</div>
+      <div class="wf-ab-desc">${escHtml((I18N && (I18N.warframe_ability_descriptions || {})[x.id]) || a.description || "")}</div>
       ${rows ? `<div class="stat-table wf-ab-stats">${rows}</div>`
         : `<div class="wf-ab-none">${escHtml(tr("this ability's numbers are not transcribed yet"))}</div>`}
     </div>`;

@@ -319,6 +319,37 @@ def main() -> int:
         write_descriptions(locale_dir / "descriptions.yaml", args.locale, tables)
         print("\n".join(report))
         print(f"wrote {locale_dir / 'descriptions.yaml'}")
+        # THE WARFRAME BUILDER'S, in a file of its own: same source, same join.
+        wf_tables = {}
+        for section, table in [("warframe_mods", "warframe_mod_descriptions"),
+                               ("warframe_arcanes", "warframe_arcane_descriptions")]:
+            hits, missing = wfcd_descriptions(wfcd, args.locale, section)
+            # A LADDER OF ANOTHER LENGTH IS LEFT OUT, never trimmed: the wiki's
+            # `max_rank` is the one we state, and a card of DE's with a different
+            # count would show one rank's numbers on another. It falls back to
+            # English, and the report names it.
+            ranks = {i: int(re.search(r"^max_rank: (\d+)", (ROOT / p).read_text(encoding="utf-8"), re.M).group(1))
+                     for p in [str(x.relative_to(ROOT)) for x in ROOT.glob(SECTIONS[section])]
+                     for i in [Path(p).stem]}
+            off = sorted(i for i, r in hits.items() if len(r) != ranks.get(i, -1) + 1)
+            wf_tables[table] = {i: r for i, r in hits.items() if i not in off}
+            print(f"{table}: {len(wf_tables[table])} entries"
+                  + (f" — NO localized text for {missing}" if missing else "")
+                  + (f" — rank count differs from ours, left out: {off}" if off else ""))
+        write_descriptions(locale_dir / "warframe_descriptions.yaml", args.locale, wf_tables)
+        # An ability's text sits on its FRAME's entry, keyed by the ability's own
+        # uniqueName, one string rather than a rank ladder.
+        by_unique = {}
+        for entry in wfcd.values():
+            for a in (entry or {}).get(args.locale, {}).get("abilities") or []:
+                if a.get("abilityUniqueName") and a.get("description"):
+                    by_unique.setdefault(a["abilityUniqueName"], clean_line(a["description"]))
+        abilities = {i: by_unique[u] for i, u in sorted(our_ids("data/warframe_abilities/*.yaml").items())
+                     if u in by_unique}
+        with open(locale_dir / "warframe_descriptions.yaml", "a", encoding="utf-8", newline="\n") as fh:
+            fh.write("warframe_ability_descriptions:\n")
+            fh.writelines(f"  {i}: {json.dumps(t, ensure_ascii=False)}\n" for i, t in abilities.items())
+        print(f"warframe_ability_descriptions: {len(abilities)} entries")
         return 0
 
     # `check` / `fill` operate on the hand-written NAMES file.

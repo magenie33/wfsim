@@ -1143,6 +1143,9 @@ pub fn i18n_json() -> Value {
                 "warframe_mods": l.warframe_mods,
                 "warframe_arcanes": l.warframe_arcanes,
                 "warframe_abilities": l.warframe_abilities,
+                "warframe_mod_descriptions": l.warframe_mod_descriptions,
+                "warframe_arcane_descriptions": l.warframe_arcane_descriptions,
+                "warframe_ability_descriptions": l.warframe_ability_descriptions,
                 "ui": l.ui,
                 "effect_phrases": l.effect_phrases,
                 // DE's OWN card text, per rank — what the UI shows instead of
