@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.d36580b580dd.css" />
+  <link rel="stylesheet" href="/asset/style.bb0bc58123bf.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -1130,13 +1130,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">39acf2e6</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">acf840b1</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.950d82a28e20.js"></script>
+  <script src="/asset/app.9c1442762357.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is
@@ -1151,8 +1151,14 @@
      on the window, and a panel that cannot be moved covers whatever it lands
      on. See renderJump. -->
 <div class="jump" id="jump" hidden>
-  <button class="jump-grip" id="jump-grip" title="drag to move — click to open or close" data-i18n-title>☰</button>
-  <div class="jump-body" id="jump-body"></div>
+  <button type="button" class="jump-grip" id="jump-grip" title="drag to move — click to open or close" data-i18n-title><span class="jg-h">⠿</span><span class="jg-i">☰</span><span class="jg-n" id="jump-now"></span></button>
+  <div class="jump-panel">
+    <div class="jump-head" id="jump-head" title="drag to move — double-click to put it back" data-i18n-title>
+      <span class="jg-h">⠿</span><span class="jh-t" data-i18n>On this page</span>
+      <button type="button" class="jump-x" id="jump-x" title="close the menu" data-i18n-title>✕</button>
+    </div>
+    <div class="jump-body" id="jump-body"></div>
+  </div>
 </div>
 </body>
 </html>
