@@ -2171,6 +2171,16 @@ Bonus` + enemy-module schema):
   factions on one enemy (a Corrupted unit with override "Corpus" takes
   Bane of Orokin but the Corpus column). **Thrax**: Faction "Unknown" →
   no faction mod ever applies; override "Zariman" → Void x1.5 column.
+
+**A unit may carry its own multiplier INSIDE system A**
+(`EnemySpec::faction_bracket_multiplier`, default 1.0; measured on the
+Demolisher at 0.8 — MEASUREMENTS M89). It multiplies the finished bracket
+rather than joining its sum, so it is **squared on a DoT tick with everything
+else in there** (×0.8 on a hit, ×0.64 on the status that hit applied) and a
+Roar stays inside it. A file states the per-hit figure and the depth does the
+rest. It is **neither** attenuation (which caps an instance and a second
+against Max Health) **nor** a vulnerability column (which is per component and
+applied once) — a patch note removing either leaves it standing.
 ```
 per-component = damage × bane_mult(faction match; ×2 dip on DoT ticks)
                         × column(override ?? faction, type) × pool math

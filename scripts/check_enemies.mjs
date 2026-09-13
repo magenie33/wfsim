@@ -55,7 +55,12 @@ for (const lang of ["en", "zh"]) {
         const i = new Image();
         i.onload = () => res(i.naturalWidth > 0);
         i.onerror = () => res(false);
-        i.src = '/img/' + encodeURIComponent(e.image);
+        // THE SUFFIX IS APPENDED, NOT SUBSTITUTED, because that is what the
+        // page does (enemyImg): Sobek.png.webp. Asking for the bare .png
+        // reaches the SPA fallback, which loads as HTML and fails as an image
+        // — so this probe read every portrait as broken while all of them
+        // worked.
+        i.src = '/img/' + encodeURIComponent(e.image + '.webp');
       });
       if (!ok) art.push([e.id, e.image]);
     }
@@ -81,6 +86,10 @@ for (const lang of ["en", "zh"]) {
       };
     };
     const acolyte = await cardFor('angst');
+    // THE ONE UNIT THAT CUTS WHAT IT TAKES, and it is the only place on the
+    // page that number appears — nothing else on the card would tell a reader
+    // their damage is being multiplied at all.
+    const demolisher = await cardFor('demolisher_devourer');
     const gunner = await cardFor('corrupted_heavy_gunner');
     // The pools are fetched, so the card is repainted a beat after it is
     // drawn. Re-read rather than re-render: this is the state a player sees.
@@ -104,7 +113,7 @@ for (const lang of ["en", "zh"]) {
     const menu = { rows: rows.length, thumbs: rows.filter(o => o.querySelector('.en-thumb')).length };
     closePopovers();
 
-    return { roster, art, acolyte, gunner, menu, gunnerLate, thraxLate, lang: LANG,
+    return { roster, art, acolyte, demolisher, gunner, menu, gunnerLate, thraxLate, lang: LANG,
              baseHealth: (META.enemies.find(e => e.id === 'corrupted_heavy_gunner') || {}).health };
   })()`);
 
@@ -112,6 +121,14 @@ for (const lang of ["en", "zh"]) {
   check(`${tag} the app is in ${lang}`, r.lang === lang, r.lang);
   check(`${tag} every target declares a portrait and it LOADS`, r.art.length === 0,
     JSON.stringify(r.art));
+
+  // BOTH NUMBERS OR NEITHER. The multiplier rides the faction bracket, so a
+  // status carries its square — a card printing only the x0.8 would leave a
+  // reader a fifth out on every DoT, which is the mistake the measurement
+  // behind it was an argument about (MEASUREMENTS M89).
+  check(`${tag} the Demolisher's own multiplier is on the card, squared half included`,
+    r.demolisher.meta.includes('×0.8') && r.demolisher.meta.includes('×0.64'),
+    r.demolisher.meta);
   check(`${tag} the roster is the whole data/enemies/ library`, r.roster.length >= 8,
     `${r.roster.length} targets`);
 

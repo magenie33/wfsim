@@ -564,6 +564,7 @@ ui:
   "aiming is disabled for the duration of the burst, so the alternate fire cannot benefit from Acolyte mods — a gate this arena has no aim state to apply": "连射期间无法瞄准，所以交替射击吃不到「侍僧」系列 MOD——这是一道门槛，而本场没有瞄准状态可以拿来判定"
   "all potential buffs": 全部潜在增益
   "all rivens": 全部裂罅
+  "all damage": 全部伤害
   "all targets": 所有目标
   "ammo efficiency — it does not touch damage: it divides what a shot costs the magazine, so what it buys is reloads not taken. Multiplicative with other ammo-efficiency sources": 弹药效率——它不碰伤害：它把一发子弹消耗的弹匣量除下去，所以买到的是少换的弹。与其他弹药效率来源相乘叠加
   "ammo reserves are unlimited, so nothing runs dry": 备弹无限，不会打空
@@ -804,6 +805,7 @@ ui:
   "nothing to undo": 没有可撤销的操作
   "on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way": 开 = 用弹药拾取补满储备（模拟器没有拾取实体，用这个代替）；关 = 会打光。弹匣和换弹两种情况下都照常生效
   "on contact": 接触即中
+  "on status": 异常伤害
   "on the shot line": "在射线上"
   "on the target": "跟随目标"
   "one firing mode": 只有一种开火方式

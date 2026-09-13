@@ -670,6 +670,13 @@ pub struct TargetParams {
     /// the two systems have different keys and stack multiplicatively
     /// (docs/MECHANICS.md §8).
     pub type_mods: crate::factions_data::Columns,
+    /// A FLAT MULTIPLIER THIS UNIT APPLIES INSIDE THE FACTION BRACKET, 1.0 on
+    /// everything that does not declare one. It is NOT attenuation and not a
+    /// vulnerability column: it rides `faction_at_time`, so it is re-applied at
+    /// every derivation step exactly as a Bane is — ×m on a hit, ×m² on a
+    /// status that hit applied (`faction_at`). 0.8 therefore reads ×0.8 and
+    /// ×0.64, which is the shape it was measured in (MEASUREMENTS M89).
+    pub faction_bracket_multiplier: f64,
     pub mode: TargetMode,
 }
 
@@ -861,6 +868,7 @@ impl TargetParams {
             faction: crate::loadout::Faction::Unknown,
             // A training dummy has no faction and takes damage as written.
             type_mods: crate::factions_data::Columns::NEUTRAL,
+            faction_bracket_multiplier: 1.0,
             mode: TargetMode::InfiniteHealth,
         }
     }
@@ -4140,8 +4148,16 @@ impl DummyParams {
     /// Faction Damage" — wiki), so it ADDS to the sum rather than multiplying
     /// the result. Everything the bracket already does then happens to it for
     /// free, the status double-dip included.
+    ///
+    /// THE TARGET'S OWN MULTIPLIER MULTIPLIES THE FINISHED SUM, and the
+    /// position is the whole of it: inside the sum it would be one more Bane
+    /// and Roar would land on the wrong side of it; outside `faction_at`'s
+    /// power it would be applied once whatever the payload's depth. Here it is
+    /// raised with the bracket, which is what was measured
+    /// (`faction_bracket_multiplier`).
     pub fn faction_at_time(&self, t: f64) -> f64 {
-        self.faction_multiplier + crate::abilities_data::faction_bonus_at(&self.abilities, t)
+        (self.faction_multiplier + crate::abilities_data::faction_bonus_at(&self.abilities, t))
+            * self.target.faction_bracket_multiplier
     }
 
     /// ECLIPSE'S OWN MULTIPLIER at `t`, or 1.0. Applied ONCE wherever it is
@@ -27473,6 +27489,7 @@ mod tests {
             status_immunities: Vec::new(),
             faction: crate::loadout::Faction::Unknown,
             type_mods: crate::factions_data::Columns::NEUTRAL,
+            faction_bracket_multiplier: 1.0,
             mode,
         }
     }
@@ -32719,6 +32736,57 @@ mod warframe_ability_tests {
         // …and STRENGTH is linear, so 200% strength is +100%.
         let strong = direct(&params(&[("roar", None)], 2.0));
         assert!((strong / none - 2.0).abs() < 1e-9, "x{:.4}", strong / none);
+    }
+
+    /// A TARGET'S OWN MULTIPLIER RIDES THE FACTION BRACKET, and this pins the
+    /// POSITION rather than the size — the size is one yaml field and moves
+    /// with a measurement, the position is the claim (MEASUREMENTS M89).
+    ///
+    /// Roar is the instrument because it is the only bracket member that can be
+    /// on the WRONG SIDE and still look right on a hit: at x0.8 and +50%,
+    /// "inside" is `(1 + 0.5) * 0.8 = 1.2` and "outside" is `1 * 0.8 + 0.5 =
+    /// 1.3`. Both are "Roar helps"; only one is the bracket.
+    #[test]
+    fn a_targets_multiplier_rides_the_faction_bracket_with_roar_inside_it() {
+        let plain = direct(&params(&[], 1.0));
+        assert!(plain > 0.0);
+
+        let cut = direct(&{
+            let mut p = params(&[], 1.0);
+            p.target.faction_bracket_multiplier = 0.8;
+            p
+        });
+        assert!((cut / plain - 0.8).abs() < 1e-9, "x{:.4}", cut / plain);
+
+        let roared = direct(&{
+            let mut p = params(&[("roar", None)], 1.0);
+            p.target.faction_bracket_multiplier = 0.8;
+            p
+        });
+        assert!(
+            (roared / plain - 1.2).abs() < 1e-9,
+            "Roar left the bracket: x{:.4}, and x1.3 is the multiplier applied outside it",
+            roared / plain
+        );
+    }
+
+    /// …AND IT IS RAISED WITH THE BRACKET, which is the half a direct hit
+    /// cannot show. MEASUREMENTS M89's two readings, as the arithmetic that
+    /// forces them: an Aklex Prime with nothing equipped, base 150, into a
+    /// Demolisher's head, read off the Slash bleed.
+    #[test]
+    fn the_targets_multiplier_is_squared_on_a_status_exactly_as_a_bane_is() {
+        let bleed = |f: f64| BLEED_COEFFICIENT * 150.0 * 3.0 * faction_at(f, DEPTH_PROC);
+        assert!((bleed(0.8) - 100.8).abs() < 0.5, "{}", bleed(0.8));
+        assert!((bleed(1.55 * 0.8) - 242.2).abs() < 0.5, "{}", bleed(1.55 * 0.8));
+
+        // THE TWO READINGS THAT WERE NOT THOSE, so the test fails on either
+        // wrong answer rather than only on a missing one: absent, and applied
+        // once whatever the depth.
+        assert!((bleed(1.0) - 157.5).abs() < 0.5);
+        assert!((0.8 * bleed(1.0) - 126.0).abs() < 0.5);
+        assert!((bleed(1.55) - 378.4).abs() < 0.5);
+        assert!((0.8 * bleed(1.55) - 302.7).abs() < 0.5);
     }
 
     /// A DoT TRACKS ITS SOURCE, so a buff that ENDS mid-burn stops paying for

@@ -65,6 +65,12 @@ nullified_status_effects: [impact]
 # here reads as a gap until somebody checks. The Acolytes still have it and
 # still carry the admission for it.
 
+# …AND THE FLAT 0.8 BELOW IS NOT THAT, which is why the line above does not
+# cover it. Attenuation caps what an instance and a second may take off a unit;
+# this is a plain multiplier in the FACTION bracket, so it survives a patch note
+# that removed attenuation and nothing else. MEASUREMENTS M89.
+faction_bracket_multiplier: 0.8
+
 # IT IS NEVER FROZEN, and that makes Cold BETTER here rather than worse. The
 # ladder normally spends itself: the tenth proc consumes all stacks for a
 # 3-second Frozen window and drops back to three. Nothing converts on a
@@ -88,12 +94,18 @@ squad_health_bonus: [0.0, 0.5, 1.0, 2.0]
 
 # Base stats at base_level. Health is the DEMOLISHER variant's 2500, not the
 # Ghoul Devourer's 600 — a Demolisher is its own stat block, not a tag.
+#
+# ARMOUR IS 50, NOT THE 250 THE INFOBOX PRINTS. The page says so itself, in its
+# own Bugs section: *"Despite the codex showing a base armor value of 250, the
+# base armor value of the Ghoul Devourer and the Demolisher Devourer is 50."*
+# The table and the note disagree and the note wins, because the note is about
+# the table.
 stats:
   base_level: 1
   spawn_level: 15
   health: 2500
   shield: 0
-  armor: 250
+  armor: 50
   overguard: 0
   affinity: 0
 

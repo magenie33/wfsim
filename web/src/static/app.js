@@ -15292,6 +15292,14 @@ function enemyMeta(en) {
   }
   const head = (en.parts || []).find((p) => p.is_head);
   if (head) bits.push(`${tr("Headshot")} ×${head.multiplier}`);
+  // A UNIT'S OWN MULTIPLIER, and it is said as BOTH numbers because one of
+  // them is the surprise: it rides the faction bracket, so a status carries
+  // its square. A card printing only "×0.8" would have a reader off by a
+  // fifth on every DoT.
+  const fb = en.faction_bracket_multiplier;
+  if (fb != null && fb !== 1) {
+    bits.push(`×${fb} ${tr("all damage")} (×${Math.round(fb * fb * 1000) / 1000} ${tr("on status")})`);
+  }
   // The bare word "Eximus" is now a claim about WHAT YOU ARE SHOOTING and is
   // made above, beside that variant's own pools — there is a switch for it and
   // it defaults on. This line stays only for the case the numbers have not

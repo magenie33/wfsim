@@ -1711,6 +1711,12 @@ pub fn meta_json() -> Value {
                     .into_iter()
                     .map(|(t, m)| json!({ "type": t.name(), "mult": m }))
                     .collect::<Vec<_>>(),
+                // …AND THE FOURTH KIND, which none of the three above covers: a
+                // flat multiplier this unit applies INSIDE the faction bracket,
+                // so it is squared on a status exactly as a Bane is. It moves
+                // every number on the page and nothing else on this card would
+                // mention it, which is the whole reason it is here.
+                "faction_bracket_multiplier": e.faction_bracket_multiplier,
                 "parts": e.body_parts.iter().map(|b| json!({
                     "name": b.name, "multiplier": b.multiplier, "is_head": b.is_head
                 })).collect::<Vec<_>>(),

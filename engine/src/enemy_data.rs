@@ -119,6 +119,11 @@ pub struct SpectralForm {
     pub delay_seconds: f64,
 }
 
+/// The serde default for a multiplier a file leaves out: change nothing.
+fn one() -> f64 {
+    1.0
+}
+
 /// An enemy entry from `data/enemies/`. Unknown YAML fields (source,
 /// mechanics, notes, ...) are ignored by the loader.
 #[derive(Debug, Clone, Deserialize)]
@@ -277,6 +282,14 @@ pub struct EnemySpec {
     /// Damage attenuation (boss types); absent = none.
     #[serde(default)]
     pub attenuation: Option<AttenuationSpec>,
+    /// A FLAT MULTIPLIER THIS UNIT APPLIES INSIDE THE FACTION BRACKET — see
+    /// [`crate::dummy::TargetParams::faction_bracket_multiplier`]. Absent = 1.0,
+    /// which is every unit but the one it was measured on. It is written as the
+    /// per-HIT figure and the engine raises it per derivation step, so a file
+    /// states 0.8 and never 0.64: a file that stated the squared number would be
+    /// wrong for every direct hit.
+    #[serde(default = "one")]
+    pub faction_bracket_multiplier: f64,
     /// Per-unit status stack caps; absent = normal caps.
     #[serde(default)]
     pub status_stack_caps: Option<StackCapsSpec>,
@@ -376,6 +389,7 @@ impl EnemySpec {
                 instance_fraction: a.max_instance_fraction_of_health,
                 dps_fraction: a.max_dps_fraction_of_health,
             }),
+            faction_bracket_multiplier: self.faction_bracket_multiplier,
             stack_caps: self.status_stack_caps.map(|c| StackCaps {
                 general: c.general,
                 impact: c.impact,
