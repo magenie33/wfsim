@@ -268,5 +268,29 @@ check(rescore !== null && !passesGate(rescore),
   "a person asking for a ruler again is the one thing here that may reach a "
     + "parked build, and gating it makes a corrected model unable to rescue one");
 
+// AN ARRIVAL ASKS FOR THE FIGHT IT NAMED, AND THE ROW IS SHIPPED.
+//
+// A build carries no ruler and no mode, so intake is the only pass that still
+// knows which board a submitter was on. Losing this row is silent twice over:
+// a build nothing has measured falls back to every row it could have, which is
+// the entry line paying 84 fights where one would do — and a build the line
+// PARKED can never come back, because a resubmission would reach the gate and
+// be refused. The panel would still say "sent".
+const intakeStep = step("take in what has arrived") ?? "";
+const codeOf = (text) => text.split(NL).filter((l) => !l.trim().startsWith("#")).join(NL);
+check(/--asked(\s|\\|$)/m.test(codeOf(intakeStep)),
+  "an arrival asks for the fight it named",
+  "intake is the only pass that knows it; after it, nothing does");
+check(codeOf(intakeStep).includes("ship_queue.sh"),
+  "…and the row reaches the queue",
+  "a file written and never shipped is a fight nobody asked for, and the "
+    + "submitter is told 'sent'");
+// AFTER THE BUILDS, because a queue row naming a build the library does not
+// hold is a row nothing can ever take.
+const asked = codeOf(intakeStep).indexOf("ship_queue.sh");
+const builds = codeOf(intakeStep).indexOf("ship_builds.sh");
+check(builds >= 0 && asked > builds, "…and the build lands before the row that asks for it",
+  "a queue row naming a build the library does not hold is never taken");
+
 console.log(NL + (bad ? `${bad} failed` : "only the clock and a person start a board run"));
 process.exit(bad ? 1 : 0);

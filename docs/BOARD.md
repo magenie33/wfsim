@@ -890,17 +890,29 @@ and 93.3% of builds; a hundredth keeps 98.0% and gates nothing.
 
 **WHAT IT CANNOT DO IS REFUSE THE FIRST FIGHT.** Knowing whether a build clears
 the line means measuring it, so a build with no fact anywhere is owed one — and
-it is owed exactly one: the (ruler, mode) its submission NAMED, which is the
-fight its submitter actually ran. Clearing the line there earns the other
-eighty-odd rows. A record naming no fight — provenance the endpoint has not
-always stored — widens to every row rather than being stranded.
+exactly one. **`wfsim-intake` asks for it**, at the (ruler, mode) the ARRIVAL
+named, because that is the only moment anything knows: a build carries no ruler
+and no mode (`canonical` drops both, since mods are equipped on the WEAPON and a
+mode is how it is fired), so after intake the question cannot be asked at all.
+Clearing the line on that one fight earns the other eighty-odd rows.
 
-**EVERY AUTOMATIC PATH OBEYS IT AND THE RESCORE BUTTON DOES NOT.** `--gate` is
+**AND A BUILD WITH NOTHING OWED IS ASKED FOR EVERYTHING.** That is the net. An
+arrival row that was spent, dropped with its batch or never written would
+otherwise leave a build nothing ever measures, which is the one failure the
+reconciliation exists to make impossible.
+
+**AN ARRIVAL IS UNGATED, AND THAT IS HOW A PARKED BUILD COMES BACK.** Somebody
+pressing upload is a person asking, so a build the line parked is re-measured on
+the fight they just ran it in — a mechanic that changed makes it return by
+itself, with nobody having to know which build to look for. The cost is one
+fight per submission, which is the cost the first fight always is.
+
+**EVERY OTHER PATH OBEYS THE LINE AND THE RESCORE BUTTON DOES NOT.** `--gate` is
 passed by the arrivals reconciliation and by the nightly sweep, which is where
-the line pays for itself: arrivals are a one-off bill and the sweep recurs for
-the life of the board. A person asking for a ruler again after a model
-correction is the one path that may reach a parked build, and
-`check_rescore_paths.mjs` asserts all three.
+the line pays for itself: a first measurement is a one-off bill and the sweep
+recurs for the life of the board. A person asking for a ruler again after a model
+correction is the other path that may reach a parked build, and
+`check_rescore_paths.mjs` asserts every one of them.
 
 **NOTHING IS DELETED, AND THAT IS WHAT MAKES THE LINE REVERSIBLE.** A parked
 build keeps its row in `builds` and every fact in `scores`; what stops is the
