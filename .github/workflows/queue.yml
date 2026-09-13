@@ -100,6 +100,13 @@ jobs:
       # THE BUILDS LAND BEFORE THE QUEUE ROWS ARE SPENT, which is `ship_builds`'
       # own rule: stopped in between, the inbox still holds what the library is
       # missing and the next hour derives the same ids.
+      #
+      # …AND IT ASKS FOR THE FIGHT EACH ARRIVAL NAMED (`--asked`). A build has no
+      # ruler and no mode — `canonical` drops both — so this pass is the only
+      # place that still knows which board somebody was on, and the row it writes
+      # is the ONE fight a build nothing has measured is owed. It is NOT gated:
+      # somebody pressing upload is a person asking, so a build the entry line
+      # parked is re-measured on the fight they just ran it in.
       - name: take in what has arrived
         if: steps.wired.outputs.yes == 'true'
         env:
@@ -111,8 +118,13 @@ jobs:
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
           bash scripts/fetch_inbox.sh inbox.ndjson
-          ./target/release/wfsim-intake --done done.txt < inbox.ndjson > builds.ndjson
+          ./target/release/wfsim-intake --done done.txt --asked asked.ndjson \
+            < inbox.ndjson > builds.ndjson
           bash scripts/ship_builds.sh builds.ndjson done.txt
+          # AFTER THE BUILDS, because a queue row naming a build the library does
+          # not hold is a row nothing can ever take.
+          bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
+            "the fight each arrival was run in" asked.ndjson
 
       # ---- …AND WHAT HAS NO SCORE IS ASKED FOR --------------------------
       #

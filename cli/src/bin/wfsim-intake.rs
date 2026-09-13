@@ -190,17 +190,73 @@ fn flag(name: &str) -> Option<String> {
     a.iter().position(|x| x == name).and_then(|i| a.get(i + 1).cloned())
 }
 
-/// WHAT ONE PASS OF THE INBOX PRODUCES: the builds, and the inbox ids that may
-/// now be deleted.
+/// THE FIGHT AN ARRIVAL NAMED, as a queue row — and this is the only place in
+/// the pipeline that can say it.
+///
+/// A BUILD HAS NO RULER AND NO MODE: `canonical` drops both on purpose, because
+/// mods are equipped on the WEAPON and a mode is how it is fired. So the fight
+/// a submitter actually ran is a property of the ARRIVAL, and it exists only
+/// here, for the length of this pass. Asked for now, it is the one row a build
+/// nothing has measured is owed; unasked, the reconciliation falls back to
+/// every row the build could have, which is the entry line paying 84 fights
+/// where one would do.
+///
+/// IT IS NOT GATED, and that is what it is for: somebody pressing upload is a
+/// person asking, so a build the entry line parked is re-measured on the fight
+/// they just ran it in. A mechanic that changed makes it come back by itself.
+/// `sent_ruler` and `sent_mode` are the INBOX record's, taken before the
+/// canonical one shadows it — that one has neither, which is the whole point.
+fn asked_row(
+    sent_ruler: &str,
+    sent_mode: &str,
+    v: &wfsim_engine::builds::ValidBuild,
+    key: &str,
+) -> Option<Value> {
+    // A RULER THE ROSTER STILL HAS, by family — a `_vN` record names the ruler
+    // it is a version of. One it no longer has asks for nothing: `purge_queue`
+    // would delete the row and the reconciliation covers the build anyway.
+    let ruler = wfsim_engine::benchmarks_data::all()
+        .iter()
+        .map(|b| b.id.clone())
+        .find(|b| benchmark_family(b) == benchmark_family(sent_ruler))?;
+    // …AND A MODE THE WEAPON CAN SUSTAIN. The scorer enumerates sustainable
+    // modes and matches the queue on that id, so a row naming any other mode is
+    // a row nothing will ever take.
+    let modes: Vec<String> = wfsim_engine::weapons_data::play_modes(&v.weapon)
+        .into_iter()
+        .filter(|m| m.sustainable)
+        .map(|m| m.id.to_string())
+        .collect();
+    let mode = modes.iter().find(|m| *m == sent_mode).or_else(|| modes.first())?;
+    Some(json!({ "build_id": key, "ruler": ruler, "mode": mode }))
+}
+
+/// A benchmark id without its `_v<n>` suffix — the same rule `wfsim-board`
+/// applies, so a record naming an older version asks for the current ruler.
+fn benchmark_family(id: &str) -> &str {
+    id.rsplit_once("_v")
+        .filter(|(_, n)| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+        .map(|(base, _)| base)
+        .unwrap_or(id)
+}
+
+/// WHAT ONE PASS OF THE INBOX PRODUCES: the builds, the fights the arrivals
+/// named, and the inbox ids that may now be deleted.
 ///
 /// A FUNCTION rather than a loop inside `main`, because the properties worth
 /// asserting are all about this: which records collapse onto one build, which
 /// do not, and what a refusal does with the row.
-fn intake(lines: impl Iterator<Item = String>) -> (Vec<Value>, Vec<String>, usize, usize) {
+fn intake(
+    lines: impl Iterator<Item = String>,
+) -> (Vec<Value>, Vec<Value>, Vec<String>, usize, usize) {
     // ONE ROW PER BUILD, DEDUPED HERE TOO. Two inbox rows can be the same build
     // — a resubmission is a second row in a queue on purpose — and emitting it
     // twice would spend two writes on one row for no reason.
     let mut built: BTreeMap<String, Value> = BTreeMap::new();
+    // …AND THE FIGHT EACH ARRIVAL NAMED, deduped the same way: one row per
+    // (build, ruler, mode), because two people sending one build from one board
+    // are asking for one fight.
+    let mut asked: BTreeMap<String, Value> = BTreeMap::new();
     // WHAT MAY BE DELETED FROM THE INBOX. A refused record is DONE, not
     // retried: it will never become legal, and a queue that keeps what it
     // cannot use grows for ever.
@@ -252,6 +308,9 @@ fn intake(lines: impl Iterator<Item = String>) -> (Vec<Value>, Vec<String>, usiz
                 continue;
             }
         };
+        // THE FIGHT THIS ARRIVAL NAMED, read while the INBOX record is still in
+        // scope: the canonical one shadows it below and carries neither field.
+        let sent = (id(&rec, "benchmark"), id(&rec, "mode"));
         let at = id(&row, "at");
         // A RIVEN BECOMES ITS CORNERS, and a build without one is itself. The
         // record that arrives states a SHAPE; what is stored is a build a player
@@ -288,14 +347,23 @@ fn intake(lines: impl Iterator<Item = String>) -> (Vec<Value>, Vec<String>, usiz
                     from.push(was);
                 }
             }
+            // THE FIGHT THEY RAN IT IN. `sent` was taken before the canonical
+            // record shadowed the inbox one, which carries neither field.
+            if let Some(ask) = asked_row(&sent.0, &sent.1, &v, &key) {
+                asked.insert(
+                    format!("{key}#{}#{}", id(&ask, "ruler"), id(&ask, "mode")),
+                    ask,
+                );
+            }
         }
     }
-    (built.into_values().collect(), done, seen, refused)
+    (built.into_values().collect(), asked.into_values().collect(), done, seen, refused)
 }
 
 fn main() {
     let done_path = flag("--done");
-    let (builds, done, seen, refused) =
+    let asked_path = flag("--asked");
+    let (builds, asked, done, seen, refused) =
         intake(std::io::stdin().lock().lines().map_while(Result::ok));
 
     let mut out = std::io::BufWriter::new(std::io::stdout().lock());
@@ -312,9 +380,20 @@ fn main() {
             std::process::exit(1);
         }
     }
+    // THE FILE IS WRITTEN EVEN WHEN IT IS EMPTY. The shipper reads it, and an
+    // absent file and an empty one are the same thing to it — but an absent one
+    // after a pass that took records in is a pass that lost them.
+    if let Some(path) = asked_path {
+        let body: String = asked.iter().map(|r| format!("{r}\n")).collect();
+        if let Err(e) = std::fs::write(&path, body) {
+            eprintln!("intake: cannot write {path}: {e}");
+            std::process::exit(1);
+        }
+    }
     eprintln!(
-        "intake: {seen} record(s) in, {refused} refused, {} build(s) out",
-        builds.len()
+        "intake: {seen} record(s) in, {refused} refused, {} build(s) out, {} fight(s) asked for",
+        builds.len(),
+        asked.len(),
     );
 }
 
@@ -429,7 +508,7 @@ mod tests {
     /// legal, and a queue that keeps what it cannot use grows for ever.
     #[test]
     fn a_refused_record_leaves_the_inbox() {
-        let (builds, done, seen, refused) = intake(
+        let (builds, _, done, seen, refused) = intake(
             vec![
                 json!({"id":"bad","at":"d","record":{"weapon":"not_a_weapon","mods":[]}}).to_string(),
                 row("good", &FULL, json!({})),
@@ -495,5 +574,85 @@ mod tests {
     fn a_build_no_ruler_would_admit_is_still_a_build() {
         let ids = ids_of(vec![row("a", &["serration"], json!({}))]);
         assert_eq!(ids.len(), 1, "one legal mod is a legal build");
+    }
+
+    fn asked_of(lines: Vec<String>) -> Vec<Value> {
+        intake(lines.into_iter()).1
+    }
+
+    /// **THE FIGHT THE SUBMITTER RAN IS ASKED FOR**, and it is the only thing
+    /// that can be: `canonical` drops the ruler and the mode, so after this
+    /// pass nothing in the pipeline knows what board they were on.
+    #[test]
+    fn an_arrival_asks_for_the_fight_it_named() {
+        let asked = asked_of(vec![row(
+            "a",
+            &FULL,
+            json!({ "benchmark": "group_clear", "mode": "cycle" }),
+        )]);
+        assert_eq!(asked.len(), 1, "one arrival, one fight");
+        assert_eq!(asked[0]["ruler"], "group_clear");
+        assert_eq!(asked[0]["mode"], "cycle");
+    }
+
+    /// **TWO PEOPLE SENDING ONE BUILD FROM ONE BOARD ASK FOR ONE FIGHT**, and
+    /// from two boards for two — the row is keyed by what makes it a different
+    /// measurement, exactly as `scores` is.
+    #[test]
+    fn one_fight_per_build_ruler_and_mode() {
+        let asked = asked_of(vec![
+            row("a", &FULL, json!({ "benchmark": "group_clear", "mode": "cycle" })),
+            row("b", &FULL, json!({ "benchmark": "group_clear", "mode": "cycle" })),
+            row("c", &FULL, json!({ "benchmark": "single_target", "mode": "cycle" })),
+        ]);
+        assert_eq!(asked.len(), 2, "{asked:?}");
+    }
+
+    /// **A MODE THE WEAPON CANNOT SUSTAIN IS NOT ASKED FOR.** The scorer
+    /// enumerates sustainable modes and matches the queue on that id, so a row
+    /// naming any other is a row nothing will ever take — and the build would
+    /// wait for a fight that never comes.
+    #[test]
+    fn an_unsustainable_mode_falls_back_to_one_that_is() {
+        let asked = asked_of(vec![row(
+            "a",
+            &FULL,
+            json!({ "benchmark": "single_target", "mode": "transformed" }),
+        )]);
+        assert_eq!(asked.len(), 1);
+        let modes: Vec<String> = wfsim_engine::weapons_data::play_modes("torid")
+            .into_iter()
+            .filter(|m| m.sustainable)
+            .map(|m| m.id.to_string())
+            .collect();
+        let got = asked[0]["mode"].as_str().unwrap_or_default().to_string();
+        assert!(modes.contains(&got), "{got} is not sustainable on the Torid");
+    }
+
+    /// **A RETIRED RULER ASKS FOR NOTHING.** `purge_queue` would delete the row
+    /// and the reconciliation covers the build anyway, so a record naming a
+    /// board the roster no longer has is not a build left waiting.
+    #[test]
+    fn a_ruler_the_roster_lost_asks_for_nothing() {
+        let asked = asked_of(vec![row(
+            "a",
+            &FULL,
+            json!({ "benchmark": "a_board_that_was_retired", "mode": "base" }),
+        )]);
+        assert!(asked.is_empty(), "{asked:?}");
+    }
+
+    /// **AN OLDER VERSION OF A LIVE RULER IS THAT RULER.** Records in the store
+    /// name `single_target_v1`, and a build aimed at it belongs on the current
+    /// one's board — the same `_vN` rule the scorer applies.
+    #[test]
+    fn an_older_version_of_a_ruler_asks_for_the_current_one() {
+        let asked = asked_of(vec![row(
+            "a",
+            &FULL,
+            json!({ "benchmark": "single_target_v1", "mode": "base" }),
+        )]);
+        assert_eq!(asked.len(), 1, "{asked:?}");
+        assert_eq!(asked[0]["ruler"], "single_target");
     }
 }

@@ -614,33 +614,37 @@ fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
     out
 }
 
-/// WHAT THE ENTRY LINE HAS TO KNOW ABOUT A BUILD THIS RUN WALKED PAST: which
-/// group its facts fall in, and the fight its submitter actually ran.
+/// EVERY BUILD WITH A ROW OWED ON ANY RULER — the queue read whole, for the one
+/// question `load_queue`'s per-ruler view cannot answer.
+///
+/// A build nothing has measured is owed ONE fight, and the row intake asked for
+/// is it. Asked of this ruler alone, a build whose arrival named ANOTHER board
+/// would look like a build nobody has asked about, and the reconciliation would
+/// hand it every row it could have.
+fn builds_with_a_row_owed(spec: Option<String>) -> std::collections::BTreeSet<String> {
+    let mut out = std::collections::BTreeSet::new();
+    let Some(path) = spec else { return out };
+    let Ok(text) = std::fs::read_to_string(&path) else { return out };
+    for line in text.lines() {
+        let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
+        if let Some(id) = v.get("build_id").and_then(Value::as_str) {
+            out.insert(id.to_string());
+        }
+    }
+    out
+}
+
+/// WHICH GROUP A BUILD'S FACTS FALL IN — the two halves of a group key that
+/// belong to the BUILD rather than to the measurement.
+///
+/// THE OTHER TWO ARE THE MEASUREMENT'S. A build has no ruler and no mode:
+/// `wfsim-intake`'s `canonical` drops both on purpose, because mods are
+/// equipped on the WEAPON and a mode is how it is fired. So nothing here can
+/// ask what fight a submitter ran — that is a property of the ARRIVAL, and
+/// intake asks for it as a queue row while it still knows.
 struct Who {
     weapon: String,
     riven: bool,
-    /// THE RULER AND MODE THE SUBMISSION NAMED. The endpoint keeps both as
-    /// PROVENANCE — where the submitter happened to be — and they decide
-    /// exactly one thing: which single fight a build nothing has measured yet
-    /// is owed. `None` is a record that named none, or one naming a ruler the
-    /// roster has since retired.
-    sent_ruler: Option<String>,
-    sent_mode: Option<String>,
-}
-
-impl Who {
-    /// IS THIS THE FIGHT A BUILD WITH NO FACT ANYWHERE IS OWED?
-    ///
-    /// AS NARROW AS THE RECORD ALLOWS. A submission names the ruler and mode
-    /// its submitter ran, so that is the fight the board asks for first: a
-    /// build that cannot reach a tenth of the leader on the fight it was tuned
-    /// for has answered, and the other eighty-odd rows are the saving. A record
-    /// naming neither widens to every row, which is what this did before there
-    /// was a line at all — a rule cannot strand a build for being old.
-    fn owes_first_fight(&self, ruler: &str, mode: &str) -> bool {
-        self.sent_ruler.as_deref().is_none_or(|r| r == ruler)
-            && self.sent_mode.as_deref().is_none_or(|m| m == mode)
-    }
 }
 
 /// THE ENTRY LINE OVER THE ROWS THIS RULER MEASURED, and which builds it left
@@ -682,7 +686,7 @@ fn park_under_entry_line(
     pending: &mut Vec<(String, String)>,
     cross: &[CrossFact],
     who: &std::collections::HashMap<String, Who>,
-    bench_id: &str,
+    already_owed: &std::collections::BTreeSet<String>,
 ) -> std::collections::BTreeSet<String> {
     let mut leader: std::collections::HashMap<(&str, &str, &str, bool), f64> = Default::default();
     for f in cross {
@@ -703,15 +707,22 @@ fn park_under_entry_line(
         *e = e.max(share);
     }
     let mut parked: std::collections::BTreeSet<String> = Default::default();
-    pending.retain(|(id, mode)| {
+    pending.retain(|(id, _mode)| {
         let share = best.get(id.as_str()).copied();
         if !wfsim_engine::boards_data::keeps_earning(share) {
             parked.insert(id.clone());
             return false;
         }
-        // A BUILD WITH A FACT SOMEWHERE IS OWED EVERY ROW IT LACKS; one with
-        // none anywhere is owed the single fight its submitter ran.
-        share.is_some() || who.get(id).is_none_or(|w| w.owes_first_fight(bench_id, mode))
+        // A BUILD WITH A FACT SOMEWHERE IS OWED EVERY ROW IT LACKS. One with
+        // none is owed ONE, and if a row is already owed for it then that row
+        // IS the one — intake asks for the fight its submitter ran, so the
+        // other eighty-odd are what clearing the line earns.
+        //
+        // …AND ONE WITH NOTHING OWED IS ASKED FOR EVERYTHING, which is the net:
+        // a build whose arrival row was spent, dropped with its batch, or never
+        // written is a build nobody would ever measure, and that is the failure
+        // the reconciliation exists to make impossible.
+        share.is_some() || !already_owed.contains(id.as_str())
     });
     parked
 }
@@ -837,6 +848,11 @@ fn main() {
     // on a command line would be a second copy of it.
     let gate = has_flag("--gate");
     let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
+    // …AND WHICH BUILDS SOMEBODY HAS ALREADY ASKED ABOUT, on any ruler. A build
+    // with no fact is owed one fight; this is how the run knows whether that
+    // fight has already been asked for.
+    let already_owed =
+        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
     // WHICH GROUP EACH BUILD'S FACTS FALL IN, filled as the run walks the
     // library. A build illegal under THIS ruler is missing from it, which can
     // only understate another group's leader and so only ever asks for a row
@@ -1107,16 +1123,6 @@ fn main() {
         who.entry(ident).or_insert_with(|| Who {
             weapon: v.weapon.clone(),
             riven: shape.is_some(),
-            sent_ruler: s
-                .get("benchmark")
-                .and_then(Value::as_str)
-                .map(|b| family(b).to_string())
-                .filter(|b| wfsim_engine::benchmarks_data::all().iter().any(|x| family(&x.id) == b)),
-            sent_mode: s
-                .get("mode")
-                .and_then(Value::as_str)
-                .filter(|m| !m.is_empty())
-                .map(String::from),
         });
         // EVERY MODE THIS WEAPON CAN BE PLAYED IN, and not the one the
         // submitter happened to try.
@@ -1558,7 +1564,7 @@ fn main() {
     // nowhere keeps the facts it has and stops being asked for more.
     if missing_out.is_some() {
         let parked = if gate {
-            park_under_entry_line(&mut pending_missing, &cross, &who, &bench_id).len()
+            park_under_entry_line(&mut pending_missing, &cross, &who, &already_owed).len()
         } else {
             0
         };
@@ -2679,24 +2685,22 @@ mod entry_line_tests {
     }
 
     /// One library entry as the run recorded it: the build's id, its weapon,
-    /// whether it wears a riven, and the fight its submission named.
-    struct Entry(&'static str, &'static str, bool, Option<&'static str>, Option<&'static str>);
+    /// and whether it wears a riven. It carries no ruler and no mode, because a
+    /// build has neither.
+    struct Entry(&'static str, &'static str, bool);
 
     fn known(entries: Vec<Entry>) -> std::collections::HashMap<String, Who> {
         entries
             .into_iter()
-            .map(|Entry(id, weapon, riven, sent_ruler, sent_mode)| {
-                (
-                    id.to_string(),
-                    Who {
-                        weapon: weapon.to_string(),
-                        riven,
-                        sent_ruler: sent_ruler.map(String::from),
-                        sent_mode: sent_mode.map(String::from),
-                    },
-                )
+            .map(|Entry(id, weapon, riven)| {
+                (id.to_string(), Who { weapon: weapon.to_string(), riven })
             })
             .collect()
+    }
+
+    /// The builds somebody has already asked a fight for, on any ruler.
+    fn owed(ids: &[&str]) -> std::collections::BTreeSet<String> {
+        ids.iter().map(|s| (*s).to_string()).collect()
     }
 
     /// **A BUILD THAT REACHES THE LINE NOWHERE STOPS BEING ASKED FOR MORE**,
@@ -2705,9 +2709,9 @@ mod entry_line_tests {
     #[test]
     fn one_good_ruler_is_enough_and_none_is_not() {
         let who = known(vec![
-            Entry("good", "torid", false, None, None),
-            Entry("junk", "torid", false, None, None),
-            Entry("lead", "torid", false, None, None),
+            Entry("good", "torid", false),
+            Entry("junk", "torid", false),
+            Entry("lead", "torid", false),
         ]);
         let cross = vec![
             fact("lead", "single_target", "base", 100.0),
@@ -2724,7 +2728,7 @@ mod entry_line_tests {
             ("junk".to_string(), "cycle".to_string()),
             ("lead".to_string(), "cycle".to_string()),
         ];
-        let parked = park_under_entry_line(&mut pending, &cross, &who, "single_target");
+        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]));
         assert_eq!(
             pending.iter().map(|(i, _)| i.as_str()).collect::<Vec<_>>(),
             ["good", "lead"],
@@ -2733,38 +2737,34 @@ mod entry_line_tests {
         assert_eq!(parked.iter().map(String::as_str).collect::<Vec<_>>(), ["junk"]);
     }
 
-    /// **A BUILD NOTHING HAS MEASURED IS OWED THE FIGHT ITS SUBMITTER RAN**,
-    /// and that one only. The other eighty-odd rows are what a flood would
-    /// otherwise cost, and they are earned by clearing the line on this one.
+    /// **A BUILD NOTHING HAS MEASURED IS OWED ONE FIGHT, AND THE ROW ALREADY
+    /// ASKED FOR IS IT.** `wfsim-intake` asks for the fight its submitter ran;
+    /// the other eighty-odd rows are what a flood would otherwise cost, and
+    /// clearing the line on that one is what earns them.
     #[test]
-    fn a_first_fight_is_the_one_the_submitter_ran() {
-        let who = known(vec![Entry("new", "torid", false, Some("group_clear"), Some("cycle"))]);
+    fn a_build_with_a_row_owed_is_owed_nothing_more() {
+        let who = known(vec![Entry("new", "torid", false)]);
         let mut pending = vec![
             ("new".to_string(), "cycle".to_string()),
             ("new".to_string(), "base".to_string()),
         ];
-        // The ruler it was sent to asks for its own mode and nothing else.
-        let parked = park_under_entry_line(&mut pending, &[], &who, "group_clear");
-        assert_eq!(pending, vec![("new".to_string(), "cycle".to_string())]);
+        let parked = park_under_entry_line(&mut pending, &[], &who, &owed(&["new"]));
+        assert!(pending.is_empty(), "{pending:?}");
         assert!(parked.is_empty(), "a build with no fact is owed one, not parked");
-
-        // …and every OTHER ruler asks for nothing until that one has answered.
-        let mut elsewhere = vec![("new".to_string(), "cycle".to_string())];
-        park_under_entry_line(&mut elsewhere, &[], &who, "single_target");
-        assert!(elsewhere.is_empty());
     }
 
-    /// **A RECORD NAMING NO FIGHT IS NOT STRANDED.** `benchmark` and `mode` are
-    /// provenance the endpoint has not always stored, so a build carrying
-    /// neither widens to every row — the behaviour there was before a line.
+    /// **A BUILD NOBODY HAS ASKED ABOUT IS ASKED FOR EVERYTHING.** That is the
+    /// net: an arrival row that was spent, dropped with its batch, or never
+    /// written would otherwise leave a build nothing ever measures, which is
+    /// the one failure the reconciliation exists to make impossible.
     #[test]
-    fn a_record_naming_no_fight_is_asked_everywhere() {
-        let who = known(vec![Entry("old", "torid", false, None, None)]);
+    fn a_build_with_nothing_owed_is_asked_everywhere() {
+        let who = known(vec![Entry("old", "torid", false)]);
         let mut pending = vec![
             ("old".to_string(), "cycle".to_string()),
             ("old".to_string(), "base".to_string()),
         ];
-        park_under_entry_line(&mut pending, &[], &who, "single_target");
+        park_under_entry_line(&mut pending, &[], &who, &owed(&[]));
         assert_eq!(pending.len(), 2);
     }
 
@@ -2774,15 +2774,15 @@ mod entry_line_tests {
     #[test]
     fn a_riven_leader_does_not_park_a_plain_build() {
         let who = known(vec![
-            Entry("carded", "laetum", true, None, None),
-            Entry("plain", "laetum", false, None, None),
+            Entry("carded", "laetum", true),
+            Entry("plain", "laetum", false),
         ]);
         let cross = vec![
             fact("carded", "single_target", "base", 1000.0),
             fact("plain", "single_target", "base", 50.0),
         ];
         let mut pending = vec![("plain".to_string(), "alternate".to_string())];
-        let parked = park_under_entry_line(&mut pending, &cross, &who, "single_target");
+        let parked = park_under_entry_line(&mut pending, &cross, &who, &owed(&[]));
         assert_eq!(pending.len(), 1, "the plain build leads its own group");
         assert!(parked.is_empty());
     }
