@@ -1,0 +1,12 @@
+id: lycaths_hunt
+name: "Lycath's Hunt"
+frame: voruna
+slot: 3
+energy_cost: 75
+subsumable: true
+internal_name: /Lotus/Powersuits/Werewolf/Abilities/WerewolfLeapAbility
+icon: Lycath'sHuntIcon(xWhite).png
+description: "(TAP) Lycath hunts to sustain the pack. Enemies killed by melee attacks drop health orbs and enemies killed by headshots drop energy orbs. Increase the duration of Lycath's hunt by killing enemies affected by 5 or more Status Effects.\n\n(HOLD) Lycath guards Voruna with increased Heavy Attack efficiency."
+
+source:
+  url: https://wiki.warframe.com/w/Lycath%27s_Hunt

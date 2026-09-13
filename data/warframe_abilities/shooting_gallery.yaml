@@ -1,0 +1,13 @@
+id: shooting_gallery
+name: "Shooting Gallery"
+frame: mesa
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [muzzle_flash]
+internal_name: /Lotus/Powersuits/Cowgirl/Abilities/RussianRouletteAbility
+icon: ShootingGalleryIcon(xWhite).png
+description: "Gives an ally Extra Damage while jamming the guns of nearby enemies. This power shifts between team members."
+
+source:
+  url: https://wiki.warframe.com/w/Shooting_Gallery

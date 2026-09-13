@@ -1,0 +1,22 @@
+id: umbral_fiber
+name: "Umbral Fiber"
+rarity: legendary
+polarity: umbra
+base_drain: 6
+max_rank: 10
+family: steel_fiber
+set: umbral
+# see umbral_vitality.yaml — the same sentence names this card.
+set_bonus: {2: 0.3, 3: 0.8}
+internal_name: /Lotus/Upgrades/Mods/Sets/Umbra/WarframeUmbraModB
+description: "+100% Armor\n+11% Tau Resistance"
+
+effects:
+  # +100% Armor
+  - kind: armor_bonus
+    rankMax: 1
+  - kind: unmodelled
+    text: "+11% Tau Resistance"
+
+source:
+  url: https://wiki.warframe.com/w/Umbral_Fiber

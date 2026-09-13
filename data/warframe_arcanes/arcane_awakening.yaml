@@ -1,0 +1,15 @@
+id: arcane_awakening
+name: "Arcane Awakening"
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/PistolDamageOnReload
+description: "On Reload:\n60% chance for +150% Damage to Pistols for 24s"
+
+effects:
+  - kind: unmodelled
+    text: "On Reload:"
+  - kind: unmodelled
+    text: "60% chance for +150% Damage to Pistols for 24s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Awakening

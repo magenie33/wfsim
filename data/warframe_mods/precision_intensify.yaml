@@ -1,0 +1,16 @@
+id: precision_intensify
+name: "Precision Intensify"
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 5
+family: intensify
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarAbilityFourStrengthMod
+description: "+90% Ability Strength for your 4th Ability"
+
+effects:
+  - kind: unmodelled
+    text: "+90% Ability Strength for your 4th Ability"
+
+source:
+  url: https://wiki.warframe.com/w/Precision_Intensify

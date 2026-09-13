@@ -1,0 +1,13 @@
+id: silence
+name: "Silence"
+frame: banshee
+slot: 3
+energy_cost: 75
+subsumable: true
+augments: [savage_silence]
+internal_name: /Lotus/Powersuits/Banshee/Abilities/SilenceAbility
+icon: SilenceIcon(xWhite).png
+description: "Using Silence surrounds Banshee in an aura that stuns enemies and will limit their perceptions and tactical response to gunfire and Warframe attacks."
+
+source:
+  url: https://wiki.warframe.com/w/Silence

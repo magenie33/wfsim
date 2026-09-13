@@ -1,0 +1,13 @@
+id: arcane_circumvent
+name: "Arcane Circumvent"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/StealDefensiveStatsOnRoll
+description: "Roll through enemies to steal 50% of their defenses for yourself. Stolen Armor lasts 15s."
+
+effects:
+  - kind: unmodelled
+    text: "Roll through enemies to steal 50% of their defenses for yourself. Stolen Armor lasts 15s."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Circumvent

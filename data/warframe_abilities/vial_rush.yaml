@@ -1,0 +1,13 @@
+id: vial_rush
+name: "Vial Rush"
+frame: lavos
+slot: 2
+energy_cost: 5
+cost_type: time
+subsumable: true
+internal_name: /Lotus/Powersuits/Alchemist/Abilities/AlchemistVialAbility
+icon: VialRushIcon(xWhite).png
+description: "Dash forward, crashing through enemies and leaving an icy trail of broken vials.\n\nHold to imbue the next ability cast with Cold."
+
+source:
+  url: https://wiki.warframe.com/w/Vial_Rush

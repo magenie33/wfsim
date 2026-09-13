@@ -1,0 +1,19 @@
+id: archon_flow
+name: "Archon Flow"
+rarity: legendary
+polarity: naramon
+base_drain: 6
+max_rank: 10
+family: flow
+internal_name: /Lotus/Upgrades/Mods/Warframe/Kahl/KahlAvatarPowerMaxMod
+description: "+185% Energy Max\nEnemies killed by Cold Abilities have 10% chance to drop an Energy Orb. Cooldown: 10s"
+
+effects:
+  # +185% Energy Max
+  - kind: energy_bonus
+    rankMax: 1.85
+  - kind: unmodelled
+    text: "Enemies killed by Cold Abilities have 10% chance to drop an Energy Orb. Cooldown: 10s"
+
+source:
+  url: https://wiki.warframe.com/w/Archon_Flow

@@ -1,0 +1,16 @@
+id: hunter_adrenaline
+name: "Hunter Adrenaline"
+rarity: common
+polarity: madurai
+base_drain: 6
+max_rank: 5
+set: hunter
+internal_name: /Lotus/Upgrades/Mods/Sets/Hunter/WarframeHunterAdrenalineMod
+description: "Convert +45% of Damage on Health to Energy. Without Shields, ally Overguard imitates Health."
+
+effects:
+  - kind: unmodelled
+    text: "Convert +45% of Damage on Health to Energy. Without Shields, ally Overguard imitates Health."
+
+source:
+  url: https://wiki.warframe.com/w/Hunter_Adrenaline

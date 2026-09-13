@@ -1,0 +1,11 @@
+id: masters_summons
+name: "Master's Summons"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthCompanionAbility
+icon: Master%27sSummonsIcon(xWhite).png
+description: "Heal your companion and call it to your side."
+
+source:
+  url: https://wiki.warframe.com/w/Master%27s_Summons

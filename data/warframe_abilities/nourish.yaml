@@ -1,0 +1,13 @@
+id: nourish
+name: "Nourish"
+frame: grendel
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [hearty_nourishment]
+internal_name: /Lotus/Powersuits/Devourer/Abilities/DevourerConsumeAbility
+icon: NourishIcon(xWhite).png
+description: "Regenerate health as Grendel absorbs nourishment from enemies in his gut. While he digests, enemies that attack or are attacked by Grendel suffer Viral Damage and energy sources provide more energy. These buffs extend to squad mates."
+
+source:
+  url: https://wiki.warframe.com/w/Nourish

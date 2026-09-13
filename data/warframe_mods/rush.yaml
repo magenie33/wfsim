@@ -1,0 +1,17 @@
+id: rush
+name: "Rush"
+rarity: uncommon
+polarity: naramon
+base_drain: 6
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarSprintSpeedMod
+description: "+30% Sprint Speed"
+
+effects:
+  # +30% Sprint Speed
+  - kind: sprint_speed_bonus
+    rankMax: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Rush

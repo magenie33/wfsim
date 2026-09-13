@@ -1,0 +1,17 @@
+id: fortitude
+name: "Fortitude"
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/FortitudeMod
+description: "+40% Chance to Resist Knockdown\n+100% Shield Recharge"
+
+effects:
+  - kind: unmodelled
+    text: "+40% Chance to Resist Knockdown"
+  - kind: unmodelled
+    text: "+100% Shield Recharge"
+
+source:
+  url: https://wiki.warframe.com/w/Fortitude

@@ -1,0 +1,17 @@
+id: steel_fiber
+name: "Steel Fiber"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 10
+family: steel_fiber
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarArmourMod
+description: "+100% Armor"
+
+effects:
+  # +100% Armor
+  - kind: armor_bonus
+    rankMax: 1
+
+source:
+  url: https://wiki.warframe.com/w/Steel_Fiber

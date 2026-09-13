@@ -1,0 +1,17 @@
+id: vigilante_pursuit
+name: "Vigilante Pursuit"
+rarity: uncommon
+polarity: naramon
+base_drain: 4
+max_rank: 5
+exilus: true
+set: vigilante
+internal_name: /Lotus/Upgrades/Mods/Sets/Vigilante/WarframeVigilantePursuitMod
+description: "+30m Enemy Radar"
+
+effects:
+  - kind: unmodelled
+    text: "+30m Enemy Radar"
+
+source:
+  url: https://wiki.warframe.com/w/Vigilante_Pursuit

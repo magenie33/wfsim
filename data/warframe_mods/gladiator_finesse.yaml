@@ -1,0 +1,16 @@
+id: gladiator_finesse
+name: "Gladiator Finesse"
+rarity: rare
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+set: gladiator
+internal_name: /Lotus/Upgrades/Mods/Sets/Gladiator/WarframeGladiatorFinesseMod
+description: "Drains Energy to stop Lethal Damage with 60% Efficiency."
+
+effects:
+  - kind: unmodelled
+    text: "Drains Energy to stop Lethal Damage with 60% Efficiency."
+
+source:
+  url: https://wiki.warframe.com/w/Gladiator_Finesse

@@ -1,0 +1,13 @@
+id: coil_horizon
+name: "Coil Horizon"
+frame: gyre
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [coil_recharge]
+internal_name: /Lotus/Powersuits/Gyre/Abilities/GyreSphereAbility
+icon: CoilHorizonIcon(xWhite).png
+description: "Throw forward a Gyratory Sphere that will implode after a few seconds or can be manually triggered."
+
+source:
+  url: https://wiki.warframe.com/w/Coil_Horizon

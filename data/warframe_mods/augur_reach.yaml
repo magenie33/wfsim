@@ -1,0 +1,17 @@
+id: augur_reach
+name: "Augur Reach"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+set: augur
+internal_name: /Lotus/Upgrades/Mods/Sets/Augur/WarframeAugurReachMod
+description: "+30% Ability Range"
+
+effects:
+  # +30% Ability Range
+  - kind: ability_range_bonus
+    rankMax: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Augur_Reach

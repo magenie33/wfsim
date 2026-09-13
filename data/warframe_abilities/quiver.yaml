@@ -1,0 +1,13 @@
+id: quiver
+name: "Quiver"
+frame: ivara
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [empowered_quiver, power_of_three]
+internal_name: /Lotus/Powersuits/Ranger/Abilities/RangerQuiverAbility
+icon: QuiverIcon(xWhite).png
+description: "Cycle through and shoot one of four tactical arrows. Cloak creates a stationary bubble that cloaks Ivara and allies. Dashwire creates a traversable zipline. Noise emits a high-pitched sound that attracts enemies to it. Sleep temporarily puts nearby enemies into a deep slumber."
+
+source:
+  url: https://wiki.warframe.com/w/Quiver

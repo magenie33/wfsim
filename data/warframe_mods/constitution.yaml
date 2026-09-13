@@ -1,0 +1,18 @@
+id: constitution
+name: "Constitution"
+rarity: rare
+polarity: naramon
+base_drain: 10
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/ConstitutionMod
+description: "+40% Faster Knockdown Recovery\n+28% Ability Duration"
+
+effects:
+  - kind: unmodelled
+    text: "+40% Faster Knockdown Recovery"
+  # +28% Ability Duration
+  - kind: ability_duration_bonus
+    rankMax: 0.28
+
+source:
+  url: https://wiki.warframe.com/w/Constitution

@@ -1,0 +1,18 @@
+id: maglev
+name: "Maglev"
+rarity: uncommon
+polarity: naramon
+base_drain: 6
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarSlideBoostMod
+description: "+30% Slide\n-30% Friction"
+
+effects:
+  - kind: unmodelled
+    text: "+30% Slide"
+  - kind: unmodelled
+    text: "-30% Friction"
+
+source:
+  url: https://wiki.warframe.com/w/Maglev

@@ -1,0 +1,13 @@
+id: shock
+name: "Shock"
+frame: volt
+slot: 1
+energy_cost: 15
+subsumable: true
+augments: [shock_trooper]
+internal_name: /Lotus/Powersuits/Volt/Abilities/ShockAbility
+icon: ShockIcon(xWhite).png
+description: "Launch a voltaic projectile that stuns and damages its target. A chain of electricity extends from the target to shock nearby enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Shock

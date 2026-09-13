@@ -1,0 +1,13 @@
+id: arcane_escapist
+name: "Arcane Escapist"
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/InvulnerabilityOnDeathOnMercyKill
+description: "On Mercy Kill: Gain a stack of Escapist, up to 9x. On taking fatal damage, consume 3 stacks to avoid death and become invulnerable for 12s."
+
+effects:
+  - kind: unmodelled
+    text: "On Mercy Kill: Gain a stack of Escapist, up to 9x. On taking fatal damage, consume 3 stacks to avoid death and become invulnerable for 12s."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Escapist

@@ -1,0 +1,17 @@
+id: catalyzing_shields
+name: "Catalyzing Shields"
+rarity: rare
+polarity: vazarin
+base_drain: 10
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/FixedShieldAndShieldGatingDuration
+description: "x0.20 Max Shield Capacity\n1.33s Full Shield Gate immunity duration"
+
+effects:
+  - kind: unmodelled
+    text: "x0.20 Max Shield Capacity"
+  - kind: unmodelled
+    text: "1.33s Full Shield Gate immunity duration"
+
+source:
+  url: https://wiki.warframe.com/w/Catalyzing_Shields

@@ -1,0 +1,15 @@
+id: sniper_scavenger
+name: "Sniper Scavenger"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerSniperAmmoAuraMod
+description: "Squad receives +150% Sniper Rifle Ammo Recovery"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Sniper_Scavenger

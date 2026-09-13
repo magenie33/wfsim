@@ -1,0 +1,85 @@
+id: hysteria
+name: "Hysteria"
+frame: valkyr
+slot: 4
+energy_cost: 25
+augments: [enraged, hysterical_assault]
+internal_name: /Lotus/Powersuits/Berserker/Abilities/LastStandAbility
+icon: HysteriaIcon(xWhite).png
+description: "Valkyr bares her deadly claws, unleashing devastating attacks that also heal her. Valkyr becomes immune to Status Effects and her Armor bonus from Warcry is multiplied while using the claws."
+
+# "Hysteria consumes {{Stat|Ability Efficiency|icon=only}}{{Stat|Ability
+# Duration|icon=only}}'''5''' energy per second while active"
+drain_per_second: 5
+
+# AT RANK 3. An underlined number (`<u>'''2.15'''</u>`) scales with nothing.
+stats:
+  # "Normal attacks deal {{Stat|Ability Strength|icon=only}}'''100 / 125 / 200 / 250''' damage"
+  - id: attack_damage
+    label: Normal attack damage
+    value: 250
+    unit: flat
+    scales_with: strength
+  # "restore {{Stat|Ability Strength|icon=only}}'''70 / 80 / 90 / 100''' Health per hit"
+  - id: health_per_hit
+    label: Health restored per hit
+    value: 100
+    unit: flat
+    scales_with: strength
+  # "Wall attacks and slide attacks inflict {{Stat|Ability Strength|icon=only}}'''300 / 375 / 600 / 750''' damage"
+  - id: wall_slide_damage
+    label: Wall and slide attack damage
+    value: 750
+    unit: flat
+    scales_with: strength
+  # "Aerial attacks inflict {{Stat|Ability Strength|icon=only}}'''200 / 250 / 400 / 500''' damage"
+  - id: aerial_damage
+    label: Aerial attack damage
+    value: 500
+    unit: flat
+    scales_with: strength
+  # "Slam attacks inflict {{Stat|Ability Strength|icon=only}}'''300''' damage within <u>'''5'''</u> meters"
+  - id: slam_damage
+    label: Slam attack damage
+    value: 300
+    unit: flat
+    scales_with: strength
+  - id: slam_radius
+    label: Slam radius
+    value: 5
+    unit: m
+    scales_with: none
+  - id: reach
+    label: Reach
+    value: 2.15
+    unit: m
+    scales_with: none
+  # "Attacks have a <u>'''2x'''</u> critical multiplier, <u>'''50%'''</u> critical chance, and <u>'''10%'''</u> status chance."
+  - id: crit_chance
+    label: Critical chance
+    value: 0.5
+    unit: pct
+    scales_with: none
+  - id: crit_multiplier
+    label: Critical multiplier
+    value: 2
+    unit: multiplier
+    scales_with: none
+  - id: status_chance
+    label: Status chance
+    value: 0.1
+    unit: pct
+    scales_with: none
+  # "Cast time of '''1''' second is affected by Casting Speed." — and the Abilities
+  # page: "casting time is (Base Animation Time) ÷ (1 + Speed Bonus)".
+  - id: cast_time
+    label: Cast time
+    value: 1
+    unit: seconds
+    scales_with: casting_speed
+
+unmodelled:
+  - "the Valkyr Talons as a weapon: its damage, mods and arcanes belong to a weapon build, not to this panel"
+
+source:
+  url: https://wiki.warframe.com/w/Hysteria

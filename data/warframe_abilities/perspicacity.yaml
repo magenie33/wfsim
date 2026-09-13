@@ -1,0 +1,11 @@
+id: perspicacity
+name: "Perspicacity"
+frame: helminth
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthHackAbility
+icon: PerspicacityIcon(xWhite).png
+description: "Your next hack will be automatic."
+
+source:
+  url: https://wiki.warframe.com/w/Perspicacity

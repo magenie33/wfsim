@@ -1,0 +1,11 @@
+id: rebuild_shields
+name: "Rebuild Shields"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthShieldsAbility
+icon: RebuildShieldsIcon(xWhite).png
+description: "Instantly restore your shields."
+
+source:
+  url: https://wiki.warframe.com/w/Rebuild_Shields

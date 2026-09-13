@@ -1,0 +1,13 @@
+id: tharros_strike
+name: "Tharros Strike"
+frame: styanax
+slot: 2
+energy_cost: 25
+subsumable: true
+augments: [tharros_lethality]
+internal_name: /Lotus/Powersuits/Hoplite/Abilities/HopliteBashAbility
+icon: TharrosStrikeIcon(xWhite).png
+description: "Summon Tharros, the shield of Styanax. Swing Tharros to repel enemies and reduce their shields and armor. Styanax regenerates health for every enemy struck."
+
+source:
+  url: https://wiki.warframe.com/w/Tharros_Strike

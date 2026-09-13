@@ -1,0 +1,15 @@
+id: shock_absorbers
+name: "Shock Absorbers"
+rarity: rare
+polarity: vazarin
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarDamageResistanceKnockdown
+description: "+20% Physical Damage Resistance"
+
+effects:
+  - kind: unmodelled
+    text: "+20% Physical Damage Resistance"
+
+source:
+  url: https://wiki.warframe.com/w/Shock_Absorbers

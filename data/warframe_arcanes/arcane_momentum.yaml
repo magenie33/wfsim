@@ -1,0 +1,15 @@
+id: arcane_momentum
+name: "Arcane Momentum"
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/GolemArcaneSniperSpeedOnCrit
+description: "On Critical Hit:\n60% chance for +150% Reload Speed to Sniper Rifles for 12s"
+
+effects:
+  - kind: unmodelled
+    text: "On Critical Hit:"
+  - kind: unmodelled
+    text: "60% chance for +150% Reload Speed to Sniper Rifles for 12s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Momentum

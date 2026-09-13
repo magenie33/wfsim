@@ -1,0 +1,15 @@
+id: arcane_victory
+name: "Arcane Victory"
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/HealthRegenOnHeadshot
+description: "On Headshot Kill:\n75% chance for +3% Health Regeneration/s for 9s"
+
+effects:
+  - kind: unmodelled
+    text: "On Headshot Kill:"
+  - kind: unmodelled
+    text: "75% chance for +3% Health Regeneration/s for 9s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Victory

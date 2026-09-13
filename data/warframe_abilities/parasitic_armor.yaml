@@ -1,0 +1,11 @@
+id: parasitic_armor
+name: "Parasitic Armor"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthShieldArmorAbility
+icon: ParasiticArmorIcon(xWhite).png
+description: "Sacrifice Shields to reinforce Armor for a period of time."
+
+source:
+  url: https://wiki.warframe.com/w/Parasitic_Armor

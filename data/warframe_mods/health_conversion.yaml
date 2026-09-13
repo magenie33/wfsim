@@ -1,0 +1,15 @@
+id: health_conversion
+name: "Health Conversion"
+rarity: rare
+polarity: vazarin
+base_drain: 10
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/HealthPickupGivesArmourMod
+description: "Health Orbs grant 450 Armor, stacking up to 3x. Taking damage will consume a stack after 3s."
+
+effects:
+  - kind: unmodelled
+    text: "Health Orbs grant 450 Armor, stacking up to 3x. Taking damage will consume a stack after 3s."
+
+source:
+  url: https://wiki.warframe.com/w/Health_Conversion

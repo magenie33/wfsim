@@ -1,0 +1,15 @@
+id: steel_charge
+name: "Steel Charge"
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerMeleeAuraMod
+description: "Squad receives +60% Melee Damage"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Steel_Charge

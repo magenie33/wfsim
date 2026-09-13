@@ -1,0 +1,13 @@
+id: molt_reconstruct
+name: "Molt Reconstruct"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/HealAlliesOnEnergySpent
+description: "Heal yourself and allies within Affinity Range 6 Health for each Energy point spent on the initial casting cost of abilities."
+
+effects:
+  - kind: unmodelled
+    text: "Heal yourself and allies within Affinity Range 6 Health for each Energy point spent on the initial casting cost of abilities."
+
+source:
+  url: https://wiki.warframe.com/w/Molt_Reconstruct

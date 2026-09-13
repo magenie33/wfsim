@@ -1,0 +1,13 @@
+id: decoy
+name: "Decoy"
+frame: loki
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [damage_decoy, deceptive_bond, savior_decoy]
+internal_name: /Lotus/Powersuits/Loki/Abilities/DecoyAbility
+icon: DecoyIcon(xWhite).png
+description: "Loki deploys a holographic copy of himself that draws enemy fire. The decoy gains health and shield based on enemies nearby."
+
+source:
+  url: https://wiki.warframe.com/w/Decoy

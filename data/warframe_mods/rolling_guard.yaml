@@ -1,0 +1,17 @@
+id: rolling_guard
+name: "Rolling Guard"
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarInvulnOnRollMod
+description: "On Dodge:\nBecome invulnerable for 3s and remove all Status Effects. 7s cooldown."
+
+effects:
+  - kind: unmodelled
+    text: "On Dodge:"
+  - kind: unmodelled
+    text: "Become invulnerable for 3s and remove all Status Effects. 7s cooldown."
+
+source:
+  url: https://wiki.warframe.com/w/Rolling_Guard

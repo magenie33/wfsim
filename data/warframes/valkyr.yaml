@@ -1,0 +1,29 @@
+# VALKYR, at rank 30, as the Warframe builder seats her.
+#
+# Armor, energy and sprint are NOT here: `data/frames.yaml` states them and the
+# fight's Tenno already reads that file, so this one carries only what a build
+# needs beyond them.
+id: valkyr
+name: Valkyr
+internal_name: /Lotus/Powersuits/Berserker/Berserker
+
+# RANK 30. Module:Warframes/data carries rank 0 — `Health = 650`, `Shield = 135`,
+# `ShieldRank30 = 185` — and Module:Warframes/infobox adds the rank bonus, which
+# the Health page puts INSIDE the mod multiplier:
+#   "Total Health = (Base Health + Warframe Rank Bonuses) × (1 + Modifier from
+#   Mods) + Other Bonuses"
+health: 750
+shield: 185
+
+# INNATE POLARITIES, WITHOUT POSITIONS. The module lists a set —
+# `Polarities = { "Madurai", "Madurai" }` — and names no slot, and a polarity
+# can be swapped between slots (the exilus slot's since Techrot Encore, the
+# aura slot's since 38.5), so a position here would be a claim nothing states.
+polarities: [madurai, madurai]
+aura_polarity: madurai
+
+passive: "Valkyr accumulates Rage when hitting or killing enemies with melee weapons, increasing her Melee Damage up to 300%. Taking fatal damage when the Rage meter is above 150% consumes the meter, preventing death and granting 5s of invulnerability."
+abilities: [rip_line, warcry, paralysis, hysteria]
+
+source:
+  url: https://wiki.warframe.com/w/Valkyr

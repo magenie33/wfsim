@@ -1,0 +1,12 @@
+id: pyrotechnics
+name: "Pyrotechnics"
+frame: temple
+slot: 1
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/Temple/Abilities/TempleShredAbility
+icon: PyrotechnicsIcon(xWhite).png
+description: "Blast targeted enemies with pillars of Heat Damage. \n\nBackbeat Timing: Ignite even more pillars. Increases the Duration and Heat Damage of Ripper's Wail when it deals damage."
+
+source:
+  url: https://wiki.warframe.com/w/Pyrotechnics

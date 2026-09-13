@@ -1,0 +1,11 @@
+id: expedite_suffering
+name: "Expedite Suffering"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthStatusAbility
+icon: ExpediteSufferingIcon(xWhite).png
+description: "Condense all Slash and Toxin Status Effects into a single damage instance."
+
+source:
+  url: https://wiki.warframe.com/w/Expedite_Suffering

@@ -1,0 +1,17 @@
+id: peculiar_end
+name: "Peculiar End"
+rarity: common
+polarity: naramon
+base_drain: 2
+max_rank: 5
+exilus: true
+family: peculiar_end
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Peculiars/DissolveEnemyMod
+description: "Finisher kills have a 100% chance to dissolve enemies in dread."
+
+effects:
+  - kind: unmodelled
+    text: "Finisher kills have a 100% chance to dissolve enemies in dread."
+
+source:
+  url: https://wiki.warframe.com/w/Peculiar_End

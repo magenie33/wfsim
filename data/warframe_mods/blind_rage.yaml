@@ -1,0 +1,19 @@
+id: blind_rage
+name: "Blind Rage"
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/CorruptedPowerEfficiencyWarframe
+description: "+99% Ability Strength\n-55% Ability Efficiency"
+
+effects:
+  # +99% Ability Strength
+  - kind: ability_strength_bonus
+    rankMax: 0.99
+  # -55% Ability Efficiency
+  - kind: ability_efficiency_bonus
+    rankMax: -0.55
+
+source:
+  url: https://wiki.warframe.com/w/Blind_Rage

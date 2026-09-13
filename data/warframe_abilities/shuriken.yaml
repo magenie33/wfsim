@@ -1,0 +1,13 @@
+id: shuriken
+name: "Shuriken"
+frame: ash
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [seeking_shuriken]
+internal_name: /Lotus/Powersuits/Ninja/Abilities/GlaiveAbility
+icon: ShurikenIcon(xWhite).png
+description: "Launches a spinning blade of pain, dealing high damage and impaling enemies to walls."
+
+source:
+  url: https://wiki.warframe.com/w/Shuriken

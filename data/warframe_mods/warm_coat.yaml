@@ -1,0 +1,16 @@
+id: warm_coat
+name: "Warm Coat"
+rarity: common
+polarity: vazarin
+base_drain: 6
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarMissionSpecificResistanceIce
+description: "+12% Shield Resistance to Environmental Ice Hazards"
+
+effects:
+  - kind: unmodelled
+    text: "+12% Shield Resistance to Environmental Ice Hazards"
+
+source:
+  url: https://wiki.warframe.com/w/Warm_Coat

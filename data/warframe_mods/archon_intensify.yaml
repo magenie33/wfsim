@@ -1,0 +1,19 @@
+id: archon_intensify
+name: "Archon Intensify"
+rarity: legendary
+polarity: madurai
+base_drain: 6
+max_rank: 10
+family: intensify
+internal_name: /Lotus/Upgrades/Mods/Warframe/Kahl/KahlAvatarAbilityStrengthMod
+description: "+30% Ability Strength\nRestoring health with abilities grants +30% Ability Strength for 10s."
+
+effects:
+  # +30% Ability Strength
+  - kind: ability_strength_bonus
+    rankMax: 0.3
+  - kind: unmodelled
+    text: "Restoring health with abilities grants +30% Ability Strength for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Archon_Intensify

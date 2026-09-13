@@ -1,0 +1,15 @@
+id: arcane_eruption
+name: "Arcane Eruption"
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/RadialKnockdownOnEnergyPickup
+description: "On Energy Pickup:\n100% chance to Knockdown nearby enemies"
+
+effects:
+  - kind: unmodelled
+    text: "On Energy Pickup:"
+  - kind: unmodelled
+    text: "100% chance to Knockdown nearby enemies"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Eruption

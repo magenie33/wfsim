@@ -1,0 +1,19 @@
+id: fleeting_expertise
+name: "Fleeting Expertise"
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/CorruptedEfficiencyDurationWarframe
+description: "+60% Ability Efficiency\n-60% Ability Duration"
+
+effects:
+  # +60% Ability Efficiency
+  - kind: ability_efficiency_bonus
+    rankMax: 0.6
+  # -60% Ability Duration
+  - kind: ability_duration_bonus
+    rankMax: -0.6
+
+source:
+  url: https://wiki.warframe.com/w/Fleeting_Expertise

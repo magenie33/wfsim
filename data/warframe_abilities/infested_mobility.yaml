@@ -1,0 +1,11 @@
+id: infested_mobility
+name: "Infested Mobility"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthSpeedAbility
+icon: InfestedMobilityIcon(xWhite).png
+description: "Increase your parkour velocity."
+
+source:
+  url: https://wiki.warframe.com/w/Infested_Mobility

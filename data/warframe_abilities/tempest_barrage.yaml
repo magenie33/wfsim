@@ -1,0 +1,13 @@
+id: tempest_barrage
+name: "Tempest Barrage"
+frame: hydroid
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [viral_tempest]
+internal_name: /Lotus/Powersuits/Pirate/Abilities/CannonBarrageAbility
+icon: TempestBarrageIcon(xWhite).png
+description: "Summon a tempest to rain down upon a target area."
+
+source:
+  url: https://wiki.warframe.com/w/Tempest_Barrage

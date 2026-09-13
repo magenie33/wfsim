@@ -1,0 +1,13 @@
+id: theorem_infection
+name: "Theorem Infection"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/CompanionDamageOnResidualContact
+description: "Standing in a zone created by a Residual Arcane increases damage of companions and summoned allies within 90m by 24%/s stacking up to 15x. Effect persists for 20s upon leaving the zone."
+
+effects:
+  - kind: unmodelled
+    text: "Standing in a zone created by a Residual Arcane increases damage of companions and summoned allies within 90m by 24%/s stacking up to 15x. Effect persists for 20s upon leaving the zone."
+
+source:
+  url: https://wiki.warframe.com/w/Theorem_Infection

@@ -1,0 +1,16 @@
+id: eternal_war
+name: "Eternal War"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: warcry
+internal_name: /Lotus/Powersuits/Berserker/IntimidateAugmentCard
+description: "Warcry Augment: While active, Warcry's duration is increased by 2s for each Melee Kill."
+
+effects:
+  - kind: unmodelled
+    text: "Warcry Augment: While active, Warcry's duration is increased by 2s for each Melee Kill."
+
+source:
+  url: https://wiki.warframe.com/w/Eternal_War

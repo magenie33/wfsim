@@ -1,0 +1,15 @@
+id: arcane_bodyguard
+name: "Arcane Bodyguard"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/HealCompanionOnSixMeleeKills
+description: "On 6 Melee Kills within 30s:\nHeal Companion for 900"
+
+effects:
+  - kind: unmodelled
+    text: "On 6 Melee Kills within 30s:"
+  - kind: unmodelled
+    text: "Heal Companion for 900"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Bodyguard

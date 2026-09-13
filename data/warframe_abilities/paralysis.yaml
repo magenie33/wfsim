@@ -1,0 +1,52 @@
+id: paralysis
+name: "Paralysis"
+frame: valkyr
+slot: 3
+energy_cost: 25
+augments: [prolonged_paralysis]
+internal_name: /Lotus/Powersuits/Berserker/Abilities/ShieldBashAbility
+icon: ParalysisIcon(xWhite).png
+description: "Unleash a damaging blast, slowing its victims while increasing their Melee Damage Vulnerability."
+
+# AT RANK 3: "within {{Stat|Ability Range|icon=only}}'''5 / 7 / 8 / 10''' meters
+# … {{Stat|Ability Strength|icon=only}}'''100 / 200 / 300 / 400''' Impact damage,
+# {{Stat|Ability Strength|icon=only}}'''15% / 20% / 25% / 30%''' Slow, and
+# {{Stat|Ability Strength|icon=only}}'''20% / 30% / 40% / 50%''' Melee Damage
+# Vulnerability for {{Stat|Ability Duration|icon=only}}'''15''' seconds"
+stats:
+  - id: radius
+    label: Radius
+    value: 10
+    unit: m
+    scales_with: range
+  - id: impact_damage
+    label: Impact damage
+    value: 400
+    unit: flat
+    scales_with: strength
+  # "Slow is capped at <u>'''75%'''</u>."
+  - id: slow
+    label: Slow
+    value: 0.3
+    unit: pct
+    scales_with: strength
+    cap: 0.75
+  - id: melee_vulnerability
+    label: Melee damage vulnerability
+    value: 0.5
+    unit: pct
+    scales_with: strength
+  - id: duration
+    label: Duration
+    value: 15
+    unit: seconds
+    scales_with: duration
+  # "Enemies struck are stunned for 3 seconds (unaffected by Ability Duration)"
+  - id: stun
+    label: Stun
+    value: 3
+    unit: seconds
+    scales_with: none
+
+source:
+  url: https://wiki.warframe.com/w/Paralysis

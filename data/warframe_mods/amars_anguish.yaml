@@ -1,0 +1,21 @@
+id: amars_anguish
+name: "Amar's Anguish"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+exilus: true
+family: amars_anguish
+set: amar
+internal_name: /Lotus/Upgrades/Mods/Sets/Amar/AmarExilusMod
+description: "+15% to Parkour Velocity\n+15% Sprint Speed"
+
+effects:
+  - kind: unmodelled
+    text: "+15% to Parkour Velocity"
+  # +15% Sprint Speed
+  - kind: sprint_speed_bonus
+    rankMax: 0.15
+
+source:
+  url: https://wiki.warframe.com/w/Amar%27s_Anguish

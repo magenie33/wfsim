@@ -1,0 +1,17 @@
+id: vigorous_swap
+name: "Vigorous Swap"
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarHolsterDamageMod
+description: "On Equip:\n+165% Damage for 3s"
+
+effects:
+  - kind: unmodelled
+    text: "On Equip:"
+  - kind: unmodelled
+    text: "+165% Damage for 3s"
+
+source:
+  url: https://wiki.warframe.com/w/Vigorous_Swap

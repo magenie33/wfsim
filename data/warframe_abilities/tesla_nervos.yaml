@@ -1,0 +1,13 @@
+id: tesla_nervos
+name: "Tesla Nervos"
+frame: vauban
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [tesla_bank]
+internal_name: /Lotus/Powersuits/Trapper/Abilities/ZapTrapAbility
+icon: TeslaNervosIcon(xWhite).png
+description: "Deploy a roller drone that attaches itself to enemies and delivers bursts of arcing  Electricity Damage to anything in the immediate area."
+
+source:
+  url: https://wiki.warframe.com/w/Tesla_Nervos

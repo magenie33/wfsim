@@ -1,0 +1,22 @@
+id: umbral_intensify
+name: "Umbral Intensify"
+rarity: legendary
+polarity: umbra
+base_drain: 6
+max_rank: 10
+family: intensify
+set: umbral
+# see umbral_vitality.yaml: "and Umbral Intensify by 25%" / "by 75%".
+set_bonus: {2: 0.25, 3: 0.75}
+internal_name: /Lotus/Upgrades/Mods/Sets/Umbra/WarframeUmbraModC
+description: "+44% Ability Strength\n+11% Tau Resistance"
+
+effects:
+  # +44% Ability Strength
+  - kind: ability_strength_bonus
+    rankMax: 0.44
+  - kind: unmodelled
+    text: "+11% Tau Resistance"
+
+source:
+  url: https://wiki.warframe.com/w/Umbral_Intensify

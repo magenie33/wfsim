@@ -1,0 +1,15 @@
+id: sprint_boost
+name: "Sprint Boost"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerSprintAuraMod
+description: "Squad receives +15% Sprint Speed"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Sprint_Boost

@@ -1,0 +1,13 @@
+id: desiccation
+name: "Desiccation"
+frame: inaros
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [desiccations_curse]
+internal_name: /Lotus/Powersuits/Sandman/Abilities/SandmanBlastAbility
+icon: DesiccationIcon(xWhite).png
+description: "Blast enemies with a wave of cursed sand that blinds them and steals their health."
+
+source:
+  url: https://wiki.warframe.com/w/Desiccation

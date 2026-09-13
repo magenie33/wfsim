@@ -1,0 +1,13 @@
+id: rest_rage
+name: "Rest & Rage"
+frame: equinox
+slot: 2
+energy_cost: 25
+subsumable: true
+augments: [calm_frenzy]
+internal_name: /Lotus/Powersuits/YinYang/Abilities/YinYangTargetAbility
+icon: RestRageIcon(xWhite).png
+description: "In Night-Form, targets are put to sleep. In Day-Form, targets become more vulnerable to damage."
+
+source:
+  url: https://wiki.warframe.com/w/Rest_&_Rage

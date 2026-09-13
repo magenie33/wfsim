@@ -1,0 +1,13 @@
+id: reave
+name: "Reave"
+frame: revenant
+slot: 3
+energy_cost: 50
+subsumable: true
+augments: [blinding_reave]
+internal_name: /Lotus/Powersuits/Revenant/Abilities/RevenantAfflictionAbility
+icon: ReaveIcon(xWhite).png
+description: "Dash through enemies as a wall of sentient energy, leeching shields and health from any encountered, enhanced for thralls."
+
+source:
+  url: https://wiki.warframe.com/w/Reave

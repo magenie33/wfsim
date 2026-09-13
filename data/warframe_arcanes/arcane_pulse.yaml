@@ -1,0 +1,17 @@
+id: arcane_pulse
+name: "Arcane Pulse"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/RadialHealOnHealthPickup
+description: "On Health Pickup:\n60% chance to restore 500 Health to allies within 25m\n15s cooldown"
+
+effects:
+  - kind: unmodelled
+    text: "On Health Pickup:"
+  - kind: unmodelled
+    text: "60% chance to restore 500 Health to allies within 25m"
+  - kind: unmodelled
+    text: "15s cooldown"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Pulse

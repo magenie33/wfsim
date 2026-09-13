@@ -1,0 +1,15 @@
+id: power_donation
+name: "Power Donation"
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/AvatarAuraPowerMaxMod
+description: "You lose 30% Ability Strength\nSquadmates gain 30% Ability Strength"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Power_Donation

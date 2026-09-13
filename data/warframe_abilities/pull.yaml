@@ -1,0 +1,13 @@
+id: pull
+name: "Pull"
+frame: mag
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [greedy_pull]
+internal_name: /Lotus/Powersuits/Mag/Abilities/PullAbility
+icon: PullIcon(xWhite).png
+description: "Mag stuns enemies as she manifests a magnetic vortex. The vortex pulls in Polarize Shards and stunned enemies to place them directly in front of her."
+
+source:
+  url: https://wiki.warframe.com/w/Pull

@@ -1,0 +1,13 @@
+id: condemn
+name: "Condemn"
+frame: harrow
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [tribunal]
+internal_name: /Lotus/Powersuits/Priest/Abilities/PriestCondemnAbility
+icon: CondemnIcon(xWhite).png
+description: "Cast a wave of energy that chains them where they stand. Each enemy held reinforces Harrow's shields."
+
+source:
+  url: https://wiki.warframe.com/w/Condemn

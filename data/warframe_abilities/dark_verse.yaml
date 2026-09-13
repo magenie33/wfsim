@@ -1,0 +1,12 @@
+id: dark_verse
+name: "Dark Verse"
+frame: dante
+slot: 3
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/Pagemaster/Abilities/PagemasterDeathAbility
+icon: DarkVerseIcon(xWhite).png
+description: "Dante's composition draws blood from nearby enemies, inflicting Slash Damage upon them."
+
+source:
+  url: https://wiki.warframe.com/w/Dark_Verse

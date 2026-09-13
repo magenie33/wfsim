@@ -1,0 +1,15 @@
+id: empowered_blades
+name: "Empowered Blades"
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/FairyQuest/FairyQuestShieldsToCritAuraMod
+description: "Squad receives +60% Status Chance and Status Damage on Heavy Attacks, but lose 90 Shields per hit."
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Empowered_Blades

@@ -1,0 +1,13 @@
+id: elemental_ward
+name: "Elemental Ward"
+frame: chroma
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [everlasting_ward]
+internal_name: /Lotus/Powersuits/Dragon/Abilities/DragonLuckAbility
+icon: ElementalWardIcon(xWhite).png
+description: "Depending on Chroma's elemental alignment, an offensive area-of-effect is created. Chroma and its nearby allies are imbued with defensive energy."
+
+source:
+  url: https://wiki.warframe.com/w/Elemental_Ward

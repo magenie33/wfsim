@@ -1,0 +1,15 @@
+id: toxin_resistance
+name: "Toxin Resistance"
+rarity: uncommon
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerPoisonImmunityAuraMod
+description: "+15% Toxin Resistance"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Toxin_Resistance

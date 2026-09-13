@@ -61,6 +61,15 @@ struct Assets {
     /// hosted (the CDN 404s every one), so each carries the `wiki:` prefix.
     #[serde(default)]
     damage_types: std::collections::HashMap<String, String>,
+    /// THE WARFRAME BUILDER'S cards, one section per data directory.
+    #[serde(default)]
+    warframes: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    warframe_mods: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    warframe_arcanes: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    auras: std::collections::HashMap<String, String>,
 }
 
 // ---- Image asset map (data/assets.yaml, embedded by the engine) --------
@@ -71,6 +80,150 @@ fn assets() -> &'static Assets {
     A.get_or_init(|| {
         let yaml = wfsim_engine::data::file("assets.yaml").expect("embedded data/assets.yaml");
         serde_norway::from_str(yaml).unwrap_or_default()
+    })
+}
+
+// ---- /api/warframe/catalog and /api/warframe/panel ---------------------
+// The Warframe builder's two doors. A POST like every endpoint but meta and
+// i18n, and fetched only by the Warframe page, so a weapon page pays nothing
+// for a catalogue it never reads. docs/WARFRAMES.md.
+
+/// `madurai` -> `Madurai`, the spelling the page's polarity art is keyed by.
+fn polarity_label(p: &str) -> String {
+    let mut c = p.chars();
+    c.next().map_or(String::new(), |f| f.to_uppercase().collect::<String>() + c.as_str())
+}
+
+pub fn warframe_catalog_json() -> Value {
+    use wfsim_engine::warframes_data as wf;
+    let a = assets();
+    json!({
+        "ok": true,
+        "frames": wf::warframes().iter().map(|f| json!({
+            "id": f.id,
+            "name": f.name,
+            "health": f.health,
+            "shield": f.shield,
+            "armor": f.armor,
+            "energy": f.energy,
+            "sprint": f.sprint,
+            "polarities": f.polarities.iter().map(|p| polarity_label(p)).collect::<Vec<_>>(),
+            "aura_polarity": f.aura_polarity.as_deref().map(polarity_label),
+            "exilus_polarity": f.exilus_polarity.as_deref().map(polarity_label),
+            "passive": f.passive,
+            "abilities": f.abilities,
+            "image": a.warframes.get(&f.id),
+            "url": f.url,
+        })).collect::<Vec<_>>(),
+        "mods": wf::mods().iter().map(|m| json!({
+            "id": m.id,
+            "name": m.name,
+            "rarity": m.rarity,
+            "polarity": polarity_label(&m.polarity),
+            // AT MAX RANK, the convention the weapon picker's `modDrain` reads.
+            "drain": m.base_drain + m.max_rank,
+            "max_rank": m.max_rank,
+            "exilus": m.exilus,
+            "aura": m.aura,
+            "family": m.family,
+            "set": m.set,
+            "augments": m.augments,
+            "image": if m.aura || a.auras.contains_key(&m.id) {
+                a.auras.get(&m.id)
+            } else {
+                a.warframe_mods.get(&m.id)
+            },
+            "description": m.description,
+            "effects": m.description.lines().collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+        "arcanes": wf::arcanes().iter().map(|x| json!({
+            "id": x.id,
+            "name": x.name,
+            "rarity": x.rarity,
+            "max_rank": x.max_rank,
+            "image": a.warframe_arcanes.get(&x.id),
+            "description": x.description,
+            "effects": x.description.lines().collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+        "abilities": wf::abilities().iter().map(|x| json!({
+            "id": x.id,
+            "name": x.name,
+            "frame": x.frame,
+            "slot": x.slot,
+            "energy_cost": x.energy_cost,
+            "cost_type": x.cost_type,
+            "subsumable": x.subsumable,
+            "augments": x.augments,
+            "icon": x.icon,
+            "description": x.description,
+            "url": x.url,
+        })).collect::<Vec<_>>(),
+    })
+}
+
+pub fn warframe_panel_json(v: &Value) -> Value {
+    use wfsim_engine::warframes_data as wf;
+    let build: wf::Build = match serde_json::from_value(v.clone()) {
+        Ok(b) => b,
+        Err(e) => return err_json(format!("bad Warframe build: {e}")),
+    };
+    let r = match wf::resolve(&build) {
+        Ok(r) => r,
+        Err(e) => return err_json(e),
+    };
+    let scaling = |s: wf::Scaling| match s {
+        wf::Scaling::Strength => "strength",
+        wf::Scaling::Duration => "duration",
+        wf::Scaling::Range => "range",
+        wf::Scaling::CastingSpeed => "casting_speed",
+        wf::Scaling::None => "none",
+    };
+    json!({
+        "ok": true,
+        "frame": r.frame.id,
+        "stats": r.stats.iter().map(|l| json!({
+            "id": l.stat.id(),
+            "label": l.stat.label(),
+            "ratio": l.stat.is_ratio(),
+            "base": l.base,
+            "bonus": l.bonus,
+            "flat": l.flat,
+            "value": l.value,
+            "sources": l.sources.iter().map(|c| json!({
+                "from": c.from, "value": c.value, "flat": c.flat,
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+        "abilities": r.abilities.iter().map(|x| json!({
+            "slot": x.slot,
+            "id": x.ability.id,
+            "helminth": x.helminth,
+            "base_energy_cost": x.ability.energy_cost,
+            "energy_cost": x.energy_cost,
+            "cost_type": x.ability.cost_type,
+            "base_drain_per_second": x.ability.drain_per_second,
+            "drain_per_second": x.drain_per_second,
+            "lines": x.lines.iter().map(|l| json!({
+                "id": l.stat.id,
+                "label": l.stat.label,
+                "unit": l.stat.unit,
+                "scales_with": scaling(l.stat.scales_with),
+                "base": l.base,
+                "value": l.value,
+            })).collect::<Vec<_>>(),
+            "derived": x.derived.iter().map(|d| json!({
+                "label": d.label, "stat": d.stat.id(), "value": d.value,
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+        "admissions": r.admissions.iter().map(|x| json!({
+            "from": x.from,
+            "text": x.text,
+            "kind": match x.kind {
+                wf::AdmissionKind::Unmodelled => "unmodelled",
+                wf::AdmissionKind::OutOfScope => "out_of_scope",
+                wf::AdmissionKind::Inert => "inert",
+            },
+        })).collect::<Vec<_>>(),
+        "refused": r.refused,
     })
 }
 
@@ -985,6 +1138,9 @@ pub fn i18n_json() -> Value {
                 // looks a socket up by the same composite key it sends.
                 "auras": l.auras,
                 "shards": l.shards,
+                "warframe_mods": l.warframe_mods,
+                "warframe_arcanes": l.warframe_arcanes,
+                "warframe_abilities": l.warframe_abilities,
                 "ui": l.ui,
                 "effect_phrases": l.effect_phrases,
                 // DE's OWN card text, per rank — what the UI shows instead of
@@ -1825,7 +1981,9 @@ pub fn meta_json() -> Value {
         // instead of folding them into the custom bonuses: a named shard has a
         // source that can be checked and updated with the wiki; a typed +45%
         // has nothing.
-        "auras": wfsim_engine::auras_data::all().iter().map(|a| json!({
+        "auras": wfsim_engine::auras_data::all().iter()
+            .filter(|a| wfsim_engine::auras_data::in_fight(a))
+            .map(|a| json!({
             "id": a.id,
             "name": a.name,
             "squad_stacking": a.squad_stacking,

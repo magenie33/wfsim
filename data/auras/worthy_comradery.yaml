@@ -1,0 +1,15 @@
+id: worthy_comradery
+name: "Worthy Comradery"
+rarity: uncommon
+polarity: madurai
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerWeakpointCriticalChanceAuraMod
+description: "Squad receives +75% Weak Point Critical Chance"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Worthy_Comradery

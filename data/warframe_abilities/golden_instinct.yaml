@@ -1,0 +1,11 @@
+id: golden_instinct
+name: "Golden Instinct"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthTreasureAbility
+icon: GoldenInstinctIcon(xWhite).png
+description: "Send out a short-lived Void Spark that is drawn toward the nearest Medallion, Ayatan Sculpture, rare crate, unscanned Kuria or unscanned Fragment."
+
+source:
+  url: https://wiki.warframe.com/w/Golden_Instinct

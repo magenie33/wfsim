@@ -1,0 +1,11 @@
+id: voracious_metastasis
+name: "Voracious Metastasis"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthEnergyShareAbility
+icon: VoraciousMetastasisIcon(xWhite).png
+description: "Consume Energy to heal yourself and grant matching Energy to each ally."
+
+source:
+  url: https://wiki.warframe.com/w/Voracious_Metastasis

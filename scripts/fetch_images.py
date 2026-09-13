@@ -47,9 +47,10 @@ def wiki_icon_names():
     - evolution icons: `icon:` in data/evolutions/*.yaml
     - enemy portraits: `image:` in data/enemies/**.yaml (WFCD's export has no
       Thrax entry at all, and api.warframestat.us 404s the name)
+    - Warframe ability icons: `icon:` in data/warframe_abilities/*.yaml
     """
     names = set()
-    for rel, field in (("evolutions", "icon"), ("enemies", "image")):
+    for rel, field in (("evolutions", "icon"), ("enemies", "image"), ("warframe_abilities", "icon")):
         for root, _dirs, files in os.walk(os.path.join(ROOT, "data", rel)):
             for fn in files:
                 if not fn.endswith(".yaml"):

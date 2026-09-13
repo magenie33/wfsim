@@ -1,0 +1,17 @@
+id: fast_deflection
+name: "Fast Deflection"
+rarity: uncommon
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarShieldRechargeRateMod
+description: "+90% Shield Recharge\n-45% Shield Recharge Delay"
+
+effects:
+  - kind: unmodelled
+    text: "+90% Shield Recharge"
+  - kind: unmodelled
+    text: "-45% Shield Recharge Delay"
+
+source:
+  url: https://wiki.warframe.com/w/Fast_Deflection

@@ -1,0 +1,15 @@
+id: undying_will
+name: "Undying Will"
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarBleedoutDelayMod
+description: "+42% Bleedout Reduction"
+
+effects:
+  - kind: unmodelled
+    text: "+42% Bleedout Reduction"
+
+source:
+  url: https://wiki.warframe.com/w/Undying_Will

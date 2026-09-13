@@ -1,0 +1,15 @@
+id: enemy_radar
+name: "Enemy Radar"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerEnemyRadarAuraMod
+description: "Highlights enemies on the Minimap\nSquad receives +30 Enemy Radar"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Enemy_Radar

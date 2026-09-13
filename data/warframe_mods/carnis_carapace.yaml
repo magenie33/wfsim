@@ -1,0 +1,20 @@
+id: carnis_carapace
+name: "Carnis Carapace"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+set: carnis
+internal_name: /Lotus/Upgrades/Mods/Sets/Ashen/AshenCarapaceMod
+description: "+55% Armor\n+20% Health"
+
+effects:
+  # +55% Armor
+  - kind: armor_bonus
+    rankMax: 0.55
+  # +20% Health
+  - kind: health_bonus
+    rankMax: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Carnis_Carapace

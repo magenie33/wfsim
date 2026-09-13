@@ -1,0 +1,17 @@
+id: continuity
+name: "Continuity"
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 5
+family: continuity
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarAbilityDurationMod
+description: "+30% Ability Duration"
+
+effects:
+  # +30% Ability Duration
+  - kind: ability_duration_bonus
+    rankMax: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Continuity

@@ -1,0 +1,19 @@
+id: swing_line
+name: "Swing Line"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+augments: rip_line
+internal_name: /Lotus/Powersuits/Berserker/GrappleAugmentCard
+description: "Rip Line Augment: Rip Lines has no Energy cost while Airborne.\n+20% Parkour Velocity"
+
+effects:
+  - kind: unmodelled
+    text: "Rip Line Augment: Rip Lines has no Energy cost while Airborne."
+  - kind: unmodelled
+    text: "+20% Parkour Velocity"
+
+source:
+  url: https://wiki.warframe.com/w/Swing_Line

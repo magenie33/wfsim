@@ -1,0 +1,19 @@
+id: power_drift
+name: "Power Drift"
+rarity: rare
+polarity: zenurik
+base_drain: 4
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/OrokinChallenge/OrokinChallengeModPower
+description: "+15% Ability Strength\n+30% Chance to Resist Knockdown"
+
+effects:
+  # +15% Ability Strength
+  - kind: ability_strength_bonus
+    rankMax: 0.15
+  - kind: unmodelled
+    text: "+30% Chance to Resist Knockdown"
+
+source:
+  url: https://wiki.warframe.com/w/Power_Drift

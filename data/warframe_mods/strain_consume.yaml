@@ -1,0 +1,16 @@
+id: strain_consume
+name: "Strain Consume"
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 3
+set: strain
+internal_name: /Lotus/Upgrades/Mods/Sets/Strain/WarframeStrainConsumeMod
+description: "Dead Maggots within 10m are consumed, increasing Max Health by 4% and increasing Health Regen by 2/sec for 45sec."
+
+effects:
+  - kind: unmodelled
+    text: "Dead Maggots within 10m are consumed, increasing Max Health by 4% and increasing Health Regen by 2/sec for 45sec."
+
+source:
+  url: https://wiki.warframe.com/w/Strain_Consume

@@ -1,0 +1,13 @@
+id: mind_control
+name: "Mind Control"
+frame: nyx
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [mind_freak]
+internal_name: /Lotus/Powersuits/Jade/Abilities/MindControlAbility
+icon: MindControlIcon(xWhite).png
+description: "Nyx seizes control of a target's mind, compelling them to fight for the Tenno cause. Controlled enemies have increased Radiation Status Chance. When Nyx shoots them, they also have an increased Damage Multiplier."
+
+source:
+  url: https://wiki.warframe.com/w/Mind_Control

@@ -1,0 +1,15 @@
+id: arcane_guardian
+name: "Arcane Guardian"
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/ArmourOnDamage
+description: "On Damaged:\n15% chance for +900 Armor for 20s"
+
+effects:
+  - kind: unmodelled
+    text: "On Damaged:"
+  - kind: unmodelled
+    text: "15% chance for +900 Armor for 20s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Guardian

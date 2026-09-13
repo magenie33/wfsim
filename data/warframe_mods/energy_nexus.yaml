@@ -1,0 +1,15 @@
+id: energy_nexus
+name: "Energy Nexus"
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarEnergyRegenMod
+description: "Warframe receives +3 Energy Regen/s"
+
+effects:
+  - kind: unmodelled
+    text: "Warframe receives +3 Energy Regen/s"
+
+source:
+  url: https://wiki.warframe.com/w/Energy_Nexus

@@ -1,0 +1,17 @@
+id: augur_accord
+name: "Augur Accord"
+rarity: uncommon
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+set: augur
+internal_name: /Lotus/Upgrades/Mods/Sets/Augur/WarframeAugurAccordMod
+description: "+70% Shield Capacity"
+
+effects:
+  # +70% Shield Capacity
+  - kind: shield_bonus
+    rankMax: 0.7
+
+source:
+  url: https://wiki.warframe.com/w/Augur_Accord

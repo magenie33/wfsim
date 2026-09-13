@@ -1,0 +1,12 @@
+id: gloom
+name: "Gloom"
+frame: sevagoth
+slot: 3
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/Wraith/Abilities/WraithGloomAbility
+icon: GloomIcon(xWhite).png
+description: "Summon a radial pulse wave that ensnares and slows enemies, siphoning their lifeforce for the Death Well. Allies within the wave steal health with each attack."
+
+source:
+  url: https://wiki.warframe.com/w/Gloom

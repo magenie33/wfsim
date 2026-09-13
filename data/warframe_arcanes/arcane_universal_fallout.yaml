@@ -1,0 +1,13 @@
+id: arcane_universal_fallout
+name: "Arcane Universal Fallout"
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/AbilityRadiationProcsCreateUniversalOrbsOnKill
+description: "Each Radiation Status Effect inflicted on enemies by Abilities gives a 6% chance to drop a Universal Orb on enemy death."
+
+effects:
+  - kind: unmodelled
+    text: "Each Radiation Status Effect inflicted on enemies by Abilities gives a 6% chance to drop a Universal Orb on enemy death."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Universal_Fallout

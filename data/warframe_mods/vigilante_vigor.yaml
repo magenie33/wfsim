@@ -1,0 +1,18 @@
+id: vigilante_vigor
+name: "Vigilante Vigor"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+set: vigilante
+internal_name: /Lotus/Upgrades/Mods/Sets/Vigilante/WarframeVigilanteVigorMod
+description: "+60% Shield Recharge\n-30% Shield Recharge Delay"
+
+effects:
+  - kind: unmodelled
+    text: "+60% Shield Recharge"
+  - kind: unmodelled
+    text: "-30% Shield Recharge Delay"
+
+source:
+  url: https://wiki.warframe.com/w/Vigilante_Vigor

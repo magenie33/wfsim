@@ -39,7 +39,9 @@ ASSETS = ROOT / "data" / "assets.yaml"
 EXPORT = ROOT / "vendor" / "warframe-items" / "data" / "json" / "All.json"
 
 # data directory -> the section of assets.yaml it belongs in
-SECTIONS = [("mods", "mods"), ("weapons", "weapons"), ("arcanes", "arcanes")]
+SECTIONS = [("mods", "mods"), ("weapons", "weapons"), ("arcanes", "arcanes"),
+            ("warframes", "warframes"), ("warframe_mods", "warframe_mods"),
+            ("warframe_arcanes", "warframe_arcanes"), ("auras", "auras")]
 
 
 def data_entries(kind):

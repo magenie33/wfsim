@@ -1,0 +1,15 @@
+id: brief_respite
+name: "Brief Respite"
+rarity: uncommon
+polarity: zenurik
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/FairyQuest/FairyQuestAbilityToShieldsAuraMod
+description: "On Ability Cast:\nSquad converts 150% of Energy spent to Shields while Overshields are inactive"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Brief_Respite

@@ -1,0 +1,13 @@
+id: arcane_camisado
+name: "Arcane Camisado"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/AbilityStrengthOnSummonAttack
+description: "Attacks from summoned minions increase Ability Strength by 6% up to 60% on the next Ability Cast. Summons gain 20% Movement Speed."
+
+effects:
+  - kind: unmodelled
+    text: "Attacks from summoned minions increase Ability Strength by 6% up to 60% on the next Ability Cast. Summons gain 20% Movement Speed."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Camisado

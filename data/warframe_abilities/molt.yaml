@@ -1,0 +1,13 @@
+id: molt
+name: "Molt"
+frame: saryn
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [regenerative_molt]
+internal_name: /Lotus/Powersuits/Saryn/Abilities/ShedAbility
+icon: MoltIcon(xWhite).png
+description: "Shedding her skin like a snake, Saryn leaves a decoy behind to draw fire from enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Molt

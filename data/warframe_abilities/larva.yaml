@@ -1,0 +1,13 @@
+id: larva
+name: "Larva"
+frame: nidus
+slot: 2
+energy_cost: 25
+subsumable: true
+augments: [larva_burst]
+internal_name: /Lotus/Powersuits/Infestation/Abilities/InfestTendrilsAbility
+icon: LarvaIcon(xWhite).png
+description: "Spawn an Infested pod that erupts with tendrils, latches onto nearby enemies and pulls them in. Enemies killed while held have a chance of generating a Mutation stack."
+
+source:
+  url: https://wiki.warframe.com/w/Larva

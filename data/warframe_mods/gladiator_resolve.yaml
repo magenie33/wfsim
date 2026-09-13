@@ -1,0 +1,17 @@
+id: gladiator_resolve
+name: "Gladiator Resolve"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+set: gladiator
+internal_name: /Lotus/Upgrades/Mods/Sets/Gladiator/WarframeGladiatorResolveMod
+description: "+40% Health"
+
+effects:
+  # +40% Health
+  - kind: health_bonus
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Gladiator_Resolve

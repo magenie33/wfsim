@@ -1,0 +1,15 @@
+id: ready_steel
+name: "Ready Steel"
+rarity: uncommon
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerMeleeStartingComboAuraMod
+description: "Squad begins the mission with +24 Initial Combo"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Ready_Steel

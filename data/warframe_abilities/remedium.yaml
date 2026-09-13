@@ -1,0 +1,12 @@
+id: remedium
+name: "Remedium"
+frame: uriel
+slot: 2
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/DemonFrameHealAbility
+icon: RemediumIcon(xWhite).png
+description: "Uriel heals himself and his demons. If his demons are dead, they are resurrected."
+
+source:
+  url: https://wiki.warframe.com/w/Remedium

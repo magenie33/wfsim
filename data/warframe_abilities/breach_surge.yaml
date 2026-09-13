@@ -1,0 +1,13 @@
+id: breach_surge
+name: "Breach Surge"
+frame: wisp
+slot: 3
+energy_cost: 50
+subsumable: true
+augments: [critical_surge]
+internal_name: /Lotus/Powersuits/Wisp/Abilities/WispHarnessAbility
+icon: BreachSurgeIcon(xWhite).png
+description: "Open a dimensional breach to overwhelm nearby enemies and cause them to release aggressive Surge sparks when damaged.\nWisp may also target a Reservoir to teleport to it and double the range of the surge."
+
+source:
+  url: https://wiki.warframe.com/w/Breach_Surge

@@ -1,0 +1,21 @@
+id: piercing_step
+name: "Piercing Step"
+rarity: uncommon
+polarity: naramon
+base_drain: 4
+max_rank: 5
+exilus: true
+family: mobilize
+internal_name: /Lotus/Upgrades/Mods/Warframe/PunctureParkourTwoMod
+description: "+18% to Bullet Jump\n+18% Aim Glide/Wall Latch Duration\n+60% Puncture on Bullet Jump"
+
+effects:
+  - kind: unmodelled
+    text: "+18% to Bullet Jump"
+  - kind: unmodelled
+    text: "+18% Aim Glide/Wall Latch Duration"
+  - kind: unmodelled
+    text: "+60% Puncture on Bullet Jump"
+
+source:
+  url: https://wiki.warframe.com/w/Piercing_Step

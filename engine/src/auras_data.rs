@@ -32,23 +32,39 @@ pub enum AuraEffect {
     WeaponDamage(f64),
     /// Coaction Drift: it multiplies the OTHER auras and does nothing itself.
     AuraStrength(f64),
+    /// NOTHING A FIGHT READS: every effect is `out_of_scope`. The Warframe
+    /// builder still seats it and says why; the fight's roster leaves it out.
+    None,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct RawEffect {
     kind: String,
-    #[serde(rename = "rankMax")]
+    #[serde(rename = "rankMax", default)]
     rank_max: f64,
     #[serde(default)]
     requires_pool: Option<String>,
     #[serde(default)]
     requires_class: Option<String>,
+    #[serde(default)]
+    applies_to: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct RawAura {
     id: String,
     name: String,
+    polarity: String,
+    base_drain: u32,
+    max_rank: u32,
+    #[serde(default)]
+    rarity: Option<String>,
+    #[serde(default)]
+    exilus: bool,
+    #[serde(default)]
+    internal_name: Option<String>,
+    #[serde(default)]
+    description: Option<String>,
     #[serde(default)]
     squad_stacking: bool,
     effects: Vec<RawEffect>,
@@ -59,6 +75,19 @@ struct RawAura {
 pub struct AuraDef {
     pub id: String,
     pub name: String,
+    /// The card, as the Warframe builder seats it. `base_drain` is the RANK-0
+    /// capacity the aura GRANTS, the same rank-0 convention a mod's cost uses.
+    pub polarity: String,
+    pub base_drain: u32,
+    pub max_rank: u32,
+    pub rarity: String,
+    /// Coaction Drift is filed here because the fight reads it as an aura, and
+    /// it is seated in the EXILUS slot like any other exilus mod.
+    pub exilus: bool,
+    pub internal_name: Option<String>,
+    pub description: String,
+    /// Each `out_of_scope` effect's own reason, in card order.
+    pub out_of_scope: Vec<String>,
     /// Does running it four-handed multiply it? Corrosive Projection's page:
     /// *"reducing enemy armor up to 72% with a 4-player squad"*.
     pub squad_stacking: bool,
@@ -76,6 +105,9 @@ pub struct AuraDef {
 impl AuraDef {
     /// Does this aura pay a weapon of this class, drawing these pools?
     pub fn pays(&self, class: &str, pools: &[&str]) -> bool {
+        if self.effect == AuraEffect::None {
+            return false;
+        }
         match (&self.requires_pool, &self.requires_class) {
             (None, None) => true,
             (Some(p), _) if pools.contains(&p.as_str()) => true,
@@ -105,8 +137,14 @@ fn parse_effect(e: &RawEffect) -> AuraEffect {
         "enemy_shield_multiplier" => AuraEffect::EnemyShield(e.rank_max),
         "weapon_damage_bonus" => AuraEffect::WeaponDamage(e.rank_max),
         "aura_strength_bonus" => AuraEffect::AuraStrength(e.rank_max),
+        "out_of_scope" => AuraEffect::None,
         other => panic!("unknown aura effect kind: {other}"),
     }
+}
+
+/// Is this aura one the FIGHT can read? The squad picker lists only these.
+pub fn in_fight(a: &AuraDef) -> bool {
+    a.effect != AuraEffect::None
 }
 
 /// Every aura in `data/auras/`, loaded once.
@@ -118,12 +156,30 @@ pub fn all() -> &'static [AuraDef] {
             .map(|(p, text)| {
                 let r: RawAura = serde_norway::from_str(text)
                     .unwrap_or_else(|e| panic!("{p}: {e}"));
-                let e = r.effects.first().unwrap_or_else(|| panic!("{p}: no effect"));
+                assert!(!r.effects.is_empty(), "{p}: no effect");
+                // THE FIRST EFFECT A FIGHT READS, or none when every one is out
+                // of scope. Every kind is still parsed, so a typo panics here.
+                let effects: Vec<AuraEffect> = r.effects.iter().map(parse_effect).collect();
+                let at = effects.iter().position(|e| *e != AuraEffect::None);
+                let e = &r.effects[at.unwrap_or(0)];
                 AuraDef {
                     id: r.id,
                     name: r.name,
+                    polarity: r.polarity,
+                    base_drain: r.base_drain,
+                    max_rank: r.max_rank,
+                    rarity: r.rarity.unwrap_or_else(|| "common".into()),
+                    exilus: r.exilus,
+                    internal_name: r.internal_name,
+                    description: r.description.unwrap_or_default(),
+                    out_of_scope: r
+                        .effects
+                        .iter()
+                        .filter(|x| x.kind == "out_of_scope")
+                        .map(|x| x.applies_to.clone().unwrap_or_default())
+                        .collect(),
                     squad_stacking: r.squad_stacking,
-                    effect: parse_effect(e),
+                    effect: at.map(|i| effects[i]).unwrap_or(AuraEffect::None),
                     requires_pool: e.requires_pool.clone(),
                     requires_class: e.requires_class.clone(),
                 }

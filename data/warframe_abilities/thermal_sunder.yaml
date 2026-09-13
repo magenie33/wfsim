@@ -1,0 +1,13 @@
+id: thermal_sunder
+name: "Thermal Sunder"
+frame: gauss
+slot: 3
+energy_cost: 50
+subsumable: true
+augments: [thermal_transfer]
+internal_name: /Lotus/Powersuits/Runner/Abilities/RunnerTransferAbility
+icon: ThermalSunderIcon(xWhite).png
+description: "Siphon kinetic energy from the area, charging the battery and inflicting Cold Status on nearby enemies. Hold reverses the process, draining the battery and inflicting Heat Status on nearby enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Thermal_Sunder

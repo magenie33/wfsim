@@ -1,0 +1,17 @@
+id: arcane_energize
+name: "Arcane Energize"
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/GolemArcaneRadialEnergyOnEnergyPickup
+description: "On Energy Pickup:\n60% chance to replenish 150 Energy to self and allies within 15m\n15s cooldown"
+
+effects:
+  - kind: unmodelled
+    text: "On Energy Pickup:"
+  - kind: unmodelled
+    text: "60% chance to replenish 150 Energy to self and allies within 15m"
+  - kind: unmodelled
+    text: "15s cooldown"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Energize

@@ -1,0 +1,15 @@
+id: shepherd
+name: "Shepherd"
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/WarframeAuraLoyalHerdMod
+description: "Squad's Companions receive +300 Health and +180 Armor"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Shepherd

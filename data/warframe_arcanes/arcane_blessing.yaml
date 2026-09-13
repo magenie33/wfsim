@@ -1,0 +1,15 @@
+id: arcane_blessing
+name: "Arcane Blessing"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/IncreaseMaxHealthOnHealthPickup
+description: "On Health Pickup:\n+24 Max Health. Stacks up to 50x."
+
+effects:
+  - kind: unmodelled
+    text: "On Health Pickup:"
+  - kind: unmodelled
+    text: "+24 Max Health. Stacks up to 50x."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Blessing

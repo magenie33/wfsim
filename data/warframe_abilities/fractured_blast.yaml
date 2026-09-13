@@ -1,0 +1,12 @@
+id: fractured_blast
+name: "Fractured Blast"
+frame: citrine
+slot: 1
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/Geode/Abilities/GeodeShardsAbility
+icon: FracturedBlastIcon(xWhite).png
+description: "Slash and stagger enemies with a crystal blast that inflicts Slash Status. Enemies afflicted with this Status Effect have an increased chance of dropping Health and Energy Orbs."
+
+source:
+  url: https://wiki.warframe.com/w/Fractured_Blast

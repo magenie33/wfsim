@@ -1,0 +1,21 @@
+id: rending_turn
+name: "Rending Turn"
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5
+exilus: true
+family: mobilize
+internal_name: /Lotus/Upgrades/Mods/Warframe/SlashParkourTwoMod
+description: "+18% to Bullet Jump\n+18% Aim Glide/Wall Latch Duration\n+60% Slash on Bullet Jump"
+
+effects:
+  - kind: unmodelled
+    text: "+18% to Bullet Jump"
+  - kind: unmodelled
+    text: "+18% Aim Glide/Wall Latch Duration"
+  - kind: unmodelled
+    text: "+60% Slash on Bullet Jump"
+
+source:
+  url: https://wiki.warframe.com/w/Rending_Turn

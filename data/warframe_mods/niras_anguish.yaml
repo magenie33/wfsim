@@ -1,0 +1,20 @@
+id: niras_anguish
+name: "Nira's Anguish"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+exilus: true
+family: amars_anguish
+set: nira
+internal_name: /Lotus/Upgrades/Mods/Sets/Nira/NiraExilusMod
+description: "+15% to Parkour Velocity\n+15% Aim Glide/Wall Latch Duration"
+
+effects:
+  - kind: unmodelled
+    text: "+15% to Parkour Velocity"
+  - kind: unmodelled
+    text: "+15% Aim Glide/Wall Latch Duration"
+
+source:
+  url: https://wiki.warframe.com/w/Nira%27s_Anguish

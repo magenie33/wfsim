@@ -6,8 +6,11 @@
 id: dead_eye
 name: Dead Eye
 polarity: madurai
-base_drain: 9
+base_drain: 2
 max_rank: 5
+rarity: uncommon
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerSniperDamageAuraMod
+description: "Squad receives +52.5% Sniper Rifle Damage"
 # STACKS ACROSS THE SQUAD: the count is how many teammates run it, 0-4.
 squad_stacking: true
 

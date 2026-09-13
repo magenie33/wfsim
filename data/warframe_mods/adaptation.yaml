@@ -1,0 +1,17 @@
+id: adaptation
+name: "Adaptation"
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarResistanceOnDamageMod
+description: "When Damaged:\n+10% Resistance to that Damage Type for 20s. Stacks up to 90%."
+
+effects:
+  - kind: unmodelled
+    text: "When Damaged:"
+  - kind: unmodelled
+    text: "+10% Resistance to that Damage Type for 20s. Stacks up to 90%."
+
+source:
+  url: https://wiki.warframe.com/w/Adaptation

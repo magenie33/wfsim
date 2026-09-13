@@ -1,0 +1,16 @@
+id: handspring
+name: "Handspring"
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarKnockdownRecoveryMod
+description: "+160% Faster Knockdown Recovery"
+
+effects:
+  - kind: unmodelled
+    text: "+160% Faster Knockdown Recovery"
+
+source:
+  url: https://wiki.warframe.com/w/Handspring

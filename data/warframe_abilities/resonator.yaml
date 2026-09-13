@@ -1,0 +1,13 @@
+id: resonator
+name: "Resonator"
+frame: octavia
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [conductor]
+internal_name: /Lotus/Powersuits/Bard/Abilities/BardCharmAbility
+icon: ResonatorIcon(xWhite).png
+description: "Launches a rollerball that charms foes to follow it. Combines with the Mallet to create a roving ball of sonic destruction."
+
+source:
+  url: https://wiki.warframe.com/w/Resonator

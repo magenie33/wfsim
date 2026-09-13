@@ -1,0 +1,17 @@
+id: peculiar_audience
+name: "Peculiar Audience"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+exilus: true
+family: peculiar_end
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Peculiars/EvilSpiritMod
+description: "Killing an enemy has a 60% chance to amuse a certain Void entity. Cooldown: 20s."
+
+effects:
+  - kind: unmodelled
+    text: "Killing an enemy has a 60% chance to amuse a certain Void entity. Cooldown: 20s."
+
+source:
+  url: https://wiki.warframe.com/w/Peculiar_Audience

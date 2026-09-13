@@ -1,0 +1,13 @@
+id: terrify
+name: "Terrify"
+frame: nekros
+slot: 2
+energy_cost: 75
+subsumable: true
+augments: [creeping_terrify]
+internal_name: /Lotus/Powersuits/Necro/Abilities/TerrorTotemAbility
+icon: TerrifyIcon(xWhite).png
+description: "Cast fear into the hearts of nearby enemies, causing them to run away in terror."
+
+source:
+  url: https://wiki.warframe.com/w/Terrify

@@ -1,0 +1,17 @@
+id: enraged
+name: "Enraged"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+family: enraged
+augments: hysteria
+internal_name: /Lotus/Powersuits/Berserker/LastStandAugmentTwoCard
+description: "Hysteria Augment: Damage increased by 350%, Critical Chance increased by 350%. Hysteria lasts for 15s, and receives a matching cooldown."
+
+effects:
+  - kind: unmodelled
+    text: "Hysteria Augment: Damage increased by 350%, Critical Chance increased by 350%. Hysteria lasts for 15s, and receives a matching cooldown."
+
+source:
+  url: https://wiki.warframe.com/w/Enraged

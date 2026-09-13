@@ -1,0 +1,20 @@
+id: primed_vigor
+name: "Primed Vigor"
+rarity: legendary
+polarity: vazarin
+base_drain: 6
+max_rank: 10
+family: vigor
+internal_name: /Lotus/Upgrades/Mods/Warframe/Expert/VigorModExpert
+description: "+75% Shield Capacity\n+75% Health"
+
+effects:
+  # +75% Shield Capacity
+  - kind: shield_bonus
+    rankMax: 0.75
+  # +75% Health
+  - kind: health_bonus
+    rankMax: 0.75
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Vigor

@@ -1,0 +1,13 @@
+id: petrify
+name: "Petrify"
+frame: atlas
+slot: 3
+energy_cost: 75
+subsumable: true
+augments: [ore_gaze]
+internal_name: /Lotus/Powersuits/Brawler/Abilities/BrawlerGazeAbility
+icon: PetrifyIcon(xWhite).png
+description: "Atlas' hardened gaze will fossilize foes increasing the damage they take, heal Rumblers, and create Petrified Bulwarks. When shattered, petrified enemies drop healing Rubble for Atlas."
+
+source:
+  url: https://wiki.warframe.com/w/Petrify

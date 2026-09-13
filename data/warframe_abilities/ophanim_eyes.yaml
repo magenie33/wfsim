@@ -1,0 +1,12 @@
+id: ophanim_eyes
+name: "Ophanim Eyes"
+frame: jade
+slot: 3
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/Choir/Abilities/ChoirEyesAbility
+icon: OphanimEyesIcon(xWhite).png
+description: "Jade summons an accusatory gaze that slows nearby enemies and dissolves their Shields and Armor. When the gaze falls upon allies, they can be revived from a distance."
+
+source:
+  url: https://wiki.warframe.com/w/Ophanim_Eyes

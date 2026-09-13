@@ -1,0 +1,13 @@
+id: fire_blast
+name: "Fire Blast"
+frame: ember
+slot: 3
+energy_cost: 75
+subsumable: true
+augments: [healing_flame, purifying_flames]
+internal_name: /Lotus/Powersuits/Ember/Abilities/FireBlastAbility
+icon: FireBlastIcon(xWhite).png
+description: "Slam the ground to create a wave of incinerating plasma that knocks back enemies and strips their armor."
+
+source:
+  url: https://wiki.warframe.com/w/Fire_Blast

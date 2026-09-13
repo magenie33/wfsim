@@ -1,0 +1,17 @@
+id: motus_signal
+name: "Motus Signal"
+rarity: common
+polarity: naramon
+base_drain: 4
+max_rank: 3
+exilus: true
+set: motus
+internal_name: /Lotus/Upgrades/Mods/Sets/Raptor/RaptorModA
+description: "Increase Double Jump strength by +200%."
+
+effects:
+  - kind: unmodelled
+    text: "Increase Double Jump strength by +200%."
+
+source:
+  url: https://wiki.warframe.com/w/Motus_Signal

@@ -1,0 +1,16 @@
+id: prolonged_paralysis
+name: "Prolonged Paralysis"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+augments: paralysis
+internal_name: /Lotus/Powersuits/Berserker/ShieldBashAugmentCard
+description: "Paralysis Augment: Affected enemies are pulled towards Valkyr and the stun duration is increased by 5s."
+
+effects:
+  - kind: unmodelled
+    text: "Paralysis Augment: Affected enemies are pulled towards Valkyr and the stun duration is increased by 5s."
+
+source:
+  url: https://wiki.warframe.com/w/Prolonged_Paralysis

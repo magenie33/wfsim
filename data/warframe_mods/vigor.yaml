@@ -1,0 +1,20 @@
+id: vigor
+name: "Vigor"
+rarity: rare
+polarity: vazarin
+base_drain: 6
+max_rank: 5
+family: vigor
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/VigorMod
+description: "+50% Shield Capacity\n+50% Health"
+
+effects:
+  # +50% Shield Capacity
+  - kind: shield_bonus
+    rankMax: 0.5
+  # +50% Health
+  - kind: health_bonus
+    rankMax: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Vigor

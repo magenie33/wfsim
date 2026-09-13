@@ -1,0 +1,19 @@
+id: archon_stretch
+name: "Archon Stretch"
+rarity: legendary
+polarity: naramon
+base_drain: 6
+max_rank: 10
+family: stretch
+internal_name: /Lotus/Upgrades/Mods/Warframe/Kahl/KahlAvatarAbilityRangeMod
+description: "+45% Ability Range\nAbilities that deal Electricity Damage restore +2 Energy/s over 5s."
+
+effects:
+  # +45% Ability Range
+  - kind: ability_range_bonus
+    rankMax: 0.45
+  - kind: unmodelled
+    text: "Abilities that deal Electricity Damage restore +2 Energy/s over 5s."
+
+source:
+  url: https://wiki.warframe.com/w/Archon_Stretch

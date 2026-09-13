@@ -1,0 +1,15 @@
+id: rifle_scavenger
+name: "Rifle Scavenger"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerRifleAmmoAuraMod
+description: "Squad receives +150% Rifle Ammo Recovery"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Rifle_Scavenger

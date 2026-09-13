@@ -1,0 +1,15 @@
+id: physique
+name: "Physique"
+rarity: uncommon
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerHealthAuraMod
+description: "Squad gains +20% Maximum Health"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Physique

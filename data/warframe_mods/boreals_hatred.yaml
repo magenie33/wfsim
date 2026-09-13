@@ -1,0 +1,21 @@
+id: boreals_hatred
+name: "Boreal's Hatred"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+family: amars_hatred
+set: boreal
+internal_name: /Lotus/Upgrades/Mods/Sets/Boreal/BorealWarframeMod
+description: "+65% Shield Capacity\n+15% Ability Efficiency"
+
+effects:
+  # +65% Shield Capacity
+  - kind: shield_bonus
+    rankMax: 0.65
+  # +15% Ability Efficiency
+  - kind: ability_efficiency_bonus
+    rankMax: 0.15
+
+source:
+  url: https://wiki.warframe.com/w/Boreal%27s_Hatred

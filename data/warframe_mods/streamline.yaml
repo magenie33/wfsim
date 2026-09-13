@@ -1,0 +1,16 @@
+id: streamline
+name: "Streamline"
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarAbilityEfficiencyMod
+description: "+30% Ability Efficiency"
+
+effects:
+  # +30% Ability Efficiency
+  - kind: ability_efficiency_bonus
+    rankMax: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Streamline

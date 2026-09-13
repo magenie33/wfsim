@@ -1,0 +1,13 @@
+id: arcane_crepuscular
+name: "Arcane Crepuscular"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/AbilityStrengthAndCritDamageWhenInvisible
+description: "While invisible, gain +30% Ability Strength and +3x Final Critical Damage."
+
+effects:
+  - kind: unmodelled
+    text: "While invisible, gain +30% Ability Strength and +3x Final Critical Damage."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Crepuscular

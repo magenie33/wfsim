@@ -1,0 +1,12 @@
+id: wrathful_advance
+name: "Wrathful Advance"
+frame: kullervo
+slot: 1
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/PaxDuviricus/Abilities/PaxTeleportAbility
+icon: WrathfulAdvanceIcon(xWhite).png
+description: "(TAP) Kullervo charges a Heavy Attack, then teleports to his target and strikes. His rage-filled focus temporarily increases his Melee Critical Chance.\n(HOLD) Teleport to any marked location."
+
+source:
+  url: https://wiki.warframe.com/w/Wrathful_Advance

@@ -1,0 +1,24 @@
+id: umbral_vitality
+name: "Umbral Vitality"
+rarity: legendary
+polarity: umbra
+base_drain: 6
+max_rank: 10
+family: vitality
+set: umbral
+# "With 2 equipped, increases the effects of Umbral Vitality and Umbral Fiber by
+# 30%, and Umbral Intensify by 25%. With 3 equipped … by 80%, and Umbral
+# Intensify by 75%." (wiki `Umbral_Set`) — a share of this card's OWN value.
+set_bonus: {2: 0.3, 3: 0.8}
+internal_name: /Lotus/Upgrades/Mods/Sets/Umbra/WarframeUmbraModA
+description: "+100% Health\n+11% Tau Resistance"
+
+effects:
+  # +100% Health
+  - kind: health_bonus
+    rankMax: 1
+  - kind: unmodelled
+    text: "+11% Tau Resistance"
+
+source:
+  url: https://wiki.warframe.com/w/Umbral_Vitality

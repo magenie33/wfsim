@@ -1,0 +1,19 @@
+id: transient_fortitude
+name: "Transient Fortitude"
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/CorruptedPowerStrengthPowerDurationWarframe
+description: "+55% Ability Strength\n-27.5% Ability Duration"
+
+effects:
+  # +55% Ability Strength
+  - kind: ability_strength_bonus
+    rankMax: 0.55
+  # -27.5% Ability Duration
+  - kind: ability_duration_bonus
+    rankMax: -0.275
+
+source:
+  url: https://wiki.warframe.com/w/Transient_Fortitude

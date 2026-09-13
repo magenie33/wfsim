@@ -1,0 +1,12 @@
+id: blood_altar
+name: "Blood Altar"
+frame: garuda
+slot: 2
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/Garuda/Abilities/GarudaSiphonAbility
+icon: BloodAltarIcon(xWhite).png
+description: "Impale an enemy on an altar of talons and siphon health for Garuda and her allies."
+
+source:
+  url: https://wiki.warframe.com/w/Blood_Altar

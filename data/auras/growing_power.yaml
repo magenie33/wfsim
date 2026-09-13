@@ -1,0 +1,15 @@
+id: growing_power
+name: "Growing Power"
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/FairyQuest/FairyQuestCritToAbilityAuraMod
+description: "On Status Effect with Weapon: Squad increases personal Ability Strength by 25% for 6s."
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Growing_Power

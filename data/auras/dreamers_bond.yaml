@@ -1,0 +1,15 @@
+id: dreamers_bond
+name: "Dreamer's Bond"
+rarity: uncommon
+polarity: any
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerEnergyHealthRegenAuraMod
+description: "Squad receives +0.3 Energy Regen/s and +1.5 Health Regen/s"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Dreamer%27s_Bond

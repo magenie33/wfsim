@@ -1,0 +1,17 @@
+id: reflection
+name: "Reflection"
+rarity: uncommon
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarParryReflectMod
+description: "+40% chance to Stagger on Block\n+10% chance to Stun on Block"
+
+effects:
+  - kind: unmodelled
+    text: "+40% chance to Stagger on Block"
+  - kind: unmodelled
+    text: "+10% chance to Stun on Block"
+
+source:
+  url: https://wiki.warframe.com/w/Reflection

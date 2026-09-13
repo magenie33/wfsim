@@ -1,0 +1,15 @@
+id: lightning_rod
+name: "Lightning Rod"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarDamageResistanceElectricity
+description: "+60% Electricity Resistance"
+
+effects:
+  - kind: unmodelled
+    text: "+60% Electricity Resistance"
+
+source:
+  url: https://wiki.warframe.com/w/Lightning_Rod

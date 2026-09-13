@@ -55,6 +55,9 @@ SECTIONS = {
     "weapons": "data/weapons/**/*.yaml",
     "mods": "data/mods/**/*.yaml",
     "arcanes": "data/arcanes/**/*.yaml",
+    "auras": "data/auras/*.yaml",
+    "warframe_mods": "data/warframe_mods/*.yaml",
+    "warframe_arcanes": "data/warframe_arcanes/*.yaml",
 }
 
 

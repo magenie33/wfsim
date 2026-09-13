@@ -1,0 +1,11 @@
+id: hideous_resistance
+name: "Hideous Resistance"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthProcBlockAbility
+icon: HideousResistanceIcon(xWhite).png
+description: "Grant yourself immunity to Status effects."
+
+source:
+  url: https://wiki.warframe.com/w/Hideous_Resistance

@@ -1,0 +1,19 @@
+id: archon_vitality
+name: "Archon Vitality"
+rarity: legendary
+polarity: vazarin
+base_drain: 6
+max_rank: 10
+family: vitality
+internal_name: /Lotus/Upgrades/Mods/Warframe/Kahl/KahlAvatarHealthMaxMod
+description: "+100% Health\nStatus Effects from abilities that deal Heat Damage will be applied twice."
+
+effects:
+  # +100% Health
+  - kind: health_bonus
+    rankMax: 1
+  - kind: unmodelled
+    text: "Status Effects from abilities that deal Heat Damage will be applied twice."
+
+source:
+  url: https://wiki.warframe.com/w/Archon_Vitality

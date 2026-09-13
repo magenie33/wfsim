@@ -66,6 +66,16 @@ pub struct LocaleSpec {
     /// and `i18n.json` carries none of them.
     #[serde(default)]
     pub shards: BTreeMap<String, String>,
+    /// THE WARFRAME BUILDER'S cards — `data/warframe_mods/`,
+    /// `data/warframe_arcanes/` and `data/warframe_abilities/` — joined on
+    /// `internal_name` like every other DE string. No `warframes` table: DE's
+    /// Chinese client leaves a frame's name in English.
+    #[serde(default)]
+    pub warframe_mods: BTreeMap<String, String>,
+    #[serde(default)]
+    pub warframe_arcanes: BTreeMap<String, String>,
+    #[serde(default)]
+    pub warframe_abilities: BTreeMap<String, String>,
     /// UI strings keyed by the English source string.
     #[serde(default)]
     pub ui: BTreeMap<String, String>,
@@ -139,6 +149,9 @@ impl LocaleSpec {
         maps(&mut self.abilities, other.abilities, path, "abilities");
         maps(&mut self.auras, other.auras, path, "auras");
         maps(&mut self.shards, other.shards, path, "shards");
+        maps(&mut self.warframe_mods, other.warframe_mods, path, "warframe_mods");
+        maps(&mut self.warframe_arcanes, other.warframe_arcanes, path, "warframe_arcanes");
+        maps(&mut self.warframe_abilities, other.warframe_abilities, path, "warframe_abilities");
 
         maps(&mut self.ui, other.ui, path, "ui");
         maps(&mut self.evolution_descriptions, other.evolution_descriptions, path, "evolution_descriptions");
@@ -390,6 +403,24 @@ mod tests {
                         "i18n/{code}: unknown shard effect '{id}'"
                     );
                 }
+            }
+            for id in spec.warframe_mods.keys() {
+                assert!(
+                    crate::warframes_data::mod_by_id(id).is_some(),
+                    "i18n/{code}: unknown Warframe mod id '{id}'"
+                );
+            }
+            for id in spec.warframe_arcanes.keys() {
+                assert!(
+                    crate::warframes_data::arcane_by_id(id).is_some(),
+                    "i18n/{code}: unknown Warframe arcane id '{id}'"
+                );
+            }
+            for id in spec.warframe_abilities.keys() {
+                assert!(
+                    crate::warframes_data::ability(id).is_some(),
+                    "i18n/{code}: unknown Warframe ability id '{id}'"
+                );
             }
             for id in spec.evolutions.keys().chain(spec.evolution_descriptions.keys()) {
                 assert!(

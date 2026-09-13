@@ -1,0 +1,13 @@
+id: arcane_impetus
+name: "Arcane Impetus"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/AbilityStatusProcsGiveAbilityStrengthAndEfficiency
+description: "Unique Status Effects from Abilities grant +6% Ability Strength and +3% Ability Efficiency for 20s."
+
+effects:
+  - kind: unmodelled
+    text: "Unique Status Effects from Abilities grant +6% Ability Strength and +3% Ability Efficiency for 20s."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Impetus

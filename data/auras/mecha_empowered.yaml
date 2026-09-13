@@ -1,0 +1,15 @@
+id: mecha_empowered
+name: "Mecha Empowered"
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Mecha/WarframeAuraMechaEmpowerMod
+description: "Increased Pistol Ammo recovery.\nSquad deals +150% extra Damage against a Marked Enemy"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Mecha_Empowered

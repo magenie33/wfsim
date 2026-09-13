@@ -1,0 +1,18 @@
+id: retribution
+name: "Retribution"
+rarity: rare
+polarity: vazarin
+base_drain: 6
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarRevengeDamageMelee
+description: "+60% Chance to deal Electrical Damage when shield struck by melee enemies.\n+80 Electricity"
+
+effects:
+  - kind: unmodelled
+    text: "+60% Chance to deal Electrical Damage when shield struck by melee enemies."
+  - kind: unmodelled
+    text: "+80 Electricity"
+
+source:
+  url: https://wiki.warframe.com/w/Retribution

@@ -1,0 +1,19 @@
+id: mobilize
+name: "Mobilize"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 3
+exilus: true
+family: mobilize
+internal_name: /Lotus/Upgrades/Mods/Warframe/ParkourTwoMod
+description: "+20% to Parkour Velocity\n+20% Aim Glide/Wall Latch Duration"
+
+effects:
+  - kind: unmodelled
+    text: "+20% to Parkour Velocity"
+  - kind: unmodelled
+    text: "+20% Aim Glide/Wall Latch Duration"
+
+source:
+  url: https://wiki.warframe.com/w/Mobilize

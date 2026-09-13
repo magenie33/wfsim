@@ -1,0 +1,15 @@
+id: arcane_blade_charger
+name: "Arcane Blade Charger"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeDmgOnRifleKill
+description: "On Primary Weapon Kill:\n30% chance for +300% Melee Damage for 12s"
+
+effects:
+  - kind: unmodelled
+    text: "On Primary Weapon Kill:"
+  - kind: unmodelled
+    text: "30% chance for +300% Melee Damage for 12s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Blade_Charger

@@ -1,0 +1,17 @@
+id: peculiar_bloom
+name: "Peculiar Bloom"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+exilus: true
+family: peculiar_end
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Peculiars/FlowerPowerMod
+description: "Critical hits cause flowers to grow from the wounds."
+
+effects:
+  - kind: unmodelled
+    text: "Critical hits cause flowers to grow from the wounds."
+
+source:
+  url: https://wiki.warframe.com/w/Peculiar_Bloom

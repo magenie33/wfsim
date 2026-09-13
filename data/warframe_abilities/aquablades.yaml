@@ -1,0 +1,13 @@
+id: aquablades
+name: "Aquablades"
+frame: yareli
+slot: 3
+energy_cost: 75
+subsumable: true
+augments: [surging_blades]
+internal_name: /Lotus/Powersuits/Yareli/Abilities/YareliDisksAbility
+icon: AquabladesIcon(xWhite).png
+description: "Tear through foes with a trio of orbiting aquatic blades."
+
+source:
+  url: https://wiki.warframe.com/w/Aquablades

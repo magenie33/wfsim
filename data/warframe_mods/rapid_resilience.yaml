@@ -1,0 +1,15 @@
+id: rapid_resilience
+name: "Rapid Resilience"
+rarity: rare
+polarity: vazarin
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarProcTimeMod
+description: "-75% Status Duration on Self"
+
+effects:
+  - kind: unmodelled
+    text: "-75% Status Duration on Self"
+
+source:
+  url: https://wiki.warframe.com/w/Rapid_Resilience

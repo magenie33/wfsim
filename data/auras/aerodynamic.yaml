@@ -1,0 +1,15 @@
+id: aerodynamic
+name: "Aerodynamic"
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/WarframeAuraVerticalityMod
+description: "Squad takes 24% reduced damage while airborne, gains +6s Aim Glide and +12s Wall Latch"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Aerodynamic

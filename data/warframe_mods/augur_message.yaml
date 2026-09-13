@@ -1,0 +1,17 @@
+id: augur_message
+name: "Augur Message"
+rarity: common
+polarity: naramon
+base_drain: 2
+max_rank: 5
+set: augur
+internal_name: /Lotus/Upgrades/Mods/Sets/Augur/WarframeAugurMessageMod
+description: "+24% Ability Duration"
+
+effects:
+  # +24% Ability Duration
+  - kind: ability_duration_bonus
+    rankMax: 0.24
+
+source:
+  url: https://wiki.warframe.com/w/Augur_Message

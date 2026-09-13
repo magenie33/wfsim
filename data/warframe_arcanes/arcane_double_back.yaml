@@ -1,0 +1,13 @@
+id: arcane_double_back
+name: "Arcane Double Back"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/DamageResistanceStacksOverTime
+description: "Gain +25% damage resistance for 4s per Dodge, Double Jump and Bullet Jump. Stacks up to 3x."
+
+effects:
+  - kind: unmodelled
+    text: "Gain +25% damage resistance for 4s per Dodge, Double Jump and Bullet Jump. Stacks up to 3x."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Double_Back

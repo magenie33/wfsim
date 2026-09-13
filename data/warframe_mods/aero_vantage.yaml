@@ -1,0 +1,17 @@
+id: aero_vantage
+name: "Aero Vantage"
+rarity: uncommon
+polarity: naramon
+base_drain: 4
+max_rank: 3
+exilus: true
+set: aero
+internal_name: /Lotus/Upgrades/Mods/Sets/Hawk/HawkModA
+description: "-100% Gravity while Aim Gliding"
+
+effects:
+  - kind: unmodelled
+    text: "-100% Gravity while Aim Gliding"
+
+source:
+  url: https://wiki.warframe.com/w/Aero_Vantage

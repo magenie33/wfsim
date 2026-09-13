@@ -1,0 +1,13 @@
+id: smite
+name: "Smite"
+frame: oberon
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [smite_infusion]
+internal_name: /Lotus/Powersuits/Paladin/Abilities/SmiteAbility
+icon: SmiteIcon(xWhite).png
+description: "Focuses deadly energy within a target, dealing massive damage and removing all of its defenses, including Overguard. Enemies near the target also take a portion of the damage."
+
+source:
+  url: https://wiki.warframe.com/w/Smite

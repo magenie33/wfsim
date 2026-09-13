@@ -1,0 +1,15 @@
+id: arcane_arachne
+name: "Arcane Arachne"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/GolemArcaneBonusDamageOnWallLatch
+description: "On Wall Latch:\n+150% Damage to Primary and Secondary weapons for 30s"
+
+effects:
+  - kind: unmodelled
+    text: "On Wall Latch:"
+  - kind: unmodelled
+    text: "+150% Damage to Primary and Secondary weapons for 30s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Arachne

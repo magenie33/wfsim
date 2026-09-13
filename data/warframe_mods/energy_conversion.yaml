@@ -1,0 +1,15 @@
+id: energy_conversion
+name: "Energy Conversion"
+rarity: rare
+polarity: madurai
+base_drain: 10
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/EnergyPickupGivesStrengthMod
+description: "Energy Orbs grant 50% more Ability Strength to your next cast."
+
+effects:
+  - kind: unmodelled
+    text: "Energy Orbs grant 50% more Ability Strength to your next cast."
+
+source:
+  url: https://wiki.warframe.com/w/Energy_Conversion

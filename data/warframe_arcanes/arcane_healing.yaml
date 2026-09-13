@@ -1,0 +1,13 @@
+id: arcane_healing
+name: "Arcane Healing"
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/RadiationProcResist
+description: "+102% chance to resist a Radiation Status effect."
+
+effects:
+  - kind: unmodelled
+    text: "+102% chance to resist a Radiation Status effect."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Healing

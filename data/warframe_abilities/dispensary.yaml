@@ -1,0 +1,13 @@
+id: dispensary
+name: "Dispensary"
+frame: protea
+slot: 3
+energy_cost: 75
+subsumable: true
+augments: [repair_dispensary]
+internal_name: /Lotus/Powersuits/Odalisk/Abilities/OdaliskDispensaryAbility
+icon: DispensaryIcon(xWhite).png
+description: "Deploys a device that generates 3 pickups after a short delay: empowered health orb, universal ammo pack and energy orb."
+
+source:
+  url: https://wiki.warframe.com/w/Dispensary

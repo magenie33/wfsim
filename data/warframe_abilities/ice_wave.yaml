@@ -1,0 +1,13 @@
+id: ice_wave
+name: "Ice Wave"
+frame: frost
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [ice_wave_impedance]
+internal_name: /Lotus/Powersuits/Frost/Abilities/IceSpikeAbility
+icon: IceWaveIcon(xWhite).png
+description: "Sends a wave of razor sharp, crystalized ice toward an enemy, dealing heavy damage."
+
+source:
+  url: https://wiki.warframe.com/w/Ice_Wave

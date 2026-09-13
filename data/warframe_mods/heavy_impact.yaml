@@ -1,0 +1,16 @@
+id: heavy_impact
+name: "Heavy Impact"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarFallingImpactMod
+description: "Create 6m seismic shockwaves from heavy landings, dealing 300 Damage and knocking foes off their feet."
+
+effects:
+  - kind: unmodelled
+    text: "Create 6m seismic shockwaves from heavy landings, dealing 300 Damage and knocking foes off their feet."
+
+source:
+  url: https://wiki.warframe.com/w/Heavy_Impact

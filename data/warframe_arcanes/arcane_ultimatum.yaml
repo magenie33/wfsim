@@ -1,0 +1,15 @@
+id: arcane_ultimatum
+name: "Arcane Ultimatum"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/GolemArcaneArmorOnFinisher
+description: "On Finisher Kill:\n+1,200 Armor for 45s"
+
+effects:
+  - kind: unmodelled
+    text: "On Finisher Kill:"
+  - kind: unmodelled
+    text: "+1,200 Armor for 45s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Ultimatum

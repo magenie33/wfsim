@@ -1,0 +1,18 @@
+id: hysterical_assault
+name: "Hysterical Assault"
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+exilus: true
+family: enraged
+augments: hysteria
+internal_name: /Lotus/Powersuits/Berserker/LastStandAugmentCard
+description: "Hysteria Augment: Attack with Valkyr's Talons to leap onto targeted enemies up to 50m away. Gain +50% Parkour Velocity and +50% Sprint Speed for 5s."
+
+effects:
+  - kind: unmodelled
+    text: "Hysteria Augment: Attack with Valkyr's Talons to leap onto targeted enemies up to 50m away. Gain +50% Parkour Velocity and +50% Sprint Speed for 5s."
+
+source:
+  url: https://wiki.warframe.com/w/Hysterical_Assault

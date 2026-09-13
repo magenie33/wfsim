@@ -1,0 +1,16 @@
+id: master_thief
+name: "Master Thief"
+rarity: rare
+polarity: naramon
+base_drain: 10
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarChanceToLoot
+description: "+40% chance to unlock locked lockers."
+
+effects:
+  - kind: unmodelled
+    text: "+40% chance to unlock locked lockers."
+
+source:
+  url: https://wiki.warframe.com/w/Master_Thief

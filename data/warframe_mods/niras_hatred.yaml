@@ -1,0 +1,21 @@
+id: niras_hatred
+name: "Nira's Hatred"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+family: amars_hatred
+set: nira
+internal_name: /Lotus/Upgrades/Mods/Sets/Nira/NiraWarframeMod
+description: "+35% Health\n+15% Ability Duration"
+
+effects:
+  # +35% Health
+  - kind: health_bonus
+    rankMax: 0.35
+  # +15% Ability Duration
+  - kind: ability_duration_bonus
+    rankMax: 0.15
+
+source:
+  url: https://wiki.warframe.com/w/Nira%27s_Hatred

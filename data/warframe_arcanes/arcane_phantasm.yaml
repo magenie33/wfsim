@@ -1,0 +1,15 @@
+id: arcane_phantasm
+name: "Arcane Phantasm"
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/SpeedOnParry
+description: "On Block:\n45% chance for +60% Speed for 18s"
+
+effects:
+  - kind: unmodelled
+    text: "On Block:"
+  - kind: unmodelled
+    text: "45% chance for +60% Speed for 18s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Phantasm

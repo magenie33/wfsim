@@ -1,0 +1,13 @@
+id: banish
+name: "Banish"
+frame: limbo
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [rift_haven]
+internal_name: /Lotus/Powersuits/Magician/Abilities/BanishAbility
+icon: BanishIcon(xWhite).png
+description: "Casts a wave of Rift energy that damages hostiles while pushing enemies and allies out of Limbo's current plane of existence."
+
+source:
+  url: https://wiki.warframe.com/w/Banish

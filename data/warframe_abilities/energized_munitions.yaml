@@ -1,0 +1,11 @@
+id: energized_munitions
+name: "Energized Munitions"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthEfficiencyAbility
+icon: EnergizedMunitionsIcon(xWhite).png
+description: "Imbue your weapons with ammo efficiency."
+
+source:
+  url: https://wiki.warframe.com/w/Energized_Munitions

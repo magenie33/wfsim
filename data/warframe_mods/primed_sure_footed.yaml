@@ -1,0 +1,17 @@
+id: primed_sure_footed
+name: "Primed Sure Footed"
+rarity: legendary
+polarity: vazarin
+base_drain: 6
+max_rank: 10
+exilus: true
+family: sure_footed
+internal_name: /Lotus/Upgrades/Mods/Warframe/Expert/AvatarKnockdownResistanceModExpert
+description: "+100% Chance to Resist Knockdown"
+
+effects:
+  - kind: unmodelled
+    text: "+100% Chance to Resist Knockdown"
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Sure_Footed

@@ -6,8 +6,11 @@
 id: shotgun_amp
 name: Shotgun Amp
 polarity: madurai
-base_drain: 9
+base_drain: 2
 max_rank: 5
+rarity: uncommon
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerShellDamageAuraMod
+description: "Squad receives +18% Shotgun Damage"
 # STACKS ACROSS THE SQUAD: the count is how many teammates run it, 0-4.
 squad_stacking: true
 

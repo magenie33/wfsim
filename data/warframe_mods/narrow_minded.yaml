@@ -1,0 +1,19 @@
+id: narrow_minded
+name: "Narrow Minded"
+rarity: rare
+polarity: vazarin
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Warframe/DualStat/CorruptedDurationRangeWarframe
+description: "+99% Ability Duration\n-66% Ability Range"
+
+effects:
+  # +99% Ability Duration
+  - kind: ability_duration_bonus
+    rankMax: 0.99
+  # -66% Ability Range
+  - kind: ability_range_bonus
+    rankMax: -0.66
+
+source:
+  url: https://wiki.warframe.com/w/Narrow_Minded

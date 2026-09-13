@@ -1,0 +1,14 @@
+id: pillage
+name: "Pillage"
+frame: hildryn
+slot: 2
+energy_cost: 150
+cost_type: shield
+subsumable: true
+augments: [blazing_pillage]
+internal_name: /Lotus/Powersuits/IronFrame/Abilities/IronFrameStripAbility
+icon: PillageIcon(xWhite).png
+description: "Pillage a percentage of Shields and Armor of nearby enemies to replenish Hildryn's own Shields and Overshields. Also removes Status Effects from Hildryn and her allies."
+
+source:
+  url: https://wiki.warframe.com/w/Pillage

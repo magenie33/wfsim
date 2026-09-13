@@ -1,0 +1,17 @@
+id: patagium
+name: "Patagium"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+exilus: true
+family: mobilize
+internal_name: /Lotus/Upgrades/Mods/Warframe/SuperGlideParkourTwoMod
+description: "+90% Aim Glide/Wall Latch Duration"
+
+effects:
+  - kind: unmodelled
+    text: "+90% Aim Glide/Wall Latch Duration"
+
+source:
+  url: https://wiki.warframe.com/w/Patagium

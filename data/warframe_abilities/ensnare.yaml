@@ -1,0 +1,12 @@
+id: ensnare
+name: "Ensnare"
+frame: khora
+slot: 2
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/Khora/Abilities/KhoraTwirlAbility
+icon: EnsnareIcon(xWhite).png
+description: "Bind a hapless target in living metal, entangling others who stray too close. Whipclaw will refresh the trap allowing it to capture more enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Ensnare

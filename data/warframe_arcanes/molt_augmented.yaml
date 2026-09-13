@@ -1,0 +1,15 @@
+id: molt_augmented
+name: "Molt Augmented"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PowerStrengthOnKill
+description: "On Kill:\n+0.24% Ability Strength. Stacks up to 250x."
+
+effects:
+  - kind: unmodelled
+    text: "On Kill:"
+  - kind: unmodelled
+    text: "+0.24% Ability Strength. Stacks up to 250x."
+
+source:
+  url: https://wiki.warframe.com/w/Molt_Augmented

@@ -1,0 +1,15 @@
+id: diamond_skin
+name: "Diamond Skin"
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarDamageResistanceLaser
+description: "+45% Radiation Resistance"
+
+effects:
+  - kind: unmodelled
+    text: "+45% Radiation Resistance"
+
+source:
+  url: https://wiki.warframe.com/w/Diamond_Skin

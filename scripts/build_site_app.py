@@ -578,7 +578,7 @@ def ship_art() -> None:
     # wiki. Same rule as everything else — it ships, or the build fails.
     want |= {
         spec[field]
-        for rel, field in (("evolutions", "icon"), ("enemies", "image"))
+        for rel, field in (("evolutions", "icon"), ("enemies", "image"), ("warframe_abilities", "icon"))
         for f in (ROOT / "data" / rel).rglob("*.yaml")
         for spec in [yload(f.read_text(encoding="utf-8"))]
         if spec.get(field)

@@ -1,0 +1,15 @@
+id: arcane_reaper
+name: "Arcane Reaper"
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/OperatorArmour/HealthRegenAndArmorOnMeleeKill
+description: "On Melee Kill:\n+24 Health Regen/s and +660 Armor for 10s."
+
+effects:
+  - kind: unmodelled
+    text: "On Melee Kill:"
+  - kind: unmodelled
+    text: "+24 Health Regen/s and +660 Armor for 10s."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Reaper

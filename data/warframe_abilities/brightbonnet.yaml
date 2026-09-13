@@ -1,0 +1,12 @@
+id: brightbonnet
+name: "Brightbonnet"
+frame: nokko
+slot: 2
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/Nokko/Abilities/NokkoPowerShroomAbility
+icon: BrightbonnetIcon(xWhite).png
+description: "Release a rejuvenating mushroom that emits a radial pulse, giving Nokko and his allies'  Energy and applying a buff to Ability Strength that lasts for a short time."
+
+source:
+  url: https://wiki.warframe.com/w/Brightbonnet

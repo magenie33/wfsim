@@ -1,0 +1,12 @@
+id: sentient_wrath
+name: "Sentient Wrath"
+frame: caliban
+slot: 2
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/Sentient/Abilities/SentientStompAbility
+icon: SentientWrathIcon(xWhite).png
+description: "Smash the ground sending out a radial wave of destruction. Those not killed by the initial blast are helplessly raised into the air, where they take amplified damage for a short time."
+
+source:
+  url: https://wiki.warframe.com/w/Sentient_Wrath

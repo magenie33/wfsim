@@ -1,0 +1,12 @@
+id: xatas_whisper
+name: "Xata's Whisper"
+frame: xaku
+slot: 1
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/BrokenFrame/Abilities/BrokenRotAbility
+icon: Xata'sWhisperIcon(xWhite).png
+description: "Wield Void Damage for all attacks from equipped weapons when activated."
+
+source:
+  url: https://wiki.warframe.com/w/Xata%27s_Whisper

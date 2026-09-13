@@ -1,0 +1,13 @@
+id: arcane_ice_storm
+name: "Arcane Ice Storm"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/AbilityPowerOnFreeze
+description: "On Enemy Frozen: Gain +2% Ability Strength and +2% Ability Duration for 15s. Stacks up to 20x."
+
+effects:
+  - kind: unmodelled
+    text: "On Enemy Frozen: Gain +2% Ability Strength and +2% Ability Duration for 15s. Stacks up to 20x."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Ice_Storm

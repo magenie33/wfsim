@@ -1,0 +1,11 @@
+id: sickening_pulse
+name: "Sickening Pulse"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthMaxStatusAbility
+icon: SickeningPulseIcon(xWhite).png
+description: "Emit a pulse that adds stacks to Status Effects already afflicting enemies. The damage of Slash, Heat, and Toxin effects, excluding those created by Sickening Pulse itself, are added together to create a new instance of the Effect with a refreshed timer"
+
+source:
+  url: https://wiki.warframe.com/w/Sickening_Pulse

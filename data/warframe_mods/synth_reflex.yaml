@@ -1,0 +1,19 @@
+id: synth_reflex
+name: "Synth Reflex"
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+exilus: true
+set: synth
+internal_name: /Lotus/Upgrades/Mods/Sets/Synth/WarframeSynthReflexMod
+description: "On Equip:\n+40% Bullet Jump for 2s"
+
+effects:
+  - kind: unmodelled
+    text: "On Equip:"
+  - kind: unmodelled
+    text: "+40% Bullet Jump for 2s"
+
+source:
+  url: https://wiki.warframe.com/w/Synth_Reflex

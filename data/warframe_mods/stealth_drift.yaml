@@ -1,0 +1,18 @@
+id: stealth_drift
+name: "Stealth Drift"
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/OrokinChallenge/OrokinChallengeModStealth
+description: "+18m Enemy Radar\n+12% Aim Glide/Wall Latch Duration"
+
+effects:
+  - kind: unmodelled
+    text: "+18m Enemy Radar"
+  - kind: unmodelled
+    text: "+12% Aim Glide/Wall Latch Duration"
+
+source:
+  url: https://wiki.warframe.com/w/Stealth_Drift

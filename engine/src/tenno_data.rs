@@ -139,6 +139,7 @@ impl Tenno {
                 AuraEffect::EnemyShield(v) => out.enemy_shield_multiplier += v * n * strength,
                 AuraEffect::WeaponDamage(_) => {}
                 AuraEffect::AuraStrength(_) => {}
+                AuraEffect::None => {}
             }
         }
         for pick in &self.shards {

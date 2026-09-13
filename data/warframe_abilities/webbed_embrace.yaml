@@ -1,0 +1,12 @@
+id: webbed_embrace
+name: "Webbed Embrace"
+frame: oraxia
+slot: 2
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/Oraxia/Abilities/OraxiaEntangleAbility
+icon: WebbedEmbraceIcon(xWhite).png
+description: "Oraxia throws a creeping web to ensnare her prey. Enemies caught within the widening radius are trapped inside a cocoon that increases their Damage Vulnerability."
+
+source:
+  url: https://wiki.warframe.com/w/Webbed_Embrace

@@ -1,0 +1,13 @@
+id: null_star
+name: "Null Star"
+frame: nova
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [neutron_star]
+internal_name: /Lotus/Powersuits/AntiMatter/Abilities/NullStarAbility
+icon: NullStarIcon(xWhite).png
+description: "Creates antimatter particles that orbit Nova and attack nearby targets. Each active particle reduces damage to Nova's Health and Shields."
+
+source:
+  url: https://wiki.warframe.com/w/Null_Star

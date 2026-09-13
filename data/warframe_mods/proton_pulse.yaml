@@ -1,0 +1,17 @@
+id: proton_pulse
+name: "Proton Pulse"
+rarity: common
+polarity: naramon
+base_drain: 4
+max_rank: 3
+exilus: true
+set: proton
+internal_name: /Lotus/Upgrades/Mods/Sets/Spider/SpiderModA
+description: "Wall Dashing grants +100% Bullet Jump Speed."
+
+effects:
+  - kind: unmodelled
+    text: "Wall Dashing grants +100% Bullet Jump Speed."
+
+source:
+  url: https://wiki.warframe.com/w/Proton_Pulse

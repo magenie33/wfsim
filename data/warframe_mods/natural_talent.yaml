@@ -1,0 +1,18 @@
+id: natural_talent
+name: "Natural Talent"
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarCastingSpeedMod
+description: "Improves Casting Speed on Warframe abilities if applicable.\n+50% Casting Speed"
+
+effects:
+  - kind: unmodelled
+    text: "Improves Casting Speed on Warframe abilities if applicable."
+  # +50% Casting Speed
+  - kind: casting_speed_bonus
+    rankMax: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Natural_Talent

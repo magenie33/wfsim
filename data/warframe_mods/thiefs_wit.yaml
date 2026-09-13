@@ -1,0 +1,18 @@
+id: thiefs_wit
+name: "Thief's Wit"
+rarity: common
+polarity: naramon
+base_drain: 2
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarLootRadarMod
+description: "Minimap shows loot crates.\n+42m Loot Radar"
+
+effects:
+  - kind: unmodelled
+    text: "Minimap shows loot crates."
+  - kind: unmodelled
+    text: "+42m Loot Radar"
+
+source:
+  url: https://wiki.warframe.com/w/Thief%27s_Wit

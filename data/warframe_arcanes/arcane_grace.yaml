@@ -1,0 +1,15 @@
+id: arcane_grace
+name: "Arcane Grace"
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/HealthRegenOnDamage
+description: "On Health Damaged:\n9% chance for +6% Health Regeneration/s for 9s"
+
+effects:
+  - kind: unmodelled
+    text: "On Health Damaged:"
+  - kind: unmodelled
+    text: "9% chance for +6% Health Regeneration/s for 9s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Grace

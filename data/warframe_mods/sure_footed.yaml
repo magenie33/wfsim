@@ -1,0 +1,17 @@
+id: sure_footed
+name: "Sure Footed"
+rarity: rare
+polarity: vazarin
+base_drain: 6
+max_rank: 5
+exilus: true
+family: sure_footed
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarKnockdownResistanceMod
+description: "+60% Chance to Resist Knockdown"
+
+effects:
+  - kind: unmodelled
+    text: "+60% Chance to Resist Knockdown"
+
+source:
+  url: https://wiki.warframe.com/w/Sure_Footed

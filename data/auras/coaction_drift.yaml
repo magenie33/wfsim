@@ -7,8 +7,12 @@
 id: coaction_drift
 name: Coaction Drift
 polarity: naramon
-base_drain: 9
+base_drain: 4
 max_rank: 5
+rarity: rare
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/OrokinChallenge/OrokinChallengeModCollaboration
+description: "Squad benefits +15% more from Auras\nYou benefit an additional +15% from Auras"
 # STACKS ACROSS THE SQUAD: the count is how many teammates run it, 0-4.
 squad_stacking: true
 

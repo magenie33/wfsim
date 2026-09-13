@@ -1,0 +1,49 @@
+id: rip_line
+name: "Rip Line"
+frame: valkyr
+slot: 1
+energy_cost: 25
+augments: [swing_line]
+internal_name: /Lotus/Powersuits/Berserker/Abilities/GrappleHookAbility
+icon: RipLineIcon(xWhite).png
+description: "Valkyr hurls forth a hook and pulls herself to whatever it hits. If it hits an enemy, nearby foes are pulled in as she unleashes a coordinated Melee attack."
+
+# AT RANK 3: "a range of {{Stat|Ability Range|icon=only}}'''25 / 40 / 60 / 75'''
+# meters … within {{Stat|Ability Range|icon=only}}'''9''' meters around the hooked
+# enemy … dealt {{Stat|Ability Strength|icon=only}}'''300 / 400 / 500 / 600'''
+# Slash damage … Has a <u>'''0.4'''</u> second cooldown."
+stats:
+  - id: range
+    label: Range
+    value: 75
+    unit: m
+    scales_with: range
+  - id: pull_radius
+    label: Pull radius
+    value: 9
+    unit: m
+    scales_with: range
+  - id: slash_damage
+    label: Slash damage
+    value: 600
+    unit: flat
+    scales_with: strength
+  # "within a window of {{Stat|Ability Duration|icon=only}}'''1''' second after the
+  # previous cast" — "Combo window cannot be decreased below <u>'''0.5'''</u> seconds."
+  - id: combo_window
+    label: Combo window
+    value: 1
+    unit: seconds
+    scales_with: duration
+    min: 0.5
+  - id: cooldown
+    label: Cooldown
+    value: 0.4
+    unit: seconds
+    scales_with: none
+
+unmodelled:
+  - "the combo: a recast inside the window multiplies damage by 200% and cuts the cost by 50%, and every recast after that by 400% and 75%"
+
+source:
+  url: https://wiki.warframe.com/w/Rip_Line

@@ -1,0 +1,13 @@
+id: arcane_battery
+name: "Arcane Battery"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MaxEnergyForArmor
+description: "Gain 0.30 maximum Energy per Armor point, up to 1000 Energy."
+
+effects:
+  - kind: unmodelled
+    text: "Gain 0.30 maximum Energy per Armor point, up to 1000 Energy."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Battery

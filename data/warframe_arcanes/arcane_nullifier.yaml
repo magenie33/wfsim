@@ -1,0 +1,13 @@
+id: arcane_nullifier
+name: "Arcane Nullifier"
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/MagneticProcResist
+description: "+102% chance to resist a Magnetic Status effect."
+
+effects:
+  - kind: unmodelled
+    text: "+102% chance to resist a Magnetic Status effect."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Nullifier

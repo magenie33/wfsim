@@ -1,0 +1,13 @@
+id: lull
+name: "Lull"
+frame: baruuk
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [endless_lullaby]
+internal_name: /Lotus/Powersuits/Pacifist/Abilities/PacifistWaveAbility
+icon: LullIcon(xWhite).png
+description: "A calming wave slows enemies until they fall into a slumber. Enemies woken by damage will be confused and disoriented. Short-term amnesia means all waking enemies forget anything that happened before the lull."
+
+source:
+  url: https://wiki.warframe.com/w/Lull

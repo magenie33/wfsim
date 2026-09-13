@@ -1,0 +1,11 @@
+id: marked_for_death
+name: "Marked For Death"
+frame: helminth
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthStunAbility
+icon: MarkedForDeathIcon(xWhite).png
+description: "Stun an enemy; a portion of the next damage you deal to it will be dealt to all enemies around it."
+
+source:
+  url: https://wiki.warframe.com/w/Marked_For_Death

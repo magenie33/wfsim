@@ -1,0 +1,17 @@
+id: peculiar_growth
+name: "Peculiar Growth"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+exilus: true
+family: peculiar_end
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Peculiars/InflationMod
+description: "Damaging an enemy will inflate the body part hit for 6s."
+
+effects:
+  - kind: unmodelled
+    text: "Damaging an enemy will inflate the body part hit for 6s."
+
+source:
+  url: https://wiki.warframe.com/w/Peculiar_Growth

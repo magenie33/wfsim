@@ -1,0 +1,15 @@
+id: antitoxin
+name: "Antitoxin"
+rarity: uncommon
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarDamageResistancePoison
+description: "+45% Toxin Resistance"
+
+effects:
+  - kind: unmodelled
+    text: "+45% Toxin Resistance"
+
+source:
+  url: https://wiki.warframe.com/w/Antitoxin_(Mod)

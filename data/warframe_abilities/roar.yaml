@@ -1,0 +1,13 @@
+id: roar
+name: "Roar"
+frame: rhino
+slot: 3
+energy_cost: 75
+subsumable: true
+augments: [piercing_roar]
+internal_name: /Lotus/Powersuits/Rhino/Abilities/RhinoRoarAbility
+icon: RoarIcon(xWhite).png
+description: "Grants all nearby Warframes increased damage for a short duration."
+
+source:
+  url: https://wiki.warframe.com/w/Roar

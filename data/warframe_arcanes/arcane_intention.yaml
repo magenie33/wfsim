@@ -1,0 +1,13 @@
+id: arcane_intention
+name: "Arcane Intention"
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/HealthWhileUsingChanneledAbilities
+description: "Gain +250 Max Health per active channeled ability."
+
+effects:
+  - kind: unmodelled
+    text: "Gain +250 Max Health per active channeled ability."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Intention

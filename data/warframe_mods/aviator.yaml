@@ -1,0 +1,16 @@
+id: aviator
+name: "Aviator"
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarDamageReductionInAir
+description: "Reduced damage by 40% while airborne"
+
+effects:
+  - kind: unmodelled
+    text: "Reduced damage by 40% while airborne"
+
+source:
+  url: https://wiki.warframe.com/w/Aviator

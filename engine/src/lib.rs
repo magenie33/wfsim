@@ -61,6 +61,7 @@ pub mod space;
 pub mod status;
 pub mod syndicates_data;
 pub mod tenno_data;
+pub mod warframes_data;
 pub mod weapons_data;
 
 // Damage-pipeline layers will be split into their own modules, e.g.:

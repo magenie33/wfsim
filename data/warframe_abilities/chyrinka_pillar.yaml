@@ -1,0 +1,12 @@
+id: chyrinka_pillar
+name: "Chyrinka Pillar"
+frame: qorvex
+slot: 1
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/ConcreteFrame/Abilities/ConcretePillarAbility
+icon: ChyrinkaPillarIcon(xWhite).png
+description: "Summon a Chyrinka Pillar that slows enemies. It pulses Radiation Damage with a guaranteed Status Effect."
+
+source:
+  url: https://wiki.warframe.com/w/Chyrinka_Pillar

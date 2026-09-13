@@ -1,0 +1,13 @@
+id: well_of_life
+name: "Well of Life"
+frame: trinity
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [pool_of_life]
+internal_name: /Lotus/Powersuits/Trinity/Abilities/WellOfLifeAbility
+icon: WellOfLifeIcon(xWhite).png
+description: "Create a well of life on an enemy who will absorb Status Effect damage intended for nearby allies. Allies gain additional Health when they attack the target. If allies die, enemies in the well of life die in their stead."
+
+source:
+  url: https://wiki.warframe.com/w/Well_of_Life

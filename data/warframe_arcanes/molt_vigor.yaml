@@ -1,0 +1,15 @@
+id: molt_vigor
+name: "Molt Vigor"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Zariman/WarframeOnOperatorAbilityPowerStrength
+description: "On Operator Ability:\n45% Ability Strength on next Warframe Ability Cast"
+
+effects:
+  - kind: unmodelled
+    text: "On Operator Ability:"
+  - kind: unmodelled
+    text: "45% Ability Strength on next Warframe Ability Cast"
+
+source:
+  url: https://wiki.warframe.com/w/Molt_Vigor

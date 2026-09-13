@@ -1,0 +1,16 @@
+id: equilibrium
+name: "Equilibrium"
+rarity: uncommon
+polarity: naramon
+base_drain: 4
+max_rank: 10
+family: equilibrium
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarPickupBonusMod
+description: "Health pickups give +110% Energy. Energy pickups give +110% Health."
+
+effects:
+  - kind: unmodelled
+    text: "Health pickups give +110% Energy. Energy pickups give +110% Health."
+
+source:
+  url: https://wiki.warframe.com/w/Equilibrium

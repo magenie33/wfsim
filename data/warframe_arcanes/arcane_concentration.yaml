@@ -1,0 +1,15 @@
+id: arcane_concentration
+name: "Arcane Concentration"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/AbilityDurationOnCast
+description: "On Ability Cast:\n+60% Ability Duration for 3s"
+
+effects:
+  - kind: unmodelled
+    text: "On Ability Cast:"
+  - kind: unmodelled
+    text: "+60% Ability Duration for 3s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Concentration

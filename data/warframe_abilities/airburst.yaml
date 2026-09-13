@@ -1,0 +1,13 @@
+id: airburst
+name: "Airburst"
+frame: zephyr
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [airburst_rounds]
+internal_name: /Lotus/Powersuits/Tengu/Abilities/TenguBurstAbility
+icon: AirburstIcon(xWhite).png
+description: "Launch a burst of massively dense air. Hold to send enemies flying, tap to pull them toward the burst. Damage increases per enemy hit."
+
+source:
+  url: https://wiki.warframe.com/w/Airburst

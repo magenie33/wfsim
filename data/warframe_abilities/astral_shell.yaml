@@ -1,0 +1,12 @@
+id: astral_shell
+name: "Astral Shell"
+frame: orion
+slot: 2
+energy_cost: 50
+subsumable: true
+internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/OrionBuffAbility
+icon: AstralShellIcon(xWhite).png
+description: "Envelop Orion in an Astral Shell. Upon taking damage the shell becomes a decoy that draws fire until it's destroyed.\n\n(HOLD) Swap to Sirius and use Jade Stars."
+
+source:
+  url: https://wiki.warframe.com/w/Astral_Shell

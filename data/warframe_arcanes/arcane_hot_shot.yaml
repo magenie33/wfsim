@@ -1,0 +1,13 @@
+id: arcane_hot_shot
+name: "Arcane Hot Shot"
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/AbilityHeatProcsGiveCritChance
+description: "Gain 6% weapon Critical Chance for 10s, when using abilities to inflict Heat Status effect on enemies. Maximum 50x stacks."
+
+effects:
+  - kind: unmodelled
+    text: "Gain 6% weapon Critical Chance for 10s, when using abilities to inflict Heat Status effect on enemies. Maximum 50x stacks."
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Hot_Shot

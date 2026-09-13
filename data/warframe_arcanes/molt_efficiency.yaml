@@ -1,0 +1,13 @@
+id: molt_efficiency
+name: "Molt Efficiency"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Zariman/WarframeOnShieldUptimePowerDuration
+description: "While Shields are Active: Gain 6% Ability Duration per second, up to a maximum of 36%"
+
+effects:
+  - kind: unmodelled
+    text: "While Shields are Active: Gain 6% Ability Duration per second, up to a maximum of 36%"
+
+source:
+  url: https://wiki.warframe.com/w/Molt_Efficiency

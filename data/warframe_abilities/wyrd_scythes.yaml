@@ -1,0 +1,12 @@
+id: wyrd_scythes
+name: "Wyrd Scythes"
+frame: dagath
+slot: 1
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/Dagath/Abilities/DagathVolleyAbility
+icon: WyrdScythesIcon(xWhite).png
+description: "Wyrd Scythes surround Dagath and seek out nearby enemies. Those struck are slowed and suffer Viral Damage with a guaranteed Status Effect. The scythes also spread Doom and extend its duration."
+
+source:
+  url: https://wiki.warframe.com/w/Wyrd_Scythes

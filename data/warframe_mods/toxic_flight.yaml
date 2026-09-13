@@ -1,0 +1,21 @@
+id: toxic_flight
+name: "Toxic Flight"
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 10
+exilus: true
+family: mobilize
+internal_name: /Lotus/Upgrades/Mods/Warframe/ToxinParkourTwoMod
+description: "+24.2% to Bullet Jump\n+24.2% Aim Glide/Wall Latch Duration\n+275% Toxin on Bullet Jump"
+
+effects:
+  - kind: unmodelled
+    text: "+24.2% to Bullet Jump"
+  - kind: unmodelled
+    text: "+24.2% Aim Glide/Wall Latch Duration"
+  - kind: unmodelled
+    text: "+275% Toxin on Bullet Jump"
+
+source:
+  url: https://wiki.warframe.com/w/Toxic_Flight

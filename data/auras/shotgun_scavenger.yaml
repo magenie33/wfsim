@@ -1,0 +1,15 @@
+id: shotgun_scavenger
+name: "Shotgun Scavenger"
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Aura/PlayerShellAmmoAuraMod
+description: "Squad receives +150% Shotgun Ammo Recovery"
+
+effects:
+  - kind: out_of_scope
+    applies_to: a squad effect, and nothing in this Warframe's own panel
+
+source:
+  url: https://wiki.warframe.com/w/Shotgun_Scavenger

@@ -1,0 +1,12 @@
+id: omamori
+name: "Omamori"
+frame: koumei
+slot: 3
+energy_cost: 75
+subsumable: true
+internal_name: /Lotus/Powersuits/Koumei/Abilities/KoumeiBlockAbility
+icon: OmamoriIcon(xWhite).png
+description: "Surround yourself with Omamori Charms, each with a chance to have enemy attacks heal you instead of damage you. The number of charms is determined by Koumei's dice roll.\n\nA roll of triple sixes grants invulnerability for the duration of your Omamori Charms."
+
+source:
+  url: https://wiki.warframe.com/w/Omamori

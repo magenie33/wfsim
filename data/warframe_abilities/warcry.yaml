@@ -1,0 +1,43 @@
+id: warcry
+name: "Warcry"
+frame: valkyr
+slot: 2
+energy_cost: 75
+subsumable: true
+augments: [eternal_war]
+internal_name: /Lotus/Powersuits/Berserker/Abilities/BerserkerScreamAbility
+icon: WarcryIcon(xWhite).png
+description: "Valkyr lets out a rallying cry that bolsters Armor and Attack Speed for allies while in Affinity Range."
+
+# AT RANK 3. The page's `info` marks each number with the stat that scales it:
+#   "{{Stat|Ability Strength|icon=only}}'''15% / 20% / 25% / 50%''' Attack Speed
+#   and {{Stat|Ability Strength|icon=only}}'''25% / 35% / 45% / 50%''' Armor for
+#   {{Stat|Ability Duration|icon=only}}'''10 / 14 / 17 / 20''' seconds"
+stats:
+  - id: attack_speed_bonus
+    label: Attack Speed
+    value: 0.5
+    unit: pct
+    scales_with: strength
+    # "Subsumed Warcry's attack speed bonus is reduced to 9% / 12% / 15% / 30%"
+    helminth_value: 0.3
+  # "The armor buff is based off of the affected Warframe's base armor value":
+  #   Base Armor × (1 + Armor Mods + Warcry Modifier × (1 + Strength Mods))
+  # and "Warcry's armor bonus is multiplied by 3x when used while Hysteria is active".
+  - id: armor_bonus
+    label: Armor
+    value: 0.5
+    unit: pct
+    scales_with: strength
+    adds_to_base: armor
+    channel_multiplier:
+      ability: hysteria
+      value: 3
+  - id: duration
+    label: Duration
+    value: 20
+    unit: seconds
+    scales_with: duration
+
+source:
+  url: https://wiki.warframe.com/w/Warcry

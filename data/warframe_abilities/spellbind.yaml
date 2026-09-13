@@ -1,0 +1,13 @@
+id: spellbind
+name: "Spellbind"
+frame: titania
+slot: 1
+energy_cost: 25
+subsumable: true
+augments: [spellbound_harvest]
+internal_name: /Lotus/Powersuits/Fairy/Abilities/FairyDustAbility
+icon: SpellbindIcon(xWhite).png
+description: "Enemies fumble their weapons as they are whisked into the air. Nearby allies become immune to Status Effects. Hold the ability to cast the immunity onto Titania."
+
+source:
+  url: https://wiki.warframe.com/w/Spellbind

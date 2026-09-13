@@ -1129,6 +1129,36 @@ auras:
   # exactly why it is transcribed and not translated.
   coaction_drift: 协力窜升
   # emp_aura: NOT IN DE's EXPORT. Falls back to English on purpose.
+  aerodynamic: 空气动力
+  brief_respite: 快速休整
+  combat_discipline: 战斗教条
+  dreamers_bond: 梦者羁绊
+  emp_aura: 电磁脉冲场
+  empowered_blades: 强化刀锋
+  enemy_radar: 侦敌雷达
+  energy_siphon: 能量虹吸
+  growing_power: 成长之力
+  holster_amp: 切换增幅
+  infested_impedance: 感染者阻抗
+  loot_detector: 战利品探测器
+  mecha_empowered: 机甲 强化
+  melee_guidance: 近战指引
+  physique: 体魄
+  pistol_scavenger: 手枪弹药搜集者
+  power_donation: 献出力量
+  ready_steel: 磨砺锋刃
+  rejuvenation: 返老还童
+  rifle_scavenger: 步枪弹药搜集者
+  shepherd: 牧羊人
+  shotgun_scavenger: 霰弹枪弹药搜集者
+  sniper_scavenger: 狙击枪弹药搜集者
+  sprint_boost: 冲刺提升
+  stand_united: 团结一致
+  steel_charge: 钢铁充能
+  summoners_wrath: 召唤师之怒
+  swift_momentum: 迅敏动量
+  toxin_resistance: 毒素抵抗
+  worthy_comradery: 可靠战友
 
 # ARCHON SHARDS — transcribed from the CN wiki (执刑官源力石), which is the
 # second source data/README.md names and the only one that has these: a shard
@@ -1171,3 +1201,274 @@ shards:
   violet_archon_shard/primary_electricity_damage: 主要武器 Electricity 伤害
   violet_archon_shard/melee_crit_damage: 近战暴击伤害
   violet_archon_shard/orb_conversion: 拾取生命球得能量、拾取能量球得生命
+
+# WARFRAME ABILITIES (data/warframe_abilities/) — DE's own strings, off each
+# frame's `abilities` list in WFCD i18n.json, joined on the ability's internal_name.
+warframe_abilities:
+  airburst: "空爆"
+  aquablades: "水形之刃"
+  astral_shell: "星壳"
+  banish: "放逐"
+  blood_altar: "鲜血祭坛"
+  breach_surge: "裂口涌流"
+  brightbonnet: "亮帽菇"
+  chyrinka_pillar: "辐射柱体"
+  coil_horizon: "旋爆视界"
+  condemn: "责难束缚"
+  dark_verse: "暗之诗句"
+  decoy: "诱饵"
+  defy: "死命顽抗"
+  desiccation: "枯沙竭血"
+  dispensary: "后勤支援"
+  eclipse: "黯然失色"
+  elemental_ward: "元素之护"
+  empower: "强化"
+  energized_munitions: "充沛军需"
+  ensnare: "束缚陷阱"
+  evade: "闪避"
+  expedite_suffering: "瞬时苦痛"
+  fire_blast: "火焰冲击"
+  fire_walker: "风火飞轮"
+  fractured_blast: "碎裂晶爆"
+  gloom: "惨淡"
+  golden_instinct: "黄金本能"
+  hideous_resistance: "狰狞抵抗"
+  hysteria: "狂化爆发"
+  ice_wave: "冰浪"
+  infested_mobility: "感染敏捷性"
+  jade_stars: "翠玉之星"
+  larva: "幼体"
+  lull: "镇静"
+  lycaths_hunt: "莱卡斯之猎"
+  marked_for_death: "死亡标记"
+  masters_summons: "主人的召唤"
+  mind_control: "精神控制"
+  molt: "蜕皮"
+  nourish: "消化滋养"
+  null_star: "湮灭流星群"
+  omamori: "御守"
+  ophanim_eyes: "座天使之眼"
+  paralysis: "瘫痪"
+  parasitic_armor: "寄生护甲"
+  perspicacity: "洞察力"
+  petrify: "石化凝视"
+  pillage: "掠夺"
+  pull: "吸引"
+  pyrotechnics: "烟火"
+  quiver: "战术箭袋"
+  radial_blind: "广域致盲"
+  reave: "精华掠夺"
+  rebuild_shields: "重塑护盾"
+  resonator: "共鸣渲染"
+  rest_rage: "暂息－怒气"
+  rip_line: "撕裂钩索"
+  roar: "战吼"
+  self_portrait: "自画像"
+  sentient_wrath: "Sentient 之怒"
+  shock: "电击"
+  shooting_gallery: "靶场"
+  shuriken: "手里剑"
+  sickening_pulse: "恶疾脉冲"
+  silence: "静音"
+  smite: "惩击"
+  spectrorage: "光谱盛怒"
+  spellbind: "迷尘"
+  tempest_barrage: "暴风雨弹幕"
+  terrify: "惊骇"
+  tesla_nervos: "特斯拉电激"
+  tharros_strike: "豪勇之击"
+  thermal_sunder: "热能抽离"
+  vial_rush: "药瓶冲撞"
+  voracious_metastasis: "贪婪转移"
+  warcry: "咆哮"
+  webbed_embrace: "网缚之拥"
+  well_of_life: "生命之井"
+  wrathful_advance: "暴怒突进"
+  wyrd_scythes: "命定镰刃"
+  xatas_whisper: "真理密语"
+  # remedium: NOT IN DE's EXPORT — falls back to English
+
+warframe_mods:
+  adaptation: 适应
+  aero_vantage: 空飞 俯瞰
+  agility_drift: 矫捷窜升
+  amars_anguish: 欺谋狼主之苦
+  amars_hatred: 欺谋狼主之恨
+  antitoxin: 毒抗
+  archon_continuity: 执刑官 持久力
+  archon_flow: 执刑官 川流不息
+  archon_intensify: 执刑官 聚精会神
+  archon_stretch: 执刑官 延伸
+  archon_vitality: 执刑官 生命力
+  armored_agility: 灵活装甲
+  augur_accord: 预言 协约
+  augur_message: 预言 启示
+  augur_reach: 预言 通灵
+  augur_secrets: 预言 神密
+  aviator: 飞行员
+  battering_maneuver: 机动冲撞
+  blind_rage: 盲怒
+  boreals_anguish: 诡文枭主之苦
+  boreals_hatred: 诡文枭主之恨
+  carnis_carapace: 肉碾虫 壳甲
+  catalyzing_shields: 催化护盾
+  constitution: 百折不挠
+  continuity: 持久力
+  cunning_drift: 狡诈窜升
+  diamond_skin: 钻石皮肤
+  endurance_drift: 坚忍窜升
+  enemy_sense: 敌人感应
+  energy_conversion: 能量转换
+  energy_nexus: 能量枢纽
+  enraged: 狂化震怒
+  equilibrium: 均衡点
+  eternal_war: 永恒战意
+  fast_deflection: 快速充能
+  firewalker: 火焰行者
+  flame_repellent: 火焰防护
+  fleeting_expertise: 弹指瞬技
+  flow: 川流不息
+  fortitude: 不屈不挠
+  gale_kick: 狂风猛踢
+  gladiator_aegis: 角斗士 圣盾
+  gladiator_finesse: 角斗士 灵巧
+  gladiator_resolve: 角斗士 决心
+  handspring: 翻筋斗
+  health_conversion: 生命转换
+  heavy_impact: 震地冲击
+  hunter_adrenaline: 猎人 肾上腺素
+  hysterical_assault: 狂化突击
+  ice_spring: 冰冷跃动
+  insulation: 隔热
+  intensify: 聚精会神
+  jugulus_carapace: 喉骨刃者 壳甲
+  kavats_grace: 库娃的优雅
+  lightning_dash: 电光冲刺
+  lightning_rod: 避雷针
+  master_thief: 盗贼大师
+  mecha_pulse: 机甲 脉冲
+  mobilize: 全面驱动
+  motus_signal: 跃动 信号
+  narrow_minded: 心志偏狭
+  natural_talent: 天赋
+  niras_anguish: 混沌蛇主之苦
+  niras_hatred: 混沌蛇主之恨
+  overextended: 过度延展
+  pain_threshold: 痛苦阈值
+  patagium: 翼膜
+  peculiar_audience: 观众怪奇
+  peculiar_bloom: 花开怪奇
+  peculiar_end: 终劫怪奇
+  peculiar_growth: 生长怪奇
+  piercing_step: 穿刺步伐
+  power_drift: 力量窜升
+  precision_intensify: 集中 聚精会神
+  preparation: 有备而来
+  primed_continuity: 持久力 Prime
+  primed_flow: 川流不息 Prime
+  primed_sure_footed: 顶天立地 Prime
+  primed_vigor: 活力 Prime
+  prolonged_paralysis: 长时瘫痪
+  proton_pulse: 质子 脉动
+  provoked: 激怒
+  rage: 狂暴化
+  rapid_resilience: 极速复元
+  redirection: 蓄能重划
+  reflection: 充能反弹
+  reflex_guard: 反射防御
+  rending_turn: 撕裂翻转
+  retribution: 惩戒
+  rolling_guard: 翻滚防护
+  rush: 冲刺
+  saxum_carapace: 重岩者 壳甲
+  shock_absorbers: 减震器
+  speed_drift: 速度窜升
+  stealth_drift: 匿踪窜升
+  steel_fiber: 钢铁纤维
+  strain_consume: 菌株 吸收
+  streamline: 简化
+  streamlined_form: 流线外形
+  stretch: 延伸
+  sure_footed: 顶天立地
+  swing_line: 摆荡钩索
+  synth_reflex: 合成 反射
+  tek_collateral: 技法 连带
+  thiefs_wit: 盗贼天赋
+  toxic_flight: 剧毒飞腾
+  transient_fortitude: 瞬时坚毅
+  umbral_fiber: 暗影 纤维
+  umbral_intensify: 暗影 聚精会神
+  umbral_vitality: 暗影 生命力
+  undying_will: 不朽意志
+  vigilante_pursuit: 私法 追踪
+  vigilante_vigor: 私法 活力
+  vigor: 活力
+  vigorous_swap: 强力切换
+  vitality: 生命力
+  warm_coat: 保温服
+
+warframe_arcanes:
+  arcane_acceleration: 赋能·加速
+  arcane_aegis: 赋能·神盾
+  arcane_agility: 赋能·灵敏
+  arcane_arachne: 赋能·蜘蛛
+  arcane_avenger: 赋能·复仇者
+  arcane_awakening: 赋能·觉醒
+  arcane_barrier: 赋能·壁垒
+  arcane_battery: 赋能·电池
+  arcane_bellicose: 赋能·黩武
+  arcane_blade_charger: 赋能·刀刃充能
+  arcane_blessing: 赋能·赐福
+  arcane_bodyguard: 赋能·卫士
+  arcane_camisado: 赋能·奇袭
+  arcane_circumvent: 赋能·规避
+  arcane_concentration: 赋能·专注
+  arcane_consequence: 赋能·结果
+  arcane_crepuscular: 赋能·影袭
+  arcane_deflection: 赋能·偏折
+  arcane_double_back: 赋能·回返
+  arcane_energize: 赋能·充沛
+  arcane_eruption: 赋能·爆发
+  arcane_escapist: 赋能·脱逃
+  arcane_expertise: 赋能·精湛
+  arcane_fury: 赋能·狂怒
+  arcane_grace: 赋能·优雅
+  arcane_guardian: 赋能·保卫者
+  arcane_healing: 赋能·复原
+  arcane_hot_shot: 赋能·热火
+  arcane_ice: 赋能·冰冷
+  arcane_ice_storm: 赋能·冰暴
+  arcane_impetus: 赋能·激励
+  arcane_intention: 赋能·心相
+  arcane_momentum: 赋能·动量
+  arcane_nullifier: 赋能·消磁
+  arcane_persistence: 赋能·坚韧
+  arcane_phantasm: 赋能·幻象
+  arcane_pistoleer: 赋能·枪炮
+  arcane_power_ramp: 赋能·力升
+  arcane_precision: 赋能·精确
+  arcane_primary_charger: 赋能·主武充能
+  arcane_pulse: 赋能·生机
+  arcane_rage: 赋能·愤怒
+  arcane_reaper: 赋能·收割
+  arcane_resistance: 赋能·抗毒
+  arcane_rise: 赋能·崛起
+  arcane_sculptor: 赋能·雕塑
+  arcane_steadfast: 赋能·坚定
+  arcane_strike: 赋能·速攻
+  arcane_tanker: 赋能·坦克
+  arcane_tempo: 赋能·节奏
+  arcane_trickery: 赋能·诡计
+  arcane_truculence: 赋能·暴虐
+  arcane_ultimatum: 赋能·通牒
+  arcane_universal_fallout: 赋能·辐照
+  arcane_velocity: 赋能·迅速
+  arcane_victory: 赋能·胜利
+  arcane_warmth: 赋能·温暖
+  molt_augmented: 蜕化·升腾
+  molt_efficiency: 蜕化·效能
+  molt_reconstruct: 蜕化·重塑
+  molt_vigor: 蜕化·活力
+  theorem_contagion: 定理·触染
+  theorem_demulcent: 定理·缓和
+  theorem_infection: 定理·感染

@@ -1,0 +1,15 @@
+id: arcane_avenger
+name: "Arcane Avenger"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/CritChanceOnDamage
+description: "On Damaged:\n21% chance for +45% Critical Chance for 12s"
+
+effects:
+  - kind: unmodelled
+    text: "On Damaged:"
+  - kind: unmodelled
+    text: "21% chance for +45% Critical Chance for 12s"
+
+source:
+  url: https://wiki.warframe.com/w/Arcane_Avenger

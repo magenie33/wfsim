@@ -1,0 +1,13 @@
+id: eclipse
+name: "Eclipse"
+frame: mirage
+slot: 3
+energy_cost: 25
+subsumable: true
+augments: [total_eclipse]
+internal_name: /Lotus/Powersuits/Harlequin/Abilities/LightAbility
+icon: EclipseIcon(xWhite).png
+description: "(TAP) Temporarily reduce the damage Mirage takes from enemies.\n(HOLD) Temporarily increase Mirage's weapon damage."
+
+source:
+  url: https://wiki.warframe.com/w/Eclipse

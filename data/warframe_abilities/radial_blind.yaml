@@ -1,0 +1,13 @@
+id: radial_blind
+name: "Radial Blind"
+frame: excalibur
+slot: 2
+energy_cost: 50
+subsumable: true
+augments: [radiant_finish, signal_flare]
+internal_name: /Lotus/Powersuits/Excalibur/Abilities/RadialBlindAbility
+icon: RadialBlindIcon(xWhite).png
+description: "Emit a bright flash of light, blinding all nearby enemies."
+
+source:
+  url: https://wiki.warframe.com/w/Radial_Blind

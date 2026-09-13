@@ -1,0 +1,17 @@
+id: redirection
+name: "Redirection"
+rarity: common
+polarity: vazarin
+base_drain: 2
+max_rank: 10
+family: redirection
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarShieldMaxMod
+description: "+100% Shield Capacity"
+
+effects:
+  # +100% Shield Capacity
+  - kind: shield_bonus
+    rankMax: 1
+
+source:
+  url: https://wiki.warframe.com/w/Redirection
