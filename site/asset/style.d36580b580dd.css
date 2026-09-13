@@ -2317,6 +2317,11 @@ tr.rec-miss td.rec-t{border-left-color:var(--critical)}
   background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good-text)}
 .lg-b .lg-lbl{color:var(--accent)}
 .lg-b{border-left:2px solid color-mix(in srgb,var(--accent) 40%,transparent);padding-left:8px}
+/* A SUM OF WHOLE NUMBERS. Marked like a bracket because it is the same kind of
+   claim — this number is built from these — and muted, because the part it
+   exists to show is a fraction of a point beside a seed in the hundreds. */
+.lg-s .lg-lbl{color:var(--accent)}
+.lg-s{border-left:2px solid color-mix(in srgb,var(--accent) 25%,transparent);padding-left:8px}
 .lg-term{display:inline-flex;align-items:baseline;gap:3px;font-variant-numeric:tabular-nums}
 .lg-term .lg-op{font-style:normal;color:var(--muted)}
 .lg-term b{font-weight:400;color:var(--muted);font-size:10.5px}
