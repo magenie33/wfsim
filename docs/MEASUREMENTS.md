@@ -174,6 +174,7 @@ path, so an entry may be renamed but never renumbered.
 | [M87](measurements/M87-demolisher-radiation-cannot-land.md) | a Demolisher's Radiation proc never lands; its Impact proc lands and does nothing | ✅ 2026-09-11 (owner) |
 | [M88](measurements/M88-boar-prime-co-base-under-reified-bane.md) | Boar Prime's Condition Overload reads the weapon's own base in both forms; Reified Bane's +10 and +14 stay out, and the gated half is +14 | ✅ 2026-09-11 (owner) |
 | [M89](measurements/M89-demolisher-flat-multiplier-in-the-faction-bracket.md) | a Demolisher takes a flat 0.8 inside the FACTION bracket, so a hit is ×0.8 and the status it applies is ×0.64 | ✅ 2026-09-13 (group) |
+| [M90](measurements/M90-heat-dot-takes-the-weak-point-and-the-accumulator-does-not.md) | a Heat DoT DOES take the weak point, and the accumulator's 1 does NOT | ✅ 2026-09-13 (owner) |
 
 ## By weapon
 

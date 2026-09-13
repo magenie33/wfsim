@@ -1888,11 +1888,14 @@ const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
 /// Does this status's DoT inherit the WEAK-POINT multiplier of the hit that
 /// applied it?
 ///
-/// TOXIN DOES NOT. Everything else keeps
-/// the wiki's answer, which is that it does, because nobody has measured them —
-/// so this is a list of what is KNOWN rather than a rule derived from one case.
-/// A blast is not in it at all: it is not a DoT and it was measured to carry
-/// the multiplier, at exactly x3.00.
+/// TOXIN DOES NOT (M54). Everything this list reaches keeps the wiki's answer,
+/// which is that it does, because nobody has measured them — so it states what
+/// is KNOWN rather than a rule derived from one case.
+///
+/// IT DOES NOT REACH HEAT OR BLAST, and neither is an omission. Heat is a
+/// singleton accumulator built in its own arm, which multiplies the part
+/// factor there and is MEASURED to (M90); a blast is not a DoT at all and was
+/// measured to carry it at exactly x3.00 (M54).
 fn dot_takes_weakpoint(t: DamageType) -> bool {
     !matches!(t, DamageType::Toxin)
 }
@@ -7112,6 +7115,11 @@ fn settle_procs(
                     * mb_live
                     * sdm
                     * crit_multiplier
+                    // THE WEAK POINT, AND IT IS MEASURED HERE rather than taken
+                    // from `dot_takes_weakpoint`, which this arm never asks:
+                    // a Braton Prime at base 35 with +200% Heat popped 54 on the
+                    // body and 159 on the head (M90). The accumulator's own 1 is
+                    // outside this product, which is why 159 and not 162.
                     * part_factor
                     // …and Eclipse, applied ONCE at the proc. See `Dot::live`.
                     * ecl;
@@ -26465,6 +26473,55 @@ mod tests {
         assert!((parts[1].head - 0.35).abs() < 1e-9, "accumulator head {}", parts[1].head);
         assert!((of(0, crate::record::Factor::TargetMultiplier) - 0.64).abs() < 1e-9);
         assert!((of(1, crate::record::Factor::TargetMultiplier) - 0.8).abs() < 1e-9);
+    }
+
+    /// A HEAT TICK TAKES THE WEAK POINT AND ITS ACCUMULATOR DOES NOT —
+    /// MEASUREMENTS M90, and the numbers are the reading rather than a
+    /// direction: a Braton Prime at base 35 with +200% Heat popped 54 on the
+    /// body and 159 on the head.
+    ///
+    /// 159 IS THE WHOLE POINT. Scaled whole the head tick would be 162 and
+    /// with neither half scaled it would be 54, so this fixture separates all
+    /// three readings — and the three-point difference is the `1` declining a
+    /// multiplier the seed took.
+    #[test]
+    fn a_heat_tick_takes_the_weak_point_and_its_accumulator_does_not() {
+        let tick = |part: f64| {
+            let p = DummyParams {
+                // THE FIXTURE'S OWN BASE, and the DoT reads it through
+                // `dot_modified_base` the way a real weapon's panel feeds it.
+                damage: DamageVector::new().with(DamageType::Heat, 35.0),
+                dot_modified_base: Some(35.0),
+                // +200% Heat, which is the bracket a tick multiplies by.
+                elem_dot_bonus: vec![(DamageType::Heat, 3.0)],
+                crit_multiplier: 1.0,
+                forced_procs: vec![DamageType::Heat],
+                body_parts: mono_body(part),
+                // ONE SHOT, so every tick in the window belongs to one proc and
+                // the accumulator is counted once rather than folded with a
+                // second contribution.
+                fire_rate: 0.02,
+                duration_seconds: 4.0,
+                magazine_size: 100.0,
+                ..no_status()
+            };
+            let rec = record(&p, 0, 0.0, f64::INFINITY, 10_000, 0);
+            rec.events()
+                .iter()
+                .find_map(|e| match &e.kind {
+                    crate::record::Kind::Damage(d)
+                        if d.origin == crate::record::Origin::Status
+                            && d.dtype == DamageType::Heat => Some(d.base),
+                    _ => None,
+                })
+                .expect("a forced Heat proc ticks")
+        };
+        let (body, head) = (tick(1.0), tick(3.0));
+        assert!((body - 54.0).abs() < 1e-9, "body {body}");
+        assert!((head - 159.0).abs() < 1e-9, "head {head}");
+        // …AND SAID AS THE RATIO, because that is the form the reading is in
+        // and the form a regression would break first.
+        assert!((head / body - 2.9444444444444).abs() < 1e-9, "x{}", head / body);
     }
 
     /// HUNTER MUNITIONS. A guaranteed crit with a 100% roll must bleed on
