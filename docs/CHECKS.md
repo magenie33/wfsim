@@ -52,7 +52,10 @@ lists exactly the folds the page has under their own translated names. Then it
 jumps into the deepest section of a fully collapsed page and asserts the target
 AND the block above it opened. The menu is dragged with a real pointer
 (`Input.dispatchMouseEvent` — a page-side `PointerEvent` carries no active
-pointer id), and dragged off the edge to see it stop at the edge. Verified to
+pointer id): shut by its grip, open by its header, and off the corner to see it
+stop at the window's edge and under the topbar. A click on the grip must still
+open it, growing away from the side it is parked on, and the section scrolled
+to must be the marked row and the name on the shut grip. Verified to
 bite: removing the heading-control guard, the section half of `pageFolds` and
 the clamp reddened twelve assertions between them, each naming its own half.
 

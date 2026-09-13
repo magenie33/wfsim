@@ -186,38 +186,65 @@ check("a section comes back shut, and only that one",
 
 // ---- the menu is draggable and cannot be dragged out of reach --------------
 
-const before = await evaluate(`(() => {
-  localStorage.removeItem('wfsim-folds');
-  jump.open = true; renderJump();
+const centre = (id) => evaluate(`(() => { const g = document.getElementById('${id}').getBoundingClientRect();
+  return { x: Math.round(g.left + g.width / 2), y: Math.round(g.top + g.height / 2),
+    left: Math.round(g.left), right: Math.round(g.right), top: Math.round(g.top) }; })()`);
+const g0 = await evaluate(`(() => {
+  localStorage.removeItem('wfsim-folds'); localStorage.removeItem('wfsim-jump');
+  jump = { ax: null, y: null, edge: 'r', open: false }; renderJump();
   const g = document.getElementById('jump-grip').getBoundingClientRect();
-  return { gx: Math.round(g.left + g.width / 2), gy: Math.round(g.top + g.height / 2),
-    left: document.getElementById('jump').style.left };
+  return { right: Math.round(g.right), top: Math.round(g.top), w: innerWidth,
+    bar: Math.round(document.querySelector('.topbar').getBoundingClientRect().bottom) };
 })()`);
-await drag([before.gx, before.gy], [before.gx - 260, before.gy + 180]);
-const moved = await evaluate(`(() => {
-  const el = document.getElementById('jump'), r = el.getBoundingClientRect();
-  return { left: el.style.left, top: el.style.top, open: el.classList.contains('open'),
-    inView: r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1 };
-})()`);
-check("the grip drags the menu", moved.left !== before.left, `${before.left} -> ${moved.left}`);
-check("...a drag is not a click, so it stays open", moved.open === true);
-check("...and it lands inside the window", moved.inView === true, JSON.stringify(moved));
+check("by default it sits on the right edge, under the topbar",
+  g0.right > g0.w - 40 && g0.top > g0.bar, JSON.stringify(g0));
 
-// A CLICK IS STILL A CLICK. Same grip, same handler: a drag threshold that
-// swallowed the click would leave a panel that can only be moved.
-const g2 = await evaluate(`(() => { const g = document.getElementById('jump-grip').getBoundingClientRect();
-  return { x: Math.round(g.left + g.width / 2), y: Math.round(g.top + g.height / 2) }; })()`);
-await drag([g2.x, g2.y], [g2.x + 1, g2.y]);
-check("a click on the grip shuts the menu",
-  (await evaluate(`document.getElementById('jump').classList.contains('open')`)) === false);
+// SHUT, THE GRIP DRAGS IT ANYWHERE, and a drag is not a click.
+const s0 = await centre("jump-grip");
+await drag([s0.x, s0.y], [s0.x - 260, s0.y + 150]);
+const s1 = await centre("jump-grip");
+check("the grip drags the menu", s1.x < s0.x - 200 && s1.y > s0.y + 100, `${JSON.stringify(s0)} -> ${JSON.stringify(s1)}`);
+check("...a drag is not a click, so it stays shut", (await evaluate("jump.open")) === false);
 
-// A DRAG BEYOND THE EDGE IS CLAMPED, NOT LOST. A menu three-quarters
-// off-screen is a menu with no rows a reader can reach.
-await drag([g2.x, g2.y], [-400, -400]);
+// A CLICK IS STILL A CLICK, and a menu parked on the right half opens leftwards
+// from where the grip was rather than being shoved over by the clamp.
+await drag([s1.x, s1.y], [s1.x + 1, s1.y]);
+const p1 = await evaluate(`(() => { const r = document.querySelector('.jump-panel').getBoundingClientRect();
+  return { open: jump.open, edge: jump.edge, left: Math.round(r.left), right: Math.round(r.right), w: Math.round(r.width) }; })()`);
+check("a click on the grip opens the menu", p1.open === true && p1.w > 0, JSON.stringify(p1));
+check("...growing away from the side it is parked on",
+  p1.edge === "r" ? Math.abs(p1.right - s1.right) <= 2 : Math.abs(p1.left - s1.left) <= 2,
+  `${JSON.stringify(p1)} grip ${JSON.stringify(s1)}`);
+
+// OPEN, THE HEADER IS THE HANDLE — and it cannot be dragged over the topbar or
+// off the window, where a menu has no rows a reader can reach.
+const h0 = await centre("jump-head");
+await drag([h0.x - 40, h0.y], [-400, -400]);
 const off = await evaluate(`(() => { const r = document.getElementById('jump').getBoundingClientRect();
-  return { left: Math.round(r.left), top: Math.round(r.top) }; })()`);
-check("dragged off the edge, it stops at the edge",
-  off.left >= 0 && off.top >= 0, JSON.stringify(off));
+  return { left: Math.round(r.left), top: Math.round(r.top), open: jump.open,
+    bar: Math.round(document.querySelector('.topbar').getBoundingClientRect().bottom) }; })()`);
+check("the header drags it, and it stays open", off.open === true && off.left < h0.left, JSON.stringify(off));
+check("dragged off the corner, it stops at the edge and under the topbar",
+  off.left >= 0 && off.top >= off.bar, JSON.stringify(off));
+
+// IT KNOWS WHERE THE READER IS: the section on screen is the marked row and the
+// name on the shut grip.
+const here = await evaluate(`(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  jumpTo('sim-buffs'); await sleep(1500);
+  const row = document.querySelector('.jump-row.here');
+  const at = { row: row && row.dataset.jump };
+  document.getElementById('jump-x').click(); await sleep(150);
+  at.open = jump.open;
+  at.now = document.getElementById('jump-now').textContent;
+  at.want = foldTitle(document.querySelector('[data-fold="sim-buffs"]'));
+  window.scrollTo(0, 0); await sleep(400);
+  at.topNow = document.getElementById('jump-now').textContent;
+  return at;
+})()`);
+check("the section on screen is the marked row", here.row === "sim-buffs", JSON.stringify(here));
+check("...the close button shuts it", here.open === false);
+check("...and the shut grip names it", here.now === here.want && here.topNow !== here.want, JSON.stringify(here));
 
 // ---- the optimizer: sections two levels down ------------------------------
 
