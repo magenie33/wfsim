@@ -251,6 +251,14 @@ TODAY, and a row measured under an engine six weeks old is a claim nobody has
 checked. The sweep says nothing about whether that number is WRONG — it says
 nobody has looked.
 
+**THREE DAYS IS THE THRESHOLD, and `stale_days` on the dispatch can name
+another.** It is not a claim about how fast a number goes wrong — a row is
+wrong the moment its engine moves — it is how long nobody has to notice before
+the sweep goes looking. It is an input because otherwise the sweep cannot be
+EXERCISED: a `scores` row is replaced rather than appended, so a week of hand
+rescoring leaves nothing stale and every manual trigger asks the question the
+clock already asked and gets the same empty answer.
+
 **WHOLE WEAPONS, AND A FIFTH OF THE LIBRARY IS A TARGET RATHER THAN A CEILING.**
 A weapon's file is written whole, so half of one re-measured ranks two
 generations against each other — splitting one is off the table. Weapons go in

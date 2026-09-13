@@ -26,9 +26,9 @@
 # ONCE A NIGHT IT ALSO SWEEPS. Nothing in this pipeline retires a fact on its
 # own — a board is a claim about what the code computes TODAY, and a row nobody
 # has looked at since an engine six weeks ago is a claim nobody has checked. The
-# sweep asks for the weapons that have gone longest, whole, up to a fifth of the
-# library a night, so forgetting to rescore by hand costs days rather than
-# months. It only ever ADDS to the queue; the hourly scorer pays for it in the
+# sweep asks for the weapons that have gone longest — three days unmeasured, a
+# fifth of the library a night — so forgetting to rescore by hand costs days
+# rather than months. It only ever ADDS to the queue; the hourly scorer pays for it in the
 # hours after.
 name: queue
 
@@ -49,6 +49,10 @@ on:
         default: false
       rescore:
         description: "ask for EVERY row of one ruler again (a benchmark id)"
+        type: string
+        default: ""
+      stale_days:
+        description: "how many days unmeasured counts as stale (blank = 3)"
         type: string
         default: ""
 
@@ -176,13 +180,22 @@ jobs:
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          STALE_DAYS: 7
+          # HOW OLD IS STALE, and the only reason it is an input: the sweep
+          # cannot be exercised on demand otherwise — a manual trigger asks
+          # the question the clock already asked and gets the same answer.
+          # Blank on a schedule, so the number here is the nightly one.
+          STALE_DAYS: ${{ inputs.stale_days || 3 }}
           SWEEP_SHARE: 5
         run: |
           set -euo pipefail
           CF_D1_DATABASE=$(sed 's|^[[:space:]]*//.*$||' wrangler.jsonc \
             | jq -r '.d1_databases[0].database_id // empty')
           export CF_D1_DATABASE
+          # A NUMBER, AND ONLY A NUMBER. The input reaches a shell argument,
+          # so it is checked the way the ruler id below is rather than trusted.
+          case "$STALE_DAYS" in
+            ''|*[!0-9]*) echo "::error::not a number of days: $STALE_DAYS"; exit 1 ;;
+          esac
           bash scripts/pick_stale.sh "$STALE_DAYS" "$SWEEP_SHARE" > weapons.txt
           if [ ! -s weapons.txt ]; then
             echo "::notice::sweep: nothing has gone $STALE_DAYS days unmeasured"

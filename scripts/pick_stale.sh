@@ -24,7 +24,11 @@
 # that would be the BIGGEST weapon, the one most people submit to.
 set -euo pipefail
 
-DAYS="${1:-7}"
+# THREE DAYS, and the workflow can name another (`stale_days`). It is a
+# SAFETY NET's threshold rather than a claim about how fast a number goes
+# wrong: a row is wrong the moment its engine moves, and this is only how
+# long nobody has to notice before the sweep goes looking.
+DAYS="${1:-3}"
 SHARE="${2:-5}"
 
 configured() {
