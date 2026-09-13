@@ -565,6 +565,7 @@ ui:
   "all potential buffs": 全部潜在增益
   "all rivens": 全部裂罅
   "all damage": 全部伤害
+  "accumulator (starts at 1)": 累加器（从 1 开始）
   "all targets": 所有目标
   "ammo efficiency — it does not touch damage: it divides what a shot costs the magazine, so what it buys is reloads not taken. Multiplicative with other ammo-efficiency sources": 弹药效率——它不碰伤害：它把一发子弹消耗的弹匣量除下去，所以买到的是少换的弹。与其他弹药效率来源相乘叠加
   "ammo reserves are unlimited, so nothing runs dry": 备弹无限，不会打空
@@ -806,6 +807,9 @@ ui:
   "on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way": 开 = 用弹药拾取补满储备（模拟器没有拾取实体，用这个代替）；关 = 会打光。弹匣和换弹两种情况下都照常生效
   "on contact": 接触即中
   "on status": 异常伤害
+  "stored damage seeds": 已存入的伤害种子
+  "target's own multiplier": 目标自身的伤害倍率
+  "sum": 求和
   "on the shot line": "在射线上"
   "on the target": "跟随目标"
   "one firing mode": 只有一种开火方式

@@ -17919,6 +17919,26 @@ function ledgerRows(e) {
             n2(from)}</td><td class="ar">→</td><td class="num">${n2(units)}</td><td class="ar">→</td>${
             ""}<td class="num sn">${Math.round(units)}</td><td class="num to">${n2(to)}</td></tr>`).join("")}</table><span class="lg-out">${n(l.o)}</span></span></div>`;
     }
+    if (l.k === "s") {
+      // A SUM OF WHOLE NUMBERS, and the only shape here that is not about a
+      // multiplier. Each part is damage, so it is drawn at full precision and
+      // never with a bracket term's `+0.80` formatting — the accumulator's own
+      // 1 is worth a fraction of a point and rounding it away would leave the
+      // row not adding up, which is the one thing this panel may not do.
+      return `<div class="lg lg-s">
+        <span class="lg-lbl">${escHtml(tr("sum"))}</span>
+        <span class="lg-body">${(l.p || []).map((x, i) =>
+          `<span class="lg-term" data-factor="${escHtml(F(x.f))}">${
+            i ? `<i class="lg-op">+</i>` : ""}<span class="lg-amt">${n2(x.a)}</span><b>${
+            escHtml(tr(F(x.f)))}</b>${
+            // WHAT THAT NUMBER IS A PRODUCT OF. The two parts differ in exactly
+            // one place — the seeds carry the payload's faction depth, the
+            // accumulator carries one layer — and printing the products side by
+            // side is the only way that is checkable rather than asserted.
+            x.of ? `<em>${n2(x.head)}${(x.of || []).map((g) =>
+              ` × ${n2(g.v)} ${escHtml(tr(F(g.f)))}`).join("")}</em>` : ""}</span>`).join("")}<span class="lg-out">${
+          n(l.o)}</span></span></div>`;
+    }
     // A MULTIPLICATIVE BRACKET — the only shape that earns a sign.
     return `<div class="lg lg-m">
       <span class="lg-lbl"><i class="lg-x">×</i>${n2(l.v)}</span>

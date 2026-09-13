@@ -133,6 +133,21 @@ const r = await evaluate(`(async () => {
   out.checked = checked;
   out.brackets = brackets;
   out.bad = bad.slice(0, 3);
+  // A STATUS TICK SHOWS THE PART THAT BELONGS TO NO HIT. A tick is
+  // (stored seeds + 1) x C x M, and that 1 is worth a fraction of a point
+  // beside a seed in the hundreds — which is exactly the amount a reader
+  // checking us against a closed form comes out short by. A row that swallowed
+  // it would read as rounding in our own favour.
+  const sums = [...document.querySelectorAll('tr.rec-dmg .lg-s')];
+  out.sums = sums.length;
+  out.wireSums = (recordState.events || []).filter((e) => (e.layers || []).some((l) => l.k === 's')).length;
+  out.accumulatorNamed = sums.some(
+    (l) => l.querySelector('[data-factor="accumulator (starts at 1)"]'));
+  out.sumsAdd = sums.every((l) => {
+    const parts = [...l.querySelectorAll('.lg-amt')].map((x) => num(x.textContent));
+    const shown = num(l.querySelector('.lg-out').textContent);
+    return Math.abs(parts.reduce((a, b) => a + b, 0) - shown) <= Math.max(0.6, shown * 0.01);
+  });
   // …AND NO ROW DRAWS A QUOTIENT WITH A MULTIPLICATION SIGN. On an Adding
   // weapon Condition Overload is a TERM of the base bracket; an x in front of
   // it is the fiction this whole shape exists to make unrepresentable.
@@ -300,6 +315,21 @@ check(`${tag} the record can be taken away as text`, r.copy, "no copy control");
 // for the run and not for the record — a mod, a mode, an evolution, a riven —
 // moves this sum and nothing else on the page would notice.
 check(`${tag} the build reached it`, r.mods.length > 0, JSON.stringify(r.mods));
+// A STATUS TICK IS DECOMPOSED, THE ACCUMULATOR INCLUDED — see MEASUREMENTS M58
+// for why that part matters: it belongs to no hit, it is worth a fraction of a
+// point beside a seed in the hundreds, and it is exactly the amount a reader
+// checking us against a closed form comes out short by.
+//
+// THIS FIGHT NEED NOT PRODUCE ONE, and that is deliberate rather than slack:
+// the target here is a level 1 Crewman that this build kills with one shot, so
+// a burn rarely lives to tick. What must hold is that a tick the WIRE carries
+// is a tick the page DRAWS, decomposed — the existence of the mechanic is
+// pinned in the engine (`a_status_tick_is_drawn_as_its_two_halves`), where the
+// fixture can force a bleed and nothing is left to a roll.
+check(`${tag} every status tick on the wire is drawn, and decomposed`,
+  r.sums === r.wireSums && (r.wireSums === 0 || (r.accumulatorNamed && r.sumsAdd)),
+  `${r.sums} drawn of ${r.wireSums} on the wire`);
+
 check(`${tag} the rows add up to the report's own engagement`,
   r.reportTotal > 0 && Math.abs(r.recordTotal - r.reportTotal) / r.reportTotal < 0.01,
   `record ${Math.round(r.recordTotal).toLocaleString()} vs report ${Math.round(r.reportTotal).toLocaleString()}`);

@@ -63,6 +63,15 @@ multiplier exactly as much as the damage it rides on and no more.
 A file states the per-HIT figure (`0.8`) and never the squared one: a yaml
 that stated 0.64 would be wrong for every direct hit.
 
+### …and the record names it
+
+`x1.24 faction` with a +55% Bane equipped is a number nobody can trace back to
+a card, so the ledger draws the shooter's bracket and the target's multiplier
+as two layers — `x1.55 faction`, `x0.8 target's own multiplier`. A status tick
+is drawn as the sum it is, each half with the product behind it, so the
+`x0.64` and the `x0.8` sit one line apart and the difference is read rather
+than asserted.
+
 ### What these two readings cannot separate
 
 Both are headshots, and `3.0 × 0.8² = 1.92`. So "a 0.8 in the bracket" and

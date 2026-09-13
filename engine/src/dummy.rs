@@ -1613,6 +1613,30 @@ impl Dot {
             * (self.bracket + params.ability_element_at(self.dtype, now))
             * params.faction_at_time(now)
     }
+
+    /// THE MULTIPLIERS OVER EACH HALF, for the ledger and nothing else:
+    /// `(over the seeds, over the accumulator)`. They differ in one place and
+    /// that is the point of drawing them — the seed carries the payload's own
+    /// faction depth and the accumulator carries one layer, so one tick holds
+    /// x2.4025 and x1.55 side by side.
+    fn explain(
+        &self,
+        params: &DummyParams,
+        now: f64,
+    ) -> (Vec<crate::record::Scale>, Vec<crate::record::Scale>) {
+        use crate::record::{Factor, Scale};
+        let elem = self.bracket + params.ability_element_at(self.dtype, now);
+        let f = params.faction_bracket_at(now);
+        let m = params.target.faction_bracket_multiplier;
+        let at = |depth: u32| {
+            vec![
+                Scale { factor: Factor::ElementBracket, value: elem },
+                Scale { factor: Factor::Faction, value: faction_at(f, depth) },
+                Scale { factor: Factor::TargetMultiplier, value: faction_at(m, depth) },
+            ]
+        };
+        (at(self.depth), at(DEPTH_HIT))
+    }
 }
 
 /// The Heat singleton accumulator (data/debuffs/ignite.yaml): ONE entity
@@ -4156,8 +4180,14 @@ impl DummyParams {
     /// raised with the bracket, which is what was measured
     /// (`faction_bracket_multiplier`).
     pub fn faction_at_time(&self, t: f64) -> f64 {
-        (self.faction_multiplier + crate::abilities_data::faction_bonus_at(&self.abilities, t))
-            * self.target.faction_bracket_multiplier
+        self.faction_bracket_at(t) * self.target.faction_bracket_multiplier
+    }
+
+    /// …AND THE SHOOTER'S HALF OF IT ALONE, which is what a Bane's card says.
+    /// The product above is what the damage takes; this is what a reader can
+    /// CHECK against a mod, and the two are told apart nowhere else.
+    pub fn faction_bracket_at(&self, t: f64) -> f64 {
+        self.faction_multiplier + crate::abilities_data::faction_bonus_at(&self.abilities, t)
     }
 
     /// ECLIPSE'S OWN MULTIPLIER at `t`, or 1.0. Applied ONCE wherever it is
@@ -5305,7 +5335,7 @@ fn watching<'a>(
 fn layer_out(l: &crate::record::Layer) -> f64 {
     use crate::record::Layer::*;
     match l {
-        Bracket { out, .. } | Quantize { out, .. } | Mul { out, .. } => *out,
+        Bracket { out, .. } | Quantize { out, .. } | Mul { out, .. } | Sum { out, .. } => *out,
     }
 }
 
@@ -6336,6 +6366,24 @@ fn faction_at(faction_multiplier: f64, depth: u32) -> f64 {
     faction_multiplier.powi(depth as i32)
 }
 
+/// THE SAME NUMBER, SAID AS THE TWO THINGS A READER CAN CHECK — the shooter's
+/// bracket and the target's own multiplier, each raised to the payload's depth.
+///
+/// Their product is exactly `faction_at(params.faction_at_time(t), depth)`, so
+/// this changes no damage; it exists because `x1.24 faction` with a +55% Bane
+/// equipped is a number nobody can trace back to a card. `mul_layers` drops a
+/// x1.00, so on every target that declares no multiplier this is one layer and
+/// reads exactly as it did before.
+fn faction_layers(params: &DummyParams, t: f64, depth: u32) -> [(crate::record::Factor, f64); 2] {
+    [
+        (crate::record::Factor::Faction, faction_at(params.faction_bracket_at(t), depth)),
+        (
+            crate::record::Factor::TargetMultiplier,
+            faction_at(params.target.faction_bracket_multiplier, depth),
+        ),
+    ]
+}
+
 /// How many stacks of a COMBINED status the target currently holds.
 ///
 /// Only the six combinations answer — a primary or a physical proc has no
@@ -6505,8 +6553,7 @@ fn fire_extra_hits(
                     (crate::record::Factor::ExtraHitShare, fraction),
                     (crate::record::Factor::ElementBracket, bracket),
                     (crate::record::Factor::BodyPart, part_again),
-                    (crate::record::Factor::Faction, f),
-                ]),
+                ].into_iter().chain(faction_layers(params, at, DEPTH_HIT)).collect::<Vec<_>>()),
                 head: head_direct,
                 ..Instance::default()
             },
@@ -7362,7 +7409,7 @@ fn settle_procs(
                     // of this arcane: "unaffected by damage/element/crit
                     // mods … faction bonuses apply ONCE".
                     base: params.arcane.flat_damage_on_status,
-                    layers: mul_layers(params.arcane.flat_damage_on_status, &[(crate::record::Factor::Faction, params.faction_at_time(at))]),
+                    layers: mul_layers(params.arcane.flat_damage_on_status, &faction_layers(params, at, DEPTH_HIT)),
                     ..Instance::default()
                 },
             );
@@ -7807,7 +7854,7 @@ fn spread_from_influence(
                     // what the arcane copies — its Condition Overload included,
                     // and this body's excluded.
                     base: elem_raw,
-                    layers: mul_layers(elem_raw, &[(crate::record::Factor::Faction, f)]),
+                    layers: mul_layers(elem_raw, &faction_layers(params, t, DEPTH_HIT)),
                     head: false,
                     ..Instance::default()
                 },
@@ -8952,7 +8999,7 @@ fn fire_syndicate_radial(
         || Instance {
             origin: crate::record::Origin::Arcane,
             base: sy.damage,
-            layers: mul_layers(sy.damage, &[(crate::record::Factor::Faction, params.faction_at_time(at))]),
+            layers: mul_layers(sy.damage, &faction_layers(params, at, DEPTH_HIT)),
             ..Instance::default()
         },
     );
@@ -9859,10 +9906,10 @@ fn field_tick(
                 (crate::record::Factor::BodyPart, part_factor),
                 (crate::record::Factor::Critical, crit_multiplier),
                 (crate::record::Factor::ConditionOverload, bucket),
-                (crate::record::Factor::Faction, faction_at(params.faction_at_time(at), DEPTH_HIT)),
+            ].into_iter().chain(faction_layers(params, at, DEPTH_HIT)).chain([
                 (crate::record::Factor::FieldDamage, damage_multiplier),
                 (crate::record::Factor::WarframeAbility, params.ability_final_at(at)),
-            ]),
+            ]).collect::<Vec<_>>()),
             ..Instance::default()
         },
     );
@@ -10101,6 +10148,12 @@ fn process_ticks(
     // `BinaryHeap` allocates nothing.
     // WHICH SHOT THE EVENT BEING SETTLED BELONGS TO — set by each arm below.
     let mut seeded_by;
+    // …AND THE TWO HALVES OF A DoT TICK, for the ledger alone: the seeds it
+    // holds and what the accumulator's own 1 is worth. `None` on every event
+    // that is not a DoT tick. Kept here rather than derived at the ledger
+    // because only this loop can still see them apart — see `Dot::live` and
+    // `Dot::accumulator_unit`, which take DIFFERENT faction layers.
+    let mut dot_parts: Option<Vec<crate::record::Part>>;
     let use_queue = debuffs.dots.len() > TICK_QUEUE_MIN;
     let mut q = std::mem::take(&mut debuffs.tick_q);
     if use_queue {
@@ -10131,6 +10184,7 @@ fn process_ticks(
             1 => (k.t, Ev::Heat),
             _ => (k.t, Ev::Blast(k.index as usize)),
         };
+        dot_parts = None;
 
         let mit = debuffs.mitigation(now, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
         // A tick is one damage type — which is also the type the
@@ -10189,6 +10243,24 @@ fn process_ticks(
                             }
                         }
                     }
+                    // NO EXPANSION HERE. A consolidated group is several
+                    // stacks paying into one tick and they need not share a
+                    // depth, so a single product drawn over all of them would
+                    // be a claim about stacks this arm cannot inspect.
+                    dot_parts = Some(vec![
+                        crate::record::Part {
+                            factor: crate::record::Factor::StatusSeeds,
+                            amount: sum,
+                            head: 0.0,
+                            of: Vec::new(),
+                        },
+                        crate::record::Part {
+                            factor: crate::record::Factor::StatusAccumulator,
+                            amount: unit,
+                            head: 0.0,
+                            of: Vec::new(),
+                        },
+                    ]);
                     sum + unit
                 } else {
                     let d = &mut debuffs.dots[*i];
@@ -10196,7 +10268,23 @@ fn process_ticks(
                     d.ticks_left -= 1;
                     // Slash and Toxin tick independently, so each stack is its
                     // own tick group and carries its own accumulator.
-                    d.live(params, now) + d.accumulator_unit(params, now)
+                    let (seeds, acc) = (d.live(params, now), d.accumulator_unit(params, now));
+                    let (over_seed, over_acc) = d.explain(params, now);
+                    dot_parts = Some(vec![
+                        crate::record::Part {
+                            factor: crate::record::Factor::StatusSeeds,
+                            amount: seeds,
+                            head: d.frozen,
+                            of: over_seed,
+                        },
+                        crate::record::Part {
+                            factor: crate::record::Factor::StatusAccumulator,
+                            amount: acc,
+                            head: d.unit,
+                            of: over_acc,
+                        },
+                    ]);
+                    seeds + acc
                 };
                 let hit_type = if ignores_armor {
                     DamageType::Cinematic
@@ -10299,12 +10387,37 @@ fn process_ticks(
                 // coefficient, ModifiedBase, status damage, and the crit and
                 // body part of the hit that applied it — is frozen into one
                 // number at the moment the status landed (`Dot::frozen`), so
-                // decomposing it here would mean reporting facts about a hit
-                // this function can no longer see. It is the ROW THE TICK
+                // decomposing it FURTHER here would mean reporting facts about
+                // a hit this function can no longer see. It is the ROW THE TICK
                 // POINTS AT that carries them: `Event::cause` names the shot
                 // that seeded this, and that row has the full ledger.
+                //
+                // WHAT IS SPLIT OUT IS THE ACCUMULATOR, because it is the one
+                // part of a tick that belongs to no hit at all: the tick group's
+                // own 1 (MEASUREMENTS M58). It is small and it is the thing a
+                // reader checking our arithmetic against a closed form will be
+                // off by, so a row that swallowed it would read as a rounding
+                // error in our favour.
                 base: unfortified,
-                layers: mul_layers(unfortified, &[(crate::record::Factor::SecondaryFortifier, fortifier)]),
+                layers: dot_parts
+                    .take()
+                    .map(|parts| {
+                        let out: f64 = parts.iter().map(|x| x.amount).sum();
+                        let mut v = vec![crate::record::Layer::Sum {
+                            factor: crate::record::Factor::StatusSeeds,
+                            parts,
+                            out,
+                        }];
+                        v.extend(mul_layers(
+                            out,
+                            &[(crate::record::Factor::SecondaryFortifier, fortifier)],
+                        ));
+                        v
+                    })
+                    .unwrap_or_else(|| mul_layers(
+                        unfortified,
+                        &[(crate::record::Factor::SecondaryFortifier, fortifier)],
+                    )),
                 ..Instance::default()
             },
         );
@@ -16782,7 +16895,8 @@ pub fn run_once_traced(
                         (crate::record::Factor::BodyPart, part_factor),
                         (crate::record::Factor::Critical, crit_multiplier),
                         (crate::record::Factor::ConditionOverload, bucket),
-                        (crate::record::Factor::Faction, params.faction_at_time(t)),
+                        faction_layers(params, t, DEPTH_HIT)[0],
+                        faction_layers(params, t, DEPTH_HIT)[1],
                         (crate::record::Factor::ArcaneFinal, arc_final),
                         (crate::record::Factor::Attrition, attrition),
                         (crate::record::Factor::WarframeAbility, eclipse_at(params.ability_final_at(t), co_mult.co_share)),
@@ -26296,6 +26410,63 @@ mod tests {
         assert!((s.mean_procs - 10.0).abs() < 1e-9);
     }
 
+    /// A STATUS TICK IS DRAWN AS ITS TWO HALVES, and the halves are not scaled
+    /// alike — which is the whole reason the ledger has a shape for it.
+    ///
+    /// `(Σ seeds + 1) x C x M` (MEASUREMENTS M58), and the `1` carries ONE
+    /// faction layer where the seeds carry the payload's own depth (M56). A
+    /// target with its own bracket multiplier is the only fixture that can tell
+    /// the two apart: at x0.8 the seeds take x0.64 and the accumulator x0.8, so
+    /// a ledger that scaled them together would land on neither number.
+    #[test]
+    fn a_status_tick_is_drawn_as_its_two_halves() {
+        let mut p = DummyParams {
+            crit_multiplier: 1.0,
+            forced_procs: vec![DamageType::Slash],
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        p.target.faction_bracket_multiplier = 0.8;
+        p.target.base_health = 1e15;
+        let rec = record(&p, 0, 0.0, f64::INFINITY, 10_000, 0);
+        let tick = rec
+            .events()
+            .iter()
+            .find_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d)
+                    if d.origin == crate::record::Origin::Status => Some(d.clone()),
+                _ => None,
+            })
+            .expect("a forced bleed ticks");
+
+        let sum = tick.layers.iter().find_map(|l| match l {
+            crate::record::Layer::Sum { parts, out, .. } => Some((parts.clone(), *out)),
+            _ => None,
+        }).expect("a status tick states what it is made of");
+        let (parts, out) = sum;
+        assert_eq!(parts.len(), 2, "seeds and the accumulator, and nothing else");
+        assert_eq!(parts[0].factor, crate::record::Factor::StatusSeeds);
+        assert_eq!(parts[1].factor, crate::record::Factor::StatusAccumulator);
+
+        // THE NUMBERS, and they are the fixture's own: base 75, C = 0.35.
+        //   seeds 0.35 x 75 x 0.8^2 = 16.80      accumulator 0.35 x 0.8 = 0.28
+        assert!((parts[0].amount - 16.8).abs() < 1e-9, "seeds {}", parts[0].amount);
+        assert!((parts[1].amount - 0.28).abs() < 1e-9, "accumulator {}", parts[1].amount);
+        assert!((out - 17.08).abs() < 1e-9, "tick {out}");
+        assert!((tick.base - 17.08).abs() < 1e-9, "the row is its own sum: {}", tick.base);
+
+        // …AND EACH PART SAYS WHERE IT CAME FROM, which is the half a reader
+        // checks against a card. The target's multiplier is the term that
+        // differs, and it differs by exactly the depth.
+        let of = |i: usize, f: crate::record::Factor| -> f64 {
+            parts[i].of.iter().find(|g| g.factor == f).map_or(f64::NAN, |g| g.value)
+        };
+        assert!((parts[0].head - 26.25).abs() < 1e-9, "seed head {}", parts[0].head);
+        assert!((parts[1].head - 0.35).abs() < 1e-9, "accumulator head {}", parts[1].head);
+        assert!((of(0, crate::record::Factor::TargetMultiplier) - 0.64).abs() < 1e-9);
+        assert!((of(1, crate::record::Factor::TargetMultiplier) - 0.8).abs() < 1e-9);
+    }
+
     /// HUNTER MUNITIONS. A guaranteed crit with a 100% roll must bleed on
     /// every shot, on a weapon whose vector holds NO Slash at all — the mod's
     /// whole point is that it does not draw from the damage types.
@@ -28821,6 +28992,22 @@ mod tests {
                         *out
                     }
                     crate::record::Layer::Quantize { out, .. } => *out,
+                    // A SUM RESTATES THE RUNNING TOTAL RATHER THAN MOVING IT:
+                    // it says what the number already there is MADE OF, so both
+                    // halves are asserted — the parts add up, and they add up
+                    // to what the chain was already carrying.
+                    crate::record::Layer::Sum { parts, out, .. } => {
+                        let s: f64 = parts.iter().map(|x| x.amount).sum();
+                        assert!(
+                            (s - out).abs() <= 1e-9 * out.abs().max(1.0),
+                            "{:?}: Σ parts = {s}, layer says {out}", d.origin
+                        );
+                        assert!(
+                            (at - out).abs() <= 1e-6 * out.abs().max(1.0),
+                            "{:?}: a sum moved the total: {out} against {at}", d.origin
+                        );
+                        *out
+                    }
                     crate::record::Layer::Mul { value, out, .. } => {
                         assert!(
                             (at * value - out).abs() <= 1e-6 * out.abs().max(1.0),

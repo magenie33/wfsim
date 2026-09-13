@@ -6585,6 +6585,29 @@ fn layer_json(l: &wfsim_engine::record::Layer) -> Value {
             ])).collect::<Vec<_>>(),
             "o": r1(*out),
         }),
+        // `p` IS PARTS, AND EACH CARRIES A WHOLE NUMBER rather than a bonus —
+        // the page must not draw them with a `+0.80`'s formatting.
+        Layer::Sum { factor, parts, out } => json!({
+            "k": "s",
+            "f": factor.index(),
+            "p": parts.iter()
+                .map(|x| {
+                    let mut o = json!({ "f": x.factor.index(), "a": r3(x.amount) });
+                    // …AND WHAT THAT AMOUNT IS A PRODUCT OF, where the engine
+                    // can still say. Absent on a consolidated tick, which is
+                    // several stacks the arm cannot inspect one by one.
+                    if !x.of.is_empty() {
+                        let m = o.as_object_mut().expect("object");
+                        m.insert("head".into(), json!(r3(x.head)));
+                        m.insert("of".into(), json!(x.of.iter()
+                            .map(|g| json!({ "f": g.factor.index(), "v": r3(g.value) }))
+                            .collect::<Vec<_>>()));
+                    }
+                    o
+                })
+                .collect::<Vec<_>>(),
+            "o": r3(*out),
+        }),
         Layer::Mul { factor, value, of, head, out } => {
             let mut o = json!({ "k": "m", "f": factor.index(), "v": r3(*value), "o": r1(*out) });
             if !of.is_empty() {

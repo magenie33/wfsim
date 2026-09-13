@@ -236,6 +236,12 @@ pub enum Factor {
     Attenuation,
     /// `the pool ran out`
     PoolRanOut,
+    /// `stored damage seeds`
+    StatusSeeds,
+    /// `accumulator (starts at 1)`
+    StatusAccumulator,
+    /// `target's own multiplier`
+    TargetMultiplier,
 }
 
 impl Factor {
@@ -243,7 +249,7 @@ impl Factor {
     /// for as long as a client older than the server can exist — which for a
     /// page served from the same deploy is never, so this is a convention
     /// rather than a ratchet.
-    pub const ALL: [Factor; 38] = [
+    pub const ALL: [Factor; 41] = [
         Factor::BaseDamageBracket,
         Factor::BaseDamageMods,
         Factor::HalfHealth,
@@ -282,6 +288,9 @@ impl Factor {
         Factor::Armour,
         Factor::Attenuation,
         Factor::PoolRanOut,
+        Factor::StatusSeeds,
+        Factor::StatusAccumulator,
+        Factor::TargetMultiplier,
     ];
 
     /// What a reader is shown, and the key the i18n overlay is written against.
@@ -325,6 +334,9 @@ impl Factor {
             Factor::Armour => "armour",
             Factor::Attenuation => "attenuation",
             Factor::PoolRanOut => "the pool ran out",
+            Factor::StatusSeeds => "stored damage seeds",
+            Factor::StatusAccumulator => "accumulator (starts at 1)",
+            Factor::TargetMultiplier => "target's own multiplier",
         }
     }
 
@@ -385,6 +397,27 @@ pub struct Term {
     pub of: Option<(f64, f64)>,
 }
 
+/// ONE WHOLE NUMBER INSIDE A [`Layer::Sum`] — a quantity of damage, never a
+/// bonus. `Term` is the other one and the two are not interchangeable: a term
+/// is `+0.80` of something, a part is `242.17`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Part {
+    pub factor: Factor,
+    pub amount: f64,
+    /// WHERE THE AMOUNT CAME FROM — the head of its own product and the
+    /// multipliers over it, the way [`Layer::Mul`] expands a body part. Empty
+    /// `of` is a part the engine holds only as a number.
+    pub head: f64,
+    pub of: Vec<Scale>,
+}
+
+/// ONE MULTIPLIER INSIDE A [`Part`]'s expansion — `x2.4025 faction`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Scale {
+    pub factor: Factor,
+    pub value: f64,
+}
+
 /// ONE COMPONENT'S SNAP TO THE QUANTIZATION GRID.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Snap {
@@ -435,6 +468,20 @@ pub enum Layer {
         /// `ModifiedBase / 32`.
         scale: f64,
         components: Vec<Snap>,
+        out: f64,
+    },
+    /// `Σ parts`, and the only shape that adds whole QUANTITIES rather than
+    /// bonuses — a bracket's terms are fractions of something, these are
+    /// damage.
+    ///
+    /// A status tick is the case it exists for. It is `(Σ seeds + 1) x C x M`
+    /// (MEASUREMENTS M58), and the `1` is not a bonus to the seeds: it carries
+    /// ONE faction layer where a seed carries the payload's own depth, so at
+    /// +55% against a unit with its own multiplier the two parts are scaled
+    /// differently and no bracket can express their relationship.
+    Sum {
+        factor: Factor,
+        parts: Vec<Part>,
         out: f64,
     },
     /// A real multiplicative bracket, and the only shape that earns a `x`.
