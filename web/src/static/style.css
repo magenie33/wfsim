@@ -2511,9 +2511,10 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .jump-row .jr-n{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* THE CARET IS THE FOLD CONTROL AND THE ROW IS THE JUMP: a click on the caret
    shuts or opens that section in place and moves nothing. */
-.jump-row .jr-c{flex:0 0 auto;color:var(--muted);font-size:11px;padding:2px 6px;
-  margin:-2px -4px -2px 0;border-radius:5px;cursor:pointer}
-.jump-row .jr-c:hover{background:var(--line);color:var(--text)}
+.jump-row .jr-c{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;margin:-2px -2px -2px 0;font-size:13px;line-height:1;color:var(--text-2);
+  border:1px solid var(--line);border-radius:5px;background:var(--surface);cursor:pointer}
+.jump-row .jr-c:hover{border-color:var(--accent);color:var(--text)}
 .jump-row.is-shut{color:var(--muted)}
 .jump-row.here{color:var(--text);background:color-mix(in srgb,var(--accent) 13%,transparent);
   box-shadow:inset 2px 0 0 var(--accent)}

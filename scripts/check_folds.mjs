@@ -136,10 +136,13 @@ const r = await evaluate(`(async () => {
     && !document.getElementById('sim-block').classList.contains('shut');
   out.jumpedInView = document.querySelector('[data-fold="sim-measure"]').offsetParent !== null;
   // THE ROW'S CARET IS THE FOLD CONTROL: it opens that section and moves nothing.
+  // Measured once the jump's smooth scroll has settled.
+  await sleep(1200);
   const y0 = window.scrollY;
   hit('[data-jump-fold="sim-measure"]'); await sleep(200);
-  out.caretOpened = !document.querySelector('[data-fold="sim-measure"]').classList.contains('shut')
-    && Math.abs(window.scrollY - y0) < 2;
+  out.caret = { open: !document.querySelector('[data-fold="sim-measure"]').classList.contains('shut'),
+    moved: Math.round(window.scrollY - y0) };
+  out.caretOpened = out.caret.open && Math.abs(out.caret.moved) < 2;
   hit('[data-jump-all="open"]'); await sleep(200);
   out.allOpen = blocks().every(b => !b.classList.contains('shut'))
     && sects().every(s => !s.classList.contains('shut'));
@@ -169,7 +172,7 @@ check("...and nothing inside a shut section is still drawn", r.leaks.length === 
 check("...and it is the point: the page gets shorter",
   r.shortPage * 2 < r.tallPage, `${r.shortPage}px shut vs ${r.tallPage}px open`);
 check("a jump opens every fold above its target and leaves the target's own", r.jumpedOpen && r.jumpedInView);
-check("...and the row's caret is what opens it, in place", r.caretOpened);
+check("...and the row's caret is what opens it, in place", r.caretOpened, JSON.stringify(r.caret));
 check("expand all reaches every one back", r.allOpen);
 check("what you folded is stored", r.stored === true);
 check("every control the menu was asked for was drawn", !r.missing, JSON.stringify(r.missing));
