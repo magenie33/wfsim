@@ -2476,7 +2476,7 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
   background:color-mix(in srgb,var(--panel2) 88%,transparent);backdrop-filter:blur(8px);
   box-shadow:0 4px 16px rgba(0,0,0,.22)}
 .jump-grip:hover{border-color:var(--accent);color:var(--text)}
-.jg-h{color:var(--muted);letter-spacing:-2px;font-size:11px;user-select:none}
+.jg-h{color:var(--muted);font-size:14px;line-height:1;user-select:none}
 .jg-i{font-size:13px}
 .jg-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .jg-n:empty{display:none}
@@ -2509,10 +2509,11 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .jump-row.sub{padding-left:18px}
 .jump-row.deep{padding-left:30px}
 .jump-row .jr-n{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* WHETHER THE THING YOU ARE ABOUT TO JUMP TO IS OPEN. A menu that jumped you
-   to a shut section without saying so read as a jump that did nothing — the
-   caret opens it from here, and the row itself opens it on the way. */
-.jump-row .jr-c{flex:0 0 auto;color:var(--muted);font-size:10px}
+/* THE CARET IS THE FOLD CONTROL AND THE ROW IS THE JUMP: a click on the caret
+   shuts or opens that section in place and moves nothing. */
+.jump-row .jr-c{flex:0 0 auto;color:var(--muted);font-size:11px;padding:2px 6px;
+  margin:-2px -4px -2px 0;border-radius:5px;cursor:pointer}
+.jump-row .jr-c:hover{background:var(--line);color:var(--text)}
 .jump-row.is-shut{color:var(--muted)}
 .jump-row.here{color:var(--text);background:color-mix(in srgb,var(--accent) 13%,transparent);
   box-shadow:inset 2px 0 0 var(--accent)}
