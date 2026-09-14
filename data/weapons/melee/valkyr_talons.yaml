@@ -25,6 +25,12 @@ max_rank: 30
 # grant; each entry states the stance's combo as its own script
 # (`Module:Stances/data`, `Hysteria`).
 fixed_stance: hysteria
+# HELD BY VALKYR AND NOTHING ELSE — Hysteria summons it — and renamed in her
+# Prime's hands: "On Valkyr Prime, the claws are named Valkyr Prime Talons"
+# (W`Valkyr_Talons`).
+wielders: [valkyr, valkyr_prime]
+wielder_names:
+  valkyr_prime: Valkyr Prime Talons
 # EXALTED: the module's CompatibilityTags `POWER_WEAPON`, so the cards DE tags
 # incompatible with it are refused (`mods_data::pool_for_build`).
 exalted: true

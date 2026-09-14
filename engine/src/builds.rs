@@ -102,6 +102,11 @@ pub const BUILD_AXES: &[BuildAxis] = &[
     // which stats it rolled and which is the malus, scored at that shape's own
     // ceiling. Two players who rolled the same stats submitted the same build.
     BuildAxis { id: "rivens", request_field: "rivens", on_board: true },
+    // WHO HOLDS IT: a linked Warframe build, whose stats, shards and passives
+    // the fight reads. NOT on the board, and not recorded on a submission: every
+    // ruler scores its rows in the Prototype's hands, so a build tested on Ash
+    // enters the library as the same build it would be on anyone.
+    BuildAxis { id: "wielder", request_field: "wielder", on_board: false },
 ];
 
 /// A build that passed, and what it costs to actually own.

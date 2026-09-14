@@ -37,6 +37,14 @@ ui:
   "no linked Operator": 不链接指挥官
   "no school picked": 未选流派
   "edit on the Operator page": 在指挥官页面编辑
+  "Wielder": 使用者
+  "Prototype": 原型
+  "the floor every board is scored on": 所有榜单都按它评分
+  "no build — unmodded": 不链接配置（无 mod）
+  "edit on the Warframe page": 在战甲页面编辑
+  "only these can hold it": 只有这些战甲能使用
+  "your Warframe's shields, buffs included": 战甲的护盾，含增益
+  "the wielder before the overrides below — every board is scored on the Prototype": 下方覆写之前的使用者数值 —— 所有榜单都按原型评分
   "fixed on this weapon — it cannot be removed, and its slot takes no Forma": 这把武器固定装备，不能卸下，槽位也不能 Forma
   "THE DAMAGE IS HYSTERIA'S AT 100% ABILITY STRENGTH. Every swing, slide and slam number on the page carries the Strength icon, so a Valkyr build with more strength deals proportionally more than this reports": "**伤害来自 Hysteria，按 100% 技能强度计**。技能页上每个挥砍、滑行和捶地数值都带强度图标，所以强度更高的 Valkyr 配装实际伤害会按比例高于此处"
   "Hysteria drains 5 energy a second while the claws are out; energy is not modelled, so they are held for the whole engagement": "Hysteria 开着利爪时每秒消耗 5 点能量；能量未建模，所以利爪全程保持"
@@ -146,7 +154,7 @@ ui:
   ", ": "、"
   "1 · Enemy": 1 · 敌人
   "1 · The fight": 1 · 这场仗
-  "2 · The wielder": 2 · 使用者
+  "2 · External bonuses": 2 · 外部加成
   "3 · Buffs": 3 · 增益
   "3 · Limits": 3 · 限制
   "4 · Buffs": 4 · 增益
@@ -1311,7 +1319,7 @@ ui:
   "while firing": 扣着扳机时
   "while this is on, dragging a body moves it instead of scrolling the page": 打开后，拖动身体会移动它，而不是滚动页面
   "who you are shooting at, where, and for how long": 你在打谁、在什么条件下、打多久
-  "whoever is holding the weapon and what they are doing — this gates the buffs below": 握着这把武器的那一方，以及他在做什么 —— 下面的 buff 由此决定是否生效
+  "what the wielder is doing, and what others hand them — a ticked number replaces the wielder's own": 使用者在做什么，以及别人给的加成 —— 勾选的数值会替换使用者自己的
   wiki: 维基
   "write my own column (0 = takes none of that type)": 自己写一列（0 = 该属性一点伤害都吃不到）
   "yes": "是"

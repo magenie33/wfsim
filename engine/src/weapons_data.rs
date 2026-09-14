@@ -1920,6 +1920,16 @@ pub struct WeaponSpec {
     /// MEASUREMENTS M94) — so it is the weapon's fact and a build only repeats it.
     #[serde(default)]
     pub fixed_stance: Option<String>,
+    /// THE ONLY WARFRAMES THAT CAN HOLD IT, by id. Empty on almost every weapon,
+    /// which any wielder can carry, the Prototype included; an Exalted weapon
+    /// names its frame (Valkyr Talons: Valkyr and Valkyr Prime), and a build
+    /// linking any other wielder is held by the first of these instead.
+    #[serde(default)]
+    pub wielders: Vec<String>,
+    /// WHAT IT IS CALLED IN ONE WIELDER'S HANDS, by frame id — the arsenal
+    /// renames the weapon rather than the stats ("Valkyr Prime Talons").
+    #[serde(default)]
+    pub wielder_names: BTreeMap<String, String>,
     /// `by_round` — the magazine refills a SHELL AT A TIME (Strun, Felarx,
     /// Onos). It is the wiki module's `ReloadStyle`, and it is not cosmetic:
     /// a bigger magazine makes the reload LONGER, so a magazine mod buys
@@ -2164,8 +2174,9 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-const INHERITED: [&str; 24] = [
+const INHERITED: [&str; 26] = [
     "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy", "exalted", "fixed_stance",
+    "wielders", "wielder_names",
     "disposition", "polarities", "exilus_polarity", "stance_polarity", "riven_family",
     "internal_name", "noise", "magazine", "reload_seconds", "ammo_type",
     "ammo_max", "ammo_pickup", "traits", "deployment", "no_resupply",
@@ -4518,6 +4529,23 @@ mod tests {
             .collect();
         assert!(orphans.is_empty(), "the survey names entries the roster lost: {orphans:?}");
         assert_eq!(stated, resolved.len(), "survey row count vs entries that state a key");
+    }
+
+    /// A WEAPON THAT NAMES ITS WIELDERS NAMES FRAMES THE WARFRAME MODULE HAS,
+    /// renames itself only for one of them, and hands both to every form.
+    #[test]
+    fn every_named_wielder_is_a_modelled_warframe() {
+        for s in all() {
+            for f in &s.wielders {
+                assert!(crate::warframes_data::warframe(f).is_some(), "{}: wielder {f} is not in data/warframes/", s.id);
+            }
+            for f in s.wielder_names.keys() {
+                assert!(s.wielders.contains(f), "{}: a name for {f}, who cannot hold it", s.id);
+            }
+        }
+        let t = spec("valkyr_talons_slide").expect("a Talons form");
+        assert_eq!(t.wielders, ["valkyr", "valkyr_prime"], "a form inherits its weapon's wielders");
+        assert_eq!(t.wielder_names.get("valkyr_prime").map(String::as_str), Some("Valkyr Prime Talons"));
     }
 
     /// THE STANCE SLOT'S POLARITY IS READ, and it decides a capacity GRANT

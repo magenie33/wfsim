@@ -84,9 +84,15 @@ check("the share tuple declares the axes it carries", !!shareBlock,
   "SHARE_AXES not found in app.js");
 if (shareBlock) {
   const have = claimed(shareBlock[1], /"([a-z_]+)"/g);
-  const missing = ALL.filter((a) => !have.includes(a));
-  check("...and a link carries every axis a build has",
+  // AN AXIS A LINK DOES NOT CARRY YET is named in `SHARE_EXCLUDED_AXES`, which
+  // is the difference between a decision and a dropped field.
+  const excludedBlock = appJs.match(/const SHARE_EXCLUDED_AXES = \[([\s\S]*?)\];/);
+  const excluded = excludedBlock ? claimed(excludedBlock[1], /"([a-z_]+)"/g) : [];
+  const missing = ALL.filter((a) => !have.includes(a) && !excluded.includes(a));
+  check("...and a link carries every axis a build has, or names the one it does not",
     missing.length === 0, `missing: ${missing.join(", ")}`);
+  check("...and names no axis the engine has never heard of as left out",
+    excluded.every((a) => ALL.includes(a)), `unknown: ${excluded.filter((a) => !ALL.includes(a)).join(", ")}`);
 }
 
 // ---- 3. THE BOARD RECORD ----------------------------------------------

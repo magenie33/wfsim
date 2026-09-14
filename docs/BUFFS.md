@@ -742,13 +742,15 @@ which is a 20% error nobody spots in a DPS figure.
 
 ---
 
-## What the Warframe brings is the FIGHT’s — auras and archon shards
+## What the Warframe brings — the squad's auras, the wielder's shards
 
-**WHAT THE WARFRAME BRINGS IS THE FIGHT'S.** A squad AURA (`data/auras/`) and
-an ARCHON SHARD (`data/shards/`) belong to neither the weapon nor the build,
-so they ride on the fight's `Tenno` exactly as `data/abilities/` does —
-carried into both modules through `parse_fight` alone, and kept off the BOARD,
-scored under the neutral player.
+**THE SQUAD'S AURAS ARE THE FIGHT'S; THE WIELDER'S SHARDS ARE ITS BUILD'S.** A
+squad AURA (`data/auras/`) belongs to neither the weapon nor the build, so it
+rides on the fight's `Tenno` exactly as `data/abilities/` does — carried into
+both modules through `parse_fight` alone. An ARCHON SHARD (`data/shards/`) and
+the wielder's own aura come with the Warframe build the weapon's wielder links
+(docs/WARFRAMES.md §A weapon's wielder). Neither reaches the BOARD, which is
+scored in the Prototype's hands.
 
 THEY ARE OFFERED, NEVER TYPED. The Extra stats grid accepts any number into
 any bucket; what it cannot do is say WHERE the number came from. A named shard

@@ -816,6 +816,11 @@ it, scored once like any other, and the scorer probes nothing.
 
 *(The exilus slot is on the board — see below.)*
 
+**THE WIELDER.** A build names who holds its weapon (docs/WARFRAMES.md §A
+weapon's wielder), and a submission does not carry it: a build tested in Ash's
+hands enters the library as the same build it is in anybody's, and every ruler
+scores it in the Prototype's.
+
 **AN EXALTED WEAPON.** Valkyr Talons are a weapon in the roster, a build for
 them is saved like any other, and the board does not rank them: their damage is
 an ability's, taken at 100% strength, and no ruler states the Warframe behind

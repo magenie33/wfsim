@@ -159,6 +159,25 @@ module's `Subsumable` flag, which covers the Helminth's own abilities too.
 - **An augment pays only while its ability is in the loadout**; otherwise the
   card is seated and says it is inert.
 
+## A weapon's wielder
+
+**A WEAPON IS ALWAYS HELD BY SOMEBODY, AND A WEAPON BUILD SAYS WHO.** The
+`wielder` build axis (`builds::BUILD_AXES`) is a link to one of this module's
+saved builds — by its preset `id` — or a modelled frame with no build, or the
+**Prototype**: `data/tenno/default.yaml`, every stat the lowest any released
+Warframe has at rank 30, with no mods and no passive.
+
+- The fight's player is that build's `resolve` — health, shields, armor, energy,
+  sprint — with its archon shards and its own aura (`webapi::wielder_from`).
+- The FIGHT keeps what others hand the wielder: its state, its own stat bonuses,
+  the squad's auras, and the ticked overrides, which replace a resolved number.
+  A scenario names no frame and no shards.
+- A weapon a frame summons names its wielders (`wielders:`) and is held by the
+  first when a link names any other; `wielder_names:` renames it in one frame's
+  hands ("Valkyr Prime Talons").
+- The BOARD never records one: every ruler scores in the Prototype's hands.
+- A share link does not carry the wielder yet (`SHARE_EXCLUDED_AXES`).
+
 ## Adding a frame
 
 1. `data/warframes/<id>.yaml`: rank-30 `health` and `shield`, the innate
