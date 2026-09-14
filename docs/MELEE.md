@@ -503,6 +503,11 @@ is the card's own clause and not an artefact. The window's own speed-up is
 **+100%** and it is the one number in the mechanic DE publishes nothing for —
 `loadout::TENNOKAI_WINDUP_SPEED`, declared on every melee entry.
 
+**A SLIDE OPENS IT TOO.** A slide attack lands direct melee hits like any light
+swing, so it rolls for the flash, and a slide loop that gets one fires the
+class's heavy attack in place of its next slide
+(`a_slide_attack_opens_tennokai_and_takes_it`).
+
 **ALL SEVEN TENNOKAI CARDS ENABLE IT.** Every one opens with the same three
 words on its own card and only then says what else it does, so the mechanic is
 read off the card and not off a list of card names. The negative control is a
@@ -680,6 +685,28 @@ deals **300%**, and naively adding the radial gave 400%. `swing_share`
 vanish the moment a stance went in the slot.
 
 ---
+
+## 7c. AN EXALTED WEAPON — Valkyr Talons
+
+An ability's weapon, and still a melee weapon: seven modes like any other, one
+entry per mode (`data/weapons/melee/valkyr_talons*.yaml`). Three things differ.
+
+- **ITS DAMAGE IS THE ABILITY'S, AT 100% STRENGTH.** Hysteria's page puts the
+  Strength icon on every swing, slide and slam number, and the module's are
+  those numbers at 100%. A strength build deals more than the entry reports,
+  and the entry says so.
+- **A FIXED STANCE.** Hysteria is seated and cannot be removed; the card grants
+  5 and its matching slot doubles it to 10 (60 -> 70); the slot takes no Forma
+  (MEASUREMENTS M94). `fixed_stance:` on the
+  weapon says so once; the card is the grant, and the combos are the entries'
+  own scripts rather than a second copy on the card.
+- **`exalted: true` REFUSES WHAT DE TAGS `POWER_WEAPON`**: Blood Rush, Weeping
+  Wounds, Body Count, Gladiator Rush, Maiming Strike and Amalgam Organ Shatter.
+  The Tennokai cards carry `POWER_WEAPON_LITE` (the pseudo-exalted with no heavy
+  attack) and stay.
+
+Valkyr Prime Talons are the same weapon — "their stats are, however, identical"
+— so there is one entry, not two.
 
 ## 8. WHAT MELEE COSTS FROM HERE
 

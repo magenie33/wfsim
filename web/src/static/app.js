@@ -363,6 +363,9 @@ const capOf = (id) => (weaponInfo(id) || {}).capacity || 60;
 // grants "80% of listed drain, rounded down", which is 4. Mirrors
 // `engine::mods::stance_capacity`.
 const stancePolOf = (id) => (weaponInfo(id) || {}).stance_polarity || null;
+/// A STANCE THE WEAPON CANNOT TAKE OFF (Valkyr Talons' Hysteria, MEASUREMENTS
+/// M94): seated on every build, never removed, and its slot takes no Forma.
+const fixedStanceOf = (id) => (weaponInfo(id) || {}).fixed_stance || null;
 function stanceGrant() {
   const s = slots[STANCE];
   const m = s && s.mod ? modById(s.mod) : null;
@@ -10513,6 +10516,14 @@ function polBtn(pol, i) {
 function renderMods() {
   // The quick-calc bar sits above this block and is measured against the same
   // build, so it redraws with it.
+  // A FIXED STANCE IS SEATED BEFORE ANYTHING READS THE SLOTS, so the capacity
+  // line counts its grant and a build restored without it holds it anyway.
+  const fixedStance = fixedStanceOf($("weapon").value);
+  if (fixedStance && slots[STANCE]) {
+    slots[STANCE].mod = fixedStance;
+    slots[STANCE].pol = stancePolOf($("weapon").value);
+    slots[STANCE].rank = null;
+  }
   if (typeof renderQuickCalc === "function") renderQuickCalc();
   // ...and so does the mode control: equipping a Cannonade is what takes the
   // cycle away, so the reason it is greyed changes with the slots.
@@ -11314,6 +11325,15 @@ function buildSlot(i) {
     // thing rather than as a number and a coincidence.
     no.title = tr("slot") + " " + (i + 1);
     el.appendChild(no);
+  }
+  // A FIXED STANCE HAS NO MENU AND NO POLARITY TO CHANGE: it cannot be removed
+  // and its slot takes no Forma (MEASUREMENTS M94).
+  if (i === STANCE && fixedStanceOf($("weapon").value)) {
+    const dots = el.querySelector(".dots");
+    if (dots) dots.remove();
+    el.classList.add("fixed");
+    el.title = tr("fixed on this weapon — it cannot be removed, and its slot takes no Forma");
+    return el;
   }
   // polarity is decoupled: clickable on every slot (mod or empty, incl. innate)
   el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openPolMenu(i); });

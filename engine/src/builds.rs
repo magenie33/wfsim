@@ -901,6 +901,14 @@ pub fn validate_with(
     if stances > 1 {
         return Err(format!("{stances} stances, and a melee weapon has one stance slot"));
     }
+    // …AND A FIXED STANCE IS ALWAYS THE ONE. It cannot be taken off (Valkyr
+    // Talons' Hysteria, MEASUREMENTS M94), so a list without it is a build
+    // nobody can hold — and one that reads 10 capacity short.
+    if let Some(fixed) = crate::weapons_data::spec(weapon).and_then(|s| s.fixed_stance.as_deref()) {
+        if !multishot.iter().any(|id| def(id).id == fixed) {
+            return Err(format!("{fixed} is fixed on this weapon and cannot be removed"));
+        }
+    }
     if multishot.len() - stances > MAIN_SLOTS {
         return Err(format!(
             "{} mods, and a benchmark build has {MAIN_SLOTS}",
@@ -1413,6 +1421,23 @@ mod riven_perfection_tests {
 #[cfg(test)]
 mod tests {
 
+    /// A FIXED STANCE IS PART OF EVERY BUILD: Valkyr Talons without Hysteria is
+    /// a build nobody can hold, and with it the card's 5 doubles to 10 on its
+    /// matching slot (MEASUREMENTS M94).
+    #[test]
+    fn a_fixed_stance_is_required_and_grants_its_capacity() {
+        let ids = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let without = validate("valkyr_talons", &ids(&["pressure_point"]), &[], &[], "");
+        assert!(without.err().is_some_and(|e| e.contains("hysteria is fixed")));
+        assert!(validate("valkyr_talons_slide", &ids(&["pressure_point", "hysteria"]), &[], &[], "").is_ok());
+        let hysteria = crate::mods_data::pool_for_weapon("valkyr_talons")
+            .into_iter()
+            .find(|m| m.id == "hysteria")
+            .expect("in its own pool");
+        let slot = crate::weapons_data::stance_polarity("valkyr_talons");
+        assert_eq!(crate::mods::stance_capacity(hysteria.polarity, slot), 10, "60 + 10 = 70");
+    }
+
     /// **WHAT THE EDITOR OFFERS, THE BOARD ACCEPTS** — over every weapon that
     /// takes a riven, not over a named one.
     ///
@@ -1765,7 +1790,18 @@ mod tests {
             if picked.len() < MAIN_SLOTS {
                 continue;
             }
-            let cap = cap_of(&w.id);
+            // A FIXED STANCE RIDES EVERY BUILD, and its grant is capacity the
+            // build can spend (Valkyr Talons' Hysteria, MEASUREMENTS M94).
+            let fixed = pool.iter().find(|m| {
+                crate::weapons_data::spec(&w.id).and_then(|s| s.fixed_stance.as_deref()) == Some(m.id)
+            });
+            if let Some(m) = fixed {
+                picked.push(m.id.to_string());
+            }
+            let cap = cap_of(&w.id)
+                + fixed.map_or(0, |m| {
+                    crate::mods::stance_capacity(m.polarity, crate::weapons_data::stance_polarity(&w.id))
+                });
             // An adversary weapon has no legal build with no element, so the
             // sweep gives every weapon the one its own spec starts with — this
             // test is about capacity and must not trip over legality.

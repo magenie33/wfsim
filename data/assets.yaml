@@ -266,6 +266,13 @@ weapons:
   magistar_heavy: Magistar.png
   magistar_slide: Magistar.png
   magistar_heavy_slam: Magistar.png
+  valkyr_talons: BerskerMelee.png
+  valkyr_talons_forward: BerskerMelee.png
+  valkyr_talons_block: BerskerMelee.png
+  valkyr_talons_block_forward: BerskerMelee.png
+  valkyr_talons_heavy: BerskerMelee.png
+  valkyr_talons_slide: BerskerMelee.png
+  valkyr_talons_heavy_slam: BerskerMelee.png
   sancti_magistar: wiki:SanctiMagistar.png
   sancti_magistar_forward: wiki:SanctiMagistar.png
   sancti_magistar_block: wiki:SanctiMagistar.png
@@ -613,6 +620,9 @@ weapons:
   tysis: Tysis.png
   zymos: InfUziWeapon.png
 mods:
+  # Hysteria's stance card is in neither the module nor DE's export; the ability
+  # page draws this file for it.
+  hysteria: "wiki:HysteriaStanceMod.png"
   # A RIVEN's card, DE's own: every riven shares one image because the game
   # draws them all the same — `OmegaMod.png` is the unveiled riven mod on
   # /Lotus/Upgrades/Mods/Randomized/Lotus*RandomModRare. Rivens are made by

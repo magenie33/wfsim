@@ -1901,6 +1901,17 @@ pub struct WeaponSpec {
     /// pool per family, so a Boar riven and a Boar Prime riven are one thing.
     #[serde(default)]
     pub riven_family: Option<String>,
+    /// AN EXALTED WEAPON — one an ability summons (Valkyr Talons, by Hysteria).
+    /// It is the weapon's half of DE's `POWER_WEAPON` tag: a card whose
+    /// incompatibility tags carry it (`excludes_weapon: [power_weapon]`) is
+    /// refused from the pool — Blood Rush, Weeping Wounds, the Amalgams.
+    #[serde(default)]
+    pub exalted: bool,
+    /// A STANCE THE WEAPON CANNOT TAKE OFF, by mod id. Seated on every build,
+    /// never removed, and its slot takes no Forma (Valkyr Talons' Hysteria,
+    /// MEASUREMENTS M94) — so it is the weapon's fact and a build only repeats it.
+    #[serde(default)]
+    pub fixed_stance: Option<String>,
     /// `by_round` — the magazine refills a SHELL AT A TIME (Strun, Felarx,
     /// Onos). It is the wiki module's `ReloadStyle`, and it is not cosmetic:
     /// a bigger magazine makes the reload LONGER, so a magazine mod buys
@@ -2145,8 +2156,8 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-const INHERITED: [&str; 22] = [
-    "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy",
+const INHERITED: [&str; 24] = [
+    "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy", "exalted", "fixed_stance",
     "disposition", "polarities", "exilus_polarity", "stance_polarity", "riven_family",
     "internal_name", "noise", "magazine", "reload_seconds", "ammo_type",
     "ammo_max", "ammo_pickup", "traits", "deployment", "no_resupply",

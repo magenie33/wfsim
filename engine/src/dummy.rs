@@ -11778,6 +11778,20 @@ mod melee {
         );
     }
 
+    /// **A SLIDE ATTACK OPENS THE WINDOW AND TAKES IT.** A slide lands direct
+    /// melee hits like any light swing, so it rolls for the flash, and a slide
+    /// loop that gets one fires the class's heavy attack in place of its next
+    /// slide — the play is to use the window the moment it opens.
+    #[test]
+    fn a_slide_attack_opens_tennokai_and_takes_it() {
+        for form in ["praedos_slide", "valkyr_talons_slide"] {
+            let dps = |mods: &[&str]| magistar(form, mods, 60.0, None).mean_damage;
+            let off = dps(&[]);
+            let on = dps(&["disciplines_merit"]);
+            assert!(on > off * 1.3, "{form}: a slide loop with Tennokai must fire its heavies: {off:.0} -> {on:.0}");
+        }
+    }
+
     /// **A TENNOKAI HEAVY BREAKS THE STANCE CHAIN**, so the next light swing
     /// starts the combo over.
     ///

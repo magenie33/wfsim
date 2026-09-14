@@ -63,10 +63,10 @@ batches had already earned.
 
 Two exclusions, and they are different in kind.
 
-**EXALTED weapons** — twelve of them, listed above. They are Warframe and
-Necramech ABILITIES that happen to fire, so what they cost, what they scale
-with and what a build for one even means are the Warframe layer's questions,
-which docs/UNMODELLED.md already holds open.
+**EXALTED weapons** — twelve guns, listed above. They are Warframe and
+Necramech ABILITIES that happen to fire, so what they cost and what they scale
+with are the Warframe layer's questions. The one Exalted weapon in the roster is
+a MELEE one, Valkyr Talons, taken at 100% ability strength (docs/MELEE.md §7c).
 
 **KITGUNS ARE IN, one roster entry per CHAMBER PER SLOT** — all six chambers,
 twelve entries, `data/kitguns/README.md`. A Kitgun has no published stat line:

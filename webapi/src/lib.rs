@@ -1742,6 +1742,10 @@ pub fn meta_json() -> Value {
                 // page needs it to answer 5 or 10 (`mods::stance_capacity`).
                 "stance_polarity": wfsim_engine::weapons_data::stance_polarity(&w.id)
                     .map(|p| format!("{p:?}")),
+                // A STANCE THE WEAPON CANNOT TAKE OFF: the page seats it, offers
+                // no removal and no polarity for its slot.
+                "fixed_stance": wfsim_engine::weapons_data::spec(&w.id)
+                    .and_then(|s| s.fixed_stance.clone()),
                 "forms": w.forms.iter()
                     .map(|(id, name, def)| {
                         // THE ENTRY BEHIND THIS FORM, once. Everything below is

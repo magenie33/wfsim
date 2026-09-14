@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: fbe30278f4def350
-count: 1760
+digest: 8a2511b1a3628a14
+count: 1768
 ids:
   - acceltra
   - acceltra_prime
@@ -1770,3 +1770,11 @@ ids:
   - sporelacer_secondary
   - vermisplicer_primary
   - vermisplicer_secondary
+  - valkyr_talons
+  - valkyr_talons_block
+  - valkyr_talons_block_forward
+  - valkyr_talons_forward
+  - valkyr_talons_heavy
+  - valkyr_talons_heavy_slam
+  - valkyr_talons_slide
+  - hysteria
