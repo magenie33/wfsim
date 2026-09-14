@@ -16825,7 +16825,7 @@ pub fn run_once_traced(
                     // why `ap.forced_procs` above cannot carry them. `forced_hits`
                     // is how many of the row's hits carry them, when not all do.
                     let swing_forces = direct
-                        && swing.as_ref().and_then(|h| h.forced_hits).is_none_or(|k| (pellet_idx as u32) < k);
+                        && swing.as_ref().and_then(|h| h.forced_hits).is_none_or(|k| pellet_idx < k);
                     for ty in swing_forced_types.iter().filter(|_| swing_forces) {
                         if !forced_buf[..n].contains(ty) && n < forced_buf.len() {
                             forced_buf[n] = *ty;
