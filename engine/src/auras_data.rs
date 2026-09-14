@@ -88,6 +88,8 @@ pub struct AuraDef {
     pub description: String,
     /// Each `out_of_scope` effect's own reason, in card order.
     pub out_of_scope: Vec<String>,
+    /// Shields granted per energy spent casting, at max rank (Brief Respite).
+    pub energy_to_shield: Option<f64>,
     /// Does running it four-handed multiply it? Corrosive Projection's page:
     /// *"reducing enemy armor up to 72% with a 4-player squad"*.
     pub squad_stacking: bool,
@@ -138,6 +140,8 @@ fn parse_effect(e: &RawEffect) -> AuraEffect {
         "weapon_damage_bonus" => AuraEffect::WeaponDamage(e.rank_max),
         "aura_strength_bonus" => AuraEffect::AuraStrength(e.rank_max),
         "out_of_scope" => AuraEffect::None,
+        // A WARFRAME effect the builder's shield-gate card reads; no fight does.
+        "energy_to_shield" => AuraEffect::None,
         other => panic!("unknown aura effect kind: {other}"),
     }
 }
@@ -178,6 +182,11 @@ pub fn all() -> &'static [AuraDef] {
                         .filter(|x| x.kind == "out_of_scope")
                         .map(|x| x.applies_to.clone().unwrap_or_default())
                         .collect(),
+                    energy_to_shield: r
+                        .effects
+                        .iter()
+                        .find(|x| x.kind == "energy_to_shield")
+                        .map(|x| x.rank_max),
                     squad_stacking: r.squad_stacking,
                     effect: at.map(|i| effects[i]).unwrap_or(AuraEffect::None),
                     requires_pool: e.requires_pool.clone(),

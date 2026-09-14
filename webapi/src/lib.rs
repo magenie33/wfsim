@@ -212,7 +212,7 @@ pub fn warframe_panel_json(v: &Value) -> Value {
             "flat": l.flat,
             "value": l.value,
             "sources": l.sources.iter().map(|c| json!({
-                "from": c.from, "value": c.value, "flat": c.flat,
+                "from": c.from, "value": c.value, "flat": c.flat, "times": c.times,
             })).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
         "abilities": r.abilities.iter().map(|x| json!({
@@ -245,7 +245,19 @@ pub fn warframe_panel_json(v: &Value) -> Value {
         // EVERY TAG WITH EVERY SOURCE, so the page can say where each came from.
         "tags": r.tags.iter().map(|t| json!({
             "tag": t.tag.id(), "label": t.tag.label(), "from": t.from, "when": t.when,
+            "confirmed": t.confirmed,
         })).collect::<Vec<_>>(),
+        "shield_gate": json!({
+            "max_shields": r.shield_gate.max_shields,
+            "full_seconds": r.shield_gate.full_seconds,
+            "fixed_by": r.shield_gate.fixed_by,
+            "energy_to_shield": r.shield_gate.energy_to_shield,
+            "sources": r.shield_gate.sources.iter().map(|(from, v)| json!({ "from": from, "value": v })).collect::<Vec<_>>(),
+            "casts": r.shield_gate.casts.iter().map(|c| json!({
+                "slot": c.slot, "ability": c.ability, "energy": c.energy, "shields": c.shields,
+                "full": c.full, "seconds": c.seconds, "disputed_seconds": c.disputed_seconds,
+            })).collect::<Vec<_>>(),
+        }),
         "admissions": r.admissions.iter().map(|x| json!({
             "from": x.from,
             "text": x.text,

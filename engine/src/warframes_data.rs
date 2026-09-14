@@ -278,6 +278,10 @@ pub enum FrameEffect {
     Bonus(FrameStat, f64),
     /// A flat amount added after the multiplier (`<stat>_flat`, `value:`).
     Flat(FrameStat, f64),
+    /// "x0.20 Max Shield Capacity": a multiplier on the finished shields, per rank.
+    ShieldMultiplier(Vec<f64>),
+    /// A fixed shield-gate length, per rank (Catalyzing Shields).
+    ShieldGateSeconds(Vec<f64>),
     /// A line of the card this panel does not compute, verbatim.
     Unmodelled(String),
     /// A line that cannot pay out in a Warframe's own panel, and why.
@@ -297,6 +301,9 @@ struct RawEffect {
     rank_max: f64,
     #[serde(default)]
     value: f64,
+    /// A per-rank ladder, where a card's values do not follow `at_rank`.
+    #[serde(default)]
+    ranks: Vec<f64>,
     #[serde(default)]
     text: Option<String>,
     #[serde(default)]
@@ -309,6 +316,14 @@ fn effect(path: &str, e: &RawEffect) -> FrameEffect {
             e.text.clone().unwrap_or_else(|| panic!("{path}: an unmodelled line carries its text")),
         ),
         "out_of_scope" => FrameEffect::OutOfScope(e.applies_to.clone().unwrap_or_default()),
+        "max_shield_multiplier" | "shield_gate_seconds" => {
+            assert!(!e.ranks.is_empty(), "{path}: `{}` carries its `ranks`", e.kind);
+            if e.kind == "max_shield_multiplier" {
+                FrameEffect::ShieldMultiplier(e.ranks.clone())
+            } else {
+                FrameEffect::ShieldGateSeconds(e.ranks.clone())
+            }
+        }
         kind if kind.ends_with("_flat") => {
             let id = kind.trim_end_matches("_flat");
             match FrameStat::ALL.into_iter().find(|s| s.id() == id) {
@@ -880,6 +895,68 @@ pub struct Contribution {
     pub value: f64,
     /// A flat amount added after the multiplier, rather than a percentage.
     pub flat: bool,
+    /// A multiplier on the finished stat (Catalyzing Shields' x0.20).
+    pub times: bool,
+}
+
+/// THE SHIELD GATE: how long "invulnerable when shields break" lasts on this
+/// build, and whether casting re-opens it. docs/WARFRAMES.md §Shield gate.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShieldGate {
+    pub max_shields: f64,
+    /// The gate after a FULL break, in seconds.
+    pub full_seconds: f64,
+    /// The card that fixes it, when one does.
+    pub fixed_by: Option<String>,
+    /// Shields per energy spent casting, and each source's share.
+    pub energy_to_shield: f64,
+    pub sources: Vec<(String, f64)>,
+    pub casts: Vec<GateCast>,
+}
+
+/// One ability's cast, as the shield gate sees it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GateCast {
+    pub slot: u8,
+    pub ability: String,
+    pub energy: f64,
+    pub shields: f64,
+    /// The refill reaches max shields, so every reading gives the full gate.
+    pub full: bool,
+    pub seconds: f64,
+    /// The OTHER reading's length where the wiki disagrees with itself: a partial
+    /// refill under Catalyzing Shields per the Update 34 notes.
+    pub disputed_seconds: Option<f64>,
+}
+
+/// The gate after shields break holding `s` shields (W`Shield`):
+/// "Shield/180 + 1/3" under 53, "(Shield/350)^0.65 + 1/3" to 1,150, 2.5 above.
+pub fn shield_gate_seconds(s: f64) -> f64 {
+    if s <= 0.0 {
+        0.0
+    } else if s < 53.0 {
+        s / 180.0 + 1.0 / 3.0
+    } else if s <= 1150.0 {
+        (s / 350.0).powf(0.65) + 1.0 / 3.0
+    } else {
+        2.5
+    }
+}
+
+/// A set's energy-to-shield share for this many cards seated, from
+/// `data/mod_sets/<set>.yaml`'s `energy_to_shield_by_count`.
+fn set_energy_to_shield(set: &str, count: u32) -> f64 {
+    #[derive(Deserialize)]
+    struct SetShield {
+        id: String,
+        #[serde(default)]
+        energy_to_shield_by_count: BTreeMap<u32, f64>,
+    }
+    crate::data::files_under("mod_sets/")
+        .filter_map(|(_, t)| serde_norway::from_str::<SetShield>(t).ok())
+        .find(|s| s.id == set)
+        .and_then(|s| s.energy_to_shield_by_count.get(&count).copied())
+        .unwrap_or(0.0)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -945,6 +1022,9 @@ pub struct TagSource {
     /// The mod, arcane or ability id, or the frame's id for its passive.
     pub from: String,
     pub when: String,
+    /// False where the wiki disagrees with itself about it (the shield gate
+    /// after a partial refill), so the page can say it needs a measurement.
+    pub confirmed: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -955,9 +1035,14 @@ pub struct Resolved {
     /// Every tag and every source of it, in tag order. An augment without its
     /// ability grants nothing, as it pays nothing.
     pub tags: Vec<TagSource>,
+    pub shield_gate: ShieldGate,
     pub admissions: Vec<Admission>,
     /// What the build asked for and could not seat, each with the reason.
     pub refused: Vec<String>,
+}
+
+fn by_rank(ladder: &[f64], rank: u32) -> f64 {
+    ladder[(rank as usize).min(ladder.len() - 1)]
 }
 
 impl Resolved {
@@ -1065,8 +1150,12 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         } else {
             e.0 += value;
         }
-        e.2.push(Contribution { from: from.to_string(), value, flat });
+        e.2.push(Contribution { from: from.to_string(), value, flat, times: false });
     };
+    // The two shield-gate cards: a multiplier on the finished shields, and a
+    // fixed gate length.
+    let mut shield_times: Vec<(String, f64)> = Vec::new();
+    let mut gate_fixed: Option<(String, f64)> = None;
 
     for (m, rank) in &seated {
         // A SET BONUS counts the set's cards seated, and adds a share of THIS
@@ -1092,6 +1181,8 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                 FrameEffect::Bonus(..) => {}
                 FrameEffect::Flat(s, v) if dead.is_none() => add(*s, &m.id, *v, true),
                 FrameEffect::Flat(..) => {}
+                FrameEffect::ShieldMultiplier(r) => shield_times.push((m.id.clone(), by_rank(r, *rank))),
+                FrameEffect::ShieldGateSeconds(r) => gate_fixed = Some((m.id.clone(), by_rank(r, *rank))),
                 FrameEffect::Unmodelled(t) => admissions.push(Admission {
                     from: m.id.clone(),
                     text: t.clone(),
@@ -1122,6 +1213,8 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             match e {
                 FrameEffect::Bonus(s, v) => add(*s, &a.id, at_rank(*v, rank, a.max_rank), false),
                 FrameEffect::Flat(s, v) => add(*s, &a.id, *v, true),
+                FrameEffect::ShieldMultiplier(r) => shield_times.push((a.id.clone(), by_rank(r, rank))),
+                FrameEffect::ShieldGateSeconds(r) => gate_fixed = Some((a.id.clone(), by_rank(r, rank))),
                 FrameEffect::Unmodelled(t) => admissions.push(Admission {
                     from: a.id.clone(),
                     text: t.clone(),
@@ -1176,6 +1269,8 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                 match e {
                     FrameEffect::Bonus(st, v) => add(*st, &from, *v, false),
                     FrameEffect::Flat(st, v) => add(*st, &from, *v, true),
+                    FrameEffect::ShieldMultiplier(r) => shield_times.push((from.clone(), by_rank(r, 99))),
+                    FrameEffect::ShieldGateSeconds(r) => gate_fixed = Some((from.clone(), by_rank(r, 99))),
                     FrameEffect::Unmodelled(_) | FrameEffect::OutOfScope(_) => {}
                 }
             }
@@ -1197,8 +1292,16 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                 FrameStat::SprintSpeed => frame.sprint,
                 _ => 1.0,
             };
-            let (pct, flat, sources) = bonus.get(&s).cloned().unwrap_or_default();
-            StatLine { stat: s, base, bonus: pct, flat, value: base * (1.0 + pct) + flat, sources }
+            let (pct, flat, mut sources) = bonus.get(&s).cloned().unwrap_or_default();
+            let mut value = base * (1.0 + pct) + flat;
+            // "x0.20 Max Shield Capacity" — applied to the finished shields.
+            if s == FrameStat::Shield {
+                for (from, t) in &shield_times {
+                    value *= t;
+                    sources.push(Contribution { from: from.clone(), value: *t, flat: false, times: true });
+                }
+            }
+            StatLine { stat: s, base, bonus: pct, flat, value, sources }
         })
         .collect();
     let val = |s: FrameStat| stats.iter().find(|l| l.stat == s).map_or(1.0, |l| l.value);
@@ -1282,7 +1385,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                 (Some(Some(w)), true) => w.clone(),
                 _ => g.when.clone(),
             };
-            tags.push(TagSource { tag: g.tag, from: from.to_string(), when });
+            tags.push(TagSource { tag: g.tag, from: from.to_string(), when, confirmed: true });
         }
     };
     claim(&frame.id, &frame.passive_tags, false);
@@ -1306,9 +1409,75 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             claim(&format!("focus:{}:{}", s.id, n.id), &n.tags, false);
         }
     }
+    // THE SHIELD GATE. Energy spent casting is converted to shields by the Augur
+    // set and Brief Respite; a refill that reaches max shields re-opens the full
+    // gate under every reading of the wiki, a partial one only under some.
+    let max_shields = stats.iter().find(|l| l.stat == FrameStat::Shield).map_or(0.0, |l| l.value);
+    let mut sources: Vec<(String, f64)> = Vec::new();
+    let augur = seated.iter().filter(|(m, _)| m.set.as_deref() == Some("augur")).count() as u32;
+    if augur > 0 {
+        sources.push(("augur".into(), set_energy_to_shield("augur", augur)));
+    }
+    for (m, rank) in seated.iter().filter(|(m, _)| m.aura) {
+        if let Some(v) = crate::auras_data::by_id(&m.id).and_then(|a| a.energy_to_shield) {
+            sources.push((m.id.clone(), at_rank(v, *rank, m.max_rank)));
+        }
+    }
+    let energy_to_shield: f64 = sources.iter().map(|(_, v)| v).sum();
+    let casts: Vec<GateCast> = if max_shields > 0.0 && energy_to_shield > 0.0 {
+        abilities
+            .iter()
+            .filter(|x| x.ability.cost_type.is_none() && x.energy_cost > 0.0)
+            .map(|x| {
+                let shields = x.energy_cost * energy_to_shield;
+                let full = shields >= max_shields;
+                let (seconds, disputed_seconds) = match &gate_fixed {
+                    Some((_, fixed)) if full => (*fixed, None),
+                    // The mod page: the fixed value "upon recovering any amount of
+                    // Shields"; the Update 34 notes: "scales from 0.33 to 1.33".
+                    Some((_, fixed)) => (*fixed, Some((fixed * shields / max_shields).max(1.0 / 3.0))),
+                    None => (shield_gate_seconds(shields.min(max_shields)), None),
+                };
+                GateCast {
+                    slot: x.slot,
+                    ability: x.ability.id.clone(),
+                    energy: x.energy_cost,
+                    shields,
+                    full,
+                    seconds,
+                    disputed_seconds,
+                }
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    if !casts.is_empty() {
+        tags.push(TagSource {
+            tag: Capability::Invulnerable,
+            from: "shield_gate".into(),
+            when: format!(
+                "the shield gate, re-opened by casting: {}",
+                casts
+                    .iter()
+                    .map(|c| format!("{} {:.2} s", ability(&c.ability).map_or(c.ability.as_str(), |a| a.name.as_str()), c.seconds))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            confirmed: casts.iter().all(|c| c.disputed_seconds.is_none()),
+        });
+    }
+    let shield_gate = ShieldGate {
+        max_shields,
+        full_seconds: gate_fixed.as_ref().map_or(shield_gate_seconds(max_shields), |(_, s)| *s),
+        fixed_by: gate_fixed.map(|(id, _)| id),
+        energy_to_shield,
+        sources,
+        casts,
+    };
     tags.sort_by_key(|t| t.tag);
 
-    Ok(Resolved { frame, stats, abilities, tags, admissions, refused })
+    Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused })
 }
 
 /// The capacity an aura adds, from W`Aura`: "matching polarity … double of the
@@ -1529,6 +1698,36 @@ mod tests {
         assert_eq!(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.0);
         b.operator = Some(OperatorPick { school: "madurai".into(), assumed: vec!["sling_strength".into()] });
         assert!(close(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.4));
+    }
+
+    /// W`Shield`'s formula at Valkyr's 185, Catalyzing Shields' x0.20 and 1.33 s,
+    /// and a cast that refills past max giving the full gate under every reading.
+    #[test]
+    fn the_shield_gate_follows_the_shield_page_and_catalyzing_shields() {
+        let bare = resolve(&build(&[])).unwrap();
+        assert!(close(bare.shield_gate.full_seconds, (185.0f64 / 350.0).powf(0.65) + 1.0 / 3.0));
+        assert!(bare.shield_gate.casts.is_empty(), "no refill source, no re-opened gate");
+
+        let mut b = build(&["catalyzing_shields", "augur_secrets", "augur_message"]);
+        b.aura = Some(SlotPick { id: "brief_respite".into(), rank: None });
+        let r = resolve(&b).unwrap();
+        assert!(close(r.stat(FrameStat::Shield).value, 185.0 * 0.2));
+        assert!(close(r.shield_gate.full_seconds, 1.33));
+        // two Augur cards (80%) + Brief Respite (150%)
+        assert!(close(r.shield_gate.energy_to_shield, 2.3));
+        let warcry = r.shield_gate.casts.iter().find(|c| c.ability == "warcry").unwrap();
+        assert!(warcry.full && warcry.disputed_seconds.is_none(), "75 energy x2.3 refills 37 shields");
+        let t = r.tags.iter().find(|t| t.from == "shield_gate").expect("the derived tag");
+        assert_eq!(t.tag, Capability::Invulnerable);
+
+        // ONE Augur card (40%): Rip Line's 25 energy restores 10 of 37 shields, a
+        // partial refill the wiki's two readings disagree about, so the tag says so.
+        let partial = resolve(&build(&["catalyzing_shields", "augur_secrets"])).unwrap();
+        let rip = partial.shield_gate.casts.iter().find(|c| c.ability == "rip_line").unwrap();
+        assert!(!rip.full);
+        assert!(close(rip.seconds, 1.33));
+        assert!(close(rip.disputed_seconds.unwrap(), 1.33 * 10.0 / 37.0));
+        assert!(!partial.tags.iter().find(|t| t.from == "shield_gate").unwrap().confirmed);
     }
 
     #[test]

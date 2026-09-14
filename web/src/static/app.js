@@ -21862,6 +21862,7 @@ function wfSourceName(from) {
     const o = d && d.options.find((x) => x.id === b);
     return `${LN("shards", a, d ? d.name : a)} · ${(I18N && (I18N.shards || {})[from]) || (o ? o.text : b)}`;
   }
+  if (from === "shield_gate") return tr("Shield gate");
   const f = wfFrame(from);
   if (f) return `${f.name} · ${tr("Passive")}`;
   const x = wfMod(from) || wfArcane(from) || wfAbility(from);
@@ -21879,7 +21880,7 @@ function renderWfStats(r) {
   $("wf-stats").innerHTML = (r.refused || []).map((x) => `<div class="error">${escHtml(x)}</div>`).join("")
     + (r.stats || []).map((l) => `<div class="srow"><div class="shead"><span class="sk">${escHtml(tr(l.label))}</span><span class="sv">${
       Math.abs(l.value - l.base) > 1e-9 ? `<span class="sbase">${fmt(l, l.base)}</span> → ` : ""}<b>${fmt(l, l.value)}</b></span></div>${
-      (l.sources || []).map((c) => `<div class="ssrc">${c.flat ? wfSigned(c.value) : wfSigned(c.value * 100) + "%"} — ${escHtml(wfSourceName(c.from))}</div>`).join("")}</div>`).join("");
+      (l.sources || []).map((c) => `<div class="ssrc">${c.times ? "×" + wfNum(c.value) : c.flat ? wfSigned(c.value) : wfSigned(c.value * 100) + "%"} — ${escHtml(wfSourceName(c.from))}</div>`).join("")}</div>`).join("");
   const by = new Map();
   (r.admissions || []).forEach((x) => { if (!by.has(x.from)) by.set(x.from, []); by.get(x.from).push(x); });
   $("wf-admissions").innerHTML = by.size
@@ -21917,8 +21918,38 @@ function renderWfCaps(r) {
     const src = by(id);
     return `<div class="wf-capbox ${id}${src.length ? "" : " off"}"><div class="wf-caph">${escHtml(tr(label))}${
       src.length ? "" : ` <span class="wf-capsrc">${escHtml(tr("none in this build"))}</span>`}</div>${
-      src.map((t) => `<div class="wf-capsrc">${escHtml(wfSourceName(t.from))} — ${escHtml(t.when)}</div>`).join("")}</div>`;
+      src.map((t) => `<div class="wf-capsrc">${escHtml(wfSourceName(t.from))} — ${escHtml(t.when)}${
+        t.confirmed === false ? ` <span class="wf-unconfirmed" title="${escHtml(tr("the wiki's pages disagree about this; it needs an in-game measurement"))}">⚠ ${escHtml(tr("needs a measurement"))}</span>` : ""}</div>`).join("")}</div>`;
   }).join("");
+  renderWfGate(r.shield_gate);
+}
+
+/// THE SHIELD GATE: how long it lasts on this build, and what each cast refills.
+/// A cast that refills past max shields gets the full gate under every reading
+/// of the wiki; a partial one is where its pages disagree, and the card says so.
+function renderWfGate(g) {
+  const box = $("wf-gate");
+  if (!g || g.max_shields <= 0) {
+    box.innerHTML = `<div class="wf-caph">${escHtml(tr("Shield gate"))}</div><div class="wf-capsrc">${escHtml(tr("no shields, so no shield gate"))}</div>`;
+    return;
+  }
+  const fixed = g.fixed_by ? ` — ${escHtml(tr("fixed by"))} ${escHtml(wfSourceName(g.fixed_by))}` : ` — ${escHtml(tr("scales with the shields held when they break"))}`;
+  const srcs = (g.sources || []).map((s) => `${escHtml(s.from === "augur" ? tr("Augur set") : wfSourceName(s.from))} ${Math.round(s.value * 100)}%`).join(" + ");
+  const rows = (g.casts || []).map((c) => {
+    const a = wfAbility(c.ability);
+    const verdict = c.full
+      ? `<span class="ok">${escHtml(tr("full refill"))} · ${wfNum(c.seconds)} s</span>`
+      : c.disputed_seconds != null
+        ? `<span class="warn">⚠ ${wfNum(c.seconds)} s ${escHtml(tr("or"))} ${wfNum(c.disputed_seconds)} s — ${escHtml(tr("the wiki's pages disagree"))}</span>`
+        : `${escHtml(tr("partial refill"))} · ${wfNum(c.seconds)} s`;
+    return `<tr><td>${c.slot} · ${escHtml(a ? a.name : c.ability)}</td><td>${wfNum(c.energy)}</td><td>${wfNum(c.shields)} / ${wfNum(g.max_shields)}</td><td>${verdict}</td></tr>`;
+  }).join("");
+  box.innerHTML = `<div class="wf-caph">${escHtml(tr("Shield gate"))}</div>`
+    + `<div class="wf-capsrc">${escHtml(tr("After a full break"))}: <b>${wfNum(g.full_seconds)} s</b>${fixed}</div>`
+    + (g.energy_to_shield > 0
+      ? `<div class="wf-capsrc">${escHtml(tr("Casting converts energy to shields"))}: ${srcs}</div>`
+        + `<table><tr><th>${escHtml(tr("Ability"))}</th><th>${escHtml(tr("energy"))}</th><th>${escHtml(tr("shields"))}</th><th>${escHtml(tr("Shield gate"))}</th></tr>${rows}</table>`
+      : `<div class="wf-capsrc">${escHtml(tr("nothing re-opens it on cast — the Augur set or Brief Respite would"))}</div>`);
 }
 
 // ---- builds ----

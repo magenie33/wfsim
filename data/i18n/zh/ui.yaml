@@ -12,6 +12,22 @@ ui:
   "Invulnerable": 无敌
   "Status cleanse": 清除异常状态
   "Damage cap": 限伤
+  "Shield gate": 护盾门
+  "needs a measurement": 需要实测
+  "the wiki's pages disagree about this; it needs an in-game measurement": wiki 各页面对此说法不一，需要游戏内实测
+  "no shields, so no shield gate": 没有护盾，也就没有护盾门
+  "fixed by": 固定于
+  "scales with the shields held when they break": 随破盾时的护盾量变化
+  "Augur set": Augur 套装
+  "full refill": 回满
+  "partial refill": 未回满
+  "or": 或
+  "the wiki's pages disagree": wiki 各页面说法不一
+  "After a full break": 满盾破盾后
+  "Casting converts energy to shields": 施放时能量转化为护盾
+  "shields": 护盾
+  "Ability": 技能
+  "nothing re-opens it on cast — the Augur set or Brief Respite would": 施放技能不会重新打开护盾门——需要 Augur 套装或 Brief Respite
   "none in this build": 这套配装没有
   "Operator": 指挥官
   "Passive": 被动

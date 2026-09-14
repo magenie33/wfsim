@@ -1,10 +1,8 @@
 id: augur
 name: Augur
-# The set bonus is a WARFRAME effect, not a weapon one: a share of the shields
-# spent casting an ability is converted into ability damage. Nothing about it
-# touches the weapon's damage, so it is declared UNMODELED rather than left
-# undefined — a member naming a set with no definition would look identical to
-# a bonus we simply forgot to implement.
+# The set bonus is a WARFRAME effect, not a weapon one: energy spent casting is
+# converted to shields. Nothing about it touches a weapon's damage, so the
+# weapon side declares it UNMODELED; the Warframe builder reads the table below.
 #
 # Two of the six are secondary mods (Pact, Seeker), which is why the set turns
 # up in a weapon pool at all.
@@ -12,6 +10,11 @@ members: 6
 bonus:
   kind: unmodeled
   per_mod: 0.0
+
+# "X% of energy spent is converted to shields." at 40/80/120/160/200/240% for
+# 1-6 mods (W`Augur_Set`). "Excess shields are converted into overshields", and
+# "The set bonus does not convert energy drained over time by channeled abilities".
+energy_to_shield_by_count: {1: 0.4, 2: 0.8, 3: 1.2, 4: 1.6, 5: 2.0, 6: 2.4}
 
 source:
   url: https://wiki.warframe.com/w/Augur_Set
