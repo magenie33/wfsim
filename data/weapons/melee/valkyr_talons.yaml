@@ -95,7 +95,7 @@ attack:
   # own combo table and the module agree, and the table is the source for a combo
   # where the page's Notes say "the final four". Stagger and Stun carry no damage.
   #
-  # COMBO POINTS ARE MEASURED, per hit on one target: 1/1/2*2/2*2/2/3*2
+  # COMBO POINTS ARE MEASURED, per hit on one target: 1 / 1 / 2x 2 / 2x 2 / 2 / 2x 3
   # (MEASUREMENTS M95). Every Hysteria entry states them per row.
   combo_script:
     - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1 }

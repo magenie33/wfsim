@@ -41,7 +41,7 @@ attack:
     forced_procs: []
     takes_multishot: false
   combo_script:
-    # ONE combo point a hit, measured: 1*6 (MEASUREMENTS M95) — not the 3 its
+    # ONE combo point a hit, measured: 6x 1 (MEASUREMENTS M95) — not the 3 its
     # 300% would give.
     - { multiplier: 3.0, delay_seconds: 0.8, hits: 6, all_around: true, combo_points: 1 }
 

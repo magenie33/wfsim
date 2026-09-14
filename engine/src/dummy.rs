@@ -11800,11 +11800,12 @@ mod melee {
                 .map(|h| swing_combo_points(h, f64::from(h.hits)))
                 .sum()
         };
-        assert_eq!(round("valkyr_talons"), 18.0, "1/1/2*2/2*2/2/3*2");
-        assert_eq!(round("valkyr_talons_forward"), 6.0, "1/1/2/2");
-        assert_eq!(round("valkyr_talons_block"), 22.0, "2/3*2/3*3/1+2*2");
-        assert_eq!(round("valkyr_talons_block_forward"), 30.0, "2/2*2/2*3/2*2/3*3/1+2*2");
-        assert_eq!(round("valkyr_talons_slide"), 6.0, "1*6, not the 18 its 300% would give");
+        // The wiki's notation: `Nx v` is N hits of v.
+        assert_eq!(round("valkyr_talons"), 18.0, "1 / 1 / 2x 2 / 2x 2 / 2 / 2x 3");
+        assert_eq!(round("valkyr_talons_forward"), 6.0, "1 / 1 / 2 / 2");
+        assert_eq!(round("valkyr_talons_block"), 22.0, "2 / 2x 3 / 3x 3 / 1 + 3 + 1");
+        assert_eq!(round("valkyr_talons_block_forward"), 30.0, "2 / 2x 2 / 3x 2 / 2x 2 / 3x 3 / 1 + 3 + 1");
+        assert_eq!(round("valkyr_talons_slide"), 6.0, "6x 1, not the 18 its 300% would give");
         // …AND A ROW WITHOUT MEASURED POINTS READS ITS MULTIPLIER, unchanged.
         let magistar: f64 = crate::weapons_data::spec("magistar")
             .unwrap()
