@@ -75,6 +75,25 @@ loadout grants no tag, as it pays nothing. A CLEANSE and an IMMUNITY are two
 tags because they answer two questions — one removes what landed, the other
 stops what is coming — and one ability may grant both (Defy, Fire Walker).
 
+## Shield gate
+
+**THE SHIELD GATE IS ITS OWN ENTRY**, because every frame with shields has one
+and a build only decides how long it lasts and whether casting re-opens it.
+
+- Its length is W`Shield`'s approximation of the shields held when they break:
+  `S/180 + 1/3` under 53, `(S/350)^0.65 + 1/3` to 1,150, then 2.5 s
+  (`shield_gate_seconds`). No shields, no gate — Arcane Persistence is ×0.
+- Catalyzing Shields is two structured lines: ×0.80…×0.20 shields and a fixed
+  0.33…1.33 s gate, per rank.
+- Casting re-opens it through energy converted to shields: the Augur set
+  (`energy_to_shield_by_count` in `data/mod_sets/augur.yaml`) plus Brief Respite
+  (`energy_to_shield` on the aura). Channelled drain converts nothing.
+- A cast whose refill reaches max shields gets the full gate under every reading.
+  A PARTIAL refill under Catalyzing Shields is where the wiki disagrees with
+  itself — the mod page's fixed value against the Update 34 notes' "scales from
+  0.33 to 1.33" — so the card prints both and the derived `invulnerable` source
+  carries `confirmed: false` until a measurement settles it.
+
 ## Operator
 
 **AN OPERATOR BUILD IS MADE ONCE AND REFERRED TO.** `/operator` holds a Focus
