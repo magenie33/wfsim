@@ -39,5 +39,9 @@ stats:
     unit: seconds
     scales_with: duration
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Warcry's attack speed bonus is reduced to 9% / 12% / 15% / 30%."
+
 source:
   url: https://wiki.warframe.com/w/Warcry

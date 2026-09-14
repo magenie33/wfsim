@@ -8,5 +8,16 @@ internal_name: /Lotus/Powersuits/PowersuitAbilities/DemonFrameHealAbility
 icon: RemediumIcon(xWhite).png
 description: "Uriel heals himself and his demons. If his demons are dead, they are resurrected."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Remedium's healing is reduced to 24% / 28% / 31% / 35% and does not summon Uriel's Demons."
+
+tags:
+  # "to become Invulnerable during cast, cleansing himself of Status Effects"
+  - tag: invulnerable
+    when: "during the cast, shortened by Casting Speed"
+  - tag: status_cleanse
+    when: "on cast"
+
 source:
   url: https://wiki.warframe.com/w/Remedium

@@ -10,5 +10,15 @@ internal_name: /Lotus/Powersuits/IronFrame/Abilities/IronFrameStripAbility
 icon: PillageIcon(xWhite).png
 description: "Pillage a percentage of Shields and Armor of nearby enemies to replenish Hildryn's own Shields and Overshields. Also removes Status Effects from Hildryn and her allies."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_energy_cost: 50
+infused_notes:
+  - "Subsumed Pillage uses 50 energy instead of shields."
+
+tags:
+  # "Hildryn and allies touched by the expanding pulse are instantly cleansed of all negative Status Effects."
+  - tag: status_cleanse
+    when: "on cast, when the pulse reaches you"
+
 source:
   url: https://wiki.warframe.com/w/Pillage

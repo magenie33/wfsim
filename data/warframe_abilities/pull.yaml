@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Mag/Abilities/PullAbility
 icon: PullIcon(xWhite).png
 description: "Mag stuns enemies as she manifests a magnetic vortex. The vortex pulls in Polarize Shards and stunned enemies to place them directly in front of her."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Pull's pull range is reduced to 7.5 / 10 / 11 / 12.5 meters."
+
 source:
   url: https://wiki.warframe.com/w/Pull

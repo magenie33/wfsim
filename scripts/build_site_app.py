@@ -670,7 +670,7 @@ def guard_board_files() -> None:
 # answers every route, so all five ship in every page and exactly one of them is
 # the heading of the page being served. `w-name` is the weapon route's, empty in
 # the shell and filled by `app.js` on boot.
-ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-support", "w-name", "wf-name")
+ROUTE_H1 = ("h-home", "h-download", "h-benchmark", "h-support", "w-name", "wf-name", "op-name")
 
 
 def one_h1(page: str, keep: str | None, text: str | None = None) -> str:
@@ -1023,6 +1023,12 @@ def prerender(flagged: str) -> None:
             "opening instantly, working with no connection and updating itself. "
             "It is not a cut-down version — it carries the same engine the site "
             "serves. Free and open source, AGPL-3.0.",
+        ),
+        (
+            "operator", "Operator — Focus school for a Warframe build | WFSim", "op-name", "Operator",
+            "The Operator a Warframe build refers to: the active Focus school, and which "
+            "of its nodes that need an Operator action to count as running. Every node "
+            "that reaches the Warframe, quoted from the wiki.",
         ),
         (
             "thanks", "Thank you — the people who chipped in", "h-thanks", "Thank you",

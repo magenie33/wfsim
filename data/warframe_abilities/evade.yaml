@@ -8,5 +8,15 @@ internal_name: /Lotus/Powersuits/Frumentarius/Abilities/FrumentariusCloakAbility
 icon: EvadeIcon(xWhite).png
 description: "Jump backwards and become invisible for a short duration. Killing enemies on their Weak Points extends the duration and heals Cyte-09."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Evade's maximum duration is reduced to 15 seconds and is capped at 25 seconds."
+  - "The page: \"Currently this helminth is bugged and the maximum duration is not capped at 25 seconds.\""
+
+tags:
+  # "to dodge backward 5 meters, cleansing himself of Status Effects"
+  - tag: status_cleanse
+    when: "on cast, 60 s cooldown"
+
 source:
   url: https://wiki.warframe.com/w/Evade

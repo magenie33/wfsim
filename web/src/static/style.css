@@ -2534,6 +2534,17 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .wf-cap.invulnerable,.wf-capbox.invulnerable .wf-caph{color:#e8a33d}
 .wf-cap.status_cleanse,.wf-capbox.status_cleanse .wf-caph{color:#2fb36d}
 .wf-cap.damage_cap,.wf-capbox.damage_cap .wf-caph{color:#3d8bfd}
+.op-schools{display:flex;flex-wrap:wrap;gap:6px}
+.op-school{font:inherit;font-size:13px;padding:5px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text);cursor:pointer}
+.op-school.sel{border-color:var(--accent);color:var(--accent);font-weight:700}
+.op-nodes{display:flex;flex-direction:column;gap:8px}
+.op-node{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--panel2);opacity:.65}
+.op-node.on{opacity:1;border-left:3px solid var(--accent)}
+.op-node .mn{font-size:13px;font-weight:600}
+.op-node .me,.wf-operator .me{font-size:12px;color:var(--text-2);line-height:1.45}
+.op-when{font-size:11px;color:var(--muted);margin-top:4px}
+.wf-operator{display:flex;flex-direction:column;gap:6px}
+.wf-operator .wf-op-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #wf-aura-block{margin-bottom:10px}
 #wf-aura-block .exlabel{margin-top:0}
 .wf-shards{display:flex;flex-direction:column;gap:6px}

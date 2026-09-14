@@ -1134,6 +1134,13 @@
       <div class="bb"><div id="wf-shards" class="wf-shards"></div></div>
     </section>
 
+    <!-- THE OPERATOR THIS BUILD REFERS TO — an Operator build is made on its own
+         page and only chosen here, so one Focus choice serves every frame. -->
+    <section class="block" id="wf-operator-block">
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Operator</h2></div>
+      <div class="bb"><div id="wf-operator" class="wf-operator"></div></div>
+    </section>
+
     <section class="block" id="wf-stats-block">
       <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2></div>
       <div class="bb"><div id="wf-stats"></div><div id="wf-admissions"></div></div>
@@ -1142,11 +1149,32 @@
     <!-- THE DETAIL: the four abilities at this build's numbers, and the one
          slot the Helminth may take. -->
     <section class="block" id="wf-ability-block">
-      <div class="bh"><span class="n">4</span><h2 data-i18n>Abilities</h2></div>
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Abilities</h2></div>
       <div class="bb">
         <div id="wf-helminth" class="wf-helminth"></div>
         <div id="wf-abilities" class="wf-abilities"></div>
       </div>
+    </section>
+  </main>
+
+  <!-- THE OPERATOR — `/operator`. Its Focus school, and which of that school's
+       conditional nodes to count as running; a Warframe build refers to one.
+       docs/WARFRAMES.md §Operator. -->
+  <main id="operator-page" class="config-page" hidden>
+    <div class="wstrip">
+      <div>
+        <h1 id="op-name" data-i18n>Operator</h1>
+        <div class="wpassives"><div data-i18n>Only the active school's nodes apply. A node that needs an Operator action counts only when you say it is running.</div></div>
+      </div>
+    </div>
+    <div class="preset-bar" id="preset-bar-operators"></div>
+    <section class="block" id="op-school-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Focus school</h2></div>
+      <div class="bb"><div id="op-schools" class="op-schools"></div></div>
+    </section>
+    <section class="block" id="op-node-block">
+      <div class="bh"><span class="n">2</span><h2 data-i18n>What reaches the Warframe</h2></div>
+      <div class="bb"><div id="op-nodes" class="op-nodes"></div></div>
     </section>
   </main>
 

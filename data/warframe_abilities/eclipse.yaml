@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Harlequin/Abilities/LightAbility
 icon: EclipseIcon(xWhite).png
 description: "(TAP) Temporarily reduce the damage Mirage takes from enemies.\n(HOLD) Temporarily increase Mirage's weapon damage."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Eclipse's damage reduction caps at 75% and damage bonus is reduced to 2% / 9% / 15% / 30%."
+
 source:
   url: https://wiki.warframe.com/w/Eclipse

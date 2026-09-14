@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Paladin/Abilities/SmiteAbility
 icon: SmiteIcon(xWhite).png
 description: "Focuses deadly energy within a target, dealing massive damage and removing all of its defenses, including Overguard. Enemies near the target also take a portion of the damage."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Smite's percentage damage cap is reduced to 50% and the AoE percentage damage cap is reduced to 20%."
+
 source:
   url: https://wiki.warframe.com/w/Smite

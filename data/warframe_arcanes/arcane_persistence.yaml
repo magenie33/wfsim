@@ -9,5 +9,10 @@ effects:
   - kind: unmodelled
     text: "Remove all Shields. If Armor is above 700: Cannot be hit for more than 500 Damage/s. Magnetic Status and Ability Nullifying Effects disable this protection."
 
+tags:
+  # "Damage exceeding 500 after Damage Reduction is reduced to 500 by Arcane Persistence."
+  - tag: damage_cap
+    when: "while Armor is at least 700, at 500 damage per second after damage reduction; off under Magnetic or in a nullifier field"
+
 source:
   url: https://wiki.warframe.com/w/Arcane_Persistence

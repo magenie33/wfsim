@@ -8,5 +8,10 @@ internal_name: /Lotus/Powersuits/Nokko/Abilities/NokkoPowerShroomAbility
 icon: BrightbonnetIcon(xWhite).png
 description: "Release a rejuvenating mushroom that emits a radial pulse, giving Nokko and his allies'  Energy and applying a buff to Ability Strength that lasts for a short time."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "The Ability Strength bonus is diminished to 10% / 13% / 17% / 20% and energy restore is reduced to 6.67 / 8 / 8.67 / 10."
+  - "The Ability Strength bonus cap is diminished to 100%."
+
 source:
   url: https://wiki.warframe.com/w/Brightbonnet

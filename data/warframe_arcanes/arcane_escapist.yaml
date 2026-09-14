@@ -9,5 +9,10 @@ effects:
   - kind: unmodelled
     text: "On Mercy Kill: Gain a stack of Escapist, up to 9x. On taking fatal damage, consume 3 stacks to avoid death and become invulnerable for 12s."
 
+tags:
+  # "stacking this buff provides a revive and Invulnerability on fatal damage"
+  - tag: invulnerable
+    when: "on fatal damage with 3 Escapist stacks from Mercy kills, 12 s"
+
 source:
   url: https://wiki.warframe.com/w/Arcane_Escapist

@@ -23,6 +23,11 @@ polarities: [madurai, madurai]
 aura_polarity: madurai
 
 passive: "Valkyr accumulates Rage when hitting or killing enemies with melee weapons, increasing her Melee Damage up to 300%. Taking fatal damage when the Rage meter is above 150% consumes the meter, preventing death and granting 5s of invulnerability."
+# "Taking fatal damage when the Rage meter is above 150% consumes the meter,
+# preventing death and granting 5s of invulnerability."
+passive_tags:
+  - tag: invulnerable
+    when: "on fatal damage with Rage above 150%, 5 s"
 abilities: [rip_line, warcry, paralysis, hysteria]
 
 source:

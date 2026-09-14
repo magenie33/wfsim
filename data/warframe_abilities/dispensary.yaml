@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Odalisk/Abilities/OdaliskDispensaryAbility
 icon: DispensaryIcon(xWhite).png
 description: "Deploys a device that generates 3 pickups after a short delay: empowered health orb, universal ammo pack and energy orb."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Dispensary's duration is reduced to 5 / 7.5 / 10 / 12.5 seconds."
+
 source:
   url: https://wiki.warframe.com/w/Dispensary

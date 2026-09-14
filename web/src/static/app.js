@@ -2020,7 +2020,8 @@ async function route() {
   const wfSlug = wfRoute && decodeURIComponent(wfRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const wfHit = wfSlug && wfFrames().find((f) =>
     f.id === wfSlug || f.name.toLowerCase().replace(/[\s-]+/g, "_") === wfSlug) || null;
-  const m = (support || bench || dl || thx || wfHit) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
+  const opRoute = /^\/operator\/?$/.test(location.pathname);
+  const m = (support || bench || dl || thx || wfHit || opRoute) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -2039,9 +2040,11 @@ async function route() {
   const gen = ++routeGen;
   if (w) await loadWeaponBoard(w.id);
   if (gen !== routeGen) return;
-  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx && !wfHit);
+  document.body.classList.toggle("on-home", !w && !support && !bench && !dl && !thx && !wfHit && !opRoute);
   document.body.classList.toggle("on-warframe", !!wfHit);
+  document.body.classList.toggle("on-operator", opRoute);
   $("warframe-page").hidden = !wfHit;
+  $("operator-page").hidden = !opRoute;
   document.body.classList.toggle("on-support", support);
   document.body.classList.toggle("on-thanks", thx);
   document.body.classList.toggle("on-benchmark", bench);
@@ -2050,14 +2053,14 @@ async function route() {
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
   document.body.classList.toggle("on-enemies", mod === "enemies");
-  $("home-page").hidden = !!w || support || bench || dl || thx || !!wfHit;
+  $("home-page").hidden = !!w || support || bench || dl || thx || !!wfHit || opRoute;
   $("support-page").hidden = !support;
   $("thanks-page").hidden = !thx;
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : (!w && !support && !dl && !thx && !wfHit) ? "home" : "";
+  const here = bench ? "benchmark" : (!w && !support && !dl && !thx && !wfHit && !opRoute) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
@@ -2072,9 +2075,13 @@ async function route() {
     : dl ? `${tr("WFSim for Windows")} — WFSim`
     : bench ? `${tr("Benchmark")} — WFSim`
     : wfHit ? `${wfHit.name} — WFSim`
+    : opRoute ? `${tr("Operator")} — WFSim`
     : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Warframe Calculator";
   if (wfHit) {
     await showWarframe(wfHit.id);
+    if (gen !== routeGen) return;
+  } else if (opRoute) {
+    await showOperator();
     if (gen !== routeGen) return;
   } else if (support) {
     renderSupport();
@@ -2218,7 +2225,9 @@ function renderHome() {
     frames.innerHTML = `<section class="wgroup"><div class="wgrid">${wfFrames().map((f) => `<a class="wcard" href="${warframePath(f)}">
       ${imgTag(IMG(f.image), "wc-img")}
       <div class="wc-info"><div class="wc-name">${escHtml(f.name)}</div>
-      <div class="wc-tags"><span class="tag">${escHtml(tr("Builder"))}</span></div></div></a>`).join("")}</div></section>`;
+      <div class="wc-tags"><span class="tag">${escHtml(tr("Builder"))}</span></div></div></a>`).join("")}
+      <a class="wcard" href="/operator"><span class="wc-img"></span><div class="wc-info"><div class="wc-name">${escHtml(tr("Operator"))}</div>
+      <div class="wc-tags"><span class="tag">${escHtml(tr("Focus school"))}</span></div></div></a></div></section>`;
   }
   const grid = $("weapon-grid");
   if (!grid) return;
@@ -7303,7 +7312,7 @@ const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 /// saved cards to an address the page no longer computes. So the store is one
 /// list, the card carries its own `scope`, and changing a family does exactly
 /// what it says — it changes which weapons the card appears under.
-const SHARED_DOMAINS = new Set(["simulator-scenarios", "enemies", "rivens"]);
+const SHARED_DOMAINS = new Set(["simulator-scenarios", "enemies", "rivens", "operators"]);
 const isSharedDomain = (d) => SHARED_DOMAINS.has(d);
 
 /// WHOSE RIVEN THIS IS — the weapon FAMILY, never the entry: *"Riven mods can
@@ -7745,6 +7754,11 @@ function presetDoc(d) {
     apply: wfApply,
     rerender: renderWfPresetBar,
   };
+  if (d === OPS) return {
+    setActive: (n) => { opActive = n; },
+    apply: opApply,
+    rerender: renderOpPresetBar,
+  };
   if (d === RIVENS) return {
     setActive: (n) => { activeRiven = n; },
     // An undo can land on a collection that is now empty (the last riven
@@ -7851,6 +7865,7 @@ const PRESET_LABELS = {
   optimizer: "Searches",
   rivens: "Rivens",
   warframes: "Builds",
+  operators: "Operator builds",
 };
 
 // Inline feedback, never a native dialog (those are blocked in the owner's
@@ -17234,8 +17249,8 @@ const JUMP_TABS = [["", "Builder"], ["simulator", "Simulator"], ["optimizer", "O
 function jumpRows() {
   const here = jumpMod();
   const base = weaponPath($("weapon").value);
-  // A WARFRAME PAGE HAS NO TABS, so it has no row of them.
-  let h = document.body.classList.contains("on-warframe") ? "" : `<div class="jump-mods">` + JUMP_TABS.map(([m, label]) =>
+  // A WARFRAME OR OPERATOR PAGE HAS NO TABS, so it has no row of them.
+  let h = ["on-warframe", "on-operator"].some((c) => document.body.classList.contains(c)) ? "" : `<div class="jump-mods">` + JUMP_TABS.map(([m, label]) =>
     `<a class="jump-mod${m === here ? " sel" : ""}" href="${base}${m ? "/" + m : ""}">${
       escHtml(tr(label))}</a>`).join("") + `</div>`;
   h += pageFolds().map((f) => {
@@ -21418,7 +21433,7 @@ function wfBlank(id) {
   slots[WF_EXILUS].pol = f.exilus_polarity || null;
   slots[WF_AURA].pol = f.aura_polarity || null;
   return { frame: id, slots, arcanes: [{ id: null, rank: null }, { id: null, rank: null }],
-    shards: [null, null, null, null, null], helminth: { slot: 0, ability: null } };
+    shards: [null, null, null, null, null], helminth: { slot: 0, ability: null }, operator: null };
 }
 
 /// A stored build, repaired against today's catalogue: an id that is gone
@@ -21444,6 +21459,8 @@ function wfNormalize(st, id) {
     }),
     helminth: { slot: Number((s.helminth || {}).slot) || 0,
       ability: wfAbility((s.helminth || {}).ability) ? s.helminth.ability : null },
+    // THE OPERATOR BUILD'S NAME: a reference, resolved when the build is sent.
+    operator: typeof s.operator === "string" && s.operator ? s.operator : null,
   };
 }
 
@@ -21462,6 +21479,7 @@ function wfPayload() {
     shards: wf.shards.filter(Boolean),
     helminth: wf.helminth.slot && wf.helminth.ability
       ? { slot: wf.helminth.slot, ability: wf.helminth.ability } : null,
+    operator: wfOperatorPick(),
   };
 }
 
@@ -21823,6 +21841,7 @@ function renderWfAbilities(r) {
         <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${x.helminth ? ` <span class="exchip">${escHtml(tr("Helminth"))}</span>` : ""}${wfTagChips(a.tags)}</div>
         <div class="wf-costs">${cost}${drain}</div></div></div>
       <div class="wf-ab-desc">${escHtml((I18N && (I18N.warframe_ability_descriptions || {})[x.id]) || a.description || "")}</div>
+      ${(x.infused_notes || []).map((n) => `<div class="srownote">⚙ ${escHtml(n)}</div>`).join("")}
       ${rows ? `<div class="stat-table wf-ab-stats">${rows}</div>`
         : `<div class="wf-ab-none">${escHtml(tr("this ability's numbers are not transcribed yet"))}</div>`}
     </div>`;
@@ -21830,6 +21849,12 @@ function renderWfAbilities(r) {
 }
 
 function wfSourceName(from) {
+  if (String(from).startsWith("focus:")) {
+    const [, sid, nid] = String(from).split(":");
+    const s = focusSchool(sid);
+    const n = s && s.nodes.find((x) => x.id === nid);
+    return `${s ? s.name : sid} · ${n ? n.name : nid}`;
+  }
   const [a, b] = String(from).split("/");
   if (b) {
     const d = SHARDS().find((x) => x.id === a);
@@ -21945,9 +21970,137 @@ function wfChanged() {
   renderWfMods();
   renderWfArcanes();
   renderWfShards();
+  renderWfOperator();
   renderWfHelminth();
   refreshWfPanel();
   wfMarkDirty();
+}
+
+// ---- THE OPERATOR ------------------------------------------------------
+//
+// `/operator`: the active Focus school, and which of its conditional nodes to
+// count as running. A Warframe build REFERS to one by name, so a Focus choice is
+// made once and every frame reads it.
+const OPS = "operators";
+let op = null;
+let opActive = "";
+let opSaveTimer = null;
+const focusSchool = (id) => (WFCAT && id && WFCAT.focus.find((s) => s.id === id)) || null;
+const opBlank = () => ({ school: null, assumed: [] });
+function opNormalize(st) {
+  const s = st || {};
+  const school = focusSchool(s.school);
+  return {
+    school: school ? school.id : null,
+    assumed: school ? (s.assumed || []).filter((id) => school.nodes.some((n) => n.id === id && !n.always)) : [],
+  };
+}
+function opBarCfg() {
+  return {
+    domain: OPS,
+    label: tr("Operator builds"),
+    noun: "operator",
+    load: () => loadPresetList(OPS),
+    store: (ps) => storePresetList(OPS, ps),
+    active: () => opActive,
+    setActive: (n) => { opActive = n; localStorage.setItem(presetActiveKey(OPS), n); },
+    snapshot: () => JSON.parse(JSON.stringify(op)),
+    apply: (st) => opApply(st),
+    blank: opBlank,
+    rerender: renderOpPresetBar,
+  };
+}
+const renderOpPresetBar = () => renderPresetBarIn($("preset-bar-operators"), opBarCfg());
+function opApply(st) {
+  op = opNormalize(st);
+  clearTimeout(opSaveTimer);
+  renderOperator();
+}
+function opMarkDirty() {
+  if (presetApplying) return;
+  clearTimeout(opSaveTimer);
+  opSaveTimer = setTimeout(() => {
+    if (presetApplying || !op) return;
+    const cfg = opBarCfg();
+    const ps = cfg.load();
+    const at = ps.findIndex((p) => p.name === opActive);
+    if (at < 0) {
+      if (sameState(op, opBlank())) return;
+      const name = freeName(ps, (n) => autoPresetName("operator", n));
+      ps.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
+      cfg.store(ps);
+      cfg.setActive(name);
+      renderOpPresetBar();
+      return;
+    }
+    if (sameState(ps[at].state, op)) return;
+    ps[at] = { ...ps[at], savedAt: Date.now(), state: cfg.snapshot() };
+    cfg.store(ps);
+  }, 400);
+}
+
+/// One node, for the Operator page and for the summary a Warframe page shows.
+const opNodeHtml = (s, n, on, toggle) => `<div class="op-node${on ? " on" : ""}">
+  <div class="mn">${wl(n.name, s.url)}${wfTagChips(n.tags)}</div>
+  <div class="me">${escHtml(n.text)}</div>
+  <div class="op-when">${n.always ? escHtml(tr("always on"))
+    : toggle ? `<label><input type="checkbox" data-node="${n.id}"${on ? " checked" : ""}> ${escHtml(tr("count it as running"))} — ${escHtml(n.when)}</label>`
+    : escHtml(n.when)}</div></div>`;
+
+function renderOperator() {
+  renderOpPresetBar();
+  $("op-schools").innerHTML = WFCAT.focus.map((s) =>
+    `<button class="op-school${op.school === s.id ? " sel" : ""}" data-school="${s.id}">${escHtml(s.name)}</button>`).join("");
+  $("op-schools").querySelectorAll("[data-school]").forEach((b) => b.addEventListener("click", () => {
+    op.school = op.school === b.dataset.school ? null : b.dataset.school;
+    op.assumed = [];
+    renderOperator();
+    opMarkDirty();
+  }));
+  const s = focusSchool(op.school);
+  $("op-nodes").innerHTML = s
+    ? s.nodes.map((n) => opNodeHtml(s, n, n.always || op.assumed.includes(n.id), true)).join("")
+    : `<div class="exhint">${escHtml(tr("pick the active Focus school"))}</div>`;
+  $("op-nodes").querySelectorAll("[data-node]").forEach((c) => c.addEventListener("change", () => {
+    op.assumed = c.checked ? [...op.assumed, c.dataset.node] : op.assumed.filter((x) => x !== c.dataset.node);
+    renderOperator();
+    opMarkDirty();
+  }));
+}
+
+async function showOperator() {
+  await loadWarframeCatalog();
+  if (!op) {
+    const list = loadPresetList(OPS);
+    const last = localStorage.getItem(presetActiveKey(OPS));
+    const p = list.find((x) => x.name === last) || list[0] || null;
+    opActive = p ? p.name : "";
+    op = opNormalize(p ? p.state : null);
+  }
+  renderOperator();
+}
+
+/// The Operator build a Warframe build names, as the engine reads it.
+function wfOperatorPick() {
+  if (!wf || !wf.operator) return null;
+  const p = loadPresetList(OPS).find((x) => x.name === wf.operator);
+  const st = p && opNormalize(p.state);
+  return st && st.school ? st : null;
+}
+
+function renderWfOperator() {
+  const ps = loadPresetList(OPS);
+  const cur = wf.operator && ps.some((p) => p.name === wf.operator) ? wf.operator : "";
+  const items = [{ value: "", label: tr("no Operator") },
+    ...ps.map((p) => ({ value: p.name, label: p.name,
+      hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") }))];
+  const pick = wfOperatorPick();
+  const s = pick && focusSchool(pick.school);
+  $("wf-operator").innerHTML = `<div class="wf-op-row">${ddButton("dd-wf-operator", {
+    value: cur, items, onPick: (v) => { wf.operator = v || null; wfChanged(); },
+  })}<a class="ghost-btn small" href="/operator">${escHtml(tr("edit on the Operator page"))}</a></div>`
+    + (s ? s.nodes.filter((n) => n.always || pick.assumed.includes(n.id) || n.tags.length)
+      .map((n) => opNodeHtml(s, n, n.always || pick.assumed.includes(n.id), false)).join("") : "");
 }
 
 function renderWarframe() {
@@ -21963,6 +22116,7 @@ function renderWarframe() {
   renderWfMods();
   renderWfArcanes();
   renderWfShards();
+  renderWfOperator();
   renderWfHelminth();
   refreshWfPanel();
 }

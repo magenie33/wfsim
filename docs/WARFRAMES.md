@@ -73,6 +73,22 @@ comment. An unknown tag panics at load. An augment whose ability is not in the
 loadout grants no tag, as it pays nothing. Status IMMUNITY is not one of the
 three: it stops a new status and removes none.
 
+## Operator
+
+**AN OPERATOR BUILD IS MADE ONCE AND REFERRED TO.** `/operator` holds a Focus
+school and which of its conditional nodes count as running; a Warframe build
+names one (`operator:` in its state, resolved to `OperatorPick` when sent), so a
+Focus choice made once reaches every frame.
+
+- ONLY THE ACTIVE SCHOOL APPLIES: "Active and Passive ways are only usable in the
+  specific focus school they belong to" (W`Focus`). No Waybound reaches a
+  Warframe, so `data/focus/` carries none.
+- `always: true` counts whenever the school is active (Stone Skin). A node that
+  needs an Operator action counts only when the Operator build ASSUMES it, which
+  is the house rule for a condition about the Tenno.
+- A node's TAG counts whenever its school is active: the node can be used, and a
+  tag says what a build can do rather than what is running.
+
 ## Abilities
 
 `data/warframe_abilities/` holds the CARD of an ability — cost, description,

@@ -1,0 +1,36 @@
+# UNAIRU — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
+id: unairu
+name: Unairu
+
+nodes:
+  # "Gain immunity to slow, stagger, and knockdown effects for '''10 / 20 / 30 / 40'''s
+  # after transferring between Operator or Warframe."
+  - id: poise
+    name: Poise
+    text: "Gain immunity to slow, stagger, and knockdown effects for 40s after transferring between Operator or Warframe."
+    when: 40 s after Transference
+  # "Increases {{Stat|Armor}} for Warframe and Operator by '''50 / 100 / 150 / 200'''."
+  # Info: "Armor bonus is flat, added after mods and abilities".
+  - id: stone_skin
+    name: Stone Skin
+    text: "Increases Armor for Warframe and Operator by 200."
+    always: true
+    effects:
+      - kind: armor_flat
+        value: 200
+  # "Warframe is invulnerable for '''1 / 2 / 3 / 4'''s after Operator is downed"
+  - id: reinforced_return
+    name: Reinforced Return
+    text: "Warframe is invulnerable for 4s after Operator is downed."
+    when: after the Operator is downed
+    tags:
+      - tag: invulnerable
+        when: after the Operator is downed, 4 s
+  # "Shockwaves create '''2 / 3 / 4 / 5''' Armor Motes that grant +450 temporary Armor. Max 5."
+  - id: tempered_benison
+    name: Tempered Benison
+    text: "Shockwaves create 5 Armor Motes that grant +450 temporary Armor. Max 5."
+    when: after a Cogron Tauron Strike
+
+source:
+  url: https://wiki.warframe.com/w/Focus/Unairu

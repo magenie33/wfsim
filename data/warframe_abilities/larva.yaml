@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Infestation/Abilities/InfestTendrilsAbility
 icon: LarvaIcon(xWhite).png
 description: "Spawn an Infested pod that erupts with tendrils, latches onto nearby enemies and pulls them in. Enemies killed while held have a chance of generating a Mutation stack."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Larva's range is reduced to 5.33 / 6 / 6.67 / 8 meters."
+
 source:
   url: https://wiki.warframe.com/w/Larva

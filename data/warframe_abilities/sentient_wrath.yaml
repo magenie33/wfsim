@@ -8,5 +8,9 @@ internal_name: /Lotus/Powersuits/Sentient/Abilities/SentientStompAbility
 icon: SentientWrathIcon(xWhite).png
 description: "Smash the ground sending out a radial wave of destruction. Those not killed by the initial blast are helplessly raised into the air, where they take amplified damage for a short time."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Sentient Wrath only strikes in a frontal cone and does not inflict Tau status effects."
+
 source:
   url: https://wiki.warframe.com/w/Sentient_Wrath

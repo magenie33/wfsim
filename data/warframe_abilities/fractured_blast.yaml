@@ -8,5 +8,9 @@ internal_name: /Lotus/Powersuits/Geode/Abilities/GeodeShardsAbility
 icon: FracturedBlastIcon(xWhite).png
 description: "Slash and stagger enemies with a crystal blast that inflicts Slash Status. Enemies afflicted with this Status Effect have an increased chance of dropping Health and Energy Orbs."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Fractured Blast's damage is reduced to 125 / 150 / 200 / 250, Health Orb drop chance reduced to 25%, and Energy Orb drop chance reduced to 10%."
+
 source:
   url: https://wiki.warframe.com/w/Fractured_Blast

@@ -9,5 +9,14 @@ internal_name: /Lotus/Powersuits/Nezha/Abilities/NezhaTrailAbility
 icon: FireWalkerIcon(xWhite).png
 description: "Blaze a trail of flames, scorching enemies and cleansing allies. Teleporting blasts the landing area with a ring of fire."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "This does not allow other Warframes to use Fire Walker's explosion on teleport. This is exclusively a synergy with Blazing Chakram."
+
+tags:
+  # "they are immune and continually cleansed of all Status Effects."
+  - tag: status_cleanse
+    when: "continuously while standing on the flames"
+
 source:
   url: https://wiki.warframe.com/w/Fire_Walker

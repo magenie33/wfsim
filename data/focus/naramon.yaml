@@ -1,0 +1,32 @@
+# NARAMON — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
+id: naramon
+name: Naramon
+
+nodes:
+  # "Melee Combo Counter now decays while out of combat by '''20 / 15 / 10 / 5''' every
+  # few seconds, instead of depleting completely."
+  - id: power_spike
+    name: Power Spike
+    text: "Melee Combo Counter now decays while out of combat by 5 every few seconds, instead of depleting completely."
+    always: true
+  # "Additional '''20 / 30 / 40 / 50'''% Weapon Damage per Lifted enemy attacked by
+  # Operator. Lasts for '''30 / 40 / 50 / 60'''s, stacks up to 4x."
+  - id: lethal_levitation
+    name: Lethal Levitation
+    text: "Additional 50% Weapon Damage per Lifted enemy attacked by Operator. Lasts for 60s, stacks up to 4x."
+    when: the Operator attacking Lifted enemies, 60 s
+  # "Initiating a finisher as Operator switches to Warframe, increasing melee Critical
+  # Chance by '''20 / 30 / 40 / 50'''% for '''10 / 20 / 30 / 40'''s."
+  - id: killers_rush
+    name: Killer's Rush
+    text: "Initiating a finisher as Operator switches to Warframe, increasing melee Critical Chance by 50% for 40s."
+    when: after an Operator finisher, 40 s
+  # "Performing a Slam as Operator switches to Warframe and grants double Combo gain for
+  # '''5 / 10 / 15 / 20'''s."
+  - id: opening_slam
+    name: Opening Slam
+    text: "Performing a Slam as Operator switches to Warframe and grants double Combo gain for 20s."
+    when: after an Operator slam, 20 s
+
+source:
+  url: https://wiki.warframe.com/w/Focus/Naramon

@@ -7,5 +7,10 @@ internal_name: /Lotus/Powersuits/PowersuitAbilities/HelminthProcBlockAbility
 icon: HideousResistanceIcon(xWhite).png
 description: "Grant yourself immunity to Status effects."
 
+tags:
+  # "Expend 50 Energy to cleanse active Status Effects"
+  - tag: status_cleanse
+    when: "on cast, not what lands during the cast animation"
+
 source:
   url: https://wiki.warframe.com/w/Hideous_Resistance

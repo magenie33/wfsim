@@ -9,5 +9,17 @@ internal_name: /Lotus/Powersuits/Revenant/Abilities/RevenantAfflictionAbility
 icon: ReaveIcon(xWhite).png
 description: "Dash through enemies as a wall of sentient energy, leeching shields and health from any encountered, enhanced for thralls."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "The UI's listed 40% damage is not applicable for non-Revenant frames and instead deals 8% damage."
+
+tags:
+  # "While traveling in energy form, Revenant is intangible, Invulnerable to damage"
+  - tag: invulnerable
+    when: "during the dash, 1 s"
+  # "Revenant still removes all status effects if doesn't pass through any enemy."
+  - tag: status_cleanse
+    when: "during the dash"
+
 source:
   url: https://wiki.warframe.com/w/Reave

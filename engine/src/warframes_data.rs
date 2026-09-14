@@ -147,16 +147,120 @@ pub struct TagGrant {
     pub tag: Capability,
     /// The condition and timing, in the card's own terms ("on roll, 3 s").
     pub when: String,
+    /// An ABILITY's tag as the Helminth infuses it: `None` = unchanged, and
+    /// `Some(None)` = the infused version does not grant it at all.
+    pub infused: Option<Option<String>>,
 }
 
 #[derive(Debug, Deserialize)]
 struct RawTag {
     tag: String,
     when: String,
+    /// The infused version's timing, where its page states a different one.
+    #[serde(default)]
+    infused_when: Option<String>,
+    /// The infused version grants no such tag (Omamori).
+    #[serde(default)]
+    not_when_infused: bool,
 }
 
 fn tags_of(path: &str, raw: &[RawTag]) -> Vec<TagGrant> {
-    raw.iter().map(|t| TagGrant { tag: Capability::parse(path, &t.tag), when: t.when.clone() }).collect()
+    raw.iter()
+        .map(|t| TagGrant {
+            tag: Capability::parse(path, &t.tag),
+            when: t.when.clone(),
+            infused: if t.not_when_infused {
+                Some(None)
+            } else {
+                t.infused_when.clone().map(Some)
+            },
+        })
+        .collect()
+}
+
+// ---- focus ----------------------------------------------------------------
+
+/// One Focus node that reaches the Warframe, at max rank.
+#[derive(Debug, Clone)]
+pub struct FocusNode {
+    pub id: String,
+    pub name: String,
+    pub text: String,
+    /// No Operator action is needed; the node always applies.
+    pub always: bool,
+    pub when: String,
+    pub effects: Vec<FrameEffect>,
+    pub tags: Vec<TagGrant>,
+}
+
+/// A Focus school. Only the ACTIVE school's nodes apply: "Active and Passive ways
+/// are only usable in the specific focus school they belong to" (W`Focus`).
+#[derive(Debug, Clone)]
+pub struct FocusSchool {
+    pub id: String,
+    pub name: String,
+    pub nodes: Vec<FocusNode>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawNode {
+    id: String,
+    name: String,
+    text: String,
+    #[serde(default)]
+    always: bool,
+    #[serde(default)]
+    when: String,
+    #[serde(default)]
+    effects: Vec<RawEffect>,
+    #[serde(default)]
+    tags: Vec<RawTag>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawSchool {
+    id: String,
+    name: String,
+    nodes: Vec<RawNode>,
+    #[serde(default)]
+    source: SourceFile,
+}
+
+pub fn focus_schools() -> &'static [FocusSchool] {
+    static F: OnceLock<Vec<FocusSchool>> = OnceLock::new();
+    F.get_or_init(|| {
+        crate::data::files_under("focus/")
+            .map(|(p, text)| {
+                let r: RawSchool = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                FocusSchool {
+                    id: r.id,
+                    name: r.name,
+                    nodes: r
+                        .nodes
+                        .iter()
+                        .map(|n| {
+                            assert!(n.always || !n.when.is_empty(), "{p}: {} says neither `always` nor `when`", n.id);
+                            FocusNode {
+                                id: n.id.clone(),
+                                name: n.name.clone(),
+                                text: n.text.clone(),
+                                always: n.always,
+                                when: n.when.clone(),
+                                effects: n.effects.iter().map(|e| effect(p, e)).collect(),
+                                tags: tags_of(p, &n.tags),
+                            }
+                        })
+                        .collect(),
+                    url: r.source.url,
+                }
+            })
+            .collect()
+    })
+}
+
+pub fn focus_school(id: &str) -> Option<&'static FocusSchool> {
+    focus_schools().iter().find(|s| s.id == id)
 }
 
 /// One line of a mod's or an arcane's card, typed.
@@ -164,6 +268,8 @@ fn tags_of(path: &str, raw: &[RawTag]) -> Vec<TagGrant> {
 pub enum FrameEffect {
     /// A percentage bonus at MAX rank, additive with every other source of it.
     Bonus(FrameStat, f64),
+    /// A flat amount added after the multiplier (`<stat>_flat`, `value:`).
+    Flat(FrameStat, f64),
     /// A line of the card this panel does not compute, verbatim.
     Unmodelled(String),
     /// A line that cannot pay out in a Warframe's own panel, and why.
@@ -182,6 +288,8 @@ struct RawEffect {
     #[serde(rename = "rankMax", default)]
     rank_max: f64,
     #[serde(default)]
+    value: f64,
+    #[serde(default)]
     text: Option<String>,
     #[serde(default)]
     applies_to: Option<String>,
@@ -193,6 +301,13 @@ fn effect(path: &str, e: &RawEffect) -> FrameEffect {
             e.text.clone().unwrap_or_else(|| panic!("{path}: an unmodelled line carries its text")),
         ),
         "out_of_scope" => FrameEffect::OutOfScope(e.applies_to.clone().unwrap_or_default()),
+        kind if kind.ends_with("_flat") => {
+            let id = kind.trim_end_matches("_flat");
+            match FrameStat::ALL.into_iter().find(|s| s.id() == id) {
+                Some(s) => FrameEffect::Flat(s, e.value),
+                None => panic!("{path}: unknown Warframe effect kind `{kind}`"),
+            }
+        }
         kind => match FrameStat::from_kind(kind) {
             Some(s) => FrameEffect::Bonus(s, e.rank_max),
             // AN UNKNOWN KIND IS REFUSED, never dropped: a card that silently
@@ -482,6 +597,10 @@ pub struct Ability {
     pub stats: Vec<AbilityStat>,
     pub unmodelled: Vec<String>,
     pub tags: Vec<TagGrant>,
+    /// The infused version's cost, where its page states a different one.
+    pub infused_energy_cost: Option<f64>,
+    /// What the infused version does differently, verbatim.
+    pub infused_notes: Vec<String>,
     pub internal_name: Option<String>,
     pub url: Option<String>,
 }
@@ -538,6 +657,10 @@ struct RawAbility {
     #[serde(default)]
     tags: Vec<RawTag>,
     #[serde(default)]
+    infused_energy_cost: Option<f64>,
+    #[serde(default)]
+    infused_notes: Vec<String>,
+    #[serde(default)]
     internal_name: Option<String>,
     #[serde(default)]
     source: SourceFile,
@@ -592,6 +715,8 @@ pub fn abilities() -> &'static [Ability] {
                     description: r.description,
                     drain_per_second: r.drain_per_second,
                     tags: tags_of(p, &r.tags),
+                    infused_energy_cost: r.infused_energy_cost,
+                    infused_notes: r.infused_notes,
                     unmodelled: r.unmodelled,
                     internal_name: r.internal_name,
                     url: r.source.url,
@@ -710,8 +835,20 @@ pub struct HelminthPick {
     pub ability: String,
 }
 
+/// THE OPERATOR a Warframe build refers to: the active Focus school, and which
+/// of its conditional nodes to count as running. A node's condition is the
+/// Operator's own action, so it is ASSUMED when ticked and never simulated.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct OperatorPick {
+    pub school: String,
+    #[serde(default)]
+    pub assumed: Vec<String>,
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct Build {
+    #[serde(default)]
+    pub operator: Option<OperatorPick>,
     pub frame: String,
     #[serde(default)]
     pub mods: Vec<SlotPick>,
@@ -945,6 +1082,8 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                     add(*s, &m.id, at_rank(*v, *rank, m.max_rank) * (1.0 + set_share), false)
                 }
                 FrameEffect::Bonus(..) => {}
+                FrameEffect::Flat(s, v) if dead.is_none() => add(*s, &m.id, *v, true),
+                FrameEffect::Flat(..) => {}
                 FrameEffect::Unmodelled(t) => admissions.push(Admission {
                     from: m.id.clone(),
                     text: t.clone(),
@@ -974,6 +1113,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         for e in &a.effects {
             match e {
                 FrameEffect::Bonus(s, v) => add(*s, &a.id, at_rank(*v, rank, a.max_rank), false),
+                FrameEffect::Flat(s, v) => add(*s, &a.id, *v, true),
                 FrameEffect::Unmodelled(t) => admissions.push(Admission {
                     from: a.id.clone(),
                     text: t.clone(),
@@ -1006,6 +1146,31 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                 text: o.text.clone(),
                 kind: AdmissionKind::OutOfScope,
             }),
+        }
+    }
+
+    // THE OPERATOR'S FOCUS: an always-on node counts, a conditional one only
+    // when the Operator build assumes it.
+    let school = match &b.operator {
+        Some(o) => match focus_school(&o.school) {
+            Some(s) => Some((s, o)),
+            None => {
+                refused.push(format!("unknown Focus school: {}", o.school));
+                None
+            }
+        },
+        None => None,
+    };
+    if let Some((s, o)) = school {
+        for n in s.nodes.iter().filter(|n| n.always || o.assumed.contains(&n.id)) {
+            let from = format!("focus:{}:{}", s.id, n.id);
+            for e in &n.effects {
+                match e {
+                    FrameEffect::Bonus(st, v) => add(*st, &from, *v, false),
+                    FrameEffect::Flat(st, v) => add(*st, &from, *v, true),
+                    FrameEffect::Unmodelled(_) | FrameEffect::OutOfScope(_) => {}
+                }
+            }
         }
     }
 
@@ -1092,7 +1257,8 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                 slot,
                 ability: a,
                 helminth,
-                energy_cost: a.energy_cost * cost_multiplier,
+                energy_cost: if helminth { a.infused_energy_cost.unwrap_or(a.energy_cost) } else { a.energy_cost }
+                    * cost_multiplier,
                 drain_per_second: a.drain_per_second.map(|d| d * drain_multiplier),
                 lines,
                 derived,
@@ -1101,22 +1267,36 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         .collect();
 
     let mut tags: Vec<TagSource> = Vec::new();
-    let mut claim = |from: &str, grants: &[TagGrant]| {
-        tags.extend(grants.iter().map(|g| TagSource { tag: g.tag, from: from.to_string(), when: g.when.clone() }));
+    let mut claim = |from: &str, grants: &[TagGrant], infused: bool| {
+        for g in grants {
+            let when = match (&g.infused, infused) {
+                (Some(None), true) => continue,
+                (Some(Some(w)), true) => w.clone(),
+                _ => g.when.clone(),
+            };
+            tags.push(TagSource { tag: g.tag, from: from.to_string(), when });
+        }
     };
-    claim(&frame.id, &frame.passive_tags);
+    claim(&frame.id, &frame.passive_tags, false);
     for (m, _) in &seated {
         if m.augments.as_deref().is_none_or(|a| loadout.iter().any(|(_, x, _)| x.id == a)) {
-            claim(&m.id, &m.tags);
+            claim(&m.id, &m.tags, false);
         }
     }
     for id in &arcane_ids {
         if let Some(a) = arcane_by_id(id) {
-            claim(&a.id, &a.tags);
+            claim(&a.id, &a.tags, false);
         }
     }
-    for (_, a, _) in &loadout {
-        claim(&a.id, &a.tags);
+    for (_, a, helminth) in &loadout {
+        claim(&a.id, &a.tags, *helminth);
+    }
+    // AN UNLOCKED NODE CAN BE USED whether or not its stat is assumed, so every
+    // tag of the active school counts.
+    if let Some((s, _)) = school {
+        for n in &s.nodes {
+            claim(&format!("focus:{}:{}", s.id, n.id), &n.tags, false);
+        }
     }
     tags.sort_by(|a, b| a.tag.cmp(&b.tag));
 
@@ -1272,6 +1452,11 @@ mod tests {
         assert_eq!(resolve(&b).unwrap().refused.len(), 1);
         let as_infused = ability("warcry").unwrap().stats[0].helminth_value;
         assert_eq!(as_infused, Some(0.3));
+        // "Subsumed Pillage uses 50 energy instead of shields."
+        b.helminth = Some(HelminthPick { slot: 1, ability: "pillage".into() });
+        let r = resolve(&b).unwrap();
+        assert_eq!(r.abilities[0].energy_cost, 50.0);
+        assert!(!r.abilities[0].ability.infused_notes.is_empty());
     }
 
     #[test]
@@ -1289,6 +1474,50 @@ mod tests {
         let r = resolve(&b).unwrap();
         // a family twice, an aura in a main slot, a non-exilus in the exilus slot
         assert_eq!(r.refused.len(), 3, "{:?}", r.refused);
+    }
+
+    fn tags_of_build(b: &Build) -> Vec<(Capability, String)> {
+        resolve(b).unwrap().tags.into_iter().map(|t| (t.tag, t.from)).collect()
+    }
+
+    /// Rolling Guard: "grants a brief period of invulnerability and removes all
+    /// Status Effects when rolling"; Valkyr's passive grants invulnerability.
+    #[test]
+    fn a_tag_names_every_source_that_grants_it() {
+        let b = build(&["rolling_guard"]);
+        let t = tags_of_build(&b);
+        assert!(t.contains(&(Capability::Invulnerable, "valkyr".into())));
+        assert!(t.contains(&(Capability::Invulnerable, "rolling_guard".into())));
+        assert!(t.contains(&(Capability::StatusCleanse, "rolling_guard".into())));
+        assert!(!t.iter().any(|(c, _)| *c == Capability::DamageCap));
+    }
+
+    /// "Subsumed Omamori ... cannot gain invulnerability", and Well of Life's
+    /// infused cooldown is 120 s.
+    #[test]
+    fn an_infused_ability_carries_the_infused_versions_tags() {
+        let mut b = build(&[]);
+        b.helminth = Some(HelminthPick { slot: 1, ability: "omamori".into() });
+        assert!(!tags_of_build(&b).iter().any(|(_, f)| f == "omamori"));
+        b.helminth = Some(HelminthPick { slot: 1, ability: "well_of_life".into() });
+        let r = resolve(&b).unwrap();
+        let w = r.tags.iter().find(|t| t.from == "well_of_life").expect("the infused Well of Life");
+        assert!(w.when.contains("120 s"), "{}", w.when);
+    }
+
+    /// An always-on node counts, a conditional one only when assumed, and the
+    /// active school's tags count either way.
+    #[test]
+    fn the_operator_counts_what_is_always_on_and_what_is_assumed() {
+        let mut b = build(&[]);
+        b.operator = Some(OperatorPick { school: "unairu".into(), assumed: vec![] });
+        let r = resolve(&b).unwrap();
+        assert_eq!(r.stat(FrameStat::Armor).value, 855.0 + 200.0, "Stone Skin");
+        assert!(r.tags.iter().any(|t| t.from == "focus:unairu:reinforced_return"));
+        b.operator = Some(OperatorPick { school: "madurai".into(), assumed: vec![] });
+        assert_eq!(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.0);
+        b.operator = Some(OperatorPick { school: "madurai".into(), assumed: vec!["sling_strength".into()] });
+        assert!(close(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.4));
     }
 
     #[test]

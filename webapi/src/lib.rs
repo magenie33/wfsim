@@ -151,6 +151,21 @@ pub fn warframe_catalog_json() -> Value {
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
             "tags": tags(&x.tags),
         })).collect::<Vec<_>>(),
+        // THE OPERATOR'S FOCUS, for the Operator page and for what a Warframe
+        // build shows it referring to.
+        "focus": wf::focus_schools().iter().map(|s| json!({
+            "id": s.id,
+            "name": s.name,
+            "url": s.url,
+            "nodes": s.nodes.iter().map(|n| json!({
+                "id": n.id,
+                "name": n.name,
+                "text": n.text,
+                "always": n.always,
+                "when": n.when,
+                "tags": tags(&n.tags),
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
         "abilities": wf::abilities().iter().map(|x| json!({
             "id": x.id,
             "name": x.name,
@@ -204,7 +219,13 @@ pub fn warframe_panel_json(v: &Value) -> Value {
             "slot": x.slot,
             "id": x.ability.id,
             "helminth": x.helminth,
-            "base_energy_cost": x.ability.energy_cost,
+            "base_energy_cost": if x.helminth {
+                x.ability.infused_energy_cost.unwrap_or(x.ability.energy_cost)
+            } else {
+                x.ability.energy_cost
+            },
+            // WHAT THE INFUSED VERSION DOES DIFFERENTLY, only when it is infused.
+            "infused_notes": if x.helminth { x.ability.infused_notes.clone() } else { Vec::new() },
             "energy_cost": x.energy_cost,
             "cost_type": x.ability.cost_type,
             "base_drain_per_second": x.ability.drain_per_second,
