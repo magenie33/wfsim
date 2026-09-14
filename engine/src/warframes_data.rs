@@ -109,18 +109,25 @@ pub enum Capability {
     Invulnerable,
     /// Removes status effects already on the Warframe.
     StatusCleanse,
+    /// No NEW status effect lands; what is already there stays.
+    StatusImmunity,
     /// Damage taken has a hard ceiling.
     DamageCap,
 }
 
 impl Capability {
-    pub const ALL: [Capability; 3] =
-        [Capability::Invulnerable, Capability::StatusCleanse, Capability::DamageCap];
+    pub const ALL: [Capability; 4] = [
+        Capability::Invulnerable,
+        Capability::StatusCleanse,
+        Capability::StatusImmunity,
+        Capability::DamageCap,
+    ];
 
     pub fn id(self) -> &'static str {
         match self {
             Capability::Invulnerable => "invulnerable",
             Capability::StatusCleanse => "status_cleanse",
+            Capability::StatusImmunity => "status_immunity",
             Capability::DamageCap => "damage_cap",
         }
     }
@@ -129,6 +136,7 @@ impl Capability {
         match self {
             Capability::Invulnerable => "Invulnerable",
             Capability::StatusCleanse => "Status cleanse",
+            Capability::StatusImmunity => "Status immunity",
             Capability::DamageCap => "Damage cap",
         }
     }
@@ -1490,6 +1498,9 @@ mod tests {
         assert!(t.contains(&(Capability::Invulnerable, "rolling_guard".into())));
         assert!(t.contains(&(Capability::StatusCleanse, "rolling_guard".into())));
         assert!(!t.iter().any(|(c, _)| *c == Capability::DamageCap));
+        // Hysteria: "becoming immune to Status Effects" — an immunity, not a cleanse.
+        assert!(t.contains(&(Capability::StatusImmunity, "hysteria".into())));
+        assert!(!t.contains(&(Capability::StatusCleanse, "hysteria".into())));
     }
 
     /// "Subsumed Omamori ... cannot gain invulnerability", and Well of Life's

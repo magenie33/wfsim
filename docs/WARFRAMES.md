@@ -65,13 +65,15 @@ builds. What a build states instead is a closed set of tags
 | --- | --- |
 | `invulnerable` | takes no damage at all for a while |
 | `status_cleanse` | removes status effects already on the frame |
+| `status_immunity` | no new status effect lands; what is already there stays |
 | `damage_cap` | damage taken has a hard ceiling, not a percentage reduction |
 
 A tag is DATA on the item that grants it — `tags:` on a mod, arcane or ability,
 `passive_tags:` on a frame — as `{tag, when}`, with the wiki sentence quoted in a
 comment. An unknown tag panics at load. An augment whose ability is not in the
-loadout grants no tag, as it pays nothing. Status IMMUNITY is not one of the
-three: it stops a new status and removes none.
+loadout grants no tag, as it pays nothing. A CLEANSE and an IMMUNITY are two
+tags because they answer two questions — one removes what landed, the other
+stops what is coming — and one ability may grant both (Defy, Fire Walker).
 
 ## Operator
 

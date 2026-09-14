@@ -21392,7 +21392,8 @@ const WF_AURA = 9;
 const WF_BASE_CAPACITY = 60;
 const WF_POLS = ["Madurai", "Naramon", "Vazarin", "Zenurik", "Unairu", "Umbra", "Omni"];
 const WF_SCALE_TAG = { strength: "STR", duration: "DUR", range: "RNG", casting_speed: "CAST" };
-const WF_CAPS = [["invulnerable", "Invulnerable"], ["status_cleanse", "Status cleanse"], ["damage_cap", "Damage cap"]];
+const WF_CAPS = [["invulnerable", "Invulnerable"], ["status_cleanse", "Status cleanse"],
+  ["status_immunity", "Status immunity"], ["damage_cap", "Damage cap"]];
 /// An item's tags as chips, for the card that carries them.
 const wfTagChips = (tags) => (tags || []).map((t) => {
   const c = WF_CAPS.find(([id]) => id === t.tag);

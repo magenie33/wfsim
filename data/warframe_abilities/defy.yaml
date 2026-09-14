@@ -13,6 +13,9 @@ infused_notes:
   - "Subsumed Defy's armor bonus is capped at 750."
 
 tags:
+  # "Invulnerable to damage and new Status Effects"
+  - tag: status_immunity
+    when: "during the 2 s stance"
   # "becoming Invulnerable to damage and new Status Effects ... for 2 seconds"
   - tag: invulnerable
     when: "on cast, 2 s"

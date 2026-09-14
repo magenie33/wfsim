@@ -15,6 +15,9 @@ infused_notes:
 
 tags:
   # "they are immune and continually cleansed of all Status Effects."
+  - tag: status_immunity
+    when: "while standing on the flames"
+  # "they are immune and continually cleansed of all Status Effects."
   - tag: status_cleanse
     when: "continuously while standing on the flames"
 

@@ -14,6 +14,9 @@ infused_notes:
   - "Subsumed Well of Life's revive cooldown is increased to 120 seconds."
 
 tags:
+  # "each status effect received by allies inside the aura are negated / Will negate Toxin procs but not damage"
+  - tag: status_immunity
+    when: "inside the aura; Toxin damage still lands"
   # "granting them 5 seconds of Invulnerability. The revived ally experiences a 60 second cooldown / Subsumed Well of Life's revive cooldown is increased to 120 seconds."
   - tag: invulnerable
     when: "on fatal damage inside the aura, 5 s, a 60 s cooldown per ally"

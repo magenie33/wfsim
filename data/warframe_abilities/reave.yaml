@@ -14,6 +14,9 @@ infused_notes:
   - "The UI's listed 40% damage is not applicable for non-Revenant frames and instead deals 8% damage."
 
 tags:
+  # "protected against new Status Effects"
+  - tag: status_immunity
+    when: "during the dash"
   # "While traveling in energy form, Revenant is intangible, Invulnerable to damage"
   - tag: invulnerable
     when: "during the dash, 1 s"
