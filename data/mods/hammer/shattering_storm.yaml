@@ -35,47 +35,47 @@ description: "A Stance of crushing blows and shattering impacts."
 combos:
   # Falling Rock — 4.9 s at 1.0x, 4 inputs of 1.225 s
   neutral:
-    - { multiplier: 4.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 4 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, combo_points: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, combo_points: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.0, impact_multiplier: 1.5, combo_points: 4 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 2 }
-    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, forced_procs: [knockdown], combo_points: 1 }
+    - { multiplier: 4.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 4.0, delay_seconds: 0.0, impact_multiplier: 1.5, combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5, combo_points_base: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.225, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
   # Pounding Smite — 2.6 s at 1.0x, 4 inputs of 0.65 s
   forward:
-    - { multiplier: 2.0, delay_seconds: 0.65, forced_procs: [impact], combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.65, combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.65, impact_multiplier: 1.5, combo_points: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.65, impact_multiplier: 1.5, forced_procs: [lifted], combo_points: 3 }
+    - { multiplier: 2.0, delay_seconds: 0.65, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.65, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.65, impact_multiplier: 1.5, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.65, impact_multiplier: 1.5, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
   # Rising Thunder — 3.3 s at 1.0x, 2 inputs of 1.65 s
   block:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 3.0, delay_seconds: 1.65, forced_procs: [lifted], combo_points: 3 }
-    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.65, forced_procs: [knockdown], combo_points: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 3.0, delay_seconds: 1.65, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5, combo_points_base: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.65, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
   # Smashing Fury — 3.55 s at 1.0x, 3 inputs of 1.1833 s
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 2.0, delay_seconds: 1.1833, combo_points: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.0, combo_points: 4 }
-    - { multiplier: 2.0, delay_seconds: 1.1833, all_around: true, combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, impact_multiplier: 1.5, combo_points: 2 }
-    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, combo_points: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.1834, forced_procs: [knockdown], combo_points: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 2.0, delay_seconds: 1.1833, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 4.0, delay_seconds: 0.0, combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 2.0, delay_seconds: 1.1833, all_around: true, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.0, impact_multiplier: 1.5, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, combo_points: 5, combo_points_base: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.1834, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
   # Crowd Fall — the heavy attack. IDENTICAL ON BOTH HAMMER STANCES, which is
   # worth stating: a hammer's heavy is its class multiplier (6x) delivered as an
   # alternating pair, and the stance decides only the animation and the procs.
   # The 1.2 s wind-up is its own clock and attack speed does not shorten it.
   heavy:
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0 }
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0 }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
   # Hell's Wave — the slide attack, also identical on both.
   slide:
-    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact], combo_points: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
 
 effects:
   - kind: out_of_scope

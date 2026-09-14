@@ -1190,6 +1190,11 @@ pub struct ComboHit {
     /// follow no rule of the multiplier (MEASUREMENTS M95). An unmeasured row is
     /// filled from the wiki's rule (see notes: combo_points_from_multiplier).
     pub combo_points: f64,
+    /// HOW MANY OF THOSE POINTS ARE BASE POINTS — the unit every combo chance
+    /// acts on (MEASUREMENTS M97). An ordinary weapon's stance: all of them. An
+    /// Exalted stance: one per hit, the rest riding along. Zero on a row of a
+    /// form that spends the counter, which earns nothing.
+    pub combo_points_base: f64,
 }
 
 fn one_hit() -> u32 {

@@ -76,10 +76,13 @@ WFCD's export where the export carries the field.
   nobody has measured is FILLED (notes: `combo_points_from_multiplier`), not how
   the game works: Hysteria's measured rows follow no rule of the multiplier
   (MEASUREMENTS M95).
-- **Additional Combo Count Chance, per hit: each whole 100% repeats the hit's
-  points, and the rest rolls for ONE point.** Quickening, True Punishment and
-  Enduring Strike add to one chance; 120% on Hysteria's 9-point aerial combo
-  reads 18 to 22 (MEASUREMENTS M96).
+- **A hit's BASE points are what every combo chance acts on**: all of them on an
+  ordinary weapon's stance, one a hit on Hysteria (`combo_points_base`,
+  MEASUREMENTS M97). Additional Combo Count Chance (Quickening, True Punishment,
+  Enduring Strike, a riven — one sum) repeats the hit's points per whole 100%
+  and rolls the rest once per base point for one (M96). Chance to Gain Combo
+  Count is a GATE each base point survives with `1 + chance`, not a share of
+  that sum, and a hit that comes to 0 leaves the combo timer running down (M97).
 - **Per body landed.** The wiki's own reading of the Rauta: *"generates 2 combo
   points per pellet landing on enemy (max 28 points across 14 pellets)"*.
 - **The ladder** is `1 + floor(points / 20)` capped at 12: 2x at 20, one more

@@ -51,13 +51,13 @@ attack:
   # `Knockback` is Impact's own proc and is transcribed as `impact`.
   # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1 }
-    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact], combo_points: 4 }
-    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown], combo_points: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact], combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5, combo_points_base: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
 
 source:
   url: https://wiki.warframe.com/w/Crushing_Ruin

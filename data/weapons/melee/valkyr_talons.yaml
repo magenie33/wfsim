@@ -98,12 +98,12 @@ attack:
   # COMBO POINTS ARE MEASURED, per hit on one target: 1 / 1 / 2x 2 / 2x 2 / 2 / 2x 3
   # (MEASUREMENTS M95). Every Hysteria entry states them per row.
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.475, forced_procs: [slash], combo_points: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.475, hits: 2, combo_points: 3 }
+    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.475, forced_procs: [slash], combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.475, hits: 2, combo_points: 3, combo_points_base: 1 }
 
 source:
   url: https://wiki.warframe.com/w/Valkyr_Talons

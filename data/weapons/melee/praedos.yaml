@@ -106,13 +106,13 @@ attack:
   # see notes: combo_clock_is_the_input — four inputs of 0.7125 s
   # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.7125, hits: 5, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.0, combo_points: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.7125, forced_procs: [impact], combo_points: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 4, forced_procs: [slash], combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 2, forced_procs: [knockdown], combo_points: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 0.5, delay_seconds: 0.7125, hits: 5, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 0.5, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.7125, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 4, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 2, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
 
 source:
   url: https://wiki.warframe.com/w/Praedos

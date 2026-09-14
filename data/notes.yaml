@@ -283,7 +283,9 @@ notes:
     stance damage multiplier (100% stance damage multiplier = 1 point)"* (wiki,
     Melee Combo) — ceil(multiplier), at least 1, so a 50% row still earns one
     (Rogue Edict's counter reads SEVEN). A row of a form that SPENDS the
-    counter states 0: a heavy attack earns nothing.
+    counter states 0: a heavy attack earns nothing. Its `combo_points_base` is
+    the same number, since on an ordinary weapon's stance every point is a base
+    point (MEASUREMENTS M97).
 
     THE RULE FILLS THE FIELD; IT IS NOT HOW THE GAME WORKS. DE sets combo points
     per attack beside its damage — "damage multipliers and combo points adjusted

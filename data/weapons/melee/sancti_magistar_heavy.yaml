@@ -44,7 +44,7 @@ attack:
   # `ComboHit::windup_seconds`.
   # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0 }
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0 }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
 source:
   url: https://wiki.warframe.com/w/Sancti_Magistar

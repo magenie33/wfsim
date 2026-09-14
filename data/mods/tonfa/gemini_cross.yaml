@@ -27,46 +27,46 @@ combos:
   # see notes: combo_clock_is_the_input
   # Vagrant Blight — 4.60 s at 1.0x, 5 inputs of 0.92 s
   neutral:
-    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, combo_points: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.92, hits: 2, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1 }
-    - { multiplier: 0.5, delay_seconds: 0.0, hits: 2, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.92, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1 }
-    - { multiplier: 0.5, delay_seconds: 0.92, hits: 3, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.92, hits: 2, combo_points: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.92, forced_procs: [slash, knockdown], combo_points: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 0.5, delay_seconds: 0.92, hits: 2, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 0.5, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.92, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 0.5, delay_seconds: 0.92, hits: 3, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.92, hits: 2, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 2.0, delay_seconds: 0.92, forced_procs: [slash, knockdown], combo_points: 2, combo_points_base: 2 }
   # Cold Vendetta — 1.20 s at 1.0x, 3 inputs of 0.4 s
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.4, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.4, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.4, combo_points: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.4, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.4, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.4, combo_points: 2, combo_points_base: 2 }
   # Blind Tormentor — 2.85 s at 1.0x, 2 inputs of 1.425 s, the second ending on
   # the weapon's own slam
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 1.425, hits: 2, forced_procs: [impact], combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, combo_points: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, forced_procs: [slash], combo_points: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown], combo_points: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.425, forced_procs: [impact], combo_points: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 1.425, hits: 2, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown], combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.425, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
   # Baleful Sin — 2.30 s at 1.0x, 4 inputs of 0.575 s
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.575, forced_procs: [impact], combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 1.0, delay_seconds: 0.575, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2, combo_points_base: 2 }
   # see notes: tonfa_heavy_and_slide
   heavy:
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown], combo_points: 0 }
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown], combo_points: 0 }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.7, delay_seconds: 0.0, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
   slide:
-    - { multiplier: 2.0, delay_seconds: 0.74, hits: 2, all_around: true, combo_points: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.74, hits: 2, all_around: true, combo_points: 2, combo_points_base: 2 }
 
 effects:
   - kind: out_of_scope

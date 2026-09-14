@@ -46,8 +46,8 @@ attack:
   # combo's 2 s split over its two inputs after it.
   # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 5.0, windup_seconds: 0.5, delay_seconds: 1.0, forced_procs: [lifted], combo_points: 0 }
-    - { multiplier: 3.0, hits: 5, windup_seconds: 0.5, delay_seconds: 1.0, combo_points: 0 }
+    - { multiplier: 5.0, windup_seconds: 0.5, delay_seconds: 1.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 3.0, hits: 5, windup_seconds: 0.5, delay_seconds: 1.0, combo_points: 0, combo_points_base: 0 }
 
 source:
   url: https://wiki.warframe.com/w/Hysteria_(Stance)

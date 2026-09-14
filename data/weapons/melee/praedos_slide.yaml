@@ -53,7 +53,7 @@ attack:
     takes_multishot: false
   # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.74, hits: 2, all_around: true, combo_points: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.74, hits: 2, all_around: true, combo_points: 2, combo_points_base: 2 }
 
 source:
   url: https://wiki.warframe.com/w/Sovereign_Outcast

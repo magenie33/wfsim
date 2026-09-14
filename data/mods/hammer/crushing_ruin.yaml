@@ -31,44 +31,44 @@ description: "Wielders of this Stance thrust in strong whirlwind attacks."
 combos:
   # Raging Whirlwind — 3.0 s at 1.0x, 3 inputs of 1.0 s
   neutral:
-    - { multiplier: 4.0, delay_seconds: 1.0, impact_multiplier: 1.5, forced_procs: [impact], combo_points: 4 }
-    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true, combo_points: 2 }
-    - { multiplier: 3.0, delay_seconds: 1.0, all_around: true, combo_points: 3 }
-    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, forced_procs: [knockdown], combo_points: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0, combo_points: 1 }
+    - { multiplier: 4.0, delay_seconds: 1.0, impact_multiplier: 1.5, forced_procs: [impact], combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 3.0, delay_seconds: 1.0, all_around: true, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, forced_procs: [knockdown], combo_points: 5, combo_points_base: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0, combo_points: 1, combo_points_base: 1 }
   # Tidal Force — 2.6 s at 1.0x, 4 inputs of 0.65 s
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.65, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.65, combo_points: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.65, combo_points: 3 }
+    - { multiplier: 1.0, delay_seconds: 0.65, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.65, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.65, combo_points: 3, combo_points_base: 3 }
   # Winding Temper — 2.25 s at 1.0x, ONE input. The stance's whole block combo
   # is a single attack that lands four times, which is what makes it 400%/s off
   # a hammer's cadence.
   block:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.0, combo_points: 4 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 2.25, forced_procs: [knockdown], combo_points: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 4.0, delay_seconds: 0.0, combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 2.25, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
   # Shattered Village — 4.25 s at 1.0x, 4 inputs of 1.0625 s
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
-    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1 }
-    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact], combo_points: 4 }
-    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown], combo_points: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact], combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5, combo_points_base: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
   # Crowd Fall — the heavy attack. IDENTICAL ON BOTH HAMMER STANCES, which is
   # worth stating: a hammer's heavy is its class multiplier (6x) delivered as an
   # alternating pair, and the stance decides only the animation and the procs.
   # The 1.2 s wind-up is its own clock and attack speed does not shorten it.
   heavy:
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0 }
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0 }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
   # Hell's Wave — the slide attack, also identical on both.
   slide:
-    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact], combo_points: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
 
 effects:
   # A STANCE IS NOT A STAT. Its whole payload is the `combos:` above — the first

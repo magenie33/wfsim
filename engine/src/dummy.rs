@@ -3233,14 +3233,16 @@ pub struct DummyParams {
     /// `status = base x [1 + mods + this x (combo - 1)]`.
     pub status_chance_per_combo: f64,
     /// CHANCE OF AN EXTRA COMBO POINT per landed hit (Quickening, True
-    /// Punishment, Enduring Strike). Per hit, each whole 1.0 repeats the hit's
-    /// points and the rest rolls for one point (MEASUREMENTS M96).
+    /// Punishment, Enduring Strike). Each whole 1.0 repeats the hit's points;
+    /// the rest rolls for one point per base point (MEASUREMENTS M96, M97).
     pub combo_count_chance: f64,
     /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike), plus the status
     /// bracket's own Lifted card (Enduring Affliction). A CONDITION ABOUT THE
     /// TARGET IS SIMULATED: `Lifted` is a status this engine tracks, forced by
     /// every heavy slam and by a heavy attack.
     pub combo_count_chance_on_lifted: f64,
+    /// Chance to Gain Combo Count — see `loadout::ResolvedPanel::combo_gain_chance`.
+    pub combo_gain_chance: f64,
     /// COMBO POINTS PER BODY THE SLAM REACHED (Shockwave Synergy), before the
     /// combo count chance that scales them. Zero on every other weapon.
     pub combo_count_on_slam_hit: f64,
@@ -4753,6 +4755,7 @@ impl DummyParams {
             status_chance_per_combo: panel.status_chance_per_combo,
             combo_count_chance: panel.combo_count_chance,
             combo_count_chance_on_lifted: panel.combo_count_chance_on_lifted,
+            combo_gain_chance: panel.combo_gain_chance,
             combo_count_on_slam_hit: panel.combo_count_on_slam_hit,
             status_chance_on_lifted: panel.status_chance_on_lifted,
             heavy_attack_damage: panel.heavy_attack_damage,
@@ -5168,6 +5171,7 @@ impl Default for DummyParams {
             status_chance_per_combo: 0.0,
             combo_count_chance: 0.0,
             combo_count_chance_on_lifted: 0.0,
+            combo_gain_chance: 0.0,
             combo_count_on_slam_hit: 0.0,
             status_chance_on_lifted: 0.0,
             heavy_attack_damage: 0.0,
@@ -7739,36 +7743,51 @@ struct Landed {
     killed: bool,
 }
 
-/// WHAT ONE SWING'S INSTANCES ADD TO THE COUNTER — the multiplier ROUNDED UP,
-/// once per instance, where an instance is a hit AND a body.
+/// WHAT ONE HIT EARNS THE COUNTER (MEASUREMENTS M96, M97). `points` is what the
+/// row shows and `base` how many of them are base points, the unit every chance
+/// acts on; `chance` is Additional Combo Count Chance and `gain` is Chance to Gain
+/// Combo Count (0, or a malus). Each base point, carrying its share of `points`:
+/// - survives the gain roll (`1 + gain`), or is lost with its share;
+/// - pays its share once more per whole 100% of `chance`;
+/// - and rolls what is left of `chance` for one more point.
 ///
-/// *"Stance attacks add combo points, scaling with the attack's stance damage
-/// multiplier (100% = 1 point)"* (wiki, Melee Combo), and a swing under 100%
-/// still earns one, which that sentence does not say and a stopwatch does:
-/// Rogue Edict opens `200%` then `5x 50%` and the counter shows SEVEN, against
-/// 4.5 proportional and 6 flat.
-///
-/// ROUNDED rather than floored at one: the two agree wherever they can be told
-/// apart, and rounding is ONE rule where a floor is two. Not separable with
-/// this roster — every stance multiplier in it is whole except `0.5`, below the
-/// line they differ above — so a stance publishing 150% would settle it.
-///
-/// ADDITIONAL COMBO COUNT CHANCE, for one hit earning `points`: every whole 100%
-/// pays the hit's points once more, and what is left over is one roll for ONE
-/// point (MEASUREMENTS M96). 120% on a 2-point hit is 4, plus 1 a fifth of the
-/// time.
-fn extra_combo_points(points: f64, chance: f64, roll: &mut impl FnMut(f64) -> bool) -> f64 {
-    if chance <= 0.0 {
+/// NO ROLL IS SPENT where neither chance is set, so a build without them draws
+/// the same random stream it always did.
+fn swing_combo_gain(points: f64, base: f64, chance: f64, gain: f64, roll: &mut impl FnMut(f64) -> bool) -> f64 {
+    if base <= 0.0 {
         return 0.0;
     }
+    let share = points / base;
+    let chance = chance.max(0.0);
     let whole = chance.floor();
     let rest = chance - whole;
-    points * whole + if rest > 0.0 && roll(rest) { 1.0 } else { 0.0 }
+    let keep = (1.0 + gain).clamp(0.0, 1.0);
+    let mut out = 0.0;
+    for _ in 0..(base.round() as u32) {
+        if keep < 1.0 && !roll(keep) {
+            continue;
+        }
+        out += share * (1.0 + whole);
+        if rest > 0.0 && roll(rest) {
+            out += 1.0;
+        }
+    }
+    out
 }
 
-///
-/// THE FILL RULE ONLY: the fight reads each row's own `combo_points`, and this
-/// checks the rows filled from the rule (see notes: combo_points_from_multiplier).
+/// A HIT HOLDS THE COUNTER ONLY IF IT EARNED SOMETHING: one that came to 0 points
+/// leaves the combo timer running down (MEASUREMENTS M97). Asked of a swing that
+/// earns at all; a heavy attack keeps the refresh it had.
+fn refreshes_combo_timer(landed: f64, earns: bool, gained: f64) -> bool {
+    landed > 0.0 && (!earns || gained > 0.0)
+}
+
+/// THE FILL RULE for a row's `combo_points`, and only that: the fight reads each
+/// row's own number (see notes: combo_points_from_multiplier). The multiplier
+/// ROUNDED UP, once per instance — *"100% = 1 point"* (wiki, Melee Combo), and a
+/// swing under 100% still earns one: Rogue Edict opens `200%` then `5x 50%` and
+/// the counter shows SEVEN, against 4.5 proportional and 6 flat. Rounded rather
+/// than floored at one: the two agree wherever this roster can tell them apart.
 #[cfg(test)]
 fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
     multiplier.ceil().max(1.0) * instances
@@ -11873,13 +11892,21 @@ mod melee {
                 continue;
             }
             assert!(text.contains(MARK) || text.contains("M95"), "{path}: combo points with no source");
-            if !text.contains(MARK) {
-                continue;
-            }
+            let filled = text.contains(MARK);
             for (spends, block) in blocks {
                 for row in block {
                     let mult = row["multiplier"].as_f64().unwrap();
                     let stated = row["combo_points"].as_f64().unwrap();
+                    // BASE POINTS: none on a spending row, all of them on an
+                    // ordinary stance's, one a hit on an Exalted one (M97).
+                    let base = row["combo_points_base"].as_f64().unwrap();
+                    let want_base = if spends { 0.0 } else if filled { stated } else { 1.0 };
+                    if base != want_base {
+                        wrong.push(format!("{path}: {mult} states base {base}, want {want_base}"));
+                    }
+                    if !filled {
+                        continue;
+                    }
                     let rule = if spends { 0.0 } else { combo_points_for(mult, 1.0) };
                     checked += 1;
                     if stated != rule {
@@ -11892,35 +11919,75 @@ mod melee {
         assert!(wrong.is_empty(), "{}", wrong.join("\n"));
     }
 
-    /// **ADDITIONAL COMBO COUNT CHANCE: EACH WHOLE 100% REPEATS THE HIT'S POINTS,
-    /// AND THE REST ROLLS FOR ONE** (MEASUREMENTS M96). Hysteria's aerial combo
-    /// earns 2 / 2x 2 / 3 = 9 points; at 120% it was measured at 18 to 22 — the 9
-    /// doubled, plus one point on each of the four hits that wins its 20% roll.
+    /// Every total `hits` can come to — `(points, base)` a hit — with the
+    /// probability of each, by walking every sequence of roll outcomes.
+    fn combo_outcomes(hits: &[(f64, f64)], chance: f64, gain: f64) -> Vec<(f64, f64)> {
+        let mut out: std::collections::BTreeMap<u64, (f64, f64)> = Default::default();
+        let rolls_needed = hits.iter().map(|(_, b)| 2 * (*b as u32)).sum::<u32>();
+        for pattern in 0u64..(1u64 << rolls_needed) {
+            let mut i = 0;
+            let mut prob = 1.0;
+            let mut total = 0.0;
+            for (p, b) in hits {
+                total += swing_combo_gain(*p, *b, chance, gain, &mut |q| {
+                    let win = pattern >> i & 1 == 1;
+                    i += 1;
+                    prob *= if win { q } else { 1.0 - q };
+                    win
+                });
+            }
+            // A PATTERN IS COUNTED ONCE: the bits past the rolls it used are
+            // other patterns' business.
+            if pattern >> i == 0 {
+                let e = out.entry(total.to_bits()).or_insert((total, 0.0));
+                e.1 += prob;
+            }
+        }
+        out.into_values().collect()
+    }
+
+    /// **WHAT A HIT EARNS, AGAINST EVERY MEASUREMENT OF IT** (MEASUREMENTS M96,
+    /// M97): the totals each reading can reach, and the ones it cannot.
     #[test]
-    fn additional_combo_count_chance_doubles_per_whole_hundred_and_rolls_the_rest() {
-        let aerial = [2.0, 2.0, 2.0, 3.0];
-        let round = |chance: f64, win: bool| -> (f64, Vec<f64>) {
-            let mut asked = Vec::new();
-            let extra: f64 = aerial
-                .iter()
-                .map(|p| {
-                    extra_combo_points(*p, chance, &mut |q| {
-                        asked.push(q);
-                        win
-                    })
-                })
-                .sum();
-            (9.0 + extra, asked)
+    fn a_hit_earns_its_base_points_through_the_gain_gate_and_the_extra_chance() {
+        let values = |hits: &[(f64, f64)], chance: f64, gain: f64| -> Vec<f64> {
+            combo_outcomes(hits, chance, gain).into_iter().filter(|(_, pr)| *pr > 0.0).map(|(v, _)| v).collect()
         };
-        let (lose, asked) = round(1.2, false);
-        assert_eq!(lose, 18.0, "the 100% doubles all 9");
-        assert_eq!(asked.len(), 4, "one roll a hit");
-        assert!(asked.iter().all(|q| (q - 0.2).abs() < 1e-9), "each rolls the 20% left over");
-        assert_eq!(round(1.2, true).0, 22.0, "four wins are four points, never four doublings");
-        let (whole, asked) = round(1.0, true);
-        assert_eq!((whole, asked.len()), (18.0, 0), "exactly 100% doubles and rolls nothing");
-        assert_eq!(round(0.2, true).0, 13.0, "under 100% a win is one point a hit");
-        assert_eq!(round(0.0, true), (9.0, vec![]), "no chance, no roll");
+        let mean = |hits: &[(f64, f64)], chance: f64, gain: f64| -> f64 {
+            combo_outcomes(hits, chance, gain).into_iter().map(|(v, pr)| v * pr).sum()
+        };
+        // DAKRA PRIME, Vengeful Revenant's neutral opener: 3 points, all base.
+        let dakra = [(3.0, 3.0)];
+        assert_eq!(values(&dakra, 0.0, 0.0), [3.0]);
+        assert_eq!(values(&dakra, 0.2, 0.0), [3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(values(&dakra, 1.0, 0.0), [6.0], "exactly 100% doubles and rolls nothing");
+        assert_eq!(values(&dakra, 1.794, 0.0), [6.0, 7.0, 8.0, 9.0], "measured 9 9 9 8 7 8");
+        assert_eq!(values(&dakra, 0.0, -0.573), [0.0, 1.0, 2.0, 3.0]);
+        // …THE GATE BESIDE +120%: each base point is lost whole or kept with its
+        // doubled share, so the total is never 1 — measured 2.82 over 17, no 1.
+        let gated = values(&dakra, 1.2, -0.573);
+        assert!(!gated.contains(&1.0), "{gated:?}");
+        assert!((mean(&dakra, 1.2, -0.573) - 2.818).abs() < 0.01);
+        // DAKRA PRIME'S AERIAL OPENER, 200%: 2 points, both base.
+        assert_eq!(values(&[(2.0, 2.0)], 0.594, 0.0), [2.0, 3.0, 4.0], "measured 2 to 4");
+        assert_eq!(values(&[(2.0, 2.0)], 0.0, -0.573), [0.0, 1.0, 2.0], "measured 0 to 2");
+        // HYSTERIA: one base point a hit, the rest riding along. Its 3-point
+        // aerial finisher at 120% is 6 or 7 and never 8 or 9 (measured 30 times).
+        assert_eq!(values(&[(3.0, 1.0)], 1.2, 0.0), [6.0, 7.0]);
+        // …and the whole aerial round, 2 / 2x 2 / 3: 18 to 22, exactly 18 at 100%.
+        let aerial = [(2.0, 1.0), (2.0, 1.0), (2.0, 1.0), (3.0, 1.0)];
+        assert_eq!(values(&aerial, 1.2, 0.0), [18.0, 19.0, 20.0, 21.0, 22.0]);
+        assert_eq!(values(&aerial, 1.0, 0.0), [18.0]);
+    }
+
+    /// A HIT THAT CAME TO 0 POINTS DOES NOT HOLD THE COUNTER (MEASUREMENTS M97);
+    /// a heavy attack, which earns nothing by kind, keeps the refresh it had.
+    #[test]
+    fn a_hit_that_earned_nothing_does_not_refresh_the_combo_timer() {
+        assert!(!refreshes_combo_timer(1.0, true, 0.0), "every base point lost");
+        assert!(refreshes_combo_timer(1.0, true, 1.0));
+        assert!(refreshes_combo_timer(1.0, false, 0.0), "a heavy attack");
+        assert!(!refreshes_combo_timer(0.0, true, 3.0), "nothing landed");
     }
 
     /// **SPRING-LOADED BLADE'S STACKS WIDEN THE REACH MID-FIGHT.** Each status
@@ -18270,28 +18337,32 @@ pub fn run_once_traced(
             // on a light combo is one too. On a spending form it is visible
             // only through Melee Combo Efficiency, which is the share of the
             // counter the swing does NOT empty.
-            if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
-                combo_points += h.combo_points * landed;
-                // …PLUS WHAT ADDITIONAL COMBO COUNT CHANCE BUYS, per HIT: each
-                // whole 100% repeats the hit's points, and the rest is a roll for
-                // one point (MEASUREMENTS M96). See `extra_combo_points`.
-                // …AND ENDURING STRIKE, which adds to the same chance while the
-                // target is LIFTED — a status this engine tracks rather than a
-                // state it has to assume.
+            let earns = !(ap.spends_combo || tennokai_heavy);
+            let mut gained = 0.0;
+            if landed > 0.0 && earns {
+                // EVERY LANDED INSTANCE IS A HIT OF ITS OWN: its base points take
+                // the gain roll, Additional Combo Count Chance and what is left
+                // of it — `swing_combo_gain`. ENDURING STRIKE adds to that chance
+                // while the target is LIFTED, a status this engine tracks rather
+                // than a state it has to assume.
                 let chance_now = ap.combo_count_chance
                     + if debuffs.lifted.is_some_and(|e| e > t) {
                         ap.combo_count_chance_on_lifted
                     } else {
                         0.0
                     };
-                if chance_now > 0.0 {
-                    for _ in 0..(landed as u32) {
-                        combo_points +=
-                            extra_combo_points(h.combo_points, chance_now, &mut |p| d.spine.chance(p));
-                    }
+                for _ in 0..(landed as u32) {
+                    gained += swing_combo_gain(
+                        h.combo_points,
+                        h.combo_points_base,
+                        chance_now,
+                        ap.combo_gain_chance,
+                        &mut |p| d.spine.chance(p),
+                    );
                 }
+                combo_points += gained;
             }
-            if landed > 0.0 {
+            if refreshes_combo_timer(landed, earns, gained) {
                 combo_expiry = t + ap.combo_duration_seconds;
             }
             // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the

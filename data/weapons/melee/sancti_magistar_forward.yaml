@@ -34,10 +34,10 @@ attack:
   # `Knockback` is Impact's own proc and is transcribed as `impact`.
   # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 0.65, combo_points: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true, combo_points: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.65, combo_points: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.65, combo_points: 3 }
+    - { multiplier: 1.0, delay_seconds: 0.65, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.65, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.65, combo_points: 3, combo_points_base: 3 }
 
 source:
   url: https://wiki.warframe.com/w/Crushing_Ruin

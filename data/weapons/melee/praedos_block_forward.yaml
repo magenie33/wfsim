@@ -54,11 +54,11 @@ attack:
     takes_multishot: false
   # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 0.5, delay_seconds: 0.75, hits: 6, combo_points: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.75, slash_multiplier: 1.25, combo_points: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.75, hits: 2, combo_points: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown], combo_points: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.75, forced_procs: [impact], combo_points: 1 }
+    - { multiplier: 0.5, delay_seconds: 0.75, hits: 6, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.75, slash_multiplier: 1.25, combo_points: 3, combo_points_base: 3 }
+    - { multiplier: 2.0, delay_seconds: 0.75, hits: 2, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.75, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
 
 source:
   url: https://wiki.warframe.com/w/Sovereign_Outcast

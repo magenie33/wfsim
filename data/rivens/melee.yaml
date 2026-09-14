@@ -38,7 +38,10 @@ stats:
     prefix: ""
     suffix: ""
     text: "|val|% Chance to Gain Combo Count"
-    kind: combo_count_chance
+    # A GATE on each base combo point, not a share of Additional Combo Count
+    # Chance: -57.3% beside +120% averaged 2.82 on a 3-point hit and never 1,
+    # where netting the two would never go under 3 (MEASUREMENTS M97).
+    kind: combo_gain_chance
     bonus: false
   - id: cold
     tag: WeaponFreezeDamageMod
