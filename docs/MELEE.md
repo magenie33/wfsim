@@ -724,6 +724,9 @@ entry per mode (`data/weapons/melee/valkyr_talons*.yaml`). Three things differ.
   on one combo and 2 on another, and the 300% slide earns 1 a hit. Every other
   row in the roster is filled from the multiplier rule, unmeasured.
 
+- **ITS BUILDS ARE SAVED AND NOT RANKED**: the board refuses an Exalted weapon
+  (docs/BOARD.md §What is not on the board).
+
 Valkyr Prime Talons are the same weapon — "their stats are, however, identical"
 — so there is one entry, not two.
 

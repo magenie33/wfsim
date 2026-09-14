@@ -816,6 +816,13 @@ it, scored once like any other, and the scorer probes nothing.
 
 *(The exilus slot is on the board — see below.)*
 
+**AN EXALTED WEAPON.** Valkyr Talons are a weapon in the roster, a build for
+them is saved like any other, and the board does not rank them: their damage is
+an ability's, taken at 100% strength, and no ruler states the Warframe behind
+the weapon, so a row could not be reproduced. `validate_for_board_with` refuses
+one before anything else — the page's door and the scorer both read it —
+and `an_exalted_weapon_is_a_legal_build_and_never_a_board_row` holds it.
+
 ## What a row has to be
 
 A ruler that wants a complete build wants exactly this, and the four rows are

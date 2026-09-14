@@ -659,6 +659,13 @@ pub fn validate_for_board_with(
     exilus: Option<&str>,
     assembly: Option<&crate::kitguns_data::Assembly>,
 ) -> Result<ValidBuild, String> {
+    // AN EXALTED WEAPON IS NOT RANKED. Its damage is an ability's, taken at 100%
+    // strength, and no ruler states the Warframe behind it — so a row could not
+    // be reproduced. The builder keeps the build all the same; this door is the
+    // board's alone (docs/BOARD.md §What is not on the board).
+    if crate::weapons_data::spec(weapon).is_some_and(|s| s.exalted) {
+        return Err(format!("{weapon} is an Exalted weapon, and the board does not rank one"));
+    }
     let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven, exilus, assembly)?;
     let req = match crate::benchmarks_data::get(benchmark) {
         Some(bm) => bm.build.clone(),
@@ -1420,6 +1427,24 @@ mod riven_perfection_tests {
 
 #[cfg(test)]
 mod tests {
+
+    /// AN EXALTED WEAPON'S BUILD IS KEPT AND NOT RANKED: legal for the builder,
+    /// refused at the board's door whatever the ruler.
+    #[test]
+    fn an_exalted_weapon_is_a_legal_build_and_never_a_board_row() {
+        let ids = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let talons = ids(&["pressure_point", "hysteria"]);
+        assert!(validate("valkyr_talons", &talons, &[], &[], "").is_ok(), "the builder keeps it");
+        for form in ["valkyr_talons", "valkyr_talons_slide", "valkyr_talons_heavy"] {
+            let refused = validate_for_board(ANY_RULER, form, &talons, &[], &[], "");
+            assert!(refused.err().is_some_and(|e| e.contains("Exalted")), "{form}");
+        }
+        // …AND IT IS THAT RULE REFUSING, not the made-up ruler: an ordinary melee
+        // weapon at the same door is turned away for the ruler instead.
+        let magistar = validate_for_board(ANY_RULER, "magistar", &ids(&["pressure_point"]), &[], &[], "");
+        assert!(magistar.err().is_some_and(|e| e.contains("unknown benchmark")));
+    }
+    const ANY_RULER: &str = "no_such_ruler";
 
     /// A FIXED STANCE IS PART OF EVERY BUILD: Valkyr Talons without Hysteria is
     /// a build nobody can hold, and with it the card's 5 doubles to 10 on its
