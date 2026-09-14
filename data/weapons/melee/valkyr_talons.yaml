@@ -31,8 +31,9 @@ fixed_stance: hysteria
 wielders: [valkyr_prime, valkyr]
 wielder_names:
   valkyr_prime: Valkyr Prime Talons
-# EXALTED: the module's CompatibilityTags `POWER_WEAPON`, so the cards DE tags
-# incompatible with it are refused (`mods_data::pool_for_build`).
+# EXALTED: the module's CompatibilityTags `POWER_WEAPON`, so a card still tagged
+# incompatible with it is refused (`mods_data::pool_for_build`); the combo,
+# Acolyte and Amalgam cards are not (see notes: exalted_mods_reenabled).
 exalted: true
 accuracy: ~
 # NO DISPOSITION AND NO RIVEN FAMILY: "Riven Mods are not generated for Valkyr

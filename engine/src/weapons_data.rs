@@ -1185,6 +1185,11 @@ pub struct ComboHit {
     /// has both machines in front of it.
     #[serde(default)]
     pub forced_procs: Vec<String>,
+    /// HOW MANY OF `hits` CARRY `forced_procs`, when not all of them do.
+    /// `Procs = { "Slash", "", "Slash", "", "Stagger" }` on Hysteria's heavy is
+    /// two of five; the row lands at one moment, so which two is no question.
+    #[serde(default)]
+    pub forced_hits: Option<u32>,
     /// COMBO POINTS ONE INSTANCE OF THIS SWING EARNS — its own number, set beside
     /// its damage and REQUIRED, because the game sets it per attack: Hysteria's
     /// follow no rule of the multiplier (MEASUREMENTS M95). An unmeasured row is

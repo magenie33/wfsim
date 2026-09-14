@@ -8,9 +8,7 @@ internal_name: /Lotus/Upgrades/Mods/Melee/Event/ComboCritChanceMod
 description: "+40% Critical Chance stacks with Combo Multiplier"
 
 # Rank 0: +3.6% Critical Chance stacks with Combo Multiplier
-# DE's INCOMPATIBILITY TAGS (`Module:Mods/data`) include POWER_WEAPON: no
-# Exalted weapon seats this card.
-excludes_weapon: [power_weapon]
+# see notes: exalted_mods_reenabled
 
 effects:
   - kind: crit_chance_per_combo

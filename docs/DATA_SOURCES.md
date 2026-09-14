@@ -1105,9 +1105,10 @@ pass all 13 match our files exactly. Eleven were missing before it
 (`power_weapon` on Aerial Ace, Argon Scope, Bladed Rounds, Catalyzer Link,
 Galvanized Scope/Crosshairs, Hydraulic Crosshairs, Sharpened Bullets, Eject
 Magazine; `modular_gun` on Semi-Rifle Cannonade; `sentinel_mod`/`singleshot`
-on Synth Charge). Only `sentinel_weapon` is consulted by the pool filter
-today — the rest are recorded because the tag is the fact, and a weapon class
-that reads them can arrive later.
+on Synth Charge). **A PATCH NOTE BEATS THE MODULE'S TAG**: Techrot Encore
+re-enabled the Acolyte, Amalgam and melee combo cards on Exalted weapons, so
+those files carry no `power_weapon` (`data/notes.yaml`
+`exalted_mods_reenabled`).
 
 **A fetched PROSE summary is not a source.** Primary Acuity briefly carried
 `excludes_weapon: [sentinel_weapon, power_weapon]` on the strength of a

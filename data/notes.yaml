@@ -519,6 +519,14 @@ notes:
     Every stat is the wiki page's Atmosphere tab. WFCD `warframe-items` was
     read for `internal_name` only: its Arch-Gun entries are the ARCHWING
     column, which is the wrong one here (docs/DATA_SOURCES.md).
+  exalted_mods_reenabled: |
+    RE-ENABLED ON EXALTED WEAPONS, over the module's POWER_WEAPON tag. Techrot
+    Encore (W`Exalted_Weapon`): "Acolyte, Amalgam and Melee Combo Counter mods
+    can now be equipped on all Exalted weapons" — Amalgam Serration, Argon Scope
+    (Galvanized Scope), Bladed Rounds, Catalyzer Link; Amalgam Barrel Diffusion,
+    Embedded Catalyzer, Hydraulic Crosshairs, Pressurized Magazine, Sharpened
+    Bullets, Targeting Subsystem; Amalgam Organ Shatter, Blood Rush, Body Count,
+    Dispatch Overdrive, Gladiator Rush, Maiming Strike, Weeping Wounds.
   explosion_single_target_relevant: |
     THE EXPLOSION. Single-target relevant in full: a 25 m radius is one the
     arena's only enemy is always inside, so this lands whole.

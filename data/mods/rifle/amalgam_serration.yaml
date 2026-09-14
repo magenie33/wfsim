@@ -27,8 +27,9 @@ incompatible_with: [serration, spectral_serration]
 # weapons". The reason is the second half: "+25% Sprint Speed" is a WARFRAME
 # buff that "always applies, regardless of whether or not you are holding the
 # weapon it is equipped to", and a companion is not the Warframe. This is why
-# plain Serration goes on Verglas Prime and this one does not. `power_weapon` (Exalted) is carried unused — we model none.
-excludes_weapon: [sentinel_weapon, power_weapon]
+# plain Serration goes on Verglas Prime and this one does not.
+# see notes: exalted_mods_reenabled
+excludes_weapon: [sentinel_weapon]
 
 source:
   url: https://wiki.warframe.com/w/Amalgam_Serration

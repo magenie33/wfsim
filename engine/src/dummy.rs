@@ -11565,7 +11565,8 @@ mod melee {
         );
 
         let sw_slam = gain("magistar_heavy_slam", "seismic_wave");
-        let sw_light = gain("magistar", "seismic_wave");
+        // Tidal Force: the one Crushing Ruin combo that ends on no slam.
+        let sw_light = gain("magistar_forward", "seismic_wave");
         assert!(sw_slam > 1.5, "Seismic Wave bought a slam build nothing: x{sw_slam:.3}");
         assert!(
             (sw_light - 1.0).abs() < 0.02,
@@ -11593,18 +11594,19 @@ mod melee {
             panel.range_m,
         );
         let reached = |mods: &[&str]| {
-            let r = magistar("magistar", mods, 20.0, Some(4.0));
+            let r = magistar("magistar_forward", mods, 20.0, Some(4.0));
             r.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count()
         };
         assert_eq!(reached(&[]), 1, "a 2.5 m swing should find only the body at contact");
         // REACH IS THE WEDGE'S RADIUS, NOT ITS ANGLE, and the two combos show
-        // both halves on the same ring. Raging Whirlwind spins twice
+        // both halves on the same ring. Tidal Force spins once
         // (`Types = { "360" }`), so once the radius covers the ring it takes all
-        // nine; Winding Temper is all sweeps, so it takes the aimed body and the
-        // three inside `MELEE_ARC_DEG` — the ring stands at 45-degree steps, and
-        // a 90-degree wedge holds the one in front and one either side.
+        // nine; Winding Temper's swings are all sweeps, so it takes the aimed body
+        // and the three inside `MELEE_ARC_DEG` — the ring stands at 45-degree
+        // steps, and a 90-degree wedge holds the one in front and one either side.
+        // Its closing SLAM is taken off, because a slam is a sphere.
         let sweep = |mods: &[&str]| {
-            let r = magistar("magistar_block", mods, 20.0, Some(4.0));
+            let r = swings_only("magistar_block", mods, Some(4.0));
             r.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count()
         };
         assert_eq!(reached(&["primed_reach"]), 9, "a 5.5 m spin should take the whole ring");
@@ -11846,6 +11848,17 @@ mod melee {
             hit_on > hit_off * 3.0,
             "the biggest hit barely moved: {hit_off:.0} -> {hit_on:.0}",
         );
+    }
+
+    /// A STANCE SLAM LANDS ITS OWN MULTIPLE AND SEISMIC WAVE PAYS IT — the
+    /// slam-only row a light combo ends on, and Hysteria's heavy opener.
+    #[test]
+    fn a_stance_slam_lands_and_seismic_wave_pays_it() {
+        for form in ["magistar_block_forward", "valkyr_talons_heavy"] {
+            let bare = melee_fight(form, &[], &[], None, 60.0, None).mean_damage;
+            let waved = melee_fight(form, &[], &["seismic_wave"], None, 60.0, None).mean_damage;
+            assert!(waved > bare * 1.01, "{form}: Seismic Wave bought {bare:.0} -> {waved:.0}");
+        }
     }
 
     /// **HYSTERIA'S COMBO POINTS ARE THE MEASURED ONES** (MEASUREMENTS M95), per
@@ -12357,6 +12370,32 @@ mod melee {
         monte_carlo(&p, 24, 909)
     }
 
+    /// A COMBO WITH ITS SLAMS TAKEN OFF, over 20 s — for a test about who a SWING
+    /// reaches, since a stance slam is a sphere and reaches the room.
+    fn swings_only(form: &str, mods: &[&str], spacing: Option<f64>) -> Summary {
+        let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+        let pool = crate::mods_data::pool_for_weapon(form);
+        let refs: Vec<&crate::loadout::ModDef> =
+            mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+        let mut panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        panel.combo_script.retain(|h| h.slam_multiplier.is_none());
+        let mut arena = crate::arena::Arena::training(20.0);
+        if let Some(gap) = spacing {
+            arena.others = (1..9)
+                .map(|i| {
+                    let a = std::f64::consts::TAU * f64::from(i) / 8.0;
+                    crate::formation::FoeSpec {
+                        id: format!("e{}", i + 1),
+                        params: crate::dummy::TargetParams::training_dummy(),
+                        body_parts: crate::dummy::DummyParams::humanoid_parts(),
+                        at: crate::space::Vec2::new(gap * a.cos(), gap * a.sin()),
+                    }
+                })
+                .collect();
+        }
+        monte_carlo(&DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none()), 24, 909)
+    }
+
     /// **SHOCKWAVE SYNERGY IS PAID BY THE CROWD**, and it is the only card in
     /// the game that earns combo points on a heavy mode.
     ///
@@ -12815,9 +12854,10 @@ mod melee {
     /// comfortably outside.
     #[test]
     fn a_swing_reaches_a_crowd_inside_its_range_and_no_further() {
-        let alone = magistar("magistar", &[], 20.0, None).mean_damage;
-        let near = magistar("magistar", &[], 20.0, Some(2.6)).mean_damage;
-        let far = magistar("magistar", &[], 20.0, Some(4.0)).mean_damage;
+        // Tidal Force, because the other three combos END on a slam.
+        let alone = magistar("magistar_forward", &[], 20.0, None).mean_damage;
+        let near = magistar("magistar_forward", &[], 20.0, Some(2.6)).mean_damage;
+        let far = magistar("magistar_forward", &[], 20.0, Some(4.0)).mean_damage;
         assert!(
             near > alone * 1.2,
             "a crowd inside a 2.5 m reach took nothing: {alone:.0} -> {near:.0}",
@@ -12894,7 +12934,8 @@ mod melee {
     fn only_the_slam_reaches_a_crowd_a_swing_cannot() {
         let alone = |f: &str| magistar(f, &[], 20.0, None).mean_damage;
         let crowd = |f: &str| magistar(f, &[], 20.0, Some(4.0)).mean_damage;
-        let swing = crowd("magistar") / alone("magistar");
+        // Tidal Force, because the other three combos END on a slam.
+        let swing = crowd("magistar_forward") / alone("magistar_forward");
         let slam = crowd("magistar_heavy_slam") / alone("magistar_heavy_slam");
         assert!(
             swing < 1.02,
@@ -12927,9 +12968,9 @@ mod melee {
             r.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count()
         };
         // Hell's Wave is one 200% spin; Winding Temper's three swings are all
-        // ordinary sweeps.
+        // ordinary sweeps, and its closing slam is taken off.
         let spin = reached("magistar_slide");
-        let sweep = reached("magistar_block");
+        let sweep = swings_only("magistar_block", &[], Some(2.6)).mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count();
         assert_eq!(spin, 9, "a spin should reach the aimed body and all eight around it");
         assert!(
             sweep < spin,
@@ -16413,10 +16454,24 @@ pub fn run_once_traced(
             // swing multiplier that reached only the direct stage would leave
             // the one melee mode that is entirely radial reading its unswung
             // base — 630 at every combo tier.
+            //
+            // A STANCE SLAM CARRIES ITS OWN MULTIPLIER, already in `attack_radial`,
+            // so the swing's — zero on a slam-only row — is not it. What it takes
+            // is what every slam takes: the counter a heavy spends, and Seismic
+            // Wave, which "also increase[s] the damage dealt by slam attacks
+            // performed via Stance Combos" (W`Seismic_Wave`).
+            let stance_slam = !tennokai_heavy
+                && ap.slam.is_some()
+                && swing.as_ref().is_some_and(|h| h.slam_multiplier.is_some());
+            let radial_mult = if stance_slam {
+                (if ap.spends_combo { combo_mult } else { 1.0 }) * (1.0 + ap.slam_damage)
+            } else {
+                swing_mult
+            };
             let radial_stage = match radial_stage {
-                Some(r) if (swing_mult - 1.0).abs() > 1e-12 => Some(crate::loadout::ResolvedRadial {
-                    damage: r.damage.scale(swing_mult),
-                    modified_base: r.modified_base * swing_mult,
+                Some(r) if (radial_mult - 1.0).abs() > 1e-12 => Some(crate::loadout::ResolvedRadial {
+                    damage: r.damage.scale(radial_mult),
+                    modified_base: r.modified_base * radial_mult,
                     ..r
                 }),
                 other => other,
@@ -16762,8 +16817,11 @@ pub fn run_once_traced(
                     // marks them per attack — Crushing Ruin's first swing
                     // forces Impact and its last forces Knockdown — so they
                     // belong to the swing rather than to the weapon, which is
-                    // why `ap.forced_procs` above cannot carry them.
-                    for ty in &swing_forced_types {
+                    // why `ap.forced_procs` above cannot carry them. `forced_hits`
+                    // is how many of the row's hits carry them, when not all do.
+                    let swing_forces = direct
+                        && swing.as_ref().and_then(|h| h.forced_hits).is_none_or(|k| (pellet_idx as u32) < k);
+                    for ty in swing_forced_types.iter().filter(|_| swing_forces) {
                         if !forced_buf[..n].contains(ty) && n < forced_buf.len() {
                             forced_buf[n] = *ty;
                             n += 1;

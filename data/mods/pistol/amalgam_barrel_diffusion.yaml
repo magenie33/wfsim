@@ -28,7 +28,8 @@ utility_scope: universal_while_carried
 # Warframe. This replaces a `restrictions: [not_on_sentinel_weapons]` note that
 # stated the same fact in a spelling nothing read; one vocabulary,
 # and it is the mirror of `requires_weapon`.
-excludes_weapon: [sentinel_weapon, power_weapon]
+# see notes: exalted_mods_reenabled
+excludes_weapon: [sentinel_weapon]
 
 
 family: barrel_diffusion

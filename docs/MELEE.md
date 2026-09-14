@@ -714,10 +714,15 @@ entry per mode (`data/weapons/melee/valkyr_talons*.yaml`). Three things differ.
   (MEASUREMENTS M94). `fixed_stance:` on the
   weapon says so once; the card is the grant, and the combos are the entries'
   own scripts rather than a second copy on the card.
-- **`exalted: true` REFUSES WHAT DE TAGS `POWER_WEAPON`**: Blood Rush, Weeping
-  Wounds, Body Count, Gladiator Rush, Maiming Strike and Amalgam Organ Shatter.
-  The Tennokai cards carry `POWER_WEAPON_LITE` (the pseudo-exalted with no heavy
-  attack) and stay.
+- **`exalted: true` REFUSES WHAT IS STILL TAGGED `POWER_WEAPON`**, and on melee
+  that is nothing: Techrot Encore re-enabled Blood Rush, Weeping Wounds, Body
+  Count, Dispatch Overdrive, Gladiator Rush, Maiming Strike and Amalgam Organ
+  Shatter on every Exalted weapon, and the module's tags predate it
+  (`data/notes.yaml` `exalted_mods_reenabled`).
+- **A STANCE SLAM IS A SLAM.** Seismic Wave pays a combo row's `slam_multiplier`
+  as it pays a slam form: "Seismic Wave … also increase the damage dealt by slam
+  attacks performed via Stance Combos" (W`Seismic_Wave`). Hysteria's heavy
+  opener is one.
 
 - **ITS COMBO POINTS ARE MEASURED, NOT READ OFF THE MULTIPLIER.** Every
   Hysteria row states `combo_points` (MEASUREMENTS M95): a 100% opener earns 1

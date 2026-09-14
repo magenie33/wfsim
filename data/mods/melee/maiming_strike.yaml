@@ -10,9 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Melee/Event/SlideAttackCritChanceMod
 description: "+150% Critical Chance for Slide Attack"
 
 # Rank 0: +25% Critical Chance for Slide Attack
-# DE's INCOMPATIBILITY TAGS (`Module:Mods/data`) include POWER_WEAPON: no
-# Exalted weapon seats this card.
-excludes_weapon: [power_weapon]
+# see notes: exalted_mods_reenabled
 
 effects:
   - kind: crit_chance_on_slide
