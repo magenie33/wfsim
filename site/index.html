@@ -684,6 +684,14 @@
       <div class="bb"><div id="assembly-row" class="field-grid"></div></div>
     </section>
 
+    <!-- THE WIELDER: whoever holds the weapon — a link to a saved Warframe build,
+         a modelled frame unbuilt, or the Prototype every ruler scores in. Part of
+         the BUILD, and never of a board row. See renderWielder. -->
+    <section class="block" data-module="builder" id="wielder-block">
+      <div class="bh"><span class="n">0</span><h2 data-i18n>Wielder</h2><span class="sub" id="wielder-sub"></span></div>
+      <div class="bb"><div id="wielder-row" class="field-grid"></div></div>
+    </section>
+
     <section class="block" data-module="builder" id="mode-block">
       <div class="bh"><span class="n">1</span><h2 data-i18n>Mode</h2><span class="sub" id="mode-sub"></span></div>
       <div class="bb"><div id="mode-row" class="field-grid"></div></div>
@@ -798,15 +806,12 @@
              shooting". It comes before Buffs because it GATES them: aiming
              decides whether the while-aiming mods pay out at all. -->
         <div class="fold sect" data-fold="sim-wielder">
-          <h3 class="sim-h fold-h" data-i18n>2 · The wielder <span class="sim-hint" data-i18n>whoever is holding the weapon and what they are doing — this gates the buffs below</span></h3>
+          <h3 class="sim-h fold-h" data-i18n>2 · External bonuses <span class="sim-hint" data-i18n>what the wielder is doing, and what others hand them — a ticked number replaces the wielder's own</span></h3>
           <div id="sim-technique" class="field-grid"></div>
-          <!-- THE SQUAD's AURA and the frame's ARCHON SHARDS. Both are the
-               WARFRAME's rather than the weapon's, which is why they are in
-               this block and not in a build: two players with the same gun and
-               different squads are two different fights, the same rule the
-               ability buffs follow. They are OFFERED rather than typed, because
-               a named shard has a source that can be checked against the wiki
-               and a typed +45% has nothing. -->
+          <!-- THE SQUAD'S AURAS. The fight's rather than the build's: two players
+               with the same gun and different squads are two different fights,
+               the same rule the ability buffs follow. The wielder's own shards
+               and aura come with the Warframe build the weapon links. -->
           <div id="sim-squad" class="sub-block"></div>
         </div>
         <!-- NOT a technique: nobody plays "infinite ammo". These say what the
@@ -1240,13 +1245,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">f52dd712</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">bbac3e96</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.e913036e945f.js"></script>
+  <script src="/asset/app.5854c746d0d6.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is

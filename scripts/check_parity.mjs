@@ -285,6 +285,7 @@ const TRAVELS_AS = {
 // point: a row carries the build, never the layout you reached it through.
 const NOT_A_ROW = [
   "arcaneRank",   // every arcane scores at max rank
+  "wielder",      // every ruler scores in the Prototype's hands
 ];
 const AXES = await app.evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
