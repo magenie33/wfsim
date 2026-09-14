@@ -21861,6 +21861,8 @@ function wfSourceName(from) {
     const o = d && d.options.find((x) => x.id === b);
     return `${LN("shards", a, d ? d.name : a)} · ${(I18N && (I18N.shards || {})[from]) || (o ? o.text : b)}`;
   }
+  const f = wfFrame(from);
+  if (f) return `${f.name} · ${tr("Passive")}`;
   const x = wfMod(from) || wfArcane(from) || wfAbility(from);
   return x ? x.name : from;
 }

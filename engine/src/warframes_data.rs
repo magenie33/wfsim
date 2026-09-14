@@ -1298,7 +1298,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             claim(&format!("focus:{}:{}", s.id, n.id), &n.tags, false);
         }
     }
-    tags.sort_by(|a, b| a.tag.cmp(&b.tag));
+    tags.sort_by_key(|t| t.tag);
 
     Ok(Resolved { frame, stats, abilities, tags, admissions, refused })
 }
