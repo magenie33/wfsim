@@ -1106,7 +1106,7 @@ pub struct ComboHit {
     /// It is also the COMBO POINTS this swing is worth: *"Stance attacks add
     /// combo points, scaling with the attack's stance damage multiplier (100%
     /// stance damage multiplier = 1 point)"* (wiki, Melee Combo). One number,
-    /// two jobs, and they are the same number in game.
+    /// two jobs — unless the row states `combo_points`, which is measured.
     pub multiplier: f64,
     /// Seconds from this swing to the next, at 1.0x attack speed.
     ///
@@ -1187,6 +1187,12 @@ pub struct ComboHit {
     /// has both machines in front of it.
     #[serde(default)]
     pub forced_procs: Vec<String>,
+    /// COMBO POINTS ONE INSTANCE OF THIS SWING EARNS, where they are measured
+    /// rather than read off `multiplier`. Hysteria's follow no rule of the
+    /// multiplier — a 100% opener earns 1 on one combo and 2 on another
+    /// (MEASUREMENTS M95). `None` reads the multiplier.
+    #[serde(default)]
+    pub combo_points: Option<f64>,
 }
 
 fn one_hit() -> u32 {

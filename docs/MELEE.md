@@ -705,6 +705,11 @@ entry per mode (`data/weapons/melee/valkyr_talons*.yaml`). Three things differ.
   The Tennokai cards carry `POWER_WEAPON_LITE` (the pseudo-exalted with no heavy
   attack) and stay.
 
+- **ITS COMBO POINTS ARE MEASURED, NOT READ OFF THE MULTIPLIER.** Every
+  Hysteria row states `combo_points` (MEASUREMENTS M95): a 100% opener earns 1
+  on one combo and 2 on another, and the 300% slide earns 1 a hit. Every other
+  stance still reads the multiplier, unmeasured.
+
 Valkyr Prime Talons are the same weapon — "their stats are, however, identical"
 — so there is one entry, not two.
 

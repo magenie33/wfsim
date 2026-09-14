@@ -36,7 +36,7 @@ stance_polarity: zenurik
 introduced: "Update 23"
 internal_name: /Lotus/Powersuits/Berserker/BerserkerMelee
 
-# see notes: melee_has_no_ammo
+# NO AMMO AT ALL: a melee weapon has no magazine, no reserve and no reload.
 ammo_max: ~
 
 # The module's ComboDur.
@@ -53,7 +53,6 @@ unmodeled:
   - "Hysteria drains 5 energy a second while the claws are out; energy is not modelled, so they are held for the whole engagement"
   - "RAGE, Valkyr's passive — +3% melee damage per hit and +12% per kill, up to +300%, additive with Pressure Point — is a Warframe passive and is not modelled, so a Valkyr build reads LOW here"
   - "every hit restores 100 health, and nothing in this arena damages the Tenno"
-  - "the Hysteria stance page lists MORE combo count on some hits than their multipliers give (Fervor, Delirium, Rage, Madness); the counter here reads the multiplier, which is the rule for every other stance"
   - "one attack input's own animation length is not published anywhere: the wiki gives a combo's total duration at 1.0x attack speed and one entry per input, so the combo's DURATION is exact and the split between its INPUTS is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
 
 attack:
@@ -92,17 +91,19 @@ attack:
     forced_procs: []
     takes_multishot: false
   # FERVOR — 2.85 s at 1.0x, six inputs of 0.475 s (see notes:
-  # combo_clock_is_the_input). THE LAST FOUR ARE SPINS: "The final four attacks
-  # of Fervor have Valkyr swipe around a full 360 degrees" (W`Hysteria_(Stance)`),
-  # where the module marks only two — the page's prose over the module.
-  # Stagger and Stun carry no damage.
+  # combo_clock_is_the_input). TWO SPINS, the third and fourth inputs: the stance's
+  # own combo table and the module agree, and the table is the source for a combo
+  # where the page's Notes say "the final four". Stagger and Stun carry no damage.
+  #
+  # COMBO POINTS ARE MEASURED, per hit on one target: 1/1/2*2/2*2/2/3*2
+  # (MEASUREMENTS M95). Every Hysteria entry states them per row.
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 0.475 }
-    - { multiplier: 1.0, delay_seconds: 0.475 }
-    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true }
-    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true }
-    - { multiplier: 3.0, delay_seconds: 0.475, all_around: true, forced_procs: [slash] }
-    - { multiplier: 3.0, delay_seconds: 0.475, hits: 2, all_around: true }
+    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2 }
+    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.475, forced_procs: [slash], combo_points: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.475, hits: 2, combo_points: 3 }
 
 source:
   url: https://wiki.warframe.com/w/Valkyr_Talons

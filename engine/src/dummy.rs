@@ -7753,6 +7753,15 @@ fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
     multiplier.ceil().max(1.0) * instances
 }
 
+/// …UNLESS THE ROW STATES ITS POINTS, which are measured and win: Hysteria's
+/// follow no rule of the multiplier (MEASUREMENTS M95).
+fn swing_combo_points(h: &crate::weapons_data::ComboHit, instances: f64) -> f64 {
+    match h.combo_points {
+        Some(p) => p * instances,
+        None => combo_points_for(h.multiplier, instances),
+    }
+}
+
 /// CAN MELEE INFLUENCE CARRY THIS STATUS?
 ///
 /// The wiki lists both halves, and they partition the elements exactly: the
@@ -11776,6 +11785,35 @@ mod melee {
             hit_on > hit_off * 3.0,
             "the biggest hit barely moved: {hit_off:.0} -> {hit_on:.0}",
         );
+    }
+
+    /// **HYSTERIA'S COMBO POINTS ARE THE MEASURED ONES** (MEASUREMENTS M95), per
+    /// hit on one target, and a row with none still reads the multiplier.
+    #[test]
+    fn hysteria_earns_its_measured_combo_points() {
+        let round = |id: &str| -> f64 {
+            crate::weapons_data::spec(id)
+                .unwrap()
+                .attack
+                .combo_script
+                .iter()
+                .map(|h| swing_combo_points(h, f64::from(h.hits)))
+                .sum()
+        };
+        assert_eq!(round("valkyr_talons"), 18.0, "1/1/2*2/2*2/2/3*2");
+        assert_eq!(round("valkyr_talons_forward"), 6.0, "1/1/2/2");
+        assert_eq!(round("valkyr_talons_block"), 22.0, "2/3*2/3*3/1+2*2");
+        assert_eq!(round("valkyr_talons_block_forward"), 30.0, "2/2*2/2*3/2*2/3*3/1+2*2");
+        assert_eq!(round("valkyr_talons_slide"), 6.0, "1*6, not the 18 its 300% would give");
+        // …AND A ROW WITHOUT MEASURED POINTS READS ITS MULTIPLIER, unchanged.
+        let magistar: f64 = crate::weapons_data::spec("magistar")
+            .unwrap()
+            .attack
+            .combo_script
+            .iter()
+            .map(|h| combo_points_for(h.multiplier, f64::from(h.hits)))
+            .sum();
+        assert_eq!(round("magistar"), magistar);
     }
 
     /// **A SLIDE ATTACK OPENS THE WINDOW AND TAKES IT.** A slide lands direct
@@ -18100,7 +18138,7 @@ pub fn run_once_traced(
             // only through Melee Combo Efficiency, which is the share of the
             // counter the swing does NOT empty.
             if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
-                combo_points += combo_points_for(h.multiplier, landed);
+                combo_points += swing_combo_points(h, landed);
                 // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
                 // extra combo points on hit/block additively"* — ONE point, per
                 // HIT rather than per stance multiplier, which is what makes

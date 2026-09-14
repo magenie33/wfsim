@@ -179,6 +179,7 @@ path, so an entry may be renamed but never renumbered.
 | [M92](measurements/M92-catalyzing-shields-fixed-gate-on-any-refill.md) | Catalyzing Shields gives its full fixed shield gate on ANY refill, however small — the mod page, not the Update 34 scaling | ✅ 2026-09-14 (owner) |
 | [M93](measurements/M93-antique-unique-school-bonus-counts-other-schools.md) | an Antique mod's "unique School" bonus pays once per OTHER school seated on the artifact, never for its own | ✅ 2026-09-14 (owner) |
 | [M94](measurements/M94-hysteria-stance-is-fixed-and-grants-ten.md) | Valkyr Talons: Hysteria is fixed in the stance slot; the card grants 5 and its matching slot doubles it to 10 (60 -> 70); the slot takes no Forma | ✅ 2026-09-14 (owner) |
+| [M95](measurements/M95-hysteria-combo-points-per-hit.md) | Hysteria's combo points per hit, every combo: they follow no rule of the stance multiplier (a 100% opener earns 1 or 2, the 300% slide earns 1) | ✅ 2026-09-14 (owner) |
 
 ## By weapon
 
