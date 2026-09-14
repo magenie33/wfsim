@@ -1,11 +1,8 @@
 id: valkyr_talons_block
 name: Valkyr Talons
-# DELIRIUM — 2.4 s at 1.0x, four inputs of 0.6 s.
-#
-# THE LAST INPUT IS ONE HIT, measured (MEASUREMENTS M95), where the table prints
-# three 300% rows. It is 900% here — the table's total, which its own 1062.5%/s
-# over 2.4 s adds up to — landing once and forcing Knockdown and Knockback
-# (Impact's own proc); the Ragdoll carries no damage.
+# DELIRIUM — 2.4 s at 1.0x, four inputs of 0.6 s. The last input lands three
+# 300% hits together (three numbers, measured), forcing Knockdown, Knockback
+# (Impact's own proc) and a Ragdoll that carries no damage.
 inherits: valkyr_talons
 form: block
 transform_group: valkyr_talons
@@ -36,12 +33,14 @@ attack:
     forced_procs: []
     takes_multishot: false
   # see notes: combo_clock_is_the_input
-  # Combo points measured 2/3*2/3*3/5 (MEASUREMENTS M95).
+  # Combo points measured 2/3*2/3*3/1+3+1 (MEASUREMENTS M95).
   combo_script:
     - { multiplier: 3.0, delay_seconds: 0.6, forced_procs: [slash], combo_points: 2 }
     - { multiplier: 3.0, delay_seconds: 0.6, hits: 2, combo_points: 3 }
     - { multiplier: 2.5, delay_seconds: 0.6, hits: 3, combo_points: 3 }
-    - { multiplier: 9.0, delay_seconds: 0.6, forced_procs: [knockdown, impact], combo_points: 5 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3 }
+    - { multiplier: 3.0, delay_seconds: 0.6, combo_points: 1 }
 
 source:
   url: https://wiki.warframe.com/w/Hysteria_(Stance)

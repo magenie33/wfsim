@@ -10,8 +10,8 @@ n of b. Against a crowd each hit earns its points per body it lands on.
 | --- | --- |
 | Neutral (Fervor) | 1 / 1 / 2\*2 / 2\*2 / 2 / 3\*2 |
 | Forward (Rage) | 1 / 1 / 2 / 2 |
-| Forward Block (Madness) | 2 / 2\*2 / 2\*3 / 2\*2 / 3\*3 / 5 |
-| Block (Delirium) | 2 / 3\*2 / 3\*3 / 5 |
+| Forward Block (Madness) | 2 / 2\*2 / 2\*3 / 2\*2 / 3\*3 / 1+3+1 |
+| Block (Delirium) | 2 / 3\*2 / 3\*3 / 1+3+1 |
 | Slide (Launching Spring) | 1\*6 |
 | Slam | 1 |
 | Aerial (One Point) | 2 / 2\*2 / 3 |
@@ -29,12 +29,10 @@ The stance page's Notes (W`Hysteria_(Stance)`) read as absolute counts, an
 unlisted hit earning 1, match Fervor ("3rd through 5th hits grant 2 Combo and
 the 6th hit grants 3") and Madness's first five inputs, and miss Rage (notes
 2/3/3/3), Delirium (notes 2 on the 3rd and 4th only) and Madness's last input
-(notes 3, measured 5). No rule is taken from them.
+(notes 3, measured 1+3+1). No rule is taken from them.
 
-**THE LAST INPUT OF MADNESS AND OF DELIRIUM IS ONE HIT**, earning 5. The stance
-table and `Module:Stances/data` print it as three 300% rows; the game shows one
-damage number. Its size is not measured: the entries take the table's 900%, which
-is what both combos' published %/s adds up to.
+**THE LAST INPUT OF MADNESS AND OF DELIRIUM IS THREE HITS**, three damage numbers
+earning 1, 3 and 1 — the stance table's three 300% rows, in order.
 
 Nothing here says the multiplier rule fails for any OTHER stance; they still read
 it, unmeasured.
