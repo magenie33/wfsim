@@ -1,6 +1,10 @@
 # VAZARIN — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
 id: vazarin
 name: Vazarin
+# "The weapon of Vazarin, School of the Protectors - a Staff." (W`Tektolyst_Artifact`)
+artifact:
+  id: nidri
+  name: Nidri
 
 nodes:
   # "Increase Affinity Radius by '''10 / 15 / 20 / 25'''m"

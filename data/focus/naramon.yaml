@@ -1,6 +1,10 @@
 # NARAMON — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
 id: naramon
 name: Naramon
+# "The weapon of Naramon, School of the Tacticians - a Sword." (W`Tektolyst_Artifact`)
+artifact:
+  id: vexoric
+  name: Vexoric
 
 nodes:
   # "Melee Combo Counter now decays while out of combat by '''20 / 15 / 10 / 5''' every

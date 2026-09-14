@@ -363,6 +363,9 @@ const capOf = (id) => (weaponInfo(id) || {}).capacity || 60;
 // grants "80% of listed drain, rounded down", which is 4. Mirrors
 // `engine::mods::stance_capacity`.
 const stancePolOf = (id) => (weaponInfo(id) || {}).stance_polarity || null;
+/// A STANCE THE WEAPON CANNOT TAKE OFF (Valkyr Talons' Hysteria, MEASUREMENTS
+/// M94): seated on every build, never removed, and its slot takes no Forma.
+const fixedStanceOf = (id) => (weaponInfo(id) || {}).fixed_stance || null;
 function stanceGrant() {
   const s = slots[STANCE];
   const m = s && s.mod ? modById(s.mod) : null;
@@ -10513,6 +10516,14 @@ function polBtn(pol, i) {
 function renderMods() {
   // The quick-calc bar sits above this block and is measured against the same
   // build, so it redraws with it.
+  // A FIXED STANCE IS SEATED BEFORE ANYTHING READS THE SLOTS, so the capacity
+  // line counts its grant and a build restored without it holds it anyway.
+  const fixedStance = fixedStanceOf($("weapon").value);
+  if (fixedStance && slots[STANCE]) {
+    slots[STANCE].mod = fixedStance;
+    slots[STANCE].pol = stancePolOf($("weapon").value);
+    slots[STANCE].rank = null;
+  }
   if (typeof renderQuickCalc === "function") renderQuickCalc();
   // ...and so does the mode control: equipping a Cannonade is what takes the
   // cycle away, so the reason it is greyed changes with the slots.
@@ -11314,6 +11325,15 @@ function buildSlot(i) {
     // thing rather than as a number and a coincidence.
     no.title = tr("slot") + " " + (i + 1);
     el.appendChild(no);
+  }
+  // A FIXED STANCE HAS NO MENU AND NO POLARITY TO CHANGE: it cannot be removed
+  // and its slot takes no Forma (MEASUREMENTS M94).
+  if (i === STANCE && fixedStanceOf($("weapon").value)) {
+    const dots = el.querySelector(".dots");
+    if (dots) dots.remove();
+    el.classList.add("fixed");
+    el.title = tr("fixed on this weapon — it cannot be removed, and its slot takes no Forma");
+    return el;
   }
   // polarity is decoupled: clickable on every slot (mod or empty, incl. innate)
   el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openPolMenu(i); });
@@ -21422,6 +21442,8 @@ async function loadWarframeCatalog() {
   c.mods.forEach((m) => over(m, I18N && (I18N.auras || {})[m.id] ? "auras" : "warframe_mods"));
   c.arcanes.forEach((a) => over(a, "warframe_arcanes"));
   c.abilities.forEach((a) => over(a, "warframe_abilities"));
+  c.artifact_mods.forEach((m) => over(m, "artifact_mods"));
+  c.artifact_arcanes.forEach((a) => over(a, "artifact_arcanes"));
   WFCAT = c;
   return c;
 }
@@ -21460,8 +21482,10 @@ function wfNormalize(st, id) {
     }),
     helminth: { slot: Number((s.helminth || {}).slot) || 0,
       ability: wfAbility((s.helminth || {}).ability) ? s.helminth.ability : null },
-    // THE OPERATOR BUILD'S NAME: a reference, resolved when the build is sent.
-    operator: typeof s.operator === "string" && s.operator ? s.operator : null,
+    // THE LINKED OPERATOR BUILD'S `id`, resolved when the build is sent. A NAME
+    // here is a link saved before ids, and becomes that build's id.
+    operator: typeof s.operator === "string" && s.operator
+      ? ((opList().find((p) => p.id === s.operator || p.name === s.operator) || {}).id || null) : null,
   };
 }
 
@@ -22010,20 +22034,42 @@ function wfChanged() {
 // ---- THE OPERATOR ------------------------------------------------------
 //
 // `/operator`: the active Focus school, and which of its conditional nodes to
-// count as running. A Warframe build REFERS to one by name, so a Focus choice is
-// made once and every frame reads it.
+// count as running. A Warframe build LINKS to one by its `id`, so a Focus choice
+// is made once and every frame reads it.
 const OPS = "operators";
 let op = null;
 let opActive = "";
 let opSaveTimer = null;
+/// THE OPERATOR BUILDS, EACH WITH AN `id` — the link a Warframe build stores. A
+/// name is not one: a rename would cut every link to it. A missing id is written
+/// straight to storage, past undo, since an undo that dropped it would re-mint it.
+function opList() {
+  const ps = loadPresetList(OPS);
+  if (ps.every((p) => p.id)) return ps;
+  const out = opWithIds(ps);
+  try { localStorage.setItem(presetListKey(OPS), JSON.stringify(out)); } catch (_) { /* unsaved: minted again next read */ }
+  return out;
+}
+// `randomUUID` exists only in a secure context; the fallback is as unique here.
+const opNewId = () => (crypto.randomUUID ? crypto.randomUUID()
+  : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const opWithIds = (ps) => ps.map((p) => (p.id ? p : { ...p, id: opNewId() }));
 const focusSchool = (id) => (WFCAT && id && WFCAT.focus.find((s) => s.id === id)) || null;
-const opBlank = () => ({ school: null, assumed: [] });
+const opAMod = (id) => (WFCAT && id && WFCAT.artifact_mods.find((m) => m.id === id)) || null;
+const opAArcane = (id) => (WFCAT && id && WFCAT.artifact_arcanes.find((a) => a.id === id)) || null;
+const opBlank = () => opNormalize(null);
+/// The artifact stays with the build when the school changes: any artifact
+/// seats any school's card, and the page shows the one the school owns.
 function opNormalize(st) {
   const s = st || {};
   const school = focusSchool(s.school);
+  const art = s.artifact || {};
+  const mods = Array.from({ length: WFCAT.artifact_slots }, (_, i) => (art.mods || [])[i])
+    .map((id, i, all) => (opAMod(id) && all.indexOf(id) === i ? id : null));
   return {
     school: school ? school.id : null,
     assumed: school ? (s.assumed || []).filter((id) => school.nodes.some((n) => n.id === id && !n.always)) : [],
+    artifact: { mods, arcane: opAArcane(art.arcane) ? art.arcane : null },
   };
 }
 function opBarCfg() {
@@ -22031,8 +22077,8 @@ function opBarCfg() {
     domain: OPS,
     label: tr("Operator builds"),
     noun: "operator",
-    load: () => loadPresetList(OPS),
-    store: (ps) => storePresetList(OPS, ps),
+    load: opList,
+    store: (ps) => storePresetList(OPS, opWithIds(ps)),
     active: () => opActive,
     setActive: (n) => { opActive = n; localStorage.setItem(presetActiveKey(OPS), n); },
     snapshot: () => JSON.parse(JSON.stringify(op)),
@@ -22097,12 +22143,124 @@ function renderOperator() {
     renderOperator();
     opMarkDirty();
   }));
+  renderOpArtifact();
+  refreshOpArtifact();
+}
+
+// ---- the Tektolyst Artifact ----
+const opSchoolChip = (id) => `<span class="exchip">${escHtml((focusSchool(id) || {}).name || id)}</span>`;
+
+/// Each seated card as `/api/operator/panel` pays it out, by id. Until it answers
+/// a card shows its catalogue text.
+let opPanel = {};
+let opPanelSeq = 0;
+async function refreshOpArtifact() {
+  const seq = ++opPanelSeq;
+  const r = await api("/api/operator/panel", { artifact: { mods: op.artifact.mods.filter(Boolean), arcane: op.artifact.arcane } });
+  if (seq !== opPanelSeq || !r || !r.ok) return;
+  opPanel = Object.fromEntries(r.mods.map((m) => [m.id, m]));
+  renderOpArtifact();
+}
+
+function opBonusNote(m) {
+  const p = opPanel[m.id];
+  if (!m.bonus || !p) return "";
+  const text = m.bonus.per === "unique_school"
+    ? tr("other schools seated: {n}")
+    : tr("{school} mods seated: {n}").replace("{school}", (focusSchool(m.bonus.per) || {}).name || m.bonus.per);
+  return `<div class="op-when">${escHtml(text.replace("{n}", p.count))}</div>`;
+}
+
+function opCardEl(kind, i) {
+  const m = kind === "mod" ? opAMod(op.artifact.mods[i]) : opAArcane(op.artifact.arcane);
+  const el = document.createElement("div");
+  if (!m) {
+    el.className = "slot empty" + (kind === "mod" ? "" : " arc");
+    el.innerHTML = `<span class="plus">${escHtml(kind === "mod" ? tr("+ add mod") : "+ " + tr("add arcane"))}</span>`;
+    el.addEventListener("click", (e) => { e.stopPropagation(); openOpPicker(kind, i, el); });
+    return el;
+  }
+  el.className = `slot filled${kind === "mod" ? "" : " arc"} rar-${m.rarity}`;
+  el.innerHTML = imgTag(IMG(m.image), "mod")
+    + `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${kind === "mod" ? " " + opSchoolChip(m.school) : ""}</div>`
+    + `${effLines((kind === "mod" && opPanel[m.id] ? opPanel[m.id].lines : m.effects).map(escHtml))}`
+    + `${kind === "mod" ? opBonusNote(m) : ""}</div>`
+    + `<button class="dots" title="options">⋯</button>`;
+  el.querySelector(".dots").addEventListener("click", (e) => {
+    e.stopPropagation();
+    openSlotMenu(e.currentTarget, null, {
+      label: tr(kind === "mod" ? "Mod" : "Arcane"), removable: true,
+      onSwap: () => openOpPicker(kind, i, el),
+      onPick: () => {
+        if (kind === "mod") op.artifact.mods[i] = null; else op.artifact.arcane = null;
+        opArtifactChanged();
+      },
+    });
+  });
+  return el;
+}
+
+function renderOpArtifact() {
+  const s = focusSchool(op.school);
+  $("op-artifact-block").hidden = !s;
+  if (!s || !s.artifact) return;
+  const a = s.artifact;
+  $("op-artifact").innerHTML = `<div class="op-artifact-head">${a.image ? imgTag(IMG(a.image), "mod") : ""}`
+    + `<div class="mn">${wl(a.name, wikiUrl("Tektolyst Artifact"))}</div>`
+    + `<span class="op-when">${escHtml(tr("5 mod slots · 1 arcane slot · every card at max rank"))}</span></div>`
+    + `<div class="slots" id="op-artifact-mods"></div><div class="slots" id="op-artifact-arcane"></div>`;
+  op.artifact.mods.forEach((_, i) => $("op-artifact-mods").appendChild(opCardEl("mod", i)));
+  $("op-artifact-arcane").appendChild(opCardEl("arcane", 0));
+}
+
+function opArtifactChanged() {
+  renderOpArtifact();
+  refreshOpArtifact();
+  opMarkDirty();
+}
+
+function openOpPicker(kind, idx, anchor) {
+  closePopovers();
+  place($("wf-popover"), anchor);
+  const s = $("wf-search");
+  s.value = "";
+  s.oninput = () => renderOpMenu(kind, idx, s.value);
+  renderOpMenu(kind, idx, "");
+  s.focus();
+}
+
+/// A card seated in another slot MOVES here and the two swap, as on a Warframe:
+/// one card is seated once.
+function renderOpMenu(kind, idx, query) {
+  const q = query.trim().toLowerCase();
+  const menu = $("wf-menu");
+  const cur = kind === "mod" ? op.artifact.mods[idx] : op.artifact.arcane;
+  const hits = (kind === "mod" ? WFCAT.artifact_mods : WFCAT.artifact_arcanes).filter((x) => searchHit(x, q))
+    .sort((a, b) => (b.id === cur) - (a.id === cur) || a.name.localeCompare(b.name));
+  menu.innerHTML = hits.length ? hits.map((x) => {
+    const placed = kind === "mod" && x.id !== cur && op.artifact.mods.includes(x.id);
+    return `<div class="opt ${x.id === cur ? "cur" : placed ? "placed" : ""} rar-${x.rarity}" data-id="${x.id}">`
+      + `${imgTag(IMG(x.image), "mod")}<div class="info"><div class="mn">${escHtml(x.name)}${kind === "mod" ? " " + opSchoolChip(x.school) : ""}</div>`
+      + `${effLines(x.effects.map(escHtml))}</div></div>`;
+  }).join("") : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+  menu.querySelectorAll(".opt[data-id]").forEach((o) => o.addEventListener("click", () => {
+    const id = o.dataset.id;
+    if (kind === "mod") {
+      const from = op.artifact.mods.indexOf(id);
+      if (from >= 0) op.artifact.mods[from] = op.artifact.mods[idx];
+      op.artifact.mods[idx] = id;
+    } else {
+      op.artifact.arcane = id;
+    }
+    closePopovers();
+    opArtifactChanged();
+  }));
 }
 
 async function showOperator() {
   await loadWarframeCatalog();
   if (!op) {
-    const list = loadPresetList(OPS);
+    const list = opList();
     const last = localStorage.getItem(presetActiveKey(OPS));
     const p = list.find((x) => x.name === last) || list[0] || null;
     opActive = p ? p.name : "";
@@ -22111,19 +22269,19 @@ async function showOperator() {
   renderOperator();
 }
 
-/// The Operator build a Warframe build names, as the engine reads it.
+/// The Operator build a Warframe build links, as the engine reads it.
 function wfOperatorPick() {
   if (!wf || !wf.operator) return null;
-  const p = loadPresetList(OPS).find((x) => x.name === wf.operator);
+  const p = opList().find((x) => x.id === wf.operator);
   const st = p && opNormalize(p.state);
-  return st && st.school ? st : null;
+  return st && st.school ? { ...st, artifact: { mods: st.artifact.mods.filter(Boolean), arcane: st.artifact.arcane } } : null;
 }
 
 function renderWfOperator() {
-  const ps = loadPresetList(OPS);
-  const cur = wf.operator && ps.some((p) => p.name === wf.operator) ? wf.operator : "";
-  const items = [{ value: "", label: tr("no Operator") },
-    ...ps.map((p) => ({ value: p.name, label: p.name,
+  const ps = opList();
+  const cur = wf.operator && ps.some((p) => p.id === wf.operator) ? wf.operator : "";
+  const items = [{ value: "", label: tr("no linked Operator") },
+    ...ps.map((p) => ({ value: p.id, label: p.name,
       hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") }))];
   const pick = wfOperatorPick();
   const s = pick && focusSchool(pick.school);
@@ -22131,7 +22289,20 @@ function renderWfOperator() {
     value: cur, items, onPick: (v) => { wf.operator = v || null; wfChanged(); },
   })}<a class="ghost-btn small" href="/operator">${escHtml(tr("edit on the Operator page"))}</a></div>`
     + (s ? s.nodes.filter((n) => n.always || pick.assumed.includes(n.id) || n.tags.length)
-      .map((n) => opNodeHtml(s, n, n.always || pick.assumed.includes(n.id), false)).join("") : "");
+      .map((n) => opNodeHtml(s, n, n.always || pick.assumed.includes(n.id), false)).join("") : "")
+    + (s && s.artifact ? wfArtifactHtml(s.artifact, pick.artifact) : "");
+}
+
+/// The linked artifact, as a line: its mods by name, and the arcane's card, which
+/// is the part that can reach a Warframe's weapons.
+function wfArtifactHtml(def, art) {
+  const mods = art.mods.map((id) => opAMod(id).name);
+  const arc = opAArcane(art.arcane);
+  if (!mods.length && !arc) return "";
+  return `<div class="op-node on"><div class="mn">${escHtml(def.name)}</div>`
+    + (mods.length ? `<div class="me">${escHtml(mods.join(" · "))}</div>` : "")
+    + (arc ? `<div class="me"><b>${escHtml(arc.name)}</b> — ${escHtml(arc.effects.join(" "))}</div>` : "")
+    + `</div>`;
 }
 
 function renderWarframe() {

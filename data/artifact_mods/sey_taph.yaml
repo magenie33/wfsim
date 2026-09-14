@@ -1,0 +1,11 @@
+id: sey_taph
+name: "Sey-Taph"
+school: zenurik
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/VoidSlingEfficiency
+# the wiki's table at max rank — Rank / Void Sling Efficiency: 5 || 30%
+description: "+30% Void Sling Efficiency"
+
+source:
+  url: https://wiki.warframe.com/w/Sey-Taph

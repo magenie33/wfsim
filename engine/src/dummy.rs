@@ -3233,14 +3233,16 @@ pub struct DummyParams {
     /// `status = base x [1 + mods + this x (combo - 1)]`.
     pub status_chance_per_combo: f64,
     /// CHANCE OF AN EXTRA COMBO POINT per landed hit (Quickening, True
-    /// Punishment, Enduring Strike). Above 1.0 it is a guaranteed point plus a
-    /// roll for the next.
+    /// Punishment, Enduring Strike). Each whole 1.0 repeats the hit's points;
+    /// the rest rolls for one point per base point (MEASUREMENTS M96, M97).
     pub combo_count_chance: f64,
     /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike), plus the status
     /// bracket's own Lifted card (Enduring Affliction). A CONDITION ABOUT THE
     /// TARGET IS SIMULATED: `Lifted` is a status this engine tracks, forced by
     /// every heavy slam and by a heavy attack.
     pub combo_count_chance_on_lifted: f64,
+    /// Chance to Gain Combo Count — see `loadout::ResolvedPanel::combo_gain_chance`.
+    pub combo_gain_chance: f64,
     /// COMBO POINTS PER BODY THE SLAM REACHED (Shockwave Synergy), before the
     /// combo count chance that scales them. Zero on every other weapon.
     pub combo_count_on_slam_hit: f64,
@@ -4339,9 +4341,12 @@ impl DummyParams {
     ///
     /// STATIC FOR THE ENGAGEMENT like `struck_bodies`, and computed per swing
     /// anyway because a combo alternates the two shapes and the list is short.
-    pub fn melee_struck(&self, all_around: bool) -> Vec<usize> {
+    ///
+    /// `extra_reach_m` is the reach a live buff adds at this swing
+    /// (Spring-Loaded Blade's stacks), on top of the resolved range.
+    pub fn melee_struck(&self, all_around: bool, extra_reach_m: f64) -> Vec<usize> {
         let reach = match self.range_m {
-            r if r.is_finite() && r > 0.0 => r,
+            r if r.is_finite() && r > 0.0 => r + extra_reach_m,
             _ => return vec![0],
         };
         if self.others.is_empty() {
@@ -4750,6 +4755,7 @@ impl DummyParams {
             status_chance_per_combo: panel.status_chance_per_combo,
             combo_count_chance: panel.combo_count_chance,
             combo_count_chance_on_lifted: panel.combo_count_chance_on_lifted,
+            combo_gain_chance: panel.combo_gain_chance,
             combo_count_on_slam_hit: panel.combo_count_on_slam_hit,
             status_chance_on_lifted: panel.status_chance_on_lifted,
             heavy_attack_damage: panel.heavy_attack_damage,
@@ -5165,6 +5171,7 @@ impl Default for DummyParams {
             status_chance_per_combo: 0.0,
             combo_count_chance: 0.0,
             combo_count_chance_on_lifted: 0.0,
+            combo_gain_chance: 0.0,
             combo_count_on_slam_hit: 0.0,
             status_chance_on_lifted: 0.0,
             heavy_attack_damage: 0.0,
@@ -7736,19 +7743,52 @@ struct Landed {
     killed: bool,
 }
 
-/// WHAT ONE SWING'S INSTANCES ADD TO THE COUNTER — the multiplier ROUNDED UP,
-/// once per instance, where an instance is a hit AND a body.
+/// WHAT ONE HIT EARNS THE COUNTER (MEASUREMENTS M96, M97). `points` is what the
+/// row shows and `base` how many of them are base points, the unit every chance
+/// acts on; `chance` is Additional Combo Count Chance and `gain` is Chance to Gain
+/// Combo Count (0, or a malus). Each base point, carrying its share of `points`:
+/// - survives the gain roll (`1 + gain`), or is lost with its share;
+/// - pays its share once more per whole 100% of `chance`;
+/// - and rolls what is left of `chance` for one more point.
 ///
-/// *"Stance attacks add combo points, scaling with the attack's stance damage
-/// multiplier (100% = 1 point)"* (wiki, Melee Combo), and a swing under 100%
-/// still earns one, which that sentence does not say and a stopwatch does:
-/// Rogue Edict opens `200%` then `5x 50%` and the counter shows SEVEN, against
-/// 4.5 proportional and 6 flat.
-///
-/// ROUNDED rather than floored at one: the two agree wherever they can be told
-/// apart, and rounding is ONE rule where a floor is two. Not separable with
-/// this roster — every stance multiplier in it is whole except `0.5`, below the
-/// line they differ above — so a stance publishing 150% would settle it.
+/// NO ROLL IS SPENT where neither chance is set, so a build without them draws
+/// the same random stream it always did.
+fn swing_combo_gain(points: f64, base: f64, chance: f64, gain: f64, roll: &mut impl FnMut(f64) -> bool) -> f64 {
+    if base <= 0.0 {
+        return 0.0;
+    }
+    let share = points / base;
+    let chance = chance.max(0.0);
+    let whole = chance.floor();
+    let rest = chance - whole;
+    let keep = (1.0 + gain).clamp(0.0, 1.0);
+    let mut out = 0.0;
+    for _ in 0..(base.round() as u32) {
+        if keep < 1.0 && !roll(keep) {
+            continue;
+        }
+        out += share * (1.0 + whole);
+        if rest > 0.0 && roll(rest) {
+            out += 1.0;
+        }
+    }
+    out
+}
+
+/// A HIT HOLDS THE COUNTER ONLY IF IT EARNED SOMETHING: one that came to 0 points
+/// leaves the combo timer running down (MEASUREMENTS M97). Asked of a swing that
+/// earns at all; a heavy attack keeps the refresh it had.
+fn refreshes_combo_timer(landed: f64, earns: bool, gained: f64) -> bool {
+    landed > 0.0 && (!earns || gained > 0.0)
+}
+
+/// THE FILL RULE for a row's `combo_points`, and only that: the fight reads each
+/// row's own number (see notes: combo_points_from_multiplier). The multiplier
+/// ROUNDED UP, once per instance — *"100% = 1 point"* (wiki, Melee Combo), and a
+/// swing under 100% still earns one: Rogue Edict opens `200%` then `5x 50%` and
+/// the counter shows SEVEN, against 4.5 proportional and 6 flat. Rounded rather
+/// than floored at one: the two agree wherever this roster can tell them apart.
+#[cfg(test)]
 fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
     multiplier.ceil().max(1.0) * instances
 }
@@ -11778,6 +11818,217 @@ mod melee {
         );
     }
 
+    /// **HYSTERIA'S COMBO POINTS ARE THE MEASURED ONES** (MEASUREMENTS M95), per
+    /// hit on one target, and a row with none still reads the multiplier.
+    #[test]
+    fn hysteria_earns_its_measured_combo_points() {
+        let round = |id: &str| -> f64 {
+            crate::weapons_data::spec(id)
+                .unwrap()
+                .attack
+                .combo_script
+                .iter()
+                .map(|h| h.combo_points * f64::from(h.hits))
+                .sum()
+        };
+        // The wiki's notation: `Nx v` is N hits of v.
+        assert_eq!(round("valkyr_talons"), 18.0, "1 / 1 / 2x 2 / 2x 2 / 2 / 2x 3");
+        assert_eq!(round("valkyr_talons_forward"), 6.0, "1 / 1 / 2 / 2");
+        assert_eq!(round("valkyr_talons_block"), 22.0, "2 / 2x 3 / 3x 3 / 1 + 3 + 1");
+        assert_eq!(round("valkyr_talons_block_forward"), 30.0, "2 / 2x 2 / 3x 2 / 2x 2 / 3x 3 / 1 + 3 + 1");
+        assert_eq!(round("valkyr_talons_slide"), 6.0, "6x 1, not the 18 its 300% would give");
+    }
+
+    /// **A ROW FILLED FROM THE RULE FOLLOWS IT, AND EVERY ROW HAS A SOURCE.**
+    ///
+    /// Combo points are data the game sets per attack, so every melee file
+    /// states them — measured (MEASUREMENTS M95) or filled from the wiki's rule
+    /// (`see notes: combo_points_from_multiplier`). A filled row is checked
+    /// against that rule so a typo cannot pass as a measurement; a row of a form
+    /// that SPENDS the counter states 0, since a heavy attack earns nothing.
+    #[test]
+    fn every_combo_row_states_its_points_and_a_filled_one_follows_the_rule() {
+        const MARK: &str = "see notes: combo_points_from_multiplier";
+        let rows = |v: &serde_norway::Value| v.as_sequence().cloned().unwrap_or_default();
+        let mut checked = 0;
+        let mut wrong: Vec<String> = Vec::new();
+        // FROM DISK: the source is a COMMENT, and the embedded data is stripped of
+        // its comments on the way in (`engine/build.rs`).
+        let data = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../data");
+        let dirs = std::iter::once(data.join("weapons/melee"))
+            .chain(std::fs::read_dir(data.join("mods")).unwrap().filter_map(|e| e.ok()).map(|e| e.path()));
+        let mut paths: Vec<std::path::PathBuf> = Vec::new();
+        for dir in dirs {
+            if let Ok(rd) = std::fs::read_dir(&dir) {
+                paths.extend(
+                    rd.filter_map(|e| e.ok())
+                        .map(|e| e.path())
+                        .filter(|p| p.extension().is_some_and(|x| x == "yaml")),
+                );
+            }
+        }
+        for p in paths {
+            let owned = std::fs::read_to_string(&p).unwrap();
+            let text = owned.as_str();
+            let path = p.display().to_string();
+            let doc: serde_norway::Value = serde_norway::from_str(text).unwrap();
+            // (spends the counter, rows) for every block of rows in the file.
+            let blocks: Vec<(bool, Vec<serde_norway::Value>)> = match doc.get("combos") {
+                Some(c) => c
+                    .as_mapping()
+                    .into_iter()
+                    .flatten()
+                    .map(|(k, v)| (k.as_str() == Some("heavy"), rows(v)))
+                    .collect(),
+                None => match doc.get("attack").and_then(|a| a.get("combo_script")) {
+                    Some(s) => {
+                        let spends = doc["attack"].get("spends_combo").and_then(|b| b.as_bool()) == Some(true);
+                        vec![(spends, rows(s))]
+                    }
+                    None => continue,
+                },
+            };
+            if blocks.iter().all(|(_, r)| r.is_empty()) {
+                continue;
+            }
+            assert!(text.contains(MARK) || text.contains("M95"), "{path}: combo points with no source");
+            let filled = text.contains(MARK);
+            for (spends, block) in blocks {
+                for row in block {
+                    let mult = row["multiplier"].as_f64().unwrap();
+                    let stated = row["combo_points"].as_f64().unwrap();
+                    // BASE POINTS: none on a spending row, all of them on an
+                    // ordinary stance's, one a hit on an Exalted one (M97).
+                    let base = row["combo_points_base"].as_f64().unwrap();
+                    let want_base = if spends { 0.0 } else if filled { stated } else { 1.0 };
+                    if base != want_base {
+                        wrong.push(format!("{path}: {mult} states base {base}, want {want_base}"));
+                    }
+                    if !filled {
+                        continue;
+                    }
+                    let rule = if spends { 0.0 } else { combo_points_for(mult, 1.0) };
+                    checked += 1;
+                    if stated != rule {
+                        wrong.push(format!("{path}: {mult} states {stated}, the rule fills {rule}"));
+                    }
+                }
+            }
+        }
+        assert!(checked > 100, "the sweep found only {checked} filled rows");
+        assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    }
+
+    /// Every total `hits` can come to — `(points, base)` a hit — with the
+    /// probability of each, by walking every sequence of roll outcomes.
+    fn combo_outcomes(hits: &[(f64, f64)], chance: f64, gain: f64) -> Vec<(f64, f64)> {
+        let mut out: std::collections::BTreeMap<u64, (f64, f64)> = Default::default();
+        let rolls_needed = hits.iter().map(|(_, b)| 2 * (*b as u32)).sum::<u32>();
+        for pattern in 0u64..(1u64 << rolls_needed) {
+            let mut i = 0;
+            let mut prob = 1.0;
+            let mut total = 0.0;
+            for (p, b) in hits {
+                total += swing_combo_gain(*p, *b, chance, gain, &mut |q| {
+                    let win = pattern >> i & 1 == 1;
+                    i += 1;
+                    prob *= if win { q } else { 1.0 - q };
+                    win
+                });
+            }
+            // A PATTERN IS COUNTED ONCE: the bits past the rolls it used are
+            // other patterns' business.
+            if pattern >> i == 0 {
+                let e = out.entry(total.to_bits()).or_insert((total, 0.0));
+                e.1 += prob;
+            }
+        }
+        out.into_values().collect()
+    }
+
+    /// **WHAT A HIT EARNS, AGAINST EVERY MEASUREMENT OF IT** (MEASUREMENTS M96,
+    /// M97): the totals each reading can reach, and the ones it cannot.
+    #[test]
+    fn a_hit_earns_its_base_points_through_the_gain_gate_and_the_extra_chance() {
+        let values = |hits: &[(f64, f64)], chance: f64, gain: f64| -> Vec<f64> {
+            combo_outcomes(hits, chance, gain).into_iter().filter(|(_, pr)| *pr > 0.0).map(|(v, _)| v).collect()
+        };
+        let mean = |hits: &[(f64, f64)], chance: f64, gain: f64| -> f64 {
+            combo_outcomes(hits, chance, gain).into_iter().map(|(v, pr)| v * pr).sum()
+        };
+        // DAKRA PRIME, Vengeful Revenant's neutral opener: 3 points, all base.
+        let dakra = [(3.0, 3.0)];
+        assert_eq!(values(&dakra, 0.0, 0.0), [3.0]);
+        assert_eq!(values(&dakra, 0.2, 0.0), [3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(values(&dakra, 1.0, 0.0), [6.0], "exactly 100% doubles and rolls nothing");
+        assert_eq!(values(&dakra, 1.794, 0.0), [6.0, 7.0, 8.0, 9.0], "measured 9 9 9 8 7 8");
+        assert_eq!(values(&dakra, 0.0, -0.573), [0.0, 1.0, 2.0, 3.0]);
+        // …THE GATE BESIDE +120%: each base point is lost whole or kept with its
+        // doubled share, so the total is never 1 — measured 2.82 over 17, no 1.
+        let gated = values(&dakra, 1.2, -0.573);
+        assert!(!gated.contains(&1.0), "{gated:?}");
+        assert!((mean(&dakra, 1.2, -0.573) - 2.818).abs() < 0.01);
+        // DAKRA PRIME'S AERIAL OPENER, 200%: 2 points, both base.
+        assert_eq!(values(&[(2.0, 2.0)], 0.594, 0.0), [2.0, 3.0, 4.0], "measured 2 to 4");
+        assert_eq!(values(&[(2.0, 2.0)], 0.0, -0.573), [0.0, 1.0, 2.0], "measured 0 to 2");
+        // HYSTERIA: one base point a hit, the rest riding along. Its 3-point
+        // aerial finisher at 120% is 6 or 7 and never 8 or 9 (measured 30 times).
+        assert_eq!(values(&[(3.0, 1.0)], 1.2, 0.0), [6.0, 7.0]);
+        // …and the whole aerial round, 2 / 2x 2 / 3: 18 to 22, exactly 18 at 100%.
+        let aerial = [(2.0, 1.0), (2.0, 1.0), (2.0, 1.0), (3.0, 1.0)];
+        assert_eq!(values(&aerial, 1.2, 0.0), [18.0, 19.0, 20.0, 21.0, 22.0]);
+        assert_eq!(values(&aerial, 1.0, 0.0), [18.0]);
+    }
+
+    /// A HIT THAT CAME TO 0 POINTS DOES NOT HOLD THE COUNTER (MEASUREMENTS M97);
+    /// a heavy attack, which earns nothing by kind, keeps the refresh it had.
+    #[test]
+    fn a_hit_that_earned_nothing_does_not_refresh_the_combo_timer() {
+        assert!(!refreshes_combo_timer(1.0, true, 0.0), "every base point lost");
+        assert!(refreshes_combo_timer(1.0, true, 1.0));
+        assert!(refreshes_combo_timer(1.0, false, 0.0), "a heavy attack");
+        assert!(!refreshes_combo_timer(0.0, true, 3.0), "nothing landed");
+    }
+
+    /// **SPRING-LOADED BLADE'S STACKS WIDEN THE REACH MID-FIGHT.** Each status
+    /// buys +1 m for 24 s, two stacks on independent timers, read at the swing.
+    /// A ring at 3.5 m around the aimed body is mostly out of a Praedos's 2.5 m
+    /// and inside 4.5 m, so the stacks bring it in; a ring at 20 m stays out
+    /// wherever the wielder stands, and the card must then move nothing at all.
+    #[test]
+    fn spring_loaded_blade_stacks_reach_and_reaches_what_it_brings_into_range() {
+        let dps = |mods: &[&str], gap: f64| magistar("praedos_slide", mods, 30.0, Some(gap)).mean_damage;
+        let near_off = dps(&[], 3.5);
+        let near_on = dps(&["spring_loaded_blade"], 3.5);
+        assert!(near_on > near_off * 2.0, "two stacks reach the 3.5 m ring: {near_off:.0} -> {near_on:.0}");
+        assert_eq!(dps(&[], 20.0), dps(&["spring_loaded_blade"], 20.0), "4.5 m reaches nothing at 20 m");
+
+        let card = crate::mods_data::pool_for_weapon("praedos")
+            .into_iter()
+            .find(|m| m.id == "spring_loaded_blade")
+            .expect("in the melee pool");
+        let Some(crate::loadout::ModEffect::GrantsStackingBuff(b)) = card.effects.first().cloned() else {
+            panic!("a stacking buff");
+        };
+        assert_eq!(b.grant, crate::loadout::BuffGrant::MeleeRange);
+        assert_eq!(b.decay, crate::loadout::BuffDecay::PerStackExpiry, "independent timers");
+        assert_eq!((b.per_stack, b.max_stacks, b.duration), (1.0, 2, 24.0));
+    }
+
+    /// **A SLIDE ATTACK OPENS THE WINDOW AND TAKES IT.** A slide lands direct
+    /// melee hits like any light swing, so it rolls for the flash, and a slide
+    /// loop that gets one fires the class's heavy attack in place of its next
+    /// slide — the play is to use the window the moment it opens.
+    #[test]
+    fn a_slide_attack_opens_tennokai_and_takes_it() {
+        for form in ["praedos_slide", "valkyr_talons_slide"] {
+            let dps = |mods: &[&str]| magistar(form, mods, 60.0, None).mean_damage;
+            let off = dps(&[]);
+            let on = dps(&["disciplines_merit"]);
+            assert!(on > off * 1.3, "{form}: a slide loop with Tennokai must fire its heavies: {off:.0} -> {on:.0}");
+        }
+    }
+
     /// **A TENNOKAI HEAVY BREAKS THE STANCE CHAIN**, so the next light swing
     /// starts the combo over.
     ///
@@ -12880,12 +13131,12 @@ mod melee {
             panel.clone()
         });
         assert_eq!(
-            p.melee_struck(false),
+            p.melee_struck(false, 0.0),
             vec![0, 1],
             "a 90-degree sweep takes the aimed body and the one 30 degrees off it, and nothing at 60",
         );
         assert_eq!(
-            p.melee_struck(true),
+            p.melee_struck(true, 0.0),
             vec![0, 1, 2],
             "a spin takes everything in range whatever angle it stands at",
         );
@@ -14735,7 +14986,8 @@ pub fn run_once_traced(
         // everything within the weapon's range; an ordinary one sweeps in
         // front. Empty for a gun, which never asks.
         let melee_struck = match &swing {
-            Some(h) if ap.follow_through.is_some() => params.melee_struck(h.all_around),
+            Some(h) if ap.follow_through.is_some() => params
+                .melee_struck(h.all_around, buff_total!(ap, crate::loadout::BuffGrant::MeleeRange, t)),
             _ => Vec::new(),
         };
         // WHAT THIS SWING FORCES, split into the two machines that carry it —
@@ -18085,34 +18337,32 @@ pub fn run_once_traced(
             // on a light combo is one too. On a spending form it is visible
             // only through Melee Combo Efficiency, which is the share of the
             // counter the swing does NOT empty.
-            if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
-                combo_points += combo_points_for(h.multiplier, landed);
-                // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
-                // extra combo points on hit/block additively"* — ONE point, per
-                // HIT rather than per stance multiplier, which is what makes
-                // Quickening worth so much less on a 400% swing than on a 100%
-                // one. Above 100% it is a guaranteed point plus a roll for the
-                // next, the way every other over-100% chance here behaves.
-                // …AND ENDURING STRIKE, which adds to the same chance while the
-                // target is LIFTED — a status this engine tracks rather than a
-                // state it has to assume.
+            let earns = !(ap.spends_combo || tennokai_heavy);
+            let mut gained = 0.0;
+            if landed > 0.0 && earns {
+                // EVERY LANDED INSTANCE IS A HIT OF ITS OWN: its base points take
+                // the gain roll, Additional Combo Count Chance and what is left
+                // of it — `swing_combo_gain`. ENDURING STRIKE adds to that chance
+                // while the target is LIFTED, a status this engine tracks rather
+                // than a state it has to assume.
                 let chance_now = ap.combo_count_chance
                     + if debuffs.lifted.is_some_and(|e| e > t) {
                         ap.combo_count_chance_on_lifted
                     } else {
                         0.0
                     };
-                if chance_now > 0.0 {
-                    for _ in 0..(landed as u32) {
-                        let whole = chance_now.floor();
-                        combo_points += whole;
-                        if d.spine.chance(chance_now - whole) {
-                            combo_points += 1.0;
-                        }
-                    }
+                for _ in 0..(landed as u32) {
+                    gained += swing_combo_gain(
+                        h.combo_points,
+                        h.combo_points_base,
+                        chance_now,
+                        ap.combo_gain_chance,
+                        &mut |p| d.spine.chance(p),
+                    );
                 }
+                combo_points += gained;
             }
-            if landed > 0.0 {
+            if refreshes_combo_timer(landed, earns, gained) {
                 combo_expiry = t + ap.combo_duration_seconds;
             }
             // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the

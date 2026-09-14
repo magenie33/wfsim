@@ -28,7 +28,8 @@ attack:
   # see notes: class_s_heavy_attack
   heavy: { multiplier: 6.0, windup_seconds: 1.2 }
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
 source:
   url: https://wiki.warframe.com/w/Crushing_Ruin

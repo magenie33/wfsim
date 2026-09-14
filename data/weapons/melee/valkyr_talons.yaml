@@ -1,0 +1,110 @@
+id: valkyr_talons
+name: Valkyr Talons
+slot: melee
+class: claws
+# THE STATIONARY COMBO, and the arsenal's own form — so its mode is `base`.
+form: neutral
+default_form: true
+transform_group: valkyr_talons
+mod_pools: [melee, valkyr_talons]
+mastery_rank: 0
+max_rank: 30
+
+# VALKYR'S EXALTED WEAPON, summoned by Hysteria. ONE ENTRY FOR BOTH FRAMES:
+# "On Valkyr Prime, the claws are named Valkyr Prime Talons. Their stats are,
+# however, identical to Valkyr Talons." (W`Valkyr_Talons`)
+#
+# ITS DAMAGE IS AN ABILITY'S, TAKEN AT 100% STRENGTH. "Normal attacks deal
+# 250 damage … slide attacks inflict 750 damage for each strike" carry the
+# Ability Strength icon (W`Hysteria`), so every number below is the module's,
+# which is that page at 100%.
+#
+# HYSTERIA IS FIXED IN THE STANCE SLOT: seated and never removed; the card grants
+# 5 and the matching slot doubles it to 10 (60 -> 70); the slot takes no Forma
+# (MEASUREMENTS M94). The card (`data/mods/valkyr_talons/hysteria.yaml`) is the
+# grant; each entry states the stance's combo as its own script
+# (`Module:Stances/data`, `Hysteria`).
+fixed_stance: hysteria
+# EXALTED: the module's CompatibilityTags `POWER_WEAPON`, so the cards DE tags
+# incompatible with it are refused (`mods_data::pool_for_build`).
+exalted: true
+accuracy: ~
+# NO DISPOSITION AND NO RIVEN FAMILY: "Riven Mods are not generated for Valkyr
+# Talons" (W`Hysteria`).
+polarities: [madurai, naramon, naramon]
+stance_polarity: zenurik
+introduced: "Update 23"
+internal_name: /Lotus/Powersuits/Berserker/BerserkerMelee
+
+# NO AMMO AT ALL: a melee weapon has no magazine, no reserve and no reload.
+ammo_max: ~
+
+# The module's ComboDur.
+combo_duration_seconds: 5.0
+
+# NO ROW IN THE CO WEAPON TABLE, so the ordinary class. The STANCE table reads
+# `Valkyr Talons || Hysteria || 100% || 100% || 93% || 90% || 100%` (Neutral,
+# Forward, Forward Block, Block, Slide) — transcribed and not acted on, the same
+# as every other stance's row in that table.
+co_behavior: additive_with_base_damage
+
+unmodeled:
+  - "THE DAMAGE IS HYSTERIA'S AT 100% ABILITY STRENGTH. Every swing, slide and slam number on the page carries the Strength icon, so a Valkyr build with more strength deals proportionally more than this reports"
+  - "Hysteria drains 5 energy a second while the claws are out; energy is not modelled, so they are held for the whole engagement"
+  - "RAGE, Valkyr's passive — +3% melee damage per hit and +12% per kill, up to +300%, additive with Pressure Point — is a Warframe passive and is not modelled, so a Valkyr build reads LOW here"
+  - "every hit restores 100 health, and nothing in this arena damages the Tenno"
+  - "one attack input's own animation length is not published anywhere: the wiki gives a combo's total duration at 1.0x attack speed and one entry per input, so the combo's DURATION is exact and the split between its INPUTS is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
+
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  # ATTACK SPEED, in the fire-rate bucket: the module's FireRate.
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.5
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # REACH: "within 2.15 meters" (W`Hysteria`), the module's MeleeRange.
+  range_m: 2.15
+  # The module's FollowThrough is 1: every body in reach takes the whole swing.
+  follow_through: 1.0
+  # THE CLASS HEAVY: the module's HeavyAttack 1250 is 5x the 250 swing, and its
+  # WindUp is 0.5 s.
+  heavy: { multiplier: 5.0, windup_seconds: 0.5 }
+  # "Damage is distributed between 25% Puncture and 75% Slash" (W`Hysteria`).
+  damage: { puncture: 62.5, slash: 187.5 }   # total 250
+
+  # THE WEAPON'S OWN SLAM, at 100% of base: the module's Slam Attack is 500
+  # (200%) in a 6 m sphere, linear falloff to 50% at the edge. Its forced
+  # Ragdoll carries no damage.
+  slam:
+    damage: { puncture: 62.5, slash: 187.5 }
+    radius_m: 6.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: []
+    takes_multishot: false
+  # FERVOR — 2.85 s at 1.0x, six inputs of 0.475 s (see notes:
+  # combo_clock_is_the_input). TWO SPINS, the third and fourth inputs: the stance's
+  # own combo table and the module agree, and the table is the source for a combo
+  # where the page's Notes say "the final four". Stagger and Stun carry no damage.
+  #
+  # COMBO POINTS ARE MEASURED, per hit on one target: 1 / 1 / 2x 2 / 2x 2 / 2 / 2x 3
+  # (MEASUREMENTS M95). Every Hysteria entry states them per row.
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.475, hits: 2, all_around: true, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.475, forced_procs: [slash], combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.475, hits: 2, combo_points: 3, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Valkyr_Talons
+  # The combo table: https://wiki.warframe.com/w/Hysteria_(Stance)

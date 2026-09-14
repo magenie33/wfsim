@@ -70,6 +70,12 @@ struct Assets {
     warframe_arcanes: std::collections::HashMap<String, String>,
     #[serde(default)]
     auras: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    artifacts: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    artifact_mods: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    artifact_arcanes: std::collections::HashMap<String, String>,
 }
 
 // ---- Image asset map (data/assets.yaml, embedded by the engine) --------
@@ -151,12 +157,38 @@ pub fn warframe_catalog_json() -> Value {
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
             "tags": tags(&x.tags),
         })).collect::<Vec<_>>(),
+        "artifact_slots": wf::ARTIFACT_MOD_SLOTS,
+        "artifact_mods": wf::artifact_mods().iter().map(|m| json!({
+            "id": m.id,
+            "name": m.name,
+            "school": m.school,
+            "rarity": m.rarity,
+            "max_rank": m.max_rank,
+            "bonus": m.bonus.as_ref().map(|b| json!({ "per": b.per })),
+            "image": a.artifact_mods.get(&m.id),
+            "effects": m.description.lines().collect::<Vec<_>>(),
+            "url": m.url,
+        })).collect::<Vec<_>>(),
+        "artifact_arcanes": wf::artifact_arcanes().iter().map(|x| json!({
+            "id": x.id,
+            "name": x.name,
+            "rarity": x.rarity,
+            "max_rank": x.max_rank,
+            "image": a.artifact_arcanes.get(&x.id),
+            "effects": x.description.lines().collect::<Vec<_>>(),
+            "url": x.url,
+        })).collect::<Vec<_>>(),
         // THE OPERATOR'S FOCUS, for the Operator page and for what a Warframe
-        // build shows it referring to.
+        // build shows it linking.
         "focus": wf::focus_schools().iter().map(|s| json!({
             "id": s.id,
             "name": s.name,
             "url": s.url,
+            "artifact": s.artifact.as_ref().map(|x| json!({
+                "id": x.id,
+                "name": x.name,
+                "image": a.artifacts.get(&x.id),
+            })),
             "nodes": s.nodes.iter().map(|n| json!({
                 "id": n.id,
                 "name": n.name,
@@ -180,6 +212,26 @@ pub fn warframe_catalog_json() -> Value {
             "tags": tags(&x.tags),
             "url": x.url,
         })).collect::<Vec<_>>(),
+    })
+}
+
+/// `/api/operator/panel`: the Operator page's artifact, each seated card with its
+/// bonus line paid out for what is seated beside it.
+pub fn operator_panel_json(v: &Value) -> Value {
+    use wfsim_engine::warframes_data as wf;
+    let pick: wf::ArtifactPick = match serde_json::from_value(v.get("artifact").cloned().unwrap_or_else(|| json!({}))) {
+        Ok(p) => p,
+        Err(e) => return err_json(format!("bad artifact: {e}")),
+    };
+    let seated: Vec<&wf::ArtifactMod> = pick.mods.iter().filter_map(|id| wf::artifact_mod_by_id(id)).collect();
+    json!({
+        "ok": true,
+        "mods": seated.iter().map(|m| json!({
+            "id": m.id,
+            "lines": m.card_with(&seated),
+            "count": m.bonus_count(&seated),
+        })).collect::<Vec<_>>(),
+        "refused": wf::artifact_refusals(&pick),
     })
 }
 
@@ -1184,6 +1236,7 @@ pub fn i18n_json() -> Value {
                 "warframe_mods": l.warframe_mods,
                 "warframe_arcanes": l.warframe_arcanes,
                 "warframe_abilities": l.warframe_abilities,
+                "artifact_mods": l.artifact_mods,
                 "warframe_mod_descriptions": l.warframe_mod_descriptions,
                 "warframe_arcane_descriptions": l.warframe_arcane_descriptions,
                 "warframe_ability_descriptions": l.warframe_ability_descriptions,
@@ -1689,6 +1742,10 @@ pub fn meta_json() -> Value {
                 // page needs it to answer 5 or 10 (`mods::stance_capacity`).
                 "stance_polarity": wfsim_engine::weapons_data::stance_polarity(&w.id)
                     .map(|p| format!("{p:?}")),
+                // A STANCE THE WEAPON CANNOT TAKE OFF: the page seats it, offers
+                // no removal and no polarity for its slot.
+                "fixed_stance": wfsim_engine::weapons_data::spec(&w.id)
+                    .and_then(|s| s.fixed_stance.clone()),
                 "forms": w.forms.iter()
                     .map(|(id, name, def)| {
                         // THE ENTRY BEHIND THIS FORM, once. Everything below is
@@ -4086,6 +4143,9 @@ pub fn panel_json(v: &Value) -> Value {
                 ComboCountChance(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "extra combo points per hit — what they are worth depends on what reads                             the counter, which is Blood Rush and Weeping Wounds in a combo mode                             and the heavy multiplier in a heavy one"})),
+                ComboGainChance(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "a GATE on every base combo point a hit earns, not a share of Additional Combo                             Count Chance — a lost point takes whatever that chance gave it, and a                             hit left with none does not hold the combo timer (MEASUREMENTS M97)"})),
                 ComboCountChanceOnLifted(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "its gate is a status this fight tracks: every heavy slam forces Lifted, and                             a light combo forces none — so what it pays is decided by the mode                             rather than assumed"})),

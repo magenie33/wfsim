@@ -854,6 +854,7 @@ fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
         "heavy_attack_efficiency" => ModEffect::HeavyAttackEfficiency(v),
         "initial_combo" => ModEffect::InitialCombo(v),
         "combo_count_chance" => ModEffect::ComboCountChance(v),
+        "combo_gain_chance" => ModEffect::ComboGainChance(v),
         _ => return None,
     })
 }
@@ -1388,6 +1389,8 @@ fn an_element_is_never_a_malus() {
         assert!(matches!(effect_of(by("initial_combo"), 24.5), Some(ModEffect::InitialCombo(_))));
         assert!(matches!(effect_of(by("heavy_attack_efficiency"), 0.73), Some(ModEffect::HeavyAttackEfficiency(_))));
         assert!(matches!(effect_of(by("additional_combo_count_chance"), 0.58), Some(ModEffect::ComboCountChance(_))));
+        // …AND ITS MALUS TWIN IS A DIFFERENT MECHANIC, a gate (MEASUREMENTS M97).
+        assert!(matches!(effect_of(by("chance_to_gain_combo_count"), -0.57), Some(ModEffect::ComboGainChance(_))));
         assert!(effect_of(by("finisher_damage"), 1.2).is_none(), "a finisher is out of this arena");
     }
 

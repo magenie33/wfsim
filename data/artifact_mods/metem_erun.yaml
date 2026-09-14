@@ -1,0 +1,16 @@
+id: metem_erun
+name: "Metem-Erun"
+school: naramon
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/SuperSpeedSchools
+# the wiki's table at max rank — Rank / Sprint Speed / Bonus Sprint Speed: 5 || +30% || +5%
+description: "Increase Operator Sprint Speed by +30%\n+5% bonus for each Mod from a unique School"
+bonus:
+  per: unique_school
+  value: 5
+  unit: "%"
+  stat: "Operator Sprint Speed"
+
+source:
+  url: https://wiki.warframe.com/w/Metem-Erun

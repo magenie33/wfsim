@@ -1,0 +1,11 @@
+id: ulashta_shol
+name: "Ulashta-Shol"
+school: unairu
+rarity: common
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Antiques/ReduceDeathEffect
+# the wiki's table at max rank — Rank / Transference Static Duration: 3 || -60%
+description: "-60% Transference Static duration"
+
+source:
+  url: https://wiki.warframe.com/w/Ulashta-Shol

@@ -51,10 +51,11 @@ attack:
     falloff_reduction: 0.5
     forced_procs: [impact]
     takes_multishot: false
+  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 4.0, delay_seconds: 0.625, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.0 }
-    - { multiplier: 3.0, delay_seconds: 0.625 }
+    - { multiplier: 4.0, delay_seconds: 0.625, forced_procs: [impact], combo_points: 4, combo_points_base: 4 }
+    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
+    - { multiplier: 3.0, delay_seconds: 0.625, combo_points: 3, combo_points_base: 3 }
 
 source:
   url: https://wiki.warframe.com/w/Sovereign_Outcast

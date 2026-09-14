@@ -218,6 +218,7 @@ fn buff_grant(name: &str) -> Option<crate::loadout::BuffGrant> {
         "fire_rate" => G::FireRate,
         "reload_speed" => G::ReloadSpeed,
         "initial_combo" => G::InitialCombo,
+        "melee_range" => G::MeleeRange,
         _ => return None,
     })
 }
@@ -1034,9 +1035,11 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
         // of whether or not you are holding the weapon"), and a companion is
         // not the Warframe, so the wiki states it outright: "This mod cannot be
         // equipped on Sentinel weapons", tags `SENTINEL_WEAPON, POWER_WEAPON`.
-        // We model no exalted weapon, so `power_weapon` is carried and unused.
+        // POWER_WEAPON is the EXALTED weapon, and the same tag keeps Blood Rush
+        // and Weeping Wounds off Valkyr Talons.
         .filter(|m| {
             !(weapon.class.contains("sentinel") && m.excludes_weapon.contains(&"sentinel_weapon"))
+                && !(weapon.exalted && m.excludes_weapon.contains(&"power_weapon"))
         })
         .collect()
 }
@@ -1410,6 +1413,26 @@ mod tests {
              `kind` the loader knows, or an `IndirectStat` if it carries no \
              single-target damage"
         );
+    }
+
+    /// AN EXALTED WEAPON REFUSES WHAT DE TAGS `POWER_WEAPON`, and nothing else.
+    /// Five melee cards and an Amalgam carry the tag; the Tennokai cards carry
+    /// `POWER_WEAPON_LITE`, which is the pseudo-exalted with no heavy attack,
+    /// so Valkyr Talons keeps them — and an ordinary melee keeps everything.
+    #[test]
+    fn an_exalted_weapon_refuses_the_power_weapon_cards() {
+        let has = |weapon: &str, id: &str| pool_for_weapon(weapon).iter().any(|m| m.id == id);
+        for id in ["blood_rush", "weeping_wounds", "body_count", "gladiator_rush", "maiming_strike", "amalgam_organ_shatter"] {
+            assert!(!has("valkyr_talons", id), "{id} is tagged POWER_WEAPON");
+            assert!(!has("valkyr_talons_heavy", id), "{id}: a form refuses what its weapon does");
+            assert!(has("magistar", id), "{id} still goes on an ordinary melee");
+        }
+        for id in ["condition_overload", "disciplines_merit", "pressure_point"] {
+            assert!(has("valkyr_talons", id), "{id} carries no POWER_WEAPON tag");
+        }
+        // …AND ITS FIXED STANCE IS IN ITS OWN POOL AND NO OTHER.
+        assert!(has("valkyr_talons_slide", "hysteria"));
+        assert!(!has("magistar", "hysteria"));
     }
 
     /// Every AMALGAM mod must declare that it cannot go on a sentinel weapon.

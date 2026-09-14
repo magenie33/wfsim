@@ -1,0 +1,23 @@
+id: hysteria
+name: Hysteria
+rarity: rare
+# ZENURIK, LIKE ITS SLOT: the card grants the ordinary 5 and the matching slot
+# doubles it to 10, so the weapon's 60 reads 70 in the arsenal (MEASUREMENTS
+# M94). No module or export carries this card; the doubling is what says its
+# polarity.
+polarity: zenurik
+# see notes: stance_grants_capacity
+base_drain: 0
+max_rank: 0
+description: "Valkyr's claws, unleashed by Hysteria."
+
+# THE CARD IS THE SLOT'S GRANT AND NOTHING ELSE. Its combos are on the
+# `valkyr_talons*` entries, which cannot run without it (`fixed_stance:`), so
+# stating them here too would be a second copy of the same table.
+combos: {}
+
+effects:
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Hysteria_(Stance)

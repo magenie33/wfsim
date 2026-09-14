@@ -1,0 +1,16 @@
+id: lashta_vak
+name: "Lashta-Vak"
+school: unairu
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/VoidSlingCrateBreaker
+# the wiki's table at max rank — Rank / Range / Bonus Range: 5 || 12m || +2m
+description: "Void Sling emits a pulse that breaks Containers within 12 m\n+2m bonus for each Mod from a unique School"
+bonus:
+  per: unique_school
+  value: 2
+  unit: "m"
+  stat: "container-breaking pulse range"
+
+source:
+  url: https://wiki.warframe.com/w/Lashta-Vak

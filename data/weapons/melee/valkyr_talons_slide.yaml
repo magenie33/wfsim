@@ -1,0 +1,49 @@
+id: valkyr_talons_slide
+name: Valkyr Talons
+# LAUNCHING SPRING — the slide attack, on a loop: one 300% spin landing SIX
+# times, 0.8 s a slide. 300% is the page's "slide attacks inflict 750 damage for
+# each strike" over the 250 swing.
+#
+# SIX HITS, FROM THE MODULE AND THE ABILITY PAGE: `Hits = { 6 }` and "Hysteria's
+# Slide attack does 6 hits" (W`Hysteria`). The stance page's notes say "up to a
+# 5-hit combo against a single target, or 4 hits against multiple enemies"; two
+# sources against one, and unmeasured.
+inherits: valkyr_talons
+form: slide
+transform_group: valkyr_talons
+co_behavior: additive_with_base_damage
+unmodeled:
+  - "the stance page says this slide lands 'up to a 5-hit combo against a single target, or 4 hits against multiple enemies', where the module and the ability page say 6; this entry lands 6 and it is unmeasured"
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.5
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  range_m: 2.15
+  # see notes: slide_ignores_follow_through
+  follow_through: 1.0
+  heavy: { multiplier: 5.0, windup_seconds: 0.5 }
+  damage: { puncture: 62.5, slash: 187.5 }   # total 250
+  slam:
+    damage: { puncture: 62.5, slash: 187.5 }
+    radius_m: 6.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: []
+    takes_multishot: false
+  combo_script:
+    # ONE combo point a hit, measured: 6x 1 (MEASUREMENTS M95) — not the 3 its
+    # 300% would give.
+    - { multiplier: 3.0, delay_seconds: 0.8, hits: 6, all_around: true, combo_points: 1, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Hysteria_(Stance)

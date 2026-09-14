@@ -69,9 +69,10 @@ attack:
   # shortens it; the swing after it is 0.8 s and only attack speed does. A heavy
   # is 1.2 s at 1.0x of both.
   # see notes: tonfa_heavy_timing
+  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown] }
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown] }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
 
 source:
   url: https://wiki.warframe.com/w/Praedos

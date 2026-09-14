@@ -71,9 +71,18 @@ WFCD's export where the export carries the field.
 
 ### The combo counter
 
-- **Points, not hits.** *"Stance attacks add combo points, scaling with the
-  attack's stance damage multiplier (100% stance damage multiplier = 1 point)"*
-  — so a 400% swing is worth 4, and one number does both jobs.
+- **Points are each row's own `combo_points`**, set per attack beside its
+  damage. The wiki's *"100% stance damage multiplier = 1 point"* is how a row
+  nobody has measured is FILLED (notes: `combo_points_from_multiplier`), not how
+  the game works: Hysteria's measured rows follow no rule of the multiplier
+  (MEASUREMENTS M95).
+- **A hit's BASE points are what every combo chance acts on**: all of them on an
+  ordinary weapon's stance, one a hit on Hysteria (`combo_points_base`,
+  MEASUREMENTS M97). Additional Combo Count Chance (Quickening, True Punishment,
+  Enduring Strike, a riven — one sum) repeats the hit's points per whole 100%
+  and rolls the rest once per base point for one (M96). Chance to Gain Combo
+  Count is a GATE each base point survives with `1 + chance`, not a share of
+  that sum, and a hit that comes to 0 leaves the combo timer running down (M97).
 - **Per body landed.** The wiki's own reading of the Rauta: *"generates 2 combo
   points per pellet landing on enemy (max 28 points across 14 pellets)"*.
 - **The ladder** is `1 + floor(points / 20)` capped at 12: 2x at 20, one more
@@ -503,6 +512,11 @@ is the card's own clause and not an artefact. The window's own speed-up is
 **+100%** and it is the one number in the mechanic DE publishes nothing for —
 `loadout::TENNOKAI_WINDUP_SPEED`, declared on every melee entry.
 
+**A SLIDE OPENS IT TOO.** A slide attack lands direct melee hits like any light
+swing, so it rolls for the flash, and a slide loop that gets one fires the
+class's heavy attack in place of its next slide
+(`a_slide_attack_opens_tennokai_and_takes_it`).
+
 **ALL SEVEN TENNOKAI CARDS ENABLE IT.** Every one opens with the same three
 words on its own card and only then says what else it does, so the mechanic is
 read off the card and not off a list of card names. The negative control is a
@@ -538,10 +552,15 @@ applies to.
    is not planned is REPOLARIZING that slot to buy the double, which the wiki
    says a Forma can do, so a build that would spend one reads five capacity low
    here — the conservative direction: a build that fits here fits in game.
-7. **Three cards that name a state this arena has not got**: Relentless
-   Combination wants a combo point when a Slash DoT ticks, Spring-Loaded Blade
-   wants a stacking reach buff, and Shattering Impact wants a flat armour strip
-   per Impact hit.
+7. **Two cards that name a state this arena has not got**: Relentless
+   Combination wants a combo point when a Slash DoT ticks, and Shattering Impact
+   wants a flat armour strip per Impact hit.
+
+   **SPRING-LOADED BLADE IS OFF IT**: a stacking buff into
+   `BuffGrant::MeleeRange` — +1 m per status for 24 s, two stacks on
+   independent timers (`per_stack_expiry`, the page's "decay separately") —
+   read at the swing, so a stack earned mid-fight reaches the bodies it brings
+   into range.
 
    **THE TWO LIFTED CARDS ARE OFF IT.** `Lifted` is a status this engine
    tracks, so Enduring Strike's combo-point chance and Enduring Affliction's
@@ -680,6 +699,36 @@ deals **300%**, and naively adding the radial gave 400%. `swing_share`
 vanish the moment a stance went in the slot.
 
 ---
+
+## 7c. AN EXALTED WEAPON — Valkyr Talons
+
+An ability's weapon, and still a melee weapon: seven modes like any other, one
+entry per mode (`data/weapons/melee/valkyr_talons*.yaml`). Three things differ.
+
+- **ITS DAMAGE IS THE ABILITY'S, AT 100% STRENGTH.** Hysteria's page puts the
+  Strength icon on every swing, slide and slam number, and the module's are
+  those numbers at 100%. A strength build deals more than the entry reports,
+  and the entry says so.
+- **A FIXED STANCE.** Hysteria is seated and cannot be removed; the card grants
+  5 and its matching slot doubles it to 10 (60 -> 70); the slot takes no Forma
+  (MEASUREMENTS M94). `fixed_stance:` on the
+  weapon says so once; the card is the grant, and the combos are the entries'
+  own scripts rather than a second copy on the card.
+- **`exalted: true` REFUSES WHAT DE TAGS `POWER_WEAPON`**: Blood Rush, Weeping
+  Wounds, Body Count, Gladiator Rush, Maiming Strike and Amalgam Organ Shatter.
+  The Tennokai cards carry `POWER_WEAPON_LITE` (the pseudo-exalted with no heavy
+  attack) and stay.
+
+- **ITS COMBO POINTS ARE MEASURED, NOT READ OFF THE MULTIPLIER.** Every
+  Hysteria row states `combo_points` (MEASUREMENTS M95): a 100% opener earns 1
+  on one combo and 2 on another, and the 300% slide earns 1 a hit. Every other
+  row in the roster is filled from the multiplier rule, unmeasured.
+
+- **ITS BUILDS ARE SAVED AND NOT RANKED**: the board refuses an Exalted weapon
+  (docs/BOARD.md §What is not on the board).
+
+Valkyr Prime Talons are the same weapon — "their stats are, however, identical"
+— so there is one entry, not two.
 
 ## 8. WHAT MELEE COSTS FROM HERE
 

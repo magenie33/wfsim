@@ -1,0 +1,16 @@
+id: ubri_kaneph
+name: "Ubri-Kaneph"
+school: madurai
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/WeaponDamageSchools
+# the wiki's table at max rank — Rank / Damage / Bonus Damage: 5 || +60% || +10%
+description: "+60% Damage to Amps\n+10% bonus for each Mod from a unique School"
+bonus:
+  per: unique_school
+  value: 10
+  unit: "%"
+  stat: "Amp Damage"
+
+source:
+  url: https://wiki.warframe.com/w/Ubri-Kaneph

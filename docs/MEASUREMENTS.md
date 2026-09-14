@@ -177,6 +177,11 @@ path, so an entry may be renamed but never renumbered.
 | [M90](measurements/M90-heat-dot-takes-the-weak-point-and-the-accumulator-does-not.md) | a Heat DoT DOES take the weak point, and the accumulator's 1 does NOT | ✅ 2026-09-13 (owner) |
 | [M91](measurements/M91-one-weapon-five-elements-four-rows.md) | one weapon, five elements, four rows apiece: every damaging DoT takes the weak point (Toxin included, superseding M54) and a full Blast pile is ten numbers on the host | ✅ 2026-09-13 (owner) |
 | [M92](measurements/M92-catalyzing-shields-fixed-gate-on-any-refill.md) | Catalyzing Shields gives its full fixed shield gate on ANY refill, however small — the mod page, not the Update 34 scaling | ✅ 2026-09-14 (owner) |
+| [M93](measurements/M93-antique-unique-school-bonus-counts-other-schools.md) | an Antique mod's "unique School" bonus pays once per OTHER school seated on the artifact, never for its own | ✅ 2026-09-14 (owner) |
+| [M94](measurements/M94-hysteria-stance-is-fixed-and-grants-ten.md) | Valkyr Talons: Hysteria is fixed in the stance slot; the card grants 5 and its matching slot doubles it to 10 (60 -> 70); the slot takes no Forma | ✅ 2026-09-14 (owner) |
+| [M95](measurements/M95-hysteria-combo-points-per-hit.md) | Hysteria's combo points per hit, every combo: they follow no rule of the stance multiplier (a 100% opener earns 1 or 2, the 300% slide earns 1) | ✅ 2026-09-14 (owner) |
+| [M96](measurements/M96-additional-combo-count-chance-repeats-per-whole-hundred.md) | Additional Combo Count Chance: each whole 100% repeats a hit's points, and the rest rolls once per BASE point for one (Dakra 9 9 9 8 7 8 at 179.4%, Hysteria 18 to 22 at 120%) | ✅ 2026-09-14 (owner) |
+| [M97](measurements/M97-base-combo-points-gain-gate-and-timer.md) | a hit's base combo points (all of them on an ordinary stance, one a hit on Hysteria), Chance to Gain Combo Count as a gate per base point, and a 0-point hit leaving the combo timer alone | ✅ 2026-09-14 (owner) |
 
 ## By weapon
 

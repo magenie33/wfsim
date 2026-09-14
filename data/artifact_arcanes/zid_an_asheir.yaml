@@ -1,0 +1,10 @@
+id: zid_an_asheir
+name: "Zid-An Asheir"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Antiques/StatusChanceOnUltimateHit
+# the wiki's table at max rank — Rank / Status Chance / Tauron Strike Initial Charge: 5 || 6% || 18%
+description: "6% Status chance for all Warframe weapons for each enemy hit with Tauron Strike, up to 300%. Buff lasts for 30s\n+18% Tauron Strike Initial Charge."
+
+source:
+  url: https://wiki.warframe.com/w/Zid-An_Asheir

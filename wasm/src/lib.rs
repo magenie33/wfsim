@@ -36,6 +36,7 @@ pub fn api(endpoint: &str, body: &str) -> String {
         "/api/build/keys" => wfsim_webapi::build_keys_json(&v),
         "/api/warframe/catalog" => wfsim_webapi::warframe_catalog_json(),
         "/api/warframe/panel" => wfsim_webapi::warframe_panel_json(&v),
+        "/api/operator/panel" => wfsim_webapi::operator_panel_json(&v),
         other => wfsim_webapi::err_json(format!("unknown endpoint: {other}")),
     };
     out.to_string()

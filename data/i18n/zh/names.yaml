@@ -426,6 +426,13 @@ weapons:
   magistar_heavy: 执法者
   magistar_slide: 执法者
   magistar_heavy_slam: 执法者
+  valkyr_talons: Valkyr 的利爪
+  valkyr_talons_forward: Valkyr 的利爪
+  valkyr_talons_block: Valkyr 的利爪
+  valkyr_talons_block_forward: Valkyr 的利爪
+  valkyr_talons_heavy: Valkyr 的利爪
+  valkyr_talons_slide: Valkyr 的利爪
+  valkyr_talons_heavy_slam: Valkyr 的利爪
   sancti_magistar: 圣洁·执法者
   sancti_magistar_forward: 圣洁·执法者
   sancti_magistar_block: 圣洁·执法者
@@ -1472,3 +1479,25 @@ warframe_arcanes:
   theorem_contagion: 定理·触染
   theorem_demulcent: 定理·缓和
   theorem_infection: 定理·感染
+
+artifact_mods:
+  da_ren: 达仁
+  empazu_shol: 恩肖
+  esti_vel_ikha: 埃伊
+  evir_ti: 埃蒂
+  hayan_dabor: 哈达
+  hok_kaal: 霍卡
+  kaal_zidi: 卡齐
+  lashta_vak: 拉瓦
+  lorun_tash: 洛塔
+  metem_erun: 梅伦
+  metem_hakh: 梅哈
+  omn_evi: 奥维
+  sey_taph: 塞塔
+  sil_tabol: 西塔
+  talsek_an: 塔安
+  ubri_kaneph: 乌卡
+  ulashta_shol: 乌肖
+  vik_anam: 维南
+  vikla_safor: 维萨
+  yar_dal: 亚达

@@ -95,10 +95,11 @@ and a build only decides how long it lasts and whether casting re-opens it.
 
 ## Operator
 
-**AN OPERATOR BUILD IS MADE ONCE AND REFERRED TO.** `/operator` holds a Focus
+**AN OPERATOR BUILD IS MADE ONCE AND LINKED.** `/operator` holds a Focus
 school and which of its conditional nodes count as running; a Warframe build
-names one (`operator:` in its state, resolved to `OperatorPick` when sent), so a
-Focus choice made once reaches every frame.
+links one by the Operator build's `id` (`operator:` in its state, resolved to
+`OperatorPick` when sent), so a Focus choice made once reaches every frame and a
+rename cuts no link. An `operator:` holding a name becomes that build's id.
 
 - ONLY THE ACTIVE SCHOOL APPLIES: "Active and Passive ways are only usable in the
   specific focus school they belong to" (W`Focus`). No Waybound reaches a
@@ -108,6 +109,24 @@ Focus choice made once reaches every frame.
   is the house rule for a condition about the Tenno.
 - A node's TAG counts whenever its school is active: the node can be used, and a
   tag says what a build can do rather than what is running.
+
+**THE PLAYER HAS ONE OPERATOR, AND ANY NUMBER OF OPERATOR BUILDS.** An Operator
+build is a school, its assumed nodes and that school's Tektolyst Artifact; the
+Amp is not part of it yet.
+
+- One artifact per school (`artifact:` in `data/focus/<school>.yaml`), with 5
+  mod slots and 1 arcane slot (W`Tektolyst_Artifact`). Every card is at max
+  rank.
+- An Antique mod (`data/artifact_mods/`) is Universal with a base drain of 0, so
+  an artifact has no capacity and no polarity. Any artifact seats any school's
+  card, and one card is seated once.
+- A card's `bonus` is its second line, paid once per thing `per` counts: a
+  school id counts that school's cards; `unique_school` counts each OTHER school
+  seated once, never the card's own (MEASUREMENTS M93). `/api/operator/panel`
+  pays it out for what is seated.
+- Nothing on an artifact moves a Warframe's own numbers: its mods are the
+  Operator's and the Amp's, and its arcanes reach the Tauron Strike, Amp and
+  Warframe WEAPONS (`data/artifact_arcanes/`).
 
 ## Abilities
 

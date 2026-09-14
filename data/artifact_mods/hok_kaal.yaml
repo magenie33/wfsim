@@ -1,0 +1,11 @@
+id: hok_kaal
+name: "Hok-Kaal"
+school: naramon
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/DamageWhileInvisible
+# the wiki's table at max rank — Rank / Damage Multiplier / Cooldown: 5 || x3.0 || 5s
+description: "After using Void Mode, the next Amp attack deals x3.0 bonus damage (cooldown 5s)"
+
+source:
+  url: https://wiki.warframe.com/w/Hok-Kaal

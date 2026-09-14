@@ -1,0 +1,48 @@
+id: valkyr_talons_block_forward
+name: Valkyr Talons
+# MADNESS — 3.6 s at 1.0x, six inputs of 0.6 s. The last input lands three
+# 300% hits together (three numbers, measured), forcing Knockdown, Knockback
+# (Impact's own proc) and a Ragdoll that carries no damage.
+inherits: valkyr_talons
+form: block_forward
+transform_group: valkyr_talons
+co_behavior: additive_with_base_damage
+attack:
+  # see notes: swing_trigger_pull_engine
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.5
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  range_m: 2.15
+  follow_through: 1.0
+  heavy: { multiplier: 5.0, windup_seconds: 0.5 }
+  damage: { puncture: 62.5, slash: 187.5 }   # total 250
+  slam:
+    damage: { puncture: 62.5, slash: 187.5 }
+    radius_m: 6.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: []
+    takes_multishot: false
+  # see notes: combo_clock_is_the_input
+  # Combo points measured 2 / 2x 2 / 3x 2 / 2x 2 / 3x 3 / 1 + 3 + 1 (MEASUREMENTS M95).
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 0.6, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 1.5, delay_seconds: 0.6, hits: 2, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 1.5, delay_seconds: 0.6, hits: 3, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 2.0, delay_seconds: 0.6, hits: 2, combo_points: 2, combo_points_base: 1 }
+    - { multiplier: 2.5, delay_seconds: 0.6, hits: 3, combo_points: 3, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3, combo_points_base: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.6, combo_points: 1, combo_points_base: 1 }
+
+source:
+  url: https://wiki.warframe.com/w/Hysteria_(Stance)

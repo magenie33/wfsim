@@ -266,6 +266,13 @@ weapons:
   magistar_heavy: Magistar.png
   magistar_slide: Magistar.png
   magistar_heavy_slam: Magistar.png
+  valkyr_talons: BerskerMelee.png
+  valkyr_talons_forward: BerskerMelee.png
+  valkyr_talons_block: BerskerMelee.png
+  valkyr_talons_block_forward: BerskerMelee.png
+  valkyr_talons_heavy: BerskerMelee.png
+  valkyr_talons_slide: BerskerMelee.png
+  valkyr_talons_heavy_slam: BerskerMelee.png
   sancti_magistar: wiki:SanctiMagistar.png
   sancti_magistar_forward: wiki:SanctiMagistar.png
   sancti_magistar_block: wiki:SanctiMagistar.png
@@ -613,6 +620,9 @@ weapons:
   tysis: Tysis.png
   zymos: InfUziWeapon.png
 mods:
+  # Hysteria's stance card is in neither the module nor DE's export; the ability
+  # page draws this file for it.
+  hysteria: "wiki:HysteriaStanceMod.png"
   # A RIVEN's card, DE's own: every riven shares one image because the game
   # draws them all the same — `OmegaMod.png` is the unveiled riven mod on
   # /Lotus/Upgrades/Mods/Randomized/Lotus*RandomModRare. Rivens are made by
@@ -1378,4 +1388,43 @@ auras:
   swift_momentum: WarframeAuraWickedStrikesMod.jpg
   toxin_resistance: PlayerPoisonImmunityBuff.jpg
   worthy_comradery: PlayerWeakpointCriticalChanceAuraMod.jpg
+
+# THE TEKTOLYST ARTIFACTS, hand-set from the wiki: WFCD draws every Antique mod
+# as a placeholder (`OrokinImage*.jpg`) and carries neither the arcanes nor the
+# artifacts, so `gen_assets.py` does not own these three sections.
+artifacts:
+  cogron: "wiki:Cogron.png"
+  lorak: "wiki:Lorak.png"
+  nidri: "wiki:Nidri.png"
+  thara: "wiki:Thara.png"
+  vexoric: "wiki:Vexoric.png"
+
+artifact_mods:
+  da_ren: "wiki:Da-RenMod.png"
+  empazu_shol: "wiki:Empazu-SholMod.png"
+  esti_vel_ikha: "wiki:EstiVel-IkhaMod.png"
+  evir_ti: "wiki:Evir-TiMod.png"
+  hayan_dabor: "wiki:Hayan-DaborMod.png"
+  hok_kaal: "wiki:Hok-KaalMod.png"
+  kaal_zidi: "wiki:Kaal-zidiMod.png"
+  lashta_vak: "wiki:Lashta-VakMod.png"
+  lorun_tash: "wiki:Lorun-TashMod.png"
+  metem_erun: "wiki:Metem-ErunMod.png"
+  metem_hakh: "wiki:Metem-HakhMod.png"
+  omn_evi: "wiki:Omn-EviMod.png"
+  sey_taph: "wiki:Sey-TaphMod.png"
+  sil_tabol: "wiki:Sil-TabolMod.png"
+  talsek_an: "wiki:Talsek-AnMod.png"
+  ubri_kaneph: "wiki:Ubri-KanephMod.png"
+  ulashta_shol: "wiki:Ulashta-SholMod.png"
+  vikla_safor: "wiki:Vikla-SaforMod.png"
+  vik_anam: "wiki:Vik-AnamMod.png"
+  yar_dal: "wiki:YarDalMod.png"
+
+artifact_arcanes:
+  zid_an_asheir: "wiki:Zid-AnAsheir.png"
+  zid_an_haras: "wiki:Zid-AnHaras.png"
+  zid_an_osbok: "wiki:Zid-AnOsbok.png"
+  zid_an_sek_eel: "wiki:Zid-AnSek-Eel.png"
+  zid_an_uskos: "wiki:Zid-AnUskos.png"
 

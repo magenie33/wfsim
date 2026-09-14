@@ -277,6 +277,22 @@ notes:
     a form carrying NO follow through reaches the aimed body ALONE. That is the
     right answer for a slam, whose damage is its radial, and the wrong one for
     a spin.
+  combo_points_from_multiplier: |
+    A ROW'S COMBO POINTS ARE DATA, filled here from the wiki's rule rather than
+    measured: *"Stance attacks add combo points, scaling with the attack's
+    stance damage multiplier (100% stance damage multiplier = 1 point)"* (wiki,
+    Melee Combo) — ceil(multiplier), at least 1, so a 50% row still earns one
+    (Rogue Edict's counter reads SEVEN). A row of a form that SPENDS the
+    counter states 0: a heavy attack earns nothing. Its `combo_points_base` is
+    the same number, since on an ordinary weapon's stance every point is a base
+    point (MEASUREMENTS M97).
+
+    THE RULE FILLS THE FIELD; IT IS NOT HOW THE GAME WORKS. DE sets combo points
+    per attack beside its damage — "damage multipliers and combo points adjusted
+    accordingly", and the heaviness of an attack decides its gain "as a general
+    rule" (Update 26 notes, W`Melee`) — and Hysteria follows no rule of the
+    multiplier (MEASUREMENTS M95). A measured row replaces a filled one and
+    cites its measurement.
   combo_clock_is_the_input: |
     A COMBO'S CLOCK IS ITS INPUTS, NOT ITS DAMAGE ROWS. `Module:Stances/data`
     holds one `Attacks` entry per attack the player makes — the stance table

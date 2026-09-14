@@ -551,10 +551,18 @@ pub enum ModEffect {
     ///
     /// *"Certain mods award extra combo points on hit/block additively"*. A
     /// CHANCE of one EXTRA point per landed hit rather than a multiplier on the
-    /// swing's own points — above 100% it is a guaranteed point plus a roll for
-    /// the next, which is how every other over-100% chance in this engine
-    /// behaves.
+    /// swing's own points — each whole 100% repeats the hit's points, and what is
+    /// left rolls for one point per BASE point (MEASUREMENTS M96, M97).
     ComboCountChance(f64),
+    /// CHANCE TO GAIN COMBO COUNT — a riven's malus, and a GATE rather than a
+    /// share of the chance above: each base combo point a hit earns survives with
+    /// `1 + v`, and a lost one takes its points with it (MEASUREMENTS M97).
+    ///
+    /// ONE RIVEN AXIS, TWO MECHANICS. On the card it is the malus pole of the
+    /// axis [`Self::ComboCountChance`] is the bonus pole of, so it reads like one
+    /// signed number — and summing the two is the wrong model the measurement
+    /// rules out: they stack without netting.
+    ComboGainChance(f64),
     /// …AND THE SAME CHANCE, PAID ONLY ON A LIFTED TARGET (Enduring Strike).
     ///
     /// A CONDITION ABOUT THE TARGET IS SIMULATED: `Lifted` is a status this
@@ -1100,12 +1108,21 @@ impl ModEffect {
             AddedSpread(v) => format!(
                 "+{v} degrees of spread — added after accuracy bonuses, which do not reach it"
             ),
+            // A FLAT GRANT SAYS ITS UNIT: `+1 m` of reach, `+20` combo points.
             GrantsStackingBuff(b) => format!(
                 "{} {} per stack, up to {} ({}), for {}s — earned {}",
-                pct(b.per_stack),
+                match b.grant {
+                    BuffGrant::MeleeRange => format!("+{} m", b.per_stack),
+                    BuffGrant::InitialCombo => format!("+{}", b.per_stack),
+                    _ => pct(b.per_stack),
+                },
                 b.grant.label(),
                 b.max_stacks,
-                pct(b.per_stack * f64::from(b.max_stacks)),
+                match b.grant {
+                    BuffGrant::MeleeRange => format!("+{} m", b.per_stack * f64::from(b.max_stacks)),
+                    BuffGrant::InitialCombo => format!("+{}", b.per_stack * f64::from(b.max_stacks)),
+                    _ => pct(b.per_stack * f64::from(b.max_stacks)),
+                },
                 b.duration,
                 b.trigger.label(),
             ),
@@ -1155,6 +1172,11 @@ impl ModEffect {
             ),
             ComboCountChance(v) => format!(
                 "+{} chance of an extra melee combo point per landed hit", pct(v)
+            ),
+            ComboGainChance(v) => format!(
+                "{:+.1}% chance to gain combo count — each base combo point a hit earns is kept {:.1}% of the time",
+                v * 100.0,
+                (1.0 + v).clamp(0.0, 1.0) * 100.0
             ),
             ComboCountChanceOnLifted(v) => format!(
                 "+{} chance of an extra melee combo point per hit on a LIFTED target",
@@ -2537,6 +2559,10 @@ pub enum BuffGrant {
     /// attack that cost nothing to hold and refill at 40 a second after every
     /// swing that spends them.
     InitialCombo,
+    /// Spring-Loaded Blade: *"+1 Range for 24s"* — FLAT METRES on the reach,
+    /// "additive to other range mods", read at the swing so a stack earned
+    /// mid-fight reaches the bodies it brings into range.
+    MeleeRange,
 }
 
 impl ModEffect {
@@ -2590,6 +2616,7 @@ impl BuffGrant {
             BuffGrant::StatusChance => "status_chance",
             BuffGrant::HeadshotDamage => "headshot_damage",
             BuffGrant::InitialCombo => "initial_combo",
+            BuffGrant::MeleeRange => "melee_range",
         }
     }
 
@@ -2612,6 +2639,7 @@ impl BuffGrant {
             BuffGrant::StatusChance => "Status Chance",
             BuffGrant::HeadshotDamage => "Headshot Damage",
             BuffGrant::InitialCombo => "Initial Combo",
+            BuffGrant::MeleeRange => "Range",
         }
     }
 }
@@ -3637,10 +3665,14 @@ pub struct ResolvedPanel {
     /// Weeping Wounds' per-combo-tier status chance.
     pub status_chance_per_combo: f64,
     /// Chance of an EXTRA combo point per landed hit (Quickening, True
-    /// Punishment). Above 1.0 it is a guaranteed point plus a roll for another.
+    /// Punishment). Each whole 1.0 repeats the hit's points; the rest rolls for
+    /// one point per base point (MEASUREMENTS M96, M97).
     pub combo_count_chance: f64,
     /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike).
     pub combo_count_chance_on_lifted: f64,
+    /// Chance to Gain Combo Count: 0, or a riven's malus — a gate each base
+    /// combo point survives with `1 + this` (MEASUREMENTS M97).
+    pub combo_gain_chance: f64,
     /// COMBO POINTS PER BODY THE SLAM REACHED (Shockwave Synergy), before the
     /// combo count chance that scales them.
     pub combo_count_on_slam_hit: f64,
@@ -4323,6 +4355,7 @@ pub fn resolve_for(
     let mut heavy_damage = 0.0f64;
     let mut combo_count_chance = 0.0f64;
     let mut combo_count_chance_on_lifted = 0.0f64;
+    let mut combo_gain_chance = 0.0f64;
     let mut status_chance_on_lifted = 0.0f64;
     let mut windup_speed = 0.0f64;
     // TENNOKAI: off until a card says otherwise, and every knob a sum.
@@ -4501,6 +4534,7 @@ pub fn resolve_for(
                 ModEffect::HeavyAttackDamage(v) => heavy_damage += v,
                 ModEffect::ComboCountChance(v) => combo_count_chance += v,
                 ModEffect::ComboCountChanceOnLifted(v) => combo_count_chance_on_lifted += v,
+                ModEffect::ComboGainChance(v) => combo_gain_chance += v,
                 ModEffect::StatusChanceOnLifted(v) => status_chance_on_lifted += v,
                 ModEffect::HeavyWindUpSpeed(v) => windup_speed += v,
                 ModEffect::Tennokai {
@@ -5516,6 +5550,7 @@ pub fn resolve_for(
         status_chance_per_combo: sc_per_combo,
         combo_count_chance,
         combo_count_chance_on_lifted,
+        combo_gain_chance,
         combo_count_on_slam_hit: base.evo_combo_count_on_slam_hit,
         status_chance_on_lifted,
         heavy_attack_damage: heavy_damage,

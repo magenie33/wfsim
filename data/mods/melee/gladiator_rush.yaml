@@ -8,6 +8,10 @@ internal_name: /Lotus/Upgrades/Mods/Sets/Gladiator/MeleeGladiatorRushMod
 description: "+6s Combo Duration"
 
 # Rank 0: +1s Combo Duration
+# DE's INCOMPATIBILITY TAGS (`Module:Mods/data`) include POWER_WEAPON: no
+# Exalted weapon seats this card.
+excludes_weapon: [power_weapon]
+
 effects:
   - kind: melee_combo_duration_bonus
     rank0: 1.0
