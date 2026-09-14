@@ -44,8 +44,9 @@ it, unmeasured.
 ### Where it is read
 
 `ComboHit::combo_points` on every row of the `valkyr_talons*` entries (the
-modes: neutral, forward, block, block forward, slide); the counter reads it in
-place of the multiplier (`dummy::swing_combo_points`), and
+modes: neutral, forward, block, block forward, slide); the counter reads a row's
+`combo_points` and nothing else, every unmeasured row being filled from the
+multiplier rule (notes: `combo_points_from_multiplier`), and
 `hysteria_earns_its_measured_combo_points` holds each combo's round. Slam,
 Aerial, Wall and Finisher are not modes of this arena and are recorded for the
 day they are.

@@ -112,12 +112,13 @@ attack:
   # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
   # the 4 direct swings share the 3.0 s and it lands alongside the last of them.
   # `Knockback` is Impact's own proc and is transcribed as `impact`.
+  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 4.0, delay_seconds: 1.0, impact_multiplier: 1.5, forced_procs: [impact] }
-    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true }
-    - { multiplier: 3.0, delay_seconds: 1.0, all_around: true }
-    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, forced_procs: [knockdown] }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0 }
+    - { multiplier: 4.0, delay_seconds: 1.0, impact_multiplier: 1.5, forced_procs: [impact], combo_points: 4 }
+    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true, combo_points: 2 }
+    - { multiplier: 3.0, delay_seconds: 1.0, all_around: true, combo_points: 3 }
+    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, forced_procs: [knockdown], combo_points: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0, combo_points: 1 }
 
 source:
   url: https://wiki.warframe.com/w/Sancti_Magistar

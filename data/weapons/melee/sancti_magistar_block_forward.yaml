@@ -49,14 +49,15 @@ attack:
   # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
   # the 6 direct swings share the 4.25 s and it lands alongside the last of them.
   # `Knockback` is Impact's own proc and is transcribed as `impact`.
+  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 3.0, delay_seconds: 0.0 }
-    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true }
-    - { multiplier: 3.0, delay_seconds: 0.0 }
-    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true }
-    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact] }
-    - { multiplier: 5.0, delay_seconds: 0.0 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown] }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1 }
+    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3 }
+    - { multiplier: 0.5, delay_seconds: 1.0625, hits: 2, all_around: true, combo_points: 1 }
+    - { multiplier: 4.0, delay_seconds: 1.0625, impact_multiplier: 1.5, all_around: true, forced_procs: [impact], combo_points: 4 }
+    - { multiplier: 5.0, delay_seconds: 0.0, combo_points: 5 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0625, forced_procs: [knockdown], combo_points: 1 }
 
 source:
   url: https://wiki.warframe.com/w/Crushing_Ruin

@@ -7749,17 +7749,12 @@ struct Landed {
 /// apart, and rounding is ONE rule where a floor is two. Not separable with
 /// this roster — every stance multiplier in it is whole except `0.5`, below the
 /// line they differ above — so a stance publishing 150% would settle it.
+///
+/// THE FILL RULE ONLY: the fight reads each row's own `combo_points`, and this
+/// checks the rows filled from the rule (see notes: combo_points_from_multiplier).
+#[cfg(test)]
 fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
     multiplier.ceil().max(1.0) * instances
-}
-
-/// …UNLESS THE ROW STATES ITS POINTS, which are measured and win: Hysteria's
-/// follow no rule of the multiplier (MEASUREMENTS M95).
-fn swing_combo_points(h: &crate::weapons_data::ComboHit, instances: f64) -> f64 {
-    match h.combo_points {
-        Some(p) => p * instances,
-        None => combo_points_for(h.multiplier, instances),
-    }
 }
 
 /// CAN MELEE INFLUENCE CARRY THIS STATUS?
@@ -11797,7 +11792,7 @@ mod melee {
                 .attack
                 .combo_script
                 .iter()
-                .map(|h| swing_combo_points(h, f64::from(h.hits)))
+                .map(|h| h.combo_points * f64::from(h.hits))
                 .sum()
         };
         // The wiki's notation: `Nx v` is N hits of v.
@@ -11806,15 +11801,78 @@ mod melee {
         assert_eq!(round("valkyr_talons_block"), 22.0, "2 / 2x 3 / 3x 3 / 1 + 3 + 1");
         assert_eq!(round("valkyr_talons_block_forward"), 30.0, "2 / 2x 2 / 3x 2 / 2x 2 / 3x 3 / 1 + 3 + 1");
         assert_eq!(round("valkyr_talons_slide"), 6.0, "6x 1, not the 18 its 300% would give");
-        // …AND A ROW WITHOUT MEASURED POINTS READS ITS MULTIPLIER, unchanged.
-        let magistar: f64 = crate::weapons_data::spec("magistar")
-            .unwrap()
-            .attack
-            .combo_script
-            .iter()
-            .map(|h| combo_points_for(h.multiplier, f64::from(h.hits)))
-            .sum();
-        assert_eq!(round("magistar"), magistar);
+    }
+
+    /// **A ROW FILLED FROM THE RULE FOLLOWS IT, AND EVERY ROW HAS A SOURCE.**
+    ///
+    /// Combo points are data the game sets per attack, so every melee file
+    /// states them — measured (MEASUREMENTS M95) or filled from the wiki's rule
+    /// (`see notes: combo_points_from_multiplier`). A filled row is checked
+    /// against that rule so a typo cannot pass as a measurement; a row of a form
+    /// that SPENDS the counter states 0, since a heavy attack earns nothing.
+    #[test]
+    fn every_combo_row_states_its_points_and_a_filled_one_follows_the_rule() {
+        const MARK: &str = "see notes: combo_points_from_multiplier";
+        let rows = |v: &serde_norway::Value| v.as_sequence().cloned().unwrap_or_default();
+        let mut checked = 0;
+        let mut wrong: Vec<String> = Vec::new();
+        // FROM DISK: the source is a COMMENT, and the embedded data is stripped of
+        // its comments on the way in (`engine/build.rs`).
+        let data = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../data");
+        let dirs = std::iter::once(data.join("weapons/melee"))
+            .chain(std::fs::read_dir(data.join("mods")).unwrap().filter_map(|e| e.ok()).map(|e| e.path()));
+        let mut paths: Vec<std::path::PathBuf> = Vec::new();
+        for dir in dirs {
+            if let Ok(rd) = std::fs::read_dir(&dir) {
+                paths.extend(
+                    rd.filter_map(|e| e.ok())
+                        .map(|e| e.path())
+                        .filter(|p| p.extension().is_some_and(|x| x == "yaml")),
+                );
+            }
+        }
+        for p in paths {
+            let owned = std::fs::read_to_string(&p).unwrap();
+            let text = owned.as_str();
+            let path = p.display().to_string();
+            let doc: serde_norway::Value = serde_norway::from_str(text).unwrap();
+            // (spends the counter, rows) for every block of rows in the file.
+            let blocks: Vec<(bool, Vec<serde_norway::Value>)> = match doc.get("combos") {
+                Some(c) => c
+                    .as_mapping()
+                    .into_iter()
+                    .flatten()
+                    .map(|(k, v)| (k.as_str() == Some("heavy"), rows(v)))
+                    .collect(),
+                None => match doc.get("attack").and_then(|a| a.get("combo_script")) {
+                    Some(s) => {
+                        let spends = doc["attack"].get("spends_combo").and_then(|b| b.as_bool()) == Some(true);
+                        vec![(spends, rows(s))]
+                    }
+                    None => continue,
+                },
+            };
+            if blocks.iter().all(|(_, r)| r.is_empty()) {
+                continue;
+            }
+            assert!(text.contains(MARK) || text.contains("M95"), "{path}: combo points with no source");
+            if !text.contains(MARK) {
+                continue;
+            }
+            for (spends, block) in blocks {
+                for row in block {
+                    let mult = row["multiplier"].as_f64().unwrap();
+                    let stated = row["combo_points"].as_f64().unwrap();
+                    let rule = if spends { 0.0 } else { combo_points_for(mult, 1.0) };
+                    checked += 1;
+                    if stated != rule {
+                        wrong.push(format!("{path}: {mult} states {stated}, the rule fills {rule}"));
+                    }
+                }
+            }
+        }
+        assert!(checked > 100, "the sweep found only {checked} filled rows");
+        assert!(wrong.is_empty(), "{}", wrong.join("\n"));
     }
 
     /// **A SLIDE ATTACK OPENS THE WINDOW AND TAKES IT.** A slide lands direct
@@ -18139,7 +18197,7 @@ pub fn run_once_traced(
             // only through Melee Combo Efficiency, which is the share of the
             // counter the swing does NOT empty.
             if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
-                combo_points += swing_combo_points(h, landed);
+                combo_points += h.combo_points * landed;
                 // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
                 // extra combo points on hit/block additively"* — ONE point, per
                 // HIT rather than per stance multiplier, which is what makes

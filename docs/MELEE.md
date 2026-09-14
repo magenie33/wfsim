@@ -71,9 +71,11 @@ WFCD's export where the export carries the field.
 
 ### The combo counter
 
-- **Points, not hits.** *"Stance attacks add combo points, scaling with the
-  attack's stance damage multiplier (100% stance damage multiplier = 1 point)"*
-  — so a 400% swing is worth 4, and one number does both jobs.
+- **Points are each row's own `combo_points`**, set per attack beside its
+  damage. The wiki's *"100% stance damage multiplier = 1 point"* is how a row
+  nobody has measured is FILLED (notes: `combo_points_from_multiplier`), not how
+  the game works: Hysteria's measured rows follow no rule of the multiplier
+  (MEASUREMENTS M95).
 - **Per body landed.** The wiki's own reading of the Rauta: *"generates 2 combo
   points per pellet landing on enemy (max 28 points across 14 pellets)"*.
 - **The ladder** is `1 + floor(points / 20)` capped at 12: 2x at 20, one more
@@ -708,7 +710,7 @@ entry per mode (`data/weapons/melee/valkyr_talons*.yaml`). Three things differ.
 - **ITS COMBO POINTS ARE MEASURED, NOT READ OFF THE MULTIPLIER.** Every
   Hysteria row states `combo_points` (MEASUREMENTS M95): a 100% opener earns 1
   on one combo and 2 on another, and the 300% slide earns 1 a hit. Every other
-  stance still reads the multiplier, unmeasured.
+  row in the roster is filled from the multiplier rule, unmeasured.
 
 Valkyr Prime Talons are the same weapon — "their stats are, however, identical"
 — so there is one entry, not two.

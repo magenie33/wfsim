@@ -38,8 +38,9 @@ attack:
   # "Heavy slams do not have any wind up" (W`Melee`). TWO SECONDS IS THE SAME
   # STAND-IN for the landing recovery every heavy slam in the roster carries,
   # declared in docs/MELEE.md until it is measured.
+  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted] }
+    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0 }
 
 source:
   url: https://wiki.warframe.com/w/Valkyr_Talons
