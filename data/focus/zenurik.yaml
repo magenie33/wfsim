@@ -1,6 +1,10 @@
 # ZENURIK — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
 id: zenurik
 name: Zenurik
+# "The weapon of Zenurik, School of the Arcane - a Grimoire." (W`Tektolyst_Artifact`)
+artifact:
+  id: lorak
+  name: Lorak
 
 nodes:
   # "Energy pickups grant '''20 / 30 / 40 / 50 '''% additional energy over '''11 / 9 / 7 / 5'''s."

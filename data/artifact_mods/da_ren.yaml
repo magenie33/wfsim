@@ -1,0 +1,12 @@
+id: da_ren
+name: "Da-Ren"
+school: vazarin
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/ShieldSchool
+# the wiki's table at max rank — Rank / Shield / Bonus Shield: 5 || +300 || +30
+description: "+300 Operator Shields\n+30 bonus for each Unairu School Mod"
+bonus_per: unairu
+
+source:
+  url: https://wiki.warframe.com/w/Da-Ren

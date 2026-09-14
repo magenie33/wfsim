@@ -37,6 +37,9 @@ ui:
   "no linked Operator": 不链接指挥官
   "no school picked": 未选流派
   "edit on the Operator page": 在指挥官页面编辑
+  "5 mod slots · 1 arcane slot · every card at max rank": 5 个 mod 槽 · 1 个赋能槽 · 所有卡牌按满级计
+  "schools among the seated mods: {n}": 已装 mod 涵盖的流派数：{n}
+  "{school} mods seated: {n}": 已装 {school} 流派 mod：{n}
   "Exilus": Exilus
   "Archon Shards": 执刑官源力石
   "Abilities": 技能

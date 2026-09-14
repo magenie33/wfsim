@@ -1,0 +1,11 @@
+id: lorun_tash
+name: "Lorun-Tash"
+school: vazarin
+rarity: common
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Antiques/AntiqueArmour
+# the wiki's table at max rank — Rank / Armor: 3 || +400
+description: "+400 Operator Armor"
+
+source:
+  url: https://wiki.warframe.com/w/Lorun-Tash

@@ -1,0 +1,10 @@
+id: zid_an_uskos
+name: "Zid-An Uskos"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Antiques/HeatStatusProcOnUltimateKill
+# the wiki's table at max rank — Rank / Bonus Heat Damage / Kills to Cap: 5 || 2.4% || 105
+description: "On Operator and Tauron Strike Kill: 2.4% Heat Damage for Secondary Weapon for duration of mission, max 250%"
+
+source:
+  url: https://wiki.warframe.com/w/Zid-An_Uskos

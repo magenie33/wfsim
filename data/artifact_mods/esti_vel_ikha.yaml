@@ -1,0 +1,12 @@
+id: esti_vel_ikha
+name: "Esti Vel-Ikha"
+school: zenurik
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/DashDistanceSchools
+# the wiki's table at max rank — Rank / Distance / Bonus Radius: 5 || 30% || +10%
+description: "Increases maximum Void Sling distance by +30%.\n+10% Void Sling radius for each Mod from a unique School"
+bonus_per: unique_school
+
+source:
+  url: https://wiki.warframe.com/w/Esti_Vel-Ikha

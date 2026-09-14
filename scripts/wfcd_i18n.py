@@ -58,6 +58,7 @@ SECTIONS = {
     "auras": "data/auras/*.yaml",
     "warframe_mods": "data/warframe_mods/*.yaml",
     "warframe_arcanes": "data/warframe_arcanes/*.yaml",
+    "artifact_mods": "data/artifact_mods/*.yaml",
 }
 
 

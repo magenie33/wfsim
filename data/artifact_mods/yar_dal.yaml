@@ -1,0 +1,11 @@
+id: yar_dal
+name: "Yar Dal"
+school: vazarin
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/HealthMax
+# the wiki's table at max rank — Rank / Health: 5 || +300
+description: "+300 Operator Health"
+
+source:
+  url: https://wiki.warframe.com/w/Yar_Dal

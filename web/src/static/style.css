@@ -2556,6 +2556,10 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .op-when input{margin:0;flex:none}
 .wf-operator{display:flex;flex-direction:column;gap:6px}
 .wf-operator .wf-op-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.op-artifact{display:flex;flex-direction:column;gap:8px}
+.op-artifact-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.op-artifact-head img{width:44px;height:44px;object-fit:contain}
+.op-artifact-head .mn{font-size:14px;font-weight:700}
 #wf-aura-block{margin-bottom:10px}
 #wf-aura-block .exlabel{margin-top:0}
 .wf-shards{display:flex;flex-direction:column;gap:6px}

@@ -1,0 +1,11 @@
+id: hayan_dabor
+name: "Hayan-Dabor"
+school: madurai
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/Multishot
+# the wiki's table at max rank — Rank / Multishot: 5 || +60%
+description: "+60% Amp Multishot"
+
+source:
+  url: https://wiki.warframe.com/w/Hayan-Dabor

@@ -76,6 +76,11 @@ pub struct LocaleSpec {
     pub warframe_arcanes: BTreeMap<String, String>,
     #[serde(default)]
     pub warframe_abilities: BTreeMap<String, String>,
+    /// The Tektolyst Artifact's Antique mods, joined the same way. DE's export
+    /// names no artifact ARCANE, so there is no table for them until one is
+    /// transcribed.
+    #[serde(default)]
+    pub artifact_mods: BTreeMap<String, String>,
     /// DE's card text for the same three, generated like `mod_descriptions`:
     /// one entry per rank for a card, one string for an ability.
     #[serde(default)]
@@ -160,6 +165,7 @@ impl LocaleSpec {
         maps(&mut self.warframe_mods, other.warframe_mods, path, "warframe_mods");
         maps(&mut self.warframe_arcanes, other.warframe_arcanes, path, "warframe_arcanes");
         maps(&mut self.warframe_abilities, other.warframe_abilities, path, "warframe_abilities");
+        maps(&mut self.artifact_mods, other.artifact_mods, path, "artifact_mods");
         lists(&mut self.warframe_mod_descriptions, other.warframe_mod_descriptions, path, "warframe_mod_descriptions");
         lists(&mut self.warframe_arcane_descriptions, other.warframe_arcane_descriptions, path, "warframe_arcane_descriptions");
         maps(&mut self.warframe_ability_descriptions, other.warframe_ability_descriptions, path, "warframe_ability_descriptions");
@@ -436,6 +442,12 @@ mod tests {
                 assert!(
                     crate::warframes_data::ability(id).is_some(),
                     "i18n/{code}: unknown Warframe ability id '{id}'"
+                );
+            }
+            for id in spec.artifact_mods.keys() {
+                assert!(
+                    crate::warframes_data::artifact_mod_by_id(id).is_some(),
+                    "i18n/{code}: unknown artifact mod id '{id}'"
                 );
             }
             for id in spec.warframe_arcanes.keys() {

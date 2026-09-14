@@ -1,0 +1,12 @@
+id: kaal_zidi
+name: "Kaal-zidi"
+school: unairu
+rarity: uncommon
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/Ghostwalk
+# the wiki's table at max rank — Rank / Efficiency / Movement Speed: 5 || +30% || +5%
+description: "+30% Void Mode efficiency\n+5% Movement Speed in Void Mode for each Naramon School Mod"
+bonus_per: naramon
+
+source:
+  url: https://wiki.warframe.com/w/Kaal-zidi

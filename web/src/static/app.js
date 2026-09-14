@@ -21422,6 +21422,8 @@ async function loadWarframeCatalog() {
   c.mods.forEach((m) => over(m, I18N && (I18N.auras || {})[m.id] ? "auras" : "warframe_mods"));
   c.arcanes.forEach((a) => over(a, "warframe_arcanes"));
   c.abilities.forEach((a) => over(a, "warframe_abilities"));
+  c.artifact_mods.forEach((m) => over(m, "artifact_mods"));
+  c.artifact_arcanes.forEach((a) => over(a, "artifact_arcanes"));
   WFCAT = c;
   return c;
 }
@@ -22033,13 +22035,21 @@ const opNewId = () => (crypto.randomUUID ? crypto.randomUUID()
   : Date.now().toString(36) + Math.random().toString(36).slice(2));
 const opWithIds = (ps) => ps.map((p) => (p.id ? p : { ...p, id: opNewId() }));
 const focusSchool = (id) => (WFCAT && id && WFCAT.focus.find((s) => s.id === id)) || null;
-const opBlank = () => ({ school: null, assumed: [] });
+const opAMod = (id) => (WFCAT && id && WFCAT.artifact_mods.find((m) => m.id === id)) || null;
+const opAArcane = (id) => (WFCAT && id && WFCAT.artifact_arcanes.find((a) => a.id === id)) || null;
+const opBlank = () => opNormalize(null);
+/// The artifact stays with the build when the school changes: any artifact
+/// seats any school's card, and the page shows the one the school owns.
 function opNormalize(st) {
   const s = st || {};
   const school = focusSchool(s.school);
+  const art = s.artifact || {};
+  const mods = Array.from({ length: WFCAT.artifact_slots }, (_, i) => (art.mods || [])[i])
+    .map((id, i, all) => (opAMod(id) && all.indexOf(id) === i ? id : null));
   return {
     school: school ? school.id : null,
     assumed: school ? (s.assumed || []).filter((id) => school.nodes.some((n) => n.id === id && !n.always)) : [],
+    artifact: { mods, arcane: opAArcane(art.arcane) ? art.arcane : null },
   };
 }
 function opBarCfg() {
@@ -22113,6 +22123,106 @@ function renderOperator() {
     renderOperator();
     opMarkDirty();
   }));
+  renderOpArtifact();
+}
+
+// ---- the Tektolyst Artifact ----
+const opSchoolChip = (id) => `<span class="exchip">${escHtml((focusSchool(id) || {}).name || id)}</span>`;
+
+/// WHAT A CARD'S BONUS LINE COUNTS, as seated — never added into a total: no page
+/// says whether the card's own school is one of the "unique" ones.
+function opBonusNote(m) {
+  if (!m.bonus_per) return "";
+  const seated = op.artifact.mods.map(opAMod).filter(Boolean);
+  const text = m.bonus_per === "unique_school"
+    ? tr("schools among the seated mods: {n}").replace("{n}", new Set(seated.map((x) => x.school)).size)
+    : tr("{school} mods seated: {n}").replace("{school}", (focusSchool(m.bonus_per) || {}).name || m.bonus_per)
+      .replace("{n}", seated.filter((x) => x.school === m.bonus_per).length);
+  return `<div class="op-when">${escHtml(text)}</div>`;
+}
+
+function opCardEl(kind, i) {
+  const m = kind === "mod" ? opAMod(op.artifact.mods[i]) : opAArcane(op.artifact.arcane);
+  const el = document.createElement("div");
+  if (!m) {
+    el.className = "slot empty" + (kind === "mod" ? "" : " arc");
+    el.innerHTML = `<span class="plus">${escHtml(kind === "mod" ? tr("+ add mod") : "+ " + tr("add arcane"))}</span>`;
+    el.addEventListener("click", (e) => { e.stopPropagation(); openOpPicker(kind, i, el); });
+    return el;
+  }
+  el.className = `slot filled${kind === "mod" ? "" : " arc"} rar-${m.rarity}`;
+  el.innerHTML = imgTag(IMG(m.image), "mod")
+    + `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${kind === "mod" ? " " + opSchoolChip(m.school) : ""}</div>`
+    + `${effLines(m.effects.map(escHtml))}${kind === "mod" ? opBonusNote(m) : ""}</div>`
+    + `<button class="dots" title="options">⋯</button>`;
+  el.querySelector(".dots").addEventListener("click", (e) => {
+    e.stopPropagation();
+    openSlotMenu(e.currentTarget, null, {
+      label: tr(kind === "mod" ? "Mod" : "Arcane"), removable: true,
+      onSwap: () => openOpPicker(kind, i, el),
+      onPick: () => {
+        if (kind === "mod") op.artifact.mods[i] = null; else op.artifact.arcane = null;
+        opArtifactChanged();
+      },
+    });
+  });
+  return el;
+}
+
+function renderOpArtifact() {
+  const s = focusSchool(op.school);
+  $("op-artifact-block").hidden = !s;
+  if (!s || !s.artifact) return;
+  const a = s.artifact;
+  $("op-artifact").innerHTML = `<div class="op-artifact-head">${a.image ? imgTag(IMG(a.image), "mod") : ""}`
+    + `<div class="mn">${wl(a.name, wikiUrl("Tektolyst Artifact"))}</div>`
+    + `<span class="op-when">${escHtml(tr("5 mod slots · 1 arcane slot · every card at max rank"))}</span></div>`
+    + `<div class="slots" id="op-artifact-mods"></div><div class="slots" id="op-artifact-arcane"></div>`;
+  op.artifact.mods.forEach((_, i) => $("op-artifact-mods").appendChild(opCardEl("mod", i)));
+  $("op-artifact-arcane").appendChild(opCardEl("arcane", 0));
+}
+
+function opArtifactChanged() {
+  renderOpArtifact();
+  opMarkDirty();
+}
+
+function openOpPicker(kind, idx, anchor) {
+  closePopovers();
+  place($("wf-popover"), anchor);
+  const s = $("wf-search");
+  s.value = "";
+  s.oninput = () => renderOpMenu(kind, idx, s.value);
+  renderOpMenu(kind, idx, "");
+  s.focus();
+}
+
+/// A card seated in another slot MOVES here and the two swap, as on a Warframe:
+/// one card is seated once.
+function renderOpMenu(kind, idx, query) {
+  const q = query.trim().toLowerCase();
+  const menu = $("wf-menu");
+  const cur = kind === "mod" ? op.artifact.mods[idx] : op.artifact.arcane;
+  const hits = (kind === "mod" ? WFCAT.artifact_mods : WFCAT.artifact_arcanes).filter((x) => searchHit(x, q))
+    .sort((a, b) => (b.id === cur) - (a.id === cur) || a.name.localeCompare(b.name));
+  menu.innerHTML = hits.length ? hits.map((x) => {
+    const placed = kind === "mod" && x.id !== cur && op.artifact.mods.includes(x.id);
+    return `<div class="opt ${x.id === cur ? "cur" : placed ? "placed" : ""} rar-${x.rarity}" data-id="${x.id}">`
+      + `${imgTag(IMG(x.image), "mod")}<div class="info"><div class="mn">${escHtml(x.name)}${kind === "mod" ? " " + opSchoolChip(x.school) : ""}</div>`
+      + `${effLines(x.effects.map(escHtml))}</div></div>`;
+  }).join("") : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+  menu.querySelectorAll(".opt[data-id]").forEach((o) => o.addEventListener("click", () => {
+    const id = o.dataset.id;
+    if (kind === "mod") {
+      const from = op.artifact.mods.indexOf(id);
+      if (from >= 0) op.artifact.mods[from] = op.artifact.mods[idx];
+      op.artifact.mods[idx] = id;
+    } else {
+      op.artifact.arcane = id;
+    }
+    closePopovers();
+    opArtifactChanged();
+  }));
 }
 
 async function showOperator() {
@@ -22132,7 +22242,7 @@ function wfOperatorPick() {
   if (!wf || !wf.operator) return null;
   const p = opList().find((x) => x.id === wf.operator);
   const st = p && opNormalize(p.state);
-  return st && st.school ? st : null;
+  return st && st.school ? { ...st, artifact: { mods: st.artifact.mods.filter(Boolean), arcane: st.artifact.arcane } } : null;
 }
 
 function renderWfOperator() {
@@ -22147,7 +22257,20 @@ function renderWfOperator() {
     value: cur, items, onPick: (v) => { wf.operator = v || null; wfChanged(); },
   })}<a class="ghost-btn small" href="/operator">${escHtml(tr("edit on the Operator page"))}</a></div>`
     + (s ? s.nodes.filter((n) => n.always || pick.assumed.includes(n.id) || n.tags.length)
-      .map((n) => opNodeHtml(s, n, n.always || pick.assumed.includes(n.id), false)).join("") : "");
+      .map((n) => opNodeHtml(s, n, n.always || pick.assumed.includes(n.id), false)).join("") : "")
+    + (s && s.artifact ? wfArtifactHtml(s.artifact, pick.artifact) : "");
+}
+
+/// The linked artifact, as a line: its mods by name, and the arcane's card, which
+/// is the part that can reach a Warframe's weapons.
+function wfArtifactHtml(def, art) {
+  const mods = art.mods.map((id) => opAMod(id).name);
+  const arc = opAArcane(art.arcane);
+  if (!mods.length && !arc) return "";
+  return `<div class="op-node on"><div class="mn">${escHtml(def.name)}</div>`
+    + (mods.length ? `<div class="me">${escHtml(mods.join(" · "))}</div>` : "")
+    + (arc ? `<div class="me"><b>${escHtml(arc.name)}</b> — ${escHtml(arc.effects.join(" "))}</div>` : "")
+    + `</div>`;
 }
 
 function renderWarframe() {

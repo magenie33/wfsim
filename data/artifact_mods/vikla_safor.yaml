@@ -1,0 +1,11 @@
+id: vikla_safor
+name: "Vikla-Safor"
+school: madurai
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Antiques/FireRateAndEfficiency
+# the wiki's table at max rank — Rank / Fire Rate / Ammo Efficiency: 5 || +30% || +30%
+description: "+30% Amp Fire Rate\n+30% Amp Ammo Efficiency"
+
+source:
+  url: https://wiki.warframe.com/w/Vikla-Safor

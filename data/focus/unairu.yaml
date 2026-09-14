@@ -1,6 +1,10 @@
 # UNAIRU — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
 id: unairu
 name: Unairu
+# "The weapon of Unairu, School of the Indomitable - a Hammer." (W`Tektolyst_Artifact`)
+artifact:
+  id: cogron
+  name: Cogron
 
 nodes:
   # "Gain immunity to slow, stagger, and knockdown effects for '''10 / 20 / 30 / 40'''s

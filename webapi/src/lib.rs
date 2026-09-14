@@ -70,6 +70,12 @@ struct Assets {
     warframe_arcanes: std::collections::HashMap<String, String>,
     #[serde(default)]
     auras: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    artifacts: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    artifact_mods: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    artifact_arcanes: std::collections::HashMap<String, String>,
 }
 
 // ---- Image asset map (data/assets.yaml, embedded by the engine) --------
@@ -151,12 +157,38 @@ pub fn warframe_catalog_json() -> Value {
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
             "tags": tags(&x.tags),
         })).collect::<Vec<_>>(),
+        "artifact_slots": wf::ARTIFACT_MOD_SLOTS,
+        "artifact_mods": wf::artifact_mods().iter().map(|m| json!({
+            "id": m.id,
+            "name": m.name,
+            "school": m.school,
+            "rarity": m.rarity,
+            "max_rank": m.max_rank,
+            "bonus_per": m.bonus_per,
+            "image": a.artifact_mods.get(&m.id),
+            "effects": m.description.lines().collect::<Vec<_>>(),
+            "url": m.url,
+        })).collect::<Vec<_>>(),
+        "artifact_arcanes": wf::artifact_arcanes().iter().map(|x| json!({
+            "id": x.id,
+            "name": x.name,
+            "rarity": x.rarity,
+            "max_rank": x.max_rank,
+            "image": a.artifact_arcanes.get(&x.id),
+            "effects": x.description.lines().collect::<Vec<_>>(),
+            "url": x.url,
+        })).collect::<Vec<_>>(),
         // THE OPERATOR'S FOCUS, for the Operator page and for what a Warframe
-        // build shows it referring to.
+        // build shows it linking.
         "focus": wf::focus_schools().iter().map(|s| json!({
             "id": s.id,
             "name": s.name,
             "url": s.url,
+            "artifact": s.artifact.as_ref().map(|x| json!({
+                "id": x.id,
+                "name": x.name,
+                "image": a.artifacts.get(&x.id),
+            })),
             "nodes": s.nodes.iter().map(|n| json!({
                 "id": n.id,
                 "name": n.name,
@@ -1184,6 +1216,7 @@ pub fn i18n_json() -> Value {
                 "warframe_mods": l.warframe_mods,
                 "warframe_arcanes": l.warframe_arcanes,
                 "warframe_abilities": l.warframe_abilities,
+                "artifact_mods": l.artifact_mods,
                 "warframe_mod_descriptions": l.warframe_mod_descriptions,
                 "warframe_arcane_descriptions": l.warframe_arcane_descriptions,
                 "warframe_ability_descriptions": l.warframe_ability_descriptions,

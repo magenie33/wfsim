@@ -208,7 +208,15 @@ pub struct FocusSchool {
     pub id: String,
     pub name: String,
     pub nodes: Vec<FocusNode>,
+    /// The school's Tektolyst Artifact: one per school, seated by the Operator.
+    pub artifact: Option<ArtifactDef>,
     pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ArtifactDef {
+    pub id: String,
+    pub name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -231,6 +239,8 @@ struct RawSchool {
     id: String,
     name: String,
     nodes: Vec<RawNode>,
+    #[serde(default)]
+    artifact: Option<ArtifactDef>,
     #[serde(default)]
     source: SourceFile,
 }
@@ -260,6 +270,7 @@ pub fn focus_schools() -> &'static [FocusSchool] {
                             }
                         })
                         .collect(),
+                    artifact: r.artifact,
                     url: r.source.url,
                 }
             })
@@ -269,6 +280,76 @@ pub fn focus_schools() -> &'static [FocusSchool] {
 
 pub fn focus_school(id: &str) -> Option<&'static FocusSchool> {
     focus_schools().iter().find(|s| s.id == id)
+}
+
+// ---- the Tektolyst Artifact ------------------------------------------------
+
+/// "Each Tektolyst Artifact has 5 mod slots and 1 arcane slot." (W`Tektolyst_Artifact`)
+pub const ARTIFACT_MOD_SLOTS: usize = 5;
+
+/// An Antique mod. Every one is Universal with a base drain of 0 (the wiki's mod
+/// module), so an artifact has no capacity to spend and no polarity to match.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ArtifactMod {
+    pub id: String,
+    pub name: String,
+    /// The school the card belongs to; any artifact seats it.
+    pub school: String,
+    pub rarity: String,
+    pub max_rank: u32,
+    #[serde(default)]
+    pub internal_name: Option<String>,
+    /// The card at max rank.
+    pub description: String,
+    /// What the card's second line counts: `unique_school` ("for each Mod from a
+    /// unique School") or a school id ("for each Unairu School Mod").
+    #[serde(default)]
+    pub bonus_per: Option<String>,
+    #[serde(default, rename = "source", deserialize_with = "source_url")]
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ArtifactArcane {
+    pub id: String,
+    pub name: String,
+    pub rarity: String,
+    pub max_rank: u32,
+    #[serde(default)]
+    pub internal_name: Option<String>,
+    pub description: String,
+    #[serde(default, rename = "source", deserialize_with = "source_url")]
+    pub url: Option<String>,
+}
+
+fn source_url<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    Ok(SourceFile::deserialize(d)?.url)
+}
+
+fn load_sorted<T: serde::de::DeserializeOwned>(prefix: &str, id: fn(&T) -> &str) -> Vec<T> {
+    let mut out: Vec<T> = leak_all(prefix)
+        .map(|(p, text)| serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}")))
+        .collect();
+    out.sort_by(|a, b| id(a).cmp(id(b)));
+    out
+}
+
+pub fn artifact_mods() -> &'static [ArtifactMod] {
+    static M: OnceLock<Vec<ArtifactMod>> = OnceLock::new();
+    M.get_or_init(|| load_sorted("artifact_mods/", |m: &ArtifactMod| &m.id))
+}
+
+pub fn artifact_arcanes() -> &'static [ArtifactArcane] {
+    static A: OnceLock<Vec<ArtifactArcane>> = OnceLock::new();
+    A.get_or_init(|| load_sorted("artifact_arcanes/", |a: &ArtifactArcane| &a.id))
+}
+
+pub fn artifact_mod_by_id(id: &str) -> Option<&'static ArtifactMod> {
+    artifact_mods().iter().find(|m| m.id == id)
+}
+
+pub fn artifact_arcane_by_id(id: &str) -> Option<&'static ArtifactArcane> {
+    artifact_arcanes().iter().find(|a| a.id == id)
 }
 
 /// One line of a mod's or an arcane's card, typed.
@@ -858,14 +939,26 @@ pub struct HelminthPick {
     pub ability: String,
 }
 
-/// THE OPERATOR a Warframe build refers to: the active Focus school, and which
-/// of its conditional nodes to count as running. A node's condition is the
-/// Operator's own action, so it is ASSUMED when ticked and never simulated.
+/// THE OPERATOR a Warframe build links: the active Focus school, which of its
+/// conditional nodes to count as running, and the school's artifact. A node's
+/// condition is the Operator's own action, so it is ASSUMED when ticked and
+/// never simulated.
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct OperatorPick {
     pub school: String,
     #[serde(default)]
     pub assumed: Vec<String>,
+    #[serde(default)]
+    pub artifact: ArtifactPick,
+}
+
+/// The active school's artifact, every card at max rank.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ArtifactPick {
+    #[serde(default)]
+    pub mods: Vec<String>,
+    #[serde(default)]
+    pub arcane: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -1256,6 +1349,22 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         },
         None => None,
     };
+    if let Some((_, o)) = school {
+        let seated = &o.artifact.mods;
+        if seated.len() > ARTIFACT_MOD_SLOTS {
+            refused.push(format!("an artifact has {ARTIFACT_MOD_SLOTS} mod slots, not {}", seated.len()));
+        }
+        for (i, id) in seated.iter().enumerate() {
+            if artifact_mod_by_id(id).is_none() {
+                refused.push(format!("unknown artifact mod: {id}"));
+            } else if seated[..i].contains(id) {
+                refused.push(format!("artifact mod seated twice: {id}"));
+            }
+        }
+        if let Some(id) = o.artifact.arcane.as_deref().filter(|id| artifact_arcane_by_id(id).is_none()) {
+            refused.push(format!("unknown artifact arcane: {id}"));
+        }
+    }
     if let Some((s, o)) = school {
         for n in s.nodes.iter().filter(|n| n.always || o.assumed.contains(&n.id)) {
             let from = format!("focus:{}:{}", s.id, n.id);
@@ -1673,14 +1782,53 @@ mod tests {
     #[test]
     fn the_operator_counts_what_is_always_on_and_what_is_assumed() {
         let mut b = build(&[]);
-        b.operator = Some(OperatorPick { school: "unairu".into(), assumed: vec![] });
+        b.operator = Some(OperatorPick { school: "unairu".into(), assumed: vec![], ..Default::default() });
         let r = resolve(&b).unwrap();
         assert_eq!(r.stat(FrameStat::Armor).value, 855.0 + 200.0, "Stone Skin");
         assert!(r.tags.iter().any(|t| t.from == "focus:unairu:reinforced_return"));
-        b.operator = Some(OperatorPick { school: "madurai".into(), assumed: vec![] });
+        b.operator = Some(OperatorPick { school: "madurai".into(), assumed: vec![], ..Default::default() });
         assert_eq!(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.0);
-        b.operator = Some(OperatorPick { school: "madurai".into(), assumed: vec!["sling_strength".into()] });
+        b.operator = Some(OperatorPick {
+            school: "madurai".into(),
+            assumed: vec!["sling_strength".into()],
+            ..Default::default()
+        });
         assert!(close(resolve(&b).unwrap().stat(FrameStat::AbilityStrength).value, 1.4));
+    }
+
+    /// Every school has its artifact, every card's school and `bonus_per` name a
+    /// school, and a seating the artifact cannot hold is refused.
+    #[test]
+    fn the_artifact_seats_five_known_mods_once_and_one_arcane() {
+        assert_eq!(artifact_mods().len(), 20);
+        assert_eq!(artifact_arcanes().len(), 5);
+        for s in focus_schools() {
+            assert!(s.artifact.is_some(), "{} has no artifact", s.id);
+        }
+        for m in artifact_mods() {
+            assert!(focus_school(&m.school).is_some(), "{}: school {}", m.id, m.school);
+            if let Some(per) = m.bonus_per.as_deref() {
+                assert!(per == "unique_school" || focus_school(per).is_some(), "{}: bonus_per {per}", m.id);
+            }
+        }
+
+        let mut b = build(&[]);
+        let pick = |mods: &[&str], arcane: Option<&str>| OperatorPick {
+            school: "madurai".into(),
+            assumed: vec![],
+            artifact: ArtifactPick {
+                mods: mods.iter().map(|s| s.to_string()).collect(),
+                arcane: arcane.map(str::to_string),
+            },
+        };
+        b.operator = Some(pick(&["ubri_kaneph", "da_ren", "omn_evi", "yar_dal", "sey_taph"], Some("zid_an_asheir")));
+        assert!(resolve(&b).unwrap().refused.is_empty());
+        b.operator = Some(pick(&["ubri_kaneph", "ubri_kaneph"], None));
+        assert!(resolve(&b).unwrap().refused.iter().any(|r| r.contains("seated twice")));
+        b.operator = Some(pick(&["ubri_kaneph", "da_ren", "omn_evi", "yar_dal", "sey_taph", "evir_ti"], None));
+        assert!(resolve(&b).unwrap().refused.iter().any(|r| r.contains("5 mod slots")));
+        b.operator = Some(pick(&[], Some("arcane_grace")));
+        assert!(resolve(&b).unwrap().refused.iter().any(|r| r.contains("unknown artifact arcane")));
     }
 
     /// W`Shield`'s formula at Valkyr's 185, Catalyzing Shields' x0.20 and 1.33 s,

@@ -3,6 +3,10 @@
 # empty `warframe=` (W`Focus/Madurai`'s `{{FocusNode}}` flags).
 id: madurai
 name: Madurai
+# "The weapon of Madurai, School of the Fighters - a Bow." (W`Tektolyst_Artifact`)
+artifact:
+  id: thara
+  name: Thara
 
 nodes:
   # "Physical Damage and Operator Damage increased by '''5 / 10 / 20 / 30'''%"

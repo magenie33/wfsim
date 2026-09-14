@@ -110,6 +110,24 @@ rename cuts no link. An `operator:` holding a name becomes that build's id.
 - A node's TAG counts whenever its school is active: the node can be used, and a
   tag says what a build can do rather than what is running.
 
+**THE PLAYER HAS ONE OPERATOR, AND ANY NUMBER OF OPERATOR BUILDS.** An Operator
+build is a school, its assumed nodes and that school's Tektolyst Artifact; the
+Amp is not part of it yet.
+
+- One artifact per school (`artifact:` in `data/focus/<school>.yaml`), with 5
+  mod slots and 1 arcane slot (W`Tektolyst_Artifact`). Every card is at max
+  rank.
+- An Antique mod (`data/artifact_mods/`) is Universal with a base drain of 0, so
+  an artifact has no capacity and no polarity. Any artifact seats any school's
+  card, and one card is seated once.
+- `bonus_per` says what a card's second line counts: `unique_school` or a
+  school id. The page shows the count seated; it does not add the bonus into a
+  total, because no page says whether the card's own school is one of the
+  "unique" ones.
+- Nothing on an artifact moves a Warframe's own numbers: its mods are the
+  Operator's and the Amp's, and its arcanes reach the Tauron Strike, Amp and
+  Warframe WEAPONS (`data/artifact_arcanes/`).
+
 ## Abilities
 
 `data/warframe_abilities/` holds the CARD of an ability — cost, description,

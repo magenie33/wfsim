@@ -1,0 +1,11 @@
+id: evir_ti
+name: "Evir-Ti"
+school: naramon
+rarity: common
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Antiques/JumpHeight
+# the wiki's table at max rank — Rank / Jump Height: 3 || +60%
+description: "+60% Operator Jump Height"
+
+source:
+  url: https://wiki.warframe.com/w/Evir-Ti

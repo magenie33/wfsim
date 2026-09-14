@@ -1,0 +1,10 @@
+id: zid_an_osbok
+name: "Zid-An Osbok"
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Antiques/VoidSlingsOverguardStrip
+# the wiki's table at max rank — Rank / Enemy Overguard stripped / Amp Critical Damage: 5 || 30% || +3.0x
+description: "Void Sling strips 30% of enemy Overguard.\nWhen Overguard is stripped: +3.0x Amp Critical Damage for 15s."
+
+source:
+  url: https://wiki.warframe.com/w/Zid-An_Osbok
