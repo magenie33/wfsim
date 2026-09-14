@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.12d30a27c285.css" />
+  <link rel="stylesheet" href="/asset/style.796fe1c93bfb.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -1144,7 +1144,7 @@
       <div class="bb"><div id="wf-shards" class="wf-shards"></div></div>
     </section>
 
-    <!-- THE OPERATOR THIS BUILD REFERS TO — an Operator build is made on its own
+    <!-- THE OPERATOR THIS BUILD LINKS — an Operator build is made on its own
          page and only chosen here, so one Focus choice serves every frame. -->
     <section class="block" id="wf-operator-block">
       <div class="bh"><span class="n">4</span><h2 data-i18n>Operator</h2></div>
@@ -1168,7 +1168,7 @@
   </main>
 
   <!-- THE OPERATOR — `/operator`. Its Focus school, and which of that school's
-       conditional nodes to count as running; a Warframe build refers to one.
+       conditional nodes to count as running; a Warframe build links one.
        docs/WARFRAMES.md §Operator. -->
   <main id="operator-page" class="config-page" hidden>
     <div class="wstrip">
@@ -1182,8 +1182,12 @@
       <div class="bh"><span class="n">1</span><h2 data-i18n>Focus school</h2></div>
       <div class="bb"><div id="op-schools" class="op-schools"></div></div>
     </section>
+    <section class="block" id="op-artifact-block" hidden>
+      <div class="bh"><span class="n">2</span><h2 data-i18n>Tektolyst Artifact</h2></div>
+      <div class="bb"><div id="op-artifact" class="op-artifact"></div></div>
+    </section>
     <section class="block" id="op-node-block">
-      <div class="bh"><span class="n">2</span><h2 data-i18n>What reaches the Warframe</h2></div>
+      <div class="bh"><span class="n">3</span><h2 data-i18n>What reaches the Warframe</h2></div>
       <div class="bb"><div id="op-nodes" class="op-nodes"></div></div>
     </section>
   </main>
@@ -1243,13 +1247,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">4f132411</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">f52dd712</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.5a7840a92136.js"></script>
+  <script src="/asset/app.e913036e945f.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is
