@@ -4,6 +4,7 @@
   <url><loc>https://wfsim.app/weapons</loc></url>
   <url><loc>https://wfsim.app/support</loc></url>
   <url><loc>https://wfsim.app/download</loc></url>
+  <url><loc>https://wfsim.app/operator</loc></url>
   <url><loc>https://wfsim.app/thanks</loc></url>
   <url><loc>https://wfsim.app/weapons/AX-52</loc></url>
   <url><loc>https://wfsim.app/weapons/Acceltra</loc></url>
@@ -403,4 +404,5 @@
   <url><loc>https://wfsim.app/weapons/Zylok_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Zymos</loc></url>
   <url><loc>https://wfsim.app/warframes/Valkyr</loc></url>
+  <url><loc>https://wfsim.app/warframes/Valkyr_Prime</loc></url>
 </urlset>
