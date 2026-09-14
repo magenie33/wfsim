@@ -557,6 +557,11 @@ pub enum ModEffect {
     /// CHANCE TO GAIN COMBO COUNT — a riven's malus, and a GATE rather than a
     /// share of the chance above: each base combo point a hit earns survives with
     /// `1 + v`, and a lost one takes its points with it (MEASUREMENTS M97).
+    ///
+    /// ONE RIVEN AXIS, TWO MECHANICS. On the card it is the malus pole of the
+    /// axis [`Self::ComboCountChance`] is the bonus pole of, so it reads like one
+    /// signed number — and summing the two is the wrong model the measurement
+    /// rules out: they stack without netting.
     ComboGainChance(f64),
     /// …AND THE SAME CHANCE, PAID ONLY ON A LIFTED TARGET (Enduring Strike).
     ///

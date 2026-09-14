@@ -21,6 +21,10 @@ stats:
     prefix: "laci"
     suffix: "nus"
     text: "|val|% Additional Combo Count Chance"
+    # THE BONUS POLE of an axis whose malus pole is Chance to Gain Combo Count —
+    # and TWO MECHANICS, not one signed number. This adds to the chance pool with
+    # Quickening and True Punishment; the malus is a gate that never nets against
+    # it. See that entry (MEASUREMENTS M96, M97).
     kind: combo_count_chance
     malus: false
   - id: attack_speed
@@ -38,9 +42,14 @@ stats:
     prefix: ""
     suffix: ""
     text: "|val|% Chance to Gain Combo Count"
-    # A GATE on each base combo point, not a share of Additional Combo Count
-    # Chance: -57.3% beside +120% averaged 2.82 on a 3-point hit and never 1,
-    # where netting the two would never go under 3 (MEASUREMENTS M97).
+    # ONE RIVEN AXIS, TWO MECHANICS — DO NOT MERGE THIS PAIR. On the card this is
+    # the malus pole of the axis whose bonus pole is Additional Combo Count
+    # Chance, and DE files them as two stats (WeaponMeleeComboPointsOnHitMod here,
+    # WeaponMeleeComboBonusOnHitMod there). In the fight they do NOT net: this is
+    # a GATE each base combo point survives with 1 + value, on top of whatever
+    # the chance pool gave it. -57.3% beside +120% on a 3-point hit read 0 to 6
+    # over 45 hits, mean 2.64 and never a 1; netted to +62.7% it could not go
+    # under 3 (MEASUREMENTS M97).
     kind: combo_gain_chance
     bonus: false
   - id: cold
