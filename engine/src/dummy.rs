@@ -3233,8 +3233,8 @@ pub struct DummyParams {
     /// `status = base x [1 + mods + this x (combo - 1)]`.
     pub status_chance_per_combo: f64,
     /// CHANCE OF AN EXTRA COMBO POINT per landed hit (Quickening, True
-    /// Punishment, Enduring Strike). One roll per hit for ONE point; above 1.0
-    /// the point is certain and there is never a second (MEASUREMENTS M96).
+    /// Punishment, Enduring Strike). Per hit, each whole 1.0 repeats the hit's
+    /// points and the rest rolls for one point (MEASUREMENTS M96).
     pub combo_count_chance: f64,
     /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike), plus the status
     /// bracket's own Lifted card (Enduring Affliction). A CONDITION ABOUT THE
@@ -7753,14 +7753,17 @@ struct Landed {
 /// this roster — every stance multiplier in it is whole except `0.5`, below the
 /// line they differ above — so a stance publishing 150% would settle it.
 ///
-/// ADDITIONAL COMBO COUNT CHANCE, for one hit: a single roll, and ONE point at
-/// most — past 100% it is a certain point and never a second (MEASUREMENTS M96).
-fn extra_combo_point(chance: f64, roll: &mut impl FnMut(f64) -> bool) -> f64 {
-    if chance > 0.0 && roll(chance.min(1.0)) {
-        1.0
-    } else {
-        0.0
+/// ADDITIONAL COMBO COUNT CHANCE, for one hit earning `points`: every whole 100%
+/// pays the hit's points once more, and what is left over is one roll for ONE
+/// point (MEASUREMENTS M96). 120% on a 2-point hit is 4, plus 1 a fifth of the
+/// time.
+fn extra_combo_points(points: f64, chance: f64, roll: &mut impl FnMut(f64) -> bool) -> f64 {
+    if chance <= 0.0 {
+        return 0.0;
     }
+    let whole = chance.floor();
+    let rest = chance - whole;
+    points * whole + if rest > 0.0 && roll(rest) { 1.0 } else { 0.0 }
 }
 
 ///
@@ -11889,22 +11892,35 @@ mod melee {
         assert!(wrong.is_empty(), "{}", wrong.join("\n"));
     }
 
-    /// **ADDITIONAL COMBO COUNT CHANCE IS ONE ROLL PER HIT FOR ONE POINT**
-    /// (MEASUREMENTS M96): past 100% the point is certain and there is never a
-    /// second, and the roll never asks for more than a certainty.
+    /// **ADDITIONAL COMBO COUNT CHANCE: EACH WHOLE 100% REPEATS THE HIT'S POINTS,
+    /// AND THE REST ROLLS FOR ONE** (MEASUREMENTS M96). Hysteria's aerial combo
+    /// earns 2 / 2x 2 / 3 = 9 points; at 120% it was measured at 18 to 22 — the 9
+    /// doubled, plus one point on each of the four hits that wins its 20% roll.
     #[test]
-    fn additional_combo_count_chance_rolls_once_per_hit_for_one_point() {
-        let mut asked: Vec<f64> = Vec::new();
-        let mut yes = |p: f64| {
-            asked.push(p);
-            true
+    fn additional_combo_count_chance_doubles_per_whole_hundred_and_rolls_the_rest() {
+        let aerial = [2.0, 2.0, 2.0, 3.0];
+        let round = |chance: f64, win: bool| -> (f64, Vec<f64>) {
+            let mut asked = Vec::new();
+            let extra: f64 = aerial
+                .iter()
+                .map(|p| {
+                    extra_combo_points(*p, chance, &mut |q| {
+                        asked.push(q);
+                        win
+                    })
+                })
+                .sum();
+            (9.0 + extra, asked)
         };
-        assert_eq!(extra_combo_point(2.0, &mut yes), 1.0, "200% is one point, not two");
-        assert_eq!(extra_combo_point(1.0, &mut yes), 1.0);
-        assert_eq!(extra_combo_point(0.2, &mut yes), 1.0);
-        assert_eq!(extra_combo_point(0.0, &mut yes), 0.0, "no chance, no roll");
-        assert_eq!(asked, [1.0, 1.0, 0.2], "one roll each, capped at a certainty");
-        assert_eq!(extra_combo_point(0.5, &mut |_| false), 0.0, "a failed roll earns nothing");
+        let (lose, asked) = round(1.2, false);
+        assert_eq!(lose, 18.0, "the 100% doubles all 9");
+        assert_eq!(asked.len(), 4, "one roll a hit");
+        assert!(asked.iter().all(|q| (q - 0.2).abs() < 1e-9), "each rolls the 20% left over");
+        assert_eq!(round(1.2, true).0, 22.0, "four wins are four points, never four doublings");
+        let (whole, asked) = round(1.0, true);
+        assert_eq!((whole, asked.len()), (18.0, 0), "exactly 100% doubles and rolls nothing");
+        assert_eq!(round(0.2, true).0, 13.0, "under 100% a win is one point a hit");
+        assert_eq!(round(0.0, true), (9.0, vec![]), "no chance, no roll");
     }
 
     /// **SPRING-LOADED BLADE'S STACKS WIDEN THE REACH MID-FIGHT.** Each status
@@ -18256,10 +18272,9 @@ pub fn run_once_traced(
             // counter the swing does NOT empty.
             if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
                 combo_points += h.combo_points * landed;
-                // …PLUS THE EXTRA POINT SOME CARDS BUY: one roll per HIT for ONE
-                // point, whatever the chance (MEASUREMENTS M96) — which is what
-                // makes Quickening worth so much less on a 400% swing than on a
-                // 100% one. See `extra_combo_point`.
+                // …PLUS WHAT ADDITIONAL COMBO COUNT CHANCE BUYS, per HIT: each
+                // whole 100% repeats the hit's points, and the rest is a roll for
+                // one point (MEASUREMENTS M96). See `extra_combo_points`.
                 // …AND ENDURING STRIKE, which adds to the same chance while the
                 // target is LIFTED — a status this engine tracks rather than a
                 // state it has to assume.
@@ -18271,7 +18286,8 @@ pub fn run_once_traced(
                     };
                 if chance_now > 0.0 {
                     for _ in 0..(landed as u32) {
-                        combo_points += extra_combo_point(chance_now, &mut |p| d.spine.chance(p));
+                        combo_points +=
+                            extra_combo_points(h.combo_points, chance_now, &mut |p| d.spine.chance(p));
                     }
                 }
             }

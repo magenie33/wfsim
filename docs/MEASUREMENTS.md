@@ -180,7 +180,7 @@ path, so an entry may be renamed but never renumbered.
 | [M93](measurements/M93-antique-unique-school-bonus-counts-other-schools.md) | an Antique mod's "unique School" bonus pays once per OTHER school seated on the artifact, never for its own | ✅ 2026-09-14 (owner) |
 | [M94](measurements/M94-hysteria-stance-is-fixed-and-grants-ten.md) | Valkyr Talons: Hysteria is fixed in the stance slot; the card grants 5 and its matching slot doubles it to 10 (60 -> 70); the slot takes no Forma | ✅ 2026-09-14 (owner) |
 | [M95](measurements/M95-hysteria-combo-points-per-hit.md) | Hysteria's combo points per hit, every combo: they follow no rule of the stance multiplier (a 100% opener earns 1 or 2, the 300% slide earns 1) | ✅ 2026-09-14 (owner) |
-| [M96](measurements/M96-additional-combo-count-chance-is-one-point.md) | Additional Combo Count Chance rolls once per hit for ONE point — past 100% the point is certain and never a second | ✅ 2026-09-14 (owner) |
+| [M96](measurements/M96-additional-combo-count-chance-repeats-per-whole-hundred.md) | Additional Combo Count Chance, per hit: each whole 100% repeats the hit's points and the rest rolls for one point (120% on Hysteria's 9-point aerial: 18 to 22) | ✅ 2026-09-14 (owner) |
 
 ## By weapon
 
