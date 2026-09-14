@@ -2854,6 +2854,9 @@ pub struct BodyPart {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct DummyParams {
+    /// WHICH RUN IS THE BENCHMARK FIGHT: runs are ranked by this and the one at
+    /// `len / 2` is replayed. The scenario's metric decides it.
+    pub sample_by: crate::metrics::RunStat,
     /// WHAT THE WARFRAME BRINGS, resolved from the Tenno's auras and shards.
     /// Computed once in `from_panel` rather than re-derived per shot, and read
     /// wherever a squad effect lands — the armour multiplier at mitigation, the
@@ -4538,6 +4541,7 @@ impl DummyParams {
                 .map(|(_, v)| v)
                 .sum::<f64>();
         Self {
+            sample_by: crate::metrics::RunStat::KillProgress,
             faction_multiplier,
             // RESOLVED ONCE. The picks are the state and this is a view of them,
             // so a pick can never disagree with its effect. The weapon's CLASS
@@ -5069,6 +5073,7 @@ impl Default for DummyParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            sample_by: crate::metrics::RunStat::KillProgress,
             // Ordinary: only one measured entry differs (see the field).
             echo_multiplier: 1.0,
             // A FIXTURE BRINGS NO WARFRAME: no auras, no shards.
@@ -18986,6 +18991,10 @@ pub struct Summary {
     pub std_effective_damage: f64,
     pub effective_dps: f64,
     pub mean_dot_damage: f64,
+    /// What each run threw away — see [`RunResult::overkill`] and
+    /// [`RunResult::spilled`] — averaged, so the waste rate is a mean too.
+    pub mean_overkill: f64,
+    pub mean_spilled: f64,
     /// MEAN DAMAGE PER RUN THAT REACHED HEALTH — see [`Settled::health`]. It
     /// is `mean_virus_stacks`'s denominator, and it is reported because the
     /// ratio alone cannot say whether a fight spent itself on health at all:
@@ -19083,11 +19092,12 @@ pub struct Summary {
     pub damage_per_pellet: f64,
     /// Mean effective damage by source (the damage-meter view).
     pub source_damage: SourceDamage,
-    /// The complete MEDIAN engagement (by total effective damage). The
-    /// sim result DISPLAYS this run's numbers — kills, shots, procs,
-    /// sources, timeline — so every shown stat is one internally
-    /// consistent engagement; the mean fields above
-    /// stay for the optimizer's objectives and the golden tests.
+    /// THE BENCHMARK FIGHT: the runs ranked by `DummyParams::sample_by`, and the
+    /// one at index `len / 2` — the exact middle of an odd count, the upper of
+    /// the two middles of an even one. Every figure above is a MEAN and is what
+    /// ranks and what the headline shows; this is ONE run, kept so the replay,
+    /// the damage meter and the combat record show a fight that happened. Its
+    /// numbers differ from the means, and the page says so beside them.
     pub median_run: RunResult,
 }
 
@@ -19169,20 +19179,20 @@ pub fn monte_carlo_series_reporting(
 /// THE STATE IS TWO 32-BIT HALVES, and that is not tidiness. A shard crosses
 /// the wasm boundary as JSON, and **a JSON number in JavaScript is a double** —
 /// so a 64-bit RNG state above 2^53 comes back ROUNDED, the merge replays a
-/// state that never existed, and the median engagement is a different fight.
-/// It shows as every mean matching to the last bit while only `score`
-/// disagrees, because `score` is the one figure taken from the median run.
+/// state that never existed, and the benchmark fight is a different fight.
+/// It shows as every mean matching to the last bit while only the fight's own
+/// numbers — `sample` and the replay — disagree.
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 struct RunKey {
-    /// Effective damage — what the ranking is by.
-    d: f64,
+    /// The run's value under `DummyParams::sample_by` — what the ranking is by.
+    v: f64,
     hi: u32,
     lo: u32,
 }
 
 impl RunKey {
-    fn new(d: f64, state: u64) -> Self {
-        Self { d, hi: (state >> 32) as u32, lo: state as u32 }
+    fn new(v: f64, state: u64) -> Self {
+        Self { v, hi: (state >> 32) as u32, lo: state as u32 }
     }
     fn state(self) -> u64 {
         (u64::from(self.hi) << 32) | u64::from(self.lo)
@@ -19199,6 +19209,8 @@ pub struct Shard {
     effective: f64,
     effective_sq: f64,
     dot: f64,
+    overkill: f64,
+    spilled: f64,
     /// The two halves of `Summary::mean_virus_stacks`, summed over every run
     /// of the shard. A ratio has to travel as its numerator and its
     /// denominator or a fleet of workers averages the averages.
@@ -19234,9 +19246,9 @@ pub struct Shard {
     headshots: u64,
     sources: SourceDamage,
     by_body: Vec<f64>,
-    /// One per run: what it did, and the RNG state it started from.
+    /// One per run: what it scored, and the RNG state it started from.
     ///
-    /// The median engagement is what the result panel displays, and finding it
+    /// The benchmark fight is what the replay shows, and finding it
     /// means ranking every run — so the merge ranks these and REPLAYS the
     /// winner, which is exact because a run is reproducible from its state.
     /// One extra run per simulation, against carrying a thousand of them.
@@ -19257,6 +19269,8 @@ impl Default for Shard {
             effective: 0.0,
             effective_sq: 0.0,
             dot: 0.0,
+            overkill: 0.0,
+            spilled: 0.0,
             procs: 0,
             field_ticks: 0,
             dot_ticks: 0,
@@ -19307,6 +19321,8 @@ impl Shard {
         self.effective += o.effective;
         self.effective_sq += o.effective_sq;
         self.dot += o.dot;
+        self.overkill += o.overkill;
+        self.spilled += o.spilled;
         self.health_damage += o.health_damage;
         self.virus_stack_health += o.virus_stack_health;
         self.armor_left_health += o.armor_left_health;
@@ -19427,7 +19443,7 @@ pub fn shard(
         // with.
         let state = seed ^ u64::from(i).wrapping_mul(GOLDEN_GAP);
         let r = run_once(params, &mut Rng::new(state));
-        a.index.push(RunKey::new(r.effective_damage(), state));
+        a.index.push(RunKey::new(params.sample_by.of(&r), state));
         on_run(a.index.len() as u32);
         if keep {
             a.series.kill_progress.push(r.kill_progress);
@@ -19440,6 +19456,8 @@ pub fn shard(
         a.effective += r.effective_damage();
         a.effective_sq += r.effective_damage() * r.effective_damage();
         a.dot += r.meter.dot();
+        a.overkill += r.overkill;
+        a.spilled += r.spilled;
         a.health_damage += r.health_damage;
         a.virus_stack_health += r.virus_stack_health;
         a.armor_left_health += r.armor_left_health;
@@ -19487,6 +19505,7 @@ impl Shard {
         let series = self.series.clone();
         let (sum, sum_sq, min, max) = (self.sum, self.sum_sq, self.min, self.max);
         let (effective, effective_sq, dot) = (self.effective, self.effective_sq, self.dot);
+        let (overkill, spilled) = (self.overkill, self.spilled);
         let (health_damage, virus_stack_health) = (self.health_damage, self.virus_stack_health);
         let armor_left_health = self.armor_left_health;
         let (procs, field_ticks, reloads, transforms) =
@@ -19544,6 +19563,8 @@ impl Shard {
         },
         effective_dps: effective / n / params.duration_seconds,
         mean_dot_damage: dot / n,
+        mean_overkill: overkill / n,
+        mean_spilled: spilled / n,
         mean_health_damage: health_damage / n,
         // THE RATIO OF THE SUMS, never the mean of the ratios: a run that
         // reached health once and a run that reached it ten thousand times
@@ -19613,13 +19634,14 @@ impl Shard {
             }
             s
         },
-        // THE MEDIAN ENGAGEMENT, REPLAYED. The shard carries one `(effective,
+        // THE BENCHMARK FIGHT, REPLAYED. The shard carries one `(value,
         // rng_state)` pair per run rather than the runs themselves — 16 bytes
         // against 8 KB — so ranking them here and re-running the winner is
-        // exact and costs one extra engagement per simulation.
+        // exact and costs one extra engagement per simulation. A tie breaks on
+        // the state, so the pick cannot depend on the order shards merged in.
         median_run: {
             let mut idx = self.index;
-            idx.sort_by(|a, b| a.d.total_cmp(&b.d));
+            idx.sort_by(|a, b| a.v.total_cmp(&b.v).then(a.state().cmp(&b.state())));
             match idx.get(idx.len() / 2) {
                 Some(k) => run_once(params, &mut Rng::new(k.state())),
                 None => RunResult::default(),
@@ -20579,6 +20601,28 @@ mod tests {
         assert!(r.kills_by_tendril <= r.kills);
     }
 
+    /// THE BENCHMARK FIGHT IS THE MIDDLE RUN BY THE FIGHT'S OWN METRIC: the
+    /// exact middle of an odd count, the upper of the two middles of an even one.
+    #[test]
+    fn the_benchmark_fight_is_the_upper_middle_run_by_the_metric() {
+        const SEED: u64 = 0x5EED;
+        let mut p = DummyParams::default();
+        for runs in [7u32, 8] {
+            for stat in [crate::metrics::RunStat::KillProgress, crate::metrics::RunStat::EffectiveDamage] {
+                p.sample_by = stat;
+                let mut ranked: Vec<(f64, u64)> = (0..runs)
+                    .map(|i| {
+                        let state = SEED ^ u64::from(i).wrapping_mul(GOLDEN_GAP);
+                        (stat.of(&run_once(&p, &mut Rng::new(state))), state)
+                    })
+                    .collect();
+                ranked.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+                let s = monte_carlo(&p, runs, SEED);
+                assert_eq!(s.median_run.rng_state, ranked[runs as usize / 2].1, "{runs} runs by {stat:?}");
+            }
+        }
+    }
+
     /// EIGHT SHARDS ARE ONE RUN.
     ///
     /// The assertion the whole fleet rests on: sharding is worth nothing if
@@ -20593,7 +20637,7 @@ mod tests {
     /// the mean. TO A PART IN 10^12 rather than bit for bit, because
     /// floating-point addition is not associative — anything the merge actually
     /// lost would be off by far more. The two exact things, which run is the
-    /// median and the integer counts, use `assert_eq!`.
+    /// benchmark fight and the integer counts, use `assert_eq!`.
     #[test]
     fn eight_shards_are_one_run() {
         let base = crate::loadout::WeaponBase::from_data("torid", false, &[]);
@@ -20656,7 +20700,7 @@ mod tests {
             ("mean_virus_stacks", part.mean_virus_stacks, whole.mean_virus_stacks),
             ("mean_armor_left", part.mean_armor_left, whole.mean_armor_left),
             ("mean_health_damage", part.mean_health_damage, whole.mean_health_damage),
-            // …AND WHAT IT IS DIVIDED BY. `procs_mean`/`pellets_mean` reach a
+            // …AND WHAT IT IS DIVIDED BY. `procs`/`pellets` reach a
             // caller as a RATE (`check_custom_enemies` asks whether a damage x0
             // column moves the proc draw), and the page runs every simulation on
             // a worker fleet — so a denominator lost in the merge would move

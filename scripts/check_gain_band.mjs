@@ -63,7 +63,7 @@ const r = await app.evaluate(`(async () => {
   return {
     b10, b100, ser, ama,
     floor: gainScan.floor, base: gainScan.base, running: gainScan.running,
-    own: { mean: own && own.score_mean, se: own && own.score_se, dps: own && own.dps_mean },
+    own: { mean: own && own.score, se: own && own.score_se, dps: own && own.dps },
     n: Object.keys(gainScan.by).length,
     // Every gain the scan produced, with the width it claims for it.
     gains: Object.entries(gainScan.by).map(([id, g]) => ({ id, pct: g.pct, se: g.se })),
@@ -72,9 +72,9 @@ const r = await app.evaluate(`(async () => {
 })()`);
 
 // ---- 1. the server reports the mean and its spread ----------------------
-check("the sim reports the MEAN, not only the median run",
-  typeof r.b10.score_mean === "number" && r.b10.score_mean > 0,
-  `score ${r.b10.score} score_mean ${r.b10.score_mean}`);
+check("the sim reports the mean",
+  typeof r.b10.score === "number" && r.b10.score > 0,
+  `score ${r.b10.score}`);
 check("...and the spread it measured over those runs",
   typeof r.b10.score_se === "number" && r.b10.score_se > 0
   && typeof r.b10.dps_se === "number" && r.b10.dps_se > 0,
@@ -83,7 +83,7 @@ check("...and the spread it measured over those runs",
 // times the runs must narrow it by about sqrt(10). Loose bounds — the runs
 // inside one call are mildly correlated — but a se that does NOT fall with the
 // run count is not measuring what it claims to.
-const ratio = (r.b10.score_se / r.b10.score_mean) / (r.b100.score_se / r.b100.score_mean);
+const ratio = (r.b10.score_se / r.b10.score) / (r.b100.score_se / r.b100.score);
 check("...and it narrows with the run count, as a standard error must",
   ratio > 2.2 && ratio < 4.5, `10 runs vs 100 runs: ${ratio.toFixed(2)}x (sqrt(10) = 3.16)`);
 
@@ -156,7 +156,7 @@ check("...and a status mod does not", statusMod && statusMod.se > 0.01,
 // ---- 4. the negative control: the pair the bug was reported on ----------
 // Same fight, same statuses — so the comparison is paired and exact, and the
 // order is the one the two cards state (+165% against +155%).
-const gain = (x) => x.score_mean / r.b10.score_mean - 1;
+const gain = (x) => x.score / r.b10.score - 1;
 check("Serration and Amalgam Serration do not re-roll the fight",
   r.ser.procs === r.b10.procs && r.ama.procs === r.b10.procs,
   `ref ${r.b10.procs} · serration ${r.ser.procs} · amalgam ${r.ama.procs}`);

@@ -299,7 +299,7 @@ WRITTEN TWICE, so a change has to be made twice:
 | giving work to the next free worker | `evaluate_batch`'s chunking | the lane pool's cursor |
 
 The first of those is one quantity under three names — `mean_kill_progress` in
-the engine, `score_mean` on the wire, `r.score_mean` on the page — and it is the
+the engine, `score` on the wire, `r.score` on the page — and it is the
 one that has already cost a bug.
 
 ENUMERATION IS NOT ON THAT LIST AND MUST NOT JOIN IT. The optimizer samples a

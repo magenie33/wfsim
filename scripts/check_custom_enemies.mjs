@@ -131,20 +131,15 @@ const r = await evaluate(`(async () => {
     // dies, so the raw counts are two different fights. The RATE is the thing
     // the wiki is talking about.
     //
-    // AND POOLED OVER EVERY RUN, which is the whole sample this assertion has.
-    // It read procs/pellets until 2026-08-25, and those are the MEDIAN
-    // ENGAGEMENT — 45 pellets, however many runs were paid for. So the
-    // measurement's sample size was fixed at 45 and raising the run count added
-    // nothing to it: deterministic, never converging, and about two sigma wide
-    // against a tolerance of 15%, which is how it sat red on a correct engine.
-    // procs_mean and pellets_mean are the counts over all N.
+    // AND POOLED OVER EVERY RUN, which is the whole sample this assertion has:
+    // procs and pellets are means over all N runs, so N times one fight's pellets.
     // THE SAMPLE COMES BACK WITH THE RATE. A tolerance says nothing without
     // the n behind it — that is the whole fault being repaired here — so the
     // assertion below states the sample it actually got rather than trusting
     // that the fight was measured hard enough.
     if (!res) return { rate: 0, n: 0 };
-    const pel = res.pellets_mean || 0;
-    return { rate: (res.procs_mean || 0) / Math.max(1e-9, pel), n: pel * (res.runs || 1) };
+    const pel = res.pellets || 0;
+    return { rate: (res.procs || 0) / Math.max(1e-9, pel), n: pel * (res.runs || 1) };
   };
   const plain = await procsWhen((s) => { s.damage_modifiers = null; s.status_immunities = []; });
   const zeroed = await procsWhen((s) => { s.damage_modifiers = { toxin: 0 }; s.status_immunities = []; });
@@ -187,16 +182,11 @@ check("...and the same target at x1 takes damage", r.normal > 0, String(r.normal
 // The two mechanics, told apart by measurement rather than by reading the
 // card back.
 check("procs happen at all", r.plainProcs > 0, String(r.plainProcs));
-// THE SAMPLE IS THE WHOLE RUN SET. Reading `procs` and `pellets` off the
-// response takes the MEDIAN ENGAGEMENT's counts — 45 pellets however many runs
-// the fight was paid for — where the binomial sd over 45 trials at a rate near
-// 0.6 is 3.3 procs, so a two-sigma draw fails a 15% tolerance by construction
-// and no run count fixes it. It is SELECTION-BIASED on top of that: the median
-// run is chosen by damage and more procs means more damage, so it climbs with
-// the run count (0.5556 at 1 run, 0.7778 at 1000, while the pooled rate held at
-// 0.6244).
+// THE SAMPLE IS THE WHOLE RUN SET, never one fight's 45 pellets: a single
+// run's binomial sd at a rate near 0.6 is 3.3 procs, two sigma past a 15%
+// tolerance by construction.
 //
-// procs_mean over pellets_mean is 45,000 trials at the default 1000 runs, and
+// procs over pellets is 45,000 trials at the default 1000 runs, and
 // the answer is EXACT — 0.6244 both ways, because the damage column is not read
 // by the proc draw and the two fights roll the same dice. So the tolerance is
 // 3%: tight enough to catch a PARTIAL conflation, where 15% could only ever

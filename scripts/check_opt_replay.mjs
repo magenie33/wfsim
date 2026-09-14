@@ -131,7 +131,7 @@ const runFor = (w) => evaluate(`(async () => {
     delete broken[k];
     const out = await postJson('/api/simulate', broken);
     dropped.push({ axis: k, refused: !(out && out.ok),
-                   score: out && out.ok ? out.score_mean : null });
+                   score: out && out.ok ? out.score : null });
   }
 
   // ---- 5. THE SHARP CONTROL ---------------------------------------------
@@ -170,16 +170,16 @@ const runFor = (w) => evaluate(`(async () => {
     whileApplying(() => restoreState(back, W.id));
     await sleep(900);
     const out = await asBuilt();
-    control = { axis: liveAxis.axis, score: out && out.ok ? out.score_mean : null };
+    control = { axis: liveAxis.axis, score: out && out.ok ? out.score : null };
   }
 
   return { weapon: W.id, err: null,
            rowKpm: row.kill_progress, rowSe: row.kill_progress_se,
            mode: row.mode, valence: row.valence, evolutions: row.evolutions,
-           direct: direct && direct.ok ? direct.score_mean : null,
+           direct: direct && direct.ok ? direct.score : null,
            directSe: direct && direct.ok ? direct.score_se : null,
            directErr: direct && direct.ok === false ? direct.error : null,
-           viaPage: viaPage && viaPage.ok ? viaPage.score_mean : null,
+           viaPage: viaPage && viaPage.ok ? viaPage.score : null,
            viaErr: viaPage && viaPage.ok === false ? viaPage.error : null,
            tripFails, dropped, control,
            replayKeys: Object.keys(row.replay).sort() };

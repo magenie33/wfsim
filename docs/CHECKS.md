@@ -480,9 +480,8 @@ one worker would.
 ## `check_gain_band`
 
 A quick-calc chip says HOW WELL IT KNOWS its own number
-and never prints a zero. The scan reads `score_mean`/`score_se` and
-`dps_mean`/`dps_se`, which the server already computes, rather than the MEDIAN
-run. THE WIDTH IS THE COMPARISON'S OWN and it is DERIVED: `/api/simulate`
+and never prints a zero. The scan reads `score`/`score_se` and
+`dps`/`dps_se`, the means the server already computes. THE WIDTH IS THE COMPARISON'S OWN and it is DERIVED: `/api/simulate`
 returns the per-run series when the caller says it will pair with it
 (`run_series`), and the chip's band is the spread of `c_i - ratio*b_i` over
 those runs. A chip therefore has three shapes and the check asserts all three
@@ -548,7 +547,8 @@ so it never ranks a perk the builder will not let you click.
 
 ## `check_replay`
 
-The median engagement plays back on screen: the buff curves
+The benchmark fight plays back on screen while the average above it holds
+still: the buff curves
 draw, scrubbing drains the pools, and play advances the clock at the chosen
 multiplier.
 

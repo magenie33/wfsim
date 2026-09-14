@@ -85,13 +85,19 @@ that would have them, not in a parallel module.
 
 ## Replay
 
-The Simulator's result carries the MEDIAN engagement, frame by frame: the
-target's pools, every counter the panel reports, the damage meter's own
-composition, and **live stacks per buff**.
+**THE RESULT IS TWO BLOCKS.** The top one is the MEAN over every run — the
+headline and its KPI row — and nothing moves it: it is what ranks, the same
+figure the board, the optimizer and the quick calc read. The block under it is
+the BENCHMARK FIGHT: one run, the middle one when the runs are ranked by the
+scenario's metric (the upper middle of an even count), headed by its own number
+beside the average and a line saying it is one sample and differs from it.
 
-**It sits at the TOP and drives the whole panel**.
-The panel renders once at its finished state — hero, KPIs, damage meter, DPS
-curve, detail — and the replay re-reads all of it at whatever instant the
+The Simulator's result carries that fight frame by frame: the target's pools,
+its counters, the damage meter's own composition, and **live stacks per buff**.
+
+**The replay sits at the TOP of that block and drives all of it**.
+The block renders once at its finished state — its number, KPIs, damage meter,
+DPS curve — and the replay re-reads all of it at whatever instant the
 cursor stops on: the headline recounts, the KPIs recount, the meter
 re-composes against the damage dealt SO FAR (a composition of a fight in
 progress is read against that fight, not against its end), both curves grey
@@ -125,8 +131,8 @@ be clicked. `avg` and `uptime` sit in the header so the group reads at a
 glance; play/pause + 1x/2x/5x/20x + a scrubber move one cursor across every
 curve at once.
 
-It is the same fight the headline number came from, not a fresh run and not an
-average. `Rng` is SplitMix64 with a single `u64` of state, so a run records
+It is the same fight the block's own number came from, not a fresh run and not
+an average. `Rng` is SplitMix64 with a single `u64` of state, so a run records
 what it started from (`RunResult::rng_state`) and `dummy::replay` re-runs that
 one bit-for-bit. Cost: ONE extra engagement, and only when asked — the
 marginal-gain scan calls the same endpoint once per candidate and shows no

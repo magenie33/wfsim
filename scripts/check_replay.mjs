@@ -1,4 +1,5 @@
-// THE REPLAY, driven in a browser: the median engagement plays back.
+// THE REPLAY, driven in a browser: the benchmark fight plays back, and the
+// average above it holds still.
 //
 // It exists because a replay that shows the WRONG fight is worse than none —
 // the engine's own test proves the run is reproduced bit-for-bit, and this
@@ -44,6 +45,7 @@ const r = await evaluate(`(async () => {
     meter: [...document.querySelectorAll('#sim-results .mrow[data-mk]:not(.sub)')].map(e=>e.querySelector('.mval').textContent.trim()),
     pools: [...document.querySelectorAll('#rp-pools .rp-cell b')].map(e=>e.textContent).join('|'),
     hero: document.querySelector('[data-hero]').textContent,
+    mean: document.querySelector('#sim-results .hero-num').textContent,
   });
   const atEnd = read();
   // THE LIVE STACK COUNTS AS THE PANEL OPENS, before anything is scrubbed —
@@ -229,8 +231,13 @@ check("rewinding empties the KPIs and the meter",
   JSON.stringify(r.atZero));
 check("...and the pools go back to full",
   r.atZero.pools !== r.atEnd.pools && r.atZero.pools.startsWith("659,445"), r.atZero.pools);
-check("the headline follows too", r.atZero.hero !== r.atEnd.hero,
+check("the benchmark fight's headline follows too", r.atZero.hero !== r.atEnd.hero,
   r.atEnd.hero + " -> " + r.atZero.hero);
+// THE AVERAGE IS EVERY RUN AT ONCE, and a replay of one of them must not
+// rewrite it.
+check("...while the average above it holds still",
+  r.atEnd.mean.length > 0 && r.atZero.mean === r.atEnd.mean,
+  r.atEnd.mean + " -> " + r.atZero.mean);
 check("the unit sits on the number's line",
   /KPM|DPS/.test(r.atEnd.hero), r.atEnd.hero);
 check("returning to the end restores the panel exactly",

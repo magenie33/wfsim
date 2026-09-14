@@ -238,7 +238,7 @@ const r = await evaluate(`(async () => {
       // wasm boundary as JSON, and a JSON number in JavaScript is a double, so
       // the run's 64-bit RNG state came back ROUNDED and the merge replayed a
       // fight that never happened. Every mean matched; only the
-      // median run's figures moved.
+      // benchmark fight's figures moved, which is why its score is compared too.
       const body = { ...buildPayload(), ...theFight({ runs: 40 }) };
       // THE PAGE'S ONE POOL. The simulator had a fleet of its own until
       // 2026-08-18, beside the quick calc's lanes and the single rpc worker;
@@ -246,8 +246,9 @@ const r = await evaluate(`(async () => {
       out.fleetLanes = (await lanes()).length;
       const fleet = await simulateFleet(body, () => {});
       const solo = await api('/api/simulate', body);
-      out.fleetDiff = ['score', 'score_mean', 'dps', 'burst_dps', 'max_hit', 'procs', 'kills_std']
-        .map((k) => [k, fleet[k], solo[k]])
+      const pick = (x, k) => (k === 'sample_score' ? (x.sample || {}).score : x[k]);
+      out.fleetDiff = ['score', 'sample_score', 'dps', 'burst_dps', 'max_hit', 'procs', 'kills_std']
+        .map((k) => [k, pick(fleet, k), pick(solo, k)])
         .filter(([, a, b]) => Math.abs(a - b) > Math.abs(b) * 1e-9 + 1e-9)
         .map(([k, a, b]) => k + ': ' + a + ' vs ' + b);
       out.fleetRuns = [fleet.runs, solo.runs];

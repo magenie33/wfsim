@@ -662,7 +662,8 @@ answer could be published.
    be one an ordinary player can reach.
 6. **Published IN THE BENCHMARK'S OWN METRIC.** `score` off the wire is kill
    PROGRESS — kills plus the depleted fraction of the current target — over the
-   whole engagement, and the benchmark says `metric: kpm`. Publishing the raw
+   whole engagement, averaged over the ruler's runs, and the benchmark says
+   `metric: kpm`. Publishing the raw
    figure under a "kill rate" label overstated every row by the length of the
    fight: 55.26 on screen for a build that kills 11.05 a minute over the 300 s
    the ruler ran at the time (found 2026-08-04; the ruler is 180 s now, which

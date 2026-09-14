@@ -5521,6 +5521,8 @@ pub(crate) struct Fight {
     /// the published roster, which has never heard of an enemy the player
     /// built — so a custom target reported its own id as its name.
     pub(crate) enemy_name: String,
+    /// WHAT A RUN IS JUDGED BY, and therefore which run is the benchmark fight.
+    pub(crate) metric: &'static wfsim_engine::metrics::MetricDef,
     /// The MODE asked for, resolved to one this weapon has. The optimizer reads
     /// it as the fallback for a request that names no mode axis. It replaced
     /// `form` and `untransformed_id`, which the optimizer was the only reader
@@ -5649,25 +5651,26 @@ pub fn pairings_json(v: &Value) -> Value {
 pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // ---- parse inputs ----
     // EVERY SCENARIO HAS ONE CORE METRIC, and it has to be one this build
-    // declares. Nothing here reads it — what a run is JUDGED by is the ranking
-    // surfaces' question, not the fight's — but this is the door every fight
-    // comes through, and a scenario naming a metric nobody declares would reach
-    // those surfaces and be drawn in the units of a different question.
+    // declares. The fight reads it once — it ranks the runs to pick the
+    // benchmark fight — and the ranking surfaces read it for everything else.
     //
     // REFUSED, not defaulted. A share link or a saved scenario from a newer
     // build is exactly where this arrives, and answering it with kills per
     // minute is a number the reader cannot tell from a right one.
-    let metric = get_str(v, "metric", "");
-    if !metric.is_empty() && wfsim_engine::metrics::get(metric).is_none() {
+    let metric_id = match get_str(v, "metric", "") {
+        "" => wfsim_engine::metrics::DEFAULT,
+        id => id,
+    };
+    let Some(metric) = wfsim_engine::metrics::get(metric_id) else {
         return Err(err_json(format!(
-            "unknown metric: {metric} — a scenario is judged by one of {}",
+            "unknown metric: {metric_id} — a scenario is judged by one of {}",
             wfsim_engine::metrics::ALL
                 .iter()
                 .map(|m| m.id)
                 .collect::<Vec<_>>()
                 .join(", ")
         )));
-    }
+    };
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the
@@ -6282,6 +6285,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         single_form,
         mode: mode_id,
         enemy_name: spec.name.clone(),
+        metric,
         level,
         steel_path,
         eximus,
@@ -6951,7 +6955,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     };
     let Fight {
         info, policy, buff_cfg, denied_buff_triggers, arena, evos, cycle_from, single_form,
-        enemy_name, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
+        enemy_name, metric, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
         ammo_drops, pickup_range_m, landscape,
         frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
@@ -7077,6 +7081,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         cycle_from, single_form, infinite_ammo, ammo, frenzy_single, cycle_frenzy_lock,
         &frenzy_locks,
     );
+    params.sample_by = metric.run;
     // An arcane the weapon cannot seat is an ERROR here, not a silent drop:
     // the sim is the one place a visitor is owed a reason.
     for (pool, aid, _) in arcane_choices(v, info) {
@@ -7144,10 +7149,11 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         .map(|(t, val)| json!({ "type": format!("{t:?}"), "value": val }))
         .collect();
 
-    // EVERY displayed number comes from the MEDIAN engagement — one
-    // internally consistent run, where the meter, the curve, the kills and the
-    // handling stats all line up. The cross-run
-    // spread (min–max ±σ) stays as explicit spread stats.
+    // TWO KINDS OF NUMBER, kept apart. Every top-level figure is a MEAN over the
+    // runs: it is what ranks and what the headline shows. `m` is the BENCHMARK
+    // FIGHT (`Summary::median_run`), and the damage meter, the DPS curve, the
+    // replay and `sample` are that one run — they agree with each other, not
+    // with the means.
     let m = &s.median_run;
     // THE NAMES ARE DERIVED, not listed. This was a hand-written table of
     // fifteen that had to stay in `DamageType`'s declaration order, and the
@@ -7221,7 +7227,6 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         .collect();
     // One-second buckets, sliced to the engagement's actual duration.
     let nb = (s.duration_seconds.ceil() as usize).clamp(1, m.curve.buckets().len());
-    let pel = m.pellets.max(1) as f64;
 
     // THE REPLAY: the median engagement, re-run from the RNG state it started
     // from and sampled into frames. Buff series ride the same frames as the
@@ -7420,13 +7425,13 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // kinds of waste. It is the denominator the rate is read against, so a
     // rate of 1.0 means the fight spent as much on corpses and broken pools as
     // it did on killing.
-    let needed = m.effective_damage() - m.overkill - m.spilled;
-    let overkill_rate = if needed > 0.0 { m.overkill / needed } else { 0.0 };
+    let needed = s.mean_effective_damage - s.mean_overkill - s.mean_spilled;
+    let overkill_rate = if needed > 0.0 { s.mean_overkill / needed } else { 0.0 };
 
     json!({
         "ok": true,
-        // WHICH ENGAGEMENT THIS REPORT IS ABOUT — the median run's own RNG
-        // state, as TWO u32 halves.
+        // WHICH ENGAGEMENT THE BENCHMARK FIGHT IS — its own RNG state, as TWO
+        // u32 halves.
         //
         // It is the handle `/api/log` needs: the combat record re-runs the same
         // fight from this state and gets the same numbers bit for bit, which is
@@ -7435,21 +7440,27 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // 64-bit state comes back ROUNDED — the same lesson `dummy::RunKey`
         // records, learnt the same way.
         "run": [(m.rng_state >> 32) as u32, (m.rng_state & 0xffff_ffff) as u32],
-        "score": m.kill_progress,
-        "kills": m.kills,
-        // WHAT THE FIGHT SPENT ON NOTHING, from the same median run as the
-        // numbers above it. `overkill` is damage that took a bar past zero —
+        // THE BENCHMARK FIGHT'S OWN FIGURES, under the same field names as the
+        // means, so a metric's `field` reads either and the page can say how
+        // far this one run sits from the average beside it.
+        "sample": {
+            "score": m.kill_progress,
+            "kills": m.kills,
+            "dps": m.effective_damage() / s.duration_seconds.max(1e-9),
+        },
+        "score": s.mean_kill_progress,
+        "kills": s.mean_kills,
+        // WHAT THE FIGHT SPENT ON NOTHING, per run. `overkill` is damage that took a bar past zero —
         // a unit dies once however far past it goes — and `spilled` is what a
         // broken overguard or shield threw away rather than passing down. The
         // RATE's denominator is what the kills actually cost, so it reads as
         // "for every point that was needed, this many were wasted" and is not
         // capped at 1.
-        "overkill": m.overkill,
-        "spilled": m.spilled,
+        "overkill": s.mean_overkill,
+        "spilled": s.mean_spilled,
         "overkill_rate": overkill_rate,
         // THE AVERAGE VIRAL PILE THE DAMAGE WAS DEALT THROUGH — over every
-        // body and every run, not the median engagement the numbers above it
-        // describe. The debuff chart follows eight bodies of a formation that
+        // body and every run. The debuff chart follows eight bodies of a formation that
         // may be nineteen, so it can show a pile rising and cannot say what
         // the fight as a whole was multiplied by.
         //
@@ -7462,20 +7473,12 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // rather than as "there was nothing to strip".
         "armor_left": (ar > 0.0).then_some(s.mean_armor_left),
         "kills_std": s.std_kills,
-        // THE MEAN, AND HOW FAR IT CAN BE FROM THE TRUTH. `score` and `dps`
-        // above are the MEDIAN RUN — one engagement, however many were paid
-        // for — which is the right headline for "what a fight looks like" and
-        // the wrong number to RANK two builds by: at 10 runs it moves 9.6%
-        // between seeds where the mean moves 6.2%, and the optimizer ranks the
-        // mean anyway (`mean_kill_progress`).
-        //
-        // The σ is reported because the caller cannot estimate it. Running the
+        // HOW FAR THE MEAN CAN BE FROM THE TRUTH. The σ is reported because the caller cannot estimate it. Running the
         // reference a SECOND time at another seed and calling the gap its
         // resolution is one sample of a spread, and on identical inputs that
         // answer ranges 0.7%–11.2% — the same scan would suppress every chip or
         // none of them at random. The server has all N runs; it says the spread
         // it already computed.
-        "score_mean": s.mean_kill_progress,
         "score_se": s.std_kill_progress / f64::from(runs.max(1)).sqrt(),
         // …and the runs behind them, for a caller that will PAIR against
         // another build. Absent unless asked for: see `run_series` above.
@@ -7485,45 +7488,31 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             .iter()
             .map(|e| e / s.duration_seconds.max(1e-9))
             .collect::<Vec<f64>>(),
-        "dps_mean": s.mean_effective_damage / s.duration_seconds.max(1e-9),
         "dps_se": s.std_effective_damage
             / f64::from(runs.max(1)).sqrt()
             / s.duration_seconds.max(1e-9),
         "kills_min": s.min_kills,
         "kills_max": s.max_kills,
-        "dps": m.effective_damage() / s.duration_seconds.max(1e-9),
-        "shots": m.shots,
-        "pellets": m.pellets,
-        "crit_rate": m.crits as f64 / pel,
-        "big_crit_rate": m.big_crits as f64 / pel,
+        "dps": s.mean_effective_damage / s.duration_seconds.max(1e-9),
+        "shots": s.mean_shots,
+        "pellets": s.mean_pellets,
+        "crit_rate": s.mean_crit_rate,
+        "big_crit_rate": s.mean_big_crit_rate,
         // WHAT THE BUILD CHARGED ITS OWNER, by type and never applied — see
         // `SelfDamage`. Absent rather than zero when nothing charged anything,
         // so a reader is not shown a cost line for a build that has none.
-        "self_damage": (m.self_damage.total() > 0.0).then(|| json!({
-            "total": m.self_damage.total(),
-            "by_type": m.self_damage.parts().into_iter()
+        "self_damage": (s.mean_self_damage.total() > 0.0).then(|| json!({
+            "total": s.mean_self_damage.total(),
+            "by_type": s.mean_self_damage.parts().into_iter()
                 .map(|(t, v)| json!({ "type": t.name(), "amount": v }))
                 .collect::<Vec<_>>(),
         })),
         // The tier, because the RATE stops saying anything past 100% crit
         // chance: every pellet crits, so it reads 1.0 whether the build is
         // at 110% or 410%. Uncapped — red is not the top.
-        "crit_tier": m.crit_tier_sum as f64 / pel,
-        "headshot_rate": m.headshots as f64 / pel,
-        "procs": m.procs,
-        // …AND THE SAME COUNTS OVER EVERY RUN. `procs`/`pellets` above are the
-        // MEDIAN ENGAGEMENT — one fight, so a proc count out of it is a sample
-        // of size `pellets` however many runs were paid for, and raising the run
-        // count adds not one trial to it. That is the trap `score_mean` was
-        // added for in the other direction: a caller measuring a
-        // RATE needs the pooled counts, not one run's.
-        //
-        // `check_custom_enemies` is the caller, and it asserts the wiki's rule
-        // that a damage x0 column leaves the proc DRAW alone. At 45 pellets the
-        // binomial sd is 3.3 procs against a tolerance of 3.6, so that assertion
-        // could not have measured anything; over 1000 runs it is 45,000 trials.
-        "procs_mean": s.mean_procs,
-        "pellets_mean": s.mean_pellets,
+        "crit_tier": s.mean_crit_tier,
+        "headshot_rate": s.mean_headshot_rate,
+        "procs": s.mean_procs,
         // THE SPEEDRUN SET. `dps` is the whole engagement; `burst_dps` is the
         // same damage over the time the weapon was actually firing, which is
         // what a room-clear is paced by. TTK carries its spread because a mean
@@ -7537,16 +7526,16 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "damage_per_shot": s.damage_per_shot,
         "damage_per_pellet": s.damage_per_pellet,
         // EVERY HIT SORTED BY WHAT IT WAS — [head][tier], tier capped at 2.
-        "field_ticks": m.field_ticks,
+        "field_ticks": s.mean_field_ticks,
         "damage_sources": damage_sources,
         "timeline": m.curve.buckets()[..nb].to_vec(),
         "replay": replay,
-        "transforms": m.transforms,
+        "transforms": s.mean_transforms,
         // COUNTED, NOT FOUGHT — `weapons_data::SpawnOnKillSpec`. Absent on
         // every weapon that leaves nothing, so the page draws no row for them.
-        "ghosts": (m.ghost_kills > 0).then_some(m.ghost_kills),
-        "ghosts_peak": (m.ghost_kills > 0).then_some(m.ghosts_peak),
-        "reloads": m.reloads,
+        "ghosts": (s.mean_ghosts > 0.0).then_some(s.mean_ghosts),
+        "ghosts_peak": (s.mean_ghosts > 0.0).then_some(s.ghosts_peak),
+        "reloads": s.mean_reloads,
         // WHAT THE BODIES RESUPPLIED, in rounds. Absent where nothing was
         // picked up — an infinite reserve takes none — so the page draws the
         // row only for a fight the ammo economy decides something in.
@@ -9699,6 +9688,37 @@ mod asset_tests {
         );
     }
 
+    /// EVERY TOP-LEVEL FIGURE IS A MEAN, and `sample` is the upper-middle run by
+    /// the scenario's metric — asserted on the wire, which is what the page and
+    /// the board read.
+    #[test]
+    fn the_response_is_means_and_the_sample_is_the_middle_run_by_the_metric() {
+        for (metric, field, series) in [("kpm", "score", "score_runs"), ("dps", "dps", "dps_runs")] {
+            let req = serde_json::json!({
+                "weapon": "torid", "mode": "transformed",
+                "mods": ["serration", "split_chamber"],
+                "evolutions": ["torid_evo1_incarnon_form"],
+                "enemy": "corrupted_heavy_gunner", "level": 40,
+                "runs": 8, "seed": 7, "duration": 10,
+                "metric": metric, "run_series": true,
+            });
+            let r = simulate_json(&req);
+            assert!(r.get("error").is_none(), "{r}");
+            let mut runs: Vec<f64> =
+                r[series].as_array().into_iter().flatten().filter_map(Value::as_f64).collect();
+            assert_eq!(runs.len(), 8, "{metric}: {series}");
+            let mean = runs.iter().sum::<f64>() / 8.0;
+            let top = r[field].as_f64().unwrap_or(f64::NAN);
+            assert!((top - mean).abs() <= mean.abs() * 1e-12 + 1e-12, "{metric}: {field} {top} vs mean {mean}");
+            runs.sort_by(f64::total_cmp);
+            let sample = r["sample"][field].as_f64().unwrap_or(f64::NAN);
+            assert!(
+                (sample - runs[4]).abs() <= runs[4].abs() * 1e-9 + 1e-9,
+                "{metric}: sample {sample} is not the upper middle of {runs:?}"
+            );
+        }
+    }
+
     /// A FLEET PRODUCES THE SAME REPORT AS ONE WORKER.
     ///
     /// `eight_shards_are_one_run` asserts it of the SUMMARY; this asserts it of
@@ -9709,7 +9729,7 @@ mod asset_tests {
     ///
     /// It compares the JSON with the replay taken out, because a replay is one
     /// engagement sampled at 600 instants and is not what sharding is about —
-    /// the MEDIAN RUN it replays is asserted in the engine.
+    /// the benchmark fight it replays is asserted in the engine.
     ///
     /// NUMBERS ARE COMPARED TO A PART IN 10^12, not bit for bit. Adding a
     /// thousand runs in eight groups and then combining differs from adding
@@ -10378,12 +10398,19 @@ mod form_tests {
                 .filter(|x| x.as_u64().unwrap_or(0) > 0)
                 .count() as u64
         };
-        let replayed = |form: &str, duration: f64| {
-            simulate_json(&json!({
-                "weapon": "mausolon", "form": form, "mods": [], "arcane": "none",
-                "enemy": "thrax_centurion", "level": 1, "duration": duration,
-                "runs": 8, "headshot_pct": 0.0, "seed": 7, "replay": true,
-            }))
+        // EIGHT FIGHTS, each replayed as its own benchmark. At level 1 the laser
+        // kills what it lifts, so one fight's frames can fall between the stacks
+        // entirely; the claim is about the attack, not about one run's luck.
+        let replayed = |form: &str, duration: f64| -> u64 {
+            (1..=8u64)
+                .map(|seed| {
+                    lifted_row(&simulate_json(&json!({
+                        "weapon": "mausolon", "form": form, "mods": [], "arcane": "none",
+                        "enemy": "thrax_centurion", "level": 1, "duration": duration,
+                        "runs": 1, "headshot_pct": 0.0, "seed": seed, "replay": true,
+                    })))
+                })
+                .sum()
         };
         // SIXTY SECONDS, and the reason is worth writing down: at thirty this
         // unmodded weapon earns its fifth kill so late that it transmutes and
@@ -10391,13 +10418,13 @@ mod form_tests {
         // reads 1 and no laser was ever fired. A gauge bought with kills is
         // the first mechanic here that can be REACHED and still not PAY, which
         // is exactly what a player at low build strength experiences.
-        assert!(lifted_row(&replayed("gauge_cycle", 60.0)) > 0, "the laser did not lift");
+        assert!(replayed("gauge_cycle", 60.0) > 0, "the laser did not lift");
         // THE NEGATIVE CONTROL IS THE AUTO FIRE, not the level: only the
         // alt-fire's explosion declares `independent_procs: [lifted]`, so a
         // weapon firing its belt all engagement must never light this row —
         // which is what proves the proc is tied to the ATTACK that declares it
         // and not to the weapon.
-        assert_eq!(lifted_row(&replayed("base", 60.0)), 0, "the auto fire lifted");
+        assert_eq!(replayed("base", 60.0), 0, "the auto fire lifted");
         assert!(
             (n(&hard, "dps") - n(&hard_base, "dps")).abs() < 1e-9,
             "an unfilled gauge is the base fight: {} vs {}",
@@ -10458,9 +10485,9 @@ mod form_tests {
         for form in ["charged", "base", "incarnon_cycle", "primary", ""] {
             let r = sim("cernos_prime", form);
             assert_eq!(r["ok"], json!(true), "form {form}");
-            assert_eq!(r["transforms"], json!(0), "bow transformed on form {form}");
+            assert_eq!(r["transforms"].as_f64(), Some(0.0), "bow transformed on form {form}");
         }
-        assert_eq!(sim("verglas_prime", "incarnon_cycle")["transforms"], json!(0));
+        assert_eq!(sim("verglas_prime", "incarnon_cycle")["transforms"].as_f64(), Some(0.0));
 
         // ...and the POSITIVE case, because "0 transforms" is also what a
         // weapon that IS supposed to cycle looks like when its base entry was
@@ -10496,9 +10523,9 @@ mod form_tests {
         // formula) — the trade that makes tapping a real pattern.
         let tapped = sim("cernos_prime", "base");
         assert!((base_of(&tapped) - 92.0).abs() < 1e-6, "{}", base_of(&tapped));
-        let (drawn_shots, tapped_shots) = (bow["shots"].as_u64(), tapped["shots"].as_u64());
-        assert_eq!(drawn_shots, Some(27), "30 s / (0.5 + 0.65) + 1");
-        assert_eq!(tapped_shots, Some(47), "30 s / 0.65 + 1");
+        let (drawn_shots, tapped_shots) = (bow["shots"].as_f64(), tapped["shots"].as_f64());
+        assert_eq!(drawn_shots, Some(27.0), "30 s / (0.5 + 0.65) + 1");
+        assert_eq!(tapped_shots, Some(47.0), "30 s / 0.65 + 1");
     }
 
     /// Evolutions are a LADDER, not a menu: tier N needs tier N-1 installed.

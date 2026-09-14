@@ -85,8 +85,8 @@ const out = await app.evaluate(`(async () => {
       ms_per_run: best / ${RUNS},
       spread: best > 0 ? (worst - best) / best : 0,
       shots: last && last.shots,
-      score_mean: last && last.score_mean,
-      dps_mean: last && last.dps_mean,
+      score: last && last.score,
+      dps: last && last.dps,
     });
   }
   return rows;
@@ -101,7 +101,7 @@ for (const r of out) {
   console.log(
     `${r.weapon.padEnd(14)}${(r.total_ms / 1000).toFixed(2).padStart(8)}s${
       r.ms_per_run.toFixed(3).padStart(10)}${
-      `±${(r.spread * 100).toFixed(1)}%`.padStart(8)}  kill ${r.score_mean?.toFixed(6)}`,
+      `±${(r.spread * 100).toFixed(1)}%`.padStart(8)}  kill ${r.score?.toFixed(6)}`,
   );
 }
 
@@ -125,10 +125,10 @@ if (base.length) {
     // fights and their costs are not comparable — which is how the first
     // version of this script reported "0.9x native" for a fight it had
     // never run.
-    if (Math.abs(Number(b[3]) - r.score_mean) > 1e-9) {
+    if (Math.abs(Number(b[3]) - r.score) > 1e-9) {
       console.log(
         `  ${r.weapon.padEnd(14)} NOT COMPARABLE — different fights` +
-        `   (native kill ${Number(b[3]).toFixed(6)}, here ${r.score_mean?.toFixed(6)})`,
+        `   (native kill ${Number(b[3]).toFixed(6)}, here ${r.score?.toFixed(6)})`,
       );
       continue;
     }

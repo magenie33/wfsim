@@ -815,7 +815,11 @@ ui:
   "locked at the weapon's default by": 已锁定为武器默认值，来自
   "mean damage per hit and how often it happened — an impossible number hides in an average": 每类命中的平均伤害与出现频率 —— 不可能的数字会藏在平均值里
   "measured, and it moved nothing in this fight — see what this option's own line says it does not cover": 测过了，它在这场战斗里没有产生任何变化 —— 看这一项自己那行写的、它不涵盖什么
-  "median run": 中位数样本
+  "benchmark fight": 标杆战斗
+  "Benchmark fight": 标杆战斗
+  "Average of {runs} runs": "{runs} 场平均"
+  "average {v}": "平均 {v}"
+  "one of the {runs} runs, the middle one when ranked by {unit} — its numbers differ from the average": "{runs} 场中的一场：按 {unit} 排序取中间那场，所以数字和平均值有差异"
   median: 中位
   "mines STICK to surfaces, enemies and allies, and multishot throws them in 'a very wide horizontal spread' (wiki) — so on this weapon multishot covers ground rather than stacking damage on one target, which is the opposite of what it does everywhere else": "地雷会黏在地形、敌人和队友身上，而多重射击会把它们以「非常宽的水平散布」抛出去（维基）—— 所以在这把武器上多重射击是用来覆盖场地而不是把伤害叠在一个目标上，这和它在别处的作用正好相反"
   "move": 拖动

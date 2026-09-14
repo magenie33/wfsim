@@ -144,7 +144,7 @@ const r = await evaluate(`(async () => {
     shot = null;
     document.getElementById('run-sim').click();
     for (let k=0;k<60 && !shot; k++) await sleep(1000);
-    return shot && shot.dps_mean;
+    return shot && shot.dps;
   };
   const dpsCold = await runDps();
   setC('stacks', 405); setC('locked', true); await sleep(800);

@@ -14,12 +14,37 @@
 
 use serde::Serialize;
 
+use crate::dummy::RunResult;
+
+/// WHAT ONE RUN SCORES under a metric, so the benchmark fight is picked in the
+/// units the scenario is judged in. A metric that named none would pick its
+/// fight by some other question's ranking.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RunStat {
+    KillProgress,
+    /// Ranks exactly as DPS does: every run lasts the same engagement.
+    EffectiveDamage,
+}
+
+impl RunStat {
+    pub fn of(self, r: &RunResult) -> f64 {
+        match self {
+            RunStat::KillProgress => r.kill_progress,
+            RunStat::EffectiveDamage => r.effective_damage(),
+        }
+    }
+}
+
 /// One way of judging a run.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub struct MetricDef {
     pub id: &'static str,
-    /// The field of a simulate response the value is read from.
+    /// The field of a simulate response the value is read from — the MEAN over
+    /// the runs, which is what every surface ranks and shows.
     pub field: &'static str,
+    /// The same quantity on ONE run, for picking the benchmark fight.
+    #[serde(skip)]
+    pub run: RunStat,
     /// Is that field a TOTAL over the engagement, to be turned into a rate?
     /// `score` is kill progress over the whole fight; `dps` is already a rate.
     pub per_minute: bool,
@@ -37,6 +62,7 @@ pub const ALL: &[MetricDef] = &[
     MetricDef {
         id: "kpm",
         field: "score",
+        run: RunStat::KillProgress,
         per_minute: true,
         label: "KPM",
         hint: "kills per minute",
@@ -44,6 +70,7 @@ pub const ALL: &[MetricDef] = &[
     MetricDef {
         id: "dps",
         field: "dps",
+        run: RunStat::EffectiveDamage,
         per_minute: false,
         label: "DPS",
         hint: "damage per second",

@@ -123,7 +123,7 @@ deals **408,817**, so a log that rode along would be free on most builds and
 megabytes on exactly the ones a player is most likely to be arguing about.
 Asking separately costs ONE re-run — about a millisecond single-target — and
 keeps "a measurement costs its summary" intact. `/api/simulate` answers with
-the median run's RNG state as two u32 halves, which is the handle that makes
+the benchmark fight's RNG state as two u32 halves, which is the handle that makes
 the log the report's own fight.
 
 ## A long record is paged, and it can leave this window

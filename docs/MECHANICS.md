@@ -2763,7 +2763,7 @@ Worth stating because each is a real ceiling nobody reaches:
 
 Every number above comes from `/api/simulate` with `replay: true` on the board's
 own row: `damage_sources` for the shares, `dstacks` for the ladders, `stacks`
-for the arcane's own uptime, and `score_mean` for the totals. Nothing here is
+for the arcane's own uptime, and `score` for the totals. Nothing here is
 hand-derived except the two published ladder formulas.
 
 ## 10b. THE ORIGINAL BASE — what a GunCO term computes on

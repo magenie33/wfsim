@@ -22,6 +22,7 @@ use wfsim_engine::scaling;
 
 fn dual_toxocyst_baseline() -> DummyParams {
     DummyParams {
+        sample_by: wfsim_engine::metrics::RunStat::KillProgress,
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
         combo_script: Vec::new(),

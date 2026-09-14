@@ -11742,11 +11742,7 @@ function renderTools() {
 // PAIRED randomness is what makes a tenth of the run count usable.
 /// ONE MEASUREMENT, and how far it can be from the truth: `{ v, se }`.
 ///
-/// THE MEAN, NOT THE MEDIAN RUN. `score`/`dps` are the median engagement, one
-/// run however many were paid for: measured here the median moved 9.8% between
-/// seeds at 10 runs where the mean moved 5.9%, and the mean is the statistic
-/// the OPTIMIZER ranks (`mean_kill_progress`).
-///
+/// `score`/`dps` are MEANS over the runs, the statistic every surface ranks.
 /// `se` is the server's own spread over those runs (sigma / sqrt(runs)).
 /// Estimating it by re-running the reference at another seed takes ONE sample
 /// of a distribution, which on identical inputs answers anywhere from 0.7% to
@@ -11755,8 +11751,8 @@ const readGain = (r, useKills) => {
   if (!r || !r.ok) return null;
   const runs = (useKills ? r.score_runs : r.dps_runs) || [];
   return useKills
-    ? { v: r.score_mean ?? r.score ?? r.kills ?? 0, se: r.score_se ?? 0, runs }
-    : { v: r.dps_mean ?? r.dps ?? 0, se: r.dps_se ?? 0, runs };
+    ? { v: r.score ?? 0, se: r.score_se ?? 0, runs }
+    : { v: r.dps ?? 0, se: r.dps_se ?? 0, runs };
 };
 
 /// What `cand` is worth against `ref`, with the uncertainty of the COMPARISON.
@@ -19158,14 +19154,15 @@ function renderResults(r, testedAt) {
   })();
   const heroSub = alt +
     `${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
-    ? `${n0(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
+    ? `${n2(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
     : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`)
     + spread;
   // No Forma/capacity here — the simulator reports EFFECTS only; build
   // legality is the Builder's business.
-  // `k` names the replay series that re-reads this cell. Without it a replay
-  // could only move a cursor; with it the whole row is a function of time.
-  const kpi = (l, v, k) => `<div class="kpi"><div class="kv"${k ? ` data-kpi="${k}"` : ""}>${v}</div><div class="kl">${tr(l)}</div></div>`;
+  // `k` names the replay series that re-reads this cell, and only a cell of the
+  // BENCHMARK FIGHT carries it (`live`): the row of means is every run at once,
+  // and a replay of one of them has no business rewriting it.
+  const kpi = (l, v, k, live) => `<div class="kpi"><div class="kv"${live && k ? ` data-kpi="${k}"` : ""}>${v}</div><div class="kl">${tr(l)}</div></div>`;
   // KPI row: damage pace + crit feel + HANDLING feel (shots, reloads,
   // transforms). In THIS product "DPS" always means
   // EFFECTIVE dps — what the target actually lost, armor and on-target
@@ -19302,7 +19299,7 @@ function renderResults(r, testedAt) {
   const tlGrid = [0.25, 0.5, 0.75].map((f) =>
     `<line class="tl-grid" x1="${PADL}" x2="${W - PADR}" y1="${py(tlMax * f)}" y2="${py(tlMax * f)}"/>`).join("");
   const chart = tl.length ? `
-      <h3>${tr("DPS over time")} <span class="sim-hint">${tr("median run")}</span></h3>
+      <h3>${tr("DPS over time")} <span class="sim-hint">${tr("benchmark fight")}</span></h3>
       <div class="tl-wrap">
         <svg id="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           ${tlGrid}
@@ -19316,6 +19313,29 @@ function renderResults(r, testedAt) {
         <div id="tl-tip" class="tl-tip" hidden></div>
       </div>` : "";
   const { bar: replayBar, curves: replayCurves } = replayMarkup(r);
+  // THE BENCHMARK FIGHT — one of the runs, the middle one by the metric
+  // (`Summary::median_run`). Everything above it is a MEAN and holds still;
+  // everything in its block is that one run and replays. Its figures differ
+  // from the means, so the block states both numbers side by side.
+  const sm = r.sample;
+  const rpk = (r.replay && r.replay.kpi) || null;
+  const lastOf = (s) => (s && s.length ? s[s.length - 1] : 0);
+  const sampleKpis = rpk ? [
+    kpi("DPS", n0(lastOf(rpk.dps)), "dps", true),
+    kpi("Crit tier", lastOf(rpk.crit_tier).toFixed(2), "crit_tier", true),
+    kpi("Pellets crit", pc(lastOf(rpk.crit_rate)), "crit_rate", true),
+    kpi("Orange+", pc(lastOf(rpk.big_crit_rate)), "big_crit_rate", true),
+    kpi("Procs", n0(lastOf(rpk.procs)), "procs", true),
+    kpi("Shots", n0(lastOf(rpk.shots)), "shots", true),
+    kpi("Reloads", n0(lastOf(rpk.reloads)), "reloads", true),
+    kpi("Transforms", n0(lastOf(rpk.transforms)), "transforms", true),
+  ].join("") : "";
+  const benchHead = sm ? `<div class="bench-head">
+      <h3>${escHtml(tr("Benchmark fight"))}</h3>
+      <div class="bench-num"><span data-hero="${met.id}">${fmtScore(metricValue(met, { ...sm, duration: r.duration }))}<span class="hero-unit">${heroUnit}</span></span>
+        <span class="sim-hint">${escHtml(trF("average {v}", { v: `${heroNum} ${heroUnit}` }))}</span></div>
+      <div class="sim-hint">${escHtml(trF("one of the {runs} runs, the middle one when ranked by {unit} — its numbers differ from the average", { runs: n0(r.runs), unit: heroUnit }))}</div>
+    </div>` : "";
   // THE `Detail` TABLE IS GONE. Five of its six rows were the fight restated —
   // the target, its pools, its armour, the shot count — each of which the
   // scenario panel above states while it is being CHOSEN, which is when a
@@ -19346,12 +19366,17 @@ function renderResults(r, testedAt) {
          act on. Its own block, above the thing it is not part of. -->
     <div id="sim-board-outcome" class="board-outcome"></div>
     <div class="results">
-      <div class="hero"><div><div class="hero-num" data-hero="${met.id}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
-      ${replayBar}
+      <div class="hero"><div><div class="hero-label">${escHtml(trF("Average of {runs} runs", { runs: n0(r.runs) }))}</div><div class="hero-num">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       <div class="kpi-row">${kpis}</div>
-      ${foldBlock("meter", tr("Damage by source"), "",
-        `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
-      ${speedMarkup(r)}${recordMarkup(r)}${chart}${replayCurves}
+      ${speedMarkup(r)}
+      <div class="bench">
+        ${benchHead}
+        ${replayBar}
+        ${sampleKpis ? `<div class="kpi-row">${sampleKpis}</div>` : ""}
+        ${foldBlock("meter", tr("Damage by source"), "",
+          `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
+        ${recordMarkup(r)}${chart}${replayCurves}
+      </div>
       ${ask}
     </div>`;
   // WHAT BECAME OF THIS RUN, drawn on EVERY result — a stored one re-rendered
@@ -21086,11 +21111,11 @@ async function verifyOptRows(r) {
     let s = null;
     try { s = await simulateFleet(res.replay); } catch (_) { s = null; }
     if (token !== optVerifyToken) return;
-    if (!s || s.ok === false || s.score_mean == null) {
+    if (!s || s.ok === false || s.score == null) {
       if (mark) { mark.className = "opt-repro failed"; mark.textContent = "!"; mark.title = tr("the simulator refused this build — see the build's own card"); }
       continue;
     }
-    const shown = kpm(s.score_mean, r.duration);
+    const shown = kpm(s.score, r.duration);
     const search = Number(el.dataset.search) || 0;
     // FOUR SIGMA OF THE TWO COMBINED. Both are means of independent runs, so
     // their difference has the two standard errors added in quadrature — there

@@ -246,13 +246,14 @@ function of `(seed, index)`. THE MERGE IS IN RUST, so there is one
 implementation of the arithmetic: the page schedules and collects,
 `simulate_merged` computes every field. A `Shard` carries SUMS rather than
 runs — 24 KB at a thousand runs against 8 MB — plus one
-`(effective, rng_state)` per run, because the MEDIAN engagement is what the
-panel shows; the merge ranks those and REPLAYS the winner.
+`(value, rng_state)` per run, because the BENCHMARK FIGHT — the middle run by
+the scenario's metric — is what the replay shows; the merge ranks those and
+REPLAYS the winner.
 
 **A JSON NUMBER IN JAVASCRIPT IS A DOUBLE**: the 64-bit RNG state travels as
 two `u32` halves (`RunKey`), or it comes back ROUNDED and the merge replays a
-fight that never happened — every mean matching to the last bit while `score`,
-the one figure taken from the median run, disagrees. Asserted three times: on
+fight that never happened — every mean matching to the last bit while only the
+benchmark fight's own figures (`sample`) disagree. Asserted three times: on
 the summary (`eight_shards_are_one_run`), on the whole response
 (`a_fleet_of_shards_reports_what_one_worker_reports`), and ON THE WIRE in
 `check_run_counts`, the only one that could catch the rounding.
