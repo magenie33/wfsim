@@ -6,7 +6,11 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Antiques/ProcChanceSchool
 # the wiki's table at max rank — Rank / Status Chance / Status Damage: 5 || +60% || 15%
 description: "+60% Amp Status Chance\n+15% Status Damage for each Vazarin School Mod"
-bonus_per: vazarin
+bonus:
+  per: vazarin
+  value: 15
+  unit: "%"
+  stat: "Status Damage"
 
 source:
   url: https://wiki.warframe.com/w/Sil-Tabol

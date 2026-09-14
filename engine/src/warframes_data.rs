@@ -299,14 +299,71 @@ pub struct ArtifactMod {
     pub max_rank: u32,
     #[serde(default)]
     pub internal_name: Option<String>,
-    /// The card at max rank.
+    /// The card at max rank; a card with a `bonus` states it on the last line.
     pub description: String,
-    /// What the card's second line counts: `unique_school` ("for each Mod from a
-    /// unique School") or a school id ("for each Unairu School Mod").
     #[serde(default)]
-    pub bonus_per: Option<String>,
+    pub bonus: Option<ArtifactBonus>,
     #[serde(default, rename = "source", deserialize_with = "source_url")]
     pub url: Option<String>,
+}
+
+/// A card's last line: `value` `unit` `stat` for each thing `per` counts.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ArtifactBonus {
+    /// `unique_school` ("for each Mod from a unique School") or a school id
+    /// ("for each Unairu School Mod").
+    pub per: String,
+    pub value: f64,
+    #[serde(default)]
+    pub unit: String,
+    pub stat: String,
+}
+
+impl ArtifactMod {
+    /// How many times the bonus pays with `seated` on the artifact. A school id
+    /// counts that school's cards; `unique_school` counts each OTHER school
+    /// seated once, never the card's own (MEASUREMENTS M93).
+    pub fn bonus_count(&self, seated: &[&ArtifactMod]) -> u32 {
+        let Some(b) = &self.bonus else { return 0 };
+        if b.per == "unique_school" {
+            let mut schools: Vec<&str> =
+                seated.iter().map(|m| m.school.as_str()).filter(|s| *s != self.school).collect();
+            schools.sort_unstable();
+            schools.dedup();
+            schools.len() as u32
+        } else {
+            seated.iter().filter(|m| m.school == b.per).count() as u32
+        }
+    }
+
+    /// The card with `seated` on the artifact: its last line is the bonus paid out.
+    pub fn card_with(&self, seated: &[&ArtifactMod]) -> Vec<String> {
+        let mut lines: Vec<String> = self.description.lines().map(str::to_string).collect();
+        if let (Some(b), Some(last)) = (&self.bonus, lines.last_mut()) {
+            let total = b.value * f64::from(self.bonus_count(seated));
+            *last = format!("+{total}{} {}", b.unit, b.stat);
+        }
+        lines
+    }
+}
+
+/// Why an artifact cannot hold `a`, one reason per problem.
+pub fn artifact_refusals(a: &ArtifactPick) -> Vec<String> {
+    let mut out = Vec::new();
+    if a.mods.len() > ARTIFACT_MOD_SLOTS {
+        out.push(format!("an artifact has {ARTIFACT_MOD_SLOTS} mod slots, not {}", a.mods.len()));
+    }
+    for (i, id) in a.mods.iter().enumerate() {
+        if artifact_mod_by_id(id).is_none() {
+            out.push(format!("unknown artifact mod: {id}"));
+        } else if a.mods[..i].contains(id) {
+            out.push(format!("artifact mod seated twice: {id}"));
+        }
+    }
+    if let Some(id) = a.arcane.as_deref().filter(|id| artifact_arcane_by_id(id).is_none()) {
+        out.push(format!("unknown artifact arcane: {id}"));
+    }
+    out
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1350,20 +1407,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         None => None,
     };
     if let Some((_, o)) = school {
-        let seated = &o.artifact.mods;
-        if seated.len() > ARTIFACT_MOD_SLOTS {
-            refused.push(format!("an artifact has {ARTIFACT_MOD_SLOTS} mod slots, not {}", seated.len()));
-        }
-        for (i, id) in seated.iter().enumerate() {
-            if artifact_mod_by_id(id).is_none() {
-                refused.push(format!("unknown artifact mod: {id}"));
-            } else if seated[..i].contains(id) {
-                refused.push(format!("artifact mod seated twice: {id}"));
-            }
-        }
-        if let Some(id) = o.artifact.arcane.as_deref().filter(|id| artifact_arcane_by_id(id).is_none()) {
-            refused.push(format!("unknown artifact arcane: {id}"));
-        }
+        refused.extend(artifact_refusals(&o.artifact));
     }
     if let Some((s, o)) = school {
         for n in s.nodes.iter().filter(|n| n.always || o.assumed.contains(&n.id)) {
@@ -1807,8 +1851,9 @@ mod tests {
         }
         for m in artifact_mods() {
             assert!(focus_school(&m.school).is_some(), "{}: school {}", m.id, m.school);
-            if let Some(per) = m.bonus_per.as_deref() {
-                assert!(per == "unique_school" || focus_school(per).is_some(), "{}: bonus_per {per}", m.id);
+            if let Some(b) = &m.bonus {
+                assert!(b.per == "unique_school" || focus_school(&b.per).is_some(), "{}: bonus per {}", m.id, b.per);
+                assert_eq!(m.description.lines().count(), 2, "{}: the bonus is the second line", m.id);
             }
         }
 
@@ -1829,6 +1874,17 @@ mod tests {
         assert!(resolve(&b).unwrap().refused.iter().any(|r| r.contains("5 mod slots")));
         b.operator = Some(pick(&[], Some("arcane_grace")));
         assert!(resolve(&b).unwrap().refused.iter().any(|r| r.contains("unknown artifact arcane")));
+
+        // M93: two Madurai, two Vazarin, one Naramon.
+        let seated: Vec<&ArtifactMod> = ["ubri_kaneph", "sil_tabol", "da_ren", "metem_hakh", "omn_evi"]
+            .iter()
+            .map(|id| artifact_mod_by_id(id).unwrap())
+            .collect();
+        let card = |id: &str| artifact_mod_by_id(id).unwrap().card_with(&seated);
+        assert_eq!(card("ubri_kaneph"), ["+60% Damage to Amps", "+20% Amp Damage"], "Vazarin and Naramon, not Madurai");
+        assert_eq!(card("metem_hakh")[1], "+30% Operator Health & Shields", "Madurai and Naramon, not Vazarin");
+        assert_eq!(card("sil_tabol")[1], "+30% Status Damage", "each Vazarin card");
+        assert_eq!(card("da_ren")[1], "+0 Operator Shields", "no Unairu card");
     }
 
     /// W`Shield`'s formula at Valkyr's 185, Catalyzing Shields' x0.20 and 1.33 s,

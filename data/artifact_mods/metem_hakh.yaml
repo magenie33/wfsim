@@ -6,7 +6,11 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Antiques/HealthAndShieldSchools
 # the wiki's table at max rank — Rank / Health / Shields / Bonus Health / Bonus Shields: 5 || +30% || +30% || +15% || +15%
 description: "+30% Operator Health & Shields\n+15% bonus for each Mod from a unique School"
-bonus_per: unique_school
+bonus:
+  per: unique_school
+  value: 15
+  unit: "%"
+  stat: "Operator Health & Shields"
 
 source:
   url: https://wiki.warframe.com/w/Metem-Hakh

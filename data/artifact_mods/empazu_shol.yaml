@@ -6,7 +6,11 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Antiques/UltimateInitialChargeSchools
 # the wiki's table at max rank — Rank / Initial Charge / Bonus Initial Charge: 5 || +12% || +2%
 description: "+12% Tauron Strike Initial Charge.\n+2% bonus for each Mod from a unique School"
-bonus_per: unique_school
+bonus:
+  per: unique_school
+  value: 2
+  unit: "%"
+  stat: "Tauron Strike Initial Charge"
 
 source:
   url: https://wiki.warframe.com/w/Empazu-Shol

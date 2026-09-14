@@ -164,7 +164,7 @@ pub fn warframe_catalog_json() -> Value {
             "school": m.school,
             "rarity": m.rarity,
             "max_rank": m.max_rank,
-            "bonus_per": m.bonus_per,
+            "bonus": m.bonus.as_ref().map(|b| json!({ "per": b.per })),
             "image": a.artifact_mods.get(&m.id),
             "effects": m.description.lines().collect::<Vec<_>>(),
             "url": m.url,
@@ -212,6 +212,26 @@ pub fn warframe_catalog_json() -> Value {
             "tags": tags(&x.tags),
             "url": x.url,
         })).collect::<Vec<_>>(),
+    })
+}
+
+/// `/api/operator/panel`: the Operator page's artifact, each seated card with its
+/// bonus line paid out for what is seated beside it.
+pub fn operator_panel_json(v: &Value) -> Value {
+    use wfsim_engine::warframes_data as wf;
+    let pick: wf::ArtifactPick = match serde_json::from_value(v.get("artifact").cloned().unwrap_or_else(|| json!({}))) {
+        Ok(p) => p,
+        Err(e) => return err_json(format!("bad artifact: {e}")),
+    };
+    let seated: Vec<&wf::ArtifactMod> = pick.mods.iter().filter_map(|id| wf::artifact_mod_by_id(id)).collect();
+    json!({
+        "ok": true,
+        "mods": seated.iter().map(|m| json!({
+            "id": m.id,
+            "lines": m.card_with(&seated),
+            "count": m.bonus_count(&seated),
+        })).collect::<Vec<_>>(),
+        "refused": wf::artifact_refusals(&pick),
     })
 }
 

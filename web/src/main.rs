@@ -25,7 +25,7 @@ use wfsim_webapi::{
     run_optimize,
     targets_json,
     simulate_json,
-    warframe_catalog_json, warframe_panel_json,
+    warframe_catalog_json, warframe_panel_json, operator_panel_json,
 };
 
 // ---- Embedded static assets (self-contained binary) --------------------
@@ -314,6 +314,10 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         ("POST", "/api/warframe/panel") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &warframe_panel_json(&value))
+        }
+        ("POST", "/api/operator/panel") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &operator_panel_json(&value))
         }
         ("POST", "/api/pairings") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);

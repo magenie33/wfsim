@@ -22124,21 +22124,31 @@ function renderOperator() {
     opMarkDirty();
   }));
   renderOpArtifact();
+  refreshOpArtifact();
 }
 
 // ---- the Tektolyst Artifact ----
 const opSchoolChip = (id) => `<span class="exchip">${escHtml((focusSchool(id) || {}).name || id)}</span>`;
 
-/// WHAT A CARD'S BONUS LINE COUNTS, as seated — never added into a total: no page
-/// says whether the card's own school is one of the "unique" ones.
+/// Each seated card as `/api/operator/panel` pays it out, by id. Until it answers
+/// a card shows its catalogue text.
+let opPanel = {};
+let opPanelSeq = 0;
+async function refreshOpArtifact() {
+  const seq = ++opPanelSeq;
+  const r = await api("/api/operator/panel", { artifact: { mods: op.artifact.mods.filter(Boolean), arcane: op.artifact.arcane } });
+  if (seq !== opPanelSeq || !r || !r.ok) return;
+  opPanel = Object.fromEntries(r.mods.map((m) => [m.id, m]));
+  renderOpArtifact();
+}
+
 function opBonusNote(m) {
-  if (!m.bonus_per) return "";
-  const seated = op.artifact.mods.map(opAMod).filter(Boolean);
-  const text = m.bonus_per === "unique_school"
-    ? tr("schools among the seated mods: {n}").replace("{n}", new Set(seated.map((x) => x.school)).size)
-    : tr("{school} mods seated: {n}").replace("{school}", (focusSchool(m.bonus_per) || {}).name || m.bonus_per)
-      .replace("{n}", seated.filter((x) => x.school === m.bonus_per).length);
-  return `<div class="op-when">${escHtml(text)}</div>`;
+  const p = opPanel[m.id];
+  if (!m.bonus || !p) return "";
+  const text = m.bonus.per === "unique_school"
+    ? tr("other schools seated: {n}")
+    : tr("{school} mods seated: {n}").replace("{school}", (focusSchool(m.bonus.per) || {}).name || m.bonus.per);
+  return `<div class="op-when">${escHtml(text.replace("{n}", p.count))}</div>`;
 }
 
 function opCardEl(kind, i) {
@@ -22153,7 +22163,8 @@ function opCardEl(kind, i) {
   el.className = `slot filled${kind === "mod" ? "" : " arc"} rar-${m.rarity}`;
   el.innerHTML = imgTag(IMG(m.image), "mod")
     + `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${kind === "mod" ? " " + opSchoolChip(m.school) : ""}</div>`
-    + `${effLines(m.effects.map(escHtml))}${kind === "mod" ? opBonusNote(m) : ""}</div>`
+    + `${effLines((kind === "mod" && opPanel[m.id] ? opPanel[m.id].lines : m.effects).map(escHtml))}`
+    + `${kind === "mod" ? opBonusNote(m) : ""}</div>`
     + `<button class="dots" title="options">⋯</button>`;
   el.querySelector(".dots").addEventListener("click", (e) => {
     e.stopPropagation();
@@ -22184,6 +22195,7 @@ function renderOpArtifact() {
 
 function opArtifactChanged() {
   renderOpArtifact();
+  refreshOpArtifact();
   opMarkDirty();
 }
 

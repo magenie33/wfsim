@@ -6,7 +6,11 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Antiques/ShieldSchool
 # the wiki's table at max rank — Rank / Shield / Bonus Shield: 5 || +300 || +30
 description: "+300 Operator Shields\n+30 bonus for each Unairu School Mod"
-bonus_per: unairu
+bonus:
+  per: unairu
+  value: 30
+  unit: ""
+  stat: "Operator Shields"
 
 source:
   url: https://wiki.warframe.com/w/Da-Ren
