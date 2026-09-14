@@ -25,6 +25,12 @@ max_rank: 30
 # grant; each entry states the stance's combo as its own script
 # (`Module:Stances/data`, `Hysteria`).
 fixed_stance: hysteria
+# HELD BY VALKYR AND NOTHING ELSE — Hysteria summons it — and renamed in her
+# Prime's hands: "On Valkyr Prime, the claws are named Valkyr Prime Talons"
+# (W`Valkyr_Talons`).
+wielders: [valkyr_prime, valkyr]
+wielder_names:
+  valkyr_prime: Valkyr Prime Talons
 # EXALTED: the module's CompatibilityTags `POWER_WEAPON`, so the cards DE tags
 # incompatible with it are refused (`mods_data::pool_for_build`).
 exalted: true
@@ -51,7 +57,6 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "THE DAMAGE IS HYSTERIA'S AT 100% ABILITY STRENGTH. Every swing, slide and slam number on the page carries the Strength icon, so a Valkyr build with more strength deals proportionally more than this reports"
   - "Hysteria drains 5 energy a second while the claws are out; energy is not modelled, so they are held for the whole engagement"
-  - "RAGE, Valkyr's passive — +3% melee damage per hit and +12% per kill, up to +300%, additive with Pressure Point — is a Warframe passive and is not modelled, so a Valkyr build reads LOW here"
   - "every hit restores 100 health, and nothing in this arena damages the Tenno"
   - "one attack input's own animation length is not published anywhere: the wiki gives a combo's total duration at 1.0x attack speed and one entry per input, so the combo's DURATION is exact and the split between its INPUTS is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
 

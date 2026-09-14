@@ -917,9 +917,26 @@ pub struct WarframeDef {
     pub passive: String,
     /// What the passive grants, as tags.
     pub passive_tags: Vec<TagGrant>,
+    /// A passive that is a meter on melee damage, simulated (`crate::rage`).
+    pub rage: Option<RageSpec>,
     /// Ability ids in slot order.
     pub abilities: Vec<String>,
     pub url: Option<String>,
+}
+
+/// RAGE's numbers, as the frame's file states them — `crate::rage` runs them.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RageSpec {
+    /// Shares of base damage: per melee hit landed, per melee kill, and the cap.
+    pub per_hit: f64,
+    pub per_kill: f64,
+    pub cap: f64,
+    /// Seconds without building before the decay starts.
+    pub idle_seconds: f64,
+    /// λ of the decay curve, and the slope of its linear tail in meter per second.
+    pub decay_rate: f64,
+    pub tail_per_second: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -940,6 +957,8 @@ struct RawFrame {
     passive: String,
     #[serde(default)]
     passive_tags: Vec<RawTag>,
+    #[serde(default)]
+    rage: Option<RageSpec>,
     abilities: Vec<String>,
     #[serde(default)]
     source: SourceFile,
@@ -967,6 +986,7 @@ pub fn warframes() -> &'static [WarframeDef] {
                     exilus_polarity: r.exilus_polarity,
                     passive_tags: tags_of(p, &r.passive_tags),
                     passive: r.passive,
+                    rage: r.rage,
                     abilities: r.abilities,
                     url: r.source.url,
                 }

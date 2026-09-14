@@ -1028,6 +1028,11 @@ notes:
     TWO WEAPONS MODEL: base and Incarnon forms are separate
     entries linked by a transform group. The Incarnon form exists only once the
     Braton Incarnon Genesis is installed and its tier-1 evolution taken.
+  valkyr_rage: |
+    RAGE, W`Valkyr/Abilities/Passive`: "Melee attack: 3% per hit", "Melee kill
+    or assisted kill: 12%", "up to 300% additional melee damage bonus", "After
+    not building Rage for 5 seconds", "λ = 0.016", "e^{-λn} - 0.001(t - n)".
+    A Finisher's 27% is in no loop.
   verbatim_braton_incarnon_genesis: |
     VERBATIM (Braton_Incarnon_Genesis, EVO2, the row's effect cell and its note):
       * Increase Base Damage by '''+X'''.

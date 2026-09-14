@@ -36,7 +36,10 @@
 # with the chosen frame's stats when frames land; do not build anything that
 # treats 1 as meaningful.
 id: tenno
-name: Tenno
+# THE PROTOTYPE: the wielder a weapon has when its build links none, and the one
+# every ruler scores in. The id stays `tenno` — a wire and stored-state key —
+# while the name says what it is.
+name: Prototype
 
 # THE WORST MAX-RANK FRAME THAT DOES NOT EXIST. Every
 # field is the LOWEST value any released Warframe has at rank 30, taken stat by

@@ -683,6 +683,21 @@ lives at its id rather than at nothing (`urlSlug`, and `url_slug` in
 
 ---
 
+## The wielder is the build's; external bonuses are the fight's
+
+**A WEAPON BUILD NAMES WHO HOLDS IT** — the Wielder block, first in the builder:
+the Prototype, a modelled frame with no build, or one of the Warframe page's
+saved builds, linked by its preset `id` (docs/WARFRAMES.md §A weapon's wielder).
+A weapon a frame summons offers only its frames, and its title follows the frame
+("Valkyr Prime Talons").
+
+**THE FIGHT'S "EXTERNAL BONUSES" SECTION IS WHAT OTHERS HAND THE WIELDER**: its
+state, the squad's auras, the fight's own stat bonuses — and a tick-and-number
+override per stat (health, shields, armor, energy, sprint). Unticked, the stat is
+the wielder's, as the server resolved it on the last panel (`panelWielder`);
+ticked, the typed number replaces it. There is no frame picker and no shard
+socket in a scenario any more: both are the linked Warframe build's.
+
 ## Planned
 
 - **Surface each attack part's CO anomalies in the builder panel**. Condition Overload is full of per-entry quirks that no rule

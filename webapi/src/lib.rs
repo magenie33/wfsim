@@ -593,36 +593,62 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
 ///
 /// A SENTINEL weapon is fired by the companion, which picks its own targets
 /// and does not aim for the head — so 0, not the player's 100. It stays a knob: this is the default, not a ceiling.
-/// The fight's TENNO — who is holding this weapon, and what they are doing.
+/// THE WIELDER, before anything the fight adds: the Warframe build the weapon's
+/// build links (`wielder`), the first frame a weapon is locked to when that link
+/// names no frame it allows (`WeaponSpec::wielders`), or the Prototype. Its stats
+/// are the Warframe module's resolve of that build, and its archon shards and
+/// own aura come with it.
 ///
-/// ONE builder for both the simulator and the optimizer, on purpose: the
-/// optimizer must score builds under the player the sim will replay them with,
-/// and two readers of the same JSON is how that drifts a field at a time. The neutral entry in `data/tenno/` is the starting
-/// point and the request overrides what it knows, so a field nobody sent keeps
-/// its documented default instead of a zero invented here.
-///
-/// A SENTINEL WEAPON IS ALWAYS AIMING. What
-/// it cannot do is trigger the on-HEADSHOT half of an aiming mod, because it
-/// never aims at the head — which the sim already gets right from the other
-/// end: `default_headshot_pct` is 0 for a sentinel, so no headshot lands and
-/// no on-headshot buff fires. So the state is on, the triggers stay dead, and
-/// the request cannot say otherwise.
-fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
-    // WHOEVER IS HOLDING THIS GUN. A companion weapon is carried by a SENTINEL
-    // and the two rosters have different floors — 450/130/80 against a
-    // Warframe's 250/0/105 — so starting from the Warframe told a reader that
-    // their Artax had a Warframe's armor.
-    //
-    // ONLY THE STAT BLOCK SWAPS. The Warframe is still in the fight behind the
-    // companion, bringing the aura and the archon shards, and the auras a
-    // companion weapon can take are the proof: `rifle_amp` reaches an Artax and
-    // an aura is something a Warframe wears. Everything below this line —
-    // state, overrides, squad — is read the same way for both.
+/// A COMPANION WEAPON IS CARRIED BY A SENTINEL, whose stat block this keeps —
+/// 450/130/80 against a Warframe's 250/0/105 — while the Warframe behind it
+/// still brings the shards and the aura: `rifle_amp` reaches an Artax.
+fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
+    use wfsim_engine::warframes_data as wf;
     let mut t = if info.sentinel {
         wfsim_engine::tenno_data::sentinel_wielder().clone()
     } else {
         wfsim_engine::tenno_data::default_tenno().clone()
     };
+    let allowed: &[String] = wfsim_engine::weapons_data::spec(&info.id).map_or(&[], |s| s.wielders.as_slice());
+    let asked: Option<wf::Build> = v.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok());
+    let build = match asked {
+        Some(b) if allowed.is_empty() || allowed.contains(&b.frame) => Some(b),
+        _ => allowed.first().map(|f| wf::Build { frame: f.clone(), ..Default::default() }),
+    };
+    let Some(build) = build else { return t };
+    let Ok(r) = wf::resolve(&build) else { return t };
+    if !info.sentinel {
+        let stat = |s: wf::FrameStat| r.stat(s).value;
+        t.id = r.frame.id.clone();
+        t.name = r.frame.name.clone();
+        t.health = stat(wf::FrameStat::Health);
+        t.shield = stat(wf::FrameStat::Shield);
+        t.armor = stat(wf::FrameStat::Armor);
+        t.energy = stat(wf::FrameStat::Energy);
+        t.sprint = stat(wf::FrameStat::SprintSpeed);
+    }
+    // FIVE SOCKETS, and a sixth is a typo rather than a build.
+    t.shards = build.shards.iter().take(5).cloned().collect();
+    if let Some(a) = build.aura.as_ref().filter(|a| wfsim_engine::auras_data::by_id(&a.id).is_some()) {
+        t.auras.push(wfsim_engine::auras_data::AuraPick { id: a.id.clone(), count: 1 });
+    }
+    t
+}
+
+/// The fight's TENNO — the wielder ([`wielder_from`]), then what the fight adds:
+/// the state, its own stat bonuses, the squad's auras, and last the ticked
+/// overrides, which win over every one of them.
+///
+/// ONE builder for both the simulator and the optimizer, on purpose: the
+/// optimizer must score builds under the player the sim will replay them with,
+/// and two readers of the same JSON is how that drifts a field at a time.
+///
+/// A SENTINEL WEAPON IS ALWAYS AIMING. What it cannot do is trigger the
+/// on-HEADSHOT half of an aiming mod: `default_headshot_pct` is 0 for a
+/// sentinel, so no headshot lands and no on-headshot buff fires. So the state is
+/// on, the triggers stay dead, and the request cannot say otherwise.
+fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
+    let mut t = wielder_from(v, info);
     t.state.aiming = info.sentinel || get_bool(v, "aiming", true);
     t.state.invisible = get_bool(v, "invisible", t.state.invisible);
     t.state.airborne = get_bool(v, "airborne", t.state.airborne);
@@ -667,50 +693,22 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
             ammo_efficiency: g("ammo_efficiency"),
         };
     }
-    // WHAT THE WARFRAME BRINGS. Auras are the SQUAD's and shards are the
-    // FRAME's, and both are on the Tenno rather than in the build for the same
-    // reason `data/abilities/` is: two players with the same gun and different
-    // squads are two fights. That placement is also what carries them into the
-    // optimizer for free — and what keeps them off the BOARD, which is scored
-    // under the neutral player.
+    // THE SQUAD'S AURAS, beside the wielder's own. On the fight rather than the
+    // build for the reason `data/abilities/` is: two players with the same gun
+    // and different squads are two fights — and it is what keeps them off the
+    // BOARD. An aura the wielder already wears is not counted twice.
     if let Some(a) = v.get("auras").and_then(Value::as_array) {
-        t.auras = a
-            .iter()
-            .filter_map(|x| serde_json::from_value(x.clone()).ok())
-            .collect();
+        for p in a.iter().filter_map(|x| serde_json::from_value::<wfsim_engine::auras_data::AuraPick>(x.clone()).ok()) {
+            if !t.auras.iter().any(|w| w.id == p.id) {
+                t.auras.push(p);
+            }
+        }
     }
-    if let Some(a) = v.get("shards").and_then(Value::as_array) {
-        // FIVE SOCKETS, and a sixth is a typo rather than a build.
-        t.shards = a
-            .iter()
-            .filter_map(|x| serde_json::from_value(x.clone()).ok())
-            .take(5)
-            .collect();
-    }
-    // The WARFRAME behind the gun. Armor and energy are the two stats a weapon
-    // arcane reads (Primary Bulwark, Primary Overcharge); 0 means "no frame
-    // chosen", which is what the neutral Tenno says and what makes those
-    // arcanes contribute nothing until you say otherwise.
-    // A FRAME FILLS THEM FIRST, and a typed number still wins. Picking one
-    // sets armor, max energy and sprint speed together — which is what makes
-    // every "With Sprint Speed 1.2 or Higher" / "With Armor Over 450" perk
-    // reachable at all, sprint especially: the panel had no field for it.
-    //
-    // The override is kept rather than replaced because the roster is UNMODDED
-    // (data/frames.yaml): Steel Fiber and Primed Flow are not modelled, and the
-    // one gate no frame can open — "With Energy Max Over 700", against a
-    // highest maxed pool of 300 — is only askable by typing.
-    if let Some(f) = v
-        .get("frame")
-        .and_then(Value::as_str)
-        .and_then(wfsim_engine::tenno_data::frame)
-    {
-        t = t.with_frame(f);
-    }
-    // HEALTH JOINS ARMOR AND ENERGY, because a mod reads it: the Basmu's
-    // Dreadful Killshot pays "+20% Damage and Status Chance for every 75
-    // Warframe Health", which a player can only steer if the wire can set it.
+    // THE OVERRIDES: a ticked stat replaces the wielder's, whatever built it —
+    // the one gate no frame can open ("With Energy Max Over 700") is only
+    // askable by typing. The Basmu's Dreadful Killshot reads health.
     t.health = get_f64(v, "wf_health", t.health).clamp(0.0, 100_000.0);
+    t.shield = get_f64(v, "wf_shield", t.shield).clamp(0.0, 100_000.0);
     t.armor = get_f64(v, "wf_armor", t.armor).clamp(0.0, 100_000.0);
     t.energy = get_f64(v, "wf_energy", t.energy).clamp(0.0, 100_000.0);
     t.sprint = get_f64(v, "wf_sprint", t.sprint).clamp(0.0, 10.0);
@@ -1746,6 +1744,12 @@ pub fn meta_json() -> Value {
                 // no removal and no polarity for its slot.
                 "fixed_stance": wfsim_engine::weapons_data::spec(&w.id)
                     .and_then(|s| s.fixed_stance.clone()),
+                // WHO MAY HOLD IT, and what it is called in whose hands — empty
+                // on a weapon anyone carries.
+                "wielders": wfsim_engine::weapons_data::spec(&w.id)
+                    .map(|s| s.wielders.clone()).unwrap_or_default(),
+                "wielder_names": wfsim_engine::weapons_data::spec(&w.id)
+                    .map(|s| s.wielder_names.clone()).unwrap_or_default(),
                 "forms": w.forms.iter()
                     .map(|(id, name, def)| {
                         // THE ENTRY BEHIND THIS FORM, once. Everything below is
@@ -3287,6 +3291,23 @@ fn enumerate_buffs(
             grants: String::new(),
             max_stacks: 1,
             kind: "toggle",
+            default_stacks: 0,
+            default_locked: false,
+            permanent: false,
+            uncapped: false,
+            trigger: None,
+        });
+    }
+    // RAGE IS THE WIELDER'S, earned by a melee weapon: a card in whole percent
+    // that opens the meter and, locked, holds it (`wfsim_engine::rage`).
+    let melee = wfsim_engine::weapons_data::spec(&info.id).is_some_and(|s| s.slot == "melee");
+    if let Some(s) = wfsim_engine::warframes_data::warframe(&tenno.id).and_then(|f| f.rage).filter(|_| melee) {
+        push(BuffMeta {
+            id: wfsim_engine::rage::BUFF_ID.into(),
+            name: "Rage".into(),
+            grants: String::new(),
+            max_stacks: (s.cap * 100.0).round() as u32,
+            kind: "stacking",
             default_stacks: 0,
             default_locked: false,
             permanent: false,
@@ -5323,10 +5344,14 @@ parts.push(json!({
         // implementation of the one thing every gated perk is asked about.
         "tenno": {
             "health": panel_tenno.health,
+            "shield": panel_tenno.shield,
             "armor": panel_tenno.armor,
             "energy": panel_tenno.energy,
             "sprint": panel_tenno.sprint,
         },
+        // …AND THE WIELDER BEFORE THE FIGHT'S OVERRIDES, which is what a ticked
+        // override starts from and what an unticked one falls back to.
+        "wielder": floor_json(&wielder_from(v, info)),
         "buffs": buffs_json(&buffs),
     })
 }
@@ -9432,6 +9457,103 @@ pub fn run_optimize_resumable(
         "results": results,
         "target": { "name": target_name, "level": level, "steel_path": steel_path },
     })
+}
+
+#[cfg(test)]
+mod wielder_tests {
+    use super::*;
+
+    fn resolved(frame: &str) -> wfsim_engine::warframes_data::Resolved {
+        let b = wfsim_engine::warframes_data::Build { frame: frame.into(), ..Default::default() };
+        wfsim_engine::warframes_data::resolve(&b).expect("a modelled frame")
+    }
+
+    /// THE WIELDER IS THE LINKED BUILD, THE LOCKED FRAME, OR THE PROTOTYPE — and
+    /// a ticked override still wins over whichever it is.
+    #[test]
+    fn the_wielder_is_the_linked_build_the_locked_frame_or_the_prototype() {
+        use wfsim_engine::warframes_data::FrameStat;
+        let praedos = weapon("praedos");
+        let bare = tenno_from(&json!({}), praedos);
+        assert_eq!((bare.name.as_str(), bare.health, bare.armor), ("Prototype", 250.0, 105.0));
+
+        let valkyr = wielder_from(&json!({"wielder": {"frame": "valkyr"}}), praedos);
+        let r = resolved("valkyr");
+        assert_eq!(valkyr.name, "Valkyr");
+        assert_eq!(valkyr.health, r.stat(FrameStat::Health).value);
+        assert_eq!(valkyr.armor, r.stat(FrameStat::Armor).value);
+        assert_eq!(valkyr.sprint, r.stat(FrameStat::SprintSpeed).value);
+
+        // A LOCKED WEAPON: its own frame when nothing is linked, and when the link
+        // names a frame that cannot hold it; the other allowed frame when asked.
+        let talons = weapon("valkyr_talons");
+        assert_eq!(wielder_from(&json!({}), talons).name, "Valkyr Prime");
+        assert_eq!(wielder_from(&json!({"wielder": {"frame": "nobody"}}), talons).name, "Valkyr Prime");
+        assert_eq!(wielder_from(&json!({"wielder": {"frame": "valkyr"}}), talons).name, "Valkyr");
+
+        let ticked = tenno_from(&json!({"wielder": {"frame": "valkyr"}, "wf_armor": 2000.0}), praedos);
+        assert_eq!(ticked.armor, 2000.0, "an override beats the wielder");
+    }
+
+    /// THE SHARDS AND THE OWN AURA COME WITH THE WIELDER, and a squad naming the
+    /// same aura does not count it twice.
+    #[test]
+    fn a_melee_weapon_in_valkyrs_hands_builds_rage_and_it_pays() {
+        let req = |extra: serde_json::Value| {
+            let b = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler");
+            let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
+            let o = m.as_object_mut().expect("a mapping");
+            o.insert("weapon".into(), json!("praedos"));
+            o.insert("mods".into(), json!(["primed_pressure_point", "organ_shatter"]));
+            o.insert("runs".into(), json!(6));
+            for (k, v) in extra.as_object().expect("a mapping") {
+                o.insert(k.clone(), v.clone());
+            }
+            m
+        };
+        let cards = |v: &serde_json::Value| -> Vec<String> {
+            panel_json(v)["buffs"].as_array().map_or(Vec::new(), |a| {
+                a.iter().filter_map(|b| b["id"].as_str().map(String::from)).collect()
+            })
+        };
+        let valkyr = json!({"wielder": {"frame": "valkyr"}});
+        assert!(cards(&req(valkyr.clone())).iter().any(|c| c == "valkyr_rage"));
+        assert!(!cards(&req(json!({}))).iter().any(|c| c == "valkyr_rage"), "the Prototype has no Rage");
+
+        let score = |v: serde_json::Value| {
+            let r = simulate_json(&v);
+            assert!(r.get("error").is_none(), "{r}");
+            r["score"].as_f64().expect("a score")
+        };
+        let prototype = score(req(json!({})));
+        let earned = score(req(valkyr));
+        let held = score(req(json!({
+            "wielder": {"frame": "valkyr"},
+            "buffs": {"valkyr_rage": {"stacks": 300, "locked": true}},
+        })));
+        assert!(earned > prototype, "Rage bought nothing: {earned} against {prototype}");
+        assert!(held > earned, "a full meter held bought nothing: {held} against {earned}");
+    }
+
+    #[test]
+    fn the_wielder_brings_its_shards_and_its_aura_once() {
+        let praedos = weapon("praedos");
+        let v = json!({
+            "wielder": {
+                "frame": "valkyr",
+                "aura": {"id": "steel_charge"},
+                "shards": [{"shard": "crimson_archon_shard", "effect": "melee_critical_damage"}],
+            },
+            "auras": [{"id": "steel_charge"}, {"id": "rifle_amp"}],
+        });
+        let t = tenno_from(&v, praedos);
+        assert_eq!(t.shards.len(), 1);
+        assert_eq!(t.auras.iter().filter(|a| a.id == "steel_charge").count(), 1);
+        assert!(t.auras.iter().any(|a| a.id == "rifle_amp"));
+        // …AND THE FIGHT NO LONGER NAMES A FRAME OR SHARDS OF ITS OWN.
+        let old = tenno_from(&json!({"frame": "valkyr", "shards": [{"shard": "x", "effect": "y"}]}), praedos);
+        assert_eq!((old.name.as_str(), old.shards.len()), ("Prototype", 0));
+    }
 }
 
 #[cfg(test)]
