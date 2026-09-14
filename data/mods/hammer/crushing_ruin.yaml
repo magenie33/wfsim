@@ -62,10 +62,12 @@ combos:
   # Crowd Fall — the heavy attack. IDENTICAL ON BOTH HAMMER STANCES, which is
   # worth stating: a hammer's heavy is its class multiplier (6x) delivered as an
   # alternating pair, and the stance decides only the animation and the procs.
-  # The 1.2 s wind-up is its own clock and attack speed does not shorten it.
+  # The published 1.2 s is split as a Tonfa's is: 0.4 s of charge, 0.8 s of
+  # swing — an assumption the weapon's own heavy entry admits.
+  # see notes: tonfa_heavy_timing
   heavy:
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 6.0, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 6.0, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
   # Hell's Wave — the slide attack, also identical on both.
   slide:
     - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }

@@ -80,7 +80,7 @@ attack:
   follow_through: 1.0
   # THE CLASS HEAVY: the module's HeavyAttack 1250 is 5x the 250 swing, and its
   # WindUp is 0.5 s.
-  heavy: { multiplier: 5.0, windup_seconds: 0.5 }
+  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
   # "Damage is distributed between 25% Puncture and 75% Slash" (W`Hysteria`).
   damage: { puncture: 62.5, slash: 187.5 }   # total 250
 

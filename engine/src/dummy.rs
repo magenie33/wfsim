@@ -2025,7 +2025,7 @@ const TENNOKAI_WINDOW_SECONDS: f64 = 2.0;
 /// *"Heavy attacks spend initial combo, which regenerates at a rate of 40 combo
 /// points per second"* (wiki, Melee Combo). It is what makes a pure-heavy build
 /// work at all: a Magistar in Incarnon Form carries +30, which is back inside
-/// 0.75 s against a 0.8 s wind-up, so every heavy lands at 2x rather than 1x.
+/// 0.75 s against a 1.07 s cycle, so every heavy lands at 2x rather than 1x.
 const INITIAL_COMBO_REGEN_PER_SECOND: f64 = 40.0;
 
 /// THE MULTIPLIER THE COUNTER IS WORTH RIGHT NOW.
@@ -3229,7 +3229,7 @@ pub struct DummyParams {
     /// *"Heavy attacks spend initial combo, which regenerates at a rate of 40
     /// combo points per second"* (wiki, Melee Combo). It is the whole of the
     /// pure-heavy build: a Magistar in Incarnon Form carries +30, which refills
-    /// in 0.75 s against a 0.8 s wind-up, so every heavy lands at 2x rather
+    /// in 0.75 s against a 1.07 s cycle, so every heavy lands at 2x rather
     /// than at 1x.
     pub initial_combo: f64,
     /// Fraction of the counter a heavy attack does NOT spend.
@@ -12288,7 +12288,7 @@ mod melee {
     /// *"Heavy attacks spend initial combo, which regenerates at a rate of 40
     /// combo points per second"*. It is what makes a pure-heavy build work: the
     /// Magistar's Incarnon Form carries +30, which is back inside 0.75 s
-    /// against a 0.8 s wind-up, so every heavy lands at 2x rather than 1x.
+    /// against a 1.07 s cycle, so every heavy lands at 2x rather than 1x.
     #[test]
     fn initial_combo_is_a_floor_that_refills_at_forty_a_second() {
         // Nothing earned, nothing granted: the floor is zero however long you

@@ -41,6 +41,8 @@ reasons:
   # formation is what gave it something to reach, and `space::struck_along`
   # spends it at `space::BODY_MATERIAL_M` per body crossed. The 22 weapons that
   # carried this admission carry none now.
+  heavy_charge_share_assumed:
+    text: "the heavy attack's CHARGE is ASSUMED to be a third of its published {published} s wind-up, the share measured on a Tonfa: {charge} s of charge, which only wind-up speed shortens, then {swing} s of swing, which attack speed shortens. This weapon's own split is unmeasured, so a wind-up card here is worth what the Tonfa's split says"
   sniper_combo_miss:
     text: "a MISSED shot drops the combo counter and this entry cannot miss — the only thing that misses here is SPREAD, and this one lands on the reticle, so nothing but its {seconds} s timer ever takes a stack off. A player who pulls the shot loses the combo and this sim never pulls one"
   # NO `radial_falloff` — IT IS MODELLED. The explosion reads the

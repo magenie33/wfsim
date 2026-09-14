@@ -26,7 +26,7 @@ attack:
   # see notes: slide_ignores_follow_through
   follow_through: 1.0
   # see notes: class_s_heavy_attack
-  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }
   # see notes: combo_points_from_multiplier
   combo_script:

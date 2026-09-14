@@ -22,7 +22,7 @@ attack:
   range_m: 2.6
   follow_through: 0.4
   # see notes: class_s_heavy_attack
-  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
   damage: { impact: 192, puncture: 36, slash: 12 }
   # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
   # own multiplier (`Dmg = { 500, 100 }` in the module), so this is the unit it

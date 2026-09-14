@@ -10,7 +10,10 @@ form: heavy
 transform_group: valkyr_talons
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "THE WIND-UP IS ITS OWN CLOCK: attack speed shortens only the swing after the charge, and only wind-up speed shortens the charge"
+  - reason: heavy_charge_share_assumed
+    published: 0.5
+    charge: 0.17
+    swing: 0.33
 attack:
   # see notes: swing_trigger_pull_engine
   trigger: melee
@@ -25,7 +28,7 @@ attack:
   punch_through_m: 0.0
   range_m: 2.15
   follow_through: 1.0
-  heavy: { multiplier: 5.0, windup_seconds: 0.5 }
+  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
   damage: { puncture: 62.5, slash: 187.5 }   # total 250
   slam:
     damage: { puncture: 62.5, slash: 187.5 }
@@ -37,8 +40,10 @@ attack:
     forced_procs: []
     takes_multishot: false
   spends_combo: true
-  # TWO CLOCKS: the 0.5 s charge (the module's WindUp) before each input, and the
-  # combo's 2 s split over its two inputs after it.
+  # TWO CLOCKS. The module's 0.5 s WindUp is the whole heavy, as every published
+  # wind-up is: a third of it (0.1667 s) is the charge before each input, and
+  # the other 0.3333 s joins the combo's 2 s split over its two inputs.
+  # see notes: tonfa_heavy_timing
   # see notes: combo_points_from_multiplier
   #
   # THE OPENER IS A SLAM AND NOTHING ELSE: `Dmg = { 500 }`, `Types = { "Slam" }`,
@@ -46,8 +51,8 @@ attack:
   # Seismic Wave" (W`Hysteria`). The second input forces Slash on two of its
   # five hits: `Procs = { "Slash", "", "Slash", "", "Stagger" }`.
   combo_script:
-    - { multiplier: 0.0, slam_multiplier: 5.0, windup_seconds: 0.5, delay_seconds: 1.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 3.0, hits: 5, windup_seconds: 0.5, delay_seconds: 1.0, forced_procs: [slash], forced_hits: 2, combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 0.0, slam_multiplier: 5.0, windup_seconds: 0.1667, delay_seconds: 1.3333, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+    - { multiplier: 3.0, hits: 5, windup_seconds: 0.1667, delay_seconds: 1.3333, forced_procs: [slash], forced_hits: 2, combo_points: 0, combo_points_base: 0 }
 
 source:
   url: https://wiki.warframe.com/w/Hysteria_(Stance)

@@ -21,7 +21,7 @@ attack:
   punch_through_m: 0.0
   range_m: 2.15
   follow_through: 1.0
-  heavy: { multiplier: 5.0, windup_seconds: 0.5 }
+  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
   damage: { puncture: 62.5, slash: 187.5 }   # total 250
   slam:
     damage: { puncture: 62.5, slash: 187.5 }

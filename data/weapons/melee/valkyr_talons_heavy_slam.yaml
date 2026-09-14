@@ -23,7 +23,7 @@ attack:
   punch_through_m: 0.0
   range_m: 2.15
   # NO FOLLOW THROUGH ON A SLAM: its damage is the radial.
-  heavy: { multiplier: 5.0, windup_seconds: 0.5 }
+  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
   spends_combo: true
   damage: { impact: 0.0 }
   radial:

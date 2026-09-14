@@ -156,9 +156,10 @@ engagement already pays the floor, and a half-second fight (one slam) is the
 only thing that can tell the two rules apart.
 
 It is the whole of the pure-heavy build. The Magistar's Incarnon Form carries
-**+30**, which is back inside **0.75 s** against a **0.8 s** wind-up (1.2 s
-reduced by the form's own +50% wind-up speed) — so every heavy attack lands at
-**2x** rather than 1x. `melee_combo_points` takes the higher of what was earned
+**+30**, which is back inside **0.75 s** against a **1.07 s** cycle (a 0.4 s
+charge reduced by the form's own +50% wind-up speed, then the 0.8 s swing) — so
+every heavy attack lands at **2x** rather than 1x. A hammer's split of its
+published 1.2 s is the Tonfa's measured one, assumed (`heavy_charge_share_assumed`). `melee_combo_points` takes the higher of what was earned
 and what has refilled, which is what makes "spend it and it comes back" and
 "build on top of it" one number.
 
@@ -199,8 +200,8 @@ where the two hammers carried nothing; it now carries nothing either.
 `climb -> slam -> recover`, and **only the recovery is a fixed cost**:
 
 - **The slam is instant.** *"Heavy slams do not have any wind up"* — so the
-  1.2 s charge that sets the pure-heavy mode's whole cadence is not paid here,
-  and no wind-up card pays anything in this mode.
+  charge that opens every pure-heavy cycle is not paid here, and no wind-up
+  card pays anything in this mode.
 - **The climb is free.** A slam is launched from mid-air and nothing bounds how
   long the player spends getting there, so the interval is the recovery plus
   whatever ascent is worth waiting through.

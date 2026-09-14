@@ -39,7 +39,7 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   # see notes: class_s_heavy_attack
-  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
   spends_combo: true
   damage: { impact: 0.0 }
   radial:

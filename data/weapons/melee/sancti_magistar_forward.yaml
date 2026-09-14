@@ -21,7 +21,7 @@ attack:
   range_m: 2.6
   follow_through: 0.4
   # see notes: class_s_heavy_attack
-  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
+  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
   damage: { impact: 192, puncture: 36, slash: 12 }
   # TIDAL FORCE — transcribed from the wiki's own `Module:Stances/data`,
   # which publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and
