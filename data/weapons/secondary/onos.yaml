@@ -13,9 +13,9 @@ transform_group: onos
 transforms_to: onos_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - "the Incarnon form's CHARGED arm-cannon shot is not modelled — this entry carries its held beam, and the charged shot is a second attack with its own explosion"
-  - "the held beam's charge ramp is not modelled — in game its damage climbs to 2.5x the longer the trigger is held"
+# THE BASE FORM IS WHOLE — an automatic hand cannon and nothing else. What this
+# weapon is missing belongs to the Incarnon form, and is stated there rather
+# than twice (the page renders both entries' lists together).
 accuracy: 40
 disposition: 0.8
 polarities: [madurai]

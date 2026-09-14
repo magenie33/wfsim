@@ -6,8 +6,10 @@ description: "On Consecutive Weakpoint Hits: +30% Headshot Damage. Stacks up to 
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
-# "Evolution V, Sequential Skullbuster, does not affect Incarnon mode" — the
-# page's own Notes section, not the row.
+# "Evolution V, Sequential Skullbuster, does not affect Incarnon mode" — and
+# the wiki files that under BUGS, not Notes. It is modelled anyway, because
+# this app matches the game and not the card; but a fix at DE's end deletes
+# this line rather than changing it, which is why the section is named.
 base_form_only: true
 selection: choose_one
 
