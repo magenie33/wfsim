@@ -545,10 +545,15 @@ applies to.
    is not planned is REPOLARIZING that slot to buy the double, which the wiki
    says a Forma can do, so a build that would spend one reads five capacity low
    here — the conservative direction: a build that fits here fits in game.
-7. **Three cards that name a state this arena has not got**: Relentless
-   Combination wants a combo point when a Slash DoT ticks, Spring-Loaded Blade
-   wants a stacking reach buff, and Shattering Impact wants a flat armour strip
-   per Impact hit.
+7. **Two cards that name a state this arena has not got**: Relentless
+   Combination wants a combo point when a Slash DoT ticks, and Shattering Impact
+   wants a flat armour strip per Impact hit.
+
+   **SPRING-LOADED BLADE IS OFF IT**: a stacking buff into
+   `BuffGrant::MeleeRange` — +1 m per status for 24 s, two stacks on
+   independent timers (`per_stack_expiry`, the page's "decay separately") —
+   read at the swing, so a stack earned mid-fight reaches the bodies it brings
+   into range.
 
    **THE TWO LIFTED CARDS ARE OFF IT.** `Lifted` is a status this engine
    tracks, so Enduring Strike's combo-point chance and Enduring Affliction's

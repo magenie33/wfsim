@@ -218,6 +218,7 @@ fn buff_grant(name: &str) -> Option<crate::loadout::BuffGrant> {
         "fire_rate" => G::FireRate,
         "reload_speed" => G::ReloadSpeed,
         "initial_combo" => G::InitialCombo,
+        "melee_range" => G::MeleeRange,
         _ => return None,
     })
 }

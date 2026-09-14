@@ -1100,12 +1100,21 @@ impl ModEffect {
             AddedSpread(v) => format!(
                 "+{v} degrees of spread — added after accuracy bonuses, which do not reach it"
             ),
+            // A FLAT GRANT SAYS ITS UNIT: `+1 m` of reach, `+20` combo points.
             GrantsStackingBuff(b) => format!(
                 "{} {} per stack, up to {} ({}), for {}s — earned {}",
-                pct(b.per_stack),
+                match b.grant {
+                    BuffGrant::MeleeRange => format!("+{} m", b.per_stack),
+                    BuffGrant::InitialCombo => format!("+{}", b.per_stack),
+                    _ => pct(b.per_stack),
+                },
                 b.grant.label(),
                 b.max_stacks,
-                pct(b.per_stack * f64::from(b.max_stacks)),
+                match b.grant {
+                    BuffGrant::MeleeRange => format!("+{} m", b.per_stack * f64::from(b.max_stacks)),
+                    BuffGrant::InitialCombo => format!("+{}", b.per_stack * f64::from(b.max_stacks)),
+                    _ => pct(b.per_stack * f64::from(b.max_stacks)),
+                },
                 b.duration,
                 b.trigger.label(),
             ),
@@ -2537,6 +2546,10 @@ pub enum BuffGrant {
     /// attack that cost nothing to hold and refill at 40 a second after every
     /// swing that spends them.
     InitialCombo,
+    /// Spring-Loaded Blade: *"+1 Range for 24s"* — FLAT METRES on the reach,
+    /// "additive to other range mods", read at the swing so a stack earned
+    /// mid-fight reaches the bodies it brings into range.
+    MeleeRange,
 }
 
 impl ModEffect {
@@ -2590,6 +2603,7 @@ impl BuffGrant {
             BuffGrant::StatusChance => "status_chance",
             BuffGrant::HeadshotDamage => "headshot_damage",
             BuffGrant::InitialCombo => "initial_combo",
+            BuffGrant::MeleeRange => "melee_range",
         }
     }
 
@@ -2612,6 +2626,7 @@ impl BuffGrant {
             BuffGrant::StatusChance => "Status Chance",
             BuffGrant::HeadshotDamage => "Headshot Damage",
             BuffGrant::InitialCombo => "Initial Combo",
+            BuffGrant::MeleeRange => "Range",
         }
     }
 }

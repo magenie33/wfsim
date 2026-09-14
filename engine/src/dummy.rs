@@ -4339,9 +4339,12 @@ impl DummyParams {
     ///
     /// STATIC FOR THE ENGAGEMENT like `struck_bodies`, and computed per swing
     /// anyway because a combo alternates the two shapes and the list is short.
-    pub fn melee_struck(&self, all_around: bool) -> Vec<usize> {
+    ///
+    /// `extra_reach_m` is the reach a live buff adds at this swing
+    /// (Spring-Loaded Blade's stacks), on top of the resolved range.
+    pub fn melee_struck(&self, all_around: bool, extra_reach_m: f64) -> Vec<usize> {
         let reach = match self.range_m {
-            r if r.is_finite() && r > 0.0 => r,
+            r if r.is_finite() && r > 0.0 => r + extra_reach_m,
             _ => return vec![0],
         };
         if self.others.is_empty() {
@@ -11875,6 +11878,31 @@ mod melee {
         assert!(wrong.is_empty(), "{}", wrong.join("\n"));
     }
 
+    /// **SPRING-LOADED BLADE'S STACKS WIDEN THE REACH MID-FIGHT.** Each status
+    /// buys +1 m for 24 s, two stacks on independent timers, read at the swing.
+    /// A ring at 3.5 m around the aimed body is mostly out of a Praedos's 2.5 m
+    /// and inside 4.5 m, so the stacks bring it in; a ring at 20 m stays out
+    /// wherever the wielder stands, and the card must then move nothing at all.
+    #[test]
+    fn spring_loaded_blade_stacks_reach_and_reaches_what_it_brings_into_range() {
+        let dps = |mods: &[&str], gap: f64| magistar("praedos_slide", mods, 30.0, Some(gap)).mean_damage;
+        let near_off = dps(&[], 3.5);
+        let near_on = dps(&["spring_loaded_blade"], 3.5);
+        assert!(near_on > near_off * 2.0, "two stacks reach the 3.5 m ring: {near_off:.0} -> {near_on:.0}");
+        assert_eq!(dps(&[], 20.0), dps(&["spring_loaded_blade"], 20.0), "4.5 m reaches nothing at 20 m");
+
+        let card = crate::mods_data::pool_for_weapon("praedos")
+            .into_iter()
+            .find(|m| m.id == "spring_loaded_blade")
+            .expect("in the melee pool");
+        let Some(crate::loadout::ModEffect::GrantsStackingBuff(b)) = card.effects.first().cloned() else {
+            panic!("a stacking buff");
+        };
+        assert_eq!(b.grant, crate::loadout::BuffGrant::MeleeRange);
+        assert_eq!(b.decay, crate::loadout::BuffDecay::PerStackExpiry, "independent timers");
+        assert_eq!((b.per_stack, b.max_stacks, b.duration), (1.0, 2, 24.0));
+    }
+
     /// **A SLIDE ATTACK OPENS THE WINDOW AND TAKES IT.** A slide lands direct
     /// melee hits like any light swing, so it rolls for the flash, and a slide
     /// loop that gets one fires the class's heavy attack in place of its next
@@ -12991,12 +13019,12 @@ mod melee {
             panel.clone()
         });
         assert_eq!(
-            p.melee_struck(false),
+            p.melee_struck(false, 0.0),
             vec![0, 1],
             "a 90-degree sweep takes the aimed body and the one 30 degrees off it, and nothing at 60",
         );
         assert_eq!(
-            p.melee_struck(true),
+            p.melee_struck(true, 0.0),
             vec![0, 1, 2],
             "a spin takes everything in range whatever angle it stands at",
         );
@@ -14846,7 +14874,8 @@ pub fn run_once_traced(
         // everything within the weapon's range; an ordinary one sweeps in
         // front. Empty for a gun, which never asks.
         let melee_struck = match &swing {
-            Some(h) if ap.follow_through.is_some() => params.melee_struck(h.all_around),
+            Some(h) if ap.follow_through.is_some() => params
+                .melee_struck(h.all_around, buff_total!(ap, crate::loadout::BuffGrant::MeleeRange, t)),
             _ => Vec::new(),
         };
         // WHAT THIS SWING FORCES, split into the two machines that carry it —
