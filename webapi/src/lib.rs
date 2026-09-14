@@ -65,6 +65,8 @@ struct Assets {
     #[serde(default)]
     warframes: std::collections::HashMap<String, String>,
     #[serde(default)]
+    operators: std::collections::HashMap<String, String>,
+    #[serde(default)]
     warframe_mods: std::collections::HashMap<String, String>,
     #[serde(default)]
     warframe_arcanes: std::collections::HashMap<String, String>,
@@ -2121,6 +2123,8 @@ pub fn meta_json() -> Value {
             "name": f.name,
             "image": assets().warframes.get(&f.id),
         })).collect::<Vec<_>>(),
+        // THE OPERATOR'S card, its own home group: a player has one Operator.
+        "operator_image": assets().operators.get("operator"),
         // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the
         // panel fills its fields from whichever is picked.
         "frames": wfsim_engine::tenno_data::frames()

@@ -2228,8 +2228,15 @@ function renderHome() {
     frames.innerHTML = `<section class="wgroup"><div class="wgrid">${wfFrames().map((f) => `<a class="wcard" href="${warframePath(f)}">
       ${imgTag(IMG(f.image), "wc-img")}
       <div class="wc-info"><div class="wc-name">${escHtml(f.name)}</div>
-      <div class="wc-tags"><span class="tag">${escHtml(tr("Builder"))}</span></div></div></a>`).join("")}
-      <a class="wcard" href="/operator"><span class="wc-img"></span><div class="wc-info"><div class="wc-name">${escHtml(tr("Operator"))}</div>
+      <div class="wc-tags"><span class="tag">${escHtml(tr("Builder"))}</span></div></div></a>`).join("")}</div></section>`;
+  }
+  // THE OPERATOR IS ITS OWN GROUP, never a Warframe: a player has exactly one,
+  // where a Warframe is one of many they can own.
+  const operator = $("operator-grid");
+  if (operator) {
+    operator.innerHTML = `<section class="wgroup"><div class="wgrid"><a class="wcard" href="/operator">
+      ${imgTag(IMG(META && META.operator_image), "wc-img")}
+      <div class="wc-info"><div class="wc-name">${escHtml(tr("Operator"))}</div>
       <div class="wc-tags"><span class="tag">${escHtml(tr("Focus school"))}</span></div></div></a></div></section>`;
   }
   const grid = $("weapon-grid");

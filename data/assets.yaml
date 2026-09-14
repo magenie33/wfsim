@@ -1389,6 +1389,11 @@ auras:
   toxin_resistance: PlayerPoisonImmunityBuff.jpg
   worthy_comradery: PlayerWeakpointCriticalChanceAuraMod.jpg
 
+# THE OPERATOR, hand-set from the wiki's Operator infobox. A player has one, so
+# this is one card's picture; `gen_assets.py` does not own this section.
+operators:
+  operator: "wiki:OperatorBust.png"
+
 # THE TEKTOLYST ARTIFACTS, hand-set from the wiki: WFCD draws every Antique mod
 # as a placeholder (`OrokinImage*.jpg`) and carries neither the arcanes nor the
 # artifacts, so `gen_assets.py` does not own these three sections.

@@ -110,6 +110,10 @@ rename cuts no link. An `operator:` holding a name becomes that build's id.
 - A node's TAG counts whenever its school is active: the node can be used, and a
   tag says what a build can do rather than what is running.
 
+**THE OPERATOR IS NOT A WARFRAME.** The home page lists it in a group of its
+own between Warframes and Weapons, with the wiki Operator page's portrait: a
+player owns many Warframes and is one Operator.
+
 **THE PLAYER HAS ONE OPERATOR, AND ANY NUMBER OF OPERATOR BUILDS.** An Operator
 build is a school, its assumed nodes and that school's Tektolyst Artifact; the
 Amp is not part of it yet.
