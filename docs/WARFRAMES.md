@@ -95,10 +95,11 @@ and a build only decides how long it lasts and whether casting re-opens it.
 
 ## Operator
 
-**AN OPERATOR BUILD IS MADE ONCE AND REFERRED TO.** `/operator` holds a Focus
+**AN OPERATOR BUILD IS MADE ONCE AND LINKED.** `/operator` holds a Focus
 school and which of its conditional nodes count as running; a Warframe build
-names one (`operator:` in its state, resolved to `OperatorPick` when sent), so a
-Focus choice made once reaches every frame.
+links one by the Operator build's `id` (`operator:` in its state, resolved to
+`OperatorPick` when sent), so a Focus choice made once reaches every frame and a
+rename cuts no link. An `operator:` holding a name becomes that build's id.
 
 - ONLY THE ACTIVE SCHOOL APPLIES: "Active and Passive ways are only usable in the
   specific focus school they belong to" (W`Focus`). No Waybound reaches a

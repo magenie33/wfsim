@@ -21460,8 +21460,10 @@ function wfNormalize(st, id) {
     }),
     helminth: { slot: Number((s.helminth || {}).slot) || 0,
       ability: wfAbility((s.helminth || {}).ability) ? s.helminth.ability : null },
-    // THE OPERATOR BUILD'S NAME: a reference, resolved when the build is sent.
-    operator: typeof s.operator === "string" && s.operator ? s.operator : null,
+    // THE LINKED OPERATOR BUILD'S `id`, resolved when the build is sent. A NAME
+    // here is a link saved before ids, and becomes that build's id.
+    operator: typeof s.operator === "string" && s.operator
+      ? ((opList().find((p) => p.id === s.operator || p.name === s.operator) || {}).id || null) : null,
   };
 }
 
@@ -22010,12 +22012,26 @@ function wfChanged() {
 // ---- THE OPERATOR ------------------------------------------------------
 //
 // `/operator`: the active Focus school, and which of its conditional nodes to
-// count as running. A Warframe build REFERS to one by name, so a Focus choice is
-// made once and every frame reads it.
+// count as running. A Warframe build LINKS to one by its `id`, so a Focus choice
+// is made once and every frame reads it.
 const OPS = "operators";
 let op = null;
 let opActive = "";
 let opSaveTimer = null;
+/// THE OPERATOR BUILDS, EACH WITH AN `id` — the link a Warframe build stores. A
+/// name is not one: a rename would cut every link to it. A missing id is written
+/// straight to storage, past undo, since an undo that dropped it would re-mint it.
+function opList() {
+  const ps = loadPresetList(OPS);
+  if (ps.every((p) => p.id)) return ps;
+  const out = opWithIds(ps);
+  try { localStorage.setItem(presetListKey(OPS), JSON.stringify(out)); } catch (_) { /* unsaved: minted again next read */ }
+  return out;
+}
+// `randomUUID` exists only in a secure context; the fallback is as unique here.
+const opNewId = () => (crypto.randomUUID ? crypto.randomUUID()
+  : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const opWithIds = (ps) => ps.map((p) => (p.id ? p : { ...p, id: opNewId() }));
 const focusSchool = (id) => (WFCAT && id && WFCAT.focus.find((s) => s.id === id)) || null;
 const opBlank = () => ({ school: null, assumed: [] });
 function opNormalize(st) {
@@ -22031,8 +22047,8 @@ function opBarCfg() {
     domain: OPS,
     label: tr("Operator builds"),
     noun: "operator",
-    load: () => loadPresetList(OPS),
-    store: (ps) => storePresetList(OPS, ps),
+    load: opList,
+    store: (ps) => storePresetList(OPS, opWithIds(ps)),
     active: () => opActive,
     setActive: (n) => { opActive = n; localStorage.setItem(presetActiveKey(OPS), n); },
     snapshot: () => JSON.parse(JSON.stringify(op)),
@@ -22102,7 +22118,7 @@ function renderOperator() {
 async function showOperator() {
   await loadWarframeCatalog();
   if (!op) {
-    const list = loadPresetList(OPS);
+    const list = opList();
     const last = localStorage.getItem(presetActiveKey(OPS));
     const p = list.find((x) => x.name === last) || list[0] || null;
     opActive = p ? p.name : "";
@@ -22111,19 +22127,19 @@ async function showOperator() {
   renderOperator();
 }
 
-/// The Operator build a Warframe build names, as the engine reads it.
+/// The Operator build a Warframe build links, as the engine reads it.
 function wfOperatorPick() {
   if (!wf || !wf.operator) return null;
-  const p = loadPresetList(OPS).find((x) => x.name === wf.operator);
+  const p = opList().find((x) => x.id === wf.operator);
   const st = p && opNormalize(p.state);
   return st && st.school ? st : null;
 }
 
 function renderWfOperator() {
-  const ps = loadPresetList(OPS);
-  const cur = wf.operator && ps.some((p) => p.name === wf.operator) ? wf.operator : "";
-  const items = [{ value: "", label: tr("no Operator") },
-    ...ps.map((p) => ({ value: p.name, label: p.name,
+  const ps = opList();
+  const cur = wf.operator && ps.some((p) => p.id === wf.operator) ? wf.operator : "";
+  const items = [{ value: "", label: tr("no linked Operator") },
+    ...ps.map((p) => ({ value: p.id, label: p.name,
       hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") }))];
   const pick = wfOperatorPick();
   const s = pick && focusSchool(pick.school);

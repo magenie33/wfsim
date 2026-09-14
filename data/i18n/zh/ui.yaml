@@ -34,7 +34,7 @@ ui:
   "always on": 常驻
   "count it as running": 视为已触发
   "pick the active Focus school": 选择当前专精流派
-  "no Operator": 不引用指挥官
+  "no linked Operator": 不链接指挥官
   "no school picked": 未选流派
   "edit on the Operator page": 在指挥官页面编辑
   "Exilus": Exilus
