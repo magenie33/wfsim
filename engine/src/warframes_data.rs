@@ -921,12 +921,9 @@ pub struct GateCast {
     pub ability: String,
     pub energy: f64,
     pub shields: f64,
-    /// The refill reaches max shields, so every reading gives the full gate.
+    /// The refill reaches max shields.
     pub full: bool,
     pub seconds: f64,
-    /// The OTHER reading's length where the wiki disagrees with itself: a partial
-    /// refill under Catalyzing Shields per the Update 34 notes.
-    pub disputed_seconds: Option<f64>,
 }
 
 /// The gate after shields break holding `s` shields (W`Shield`):
@@ -1022,9 +1019,6 @@ pub struct TagSource {
     /// The mod, arcane or ability id, or the frame's id for its passive.
     pub from: String,
     pub when: String,
-    /// False where the wiki disagrees with itself about it (the shield gate
-    /// after a partial refill), so the page can say it needs a measurement.
-    pub confirmed: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -1385,7 +1379,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                 (Some(Some(w)), true) => w.clone(),
                 _ => g.when.clone(),
             };
-            tags.push(TagSource { tag: g.tag, from: from.to_string(), when, confirmed: true });
+            tags.push(TagSource { tag: g.tag, from: from.to_string(), when });
         }
     };
     claim(&frame.id, &frame.passive_tags, false);
@@ -1410,8 +1404,9 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         }
     }
     // THE SHIELD GATE. Energy spent casting is converted to shields by the Augur
-    // set and Brief Respite; a refill that reaches max shields re-opens the full
-    // gate under every reading of the wiki, a partial one only under some.
+    // set and Brief Respite, and any refill re-opens the gate. Its length is the
+    // shields refilled — or Catalyzing Shields' fixed value, whatever the refill
+    // (MEASUREMENTS M92).
     let max_shields = stats.iter().find(|l| l.stat == FrameStat::Shield).map_or(0.0, |l| l.value);
     let mut sources: Vec<(String, f64)> = Vec::new();
     let augur = seated.iter().filter(|(m, _)| m.set.as_deref() == Some("augur")).count() as u32;
@@ -1431,22 +1426,11 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             .map(|x| {
                 let shields = x.energy_cost * energy_to_shield;
                 let full = shields >= max_shields;
-                let (seconds, disputed_seconds) = match &gate_fixed {
-                    Some((_, fixed)) if full => (*fixed, None),
-                    // The mod page: the fixed value "upon recovering any amount of
-                    // Shields"; the Update 34 notes: "scales from 0.33 to 1.33".
-                    Some((_, fixed)) => (*fixed, Some((fixed * shields / max_shields).max(1.0 / 3.0))),
-                    None => (shield_gate_seconds(shields.min(max_shields)), None),
+                let seconds = match &gate_fixed {
+                    Some((_, fixed)) => *fixed,
+                    None => shield_gate_seconds(shields.min(max_shields)),
                 };
-                GateCast {
-                    slot: x.slot,
-                    ability: x.ability.id.clone(),
-                    energy: x.energy_cost,
-                    shields,
-                    full,
-                    seconds,
-                    disputed_seconds,
-                }
+                GateCast { slot: x.slot, ability: x.ability.id.clone(), energy: x.energy_cost, shields, full, seconds }
             })
             .collect()
     } else {
@@ -1464,7 +1448,6 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            confirmed: casts.iter().all(|c| c.disputed_seconds.is_none()),
         });
     }
     let shield_gate = ShieldGate {
@@ -1716,18 +1699,20 @@ mod tests {
         // two Augur cards (80%) + Brief Respite (150%)
         assert!(close(r.shield_gate.energy_to_shield, 2.3));
         let warcry = r.shield_gate.casts.iter().find(|c| c.ability == "warcry").unwrap();
-        assert!(warcry.full && warcry.disputed_seconds.is_none(), "75 energy x2.3 refills 37 shields");
+        assert!(warcry.full, "75 energy x2.3 refills 37 shields");
         let t = r.tags.iter().find(|t| t.from == "shield_gate").expect("the derived tag");
         assert_eq!(t.tag, Capability::Invulnerable);
 
-        // ONE Augur card (40%): Rip Line's 25 energy restores 10 of 37 shields, a
-        // partial refill the wiki's two readings disagree about, so the tag says so.
+        // ONE Augur card (40%): Rip Line's 25 energy restores 10 of 37 shields,
+        // and Catalyzing Shields still gives its 1.33 s (MEASUREMENTS M92).
         let partial = resolve(&build(&["catalyzing_shields", "augur_secrets"])).unwrap();
         let rip = partial.shield_gate.casts.iter().find(|c| c.ability == "rip_line").unwrap();
         assert!(!rip.full);
         assert!(close(rip.seconds, 1.33));
-        assert!(close(rip.disputed_seconds.unwrap(), 1.33 * 10.0 / 37.0));
-        assert!(!partial.tags.iter().find(|t| t.from == "shield_gate").unwrap().confirmed);
+        // …and without it, the gate is the refill's own: W`Shield`'s formula at 10.
+        let bare = resolve(&build(&["augur_secrets"])).unwrap();
+        let rip = bare.shield_gate.casts.iter().find(|c| c.ability == "rip_line").unwrap();
+        assert!(close(rip.seconds, 10.0 / 180.0 + 1.0 / 3.0));
     }
 
     #[test]

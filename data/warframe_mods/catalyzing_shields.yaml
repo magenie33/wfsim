@@ -13,10 +13,9 @@ effects:
   # "x0.80 / x0.60 / x0.40 / x0.20" Max Shield Capacity
   - kind: max_shield_multiplier
     ranks: [0.8, 0.6, 0.4, 0.2]
-  # "0.33s / 0.67s / 1.0s / 1.33s" Full Shield Gate duration. After a PARTIAL
-  # refill the wiki disagrees with itself: the mod page gives the fixed value "upon
-  # recovering any amount of Shields", the Update 34 notes scale it "from 0.33 to
-  # 1.33 based on your maximum Shield values". The shield-gate card shows both.
+  # "0.33s / 0.67s / 1.0s / 1.33s" Full Shield Gate duration — and the same after a
+  # PARTIAL refill, as the mod page says ("upon recovering any amount of Shields")
+  # and against the Update 34 notes' scaling (MEASUREMENTS M92).
   - kind: shield_gate_seconds
     ranks: [0.33, 0.67, 1.0, 1.33]
 

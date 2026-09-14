@@ -88,11 +88,10 @@ and a build only decides how long it lasts and whether casting re-opens it.
 - Casting re-opens it through energy converted to shields: the Augur set
   (`energy_to_shield_by_count` in `data/mod_sets/augur.yaml`) plus Brief Respite
   (`energy_to_shield` on the aura). Channelled drain converts nothing.
-- A cast whose refill reaches max shields gets the full gate under every reading.
-  A PARTIAL refill under Catalyzing Shields is where the wiki disagrees with
-  itself — the mod page's fixed value against the Update 34 notes' "scales from
-  0.33 to 1.33" — so the card prints both and the derived `invulnerable` source
-  carries `confirmed: false` until a measurement settles it.
+- Under Catalyzing Shields ANY refill re-opens the fixed gate, however small —
+  measured (MEASUREMENTS M92), which settles the mod page's "upon
+  recovering any amount of Shields" against the Update 34 notes' scaling.
+  Without it, a refill's length is the formula at the shields it restored.
 
 ## Operator
 

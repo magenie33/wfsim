@@ -21918,15 +21918,13 @@ function renderWfCaps(r) {
     const src = by(id);
     return `<div class="wf-capbox ${id}${src.length ? "" : " off"}"><div class="wf-caph">${escHtml(tr(label))}${
       src.length ? "" : ` <span class="wf-capsrc">${escHtml(tr("none in this build"))}</span>`}</div>${
-      src.map((t) => `<div class="wf-capsrc">${escHtml(wfSourceName(t.from))} — ${escHtml(t.when)}${
-        t.confirmed === false ? ` <span class="wf-unconfirmed" title="${escHtml(tr("the wiki's pages disagree about this; it needs an in-game measurement"))}">⚠ ${escHtml(tr("needs a measurement"))}</span>` : ""}</div>`).join("")}</div>`;
+      src.map((t) => `<div class="wf-capsrc">${escHtml(wfSourceName(t.from))} — ${escHtml(t.when)}</div>`).join("")}</div>`;
   }).join("");
   renderWfGate(r.shield_gate);
 }
 
 /// THE SHIELD GATE: how long it lasts on this build, and what each cast refills.
-/// A cast that refills past max shields gets the full gate under every reading
-/// of the wiki; a partial one is where its pages disagree, and the card says so.
+/// Under Catalyzing Shields any refill gives the fixed gate (MEASUREMENTS M92).
 function renderWfGate(g) {
   const box = $("wf-gate");
   if (!g || g.max_shields <= 0) {
@@ -21937,11 +21935,10 @@ function renderWfGate(g) {
   const srcs = (g.sources || []).map((s) => `${escHtml(s.from === "augur" ? tr("Augur set") : wfSourceName(s.from))} ${Math.round(s.value * 100)}%`).join(" + ");
   const rows = (g.casts || []).map((c) => {
     const a = wfAbility(c.ability);
-    const verdict = c.full
-      ? `<span class="ok">${escHtml(tr("full refill"))} · ${wfNum(c.seconds)} s</span>`
-      : c.disputed_seconds != null
-        ? `<span class="warn">⚠ ${wfNum(c.seconds)} s ${escHtml(tr("or"))} ${wfNum(c.disputed_seconds)} s — ${escHtml(tr("the wiki's pages disagree"))}</span>`
-        : `${escHtml(tr("partial refill"))} · ${wfNum(c.seconds)} s`;
+    // FIXED BY A CARD, the refill's size does not matter; otherwise it sets the length.
+    const verdict = g.fixed_by || c.full
+      ? `<span class="ok">${escHtml(tr(c.full ? "full refill" : "partial refill"))} · ${wfNum(c.seconds)} s</span>`
+      : `<span class="warn">${escHtml(tr("partial refill"))} · ${wfNum(c.seconds)} s</span>`;
     return `<tr><td>${c.slot} · ${escHtml(a ? a.name : c.ability)}</td><td>${wfNum(c.energy)}</td><td>${wfNum(c.shields)} / ${wfNum(g.max_shields)}</td><td>${verdict}</td></tr>`;
   }).join("");
   box.innerHTML = `<div class="wf-caph">${escHtml(tr("Shield gate"))}</div>`
