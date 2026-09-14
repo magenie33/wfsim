@@ -551,9 +551,8 @@ pub enum ModEffect {
     ///
     /// *"Certain mods award extra combo points on hit/block additively"*. A
     /// CHANCE of one EXTRA point per landed hit rather than a multiplier on the
-    /// swing's own points — above 100% it is a guaranteed point plus a roll for
-    /// the next, which is how every other over-100% chance in this engine
-    /// behaves.
+    /// swing's own points — rolled once per hit, and past 100% the point is
+    /// certain and never a second (MEASUREMENTS M96).
     ComboCountChance(f64),
     /// …AND THE SAME CHANCE, PAID ONLY ON A LIFTED TARGET (Enduring Strike).
     ///
@@ -3652,7 +3651,7 @@ pub struct ResolvedPanel {
     /// Weeping Wounds' per-combo-tier status chance.
     pub status_chance_per_combo: f64,
     /// Chance of an EXTRA combo point per landed hit (Quickening, True
-    /// Punishment). Above 1.0 it is a guaranteed point plus a roll for another.
+    /// Punishment). One roll per hit for ONE point, however far past 1.0 (M96).
     pub combo_count_chance: f64,
     /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike).
     pub combo_count_chance_on_lifted: f64,

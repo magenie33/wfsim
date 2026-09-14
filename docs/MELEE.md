@@ -76,6 +76,9 @@ WFCD's export where the export carries the field.
   nobody has measured is FILLED (notes: `combo_points_from_multiplier`), not how
   the game works: Hysteria's measured rows follow no rule of the multiplier
   (MEASUREMENTS M95).
+- **Additional Combo Count Chance is one roll per hit, for ONE point.**
+  Quickening, True Punishment and Enduring Strike add to one chance; past 100%
+  the point is certain and there is never a second (MEASUREMENTS M96).
 - **Per body landed.** The wiki's own reading of the Rauta: *"generates 2 combo
   points per pellet landing on enemy (max 28 points across 14 pellets)"*.
 - **The ladder** is `1 + floor(points / 20)` capped at 12: 2x at 20, one more

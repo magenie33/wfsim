@@ -3233,8 +3233,8 @@ pub struct DummyParams {
     /// `status = base x [1 + mods + this x (combo - 1)]`.
     pub status_chance_per_combo: f64,
     /// CHANCE OF AN EXTRA COMBO POINT per landed hit (Quickening, True
-    /// Punishment, Enduring Strike). Above 1.0 it is a guaranteed point plus a
-    /// roll for the next.
+    /// Punishment, Enduring Strike). One roll per hit for ONE point; above 1.0
+    /// the point is certain and there is never a second (MEASUREMENTS M96).
     pub combo_count_chance: f64,
     /// …AND WHAT A LIFTED TARGET ADDS TO IT (Enduring Strike), plus the status
     /// bracket's own Lifted card (Enduring Affliction). A CONDITION ABOUT THE
@@ -7753,6 +7753,17 @@ struct Landed {
 /// this roster — every stance multiplier in it is whole except `0.5`, below the
 /// line they differ above — so a stance publishing 150% would settle it.
 ///
+/// ADDITIONAL COMBO COUNT CHANCE, for one hit: a single roll, and ONE point at
+/// most — past 100% it is a certain point and never a second (MEASUREMENTS M96).
+fn extra_combo_point(chance: f64, roll: &mut impl FnMut(f64) -> bool) -> f64 {
+    if chance > 0.0 && roll(chance.min(1.0)) {
+        1.0
+    } else {
+        0.0
+    }
+}
+
+///
 /// THE FILL RULE ONLY: the fight reads each row's own `combo_points`, and this
 /// checks the rows filled from the rule (see notes: combo_points_from_multiplier).
 #[cfg(test)]
@@ -11876,6 +11887,24 @@ mod melee {
         }
         assert!(checked > 100, "the sweep found only {checked} filled rows");
         assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    }
+
+    /// **ADDITIONAL COMBO COUNT CHANCE IS ONE ROLL PER HIT FOR ONE POINT**
+    /// (MEASUREMENTS M96): past 100% the point is certain and there is never a
+    /// second, and the roll never asks for more than a certainty.
+    #[test]
+    fn additional_combo_count_chance_rolls_once_per_hit_for_one_point() {
+        let mut asked: Vec<f64> = Vec::new();
+        let mut yes = |p: f64| {
+            asked.push(p);
+            true
+        };
+        assert_eq!(extra_combo_point(2.0, &mut yes), 1.0, "200% is one point, not two");
+        assert_eq!(extra_combo_point(1.0, &mut yes), 1.0);
+        assert_eq!(extra_combo_point(0.2, &mut yes), 1.0);
+        assert_eq!(extra_combo_point(0.0, &mut yes), 0.0, "no chance, no roll");
+        assert_eq!(asked, [1.0, 1.0, 0.2], "one roll each, capped at a certainty");
+        assert_eq!(extra_combo_point(0.5, &mut |_| false), 0.0, "a failed roll earns nothing");
     }
 
     /// **SPRING-LOADED BLADE'S STACKS WIDEN THE REACH MID-FIGHT.** Each status
@@ -18227,12 +18256,10 @@ pub fn run_once_traced(
             // counter the swing does NOT empty.
             if landed > 0.0 && !(ap.spends_combo || tennokai_heavy) {
                 combo_points += h.combo_points * landed;
-                // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
-                // extra combo points on hit/block additively"* — ONE point, per
-                // HIT rather than per stance multiplier, which is what makes
-                // Quickening worth so much less on a 400% swing than on a 100%
-                // one. Above 100% it is a guaranteed point plus a roll for the
-                // next, the way every other over-100% chance here behaves.
+                // …PLUS THE EXTRA POINT SOME CARDS BUY: one roll per HIT for ONE
+                // point, whatever the chance (MEASUREMENTS M96) — which is what
+                // makes Quickening worth so much less on a 400% swing than on a
+                // 100% one. See `extra_combo_point`.
                 // …AND ENDURING STRIKE, which adds to the same chance while the
                 // target is LIFTED — a status this engine tracks rather than a
                 // state it has to assume.
@@ -18244,11 +18271,7 @@ pub fn run_once_traced(
                     };
                 if chance_now > 0.0 {
                     for _ in 0..(landed as u32) {
-                        let whole = chance_now.floor();
-                        combo_points += whole;
-                        if d.spine.chance(chance_now - whole) {
-                            combo_points += 1.0;
-                        }
+                        combo_points += extra_combo_point(chance_now, &mut |p| d.spine.chance(p));
                     }
                 }
             }
