@@ -51,6 +51,7 @@ pub mod mods;
 pub mod market_data;
 pub mod mods_data;
 pub mod perks;
+pub mod rage;
 pub mod shards_data;
 pub mod rivens_data;
 pub mod record;

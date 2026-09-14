@@ -3298,6 +3298,23 @@ fn enumerate_buffs(
             trigger: None,
         });
     }
+    // RAGE IS THE WIELDER'S, earned by a melee weapon: a card in whole percent
+    // that opens the meter and, locked, holds it (`wfsim_engine::rage`).
+    let melee = wfsim_engine::weapons_data::spec(&info.id).is_some_and(|s| s.slot == "melee");
+    if let Some(s) = wfsim_engine::warframes_data::warframe(&tenno.id).and_then(|f| f.rage).filter(|_| melee) {
+        push(BuffMeta {
+            id: wfsim_engine::rage::BUFF_ID.into(),
+            name: "Rage".into(),
+            grants: String::new(),
+            max_stacks: (s.cap * 100.0).round() as u32,
+            kind: "stacking",
+            default_stacks: 0,
+            default_locked: false,
+            permanent: false,
+            uncapped: false,
+            trigger: None,
+        });
+    }
     // Arcane buffs — ONE CARD PER ARCANE, not per grant.
     //
     // Frostbite grants crit damage AND multishot off the same Cold proc, and
@@ -9470,9 +9487,9 @@ mod wielder_tests {
         // A LOCKED WEAPON: its own frame when nothing is linked, and when the link
         // names a frame that cannot hold it; the other allowed frame when asked.
         let talons = weapon("valkyr_talons");
-        assert_eq!(wielder_from(&json!({}), talons).name, "Valkyr");
-        assert_eq!(wielder_from(&json!({"wielder": {"frame": "nobody"}}), talons).name, "Valkyr");
-        assert_eq!(wielder_from(&json!({"wielder": {"frame": "valkyr_prime"}}), talons).name, "Valkyr Prime");
+        assert_eq!(wielder_from(&json!({}), talons).name, "Valkyr Prime");
+        assert_eq!(wielder_from(&json!({"wielder": {"frame": "nobody"}}), talons).name, "Valkyr Prime");
+        assert_eq!(wielder_from(&json!({"wielder": {"frame": "valkyr"}}), talons).name, "Valkyr");
 
         let ticked = tenno_from(&json!({"wielder": {"frame": "valkyr"}, "wf_armor": 2000.0}), praedos);
         assert_eq!(ticked.armor, 2000.0, "an override beats the wielder");
@@ -9480,6 +9497,44 @@ mod wielder_tests {
 
     /// THE SHARDS AND THE OWN AURA COME WITH THE WIELDER, and a squad naming the
     /// same aura does not count it twice.
+    #[test]
+    fn a_melee_weapon_in_valkyrs_hands_builds_rage_and_it_pays() {
+        let req = |extra: serde_json::Value| {
+            let b = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler");
+            let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
+            let o = m.as_object_mut().expect("a mapping");
+            o.insert("weapon".into(), json!("praedos"));
+            o.insert("mods".into(), json!(["primed_pressure_point", "organ_shatter"]));
+            o.insert("runs".into(), json!(6));
+            for (k, v) in extra.as_object().expect("a mapping") {
+                o.insert(k.clone(), v.clone());
+            }
+            m
+        };
+        let cards = |v: &serde_json::Value| -> Vec<String> {
+            panel_json(v)["buffs"].as_array().map_or(Vec::new(), |a| {
+                a.iter().filter_map(|b| b["id"].as_str().map(String::from)).collect()
+            })
+        };
+        let valkyr = json!({"wielder": {"frame": "valkyr"}});
+        assert!(cards(&req(valkyr.clone())).iter().any(|c| c == "valkyr_rage"));
+        assert!(!cards(&req(json!({}))).iter().any(|c| c == "valkyr_rage"), "the Prototype has no Rage");
+
+        let score = |v: serde_json::Value| {
+            let r = simulate_json(&v);
+            assert!(r.get("error").is_none(), "{r}");
+            r["score"].as_f64().expect("a score")
+        };
+        let prototype = score(req(json!({})));
+        let earned = score(req(valkyr));
+        let held = score(req(json!({
+            "wielder": {"frame": "valkyr"},
+            "buffs": {"valkyr_rage": {"stacks": 300, "locked": true}},
+        })));
+        assert!(earned > prototype, "Rage bought nothing: {earned} against {prototype}");
+        assert!(held > earned, "a full meter held bought nothing: {held} against {earned}");
+    }
+
     #[test]
     fn the_wielder_brings_its_shards_and_its_aura_once() {
         let praedos = weapon("praedos");

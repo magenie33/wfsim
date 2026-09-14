@@ -4544,7 +4544,7 @@ mod tests {
             }
         }
         let t = spec("valkyr_talons_slide").expect("a Talons form");
-        assert_eq!(t.wielders, ["valkyr", "valkyr_prime"], "a form inherits its weapon's wielders");
+        assert_eq!(t.wielders, ["valkyr_prime", "valkyr"], "a form inherits its weapon's wielders");
         assert_eq!(t.wielder_names.get("valkyr_prime").map(String::as_str), Some("Valkyr Prime Talons"));
     }
 

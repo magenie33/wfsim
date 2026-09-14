@@ -159,6 +159,22 @@ module's `Subsumable` flag, which covers the Helminth's own abilities too.
 - **An augment pays only while its ability is in the loadout**; otherwise the
   card is seated and says it is inert.
 
+## Passives
+
+**A PASSIVE THAT MOVES A WEAPON'S NUMBER IS SIMULATED**, and it reaches a fight
+through the wielder. Valkyr's Nimble moves none. Rage is `rage:` on both
+Valkyrs, run by `engine::rage`:
+
+- Every body a melee hit lands on adds 3% and every melee kill 12%, up to 300%.
+  The meter sits in the base-damage bucket: "additive with mods like Pressure
+  Point".
+- After 5 s without building, the meter decays along the page's curve from
+  where it stands on it. The page calls the rate "dependent on the amount of
+  Rage".
+- A kill is paid at the next swing. A Finisher's 27% is in no loop.
+- The `valkyr_rage` buff card opens the meter at a percent, and its lock holds
+  the meter there.
+
 ## A weapon's wielder
 
 **A WEAPON IS ALWAYS HELD BY SOMEBODY, AND A WEAPON BUILD SAYS WHO.** The

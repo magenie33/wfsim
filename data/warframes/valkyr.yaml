@@ -28,6 +28,14 @@ passive: "Valkyr accumulates Rage when hitting or killing enemies with melee wea
 passive_tags:
   - tag: invulnerable
     when: "on fatal damage with Rage above 150%, 5 s"
+# see notes: valkyr_rage
+rage:
+  per_hit: 0.03
+  per_kill: 0.12
+  cap: 3.0
+  idle_seconds: 5
+  decay_rate: 0.016
+  tail_per_second: 0.001
 abilities: [rip_line, warcry, paralysis, hysteria]
 
 source:

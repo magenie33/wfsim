@@ -139,6 +139,9 @@ struct ArcRuntime {
     /// is applied rather than by a fuse, so it never reaches this — which is
     /// also what the wiki says of it.
     blast_pops: Vec<f64>,
+    /// THE WIELDER'S RAGE, when the wielder has one. Here because every path
+    /// that reads the live base-damage bucket already carries this runtime.
+    rage: Option<crate::rage::Rage>,
 }
 
 impl ArcRuntime {
@@ -164,7 +167,16 @@ impl ArcRuntime {
                 .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
             instance: 0,
             blast_pops: Vec::new(),
+            rage: crate::warframes_data::warframe(&params.tenno.id).and_then(|f| f.rage).map(|s| {
+                let (start, held) = params.rage_open.unwrap_or((0.0, false));
+                crate::rage::Rage::new(s, start, held)
+            }),
         }
+    }
+
+    /// Rage's share of the base-damage bucket at `now`; 0 without one.
+    fn rage_bonus(&self, now: f64) -> f64 {
+        self.rage.map_or(0.0, |g| g.bonus(now))
     }
 
     /// Sharpened Bullets' on-kill window end — the replay reads it to say
@@ -3407,6 +3419,9 @@ pub struct DummyParams {
     /// it — `Some(end)` opens it at the start of the fight, and infinity is the
     /// lock. `None` leaves the roll to do its own work.
     pub influence_open: Option<f64>,
+    /// RAGE AS THE READER SET IT — the share the fight opens at, and whether
+    /// the meter is held. `None` builds it from zero (`crate::rage`).
+    pub rage_open: Option<(f64, bool)>,
     pub body_parts: Vec<BodyPart>,
     /// The TARGET — one of the fight's two actors.
     pub target: TargetParams,
@@ -3747,6 +3762,12 @@ impl DummyParams {
         if self.cycle.as_ref().is_some_and(|c| matches!(c.ends, Ends::After(_))) {
             push!("melee_incarnon", 1);
         }
+        // RAGE, in whole percent out of its cap — the gauge the game draws.
+        if !self.combo_script.is_empty() {
+            if let Some(s) = crate::warframes_data::warframe(&self.tenno.id).and_then(|f| f.rage) {
+                push!(crate::rage::BUFF_ID, (s.cap * 100.0).round() as u32);
+            }
+        }
         if self.sniper_combo.is_some()
             || self.cycle.as_ref().is_some_and(|c| c.base_form.sniper_combo.is_some())
         {
@@ -3945,6 +3966,11 @@ impl DummyParams {
                     cy.ends = Ends::After(clock(seconds, locked));
                 }
             }
+        }
+        // RAGE TAKES THEM AS PERCENT: what the fight opens at, and a lock that
+        // stops the decay.
+        if let Some(&(stacks, locked)) = cfg.get(crate::rage::BUFF_ID) {
+            self.rage_open = Some((f64::from(stacks) / 100.0, locked));
         }
         if let Some(b) = self.crit_chance_on_headshot.as_mut() {
             set_timed(b, cfg, "on_headshot_cc");
@@ -4802,6 +4828,7 @@ impl DummyParams {
             proc_conversion: panel.proc_conversion,
             enervate_stacks: 0,
             influence_open: None,
+            rage_open: None,
             body_parts,
             target,
             duration_seconds,
@@ -5048,6 +5075,7 @@ impl Default for DummyParams {
             squad: crate::tenno_data::SquadEffects::default(),
             enervate_stacks: 0,
             influence_open: None,
+            rage_open: None,
             target_id: "e1".to_string(),
             // NO PUNCH THROUGH by default, so the fixture fires the one-body
             // shot every golden value was calibrated against.
@@ -8029,7 +8057,7 @@ fn spread_hit(
 ) -> Landed {
     let base_damage = ap.base_damage_bonus;
     let arcane_base_damage =
-        arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) + heavy_attack_base_damage(ap);
+        arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) + heavy_attack_base_damage(ap) + arc.rage_bonus(t);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     let half_hp = if spec.params.max_health() > 0.0
         && foe.state.health < 0.5 * spec.params.max_health()
@@ -9893,7 +9921,8 @@ fn field_tick(
     let base_damage = ap.base_damage_bonus;
     let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at)
         + ctx.base_damage_add_mods
-        + heavy_attack_base_damage(ap);
+        + heavy_attack_base_damage(ap)
+        + arc.rage_bonus(at);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     // CO on an AoE part is the EXCEPTION, not the default. What the mods say is
     // direct hits only — which is why the radial path never takes it — and the
@@ -10739,6 +10768,7 @@ fn sample_stacks(
                     .fold(unknown, |a: f64, e| if a.is_nan() { e } else { a.min(e) }))
             }
 
+            crate::rage::BUFF_ID => (cap((arc.rage_bonus(now) * 100.0).round() as u32), unknown),
             // THE WHOLE STACKING FAMILY, by id. The roster pushed these ids
             // from the same Vec this reads, so a rostered buff can never fall
             // through to a zero it did not earn.
@@ -14304,6 +14334,8 @@ pub fn run_once_traced(
     // bracket term and never touch it. That is the whole reason the seven melee
     // forms are seven builds.
     let mut combo_points = 0.0f64;
+    // THE KILL COUNT AT THE LAST SWING, so the kills since are what Rage is paid.
+    let mut rage_kill_mark = r.kills;
     // WHEN THE COUNTER DIES with nothing added to it. Refreshed by any landed
     // swing; five seconds on almost every weapon.
     let mut combo_expiry = f64::NEG_INFINITY;
@@ -15959,7 +15991,9 @@ pub fn run_once_traced(
                 + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t)
                 // …AND KILLING BLOW, which is a term in this bucket and not a
                 // multiplier — see `heavy_attack_base_damage`.
-                + heavy_attack_base_damage(ap);
+                + heavy_attack_base_damage(ap)
+                // …AND RAGE: "additive with mods like Pressure Point".
+                + arc.rage_bonus(t);
             // FEIGNED RETREAT / SWIFT CONCLUSION: a condition on the TARGET,
             // evaluated per instance because the target's health is falling
             // while the shot is being resolved.
@@ -18280,6 +18314,14 @@ pub fn run_once_traced(
         // award points"*, so a miss neither adds nor refreshes.
         if let Some(h) = &swing {
             let landed = (r.pellets - pellets_before) as f64;
+            // RAGE BUILDS ON EVERY BODY A HIT LANDED ON AND EVERY KILL SINCE THE
+            // LAST SWING — a status kill "still counts as a melee kill". The kill
+            // is paid at this swing rather than at the death.
+            if let Some(g) = arc.rage.as_mut() {
+                let s = g.spec();
+                g.build(t, landed * s.per_hit + f64::from(r.kills - rage_kill_mark) * s.per_kill);
+            }
+            rage_kill_mark = r.kills;
             // …AND A LANDED HIT MAY OPEN THE TENNOKAI WINDOW.
             //
             // *"Triggering Tennokai requires directly striking an enemy ...
