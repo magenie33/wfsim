@@ -11456,35 +11456,35 @@ mod melee {
     /// The Magistar's Incarnon Form is worth 6x to a heavy loop against 2x to a
     /// light one, and the difference is not a bigger number — it is the same
     /// `+100%` damage, TIMES a combo multiplier the +30 initial combo buys
-    /// (1x to 2x), TIMES half again as many swings from `+50% Heavy Attack Wind
-    /// Up Speed`, which shortens a clock attack speed cannot touch.
+    /// (1x to 2x), TIMES more swings from `+50% Heavy Attack Wind Up Speed`,
+    /// which shortens the CHARGE and leaves the swing after it alone.
     ///
     /// THE WIND-UP IS THE ONE THAT COULD SILENTLY NOT WORK, so it is asserted
-    /// on the SHOT COUNT: 1.2 s becomes 0.8 s, and 60 seconds holds 50 swings
-    /// or 75.
+    /// on the SHOT COUNT: a 0.4 s charge becomes 0.27 s ahead of the 0.8 s
+    /// swing, so the cycle goes from 1.2 s to 1.07 s — about 1.1x the swings.
     #[test]
     fn the_incarnon_form_pays_a_heavy_build_three_ways() {
         let bare = magistar_evo_armed("magistar_heavy", &[], &[]);
         let form = magistar_evo_armed("magistar_heavy", &["magistar_evo1_incarnon_form"], &[]);
         assert!(
-            (form.mean_shots / bare.mean_shots - 1.5).abs() < 0.05,
-            "a 1.2 s wind-up at +50% speed is 0.8 s, so 1.5x the swings: {:.0} -> {:.0}",
+            (1.05..1.15).contains(&(form.mean_shots / bare.mean_shots)),
+            "a 0.4 s charge at +50% speed is 0.27 s before a 0.8 s swing, so about 1.1x the swings: {:.0} -> {:.0}",
             bare.mean_shots, form.mean_shots,
         );
         let gain = form.mean_damage / bare.mean_damage;
         assert!(
-            (5.0..7.0).contains(&gain),
-            "damage 2x, combo 1x->2x and swings 1.5x should be about 6x, got x{gain:.2}",
+            (3.8..5.0).contains(&gain),
+            "damage 2x, combo 1x->2x and swings 1.1x should be about 4.4x, got x{gain:.2}",
         );
-        // …AND SWIFT BREAK IS ADDITIVE WITH IT, in the same bucket: 1.2 / 1.8
-        // is 0.667 s, which is another fifth of a swing per second.
+        // …AND SWIFT BREAK IS ADDITIVE WITH IT, in the same bucket: 0.4 / 1.8
+        // is 0.22 s, a cycle of 1.02 s, so strictly more swings.
         let swift = magistar_evo_armed(
             "magistar_heavy",
             &["magistar_evo1_incarnon_form", "magistar_swift_break"],
             &[],
         );
         assert!(
-            swift.mean_shots > form.mean_shots * 1.15,
+            swift.mean_shots > form.mean_shots,
             "+30% more wind-up speed bought nothing: {:.0} -> {:.0}",
             form.mean_shots, swift.mean_shots,
         );
