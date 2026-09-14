@@ -9,5 +9,18 @@ internal_name: /Lotus/Powersuits/Trinity/Abilities/WellOfLifeAbility
 icon: WellOfLifeIcon(xWhite).png
 description: "Create a well of life on an enemy who will absorb Status Effect damage intended for nearby allies. Allies gain additional Health when they attack the target. If allies die, enemies in the well of life die in their stead."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Well of Life's revive cooldown is increased to 120 seconds."
+
+tags:
+  # "each status effect received by allies inside the aura are negated / Will negate Toxin procs but not damage"
+  - tag: status_immunity
+    when: "inside the aura; Toxin damage still lands"
+  # "granting them 5 seconds of Invulnerability. The revived ally experiences a 60 second cooldown / Subsumed Well of Life's revive cooldown is increased to 120 seconds."
+  - tag: invulnerable
+    when: "on fatal damage inside the aura, 5 s, a 60 s cooldown per ally"
+    infused_when: "on fatal damage inside the aura, 5 s, a 120 s cooldown per ally"
+
 source:
   url: https://wiki.warframe.com/w/Well_of_Life

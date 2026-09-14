@@ -13,5 +13,12 @@ effects:
   - kind: unmodelled
     text: "Become invulnerable for 3s and remove all Status Effects. 7s cooldown."
 
+tags:
+  # "grants a brief period of invulnerability and removes all Status Effects when rolling, with a cooldown period between uses"
+  - tag: invulnerable
+    when: "on a roll, 3 s, then 7 s of cooldown"
+  - tag: status_cleanse
+    when: "on a roll, sharing the invulnerability's cooldown"
+
 source:
   url: https://wiki.warframe.com/w/Rolling_Guard

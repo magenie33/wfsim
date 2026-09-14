@@ -5,9 +5,18 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Defensive/MaxDPSTakenForArmour
 description: "Remove all Shields. If Armor is above 700: Cannot be hit for more than 500 Damage/s. Magnetic Status and Ability Nullifying Effects disable this protection."
 
+# "To completely remove all shields, one can equip Arcane Persistence" and "Having
+# no shields disables Shield Gating" (W`Shield`) — x0 at every rank.
 effects:
   - kind: unmodelled
     text: "Remove all Shields. If Armor is above 700: Cannot be hit for more than 500 Damage/s. Magnetic Status and Ability Nullifying Effects disable this protection."
+  - kind: max_shield_multiplier
+    ranks: [0]
+
+tags:
+  # "Damage exceeding 500 after Damage Reduction is reduced to 500 by Arcane Persistence."
+  - tag: damage_cap
+    when: "while Armor is at least 700, at 500 damage per second after damage reduction; off under Magnetic or in a nullifier field"
 
 source:
   url: https://wiki.warframe.com/w/Arcane_Persistence

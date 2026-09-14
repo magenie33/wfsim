@@ -1,0 +1,60 @@
+# MADURAI — the nodes that reach the WARFRAME, at max rank. An Operator-only
+# node is left out, and so is every Waybound: all ten are `operator=y` with an
+# empty `warframe=` (W`Focus/Madurai`'s `{{FocusNode}}` flags).
+id: madurai
+name: Madurai
+
+nodes:
+  # "Physical Damage and Operator Damage increased by '''5 / 10 / 20 / 30'''%"
+  - id: phoenix_talons
+    name: Phoenix Talons
+    text: "Physical Damage and Operator Damage increased by 30%"
+    always: true
+  # "'''45 / 60 / 75 / 100'''% Amp Critical Damage for '''5 / 10 / 15 / 20'''s on
+  # switching to Operator. '''20 / 30 / 40 / 50'''% Casting Speed on switching to Warframe."
+  - id: power_transfer
+    name: Power Transfer
+    text: "100% Amp Critical Damage for 20s on switching to Operator. 50% Casting Speed on switching to Warframe."
+    when: on switching to the Warframe
+    effects:
+      - kind: casting_speed_bonus
+        rankMax: 0.5
+  # "First Ability consumes all energy to increase damage for '''5 / 6 / 7 / 8'''s.
+  # Deal '''4 / 6 / 8 / 10'''% additional damage for every percentage of energy consumed."
+  - id: void_strike
+    name: Void Strike
+    text: "First Ability consumes all energy to increase damage for 8s. Deal 10% additional damage for every percentage of energy consumed. 40s cooldown."
+    when: an Operator cast, 8 s, 40 s cooldown
+  # "'''10 / 20 / 30 / 40'''% Weapon Efficiency for Operator and Warframe while Void Strike is active."
+  - id: void_fuel
+    name: Void Fuel
+    text: "40% Weapon Efficiency for Operator and Warframe while Void Strike is active."
+    when: while Void Strike is active
+  # "Switching to Warframe after a Chained Sling adds '''10 / 20 / 30 / 40'''% Ability
+  # Strength for '''5 / 10 / 15 / 20'''s." — "additive with similar bonuses like
+  # Intensify and Energy Conversion".
+  - id: sling_strength
+    name: Sling Strength
+    text: "Switching to Warframe after a Chained Sling adds 40% Ability Strength for 20s."
+    when: after a Chained Sling and switching to the Warframe, 20 s
+    effects:
+      - kind: ability_strength_bonus
+        rankMax: 0.4
+  # "On dealing damage, fire an arrow at an enemy with a '''0.50 / 0.45 / 0.40 / 0.30'''s
+  # cooldown between arrows. '''30'''s duration."
+  - id: rain_of_arrows
+    name: Rain of Arrows
+    text: "On dealing damage, fire an arrow at an enemy with a 0.30s cooldown between arrows. 30s duration."
+    when: 30 s after a Tauron Strike
+  # "Gain +'''2 / 3 / 4 / 5'''% Ability Strength for each enemy hit by the initial
+  # Tauron Strike for 30s. Max +''' 20 / 30 / 40 / 50'''%."
+  - id: overwhelming_power
+    name: Overwhelming Power
+    text: "Gain +5% Ability Strength for each enemy hit by the initial Tauron Strike for 30s. Max +50%."
+    when: 30 s after a Tauron Strike, at the most enemies hit
+    effects:
+      - kind: ability_strength_bonus
+        rankMax: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Focus/Madurai

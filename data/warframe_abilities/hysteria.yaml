@@ -81,5 +81,10 @@ stats:
 unmodelled:
   - "the Valkyr Talons as a weapon: its damage, mods and arcanes belong to a weapon build, not to this panel"
 
+tags:
+  # "while also becoming immune to Status Effects. / switching weapons will disable Hysteria's effects, including the status immunity"
+  - tag: status_immunity
+    when: "while active with the Talons out; switching weapons ends it"
+
 source:
   url: https://wiki.warframe.com/w/Hysteria

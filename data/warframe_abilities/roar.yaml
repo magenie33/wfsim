@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Rhino/Abilities/RhinoRoarAbility
 icon: RoarIcon(xWhite).png
 description: "Grants all nearby Warframes increased damage for a short duration."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Roar's damage bonus is reduced to 2% / 9% / 15% / 30%."
+
 source:
   url: https://wiki.warframe.com/w/Roar

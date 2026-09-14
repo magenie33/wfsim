@@ -54,6 +54,61 @@ needs beyond them, and loading one whose id is not in the roster panics.
   freely between the eight slots, the exilus slot and the aura slot: the exilus
   slot's since Techrot Encore, the aura slot's since 38.5.
 
+## Tags
+
+**A FRAME'S BUILD IS READ BY WHAT IT CAN DO, NOT RANKED BY A NUMBER.** A frame
+answers survival, abilities and movement at once, so no single score orders two
+builds. What a build states instead is a closed set of tags
+(`warframes_data::Capability`), each with every source that grants it:
+
+| tag | means |
+| --- | --- |
+| `invulnerable` | takes no damage at all for a while |
+| `status_cleanse` | removes status effects already on the frame |
+| `status_immunity` | no new status effect lands; what is already there stays |
+| `damage_cap` | damage taken has a hard ceiling, not a percentage reduction |
+
+A tag is DATA on the item that grants it — `tags:` on a mod, arcane or ability,
+`passive_tags:` on a frame — as `{tag, when}`, with the wiki sentence quoted in a
+comment. An unknown tag panics at load. An augment whose ability is not in the
+loadout grants no tag, as it pays nothing. A CLEANSE and an IMMUNITY are two
+tags because they answer two questions — one removes what landed, the other
+stops what is coming — and one ability may grant both (Defy, Fire Walker).
+
+## Shield gate
+
+**THE SHIELD GATE IS ITS OWN ENTRY**, because every frame with shields has one
+and a build only decides how long it lasts and whether casting re-opens it.
+
+- Its length is W`Shield`'s approximation of the shields held when they break:
+  `S/180 + 1/3` under 53, `(S/350)^0.65 + 1/3` to 1,150, then 2.5 s
+  (`shield_gate_seconds`). No shields, no gate — Arcane Persistence is ×0.
+- Catalyzing Shields is two structured lines: ×0.80…×0.20 shields and a fixed
+  0.33…1.33 s gate, per rank.
+- Casting re-opens it through energy converted to shields: the Augur set
+  (`energy_to_shield_by_count` in `data/mod_sets/augur.yaml`) plus Brief Respite
+  (`energy_to_shield` on the aura). Channelled drain converts nothing.
+- Under Catalyzing Shields ANY refill re-opens the fixed gate, however small —
+  measured (MEASUREMENTS M92), which settles the mod page's "upon
+  recovering any amount of Shields" against the Update 34 notes' scaling.
+  Without it, a refill's length is the formula at the shields it restored.
+
+## Operator
+
+**AN OPERATOR BUILD IS MADE ONCE AND REFERRED TO.** `/operator` holds a Focus
+school and which of its conditional nodes count as running; a Warframe build
+names one (`operator:` in its state, resolved to `OperatorPick` when sent), so a
+Focus choice made once reaches every frame.
+
+- ONLY THE ACTIVE SCHOOL APPLIES: "Active and Passive ways are only usable in the
+  specific focus school they belong to" (W`Focus`). No Waybound reaches a
+  Warframe, so `data/focus/` carries none.
+- `always: true` counts whenever the school is active (Stone Skin). A node that
+  needs an Operator action counts only when the Operator build ASSUMES it, which
+  is the house rule for a condition about the Tenno.
+- A node's TAG counts whenever its school is active: the node can be used, and a
+  tag says what a build can do rather than what is running.
+
 ## Abilities
 
 `data/warframe_abilities/` holds the CARD of an ability — cost, description,

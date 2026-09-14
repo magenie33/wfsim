@@ -8,5 +8,9 @@ internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/OrionBuffAbility
 icon: AstralShellIcon(xWhite).png
 description: "Envelop Orion in an Astral Shell. Upon taking damage the shell becomes a decoy that draws fire until it's destroyed.\n\n(HOLD) Swap to Sirius and use Jade Stars."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "An infused Astral Shell or Jade Stars cannot swap Warframes."
+
 source:
   url: https://wiki.warframe.com/w/Astral_Shell

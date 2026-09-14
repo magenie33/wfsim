@@ -9,5 +9,13 @@ internal_name: /Lotus/Powersuits/Fairy/Abilities/FairyDustAbility
 icon: SpellbindIcon(xWhite).png
 description: "Enemies fumble their weapons as they are whisked into the air. Nearby allies become immune to Status Effects. Hold the ability to cast the immunity onto Titania."
 
+tags:
+  # "gain immunity to them for the duration of the ability."
+  - tag: status_immunity
+    when: "for the ability's duration, inside the cloud"
+  # "Titania and her allies caught within the dust cloud are cleansed from Status Effects"
+  - tag: status_cleanse
+    when: "on cast, inside the cloud"
+
 source:
   url: https://wiki.warframe.com/w/Spellbind

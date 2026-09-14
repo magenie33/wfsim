@@ -1,0 +1,52 @@
+# VAZARIN — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
+id: vazarin
+name: Vazarin
+
+nodes:
+  # "Increase Affinity Radius by '''10 / 15 / 20 / 25'''m"
+  - id: mending_unity
+    name: Mending Unity
+    text: "Increase Affinity Radius by 25m"
+    always: true
+  # "The first '''1 / 2 / 3 / 4''' revives are instantaneous. Additional revives are
+  # '''25 / 50 / 75 / 100'''% faster."
+  - id: mending_soul
+    name: Mending Soul
+    text: "The first 4 revives are instantaneous. Additional revives are 100% faster."
+    always: true
+  # "It is invulnerable for 4s when first created and damage inflicted while its
+  # invulnerable will be added to its base health of '''200 / 300 / 400 / 500'''."
+  - id: guardian_shell
+    name: Guardian Shell
+    text: "Use your first Ability to manifest a barrier on the Operator and allies within Affinity Range. It is invulnerable for 4s when first created and damage inflicted while its invulnerable will be added to its base health of 500."
+    when: an Operator cast
+  # "Warframe Shield Regeneration rate is increased by '''90 / 110 / 130 / 150'''% and
+  # Regeneration Delay is reduced by '''20 / 40 / 60 / 80'''%, for '''6 / 8 / 10 / 12'''s."
+  - id: guardian_break
+    name: Guardian Break
+    text: "When the Guardian Shell breaks, Warframe Shield Regeneration rate is increased by 150% and Regeneration Delay is reduced by 80%, for 12s."
+    when: when the Guardian Shell breaks, 12 s
+  # "Allies touched by Void Sling are granted immunity from damage for '''2 / 3 / 4 / 5'''s
+  # and healed '''30 / 40 / 50 / 60'''% over 5s for 10 energy cost." — the page's info:
+  # "Affected players become Invulnerable", "all Warframes (including the user's)".
+  - id: protective_sling
+    name: Protective Sling
+    text: "Allies touched by Void Sling are granted immunity from damage for 5s and healed 60% over 5s for 10 energy cost."
+    when: on a Void Sling
+    tags:
+      - tag: invulnerable
+        when: on a Void Sling, 5 s
+  # "When Void Regen reaches its maximum, it is applied to squad members within Affinity
+  # Range for '''30 / 40 / 50 / 60'''s." — "Applies to your own Warframe as well."
+  - id: squad_regen
+    name: Squad Regen
+    text: "When Void Regen reaches its maximum, it is applied to squad members within Affinity Range for 60s."
+    when: at Void Regen's maximum, 60 s
+  # "Vortex heals allies for '''100 / 150 / 200 / 250''' health/s"
+  - id: deathless_currents
+    name: Deathless Currents
+    text: "Vortex heals allies for 250 health/s."
+    when: inside the Nidri Tauron Strike's vortex
+
+source:
+  url: https://wiki.warframe.com/w/Focus/Vazarin

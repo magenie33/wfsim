@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Priest/Abilities/PriestCondemnAbility
 icon: CondemnIcon(xWhite).png
 description: "Cast a wave of energy that chains them where they stand. Each enemy held reinforces Harrow's shields."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Other Warframes cannot make use of the Tribunal augment, due to their inability to cast Penance and Thurible."
+
 source:
   url: https://wiki.warframe.com/w/Condemn

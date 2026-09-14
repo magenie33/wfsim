@@ -8,5 +8,9 @@ internal_name: /Lotus/Powersuits/SiriusOrion/Abilities/SiriusBuffAbility
 icon: JadeStarsIcon(xWhite).png
 description: "Sirius conjures Jade Light motes that slowly regenerate over time. Attacking enemies launches the motes, dealing Heat Damage and Status Effect.\n\n(HOLD) Swap to Orion and use Astral Shell."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "An infused Astral Shell or Jade Stars cannot swap Warframes."
+
 source:
   url: https://wiki.warframe.com/w/Jade_Stars

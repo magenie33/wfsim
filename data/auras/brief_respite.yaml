@@ -7,9 +7,13 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Aura/FairyQuest/FairyQuestAbilityToShieldsAuraMod
 description: "On Ability Cast:\nSquad converts 150% of Energy spent to Shields while Overshields are inactive"
 
+# "grants additional Shields equal to a percentage of Energy spent whenever an
+# ability is cast", 25-150% by rank; "Stacks with the ... Augur mod set effect";
+# "Constant Energy drain from channeling abilities ... do not replenish Shields"
+# (W`Brief_Respite`). The overshield condition is the card's own.
 effects:
-  - kind: out_of_scope
-    applies_to: a squad effect, and nothing in this Warframe's own panel
+  - kind: energy_to_shield
+    rankMax: 1.5
 
 source:
   url: https://wiki.warframe.com/w/Brief_Respite

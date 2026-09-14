@@ -8,5 +8,10 @@ internal_name: /Lotus/Powersuits/Garuda/Abilities/GarudaSiphonAbility
 icon: BloodAltarIcon(xWhite).png
 description: "Impale an enemy on an altar of talons and siphon health for Garuda and her allies."
 
+tags:
+  # "Garuda is invulnerable while charging."
+  - tag: invulnerable
+    when: "while charging to the target"
+
 source:
   url: https://wiki.warframe.com/w/Blood_Altar

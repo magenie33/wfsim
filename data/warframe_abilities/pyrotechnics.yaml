@@ -8,5 +8,9 @@ internal_name: /Lotus/Powersuits/Temple/Abilities/TempleShredAbility
 icon: PyrotechnicsIcon(xWhite).png
 description: "Blast targeted enemies with pillars of Heat Damage. \n\nBackbeat Timing: Ignite even more pillars. Increases the Duration and Heat Damage of Ripper's Wail when it deals damage."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "The Helminth checklist: \"ALTERED: Backbeat synergy is unavailable.\""
+
 source:
   url: https://wiki.warframe.com/w/Pyrotechnics

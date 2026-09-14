@@ -8,5 +8,9 @@ internal_name: /Lotus/Powersuits/Choir/Abilities/ChoirEyesAbility
 icon: OphanimEyesIcon(xWhite).png
 description: "Jade summons an accusatory gaze that slows nearby enemies and dissolves their Shields and Armor. When the gaze falls upon allies, they can be revived from a distance."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Ophanim Eyes will not have the ability to revive allies from Bleedout."
+
 source:
   url: https://wiki.warframe.com/w/Ophanim_Eyes

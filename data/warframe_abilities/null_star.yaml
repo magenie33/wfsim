@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/AntiMatter/Abilities/NullStarAbility
 icon: NullStarIcon(xWhite).png
 description: "Creates antimatter particles that orbit Nova and attack nearby targets. Each active particle reduces damage to Nova's Health and Shields."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Damage reduction caps at 75% instead of 90%."
+
 source:
   url: https://wiki.warframe.com/w/Null_Star

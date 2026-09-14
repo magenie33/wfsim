@@ -9,5 +9,9 @@ internal_name: /Lotus/Powersuits/Brawler/Abilities/BrawlerGazeAbility
 icon: PetrifyIcon(xWhite).png
 description: "Atlas' hardened gaze will fossilize foes increasing the damage they take, heal Rumblers, and create Petrified Bulwarks. When shattered, petrified enemies drop healing Rubble for Atlas."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Enemies petrified by other Warframes do not drop Rubble."
+
 source:
   url: https://wiki.warframe.com/w/Petrify

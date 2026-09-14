@@ -9,5 +9,11 @@ internal_name: /Lotus/Powersuits/Alchemist/Abilities/AlchemistVialAbility
 icon: VialRushIcon(xWhite).png
 description: "Dash forward, crashing through enemies and leaving an icy trail of broken vials.\n\nHold to imbue the next ability cast with Cold."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_energy_cost: 0
+infused_notes:
+  - "Subsumed Vial Rush includes the 0 energy cost, 5 second cooldown, as well as 3 Cold status proc stacks per application from the explosion and residue pools."
+  - "Subsumed Vial Rush does not include the hold-cast to imbue the next ability cast with Cold damage."
+
 source:
   url: https://wiki.warframe.com/w/Vial_Rush

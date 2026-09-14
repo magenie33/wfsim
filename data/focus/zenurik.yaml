@@ -1,0 +1,39 @@
+# ZENURIK — the nodes that reach the WARFRAME, at max rank (see madurai.yaml).
+id: zenurik
+name: Zenurik
+
+nodes:
+  # "Energy pickups grant '''20 / 30 / 40 / 50 '''% additional energy over '''11 / 9 / 7 / 5'''s."
+  - id: energy_pulse
+    name: Energy Pulse
+    text: "Energy pickups grant 50% additional energy over 5s."
+    always: true
+  # "Allows Abilities to be cast without using Energy or Shields but requires
+  # '''90 / 80 / 70 / 60'''s to recharge."
+  - id: inner_might
+    name: Inner Might
+    text: "Allows Abilities to be cast without using Energy or Shields but requires 60s to recharge."
+    when: one cast every 60 s
+  # "Allies passing through the well gain '''3 / 4 / 4 / 5''' Energy/s for '''20 / 22 / 25 / 30'''s."
+  - id: wellspring
+    name: Wellspring
+    text: "First Ability creates a well of energy for 8s. Allies passing through the well gain 5 Energy/s for 30s."
+    when: after passing through the well, 30 s
+  # "grant '''+12 / +15 / +18 / +20'''% Ability Strength to those inside."
+  - id: hardened_wellspring
+    name: Hardened Wellspring
+    text: "Use your first Ability inside a Wellspring to increase its size, boost its duration by 20s, and grant +20% Ability Strength to those inside."
+    when: while inside a hardened Wellspring
+    effects:
+      - kind: ability_strength_bonus
+        rankMax: 0.2
+  # "Create '''1 / 2 / 3 / 4 '''spectral pages granting an additional 10% Cast Speed,
+  # Ability Strength, Duration, and 100 bonus Energy per page." Boundless Energy
+  # raises it by 40%, and no page says whether that is points or a multiplier.
+  - id: spectral_pages
+    name: Spectral Pages
+    text: "Create 4 spectral pages granting an additional 10% Cast Speed, Ability Strength, Duration, and 100 bonus Energy per page."
+    when: after a Lorak Tauron Strike, spent by casting
+
+source:
+  url: https://wiki.warframe.com/w/Focus/Zenurik

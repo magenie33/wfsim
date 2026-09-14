@@ -97,6 +97,7 @@ fn polarity_label(p: &str) -> String {
 pub fn warframe_catalog_json() -> Value {
     use wfsim_engine::warframes_data as wf;
     let a = assets();
+    let tags = |t: &[wf::TagGrant]| t.iter().map(|g| json!({ "tag": g.tag.id(), "when": g.when })).collect::<Vec<_>>();
     json!({
         "ok": true,
         "frames": wf::warframes().iter().map(|f| json!({
@@ -111,6 +112,7 @@ pub fn warframe_catalog_json() -> Value {
             "aura_polarity": f.aura_polarity.as_deref().map(polarity_label),
             "exilus_polarity": f.exilus_polarity.as_deref().map(polarity_label),
             "passive": f.passive,
+            "passive_tags": tags(&f.passive_tags),
             "abilities": f.abilities,
             "image": a.warframes.get(&f.id),
             "url": f.url,
@@ -136,6 +138,7 @@ pub fn warframe_catalog_json() -> Value {
             "description": m.description,
             "effects": m.description.lines().collect::<Vec<_>>(),
             "desc_ranks": (0..=m.max_rank).map(|r| m.card_at(r).join("\n")).collect::<Vec<_>>(),
+            "tags": tags(&m.tags),
         })).collect::<Vec<_>>(),
         "arcanes": wf::arcanes().iter().map(|x| json!({
             "id": x.id,
@@ -146,6 +149,22 @@ pub fn warframe_catalog_json() -> Value {
             "description": x.description,
             "effects": x.description.lines().collect::<Vec<_>>(),
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
+            "tags": tags(&x.tags),
+        })).collect::<Vec<_>>(),
+        // THE OPERATOR'S FOCUS, for the Operator page and for what a Warframe
+        // build shows it referring to.
+        "focus": wf::focus_schools().iter().map(|s| json!({
+            "id": s.id,
+            "name": s.name,
+            "url": s.url,
+            "nodes": s.nodes.iter().map(|n| json!({
+                "id": n.id,
+                "name": n.name,
+                "text": n.text,
+                "always": n.always,
+                "when": n.when,
+                "tags": tags(&n.tags),
+            })).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
         "abilities": wf::abilities().iter().map(|x| json!({
             "id": x.id,
@@ -158,6 +177,7 @@ pub fn warframe_catalog_json() -> Value {
             "augments": x.augments,
             "icon": x.icon,
             "description": x.description,
+            "tags": tags(&x.tags),
             "url": x.url,
         })).collect::<Vec<_>>(),
     })
@@ -192,14 +212,20 @@ pub fn warframe_panel_json(v: &Value) -> Value {
             "flat": l.flat,
             "value": l.value,
             "sources": l.sources.iter().map(|c| json!({
-                "from": c.from, "value": c.value, "flat": c.flat,
+                "from": c.from, "value": c.value, "flat": c.flat, "times": c.times,
             })).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
         "abilities": r.abilities.iter().map(|x| json!({
             "slot": x.slot,
             "id": x.ability.id,
             "helminth": x.helminth,
-            "base_energy_cost": x.ability.energy_cost,
+            "base_energy_cost": if x.helminth {
+                x.ability.infused_energy_cost.unwrap_or(x.ability.energy_cost)
+            } else {
+                x.ability.energy_cost
+            },
+            // WHAT THE INFUSED VERSION DOES DIFFERENTLY, only when it is infused.
+            "infused_notes": if x.helminth { x.ability.infused_notes.clone() } else { Vec::new() },
             "energy_cost": x.energy_cost,
             "cost_type": x.ability.cost_type,
             "base_drain_per_second": x.ability.drain_per_second,
@@ -216,6 +242,21 @@ pub fn warframe_panel_json(v: &Value) -> Value {
                 "label": d.label, "stat": d.stat.id(), "value": d.value,
             })).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
+        // EVERY TAG WITH EVERY SOURCE, so the page can say where each came from.
+        "tags": r.tags.iter().map(|t| json!({
+            "tag": t.tag.id(), "label": t.tag.label(), "from": t.from, "when": t.when,
+        })).collect::<Vec<_>>(),
+        "shield_gate": json!({
+            "max_shields": r.shield_gate.max_shields,
+            "full_seconds": r.shield_gate.full_seconds,
+            "fixed_by": r.shield_gate.fixed_by,
+            "energy_to_shield": r.shield_gate.energy_to_shield,
+            "sources": r.shield_gate.sources.iter().map(|(from, v)| json!({ "from": from, "value": v })).collect::<Vec<_>>(),
+            "casts": r.shield_gate.casts.iter().map(|c| json!({
+                "slot": c.slot, "ability": c.ability, "energy": c.energy, "shields": c.shields,
+                "full": c.full, "seconds": c.seconds,
+            })).collect::<Vec<_>>(),
+        }),
         "admissions": r.admissions.iter().map(|x| json!({
             "from": x.from,
             "text": x.text,

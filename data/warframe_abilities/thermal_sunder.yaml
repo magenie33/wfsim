@@ -9,5 +9,10 @@ internal_name: /Lotus/Powersuits/Runner/Abilities/RunnerTransferAbility
 icon: ThermalSunderIcon(xWhite).png
 description: "Siphon kinetic energy from the area, charging the battery and inflicting Cold Status on nearby enemies. Hold reverses the process, draining the battery and inflicting Heat Status on nearby enemies."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "The damage dealt by Subsumed Thermal Sunder is equivalent to 50% of Gauss's battery: 225 / 300 / 375 / 450 Cold damage and 450 / 600 / 750 / 900 Heat damage."
+  - "The damage scaling from Heat status is capped to 10x of the ability's damage."
+
 source:
   url: https://wiki.warframe.com/w/Thermal_Sunder

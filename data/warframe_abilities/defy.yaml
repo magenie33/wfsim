@@ -8,5 +8,20 @@ internal_name: /Lotus/Powersuits/MonkeyKing/Abilities/MonkeyDeathNewAbility
 icon: DefyIcon(xWhite).png
 description: "Wukong and his twin become invulnerable and defy enemies to attack. All damage is captured, stored, and dealt back in a single furious strike of Wukong's staff.\nBonus Armor is then granted relative to the damage captured."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Defy's armor bonus is capped at 750."
+
+tags:
+  # "Invulnerable to damage and new Status Effects"
+  - tag: status_immunity
+    when: "during the 2 s stance"
+  # "becoming Invulnerable to damage and new Status Effects ... for 2 seconds"
+  - tag: invulnerable
+    when: "on cast, 2 s"
+  # "After the invulnerability period expires, Wukong cleanses himself of any negative Status Effects"
+  - tag: status_cleanse
+    when: "when the 2 s of invulnerability end"
+
 source:
   url: https://wiki.warframe.com/w/Defy

@@ -176,6 +176,7 @@ path, so an entry may be renamed but never renumbered.
 | [M89](measurements/M89-demolisher-flat-multiplier-in-the-faction-bracket.md) | a Demolisher takes a flat 0.8 inside the FACTION bracket, so a hit is ×0.8 and the status it applies is ×0.64 | ✅ 2026-09-13 (group) |
 | [M90](measurements/M90-heat-dot-takes-the-weak-point-and-the-accumulator-does-not.md) | a Heat DoT DOES take the weak point, and the accumulator's 1 does NOT | ✅ 2026-09-13 (owner) |
 | [M91](measurements/M91-one-weapon-five-elements-four-rows.md) | one weapon, five elements, four rows apiece: every damaging DoT takes the weak point (Toxin included, superseding M54) and a full Blast pile is ten numbers on the host | ✅ 2026-09-13 (owner) |
+| [M92](measurements/M92-catalyzing-shields-fixed-gate-on-any-refill.md) | Catalyzing Shields gives its full fixed shield gate on ANY refill, however small — the mod page, not the Update 34 scaling | ✅ 2026-09-14 (owner) |
 
 ## By weapon
 

@@ -9,6 +9,34 @@ ui:
   # THE WARFRAME BUILDER. The stat names are DE's own, read off the zh card text
   # of the mods that grant them (Intensify 技能强度, Continuity 技能持续时间 …).
   "Warframes": 战甲
+  "Invulnerable": 无敌
+  "Status cleanse": 清除异常状态
+  "Damage cap": 限伤
+  "Shield gate": 护盾门
+  "no shields, so no shield gate": 没有护盾，也就没有护盾门
+  "fixed by": 固定于
+  "scales with the shields held when they break": 随破盾时的护盾量变化
+  "Augur set": Augur 套装
+  "full refill": 回满
+  "partial refill": 未回满
+  "After a full break": 满盾破盾后
+  "Casting converts energy to shields": 施放时能量转化为护盾
+  "shields": 护盾
+  "Ability": 技能
+  "nothing re-opens it on cast — the Augur set or Brief Respite would": 施放技能不会重新打开护盾门——需要 Augur 套装或 Brief Respite
+  "none in this build": 这套配装没有
+  "Operator": 指挥官
+  "Passive": 被动
+  "Operator builds": 指挥官配装
+  "Focus school": 专精流派
+  "What reaches the Warframe": 影响战甲的节点
+  "Only the active school's nodes apply. A node that needs an Operator action counts only when you say it is running.": 只有当前流派的节点生效。需要指挥官先做动作才触发的节点，只有你勾选"视为已触发"时才计入。
+  "always on": 常驻
+  "count it as running": 视为已触发
+  "pick the active Focus school": 选择当前专精流派
+  "no Operator": 不引用指挥官
+  "no school picked": 未选流派
+  "edit on the Operator page": 在指挥官页面编辑
   "Exilus": Exilus
   "Archon Shards": 执刑官源力石
   "Abilities": 技能

@@ -8,5 +8,15 @@ internal_name: /Lotus/Powersuits/Koumei/Abilities/KoumeiBlockAbility
 icon: OmamoriIcon(xWhite).png
 description: "Surround yourself with Omamori Charms, each with a chance to have enemy attacks heal you instead of damage you. The number of charms is determined by Koumei's dice roll.\n\nA roll of triple sixes grants invulnerability for the duration of your Omamori Charms."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Omamori creates between 10 to 20 charms, but cannot gain invulnerability."
+
+tags:
+  # "Koumei becomes Invulnerable by negating damage until all charms from the same cast are consumed. / Subsumed Omamori ... cannot gain invulnerability."
+  - tag: invulnerable
+    when: "on a triple-six roll of Five Fates, until that cast's charms are spent"
+    not_when_infused: true
+
 source:
   url: https://wiki.warframe.com/w/Omamori

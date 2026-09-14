@@ -8,5 +8,9 @@ internal_name: /Lotus/Powersuits/Werewolf/Abilities/WerewolfLeapAbility
 icon: Lycath'sHuntIcon(xWhite).png
 description: "(TAP) Lycath hunts to sustain the pack. Enemies killed by melee attacks drop health orbs and enemies killed by headshots drop energy orbs. Increase the duration of Lycath's hunt by killing enemies affected by 5 or more Status Effects.\n\n(HOLD) Lycath guards Voruna with increased Heavy Attack efficiency."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Lycath's Hunt orb drop rate is reduced to 50% and cannot activate the passive."
+
 source:
   url: https://wiki.warframe.com/w/Lycath%27s_Hunt

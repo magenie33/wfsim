@@ -9,5 +9,10 @@ internal_name: /Lotus/Powersuits/Saryn/Abilities/ShedAbility
 icon: MoltIcon(xWhite).png
 description: "Shedding her skin like a snake, Saryn leaves a decoy behind to draw fire from enemies."
 
+tags:
+  # "to shed her skin, removing all existing status effects"
+  - tag: status_cleanse
+    when: "on cast"
+
 source:
   url: https://wiki.warframe.com/w/Molt

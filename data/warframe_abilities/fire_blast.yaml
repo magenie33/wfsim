@@ -9,5 +9,10 @@ internal_name: /Lotus/Powersuits/Ember/Abilities/FireBlastAbility
 icon: FireBlastIcon(xWhite).png
 description: "Slam the ground to create a wave of incinerating plasma that knocks back enemies and strips their armor."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Armor reduction per cast is capped at 75%, achievable with 100% Ability Strength."
+  - "Healing Flame will not generate Overguard on other Warframes."
+
 source:
   url: https://wiki.warframe.com/w/Fire_Blast

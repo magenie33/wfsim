@@ -8,5 +8,15 @@ internal_name: /Lotus/Powersuits/PaxDuviricus/Abilities/PaxTeleportAbility
 icon: WrathfulAdvanceIcon(xWhite).png
 description: "(TAP) Kullervo charges a Heavy Attack, then teleports to his target and strikes. His rage-filled focus temporarily increases his Melee Critical Chance.\n(HOLD) Teleport to any marked location."
 
+# THE INFUSED VERSION, verbatim from the ability's own page (its `| helminth =`).
+infused_notes:
+  - "Subsumed Wrathful Advance's range is reduced to 10 / 11 / 11.5 / 12.5 meters and melee critical chance bonus reduced to 25% / 50% / 75% / 100% (only the targeting, the hold to teleport range is unchanged)."
+  - "The page's Bugs section: \"Subsumed Wrathful Advance's range is not reduced, and has the same range as on Kullervo.\""
+
+tags:
+  # "becoming Invulnerable during its Wind Up time"
+  - tag: invulnerable
+    when: "during a tap cast's wind-up, not on a hold-cast teleport"
+
 source:
   url: https://wiki.warframe.com/w/Wrathful_Advance
