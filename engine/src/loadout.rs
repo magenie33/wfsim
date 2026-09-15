@@ -2005,6 +2005,8 @@ pub struct WeaponBase {
     pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
     /// [`crate::weapons_data::WeaponSpec::spawn_on_kill`] — counted, no more.
     pub spawn_on_kill: Option<crate::weapons_data::SpawnOnKillSpec>,
+    /// [`crate::weapons_data::KillStreakSummonSpec`] — no mod moves it.
+    pub kill_streak_summon: Option<crate::weapons_data::KillStreakSummonSpec>,
     /// Where this weapon's beam ramp starts (0.20 unless it says otherwise).
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
@@ -3784,6 +3786,8 @@ pub struct ResolvedPanel {
     pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
     /// See [`WeaponBase::spawn_on_kill`].
     pub spawn_on_kill: Option<crate::weapons_data::SpawnOnKillSpec>,
+    /// See [`WeaponBase::kill_streak_summon`].
+    pub kill_streak_summon: Option<crate::weapons_data::KillStreakSummonSpec>,
     /// See `weapons_data::WeaponSpec::beam_ramp_floor`. No mod moves it.
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
@@ -5777,6 +5781,7 @@ pub fn resolve_for(
         super_crit_on_status: base.super_crit_on_status,
         weakpoint_stacks: base.weakpoint_stacks,
         spawn_on_kill: base.spawn_on_kill,
+        kill_streak_summon: base.kill_streak_summon,
         beam_ramp_floor: base.beam_ramp_floor,
         applies_microwave: base.applies_microwave,
         independent_procs: base.independent_procs,

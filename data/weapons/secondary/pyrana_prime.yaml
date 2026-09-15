@@ -1,10 +1,8 @@
 id: pyrana_prime
 name: Pyrana Prime
 slot: secondary
-# TEN PELLETS OF TWENTY-FOUR, and a passive that summons a SECOND PYRANA: three
-# kills inside two seconds each doubles the magazine and multiplies the fire
-# rate by 1.4x for six seconds. That is a kill-counting buff this engine has no
-# shape for, and it is most of what the Prime is worth.
+# TEN PELLETS OF TWENTY-FOUR, and a passive that summons a SECOND PYRANA
+# (`kill_streak_summon`), which is most of what the Prime is worth.
 class: shotgun_sidearm
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -53,8 +51,16 @@ attack:
     reduction: 0.75
   damage: { impact: 1.92, puncture: 1.92, slash: 20.16 }   # 24 a pellet, 240 a shot
 
-unmodeled:
-  - "'3 kills each within 2 seconds of the previous kill summons a second Pyrana Prime for 6 seconds, doubling its magazine size and increasing its fire rate by 1.4x' (wiki). It is a KILL-counting buff — a chain of three, each inside a two-second window — and this engine has no shape for one, so the number here is the weapon before its second gun ever appears. Against a crowd that dies quickly, that is a very large understatement"
+# "3 kills each within 2 seconds of the previous kill summons a second Pyrana
+# Prime for 6 seconds, doubling its magazine size and increasing its fire rate
+# by 1.4x" (wiki). "The fire rate bonus multiplies with any modded fire rate
+# increases"; kills while dual-wielding do not refresh it.
+kill_streak_summon:
+  kills: 3
+  kill_window_seconds: 2.0
+  duration_seconds: 6.0
+  magazine_multiplier: 2.0
+  fire_rate_multiplier: 1.4
 
 source:
   url: https://wiki.warframe.com/w/Pyrana_Prime

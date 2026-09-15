@@ -2023,6 +2023,9 @@ pub struct WeaponSpec {
     /// The Ocucor's tendrils — see [`TendrilSpec`].
     #[serde(default)]
     pub tendrils: Option<TendrilSpec>,
+    /// Pyrana Prime's second gun — see [`KillStreakSummonSpec`].
+    #[serde(default)]
+    pub kill_streak_summon: Option<KillStreakSummonSpec>,
     /// The sniper's Shot Combo Counter — see [`SniperCombo`]. `None` on every
     /// weapon that is not a sniper rifle, which is what the mechanic is keyed
     /// on in game: it is not a class-wide rule the engine could infer from
@@ -3139,6 +3142,29 @@ fn tendril_cone_default() -> f64 {
     40.0
 }
 
+/// A KILL STREAK SUMMONS A SECOND GUN — Pyrana Prime: "3 kills each within 2
+/// seconds of the previous kill summons a second Pyrana Prime for 6 seconds,
+/// doubling its magazine size and increasing its fire rate by 1.4x" (wiki).
+/// Kills while it is up do not refresh it; it arrives with a modded magazine's
+/// worth of rounds, and "when the ethereal Pyrana disappears, the magazine is
+/// reduced to the modded magazine size".
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct KillStreakSummonSpec {
+    pub kills: u32,
+    pub kill_window_seconds: f64,
+    pub duration_seconds: f64,
+    pub magazine_multiplier: f64,
+    pub fire_rate_multiplier: f64,
+}
+
+impl KillStreakSummonSpec {
+    /// Its card, its replay row and its entry on the buff bar.
+    pub const BUFF_ID: &'static str = "kill_streak_summon";
+    /// The streak that buys it: a stack per kill on one clock of
+    /// `kill_window_seconds`, which the next kill restarts.
+    pub const STREAK_BUFF_ID: &'static str = "kill_streak";
+}
+
 /// THE SHOT COMBO COUNTER — a sniper rifle's own damage multiplier, and the one
 /// mechanic in the game that is a WEAPON's and not a build's.
 ///
@@ -3901,6 +3927,7 @@ pub fn base_panel_assembled(
         super_crit_on_status: s.super_crit_on_status,
         weakpoint_stacks: s.weakpoint_stacks,
         spawn_on_kill: s.spawn_on_kill,
+        kill_streak_summon: s.kill_streak_summon,
         tendril_max: s.tendrils.map_or(0, |t| t.max),
         tendril_range_m: s.tendrils.as_ref().map_or(0.0, |t| t.range_m),
         tendril_acquire_deg: s.tendrils.as_ref().map_or(0.0, |t| t.acquire_deg),

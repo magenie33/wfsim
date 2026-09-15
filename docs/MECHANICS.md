@@ -3191,6 +3191,17 @@ kills, more refills, fewer reloads, longer-lived tendrils, and more damage
 again. Nothing was added for it; it fell out of spread damage counting toward
 `RunResult::kills`.
 
+**A STREAK IS READ OFF THE SAME COUNTER.** Pyrana Prime's second gun
+(`kill_streak_summon`) wants three kills each inside 2 s of the last. BOTH
+HALVES ARE BUFFS ON THE BAR, so both have a card and a replay row: `kill_streak`
+is a stack per kill on one clock the next kill restarts, which makes a lapse
+drop the whole streak, and its third kill becomes the gun. A kill is timed at
+the shot boundary where the counter is read, so a status tick that kills
+between two shots is dated to the next one. The gun's x1.4 rides
+`fire_rate_multiplier` beside Frenzy's, and the magazine reads whether it is up
+at one site: it arrives with a modded magazine of rounds and leaves the magazine
+clamped to that size. Kills while it is up start nothing.
+
 **EXCEPT A TENDRIL'S OWN KILL**, which spawns nothing — *"a kill by the primary
 beam, or by a status effect from any source (including one a tendril applied),
 spawns a tendril; a DIRECT kill by a tendril does NOT spawn another."* It is the

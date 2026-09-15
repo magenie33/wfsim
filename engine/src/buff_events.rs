@@ -99,7 +99,8 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         "frenzy" => "headshot",
         // An evolution's CO-shaped multishot counts the statuses ON THE TARGET.
         "on_status_multishot" => "hit_enemy_with_status",
-        "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" | "tendrils" => "kill",
+        "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" | "tendrils"
+        | "kill_streak" | "kill_streak_summon" => "kill",
         "on_headshot_kill_cc" => "headshot_kill",
         // An Eximus weak point is a weak point.
         "on_headshot_cc" | "on_eximus_weakpoint_bd" | "on_headshot_fire_rate"
@@ -185,7 +186,7 @@ mod tests {
     /// the buff the run drops are the same claim.
     #[test]
     fn every_builtin_names_a_listed_trigger() {
-        for id in ["frenzy", "on_status_multishot", "on_kill_multishot", "tendrils",
+        for id in ["frenzy", "on_status_multishot", "on_kill_multishot", "tendrils", "kill_streak_summon",
                    "on_headshot_kill_cc", "sniper_combo", "evo_reload_damage"] {
             let t = of_builtin(id).unwrap_or_else(|| panic!("{id} is not in the table"));
             let t = t.unwrap_or_else(|| panic!("{id} claims no trigger"));

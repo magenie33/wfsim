@@ -3014,6 +3014,34 @@ fn enumerate_buffs(
             trigger: None,
         });
     }
+    // PYRANA PRIME'S SECOND GUN and the streak that buys it: both earned, so
+    // both open empty. The streak's last kill is the gun, hence `kills - 1`.
+    if let Some(s) = wfsim_engine::weapons_data::spec(&info.id).and_then(|w| w.kill_streak_summon) {
+        push(BuffMeta {
+            id: wfsim_engine::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
+            name: "Kill Streak".into(),
+            grants: String::new(),
+            max_stacks: s.kills.saturating_sub(1),
+            kind: "stacking",
+            default_stacks: 0,
+            default_locked: false,
+            permanent: false,
+            uncapped: false,
+            trigger: None,
+        });
+        push(BuffMeta {
+            id: wfsim_engine::weapons_data::KillStreakSummonSpec::BUFF_ID.into(),
+            name: "Second Pyrana Prime".into(),
+            grants: String::new(),
+            max_stacks: 1,
+            kind: "toggle",
+            default_stacks: 0,
+            default_locked: false,
+            permanent: false,
+            uncapped: false,
+            trigger: None,
+        });
+    }
     // THE SHOT COMBO COUNTER, the second weapon passive with a card — and the
     // one that needs it most. A stack costs a LANDING HIT and a sniper fires
     // once or twice a magazine, so a 60 s engagement ends around the third

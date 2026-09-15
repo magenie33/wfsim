@@ -3383,6 +3383,12 @@ pub struct DummyParams {
     pub weakpoint_stacks: Option<crate::weapons_data::WeakpointStacksSpec>,
     /// See `loadout::WeaponBase::spawn_on_kill` — the Ballistica's ghosts.
     pub spawn_on_kill: Option<crate::weapons_data::SpawnOnKillSpec>,
+    /// Pyrana Prime's second gun — see [`crate::weapons_data::KillStreakSummonSpec`].
+    pub kill_streak_summon: Option<crate::weapons_data::KillStreakSummonSpec>,
+    /// ...and its card: whether it is already up when the fight opens.
+    pub kill_streak_summon_opens_active: bool,
+    /// ...and the streak's card: the kills already banked when it opens.
+    pub kill_streak_opens_at: u32,
     /// Hemorrhage's status-conversion roll (per damage instance, max one).
     pub proc_conversion: Option<crate::loadout::ProcConv>,
     /// The equipped secondary arcane, resolved at its rank from
@@ -3785,6 +3791,12 @@ impl DummyParams {
         if self.tendril_max > 0 && (self.crit_chance_per_tendril > 0.0 || self.sc_per_tendril > 0.0) {
             push!("tendrils", self.tendril_max);
         }
+        // PYRANA PRIME'S SECOND GUN and the streak that buys it. The streak
+        // never shows its last kill: that one turns into the gun.
+        if let Some(s) = self.kill_streak_summon {
+            push!(crate::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID, s.kills.saturating_sub(1));
+            push!(crate::weapons_data::KillStreakSummonSpec::BUFF_ID, 1);
+        }
         // EVERY stacking buff, by construction. A new one appears on the
         // replay the moment the data declares it — there is no arm to add.
         for b in &self.stacking_buffs {
@@ -3948,6 +3960,18 @@ impl DummyParams {
             self.tendrils_initial = stacks.min(self.tendril_max);
             self.tendrils_held = locked;
         }
+        if let Some(s) = self.kill_streak_summon.as_mut() {
+            use crate::weapons_data::KillStreakSummonSpec as K;
+            if let Some(&(stacks, locked)) = cfg.get(K::BUFF_ID) {
+                self.kill_streak_summon_opens_active = stacks > 0;
+                s.duration_seconds = clock(s.duration_seconds, locked);
+            }
+            // A LOCKED STREAK never lapses: its clock is the window.
+            if let Some(&(stacks, locked)) = cfg.get(K::STREAK_BUFF_ID) {
+                self.kill_streak_opens_at = stacks.min(s.kills.saturating_sub(1));
+                s.kill_window_seconds = clock(s.kill_window_seconds, locked);
+            }
+        }
         // Every stacking buff takes the same two knobs the Galvanized family
         // does, and takes them by ID — so a buff the data adds is configurable
         // without a line here.
@@ -4072,6 +4096,13 @@ impl DummyParams {
         if self.tendril_max > 0 && by_id("tendrils") {
             self.tendril_max = 0;
             self.tendrils_initial = 0;
+        }
+        if self.kill_streak_summon.is_some()
+            && by_id(crate::weapons_data::KillStreakSummonSpec::BUFF_ID)
+        {
+            self.kill_streak_summon = None;
+            self.kill_streak_summon_opens_active = false;
+            self.kill_streak_opens_at = 0;
         }
         if self.arcane.enervate_rank.is_some() && by_id("arcane:secondary_enervate") {
             self.arcane.enervate_rank = None;
@@ -4802,6 +4833,10 @@ impl DummyParams {
             super_crit_on_status: panel.super_crit_on_status,
             weakpoint_stacks: panel.weakpoint_stacks,
             spawn_on_kill: panel.spawn_on_kill,
+            kill_streak_summon: panel.kill_streak_summon,
+            // EARNED, like every other timed buff; the cards move them.
+            kill_streak_summon_opens_active: false,
+            kill_streak_opens_at: 0,
             beam_ramp_floor: panel.beam_ramp_floor,
             applies_microwave: panel.applies_microwave,
             independent_procs: panel.independent_procs,
@@ -5214,6 +5249,9 @@ impl Default for DummyParams {
             super_crit_on_status: None,
             weakpoint_stacks: None,
             spawn_on_kill: None,
+            kill_streak_summon: None,
+            kill_streak_summon_opens_active: false,
+            kill_streak_opens_at: 0,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             applies_microwave: false,
             independent_procs: &[],
@@ -10786,6 +10824,11 @@ fn sample_stacks(
             // Read off the loop's own counter rather than re-derived: the
             // fight is the only thing that knows how many are up.
             "tendrils" => (cap(tendrils), never),
+            // Both halves of Pyrana Prime's passive live on the bar.
+            id @ (crate::weapons_data::KillStreakSummonSpec::BUFF_ID
+            | crate::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID) => bar
+                .get(id)
+                .map_or((0, unknown), |x| (cap(x.stacks), x.expiry_seconds.unwrap_or(never))),
             // ...and the same for the combo, which is why the frame series is
             // u16: this is the first buff whose honest count runs past 255.
             "sniper_combo" => (cap(combo), unknown),
@@ -13575,6 +13618,32 @@ fn combo_at(
 }
 
 /// A stacking spec's decay period, or 0 when the spec is absent.
+/// PYRANA PRIME'S STREAK, as the bar holds it: `stacks` kills on one clock.
+fn kill_streak(s: crate::weapons_data::KillStreakSummonSpec, stacks: u32, t: f64) -> crate::buffs::Buff {
+    crate::buffs::Buff {
+        id: crate::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
+        scope: crate::buffs::BuffScope::Weapon,
+        stacks,
+        expiry_seconds: Some(t + s.kill_window_seconds),
+        contributions: crate::buffs::Contributions::default(),
+    }
+}
+
+/// PYRANA PRIME'S SECOND GUN, as the bar holds it: the fire-rate half is a
+/// bar multiplier like Frenzy's, and the magazine half reads whether it is up.
+fn summoned_gun(s: crate::weapons_data::KillStreakSummonSpec, t: f64) -> crate::buffs::Buff {
+    crate::buffs::Buff {
+        id: crate::weapons_data::KillStreakSummonSpec::BUFF_ID.into(),
+        scope: crate::buffs::BuffScope::Weapon,
+        stacks: 1,
+        expiry_seconds: Some(t + s.duration_seconds),
+        contributions: crate::buffs::Contributions {
+            fire_rate_multiplier: s.fire_rate_multiplier,
+            ..Default::default()
+        },
+    }
+}
+
 fn dur(spec: &Option<crate::loadout::StackSpec>) -> f64 {
     spec.as_ref().map_or(0.0, |s| s.duration)
 }
@@ -13935,6 +14004,10 @@ pub fn run_once_traced(
     // plain number instead of a buff lookup at eight call sites.
     let mut mag_cap = params.magazine_size;
     let mut mag_growth_stacks: u32 = 0;
+    // PYRANA PRIME'S SECOND GUN multiplies that capacity while it is up, so a
+    // growth stack landing meanwhile is paid at the same multiple and comes
+    // back out whole when the gun leaves.
+    let mut summon_magazine_multiplier = 1.0f64;
 
     macro_rules! bump_on_trigger {
         ($want:expr, $t:expr, $rng:expr) => {
@@ -13975,7 +14048,7 @@ pub fn run_once_traced(
             if let Some((per, max)) = params.magazine_growth_on_empty_reload {
                 if mag_growth_stacks < max {
                     mag_growth_stacks += 1;
-                    mag_cap += per;
+                    mag_cap += per * summon_magazine_multiplier;
                 }
             }
         };
@@ -14156,6 +14229,13 @@ pub fn run_once_traced(
                     &mut bar,
                 ),
             }
+        }
+    }
+    if let Some(s) = params.kill_streak_summon {
+        if params.kill_streak_summon_opens_active {
+            bar.upsert(summoned_gun(s, 0.0));
+        } else if params.kill_streak_opens_at > 0 {
+            bar.upsert(kill_streak(s, params.kill_streak_opens_at, 0.0));
         }
     }
 
@@ -14583,6 +14663,41 @@ pub fn run_once_traced(
                         instant_reload_now = true;
                     }
                 }
+                // PYRANA PRIME'S STREAK, off the same counter and held on the bar:
+                // each kill restarts the clock `bar.expire` already runs, so a
+                // lapse drops the whole streak. A kill while the second gun is
+                // up starts nothing — "will not refresh the duration".
+                if let Some(s) = params.kill_streak_summon {
+                    use crate::weapons_data::KillStreakSummonSpec as K;
+                    if bar.get(K::BUFF_ID).is_none() {
+                        let streak = bar.get(K::STREAK_BUFF_ID).map_or(0, |b| b.stacks) + 1;
+                        if streak >= s.kills {
+                            bar.remove(K::STREAK_BUFF_ID);
+                            bar.upsert(summoned_gun(s, t));
+                        } else {
+                            bar.upsert(kill_streak(s, streak, t));
+                        }
+                    }
+                }
+            }
+        }
+        // …AND THE MAGAZINE FOLLOWS THE BAR, at one site for both edges. It
+        // arrives with a modded magazine's worth of rounds, and "when the
+        // ethereal Pyrana disappears, the magazine is reduced to the modded
+        // magazine size" (wiki).
+        if let Some(s) = params.kill_streak_summon {
+            let want = if bar.get(crate::weapons_data::KillStreakSummonSpec::BUFF_ID).is_some() {
+                s.magazine_multiplier
+            } else {
+                1.0
+            };
+            if (want - summon_magazine_multiplier).abs() > 1e-12 {
+                if want > summon_magazine_multiplier {
+                    magazine += mag_cap / summon_magazine_multiplier;
+                }
+                mag_cap = mag_cap / summon_magazine_multiplier * want;
+                magazine = magazine.min(mag_cap);
+                summon_magazine_multiplier = want;
             }
         }
 
@@ -28630,6 +28745,13 @@ mod tests {
             // them: the tendril card exists only where a mod reads the count.
             tendril_max: 4,
             crit_chance_per_tendril: 0.1,
+            kill_streak_summon: Some(crate::weapons_data::KillStreakSummonSpec {
+                kills: 3,
+                kill_window_seconds: 2.0,
+                duration_seconds: 6.0,
+                magazine_multiplier: 2.0,
+                fire_rate_multiplier: 1.4,
+            }),
             ..DummyParams::default()
         }
     }
@@ -32432,6 +32554,49 @@ mod tests {
         let far = run(&build(true, 60.0));
         assert!((far.mean_kills - on.mean_kills).abs() < 1e-9, "the control moved");
         assert!((far.mean_ghosts).abs() < 1e-9, "out of range, got {}", far.mean_ghosts);
+    }
+
+    /// PYRANA PRIME'S SECOND GUN IS BOUGHT WITH A STREAK. Every shot kills here,
+    /// so at 5 rounds a second three kills fit inside the 2 s window and the gun
+    /// is up most of the fight; at 0.4 a second no two kills do, and the fight
+    /// is the undeclared one to the kill.
+    #[test]
+    fn a_kill_streak_summons_a_second_gun_and_only_a_streak_does() {
+        let spec = |fire_rate_multiplier: f64| crate::weapons_data::KillStreakSummonSpec {
+            kills: 3,
+            kill_window_seconds: 2.0,
+            duration_seconds: 6.0,
+            magazine_multiplier: 2.0,
+            fire_rate_multiplier,
+        };
+        let build = |summon, fire_rate: f64, magazine_size: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 5000.0),
+            fire_rate,
+            magazine_size,
+            reload_seconds: 5.0,
+            infinite_reserve: true,
+            duration_seconds: 30.0,
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            body_parts: mono_body(1.0),
+            kill_streak_summon: summon,
+            ..DummyParams::default()
+        };
+        let kills = |p: &DummyParams| monte_carlo(p, 4, 0x9a4a).mean_kills;
+
+        // THE FIRE RATE: a bottomless magazine, so x1.4 is all that can move.
+        let (on, off) = (kills(&build(Some(spec(1.4)), 5.0, 1e9)), kills(&build(None, 5.0, 1e9)));
+        assert!(off > 100.0, "the fixture stopped killing: {off}");
+        assert!(on > off * 1.25, "a streak every few seconds: {on} against {off}");
+
+        // THE MAGAZINE: no fire-rate half, twelve rounds and a long reload, so
+        // the extra rounds are all that can move.
+        let (on, off) = (kills(&build(Some(spec(1.0)), 2.0, 12.0)), kills(&build(None, 2.0, 12.0)));
+        assert!(on > off + 5.0, "the second gun's rounds: {on} against {off}");
+
+        // NO STREAK: 2.5 s between kills never chains.
+        let (on, off) = (kills(&build(Some(spec(1.4)), 0.4, 1e9)), kills(&build(None, 0.4, 1e9)));
+        assert!((on - off).abs() < 1e-9, "no streak, yet {on} against {off}");
     }
 
     #[test]
