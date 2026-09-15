@@ -2654,6 +2654,14 @@ kill arms Frenzy's +100% efficiency — so the next shot is free and fires inste
 of forcing a reload. A charge-backed magazine can never take that branch, since
 it is exempt from efficiency entirely.
 
+**The question is asked before each shot, not after the last one** — measured
+in game. The last round is followed by the ordinary fire interval, and that
+delay shortens with fire rate; only when the next shot is due and cannot fire
+does the reload begin. So a 12-round magazine at 2.5 shots/s fires its last
+round at 4.4 s and starts reloading at 4.8 s. `engine::dummy` asks at the top of
+the shot loop, after the previous shot's interval; moving the check to the end
+of a shot would start every reload one interval early.
+
 **The in-game HUD shows the CEILING** of that fractional counter, which is how
 M14 was readable at all: from 4.25 a single 0.25 shot moves the readout 5 → 4,
 where a clean 5.00 magazine would have stayed at 5. Worth knowing before
