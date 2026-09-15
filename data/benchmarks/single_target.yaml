@@ -104,7 +104,7 @@ build:
   valence: full
 
 scenario:
-  # A single Corrupted-faction target at the top of the level range, Steel
+  # A single Thrax target (faction Unknown) at the top of the level range, Steel
   # Path. Chosen because it is the fight the roster is already calibrated
   # against, not because it is the only fight worth having — a second ruler
   # (group clear) is expected to exist alongside this one rather than replace
