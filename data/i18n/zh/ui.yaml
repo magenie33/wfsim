@@ -220,8 +220,8 @@ ui:
   "Buffs": 增益
   "Build": 当前配装
   "Builder": 配装器
-  "Builder, simulator and optimizer stay free for everyone.":
-    构建、模拟、优化，对所有人永远免费。
+  "Builder, simulator and optimizer are free for everyone.":
+    构建、模拟、优化，对所有人免费。
   "Builds": 配装
   "Burst DPS": 爆发 DPS
   "CPU threads": CPU 线程
@@ -455,8 +455,6 @@ ui:
   "Loading the board…": 正在加载榜单…
   "The board could not be reached.": 榜单加载失败。
   "Retry": 重试
-  "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
-    没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。
   "Noise Reduction": 消音
   "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 mod 卡的是姿势。
@@ -614,8 +612,6 @@ ui:
   "Voruna's signature bonus is not modelled — carried by her the ammo pool grows to 56, and this arena has no Warframe holding it": Voruna 的专属加成尚未建模 —— 由她携带时备弹增至 56，而这个战场里没有战甲持有它
   "WF Sprint": 战甲冲刺速度
   "WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.": WF模拟 是非官方粉丝项目，与 Digital Extremes 无从属关系，也未获其认可。Warframe 是 Digital Extremes Ltd. 的商标。
-  "WFSim is free software, licensed AGPL-3.0. Building, simulating and optimizing are the whole of this site, and they are the same for everyone: no account, no payment, no part held back.":
-    WF模拟是自由软件，采用 AGPL-3.0 授权。构建、模拟、优化——这三件事就是这个站点的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。
   "WHEN AIMING, headshots take '+400% critical chance', additive with Point Strike (wiki). The engine has no headshot-CONDITIONAL crit bucket — a crit is rolled for the hit, and the body part it lands on is drawn beside it — so this arena's crit chance is the unaimed one. It is the larger half of the weapon: against a headshot-heavy fight the number here is well under the real one": "瞄准时，爆头获得「+400% 暴击率」，与 Point Strike 加算（维基）。本引擎没有「以爆头为条件」的暴击池 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这个战场用的是不带这一条的暴击率。它是这把武器更大的那一半：在一场以爆头为主的战斗里，这里的数字远低于真实值"
   "Warframe ability": 战甲技能
   "Warframe buffs": 战甲增益
@@ -1770,10 +1766,10 @@ ui:
     "一次性，美元。信用卡或 PayPal，不用注册。"
   "Monthly, in USD. The channel where the work is discussed, and your reports read first.":
     "按月，美元。能进聊开发的频道，你的反馈会被先看到。"
-  "A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone — no payment, and no part held back.":
-    "一个奔着对上游戏内实测数字去做的 Warframe 计算器，一项一项地对。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致：不用付费，也没有哪一块是留着不给的。"
-  "A fix to the builder, the simulator or the optimizer ships to everybody at once. There is no earlier copy, and nothing held back for later.":
-    "构建器、模拟器、优化器上的任何一处修复，都是同时发给所有人的。没有抢先版，也没有什么是留着以后再放的。"
+  "A Warframe calculator built to match in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone.":
+    "一个奔着对上游戏内实测数字去做的 Warframe 计算器，一项一项地对。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致。"
+  "A fix to the builder, the simulator or the optimizer ships to everybody at once. There is no earlier copy.":
+    "构建器、模拟器、优化器上的任何一处修复，都是同时发给所有人的。没有抢先版。"
   "What you have run here stays in your own browser and is sent nowhere. The only place a visit is counted at all is Cloudflare's own request log, which is what serves the page.":
     "你在这里跑过什么，只留在你自己的浏览器里，不会发往任何地方。一次访问唯一被记下的地方，是 Cloudflare 自己的请求日志——页面本来就是它发的。"
   "Supporting this buys no priority: not over what gets built next, not in the queue, not on a reply. I will read your message knowing you backed this, and it would be dishonest to claim that changes nothing — but that is a courtesy, not an obligation, and it is the whole of what it is.":
@@ -1788,8 +1784,8 @@ ui:
     "单次或包月，人民币，在 B 站里直接充——不用信用卡，也不用注册新号。"
   "Thank you":
     "感谢"
-  "WFSim is free for everyone and always will be. These are the people who chipped in anyway, earliest and largest first — no tiers, no ranks, and no numbers beside a name.":
-    "WFSim 对所有人免费，以后也一样。这些是还是投喂了的人，最早和最多的排前面——没有档位，没有名次，名字边上不会有数字。"
+  "WFSim is free for everyone. These are the people who chipped in anyway, earliest and largest first — no ranks, and no numbers beside a name.":
+    "WFSim 对所有人免费。这些是还是投喂了的人，最早和最多的排前面——没有名次，名字边上不会有数字。"
   "The people who have chipped in":
     "投喂过的人"
   "Everyone who has →":
