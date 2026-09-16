@@ -748,12 +748,11 @@ same build.
   damage beside the rest, it changes the SHARE each damage type holds of the
   total — and a status proc is drawn in proportion to that share, so more Impact
   is fewer Viral and Corrosive procs.
-- **status duration, on every weapon, across its whole band.** It paces
-  Heat's armour strip (the steps scale with it) and nullifies every status at or
-  below -100%, so a deeper malus strips faster until the card falls off that
-  cliff (M99). Its best can sit INSIDE the band, where an end-only search sees
-  both sides of the cliff and never the edge, so it is asked at every 0.01 step:
-  21 fights instead of two.
+- **status duration, on every weapon.** It paces Heat's armour strip (the steps
+  scale with it) and nullifies every status at or below -100%, so a deeper malus
+  strips faster until the burn disappears (M99). Its true best can sit INSIDE
+  the band, on the edge of that cliff, and only the two ends are asked: the gap
+  between an end and that edge is an accepted error, not a search.
 - **a stat the WEAPON takes the sign off**, one row each in
   `rivens_data::SIGN_IS_NOT_THE_ANSWER`. A weapon earns a row by paying for NOT
   having something, which makes whatever supplies it a cost: `+2000% on
