@@ -984,6 +984,19 @@ pub fn god_roll(shape: &RivenShape, class: &str) -> RivenSpec {
 /// the sign, on every weapon.
 pub const PHYSICAL_STATS: [&str; 3] = ["impact", "puncture", "slash"];
 
+/// …AND THE STATS WHOSE BEST CAN SIT INSIDE THE BAND, asked at every step of it.
+///
+/// Status duration paces Heat's armour strip (its steps scale with it) and
+/// nullifies every status at or below -100%, so a deeper malus strips faster
+/// until the card falls off that cliff (M99). An end-only search sees the two
+/// sides of the cliff and never the edge the build wants.
+pub const INTERIOR_STATS: [&str; 1] = ["status_duration"];
+
+/// The rolls an [`INTERIOR_STATS`] entry is asked at: the band in 0.01 steps.
+fn band_steps() -> impl Iterator<Item = f64> {
+    (0..=20).map(|i| f64::from(900 + 10 * i) / 1000.0)
+}
+
 /// …AND THE WEAPONS THAT TAKE THE SIGN OFF ONE MORE, one row each.
 ///
 /// A weapon EARNS A ROW by paying for NOT having something, which makes
@@ -1026,8 +1039,8 @@ pub const SIGN_IS_NOT_THE_ANSWER: &[(&str, &[&str])] = &[
 /// WHICH OF THIS SHAPE'S STATS THE SIGN DOES NOT DECIDE — the only ones a fight
 /// has to be asked about.
 ///
-/// Two sources and no third: [`PHYSICAL_STATS`], always, and the weapon's own
-/// row in [`SIGN_IS_NOT_THE_ANSWER`].
+/// Three sources and no fourth: [`PHYSICAL_STATS`] and [`INTERIOR_STATS`],
+/// always, and the weapon's own row in [`SIGN_IS_NOT_THE_ANSWER`].
 ///
 /// EMPTY IS THE COMMON CASE, and it means no fight at all: the card is the god
 /// roll. Measured over the library: four riven builds in five.
@@ -1044,6 +1057,7 @@ pub fn ambiguous_stats(shape: &RivenShape, weapon: &str) -> BTreeSet<String> {
         .map_or(&[][..], |(_, s)| *s);
     PHYSICAL_STATS
         .into_iter()
+        .chain(INTERIOR_STATS)
         .chain(by_weapon.iter().copied())
         .filter(|s| named.contains(s))
         .map(String::from)
@@ -1084,15 +1098,31 @@ pub fn best_roll(
     let Some((base, base_err)) = score(&shape.at(class, &god)) else {
         return shape.at(class, &god);
     };
+    // WHAT EACH ASKED STAT MAY TAKE: both ends, or every step of the band.
+    let choices: Vec<Vec<f64>> = asked
+        .iter()
+        .map(|&i| {
+            if INTERIOR_STATS.contains(&stats[i]) {
+                band_steps().collect()
+            } else {
+                vec![ROLL_MIN, ROLL_MAX]
+            }
+        })
+        .collect();
     let mut best: Option<(f64, Vec<f64>)> = None;
     // EVERY COMBINATION OF THE ASKED STATS AND NOTHING ELSE. `2^k` where k is
-    // one on all but five builds in the library, so this is two fights.
-    for m in 1..(1u32 << asked.len()) {
+    // one on all but five builds in the library, so this is two fights — and
+    // 21 for an interior stat.
+    let combos: usize = choices.iter().map(Vec::len).product();
+    for m in 0..combos {
         let mut rolls = god.clone();
-        for (bit, &i) in asked.iter().enumerate() {
-            if m >> bit & 1 == 1 {
-                rolls[i] = if rolls[i] == ROLL_MAX { ROLL_MIN } else { ROLL_MAX };
-            }
+        let mut rest = m;
+        for (c, &i) in choices.iter().zip(&asked) {
+            rolls[i] = c[rest % c.len()];
+            rest /= c.len();
+        }
+        if rolls == god {
+            continue;
         }
         let spec = shape.at(class, &rolls);
         let Some((s, err)) = score(&spec) else { continue };
@@ -1190,6 +1220,28 @@ fn a_card_is_the_god_roll_unless_a_fight_can_prove_otherwise() {
     // A FIGHT THAT DID NOT RUN LEAVES THE GOD ROLL STANDING.
     let dead = best_roll(&phys, "rifle", &asked_set, |_| None);
     assert_eq!(rolls(&dead), rolls(&god_roll(&phys, "rifle")));
+}
+
+/// A STATUS DURATION MALUS IS ASKED ACROSS ITS BAND: deeper strips Heat faster
+/// until -100% nullifies the burn, so the best card sits on the cliff's edge.
+#[test]
+fn a_status_duration_malus_finds_the_edge_inside_its_band() {
+    let shape = RivenShape {
+        bonuses: vec!["damage".into(), "multishot".into()],
+        malus: Some("status_duration".into()),
+    };
+    let asked = ambiguous_stats(&shape, "lex_prime");
+    assert_eq!(asked.into_iter().collect::<Vec<_>>(), vec!["status_duration".to_string()]);
+
+    // Rising with depth up to 1.04, then off the cliff.
+    let mut fights = 0;
+    let out = best_roll(&shape, "rifle", &ambiguous_stats(&shape, "lex_prime"), |r| {
+        fights += 1;
+        let m = r.malus.as_ref().unwrap().roll;
+        Some((if m > 1.045 { 0.0 } else { m }, 0.001))
+    });
+    assert_eq!(rolls(&out), vec![ROLL_MAX, ROLL_MAX, 1.04]);
+    assert_eq!(fights, 21, "the god roll and the twenty other steps");
 }
 
 /// Bonuses then the malus — the order `RivenShape::at` reads them back in.

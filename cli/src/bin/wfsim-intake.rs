@@ -117,8 +117,9 @@ fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
 /// never reach a fight.
 ///
 /// A STAT LOSES ITS SIGN FOR A LISTED REASON — `rivens_data::ambiguous_stats`
-/// holds both sources and there is no third. Only those stats are asked about,
-/// both ends, everything else pinned at the god roll.
+/// holds the three sources and there is no fourth. Only those stats are asked
+/// about — both ends, or every step for status duration — everything else
+/// pinned at the god roll.
 ///
 /// AND EACH `(ruler, mode)` ANSWERS FOR ITSELF. One ruler cannot speak for
 /// another and the corner that wins a crowd need not win one target, so what
@@ -551,7 +552,8 @@ mod tests {
         for b in &builds {
             let rolls = b["record"]["riven_rolls"].as_array().expect("rolls are stored");
             assert_eq!(rolls.len(), 3, "two bonuses and a malus: {rolls:?}");
-            // EVERY CORNER IS AN END OF THE BAND, never something between.
+            // EVERY CORNER IS AN END OF THE BAND here: no stat of this shape is
+            // one whose best can sit inside it (`rivens_data::INTERIOR_STATS`).
             for r in rolls {
                 let r = r.as_f64().unwrap_or_default();
                 assert!(r == 0.9 || r == 1.1, "a corner is an end of the band: {r}");
