@@ -25,6 +25,11 @@ how you contribute:
 - **Some files are rewritten constantly** — `web/src/static/app.js`,
   `webapi/src/lib.rs`, `engine/src/loadout.rs`. A PR touching them competes with
   the maintainer's own edits every day it stays open.
+- **`engine/` and `optimizer/` are maintainer-led.** They carry the model every
+  number in the product comes out of, they move fastest, and a change in them is
+  argued against measurements rather than reviewed for style. Open an issue
+  before writing code in either: a patch that arrives without one is competing
+  with a rewrite it cannot see.
 - **So: open an issue before writing anything over ~300 lines.** Say what you
   want to build and where you think it plugs in; the maintainer confirms the
   interface and the landing spot; then it goes in as small pieces. This is not
