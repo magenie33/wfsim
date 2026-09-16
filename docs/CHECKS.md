@@ -543,7 +543,11 @@ because a stack count nobody can set is a mod nobody can measure. See BUFFS.md.
 ## `check_gain_axes`
 
 The quick-calc gain scan obeys the evolution TIER LADDER,
-so it never ranks a perk the builder will not let you click.
+so it never ranks a perk the builder will not let you click. It also holds the
+MODE axis to its one field: a mode moves no other part of the build, so a
+candidate that overrode a second field would be measuring a build nobody asked
+for — and a mode a mod has taken off the weapon is listed without being
+measured, the ladder's own rule.
 
 ## `check_replay`
 

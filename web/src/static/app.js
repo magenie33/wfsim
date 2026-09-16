@@ -11650,6 +11650,22 @@ function ddOpen(id, anchor) {
   s.oninput = () => ddRender(id, s.value);
   ddRender(id, "");
   if (wantSearch) s.focus();
+  // A LIST THAT DECLARES AN AXIS MEASURES ITSELF, and it is the DECLARATION
+  // that does it rather than the control: a mode is a plain dropdown and a
+  // valence is a card, and both are one axis of the same build.
+  //
+  // ON OPEN, not on render. The options live inside a closed list, so an eager
+  // scan spends a fight per candidate on numbers nobody can see, and does it
+  // again on every repaint. The list opens FIRST and the scan starts after, so
+  // the rows are there immediately carrying their "…" chips.
+  if (cfg.axis) {
+    ensureGains(cfg.axis, () => {
+      // REPAINT THE OPEN LIST, and only while it is open — the mod picker's
+      // own rule. A closed list has nobody reading it, and its next open
+      // re-renders.
+      if (!$("dd-popover").hidden) ddRender(id, $("dd-search").value);
+    }, true);
+  }
 }
 
 // Delegated, because every caller re-renders its trigger by innerHTML — a
@@ -11904,10 +11920,10 @@ const modsCompatible = (ids) => {
 /// Every candidate for an axis position, as `{ id, payload }` — the payload
 /// being what to OVERRIDE on `buildPayload()` to try it.
 ///
-/// The three axes differ only here. A mod replaces one slot, an arcane one
-/// pool, an evolution one tier — and evolutions are scanned across EVERY tier
-/// at once, because they are all on screen at once and there are a dozen of
-/// them, not seventy.
+/// The axes differ only here. A mod replaces one slot, an arcane one pool, an
+/// evolution one tier, a mode the whole way the weapon is played — and
+/// evolutions are scanned across EVERY tier at once, because they are all on
+/// screen at once and there are a dozen of them, not seventy.
 function gainCandidates(axis) {
   if (axis.kind === "arcane") {
     const cur = arcanes.slice();
@@ -11977,6 +11993,20 @@ function gainCandidates(axis) {
     return s.elements
       .filter((e) => e !== valence.element)
       .map((e) => ({ id: e, payload: { valence_element: e, valence_bonus: valence.bonus } }));
+  }
+  if (axis.kind === "mode") {
+    // ONE FIELD, AND NOTHING ELSE MOVES. A form carries no mod pool of its
+    // own — only its group's default entry states one — so the mods, arcanes
+    // and evolutions the build already wears are exactly as legal in every
+    // other mode, and the candidate is the request's `mode` and no more.
+    //
+    // A MODE A MOD HAS TAKEN OFF THE WEAPON IS NOT MEASURED, the rule the
+    // evolution axis applies to a tier that would evict one: it is still
+    // listed and still choosable, it just has nothing to report until the mod
+    // comes out.
+    return modeOpts(weaponInfo($("weapon").value) || {})
+      .filter(([id, , off]) => id !== mode && !off)
+      .map(([id]) => ({ id, payload: { mode: id } }));
   }
   const cur = slots.map((s) => s.mod);
   // `buildPool()`, not the weapon's: a scan that ranks a mod this build's
@@ -12895,26 +12925,12 @@ function rankedItems(cfg) {
   }));
 }
 
-/// OPEN A RANKED LIST, and start measuring it.
-///
-/// **THE SCAN FIRES ON OPEN, like the mod and arcane pickers**. Scanning from
-/// RENDER is right for rows of chips, "all on screen at once … which is why
-/// they can afford to answer without being opened", and wrong for cards — the
-/// options live inside a closed list now, so an eager scan spends a fight per
-/// candidate on numbers nobody can see, and does it again on every repaint.
-///
-/// The list opens FIRST and the scan starts after, so the rows are there
-/// immediately carrying their "…" chips rather than after a measurement.
+/// OPEN A RANKED LIST BY NAME — what a slot's ⋯ "Swap" and an empty plate
+/// reach for, neither of which has a trigger element to delegate off.
+/// Measuring is `ddOpen`'s, so every list that declares an axis is scanned
+/// whichever control opened it.
 function openRanked(id, anchor) {
-  const cfg = ddReg.get(id);
-  if (!cfg) return;
-  ddOpen(id, anchor);
-  if (!cfg.axis) return;
-  ensureGains(cfg.axis, () => {
-    // REPAINT THE OPEN LIST, and only while it is open — the mod picker's own
-    // rule. A closed list has nobody reading it, and its next open re-renders.
-    if (!$("dd-popover").hidden) ddRender(id, $("dd-search").value);
-  }, true);
+  if (ddReg.get(id)) ddOpen(id, anchor);
 }
 
 /// The ⋯ menu a `rankedSlot` opens — Swap, and Remove where the axis has one.
@@ -14384,11 +14400,19 @@ function renderMode() {
   if (!opts.some(([id]) => id === mode)) mode = defaultMode(w.id, null);
   const why = (opts.find(([id]) => id === mode) || [])[2];
   if (sub) sub.textContent = tr("how this build is played");
+  // RANKED, because a mode is a build axis like every other
+  // (`engine::builds::BUILD_AXES`) and the cheapest of them to try: it moves
+  // no other part of the build, so each one is a single simulation against the
+  // same baseline. STILL A DROPDOWN — the axis is what measures a list, not
+  // the shape of the control that opens it, so how a weapon is played stays
+  // one click away.
   box.innerHTML = `<label>${escHtml(tr("Mode"))} ${ddButton("dd-mode", {
+    axis: { kind: "mode", idx: 0 },
+    axisLabel: tr("Mode"),
     value: mode,
     items: opts.map(([id, label, offReason]) => ({
-      value: id, label: label + (offReason ? " ⊘" : ""), hint: offReason || "",
-      disabled: !!offReason,
+      key: id, value: id, label: label + (offReason ? " ⊘" : ""),
+      hint: offReason || "", disabled: !!offReason,
     })),
     onPick: (v) => {
       mode = v;

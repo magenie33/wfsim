@@ -41,4 +41,52 @@ check("a swap replaces ONE tier and leaves the rest alone",
   JSON.stringify(r.swap) === JSON.stringify(['torid_evo1_incarnon_form','torid_plentiful_mayhem','torid_extended_volley']),
   JSON.stringify(r.swap));
 
+// THE MODE AXIS IS THE CHEAPEST ONE, and this is why: a form carries no mod
+// pool of its own, so switching mode leaves every mod, arcane and evolution
+// exactly where it is and the candidate is ONE request field. A payload that
+// grew a second field would be a build the reader did not ask for.
+//
+// Its one exclusion is the ladder's own: a mode a mod has taken off the weapon
+// is still listed and still not measured.
+const m = await evaluate(`(async () => {
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  history.pushState({},'','/weapons/Torid'); route(); await sleep(3000);
+  slots.forEach(s => { s.mod = null; s.rank = null; });
+  const w = weaponInfo('torid');
+  const cands = () => gainCandidates({kind:'mode',idx:0});
+  const open = cands();
+  const blocker = ((w.evo_forbids || {})[w.unlock_evo] || [])[0];
+  // THE CONTROL IS A PLAIN DROPDOWN AND STILL AN AXIS: what makes a list
+  // measure is the declaration, not the shape of the thing that opens it.
+  const trigger = document.querySelector('#mode-row [data-dd]');
+  const declared = ((ddReg.get('dd-mode') || {}).axis || {}).kind || '';
+  slots[0] = { mod: blocker, pol: slots[0].pol, rank: null };
+  return {
+    declared,
+    isButton: !!trigger && trigger.tagName === 'BUTTON',
+    all: (w.modes || []).slice(),
+    cur: mode,
+    cycles: (w.modes || []).filter(isCycleMode),
+    open: open.map(c => c.id),
+    fields: [...new Set(open.flatMap(c => Object.keys(c.payload)))],
+    carried: open.every(c => c.payload.mode === c.id),
+    blocker,
+    blocked: cands().map(c => c.id),
+  };
+})()`);
+
+check("the mode control declares the axis and stays one click away",
+  m.declared === "mode" && m.isButton, `${m.declared} / button=${m.isButton}`);
+check("every other mode is a candidate, and the current one is not",
+  m.open.length === m.all.length - 1 && !m.open.includes(m.cur) &&
+  m.all.filter((x) => x !== m.cur).every((x) => m.open.includes(x)),
+  `${m.cur} -> ${m.open.join(",")}`);
+check("a mode candidate overrides ONE field, and it is its own id",
+  JSON.stringify(m.fields) === JSON.stringify(["mode"]) && m.carried,
+  m.fields.join(","));
+check("the weapon has a cycle to lose", m.cycles.length > 0 && !!m.blocker,
+  `${m.blocker} / ${m.cycles.join(",")}`);
+check("a mod that takes the Incarnon form off leaves no cycle to measure",
+  !m.blocked.some((x) => m.cycles.includes(x)), m.blocked.join(","));
+
 await app.finish("the gain scan obeys the ladder");
