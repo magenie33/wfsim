@@ -39,6 +39,18 @@ You keep your own copyright. This license is a grant, not a transfer — You
 remain free to use, publish and license Your Contribution however You like,
 including in other projects.
 
+**Moral rights.** To the extent permitted by applicable law, You agree not to
+assert against the Maintainer, or against anyone receiving the Project from the
+Maintainer, any moral rights or rights of a similar nature in Your Contribution,
+including rights of attribution and of integrity. Where such rights cannot be
+waived, You agree not to enforce them so as to prevent the Maintainer from
+exercising the licenses granted above.
+
+This asks for forbearance, not transfer — these rights are personal and in many
+jurisdictions cannot be given away at all. It is here because every file in this
+repository is routinely modified, reorganized and rewritten, which is the
+ordinary life of the project rather than an exception.
+
 ## 3. Patent license
 
 You grant the Maintainer a **perpetual, worldwide, non-exclusive, royalty-free,
@@ -68,6 +80,13 @@ You represent that:
 You are not expected to provide support for Your Contribution, and unless
 required by applicable law, each Contribution is provided **"AS IS", without
 warranties or conditions of any kind**.
+
+**Inclusion is the Maintainer's decision.** You understand that whether to
+include Your Contribution in the Project, in any repository, or in any release
+is **entirely that of the Maintainer**, and that this agreement places the
+Maintainer under no obligation to use, merge, keep or maintain any Contribution.
+Work the Maintainer develops independently is unaffected by Your having
+submitted something similar.
 
 ## 5. Scope
 
