@@ -3017,11 +3017,19 @@ fn enumerate_buffs(
     }
     // PYRANA PRIME'S SECOND GUN and the streak that buys it: both earned, so
     // both open empty. The streak's last kill is the gun, hence `kills - 1`.
+    //
+    // BOTH SAY WHAT THEY ARE WORTH, because neither pays anything a reader can
+    // see on the panel: the streak buys a gun and the gun moves two stats the
+    // stat block never shows moving. The gun's NAME is the weapon's, so it is
+    // read off the entry rather than written here.
     if let Some(s) = wfsim_engine::weapons_data::spec(&info.id).and_then(|w| w.kill_streak_summon) {
         push(BuffMeta {
             id: wfsim_engine::weapons_data::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
             name: "Kill Streak".into(),
-            grants: String::new(),
+            grants: format!(
+                "{} kills within {:.0} s of each other summon the second gun",
+                s.kills, s.kill_window_seconds
+            ),
             max_stacks: s.kills.saturating_sub(1),
             kind: "stacking",
             default_stacks: 0,
@@ -3032,8 +3040,11 @@ fn enumerate_buffs(
         });
         push(BuffMeta {
             id: wfsim_engine::weapons_data::KillStreakSummonSpec::BUFF_ID.into(),
-            name: "Second Pyrana Prime".into(),
-            grants: String::new(),
+            name: format!("Second {}", info.name),
+            grants: format!(
+                "Magazine ×{}, Fire Rate ×{}, for {:.0} s",
+                s.magazine_multiplier, s.fire_rate_multiplier, s.duration_seconds
+            ),
             max_stacks: 1,
             kind: "toggle",
             default_stacks: 0,
@@ -11936,5 +11947,46 @@ mod buff_event_cards {
             score(&open),
             "an unknown trigger must be dropped, not obeyed and not refused"
         );
+    }
+}
+
+#[cfg(test)]
+mod a_passive_names_itself {
+    use serde_json::json;
+
+    /// **A WEAPON THAT OFFERS A BUFF CARD STATES THE PASSIVE BEHIND IT.**
+    ///
+    /// With no mods, no arcanes and no evolutions on the build, a card can
+    /// only come from the WEAPON or from the WIELDER, and the wielder's is
+    /// already named by the frame's own `passive:` prose. So every remaining
+    /// card belongs to a weapon mechanic, and one with no `passive_lines`
+    /// entry is a mechanic the page never names — a reader has to know the
+    /// weapon has it before the knob means anything.
+    ///
+    /// A RATCHET RATHER THAN ONE MORE ENTRY IN A LIST NOBODY REREADS: the next
+    /// weapon passive wired into the engine fails here until it says what it
+    /// is.
+    #[test]
+    fn a_weapon_with_a_buff_card_has_a_passive_line() {
+        for s in wfsim_engine::weapons_data::roster() {
+            let panel = super::panel_json(&json!({ "weapon": s.id, "mods": [] }));
+            let cards: Vec<&str> = panel["buffs"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|b| b["id"].as_str())
+                        .filter(|id| *id != wfsim_engine::rage::BUFF_ID)
+                        .collect()
+                })
+                .unwrap_or_default();
+            if cards.is_empty() {
+                continue;
+            }
+            assert!(
+                !wfsim_engine::weapons_data::passive_lines(&s.id).is_empty(),
+                "{} offers {cards:?} and states no passive",
+                s.id
+            );
+        }
     }
 }

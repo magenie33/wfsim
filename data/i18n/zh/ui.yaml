@@ -116,7 +116,6 @@ ui:
   "Armor while Warcry and Hysteria are active": Warcry 与 Hysteria 同时生效时的护甲
   "$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.":
     5 美元起，之后给多少由你说了算。没有档位，也没有目标——上面是账单本身，不是价目表。
-  "'3 kills each within 2 seconds of the previous kill summons a second Pyrana Prime for 6 seconds, doubling its magazine size and increasing its fire rate by 1.4x' (wiki). It is a KILL-counting buff — a chain of three, each inside a two-second window — and this engine has no shape for one, so the number here is the weapon before its second gun ever appears. Against a crowd that dies quickly, that is a very large understatement": "「连续 3 次击杀、每次都在上一次击杀后 2 秒内，会召唤出第二把 Pyrana Prime，持续 6 秒，弹匣翻倍且射速 x1.4」（维基）。这是一个按「击杀」累计的增益 —— 三连，每一次都要在两秒的窗口内 —— 而本引擎没有这种形状，所以这里的数字是第二把枪从未出现过的那把武器。面对一群会很快死掉的敌人，这是一个非常大的低估"
   "'40 shots are required before optimal ACCURACY is achieved' (wiki) — this entry carries the settled cone, so a burst that would open wide here opens tight": "「需要 40 发之后才能达到最佳精度」（维基）—— 本条目带的是收紧之后的散布，所以一段在游戏里会打得很散的连射，在这里一开始就是收紧的"
   "'Cantare Chorale': striking enemies with the returning reload grants +20% reload speed for 30 seconds to all allies in affinity range (wiki). It rides on a return this sim does not fire, and this arena has no allies to grant it to": "「Cantare Chorale」：用回收的刀刃击中敌人，会给亲和范围内的所有队友 +20% 装填速度、持续 30 秒（维基）。它挂在这个模拟不会发射的回收上，而且这个战场也没有队友可以接受它"
   "'Chamber Cascade': a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 seconds (wiki). Ammo economy pays nothing here — reserves are infinite by default because this sim does not model ammo pickups — so the passive is real and worth nothing to this number": "「Chamber Cascade」：命中或造成伤害类异常状态时，有 4% 概率获得 100% 弹药效率、持续 4 秒（维基）。弹药经济在这里不产生任何收益 —— 本模拟不建模弹药拾取，所以备弹默认无限 —— 所以这个被动是真实存在的，但对这个数字毫无影响"
@@ -163,6 +162,8 @@ ui:
   "6 · Warframe buffs": 6 · 战甲增益
   "7 · Measure": 7 · 指标
   "7 · Simulation": 7 · 模拟
+  "3 kills within 2 s of each other summon the second gun": 2 秒内连续 3 次击杀，召唤出第二把枪
+  "3 kills, each within 2 s of the last, summon a second copy of this weapon for 6 s: magazine ×2 and fire rate ×1.4. This is simulated, and a kill while it is up does not refresh it — a fight whose bodies take longer than 2 s each never sees it at all.": 连续 3 次击杀、每次都在上一次击杀后 2 秒内，会召唤出第二把同样的武器，持续 6 秒：弹匣 ×2、射速 ×1.4。这一条有建模；第二把枪在场期间的击杀不会刷新它——一场每个目标都要打满 2 秒以上才死的仗，永远也不会看到它。
   "A HEADSHOT SPAWNS SIX HOMING SPORES that seek other enemies and explode in 3.3 metres each, and the headshot itself carries a further explosion (module: three more attacks). This engine carries one explosion per attack and has no shape for a hit spawning projectiles, so none of that is counted — against a headshot-heavy fight this weapon is understated several times over": "一次爆头会生成六颗自动索敌的孢子，它们会飞向其他敌人并各自在 3.3 米内爆炸，而那次爆头本身还带有一次额外爆炸（模块里另外三次攻击）。本引擎每次攻击只带一次爆炸，也没有「命中生成弹丸」这种形状，所以这些全都没有被计入 ——面对一场以爆头为主的战斗，这把武器被低估了好几倍"
   "A Status Effect has a 15% chance to SET the next hit's crit chance to 300% — ignoring every other crit bonus. Rolled per pellet.": 异常状态有 15% 几率把下一次命中的暴击率设定为 300%——无视其他一切暴击加成。逐弹丸判定。
   "A TOME'S MOD POOL IS ITS OWN and this roster does not load it — `mod_pools: []` here means the builder offers NOTHING, which is honest rather than offering pistol cards a Tome cannot wear. The weapon's numbers are right and no build can be put on it yet": "法典（Tome）有它自己的 MOD 池，而本武器库没有载入它 —— 这里的 `mod_pools: []` 意味着配装页什么都不提供，这比提供一堆法典装不了的手枪卡要诚实。这把武器的数值是对的，只是暂时还没法给它配 MOD"
@@ -417,6 +418,7 @@ ui:
   "Join the Discord": 加入官方 Discord
   "Join the QQ group — 995078378": 加入 QQ 群 —— 995078378
   "KPM": KPM
+  "Kill Streak": 连续击杀
   Kills: 击杀
   "LIFTED's crowd control is not modelled — the explosion suspends what it hits, and this arena has no movement to interrupt; what IS modelled is the 1 s status itself, which Condition Overload counts like any other": Lifted 的控制效果尚未建模 —— 爆炸会把命中的目标浮空，而这个战场没有可以被打断的移动；已经建模的是那 1 秒的状态本身，异常状态过载会像统计其他状态一样把它算进去
   "Later": "稍后"
@@ -427,6 +429,7 @@ ui:
   "MAGAZINE CAPACITY IS A DAMAGE STAT here and this entry pins it at the unmodded 10 — \"Increasing Magazine Capacity (Slip Magazine, Primed Slip Magazine, Ice Storm, Tainted Clip, Combo Fury) will increase the Alternate Fire's damage\", multiplicatively with base-damage mods. A build carrying one is understated by exactly that ratio": "在这里「弹匣容量」是一条伤害属性，而本条目把它钉在未改装的 10 上——「提高弹匣容量（滑膛弹匣、初始滑膛弹匣、冰风暴、污染弹夹、连击狂怒）会提高交替射击的伤害」，且与基础伤害类 MOD 是乘算。带了这类 MOD 的配装，在这里正好按那个比例被低估"
   "MICROWAVE's other half: it ENLARGES the body part it was shot at, which is a hit-location mechanic and worth nothing where nobody is aiming by hand. Its status COUNT is modelled (`applies_microwave`)": 微波的另一半：它会放大被击中的那个身体部位，这是一个命中部位机制，在没有人手动瞄准的地方毫无价值。它的触发计数是有建模的（`applies_microwave`）
   "Magazine": 弹匣容量
+  "Magazine ×2, Fire Rate ×1.4, for 6 s": 弹匣 ×2、射速 ×1.4，持续 6 秒
   "Max Charges": 最大充能
   "Measure": 衡量指标
   "Melee": 近战
@@ -521,6 +524,7 @@ ui:
   "Search a target…": 搜索目标…
   "Searches": 搜索方案
   "Search…": 搜索…
+  "Second Pyrana Prime": 第二把食人鱼 Prime
   "Secondary": 副武器
   "Search": 搜索
   "Select": "选择"

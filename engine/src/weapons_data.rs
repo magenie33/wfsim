@@ -2840,6 +2840,22 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         ));
     }
 
+    // PYRANA PRIME'S SECOND GUN. The rate it needs is stated with it, because
+    // that is the half a reader cannot see: the buff cards open at zero and
+    // stay there all fight unless the kills come fast enough, so a card alone
+    // reads as a passive that does not work.
+    if let Some(k) = s.kill_streak_summon {
+        out.push(format!(
+            "{} kills, each within {:.0} s of the last, summon a second copy of this weapon for {:.0} s: magazine ×{} and fire rate ×{}. This is simulated, and a kill while it is up does not refresh it — a fight whose bodies take longer than {:.0} s each never sees it at all.",
+            k.kills,
+            k.kill_window_seconds,
+            k.duration_seconds,
+            k.magazine_multiplier,
+            k.fire_rate_multiplier,
+            k.kill_window_seconds,
+        ));
+    }
+
     // THE SHOT COMBO COUNTER and THE SCOPE, both stated because both are
     // silent otherwise: neither is a stat on the panel and neither is a mod, so
     // a player reading a sniper's damage has no way to see that two of its
