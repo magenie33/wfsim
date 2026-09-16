@@ -229,9 +229,9 @@ is **-0.3% on the wire**, because it shrinks CODE and 59% of this binary is
 DATA. Not shipping the 43% of `data/` that is comments (`engine/build.rs`)
 moves it: 1,192 KB to 927 KB, **-22%**. wasm-opt runs anyway, for the 1.5 MB
 it takes off the blob this repo COMMITS every build.
-DE permits this: their Content Policy requires only that use of Warframe
-assets be non-commercial, and the wiki hosts the same files on the same basis.
-What it forbids is their LOGOS, so the only mark here stays ours.
+The art is Digital Extremes' and this repository makes no grant in it —
+`LICENSE-DATA.md` §4. No Warframe or Digital Extremes logo is used anywhere, so
+the only mark here stays ours.
 A `wiki:` prefix in `assets.yaml` means the CDN lacks that file and the FETCHER
 takes it from the wiki; the cached name and the page's URL are the bare name.
 
