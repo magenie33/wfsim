@@ -60,8 +60,17 @@ const m = await evaluate(`(async () => {
   // measure is the declaration, not the shape of the thing that opens it.
   const trigger = document.querySelector('#mode-row [data-dd]');
   const declared = ((ddReg.get('dd-mode') || {}).axis || {}).kind || '';
+  // READ FROM BASE, BOTH SIDES OF THE BLOCKER. A weapon with a cycle OPENS in
+  // it, and the current mode is never a candidate — so from there the cycle
+  // is missing for the wrong reason and the exclusion is never reached.
+  const opened = mode;
+  mode = 'base';
+  const unblocked = cands().map(c => c.id);
   slots[0] = { mod: blocker, pol: slots[0].pol, rank: null };
+  const blocked = cands().map(c => c.id);
+  mode = opened;
   return {
+    unblocked,
     declared,
     isButton: !!trigger && trigger.tagName === 'BUTTON',
     all: (w.modes || []).slice(),
@@ -71,7 +80,7 @@ const m = await evaluate(`(async () => {
     fields: [...new Set(open.flatMap(c => Object.keys(c.payload)))],
     carried: open.every(c => c.payload.mode === c.id),
     blocker,
-    blocked: cands().map(c => c.id),
+    blocked,
   };
 })()`);
 
@@ -84,8 +93,9 @@ check("every other mode is a candidate, and the current one is not",
 check("a mode candidate overrides ONE field, and it is its own id",
   JSON.stringify(m.fields) === JSON.stringify(["mode"]) && m.carried,
   m.fields.join(","));
-check("the weapon has a cycle to lose", m.cycles.length > 0 && !!m.blocker,
-  `${m.blocker} / ${m.cycles.join(",")}`);
+check("from base, with nothing blocking it, a cycle IS measured",
+  !!m.blocker && m.unblocked.some((x) => m.cycles.includes(x)),
+  `${m.blocker} / ${m.unblocked.join(",")}`);
 check("a mod that takes the Incarnon form off leaves no cycle to measure",
   !m.blocked.some((x) => m.cycles.includes(x)), m.blocked.join(","));
 
