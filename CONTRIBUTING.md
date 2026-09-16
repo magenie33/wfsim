@@ -144,6 +144,11 @@ and the app states them on the page.
 
 ## Ground rules
 
+- **Contributor License Agreement.** All contributions — code, data,
+  translations and measurement reports — require agreement to
+  [`CLA.md`](CLA.md). Comment `I have read the CLA and I hereby sign the CLA`
+  on your pull request. For measurements submitted as issues, the same line in
+  the issue body.
 - **Before a PR:** `cargo test --workspace` green and
   `cargo clippy --workspace --all-targets -- -D warnings` clean (CI enforces
   both). Toolchain is pinned via `mise install`.
