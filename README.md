@@ -68,10 +68,12 @@ may not be used to brand derived products or services —
 [`TRADEMARK.md`](TRADEMARK.md) sets out what is permitted without asking,
 which is most things, including forks that say what they descend from.
 
-Game data derived from the community
-[Warframe Wiki](https://wiki.warframe.com/), which declares
-**CC BY-NC-SA 3.0** — NonCommercial and ShareAlike both travel with it.
-Measurements, engine outputs and game art each carry terms of their own:
+Game data sourced from the community
+[Warframe Wiki](https://wiki.warframe.com/) — **facts**, re-expressed in
+WFSim's own schema, reproducing no wiki page or prose. The wiki declares its
+own content **CC BY-NC-SA 3.0** and is credited accordingly here and in the
+footer of every page. Measurements, engine
+outputs and game art each carry terms of their own:
 [`LICENSE-DATA.md`](LICENSE-DATA.md) sets out all four categories. WFCD's
 [warframe-items](https://github.com/WFCD/warframe-items) is MIT upstream and
 is fetched locally rather than redistributed here.
