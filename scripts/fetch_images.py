@@ -7,8 +7,8 @@ server from this cache, the static build from site/img/, which
 `scripts/build_site_app.py` copies out of it and refuses to build without.
 A static build that hotlinks the CDN instead goes through a redirector: it 301s to
 raw.githubusercontent.com: unreliable to blocked from mainland China, where
-the players are. (DE permits hosting the art; their Content Policy asks only
-that the use be non-commercial.)
+the players are. (The art is DE's and this repo makes no grant in it — see
+LICENSE-DATA.md §4.)
 
 Usage: python scripts/fetch_images.py
 """

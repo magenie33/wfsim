@@ -557,13 +557,10 @@ def ship_art() -> None:
     thing on the page for its actual audience. Same-origin removes the
     question entirely: if wfsim.app loads, its art loads.
 
-    DE's art may be redistributed non-commercially — their Content Policy
-    ("Use of Warframe assets must be non-commercial. You cannot profit from
-    the direct sale of Warframe's IP"), and the wiki hosts the same files on
-    the same basis. What the policy does forbid is their LOGOS, which is why
-    the only mark on this site is our own (decision 2026-07-31, superseding
-    "DE art stays out of the repo": ~4.5 MB, write-once, against a 2 MB wasm
-    this script rewrites on every build).
+    The art is Digital Extremes' and this repository makes no grant in it —
+    `LICENSE-DATA.md` §4. No Warframe or Digital Extremes logo is used, so the
+    only mark on this site is our own. Shipping the renders costs ~4.5 MB
+    write-once, against a 2 MB wasm this script rewrites on every build.
     """
     cache = ROOT / "web" / "cache" / "img"
     assets = yload((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
