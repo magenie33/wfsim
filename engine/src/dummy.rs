@@ -1552,6 +1552,11 @@ struct Dot {
     ///
     /// The SOURCE's half is not here: see [`Dot::live`].
     frozen: f64,
+    /// WHERE THE TICK ITSELF LANDS, over the WHOLE tick — accumulator included.
+    /// 1.0 on a body; on a head, the headshot-damage brackets over a 1x base
+    /// (`lands_on_a_part`). Separate from `frozen`, which holds the part the
+    /// HIT struck. MEASUREMENTS M100.
+    landing: f64,
     /// The MOD-side element bracket, `1 + Σ this element's bonuses` — frozen
     /// because mods do not change mid-fight, and carried rather than re-read
     /// because a transform weapon's ACTIVE form is not always the form that
@@ -1915,6 +1920,20 @@ const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
 fn dot_takes_weakpoint(_t: DamageType) -> bool {
     true
 }
+
+/// Does this status's TICK land on a body part of its own, beside the part the
+/// hit struck? Electricity and Gas, and no other (M100): wiki `Enemy_Body_Parts`
+/// lists "Electricity and Gas status procs" as "always defaulting to the 1x
+/// multiplier, unaffected by acuity-like bonuses but affected by deadhead-like
+/// bonuses", and Heat, Toxin and Blast measure at the hit's part alone.
+fn lands_on_a_part(t: DamageType) -> bool {
+    matches!(t, DamageType::Electricity | DamageType::Gas)
+}
+
+/// HOW OFTEN A TESLA ARC LANDS ON A NEIGHBOUR'S HEAD: 10 of 189 neighbours,
+/// 95% interval about 3% to 9.5% (M100). In game the answer is fixed by where
+/// each body stands; this plane has no height to decide it, so it is a rate.
+const TESLA_HEAD_LANDING_CHANCE: f64 = 10.0 / 189.0;
 const STATUS_DURATION: f64 = 6.0; // the standard proc duration
 /// LIFTED's duration. Not the standard 6 s: an independent
 /// proc is its own effect with its own timer, and DE publishes none for this
@@ -6423,6 +6442,7 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
         // A BROKEN POOL is the TARGET's own doing, so it points at no shot.
         cause: u32::MAX,
         frozen: total / 6.0,
+        landing: 1.0,
         // A SHARE OF THE TARGET'S OWN POOL, so nothing the shooter carries
         // scales it — not the element bracket, not faction, not Eclipse, and
         // not the accumulator, whose rule names "weapon-generated" statuses.
@@ -6704,6 +6724,7 @@ fn fire_extra_hits(
                 // what the trigger's own procs took once.
                 crit_multiplier: 1.0,
                 part_factor: 1.0,
+                landing: 1.0,
                 // **AND DEVOURING ATTRITION IS NOT ROLLED AGAIN** — measured. An extra hit is a percentage of a hit
                 // that has ALREADY taken its x21, so it inherits that and
                 // stops there: Xata's Whisper cannot re-trigger the roll and
@@ -6810,6 +6831,11 @@ fn drain_area_procs(
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     at_now: f64,
+    // WHAT A TESLA ARC IS WORTH ON A NEIGHBOUR'S HEAD — this shot's
+    // headshot-damage brackets (`Dot::landing`) — and the stream that decides
+    // whether it gets there.
+    head_landing: f64,
+    arc_landing: &mut Rng,
 ) {
     if params.others.is_empty() {
         // ONE BODY, so a cloud has nobody to reach and the queue is dropped
@@ -6862,13 +6888,27 @@ fn drain_area_procs(
             if j == from {
                 continue;
             }
-            let (dbf, cap) = if j == 0 {
-                (&mut *debuffs, dot_cap_for(&params.target, dot.dtype))
+            let (dbf, fp, parts) = if j == 0 {
+                (&mut *debuffs, &params.target, &params.body_parts)
             } else {
                 match others.get_mut(j - 1) {
-                    Some(f) => (&mut f.debuffs, dot_cap_for(&params.others[j - 1].params, dot.dtype)),
+                    Some(f) => {
+                        let fs = &params.others[j - 1];
+                        (&mut f.debuffs, &fs.params, &fs.body_parts)
+                    }
                     None => continue,
                 }
+            };
+            let cap = dot_cap_for(fp, dot.dtype);
+            // ONE LANDING PER BODY PER ARC, drawn only where a head pays more.
+            let dot = if dot.dtype == DamageType::Electricity
+                && head_landing > 1.0
+                && parts.iter().any(|p| p.is_head)
+                && arc_landing.chance(TESLA_HEAD_LANDING_CHANCE)
+            {
+                Dot { landing: head_landing, ..dot }
+            } else {
+                dot
             };
             // NEVER MORE THAN THE RECEIVER CAN HOLD: pushing an eleventh copy
             // of an identical cloud only evicts the first.
@@ -6986,7 +7026,7 @@ fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
-    let InstanceScale { mb_live, crit_multiplier, part_factor, attrition, xh_bracket } = scale;
+    let InstanceScale { mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket } = scale;
     let status_damage = params.status_duration_multiplier;
     let sdm = params.status_damage_multiplier;
     let caps = foe.stack_caps;
@@ -7069,6 +7109,7 @@ fn settle_procs(
                 // bracket and the faction bonus are re-read at every tick
                 // (`Dot::live`); the final multiplier is not, measured.
                 frozen: coeff * mb_live * sdm * crit_multiplier * part * attrition * ecl,
+                landing: if lands_on_a_part(dtype) { landing } else { 1.0 },
                 // …and what the accumulator's initial 1 is worth: the same
                 // chain with the SEED taken out of it. See
                 // `Dot::accumulator_unit`.
@@ -7163,11 +7204,12 @@ fn settle_procs(
                 // radius". The stun stays here: "only the original target will
                 // be stunned ... others around it will only take damage".
                 //
-                // BODY-ONLY, like every other instance that lands on a
-                // neighbour: `part_factor` is the aimed pellet's headshot and
-                // an arc is not aimed at anything.
+                // THE SEED KEEPS THE HIT'S PART; THE LANDING IS THE ARC'S OWN.
+                // A head hit's arc reaches a neighbour's body for 130 where a
+                // body hit's own tick is 24 — x5.4, the whole head ladder (M100).
+                // Where the arc lands is drawn in `drain_area_procs`.
                 debuffs.post_area(
-                    Dot { frozen: dot.frozen / part_factor.max(1e-9), ..dot },
+                    Dot { landing: 1.0, ..dot },
                     TESLA_RADIUS_M,
                     dot_cap_of(DamageType::Electricity),
                 );
@@ -7188,8 +7230,10 @@ fn settle_procs(
                 // rather than 3.3.
                 let radius_m = (GAS_RADIUS_M + GAS_RADIUS_STEP_M * stacks_before as f64)
                     .min(GAS_RADIUS_MAX_M);
+                // BODY-ONLY on a neighbour, seed and landing both: the cloud's
+                // neighbours are unmeasured, and M100's arc is not a cloud.
                 debuffs.post_area(
-                    Dot { frozen: dot.frozen / part_factor.max(1e-9), ..dot },
+                    Dot { frozen: dot.frozen / part_factor.max(1e-9), landing: 1.0, ..dot },
                     radius_m,
                     dot_cap_of(DamageType::Gas),
                 );
@@ -7472,6 +7516,7 @@ fn settle_procs(
                         mb_live: extra_hit_status_base(0.0, mb_live),
                         crit_multiplier,
                         part_factor,
+                        landing,
                         // A SECOND ATTRITION ROLL ON TOP OF THE HIT'S, and
                         // a BUG of DE's rather than a design: one instance's
                         // multipliers left on another instance's magnitude.
@@ -7564,6 +7609,9 @@ struct InstanceScale {
     crit_multiplier: f64,
     /// Body-part multiplier — always 1.0 for a radial or a field.
     part_factor: f64,
+    /// What an Electricity or Gas tick is worth where THIS instance struck —
+    /// [`Dot::landing`]. 1.0 off a head.
+    landing: f64,
     /// DEVOURING/DEVASTATING ATTRITION on THIS instance, or 1.0.
     ///
     /// 1.0 everywhere but the Primary Debilitate split, and that is the whole
@@ -8314,6 +8362,7 @@ fn spread_hit(
             // round, on a ruler whose own rule is that a punched body IS a
             // weak-point hit.
             part_factor: inst.status_part_factor,
+            landing: inst.status_landing,
             attrition,
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
@@ -8425,6 +8474,7 @@ fn spread_from_follow_through(
             headshot: false,
             part_factor: 1.0,
             status_part_factor: 1.0,
+            status_landing: 1.0,
         };
         let foe = &mut others[idx];
         let landed = spread_hit(
@@ -8458,6 +8508,8 @@ fn spread_from_punch_through(
     // for the STATUSES — see `chain::Instance::status_part_factor`.
     head_direct: bool,
     head_part_factor: f64,
+    // …and what a tick its statuses leave is worth there (`Dot::landing`).
+    head_status_landing: f64,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -8538,6 +8590,7 @@ fn spread_from_punch_through(
             // head factor — so the one place the hit must not see it again is
             // the one place its payloads must. See `chain::Instance`.
             status_part_factor: head_part_factor,
+            status_landing: head_status_landing,
         };
         let foe = &mut others[idx];
         spread_hit(
@@ -8600,6 +8653,8 @@ fn spread_from_ricochet(
     forced: &[DamageType],
     vector: &DamageVector,
     head_factor: &dyn Fn(&crate::formation::FoeSpec) -> f64,
+    // What an Electricity or Gas tick is worth on a head (`Dot::landing`).
+    head_landing: f64,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -8625,6 +8680,7 @@ fn spread_from_ricochet(
             // A RICOCHET ROLLS ITS OWN, so the hit and its statuses read the
             // same answer — `raw_per_bucket` is handed to it body-only.
             status_part_factor: if head { head_factor(fs) } else { 1.0 },
+            status_landing: if head { head_landing } else { 1.0 },
         };
         spread_hit(
             &inst,
@@ -8728,6 +8784,7 @@ fn spread_from_echo(
             headshot: false,
             part_factor: 1.0,
             status_part_factor: 1.0,
+            status_landing: 1.0,
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
@@ -8828,6 +8885,7 @@ fn spread_from_tendrils(
             headshot: false,
             part_factor: 1.0,
             status_part_factor: 1.0,
+            status_landing: 1.0,
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
@@ -8974,6 +9032,7 @@ fn blast_at(
             headshot: false,
             part_factor: 1.0,
             status_part_factor: 1.0,
+            status_landing: 1.0,
         };
         spread_hit(
             &inst,
@@ -9184,6 +9243,7 @@ fn fire_syndicate_radial(
                 mb_live: sy.damage,
                 crit_multiplier: 1.0,
                 part_factor: 1.0,
+                landing: 1.0,
                 attrition: 1.0,
                 // A syndicate blast is 1000 of one element and "the build does
                 // not scale it", so a Blast stack it applies detonates with no
@@ -9327,7 +9387,9 @@ struct FieldCtx {
     /// middle of a pull, so the two are computed at different instants on
     /// purpose. Snapshotting it here is this struct's whole convention, and it
     /// is under a second of staleness for the same reason the crit buffs are.
-    head_factor: f64,
+    head_factor: f64,    /// The same brackets over a 1x base: what an Electricity or Gas tick is
+    /// worth when the field's hit found a head (`Dot::landing`).
+    head_landing: f64,
 }
 
 impl DummyParams {
@@ -10118,6 +10180,10 @@ fn field_tick(
             // IT — measured (M54), and 1.0 for every field that cannot find a
             // head, which is the value this passed before the orb arrived.
             part_factor,
+            landing: match part {
+                Some(p) if p.is_head => ctx.head_landing,
+                _ => 1.0,
+            },
             attrition: 1.0,
             // The BASE ATTACK's, not the cloud's: a Blast stack the cloud
             // applies still detonates off a gun, and the bracket its extra hit
@@ -10400,9 +10466,12 @@ fn process_ticks(
                             // AT `now`, NOT AT THE MOMENT IT WAS APPLIED — see
                             // `Dot::live`. A buff the shooter gained while this
                             // was burning is already in it.
-                            sum += d.live(params, now);
+                            // THE LANDING SCALES THE ACCUMULATOR TOO: 234, not
+                            // 233, off a 24 body tick (M100). A group takes the
+                            // landing of the seed that brought its `1`.
+                            sum += d.live(params, now) * d.landing;
                             if unit == 0.0 {
-                                unit = d.accumulator_unit(params, now);
+                                unit = d.accumulator_unit(params, now) * d.landing;
                             }
                         }
                     }
@@ -15854,6 +15923,23 @@ pub fn run_once_traced(
         let (mut any_head, mut any_big) = (false, false);
         let headshots_before = r.headshots;
         let pellets_before = r.pellets;
+        // THE HEADSHOT-DAMAGE BRACKETS as of this shot: the field's head ladder
+        // below, and what a Tesla arc is worth on a neighbour's head.
+        let (shot_hb, shot_hi) = {
+            let streak = match params.headshot_streak {
+                Some(s) if t < streak_expiry => s.value,
+                _ => 0.0,
+            } + buff_total!(ap, crate::loadout::BuffGrant::HeadshotDamage, t);
+            if ap.headshot_bonus_multiplicative {
+                (params.arcane.headshot_multiplier_bonus + streak, ap.headshot_damage_bonus)
+            } else {
+                (
+                    params.arcane.headshot_multiplier_bonus + streak + ap.headshot_damage_bonus,
+                    0.0,
+                )
+            }
+        };
+        let shot_head_landing = (1.0 + shot_hb) * (1.0 + shot_hi);
         // Field ticks due before this shot, with the buff state as of now.
         field_ctx = FieldCtx {
             flat_crit,
@@ -15867,28 +15953,15 @@ pub fn run_once_traced(
             // own head — see the field's note on why it is computed twice
             // rather than shared.
             head_factor: {
-                let streak = match params.headshot_streak {
-                    Some(s) if t < streak_expiry => s.value,
-                    _ => 0.0,
-                } + buff_total!(ap, crate::loadout::BuffGrant::HeadshotDamage, t);
-                let (hb, hi) = if ap.headshot_bonus_multiplicative {
-                    (params.arcane.headshot_multiplier_bonus + streak, ap.headshot_damage_bonus)
-                } else {
-                    (
-                        params.arcane.headshot_multiplier_bonus
-                            + streak
-                            + ap.headshot_damage_bonus,
-                        0.0,
-                    )
-                };
                 let m = params
                     .body_parts
                     .iter()
                     .find(|p| p.is_head)
                     .map_or(1.0, |p| p.multiplier);
                 let m = ap.headshot_multiplier.unwrap_or(m);
-                (m + 1.5 * ap.weakpoint_damage) * (1.0 + hb) * (1.0 + hi)
+                (m + 1.5 * ap.weakpoint_damage) * (1.0 + shot_hb) * (1.0 + shot_hi)
             },
+            head_landing: shot_head_landing,
         };
         process_field_ticks(
             &mut fields,
@@ -16375,6 +16448,10 @@ pub fn run_once_traced(
                 part.multiplier
             };
             let part_factor = wp_mult * (1.0 + head_bonus) * (1.0 + head_innate);
+            // …AND WHAT AN ELECTRICITY OR GAS TICK IS WORTH WHERE IT LANDS: the
+            // same brackets over a 1x base, acuity left out (`lands_on_a_part`).
+            let head_landing = (1.0 + hb_head) * (1.0 + hi_head);
+            let landing = (1.0 + head_bonus) * (1.0 + head_innate);
             // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
             // >1x location doubles cd inside the tier formula (a cd_total
             // that INCLUDES Cold's flat bonus — freeze.yaml notes).
@@ -16862,6 +16939,7 @@ pub fn run_once_traced(
                     }
                 };
                 let part_factor = if direct { part_factor } else { 1.0 };
+                let landing = if direct { landing } else { 1.0 };
                 // ModifiedBase carries the merge too, which is what makes
                 // damaging status effects "affected TWICE by multishot": more
                 // procs from the summed status chance, and a bigger payload
@@ -17301,6 +17379,7 @@ pub fn run_once_traced(
                             forced,
                             &qvec,
                             &head_factor,
+                            head_landing,
                             &mut gal,
                             &mut arc,
                             &mut r,
@@ -17385,6 +17464,7 @@ pub fn run_once_traced(
                             &qvec,
                             head_direct,
                             part_factor,
+                            landing,
                             &mut gal,
                             &mut arc,
                             &mut r,
@@ -18046,6 +18126,7 @@ pub fn run_once_traced(
                         mb_live,
                         crit_multiplier,
                         part_factor,
+                        landing,
                         attrition,
                         // The BASE ATTACK's, so a Blast stack this instance applies
                         // remembers the bracket its detonation's extra hit takes —
@@ -18093,6 +18174,7 @@ pub fn run_once_traced(
                         mb_live,
                         crit_multiplier,
                         part_factor,
+                        landing,
                         attrition,
                         xh_bracket: ap.extra_hit_bracket(t),
                     };
@@ -18252,6 +18334,8 @@ pub fn run_once_traced(
             &mut r,
             rec,
             t,
+            shot_head_landing,
+            &mut d.arc_landing,
         );
 
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
@@ -21100,7 +21184,7 @@ mod tests {
     fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
         let dot = |dtype| Dot {
             cause: u32::MAX,
-            next_tick: 5.0, ticks_left: 4, frozen: 100.0, bracket: 1.0, depth: 0,
+            next_tick: 5.0, ticks_left: 4, frozen: 100.0, landing: 1.0, bracket: 1.0, depth: 0,
             source_scaled: false, unit: 0.0, dtype, ignores_armor: false,
         };
         let mut d = DebuffState::default();
@@ -31551,6 +31635,129 @@ mod tests {
         assert!((raw - 185.5) * 0.1 < 11.0 && (raw - 185.5) * 0.1 > 10.5, "the measured 11");
     }
 
+    /// M100 fixture: an unmodded Laetum (64 Impact + 96 Slash) with +200% of
+    /// one element, +30% and +50% headshot damage, forced `element` procs, on a
+    /// Steel Path level 210 Corrupted Heavy Gunner — and, with `neighbours`,
+    /// that many more of them 2 m away. `head` aims every shot at the head.
+    fn m100_fixture(element: DamageType, head: bool, neighbours: usize) -> DummyParams {
+        let unit = crate::enemy_data::all()
+            .into_iter()
+            .find(|e| e.id == "corrupted_heavy_gunner")
+            .expect("the roster has one");
+        let target = unit
+            .target_params(210, true, false, TargetMode::InfiniteHealth)
+            .expect("a level 210 Steel Path unit is legal");
+        let mut parts = DummyParams::humanoid_parts();
+        for p in &mut parts {
+            p.aim_weight = if p.is_head == head { 1.0 } else { 0.0 };
+        }
+        let others = (0..neighbours)
+            .map(|i| {
+                let a = i as f64 * std::f64::consts::TAU / neighbours as f64;
+                crate::formation::FoeSpec {
+                    id: String::new(),
+                    params: target.clone(),
+                    body_parts: DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(2.0 * a.cos(), 2.0 * a.sin()),
+                }
+            })
+            .collect();
+        DummyParams {
+            target,
+            others,
+            body_parts: parts,
+            damage: DamageVector::new()
+                .with(DamageType::Impact, 64.0)
+                .with(DamageType::Slash, 96.0),
+            dot_modified_base: Some(160.0),
+            headshot_damage_bonus: 0.5,
+            // THE VALENCE SHAPE: an added element in the element's own bracket.
+            arcane: crate::arcanes_data::ArcaneFx {
+                headshot_multiplier_bonus: 0.3,
+                added_elements: vec![(element, 2.0)],
+                ..ArcaneFx::none()
+            },
+            // Long enough for a Toxin tick (+1 s) and a Blast fuse (1.5 s), and
+            // a second shot: a neighbour's ticks settle when the next shot does.
+            fire_rate: 1.0,
+            duration_seconds: 1.6,
+            ..bare(element)
+        }
+    }
+
+    /// The first tick each body pops from `element`, rounded as the game draws it.
+    fn m100_first_ticks(p: &DummyParams, seed: u64, element: DamageType) -> Vec<Option<f64>> {
+        let mut first = vec![None; p.others.len() + 1];
+        for e in record(p, seed, 0.0, f64::INFINITY, 10_000, 0).events() {
+            if let (crate::record::Kind::Damage(d), Some(s)) = (&e.kind, e.subject) {
+                if d.dtype == element && d.origin == crate::record::Origin::Status {
+                    first[s as usize].get_or_insert(d.effective.round());
+                }
+            }
+        }
+        first
+    }
+
+    /// M100: the Electricity tick takes the hit's whole head ladder (x5.4) in
+    /// its seed and, where the tick itself lands on a head, the headshot
+    /// brackets over a 1x base on top (x1.8) — 24 off a body, 234 off a head,
+    /// and 130 on a neighbour's body off a head. Gas lands the same way.
+    #[test]
+    fn m100_an_electricity_tick_lands_on_a_part_of_its_own() {
+        let e = DamageType::Electricity;
+        let body = m100_first_ticks(&m100_fixture(e, false, 0), 1, e);
+        let head = m100_first_ticks(&m100_fixture(e, true, 0), 1, e);
+        assert_eq!(body, vec![Some(24.0)], "the measured body tick");
+        assert_eq!(head, vec![Some(234.0)], "the measured head tick");
+
+        let crowd = m100_first_ticks(&m100_fixture(e, true, 8), 1, e);
+        assert_eq!(crowd[0], Some(234.0));
+        for (i, t) in crowd.iter().enumerate().skip(1) {
+            assert!(
+                matches!(t, Some(v) if *v == 130.0 || *v == 234.0),
+                "neighbour {i}: the arc keeps the head seed, 130 or 234 where it lands on a head: {crowd:?}"
+            );
+        }
+
+        for g in [false, true] {
+            let t = m100_first_ticks(&m100_fixture(DamageType::Gas, g, 0), 1, DamageType::Gas);
+            let v = t[0].expect("a gas tick");
+            assert_eq!(v, if g { 234.0 } else { 24.0 }, "gas, head {g}");
+        }
+    }
+
+    /// M100's other half: the SAME fixture on Heat, Toxin and Blast keeps the
+    /// hit's ladder and nothing more — 5.4x the body tick, not 9.7x.
+    #[test]
+    fn m100_heat_toxin_and_blast_take_the_hits_part_alone() {
+        for (dtype, body_tick, head_tick) in [
+            (DamageType::Toxin, 24.0, 130.0),
+            (DamageType::Blast, 5.0, 26.0),
+        ] {
+            let body = m100_first_ticks(&m100_fixture(dtype, false, 0), 1, dtype)[0];
+            let head = m100_first_ticks(&m100_fixture(dtype, true, 0), 1, dtype)[0];
+            assert_eq!((body, head), (Some(body_tick), Some(head_tick)), "{dtype:?}");
+        }
+        assert!(!lands_on_a_part(DamageType::Heat));
+    }
+
+    /// M100: a neighbour's arc lands on its head 10 times in 189.
+    #[test]
+    fn m100_an_arc_lands_on_a_neighbours_head_at_the_measured_rate() {
+        let e = DamageType::Electricity;
+        let p = m100_fixture(e, true, 9);
+        let (mut heads, mut all) = (0, 0);
+        for seed in 0..120 {
+            for t in m100_first_ticks(&p, seed, e).into_iter().skip(1).flatten() {
+                all += 1;
+                heads += usize::from(t == 234.0);
+            }
+        }
+        let rate = heads as f64 / all as f64;
+        assert_eq!(all, 120 * 9);
+        assert!((rate - TESLA_HEAD_LANDING_CHANCE).abs() < 0.025, "{heads}/{all}");
+    }
+
     #[test]
     fn a_burn_nullified_by_negative_duration_strips_nothing() {
         // Status duration -110%: the proc's expiry is before its own instant.
@@ -31668,6 +31875,7 @@ mod tests {
             next_tick: 0.0,
             ticks_left: 6,
             frozen: v,
+            landing: 1.0,
             bracket: 1.0,
             depth: 0,
             source_scaled: false,

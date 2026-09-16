@@ -532,6 +532,13 @@ part and faction in it), `C` is 0.5 for Heat / Electricity / Toxin / Gas and
 - **DoT ticks take no 1/32 quantization**, stated in the same section: "A proc
   is calculated from the attack's modded base damage rather than from the sum
   of its quantized damage-type values."
+- **Electricity and Gas ticks land on a part of their own** (M100). On a head
+  the whole tick, accumulator included, is multiplied by the headshot-damage
+  brackets over a 1x base, acuity left out: wiki `Enemy_Body_Parts` §Notes,
+  "always defaulting to the 1x multiplier, unaffected by acuity-like bonuses
+  but affected by deadhead-like bonuses: … Electricity and Gas status procs".
+  So a head hit's tick on the struck body is `S × 5.4 × 1.8` at +80%, where
+  Heat, Toxin and Blast stop at `S × 5.4` (`lands_on_a_part`, `Dot::landing`).
 
 It is worth 0.5 damage before multipliers — 2.9% of a tick on a base-35 rifle
 and 0.25% on a base of 400, which is why it took a small gun to see.
@@ -3538,8 +3545,12 @@ A `Dot` is self-contained (`{next_tick, ticks_left, value, dtype,
 ignores_armor}`) and carries an absolute tick time, and nothing in this arena
 moves, so draining a moment later is exact rather than approximate.
 
-The copy is BODY-ONLY: `part_factor` comes back off, because an arc is not
-aimed at anything. Same rule every instance that lands on a neighbour follows.
+**A Tesla arc keeps the hit's part in its seed** (M100): a head hit's arc
+reaches a neighbour's body for 5.4× a body hit's tick, the whole head ladder.
+Where the arc LANDS on the neighbour is its own draw, a head 10 times in 189
+(`TESLA_HEAD_LANDING_CHANCE`); in game a placement decides it, and this plane
+has no height to. A GAS cloud's copy is body-only in both layers, because its
+neighbours are unmeasured.
 
 ### What it cost, and what that cost was made of
 

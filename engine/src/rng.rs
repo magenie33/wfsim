@@ -99,6 +99,10 @@ pub struct Draws {
     /// reads drops and a reserve that spends them are two readers of ONE roll,
     /// and a stream of its own is what keeps that roll the same for both.
     pub drops: Rng,
+    /// WHERE A TESLA ARC LANDS on a neighbour — head or not. Its own stream so
+    /// a crowd fight's other rolls stay where they were; it is drawn from only
+    /// when a head landing is worth more than a body landing.
+    pub arc_landing: Rng,
 }
 
 impl Draws {
@@ -130,6 +134,7 @@ impl Draws {
             aim: at(4),
             blast_dir: at(5),
             drops: at(6),
+            arc_landing: at(7),
         }
     }
 }

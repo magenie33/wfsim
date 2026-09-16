@@ -85,6 +85,10 @@ pub struct Instance {
     /// 1.0 for every mechanism that lands on a body, and the head's own factor
     /// for the two that can land on a head.
     pub status_part_factor: f64,
+    /// WHAT AN ELECTRICITY OR GAS TICK THIS INSTANCE LEAVES IS WORTH where it
+    /// struck — the headshot-damage brackets on a head, 1.0 elsewhere. See
+    /// `dummy::Dot::landing`.
+    pub status_landing: f64,
 }
 
 /// Where the beam landed and how wide its damage radius is, AFTER mods.
@@ -322,6 +326,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
             target: s, share: 1.0, multishot: direct, headshot: direct,
             part_factor: 1.0,
             status_part_factor: 1.0,
+            status_landing: 1.0,
         });
 
         // ONE `seen` PER SEED — a path never revisits its OWN bodies, and one
@@ -347,6 +352,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
                 target: next, share, multishot: direct, headshot: false,
                 part_factor: 1.0,
                 status_part_factor: 1.0,
+                status_landing: 1.0,
             });
             seen[next] = true;
             cur = next;
@@ -429,6 +435,7 @@ pub fn resolve_with(
             target: s, share: 1.0, multishot: direct, headshot: direct,
             part_factor: 1.0,
             status_part_factor: 1.0,
+            status_landing: 1.0,
         });
 
         // …and then runs its own path.
@@ -474,6 +481,7 @@ pub fn resolve_with(
                 target: next, share, multishot: direct, headshot: false,
                 part_factor: 1.0,
                 status_part_factor: 1.0,
+                status_landing: 1.0,
             });
             seen[next] = true;
             cur = next;
