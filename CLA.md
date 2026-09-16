@@ -114,9 +114,10 @@ and MySQL are released under, and it is what the right to sublicense in §2
 exists to make possible. Asking for that right in writing while leaving its
 purpose unsaid would be the less honest of the two options.
 
-That reservation reaches only work the Maintainer holds the rights to. Upstream
-game data and Digital Extremes' art are not the Maintainer's to relicense and
-carry their own terms: see [`LICENSE-DATA.md`](LICENSE-DATA.md).
+That reservation reaches only work the Maintainer holds the rights to. It does
+not extend to Digital Extremes' art, and it has no need to reach the game facts
+in `data/`, which are nobody's property to begin with. Both are set out in
+[`LICENSE-DATA.md`](LICENSE-DATA.md).
 
 ## 7. How to sign
 
