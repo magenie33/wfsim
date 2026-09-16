@@ -54,5 +54,6 @@ covers the project's own marks and claims nothing about theirs.
 
 ## Questions
 
-Uses outside the list above are usually fine and usually granted — open an
-issue and ask.
+A use the lists above do not cover: open an issue and ask. Asking is welcome
+and costs nothing. What the answer is turns on the use, so this policy does not
+give it in advance.
