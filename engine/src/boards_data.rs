@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHAT THE RUNTIME KNOWS ABOUT EACH BOARD, which is everything except the rows.
 //!
 //! THE ROWS ARE NOT EMBEDDED, and that is the whole reason this module is this

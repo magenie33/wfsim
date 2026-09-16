@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Minimal "shoot the training dummy" Monte Carlo — the first end-to-end sim.
 //!
 //! The target is a HUMANOID MADE OF BODY PARTS and each shot lands on one,

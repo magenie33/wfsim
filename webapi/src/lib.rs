@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // The weapon entry in `meta_json` is one `json!` literal deep enough to hit
 // the macro's default expansion limit — reached when the evolution tile
 // gained its "what this does not do yet" fields. A limit, not a smell:

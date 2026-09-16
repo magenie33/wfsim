@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Declarative mod loader: `data/mods/<class>/*.yaml` -> the mod pool.
 //!
 //! Mods are DATA, not code. Each `data/mods/<class>/<id>.yaml` describes a mod

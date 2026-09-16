@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! The ARENA — a fight's two actors and how long they are at it.
 //!
 //! Modelling only the target leaves everything about the player absent or

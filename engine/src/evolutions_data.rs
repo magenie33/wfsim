@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Declarative Incarnon-evolution loader: `data/evolutions/*.yaml` -> the
 //! evolution pool.
 //!

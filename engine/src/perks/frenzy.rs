@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Frenzy — Dual Toxocyst's weapon passive, modeled as a [`Perk`].
 //!
 //! Data / source of truth: the inline `passives:` block in

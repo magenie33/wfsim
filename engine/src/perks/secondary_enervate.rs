@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Secondary Enervate — a secondary-weapon arcane, modeled as a [`Perk`].
 //!
 //! On the trigger it grants a stacking, weapon-scoped buff in the [`BuffBar`]

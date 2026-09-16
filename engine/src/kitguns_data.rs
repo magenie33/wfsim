@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! KITGUNS — three parts and one rule, and the first weapon in this roster with
 //! no published stat line of its own.
 //!

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Damage types (see `docs/MECHANICS.md` §1 and `docs/GLOSSARY.md`).
 //!
 //! Every hit is a vector over these types, not a scalar. Names follow the wiki.

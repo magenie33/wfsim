@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE NAMING CONVENTION, enforced — see `docs/NAMING.md`.
 //!
 //! The owner's rule: a name may be LONG, but it must have

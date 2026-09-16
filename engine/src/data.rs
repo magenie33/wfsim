@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! The compile-time-embedded `data/` tree (docs/WASM.md phase 1).
 //!
 //! `build.rs` scans `../data` and generates the `FILES` table; every loader

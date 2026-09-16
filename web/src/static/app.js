@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // WFSim build configurator — PURE CONFIG. Modules: Mods / Arcane / Evolution /
 // Element; each weapon enables only the ones it has. Data from /api/meta;
 // official polarity icons from the wiki, art from WFCD.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! HOW MANY STACKS DOES THE PANEL ACTUALLY REPORT?
 //!
 //! A player asks why Heat, Toxin and Electricity show one stack when they

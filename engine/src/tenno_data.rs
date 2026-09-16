@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! The TENNO — the player side of a fight, loaded from `data/tenno/`.
 //!
 //! A fight has TWO actors; this is the player. It carries what the player IS

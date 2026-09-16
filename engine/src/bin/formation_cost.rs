@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHAT A FORMATION COSTS TO SIMULATE — the other half of `formation_value`.
 //!
 //! That tool asks what a crowd is WORTH; this one asks what it costs to find

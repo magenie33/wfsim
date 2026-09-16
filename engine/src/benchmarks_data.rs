@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! OFFICIAL TEST SCENARIOS — `data/benchmarks/`.
 //!
 //! A benchmark is a scenario that belongs to no weapon: read-only, defined

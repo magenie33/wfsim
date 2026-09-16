@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHICH TRIGGER A FIGHT SWITCHES OFF. The subject is `docs/BUFFS.md`
 //! §"…AND A FIGHT CAN SWITCH OFF A TRIGGER" — the events still happen and
 //! still score, the buff does not.

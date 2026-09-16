@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE INDEX SPACE IS THE WALK.
 //!
 //! `SubsetSpace` exists to replace the depth-first enumeration, and the only

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE SCORER — turns submitted builds into a board.
 //!
 //! Reads the library as a JSON array on stdin, reads the open generation's

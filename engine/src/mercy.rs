@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Parazon Mercy window (wiki `Parazon` §Mercy; docs/MECHANICS.md §8).
 //!
 //! Pure predicate: given the unit's attributes and current state, is the Mercy

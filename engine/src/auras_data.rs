@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! AURAS — the SQUAD's mod, and the first thing in this engine that is not the
 //! weapon's, not the build's, and not the target's.
 //!

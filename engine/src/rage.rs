@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! RAGE — a Warframe passive that is a meter on melee damage (Valkyr's). The
 //! numbers are data on the frame (`rage:`, `warframes_data::RageSpec`) and the
 //! rule is `docs/WARFRAMES.md` §Passives.

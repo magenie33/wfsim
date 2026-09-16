@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Enemy stat scaling with level, plus Steel Path modifiers.
 //!
 //! Source: wiki `Enemy_Level_Scaling` (community-derived from in-game testing;

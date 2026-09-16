@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `one_fight` — WHAT AN ENGAGEMENT COSTS, and whether your change to the
 //! engine made it cheaper WITHOUT making it wrong.
 //!

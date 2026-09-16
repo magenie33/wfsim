@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHERE THINGS ARE — the fight's 2D layer.
 //!
 //! The arena had two actors and no geometry between them: every shot landed at

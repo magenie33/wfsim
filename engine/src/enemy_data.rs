@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Enemy data loader: `data/enemies/**.yaml` → engine types.
 //!
 //! This is the first slice of the data layer (devlog 2026-07-24 plan). Custom

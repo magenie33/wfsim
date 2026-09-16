@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! wfsim damage-pipeline engine.
 //!
 //! See `docs/CORE.md` section 3. Damage is not a single multiplication but a

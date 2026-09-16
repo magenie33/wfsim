@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Declarative MOD SET loader: `data/mod_sets/<id>.yaml` -> the set bonuses.
 //!
 //! A set bonus is not a property of any one mod — it is what a GROUP of them

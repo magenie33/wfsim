@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! wfsim-web: a tiny, dependency-light web UI for the engine.
 //!
 //! A std-only HTTP server (no web framework) that serves a static frontend

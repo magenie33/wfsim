@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Status / proc layer — pipeline layer [5], first slice: proc **selection**.
 //!
 //! Rules (wiki `Status_Effect`; docs/MECHANICS.md §6 — unverified until

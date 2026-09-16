@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! GROUND TRUTH — what the search is graded against.
 //!
 //! Accuracy is not something a search strategy can assert about itself, so it

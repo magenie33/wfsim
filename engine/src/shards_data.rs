@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! ARCHON SHARDS — five sockets on a Warframe, and a PICK rather than a mod.
 //!
 //! A socket holds ONE of its colour's effects, and a TAUFORGED shard of that

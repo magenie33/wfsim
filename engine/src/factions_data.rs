@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! The post-U36 faction VULNERABILITY COLUMN: `data/factions/damage_modifiers.yaml`
 //! → an incoming-damage multiplier per damage type.
 //!

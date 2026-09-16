@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WARFRAMES — the builder's frame, and everything a build seats on it.
 //!
 //! A Warframe build is eight mods, an exilus, an aura, two arcanes, five archon

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHAT FALLS OFF A BODY, and what a weapon can do with it.
 //!
 //! The first mechanic in this engine that reads a KILL as a resource rather

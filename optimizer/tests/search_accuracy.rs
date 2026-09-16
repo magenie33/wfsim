@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! The optimizer's accuracy, MEASURED — not asserted.
 //!
 //! A search strategy cannot vouch for itself: "the funnel kept the best build"

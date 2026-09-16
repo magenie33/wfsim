@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHAT A RUN IS JUDGED BY — declared once, for every surface that ranks.
 //!
 //! A metric is a term of the SCENARIO, not of the code that reads one. Two are

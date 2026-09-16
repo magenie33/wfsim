@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! DOES PUNCH THROUGH ADD CHAINS? A player says it does not, in game or here.
 //!
 //! Reported for the Tenet Glaxion (信条·冷冻光束步枪), a chaining cold beam, and

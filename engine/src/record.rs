@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE COMBAT RECORD — one ordered stream of everything that happened in a
 //! fight, and the authority on what it was.
 //!
