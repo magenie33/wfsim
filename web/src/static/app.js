@@ -19364,7 +19364,7 @@ function renderResults(r, testedAt) {
   const ask = `<p class="sim-ask">${escHtml(trF(
     "{runs} engagements · {rolls} damage instances rolled, on your own machine.",
     { runs: askRuns.toLocaleString(), rolls: askRolls.toLocaleString() }))} ${
-    escHtml(tr("Builder, simulator and optimizer stay free for everyone."))} <a href="/support">${
+    escHtml(tr("Builder, simulator and optimizer are free for everyone."))} <a href="/support">${
     escHtml(tr("Chip in ↗"))}</a></p>`;
   $("sim-results").innerHTML = `
     <!-- WHAT BECAME OF THIS RUN, above the result and OUTSIDE it. It sat inside the result, under the headline, and read as

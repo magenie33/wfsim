@@ -1013,9 +1013,9 @@ def prerender(flagged: str) -> None:
         (
             "support", "Support WFSim — running costs", "h-support", "Support",
             "What it costs to run WFSim, and where to chip in. WFSim is a free, "
-            "open-source Warframe calculator: no ads, and no feature locked behind "
-            "a payment. A donation covers the domain, the CDN and the measurement "
-            "work — it buys no feature and no perk, and nothing here is for sale.",
+            "open-source Warframe calculator, AGPL-3.0. A donation covers the "
+            "domain, the CDN and the measurement work — it buys no feature and "
+            "no perk.",
         ),
         (
             "download", "Download WFSim for Windows", "h-download", "Download",
@@ -1033,9 +1033,8 @@ def prerender(flagged: str) -> None:
         (
             "thanks", "Thank you — the people who chipped in", "h-thanks", "Thank you",
             "The people who have chipped in to keep WFSim running. WFSim is a free, "
-            "open-source Warframe calculator and nothing on it is for sale: a "
-            "donation buys no feature, no perk and no place in any queue. This is "
-            "everyone who gave anyway.",
+            "open-source Warframe calculator: a donation buys no feature, no perk "
+            "and no place in any queue. This is everyone who gave anyway.",
         ),
     ]
     for path, title, hero, nav, desc in shell_pages:

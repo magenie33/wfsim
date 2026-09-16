@@ -346,10 +346,9 @@ coffee is enough" carries now that no figure does.
 
 NO SUM APPEARS ON THE PAGE — no ladder, no floor, no bill. Every channel shows
 its own minimum and its own ladder at the moment of paying, one screen away and
-always current, so a number written here is a staler copy of one; and a page
-that names a sum reads as a price list, which is the shape DE's non-commercial
-rule does not allow. `check_support` asserts the whole page against a currency
-pattern, because a digit comes back on a card unnoticed.
+always current, so a number written here is a staler copy of one, and a page
+that names a sum reads as a price list. `check_support` asserts the whole page
+against a currency pattern, because a digit comes back on a card unnoticed.
 
 "WHERE IT GOES" NAMES THE COSTS AND NEVER PRICES THEM. No amount is published
 for the domain, the update channel or the hours — a bill is the author's
@@ -377,11 +376,15 @@ while its channel has no url: what a month buys is a rule for the day Patreon
 opens, not a paragraph about an option nobody can take.
 
 A SUBSCRIPTION BUYS ORDER AND COMPANY, NEVER PRODUCT — a channel where the
-work is discussed, and reports read first. DE's Content Policy forbids
-charging for access to what is made with Warframe assets and permits passive
-advertising instead; this project's own promise is that nothing bought moves a
-result. NO RESPONSE TIME IS PROMISED IN ANY LANGUAGE: "read first" is an
-order, "within N hours" is an obligation that grows with every subscriber.
+work is discussed, and reports read first. NO RESPONSE TIME IS PROMISED IN ANY
+LANGUAGE: "read first" is an order, "within N hours" is an obligation that
+grows with every subscriber.
+
+THE PAGE MAKES NO CLAIM ABOUT PRICING, IN EITHER DIRECTION. It states what is
+checkable today — the three modules, the measurements, the licence — and says
+nothing about what may be offered later. A pledge nobody has relied on yet
+costs nothing to withdraw, where breaking one later would cost everything,
+which is the rule the advertising claim was withdrawn under.
 
 NO MONEY FIGURE IS PUBLISHED, and no endpoint serves one. What arrives is
 recorded by hand in `ledger/schema.sql`'s tables; the only thing that ever
@@ -393,8 +396,8 @@ anybody gave.
 THE ORDER IS THE ONLY THING THE RANKING SAYS. It combines what somebody gave
 with how long ago they first gave it — the rule is stated beside the constant
 that sets it — and the page prints no position, no band and no figure, because
-`/support` promises in so many words that there are no tiers and nothing is
-bought. An ordered list is a list; the same list numbered is a leaderboard.
+`/support` says in so many words that a donation buys no feature and no perk.
+An ordered list is a list; the same list numbered is a leaderboard.
 `check_thanks` holds both lines.
 
 THE BLOCK SITS BELOW THE CHANNELS on `/support`, and `/thanks` is the whole
