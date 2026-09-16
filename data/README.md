@@ -6,9 +6,11 @@ follows [`../docs/GLOSSARY.md`](../docs/GLOSSARY.md); how to fetch data in bulk
 from the wiki's structured modules is in
 [`../docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md).
 
-**Rights.** This tree is derived from the WARFRAME Wiki and carries its terms,
-which are **NonCommercial**. What may be done with it — and with the
-measurements, engine outputs and game art beside it — is set out in
+**Rights.** What this tree holds is **facts**, re-expressed in WFSim's own
+schema — no wiki page, prose or media is reproduced here. The WARFRAME Wiki is
+where most of those facts are checked, and it is credited accordingly; it
+declares its own content **CC BY-NC-SA 3.0**. That, and the terms covering the
+measurements, engine outputs and game art beside this tree, is set out in
 [`../LICENSE-DATA.md`](../LICENSE-DATA.md).
 
 ## Reference graph
