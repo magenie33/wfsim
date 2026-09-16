@@ -69,7 +69,16 @@ may not be used to brand derived products or services —
 which is most things, including forks that say what they descend from.
 
 Game data derived from the community
-[Warframe Wiki](https://wiki.warframe.com/) (CC BY-SA). Vendored
-[WFCD/warframe-items](vendor/warframe-items/LICENSE) data remains MIT.
+[Warframe Wiki](https://wiki.warframe.com/), which declares
+**CC BY-NC-SA 3.0** — NonCommercial and ShareAlike both travel with it.
+Measurements, engine outputs and game art each carry terms of their own:
+[`LICENSE-DATA.md`](LICENSE-DATA.md) sets out all four categories. WFCD's
+[warframe-items](https://github.com/WFCD/warframe-items) is MIT upstream and
+is fetched locally rather than redistributed here.
 Unofficial fan project, not affiliated with Digital Extremes; Warframe
 is a trademark of Digital Extremes Ltd.
+
+As the copyright holder, the maintainer reserves the right to offer WFSim,
+and components built alongside it, under separate terms including commercial
+licences. Every version published under AGPL-3.0-or-later stays available
+under it.
