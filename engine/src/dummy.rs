@@ -12563,11 +12563,12 @@ mod melee {
     /// A STANDING HEAVY WAITS TOO, and that is what makes the rule the SWING's
     /// rather than the slam's.
     ///
-    /// Three wind-up cards take this weapon's 1.2 s charge to 0.43 s, which is
-    /// SHORT OF THE FIRST RUNG: 17 points is still 1x, so Corrupt Charge's +30
-    /// initial combo buys nothing at all if the swing goes the moment it can.
-    /// Waiting the extra 0.07 s to 20 points buys 2x for a seventh of the
-    /// cadence, and the mode takes it.
+    /// THE SWING IS TAKEN OFF, leaving the 0.4 s charge as the whole cycle: the
+    /// real 0.96 s swing is already past the first rung, so nothing would wait.
+    /// 0.4 s is SHORT OF THE RUNG: 16 points is still 1x, so Corrupt Charge's
+    /// +30 initial combo buys nothing if the swing goes the moment it can.
+    /// Waiting 0.1 s more to 20 points buys 2x for a quarter of the cadence,
+    /// and the mode takes it.
     #[test]
     fn a_standing_heavy_waits_the_seventh_of_a_second_that_buys_a_tier() {
         for m in ["weeping_wounds", "melee_prowess", "galvanized_elementalist"] {
@@ -12575,14 +12576,23 @@ mod melee {
             let b = magistar("magistar", &[m], 60.0, None).mean_procs;
             println!("SC {m}: {a:.2} -> {b:.2}");
         }
-        let fast = ["killing_blow", "amalgam_organ_shatter", "melee_elementalist"];
-        let dps = |mods: &[&str]| magistar("magistar_heavy", mods, 60.0, None).mean_damage;
-        let bare = dps(&fast);
-        let charged = dps(&[fast.as_slice(), &["corrupt_charge"]].concat());
-        let gain = charged / bare;
+        let dps = |mods: &[&str]| {
+            let form = "magistar_heavy";
+            let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+            let pool = crate::mods_data::pool_for_weapon(form);
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            let mut panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            for h in &mut panel.combo_script {
+                h.delay_seconds = 0.0;
+            }
+            let arena = crate::arena::Arena::training(60.0);
+            monte_carlo(&DummyParams::from_panel(&panel, &arena, &ArcaneFx::none()), 24, 909).mean_damage
+        };
+        let gain = dps(&["corrupt_charge"]) / dps(&[]);
         assert!(
             (1.4..2.0).contains(&gain),
-            "the wait should buy 2x at a seventh of the cadence: x{gain:.3}",
+            "the wait should buy 2x at a quarter of the cadence: x{gain:.3}",
         );
     }
 
