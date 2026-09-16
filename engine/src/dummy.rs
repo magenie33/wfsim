@@ -12442,7 +12442,17 @@ mod melee {
         let refs: Vec<&crate::loadout::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
         let mut panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
-        panel.combo_script.retain(|h| h.slam_multiplier.is_none());
+        // A SLAM TAKEN OFF LEAVES ITS TIME BEHIND: Winding Temper keeps its
+        // whole 2.25 s on the slam row, and the three swings alone take none.
+        let mut kept: Vec<crate::weapons_data::ComboHit> = Vec::new();
+        for h in std::mem::take(&mut panel.combo_script) {
+            match (h.slam_multiplier, kept.last_mut()) {
+                (Some(_), Some(prev)) => prev.delay_seconds += h.delay_seconds,
+                (Some(_), None) => {}
+                (None, _) => kept.push(h),
+            }
+        }
+        panel.combo_script = kept;
         let mut arena = crate::arena::Arena::training(20.0);
         if let Some(gap) = spacing {
             arena.others = (1..9)
@@ -13698,6 +13708,13 @@ pub fn run_once_traced(
     // every fight and showed up as a 35% slowdown in `one_fight` with no answer
     // changed. Nothing about it can differ between two pellets.
     let aim_off_axis = params.off_axis_deg();
+    // A COMBO THAT TAKES NO TIME NEVER ENDS: the clock only advances by the
+    // rows' delays, so a zero sum loops forever instead of failing.
+    assert!(
+        params.combo_script.is_empty()
+            || params.combo_script.iter().any(|h| h.delay_seconds + h.windup_seconds > 0.0),
+        "a combo script whose rows take no time never advances the clock",
+    );
     // THE CHAIN'S STATIC HALF (`chain::Layout`). Nothing in this arena moves,
     // so which body the sphere catches and which body is nearest to which are
     // constants — asked once here instead of once per landing pellet, which on
