@@ -1963,6 +1963,13 @@ const FROZEN_RESET_STACKS: usize = 3;
 const HEAT_STRIP_DECAY: [f64; 5] = [0.50, 0.40, 0.30, 0.15, 0.0];
 const HEAT_STRIP_DECAY_INTERVAL: f64 = 1.5;
 
+/// Whole Heat strip steps taken after `elapsed` seconds. AN INSTANT ON A STEP
+/// HAS TAKEN IT: the +1 s tick lands on a boundary, and a bare floor put
+/// `born + 1.0 - born` at 1.9999… for ~1% of ignitions, a step short.
+fn heat_strip_steps(elapsed: f64, interval: f64) -> f64 {
+    (elapsed / interval + 1e-9).floor()
+}
+
 /// THE ARC A SWING SWEEPS in front of the wielder, degrees, centred on the aim.
 ///
 /// A STAND-IN, and the only invented number in [`DummyParams::melee_struck`]:
@@ -2447,6 +2454,12 @@ impl DebuffState {
         origin: HeatOrigin,
     ) {
         let HeatOrigin { bracket, depth, unit } = origin;
+        // A BURN BORN DEAD IS NOT APPLIED — status duration at or below -100%
+        // nullifies Ignite (wiki, Status Effect). Letting it in handed the
+        // ramp-down a negative interval, which never steps: a permanent 50%.
+        if expiry <= t {
+            return;
+        }
         match &mut self.heat {
             Some(h) => {
                 match cap {
@@ -2551,7 +2564,7 @@ impl DebuffState {
             }
         }
         if let Some((t0, s0)) = self.heat_decay {
-            let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * status_damage)).floor() as usize;
+            let steps = heat_strip_steps(now - t0, HEAT_STRIP_DECAY_INTERVAL * status_damage) as usize;
             let start = HEAT_STRIP_DECAY
                 .iter()
                 .position(|&s| s <= s0 + 1e-9)
@@ -2673,7 +2686,7 @@ impl DebuffState {
     /// FIRST proc (steps scaled by status duration).
     fn heat_ramp_up(&self, now: f64, status_damage: f64) -> f64 {
         let Some(h) = &self.heat else { return 0.0 };
-        let steps = ((now - h.born) / (0.5 * status_damage)).floor();
+        let steps = heat_strip_steps(now - h.born, 0.5 * status_damage);
         match steps as i64 {
             i64::MIN..=0 => 0.0,
             1 => 0.15,
@@ -2689,7 +2702,7 @@ impl DebuffState {
         let up = self.heat_ramp_up(now, status_damage);
         let down = match self.heat_decay {
             Some((t0, s0)) if now >= t0 => {
-                let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * status_damage)).floor() as usize;
+                let steps = heat_strip_steps(now - t0, HEAT_STRIP_DECAY_INTERVAL * status_damage) as usize;
                 let start = HEAT_STRIP_DECAY
                     .iter()
                     .position(|&s| s <= s0 + 1e-9)
@@ -6996,7 +7009,9 @@ fn settle_procs(
     // (1 + element bonuses) × (1 + status damage) × crit/part
     // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
     // Gas) at 0..+5 s (the +6 s event is a dud).
-    let delayed_ticks = ((BLEED_TICKS as f64 * status_damage - BLEED_DELAY).floor() as u32) + 1;
+    // Signed until the end: a duration under the delay is floor(<0) + 1 = 0
+    // ticks, and casting the floor first wrapped it to 0 + 1.
+    let delayed_ticks = ((BLEED_TICKS as f64 * status_damage - BLEED_DELAY).floor() + 1.0).max(0.0) as u32;
     let immediate_ticks = ((BLEED_TICKS as f64 * status_damage).floor() as u32).max(1);
     // Faction is re-applied at every DERIVATION step — see `faction_at`. A
     // status the hit applied is one step past it, so depth 2 (wiki
@@ -31463,6 +31478,44 @@ mod tests {
         assert_eq!(d.heat_strip(4.1, 2.0), 0.50);
         // status_damage = 0.5: full strip already at 1.0 s.
         assert_eq!(d.heat_strip(1.1, 0.5), 0.50);
+    }
+
+    #[test]
+    fn a_burn_nullified_by_negative_duration_strips_nothing() {
+        // Status duration -110%: the proc's expiry is before its own instant.
+        let sd = -0.1;
+        let mut d = DebuffState::default();
+        d.apply_heat(1.0, 3.0, 1.0 + 6.0 * sd, None, HeatOrigin { bracket: 1.0, depth: 0, unit: 0.0 });
+        assert!(d.heat.is_none());
+        for now in [1.5, 5.0, 60.0] {
+            d.prune(now, sd);
+            assert_eq!(d.heat_strip(now, sd), 0.0, "at {now}");
+        }
+    }
+
+    #[test]
+    fn a_tick_on_a_strip_boundary_sees_the_step_taken() {
+        // 0.0292 + 1.0 - 0.0292 is 0.9999… in f64, so a bare floor read the
+        // +1 s tick one step short.
+        let born = 0.0292;
+        let d = DebuffState {
+            heat: Some(HeatEntity {
+                bracket: 1.0,
+                depth: 0,
+                unit: 0.0,
+                born,
+                expiry: born + 6.0,
+                next_tick: born + 1.0,
+                value: 1.0,
+                recent: Vec::new(),
+                stacks: 1,
+            }),
+            ..Default::default()
+        };
+        assert!((born + 1.0 - born) / 0.5 < 2.0, "the fixture must sit under the boundary");
+        assert_eq!(d.heat_strip(born, 1.0), 0.0);
+        assert_eq!(d.heat_strip(born + 1.0, 1.0), 0.30);
+        assert_eq!(d.heat_strip(born + 1.0, 0.5), 0.50);
     }
 
     #[test]

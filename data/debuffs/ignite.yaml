@@ -69,6 +69,9 @@ dot:
 # Armor strip: a timed sub-effect with ramp-up and ramp-down.
 armor_strip:
   # Every 0.5 s AFTER the initial proc: 15% -> 30% -> 40% -> 50%.
+  # Anchored to the PROC, not the first tick: the wiki's cited capture
+  # (imgur.com/a/V2Oc6hl) reads 0% at 19.069 s, 15% at 19.583 s, 50% at
+  # 21.071 s — the 15% step lands before any +1 s tick exists.
   ramp_up: { interval_seconds: 0.5, steps: [0.15, 0.30, 0.40, 0.50] }
   # More procs do NOT speed up the ramp.
   # After the proc ends: armor returns every 1.5 s over 6 s:
