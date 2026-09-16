@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Perks: held capabilities that grant buffs.
 //!
 //! A **perk** is something you hold or equip — an arcane, a weapon passive, an

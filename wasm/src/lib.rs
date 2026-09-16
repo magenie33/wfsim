@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! wfsim-wasm: the browser build (docs/WASM.md phases 2–3).
 //!
 //! Exposes the `wfsim-webapi` endpoint functions to JavaScript. The intended

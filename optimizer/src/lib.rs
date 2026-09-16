@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! wfsim optimizer: search for the best mod combination on top of the engine.
 //!
 //! Principle (docs/CORE.md §5): the optimizer **only calls the engine** and

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Deterministic pseudo-random number generator.
 //!
 //! One seeded RNG threaded through the whole simulation keeps Monte Carlo runs

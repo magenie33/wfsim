@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Buffs: runtime states overlaid on a target, mirroring the in-game buff bar.
 //!
 //! A [`Buff`] is a live overlay — it has stacks, an optional expiry, a

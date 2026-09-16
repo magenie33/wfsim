@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHAT WARFRAME.MARKET CALLS THINGS WE MODEL — `data/market.yaml`.
 //!
 //! Slugs, and nothing else. The site is the authority on its own identifiers

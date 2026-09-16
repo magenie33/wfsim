@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pipeline layer [1]: mod resolution — a chosen mod set becomes panel stats.
 //!
 //! Buckets (docs/MECHANICS.md, docs/GLOSSARY.md): every relative bonus of one

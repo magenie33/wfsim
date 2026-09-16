@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `wfsim-truth` — grade the optimizer's search against ground truth.
 //!
 //! Takes the SAME request the app sends to `/api/optimize`, exhausts the

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline primitives: a fixed-rate clock and the event stream that drives
 //! stateful [`crate::buffs`].
 //!

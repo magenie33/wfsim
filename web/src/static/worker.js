@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // wfsim wasm worker (docs/WASM.md phase 4). Owns one wasm engine instance.
 // Protocol (from app.js's api() shim):
 //   { id, kind: "api", path, body }  → { id, payload }          (quick endpoints)

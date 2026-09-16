@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! wfsim-optimizer: the full search flow against the ULTIMATE STRESS TEST.
 //!
 //! Scenario: Dual Toxocyst Incarnon Form (fixed evolution

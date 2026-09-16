@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pipeline layer [2]: elemental combination.
 //!
 //! Implements the hierarchy algorithm of docs/MECHANICS.md §3 (wiki `Damage`

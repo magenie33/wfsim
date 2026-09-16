@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE SIX SYNDICATE RADIAL EFFECTS — `data/syndicates/`.
 //!
 //! Justice, Truth, Entropy, Sequence, Blight, Purity. Each is a 1000-damage

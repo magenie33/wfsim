@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WARFRAME ABILITY BUFFS — the fight's PLAYER, loaded from `data/abilities/`.
 //!
 //! A mod, an arcane and an evolution belong to the BUILD; Roar belongs to the

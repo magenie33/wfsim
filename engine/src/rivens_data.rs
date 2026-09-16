@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Riven mods: the stat pool from `data/rivens/<class>.yaml`, the value
 //! formula, the generated name, and the [`ModDef`] a riven resolves to.
 //!

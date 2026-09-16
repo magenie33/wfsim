@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Declarative arcane loader: `data/arcanes/<slot>/*.yaml` -> the arcane pool.
 //!
 //! Arcanes are DATA, not code (same pattern as [`crate::mods_data`]). Each

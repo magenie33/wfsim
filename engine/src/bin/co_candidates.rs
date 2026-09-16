@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHICH WEAPON WOULD SETTLE IT — a ranked shortlist for measuring whether an
 //! Incarnon evolution's flat base damage feeds the GunCO term.
 //!

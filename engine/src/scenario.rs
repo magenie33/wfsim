@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! **WHAT A FIGHT CONSISTS OF, declared once for the whole product** —
 //! [`BUILD_AXES`](crate::builds::BUILD_AXES)'s sibling, for the other half of
 //! a simulation. A BUILD is what you are carrying; a FIGHT is everything else.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! IS THIS A BUILD SOMEONE COULD ACTUALLY EQUIP? The simulator does not ask,
 //! deliberately: it is a calculator and slot legality is the UI's job. A
 //! SUBMISSION is the other case — fed over a network where the UI is not on the

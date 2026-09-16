@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Embed the `data/` tree at compile time (docs/WASM.md phase 1).
 //!
 //! Scans `../data` for `*.yaml` and generates `$OUT_DIR/embedded_data.rs` with

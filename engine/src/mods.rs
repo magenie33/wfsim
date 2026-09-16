@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Mod capacity & polarity math — the gate in front of mod resolution
 //! (pipeline layer [1]). Source: wiki `Polarity` (docs/MECHANICS.md §2).
 //!

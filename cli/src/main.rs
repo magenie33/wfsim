@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! wfsim command-line entry point.
 //!
 //! For now it runs the basic "shoot the training dummy" Monte Carlo: Dual

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WHICH WEAPONS REACH A FORMATION, and which reach only the body they hit.
 //!
 //! Three mechanisms spread a shot (MECHANICS §12) and a weapon carries none,

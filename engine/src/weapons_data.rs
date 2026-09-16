@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Weapon data loader: `data/weapons/*.yaml` → [`WeaponBase`] + registry
 //! metadata (CORE.md §2.3: weapon numbers are DATA; the engine only holds
 //! rules). The yamls are the source of record — `loadout`'s per-weapon

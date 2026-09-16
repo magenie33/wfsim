@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! The mod-subset space as an INDEX RANGE — `nth(i)` instead of a walk.
 //!
 //! A depth-first descent is fine when it runs to completion and disastrous when

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! i18n overlays: `data/i18n/<locale>/*.yaml` → one [`LocaleSpec`] per locale.
 //!
 //! English is not a locale here — it is the source of truth on each entity's

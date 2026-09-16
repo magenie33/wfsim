@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE FORMATION — more than one body on the floor, and which one is being shot.
 //!
 //! Deliberately SMALL: a formation is a list of bodies plus the index of the

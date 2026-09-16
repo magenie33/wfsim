@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE DOOR'S SECOND HALF — inbox records in, library builds out.
 //!
 //!   cat inbox.ndjson | wfsim-intake --done done.txt > builds.ndjson

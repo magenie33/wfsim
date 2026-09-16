@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! THE SEARCH — one path at every scope.
 //!
 //! The space is superexponential — a 22-mod pool is 571,569 candidates, 30 mods

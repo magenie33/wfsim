@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! BEAM CHAINING — where ONE shot lands when there is more than one body.
 //!
 //! The mechanic, its wiki quotes and its measurements are docs/MECHANICS.md
