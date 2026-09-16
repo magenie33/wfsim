@@ -2,8 +2,9 @@
 
 The [`LICENSE`](LICENSE) covers the **code**: AGPL-3.0-or-later. It does not
 answer what may be done with the game data the project reads, the measurements
-it is calibrated against, the figures its engine produces, or the art it shows
-— and those have different owners and different terms.
+it is calibrated against, the figures its engine produces, or the Digital
+Extremes material it shows — and those have different owners and different
+terms.
 
 This file draws that line. Four categories, and a file belongs to exactly one.
 
@@ -83,16 +84,38 @@ build against it — all free, and all welcome. What the NonCommercial term
 reserves is redistribution as part of a commercial product or service. **Bulk
 scraping of wfsim.app for redistribution is not permitted** in any case.
 
-## 4. Game art — `site/img/`
+## 4. Digital Extremes' material — art and card text
 
-Weapon and item images are **the copyright of Digital Extremes**. They are not
-licensed by this project, are not covered by the AGPL, and are not CC or MIT.
-They are reproduced to identify the weapon a reader is configuring.
+Two kinds, one owner:
 
-The wiki files DE media the same way: assets obtained with permission from
-Digital Extremes, or reproduced as fair use for informative purposes. Anyone
-redistributing this repository should reach their own conclusion about these
-files rather than relying on a licence grant, because none is being made.
+- **Art.** `site/img/` (weapon and item images) and `site/pol/` (polarity
+  symbols), served same-origin because a CDN redirects to a host that is
+  unreliable to blocked from mainland China. The link-preview cards under
+  `site/og/` are **this project's own** artwork, drawn by
+  `scripts/build_site_app.py`, and are not DE's.
+- **Card text.** The `description:` line each mod, arcane, evolution and
+  Warframe mod carries, transcribed as it reads in game, and the localized card
+  text in `data/i18n/<locale>/descriptions.yaml` and
+  `warframe_descriptions.yaml`.
+
+Both are **the copyright of Digital Extremes**. They are not licensed by this
+project, are not covered by the AGPL, and are not CC or MIT. **No grant is made
+here**, and anyone redistributing this repository should reach their own
+conclusion about them rather than relying on one.
+
+They are reproduced to identify the thing a reader is configuring: an image so
+a weapon is recognizable at a glance, a card line so a mod's own wording can be
+held against what this engine does with it.
+
+What this project does about that, because each of these is checkable:
+
+- WFSim is an unofficial fan project, **not affiliated with or endorsed by
+  Digital Extremes**, and says so in the footer of every page.
+- **No Warframe or Digital Extremes logo is used anywhere** in this repository
+  or on the site. The only mark carried is this project's own wordmark.
+- *Warframe* is a trademark of Digital Extremes Ltd.
+- **Anything Digital Extremes asks to have removed will be removed.** An issue
+  at <https://github.com/magenie33/wfsim> reaches the maintainer.
 
 ## WFCD / warframe-items
 
@@ -110,7 +133,7 @@ themselves are DE's and belong to §4.
 | game data | `data/` | facts; the wiki is credited, and declares CC BY-NC-SA 3.0 for its own content |
 | measurements | `docs/MEASUREMENTS.md`, `docs/measurements/` | CC BY-NC-SA 4.0 |
 | engine outputs | scores, rankings, simulated figures | CC BY-NC-SA 4.0 |
-| game art | `site/img/` | Digital Extremes' — no grant made |
+| DE's material | `site/img/`, card text | Digital Extremes' copyright — no grant made |
 
 ## Commercial licensing
 
@@ -123,8 +146,8 @@ right to sublicense.
 
 That reservation covers this project's own work: its code, its engine outputs,
 and the contributions licensed to it. It does not extend to Digital Extremes'
-art (§4), which is not the maintainer's to relicense — and it has no need to
-reach the facts in §1, which are nobody's property to begin with.
+material (§4), which is not the maintainer's to relicense — and it has no need
+to reach the facts in §1, which are nobody's property to begin with.
 
 The WFSim name and logo are covered by neither the code licence nor this file:
 [`TRADEMARK.md`](TRADEMARK.md).
