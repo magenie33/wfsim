@@ -76,16 +76,28 @@ Contribution You submit in future, until You revoke it in writing. Revoking it
 applies only to Contributions submitted afterwards — licenses already granted
 are irrevocable, which is what makes them worth having.
 
-## 6. What this does not change
+## 6. How the Project is licensed
 
-**WFSim is published under [AGPL-3.0-or-later](LICENSE), and this agreement
-does not change that.** It is not a transfer of copyright, and it is not a
-route to taking the Project closed: anything released stays released, and the
-AGPL's guarantees to users — source availability, the same freedoms
-downstream — continue to apply to every version published under it.
+**WFSim is published under [AGPL-3.0-or-later](LICENSE).** This agreement is
+not a transfer of copyright, and it does not change the license the Project
+ships under today.
 
-Game data carries its own terms, which this agreement does not alter. See
-[`LICENSE-DATA.md`](LICENSE-DATA.md).
+**What is guaranteed to You.** A version published under AGPL-3.0-or-later
+stays available under it. That grant is irrevocable for the versions it has
+been made for, so a Contribution cannot be taken back from the people already
+relying on it, and the AGPL's guarantees — source availability, the same
+freedoms downstream — continue to apply to every version published under it.
+
+**What the Maintainer reserves.** As the copyright holder, the Maintainer may
+offer the Project, and components built alongside it, **under separate terms,
+including commercial licenses.** This is the arrangement projects such as Qt
+and MySQL are released under, and it is what the right to sublicense in §2
+exists to make possible. Asking for that right in writing while leaving its
+purpose unsaid would be the less honest of the two options.
+
+That reservation reaches only work the Maintainer holds the rights to. Upstream
+game data and Digital Extremes' art are not the Maintainer's to relicense and
+carry their own terms: see [`LICENSE-DATA.md`](LICENSE-DATA.md).
 
 ## 7. How to sign
 
