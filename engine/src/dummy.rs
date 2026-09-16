@@ -12725,8 +12725,9 @@ mod melee {
     /// so the card pays exactly when a swing lands while a PREVIOUS swing's
     /// Lift is still standing. The swing that lifts never amplifies itself.
     ///
-    /// THREE WIND-UP CARDS MAKE IT PAY. They take the standing heavy to 0.43 s,
-    /// inside `LIFTED_SECONDS`, so every swing after the first sees the Lift.
+    /// FOUR CARDS MAKE IT PAY. Three wind-up cards take the 0.4 s charge to
+    /// 0.14 s and Fury the 0.8 s swing (at the Magistar's 0.833) to 0.74 s: 0.88 s
+    /// a cycle, inside `LIFTED_SECONDS`, so every swing after the first sees it.
     /// The neutral combo forces Impact and Knockdown and never a Lift, so the
     /// same card is worth nothing there — and a gate that only says yes is
     /// indistinguishable from no gate at all, which is why both halves are
@@ -12734,7 +12735,7 @@ mod melee {
     #[test]
     fn enduring_affliction_pays_where_a_lift_is_still_standing() {
         let procs = |form: &str, mods: &[&str]| magistar(form, mods, 60.0, None).mean_procs;
-        let fast = ["killing_blow", "amalgam_organ_shatter", "melee_elementalist"];
+        let fast = ["killing_blow", "amalgam_organ_shatter", "melee_elementalist", "fury"];
         let with_card = [fast.as_slice(), &["enduring_affliction"]].concat();
         let heavy = procs("magistar_heavy", &with_card) / procs("magistar_heavy", &fast);
         let light = procs("magistar", &["enduring_affliction"]) / procs("magistar", &[]);
