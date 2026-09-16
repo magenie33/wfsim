@@ -31480,6 +31480,49 @@ mod tests {
         assert_eq!(d.heat_strip(1.1, 0.5), 0.50);
     }
 
+    /// M99: a Braton Prime at +165% base and +200% Heat, status duration
+    /// -87.5%, on a Steel Path level 210 Corrupted Heavy Gunner. Armour is at
+    /// the 2700 cap, so the five strip steps read 29/50/73/89/107.
+    #[test]
+    fn m99_heat_strip_climbs_without_a_tick_on_capped_armour() {
+        let unit = crate::enemy_data::all()
+            .into_iter()
+            .find(|e| e.id == "corrupted_heavy_gunner")
+            .expect("the roster has one");
+        let target = unit
+            .target_params(210, true, false, TargetMode::InfiniteHealth)
+            .expect("a level 210 Steel Path unit is legal");
+        let mb = 35.0 * 2.65;
+        let p = DummyParams {
+            target,
+            damage: DamageVector::new()
+                .with(DamageType::Impact, 1.75 * 2.65)
+                .with(DamageType::Puncture, 12.25 * 2.65)
+                .with(DamageType::Slash, 21.0 * 2.65)
+                .with(DamageType::Heat, 2.0 * mb),
+            dot_modified_base: Some(mb),
+            status_duration_multiplier: 0.125,
+            // Shots at 0, 0.1, 0.2, 0.3 s: the burn lasts 0.75 s and never
+            // reaches its +1 s tick, and the steps are 0.0625 s apart.
+            fire_rate: 10.0,
+            duration_seconds: 0.35,
+            ..bare(DamageType::Heat)
+        };
+        let s = monte_carlo(&p, 1, 1);
+        // The quantized hit: Puncture 31.88 x1.5 (Orokin), Impact 5.80,
+        // Slash 55.07, Heat 185.5 — 294.22 before armour.
+        let raw = 31.882_812_5 * 1.5 + 5.796_875 + 55.070_312_5 + 185.5;
+        let at = |strip: f64| raw * (1.0 - 0.9 * (1.0 - strip).sqrt());
+        let expected = at(0.0) + at(0.15) + at(0.40) + at(0.50);
+        assert!(
+            (s.mean_effective_damage - expected).abs() < 1e-6,
+            "eff {} vs {expected}",
+            s.mean_effective_damage
+        );
+        assert!((at(0.50) - 107.0).abs() < 0.05, "the measured 107: {}", at(0.50));
+        assert!((raw - 185.5) * 0.1 < 11.0 && (raw - 185.5) * 0.1 > 10.5, "the measured 11");
+    }
+
     #[test]
     fn a_burn_nullified_by_negative_duration_strips_nothing() {
         // Status duration -110%: the proc's expiry is before its own instant.
