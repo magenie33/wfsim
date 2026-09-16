@@ -64,7 +64,9 @@ cargo run --release --bin one_fight           # …and after: delta + did the an
 [AGPL-3.0-or-later](LICENSE). If you use this code in a product or
 network service, you must release your modifications under the same
 license. The "WFSim" name and logo are not covered by the license and
-may not be used to brand derived products or services.
+may not be used to brand derived products or services —
+[`TRADEMARK.md`](TRADEMARK.md) sets out what is permitted without asking,
+which is most things, including forks that say what they descend from.
 
 Game data derived from the community
 [Warframe Wiki](https://wiki.warframe.com/) (CC BY-SA). Vendored
