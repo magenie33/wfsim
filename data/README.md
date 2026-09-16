@@ -6,6 +6,11 @@ follows [`../docs/GLOSSARY.md`](../docs/GLOSSARY.md); how to fetch data in bulk
 from the wiki's structured modules is in
 [`../docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md).
 
+**Rights.** This tree is derived from the WARFRAME Wiki and carries its terms,
+which are **NonCommercial**. What may be done with it — and with the
+measurements, engine outputs and game art beside it — is set out in
+[`../LICENSE-DATA.md`](../LICENSE-DATA.md).
+
 ## Reference graph
 
 ```
