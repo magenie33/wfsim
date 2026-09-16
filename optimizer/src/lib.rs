@@ -1212,25 +1212,6 @@ pub const BOARD_TOP: usize = 64;
 #[cfg(target_arch = "wasm32")]
 const BOARD_EVERY: usize = 4096;
 
-/// Where to pick a SCREEN back up. The screen is a single pass over the whole
-/// scope, so before this it was all-or-nothing: a reload during it cost every
-/// minute of it.
-///
-/// The survivors are NOT stored as builds. The walk that produced them is
-/// deterministic, so re-walking regenerates them for free — the cut only has
-/// to say which ones were still standing, by their position in the walk. That
-/// makes a screen checkpoint O(keep) small integers instead of O(keep) builds,
-/// and the re-walk pays only for the survivors' own re-evaluation, not for the
-/// How often the screen publishes a resume cut, in candidates produced. Rarer
-/// than a board — the payload is the whole surviving field, and it has to
-/// cross into JS and be persisted — but it has to be well inside what one
-/// screen actually walks: the browser's enumeration budget stops the walk at
-/// 20 s, which measured ~57k candidates on a 50-mod scope, so a cadence near
-/// `keep` would have fired zero times. Only the serial screen emits cuts, so
-/// the cadence only exists there.
-#[cfg(target_arch = "wasm32")]
-const SCREEN_SNAP_EVERY: usize = 8_192;
-
 /// Drive the multi-round funnel: for each `(runs, keep, by_kills)` round,
 /// evaluate the surviving jobs, sort (kill-progress on kill rounds, effective
 /// damage on screen rounds), and cull to `keep`. Returns the final sorted,
