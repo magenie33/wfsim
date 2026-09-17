@@ -140,12 +140,13 @@ for (const [label, w, h, mobile] of SCREENS) {
     ['slot menu', () => document.querySelector('#mod-slots .slot .dots').click()],
     ['mod picker', () => openPicker(7, slotEl(7))],
     ['arcane picker', () => openArcanePicker(document.querySelector('#arcane-slots .slot'), 0)],
+    ['every-rank picker', () => openEveryRankPicker(document.getElementById('gp-ranks') || document.getElementById('quick-calc'))],
   ]) {
     closePopovers(); await sleep(300);
     let threw = null;
     try { open(); } catch (e) { threw = String(e); }
     await sleep(800);
-    const shown = ['#slot-menu', '#mod-popover', '#arcane-popover', '#dd-popover']
+    const shown = ['#slot-menu', '#mod-popover', '#arcane-popover', '#rank-popover', '#dd-popover']
       .map(sel => document.querySelector(sel))
       .filter(el => el && !el.hidden && el.getBoundingClientRect().width > 0);
     const rects = shown.map(el => el.getBoundingClientRect());

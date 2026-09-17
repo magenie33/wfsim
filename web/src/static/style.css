@@ -1230,10 +1230,15 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   text-overflow:ellipsis;white-space:nowrap;border-bottom:1px dotted var(--line);cursor:help}
 .quick-calc .pc-runs{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--muted);font-size:11px}
 .quick-calc .pc-runs input[type=number]{width:58px}
-/* The every-rank list, open under the bar: one chip per card. */
+/* The every-rank list, open under the bar: the picker's own card rows, in the
+   picker's own frame, so the list reads as the cards it names. */
 .quick-calc .pc-ranks{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.quick-calc .rkitem{display:inline-flex;align-items:center;gap:2px;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 2px 1px 6px}
-.quick-calc .rk-x{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;padding:0 4px}
+.quick-calc .pc-rank-list{flex-basis:100%;max-height:260px;background:var(--surface);
+  border:1px solid var(--line);border-radius:10px}
+.quick-calc .pc-rank-list .opt{cursor:default}
+.combo-menu .rk-x{flex:none;align-self:center;border:0;background:none;color:var(--muted);
+  cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:5px}
+.combo-menu .rk-x:hover{color:var(--critical);background:var(--panel2)}
 /* THE RUN COUNT, on its own row and deliberately not in a field grid: it is
    NOT one of the fight's fields, and looking like one is how it came to be
    saved with the fight and pinned by an official ruler. A short input and a

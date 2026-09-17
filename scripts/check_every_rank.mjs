@@ -69,4 +69,53 @@ check("the quick calc asks about every other rank",
 check("a card taken off the list is asked at max only", out.afterRemove === 0, String(out.afterRemove));
 check("the default list comes back", out.afterReset === true);
 
+// THE EDITOR IS THE PICKER'S OWN CARDS, and a click toggles rather than equips.
+// Driven by clicks, the only path a player has.
+const ed = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const r = {};
+  setEveryRank(null);
+  gainPrefs = { ...gainPrefs, on: true };
+  everyRankOpen = false;
+  renderQuickCalc();
+  document.getElementById('gp-ranks').click();
+  await sleep(200);
+  const listed = () => Array.from(document.querySelectorAll('#quick-calc .pc-rank-list .opt[data-id]')).map((o) => o.dataset.id);
+  r.rows = listed();
+  r.cardShaped = !!document.querySelector('#quick-calc .pc-rank-list .opt img.mod');
+  r.select = !!document.querySelector('#quick-calc select');
+  document.getElementById('gp-ranks-add').click();
+  await sleep(200);
+  const pop = document.getElementById('rank-popover');
+  r.opened = !pop.hidden;
+  r.heads = Array.from(pop.querySelectorAll('.menu-head')).map((h) => h.textContent);
+  const slot0 = slots[0].mod;
+  pop.querySelector('.opt[data-id="serration"]').click();
+  await sleep(200);
+  r.added = everyRank().mods.includes('serration');
+  r.stillOpen = !pop.hidden;
+  r.markedCur = pop.querySelector('.opt[data-id="serration"]').classList.contains('cur');
+  r.inPanel = listed().includes('serration');
+  r.slotUntouched = slots[0].mod === slot0;
+  pop.querySelector('.opt[data-id="serration"]').click();
+  await sleep(200);
+  r.toggledOff = !everyRank().mods.includes('serration');
+  document.querySelector('#quick-calc .rk-x[data-id="hunter_track"]').click();
+  await sleep(200);
+  r.removedByX = !everyRank().mods.includes('hunter_track') && !listed().includes('hunter_track');
+  setEveryRank(null);
+  closePopovers();
+  return r;
+})()`);
+
+check("the editor lists the default cards as picker rows",
+  ed.rows.includes("hunter_track") && ed.cardShaped && !ed.select, JSON.stringify(ed));
+check("...and its add button opens the picker, mods and arcanes sectioned",
+  ed.opened && ed.heads.length >= 1, JSON.stringify(ed.heads));
+check("a click adds the card, marks it, and leaves the picker open",
+  ed.added && ed.stillOpen && ed.markedCur && ed.inPanel, JSON.stringify(ed));
+check("...without equipping it", ed.slotUntouched);
+check("a second click takes it off again", ed.toggledOff);
+check("the row's x removes a card", ed.removedByX);
+
 await app.finish("a card on the every-rank list is a row per rank, and its rank reaches the fight");
