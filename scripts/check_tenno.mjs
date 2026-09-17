@@ -67,41 +67,33 @@ const r = await evaluate(`(async () => {
   await sleep(1600);
   const armorAfterTyping = sim.wf_armor;
   const after = conds();
+  const floorLine = (document.querySelector('.wffloor') || {}).textContent || '';
 
-  // …AND A FRAME FILLS ALL THREE AT ONCE. Sprint is the one that matters most
-  // here: it could not be set at all before this control existed, so every
-  // "With Sprint Speed 1.2 or Higher" perk in the roster was unreachable from
-  // the page no matter what a player did.
-  // BY OPENING IT AND CLICKING, which is the only path a player has. The frame
-  // roster stopped being a native select on 2026-08-18 — reading .options off
-  // it threw, and setting .value by hand would have driven the binding while
-  // skipping the control, which is how the ability element picker shipped wired
-  // to nothing on the same day.
-  const pick = box.querySelector('[data-k="frame"]');
+  // …AND A WIELDER MOVES THE WHOLE FLOOR. The frame is the BUILD's (the
+  // Wielder picker in the build bar), and the server resolves its stats, so the
+  // claim is read off the floor the panel answers with — sprint included, which
+  // no Prototype reaches. Opened and clicked, the only path a player has.
   const pop = () => document.getElementById('dd-popover');
-  pick.click(); await sleep(400);
+  document.getElementById('dd-wielder').click(); await sleep(400);
   const rows = pop() && !pop().hidden ? [...pop().querySelectorAll('.opt')] : [];
-  // …minus the "no frame" row, which is not a Warframe.
-  const nFrames = Math.max(0, rows.length - 1);
-  const row = rows.find((o) => o.dataset.v === 'valkyr_prime');
+  const wielders = rows.map((o) => o.dataset.v);
+  const row = rows.find((o) => o.dataset.v === 'frame:valkyr_prime');
   if (row) row.click();
-  await sleep(1800);
-  const picked = { armor: sim.wf_armor, energy: sim.wf_energy, sprint: sim.wf_sprint };
-  // The numbers stay EDITABLE after a pick — the roster is unmodded, and one
-  // gate no frame can open is only askable by typing.
+  await sleep(2500);
+  const f = tennoFloor();
+  const picked = { armor: f.armor, energy: f.energy, sprint: f.sprint,
+                   inBuild: (snapshotState().wielder || {}).frame || null };
+  // The ticked armor OUTRANKS the frame: an override is the player's word.
+  const armorAfterPick = sim.wf_armor;
+  // …and the stats stay EDITABLE, since one gate no frame opens is only
+  // askable by typing.
   await tick('wf_energy');
   await typeIn('wf_energy', 900);
-  // …AND THE ARMOR AGAIN, ON PURPOSE. Picking the frame overwrote the 1500
-  // typed above with Valkyr Prime's own 1000 — which is the control working —
-  // so the number that must travel is one typed AFTER the pick. A frame's own
-  // armor proves nothing about the payload: the recipient derives it from
-  // the frame field either way.
-  await typeIn('wf_armor', 1500);
 
-  return { keys, editable, nFrames, picked, overridden: sim.wf_energy,
+  return { keys, editable, wielders, picked, armorAfterPick, overridden: sim.wf_energy,
            floorArmorShown: out_floorArmorShown, noKeyBefore: out_noKeyBefore,
            numDisabled: out_numDisabled, afterTick: out_afterTick,
-           floorLine: (document.querySelector('.wffloor') || {}).textContent || '',
+           floorLine,
            // THE STATE, not a literal: this read simArmor: 1500 and the
            // assertion below compared 1500 to 1500, which is not a check.
            typedArmor: armorAfterTyping, simArmor: sim.wf_armor,
@@ -112,19 +104,23 @@ const r = await evaluate(`(async () => {
 
 check("the Tenno block carries every player field",
   ["aiming", "headshot_pct", "invisible", "airborne", "overshields", "channeling", "solo_weapon",
-   "frame", "wf_armor", "wf_energy", "wf_sprint"]
+   "wf_health", "wf_shield", "wf_armor", "wf_energy", "wf_sprint"]
     .every((k) => r.keys.includes(k)),
   r.keys.join(","));
 check("the check is standing on a fight of its own, not the locked ruler",
   r.editable === true);
-check("the whole Warframe roster is offered", r.nFrames >= 120, `${r.nFrames} options`);
+check("the build's Wielder picker offers the Prototype and the modelled frames",
+  r.wielders[0] === "" && r.wielders.includes("frame:valkyr_prime"), r.wielders.join(","));
 // Valkyr Prime, from data/frames.yaml: 1000 armor, 1.1 sprint, 225 max energy
 // (175 at rank 0, +50). Three DIFFERENT numbers from one pick is the claim —
-// filling only the two that already had fields would leave every sprint gate
-// shut.
-check("picking one fills armor, max energy AND sprint",
+// moving only armor and energy would leave every sprint gate shut.
+check("picking one moves the floor's armor, max energy AND sprint",
   r.picked.armor === 1000 && r.picked.sprint === 1.1 && r.picked.energy === 225,
   JSON.stringify(r.picked));
+check("...and the wielder is saved with the BUILD", r.picked.inBuild === "valkyr_prime",
+  String(r.picked.inBuild));
+check("...while a ticked override still wins over it", r.armorAfterPick === 1500,
+  String(r.armorAfterPick));
 check("...and they stay editable — no frame reaches the 700-energy gate",
   r.overridden === 900, String(r.overridden));
 // READ AT THE MOMENT IT WAS TYPED. This read a literal 1500 the page-side body
@@ -338,6 +334,9 @@ const extra = await evaluate(`(async () => {
   history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
   document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
   await sleep(1200);
+  // A FIGHT OF ITS OWN, for the same reason as the first block: the ruler locks these.
+  document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
+  await sleep(1500);
   const box = document.getElementById('sim-extra');
   const keys = [...box.querySelectorAll('[data-xk]')].map(e => e.dataset.xk);
   const dps = async () => {
