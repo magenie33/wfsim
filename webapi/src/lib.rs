@@ -2650,6 +2650,25 @@ fn seconds_of(script: &[wfsim_engine::weapons_data::ComboHit]) -> f64 {
 /// Cards travel as `{drain, polarity}` at the rank the page set them to, so a
 /// riven or a lowered mod needs nothing from here; the capacity, the bill and
 /// the layout are the engine's.
+fn plan_json(p: &wfsim_engine::forma::Plan) -> Value {
+    let name = |p: Option<Polarity>| p.map(|p| format!("{p:?}"));
+    json!({
+        "layout": {
+            "main": p.layout.main.iter().map(|&x| name(x)).collect::<Vec<_>>(),
+            "exilus": name(p.layout.exilus),
+            "grant": name(p.layout.grant),
+        },
+        "regular": p.cost.regular,
+        "omni": p.cost.omni,
+        "umbra": p.cost.umbra,
+        "rank": p.rank,
+        "capacity": p.capacity,
+        "loadouts": p.loadouts.iter().map(|l| json!({
+            "slots": l.slots, "drain": l.drain, "grant": l.grant, "spare": l.spare,
+        })).collect::<Vec<_>>(),
+    })
+}
+
 pub fn forma_plan_json(v: &Value) -> Value {
     use wfsim_engine::forma::{self, Board, Card, Layout, Loadout, OmniUse, PlanError, Rules, Start, UmbraUse};
     let pol = |x: &Value| -> Result<Option<Polarity>, String> {
@@ -2733,27 +2752,23 @@ pub fn forma_plan_json(v: &Value) -> Value {
                     }
                     PlanError::CannotShare => json!({ "kind": "cannot_share" }),
                 };
-                return Ok(json!({ "ok": true, "fits": false, "reason": reason, "message": e.to_string() }));
+                // …AND THE OPEN BUILD'S NEAREST MISS when it is the one that
+                // cannot fit, so the page can show how far over it is.
+                let near = match &e {
+                    PlanError::DoesNotFit { loadouts: bad, .. } if bad.contains(&0) => {
+                        forma::closest(&board, &loadouts[..1], rules, start.as_ref()).map(|p| plan_json(&p))
+                    }
+                    _ => None,
+                };
+                return Ok(json!({
+                    "ok": true, "fits": false, "reason": reason, "message": e.to_string(), "closest": near,
+                }));
             }
         };
-        let name = |p: Option<Polarity>| p.map(|p| format!("{p:?}"));
-        Ok(json!({
-            "ok": true,
-            "fits": true,
-            "layout": {
-                "main": p.layout.main.iter().map(|&x| name(x)).collect::<Vec<_>>(),
-                "exilus": name(p.layout.exilus),
-                "grant": name(p.layout.grant),
-            },
-            "regular": p.cost.regular,
-            "omni": p.cost.omni,
-            "umbra": p.cost.umbra,
-            "rank": p.rank,
-            "capacity": p.capacity,
-            "loadouts": p.loadouts.iter().map(|l| json!({
-                "slots": l.slots, "drain": l.drain, "grant": l.grant, "spare": l.spare,
-            })).collect::<Vec<_>>(),
-        }))
+        let mut out = plan_json(&p);
+        out["ok"] = json!(true);
+        out["fits"] = json!(true);
+        Ok(out)
     };
     run().unwrap_or_else(err_json)
 }

@@ -22,7 +22,7 @@
 // Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
-const app = await openApp({ boot: 12000 });
+const app = await openApp({ boot: 12000, base: process.env.WFSIM_BASE });
 const { evaluate, check } = app;
 
 const r = await evaluate(`(async () => {

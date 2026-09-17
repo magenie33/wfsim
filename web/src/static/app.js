@@ -10583,7 +10583,7 @@ async function autoForma({ alone = false } = {}) {
   });
   if (slots !== live || $("weapon").value !== w || sig() !== before) return null;
   formaNotes.builder = { r, names, at: `${w}\u0000${activePreset}` };
-  if (!r || !r.ok || !r.fits) return r;
+  if (!r || !r.ok || !r.fits) return formaRefused(r, live, "forma-plan");
   placeFormaPlan(live, r, 0);
   if (partners.length) {
     const ps = loadPresetList(BUILDS);
@@ -10596,6 +10596,16 @@ async function autoForma({ alone = false } = {}) {
     });
     storePresetList(BUILDS, ps);
   }
+  return r;
+}
+
+/// A REFUSAL IS SHOWN, not swallowed: the open build takes its nearest miss, so
+/// the capacity line says how far over it is, and the box opens on the reason
+/// for this render only — the reader's own fold choice is not rewritten.
+function formaRefused(r, ss, boxId) {
+  if (r && r.closest) placeFormaPlan(ss, r.closest, 0);
+  const fold = $(boxId) && $(boxId).closest(".fold");
+  if (fold) fold.classList.remove("shut");
   return r;
 }
 
@@ -21814,7 +21824,7 @@ async function wfAutoForma() {
   });
   if (wf !== live || sig() !== before) return null;
   formaNotes.warframe = { r, names, at: `${live.frame}\u0000${wfActive}` };
-  if (!r || !r.ok || !r.fits) return r;
+  if (!r || !r.ok || !r.fits) return formaRefused(r, live.slots, "wf-forma-plan");
   placeFormaPlan(live.slots, r, 0);
   if (partners.length) {
     const cfg = wfBarCfg();

@@ -174,8 +174,8 @@ pub struct Placed {
     pub drain: u32,
     /// What its grant card hands back on the planned grant slot.
     pub grant: u32,
-    /// `capacity + grant - drain`.
-    pub spare: u32,
+    /// `capacity + grant - drain` — below zero only in [`closest`].
+    pub spare: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -261,17 +261,17 @@ pub fn plan(
     if start.layout.main.len() != n {
         return bad(format!("the current layout has {} main slots, the item has {n}", start.layout.main.len()));
     }
-    if let Some(p) = search(board, loadouts, rules, start) {
+    if let Some(p) = search(board, loadouts, rules, start, false) {
         return Ok(p);
     }
 
     if let Some(limit) = rules.forma_limit {
-        if let Some(p) = search(board, loadouts, Rules { forma_limit: None, ..rules }, start) {
+        if let Some(p) = search(board, loadouts, Rules { forma_limit: None, ..rules }, start, false) {
             return Err(PlanError::OverLimit { need: p.cost.total(), limit });
         }
     }
     let alone: Vec<usize> = (0..loadouts.len())
-        .filter(|&i| search(board, &loadouts[i..=i], rules, start).is_none())
+        .filter(|&i| search(board, &loadouts[i..=i], rules, start, false).is_none())
         .collect();
     if alone.is_empty() {
         return Err(PlanError::CannotShare);
@@ -282,6 +282,16 @@ pub fn plan(
             l.main.iter().flatten().chain(&l.exilus).any(|c| c.polarity == Polarity::Umbra)
         });
     Err(PlanError::DoesNotFit { loadouts: alone, umbra_off })
+}
+
+/// THE NEAREST MISS, for a loadout no layout fits: the layout that leaves the
+/// worst loadout least far over, whatever it costs and ignoring the limit. The
+/// page shows it so the reader sees how far over the build is rather than an
+/// unpolarized one.
+pub fn closest(board: &Board, loadouts: &[Loadout], rules: Rules, start: Option<&Start>) -> Option<Plan> {
+    let innate = Start { layout: board.innate(), forma_spent: 0 };
+    let start = start.unwrap_or(&innate);
+    search(board, loadouts, Rules { forma_limit: None, ..rules }, start, true)
 }
 
 const MAX_SLOTS: usize = 12;
@@ -407,7 +417,8 @@ struct Billed {
     key: [u32; 4],
 }
 
-fn search(board: &Board, loadouts: &[Loadout], rules: Rules, start: &Start) -> Option<Plan> {
+/// `nearest`: rank by room first and cost second, and keep what does not fit.
+fn search(board: &Board, loadouts: &[Loadout], rules: Rules, start: &Start, nearest: bool) -> Option<Plan> {
     let n = board.main.len();
     let grant_in_pool = board.grant.is_some_and(|g| g.in_pool);
     let s_grant = sym(start.layout.grant);
@@ -559,7 +570,10 @@ fn search(board: &Board, loadouts: &[Loadout], rules: Rules, start: &Start) -> O
     const UNSET: u32 = u32::MAX;
     let mut memo = vec![vec![UNSET; mains.len()]; loadouts.len()];
     let s_exilus = sym(start.layout.exilus);
-    let mut best: Option<((i64, i64, i32), usize)> = None;
+    // Ranked by (worst, total, cheapness, kept); cheapness only counts when
+    // `nearest`, since otherwise every candidate in the bucket costs the same.
+    type Score = (i64, i64, std::cmp::Reverse<[u32; 4]>, i32);
+    let mut best: Option<(Score, usize)> = None;
     let mut i = 0;
     while i < cands.len() {
         let key = cands[i].0;
@@ -590,18 +604,19 @@ fn search(board: &Board, loadouts: &[Loadout], rules: Rules, start: &Start) -> O
                 let spare = i64::from(b.capacity) + i64::from(grant) - i64::from(drain);
                 worst = worst.min(spare);
                 sum += spare;
-                if spare < 0 {
+                if spare < 0 && !nearest {
                     break;
                 }
             }
             // …and among equals, the one that moves the item's own colours least.
             let kept = -i32::from(e != s_exilus) - i32::from(g != s_grant);
-            if worst >= 0 && best.is_none_or(|(s, _)| (worst, sum, kept) > s) {
-                best = Some(((worst, sum, kept), j));
+            let score = (worst, sum, std::cmp::Reverse(if nearest { key } else { [0; 4] }), kept);
+            if (worst >= 0 || nearest) && best.as_ref().is_none_or(|(s, _)| score > *s) {
+                best = Some((score, j));
             }
             j += 1;
         }
-        if best.is_some() {
+        if best.is_some() && !nearest {
             break;
         }
         i = j;
@@ -670,7 +685,7 @@ fn search(board: &Board, loadouts: &[Loadout], rules: Rules, start: &Start) -> O
             };
             let drain = main + l.exilus.map_or(0, |c| slot_drain(c.drain, c.polarity, SYMS[e]));
             let grant = l.grant.map_or(0, |c| grant_on(c, SYMS[g]));
-            Placed { slots, drain, grant, spare: billed.capacity + grant - drain }
+            Placed { slots, drain, grant, spare: (billed.capacity + grant) as i32 - drain as i32 }
         })
         .collect();
 
@@ -809,6 +824,17 @@ mod tests {
         assert_eq!(e, PlanError::DoesNotFit { loadouts: vec![0], umbra_off: true });
     }
 
+    /// A build no layout fits still gets its nearest miss: everything matched.
+    #[test]
+    fn the_nearest_miss_polarizes_everything_it_can() {
+        let b = gun([None; 8], None);
+        let l = load(&[c(16, Madurai); 8]);
+        assert!(plan(&b, std::slice::from_ref(&l), Rules::default(), None).is_err());
+        let p = closest(&b, &[l], Rules::default(), None).unwrap();
+        assert_eq!(p.layout.main, vec![Some(Madurai); 8]);
+        assert_eq!(p.loadouts[0].spare, 60 - 64);
+    }
+
     /// A PARTIAL START: what the item already carries is free, and the Forma
     /// already spent count toward its rank.
     #[test]
@@ -882,7 +908,7 @@ mod tests {
                     );
                     if key(n.cost) == key(o.cost) {
                         assert!(
-                            n.loadouts[0].spare >= o.capacity - o.drain,
+                            n.loadouts[0].spare >= (o.capacity - o.drain) as i32,
                             "less room than fit: {o:?} vs {n:?} for {cards:?} on {innate:?}"
                         );
                     }
