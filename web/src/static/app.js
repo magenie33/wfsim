@@ -9659,7 +9659,10 @@ function finderTokens(p) {
 function finderTokenName(t) {
   const i = t.indexOf(":");
   const kind = t.slice(0, i), id = t.slice(i + 1);
-  if (kind === "mod") return (modById(id) || {}).name || prettify(id);
+  if (kind === "mod") {
+    const [card, r] = splitRank(id);
+    return ((modById(card) || {}).name || prettify(card)) + (r != null ? ` R${r}` : "");
+  }
   if (kind === "arc") return arcName(id);
   if (kind === "evo") return evoName(id);
   if (kind === "rv+" || kind === "rv-") {
