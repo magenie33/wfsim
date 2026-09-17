@@ -32,7 +32,7 @@
   <meta name="twitter:card" content="summary" />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
-  <link rel="stylesheet" href="/asset/style.b401205a55f6.css" />
+  <link rel="stylesheet" href="/asset/style.0f0d6d857ca1.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <!-- A BLANK PAGE MUST NEVER BE SILENT.
        Everything below the topbar is hidden until `init()` finishes, so until
@@ -1240,6 +1240,12 @@
     <div class="addbar"><input id="enemy-search" type="text" placeholder="Search a target…" data-i18n-ph autocomplete="off" /></div>
     <div id="enemy-menu" class="combo-menu"></div>
   </div>
+  <!-- The quick calc's every-rank list: the same rows, its own nodes, because
+       a click here toggles a card on the list instead of equipping it. -->
+  <div id="rank-popover" class="popover" hidden>
+    <div class="addbar"><input id="rank-search" type="text" placeholder="Search a mod or arcane…" data-i18n-ph autocomplete="off" /></div>
+    <div id="rank-menu" class="combo-menu"></div>
+  </div>
   <div id="arcane-popover" class="popover" hidden>
     <div class="addbar"><input id="arcane-search" type="text" placeholder="Search arcane / effect…" data-i18n-ph autocomplete="off" /></div>
     <div id="arcane-menu" class="combo-menu"></div>
@@ -1266,13 +1272,13 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">79153c2b</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">a617a900</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.acd89249247c.js"></script>
+  <script src="/asset/app.7587b49ec0f1.js"></script>
 <!-- WHAT THE CALCULATOR IS DOING, and how much of the machine is still
      answering. Page level and fixed, because a worker dying is not a property
      of whatever block happens to be on screen — and it was invisible, which is
