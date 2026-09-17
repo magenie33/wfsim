@@ -190,6 +190,36 @@ pub struct Plan {
     pub loadouts: Vec<Placed>,
 }
 
+/// Why there is no plan — the one case the page has to push back, so it names
+/// the cause in a shape the page can word.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PlanError {
+    /// The request itself cannot describe this item.
+    Invalid(String),
+    /// A plan exists and costs more than the player's limit.
+    OverLimit { need: u32, limit: u32 },
+    /// These loadouts (0-based) do not fit even alone and fully polarized.
+    DoesNotFit { loadouts: Vec<usize>, umbra_off: bool },
+    /// Each fits alone; no one layout serves them all.
+    CannotShare,
+}
+
+impl std::fmt::Display for PlanError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Invalid(e) => f.write_str(e),
+            Self::OverLimit { need, limit } => write!(f, "needs {need} Forma, over the limit of {limit}"),
+            Self::DoesNotFit { loadouts, umbra_off } => write!(
+                f,
+                "loadout {} does not fit even fully polarized{}",
+                loadouts.iter().map(|i| (i + 1).to_string()).collect::<Vec<_>>().join(", "),
+                if *umbra_off { " while Umbra Forma is off" } else { "" }
+            ),
+            Self::CannotShare => f.write_str("these loadouts cannot share one polarity layout"),
+        }
+    }
+}
+
 /// Plan one layout for every loadout. The first loadout is the one being edited
 /// and keeps its mod positions; the others are rearranged onto the layout.
 ///
@@ -202,63 +232,56 @@ pub fn plan(
     loadouts: &[Loadout],
     rules: Rules,
     start: Option<&Start>,
-) -> Result<Plan, String> {
+) -> Result<Plan, PlanError> {
+    let bad = |e: String| Err(PlanError::Invalid(e));
     let n = board.main.len();
     if n > MAX_SLOTS {
-        return Err(format!("{n} slots is more than the planner takes ({MAX_SLOTS})"));
+        return bad(format!("{n} slots is more than the planner takes ({MAX_SLOTS})"));
     }
     if loadouts.is_empty() {
-        return Err("no loadout to plan for".into());
+        return bad("no loadout to plan for".into());
     }
     for (i, l) in loadouts.iter().enumerate() {
         let mods = l.main.iter().flatten().count();
         if l.main.len() > n {
-            return Err(format!("loadout {}: {} slots given, the item has {n}", i + 1, l.main.len()));
+            return bad(format!("loadout {}: {} slots given, the item has {n}", i + 1, l.main.len()));
         }
         if mods > n {
-            return Err(format!("loadout {}: {mods} mods for {n} slots", i + 1));
+            return bad(format!("loadout {}: {mods} mods for {n} slots", i + 1));
         }
         if l.exilus.is_some() && board.exilus.is_none() {
-            return Err(format!("loadout {}: the item has no exilus slot", i + 1));
+            return bad(format!("loadout {}: the item has no exilus slot", i + 1));
         }
         if l.grant.is_some() && board.grant.is_none() {
-            return Err(format!("loadout {}: the item has no stance or aura slot", i + 1));
+            return bad(format!("loadout {}: the item has no stance or aura slot", i + 1));
         }
     }
     let innate = Start { layout: board.innate(), forma_spent: 0 };
     let start = start.unwrap_or(&innate);
     if start.layout.main.len() != n {
-        return Err(format!("the current layout has {} main slots, the item has {n}", start.layout.main.len()));
+        return bad(format!("the current layout has {} main slots, the item has {n}", start.layout.main.len()));
     }
     if let Some(p) = search(board, loadouts, rules, start) {
         return Ok(p);
     }
 
-    // WHY NOT — the one case the page has to push back, so it names the cause.
     if let Some(limit) = rules.forma_limit {
         if let Some(p) = search(board, loadouts, Rules { forma_limit: None, ..rules }, start) {
-            return Err(format!("needs {} Forma, over the limit of {limit}", p.cost.total()));
+            return Err(PlanError::OverLimit { need: p.cost.total(), limit });
         }
     }
     let alone: Vec<usize> = (0..loadouts.len())
         .filter(|&i| search(board, &loadouts[i..=i], rules, start).is_none())
-        .map(|i| i + 1)
         .collect();
-    let umbra_note = if rules.umbra == UmbraUse::Never
-        && loadouts.iter().any(|l| l.main.iter().flatten().chain(&l.exilus).any(|c| c.polarity == Polarity::Umbra))
-    {
-        " — an Umbra mod pays full drain while Umbra Forma is off"
-    } else {
-        ""
-    };
-    Err(match alone.as_slice() {
-        [] => "these loadouts cannot share one polarity layout".into(),
-        _ if loadouts.len() == 1 => format!("does not fit even fully polarized{umbra_note}"),
-        many => format!(
-            "loadout {} does not fit even fully polarized{umbra_note}",
-            many.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
-        ),
-    })
+    if alone.is_empty() {
+        return Err(PlanError::CannotShare);
+    }
+    let umbra_off = rules.umbra == UmbraUse::Never
+        && alone.iter().any(|&i| {
+            let l = &loadouts[i];
+            l.main.iter().flatten().chain(&l.exilus).any(|c| c.polarity == Polarity::Umbra)
+        });
+    Err(PlanError::DoesNotFit { loadouts: alone, umbra_off })
 }
 
 const MAX_SLOTS: usize = 12;
@@ -757,7 +780,7 @@ mod tests {
         let l = load(&[c(14, Madurai); 8]);
         let r = Rules { forma_limit: Some(2), ..Rules::default() };
         let e = plan(&b, &[l], r, None).unwrap_err();
-        assert!(e.contains("over the limit of 2"), "{e}");
+        assert!(matches!(e, PlanError::OverLimit { limit: 2, need } if need > 2), "{e:?}");
     }
 
     #[test]
@@ -783,7 +806,7 @@ mod tests {
         let p = plan(&b, std::slice::from_ref(&l), Rules::default(), None).unwrap();
         assert!(p.cost.umbra > 0);
         let e = plan(&b, &[l], never, None).unwrap_err();
-        assert!(e.contains("Umbra Forma is off"), "{e}");
+        assert_eq!(e, PlanError::DoesNotFit { loadouts: vec![0], umbra_off: true });
     }
 
     /// A PARTIAL START: what the item already carries is free, and the Forma

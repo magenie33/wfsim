@@ -2651,7 +2651,7 @@ fn seconds_of(script: &[wfsim_engine::weapons_data::ComboHit]) -> f64 {
 /// riven or a lowered mod needs nothing from here; the capacity, the bill and
 /// the layout are the engine's.
 pub fn forma_plan_json(v: &Value) -> Value {
-    use wfsim_engine::forma::{self, Board, Card, Layout, Loadout, OmniUse, Rules, Start, UmbraUse};
+    use wfsim_engine::forma::{self, Board, Card, Layout, Loadout, OmniUse, PlanError, Rules, Start, UmbraUse};
     let pol = |x: &Value| -> Result<Option<Polarity>, String> {
         match x.as_str() {
             None => Ok(None),
@@ -2720,10 +2720,26 @@ pub fn forma_plan_json(v: &Value) -> Value {
             Value::Null => None,
             s => Some(Start { layout: layout_of(&s["layout"])?, forma_spent: get_u32(s, "forma_spent", 0) }),
         };
-        let p = forma::plan(&board, &loadouts, rules, start.as_ref())?;
+        let p = match forma::plan(&board, &loadouts, rules, start.as_ref()) {
+            Ok(p) => p,
+            // A REFUSAL IS AN ANSWER: `ok` with no layout, and the reason in a
+            // shape the page words itself.
+            Err(e) => {
+                let reason = match &e {
+                    PlanError::Invalid(_) => return Err(e.to_string()),
+                    PlanError::OverLimit { need, limit } => json!({ "kind": "over_limit", "need": need, "limit": limit }),
+                    PlanError::DoesNotFit { loadouts, umbra_off } => {
+                        json!({ "kind": "does_not_fit", "loadouts": loadouts, "umbra_off": umbra_off })
+                    }
+                    PlanError::CannotShare => json!({ "kind": "cannot_share" }),
+                };
+                return Ok(json!({ "ok": true, "fits": false, "reason": reason, "message": e.to_string() }));
+            }
+        };
         let name = |p: Option<Polarity>| p.map(|p| format!("{p:?}"));
         Ok(json!({
             "ok": true,
+            "fits": true,
             "layout": {
                 "main": p.layout.main.iter().map(|&x| name(x)).collect::<Vec<_>>(),
                 "exilus": name(p.layout.exilus),
@@ -12122,6 +12138,7 @@ mod forma_plan_tests {
             "rules": { "forma_limit": 1 },
             "loadouts": [{ "main": [heavy, heavy, heavy, heavy, heavy, heavy, heavy, heavy] }],
         }));
-        assert!(no["error"].as_str().unwrap_or("").contains("limit"), "{no}");
+        assert_eq!(no["fits"], false, "{no}");
+        assert_eq!(no["reason"]["kind"], "over_limit");
     }
 }
