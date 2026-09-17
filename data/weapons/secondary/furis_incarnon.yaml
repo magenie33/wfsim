@@ -91,6 +91,8 @@ attack:
   crit_multiplier: 3.4
   status_chance: 0.24
   punch_through_m: 0.0
+  # see notes: furis_incarnon_beam_width
+  projectile_width_m: 2.0
   # PURE HEAT — five times the base form's 20, and it arrives as one element
   # rather than an IPS split, so elemental mods combine with it (MECHANICS §3
   # rule 2: the innate takes what the mods leave).

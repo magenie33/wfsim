@@ -12364,3 +12364,35 @@ mod forma_plan_tests {
         assert_eq!(curve.last().unwrap()["picks"][0]["build"], 0, "{cov}");
     }
 }
+
+#[cfg(test)]
+mod wide_beam {
+    use super::*;
+
+    /// THE FURIS INCARNON BEAM IS 2 M WIDE and pierces only on a modded punch
+    /// through: a body a metre off the line, behind the target, is reached with
+    /// Seeker and not without it.
+    #[test]
+    fn a_wide_beam_reaches_off_the_line_only_through_punch_through() {
+        // The bodies a fight reports are the ones it damaged, by position.
+        let hit = |mods: Value| -> Vec<f64> {
+            let r = simulate_json(&json!({
+                "weapon": "furis", "mode": "transformed",
+                "evolutions": ["furis_evo1_incarnon_form"],
+                "mods": mods, "enemy": "corrupted_heavy_gunner", "level": 100,
+                "runs": 2, "seed": 7, "duration": 3,
+                "player_at": [0, 0], "target_at": [0, 5],
+                "formation": [{ "at": [1.0, 7.0] }, { "at": [2.0, 9.0] }],
+            }));
+            r["bodies"]
+                .as_array()
+                .unwrap_or_else(|| panic!("{r}"))
+                .iter()
+                .filter(|b| b["damage"].as_f64().unwrap_or(0.0) > 0.0)
+                .filter_map(|b| b["at"][0].as_f64())
+                .collect()
+        };
+        assert_eq!(hit(json!([])), vec![0.0]);
+        assert_eq!(hit(json!(["seeker"])), vec![0.0, 1.0], "1 m in, 2 m out");
+    }
+}

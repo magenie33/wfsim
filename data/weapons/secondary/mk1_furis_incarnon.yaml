@@ -60,6 +60,8 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.08
   punch_through_m: 0.0
+  # see notes: furis_incarnon_beam_width
+  projectile_width_m: 2.0
   # 60 Heat against the Furis's 100. Note what the Incarnon form does to the
   # gap between these two weapons: in base form the MK1 has a TWELFTH of the
   # Furis's status chance (1% against 12%), and in Incarnon form it has a

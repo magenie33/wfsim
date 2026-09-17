@@ -192,6 +192,13 @@ notes:
     working figure — a measurement replaces it here and nowhere else. Every
     other weapon leaves the field at 0, which is a ray and is what this arena
     has always fired.
+  furis_incarnon_beam_width: |
+    THE BEAM HAS WIDTH, and 2 m is the owner's in-game reading rather than a
+    published number: the page calls it "a short-ranged, wide Klamora
+    Prism-like beam" and states no width. It carries no punch through of its
+    own ("The beam has no innate punch-through effect"), so the width only
+    decides which bodies a MODDED punch through reaches, the same line walk a
+    hit-scan round takes. A measurement replaces the 2 here and nowhere else.
   ballistica_incarnon_pierces_bodies: |
     INNATE INFINITE BODY PUNCH THROUGH, and the stat field is 0. The EVO1 card
     states it for the family — "Fire cross-shaped projectiles that punch through
