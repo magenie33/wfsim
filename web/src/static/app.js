@@ -10667,34 +10667,35 @@ function renderFormaPlan(box, ctx) {
     const rows = p.loadouts.map((l, i) => `<tr><td>${escHtml(note.names[i] || "")}</td>`
       + `<td>${l.drain} / ${p.capacity + l.grant}</td><td>${l.spare}</td></tr>`).join("");
     result = `<div class="fp-bill"><b>${escHtml(bill)}</b> · ${escHtml(tr("rank"))} ${p.rank}</div>`
-      + `<table class="fp-table"><tr><th>${escHtml(tr("Build"))}</th><th>${escHtml(tr("capacity"))}</th>`
+      + `<table class="fp-table"><tr><th>${escHtml(tr("Builds"))}</th><th>${escHtml(tr("capacity"))}</th>`
       + `<th>${escHtml(tr("spare"))}</th></tr>${rows}</table>`;
   } else if (note && note.r && note.r.ok) {
     result = `<div class="warn">${escHtml(formaRefusal(note.r.reason, note.names))}</div>`;
   } else if (note) {
     result = `<div class="warn">${escHtml((note.r && note.r.error) || tr("no plan"))}</div>`;
   }
-  box.innerHTML = `<div class="fp-rules">`
+  box.innerHTML = `<div class="exlabel">${escHtml(tr("Rules"))} · ${escHtml(tr("for every weapon and every Warframe"))}</div>`
+    + `<div class="fp-rules"><div class="fp-ticks">`
     + tick("catalyst", ctx.catalystLabel, "doubles capacity")
     + tick("reach_max_rank", "Reach max rank", "spend at least the Forma the item's max rank takes — five on a rank-40 weapon — even where the build needs fewer")
     + (ctx.grantLabel ? tick("grant_slot_first", ctx.grantLabel, "once any Forma is spent, polarize the slot that grants capacity first: it costs at most one Forma over the minimum") : "")
+    + `</div>`
     + `<label class="fp-pick">Omni Forma <select data-r="omni_forma">${opt("omni_forma",
       [["never", "never"], ["allowed", "where it saves a Forma"], ["preferred", "for every polarization"]])}</select></label>`
     + `<label class="fp-pick">Umbra Forma <select data-r="umbra_forma">${opt("umbra_forma",
       [["never", "never"], ["when_needed", "only when nothing else fits"], ["allowed", "like any Forma"]])}</select></label>`
     + `<label class="fp-pick">${escHtml(tr("Forma limit"))} <input type="number" min="0" step="1" data-r="forma_limit"`
     + ` placeholder="${escHtml(tr("none"))}" value="${r.forma_limit ?? ""}"></label>`
-    + `</div><div class="exhint">${escHtml(tr("These rules apply to every weapon and every Warframe."))}</div>`
-    + `<div class="exlabel">${escHtml(tr("Plan together"))}</div><div class="fp-group">`
-    + `<label class="fp-tick"><input type="checkbox" checked disabled> ${escHtml(ctx.activeLabel)} `
-    + `<span class="dim">(${escHtml(tr("open"))})</span></label>`
+    + `</div><div class="exlabel">${escHtml(tr("Plan together"))}</div><div class="fp-group">`
+    + `<label class="fp-tick"><input type="checkbox" checked disabled> ${escHtml(ctx.activeLabel || tr("this build"))}`
+    + `${ctx.activeLabel ? ` <span class="fp-dim">(${escHtml(tr("open"))})</span>` : ""}</label>`
     + (partners
       ? partners.map((p) => `<label class="fp-tick"><input type="checkbox" data-g="${escHtml(p.id)}"`
         + `${group.has(p.id) ? " checked" : ""}> ${escHtml(p.name)}</label>`).join("")
-      : `<span class="dim">${escHtml(tr("a board build is planned on its own"))}</span>`)
+      : `<span class="fp-dim">${escHtml(tr("a board build is planned on its own"))}</span>`)
     + `</div><div class="exhint">${escHtml(tr("Builds of one item share its polarities. The plan finds one layout every ticked build fits, and moves the other builds' mods onto it."))}</div>`
-    + `<button class="ghost-btn small fp-run">${escHtml(tr("plan Forma"))}</button>`
-    + `<div class="fp-result">${result}</div>`;
+    + `<div class="fp-foot"><button class="ghost-btn small fp-run">${escHtml(tr("plan Forma"))}</button>`
+    + `<div class="fp-result">${result}</div></div>`;
   box.querySelectorAll("[data-r]").forEach((el) => {
     el.addEventListener("change", () => {
       const next = formaRules();
@@ -10722,7 +10723,7 @@ function renderBuilderFormaPlan() {
     note: "builder",
     at: `${w}\u0000${activePreset}`,
     item: w,
-    activeLabel: presetLabel(buildNamed(activePreset)) || tr("this build"),
+    activeLabel: presetLabel(buildNamed(activePreset)),
     partners: officialBuildActive() ? null : loadPresetList(BUILDS)
       .filter((p) => presetId(p) !== activePreset).map((p) => ({ id: presetId(p), name: presetLabel(p) })),
     catalystLabel: "Orokin Catalyst",
@@ -21847,7 +21848,7 @@ function renderWfFormaPlan() {
     note: "warframe",
     at: `${wf.frame}\u0000${wfActive}`,
     item: wfItem(),
-    activeLabel: wfActive || tr("this build"),
+    activeLabel: wfActive,
     partners: wfBarCfg().load().filter((p) => p.id !== (open || {}).id)
       .map((p) => ({ id: p.id, name: presetLabel(p) })),
     catalystLabel: "Orokin Reactor",

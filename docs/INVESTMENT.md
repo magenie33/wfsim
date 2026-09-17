@@ -171,8 +171,10 @@ is free, and the Forma it took count toward the rank. The page does not ask for
 it yet.
 
 **THE PAGE** asks `/api/forma/plan` and puts the answer in the slots — the
-"auto" button and the Forma plan box in the mods block run the same call, on
-the weapon page and the Warframe page alike. The rules live in
+"auto" button and the Forma plan block run the same call, on the weapon page
+and the Warframe page alike. The block stands on its own under the build bar,
+not inside the mods block: it belongs to the item and to the builds planned on
+it, and its rules to every item. The rules live in
 `wfsim-forma-rules`; the builds planned with the open one in
 `wfsim-forma-group-<item>`, by preset id, where the item is the weapon id or
 `warframe-<frame>`. Planning writes the layout into every ticked build. A board

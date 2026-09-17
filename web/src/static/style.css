@@ -161,6 +161,7 @@ body.on-enemies [data-module="builder"]{display:none}
    the simulator; finding one is a builder question, so every other module
    hides it. */
 .on-simulator #build-finder,.on-optimizer #build-finder,.on-rivens #build-finder,.on-enemies #build-finder{display:none}
+.on-simulator #forma-block,.on-optimizer #forma-block,.on-rivens #forma-block,.on-enemies #forma-block{display:none}
 /* The builder's furniture that is not a `.block`: its preset bar and the quick
    calc travel with the blocks the other modules hide. */
 .on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
@@ -556,11 +557,18 @@ body.on-enemies [data-module="builder"]{display:none}
 .slot.exl{cursor:default;justify-content:center}.slot.exl:hover{border-color:var(--line)}
 .exlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}
 .exhint{font-size:11px;line-height:1.45;color:var(--dim);margin-top:6px;max-width:46ch}
-.forma-plan{display:flex;flex-direction:column;gap:6px}
-.fp-rules,.fp-group{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
-.fp-tick,.fp-pick{display:inline-flex;gap:6px;align-items:center;font-size:12px}
-.fp-pick input{width:6em}
-.forma-plan .fp-run{align-self:flex-start}
+.forma-plan{display:flex;flex-direction:column;gap:8px}
+.forma-plan .exlabel{margin-top:4px}
+.fp-rules{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end}
+.fp-ticks{display:flex;flex-direction:column;gap:6px}
+.forma-plan label.fp-tick{flex-direction:row;align-items:center;gap:7px;color:var(--text)}
+.forma-plan label.fp-tick input{width:auto;margin:0}
+.fp-pick select{width:auto;min-width:11em}
+.fp-pick input{width:7em}
+.fp-group{display:flex;flex-wrap:wrap;gap:6px 18px}
+.fp-dim{color:var(--dim)}
+.fp-foot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-start}
+.fp-result:empty{display:none}
 .fp-table{border-collapse:collapse;font-size:12px}
 .fp-table th,.fp-table td{padding:2px 12px 2px 0;text-align:left}
 .fp-bill{font-size:12px}

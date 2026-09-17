@@ -5,7 +5,9 @@
 // layout, each keeping its own mods; the open build keeps its positions. The
 // rules are global: a Catalyst switched off halves the capacity line, a Forma
 // limit refuses in the page's own words, and a Warframe plans through the same
-// box. docs/INVESTMENT.md §The planner.
+// box. The box is a BLOCK OF ITS OWN under the build bar on both pages: it
+// belongs to the item and its builds, not to one build's mods.
+// docs/INVESTMENT.md §The planner.
 //
 //   node scripts/check_forma_group.mjs
 //
@@ -39,7 +41,9 @@ const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(1500);
   const box = document.getElementById('forma-plan');
-  const out = { active: activePreset, live0: slots.slice(0, 8).map((s) => s.mod) };
+  const under = (id) => (document.getElementById(id).previousElementSibling || {}).id;
+  const out = { active: activePreset, live0: slots.slice(0, 8).map((s) => s.mod),
+    under: under('forma-block'), inMods: !!document.querySelector('#mod-block .forma-plan') };
   box.querySelector('.fp-run').click();
   await sleep(3000);
   const note = formaNotes.builder;
@@ -73,6 +77,7 @@ const r = await evaluate(`(async () => {
   document.getElementById('wf-forma-plan').querySelector('.fp-run').click();
   await sleep(3000);
   out.frame = formaNotes.warframe && formaNotes.warframe.r;
+  out.frameUnder = under('wf-forma-block');
   out.frameCap = document.getElementById('wf-capacity').textContent;
   return out;
 })()`);
@@ -80,6 +85,9 @@ const r = await evaluate(`(async () => {
 const pols = (xs) => xs.slice(0, 8).map((x) => x[1]).join();
 const mods = (xs) => xs.map((x) => x[0]).filter(Boolean).sort().join();
 const b = (r.stored || []).find((p) => p.name === "B");
+check("the Forma block sits under the build bar", r.under === "preset-bar-builder-builds" && !r.inMods,
+  `${r.under} ${r.inMods}`);
+check("…on the Warframe page too", r.frameUnder === "preset-bar-warframes", r.frameUnder);
 check("the open build is A", r.active === "A", r.active);
 check("both builds fit one plan", r.plan && r.plan.fits && r.plan.loadouts.length === 2, JSON.stringify(r.plan));
 check("the open build kept its positions",

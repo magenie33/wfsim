@@ -641,6 +641,14 @@
          THE BAR IS THE ONLY PLACE THAT SAYS WHICH BUILD IS OPEN — its selected
          chip names it and marks a board row with a lock. -->
     <div class="preset-bar" id="preset-bar-builder-builds"></div>
+    <!-- THE FORMA PLAN, a block of its own under the builds: it belongs to the
+         ITEM and to the builds planned on it together, not to any one build's
+         mods, and its rules are the player's for every item.
+         docs/INVESTMENT.md §The planner. -->
+    <section class="fold sect shut forma-block" id="forma-block" data-fold="forma-plan" aria-label="Forma plan">
+      <h3 class="sim-h fold-h" data-i18n>Forma plan <span class="sim-hint" data-i18n>your rules, and the builds that share these polarities</span></h3>
+      <div id="forma-plan" class="forma-plan"></div>
+    </section>
 
     <!-- QUICK CALC settings: what every "what would this slot be worth as X"
          answer below is measured with. Page level, above the mods, because it
@@ -724,12 +732,6 @@
                assumes it, so it is stated where the slot is rather than left in
                docs/INVESTMENT.md. -->
           <div class="exhint" data-i18n>A polarity can be swapped between this slot and a main one — the slot stays Exilus. So its polarity counts toward any build, even one that leaves it empty.</div>
-        </div>
-        <!-- THE FORMA PLAN: the player's rules (global) and which saved builds
-             share this item's polarities. docs/INVESTMENT.md §The planner. -->
-        <div class="fold sect shut" data-fold="forma-plan">
-          <h3 class="sim-h fold-h" data-i18n>Forma plan <span class="sim-hint" data-i18n>your rules, and the builds that share these polarities</span></h3>
-          <div id="forma-plan" class="forma-plan"></div>
         </div>
       </div>
     </section>
@@ -1109,6 +1111,14 @@
          build decides how long it lasts and whether casting re-opens it. -->
     <div id="wf-gate" class="wf-gate"></div>
     <div class="preset-bar" id="preset-bar-warframes"></div>
+    <!-- THE FORMA PLAN, a block of its own under the builds: it belongs to the
+         ITEM and to the builds planned on it together, not to any one build's
+         mods, and its rules are the player's for every item.
+         docs/INVESTMENT.md §The planner. -->
+    <section class="fold sect shut forma-block" id="wf-forma-block" data-fold="wf-forma-plan" aria-label="Forma plan">
+      <h3 class="sim-h fold-h" data-i18n>Forma plan <span class="sim-hint" data-i18n>your rules, and the builds that share these polarities</span></h3>
+      <div id="wf-forma-plan" class="forma-plan"></div>
+    </section>
 
     <section class="block" id="wf-mod-block">
       <div class="bh"><span class="n">1</span><h2 data-i18n>Mods</h2>
@@ -1131,12 +1141,6 @@
         <div id="wf-exilus-block">
           <div class="exlabel" data-i18n>Exilus</div>
           <div id="wf-exilus" class="slots"></div>
-        </div>
-        <!-- THE FORMA PLAN: the player's rules (global) and which saved builds
-             share this item's polarities. docs/INVESTMENT.md §The planner. -->
-        <div class="fold sect shut" data-fold="wf-forma-plan">
-          <h3 class="sim-h fold-h" data-i18n>Forma plan <span class="sim-hint" data-i18n>your rules, and the builds that share these polarities</span></h3>
-          <div id="wf-forma-plan" class="forma-plan"></div>
         </div>
       </div>
     </section>
