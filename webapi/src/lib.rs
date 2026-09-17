@@ -2644,6 +2644,104 @@ fn seconds_of(script: &[wfsim_engine::weapons_data::ComboHit]) -> f64 {
     script.iter().map(|h| h.windup_seconds + h.delay_seconds).sum()
 }
 
+/// THE FORMA PLAN for one item and any number of its configs
+/// (`engine::forma::plan`, docs/INVESTMENT.md §The planner).
+///
+/// Cards travel as `{drain, polarity}` at the rank the page set them to, so a
+/// riven or a lowered mod needs nothing from here; the capacity, the bill and
+/// the layout are the engine's.
+pub fn forma_plan_json(v: &Value) -> Value {
+    use wfsim_engine::forma::{self, Board, Card, Layout, Loadout, OmniUse, Rules, Start, UmbraUse};
+    let pol = |x: &Value| -> Result<Option<Polarity>, String> {
+        match x.as_str() {
+            None => Ok(None),
+            Some(s) => match s.to_lowercase().as_str() {
+                "omni" | "universal" => Ok(Some(Polarity::Omni)),
+                "aura" => Ok(Some(Polarity::Aura)),
+                p @ ("madurai" | "naramon" | "vazarin" | "zenurik" | "unairu" | "penjaga" | "umbra") => {
+                    Ok(Some(wfsim_engine::weapons_data::polarity(p)))
+                }
+                other => Err(format!("unknown polarity: {other}")),
+            },
+        }
+    };
+    let card = |x: &Value| -> Result<Option<Card>, String> {
+        if x.is_null() {
+            return Ok(None);
+        }
+        let polarity = pol(&x["polarity"])?.ok_or("a card needs a polarity")?;
+        Ok(Some(Card { drain: get_u32(x, "drain", 0), polarity }))
+    };
+    let run = || -> Result<Value, String> {
+        let board = if let Some(id) = v["weapon"].as_str() {
+            Board::weapon(id).ok_or_else(|| format!("unknown weapon: {id}"))?
+        } else if let Some(id) = v["warframe"].as_str() {
+            Board::warframe(
+                wfsim_engine::warframes_data::warframe(id).ok_or_else(|| format!("unknown Warframe: {id}"))?,
+            )
+        } else {
+            return Err("name a weapon or a warframe".into());
+        };
+        let r = &v["rules"];
+        let rules = Rules {
+            catalyst: get_bool(r, "catalyst", true),
+            reach_max_rank: get_bool(r, "reach_max_rank", true),
+            grant_slot_first: get_bool(r, "grant_slot_first", true),
+            omni: match get_str(r, "omni_forma", "never") {
+                "never" => OmniUse::Never,
+                "allowed" => OmniUse::Allowed,
+                "preferred" => OmniUse::Preferred,
+                other => return Err(format!("omni_forma: {other}")),
+            },
+            umbra: match get_str(r, "umbra_forma", "when_needed") {
+                "never" => UmbraUse::Never,
+                "when_needed" => UmbraUse::WhenNeeded,
+                "allowed" => UmbraUse::Allowed,
+                other => return Err(format!("umbra_forma: {other}")),
+            },
+            forma_limit: r["forma_limit"].as_u64().map(|n| n as u32),
+        };
+        let mut loadouts = Vec::new();
+        for l in v["loadouts"].as_array().map(Vec::as_slice).unwrap_or(&[]) {
+            loadouts.push(Loadout {
+                main: l["main"].as_array().map(Vec::as_slice).unwrap_or(&[]).iter().map(card).collect::<Result<_, _>>()?,
+                exilus: card(&l["exilus"])?,
+                grant: card(&l["grant"])?,
+            });
+        }
+        let layout_of = |x: &Value| -> Result<Layout, String> {
+            Ok(Layout {
+                main: x["main"].as_array().map(Vec::as_slice).unwrap_or(&[]).iter().map(pol).collect::<Result<_, _>>()?,
+                exilus: pol(&x["exilus"])?,
+                grant: pol(&x["grant"])?,
+            })
+        };
+        let start = match &v["start"] {
+            Value::Null => None,
+            s => Some(Start { layout: layout_of(&s["layout"])?, forma_spent: get_u32(s, "forma_spent", 0) }),
+        };
+        let p = forma::plan(&board, &loadouts, rules, start.as_ref())?;
+        let name = |p: Option<Polarity>| p.map(|p| format!("{p:?}"));
+        Ok(json!({
+            "ok": true,
+            "layout": {
+                "main": p.layout.main.iter().map(|&x| name(x)).collect::<Vec<_>>(),
+                "exilus": name(p.layout.exilus),
+                "grant": name(p.layout.grant),
+            },
+            "regular": p.cost.regular,
+            "omni": p.cost.omni,
+            "umbra": p.cost.umbra,
+            "rank": p.rank,
+            "capacity": p.capacity,
+            "loadouts": p.loadouts.iter().map(|l| json!({
+                "slots": l.slots, "drain": l.drain, "grant": l.grant, "spare": l.spare,
+            })).collect::<Vec<_>>(),
+        }))
+    };
+    run().unwrap_or_else(err_json)
+}
+
 pub fn board_check_json(v: &Value) -> Value {
     let bench = get_str(v, "benchmark", "");
     let weapon = get_str(v, "weapon", "");
@@ -11988,5 +12086,42 @@ mod a_passive_names_itself {
                 s.id
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod forma_plan_tests {
+    use super::*;
+
+    /// The wire carries the plan both ways, for a weapon and for a frame, and a
+    /// refusal is an answer with a reason.
+    #[test]
+    fn the_plan_travels_for_a_weapon_and_a_frame() {
+        let heavy = json!({ "drain": 14, "polarity": "Madurai" });
+        let w = forma_plan_json(&json!({
+            "weapon": "torid",
+            "loadouts": [{ "main": [heavy, heavy, heavy, heavy, heavy, heavy, null, null] }],
+        }));
+        assert_eq!(w["ok"], true, "{w}");
+        assert_eq!(w["capacity"], 60);
+        assert!(w["loadouts"][0]["spare"].as_u64().is_some());
+        assert_eq!(w["loadouts"][0]["slots"][6], Value::Null);
+
+        let aura = json!({ "drain": 7, "polarity": "madurai" });
+        let f = forma_plan_json(&json!({
+            "warframe": "valkyr",
+            "rules": { "umbra_forma": "never" },
+            "loadouts": [{ "main": [heavy, heavy], "grant": aura }],
+        }));
+        assert_eq!(f["ok"], true, "{f}");
+        assert_eq!(f["regular"].as_u64().unwrap() + f["umbra"].as_u64().unwrap(), 0);
+        assert_eq!(f["loadouts"][0]["grant"], 14, "Valkyr's aura slot is Madurai");
+
+        let no = forma_plan_json(&json!({
+            "weapon": "torid",
+            "rules": { "forma_limit": 1 },
+            "loadouts": [{ "main": [heavy, heavy, heavy, heavy, heavy, heavy, heavy, heavy] }],
+        }));
+        assert!(no["error"].as_str().unwrap_or("").contains("limit"), "{no}");
     }
 }

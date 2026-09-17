@@ -72,6 +72,8 @@ pub struct GrantSlot {
     /// Does its polarity swap with the other slots'? A Warframe's aura slot
     /// does; a weapon's stance slot is a slot of its own.
     pub in_pool: bool,
+    /// Takes no Forma at all — a stance the weapon cannot take off (M94).
+    pub fixed: bool,
 }
 
 /// The item being polarized.
@@ -97,6 +99,7 @@ impl Board {
             grant: (spec.slot == "melee").then(|| GrantSlot {
                 innate: w::stance_polarity(id),
                 in_pool: false,
+                fixed: spec.fixed_stance.is_some(),
             }),
         })
     }
@@ -115,6 +118,7 @@ impl Board {
             grant: Some(GrantSlot {
                 innate: frame.aura_polarity.as_deref().map(polarity),
                 in_pool: true,
+                fixed: false,
             }),
         }
     }
@@ -426,6 +430,7 @@ fn search(board: &Board, loadouts: &[Loadout], rules: Rules, start: &Start) -> O
     let ex_alpha: Vec<usize> = if board.exilus.is_some() { alpha.clone() } else { vec![BLANK] };
     let g_alpha: Vec<usize> = match board.grant {
         None => vec![BLANK],
+        Some(g) if g.fixed => vec![s_grant],
         Some(_) if grant_in_pool => alpha.clone(),
         Some(_) => {
             let mut g = [false; NSYM];
@@ -761,7 +766,7 @@ mod tests {
             base_max_rank: 30,
             main: vec![None; 8],
             exilus: Some(None),
-            grant: Some(GrantSlot { innate: Some(Madurai), in_pool: true }),
+            grant: Some(GrantSlot { innate: Some(Madurai), in_pool: true, fixed: false }),
         };
         let mut main = vec![c(16, Umbra), c(16, Umbra)];
         main.extend([c(12, Madurai); 6]);
@@ -834,7 +839,7 @@ mod tests {
                 base_max_rank: max_rank,
                 main: innate[..8].to_vec(),
                 exilus: Some(innate[8]),
-                grant: stance.map(|(_, s)| GrantSlot { innate: s, in_pool: false }),
+                grant: stance.map(|(_, s)| GrantSlot { innate: s, in_pool: false, fixed: false }),
             };
             let mut main: Vec<Option<Card>> = cards.iter().take(8).map(|&c| Some(c)).collect();
             main.resize(8, None);
