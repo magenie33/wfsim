@@ -650,6 +650,8 @@ ui:
     直击必定造成击倒，与爆炸无关 —— 这个战场的敌人不会被击倒，所以让这把武器敢近距离开火的那部分控场，在这里一分不值
   "a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet": 这是逐弹丸的瞄准权重，不是整片弹丸都爆头 —— 落点对每颗弹丸单独掷点
   "a percentage, into the same bucket a mod of this stat feeds — permanent, no trigger and no clock": 一个百分比，进入这条属性的 mod 所在的同一个乘区——永久生效，没有触发条件也没有时间
+  "percentage points added after mods, never scaled by the base — permanent, no trigger and no clock": 百分点，在 mod 之后直接加上，不按基础值缩放——永久生效，没有触发条件也没有时间
+  "Flat Critical Chance": 固定暴击几率
   "a place of its own": "一个独立的地点"
   "a rocket that hits nothing detonates on its own after 6 seconds, which needs a miss this arena resolves at the wall of its own geometry-free floor": "打空的火箭会在 6 秒后自行引爆，这需要一次「打偏」，而本场的打偏是在一块没有几何的地面上结算的"
   "a scenario can set a buff for a mod this build does not carry — the gain scan reads it": 场景可以为当前配装没装的 mod 预设增益状态 —— 快速计算会读它

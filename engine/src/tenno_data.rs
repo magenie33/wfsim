@@ -358,6 +358,12 @@ pub struct StatBonuses {
     pub reload_speed: f64,
     /// Magazine Warp's, as a fraction of the base magazine.
     pub magazine: f64,
+    /// Status duration's (a riven's), so -0.875 leaves an eighth of every
+    /// status timer. At -1 or below no duration status lands at all.
+    pub status_duration: f64,
+    /// NOT a bucket: percentage points added AFTER mods, the layer Elemental
+    /// Excess and an ability's flat grant use. 0.25 is +25 points on any base.
+    pub flat_crit_chance: f64,
 }
 
 impl StatBonuses {

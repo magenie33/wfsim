@@ -2302,11 +2302,9 @@ impl DebuffState {
     /// order; uniform durations make the front the oldest).
     fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
         list.retain(|&e| e > now); // lazy prune of expired stacks
-        // A STACK THAT IS ALREADY DEAD IS NOT APPLIED. Unreachable in the
-        // roster — a status lasts `STATUS_DURATION * status_damage` and both are positive
-        // — and stated rather than left to chance, because it is the one thing
-        // that could put an expired entry in a list `prune` has been told it
-        // may skip (see [`Self::prune`]).
+        // A STACK THAT IS ALREADY DEAD IS NOT APPLIED — a fight's status
+        // duration of -100% or less gives `STATUS_DURATION * status_damage <= 0`,
+        // and an expired entry is one `prune` has been told it may skip.
         if expiry <= now {
             return;
         }
@@ -7052,7 +7050,13 @@ fn settle_procs(
     // Signed until the end: a duration under the delay is floor(<0) + 1 = 0
     // ticks, and casting the floor first wrapped it to 0 + 1.
     let delayed_ticks = ((BLEED_TICKS as f64 * status_damage - BLEED_DELAY).floor() + 1.0).max(0.0) as u32;
-    let immediate_ticks = ((BLEED_TICKS as f64 * status_damage).floor() as u32).max(1);
+    // ONE TICK AT LEAST, until the duration is gone: past -100% status duration
+    // "all duration/DoT procs are nullified" (MECHANICS §6), Tesla and Gas included.
+    let immediate_ticks = if status_damage <= 0.0 {
+        0
+    } else {
+        ((BLEED_TICKS as f64 * status_damage).floor() as u32).max(1)
+    };
     // Faction is re-applied at every DERIVATION step — see `faction_at`. A
     // status the hit applied is one step past it, so depth 2 (wiki
     // Faction_Damage_Bonus; MECHANICS §8). This was written `faction_multiplier *
@@ -31633,6 +31637,22 @@ mod tests {
         );
         assert!((at(0.50) - 107.0).abs() < 0.05, "the measured 107: {}", at(0.50));
         assert!((raw - 185.5) * 0.1 < 11.0 && (raw - 185.5) * 0.1 > 10.5, "the measured 11");
+    }
+
+    /// PAST -100% STATUS DURATION NO DOT LANDS: "all duration/DoT procs are
+    /// nullified" (MECHANICS §6). Tesla and Gas tick at once, so they are the
+    /// two a one-tick floor would leak.
+    #[test]
+    fn no_dot_ticks_once_status_duration_is_gone() {
+        for dtype in [DamageType::Electricity, DamageType::Gas, DamageType::Slash, DamageType::Heat, DamageType::Toxin] {
+            let ticks = |sd: f64| {
+                let p = DummyParams { status_duration_multiplier: sd, ..bare(dtype) };
+                monte_carlo(&p, 4, 1).mean_dot_ticks
+            };
+            assert_eq!(ticks(0.0), 0.0, "{dtype:?} at -100%");
+            assert_eq!(ticks(-0.5), 0.0, "{dtype:?} at -150%");
+            assert!(ticks(1.0) > 0.0, "{dtype:?} at +0%");
+        }
     }
 
     /// M99, held fire: the same build keeps its 0.75 s burn alive by refreshing

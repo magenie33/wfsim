@@ -379,7 +379,7 @@ const extra = await evaluate(`(async () => {
 
 check("the extra-stats panel carries every mod-like bucket",
   ["base_damage", "multishot", "crit_chance", "crit_damage", "status_chance",
-   "status_damage", "fire_rate", "reload_speed", "magazine"]
+   "status_damage", "fire_rate", "reload_speed", "magazine", "status_duration", "flat_crit_chance"]
     .every((k) => extra.keys.includes(k)),
   extra.keys.join(","));
 // STORED AS A FRACTION, typed as a percent — the units every bucket in the

@@ -11159,6 +11159,10 @@ const EXTRA_STAT_KEYS = [
   // outside a build grant it. Worth zero under Infinite
   // ammo, which the Limits block above already says out loud.
   ["ammo_efficiency", "Ammo Efficiency"],
+  ["status_duration", "Status Duration"],
+  // NOT A BUCKET, and its hint says so: points added after mods, the layer an
+  // ability's flat grant uses, so 25 is +25% on a 5% base and on a 30% one.
+  ["flat_crit_chance", "Flat Critical Chance", "percentage points added after mods, never scaled by the base — permanent, no trigger and no clock"],
 ];
 
 /// THE WARFRAME ROSTER, and what picking one means: it fills armor, max energy
@@ -15541,8 +15545,8 @@ function renderScenarioFields(ids, opts = {}) {
   // says otherwise, which is what every ruler and every stored scenario means.
   if (ids.extra) {
     const ex = sim.extra_stats || {};
-    $(ids.extra).innerHTML = EXTRA_STAT_KEYS.map(([k, label]) =>
-      `<label title="${escHtml(tr("a percentage, into the same bucket a mod of this stat feeds — permanent, no trigger and no clock"))}">${escHtml(tr(label))} <span class="unit">%</span> <input type="number" data-xk="${k}" step="1" value="${ex[k] ? r3(ex[k] * 100) : ""}" placeholder="0"></label>`
+    $(ids.extra).innerHTML = EXTRA_STAT_KEYS.map(([k, label, hint]) =>
+      `<label title="${escHtml(tr(hint || "a percentage, into the same bucket a mod of this stat feeds — permanent, no trigger and no clock"))}">${escHtml(tr(label))} <span class="unit">%</span> <input type="number" data-xk="${k}" step="1" value="${ex[k] ? r3(ex[k] * 100) : ""}" placeholder="0"></label>`
     ).join("");
   }
 

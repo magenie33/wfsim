@@ -694,6 +694,8 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
             // the quantity — several arcanes grant it — so this is the reader
             // finally able to say it.
             ammo_efficiency: g("ammo_efficiency"),
+            status_duration: g("status_duration"),
+            flat_crit_chance: g("flat_crit_chance"),
         };
     }
     // THE SQUAD'S AURAS, beside the wielder's own. On the fight rather than the

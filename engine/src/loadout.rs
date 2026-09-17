@@ -4287,14 +4287,17 @@ pub fn resolve_for(
     // +20/30/50 critical chance, applied after mods", so it lands on the
     // post-mod layer beside the other flat grants rather than being multiplied
     // by the weapon's unmodded 25%.
-    let scope_post_cc = if tenno.state.aiming { base.scope_crit_chance_post_mod } else { 0.0 };
+    // THE FIGHT'S FLAT CRIT CHANCE joins the same post-mod layer: an ability's
+    // "+X% critical chance" is percentage points, never scaled by the base.
+    let post_mod_cc_extra = if tenno.state.aiming { base.scope_crit_chance_post_mod } else { 0.0 }
+        + fb.flat_crit_chance;
     // RELOAD STARTS AT THE EVOLUTION'S BONUS, not at zero. Rapid Reinforcement
     // and its family feed the SAME additive bucket the mods do — one bucket, so
     // an evolution's +60% and Primed Fast Hands' +55% sum rather than
     // multiplying, which is the shape every other shared stat here has.
     let mut rl = base.evo_reload_bonus + fb.reload_speed;
     // Magazine-capacity and status-duration additive buckets.
-    let (mut mag, mut sdur) = (fb.magazine, 0.0);
+    let (mut mag, mut sdur) = (fb.magazine, fb.status_duration);
     // Sentient Surge's three, carried to the sim rather than spent here: all
     // three depend on fight state (how many tendrils are up, whether anything
     // died) that the panel cannot know.
@@ -4923,7 +4926,7 @@ pub fn resolve_for(
     // modded values. No weapon carries both — the Dera has one and the
     // Cestra/Sicarus/Vectis the other — so the order cannot matter, and
     // computing them this way means it never will.
-    let modded_cc_pre = (base.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0);
+    let modded_cc_pre = (base.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra)).max(0.0);
     let modded_sc_pre =
         (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance).max(0.0);
     let derived = |spec: Option<(f64, f64)>, from: f64| -> f64 {
@@ -4933,7 +4936,7 @@ pub fn resolve_for(
     let sc_from_cc = derived(base.base_status_from_crit, modded_cc_pre);
 
     let resolved_cc =
-        ((base.base_crit_chance + cc_from_sc) * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0);
+        ((base.base_crit_chance + cc_from_sc) * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra)).max(0.0);
     let prelude_cd = match base.crit_multiplier_below_crit_chance {
         Some((bonus, below)) if resolved_cc < below => bonus,
         _ => 0.0,
@@ -5148,7 +5151,7 @@ pub fn resolve_for(
             modified_base: rmb,
             // The post-mod flat layer (Elemental Excess) is a WEAPON stat
             // change, so the explosion takes it too.
-            crit_chance: (r.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0),
+            crit_chance: (r.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra)).max(0.0),
             crit_damage: r.base_crit_damage * (1.0 + cd),
             base_crit_chance: r.base_crit_chance,
             base_crit_damage: r.base_crit_damage,
@@ -5261,7 +5264,7 @@ pub fn resolve_for(
             // DAMAGE bucket still multiplied a 1.0 up to 2.2, and a post-mod
             // additive chance would then have something to spend it on.
             crit_chance: if f.can_crit {
-                (f.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc))
+                (f.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra))
                     .max(0.0)
             } else {
                 0.0
@@ -6937,6 +6940,7 @@ mod tests {
             ("rifle_aptitude", |b| b.status_chance = 0.90, |p| p.status_chance),
             ("speed_trigger", |b| b.fire_rate = 0.60, |p| p.fire_rate),
             ("magazine_warp", |b| b.magazine = 0.30, |p| p.magazine_size),
+            ("continuous_misery", |b| b.status_duration = 1.0, |p| p.status_duration_multiplier),
         ];
         for (id, set, read) in cases {
             let a = read(&with_mod(id));
@@ -6970,6 +6974,26 @@ mod tests {
         assert!((locked.multishot - unlocked.multishot).abs() < 1e-9,
             "a locked multishot ignores a fight bonus too: {} vs {}",
             locked.multishot, unlocked.multishot);
+
+        // A NEGATIVE BONUS IS A MALUS CARD: -87.5% status duration leaves an
+        // eighth, and it subtracts from a mod rather than scaling it.
+        let mut short = neutral.clone();
+        short.bonuses.status_duration = -0.875;
+        let p = resolve_for(&base, &[by("continuous_misery")], StackPolicy::Emergent, &short);
+        assert!((p.status_duration_multiplier - 1.125).abs() < 1e-9, "{}", p.status_duration_multiplier);
+
+        // FLAT CRIT IS POINTS AFTER MODS, not a bucket: +25 lands as +0.25 on
+        // the bare panel and on Point Strike's alike, and -25 takes it back.
+        let cc = |mods: &[&ModDef], flat: f64| {
+            let mut t = neutral.clone();
+            t.bonuses.flat_crit_chance = flat;
+            resolve_for(&base, mods, StackPolicy::Emergent, &t).crit_chance
+        };
+        let ps = [by("point_strike")];
+        for mods in [&[][..], &ps[..]] {
+            assert!((cc(mods, 0.25) - cc(mods, 0.0) - 0.25).abs() < 1e-9);
+            assert!((cc(mods, -0.25) - (cc(mods, 0.0) - 0.25).max(0.0)).abs() < 1e-9);
+        }
     }
 
     /// WITH A CHANNELED ABILITY ACTIVE — the second player-declared state, and

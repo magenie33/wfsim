@@ -182,7 +182,7 @@ ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
 - **Status duration** (`status_duration_bonus`): scales status-effect DoT
   **duration only** (→ more ticks, ~linear DoT total) and **slows Heat's
   armor-strip ramp** (+100% dur → 1 s steps); no effect on instant procs
-  (§6). *Engine: not modeled yet.*
+  (§6). At −100% or below no duration status lands (§6).
 - **Punch through** (`punch_through_bonus`, **meters** — wiki `Punch_Through`):
   pierces enemies/geometry up to the meter budget; each pierced target
   subtracts remaining potential; **every pierced target takes FULL damage**
