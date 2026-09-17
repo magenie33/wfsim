@@ -1,0 +1,18 @@
+# CARDS THE QUICK CALC SEARCHES AT EVERY RANK, not only at max — the default of
+# the page's own list, which a player may edit.
+#
+# NAMED CARD BY CARD, never by effect: a card joins this list because somebody
+# decided its lower ranks are worth a fight, and a card added to the pool later
+# does not join it by resembling one that is here.
+#
+# STATUS DURATION paces Heat's armour strip and nullifies every status at or
+# below -100% (M99, docs/MECHANICS.md), so a build carrying a Status Duration
+# malus can want a LOW-rank card that lifts it just above that line.
+mods:
+  - hunter_track
+  - continuous_misery
+  - lingering_torment
+  - perpetual_agony
+  - augur_seeker
+  - lasting_sting
+arcanes: []

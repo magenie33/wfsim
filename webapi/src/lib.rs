@@ -871,6 +871,12 @@ fn intern(s: String) -> &'static str {
 /// "not in this weapon's pool" would be untrue. Asking the pool twice decides
 /// which of the two it is.
 fn mod_not_here(id: &str, weapon: &WeaponInfo, evos: &[&str]) -> String {
+    if let (card, Some(rank)) = wfsim_engine::mods_data::split_rank(id) {
+        if wfsim_engine::mods_data::at_rank(id).is_none() {
+            return format!("{card} cannot be simulated at rank {rank}");
+        }
+        return mod_not_here(card, weapon, evos);
+    }
     let known = wfsim_engine::mods_data::classes()
         .into_iter()
         .any(|c| wfsim_engine::mods_data::class_pool(c).iter().any(|m| m.id == id));
@@ -1190,6 +1196,18 @@ fn riven_class(info: &WeaponInfo) -> String {
 /// The build's pool PLUS the request's own rivens.
 fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModDef> {
     let mut p = mod_pool_for(&info.id, evos);
+    // …AND EVERY LOWER RANK THE REQUEST NAMES, as a list (a build) or as the
+    // keys of a scope (a search), in whichever block carries mods.
+    let mut named: Vec<&str> = Vec::new();
+    for key in ["mods", "exilus", "stance"] {
+        match v.get(key) {
+            Some(Value::String(id)) => named.push(id),
+            Some(Value::Array(a)) => named.extend(a.iter().filter_map(Value::as_str)),
+            Some(Value::Object(o)) => named.extend(o.keys().map(String::as_str)),
+            _ => {}
+        }
+    }
+    wfsim_engine::mods_data::with_ranks(&mut p, named);
     p.extend(rivens_from(v, info));
     p
 }
@@ -2362,6 +2380,10 @@ pub fn meta_json() -> Value {
         // two drifted — the arena called a contact-range fight 0.1 m and the
         // crowd 2.6 m apart where the engine had 0 and 2.5.
         "body_radius_m": wfsim_engine::space::BODY_RADIUS_M,
+        // The cards the quick calc tries at every rank unless the page's own
+        // list says otherwise, and the spelling a lower rank travels in.
+        "every_rank": wfsim_engine::mods_data::every_rank(),
+        "rank_mark": wfsim_engine::mods_data::RANK_MARK.to_string(),
         "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
             "request_field": a.request_field,
@@ -3532,6 +3554,23 @@ fn arcane_in_pools(
         .find_map(|p| wfsim_engine::arcanes_data::for_slot(p, id))
 }
 
+/// The arcane a scope mark names in `pool`, and the rank it names: `<id>` is
+/// max rank, `<id>@<rank>` a lower one (the mods' [`RANK_MARK`] spelling).
+///
+/// [`RANK_MARK`]: wfsim_engine::mods_data::RANK_MARK
+fn arcane_at_rank(
+    pool: &str,
+    mark: &str,
+) -> Option<(&'static wfsim_engine::arcanes_data::ArcaneDef, u32)> {
+    let (id, rank) = wfsim_engine::mods_data::split_rank(mark);
+    let d = wfsim_engine::arcanes_data::for_slot(pool, id)?;
+    match rank {
+        None => Some((d, d.max_rank)),
+        Some(r) if r < d.max_rank => Some((d, r)),
+        Some(_) => None,
+    }
+}
+
 /// The arcane chosen for each of the weapon's pools: `(pool, id, rank)`.
 ///
 /// ONE wire shape — a LIST, one entry per pool, in the weapon's pool order:
@@ -3680,7 +3719,7 @@ pub fn panel_json(v: &Value) -> Value {
     // them is legal; counting the flat list refused the full build outright.
     // `builds::validate_with` has subtracted the stances before comparing since
     // the slot landed, and this is the same subtraction.
-    let stance_pool = wfsim_engine::mods_data::pool_for_weapon(&info.id);
+    let stance_pool = wfsim_engine::mods_data::pool_naming(&info.id, &mod_ids);
     let stances = mod_ids
         .iter()
         .filter(|id| {
@@ -5645,7 +5684,6 @@ pub fn pairings_json(v: &Value) -> Value {
         Err(e) => return e,
     };
     let fire = firing_entry(&fight);
-    let pool = wfsim_engine::mods_data::pool_for_weapon(&fire);
     let sets = v.get("sets").and_then(|x| x.as_array()).cloned().unwrap_or_default();
     let out: Vec<Value> = sets
         .iter()
@@ -5665,6 +5703,9 @@ pub fn pairings_json(v: &Value) -> Value {
             // name a mod this form cannot equip (an evolution forbids it), and
             // the honest answer there is the set without it — the same rule
             // `builds::normalize` applies to a submission.
+            let named: Vec<&str> =
+                set.as_array().map(|a| a.iter().filter_map(|x| x.as_str()).collect()).unwrap_or_default();
+            let pool = wfsim_engine::mods_data::pool_naming(&fire, &named);
             let ids: Vec<String> = set
                 .as_array()
                 .map(|a| {
@@ -8295,14 +8336,15 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 .iter()
                 .find(|(id, _)| *id == empty_id || (info.arcane_pools.len() == 1 && id == "none"))
                 .map(|(_, m)| m.as_str());
+            // AN ARCANE BELOW ITS MAX RANK IS `<id>@<rank>`, the mods' spelling.
             let mine: Vec<(&String, &String)> = arc_marks
                 .iter()
-                .filter(|(id, _)| wfsim_engine::arcanes_data::for_slot(pool, id).is_some())
+                .filter(|(id, _)| arcane_at_rank(pool, id).is_some())
                 .map(|(id, m)| (id, m))
                 .collect();
             let fx = |id: &str| {
-                wfsim_engine::arcanes_data::for_slot(pool, id)
-                    .map(|d| d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, tenno))
+                arcane_at_rank(pool, id)
+                    .map(|(d, rank)| d.fx(rank, StackPolicy::Emergent, arc_base.traits, tenno))
                     .unwrap_or_else(wfsim_engine::arcanes_data::ArcaneFx::none)
             };
             let empty = || {
@@ -9061,19 +9103,20 @@ pub fn run_optimize_resumable(
         let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
         // One id per slot, in pool order — the same shape the builder takes,
         // because "apply this result" should be a copy and not a translation.
-        let ids: Vec<String> = arcane_sets
+        let marked: Vec<String> = arcane_sets
             .get(ai)
             .cloned()
             .unwrap_or_else(|| vec!["none".to_string()]);
-        let ranks: Vec<u32> = ids
+        let (ids, ranks): (Vec<String>, Vec<u32>) = marked
             .iter()
             .map(|id| {
-                wfsim_engine::arcanes_data::slot_of(id)
-                    .and_then(|s| wfsim_engine::arcanes_data::for_slot(s, id))
-                    .map(|d| d.max_rank)
-                    .unwrap_or(0)
+                let card = wfsim_engine::mods_data::split_rank(id).0;
+                let rank = wfsim_engine::arcanes_data::slot_of(card)
+                    .and_then(|s| arcane_at_rank(s, id))
+                    .map_or(0, |(_, r)| r);
+                (card.to_string(), rank)
             })
-            .collect();
+            .unzip();
         // THE ROW, AS A REQUEST THAT REPRODUCES IT. POST this to
         // `/api/simulate` and the answer is this row's number — no assembly, no
         // translation, nothing for a caller to forget.
@@ -11988,5 +12031,69 @@ mod a_passive_names_itself {
                 s.id
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod lower_ranks {
+    use super::*;
+
+    /// Every source value a panel states for `key`, wherever the panel puts it.
+    fn finals(v: &Value, key: &str, out: &mut Vec<String>) {
+        match v {
+            Value::Object(o) => {
+                if o.get("key").and_then(Value::as_str) == Some(key) {
+                    let sources = o.get("sources").and_then(Value::as_array).into_iter().flatten();
+                    out.extend(sources.filter_map(|x| x["value"].as_str().map(String::from)));
+                }
+                o.values().for_each(|x| finals(x, key, out));
+            }
+            Value::Array(a) => a.iter().for_each(|x| finals(x, key, out)),
+            _ => {}
+        }
+    }
+
+    /// A BUILD NAMING A LOWER RANK IS FOUGHT AT IT: Hunter Track is +15% at
+    /// rank 0 and +90% at rank 5.
+    #[test]
+    fn a_ranked_id_reaches_the_resolved_stats() {
+        let duration = |id: &str| {
+            let mut out = Vec::new();
+            let panel = panel_json(&json!({ "weapon": "burston_prime", "mods": [id] }));
+            finals(&panel, "status_duration", &mut out);
+            out
+        };
+        assert_eq!(duration("hunter_track"), vec!["+90%"]);
+        assert_eq!(duration("hunter_track@0"), vec!["+15%"]);
+        let refused = panel_json(&json!({ "weapon": "burston_prime", "mods": ["hunter_track@9"] }));
+        assert!(refused["error"].as_str().is_some_and(|e| e.contains("rank 9")), "{refused}");
+    }
+
+    /// A SCOPE NAMING THREE RANKS OF ONE CARD searches each, and never two of
+    /// them in one build: the variants share the card's family.
+    #[test]
+    fn a_scope_searches_each_rank_and_never_two_at_once() {
+        let plan = parse_optimize(&json!({
+            "weapon": "burston_prime",
+            "build_size": 2,
+            "mods": { "hunter_track": "search", "hunter_track@0": "search", "hunter_track@2": "search" },
+        }))
+        .expect("a plan");
+        let fams: Vec<Option<&str>> = plan.pool.iter().map(|m| m.family).collect();
+        assert_eq!(plan.pool.len(), 3);
+        assert!(fams.iter().all(|f| *f == Some("hunter_track")), "{fams:?}");
+    }
+
+    /// AN ARCANE MARK MAY NAME A RANK; max rank is the bare id.
+    #[test]
+    fn an_arcane_mark_names_its_rank() {
+        let id = wfsim_engine::arcanes_data::slot_pool("primary")
+            .iter()
+            .find(|a| a.max_rank > 1)
+            .map(|a| a.id.clone())
+            .expect("a ranked primary arcane");
+        let max = arcane_at_rank("primary", &id).map(|x| x.1).expect("the bare id");
+        assert_eq!(arcane_at_rank("primary", &format!("{id}@1")).map(|x| x.1), Some(1));
+        assert!(arcane_at_rank("primary", &format!("{id}@{max}")).is_none());
     }
 }

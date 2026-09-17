@@ -222,7 +222,7 @@ pub fn canonical_mods_with(
     mods: &[String],
     riven: Option<&crate::rivens_data::RivenShape>,
 ) -> Vec<String> {
-    let pool = crate::mods_data::pool_for_weapon(weapon);
+    let pool = crate::mods_data::pool_naming(weapon, mods);
     let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
     // WHAT EACH MOD PUTS INTO THE ELEMENT POOL, in order. One entry for an
     // ordinary elemental mod, none for a plain one, and up to TWO for a riven.
@@ -473,7 +473,7 @@ const MAX_ELEMENT_PERMUTATIONS: usize = 720;
 /// distinct elements yields exactly one entry — never zero, so a caller always
 /// has something to measure.
 pub fn element_orders(weapon: &str, mods: &[String], evolutions: &[String]) -> Vec<ElementOrder> {
-    let pool = crate::mods_data::pool_for_weapon(weapon);
+    let pool = crate::mods_data::pool_naming(weapon, mods);
     let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
     let evo_refs: Vec<&str> = evolutions.iter().map(String::as_str).collect();
     let base = crate::loadout::WeaponBase::from_data(weapon, true, &evo_refs);
@@ -571,7 +571,7 @@ fn normalize_with(
     evolutions: &[String],
     riven: Option<&crate::rivens_data::RivenShape>,
 ) -> (Vec<String>, Vec<String>) {
-    let mut pool = crate::mods_data::pool_for_weapon(weapon);
+    let mut pool = crate::mods_data::pool_naming(weapon, mods);
     // A RIVEN IS IN THE POOL FOR THIS WEAPON BY DEFINITION — it is rolled for
     // it — so the "drop anything foreign" filter below must not throw the slot
     // away. Its legality is a question about the SHAPE and is asked in
@@ -688,7 +688,7 @@ pub fn validate_for_board_with(
     // …AND THE STANCE IS NOT A MAIN SLOT. A melee build carrying one is `8 + 1`
     // in the same list, so counting the list would refuse a full build for
     // having filled the slot the game gave it.
-    let pool = crate::mods_data::pool_for_weapon(&b.weapon);
+    let pool = crate::mods_data::pool_naming(&b.weapon, &b.mods);
     let main = b
         .mods
         .iter()
@@ -842,7 +842,8 @@ pub fn validate_with(
             spec.name
         ));
     }
-    let mut pool = crate::mods_data::pool_for_weapon(weapon);
+    let mut pool = crate::mods_data::pool_naming(weapon, mods);
+    crate::mods_data::with_ranks(&mut pool, exilus);
     pool.extend(riven_def.clone());
     let def = |id: &str| pool.iter().find(|m| m.id == id).expect("normalised into the pool");
 
@@ -861,8 +862,7 @@ pub fn validate_with(
     let exilus_id = match exilus.filter(|x| !x.is_empty()) {
         None => None,
         Some(id) => {
-            let Some(m) = crate::mods_data::pool_for_weapon(weapon).iter()
-                .find(|m| m.id == id).cloned() else {
+            let Some(m) = pool.iter().find(|m| m.id == id).cloned() else {
                 return Err(format!("{id} is not a mod this weapon can hold"));
             };
             if !m.exilus {

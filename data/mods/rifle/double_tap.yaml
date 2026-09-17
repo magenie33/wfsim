@@ -37,6 +37,9 @@ exclusive_to: [latron, latron_wraith, latron_prime]
 # except at rank 2, where 15x26 = 390% and the ceiling is a hair lower. Every
 # mod here simulates at max rank, which is the clean 20 x 20%.
 family: double_tap
+# The 80/40/26/20 stack cap above is no ladder `rank0`/`rankMax` can state, so a
+# lower rank would fight with the wrong ceiling.
+lower_ranks_unmodelled: true
 
 effects:
   # VERBATIM (Notes): "Consecutive hits on enemies increase the damage bonus by

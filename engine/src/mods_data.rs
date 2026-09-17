@@ -9,7 +9,7 @@
 //!
 //! The YAML records the TRUE mechanical effect (tooltip lies are corrected in
 //! place — see docs/DATA_SOURCES.md). Effect `kind`s map to [`ModEffect`]; the
-//! MAX-rank value is used for the pool (the sim builds at max rank). Effect
+//! pool holds each card at MAX rank and [`at_rank`] builds a lower one. Effect
 //! kinds with no damage impact (dodge/acrobatic speed, weapon_scoped markers)
 //! are loaded as no-ops. Unknown kinds are ignored with the mod still loaded,
 //! so a not-yet-modeled special effect never silently drops the whole mod.
@@ -38,6 +38,10 @@ struct ModFile {
     description: Option<String>,
     #[serde(default)]
     exilus: bool,
+    /// The card cannot be simulated below max rank: a number on its ladder is
+    /// not linear in rank, so [`at_rank`] refuses every lower rank.
+    #[serde(default)]
+    lower_ranks_unmodelled: bool,
     #[serde(default)]
     family: Option<String>,
     /// Mod SET membership — the bonus itself lives in `data/mod_sets/`.
@@ -752,8 +756,50 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
     })
 }
 
+/// One effect entry with its rank-varying numbers read at `rank`: the value
+/// (`rank0` → `rankMax`) and a laddered duration (`duration_rank0` →
+/// `duration`/`duration_seconds`), both linear — the rule `ModDescInfo::at`
+/// fills the card with, so the slot's text and the fight read one number.
+fn effect_at_rank(e: &Value, rank: u32, max_rank: u32) -> Value {
+    let t = f64::from(rank.min(max_rank)) / f64::from(max_rank.max(1));
+    let lerp = |a: f64, b: f64| a + (b - a) * t;
+    let mut out = e.clone();
+    let mut set = |k: &str, x: f64| {
+        if let Value::Mapping(m) = &mut out {
+            m.insert(Value::from(k), Value::from(x));
+        }
+    };
+    if let (Some(a), Some(b)) = (n(e, "rank0"), n(e, "rankMax")) {
+        set("rankMax", lerp(a, b));
+    }
+    if let Some(d0) = n(e, "duration_rank0") {
+        for k in ["duration", "duration_seconds"] {
+            if let Some(d) = n(e, k) {
+                set(k, lerp(d0, d));
+            }
+        }
+    }
+    out
+}
+
 fn to_moddef(mf: ModFile) -> ModDef {
-    let effects = mf.effects.iter().filter_map(|e| effect(&mf.id, e)).collect();
+    to_moddef_at(mf, None)
+}
+
+/// `rank: None` is the card at max rank under its own id; `Some(r)` is the
+/// card at rank `r` under [`ranked_id`], drawing `base_drain + r`.
+fn to_moddef_at(mut mf: ModFile, rank: Option<u32>) -> ModDef {
+    let card_id = mf.id.clone();
+    if let Some(r) = rank {
+        let max_rank = mf.max_rank;
+        mf.effects = mf.effects.iter().map(|e| effect_at_rank(e, r, max_rank)).collect();
+        // ONE CARD AT TWO RANKS IS ONE CARD: the family is what every
+        // exclusivity check asks, so a variant carries one ([`with_ranks`]).
+        mf.family = Some(mf.family.take().unwrap_or_else(|| card_id.clone()));
+        mf.id = ranked_id(&card_id, r, max_rank);
+    }
+    let drain = mf.base_drain + rank.unwrap_or(mf.max_rank);
+    let effects = mf.effects.iter().filter_map(|e| effect(&card_id, e)).collect();
     // WHAT WE KNOWINGLY DO NOT MODEL, kept rather than dropped. An `unmodeled`
     // effect returns None from `effect` and vanishes, so a mod carrying only
     // one loads as a mod that does nothing and says nothing — which is exactly
@@ -791,9 +837,9 @@ fn to_moddef(mf: ModFile) -> ModDef {
         out_of_scope,
         id: Box::leak(mf.id.into_boxed_str()),
         name: Box::leak(mf.name.into_boxed_str()),
-        // ModDef.base_drain is the drain at the EQUIPPED (max) rank: drain
-        // rises by 1 per rank from the rank-0 `base_drain`, so max = base + rank.
-        base_drain: mf.base_drain + mf.max_rank,
+        // ModDef.base_drain is the drain at the EQUIPPED rank: drain rises by 1
+        // per rank from the rank-0 `base_drain`.
+        base_drain: drain,
         max_rank: mf.max_rank,
         polarity: polarity(&mf.polarity),
         rarity: rarity(&mf.rarity),
@@ -857,6 +903,98 @@ pub fn class_pool(class: &str) -> Vec<ModDef> {
     g.entry(class.to_string())
         .or_insert_with(|| Box::leak(load_class(class).into_boxed_slice()))
         .to_vec()
+}
+
+/// A CARD BELOW ITS MAX RANK IS AN ID OF ITS OWN: `<card>@<rank>`.
+///
+/// The rank rides inside the id so every surface that already carries a mod
+/// list — a request, a search's scope, a board record, a share link — carries
+/// the rank with it; a parallel list would be one more axis each of them could
+/// drop. Max rank is the bare id, so no stored build changes.
+pub const RANK_MARK: char = '@';
+
+/// `<card>@<rank>` → (`card`, `Some(rank)`); anything else → (`id`, `None`).
+pub fn split_rank(id: &str) -> (&str, Option<u32>) {
+    match id.split_once(RANK_MARK).and_then(|(c, r)| Some((c, r.parse().ok()?))) {
+        Some((card, r)) => (card, Some(r)),
+        None => (id, None),
+    }
+}
+
+/// The id of `card` at `rank`: the bare id at (or past) max rank.
+pub fn ranked_id(card: &str, rank: u32, max_rank: u32) -> String {
+    if rank >= max_rank {
+        card.to_string()
+    } else {
+        format!("{card}{RANK_MARK}{rank}")
+    }
+}
+
+/// The card a ranked id names at its rank, or None: not a ranked id, an unknown
+/// card, a rank at or past max (that card is the bare id), or a card whose
+/// lower ranks are unmodelled. Built once per id and kept.
+pub fn at_rank(id: &str) -> Option<ModDef> {
+    let (card, Some(rank)) = split_rank(id) else { return None };
+    static TEXTS: OnceLock<BTreeMap<String, &'static str>> = OnceLock::new();
+    static BUILT: OnceLock<Mutex<BTreeMap<String, Option<ModDef>>>> = OnceLock::new();
+    let texts = TEXTS.get_or_init(|| {
+        crate::data::files_under("mods/")
+            .filter_map(|(_, text)| {
+                let v: Value = serde_norway::from_str(text).ok()?;
+                Some((v.get("id")?.as_str()?.to_string(), text))
+            })
+            .collect()
+    });
+    let mut built = BUILT.get_or_init(|| Mutex::new(BTreeMap::new())).lock().expect("ranked mods");
+    built
+        .entry(id.to_string())
+        .or_insert_with(|| {
+            let mf: ModFile = serde_norway::from_str(texts.get(card)?).ok()?;
+            (rank < mf.max_rank && !mf.lower_ranks_unmodelled)
+                .then(|| to_moddef_at(mf, Some(rank)))
+        })
+        .clone()
+}
+
+/// `pool` plus every ranked card `ids` names whose card is in it — the pool a
+/// build or a search scope that names lower ranks resolves against. A card that
+/// gains a variant gains its own id as a family too, so the two exclude each
+/// other wherever a family is asked.
+pub fn with_ranks<'a>(pool: &mut Vec<ModDef>, ids: impl IntoIterator<Item = &'a str>) {
+    for id in ids {
+        if pool.iter().any(|m| m.id == id) {
+            continue;
+        }
+        let (card, Some(_)) = split_rank(id) else { continue };
+        let Some(base) = pool.iter_mut().find(|m| m.id == card) else { continue };
+        let Some(variant) = at_rank(id) else { continue };
+        base.family = variant.family;
+        pool.push(variant);
+    }
+}
+
+/// The cards a search tries at every rank by default —
+/// `data/search/every_rank.yaml`, by id.
+#[derive(Debug, Clone, Default, Deserialize, serde::Serialize)]
+pub struct EveryRank {
+    pub mods: Vec<String>,
+    pub arcanes: Vec<String>,
+}
+
+pub fn every_rank() -> &'static EveryRank {
+    static LIST: OnceLock<EveryRank> = OnceLock::new();
+    LIST.get_or_init(|| {
+        let text = crate::data::file("search/every_rank.yaml").expect("search/every_rank.yaml");
+        serde_norway::from_str(text).expect("parse search/every_rank.yaml")
+    })
+}
+
+/// [`pool_for_weapon`], plus the lower ranks `ids` name — the pool a build
+/// written as a mod list resolves against.
+pub fn pool_naming<S: AsRef<str>>(weapon_id: &str, ids: &[S]) -> Vec<ModDef> {
+    let mut pool = pool_for_weapon(weapon_id);
+    with_ranks(&mut pool, ids.iter().map(AsRef::as_ref));
+    pool
 }
 
 /// The pool a weapon actually sees: the UNION of the named pools, in order,
@@ -2085,6 +2223,70 @@ Refresh Double Jump up to 6x while Airborne."
             desc_info("vile_acceleration").unwrap().at(5),
             "+90% Fire Rate (x2 for Bows)\n-15% Damage"
         );
+    }
+}
+
+#[cfg(test)]
+mod rank_tests {
+    use super::*;
+
+    /// Hunter Track reads +15% at rank 0 and +90% at rank 5 (its yaml), and a
+    /// card's drain rises one per rank from its rank-0 cost.
+    #[test]
+    fn a_ranked_id_is_the_card_at_that_rank() {
+        let max = class_pool("primary").into_iter().find(|m| m.id == "hunter_track").unwrap();
+        let r0 = at_rank("hunter_track@0").expect("rank 0 exists");
+        let dur = |m: &ModDef| {
+            m.effects.iter().find_map(|e| match e {
+                ModEffect::StatusDuration(x) => Some(*x),
+                _ => None,
+            })
+        };
+        assert_eq!(dur(&max), Some(0.90));
+        assert!((dur(&r0).unwrap() - 0.15).abs() < 1e-12);
+        assert!((dur(&at_rank("hunter_track@3").unwrap()).unwrap() - 0.60).abs() < 1e-12);
+        assert_eq!(r0.id, "hunter_track@0");
+        assert_eq!(r0.base_drain + 5, max.base_drain);
+        assert_eq!(r0.family, Some("hunter_track"));
+        assert_eq!(split_rank("hunter_track@0"), ("hunter_track", Some(0)));
+        assert_eq!(ranked_id("hunter_track", 5, 5), "hunter_track");
+    }
+
+    /// Max rank is the bare id, and a card whose ladder is not linear refuses.
+    #[test]
+    fn a_rank_that_is_not_a_variant_is_refused() {
+        assert!(at_rank("hunter_track@5").is_none(), "max rank is the bare id");
+        assert!(at_rank("hunter_track").is_none());
+        assert!(at_rank("no_such_card@0").is_none());
+        assert!(at_rank("double_tap@0").is_none(), "its stack cap is not linear");
+    }
+
+    /// Every card the default list names exists and has a lower rank to try.
+    #[test]
+    fn every_rank_names_real_cards_with_lower_ranks() {
+        let list = every_rank();
+        assert!(list.mods.iter().any(|m| m == "hunter_track"));
+        for id in &list.mods {
+            assert!(at_rank(&format!("{id}@0")).is_some(), "{id} has no rank 0 to search");
+        }
+        for id in &list.arcanes {
+            let d = crate::arcanes_data::slot_of(id)
+                .and_then(|s| crate::arcanes_data::for_slot(s, id))
+                .unwrap_or_else(|| panic!("{id} is not an arcane"));
+            assert!(d.max_rank > 0, "{id} has no lower rank");
+        }
+    }
+
+    /// A variant joins a pool only beside its card, and the two then exclude
+    /// each other through the family.
+    #[test]
+    fn with_ranks_adds_the_variant_beside_its_card() {
+        let mut pool = class_pool("primary");
+        let n = pool.len();
+        with_ranks(&mut pool, ["hunter_track@1", "hunter_track@1", "serration@0", "hunter_track"]);
+        assert_eq!(pool.len(), n + 1, "one variant; a card not in the pool adds nothing");
+        let base = pool.iter().find(|m| m.id == "hunter_track").unwrap();
+        assert_eq!(base.family, Some("hunter_track"));
     }
 }
 

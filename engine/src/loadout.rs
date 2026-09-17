@@ -1348,7 +1348,7 @@ pub struct ModDef {
     /// comes back as "Semi Shotgun Cannonade" and its wiki link 404s, "Hell's
     /// Chamber" loses its apostrophe, "Bane of Grineer" gains a capital O.
     pub name: &'static str,
-    /// Drain at the EQUIPPED (max) rank.
+    /// Drain at the EQUIPPED rank (max, unless the id is `<card>@<rank>`).
     pub base_drain: u32,
     /// Max rank (drain rises 1/rank from rank 0, so rank-0 drain = base_drain − max_rank).
     pub max_rank: u32,
