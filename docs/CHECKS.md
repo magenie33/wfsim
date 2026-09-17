@@ -562,6 +562,14 @@ No collection's state is written from outside
 it: switching a build must not move the fight, and editing the fight must not
 touch a build.
 
+## `check_every_rank`
+
+A card on the every-rank list is offered once per rank in the builder's picker
+and in the quick calc's candidates; picking a lower rank seats the card at that
+rank, the build leaves as `<card>@<rank>` and comes back as the same slot; a card
+taken off the list is offered at max only. Verified to bite: a `lowerRanks` that
+returns nothing fails five of its eight.
+
 ## `check_share`
 
 It opens a share link in a browser that has never seen the
