@@ -135,12 +135,24 @@ colours outnumber the slots.
 
 **THE ANSWER IS EXHAUSTIVE.** The alphabet is a bare slot, the colours the item
 carries, the colours some card matches, and Omni when the rules allow it; every
-multiset over it is billed and the cheapest bucket is placed. A colour nobody
-carries only ever mismatches, so it is not tried. The cost is thousands of
-layouts in the usual case and tens of milliseconds in the worst one measured
-(eight colours, four configs). `mods::fit` stays the optimizer's greedy
-planner; `forma::tests::one_loadout_bills_what_fit_bills` holds the two to the
-same bill on one config.
+multiset over it is billed, and the buckets are walked cheapest first. A colour
+nobody carries only ever mismatches, so it is not tried. Positions are free in
+that walk, which never under-rates a layout, so it both orders the exact work
+and says when to stop. `free_drain` is the positions-free drain, a greedy held
+to the Hungarian answer by `free_drain_is_the_optimal_assignment`. `mods::fit`
+stays the optimizer's greedy planner; `one_loadout_bills_what_fit_bills` holds
+the two to the same bill on one config.
+
+**THEN THE COLOURS ARE PLACED.** Every config shares the slots' positions, so
+what moves is MODS. A card is ORDERED when it bears an element — its place
+among the other ordered cards decides what pairs — and a move keeps ordered
+cards in order, so no pairing changes; every other card goes anywhere. The
+first config's own best placement anchors the colours, and swaps are taken
+while they help the worst config, then the total, then move fewest mods. With
+**mods stay in place** nothing moves at all: each slot's colour has to serve
+what every config keeps there, which is a search over arrangements pruned by
+capacity, and it may take more Forma or Omni. Past a work budget either search
+returns what it found and says it is not exhaustive.
 
 **THE BILL** is `Σ max(0, target − start)` per polarity, a bare slot counted as
 a polarity of its own (blanking takes a Forma), each bought slot billed as the
@@ -150,12 +162,12 @@ colour. Mastery Forma are added on top up to the rank floor.
 
 **THE ORDER a layout is judged in**: Umbra Forma (under "when needed"), the
 grant slot unmatched (once anything is spent), Forma, Omni, then the WORST
-config's spare capacity, the total spare, and the item's own colours moved.
+config's spare capacity, the total spare, mods moved, and the item's own
+colours moved.
 
 **THE RULES** are the player's and are GLOBAL — one set for every weapon and
 every frame. What is per item is which configs are planned together, and the
-FIRST of them is always the one being edited: it keeps its mod positions, and
-the others are rearranged onto the layout.
+first of them is always the one being edited.
 
 | rule | default |
 | --- | --- |
@@ -165,6 +177,7 @@ the others are rearranged onto the layout.
 | Omni Forma | never · allowed (only where it saves a Forma) · preferred |
 | Umbra Forma | never · **when needed** · allowed (an ordinary Forma) |
 | Forma limit | none |
+| mods stay in place | off |
 
 A player may also state what the item ALREADY carries (`Start`): that layout
 is free, and the Forma it took count toward the rank. The page does not ask for
@@ -179,6 +192,29 @@ it, and its rules to every item. The rules live in
 `wfsim-forma-group-<item>`, by preset id, where the item is the weapon id or
 `warframe-<frame>`. Planning writes the layout into every ticked build. A board
 build is read-only, so it is planned alone and offers no partners.
+
+## The optimizer of the plan
+
+`engine::forma::optimize` answers the question a plan cannot: what ONE layout
+reaches across whole groups of builds, and what each Forma buys. A group is
+covered by the best of its builds that fits, as a share of its leader; hard
+loadouts must fit every answer. The result is a CURVE — the cheapest layout
+for each worst-group share, each point strictly better than the one before —
+so the reader sees what one more Forma is worth rather than one number.
+Under the same rules as the plan, fixed order included. It reads; it never
+writes a build.
+
+On the weapon page it is **plan ahead**, inside the Forma block. A group is a
+board RULER, every mode of it; riven rows count only when asked, and the leader
+is the best row in scope. The line (80% by default) marks the first point that
+reaches it. A pick can be saved as a build already placed on the point's
+layout, and the ticked builds can be placed onto the point for no further
+Forma (`start` = the point, limit 0). The scope is per weapon, in
+`wfsim-forma-reach-<weapon>`. A Warframe has no board, so no optimizer.
+
+Every row of a weapon's board is read — two and a half thousand on the Torid,
+in well under a second — and a row with a card this page cannot read is left
+out rather than read light.
 
 The capacity line follows the rules (`builderCap`, `wfCapacity`): no Catalyst
 halves it, and without the mastery Forma a rank-40 weapon's rank is what the

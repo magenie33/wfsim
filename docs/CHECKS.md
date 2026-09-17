@@ -698,7 +698,11 @@ together come out wearing one main layout, each with exactly its own mods, and
 the open build keeps its positions. The rules are global: a Catalyst switched
 off halves the capacity line, a Forma limit refuses in Chinese, and a Warframe
 plans through the same box with a capacity line that agrees with the plan.
-`WFSIM_BASE` points it at a dev server.
+With mods kept in place neither build's mods move. Planning ahead over the
+Torid's whole board draws a curve where each point costs more and reaches
+further, marks the first point on the line, saves a pick already wearing the
+point's layout with every card of its row, and places the ticked builds onto
+the point's exact positions. `WFSIM_BASE` points it at a dev server.
 
 ## `check_rescore_paths`
 

@@ -572,6 +572,11 @@ body.on-enemies [data-module="builder"]{display:none}
 .fp-table{border-collapse:collapse;font-size:12px}
 .fp-table th,.fp-table td{padding:2px 12px 2px 0;text-align:left}
 .fp-bill{font-size:12px}
+.fp-reach{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.fp-curve tr.fp-pt{cursor:pointer}
+.fp-curve tr.fp-pt.on td{background:var(--panel3)}
+.fp-lay .pol,.fp-lay .nopol{width:14px;height:14px;vertical-align:middle}
+.fp-ok{color:var(--good,#2fb36d);font-size:11px}
 
 /* floating popovers */
 .popover{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);width:340px;max-width:92vw;overflow:hidden}

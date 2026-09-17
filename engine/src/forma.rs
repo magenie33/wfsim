@@ -49,6 +49,9 @@ pub struct Rules {
     pub umbra: UmbraUse,
     /// The most Forma the bill may come to, mastery ones included.
     pub forma_limit: Option<u32>,
+    /// Mods never move: each slot's colour serves whatever every loadout keeps
+    /// there. Off, mods are moved onto the layout, ordered cards in order.
+    pub fixed_order: bool,
 }
 
 impl Default for Rules {
@@ -60,6 +63,7 @@ impl Default for Rules {
             omni: OmniUse::Never,
             umbra: UmbraUse::WhenNeeded,
             forma_limit: None,
+            fixed_order: false,
         }
     }
 }
@@ -138,6 +142,9 @@ impl Board {
 pub struct Card {
     pub drain: u32,
     pub polarity: Polarity,
+    /// Its place relative to the other ordered cards is part of the build —
+    /// an element-bearing mod, whose order decides what pairs.
+    pub ordered: bool,
 }
 
 /// One config. `main` is positional — `None` is an empty slot — so the first
@@ -163,19 +170,23 @@ pub struct Layout {
 pub struct Start {
     pub layout: Layout,
     pub forma_spent: u32,
+    /// The slots stay where they are: a layout made of the same colours is
+    /// placed exactly as the start has them, and only mods move.
+    pub pinned: bool,
 }
 
 /// One loadout placed on the planned layout.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Placed {
     /// Per main slot, the index into the loadout's `main` of the mod put there.
-    /// The first loadout is never moved: `slots[i] == Some(i)` for its mods.
     pub slots: Vec<Option<usize>>,
     pub drain: u32,
     /// What its grant card hands back on the planned grant slot.
     pub grant: u32,
     /// `capacity + grant - drain` — below zero only in [`closest`].
     pub spare: i32,
+    /// Mods not in the slot they came in.
+    pub moved: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -188,6 +199,8 @@ pub struct Plan {
     pub capacity: u32,
     /// Index-aligned with the loadouts handed in.
     pub loadouts: Vec<Placed>,
+    /// False when the work budget ran out before every layout was tried.
+    pub exhaustive: bool,
 }
 
 /// Why there is no plan — the one case the page has to push back, so it names
@@ -220,59 +233,75 @@ impl std::fmt::Display for PlanError {
     }
 }
 
-/// Plan one layout for every loadout. The first loadout is the one being edited
-/// and keeps its mod positions; the others are rearranged onto the layout.
+fn check_loadout(board: &Board, i: usize, l: &Loadout) -> Result<(), PlanError> {
+    let n = board.main.len();
+    let bad = |e: String| Err(PlanError::Invalid(e));
+    let mods = l.main.iter().flatten().count();
+    if l.main.len() > n {
+        return bad(format!("loadout {}: {} slots given, the item has {n}", i + 1, l.main.len()));
+    }
+    if mods > n {
+        return bad(format!("loadout {}: {mods} mods for {n} slots", i + 1));
+    }
+    if l.exilus.is_some() && board.exilus.is_none() {
+        return bad(format!("loadout {}: the item has no exilus slot", i + 1));
+    }
+    if l.grant.is_some() && board.grant.is_none() {
+        return bad(format!("loadout {}: the item has no stance or aura slot", i + 1));
+    }
+    Ok(())
+}
+
+fn check_board(board: &Board, start: Option<&Start>) -> Result<(), PlanError> {
+    let n = board.main.len();
+    if n > MAX_SLOTS {
+        return Err(PlanError::Invalid(format!("{n} slots is more than the planner takes ({MAX_SLOTS})")));
+    }
+    if let Some(s) = start {
+        if s.layout.main.len() != n {
+            return Err(PlanError::Invalid(format!(
+                "the current layout has {} main slots, the item has {n}",
+                s.layout.main.len()
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Plan one layout for every loadout — every one of them must fit.
 ///
 /// The order a layout is judged in: Umbra Forma (under `WhenNeeded`), then the
 /// grant slot (under `grant_slot_first`), then Forma, then Omni among equal
 /// Forma, then the WORST loadout's spare capacity, then the total, then the
-/// fewest of the item's own colours moved.
+/// fewest mods moved, then the fewest of the item's own colours moved.
 pub fn plan(
     board: &Board,
     loadouts: &[Loadout],
     rules: Rules,
     start: Option<&Start>,
 ) -> Result<Plan, PlanError> {
-    let bad = |e: String| Err(PlanError::Invalid(e));
-    let n = board.main.len();
-    if n > MAX_SLOTS {
-        return bad(format!("{n} slots is more than the planner takes ({MAX_SLOTS})"));
-    }
+    check_board(board, start)?;
     if loadouts.is_empty() {
-        return bad("no loadout to plan for".into());
+        return Err(PlanError::Invalid("no loadout to plan for".into()));
     }
     for (i, l) in loadouts.iter().enumerate() {
-        let mods = l.main.iter().flatten().count();
-        if l.main.len() > n {
-            return bad(format!("loadout {}: {} slots given, the item has {n}", i + 1, l.main.len()));
-        }
-        if mods > n {
-            return bad(format!("loadout {}: {mods} mods for {n} slots", i + 1));
-        }
-        if l.exilus.is_some() && board.exilus.is_none() {
-            return bad(format!("loadout {}: the item has no exilus slot", i + 1));
-        }
-        if l.grant.is_some() && board.grant.is_none() {
-            return bad(format!("loadout {}: the item has no stance or aura slot", i + 1));
-        }
+        check_loadout(board, i, l)?;
     }
-    let innate = Start { layout: board.innate(), forma_spent: 0 };
+    let innate = Start { layout: board.innate(), forma_spent: 0, pinned: false };
     let start = start.unwrap_or(&innate);
-    if start.layout.main.len() != n {
-        return bad(format!("the current layout has {} main slots, the item has {n}", start.layout.main.len()));
-    }
-    if let Some(p) = search(board, loadouts, rules, start, false) {
+    let refs: Vec<&Loadout> = loadouts.iter().collect();
+    let solve = |rules: Rules, refs: &[&Loadout]| {
+        Space::new(board, refs, rules, start).best(refs, false, &mut Budget::default())
+    };
+    if let Some(p) = solve(rules, &refs) {
         return Ok(p);
     }
-
     if let Some(limit) = rules.forma_limit {
-        if let Some(p) = search(board, loadouts, Rules { forma_limit: None, ..rules }, start, false) {
+        if let Some(p) = solve(Rules { forma_limit: None, ..rules }, &refs) {
             return Err(PlanError::OverLimit { need: p.cost.total(), limit });
         }
     }
-    let alone: Vec<usize> = (0..loadouts.len())
-        .filter(|&i| search(board, &loadouts[i..=i], rules, start, false).is_none())
-        .collect();
+    let alone: Vec<usize> = (0..refs.len()).filter(|&i| solve(rules, &refs[i..=i]).is_none()).collect();
     if alone.is_empty() {
         return Err(PlanError::CannotShare);
     }
@@ -289,9 +318,202 @@ pub fn plan(
 /// page shows it so the reader sees how far over the build is rather than an
 /// unpolarized one.
 pub fn closest(board: &Board, loadouts: &[Loadout], rules: Rules, start: Option<&Start>) -> Option<Plan> {
-    let innate = Start { layout: board.innate(), forma_spent: 0 };
+    check_board(board, start).ok()?;
+    let innate = Start { layout: board.innate(), forma_spent: 0, pinned: false };
     let start = start.unwrap_or(&innate);
-    search(board, loadouts, Rules { forma_limit: None, ..rules }, start, true)
+    let refs: Vec<&Loadout> = loadouts.iter().collect();
+    Space::new(board, &refs, Rules { forma_limit: None, ..rules }, start).best(&refs, true, &mut Budget::default())
+}
+
+/// A build on a board, and how close it comes to its group's leader.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GroupBuild {
+    pub loadout: Loadout,
+    /// Its score over the group leader's, 0..=1.
+    pub ratio: f64,
+}
+
+/// A scenario: covered when ONE of its builds fits the layout.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Group {
+    pub builds: Vec<GroupBuild>,
+}
+
+/// The build a layout serves a group with.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Pick {
+    /// Index into the group's `builds` as handed in.
+    pub build: usize,
+    pub ratio: f64,
+    pub placed: Placed,
+}
+
+/// One point on the Forma-to-coverage curve: the cheapest layout that reaches
+/// its `worst` ratio.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Point {
+    /// The layout, with the hard loadouts placed on it.
+    pub plan: Plan,
+    /// The weakest group's best fitting ratio; 0 where a group has none.
+    pub worst: f64,
+    /// Per group.
+    pub picks: Vec<Option<Pick>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Coverage {
+    /// Cheapest first, each point strictly better than the one before it.
+    pub curve: Vec<Point>,
+    /// False when the work budget ran out before every layout was tried.
+    pub exhaustive: bool,
+}
+
+/// A build's cards as far as a layout can tell two builds apart.
+type Shape = (Vec<(u32, usize, bool)>, Option<Card>, Option<Card>);
+
+/// THE OPTIMIZER OF THE PLAN: what each Forma buys across whole groups of
+/// builds. Every `hard` loadout must fit every point; a group counts through
+/// the best of its builds that fits. Builds under `floor` are not read.
+pub fn optimize(
+    board: &Board,
+    hard: &[Loadout],
+    groups: &[Group],
+    floor: f64,
+    rules: Rules,
+    start: Option<&Start>,
+) -> Result<Coverage, PlanError> {
+    check_board(board, start)?;
+    if groups.iter().all(|g| g.builds.is_empty()) {
+        return Err(PlanError::Invalid("no build to plan for".into()));
+    }
+    for (i, l) in hard.iter().enumerate() {
+        check_loadout(board, i, l)?;
+    }
+    if !hard.is_empty() {
+        plan(board, hard, Rules { forma_limit: None, ..rules }, start)?;
+    }
+    let innate = Start { layout: board.innate(), forma_spent: 0, pinned: false };
+    let start = start.unwrap_or(&innate);
+
+    // EACH GROUP: its builds over the floor, one per shape, best first.
+    let mut kept: Vec<Vec<(usize, &Loadout, f64)>> = Vec::new();
+    for g in groups {
+        let mut seen: Vec<Shape> = Vec::new();
+        let mut rows: Vec<(usize, &Loadout, f64)> = g
+            .builds
+            .iter()
+            .enumerate()
+            .filter(|(i, b)| b.ratio >= floor && check_loadout(board, *i, &b.loadout).is_ok())
+            .map(|(i, b)| (i, &b.loadout, b.ratio))
+            .collect();
+        rows.sort_by(|a, b| b.2.total_cmp(&a.2));
+        rows.retain(|(_, l, _)| {
+            let mut shape: Vec<(u32, usize, bool)> = l
+                .main
+                .iter()
+                .enumerate()
+                .filter_map(|(p, c)| c.map(|c| (c.drain, sym(Some(c.polarity)) * 16 + if rules.fixed_order { p } else { 0 }, c.ordered)))
+                .collect();
+            if !rules.fixed_order {
+                shape.sort_unstable();
+            }
+            let key = (shape, l.exilus, l.grant);
+            if seen.contains(&key) {
+                return false;
+            }
+            seen.push(key);
+            true
+        });
+        kept.push(rows);
+    }
+
+    let mut all: Vec<&Loadout> = hard.iter().collect();
+    let base = all.len();
+    let mut at: Vec<Vec<usize>> = Vec::new();
+    for rows in &kept {
+        at.push(rows.iter().map(|(_, l, _)| {
+            all.push(l);
+            all.len() - 1
+        }).collect());
+    }
+    let space = Space::new(board, &all, rules, start);
+    let mut memo = Memo::new(all.len(), space.mains.len());
+    let prepared: Vec<Prepared> = all.iter().map(|l| Prepared::of(l)).collect();
+    let mut budget = Budget::default();
+
+    // RELAXED: positions free. It never under-rates a layout, so it orders the
+    // exact work and bounds it.
+    let mut by_total: std::collections::BTreeMap<u32, Vec<(f64, usize)>> = Default::default();
+    for (ci, c) in space.cands.iter().enumerate() {
+        if (0..base).any(|li| space.relaxed_spare(c, all[li], &prepared[li], li, &mut memo) < 0) {
+            continue;
+        }
+        let mut worst = f64::INFINITY;
+        for (gi, rows) in kept.iter().enumerate() {
+            let hit = rows
+                .iter()
+                .zip(&at[gi])
+                .find(|(_, &li)| space.relaxed_spare(c, all[li], &prepared[li], li, &mut memo) >= 0)
+                .map_or(0.0, |((_, _, r), _)| *r);
+            worst = worst.min(hit);
+            if worst <= 0.0 {
+                break;
+            }
+        }
+        if worst.is_finite() {
+            by_total.entry(c.cost.total()).or_default().push((worst, ci));
+        }
+    }
+
+    let ceiling = kept.iter().map(|r| r.first().map_or(0.0, |x| x.2)).fold(f64::INFINITY, f64::min);
+    let mut curve: Vec<Point> = Vec::new();
+    for (_, mut list) in by_total {
+        let floor_now = curve.last().map_or(-1.0, |p| p.worst);
+        list.sort_by(|a, b| {
+            b.0.total_cmp(&a.0).then_with(|| space.cands[a.1].key.cmp(&space.cands[b.1].key))
+        });
+        let mut best: Option<Point> = None;
+        for &(relaxed, ci) in &list {
+            if relaxed <= floor_now || best.as_ref().is_some_and(|p| relaxed <= p.worst) {
+                break;
+            }
+            let c = &space.cands[ci];
+            // Position for the hard loadouts and the builds the relaxed walk chose.
+            let mut loads: Vec<&Loadout> = all[..base].to_vec();
+            for (gi, rows) in kept.iter().enumerate() {
+                if let Some((_, &li)) = rows
+                    .iter()
+                    .zip(&at[gi])
+                    .find(|(_, &li)| space.relaxed_spare(c, all[li], &prepared[li], li, &mut memo) >= 0)
+                {
+                    loads.push(all[li]);
+                }
+            }
+            let Some(r) = space.realize(c, &loads, &mut budget) else { continue };
+            // EXACT: every group walked again on the positioned layout.
+            let mut picks = Vec::new();
+            let mut worst = f64::INFINITY;
+            for rows in &kept {
+                let hit = rows.iter().find_map(|(bi, l, ratio)| {
+                    let placed = space.place(c, &r.syms, l);
+                    (placed.spare >= 0).then_some(Pick { build: *bi, ratio: *ratio, placed })
+                });
+                worst = worst.min(hit.as_ref().map_or(0.0, |p| p.ratio));
+                picks.push(hit);
+            }
+            if worst > floor_now && best.as_ref().is_none_or(|p| worst > p.worst) {
+                best = Some(Point { plan: space.plan_of(c, &r, base), worst, picks });
+            }
+        }
+        if let Some(p) = best {
+            let done = p.worst >= ceiling;
+            curve.push(p);
+            if done {
+                break;
+            }
+        }
+    }
+    Ok(Coverage { curve, exhaustive: !budget.spent })
 }
 
 const MAX_SLOTS: usize = 12;
@@ -334,6 +556,10 @@ fn grant_on(card: Card, slot: Option<Polarity>) -> u32 {
 
 fn grant_matched(card: Card, slot: Option<Polarity>) -> bool {
     matches!(slot, Some(p) if p == card.polarity || p == Polarity::Omni)
+}
+
+fn cost_on(c: Card, k: usize) -> u32 {
+    slot_drain(c.drain, c.polarity, SYMS[k])
 }
 
 /// Minimum-cost assignment of `rows` to distinct `cols` (rows ≤ cols), the
@@ -402,304 +628,624 @@ fn assign(rows: usize, cols: usize, cost: impl Fn(usize, usize) -> i64) -> (i64,
     (total, out)
 }
 
-/// The fewest-drain placement of `mods` on the slots `syms`.
-fn main_drain(mods: &[Card], syms: &[usize]) -> (u32, [usize; MAX_SLOTS]) {
-    let (total, at) = assign(mods.len(), syms.len(), |r, c| {
-        i64::from(slot_drain(mods[r].drain, mods[r].polarity, SYMS[syms[c]]))
-    });
-    (total as u32, at)
+/// THE FEWEST DRAIN a set of cards can take on a multiset of slots, positions
+/// free. Each colour's slots go to that colour's biggest cards, Omni to the
+/// biggest left that are not Umbra, bare slots to the biggest after that and
+/// the rest mismatch — `free_drain_is_the_optimal_assignment` holds it to the
+/// Hungarian answer. `sorted` is (drain, symbol), biggest first.
+fn free_drain(sorted: &[(u32, u8)], syms: &[u8]) -> u32 {
+    let mut left = [0u8; NSYM];
+    for &k in syms {
+        left[k as usize] += 1;
+    }
+    let mut total = 0;
+    let mut rest = [(0u32, 0u8); MAX_SLOTS];
+    let mut nr = 0;
+    for &(d, p) in sorted {
+        if left[p as usize] > 0 {
+            left[p as usize] -= 1;
+            total += d.div_ceil(2);
+        } else {
+            rest[nr] = (d, p);
+            nr += 1;
+        }
+    }
+    let mut blanks = left[BLANK];
+    for &(d, p) in &rest[..nr] {
+        if p as usize != UMBRA && left[OMNI] > 0 {
+            left[OMNI] -= 1;
+            total += d.div_ceil(2);
+        } else if blanks > 0 {
+            // Biggest first, so the bare slots take the biggest of what is left.
+            blanks -= 1;
+            total += d;
+        } else {
+            total += slot_drain(d, Polarity::Madurai, Some(Polarity::Naramon));
+        }
+    }
+    total
 }
 
-struct Billed {
+/// A loadout with its main cards sorted for [`free_drain`].
+struct Prepared {
+    sorted: Vec<(u32, u8)>,
+}
+
+impl Prepared {
+    fn of(l: &Loadout) -> Self {
+        let mut sorted: Vec<(u32, u8)> =
+            l.main.iter().flatten().map(|c| (c.drain, sym(Some(c.polarity)) as u8)).collect();
+        sorted.sort_unstable_by_key(|x| std::cmp::Reverse(x.0));
+        Self { sorted }
+    }
+}
+
+/// Free drains already worked out, per loadout and main multiset.
+struct Memo {
+    rows: Vec<Vec<u16>>,
+    width: usize,
+}
+
+impl Memo {
+    fn new(loadouts: usize, width: usize) -> Self {
+        Self { rows: vec![Vec::new(); loadouts], width }
+    }
+}
+
+/// How much exact work a search may do before it settles for what it has.
+struct Budget {
+    left: u64,
+    spent: bool,
+}
+
+impl Default for Budget {
+    fn default() -> Self {
+        Self { left: 4_000_000, spent: false }
+    }
+}
+
+impl Budget {
+    fn take(&mut self, n: u64) -> bool {
+        if self.left < n {
+            self.spent = true;
+            return false;
+        }
+        self.left -= n;
+        true
+    }
+}
+
+/// Every increasing `k`-subset of `0..n`.
+fn combinations(n: usize, k: usize, f: &mut dyn FnMut(&[usize])) {
+    fn go(from: usize, n: usize, k: usize, cur: &mut Vec<usize>, f: &mut dyn FnMut(&[usize])) {
+        if cur.len() == k {
+            f(cur);
+            return;
+        }
+        for i in from..n {
+            if n - i < k - cur.len() {
+                break;
+            }
+            cur.push(i);
+            go(i + 1, n, k, cur, f);
+            cur.pop();
+        }
+    }
+    go(0, n, k, &mut Vec::with_capacity(k), f);
+}
+
+/// A loadout's main cards on a positioned layout: which mod goes where, what
+/// it drains, and how many mods moved. Each card is placed freely except that
+/// the ORDERED ones keep their order among themselves, which is what keeps an
+/// element pairing what it was. With `fixed` nothing moves.
+fn place_main(cards: &[Option<Card>], syms: &[u8], fixed: bool) -> (u32, Vec<Option<usize>>, u32) {
+    let n = syms.len();
+    let mut slots = vec![None; n];
+    if fixed {
+        let mut drain = 0;
+        for (p, c) in cards.iter().enumerate() {
+            if let Some(c) = c {
+                drain += cost_on(*c, syms[p] as usize);
+                slots[p] = Some(p);
+            }
+        }
+        return (drain, slots, 0);
+    }
+    let mut ordered: Vec<(usize, Card)> = Vec::new();
+    let mut free: Vec<(usize, Card)> = Vec::new();
+    for (p, c) in cards.iter().enumerate() {
+        if let Some(c) = c {
+            if c.ordered { ordered.push((p, *c)) } else { free.push((p, *c)) }
+        }
+    }
+    if ordered.len() <= 1 {
+        free.append(&mut ordered);
+    }
+    // A move costs one sixteenth of a point, so it only ever breaks a tie.
+    let w = |c: &(usize, Card), at: usize| i64::from(cost_on(c.1, syms[at] as usize)) * 16 + i64::from(c.0 != at);
+    let mut best = (i64::MAX, Vec::new());
+    combinations(n, ordered.len(), &mut |pos| {
+        let own: i64 = ordered.iter().zip(pos).map(|(c, &at)| w(c, at)).sum();
+        if own >= best.0 {
+            return;
+        }
+        let rest: Vec<usize> = (0..n).filter(|p| !pos.contains(p)).collect();
+        let (total, to) = assign(free.len(), rest.len(), |r, col| w(&free[r], rest[col]));
+        if own + total < best.0 {
+            let mut at: Vec<(usize, usize)> = ordered.iter().zip(pos).map(|(c, &p)| (p, c.0)).collect();
+            at.extend(free.iter().enumerate().map(|(r, c)| (rest[to[r]], c.0)));
+            best = (own + total, at);
+        }
+    });
+    for &(slot, from) in &best.1 {
+        slots[slot] = Some(from);
+    }
+    ((best.0 / 16) as u32, slots, (best.0 % 16) as u32)
+}
+
+/// One candidate: a main multiset, the exilus and grant colours, and its bill.
+#[derive(Debug, Clone)]
+struct Cand {
+    key: [u32; 4],
+    mi: u32,
+    e: u8,
+    g: u8,
     cost: FormaCost,
     rank: u32,
     capacity: u32,
-    key: [u32; 4],
 }
 
-/// `nearest`: rank by room first and cost second, and keep what does not fit.
-fn search(board: &Board, loadouts: &[Loadout], rules: Rules, start: &Start, nearest: bool) -> Option<Plan> {
-    let n = board.main.len();
-    let grant_in_pool = board.grant.is_some_and(|g| g.in_pool);
-    let s_grant = sym(start.layout.grant);
+/// A candidate given positions.
+struct Realized {
+    syms: Vec<u8>,
+    placed: Vec<Placed>,
+    score: (i64, i64, i64, i32),
+}
 
-    // THE START AS A POOL. A bought polarization is one slot of the target
-    // multiset the start does not cover — blank counted as a colour of its own,
-    // since blanking a slot takes a Forma too — so the bill is Σ max(0, T − S).
-    let mut s: Counts = [0; NSYM];
-    for &p in &start.layout.main {
-        s[sym(p)] += 1;
-    }
-    if board.exilus.is_some() {
-        s[sym(start.layout.exilus)] += 1;
-    }
-    if grant_in_pool {
-        s[s_grant] += 1;
-    }
+/// Every layout the rules allow for these loadouts, billed and sorted.
+struct Space<'a> {
+    board: &'a Board,
+    rules: Rules,
+    start: &'a Start,
+    n: usize,
+    mains: Vec<[u8; MAX_SLOTS]>,
+    cands: Vec<Cand>,
+}
 
-    let mods: Vec<Vec<Card>> = loadouts.iter().map(|l| l.main.iter().flatten().copied().collect()).collect();
+impl<'a> Space<'a> {
+    fn new(board: &'a Board, loadouts: &[&Loadout], rules: Rules, start: &'a Start) -> Self {
+        let n = board.main.len();
+        let grant_in_pool = board.grant.is_some_and(|g| g.in_pool);
+        let s_grant = sym(start.layout.grant);
 
-    // THE ALPHABET: a bare slot, what the item already carries, and what some
-    // card can match. A colour nobody carries only ever mismatches.
-    let mut want = [false; NSYM];
-    want[BLANK] = true;
-    for (k, &c) in s.iter().enumerate() {
-        want[k] |= c > 0;
-    }
-    for l in loadouts {
-        for c in l.main.iter().flatten().chain(&l.exilus) {
-            want[sym(Some(c.polarity))] = true;
+        // THE START AS A POOL. A bought polarization is one slot of the target
+        // multiset the start does not cover — blank counted as a colour of its
+        // own, since blanking a slot takes a Forma too — so the bill is
+        // Σ max(0, T − S).
+        let mut s: Counts = [0; NSYM];
+        for &p in &start.layout.main {
+            s[sym(p)] += 1;
+        }
+        if board.exilus.is_some() {
+            s[sym(start.layout.exilus)] += 1;
         }
         if grant_in_pool {
-            if let Some(c) = l.grant {
+            s[s_grant] += 1;
+        }
+
+        // THE ALPHABET: a bare slot, what the item already carries, and what
+        // some card can match. A colour nobody carries only ever mismatches.
+        let mut want = [false; NSYM];
+        want[BLANK] = true;
+        for (k, &c) in s.iter().enumerate() {
+            want[k] |= c > 0;
+        }
+        for l in loadouts {
+            for c in l.main.iter().flatten().chain(&l.exilus) {
                 want[sym(Some(c.polarity))] = true;
             }
-        }
-    }
-    want[OMNI] |= rules.omni != OmniUse::Never;
-    if rules.umbra == UmbraUse::Never && s[UMBRA] == 0 {
-        want[UMBRA] = false;
-    }
-    let alpha: Vec<usize> = (0..NSYM).filter(|&k| want[k]).collect();
-    let ex_alpha: Vec<usize> = if board.exilus.is_some() { alpha.clone() } else { vec![BLANK] };
-    let g_alpha: Vec<usize> = match board.grant {
-        None => vec![BLANK],
-        Some(g) if g.fixed => vec![s_grant],
-        Some(_) if grant_in_pool => alpha.clone(),
-        Some(_) => {
-            let mut g = [false; NSYM];
-            g[BLANK] = true;
-            g[s_grant] = true;
-            for c in loadouts.iter().filter_map(|l| l.grant) {
-                g[sym(Some(c.polarity))] = true;
-            }
-            g[OMNI] |= rules.omni != OmniUse::Never;
-            (0..NSYM).filter(|&k| g[k]).collect()
-        }
-    };
-
-    // Every multiset of `n` over the alphabet, as sorted symbol lists.
-    let mut mains: Vec<[u8; MAX_SLOTS]> = Vec::new();
-    let mut cur = [0u8; MAX_SLOTS];
-    fn walk(alpha: &[usize], from: usize, depth: usize, n: usize, cur: &mut [u8; MAX_SLOTS], out: &mut Vec<[u8; MAX_SLOTS]>) {
-        if depth == n {
-            out.push(*cur);
-            return;
-        }
-        for a in from..alpha.len() {
-            cur[depth] = alpha[a] as u8;
-            walk(alpha, a, depth + 1, n, cur, out);
-        }
-    }
-    walk(&alpha, 0, 0, n, &mut cur, &mut mains);
-
-    let floor = if rules.reach_max_rank { forma_to_max_rank(board.base_max_rank) } else { 0 };
-    let bill = |t: &Counts, g: usize| -> Option<Billed> {
-        let mut ops = [0i32; NSYM];
-        for k in 0..NSYM {
-            ops[k] = (t[k] - s[k]).max(0);
-        }
-        if board.grant.is_some() && !grant_in_pool && g != s_grant {
-            ops[g] += 1;
-        }
-        // No Forma makes the Aura colour; only an item born with it has one.
-        if ops[AURA] > 0 {
-            return None;
-        }
-        if rules.umbra == UmbraUse::Never && ops[UMBRA] > 0 {
-            return None;
-        }
-        if rules.omni == OmniUse::Never && ops[OMNI] > 0 {
-            return None;
-        }
-        if rules.omni == OmniUse::Preferred && REGULAR.clone().any(|k| ops[k] > 0) {
-            return None;
-        }
-        let mut cost = FormaCost {
-            regular: (ops[BLANK] + REGULAR.clone().map(|k| ops[k]).sum::<i32>()) as u32,
-            omni: ops[OMNI] as u32,
-            umbra: ops[UMBRA] as u32,
-        };
-        let spent = start.forma_spent + cost.total();
-        let extra = floor.saturating_sub(spent);
-        cost.regular += extra;
-        if rules.forma_limit.is_some_and(|l| cost.total() > l) {
-            return None;
-        }
-        let rank = rank_after(board.base_max_rank.max(30), spent + extra);
-        let grant_miss = if rules.grant_slot_first && cost.total() > 0 {
-            loadouts
-                .iter()
-                .filter_map(|l| l.grant)
-                .filter(|&c| !grant_matched(c, SYMS[g]))
-                .count() as u32
-        } else {
-            0
-        };
-        let key = match rules.umbra {
-            UmbraUse::Allowed => [grant_miss, cost.total(), cost.umbra, cost.omni],
-            _ => [cost.umbra, grant_miss, cost.total(), cost.omni],
-        };
-        Some(Billed { cost, rank, capacity: capacity(rank, rules.catalyst), key })
-    };
-
-    let mut cands: Vec<([u32; 4], u32, u16, u16)> = Vec::new();
-    for (mi, m) in mains.iter().enumerate() {
-        let mut t: Counts = [0; NSYM];
-        for &k in &m[..n] {
-            t[k as usize] += 1;
-        }
-        for (ei, &e) in ex_alpha.iter().enumerate() {
-            let mut te = t;
-            if board.exilus.is_some() {
-                te[e] += 1;
-            }
-            for (gi, &g) in g_alpha.iter().enumerate() {
-                let mut tg = te;
-                if grant_in_pool {
-                    tg[g] += 1;
-                }
-                if let Some(b) = bill(&tg, g) {
-                    cands.push((b.key, mi as u32, ei as u16, gi as u16));
+            if grant_in_pool {
+                if let Some(c) = l.grant {
+                    want[sym(Some(c.polarity))] = true;
                 }
             }
         }
-    }
-    cands.sort_unstable();
+        want[OMNI] |= rules.omni != OmniUse::Never;
+        if rules.umbra == UmbraUse::Never && s[UMBRA] == 0 {
+            want[UMBRA] = false;
+        }
+        let alpha: Vec<usize> = (0..NSYM).filter(|&k| want[k]).collect();
+        let ex_alpha: Vec<usize> = if board.exilus.is_some() { alpha.clone() } else { vec![BLANK] };
+        let g_alpha: Vec<usize> = match board.grant {
+            None => vec![BLANK],
+            Some(g) if g.fixed => vec![s_grant],
+            Some(_) if grant_in_pool => alpha.clone(),
+            Some(_) => {
+                let mut g = [false; NSYM];
+                g[BLANK] = true;
+                g[s_grant] = true;
+                for c in loadouts.iter().filter_map(|l| l.grant) {
+                    g[sym(Some(c.polarity))] = true;
+                }
+                g[OMNI] |= rules.omni != OmniUse::Never;
+                (0..NSYM).filter(|&k| g[k]).collect()
+            }
+        };
 
-    const UNSET: u32 = u32::MAX;
-    let mut memo = vec![vec![UNSET; mains.len()]; loadouts.len()];
-    let s_exilus = sym(start.layout.exilus);
-    // Ranked by (worst, total, cheapness, kept); cheapness only counts when
-    // `nearest`, since otherwise every candidate in the bucket costs the same.
-    type Score = (i64, i64, std::cmp::Reverse<[u32; 4]>, i32);
-    let mut best: Option<(Score, usize)> = None;
-    let mut i = 0;
-    while i < cands.len() {
-        let key = cands[i].0;
-        let mut j = i;
-        while j < cands.len() && cands[j].0 == key {
-            let (_, mi, ei, gi) = cands[j];
-            let (mi, e, g) = (mi as usize, ex_alpha[ei as usize], g_alpha[gi as usize]);
+        let mut mains: Vec<[u8; MAX_SLOTS]> = Vec::new();
+        fn walk(alpha: &[usize], from: usize, depth: usize, n: usize, cur: &mut [u8; MAX_SLOTS], out: &mut Vec<[u8; MAX_SLOTS]>) {
+            if depth == n {
+                out.push(*cur);
+                return;
+            }
+            for a in from..alpha.len() {
+                cur[depth] = alpha[a] as u8;
+                walk(alpha, a, depth + 1, n, cur, out);
+            }
+        }
+        walk(&alpha, 0, 0, n, &mut [0u8; MAX_SLOTS], &mut mains);
+
+        let floor = if rules.reach_max_rank { forma_to_max_rank(board.base_max_rank) } else { 0 };
+        let grants: Vec<Card> = loadouts.iter().filter_map(|l| l.grant).collect();
+        let mut cands = Vec::new();
+        for (mi, m) in mains.iter().enumerate() {
             let mut t: Counts = [0; NSYM];
-            for &k in &mains[mi][..n] {
+            for &k in &m[..n] {
                 t[k as usize] += 1;
             }
-            if board.exilus.is_some() {
-                t[e] += 1;
-            }
-            if grant_in_pool {
-                t[g] += 1;
-            }
-            let b = bill(&t, g).expect("a candidate was billable");
-            let (mut worst, mut sum) = (i64::MAX, 0i64);
-            for (li, l) in loadouts.iter().enumerate() {
-                if memo[li][mi] == UNSET {
-                    let syms: Vec<usize> = mains[mi][..n].iter().map(|&k| k as usize).collect();
-                    memo[li][mi] = main_drain(&mods[li], &syms).0;
+            for &e in &ex_alpha {
+                let mut te = t;
+                if board.exilus.is_some() {
+                    te[e] += 1;
                 }
-                let drain = memo[li][mi]
-                    + l.exilus.map_or(0, |c| slot_drain(c.drain, c.polarity, SYMS[e]));
-                let grant = l.grant.map_or(0, |c| grant_on(c, SYMS[g]));
-                let spare = i64::from(b.capacity) + i64::from(grant) - i64::from(drain);
-                worst = worst.min(spare);
-                sum += spare;
-                if spare < 0 && !nearest {
+                for &g in &g_alpha {
+                    let mut tg = te;
+                    if grant_in_pool {
+                        tg[g] += 1;
+                    }
+                    let mut ops = [0i32; NSYM];
+                    for k in 0..NSYM {
+                        ops[k] = (tg[k] - s[k]).max(0);
+                    }
+                    if board.grant.is_some() && !grant_in_pool && g != s_grant {
+                        ops[g] += 1;
+                    }
+                    // No Forma makes the Aura colour; only an item born with it has one.
+                    if ops[AURA] > 0
+                        || (rules.umbra == UmbraUse::Never && ops[UMBRA] > 0)
+                        || (rules.omni == OmniUse::Never && ops[OMNI] > 0)
+                        || (rules.omni == OmniUse::Preferred && REGULAR.clone().any(|k| ops[k] > 0))
+                    {
+                        continue;
+                    }
+                    let mut cost = FormaCost {
+                        regular: (ops[BLANK] + REGULAR.clone().map(|k| ops[k]).sum::<i32>()) as u32,
+                        omni: ops[OMNI] as u32,
+                        umbra: ops[UMBRA] as u32,
+                    };
+                    let spent = start.forma_spent + cost.total();
+                    let extra = floor.saturating_sub(spent);
+                    cost.regular += extra;
+                    if rules.forma_limit.is_some_and(|l| cost.total() > l) {
+                        continue;
+                    }
+                    let rank = rank_after(board.base_max_rank.max(30), spent + extra);
+                    let grant_miss = if rules.grant_slot_first && cost.total() > 0 {
+                        grants.iter().filter(|&&c| !grant_matched(c, SYMS[g])).count() as u32
+                    } else {
+                        0
+                    };
+                    let key = match rules.umbra {
+                        UmbraUse::Allowed => [grant_miss, cost.total(), cost.umbra, cost.omni],
+                        _ => [cost.umbra, grant_miss, cost.total(), cost.omni],
+                    };
+                    cands.push(Cand {
+                        key,
+                        mi: mi as u32,
+                        e: e as u8,
+                        g: g as u8,
+                        cost,
+                        rank,
+                        capacity: capacity(rank, rules.catalyst),
+                    });
+                }
+            }
+        }
+        cands.sort_by_key(|c| c.key);
+        Self { board, rules, start, n, mains, cands }
+    }
+
+    fn syms(&self, mi: u32) -> &[u8] {
+        &self.mains[mi as usize][..self.n]
+    }
+
+    fn extras(&self, c: &Cand, l: &Loadout) -> (u32, u32) {
+        let ex = l.exilus.map_or(0, |x| cost_on(x, c.e as usize));
+        let gr = l.grant.map_or(0, |x| grant_on(x, SYMS[c.g as usize]));
+        (ex, gr)
+    }
+
+    /// Spare capacity with positions free — never below the exact answer.
+    /// `li` names the loadout in `memo`.
+    fn relaxed_spare(&self, c: &Cand, l: &Loadout, p: &Prepared, li: usize, memo: &mut Memo) -> i64 {
+        let row = &mut memo.rows[li];
+        if row.is_empty() {
+            row.resize(memo.width, u16::MAX);
+        }
+        let mi = c.mi as usize;
+        if row[mi] == u16::MAX {
+            row[mi] = free_drain(&p.sorted, &self.mains[mi][..self.n]) as u16;
+        }
+        let (ex, gr) = self.extras(c, l);
+        i64::from(c.capacity + gr) - i64::from(u32::from(row[mi]) + ex)
+    }
+
+    /// One loadout placed on a positioned layout.
+    fn place(&self, c: &Cand, syms: &[u8], l: &Loadout) -> Placed {
+        let (main, slots, moved) = place_main(&l.main, syms, self.rules.fixed_order);
+        let (ex, grant) = self.extras(c, l);
+        let drain = main + ex;
+        Placed {
+            slots,
+            drain,
+            grant,
+            spare: (c.capacity + grant) as i32 - drain as i32,
+            moved,
+        }
+    }
+
+    fn score(&self, c: &Cand, syms: &[u8], loads: &[&Loadout]) -> Realized {
+        let placed: Vec<Placed> = loads.iter().map(|l| self.place(c, syms, l)).collect();
+        let worst = placed.iter().map(|p| i64::from(p.spare)).min().unwrap_or(0);
+        let sum = placed.iter().map(|p| i64::from(p.spare)).sum();
+        let moved: i64 = placed.iter().map(|p| i64::from(p.moved)).sum();
+        let kept = syms
+            .iter()
+            .zip(&self.start.layout.main)
+            .filter(|(&k, &b)| k as usize == sym(b))
+            .count() as i32
+            // A colour moved onto or off a slot of its own kind reads as the
+            // bigger change of the two.
+            - 2 * i32::from(c.e as usize != sym(self.start.layout.exilus))
+            - 2 * i32::from(c.g as usize != sym(self.start.layout.grant));
+        Realized { syms: syms.to_vec(), placed, score: (worst, sum, -moved, kept) }
+    }
+
+    /// POSITIONS for a candidate. Movable: the first loadout's own best
+    /// placement anchors the colours, then swaps are taken while they help.
+    /// Fixed: every arrangement of the multiset, pruned by capacity.
+    fn realize(&self, c: &Cand, loads: &[&Loadout], budget: &mut Budget) -> Option<Realized> {
+        let syms = self.syms(c.mi).to_vec();
+        if self.start.pinned {
+            let at: Vec<u8> = self.start.layout.main.iter().map(|&p| sym(p) as u8).collect();
+            let (mut a, mut b) = (at.clone(), syms.clone());
+            a.sort_unstable();
+            b.sort_unstable();
+            if a == b {
+                return Some(self.score(c, &at, loads));
+            }
+        }
+        if loads.is_empty() {
+            return Some(self.score(c, &self.anchor(&syms, None), loads));
+        }
+        if self.rules.fixed_order {
+            return self.arrange_fixed(c, &syms, loads, budget);
+        }
+        let mut cur = self.score(c, &self.anchor(&syms, Some(loads[0])), loads);
+        loop {
+            let mut better = false;
+            for i in 0..self.n {
+                for j in i + 1..self.n {
+                    if cur.syms[i] == cur.syms[j] {
+                        continue;
+                    }
+                    if !budget.take(loads.len() as u64 * 8) {
+                        return Some(cur);
+                    }
+                    let mut next = cur.syms.clone();
+                    next.swap(i, j);
+                    let s = self.score(c, &next, loads);
+                    if s.score > cur.score {
+                        cur = s;
+                        better = true;
+                    }
+                }
+            }
+            if !better {
+                return Some(cur);
+            }
+        }
+    }
+
+    /// The first loadout's best free placement, written onto its own slots;
+    /// the colours left over go back where the item carried them, then anywhere.
+    fn anchor(&self, syms: &[u8], first: Option<&Loadout>) -> Vec<u8> {
+        let n = self.n;
+        let mut out: Vec<Option<u8>> = vec![None; n];
+        let mut taken = vec![false; n];
+        if let Some(l) = first {
+            let own: Vec<(usize, Card)> =
+                l.main.iter().enumerate().filter_map(|(p, c)| c.map(|c| (p, c))).collect();
+            let (_, to) = assign(own.len(), n, |r, col| i64::from(cost_on(own[r].1, syms[col] as usize)));
+            for (r, &(p, _)) in own.iter().enumerate() {
+                out[p] = Some(syms[to[r]]);
+                taken[to[r]] = true;
+            }
+        }
+        let mut left: Vec<u8> = (0..n).filter(|&k| !taken[k]).map(|k| syms[k]).collect();
+        for (at, born) in out.iter_mut().zip(&self.start.layout.main) {
+            if at.is_none() {
+                if let Some(k) = left.iter().position(|&x| x as usize == sym(*born)) {
+                    *at = Some(left.remove(k));
+                }
+            }
+        }
+        for at in out.iter_mut().filter(|x| x.is_none()) {
+            *at = Some(left.remove(0));
+        }
+        out.into_iter().map(|x| x.expect("every slot has a colour")).collect()
+    }
+
+    fn arrange_fixed(&self, c: &Cand, syms: &[u8], loads: &[&Loadout], budget: &mut Budget) -> Option<Realized> {
+        let n = self.n;
+        let mut left = [0u8; NSYM];
+        for &k in syms {
+            left[k as usize] += 1;
+        }
+        // Per loadout: the room it has, and the least its remaining cards can drain.
+        let room: Vec<i64> = loads
+            .iter()
+            .map(|l| {
+                let (ex, gr) = self.extras(c, l);
+                i64::from(c.capacity + gr) - i64::from(ex)
+            })
+            .collect();
+        let lb: Vec<Vec<i64>> = loads
+            .iter()
+            .map(|l| {
+                let mut v = vec![0i64; n + 1];
+                for p in (0..n).rev() {
+                    let d = l.main.get(p).copied().flatten().map_or(0, |c| i64::from(c.drain.div_ceil(2)));
+                    v[p] = v[p + 1] + d;
+                }
+                v
+            })
+            .collect();
+        struct St<'s, 'a, 'l> {
+            space: &'s Space<'a>,
+            loads: &'s [&'l Loadout],
+            c: &'s Cand,
+            room: Vec<i64>,
+            lb: Vec<Vec<i64>>,
+            used: Vec<i64>,
+            cur: Vec<u8>,
+            best: Option<Realized>,
+        }
+        fn dfs(st: &mut St, p: usize, left: &mut [u8; NSYM], budget: &mut Budget) {
+            let n = st.space.n;
+            if p == n {
+                let r = st.space.score(st.c, &st.cur, st.loads);
+                if r.score.0 >= 0 && st.best.as_ref().is_none_or(|b| r.score > b.score) {
+                    st.best = Some(r);
+                }
+                return;
+            }
+            let at = |l: &Loadout, k: usize| l.main.get(p).copied().flatten().map_or(0, |c| i64::from(cost_on(c, k)));
+            let born = sym(st.space.start.layout.main[p]);
+            let mut order: Vec<usize> = (0..NSYM).filter(|&k| left[k] > 0).collect();
+            order.sort_by_key(|&k| k != born);
+            for k in order {
+                if !budget.take(1) {
+                    return;
+                }
+                let mut ok = true;
+                let mut ub = i64::MAX;
+                for (i, l) in st.loads.iter().enumerate() {
+                    let slack = st.room[i] - (st.used[i] + at(l, k)) - st.lb[i][p + 1];
+                    ok &= slack >= 0;
+                    ub = ub.min(slack);
+                }
+                // The weakest loadout can end no better than its slack now.
+                if !ok || st.best.as_ref().is_some_and(|b| ub < b.score.0) {
+                    continue;
+                }
+                for (i, l) in st.loads.iter().enumerate() {
+                    st.used[i] += at(l, k);
+                }
+                left[k] -= 1;
+                st.cur[p] = k as u8;
+                dfs(st, p + 1, left, budget);
+                left[k] += 1;
+                for (i, l) in st.loads.iter().enumerate() {
+                    st.used[i] -= at(l, k);
+                }
+            }
+        }
+        let mut st = St { space: self, loads, c, room, lb, used: vec![0; loads.len()], cur: vec![0; n], best: None };
+        dfs(&mut st, 0, &mut left, budget);
+        st.best
+    }
+
+    /// The exact answer: every bucket in bill order, the relaxed score ranking
+    /// which candidates are positioned first and bounding when to stop.
+    fn best(&self, loads: &[&Loadout], nearest: bool, budget: &mut Budget) -> Option<Plan> {
+        let mut memo = Memo::new(loads.len(), self.mains.len());
+        let prepared: Vec<Prepared> = loads.iter().map(|l| Prepared::of(l)).collect();
+        let relaxed = |c: &Cand, memo: &mut Memo| -> (i64, i64) {
+            let mut worst = i64::MAX;
+            let mut sum = 0;
+            for (li, l) in loads.iter().enumerate() {
+                let s = self.relaxed_spare(c, l, &prepared[li], li, memo);
+                worst = worst.min(s);
+                sum += s;
+            }
+            (worst, sum)
+        };
+        if nearest {
+            let mut all: Vec<((i64, i64), usize)> =
+                self.cands.iter().enumerate().map(|(i, c)| (relaxed(c, &mut memo), i)).collect();
+            all.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| self.cands[a.1].key.cmp(&self.cands[b.1].key)));
+            let mut best: Option<(Realized, usize)> = None;
+            for &(_, ci) in all.iter().take(8) {
+                if let Some(r) = self.realize(&self.cands[ci], loads, budget) {
+                    if best.as_ref().is_none_or(|(b, _)| r.score > b.score) {
+                        best = Some((r, ci));
+                    }
+                }
+            }
+            return best.map(|(r, ci)| self.plan_of(&self.cands[ci], &r, loads.len()));
+        }
+        let mut i = 0;
+        while i < self.cands.len() {
+            let key = self.cands[i].key;
+            let mut j = i;
+            let mut bucket: Vec<((i64, i64), usize)> = Vec::new();
+            while j < self.cands.len() && self.cands[j].key == key {
+                let r = relaxed(&self.cands[j], &mut memo);
+                if r.0 >= 0 {
+                    bucket.push((r, j));
+                }
+                j += 1;
+            }
+            bucket.sort_by_key(|x| std::cmp::Reverse(x.0));
+            let mut best: Option<(Realized, usize)> = None;
+            for &(r, ci) in &bucket {
+                if best.as_ref().is_some_and(|(b, _)| r < (b.score.0, b.score.1)) {
+                    break;
+                }
+                if let Some(x) = self.realize(&self.cands[ci], loads, budget) {
+                    if x.score.0 >= 0 && best.as_ref().is_none_or(|(b, _)| x.score > b.score) {
+                        best = Some((x, ci));
+                    }
+                }
+                if budget.spent && best.is_some() {
                     break;
                 }
             }
-            // …and among equals, the one that moves the item's own colours least.
-            let kept = -i32::from(e != s_exilus) - i32::from(g != s_grant);
-            let score = (worst, sum, std::cmp::Reverse(if nearest { key } else { [0; 4] }), kept);
-            if (worst >= 0 || nearest) && best.as_ref().is_none_or(|(s, _)| score > *s) {
-                best = Some((score, j));
+            if let Some((r, ci)) = best {
+                let mut p = self.plan_of(&self.cands[ci], &r, loads.len());
+                p.exhaustive = !budget.spent;
+                return Some(p);
             }
-            j += 1;
+            i = j;
         }
-        if best.is_some() && !nearest {
-            break;
-        }
-        i = j;
+        None
     }
-    let (_, at) = best?;
-    let (_, mi, ei, gi) = cands[at];
-    let (e, g) = (ex_alpha[ei as usize], g_alpha[gi as usize]);
-    let syms: Vec<usize> = mains[mi as usize][..n].iter().map(|&k| k as usize).collect();
-    let mut t: Counts = [0; NSYM];
-    for &k in &syms {
-        t[k] += 1;
-    }
-    if board.exilus.is_some() {
-        t[e] += 1;
-    }
-    if grant_in_pool {
-        t[g] += 1;
-    }
-    let billed = bill(&t, g).expect("the winner was billable");
 
-    // POSITIONS. The first loadout's mods stay where they are and take the
-    // colours its best placement gave them; a colour left over goes back to
-    // the empty slot it was born on where it can, then to any empty slot.
-    let first = &loadouts[0];
-    let firsts: Vec<(usize, Card)> =
-        first.main.iter().enumerate().filter_map(|(p, c)| c.map(|c| (p, c))).collect();
-    let (_, to) = main_drain(&mods[0], &syms);
-    let mut slot: Vec<Option<usize>> = vec![None; n];
-    let mut taken = vec![false; n];
-    for (r, &(p, _)) in firsts.iter().enumerate() {
-        slot[p] = Some(syms[to[r]]);
-        taken[to[r]] = true;
-    }
-    let mut left: Vec<usize> = (0..n).filter(|&k| !taken[k]).map(|k| syms[k]).collect();
-    for (at, born) in slot.iter_mut().zip(&start.layout.main) {
-        if at.is_none() {
-            if let Some(k) = left.iter().position(|&x| x == sym(*born)) {
-                *at = Some(left.remove(k));
-            }
+    fn plan_of(&self, c: &Cand, r: &Realized, hard: usize) -> Plan {
+        Plan {
+            layout: Layout {
+                main: r.syms.iter().map(|&k| SYMS[k as usize]).collect(),
+                exilus: self.board.exilus.and(SYMS[c.e as usize]),
+                grant: self.board.grant.and(SYMS[c.g as usize]),
+            },
+            cost: c.cost,
+            rank: c.rank,
+            capacity: c.capacity,
+            loadouts: r.placed[..hard.min(r.placed.len())].to_vec(),
+            exhaustive: true,
         }
     }
-    for at in slot.iter_mut().filter(|x| x.is_none()) {
-        *at = Some(left.remove(0));
-    }
-    let slot: Vec<usize> = slot.into_iter().map(|x| x.expect("every slot has a colour")).collect();
-
-    let placed = loadouts
-        .iter()
-        .enumerate()
-        .map(|(li, l)| {
-            let mut slots = vec![None; n];
-            let own: Vec<(usize, Card)> =
-                l.main.iter().enumerate().filter_map(|(p, c)| c.map(|c| (p, c))).collect();
-            let main = if li == 0 {
-                for &(p, _) in &own {
-                    slots[p] = Some(p);
-                }
-                own.iter().map(|&(p, c)| slot_drain(c.drain, c.polarity, SYMS[slot[p]])).sum()
-            } else {
-                let cards: Vec<Card> = own.iter().map(|&(_, c)| c).collect();
-                let (d, at) = main_drain(&cards, &slot);
-                for (r, &(p, _)) in own.iter().enumerate() {
-                    slots[at[r]] = Some(p);
-                }
-                d
-            };
-            let drain = main + l.exilus.map_or(0, |c| slot_drain(c.drain, c.polarity, SYMS[e]));
-            let grant = l.grant.map_or(0, |c| grant_on(c, SYMS[g]));
-            Placed { slots, drain, grant, spare: (billed.capacity + grant) as i32 - drain as i32 }
-        })
-        .collect();
-
-    Some(Plan {
-        layout: Layout {
-            main: slot.iter().map(|&k| SYMS[k]).collect(),
-            exilus: board.exilus.and(SYMS[e]),
-            grant: board.grant.and(SYMS[g]),
-        },
-        cost: billed.cost,
-        rank: billed.rank,
-        capacity: billed.capacity,
-        loadouts: placed,
-    })
 }
 
 #[cfg(test)]
@@ -709,7 +1255,7 @@ mod tests {
     use Polarity::*;
 
     fn c(drain: u32, polarity: Polarity) -> Option<Card> {
-        Some(Card { drain, polarity })
+        Some(Card { drain, polarity, ordered: false })
     }
     fn gun(main: [Option<Polarity>; 8], exilus: Option<Polarity>) -> Board {
         Board { base_max_rank: 30, main: main.to_vec(), exilus: Some(exilus), grant: None }
@@ -750,6 +1296,7 @@ mod tests {
         assert!(both.loadouts.iter().all(|l| l.spare == 1), "{:?}", both.loadouts);
         // The first config did not move; the second was rearranged onto it.
         assert_eq!(both.loadouts[0].slots, (0..8).map(Some).collect::<Vec<_>>());
+        assert_eq!(both.loadouts[0].moved, 0);
     }
 
     /// Two configs whose heavy mods want different colours in slots that one
@@ -808,7 +1355,7 @@ mod tests {
         };
         let mut main = vec![c(16, Umbra), c(16, Umbra)];
         main.extend([c(12, Madurai); 6]);
-        let l = Loadout { main, exilus: None, grant: Some(Card { drain: 7, polarity: Madurai }) };
+        let l = Loadout { main, exilus: None, grant: Some(Card { drain: 7, polarity: Madurai, ordered: false }) };
         // 104 drain against 60 + 14.
         let p = plan(&b, std::slice::from_ref(&l), Rules::default(), None).unwrap();
         assert_eq!(p.cost.umbra, 0, "{p:?}");
@@ -835,6 +1382,108 @@ mod tests {
         assert_eq!(p.loadouts[0].spare, 60 - 64);
     }
 
+
+    fn e(drain: u32, polarity: Polarity) -> Option<Card> {
+        Some(Card { drain, polarity, ordered: true })
+    }
+
+    /// THE GREEDY IS THE ASSIGNMENT. `free_drain` stands in for the Hungarian
+    /// method wherever thousands of builds are read, so on random cards and
+    /// random slot multisets the two must agree to the point.
+    #[test]
+    fn free_drain_is_the_optimal_assignment() {
+        let mut rng = 0x2545_f491_u64;
+        let mut next = |m: u64| {
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            rng ^= rng << 17;
+            rng % m
+        };
+        let pols = [Polarity::Madurai, Polarity::Naramon, Polarity::Vazarin, Polarity::Umbra];
+        for _ in 0..200_000 {
+            let n = 1 + next(9) as usize;
+            let k = next(n as u64 + 1) as usize;
+            let cards: Vec<Card> = (0..k)
+                .map(|_| Card { drain: 1 + next(20) as u32, polarity: pols[next(4) as usize], ordered: false })
+                .collect();
+            let syms: Vec<u8> = (0..n).map(|_| [BLANK, 1, 2, 3, UMBRA, AURA, OMNI][next(7) as usize] as u8).collect();
+            let (want, _) = assign(k, n, |r, c| i64::from(cost_on(cards[r], syms[c] as usize)));
+            let got = free_drain(&Prepared::of(&Loadout { main: cards.iter().map(|&c| Some(c)).collect(), ..Default::default() }).sorted, &syms);
+            assert_eq!(i64::from(got), want, "{cards:?} on {syms:?}");
+        }
+    }
+
+    /// AN ELEMENT PAIRING SURVIVES THE MOVE. The first config puts Madurai
+    /// before Naramon; the second's Naramon element comes before its Madurai
+    /// one and both must sit on their colour to fit. Swapping the two mods
+    /// would be free and reorder the elements, so the colours move instead.
+    #[test]
+    fn moved_element_mods_keep_their_order() {
+        let b = gun([None; 8], None);
+        let fill = [c(13, Vazarin); 6];
+        let mut first = vec![c(15, Madurai), c(15, Naramon)];
+        first.extend(fill);
+        let mut second = vec![e(15, Naramon), e(15, Madurai)];
+        second.extend(fill);
+        // All matched: 8 + 8 + 6 x 7 = 58. One of the two left bare: 65.
+        let r = Rules { reach_max_rank: false, ..Rules::default() };
+        let p = plan(&b, &[load(&first), load(&second)], r, None).unwrap();
+        assert!(p.loadouts.iter().all(|l| l.spare >= 0), "{p:?}");
+        let slots = &p.loadouts[1].slots;
+        let at = |from: usize| slots.iter().position(|&x| x == Some(from)).unwrap();
+        assert!(at(0) < at(1), "{slots:?} on {:?}", p.layout.main);
+    }
+
+    /// FIXED ORDER: nothing moves, so a slot serves whatever every config keeps
+    /// there — two configs that disagree at slot 0 take an Omni Forma there.
+    #[test]
+    fn a_fixed_order_serves_each_slot_as_it_stands() {
+        let b = gun([None; 8], None);
+        let a = load(&[c(18, Madurai), c(18, Naramon), c(10, Naramon), c(10, Naramon),
+                       c(4, Naramon), c(4, Naramon), c(4, Naramon), c(4, Naramon)]);
+        let z = load(&[c(18, Naramon), c(18, Madurai), c(10, Naramon), c(10, Naramon),
+                       c(4, Naramon), c(4, Naramon), c(4, Naramon), c(4, Naramon)]);
+        // 72 each, 12 to save: an 18 halved and a 10 halved, and nothing less.
+        let free = Rules { reach_max_rank: false, ..Rules::default() };
+        let moved = plan(&b, &[a.clone(), z.clone()], free, None).unwrap();
+        assert_eq!(moved.cost.total(), 2, "moving mods, one Madurai and one Naramon serve both");
+        let fixed = Rules { fixed_order: true, omni: OmniUse::Allowed, ..free };
+        let p = plan(&b, &[a.clone(), z.clone()], fixed, None).unwrap();
+        assert!(p.loadouts.iter().all(|l| l.moved == 0 && l.slots[..8].iter().enumerate().all(|(i, &s)| s == Some(i))));
+        assert!(p.loadouts.iter().all(|l| l.spare >= 0), "{p:?}");
+        assert_eq!(p.cost.total(), 2);
+        assert!(p.cost.omni > 0, "the two first slots disagree: {:?}", p.layout.main);
+        // Without Omni the fixed answer has to buy more.
+        let p = plan(&b, &[a, z], Rules { omni: OmniUse::Never, ..fixed }, None).unwrap();
+        assert!(p.cost.total() > 2, "{:?}", p.cost);
+    }
+
+    /// THE PLAN'S OPTIMIZER: each point is the cheapest layout for its worst
+    /// group, and the curve climbs.
+    #[test]
+    fn coverage_climbs_with_forma() {
+        let b = gun([None; 8], None);
+        let heavy = |p: Polarity| GroupBuild {
+            loadout: load(&[c(16, p), c(16, p), c(16, p), c(16, p), c(4, Naramon), c(4, Naramon), None, None]),
+            ratio: 1.0,
+        };
+        let light = GroupBuild { loadout: load(&[c(10, Madurai), c(10, Vazarin), c(10, Naramon)]), ratio: 0.5 };
+        let groups = vec![
+            Group { builds: vec![heavy(Madurai), light.clone()] },
+            Group { builds: vec![heavy(Vazarin), light.clone()] },
+        ];
+        let r = Rules { reach_max_rank: false, ..Rules::default() };
+        let cov = optimize(&b, &[], &groups, 0.0, r, None).unwrap();
+        assert!(cov.exhaustive);
+        let pts: Vec<(u32, f64)> = cov.curve.iter().map(|p| (p.plan.cost.total(), p.worst)).collect();
+        // Free: only the light build fits. 72 heavy needs two halvings each: 2 + 2.
+        assert_eq!(pts.first(), Some(&(0, 0.5)), "{pts:?}");
+        assert_eq!(pts.last().map(|p| p.1), Some(1.0), "{pts:?}");
+        assert_eq!(pts.last().map(|p| p.0), Some(4), "{pts:?}");
+        let top = cov.curve.last().unwrap();
+        assert!(top.picks.iter().all(|p| p.as_ref().is_some_and(|p| p.build == 0 && p.placed.spare >= 0)));
+    }
+
     /// A PARTIAL START: what the item already carries is free, and the Forma
     /// already spent count toward its rank.
     #[test]
@@ -844,10 +1493,21 @@ mod tests {
         let mut layout = b.innate();
         layout.main[0] = Some(Madurai);
         layout.main[1] = Some(Madurai);
-        let start = Start { layout, forma_spent: 5 };
+        let mut start = Start { layout, forma_spent: 5, pinned: false };
+        start.layout.main.swap(1, 5);
         let l = load(&[c(10, Madurai); 8]);
         let p = plan(&b, &[l], Rules::default(), Some(&start)).unwrap();
         assert_eq!((p.cost.total(), p.capacity), (0, 80));
+        // PINNED, the slots stay exactly where the start has them — here on
+        // two slots a free placement would leave bare, with the mods moved on.
+        let mut light = vec![None, None];
+        light.extend([c(10, Madurai); 6]);
+        let loose = plan(&b, &[load(&light)], Rules::default(), Some(&start)).unwrap();
+        assert_ne!(loose.layout.main, start.layout.main);
+        start.pinned = true;
+        let p = plan(&b, &[load(&light)], Rules::default(), Some(&start)).unwrap();
+        assert_eq!(p.layout.main, start.layout.main);
+        assert_eq!(p.loadouts[0].spare, 80 - 5 - 5 - 40);
     }
 
     /// THE EXISTING PLANNER, AGREED WITH. `mods::fit` is greedy and serves the
@@ -871,7 +1531,7 @@ mod tests {
                 .collect();
             let count = 1 + next(9) as usize;
             let cards: Vec<Card> = (0..count)
-                .map(|_| Card { drain: 2 + next(15) as u32, polarity: pols[next(4) as usize] })
+                .map(|_| Card { drain: 2 + next(15) as u32, polarity: pols[next(4) as usize], ordered: false })
                 .collect();
             let stance = (next(3) == 0).then(|| (pols[next(3) as usize], [None, Some(Madurai), Some(Naramon)][next(3) as usize]));
             let inv = Investment { use_umbra: false, ..Investment::default() };
@@ -895,7 +1555,7 @@ mod tests {
             let l = Loadout {
                 main,
                 exilus: cards.get(8).copied(),
-                grant: stance.map(|(m, _)| Card { drain: 5, polarity: m }),
+                grant: stance.map(|(m, _)| Card { drain: 5, polarity: m, ordered: false }),
             };
             let new = plan(&board, &[l], Rules::default(), None);
             match (old, new) {

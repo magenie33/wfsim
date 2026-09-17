@@ -6,8 +6,10 @@
 // rules are global: a Catalyst switched off halves the capacity line, a Forma
 // limit refuses in the page's own words, and a Warframe plans through the same
 // box. The box is a BLOCK OF ITS OWN under the build bar on both pages: it
-// belongs to the item and its builds, not to one build's mods.
-// docs/INVESTMENT.md §The planner.
+// belongs to the item and its builds, not to one build's mods. With mods kept
+// in place nothing moves. Planning ahead over the Torid's board draws a curve
+// that climbs, saves a pick already placed on its point, and places the ticked
+// builds onto a point for nothing more. docs/INVESTMENT.md §The planner.
 //
 //   node scripts/check_forma_group.mjs
 //
@@ -68,6 +70,47 @@ const r = await evaluate(`(async () => {
   set('forma_limit', '');
   out.limit = formaRules().forma_limit;
 
+  // MODS STAY IN PLACE: neither build's mods move.
+  set('fixed_order', true);
+  const mods0 = slots.slice(0, 8).map((s) => s.mod).join();
+  const bOf = () => JSON.parse(localStorage.getItem('wfsim-presets-torid-builder-builds'))
+    .find((p) => p.name === 'B').state.slots.slice(0, 8).map((s) => s.mod).join();
+  const b0 = bOf();
+  document.getElementById('forma-plan').querySelector('.fp-run').click();
+  await sleep(3000);
+  out.fixed = { fits: !!(formaNotes.builder && formaNotes.builder.r && formaNotes.builder.r.fits),
+    open: slots.slice(0, 8).map((s) => s.mod).join() === mods0,
+    b: bOf() === b0 };
+  set('fixed_order', false);
+
+  // PLAN AHEAD over the whole board, with A and B as hard loadouts.
+  const fb = document.getElementById('forma-plan');
+  fb.querySelector('.fp-reach-run').click();
+  for (let i = 0; i < 150 && (!formaReach || formaReach.busy); i++) await sleep(200);
+  const x = formaReach || {};
+  const curve = (x.r && x.r.curve) || [];
+  out.reach = { ok: !!(x.r && x.r.fits), groups: (x.groups || []).length,
+    points: curve.map((p) => [p.plan.regular + p.plan.umbra + p.plan.omni, p.worst]),
+    sel: x.sel };
+  const pt = curve[x.sel];
+  const save = document.getElementById('forma-plan').querySelector('[data-save]');
+  if (pt && save) {
+    const gi = Number(save.dataset.save);
+    save.click(); await sleep(300);
+    const ps = JSON.parse(localStorage.getItem('wfsim-presets-torid-builder-builds'));
+    const made = ps[ps.length - 1];
+    const row = x.groups[gi].builds[pt.picks[gi].build].row;
+    out.saved = { pols: made.state.slots.slice(0, 8).map((s) => s.pol).join(),
+      layout: pt.plan.layout.main.map((p) => p || null).join(),
+      mods: made.state.slots.slice(0, 9).map((s) => s.mod).filter(Boolean).length,
+      rowMods: (row.mods || []).length + (row.exilus && row.exilus !== 'none' ? 1 : 0) };
+    document.getElementById('forma-plan').querySelector('[data-apply]').click();
+    await sleep(3000);
+    const n = formaNotes.builder && formaNotes.builder.r;
+    out.applied = { fits: !!(n && n.fits), live: slots.slice(0, 8).map((s) => s.pol || null).join(),
+      layout: pt.plan.layout.main.map((p) => p || null).join() };
+  }
+
   // …AND A FRAME PLANS THROUGH THE SAME BOX, under the same rules.
   history.pushState({}, '', '/warframes/Valkyr'); route(); await sleep(4000);
   const heavy = WFCAT.mods.filter((m) => !m.aura && !m.exilus && m.polarity === 'Madurai')
@@ -98,6 +141,17 @@ check("the table has a row per build", r.table === 3, String(r.table));
 check("a Catalyst switched off halves the capacity", /\/ 30$/.test(r.capOff) && /\/ 60$/.test(r.capOn), `${r.capOff} ${r.capOn}`);
 check("a limit refuses in the page's own words", /超过你设的上限 1/.test(r.refusal), r.refusal);
 check("clearing the limit stores none", r.limit === null, String(r.limit));
+check("with mods in place, nothing moves", r.fixed.fits && r.fixed.open && r.fixed.b, JSON.stringify(r.fixed));
+const pts = (r.reach && r.reach.points) || [];
+check("plan ahead reads every ruler of the board", r.reach.ok && r.reach.groups >= 2, JSON.stringify(r.reach));
+check("…and each point costs more and reaches further than the last",
+  pts.length > 1 && pts.every((p, i) => i === 0 || (p[0] > pts[i - 1][0] && p[1] > pts[i - 1][1])), JSON.stringify(pts));
+check("…and the marked point is the first on the line",
+  pts.findIndex((p) => p[1] >= 0.8 - 1e-9) === r.reach.sel, JSON.stringify(r.reach));
+check("a saved pick wears the point's layout", r.saved && r.saved.pols === r.saved.layout, JSON.stringify(r.saved));
+check("…with every card of its row", r.saved && r.saved.mods === r.saved.rowMods, JSON.stringify(r.saved));
+check("the ticked builds are placed onto the point", r.applied && r.applied.fits
+  && r.applied.live === r.applied.layout, JSON.stringify(r.applied));
 check("a frame plans through the same box", r.frame && r.frame.fits, JSON.stringify(r.frame));
 check("…and its capacity line agrees", r.frame && r.frameCap === `${r.frame.loadouts[0].drain} / ${r.frame.capacity}`, r.frameCap);
 

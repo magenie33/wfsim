@@ -3057,6 +3057,7 @@ function rivenMods() {
       name_en: official,
       subtype: "Riven",
       riven: true,
+      elemental: (st.bonuses || st.positives || []).some((b) => (rivenStat((b && b.id) || b) || {}).elemental),
       // A weapon takes ONE riven. Same family = mutually exclusive, the rule
       // the pool already has — so every list, slot and scope enforces it
       // without knowing what a riven is.
@@ -9333,65 +9334,71 @@ const builtinBuildsUncached = (w) => {
       hint_flat: `${bench ? tr(bench.name) : row.benchmark} · ${
         row.shown != null ? row.shown : (row.score || 0).toFixed(4)}`,
       savedAt: 0,
-      state: buildState(w.id, {
-        mode,
-        // A BOARD ROW HAS NO WIELDER: every ruler scores in the Prototype's hands.
-        wielder: null,
-        // THE RIVEN'S SLOT IS TRANSLATED BACK. A record carries the bare
-        // `riven` at the riven's own position — position is the build — and on
-        // this side a mod id has to name an ITEM. The definition is registered
-        // rather than written: `restoreState` creates it if and when this build
-        // is actually taken.
-        // TEN SLOTS, because a melee row's mod list carries its STANCE with the
-        // rest — appended, and told apart by looking at it. A row from a gun
-        // has nine of these empty and is unchanged.
-        // …AND THE EXILUS SLOT IS ITS OWN FIELD, which this has to put back in
-        // it: `mods` carries the MAINS, so a row read as a flat list restores
-        // eight cards where the board scored nine. The number then disagrees
-        // with the row it was opened from — and on a melee that card is the
-        // Tennokai one, which is most of what the row is.
-        slots: (() => {
-          const ids = (row.mods || []).slice();
-          const si = ids.findIndex((id) => (modById(id) || {}).stance);
-          const stance = si >= 0 ? ids.splice(si, 1)[0] : null;
-          const ex = row.exilus && row.exilus !== "none" ? row.exilus : null;
-          const main = ids.filter((id) => id !== ex);
-          const out = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
-          main.slice(0, 8).forEach((id, i) => { out[i].mod = id; });
-          // A ROW WRITTEN BEFORE THE SLOT WAS RECORDED packed nine into `mods`,
-          // and its ninth card is the exilus one by position — the same
-          // fallback `stateFromBuild` keeps for a share link.
-          out[EXILUS].mod = ex || main[8] || null;
-          if (stance) out[STANCE].mod = stance;
-          return out;
-        })().map((s, k) => {
-          const id = s.mod;
-          if (id !== BOARD_RIVEN_SLOT || !row.riven) return { mod: id, pol: null, rank: null };
-          const local = RIVEN_PREFIX + boardRivenName(row.riven);
-          boardRivenDefs[local] = row.riven;
-          return { mod: local, pol: null, rank: null };
-        }),
-        evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
-        arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
-        arcaneRank: [null],
-        // THE PROGENITOR ELEMENT the row was scored with, at the roll's
-        // MAXIMUM — which is the ruler's own term, not the row's, so it is
-        // taken from the weapon's spec rather than stored per row. Without
-        // this a Kuva row opens at whatever the last build was carrying and
-        // re-running it matches no line on the board.
-        valence: row.valence
-          ? { element: row.valence, bonus: (valenceSpec(w.id) || {}).max || 0 }
-          : null,
-        // THE PARTS the row was scored with, from the row's own two flat
-        // fields. A modular weapon's assembly IS its stat line, so a row that
-        // opened on the default parts would be a build that scores nothing
-        // like the number beside it — which is exactly what a missing `mode`
-        // did to every Incarnon row, and `valence` to seven Kuva Nukors.
-        assembly: row.grip ? { grip: row.grip, loader: row.loader } : null,
-      }),
+      state: boardRowState(w, row),
     };
   });
 };
+/// A BOARD ROW AS A BUILD STATE — what the build bar opens, and what the
+/// Forma optimizer reads and saves.
+function boardRowState(w, row) {
+  const mode = row.mode || "base";
+  return buildState(w.id, {
+    mode,
+    // A BOARD ROW HAS NO WIELDER: every ruler scores in the Prototype's hands.
+    wielder: null,
+    // THE RIVEN'S SLOT IS TRANSLATED BACK. A record carries the bare
+    // `riven` at the riven's own position — position is the build — and on
+    // this side a mod id has to name an ITEM. The definition is registered
+    // rather than written: `restoreState` creates it if and when this build
+    // is actually taken.
+    // TEN SLOTS, because a melee row's mod list carries its STANCE with the
+    // rest — appended, and told apart by looking at it. A row from a gun
+    // has nine of these empty and is unchanged.
+    // …AND THE EXILUS SLOT IS ITS OWN FIELD, which this has to put back in
+    // it: `mods` carries the MAINS, so a row read as a flat list restores
+    // eight cards where the board scored nine. The number then disagrees
+    // with the row it was opened from — and on a melee that card is the
+    // Tennokai one, which is most of what the row is.
+    slots: (() => {
+      const ids = (row.mods || []).slice();
+      const si = ids.findIndex((id) => (modById(id) || {}).stance);
+      const stance = si >= 0 ? ids.splice(si, 1)[0] : null;
+      const ex = row.exilus && row.exilus !== "none" ? row.exilus : null;
+      const main = ids.filter((id) => id !== ex);
+      const out = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
+      main.slice(0, 8).forEach((id, i) => { out[i].mod = id; });
+      // A ROW WRITTEN BEFORE THE SLOT WAS RECORDED packed nine into `mods`,
+      // and its ninth card is the exilus one by position — the same
+      // fallback `stateFromBuild` keeps for a share link.
+      out[EXILUS].mod = ex || main[8] || null;
+      if (stance) out[STANCE].mod = stance;
+      return out;
+    })().map((s, k) => {
+      const id = s.mod;
+      if (id !== BOARD_RIVEN_SLOT || !row.riven) return { mod: id, pol: null, rank: null };
+      const local = RIVEN_PREFIX + boardRivenName(row.riven);
+      boardRivenDefs[local] = row.riven;
+      return { mod: local, pol: null, rank: null };
+    }),
+    evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
+    arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
+    arcaneRank: [null],
+    // THE PROGENITOR ELEMENT the row was scored with, at the roll's
+    // MAXIMUM — which is the ruler's own term, not the row's, so it is
+    // taken from the weapon's spec rather than stored per row. Without
+    // this a Kuva row opens at whatever the last build was carrying and
+    // re-running it matches no line on the board.
+    valence: row.valence
+      ? { element: row.valence, bonus: (valenceSpec(w.id) || {}).max || 0 }
+      : null,
+    // THE PARTS the row was scored with, from the row's own two flat
+    // fields. A modular weapon's assembly IS its stat line, so a row that
+    // opened on the default parts would be a build that scores nothing
+    // like the number beside it — which is exactly what a missing `mode`
+    // did to every Incarnon row, and `valence` to seven Kuva Nukors.
+    assembly: row.grip ? { grip: row.grip, loader: row.loader } : null,
+  });
+}
 /// A BOARD ROW, OPENED. `?bench=<id>` names the ruler the row was read under,
 /// `?mode=` how the weapon was played; together they identify exactly one
 /// official build, and the row is not reproducible without both halves — so
@@ -10542,17 +10549,30 @@ function placeFormaPlan(ss, plan, k) {
 
 /// A weapon build as the planner reads it. A stance hands back five on a bare
 /// slot (`mods::STANCE_CAPACITY_GRANT`).
-function weaponLoadout(ss) {
+/// An ELEMENT-BEARING card is `ordered`: its place among the others is part of
+/// the build, so the plan moves it only in order.
+function weaponLoadout(ss, strict = false) {
+  let unread = false;
   const card = (s) => {
-    const m = s && s.mod ? modById(s.mod) : null;
-    return m ? { drain: modDrain(m, s.rank), polarity: m.polarity } : null;
+    if (!s || !s.mod) return null;
+    // A BOARD RIVEN that has not been taken yet: its shape is all there is.
+    const rv = isRivenId(s.mod) && !modById(s.mod) ? boardRivenDefs[s.mod] : null;
+    if (rv) {
+      const st = boardRivenState(rv);
+      return { drain: 2 + 2 * st.rank, polarity: polCap(st.polarity),
+        ordered: (rv.bonuses || []).some((id) => (rivenStat(id) || {}).elemental) };
+    }
+    const m = modById(s.mod);
+    if (!m) { unread = true; return null; }
+    return { drain: modDrain(m, s.rank), polarity: m.polarity, ordered: !!m.elemental };
   };
   const st = ss[STANCE] && ss[STANCE].mod ? modById(ss[STANCE].mod) : null;
-  return {
+  const out = {
     main: ss.slice(0, 8).map(card),
     exilus: weaponAxes().hasExilus ? card(ss[EXILUS]) : null,
     grant: st ? { drain: 5, polarity: st.polarity } : null,
   };
+  return strict && unread ? null : out;
 }
 /// A stored build's slots, repaired against this weapon's pool.
 const storedSlots = (st) => Array.from({ length: 10 }, (_, i) => {
@@ -10570,18 +10590,27 @@ function weaponFormaPartners() {
 /// Plan the open build — with its partners unless `alone` — and write the
 /// layout into every one of them. Resolves to the answer, or null when the
 /// build changed while the engine was thinking and the answer is not for it.
-async function autoForma({ alone = false } = {}) {
+/// `onto`: a layout already chosen (the optimizer's point) — the builds are
+/// placed on it for no further Forma, and its own bill is what is shown.
+async function autoForma({ alone = false, onto = null } = {}) {
   const w = $("weapon").value;
   const live = slots;
   const sig = () => JSON.stringify(live.map((s) => [s.mod, s.rank]));
   const before = sig();
   const partners = alone ? [] : weaponFormaPartners();
   const names = [presetLabel(buildNamed(activePreset)) || tr("this build"), ...partners.map(presetLabel)];
+  const rules = formaRules();
   const r = await api("/api/forma/plan", {
-    weapon: w, rules: formaRules(),
+    weapon: w,
+    rules: onto ? { ...rules, forma_limit: 0 } : rules,
+    start: onto ? { layout: onto.layout, forma_spent: onto.regular + onto.umbra + onto.omni, pinned: true } : null,
     loadouts: [weaponLoadout(live), ...partners.map((p) => weaponLoadout(storedSlots(p.state)))],
   });
   if (slots !== live || $("weapon").value !== w || sig() !== before) return null;
+  if (r && r.ok && onto) {
+    if (r.fits) Object.assign(r, { regular: onto.regular, umbra: onto.umbra, omni: onto.omni });
+    else { r.reason = { kind: "layout_misfit" }; r.closest = null; }
+  }
   formaNotes.builder = { r, names, at: `${w}\u0000${activePreset}` };
   if (!r || !r.ok || !r.fits) return formaRefused(r, live, "forma-plan");
   placeFormaPlan(live, r, 0);
@@ -10640,6 +10669,8 @@ function formaRefusal(reason, names) {
         + (reason.umbra_off ? " " + tr("— an Umbra mod pays full drain while Umbra Forma is off") : "");
     case "cannot_share":
       return tr("each of these builds fits on its own, but no one layout serves them all");
+    case "layout_misfit":
+      return tr("the ticked builds do not all fit that layout");
     default:
       return tr("no plan");
   }
@@ -10665,10 +10696,10 @@ function renderFormaPlan(box, ctx) {
     const bill = [`${p.regular} Forma`, p.umbra ? `${p.umbra} Umbra` : null, p.omni ? `${p.omni} Omni` : null]
       .filter(Boolean).join(" · ");
     const rows = p.loadouts.map((l, i) => `<tr><td>${escHtml(note.names[i] || "")}</td>`
-      + `<td>${l.drain} / ${p.capacity + l.grant}</td><td>${l.spare}</td></tr>`).join("");
+      + `<td>${l.drain} / ${p.capacity + l.grant}</td><td>${l.spare}</td><td>${l.moved || ""}</td></tr>`).join("");
     result = `<div class="fp-bill"><b>${escHtml(bill)}</b> · ${escHtml(tr("rank"))} ${p.rank}</div>`
       + `<table class="fp-table"><tr><th>${escHtml(tr("Builds"))}</th><th>${escHtml(tr("capacity"))}</th>`
-      + `<th>${escHtml(tr("spare"))}</th></tr>${rows}</table>`;
+      + `<th>${escHtml(tr("spare"))}</th><th>${escHtml(tr("mods moved"))}</th></tr>${rows}</table>`;
   } else if (note && note.r && note.r.ok) {
     result = `<div class="warn">${escHtml(formaRefusal(note.r.reason, note.names))}</div>`;
   } else if (note) {
@@ -10679,6 +10710,7 @@ function renderFormaPlan(box, ctx) {
     + tick("catalyst", ctx.catalystLabel, "doubles capacity")
     + tick("reach_max_rank", "Reach max rank", "spend at least the Forma the item's max rank takes — five on a rank-40 weapon — even where the build needs fewer")
     + (ctx.grantLabel ? tick("grant_slot_first", ctx.grantLabel, "once any Forma is spent, polarize the slot that grants capacity first: it costs at most one Forma over the minimum") : "")
+    + tick("fixed_order", "Mods stay in place", "no mod is moved: each slot's polarity serves whatever every build keeps there, which can take more Forma or Omni Forma. Off, mods are moved onto the layout and element mods keep their order")
     + `</div>`
     + `<label class="fp-pick">Omni Forma <select data-r="omni_forma">${opt("omni_forma",
       [["never", "never"], ["allowed", "where it saves a Forma"], ["preferred", "for every polarization"]])}</select></label>`
@@ -10695,7 +10727,9 @@ function renderFormaPlan(box, ctx) {
       : `<span class="fp-dim">${escHtml(tr("a board build is planned on its own"))}</span>`)
     + `</div><div class="exhint">${escHtml(tr("Builds of one item share its polarities. The plan finds one layout every ticked build fits, and moves the other builds' mods onto it."))}</div>`
     + `<div class="fp-foot"><button class="ghost-btn small fp-run">${escHtml(tr("plan Forma"))}</button>`
-    + `<div class="fp-result">${result}</div></div>`;
+    + `<div class="fp-result">${result}</div></div>`
+    + (ctx.reach ? `<div class="fp-reach">${renderFormaReach()}</div>` : "");
+  if (ctx.reach) wireFormaReach(box);
   box.querySelectorAll("[data-r]").forEach((el) => {
     el.addEventListener("change", () => {
       const next = formaRules();
@@ -10730,6 +10764,189 @@ function renderBuilderFormaPlan() {
     grantLabel: weaponAxes().hasStance ? "Stance slot first" : null,
     plan: async () => { await autoForma(); renderMods(); },
     changed: () => renderMods(),
+    reach: true,
+  });
+}
+
+// ---- THE PLAN'S OPTIMIZER ----------------------------------------------
+//
+// What one layout reaches across whole board rulers: for each ruler, the best
+// of its builds that fits, as a share of that ruler's leader, and what each
+// Forma buys (`/api/forma/optimize`, docs/INVESTMENT.md §The optimizer of the
+// plan). It
+// only reads; saving a build and placing the builds onto a point are buttons.
+const formaReachKey = (w) => `wfsim-forma-reach-${w}`;
+function formaReachScope(w) {
+  let x = {};
+  try { x = JSON.parse(localStorage.getItem(formaReachKey(w)) || "{}") || {}; } catch (_) { x = {}; }
+  return {
+    // null is every ruler the weapon has rows under.
+    benchmarks: Array.isArray(x.benchmarks) ? x.benchmarks : null,
+    riven: !!x.riven,
+    threshold: Number.isFinite(x.threshold) ? x.threshold : 0.8,
+    hard: x.hard !== false,
+  };
+}
+function storeFormaReachScope(w, x) {
+  try { localStorage.setItem(formaReachKey(w), JSON.stringify(x)); } catch (_) { /* kept for this page only */ }
+}
+let formaReach = null;
+
+const boardRulersOf = (w) => {
+  const have = new Set((BOARD[w] || []).map((r) => r.benchmark));
+  return benchList().map((b) => b.id).filter((id) => have.has(id));
+};
+
+/// Each ruler's rows as the planner reads them, with their share of the leader
+/// among the rows in scope. A row with a card this page cannot read is left out
+/// rather than read light.
+function formaReachGroups(w, scope) {
+  const rows = (BOARD[w.id] || []).filter((r) => scope.riven || !rowHasRiven(r));
+  const want = scope.benchmarks || boardRulersOf(w.id);
+  return want.map((b) => {
+    const mine = rows.filter((r) => r.benchmark === b);
+    const lead = Math.max(0, ...mine.map((r) => r.score || 0));
+    const builds = [];
+    for (const row of mine) {
+      const st = boardRowState(w, row);
+      const loadout = weaponLoadout(st.slots, true);
+      if (loadout) builds.push({ row, st, loadout, ratio: lead > 0 ? (row.score || 0) / lead : 0 });
+    }
+    return { benchmark: b, builds };
+  }).filter((g) => g.builds.length);
+}
+
+async function runFormaReach() {
+  const w = weaponInfo($("weapon").value);
+  const scope = formaReachScope(w.id);
+  const groups = formaReachGroups(w, scope);
+  if (!groups.length) {
+    formaReach = { at: w.id, error: tr("no board builds in this scope") };
+    return;
+  }
+  const hard = scope.hard && !officialBuildActive()
+    ? [weaponLoadout(slots), ...weaponFormaPartners().map((p) => weaponLoadout(storedSlots(p.state)))]
+    : [];
+  formaReach = { at: w.id, busy: true };
+  renderBuilderFormaPlan();
+  const r = await api("/api/forma/optimize", {
+    weapon: w.id, rules: formaRules(), hard, floor: 0,
+    groups: groups.map((g) => ({ builds: g.builds.map((b) => ({ loadout: b.loadout, ratio: b.ratio })) })),
+  });
+  if ($("weapon").value !== w.id) return;
+  const curve = (r && r.curve) || [];
+  const hit = curve.findIndex((p) => p.worst >= scope.threshold - 1e-9);
+  formaReach = { at: w.id, r, groups, scope, sel: hit >= 0 ? hit : curve.length - 1 };
+}
+
+/// A ruler's name cut to its first two terms — what it is and what it fights.
+/// The whole name rides in the tooltip.
+const benchmarkShort = (id) => benchmarkName(id).split(" · ").slice(0, 2).join(" · ");
+const reachPct = (x) => `${Math.floor(x * 1000) / 10}%`;
+const reachBill = (p) => [`${p.regular} Forma`, p.umbra ? `${p.umbra} Umbra` : null, p.omni ? `${p.omni} Omni` : null]
+  .filter(Boolean).join(" · ");
+const reachLayout = (p) => p.layout.main.map((x) => (x ? polGlyph(x) : '<span class="nopol">◇</span>')).join("")
+  + (p.layout.exilus ? ` <span class="fp-dim">E</span>${polGlyph(p.layout.exilus)}` : "")
+  + (p.layout.grant ? ` <span class="fp-dim">S</span>${polGlyph(p.layout.grant)}` : "");
+
+function renderFormaReach() {
+  const w = presetWeapon();
+  const scope = formaReachScope(w);
+  const rulers = boardRulersOf(w);
+  const on = new Set(scope.benchmarks || rulers);
+  const tickR = rulers.map((b) => `<label class="fp-tick"><input type="checkbox" data-rb="${escHtml(b)}"`
+    + `${on.has(b) ? " checked" : ""}> <span title="${escHtml(benchmarkName(b))}">${escHtml(benchmarkShort(b))}</span></label>`).join("");
+  const head = `<div class="exlabel">${escHtml(tr("Plan ahead"))} · ${escHtml(tr("one layout across the board"))}</div>`;
+  if (!rulers.length) return head + `<div class="fp-dim">${escHtml(tr("no board builds in this scope"))}</div>`;
+  let out = "";
+  const x = formaReach && formaReach.at === w ? formaReach : null;
+  if (x && x.busy) out = `<div class="fp-dim">${escHtml(tr("working…"))}</div>`;
+  else if (x && x.error) out = `<div class="warn">${escHtml(x.error)}</div>`;
+  else if (x && x.r && !x.r.ok) out = `<div class="warn">${escHtml(x.r.error || tr("no plan"))}</div>`;
+  else if (x && x.r && !x.r.fits) out = `<div class="warn">${escHtml(formaRefusal(x.r.reason, []))}</div>`;
+  else if (x && x.r) {
+    const curve = x.r.curve || [];
+    const rows = curve.map((p, i) => `<tr class="fp-pt${i === x.sel ? " on" : ""}" data-pt="${i}">`
+      + `<td>${escHtml(reachBill(p.plan))}</td><td>${reachPct(p.worst)}`
+      + `${p.worst >= x.scope.threshold - 1e-9 ? ` <span class="fp-ok">${escHtml(tr("meets the line"))}</span>` : ""}</td>`
+      + `<td class="fp-lay">${reachLayout(p.plan)}</td></tr>`).join("");
+    const pt = curve[x.sel];
+    const picks = pt ? x.groups.map((g, gi) => {
+      const k = pt.picks[gi];
+      const b = k && g.builds[k.build];
+      const what = b
+        ? `${escHtml(modeLabel(weaponInfo(w), b.row.mode || "base") || "")}${rowHasRiven(b.row) ? ` <span class="bl-riven">${escHtml(tr("riven"))}</span>` : ""}`
+          + ` · <b>${reachPct(k.ratio)}</b> · ${b.row.shown ?? (b.row.score || 0).toFixed(2)}`
+          + ` <button class="ghost-btn small" data-save="${gi}">${escHtml(tr("save as a build"))}</button>`
+        : `<span class="warn">${escHtml(tr("no build here fits this layout"))}</span>`;
+      return `<tr><td title="${escHtml(benchmarkName(g.benchmark))}">${escHtml(benchmarkShort(g.benchmark))}</td><td>${what}</td></tr>`;
+    }).join("") : "";
+    out = `<table class="fp-table fp-curve"><tr><th>Forma</th><th>${escHtml(tr("weakest ruler"))}</th>`
+      + `<th>${escHtml(tr("polarities"))}</th></tr>${rows}</table>`
+      + (x.r.exhaustive ? "" : `<div class="warn">${escHtml(tr("the search ran out of budget, so this is the best found rather than the best there is"))}</div>`)
+      + (pt ? `<table class="fp-table">${picks}</table>`
+        + `<button class="ghost-btn small" data-apply="1">${escHtml(tr("place the ticked builds on these polarities"))}</button>` : "");
+  }
+  return head
+    + `<div class="fp-group">${tickR}</div>`
+    + `<div class="fp-rules">`
+    + `<label class="fp-tick"><input type="checkbox" data-rs="riven"${scope.riven ? " checked" : ""}> ${escHtml(tr("count riven builds"))}</label>`
+    + `<label class="fp-tick"><input type="checkbox" data-rs="hard"${scope.hard ? " checked" : ""}> ${escHtml(tr("the ticked builds must fit too"))}</label>`
+    + `<label class="fp-pick">${escHtml(tr("the line"))} <input type="number" min="1" max="100" step="1" data-rs="threshold" value="${Math.round(scope.threshold * 100)}"></label>`
+    + `</div><div class="exhint">${escHtml(tr("A ruler is covered by the best of its builds that fits: the line is how close to that ruler's leader it has to come."))}</div>`
+    + `<div class="fp-foot"><button class="ghost-btn small fp-reach-run">${escHtml(tr("work it out"))}</button>`
+    + `<div class="fp-result">${out}</div></div>`;
+}
+
+function wireFormaReach(box) {
+  const w = presetWeapon();
+  const change = (f) => { const x = formaReachScope(w); f(x); storeFormaReachScope(w, x); };
+  box.querySelectorAll("[data-rb]").forEach((el) => el.addEventListener("change", () => change((x) => {
+    const on = new Set(x.benchmarks || boardRulersOf(w));
+    if (el.checked) on.add(el.dataset.rb); else on.delete(el.dataset.rb);
+    x.benchmarks = boardRulersOf(w).filter((b) => on.has(b));
+  })));
+  box.querySelectorAll("[data-rs]").forEach((el) => el.addEventListener("change", () => {
+    change((x) => {
+      const k = el.dataset.rs;
+      if (k === "threshold") x.threshold = Math.min(100, Math.max(1, Number(el.value) || 80)) / 100;
+      else x[k] = el.checked;
+    });
+    // The line only chooses which point is marked; the curve stands.
+    if (formaReach && formaReach.at === w && formaReach.r && el.dataset.rs === "threshold") {
+      formaReach.scope = formaReachScope(w);
+      const hit = (formaReach.r.curve || []).findIndex((p) => p.worst >= formaReach.scope.threshold - 1e-9);
+      if (hit >= 0) formaReach.sel = hit;
+      renderBuilderFormaPlan();
+    }
+  }));
+  const run = box.querySelector(".fp-reach-run");
+  if (run) run.addEventListener("click", async () => { await runFormaReach(); renderBuilderFormaPlan(); });
+  box.querySelectorAll("[data-pt]").forEach((el) => el.addEventListener("click", () => {
+    formaReach.sel = Number(el.dataset.pt);
+    renderBuilderFormaPlan();
+  }));
+  box.querySelectorAll("[data-save]").forEach((el) => el.addEventListener("click", () => {
+    const x = formaReach;
+    const pt = x.r.curve[x.sel];
+    const gi = Number(el.dataset.save);
+    const k = pt.picks[gi];
+    const b = x.groups[gi].builds[k.build];
+    const st = JSON.parse(JSON.stringify(b.st));
+    placeFormaPlan(st.slots, { layout: pt.plan.layout, loadouts: [k.placed] }, 0);
+    const ps = loadPresetList(BUILDS);
+    const name = freeName(ps, (n) => `${benchmarkShort(x.groups[gi].benchmark)} ${reachPct(k.ratio)}${n > 1 ? ` ${n}` : ""}`);
+    ps.push({ name, savedAt: Date.now(), state: st });
+    storePresetList(BUILDS, ps);
+    el.textContent = `✓ ${name}`;
+    el.disabled = true;
+    renderPresetBar();
+  }));
+  const apply = box.querySelector("[data-apply]");
+  if (apply) apply.addEventListener("click", async () => {
+    const pt = formaReach.r.curve[formaReach.sel];
+    await autoForma({ onto: pt.plan });
+    renderMods();
   });
 }
 
