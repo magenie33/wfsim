@@ -126,6 +126,56 @@ the player's and not the build's:
 | use Umbra Forma | **off** | precious. With it off the planner may not use Umbra polarity, so an Umbra mod pays full or mismatched drain |
 | polarise to max | **on** | 5 polarisations is what full mastery needs, even when the build would fit with 3 |
 
+## The planner
+
+`engine::forma::plan` answers for ONE item and ANY NUMBER of its configs,
+under the player's RULES. The item is a `Board` (a weapon or a Warframe:
+main slots, an exilus slot, and a slot that GRANTS capacity — the stance or
+the aura); each config is a `Loadout`.
+
+**THE CONFIGS SHARE ONE LAYOUT.** Polarity is the item's, and every config on
+it sees the same slots, while each config places its mods where it likes. So
+the answer is one multiset of polarities, plus the exilus slot's and the grant
+slot's — the only two that are positional, because only one kind of card goes
+there. Planning each config alone and merging does not work: the merged
+colours outnumber the slots.
+
+**THE ANSWER IS EXHAUSTIVE.** The alphabet is a bare slot, the colours the item
+carries, the colours some card matches, and Omni when the rules allow it; every
+multiset over it is billed and the cheapest bucket is placed. A colour nobody
+carries only ever mismatches, so it is not tried. The cost is thousands of
+layouts in the usual case and tens of milliseconds in the worst one measured
+(eight colours, four configs). `mods::fit` stays the optimizer's greedy
+planner; `forma::tests::one_loadout_bills_what_fit_bills` holds the two to the
+same bill on one config.
+
+**THE BILL** is `Σ max(0, target − start)` per polarity, a bare slot counted as
+a polarity of its own (blanking takes a Forma), each bought slot billed as the
+item that makes it — Omni, Umbra, or a regular Forma. A grant slot outside the
+pool (the stance slot) costs one when it changes. No Forma makes the Aura
+colour. Mastery Forma are added on top up to the rank floor.
+
+**THE ORDER a layout is judged in**: Umbra Forma (under "when needed"), the
+grant slot unmatched (once anything is spent), Forma, Omni, then the WORST
+config's spare capacity, the total spare, and the item's own colours moved.
+
+**THE RULES** are the player's and are GLOBAL — one set for every weapon and
+every frame. What is per item is which configs are planned together, and the
+FIRST of them is always the one being edited: it keeps its mod positions, and
+the others are rearranged onto the layout.
+
+| rule | default |
+| --- | --- |
+| Catalyst / Reactor | on |
+| reach max rank | on |
+| stance / aura slot first | on |
+| Omni Forma | never · allowed (only where it saves a Forma) · preferred |
+| Umbra Forma | never · **when needed** · allowed (an ordinary Forma) |
+| Forma limit | none |
+
+A player may also state what the item ALREADY carries (`Start`): that layout
+is free, and the Forma it took count toward the rank.
+
 ## Where the truth has to live
 
 `engine::mods` owns the whole model, and the client consumes its conclusions.
