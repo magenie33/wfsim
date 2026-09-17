@@ -202,6 +202,11 @@ const corners = await evaluate(`(async () => {
 })()`);
 check("two corners of one shape are two cards",
   !!corners.god && !!corners.deep && corners.god.slot !== corners.deep.slot, JSON.stringify(corners));
+check("...and each card's name states every stat's roll",
+  ["god", "deep"].every((k) => corners[k] && ["critical_damage x1.1", "damage x1.1", "multishot x1.1"]
+    .every((t) => corners[k].slot.includes(t)))
+    && corners.god.slot.endsWith("recoil x0.9") && corners.deep.slot.endsWith("recoil x1.1"),
+  JSON.stringify(corners));
 check("...each with its own malus roll, a stale copy corrected",
   corners.god && corners.god.roll === 0.9 && corners.deep && corners.deep.roll === 1.1,
   JSON.stringify(corners));

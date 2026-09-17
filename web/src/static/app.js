@@ -2369,18 +2369,17 @@ const rowHasRiven = (r) => !!(r && r.riven);
 ///
 /// A row cannot name somebody's riven: the item is on one machine and what the
 /// board holds is a SHAPE at the corner its fight chose. So the reader's copy
-/// is named after the shape AND every stat that left the god roll: two rows of
-/// one shape at two corners are two cards, and a name that dropped the corner
-/// handed one row's riven to the other.
+/// is named after every stat AND the roll it was stored at: two rows of one
+/// shape at two corners are two cards, and a name that dropped a roll handed
+/// one row's riven to the other.
 const boardRivenName = (rv) => {
+  const stat = (id, i) => {
+    const roll = (rv.rolls || [])[i];
+    return roll == null ? id : `${id} x${roll}`;
+  };
   const bonuses = rv.bonuses || [];
-  const god = (i) => (i < bonuses.length ? rivenRules().roll_max : rivenRules().roll_min);
-  const off = bonuses.concat(rv.malus ? [rv.malus] : [])
-    .map((id, i) => [id, (rv.rolls || [])[i]])
-    .filter(([, roll], i) => roll != null && Math.abs(roll - god(i)) > 1e-9)
-    .map(([id, roll]) => `${id} x${roll}`);
-  return `${tr("board")} · ${bonuses.join(" / ")}${rv.malus ? ` − ${rv.malus}` : ""}`
-    + (off.length ? ` (${off.join(", ")})` : "");
+  return `${tr("board")} · ${bonuses.map(stat).join(" / ")}`
+    + (rv.malus ? ` − ${stat(rv.malus, bonuses.length)}` : "");
 };
 
 /// The definitions `builtinBuilds` met, by the mod id it put in the slot.
