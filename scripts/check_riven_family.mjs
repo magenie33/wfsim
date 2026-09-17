@@ -97,6 +97,7 @@ const r = await evaluate(`(async () => {
   out.kitScopes = kit.map((w) => rivenScope(w.id));
   out.kitClasses = kit.map((w) => w.riven_class || w.mod_class);
   out.kitKin = kit.map((w) => rivenKin(w).map(kinName));
+  out.kitSlotWords = kit.map((w) => tr(w.slot === 'secondary' ? 'Secondary' : 'Primary'));
   // A card the primary filed under its old rifle scope moves to the chamber's.
   const store = JSON.parse(localStorage.getItem('wfsim-customs-rivens') || '[]');
   store.push({ id: 'oldkit', name: 'old kit', savedAt: 1, scope: 'tombfinger-rifle', state: blankRiven() });
@@ -257,9 +258,10 @@ check("a Kitgun's primary and secondary share one card",
     && r.kitClasses.every((c) => c === "pistol"),
   JSON.stringify({ ids: r.kitIds, scopes: r.kitScopes, classes: r.kitClasses }));
 check("...each names the other by its slot",
-  JSON.stringify(r.kitKin) === JSON.stringify([["Tombfinger (Secondary)"], ["Tombfinger (Primary)"]])
-    || JSON.stringify(r.kitKin) === JSON.stringify([["Tombfinger (Primary)"], ["Tombfinger (Secondary)"]]),
-  JSON.stringify(r.kitKin));
+  (r.kitKin || []).length === 2 && r.kitKin.every((k) => k.length === 1)
+    && r.kitKin[0][0].endsWith("(" + r.kitSlotWords[1] + ")")
+    && r.kitKin[1][0].endsWith("(" + r.kitSlotWords[0] + ")"),
+  JSON.stringify({ kin: r.kitKin, slots: r.kitSlotWords }));
 check("...and a card under the primary's old scope moves to the chamber's, still open",
   r.kitMoved === "tombfinger-pistol" && r.kitOpen === "oldkit",
   JSON.stringify({ moved: r.kitMoved, open: r.kitOpen }));
