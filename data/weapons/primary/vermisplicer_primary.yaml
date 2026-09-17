@@ -29,6 +29,8 @@ transform_group: vermisplicer_primary
 # see notes: kitgun_disposition_source
 disposition: 0.9
 riven_family: Vermisplicer
+# see notes: kitgun_riven_is_the_chambers
+riven_class: pistol
 traits: [infested]
 
 polarities: []

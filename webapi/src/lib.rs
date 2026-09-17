@@ -1185,12 +1185,7 @@ fn custom_enemies(v: &Value) -> Result<Vec<wfsim_engine::enemy_data::EnemySpec>,
 /// for a bow today, and would find a real bow pool the day one exists,
 /// without a weapon having to name it.
 fn riven_class(info: &WeaponInfo) -> String {
-    info.mod_pools
-        .iter()
-        .rev()
-        .find(|c| !wfsim_engine::rivens_data::pool(c).is_empty())
-        .cloned()
-        .unwrap_or_default()
+    wfsim_engine::rivens_data::class_for_weapon(&info.id).unwrap_or_default().to_string()
 }
 
 /// The build's pool PLUS the request's own rivens.

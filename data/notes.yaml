@@ -688,6 +688,14 @@ notes:
     infobox's 0.85), and the Kitgun page's overview table, last edited in 39.1,
     lower on four secondaries (Catchmoon 0.70, Gaze 0.95, Rattleguts 0.90,
     Vermisplicer 1.10). The weapon's own page wins; a riven reading settles it.
+  kitgun_riven_is_the_chambers: |
+    ONE RIVEN PER CHAMBER, on either slot. VERBATIM (Kitgun, Kitgun Riven Mods):
+    "Kitgun Riven mods for a specific chamber can be equipped on both the
+    primary and secondary versions. Note that the riven disposition changes
+    based on the type." One card is one set of stats, so both slots roll one
+    pool: the PISTOL one — the chamber is a secondary part in DE's data (its
+    `internal_name`), and "Riven mods for Kitguns will use images of Secondary
+    mods even when equipped on Primary Kitguns" (Riven Mods).
   kitgun_entry_is_default_assembly: |
     A KITGUN HAS NO PUBLISHED STAT LINE, so the numbers in this entry are its
     DEFAULT ASSEMBLY's (`kitguns_data::default_assembly`: the grip nearest the

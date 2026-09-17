@@ -1915,6 +1915,10 @@ pub struct WeaponSpec {
     /// pool per family, so a Boar riven and a Boar Prime riven are one thing.
     #[serde(default)]
     pub riven_family: Option<String>,
+    /// WHICH RIVEN POOL, where it is not the one the mod pools lead to: a
+    /// primary Kitgun takes its chamber's card, which is a pistol riven.
+    #[serde(default)]
+    pub riven_class: Option<String>,
     /// AN EXALTED WEAPON — one an ability summons (Valkyr Talons, by Hysteria).
     /// It is the weapon's half of DE's `POWER_WEAPON` tag: a card whose
     /// incompatibility tags carry it (`excludes_weapon: [power_weapon]`) is

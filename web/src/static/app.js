@@ -3598,6 +3598,20 @@ function withDrafts(r) {
 const rivenComplete = () =>
   riven && riven.bonuses.every((s) => s.id) && (!riven.malus || riven.malus.id);
 
+/// THE SAME CARD ON EVERY OTHER WEAPON IT FITS — a Prime and its base, a
+/// Kitgun's other slot — each read at its own disposition.
+const rivenKin = (w) => ((META && META.weapons) || []).filter((x) =>
+  w && x.riven_family && x.riven_family === w.riven_family && x.id !== w.id
+  // …AND THE SAME CARD, which a family whose members took two kinds of riven
+  // would not share.
+  && (x.riven_class || x.mod_class) === (w.riven_class || w.mod_class));
+/// A kin weapon's name, with its slot where the roster has two of that name
+/// (a Kitgun's two entries are both the chamber).
+const kinName = (x) => (((META && META.weapons) || []).filter((y) => y.name === x.name).length > 1
+  ? `${x.name} (${tr(x.slot === "secondary" ? "Secondary" : "Primary")})` : x.name);
+/// The open card as each kin weapon reads it, filled beside `rivenResolved`.
+let rivenKinResolved = [];
+
 async function resolveRiven(pending) {
   if (!riven) return;
   try {
@@ -3620,6 +3634,9 @@ async function resolveRiven(pending) {
   } catch (e) {
     rivenResolved = { ok: false, illegal: [String(e)], stats: [] };
   }
+  const kin = rivenComplete() ? rivenKin(weaponInfo($("weapon").value)) : [];
+  rivenKinResolved = await Promise.all(kin.map((x) =>
+    api("/api/riven", { ...riven, weapon: x.id }).then((r) => ({ w: x, r }), () => null)));
   renderRivenCard();
 }
 
@@ -3662,12 +3679,7 @@ function renderRivens() {
   // other" is the one thing a reader cannot act on, and it states the
   // disposition rule, since that is why the same card shows two sets of
   // numbers.
-  const kin = (META.weapons || []).filter((x) =>
-    x.riven_family && x.riven_family === w.riven_family && x.id !== w.id
-    // …AND THE SAME CARD. A Kitgun's two builds share a family and take two
-    // different rivens, so the primary must not claim its own card also fits
-    // the secondary.
-    && (x.riven_class || x.mod_class) === (w.riven_class || w.mod_class));
+  const kin = rivenKin(w);
   // THE FAMILY IS NAMED IN THE READER'S LANGUAGE, by borrowing the localized
   // name of its BASE member rather than printing the family string. That
   // string is DE's module `Family` field and is always English, so a Chinese
@@ -3681,7 +3693,7 @@ function renderRivens() {
     + (kin.length
       ? ` · ${tr("a {family} riven — it fits {others} too, each at its own disposition")
           .replace("{family}", (base && base.name) || w.riven_family)
-          .replace("{others}", kin.map((x) => x.name).join(", "))}`
+          .replace("{others}", kin.map(kinName).join(", "))}`
       : "");
   renderRivenTools();
   if (!open) {
@@ -3977,7 +3989,11 @@ function renderRivenCard() {
   $("riven-card").innerHTML = bad.length
     ? `<div class="error"><b>${escHtml(tr("not a legal riven"))}</b><ul>${bad.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul></div>`
     : `<div class="rv-name">${escHtml(r.name)}</div>
-       <div class="rv-meta">${r.drain} ${escHtml(tr("capacity"))} · ${escHtml(tr(r.class))} ${escHtml(tr("riven"))} · ${escHtml(tr("disposition"))} ${Number(r.disposition).toFixed(2)}</div>`;
+       <div class="rv-meta">${r.drain} ${escHtml(tr("capacity"))} · ${escHtml(tr(r.class))} ${escHtml(tr("riven"))} · ${escHtml(tr("disposition"))} ${Number(r.disposition).toFixed(2)}</div>`
+      + rivenKinResolved.filter((k) => k && k.r && k.r.ok && !(k.r.illegal || []).length).map((k) =>
+        `<div class="rv-kin"><span class="rv-meta">${escHtml(kinName(k.w))} · ${escHtml(tr("disposition"))} ${
+          Number(k.r.disposition).toFixed(2)}</span><div class="rv-all-s">${(k.r.stats || []).map((x) =>
+          `<span class="rv-chip ${x.value < 0 ? "neg" : ""}">${escHtml(tf(x.text))}</span>`).join("")}</div></div>`).join("");
 }
 
 // Rivens are a PRESET COLLECTION, on the same bar as builds and the
@@ -7356,12 +7372,11 @@ const isSharedDomain = (d) => SHARED_DOMAINS.has(d);
 /// the Riven stats on every owned variant of said weapon"*. A weapon that
 /// declares no family is its own and keeps the key it already had.
 ///
-/// THE RIVEN CLASS IS PART OF THE SCOPE, and a KITGUN is why. A Tombfinger
-/// built as a primary takes a RIFLE riven and the same chamber built as a
-/// secondary takes a PISTOL one — one family, two cards, two pools. Filing
-/// both under `tombfinger` would put a rifle riven in a pistol's list, where
-/// the editor offers it and the board refuses it. An engine test holds the
-/// other half: every weapon sharing a (family, class) rolls the same pool.
+/// THE RIVEN CLASS IS PART OF THE SCOPE, so a family whose members took two
+/// kinds of card would keep them apart. A KITGUN does not: its two slots take
+/// the chamber's one pistol riven (`riven_class` in the weapon data), so both
+/// land in one scope. An engine test holds the other half: every weapon
+/// sharing a (family, class) rolls the same pool.
 const rivenSlug = (x) => String(x || "")
   .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 const rivenScope = (id) => {
@@ -7515,6 +7530,23 @@ function foldRivensIntoOneList() {
       if (localStorage.getItem(to) === null) localStorage.setItem(to, open);
       localStorage.removeItem(from);
     }
+  }
+  // A SCOPE THE ROSTER NO LONGER COMPUTES MOVES TO ITS FAMILY'S ONE SCOPE — a
+  // primary Kitgun's card was filed under its own class, and a chamber has one
+  // card. A family with two live scopes is ambiguous and keeps what it has.
+  const familyOf = (sc) => sc.replace(/-[^-]*$/, "");
+  for (const p of all) {
+    if (!p.scope || live.has(p.scope)) continue;
+    const to = [...live].filter((sc) => familyOf(sc) === familyOf(p.scope));
+    if (to.length !== 1) continue;
+    const from = `wfsim-custom-open-${p.scope}-rivens`;
+    const open = localStorage.getItem(from);
+    if (open !== null && localStorage.getItem(`wfsim-custom-open-${to[0]}-rivens`) === null) {
+      localStorage.setItem(`wfsim-custom-open-${to[0]}-rivens`, open);
+    }
+    localStorage.removeItem(from);
+    p.scope = to[0];
+    touched = true;
   }
   // …AND THE CARDS ALREADY IN THE ONE LIST, which is every card once the loop
   // above has run and the whole store on a second visit. A card with no id

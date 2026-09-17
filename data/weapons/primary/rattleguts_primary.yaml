@@ -29,6 +29,8 @@ transform_group: rattleguts_primary
 # see notes: kitgun_disposition_source
 disposition: 1.0
 riven_family: Rattleguts
+# see notes: kitgun_riven_is_the_chambers
+riven_class: pistol
 
 polarities: []
 exilus_polarity: madurai

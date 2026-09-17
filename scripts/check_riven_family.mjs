@@ -14,10 +14,11 @@
 // nothing.
 //
 // THREE NEGATIVE CONTROLS, because "one big list" passes every positive above:
-// an unrelated weapon does not see it; a KITGUN's two builds do not see each
-// other's (one family, two cards, since a chamber built as a primary takes a
-// RIFLE riven); and the MIGRATION keeps what is already on the machine, build
-// references included, which is the only part that can lose a player's work.
+// an unrelated weapon does not see it; a KITGUN's two slots see ONE card (a
+// chamber's riven fits both, a pistol riven either way), and a card filed under
+// the primary's old scope moves to it; and the MIGRATION keeps what is already
+// on the machine, build references included, which is the only part that can
+// lose a player's work.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });
@@ -90,11 +91,22 @@ const r = await evaluate(`(async () => {
   await backToList();
   out.bratonList = listed();
 
-  // ---- 4. A KITGUN'S TWO BUILDS ARE TWO CARDS ---------------------------
+  // ---- 4. A KITGUN'S TWO SLOTS ARE ONE CARD -----------------------------
   const kit = (META.weapons || []).filter((w) => w.riven_family === 'Tombfinger');
   out.kitIds = kit.map((w) => w.id);
   out.kitScopes = kit.map((w) => rivenScope(w.id));
   out.kitClasses = kit.map((w) => w.riven_class || w.mod_class);
+  out.kitKin = kit.map((w) => rivenKin(w).map(kinName));
+  // A card the primary filed under its old rifle scope moves to the chamber's.
+  const store = JSON.parse(localStorage.getItem('wfsim-customs-rivens') || '[]');
+  store.push({ id: 'oldkit', name: 'old kit', savedAt: 1, scope: 'tombfinger-rifle', state: blankRiven() });
+  localStorage.setItem('wfsim-customs-rivens', JSON.stringify(store));
+  localStorage.setItem('wfsim-custom-open-tombfinger-rifle-rivens', 'oldkit');
+  foldRivensIntoOneList();
+  const after = JSON.parse(localStorage.getItem('wfsim-customs-rivens') || '[]');
+  out.kitMoved = (after.find((p) => p.id === 'oldkit') || {}).scope;
+  out.kitOpen = localStorage.getItem('wfsim-custom-open-tombfinger-pistol-rivens');
+  localStorage.setItem('wfsim-customs-rivens', JSON.stringify(after.filter((p) => p.id !== 'oldkit')));
 
   // ---- 5. THE FOLD GIVES EACH CARD AN IDENTITY -------------------------
   // Two variants of one family, each with a card called 'riven 1', and each
@@ -238,13 +250,19 @@ check("...and the page SAYS whose card it is, naming the other variant",
 check("an unrelated weapon does not see it",
   !(r.bratonList || []).includes(r.name) && r.scopes.braton !== r.scopes.burston,
   `${JSON.stringify(r.bratonList)} under ${r.scopes.braton}`);
-// A KITGUN IS THE SHARP ONE: one family, two riven classes, so scoping by
-// family alone would put a rifle riven in a pistol's list — offered by the
-// editor and refused by the board.
-check("a Kitgun's primary and secondary are two cards, not one",
-  (r.kitIds || []).length === 2 && r.kitScopes[0] !== r.kitScopes[1]
-    && r.kitClasses[0] !== r.kitClasses[1],
+// A KITGUN IS THE SHARP ONE: "Kitgun Riven mods for a specific chamber can be
+// equipped on both the primary and secondary versions" (wiki, Kitgun).
+check("a Kitgun's primary and secondary share one card",
+  (r.kitIds || []).length === 2 && r.kitScopes[0] === r.kitScopes[1]
+    && r.kitClasses.every((c) => c === "pistol"),
   JSON.stringify({ ids: r.kitIds, scopes: r.kitScopes, classes: r.kitClasses }));
+check("...each names the other by its slot",
+  JSON.stringify(r.kitKin) === JSON.stringify([["Tombfinger (Secondary)"], ["Tombfinger (Primary)"]])
+    || JSON.stringify(r.kitKin) === JSON.stringify([["Tombfinger (Primary)"], ["Tombfinger (Secondary)"]]),
+  JSON.stringify(r.kitKin));
+check("...and a card under the primary's old scope moves to the chamber's, still open",
+  r.kitMoved === "tombfinger-pistol" && r.kitOpen === "oldkit",
+  JSON.stringify({ moved: r.kitMoved, open: r.kitOpen }));
 
 // ---- the migration loses nothing --------------------------------------------
 

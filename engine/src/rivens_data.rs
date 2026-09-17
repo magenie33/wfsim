@@ -868,8 +868,11 @@ fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
 /// the reason every other equip rule is: two copies of it would be two answers,
 /// and this one decides whether a riven's Heat pairs with the build's Cold.
 pub fn class_for_weapon(weapon: &str) -> Option<&'static str> {
-    crate::weapons_data::spec(weapon)?
-        .mod_pools
+    let spec = crate::weapons_data::spec(weapon)?;
+    if let Some(c) = spec.riven_class.as_deref() {
+        return Some(c);
+    }
+    spec.mod_pools
         .iter()
         .rev()
         .find(|c| !pool(c).is_empty())
@@ -2361,6 +2364,24 @@ mod riven_family_tests {
 
     /// One weapon's view of a card: its id, and the stats it may NOT roll.
     type Member = (&'static str, Vec<&'static str>);
+
+    #[test]
+    fn a_kitguns_two_slots_take_one_card() {
+        // Kitgun: "Kitgun Riven mods for a specific chamber can be equipped on
+        // both the primary and secondary versions" — one card, one pool.
+        let mut by_family: BTreeMap<&str, Vec<(&str, Option<&str>)>> = BTreeMap::new();
+        for w in crate::weapons_data::all().iter().filter(|w| w.kitgun.is_some()) {
+            let family = w.riven_family.as_deref().expect("a Kitgun names its chamber's family");
+            by_family.entry(family).or_default().push((w.id.as_str(), super::class_for_weapon(&w.id)));
+        }
+        assert!(by_family.values().filter(|m| m.len() == 2).count() >= 6, "{by_family:?}");
+        for (family, members) in &by_family {
+            assert!(
+                members.iter().all(|(_, c)| *c == Some("pistol")),
+                "{family}: every slot takes the chamber's pistol riven: {members:?}"
+            );
+        }
+    }
 
     #[test]
     fn every_member_of_a_riven_family_rolls_the_same_pool() {
