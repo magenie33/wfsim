@@ -3864,10 +3864,18 @@ function renderRivenAll() {
   const ps = loadPresetList(RIVENS);
   const active = activeRivenId();
   const cap = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
+  const weapon = (META.weapons || []).find((x) => x.id === $("weapon").value);
+  // A stat may be saved as a bare id or as `{ id, roll }`; the auction search reads ids.
+  const asStat = (x) => (typeof x === "string" ? { id: x } : x);
   box.innerHTML = ps.length
     ? ps.map((p) => {
         const st = p.state || {};
         const meta = rivenNames[p.id] || {};
+        // THE SAME AUCTION SEARCH the equipped card carries, per saved riven.
+        const wm = marketLink(rivenMarketUrl({
+          bonuses: (st.bonuses || st.positives || []).map(asStat),
+          malus: asStat(st.malus || st.curse || null),
+        }, weapon), tr("find rivens with these stats on warframe.market"));
         const lines = meta.lines || [];
         const shape = st.shape || `${(st.bonuses || st.positives || []).length}${st.malus || st.curse ? "+1" : ""}`;
         const nBonus = (st.bonuses || st.positives || []).length;
@@ -3875,7 +3883,7 @@ function renderRivenAll() {
           <div class="rv-all-h">
             ${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
             <b>${escHtml(p.name)}</b>
-            ${meta.name ? `<span class="rv-official">${escHtml(meta.name)}</span>` : ""}
+            ${meta.name ? `<span class="rv-official">${escHtml(meta.name)}</span>` : ""}${wm}
             <span class="rv-meta">${shape} · ${escHtml(tr("Rank"))} ${st.rank ?? 8} · ${2 + 2 * (st.rank ?? 8)} ${escHtml(tr("capacity"))}</span>
           </div>
           <div class="rv-all-s">${
