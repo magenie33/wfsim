@@ -21,7 +21,7 @@
 // check waiting for one would pass by doing nothing for weeks.
 import { openApp } from "./cdp.mjs";
 
-const app = await openApp({ boot: 12000 });
+const app = await openApp({ boot: 12000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish } = app;
 
 // A shape a rifle can really roll, so nothing downstream refuses it.
@@ -168,6 +168,43 @@ check("...with the row's own stats and rolls",
   JSON.stringify(taken));
 check("...and taking it twice does not stack a second copy",
   taken.twice === taken.after, `${taken.before} -> ${taken.after} -> ${taken.twice}`);
+
+// ---- two corners of one shape are two cards --------------------------------
+
+// ONE SHAPE, TWO CORNERS. The fight can store a shape at its god roll on one
+// row and with the malus at its other end on another; each row must hand over
+// ITS OWN riven, and a copy an older page filed under the god roll's name with
+// the other corner's numbers must come back corrected.
+const corners = await evaluate(`(async () => {
+  ${setup}
+  const rowAt = (roll) => ({ ...BOARD[id][0], score: BOARD[id][0].score + roll,
+    riven: { ...BOARD[id][0].riven, rolls: [1.1, 1.1, 1.1, roll] } });
+  BOARD[id] = [rowAt(0.9), rowAt(1.1), ...BOARD[id].slice(1)];
+  const entries = builtinBuilds().filter(b => b.board && b.board.riven);
+  const malusOf = async (entry) => {
+    restoreState(entry.state, id);
+    await new Promise(r => setTimeout(r, 900));
+    const slot = slots.find(s => isRivenId(s.mod));
+    const made = loadPresetList(RIVENS).find(p => RIVEN_PREFIX + p.id === (slot || {}).mod);
+    return { slot: (slot || {}).mod || null, roll: made && made.state.malus ? made.state.malus.roll : null };
+  };
+  const god = entries.find(e => e.board.riven.rolls[3] === 0.9);
+  const deep = entries.find(e => e.board.riven.rolls[3] === 1.1);
+  if (!god || !deep) return { error: 'the two corners were not listed', n: entries.length };
+  // A STALE COPY under the god roll's id, holding the deep corner's numbers.
+  const godId = boardRivenName(god.board.riven);
+  const ps = loadPresetList(RIVENS).filter(p => p.id !== godId);
+  ps.push({ id: godId, name: godId, savedAt: 1, state: boardRivenState(deep.board.riven) });
+  storePresetList(RIVENS, ps);
+  const g = await malusOf(god);
+  const d = await malusOf(deep);
+  return { god: g, deep: d };
+})()`);
+check("two corners of one shape are two cards",
+  !!corners.god && !!corners.deep && corners.god.slot !== corners.deep.slot, JSON.stringify(corners));
+check("...each with its own malus roll, a stale copy corrected",
+  corners.god && corners.god.roll === 0.9 && corners.deep && corners.deep.roll === 1.1,
+  JSON.stringify(corners));
 
 // ---- the negative control ---------------------------------------------------
 

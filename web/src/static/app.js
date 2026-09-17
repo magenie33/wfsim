@@ -2368,11 +2368,20 @@ const rowHasRiven = (r) => !!(r && r.riven);
 /// one riven instead of stacking copies.
 ///
 /// A row cannot name somebody's riven: the item is on one machine and what the
-/// board holds is a SHAPE. So the reader's copy is named after the shape, which
-/// is also the only honest name for it — it is not anyone's roll, it is what
-/// that shape is worth at its ceiling.
-const boardRivenName = (rv) =>
-  `${tr("board")} · ${(rv.bonuses || []).join(" / ")}${rv.malus ? ` − ${rv.malus}` : ""}`;
+/// board holds is a SHAPE at the corner its fight chose. So the reader's copy
+/// is named after the shape AND every stat that left the god roll: two rows of
+/// one shape at two corners are two cards, and a name that dropped the corner
+/// handed one row's riven to the other.
+const boardRivenName = (rv) => {
+  const bonuses = rv.bonuses || [];
+  const god = (i) => (i < bonuses.length ? rivenRules().roll_max : rivenRules().roll_min);
+  const off = bonuses.concat(rv.malus ? [rv.malus] : [])
+    .map((id, i) => [id, (rv.rolls || [])[i]])
+    .filter(([, roll], i) => roll != null && Math.abs(roll - god(i)) > 1e-9)
+    .map(([id, roll]) => `${id} x${roll}`);
+  return `${tr("board")} · ${bonuses.join(" / ")}${rv.malus ? ` − ${rv.malus}` : ""}`
+    + (off.length ? ` (${off.join(", ")})` : "");
+};
 
 /// The definitions `builtinBuilds` met, by the mod id it put in the slot.
 ///
@@ -8139,9 +8148,15 @@ function materialiseBoardRivens(st) {
     // which is what makes taking the same row twice reuse the first copy, and
     // what lets the slot the build arrived with go on resolving.
     const key = id.slice(RIVEN_PREFIX.length);
-    if (ps.some((p) => p.id === key)) continue;
-    ps.push({ id: key, name: key, savedAt: Date.now(),
-      state: boardRivenState(boardRivenDefs[id]) });
+    const state = boardRivenState(boardRivenDefs[id]);
+    const had = ps.find((p) => p.id === key);
+    // A COPY WHOSE ROLLS ARE NOT THE ROW'S IS CORRECTED, not reused: a name
+    // that once dropped the corner filed a deep roll under the god roll's id.
+    const rolls = (x) => JSON.stringify([...((x && x.bonuses) || []), (x && x.malus) || null]
+      .map((b) => (b ? [b.id, b.roll] : null)));
+    if (had && rolls(had.state) === rolls(state)) continue;
+    if (had) had.state = { ...had.state, bonuses: state.bonuses, malus: state.malus };
+    else ps.push({ id: key, name: key, savedAt: Date.now(), state });
     added++;
   }
   if (!added) return;
