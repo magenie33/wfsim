@@ -31635,6 +31635,62 @@ mod tests {
         assert!((raw - 185.5) * 0.1 < 11.0 && (raw - 185.5) * 0.1 > 10.5, "the measured 11");
     }
 
+    /// M99, held fire: the same build keeps its 0.75 s burn alive by refreshing
+    /// it, so the one entity ticks every second and its tick grows with the
+    /// procs folded in — the measured 1164 is 23 of them at the full strip.
+    #[test]
+    fn m99_a_refreshed_short_burn_ticks_every_second() {
+        let unit = crate::enemy_data::all()
+            .into_iter()
+            .find(|e| e.id == "corrupted_heavy_gunner")
+            .expect("the roster has one");
+        let target = unit
+            .target_params(210, true, false, TargetMode::InfiniteHealth)
+            .expect("a level 210 Steel Path unit is legal");
+        let mb = 35.0 * 2.65;
+        let p = DummyParams {
+            target,
+            damage: DamageVector::new()
+                .with(DamageType::Impact, 1.75 * 2.65)
+                .with(DamageType::Puncture, 12.25 * 2.65)
+                .with(DamageType::Slash, 21.0 * 2.65)
+                .with(DamageType::Heat, 2.0 * mb),
+            dot_modified_base: Some(mb),
+            elem_dot_bonus: vec![(DamageType::Heat, 3.0)],
+            status_duration_multiplier: 0.125,
+            // Held fire and no reload inside the window: a proc every 0.1 s
+            // against a 0.75 s burn.
+            fire_rate: 10.0,
+            magazine_size: 100.0,
+            duration_seconds: 3.05,
+            ..bare(DamageType::Heat)
+        };
+        let ignite = DEBUFF_ROSTER.iter().position(|(id, _)| *id == "ignite").expect("a row");
+        let mut rec = crate::record::Record::window(0.0, 10.0, 100_000, 0);
+        let _ = run_once_traced(&p, &mut crate::rng::Rng::new(1), None, &mut rec);
+        let ticks: Vec<(f64, f64)> = rec
+            .events()
+            .iter()
+            .filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d)
+                    if d.origin == crate::record::Origin::Status && d.dtype == DamageType::Heat =>
+                {
+                    // `debuffs` is (stacks, expiry) per roster row.
+                    Some((f64::from(d.debuffs[ignite].0), d.effective))
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(ticks.len(), 3, "one tick a second: {ticks:?}");
+        // 0.5 × 92.75 × (1 + 2) per proc, through the 50% strip on 2700.
+        let per_proc = 0.5 * mb * 3.0 * (1.0 - 0.9 * 0.5_f64.sqrt());
+        for (n, eff) in &ticks {
+            assert!(*n >= 9.0, "the procs fold into one entity: {ticks:?}");
+            assert!((eff / n - per_proc).abs() < 0.5, "{eff} over {n} vs {per_proc}");
+        }
+        assert!((per_proc * 23.0 - 1164.0).abs() < 1.0, "the measured 1164: {}", per_proc * 23.0);
+    }
+
     /// M100 fixture: an unmodded Laetum (64 Impact + 96 Slash) with +200% of
     /// one element, +30% and +50% headshot damage, forced `element` procs, on a
     /// Steel Path level 210 Corrupted Heavy Gunner — and, with `neighbours`,

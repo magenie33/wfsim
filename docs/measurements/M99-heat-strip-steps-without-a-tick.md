@@ -4,14 +4,15 @@
 
 Braton Prime at +165% base damage (Impact 4.6, Puncture 32.5, Slash 55.7 on
 the arsenal), then with +200% Heat added by Lavos. Status
-duration -87.5% from Lavos, so a burn lasts `6 × 0.125 = 0.75 s` and never
-reaches its +1 s tick. Target: an ordinary Corrupted Heavy Gunner, Steel Path
+duration -87.5% from Lavos, so one proc's burn lasts `6 × 0.125 = 0.75 s` and
+never reaches its +1 s tick on its own. Target: an ordinary Corrupted Heavy Gunner, Steel Path
 level 210, body hits, held fire.
 
 | build | readings |
 | --- | --- |
 | no Heat | 11, crit 22 |
 | +200% Heat | settles "almost at once" on 107, crit 214; seen on the way: 30, 70, 90, crit 103 |
+| +200% Heat, held fire | a Heat tick of 1164, at about twenty-odd stacks |
 
 ### The arithmetic
 
@@ -28,10 +29,19 @@ the cap, so it spawns at 2700 (DR 90%) and a strip multiplies that.
 | 40% | 1620 | 69.7% | | 89.10 | 90 |
 | 50% | 1350 | 63.6% | | 106.97 (crit 213.94) | 107 · 214 |
 
+**The tick.** One proc's tick is `0.5 × 92.75 × (1 + 200%) = 139.13`, and at
+the full strip (DR 63.6%) it lands as 50.59. The consolidated burn pays that
+once per proc folded in, so 1164 is `23 × 50.59 = 1163.6`.
+
 ### What it settles
 
-- **The strip does not wait for a tick.** No burn in this build ever ticks,
-  and the strip still reaches its full 50%.
+- **The strip does not wait for a tick.** It reaches 50% within the first
+  0.25 s, well before any burn could tick.
+- **A burn shorter than a second still ticks while it is refreshed.** Each proc
+  resets the one entity's expiry to 0.75 s ahead, so held fire keeps it alive,
+  it ticks on its +1 s beat and the tick carries every proc folded in — 23 of
+  them in the 1164. Below -83.33% a single proc never ticks; a weapon that
+  lands a Heat proc inside every burn window still does.
 - **The strip is the four steps, on the capped value.** The settled 107/214
   and the 11/22 match to the digit, and the glimpses sit near the steps, not
   anywhere in between.
@@ -55,4 +65,6 @@ Already the engine's rule, so nothing moved: `data/debuffs/ignite.yaml`
 anchors the ramp to the proc and scales its steps by status duration, and
 `scaling::ARMOR_CAP` clamps spawn armour before any strip.
 `m99_heat_strip_climbs_without_a_tick_on_capped_armour` in `engine::dummy`
-replays this build on the real unit and fails if the ramp waits for a tick.
+replays this build on the real unit and fails if the ramp waits for a tick;
+`m99_a_refreshed_short_burn_ticks_every_second` holds the fire, fails if a
+refresh does not keep the burn alive, and pins one proc's tick at 50.59.
