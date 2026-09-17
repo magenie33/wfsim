@@ -1835,6 +1835,57 @@ ui:
   "{n} h": "{n} 小时"
   "{n} min": "{n} 分钟"
   "· scored {t} ago": · 上次评分在 {t} 前
+  # THE FORMA PLAN. Orokin Catalyst / Reactor are DE's item names and stay in
+  # English until a zh source for them is reachable, as Forma itself does.
+  "Forma plan": Forma 规划
+  "your rules, and the builds that share these polarities": 你的规则，以及共用这组极性的配装
+  "this build": 当前配装
+  "needs {n} Forma, over your limit of {m}": 需要 {n} 个 Forma，超过你设的上限 {m}
+  "{who} does not fit even fully polarized": "{who} 就算极性全配也装不下"
+  "— an Umbra mod pays full drain while Umbra Forma is off": —— Umbra Forma 关闭时，Umbra mod 按全额消耗
+  "each of these builds fits on its own, but no one layout serves them all": 这几套配装各自都装得下，但没有一组极性能同时满足它们
+  "no plan": 没有可行的方案
+  "rank": 等级
+  "spare": 剩余
+  "doubles capacity": 容量翻倍
+  "Reach max rank": 保证满级
+  "spend at least the Forma the item's max rank takes — five on a rank-40 weapon — even where the build needs fewer": 至少花满到最高等级所需的 Forma（40 级武器是 5 个），即使配装用不了这么多
+  "Stance slot first": 优先极化架势槽
+  "Aura slot first": 优先极化光环槽
+  "once any Forma is spent, polarize the slot that grants capacity first: it costs at most one Forma over the minimum": 只要要花 Forma，就先极化加容量的那个槽：最多比最少方案多花一个 Forma
+  "never": 不用
+  "where it saves a Forma": 能省 Forma 时才用
+  "for every polarization": 所有极化都用
+  "only when nothing else fits": 不用就装不下时才用
+  "like any Forma": 和普通 Forma 一样
+  "Forma limit": Forma 上限
+  "Rules": 规则
+  "for every weapon and every Warframe": 对所有武器和战甲生效
+  "Plan together": 一起规划
+  "open": 当前
+  "a board build is planned on its own": 排行榜配装只单独规划
+  "Builds of one item share its polarities. The plan finds one layout every ticked build fits, and moves the other builds' mods onto it.": 同一件装备的各套配装共用极性。规划会找一组所有勾选配装都装得下的极性，并把其他配装的 mod 挪到对应的槽里。
+  "plan Forma": 规划 Forma
+  "working…": 计算中…
+  "polarities": 极性
+  "Mods stay in place": 固定 mod 位置
+  "no mod is moved: each slot's polarity serves whatever every build keeps there, which can take more Forma or Omni Forma. Off, mods are moved onto the layout and element mods keep their order": 不挪任何 mod：每个槽的极性要照顾所有配装放在这个槽里的 mod，可能多花 Forma 或 Omni Forma。关闭时 mod 会挪到合适的槽，元素 mod 之间的先后顺序保持不变
+  "mods moved": 挪动 mod
+  "the ticked builds do not all fit that layout": 勾选的配装装不进这组极性
+  "Plan ahead": 超前规划
+  "one layout across the board": 一组极性覆盖榜单
+  "no board builds in this scope": 这个范围里没有榜单配装
+  "meets the line": 达标
+  "weakest ruler": 最差的基准
+  "save as a build": 存为配装
+  "no build here fits this layout": 这组极性装不下这里的任何配装
+  "the search ran out of budget, so this is the best found rather than the best there is": 搜索量超出预算，这是找到的最好结果，不一定是最优
+  "place the ticked builds on these polarities": 把勾选的配装按这组极性摆放
+  "count riven builds": 包含 Riven 配装
+  "the ticked builds must fit too": 同时装下一起规划的配装
+  "the line": 达标线 %
+  "A ruler is covered by the best of its builds that fits: the line is how close to that ruler's leader it has to come.": 每个基准取装得下的配装里最好的一套；达标线是它至少要达到该基准榜首的百分之几。
+  "work it out": 计算
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']

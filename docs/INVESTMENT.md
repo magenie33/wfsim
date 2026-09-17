@@ -1,12 +1,11 @@
 # Investment: what has been installed on this weapon
 
-**Status: CAPACITY IS REAL; THE ADAPTERS ARE STILL ASSUMED.**
-Phases 1 and 2 are done — capacity depends on rank, rank depends on Forma, and
-the client asks the server for both instead of carrying a literal 60. Phases 3
-and 4 (the three choices on screen, and carrying them in a share link) are not.
+**Status: CAPACITY IS REAL; THE PLAYER'S FORMA RULES ARE ON SCREEN; THE
+ADAPTERS ARE STILL ASSUMED.** Capacity depends on rank, rank depends on Forma,
+and the planner is the engine's (§The planner). Carrying anything in a share
+link is not done, and does not need to be: the rules are the player's.
 
-So the app still assumes an Orokin Catalyst, an Exilus adapter and an arcane
-adapter, silently. What it no longer assumes is the number those produce: an
+So the app still assumes an Exilus adapter and an arcane adapter, silently. What it no longer assumes is the number those produce: an
 adversary weapon ranks to 40 and finishes at 80, and every surface that prints
 a capacity says so.
 
@@ -57,8 +56,8 @@ whole of the policy:
   cost a Forma.** A mismatched slot is worse than a blank one (125% against
   100%), so "more polarities" is not worth anything on its own.
 
-`plan_forma` and the page's `autoFormaWith` both implement it, and
-`check_forma_plan` holds them to it.
+`mods::plan_forma` and `forma::plan` both implement it, and
+`check_forma_plan` holds the page to it.
 
 ## The mechanics, verified (wiki)
 
@@ -117,14 +116,110 @@ The right shape:
    builder has to push back.
 
 So the investment is an OUTPUT of the build, not a second thing to keep in
-sync with it. Only three genuine CHOICES remain, because only these three are
-the player's and not the build's:
+sync with it. What remains are the player's RULES, which are not the build's —
+§The planner lists them.
 
-| choice | default | why it is a choice |
-| --- | --- | --- |
-| use Omni Forma | off | it matches any mod except Umbra mods, so it removes the colour puzzle — but it is a different, costlier item |
-| use Umbra Forma | **off** | precious. With it off the planner may not use Umbra polarity, so an Umbra mod pays full or mismatched drain |
-| polarise to max | **on** | 5 polarisations is what full mastery needs, even when the build would fit with 3 |
+## The planner
+
+`engine::forma::plan` answers for ONE item and ANY NUMBER of its configs,
+under the player's RULES. The item is a `Board` (a weapon or a Warframe:
+main slots, an exilus slot, and a slot that GRANTS capacity — the stance or
+the aura); each config is a `Loadout`.
+
+**THE CONFIGS SHARE ONE LAYOUT.** Polarity is the item's, and every config on
+it sees the same slots, while each config places its mods where it likes. So
+the answer is one multiset of polarities, plus the exilus slot's and the grant
+slot's — the only two that are positional, because only one kind of card goes
+there. Planning each config alone and merging does not work: the merged
+colours outnumber the slots.
+
+**THE ANSWER IS EXHAUSTIVE.** The alphabet is a bare slot, the colours the item
+carries, the colours some card matches, and Omni when the rules allow it; every
+multiset over it is billed, and the buckets are walked cheapest first. A colour
+nobody carries only ever mismatches, so it is not tried. Positions are free in
+that walk, which never under-rates a layout, so it both orders the exact work
+and says when to stop. `free_drain` is the positions-free drain, a greedy held
+to the Hungarian answer by `free_drain_is_the_optimal_assignment`. `mods::fit`
+stays the optimizer's greedy planner; `one_loadout_bills_what_fit_bills` holds
+the two to the same bill on one config.
+
+**THEN THE COLOURS ARE PLACED.** Every config shares the slots' positions, so
+what moves is MODS. A card is ORDERED when it bears an element — its place
+among the other ordered cards decides what pairs — and a move keeps ordered
+cards in order, so no pairing changes; every other card goes anywhere. The
+first config's own best placement anchors the colours, and swaps are taken
+while they help the worst config, then the total, then move fewest mods. With
+**mods stay in place** nothing moves at all: each slot's colour has to serve
+what every config keeps there, which is a search over arrangements pruned by
+capacity, and it may take more Forma or Omni. Past a work budget either search
+returns what it found and says it is not exhaustive.
+
+**THE BILL** is `Σ max(0, target − start)` per polarity, a bare slot counted as
+a polarity of its own (blanking takes a Forma), each bought slot billed as the
+item that makes it — Omni, Umbra, or a regular Forma. A grant slot outside the
+pool (the stance slot) costs one when it changes. No Forma makes the Aura
+colour. Mastery Forma are added on top up to the rank floor.
+
+**THE ORDER a layout is judged in**: Umbra Forma (under "when needed"), the
+grant slot unmatched (once anything is spent), Forma, Omni, then the WORST
+config's spare capacity, the total spare, mods moved, and the item's own
+colours moved.
+
+**THE RULES** are the player's and are GLOBAL — one set for every weapon and
+every frame. What is per item is which configs are planned together, and the
+first of them is always the one being edited.
+
+| rule | default |
+| --- | --- |
+| Catalyst / Reactor | on |
+| reach max rank | on |
+| stance / aura slot first | on |
+| Omni Forma | never · allowed (only where it saves a Forma) · preferred |
+| Umbra Forma | never · **when needed** · allowed (an ordinary Forma) |
+| Forma limit | none |
+| mods stay in place | off |
+
+A player may also state what the item ALREADY carries (`Start`): that layout
+is free, and the Forma it took count toward the rank. The page does not ask for
+it yet.
+
+**THE PAGE** asks `/api/forma/plan` and puts the answer in the slots — the
+"auto" button and the Forma plan block run the same call, on the weapon page
+and the Warframe page alike. The block stands on its own under the build bar,
+not inside the mods block: it belongs to the item and to the builds planned on
+it, and its rules to every item. The rules live in
+`wfsim-forma-rules`; the builds planned with the open one in
+`wfsim-forma-group-<item>`, by preset id, where the item is the weapon id or
+`warframe-<frame>`. Planning writes the layout into every ticked build. A board
+build is read-only, so it is planned alone and offers no partners.
+
+## The optimizer of the plan
+
+`engine::forma::optimize` answers the question a plan cannot: what ONE layout
+reaches across whole groups of builds, and what each Forma buys. A group is
+covered by the best of its builds that fits, as a share of its leader; hard
+loadouts must fit every answer. The result is a CURVE — the cheapest layout
+for each worst-group share, each point strictly better than the one before —
+so the reader sees what one more Forma is worth rather than one number.
+Under the same rules as the plan, fixed order included. It reads; it never
+writes a build.
+
+On the weapon page it is **plan ahead**, inside the Forma block. A group is a
+board RULER, every mode of it; riven rows count only when asked, and the leader
+is the best row in scope. The line (80% by default) marks the first point that
+reaches it. A pick can be saved as a build already placed on the point's
+layout, and the ticked builds can be placed onto the point for no further
+Forma (`start` = the point, limit 0). The scope is per weapon, in
+`wfsim-forma-reach-<weapon>`. A Warframe has no board, so no optimizer.
+
+Every row of a weapon's board is read — two and a half thousand on the Torid,
+in well under a second — and a row with a card this page cannot read is left
+out rather than read light.
+
+The capacity line follows the rules (`builderCap`, `wfCapacity`): no Catalyst
+halves it, and without the mastery Forma a rank-40 weapon's rank is what the
+layout spent. The board judges every build at `BENCHMARK_INVESTMENT` whatever
+the player's rules say.
 
 ## Where the truth has to live
 

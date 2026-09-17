@@ -28,6 +28,7 @@ pub mod auras_data;
 pub mod buff_events;
 pub mod buffs;
 pub mod chain;
+pub mod forma;
 pub mod formation;
 pub mod damage;
 pub mod data;

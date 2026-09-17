@@ -22,7 +22,7 @@
 // Exits non-zero on the first failure.
 import { openApp } from "./cdp.mjs";
 
-const app = await openApp({ boot: 12000 });
+const app = await openApp({ boot: 12000, base: process.env.WFSIM_BASE });
 const { evaluate, check } = app;
 
 const r = await evaluate(`(async () => {
@@ -51,7 +51,7 @@ const r = await evaluate(`(async () => {
     for (let i = 0; i < 10; i++) { slots[i].mod = null; slots[i].pol = null; }
     mad.slice(off, off + 8).forEach((m, i) => { slots[i].mod = m.id; });
     slots[8].mod = exm.id;
-    autoForma();
+    await autoForma();
     const planned = { forma: bill(), used: capacityUsed(), cap: cap() };
     // EVERY MOD MATCHED is the end of the road: nothing is left to buy, so a
     // build still over capacity there is impossible rather than mis-planned.
@@ -72,7 +72,7 @@ const r = await evaluate(`(async () => {
   for (let i = 0; i < 10; i++) { slots[i].mod = null; slots[i].pol = null; }
   mad.slice(0, 8).forEach((m, i) => { slots[i].mod = m.id; });
   slots[8].mod = exm.id;
-  autoForma(); await sleep(200);
+  await autoForma(); await sleep(200);
   const pick = (idx, label) => {
     openPolMenu(idx);
     const rows = Array.from(document.getElementById('slot-menu').querySelectorAll('.mi'));
@@ -103,7 +103,7 @@ const r = await evaluate(`(async () => {
     for (let i = 0; i < 10; i++) { slots[i].mod = null; slots[i].pol = null; }
     fam.slice(off, off + 8).forEach((m, i) => { slots[i].mod = m.id; });
     slots[8].mod = exm.id;
-    autoForma(); renderMods(); await sleep(50);
+    await autoForma(); renderMods(); await sleep(50);
     if (capacityUsed() <= cap() && bill() > 0) {
       out.parityMods = slots.slice(0, 9).map((s) => s.mod);
       out.pageForma = bill();

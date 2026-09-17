@@ -699,6 +699,19 @@ history, so a polarity off and back on lands on the number it started from; and
 the page's bill is the engine's, because the plan is MIRRORED in JS rather than
 asked for.
 
+## `check_forma_group`
+
+**BUILDS OF ONE ITEM SHARE ITS POLARITIES.** Two saved Torid builds planned
+together come out wearing one main layout, each with exactly its own mods, and
+the open build keeps its positions. The rules are global: a Catalyst switched
+off halves the capacity line, a Forma limit refuses in Chinese, and a Warframe
+plans through the same box with a capacity line that agrees with the plan.
+With mods kept in place neither build's mods move. Planning ahead over the
+Torid's whole board draws a curve where each point costs more and reaches
+further, marks the first point on the line, saves a pick already wearing the
+point's layout with every card of its row, and places the ticked builds onto
+the point's exact positions. `WFSIM_BASE` points it at a dev server.
+
 ## `check_rescore_paths`
 
 Only the clock and a person may start a board run. Plain node, no browser: it

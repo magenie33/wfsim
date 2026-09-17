@@ -64,7 +64,7 @@ const out = await app.evaluate(`(async () => {
       if (!m) { dropped.push(id); continue; }
       slots[i].mod = id; slots[i].rank = m.max_rank; i++;
     }
-    autoForma(); renderMods();
+    await autoForma(); renderMods();
     await sleep(300);
     const body = { ...buildPayload(), ...theFight(),
       enemy: ${JSON.stringify(ENEMY)}, level: ${LEVEL},

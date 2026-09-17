@@ -115,7 +115,7 @@ const r = await evaluate(`(async () => {
   out.pinnedCands = A.candidates ?? null;
   // A row carries the mode it was scored in into the build it becomes.
   const first = (A.results || [])[0];
-  out.rowToBuild = first ? resultToState(first).mode : null;
+  out.rowToBuild = first ? (await resultToState(first)).mode : null;
 
   // POOLING BOTH doubles the space — one candidate per (build, mode).
   opt.modes = { base: 'search', alternate: 'search' }; renderOptModes();
