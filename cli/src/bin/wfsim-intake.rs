@@ -162,13 +162,6 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<wfsim_engine::builds
         let metric = bench.metric();
         let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
         let duration = scenario.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
-        // THE MEAN AND ITS OWN STANDARD ERROR, which is what the response
-        // carries them for: `metric.field` is the MEDIAN run, the right
-        // headline for "what a fight looks like" and the wrong number to rank
-        // two cards by. The ruler's run count is a term of the scenario, so the
-        // request already carries it and nothing here overrides it.
-        let (mean_of, se_of) =
-            (format!("{}_mean", metric.field), format!("{}_se", metric.field));
         for played in &modes {
             let best = wfsim_engine::rivens_data::perfect(
                 default.clone(),
@@ -178,18 +171,7 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<wfsim_engine::builds
                     if let (Some(o), Some(spec)) = (req.as_object_mut(), spec_of(&c.0)) {
                         o.insert("rivens".into(), wfsim_webapi::riven_request(&spec));
                     }
-                    let out = wfsim_webapi::simulate_json(&req);
-                    if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-                        return None;
-                    }
-                    // A FIGHT THAT REPORTS NO SPREAD IS NOT ASKED, and the
-                    // default stands: without one there is nothing to say
-                    // whether a gap is a difference or a draw.
-                    let read = |k: &str| out.get(k).and_then(Value::as_f64);
-                    Some((
-                        metric.of(read(&mean_of)?, duration),
-                        metric.of(read(&se_of)?, duration),
-                    ))
+                    score_of(&wfsim_webapi::simulate_json(&req), metric, duration)
                 },
             );
             // KEYED ON THE CORNER ITSELF, so two rulers landing on one card
@@ -198,6 +180,28 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<wfsim_engine::builds
         }
     }
     found.values().map(with).collect()
+}
+
+/// A FIGHT'S ANSWER IN THE RULER'S UNITS, AND ITS OWN STANDARD ERROR.
+///
+/// `metric.field` on the wire IS the mean over the runs — the scorer's own
+/// reading — and `<field>_se` sits beside it. The ruler's run count is a term
+/// of the scenario, so the request already carries it. A fight that did not
+/// run, or reports no spread, answers None and the default stands: without a
+/// spread nothing says whether a gap is a difference or a draw.
+fn score_of(
+    out: &Value,
+    metric: &wfsim_engine::metrics::MetricDef,
+    duration: f64,
+) -> Option<(f64, f64)> {
+    if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        return None;
+    }
+    let read = |k: &str| out.get(k).and_then(Value::as_f64);
+    Some((
+        metric.of(read(metric.field)?, duration),
+        metric.of(read(&format!("{}_se", metric.field))?, duration),
+    ))
 }
 
 /// EVERY MOD LIST A BUILD MAY BE STORED WITH, the build as it stands first:
@@ -669,6 +673,23 @@ mod tests {
         assert!(choices.iter().any(|m| m.contains(&"hunter_track@0".to_string())
             && m.contains(&"continuous_misery@2".to_string())));
         assert!(choices.iter().all(|m| m.contains(&"serration".to_string())), "an unlisted card is pinned");
+    }
+
+    /// A PROBE READS AN ANSWER OUT OF A REAL RESPONSE, under every ruler. A
+    /// field name the simulator does not send makes every probe "a fight that
+    /// did not run", and the default then stands without a word.
+    #[test]
+    fn a_probe_reads_the_fight_it_ran() {
+        for bench in wfsim_engine::benchmarks_data::all() {
+            let mut req: Value = serde_json::to_value(&bench.scenario).expect("scenario");
+            let o = req.as_object_mut().expect("a mapping");
+            o.insert("weapon".into(), json!("braton_prime"));
+            o.insert("mods".into(), json!(["serration"]));
+            o.insert("runs".into(), json!(4));
+            o.insert("duration".into(), json!(5));
+            let got = score_of(&wfsim_webapi::simulate_json(&req), bench.metric(), 5.0);
+            assert!(got.is_some_and(|(s, e)| s.is_finite() && e.is_finite()), "{}: {got:?}", bench.id);
+        }
     }
 
     /// ADMISSION IS THE RULER'S, NOT THIS FILE'S. A thin build is legal to

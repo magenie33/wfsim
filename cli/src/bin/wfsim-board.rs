@@ -1024,8 +1024,8 @@ fn main() {
         let valence = s.get("valence").and_then(Value::as_str).unwrap_or("");
         // A RIVEN'S SHAPE, when the submission carries one. Two flat lists, the
         // way the endpoint stores them: the ROLLS are never submitted because
-        // they are never ranked — `rivens_data::perfect` finds this shape's own
-        // best corner for this fight, below.
+        // they are never ranked — `wfsim-intake` finds this shape's own best
+        // corner (`rivens_data::perfect`).
         let shape = {
             let bonuses = get("riven_pos");
             let malus = s
