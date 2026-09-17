@@ -330,7 +330,7 @@ const added = await evaluate(`(async () => {
 
   // Through the real button's own path, so what is asserted is what a click
   // produces and not a second copy of it.
-  addResult(row);
+  await addResult(row);
   const ps = loadPresetList(BUILDS);
   const st = (ps[ps.length - 1] || {}).state || {};
   const missing = BUILD_AXES.filter((k) => !(k in st));
