@@ -496,6 +496,11 @@ ui:
   "Punch Through": 穿透
   "QQ group": QQ官方交流群
   "Quick calc": 快速计算
+  "every rank": 全等级
+  "cards every list offers at each of their ranks, not only at max — a card whose lower rank can beat its max, like Status Duration beside a malus": "这些卡在每个列表里按每个等级各出一行，而不只是满级 —— 用于低等级可能胜过满级的卡，比如带负面时的触发时间卡"
+  "every card at max rank only": 所有卡都只按满级
+  "add a card": 添加卡片
+  "default list": 恢复默认清单
   "Radial (AoE)": 范围伤害
   "Radial explosion": 范围爆炸
   "Range": 射程

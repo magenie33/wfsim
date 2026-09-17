@@ -751,8 +751,8 @@ same build.
 - **status duration, on every weapon.** It paces Heat's armour strip (the steps
   scale with it) and nullifies every status at or below -100%, so a deeper malus
   strips faster until the burn disappears (M99). Its true best can sit INSIDE
-  the band, on the edge of that cliff, and only the two ends are asked: the gap
-  between an end and that edge is an accepted error, not a search.
+  the band, on the edge of that cliff; only the two ends are asked, and the edge
+  is reached by a low-rank card instead (below).
 - **a stat the WEAPON takes the sign off**, one row each in
   `rivens_data::SIGN_IS_NOT_THE_ANSWER`. A weapon earns a row by paying for NOT
   having something, which makes whatever supplies it a cost: `+2000% on
@@ -768,6 +768,15 @@ same build.
   list honest is a test that DERIVES membership from the effects and fails when
   a row is missing — an extra row costs two fights, a missing one publishes a
   card the fight would have argued with.
+
+**A CARD'S RANK IS ASKED THE SAME WAY, BY NAME.** A submitted rank is dropped
+and every card is stored at max rank, except the cards
+`data/search/every_rank.yaml` names: each of those in the build is asked at
+every rank, crossed with every riven corner, under the same rule below
+(`rivens_data::perfect`). A deep Status Duration malus plus a low-rank Hunter
+Track is how the edge of the -100% cliff is reached. A card joins the list by
+name, never by resembling one on it, and its rank is part of the id —
+`<card>@<rank>` in `mods` (`mods_data::RANK_MARK`).
 
 Measured over the library: 1,948 of 2,418 riven builds are answered by the god
 roll and never reach a fight; 470 name a stat worth asking about, and all but

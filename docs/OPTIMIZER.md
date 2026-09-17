@@ -277,6 +277,26 @@ treatment the exilus slot has, in `optimizer/` as well as on the page. Today
 the builder has the slot and the optimizer has nothing, which is the one place
 these two tabs still disagree about what a build is.
 
+## A card is searched at max rank, unless it is named
+
+**A CARD BELOW ITS MAX RANK IS AN ID OF ITS OWN**, `<card>@<rank>`
+(`mods_data::RANK_MARK`), resolved by `mods_data::at_rank` with the same linear
+ladder the card text is filled from. It rides every mod list — a request, a
+scope, a result row, a board record — so no surface grows a rank field it could
+drop. Max rank is the bare id. A card whose ladder is not linear says
+`lower_ranks_unmodelled` and refuses (Double Tap's stack cap).
+
+**WHICH CARDS ARE TRIED AT EVERY RANK IS A LIST OF IDS**, never a rule about
+effects: `data/search/every_rank.yaml` is the default, served as
+`/api/meta.every_rank`, and the quick calc's `every rank` control replaces it
+for one reader. Named cards enter the quick calc's lists and the optimizer's
+scope once per rank; the variants share the card's family, so two ranks of one
+card are never one build. The reason the list exists is Status Duration: a
+malus past -100% nullifies every status, and a low-rank card lifts it back
+above the line where a max-rank one would erase the malus (M99).
+
+The same list decides what the board's intake asks — docs/BOARD.md §Rivens.
+
 ## The search and the replay must be the SAME fight
 
 Three ways they were not, all found by running one build through both:

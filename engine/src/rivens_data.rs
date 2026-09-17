@@ -989,7 +989,8 @@ pub const PHYSICAL_STATS: [&str; 3] = ["impact", "puncture", "slash"];
 /// It paces Heat's armour strip (its steps scale with it) and nullifies every
 /// status at or below -100%, so a deeper malus strips faster until the burn
 /// disappears (M99). The true best can therefore sit INSIDE the band, on the
-/// edge of that cliff; the ends are an accepted approximation of it.
+/// edge of that cliff; the ends are asked, and a low-rank card on
+/// `data/search/every_rank.yaml` is what reaches the edge.
 pub const DURATION_STATS: [&str; 1] = ["status_duration"];
 
 /// …AND THE WEAPONS THAT TAKE THE SIGN OFF ONE MORE, one row each.
@@ -1060,60 +1061,77 @@ pub fn ambiguous_stats(shape: &RivenShape, weapon: &str) -> BTreeSet<String> {
 }
 
 /// THE ROLLS TO STORE THIS SHAPE WITH, asked of the fight only where the sign
-/// cannot answer.
-///
-/// `score` returns the fight's number and ITS OWN standard error, and the
-/// second is what makes this deterministic without a tolerance anybody picked:
-/// a corner takes the card off the god roll only by beating it by more than the
-/// published measurement could tell apart. Two rolls the ruler cannot separate
-/// are not two builds, and between them the player gets the better card.
-///
-/// `None` from `score` is a fight that did not run; the god roll stands.
+/// cannot answer: [`perfect`] over its [`corners`], the god roll the default.
 pub fn best_roll(
     shape: &RivenShape,
     class: &str,
     ambiguous: &BTreeSet<String>,
     mut score: impl FnMut(&RivenSpec) -> Option<(f64, f64)>,
 ) -> RivenSpec {
+    let mut all = corners(shape, ambiguous).into_iter();
+    let god = all.next().expect("the god roll is always a corner");
+    let best = perfect(god, all, |rolls| score(&shape.at(class, rolls)));
+    shape.at(class, &best)
+}
+
+/// EVERY CORNER A SHAPE IS ASKED AT, the god roll first: every bonus at its
+/// ceiling and the malus at its floor, then every combination of the
+/// `ambiguous` stats flipped to their other end — `2^k` in all, where k is one
+/// on all but five builds in the library.
+pub fn corners(shape: &RivenShape, ambiguous: &BTreeSet<String>) -> Vec<Vec<f64>> {
     let stats: Vec<&str> = shape
         .bonuses
         .iter()
         .map(String::as_str)
         .chain(shape.malus.as_deref())
         .collect();
-    // THE ENDS THE GOD ROLL SITS AT, and the positions that may leave them.
     let god: Vec<f64> = (0..stats.len())
         .map(|i| if i < shape.bonuses.len() { ROLL_MAX } else { ROLL_MIN })
         .collect();
     let asked: Vec<usize> =
         (0..stats.len()).filter(|&i| ambiguous.contains(stats[i])).collect();
-    if asked.is_empty() {
-        return shape.at(class, &god);
-    }
-    let Some((base, base_err)) = score(&shape.at(class, &god)) else {
-        return shape.at(class, &god);
-    };
-    let mut best: Option<(f64, Vec<f64>)> = None;
-    // EVERY COMBINATION OF THE ASKED STATS AND NOTHING ELSE. `2^k` where k is
-    // one on all but five builds in the library, so this is two fights.
-    for m in 1..(1u32 << asked.len()) {
-        let mut rolls = god.clone();
-        for (bit, &i) in asked.iter().enumerate() {
-            if m >> bit & 1 == 1 {
-                rolls[i] = if rolls[i] == ROLL_MAX { ROLL_MIN } else { ROLL_MAX };
+    (0..(1u32 << asked.len()))
+        .map(|m| {
+            let mut rolls = god.clone();
+            for (bit, &i) in asked.iter().enumerate() {
+                if m >> bit & 1 == 1 {
+                    rolls[i] = if rolls[i] == ROLL_MAX { ROLL_MIN } else { ROLL_MAX };
+                }
             }
-        }
-        let spec = shape.at(class, &rolls);
-        let Some((s, err)) = score(&spec) else { continue };
-        // TWO STANDARD ERRORS OF THE DIFFERENCE, which is the ruler's own
-        // resolution and not a number chosen here.
+            rolls
+        })
+        .collect()
+}
+
+/// THE DEFAULT, UNLESS A FIGHT PROVES AN ALTERNATIVE BETTER.
+///
+/// `score` returns the fight's number and ITS OWN standard error, and the
+/// second is what makes this deterministic without a tolerance anybody picked:
+/// an alternative wins only by beating the default by more than two standard
+/// errors of the difference, the ruler's own resolution. Among those the best
+/// wins. Two corners the ruler cannot separate are not two builds, and between
+/// them the player gets the default. `None` from `score` is a fight that did
+/// not run; a default that did not run stands without asking the rest.
+pub fn perfect<C>(
+    default: C,
+    alternatives: impl IntoIterator<Item = C>,
+    mut score: impl FnMut(&C) -> Option<(f64, f64)>,
+) -> C {
+    let mut alternatives = alternatives.into_iter().peekable();
+    if alternatives.peek().is_none() {
+        return default;
+    }
+    let Some((base, base_err)) = score(&default) else { return default };
+    let mut best: Option<(f64, C)> = None;
+    for c in alternatives {
+        let Some((s, err)) = score(&c) else { continue };
         if s - base > 2.0 * (base_err * base_err + err * err).sqrt()
             && best.as_ref().is_none_or(|(b, _)| s > *b)
         {
-            best = Some((s, rolls));
+            best = Some((s, c));
         }
     }
-    shape.at(class, &best.map_or(god, |(_, r)| r))
+    best.map_or(default, |(_, c)| c)
 }
 
 #[cfg(test)]
@@ -1199,6 +1217,23 @@ fn a_card_is_the_god_roll_unless_a_fight_can_prove_otherwise() {
     // A FIGHT THAT DID NOT RUN LEAVES THE GOD ROLL STANDING.
     let dead = best_roll(&phys, "rifle", &asked_set, |_| None);
     assert_eq!(rolls(&dead), rolls(&god_roll(&phys, "rifle")));
+}
+
+/// AN ALTERNATIVE REPLACES THE DEFAULT ONLY BY MORE THAN TWO STANDARD ERRORS,
+/// and then the best such one wins; a default that did not run stands.
+#[test]
+fn perfect_keeps_the_default_until_a_fight_separates_them() {
+    let table = |c: &u32| match c {
+        0 => Some((10.0, 1.0)),
+        1 => Some((12.0, 1.0)),  // inside 2·√2 of the default
+        2 => Some((13.5, 1.0)),  // outside it
+        3 => Some((15.0, 1.0)),  // outside it, and the best
+        _ => None,
+    };
+    assert_eq!(perfect(0, [1], table), 0);
+    assert_eq!(perfect(0, [1, 2, 3, 9], table), 3);
+    assert_eq!(perfect(9, [3], table), 9, "a default that did not run stands");
+    assert_eq!(perfect(0, [], |_: &u32| unreachable!("nothing to compare, nothing run")), 0);
 }
 
 /// A STATUS DURATION MALUS IS ASKED AT ITS TWO ENDS, on any weapon. A best

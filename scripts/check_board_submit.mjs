@@ -283,6 +283,20 @@ console.log("the board's submission endpoint\n");
 }
 
 
+// ---- A MOD BELOW MAX RANK IS AN ID OF ITS OWN ----------------------------
+//
+// `<card>@<rank>` (`engine::mods_data::RANK_MARK`) rides `mods` and `exilus`,
+// and no other axis: an arcane's rank is scored at its ceiling.
+{
+  const db = database();
+  const ranked = await post({ ...PAYLOAD, mods: ["hunter_track@0", ...PAYLOAD.mods.slice(1)] }, db);
+  const kept = [...db.rows.values()].map((r) => r.mods).flat();
+  check("a ranked mod id is taken and kept", ranked.status === 200 && kept.includes("hunter_track@0"),
+    `${ranked.status} ${JSON.stringify(kept)}`);
+  const arc = await post({ ...PAYLOAD, arcanes: ["secondary_deadhead@2"] }, database());
+  check("...and a ranked arcane id is refused", arc.status === 400, String(arc.status));
+}
+
 // ---- THE LIMIT IS THE ENGINE'S, and this file cannot derive it ----------
 //
 // `MAX_MODS` is `MAIN_SLOTS + 1`: eight main slots and the STANCE, the one card

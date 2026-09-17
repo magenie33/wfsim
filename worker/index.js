@@ -25,7 +25,10 @@ const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 // it against the engine's own constant — this file has no game data and cannot
 // derive it, so the only thing keeping the two in step is that assertion.
 export const MAX_MODS = 9;
-const ID = /^[a-z0-9_]{1,64}$/;
+const ID_PLAIN = /^[a-z0-9_]{1,64}$/;
+// A MOD BELOW ITS MAX RANK is `<card>@<rank>` (`engine::mods_data::RANK_MARK`),
+// and only the axes marked `ranked` may carry one.
+const RANKED_ID = /^[a-z0-9_]{1,64}(@[0-9]{1,2})?$/;
 
 /// WHAT A SUBMISSION CARRIES, declared ONCE. Two things are derived from it —
 /// the shape check and the stored record — because two hand-written lists is a
@@ -75,7 +78,7 @@ export const AXES = [
   // this worker has no game data: it cannot know that a Laetum has five tiers
   // and a rifle none, so a fixed count here would be right for one benchmark
   // and silently wrong for the next.
-  { key: "mods", kind: "ids", max: MAX_MODS, axis: "mods" },
+  { key: "mods", kind: "ids", max: MAX_MODS, axis: "mods", ranked: true },
   { key: "evolutions", kind: "ids", max: 8, set: true, axis: "evolutions" },
   { key: "arcanes", kind: "ids", max: 4, axis: "arcanes" },
   // A MODULAR WEAPON'S PARTS, as TWO FLAT IDS rather than as the object the
@@ -90,7 +93,7 @@ export const AXES = [
   // say which one came out of the exilus slot, and only the page knows. It
   // joined on 2026-08-25, when the rulers stopped excluding the slot — beam
   // range is exilus, and beam range is how many bodies a beam reaches.
-  { key: "exilus", kind: "id", axis: "mods" },
+  { key: "exilus", kind: "id", axis: "mods", ranked: true },
   { key: "grip", kind: "id", axis: "assembly" },
   { key: "loader", kind: "id", axis: "assembly" },
   // A RIVEN, AS A SHAPE — which stats it rolled and which is the malus. The
@@ -132,6 +135,7 @@ function record(b) {
   const rec = { at: new Date().toISOString().slice(0, 10) };
   for (const a of AXES) {
     const v = b[a.key];
+    const ID = a.ranked ? RANKED_ID : ID_PLAIN;
     if (a.kind === "id") {
       if (v !== undefined && typeof v !== "string") return { err: `bad ${a.key}` };
       const s = v || "";

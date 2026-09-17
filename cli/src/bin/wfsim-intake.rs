@@ -107,42 +107,57 @@ fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
 }
 
 /// THE ROLLS A RIVEN IS STORED WITH — the god roll, unless a stat's sign has
-/// stopped saying which end of its band is better.
+/// stopped saying which end of its band is better — AND THE RANK EACH CARD ON
+/// THE EVERY-RANK LIST IS STORED AT, max unless a lower one is better.
 ///
-/// THE DEFAULT IS THE GOD ROLL AND IT COSTS NOTHING. Every bonus at its ceiling
-/// and the malus at its floor is the same rule that scores every row at full
-/// Forma, every mod at max rank and every valence at the roll's maximum:
-/// anything a player can eventually reach is not part of what a row states.
-/// 1,948 of the library's 2,418 riven builds are answered by that sentence and
-/// never reach a fight.
+/// THE DEFAULT IS THE GOD ROLL AT MAX RANK AND IT COSTS NOTHING. Every bonus at
+/// its ceiling and the malus at its floor is the same rule that scores every
+/// row at full Forma and every valence at the roll's maximum: anything a player
+/// can eventually reach is not part of what a row states.
 ///
-/// A STAT LOSES ITS SIGN FOR A LISTED REASON — `rivens_data::ambiguous_stats`
-/// holds the three sources and there is no fourth. Only those stats are asked
-/// about, both ends, everything else pinned at the god roll.
+/// A STAT LOSES ITS SIGN FOR A LISTED REASON (`rivens_data::ambiguous_stats`),
+/// AND A CARD LOSES ITS MAX RANK ONLY BY BEING NAMED in
+/// `data/search/every_rank.yaml`. Only those are asked, every combination of
+/// them: a Status Duration malus at its deep end is off the -100% cliff, and a
+/// low-rank Hunter Track is what lifts it back above.
 ///
 /// AND EACH `(ruler, mode)` ANSWERS FOR ITSELF. One ruler cannot speak for
 /// another and the corner that wins a crowd need not win one target, so what
-/// comes back is the SET — usually one, and then a riven is a build like any
-/// other.
-fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<f64>> {
-    let Some(shape) = &v.riven else { return Vec::new() };
-    let Some(class) = wfsim_engine::rivens_data::class_for_weapon(&v.weapon) else {
-        return Vec::new();
+/// comes back is the SET — usually one build. Empty is a riven this engine
+/// cannot resolve.
+fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<wfsim_engine::builds::ValidBuild> {
+    let class = wfsim_engine::rivens_data::class_for_weapon(&v.weapon);
+    let rolls: Vec<Vec<f64>> = match (&v.riven, class) {
+        (None, _) => vec![Vec::new()],
+        (Some(_), None) => return Vec::new(),
+        (Some(shape), Some(_)) => wfsim_engine::rivens_data::corners(
+            shape,
+            &wfsim_engine::rivens_data::ambiguous_stats(shape, &v.weapon),
+        ),
     };
-    let rolls_of = |spec: &wfsim_engine::rivens_data::RivenSpec| -> Vec<f64> {
-        spec.bonuses.iter().map(|b| b.roll).chain(spec.malus.iter().map(|m| m.roll)).collect()
+    let mods = rank_choices(v);
+    let default = (rolls[0].clone(), mods[0].clone());
+    let alternatives: Vec<(Vec<f64>, Vec<String>)> = rolls
+        .iter()
+        .flat_map(|r| mods.iter().map(move |m| (r.clone(), m.clone())))
+        .filter(|c| *c != default)
+        .collect();
+    let with = |c: &(Vec<f64>, Vec<String>)| {
+        let mut b = v.clone().with_riven_rolls(c.0.clone());
+        b.mods = c.1.clone();
+        b
     };
-    let ambiguous = wfsim_engine::rivens_data::ambiguous_stats(shape, &v.weapon);
-    if ambiguous.is_empty() {
-        return vec![rolls_of(&wfsim_engine::rivens_data::god_roll(shape, class))];
+    if alternatives.is_empty() {
+        return vec![with(&default)];
     }
+    let spec_of = |r: &[f64]| v.riven.as_ref().zip(class).map(|(shape, class)| shape.at(class, r));
 
     let modes: Vec<wfsim_engine::weapons_data::WeaponPlayMode> =
         wfsim_engine::weapons_data::play_modes(&v.weapon)
             .into_iter()
             .filter(|m| m.sustainable)
             .collect();
-    let mut found: BTreeMap<String, Vec<f64>> = BTreeMap::new();
+    let mut found: BTreeMap<String, (Vec<f64>, Vec<String>)> = BTreeMap::new();
     for bench in wfsim_engine::benchmarks_data::all() {
         let metric = bench.metric();
         let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
@@ -151,39 +166,77 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<f64>> {
         // carries them for: `metric.field` is the MEDIAN run, the right
         // headline for "what a fight looks like" and the wrong number to rank
         // two cards by. The ruler's run count is a term of the scenario, so the
-        // request already carries it and nothing here overrides it — at a
-        // cheaper count the answer is about the probe rather than about the
-        // cards.
+        // request already carries it and nothing here overrides it.
         let (mean_of, se_of) =
             (format!("{}_mean", metric.field), format!("{}_se", metric.field));
         for played in &modes {
-            let base = wfsim_webapi::simulate_request(&scenario, v, *played);
-            let best =
-                wfsim_engine::rivens_data::best_roll(shape, class, &ambiguous, |spec| {
-                    let mut req = base.clone();
-                    if let Some(o) = req.as_object_mut() {
-                        o.insert("rivens".into(), wfsim_webapi::riven_request(spec));
+            let best = wfsim_engine::rivens_data::perfect(
+                default.clone(),
+                alternatives.iter().cloned(),
+                |c| {
+                    let mut req = wfsim_webapi::simulate_request(&scenario, &with(c), *played);
+                    if let (Some(o), Some(spec)) = (req.as_object_mut(), spec_of(&c.0)) {
+                        o.insert("rivens".into(), wfsim_webapi::riven_request(&spec));
                     }
                     let out = wfsim_webapi::simulate_json(&req);
                     if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
                         return None;
                     }
-                    // A FIGHT THAT REPORTS NO SPREAD IS NOT ASKED, and the god
-                    // roll stands: without one there is nothing to say whether
-                    // a gap is a difference or a draw.
+                    // A FIGHT THAT REPORTS NO SPREAD IS NOT ASKED, and the
+                    // default stands: without one there is nothing to say
+                    // whether a gap is a difference or a draw.
                     let read = |k: &str| out.get(k).and_then(Value::as_f64);
                     Some((
                         metric.of(read(&mean_of)?, duration),
                         metric.of(read(&se_of)?, duration),
                     ))
-                });
-            // KEYED ON THE ROLLS THEMSELVES, so two rulers landing on one card
-            // leave one build. The text is only a key; the numbers are the value.
-            let rolls = rolls_of(&best);
-            found.insert(format!("{rolls:?}"), rolls);
+                },
+            );
+            // KEYED ON THE CORNER ITSELF, so two rulers landing on one card
+            // leave one build. The text is only a key; the corner is the value.
+            found.insert(format!("{best:?}"), best);
         }
     }
-    found.into_values().collect()
+    found.values().map(with).collect()
+}
+
+/// EVERY MOD LIST A BUILD MAY BE STORED WITH, the build as it stands first:
+/// each card the every-rank list names at each of its ranks, crossed.
+fn rank_choices(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<String>> {
+    let listed = &wfsim_engine::mods_data::every_rank().mods;
+    let pool = wfsim_engine::mods_data::pool_for_weapon(&v.weapon);
+    let mut out: Vec<Vec<String>> = vec![v.mods.clone()];
+    for (i, id) in v.mods.iter().enumerate() {
+        let Some(card) = pool.iter().find(|m| m.id == id.as_str() && listed.iter().any(|l| l == m.id))
+        else {
+            continue;
+        };
+        let lower: Vec<String> = (0..card.max_rank)
+            .map(|r| wfsim_engine::mods_data::ranked_id(card.id, r, card.max_rank))
+            .filter(|r| wfsim_engine::mods_data::at_rank(r).is_some())
+            .collect();
+        out = out
+            .into_iter()
+            .flat_map(|m| {
+                let at: Vec<Vec<String>> = lower
+                    .iter()
+                    .map(|r| {
+                        let mut x = m.clone();
+                        x[i] = r.clone();
+                        x
+                    })
+                    .collect();
+                std::iter::once(m).chain(at)
+            })
+            .collect();
+    }
+    out
+}
+
+/// A CARD'S RANK IS NOT PART OF WHAT ARRIVES: every card is stored at max rank,
+/// and [`corners_for`] asks the fight about the ones the every-rank list names.
+fn at_max_rank(id: &str) -> String {
+    wfsim_engine::mods_data::split_rank(id).0.to_string()
 }
 
 fn flag(name: &str) -> Option<String> {
@@ -290,14 +343,16 @@ fn intake(
             &id(&rec, "grip"),
             &id(&rec, "loader"),
         );
+        let mods: Vec<String> = ids(&rec, "mods").iter().map(|m| at_max_rank(m)).collect();
+        let exilus = at_max_rank(&id(&rec, "exilus"));
         let v = match wfsim_engine::builds::validate_with(
             &weapon,
-            &ids(&rec, "mods"),
+            &mods,
             &ids(&rec, "evolutions"),
             &ids(&rec, "arcanes"),
             &id(&rec, "valence"),
             riven.as_ref(),
-            Some(id(&rec, "exilus")).filter(|x| !x.is_empty()).as_deref(),
+            Some(exilus).filter(|x| !x.is_empty()).as_deref(),
             assembly.as_ref(),
         ) {
             Ok(v) => v,
@@ -317,17 +372,34 @@ fn intake(
         // record that arrives states a SHAPE; what is stored is a build a player
         // could go and assemble, which needs numbers.
         let corners = corners_for(&v);
-        if v.riven.is_some() && corners.is_empty() {
+        if corners.is_empty() {
             eprintln!("refused {weapon}: its riven names a shape this engine cannot resolve");
             refused += 1;
             continue;
         }
-        let variants: Vec<Vec<f64>> = if corners.is_empty() { vec![Vec::new()] } else { corners };
-        for rolls in variants {
+        for corner in corners {
+            // A CORNER'S MODS ARE CANONICALISED AGAIN: a lower rank drains
+            // less, and the representative orders plain cards by drain.
+            let v = match wfsim_engine::builds::validate_with(
+                &corner.weapon,
+                &corner.mods,
+                &corner.evolutions,
+                &corner.arcanes,
+                &corner.valence,
+                corner.riven.as_ref(),
+                corner.exilus.as_deref(),
+                corner.assembly.as_ref(),
+            ) {
+                Ok(b) => b.with_riven_rolls(corner.riven_rolls.clone()),
+                Err(why) => {
+                    eprintln!("refused {weapon} at {:?}: {why}", corner.mods);
+                    continue;
+                }
+            };
+            let rolls = v.riven_rolls.clone();
             // THE ROLLS GO ON THE BUILD BEFORE THE KEY IS TAKEN. They are part
             // of the fight, so they are part of the identity the id hashes —
             // two ends of one shape are two builds with two numbers.
-            let v = v.clone().with_riven_rolls(rolls.clone());
             let key = wfsim_engine::builds::build_id(&v);
             let rec = if rolls.is_empty() {
                 canonical(&v)
@@ -565,6 +637,38 @@ mod tests {
         let ids: std::collections::BTreeSet<&str> =
             builds.iter().filter_map(|b| b["id"].as_str()).collect();
         assert_eq!(ids.len(), builds.len(), "each corner has its own id");
+    }
+
+    /// A RANK ARRIVING ON A CARD THE EVERY-RANK LIST DOES NOT NAME IS DROPPED:
+    /// investment is not a choice, so that card is stored at max rank.
+    #[test]
+    fn a_submitted_rank_is_stored_at_max() {
+        let mut mods = FULL.to_vec();
+        mods[3] = "vital_sense@2";
+        let (builds, .., refused) = intake(vec![row("r", &mods, json!({}))].into_iter());
+        assert_eq!((refused, builds.len()), (0, 1));
+        let stored: Vec<&str> = builds[0]["record"]["mods"]
+            .as_array()
+            .expect("mods")
+            .iter()
+            .filter_map(Value::as_str)
+            .collect();
+        assert!(stored.contains(&"vital_sense"), "{stored:?}");
+        assert_eq!(ids_of(vec![row("r", &mods, json!({}))]), ids_of(vec![row("f", &FULL, json!({}))]));
+    }
+
+    /// A CARD THE LIST NAMES IS ASKED AT EVERY RANK, and two such cards at
+    /// every PAIR of ranks: Hunter Track's six by Continuous Misery's four.
+    #[test]
+    fn every_listed_card_is_crossed_at_every_rank() {
+        let mods: Vec<String> = ["hunter_track", "continuous_misery", "serration"].map(String::from).to_vec();
+        let v = wfsim_engine::builds::validate("braton_prime", &mods, &[], &[], "").expect("legal");
+        let choices = rank_choices(&v);
+        assert_eq!(choices.len(), 6 * 4);
+        assert_eq!(choices[0], v.mods, "the build as it stands comes first");
+        assert!(choices.iter().any(|m| m.contains(&"hunter_track@0".to_string())
+            && m.contains(&"continuous_misery@2".to_string())));
+        assert!(choices.iter().all(|m| m.contains(&"serration".to_string())), "an unlisted card is pinned");
     }
 
     /// ADMISSION IS THE RULER'S, NOT THIS FILE'S. A thin build is legal to

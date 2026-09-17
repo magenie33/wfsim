@@ -9352,7 +9352,7 @@ const builtinBuildsUncached = (w) => {
         // Tennokai one, which is most of what the row is.
         slots: (() => {
           const ids = (row.mods || []).slice();
-          const si = ids.findIndex((id) => (modById(id) || {}).stance);
+          const si = ids.findIndex((id) => (modById(splitRank(id)[0]) || {}).stance);
           const stance = si >= 0 ? ids.splice(si, 1)[0] : null;
           const ex = row.exilus && row.exilus !== "none" ? row.exilus : null;
           const main = ids.filter((id) => id !== ex);
@@ -9366,7 +9366,10 @@ const builtinBuildsUncached = (w) => {
           return out;
         })().map((s, k) => {
           const id = s.mod;
-          if (id !== BOARD_RIVEN_SLOT || !row.riven) return { mod: id, pol: null, rank: null };
+          if (id !== BOARD_RIVEN_SLOT || !row.riven) {
+            const [card, rank] = splitRank(id);
+            return { mod: card, pol: null, rank };
+          }
           const local = RIVEN_PREFIX + boardRivenName(row.riven);
           boardRivenDefs[local] = row.riven;
           return { mod: local, pol: null, rank: null };
@@ -9487,7 +9490,10 @@ function buildBarCfg() {
 /// IT TAKES A DESCRIPTOR RATHER THAN READING STATE: a result off the wire is
 /// not the page's live slots, and the sentence is the same either way.
 function buildContentsHtml(b) {
-  const modName = (id) => (modById(id) || { name: null }).name || prettify(id);
+  const modName = (id) => {
+    const [card, r] = splitRank(id);
+    return ((modById(card) || { name: null }).name || prettify(card)) + (r != null ? ` R${r}` : "");
+  };
   const bits = [];
   // THE MODE FIRST, because it decides what every number after it means.
   if (b.modeLabel) bits.push(`<span class="bl-mode">${escHtml(b.modeLabel)}</span>`);
@@ -9737,8 +9743,10 @@ function renderBuildFinder() {
         return { label: `${tr("Riven")} ${stats}`, title: stats,
           cls: ["rv", same === true ? "same" : same === false ? "diff" : ""].filter(Boolean).join(" ") };
       }
-      const m = modById(id);
-      return { img: m ? IMG(m.image) : null, label: m ? m.name : prettify(id),
+      const [card, rank] = splitRank(id);
+      const m = modById(card);
+      return { img: m ? IMG(m.image) : null,
+        label: (m ? m.name : prettify(card)) + (rank != null ? ` R${rank}` : ""),
         title: id === ex ? "Exilus" : "", cls: mark("mod:" + id, lead) };
     };
     const marked = (chips) => chips.map((c) => ({ ...c, cls: mark(c.key, lead) }));
@@ -10227,6 +10235,27 @@ const show = (id, on) => {
 };
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
 const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx && s.mod === id);
+// A CARD BELOW ITS MAX RANK IS AN ID OF ITS OWN on the wire, `<card>@<rank>`
+// (`engine::mods_data::RANK_MARK`), so every list of mod ids carries its ranks.
+// A slot keeps the card and the rank apart, and these are the crossings.
+const splitRank = (id) => {
+  const m = typeof id === "string" && !isRivenId(id) ? /^(.+)@(\d+)$/.exec(id) : null;
+  return m ? [m[1], Number(m[2])] : [id, null];
+};
+const rankedId = (card, rank) => {
+  const m = card && modById(card);
+  return m && !m.riven && rank != null && rank < m.max_rank ? `${card}@${rank}` : card;
+};
+const slotModId = (s) => (s && s.mod ? rankedId(s.mod, s.rank) : null);
+/// The cards the quick calc and the search try at EVERY rank — `every_rank` in
+/// /api/meta, unless the reader replaced it in the quick calc's settings.
+const everyRank = () => gainPrefs.everyRank || (META && META.every_rank) || { mods: [], arcanes: [] };
+/// `m` at each rank below its max, as list rows: `id` is the ranked id, `card`
+/// the card's, `rank` the rank it seats at and `drain` what it costs there.
+const lowerRanks = (m) => (!m.riven && everyRank().mods.includes(m.id)
+  ? Array.from({ length: m.max_rank }, (_, r) =>
+    ({ ...m, id: `${m.id}@${r}`, card: m.id, rank: r, drain: modDrain(m, r) }))
+  : []);
 
 // Switching weapons rebuilds every weapon-scoped view. It runs as an
 // APPLY (auto-save stays out of the reset/reseed churn — the optimizer
@@ -10742,7 +10771,7 @@ function buildPayload() {
     // this or a bare value, so an old saved build still means what it meant.
     arcane: arcanes,
     arcane_rank: arcaneRanks,
-    mods: slots.filter((s) => s.mod).map((s) => s.mod),
+    mods: slots.filter((s) => s.mod).map(slotModId),
     // HOW IT IS PLAYED, from the BUILD. Riding in the scenario as `form` lets
     // the FIGHT decide how a weapon is fired, so the official ruler silently
     // plays every Incarnon weapon through its cycle and "never transmuting"
@@ -10789,7 +10818,7 @@ function stateFromBuild(p, weapon, exilusId) {
   // needs no field of its own on the wire — where the exilus id has to be
   // PASSED IN, because an exilus-eligible mod is legal in a main slot and the
   // list alone cannot say which entry came out of which slot.
-  const stanceId = ids.find((id) => (modById(id) || {}).stance);
+  const stanceId = ids.find((id) => (modById(splitRank(id)[0]) || {}).stance);
   const main = ids.filter((id) => id !== exilusId && id !== stanceId);
   const sl = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
   main.slice(0, 8).forEach((id, i) => { sl[i].mod = id; });
@@ -10799,10 +10828,12 @@ function stateFromBuild(p, weapon, exilusId) {
     sl[EXILUS].mod = main[8];
   }
   if (stanceId) sl[STANCE].mod = stanceId;
-  // A RANK IS THE CARD'S CEILING. The wire carries no mod rank at all — the
-  // engine reads a maxed card, which is what every number in this app is
-  // measured at — so this is the page filling in what it alone displays.
-  sl.forEach((s) => { if (s.mod && modById(s.mod)) s.rank = modById(s.mod).max_rank; });
+  // A RANK IS THE ONE THE ID NAMES, and the card's ceiling when it names none.
+  sl.forEach((s) => {
+    const [card, r] = splitRank(s.mod);
+    const m = card && modById(card);
+    if (m) { s.mod = card; s.rank = r ?? m.max_rank; }
+  });
   const evo = { 1: null, 2: null, 3: null, 4: null };
   (p.evolutions || []).forEach((id) => {
     const t = (w.evolutions || []).find((tt) => tt.options.some((o) => o.id === id));
@@ -11855,6 +11886,8 @@ const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 // left in a reader's localStorage is inert because nothing reads it. See
 // `gainScenario`.
 let gainPrefs = { on: true, runs: GAIN_RUNS_MIN };
+/// Is the every-rank editor open? Not persisted: it is a place you go to.
+let everyRankOpen = false;
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
@@ -11909,9 +11942,14 @@ let gainAxis = { kind: "mods", idx: 0 };
 // hand-maintained list of "the fields that matter" grows a hole the moment a
 // field is added; deriving the key from the payload cannot.
 const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs.on,
-  gainScenario().scenario]);
+  gainScenario().scenario, everyRank()]);
 
-const famOf = (id) => (modById(id) || {}).family || null;
+// A CARD IS ITS OWN FAMILY here, so one card at two ranks is refused too.
+const famOf = (id) => {
+  const [card] = splitRank(id);
+  const m = modById(card);
+  return m ? m.family || card : null;
+};
 const modsCompatible = (ids) => {
   const fams = ids.map(famOf).filter(Boolean);
   return new Set(fams).size === fams.length;
@@ -11927,9 +11965,17 @@ const modsCompatible = (ids) => {
 function gainCandidates(axis) {
   if (axis.kind === "arcane") {
     const cur = arcanes.slice();
+    const here = arcaneRankedId(axis.idx);
     return arcanePool(axis.idx)
-      .filter((a) => a.id !== cur[axis.idx])
-      .map((a) => { const next = cur.slice(); next[axis.idx] = a.id; return { id: a.id, payload: { arcane: next } }; });
+      .flatMap((a) => [a, ...lowerArcaneRanks(a)])
+      .filter((a) => a.id !== here)
+      .map((a) => {
+        const next = cur.slice();
+        const ranks = arcaneRanks.slice();
+        next[axis.idx] = a.card || a.id;
+        ranks[axis.idx] = a.card ? a.rank : null;
+        return { id: a.id, payload: { arcane: next, arcane_rank: ranks } };
+      });
   }
   if (axis.kind === "evo") {
     // Every tier at once, because they are all on screen at once — but only
@@ -12008,10 +12054,11 @@ function gainCandidates(axis) {
       .filter(([id, , off]) => id !== mode && !off)
       .map(([id]) => ({ id, payload: { mode: id } }));
   }
-  const cur = slots.map((s) => s.mod);
+  const cur = slots.map(slotModId);
   // `buildPool()`, not the weapon's: a scan that ranks a mod this build's
   // evolutions forbid recommends something the picker will not offer.
   return buildPool()
+    .flatMap((m) => [m, ...lowerRanks(m)])
     .filter((m) => !cur.includes(m.id))
     .filter((m) => axis.idx !== EXILUS || m.exilus)
     .map((m) => { const next = cur.slice(); next[axis.idx] = m.id; return { id: m.id, payload: { mods: next.filter(Boolean) } }; })
@@ -13041,6 +13088,10 @@ function renderQuickCalc() {
     `<input type="number" id="gp-runs" min="${GAIN_RUNS_MIN}" max="${GAIN_RUNS_MAX}" step="10" value="${gainRuns()}">` +
     `<span>${escHtml(tr("runs"))}</span></label>` +
 
+    // WHICH CARDS THE LISTS OFFER AT EVERY RANK, and not only at max.
+    `<button class="ghost-btn small" id="gp-ranks" aria-expanded="${everyRankOpen}" title="${escHtml(tr("cards every list offers at each of their ranks, not only at max — a card whose lower rank can beat its max, like Status Duration beside a malus"))}">${
+      escHtml(tr("every rank"))} · ${everyRank().mods.length + everyRank().arcanes.length}</button>` +
+
     // PROGRESS while it runs, and an invitation before it has. The run counts
     // ("1x -> 10x") are gone from here: they were a property
     // of the algorithm back when there were two passes at two precisions. The
@@ -13048,7 +13099,8 @@ function renderQuickCalc() {
     // number came from.
     `<span class="pc-note">${gainScan.running
       ? `${gainScan.done}/${gainScan.total}`
-      : (gainScan.note ? "" : escHtml(tr("open a slot to rank its mods by effect")))}</span>`);
+      : (gainScan.note ? "" : escHtml(tr("open a slot to rank its mods by effect")))}</span>` +
+    (everyRankOpen ? everyRankPanel() : ""));
   // Every click stays inside: a redraw detaches these nodes, and the document
   // outside-click handler closes on a target whose `.popover` ancestor is gone.
   box.onclick = (e) => e.stopPropagation();
@@ -13085,6 +13137,53 @@ function renderQuickCalc() {
   // (Picking a scenario is handled by the dropdown's own `onPick`, which does
   // the same thing it always did: save, then answer the new question NOW
   // rather than at the next time a picker happens to open.)
+  const rb = $("gp-ranks");
+  if (rb) rb.onclick = () => { everyRankOpen = !everyRankOpen; renderQuickCalc(); };
+  box.querySelectorAll(".rk-x").forEach((b) => { b.onclick = () => {
+    const cur = everyRank();
+    setEveryRank({ ...cur, [b.dataset.k]: cur[b.dataset.k].filter((x) => x !== b.dataset.id) });
+  }; });
+  const add = $("gp-ranks-add");
+  if (add) add.onchange = () => {
+    const [k, id] = add.value.split(":");
+    const cur = everyRank();
+    if (id && !cur[k].includes(id)) setEveryRank({ ...cur, [k]: [...cur[k], id] });
+  };
+  const reset = $("gp-ranks-reset");
+  if (reset) reset.onclick = () => setEveryRank(null);
+}
+
+/// THE EVERY-RANK LIST, EDITED IN PLACE — by card, never by effect. `null` is
+/// the published default (`every_rank` in /api/meta). A list is a new question,
+/// so the open scan re-asks.
+function setEveryRank(next) {
+  gainPrefs = { ...gainPrefs, everyRank: next || undefined };
+  if (!next) delete gainPrefs.everyRank;
+  saveGainPrefs();
+  renderQuickCalc();
+  if (!$("mod-popover").hidden) renderMenu(pickerSlot, $("mod-search").value);
+  if (!$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value);
+  refreshGains();
+}
+
+/// The editor's body: the list as removable chips, an adder offering this
+/// weapon's ranked cards, and the way back to the default.
+function everyRankPanel() {
+  const list = everyRank();
+  const nameOf = (k, id) => (k === "mods" ? modById(id) : arcaneById(id)) || { name: id };
+  const chips = ["mods", "arcanes"].flatMap((k) => list[k].map((id) =>
+    `<span class="rkitem">${escHtml(nameOf(k, id).name)}<button class="rk-x" data-k="${k}" data-id="${escHtml(id)}" title="${
+      escHtml(tr("remove"))}">×</button></span>`));
+  const arcs = [...new Map(arcanePools().flatMap((_, i) => arcanePool(i)).map((a) => [a.id, a])).values()];
+  const offers = [
+    ...currentPool.filter((m) => !m.riven && m.max_rank > 0 && !list.mods.includes(m.id)).map((m) => ["mods", m]),
+    ...arcs.filter((a) => (a.max_rank || 0) > 0 && !list.arcanes.includes(a.id)).map((a) => ["arcanes", a]),
+  ].sort((a, b) => String(a[1].name).localeCompare(String(b[1].name)));
+  return `<div class="pc-ranks">${chips.join("") || `<span class="pc-note">${escHtml(tr("every card at max rank only"))}</span>`}` +
+    `<select id="gp-ranks-add"><option value="">+ ${escHtml(tr("add a card"))}</option>${
+      offers.map(([k, x]) => `<option value="${k}:${escHtml(x.id)}">${escHtml(x.name)}</option>`).join("")}</select>` +
+    (gainPrefs.everyRank ? `<button class="ghost-btn small" id="gp-ranks-reset">${escHtml(tr("default list"))}</button>` : "") +
+    `</div>`;
 }
 
 /// WHAT THE CALCULATOR IS DOING, AND WHAT IS LEFT OF IT.
@@ -13387,13 +13486,13 @@ function sectionedRows(items, sectionOf, rowHtml) {
 /// `exilusChip` is off in the EXILUS SLOT's own list, where every row is
 /// exilus-eligible and the chip is the heading repeated once per card.
 const modRow = (m, { cls = "", title = "", attrs = "", chips = "", note = "",
-  trailing = "", exilusChip = true } = {}) =>
+  trailing = "", exilusChip = true, rank = m.max_rank } = {}) =>
   `<div class="opt ${cls} ${m.rarity ? "rar-" + m.rarity : ""}" ${attrs} title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${
     wl(m.name, modWikiUrl(m))}${modMarketLink(m)}${
     exilusChip && m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}${chips}</div><div class="me">${
-    cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div>${note}</div>${trailing}</div>`;
+    cardLines(m, rank).map((x) => `<div>${x}</div>`).join("")}</div>${note}</div>${trailing}</div>`;
 
 /// THE SCOPE CONTROL — the optimizer's trailing half of the row above.
 ///
@@ -13424,7 +13523,8 @@ function renderMenu(slotIdx, query) {
   // chosen (eight rows of unsorted drain at the top of a drain sort), and it
   // carries nothing: every placed mod already has a "slot N" chip
   // that says where it is.
-  const group = (m) => (slots[slotIdx].mod === m.id ? 0 : 1);
+  const here = slotModId(slots[slotIdx]);
+  const group = (m) => (here === m.id ? 0 : 1);
   const hits = buildPool()
     // The exilus slot takes what `exilusPool()` says, which is the same
     // question the optimizer's exilus scope asks.
@@ -13436,6 +13536,8 @@ function renderMenu(slotIdx, query) {
     .filter((m) => (slotIdx === STANCE) === !!m.stance)
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => searchHit(m, q))
+    // A CARD ON THE EVERY-RANK LIST is a row per rank, each with its own gain.
+    .flatMap((m) => [m, ...lowerRanks(m)])
     .sort((a, b) => {
       const g = group(a) - group(b); // current first, then equipped, then the rest
       if (g) return g;
@@ -13464,8 +13566,8 @@ function renderMenu(slotIdx, query) {
   // Two sections, each labelled. With rivens leading, an unlabelled pool
   // below them would read as a continuation of the riven list.
   const row = (m) => {
-    const isCur = slots[slotIdx].mod === m.id;
-    const at = placedAt(m.id, slotIdx);
+    const isCur = here === m.id;
+    const at = placedAt(m.card || m.id, slotIdx);
     // Exchanging with the exilus slot would move OUR mod there — only legal
     // if it is exilus-eligible (or the slot is empty).
     const ownMod = slots[slotIdx].mod ? modById(slots[slotIdx].mod) : null;
@@ -13495,7 +13597,8 @@ function renderMenu(slotIdx, query) {
       cls: `${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""}`,
       attrs: `data-id="${m.id}"`,
       title,
-      chips: ` ${badge}${gainChip}`,
+      rank: m.card ? m.rank : m.max_rank,
+      chips: ` ${m.card ? `<span class="rkchip">R${m.rank}</span>` : ""}${badge}${gainChip}`,
       // THE BUILDER BINDS A VALUE, and this is it: what seating this card
       // costs the slot you are standing in.
       trailing: `<span class="dr">${m.drain}</span>`,
@@ -13506,17 +13609,18 @@ function renderMenu(slotIdx, query) {
       ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
       : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
-    const id = o.dataset.id;
-    if (slots[slotIdx].mod === id) { closePopovers(); return; } // already here
+    if (here === o.dataset.id) { closePopovers(); return; } // already here
+    const [id, rank] = splitRank(o.dataset.id);
     const at = placedAt(id, slotIdx);
     if (at >= 0) {
       // EXCHANGE the two slots' mods (+ranks); polarities stay with their slots
       const a = slots[slotIdx], b = slots[at];
       [a.mod, b.mod] = [b.mod, a.mod];
       [a.rank, b.rank] = [b.rank, a.rank];
+      if (rank != null) a.rank = rank;
     } else {
       slots[slotIdx].mod = id; // polarity is decoupled — keep the slot's polarity
-      slots[slotIdx].rank = modById(id).max_rank; // added mods default to max rank
+      slots[slotIdx].rank = rank ?? modById(id).max_rank; // max unless the row names a rank
     }
     closePopovers(); renderMods();
   }));
@@ -13696,6 +13800,17 @@ const arcanePickPool = arcanePool;
 /// Which slot the picker is filling — the popover is shared, the slot is not.
 let arcaneSlotIdx = 0;
 const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
+/// Seat `i`'s arcane as a ranked id — the spelling a list row carries.
+const arcaneRankedId = (i) => {
+  const a = arcaneById(arcanes[i]);
+  const r = arcaneRanks[i];
+  return a && r != null && r < (a.max_rank || 0) ? `${a.id}@${r}` : arcanes[i];
+};
+/// `a` at each rank below its max when it is on the every-rank list — the
+/// arcane twin of `lowerRanks`.
+const lowerArcaneRanks = (a) => (everyRank().arcanes.includes(a.id)
+  ? Array.from({ length: a.max_rank || 0 }, (_, r) => ({ ...a, id: `${a.id}@${r}`, card: a.id, rank: r }))
+  : []);
 // new arcane → max rank, in the slot the picker was opened from
 // EVERY ARCANE MUTATION REFRESHES, because the mutation owns the consequence.
 //
@@ -13801,18 +13916,27 @@ function renderArcaneMenu(query) {
   // or the description — in either language (searchBlob).
   // Same rule as the mod picker, minus a key an arcane does not have: there
   // is no drain on an arcane, so it is effect then name.
+  const here = arcaneRankedId(arcaneSlotIdx);
   const hits = arcanePickPool(arcaneSlotIdx)
     .filter((a) => !q || searchBlob(a).includes(q))
-    .sort((a, b) => (a.id === arcanes[arcaneSlotIdx] ? -1 : b.id === arcanes[arcaneSlotIdx] ? 1 : 0)
+    .flatMap((a) => [a, ...lowerArcaneRanks(a)])
+    .sort((a, b) => (a.id === here ? -1 : b.id === here ? 1 : 0)
       || gainSort(a, b, ["gain", "name"]));
   menu.innerHTML = scanStrip(gainScan, { kind: "arcane", idx: arcaneSlotIdx }, hits.map((a) => a.id))
     + (hits.length ? hits.map((a) => {
-    const isCur = a.id === arcanes[arcaneSlotIdx];
+    const isCur = a.id === here;
+    const r = a.card ? a.rank : a.max_rank;
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${arcaneMarketLink(a)}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}${gainChipFor(a.id, tr("Arcane"))}</div>${effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)))}</div></div>`;
+      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${arcaneMarketLink(a)}${a.card ? ` <span class="rkchip">R${a.rank}</span>` : ""}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}${gainChipFor(a.id, tr("Arcane"))}</div>${effLines(cardLines(a, r, effectsAt(a, r)))}</div></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`);
-  menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
+  menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
+    const [id, rank] = splitRank(o.dataset.id);
+    const i = arcaneSlotIdx;
+    setArcane(id, i);
+    if (rank != null) setArcaneRank(i, rank);
+    closePopovers(); renderArcanes();
+  }));
 }
 
 // ⋯ on a filled arcane slot: mirror the mod slot menu (remove).
@@ -15912,8 +16036,8 @@ function boardPayload() {
     // elementals and a stance carries no element.
     mods: mainSlots()
       .filter((s) => s.mod)
-      .map((s) => (isRivenId(s.mod) ? BOARD_RIVEN_SLOT : s.mod))
-      .concat((slots[STANCE] || {}).mod ? [slots[STANCE].mod] : []),
+      .map((s) => (isRivenId(s.mod) ? BOARD_RIVEN_SLOT : slotModId(s)))
+      .concat((slots[STANCE] || {}).mod ? [slotModId(slots[STANCE])] : []),
     // …AND WHAT THAT SLOT HOLDS, as a SHAPE. Which stats, and which is the
     // malus — never the rolls: the board scores a shape at its own ceiling, the
     // same way it scores every row at full Forma and every valence at the
@@ -20802,13 +20926,23 @@ async function runOptimize() {
     Object.keys(opt.arcanes).forEach((id) => {
       if (opt.arcanes[id] && opt.arcanes[id] !== "off") arcs[id] = opt.arcanes[id];
     });
+    // A POOLED CARD ON THE EVERY-RANK LIST is pooled at each of its ranks.
+    const withRanks = (marks, lower) => {
+      const out = { ...marks };
+      Object.entries(marks).forEach(([id, st]) => {
+        if (st === "search") lower(id).forEach((x) => { out[x.id] = "search"; });
+      });
+      return out;
+    };
+    const modLower = (id) => { const m = modById(id); return m ? lowerRanks(m) : []; };
+    const arcLower = (id) => { const a = arcaneById(id); return a ? lowerArcaneRanks(a) : []; };
     const body = {
       weapon: $("weapon").value,
-      mods: opt.mods,
+      mods: withRanks(opt.mods, modLower),
       rivens: rivenPayload(),
       build_size: opt.size,
       build_min: opt.min,
-      arcanes: arcs,
+      arcanes: withRanks(arcs, arcLower),
       evolutions,
       // HOW IT IS PLAYED, as a search dimension — the marks, like the arcanes'.
       // `mode` travels too and is what a scope with no axis falls back to, so
@@ -20830,13 +20964,13 @@ async function runOptimize() {
       // loader pairs per chamber is a real scope and a real cost, and it is the
       // owner's call whether a search should spend it.
       ...(assembly ? { assembly: { ...assembly } } : {}),
-      exilus: opt.exilus,
+      exilus: withRanks(opt.exilus, modLower),
       // THE STANCE, PINNED TO THE BUILDER'S — not a search axis, the way the
       // valence and the parts above are not. A stance decides what a swing IS,
       // so a melee search without one ranks builds nobody holds; the mod list
       // filters stances out (a stance is legal in the stance slot and nowhere
       // else), so this is the only thing that puts it back.
-      stance: (slots[STANCE] || {}).mod || "",
+      stance: slotModId(slots[STANCE]) || "",
       // THE FIGHT, WHOLE AND DERIVED — never a hand-written list of its
       // fields. This was twelve of them copied out one by one, under a comment
       // claiming "the TENNO travels whole", which was true only by inspection:

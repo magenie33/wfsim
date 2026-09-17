@@ -636,6 +636,16 @@ first, and the list being written is the LAST thing it may touch. AND WHAT IS
 ALREADY THERE COMES BACK: `reclaimStoredReplays` strips every replay written
 under the old rule on the way in.
 
+## A slot keeps the card and its rank apart; the wire joins them
+
+**A SLOT HOLDS `{ mod, rank }`, AND EVERY LIST THAT LEAVES THE PAGE HOLDS
+`<card>@<rank>`** below max rank (docs/OPTIMIZER.md §A card is searched at max
+rank). `slotModId` and `splitRank` are the only crossings; a share link keeps
+its own positional rank field. The quick calc's `every rank` control edits the
+list of cards offered once per rank, by card, stored in `wfsim-gain`; a named
+card is a picker row per rank, each with its own gain chip, and the optimizer
+pools each rank of a pooled one.
+
 ## Progress belongs where the work is being read
 
 **PROGRESS BELONGS WHERE THE WORK IS BEING READ.** A pool of ninety mods at a

@@ -636,6 +636,8 @@ body.on-enemies [data-module="builder"]{display:none}
 .exchip{font-size:9px;letter-spacing:.05em;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;vertical-align:1px}
 .slotchip{font-size:9px;letter-spacing:.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:4px;padding:0 4px;vertical-align:1px}
 .slotchip.cur{color:#fff;background:var(--accent);border-color:var(--accent)}
+/* a lower rank of a card on the every-rank list, one picker row each */
+.rkchip{font-size:9px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;vertical-align:1px}
 /* placed mods share ONE colour family (accent); the current slot is stronger */
 .combo-menu .opt.placed{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .combo-menu .opt.placed:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}
@@ -1205,6 +1207,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   text-overflow:ellipsis;white-space:nowrap;border-bottom:1px dotted var(--line);cursor:help}
 .quick-calc .pc-runs{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--muted);font-size:11px}
 .quick-calc .pc-runs input[type=number]{width:58px}
+/* The every-rank list, open under the bar: one chip per card. */
+.quick-calc .pc-ranks{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.quick-calc .rkitem{display:inline-flex;align-items:center;gap:2px;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 2px 1px 6px}
+.quick-calc .rk-x{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;padding:0 4px}
 /* THE RUN COUNT, on its own row and deliberately not in a field grid: it is
    NOT one of the fight's fields, and looking like one is how it came to be
    saved with the fight and pinned by an official ruler. A short input and a
