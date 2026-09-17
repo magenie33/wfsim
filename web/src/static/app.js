@@ -1862,7 +1862,7 @@ async function init() {
   foldRivensIntoOneList();
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
-  $("auto-forma").addEventListener("click", () => { autoForma(); renderMods(); });
+  $("auto-forma").addEventListener("click", () => autoForma().then(() => renderMods()));
   $("clear-mods").addEventListener("click", () => { slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; }); renderMods(); });
   document.addEventListener("click", (e) => {
     // `.rv-pick` opens the same popover from the riven tab, so its own click
@@ -7132,7 +7132,7 @@ async function drawShareCard(canvas, url) {
   // Capacity and Forma, right-aligned — the price of the build, which is half
   // of what a reader is judging.
   const fc = formaCount();
-  const cap = capOf(w.id);
+  const cap = builderCap();
   const cost = [`${capacityUsed()} / ${cap}`,
     [`${fc.regular} Forma`, fc.umbra ? `${fc.umbra} Umbra` : null, fc.omni ? `${fc.omni} Omni` : null]
       .filter(Boolean).join(" · ")].join("   ");
@@ -8196,7 +8196,7 @@ function restoreState(st, weapon) {
   //
   // Nothing of yours is at risk: a benchmark build is read-only and has no
   // hand-set polarity to overwrite.
-  if (officialBuildActive()) autoForma();
+  if (officialBuildActive()) autoForma({ alone: true }).then((r) => { if (r) renderMods(); });
   renderAssembly();
   renderWielder(); renderWeaponName();
   renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); refreshPanel();
@@ -10407,13 +10407,15 @@ function applyWeaponInner(id, presetMods) {
 
   slots = Array.from({ length: 10 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
-  autoForma(); // sensible default: minimum-Forma polarities for the preset
+  // A sensible default for a preset's mods: its cheapest layout. Nothing to
+  // plan for an empty build, whose layout is the one the weapon was born with.
+  if (slots.some((x) => x.mod)) autoForma({ alone: true }).then((r) => { if (r) renderMods(); });
 
   renderAssembly();
   renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt();
 }
 
-// ---- forma / capacity plan (mirrors engine::mods::plan_forma) ----
+// ---- capacity and the bill for the layout on screen ----
 function slotDrain(base, modPol, slotPol) {
   if (!slotPol) return base;                                        // no polarity
   if (slotPol === "Omni") return modPol === "Umbra" ? base : Math.ceil(base / 2); // universal, not Umbra
@@ -10480,110 +10482,244 @@ function formaCount() {
   // like any other change to that slot.
   const stanceForma = stancePol !== (stancePolOf($("weapon").value) || null) ? 1 : 0;
   const regular = Math.max(added, removed) + stanceForma;
-  const floor = Math.max(0, formaMin($("weapon").value) - regular - umbra - omni);
+  // …UNLESS THE PLAYER'S RULES SAY NOT TO spend the mastery Forma.
+  const owed = formaRules().reach_max_rank ? formaMin($("weapon").value) : 0;
+  const floor = Math.max(0, owed - regular - umbra - omni);
   return { regular: regular + floor, umbra, omni };
 }
 
-// Auto-assign polarities for MINIMUM Forma-to-fit (mirrors engine plan_forma):
-// spend the innate pool on the biggest matching mods, then Forma the biggest
-// unmatched until it fits. Overwrites polarities: what an unmatched slot ends
-// up with is a leftover innate colour that had nowhere free to sit, or nothing.
+// ---- the Forma plan: the player's rules, and the builds planned together ----
 //
-// ...with a FLOOR under it on an adversary weapon (`plan_forma_spending`'s
-// `at_least`). Those five polarizations are what put the weapon at rank 40,
-// and rank 40 is where the 80 capacity this plan is measured against comes
-// from — so a plan that fits in two and stops has spent the capacity of a
-// weapon it did not build. They are bought either way; this puts them on the
-// biggest mods still unmatched instead of leaving them unspent.
-function autoForma() {
-  const w = $("weapon").value;
-  // THE STANCE SLOT GOES FIRST WHEN ANY FORMA IS SPENT AT ALL, which is the
-  // rule `engine::mods::best_stance_plan` follows and the way the slot is
-  // actually used: five points of capacity is more than polarizing any mod
-  // draining ten or less. A build that fits for FREE keeps its zero, so the
-  // choice is made by running the plan once with the slot as it is.
-  const st = slots[STANCE].mod ? modById(slots[STANCE].mod) : null;
-  if (st) {
-    slots[STANCE].pol = stancePolOf(w);
-    autoFormaWith(w);
-    if (formaCount().regular + formaCount().umbra + formaCount().omni > 0) {
-      slots[STANCE].pol = st.polarity;
-    }
+// THE PLAN IS THE ENGINE'S (`/api/forma/plan`, docs/INVESTMENT.md §The
+// planner); the page only says what to plan and puts the answer in the slots.
+// The RULES are the player's and GLOBAL — one set for every weapon and frame.
+// Which builds share an item's polarities is the ITEM's, and the build being
+// edited is always one of them, first, and never moved.
+const FORMA_RULES_KEY = "wfsim-forma-rules";
+const FORMA_RULES_DEFAULT = Object.freeze({
+  catalyst: true, reach_max_rank: true, grant_slot_first: true,
+  omni_forma: "never", umbra_forma: "when_needed", forma_limit: null,
+});
+function formaRules() {
+  let r = {};
+  try { r = JSON.parse(localStorage.getItem(FORMA_RULES_KEY) || "{}") || {}; } catch (_) { r = {}; }
+  const out = { ...FORMA_RULES_DEFAULT };
+  for (const k of Object.keys(out)) if (k in r) out[k] = r[k];
+  return out;
+}
+function storeFormaRules(r) {
+  try { localStorage.setItem(FORMA_RULES_KEY, JSON.stringify(r)); } catch (_) { /* a private window keeps the defaults */ }
+}
+/// The OTHER builds planned with the open one, by preset id, per item.
+const formaGroupKey = (item) => `wfsim-forma-group-${item}`;
+function formaGroup(item) {
+  try {
+    const g = JSON.parse(localStorage.getItem(formaGroupKey(item)) || "[]");
+    return Array.isArray(g) ? g : [];
+  } catch (_) { return []; }
+}
+function storeFormaGroup(item, ids) {
+  try { localStorage.setItem(formaGroupKey(item), JSON.stringify(ids)); } catch (_) { /* kept for this page only */ }
+}
+/// What the last plan for each page said, drawn by `renderFormaPlan`.
+const formaNotes = { builder: null, warframe: null };
+
+/// Put loadout `k` of a plan onto a ten-slot array: the layout's colours, and
+/// the loadout's mods where the plan placed them. Slot 8 is the exilus and
+/// slot 9 the slot that grants capacity, on both pages.
+function placeFormaPlan(ss, plan, k) {
+  const at = plan.loadouts[k].slots;
+  const main = ss.slice(0, 8).map((s) => ({ mod: s.mod, rank: s.rank }));
+  for (let i = 0; i < 8; i++) {
+    const src = at[i];
+    ss[i].mod = src == null ? null : main[src].mod;
+    ss[i].rank = src == null ? null : main[src].rank;
+    ss[i].pol = plan.layout.main[i] || null;
   }
-  autoFormaWith(w);
+  ss[8].pol = plan.layout.exilus || null;
+  ss[9].pol = plan.layout.grant || null;
 }
 
-// The plan itself, with the stance slot's colour already decided.
-function autoFormaWith(w) {
-  // …INCLUDING WHAT THE STANCE HANDS BACK. Planning against the weapon's own
-  // capacity alone buys polarizations the build does not need — and reaches for
-  // an Umbra Forma to do it, which is the one item this plan is meant to spare.
-  const cap = capOf(w) + stanceGrant();
-  const filled = [];
-  // …AND NOT THE STANCE SLOT, which buys CAPACITY rather than a discount: its
-  // Forma is `engine::mods::best_stance_plan`'s decision, and clearing its
-  // colour here would hand the plan a mismatch it never chose.
-  slots.forEach((s, i) => { const m = modById(s.mod); if (m && i !== STANCE) filled.push({ i, m }); });
-  slots.forEach((s, i) => { if (i !== STANCE) s.pol = null; });
-  const pool = innate.slice(0, 9).filter(Boolean);
-  const poolSize = pool.length;
-  // THE WEAPON'S OWN SLOTS, which is how many places a colour can sit — eight,
-  // nine where there is an exilus slot, and the stance slot is not one of them.
-  const slotCount = 8 + (weaponAxes().hasExilus ? 1 : 0);
-  const spareSlots = Math.max(0, slotCount - filled.length);
-  const bd = ({ i, m }) => modDrain(m, slots[i].rank);
-  const order = filled.slice().sort((a, b) => bd(b) - bd(a));
-  const matched = new Set(), free = new Set();
-  for (const { i, m } of order) { const k = pool.indexOf(m.polarity); if (k >= 0) { pool.splice(k, 1); matched.add(i); free.add(i); } }
-  // A COLOUR CANNOT BE PUT IN A DRAWER. Every innate colour sits on one of the
-  // weapon's slots, so one no mod wants is not simply absent: it goes on a
-  // mod-less slot (free) or on a modded one (+25%) — unless a Forma spent
-  // elsewhere overwrites it, which each one bought does for nothing because the
-  // bill is `max(added, removed)`. So this many are STUCK on a mod, and they go
-  // on the smallest drains there are. Mirrors `engine::mods::plan_forma`.
-  const stuck = () => order.slice().reverse().filter(({ i }) => !matched.has(i))
-    .slice(0, Math.max(0, poolSize - matched.size - spareSlots));
-  const drainOf = () => {
-    const stick = new Set(stuck().map((x) => x.i));
-    return filled.reduce((s, x) => s + (matched.has(x.i) ? Math.ceil(bd(x) / 2)
-      : stick.has(x.i) ? Math.round(bd(x) * 1.25) : bd(x)), 0);
+/// A weapon build as the planner reads it. A stance hands back five on a bare
+/// slot (`mods::STANCE_CAPACITY_GRANT`).
+function weaponLoadout(ss) {
+  const card = (s) => {
+    const m = s && s.mod ? modById(s.mod) : null;
+    return m ? { drain: modDrain(m, s.rank), polarity: m.polarity } : null;
   };
-  // AS LITTLE UMBRA AS POSSIBLE, BUT NEVER FAIL FOR WANT OF IT — the rule
-  // `engine::mods::fit` follows, and the page has to follow it too or the two
-  // answer differently on the same build. Umbra Forma is the scarce item, so a
-  // pass that fits without one is taken over a cheaper-looking one that spends
-  // it: an Umbra mod simply pays full drain until nothing else will do.
-  const polarize = (umbra) => {
-    const next = order.find(({ i, m }) => !matched.has(i) && (umbra || m.polarity !== "Umbra"));
-    if (!next) return false;
-    matched.add(next.i);
-    return true;
+  const st = ss[STANCE] && ss[STANCE].mod ? modById(ss[STANCE].mod) : null;
+  return {
+    main: ss.slice(0, 8).map(card),
+    exilus: weaponAxes().hasExilus ? card(ss[EXILUS]) : null,
+    grant: st ? { drain: 5, polarity: st.polarity } : null,
   };
-  while (drainOf() > cap) { if (!polarize(false)) break; }
-  while (drainOf() > cap) { if (!polarize(true)) break; }
-  // The innate pool is FREE, so only the slots this plan had to BUY count
-  // against the floor — the same order the engine works in, where the pool is
-  // spent before `at_least` is looked at. It spends REGULAR polarizations by
-  // preference for the same reason the fit above does.
-  while (matched.size - free.size < formaMin(w)) {
-    if (!polarize(false) && !polarize(true)) break;
+}
+/// A stored build's slots, repaired against this weapon's pool.
+const storedSlots = (st) => Array.from({ length: 10 }, (_, i) => {
+  const s = ((st && st.slots) || [])[i] || {};
+  return { mod: s.mod && modById(s.mod) ? s.mod : null, pol: s.pol ?? null, rank: s.rank ?? null };
+});
+/// The saved builds planned with the open one. A board build is read-only and
+/// planned alone, so it has none.
+function weaponFormaPartners() {
+  if (officialBuildActive()) return [];
+  const want = new Set(formaGroup(presetWeapon()));
+  return loadPresetList(BUILDS).filter((p) => presetId(p) !== activePreset && want.has(presetId(p)));
+}
+
+/// Plan the open build — with its partners unless `alone` — and write the
+/// layout into every one of them. Resolves to the answer, or null when the
+/// build changed while the engine was thinking and the answer is not for it.
+async function autoForma({ alone = false } = {}) {
+  const w = $("weapon").value;
+  const live = slots;
+  const sig = () => JSON.stringify(live.map((s) => [s.mod, s.rank]));
+  const before = sig();
+  const partners = alone ? [] : weaponFormaPartners();
+  const names = [presetLabel(buildNamed(activePreset)) || tr("this build"), ...partners.map(presetLabel)];
+  const r = await api("/api/forma/plan", {
+    weapon: w, rules: formaRules(),
+    loadouts: [weaponLoadout(live), ...partners.map((p) => weaponLoadout(storedSlots(p.state)))],
+  });
+  if (slots !== live || $("weapon").value !== w || sig() !== before) return null;
+  formaNotes.builder = { r, names, at: `${w}\u0000${activePreset}` };
+  if (!r || !r.ok || !r.fits) return r;
+  placeFormaPlan(live, r, 0);
+  if (partners.length) {
+    const ps = loadPresetList(BUILDS);
+    partners.forEach((p, k) => {
+      const q = ps.find((x) => presetId(x) === presetId(p));
+      if (!q) return;
+      const ss = storedSlots(q.state);
+      placeFormaPlan(ss, r, k + 1);
+      q.state = { ...q.state, slots: ss };
+    });
+    storePresetList(BUILDS, ps);
   }
-  for (const { i, m } of filled) slots[i].pol = matched.has(i) ? m.polarity : null;
-  // WHERE THE LEFTOVER COLOURS LAND. A mod-less slot first, at the position the
-  // weapon was born with it where that is free — nothing there can mismatch, so
-  // keeping the colour costs the reader nothing. What is left over from THAT is
-  // the `stuck` set above; anything past both is overwritten by a Forma this
-  // plan is spending anyway. An empty build therefore reports 0 Forma.
-  const left = pool.slice();
-  const emptyAt = (f) => slots.findIndex((s, i) => i < slotCount && !s.mod && !s.pol && f(s, i));
-  for (const home of [true, false]) {
-    for (let n = 0; n < left.length;) {
-      const k = emptyAt((s, i) => !home || innate[i] === left[n]);
-      if (k < 0) { n++; continue; }
-      slots[k].pol = left[n]; left.splice(n, 1);
-    }
+  return r;
+}
+
+/// The same plan for a result that is not on screen: its own layout, alone.
+async function planSlotsAlone(ss) {
+  const r = await api("/api/forma/plan", { weapon: $("weapon").value, rules: formaRules(), loadouts: [weaponLoadout(ss)] });
+  if (r && r.ok && r.fits) placeFormaPlan(ss, r, 0);
+  return ss;
+}
+
+/// THE LIVE BUILD'S CAPACITY UNDER THE PLAYER'S RULES. `capOf` is the weapon at
+/// its max rank with a Catalyst; without the mastery Forma the rank is what the
+/// build spent — "max rank increases by 2 per Forma added" (docs/INVESTMENT.md).
+function builderCap() {
+  const r = formaRules();
+  const w = weaponInfo($("weapon").value) || {};
+  const max = w.max_rank || 30;
+  const f = formaCount();
+  const rank = r.reach_max_rank ? max : Math.min(max, 30 + 2 * (f.regular + f.umbra + f.omni));
+  return rank * (r.catalyst ? 2 : 1) + stanceGrant();
+}
+
+/// A refusal in the page's own words, naming the builds it is about.
+function formaRefusal(reason, names) {
+  const who = (ids) => ids.map((i) => `「${names[i] || i + 1}」`).join(" ");
+  switch (reason && reason.kind) {
+    case "over_limit":
+      return tr("needs {n} Forma, over your limit of {m}")
+        .replace("{n}", reason.need).replace("{m}", reason.limit);
+    case "does_not_fit":
+      return tr("{who} does not fit even fully polarized").replace("{who}", who(reason.loadouts))
+        + (reason.umbra_off ? " " + tr("— an Umbra mod pays full drain while Umbra Forma is off") : "");
+    case "cannot_share":
+      return tr("each of these builds fits on its own, but no one layout serves them all");
+    default:
+      return tr("no plan");
   }
-  stuck().forEach((x, n) => { slots[x.i].pol = left[n] || null; });
+}
+
+/// THE FORMA BOX, one renderer for both pages. `ctx` names the page (`note`),
+/// the item (`item`, the group's key), the open build's label, the builds it
+/// may be planned with (`[{id, name}]`, or null when it is planned alone), and
+/// what planning and a rule change do.
+function renderFormaPlan(box, ctx) {
+  if (!box) return;
+  const r = formaRules();
+  const group = new Set(formaGroup(ctx.item));
+  const opt = (k, vals) => vals.map(([v, l]) =>
+    `<option value="${v}"${r[k] === v ? " selected" : ""}>${escHtml(tr(l))}</option>`).join("");
+  const tick = (k, label, hint) => `<label class="fp-tick" title="${escHtml(tr(hint))}">`
+    + `<input type="checkbox" data-r="${k}"${r[k] ? " checked" : ""}> ${escHtml(tr(label))}</label>`;
+  const partners = ctx.partners;
+  const note = formaNotes[ctx.note] && formaNotes[ctx.note].at === ctx.at ? formaNotes[ctx.note] : null;
+  let result = "";
+  if (note && note.r && note.r.ok && note.r.fits) {
+    const p = note.r;
+    const bill = [`${p.regular} Forma`, p.umbra ? `${p.umbra} Umbra` : null, p.omni ? `${p.omni} Omni` : null]
+      .filter(Boolean).join(" · ");
+    const rows = p.loadouts.map((l, i) => `<tr><td>${escHtml(note.names[i] || "")}</td>`
+      + `<td>${l.drain} / ${p.capacity + l.grant}</td><td>${l.spare}</td></tr>`).join("");
+    result = `<div class="fp-bill"><b>${escHtml(bill)}</b> · ${escHtml(tr("rank"))} ${p.rank}</div>`
+      + `<table class="fp-table"><tr><th>${escHtml(tr("Build"))}</th><th>${escHtml(tr("capacity"))}</th>`
+      + `<th>${escHtml(tr("spare"))}</th></tr>${rows}</table>`;
+  } else if (note && note.r && note.r.ok) {
+    result = `<div class="warn">${escHtml(formaRefusal(note.r.reason, note.names))}</div>`;
+  } else if (note) {
+    result = `<div class="warn">${escHtml((note.r && note.r.error) || tr("no plan"))}</div>`;
+  }
+  box.innerHTML = `<div class="fp-rules">`
+    + tick("catalyst", ctx.catalystLabel, "doubles capacity")
+    + tick("reach_max_rank", "Reach max rank", "spend at least the Forma the item's max rank takes — five on a rank-40 weapon — even where the build needs fewer")
+    + (ctx.grantLabel ? tick("grant_slot_first", ctx.grantLabel, "once any Forma is spent, polarize the slot that grants capacity first: it costs at most one Forma over the minimum") : "")
+    + `<label class="fp-pick">Omni Forma <select data-r="omni_forma">${opt("omni_forma",
+      [["never", "never"], ["allowed", "where it saves a Forma"], ["preferred", "for every polarization"]])}</select></label>`
+    + `<label class="fp-pick">Umbra Forma <select data-r="umbra_forma">${opt("umbra_forma",
+      [["never", "never"], ["when_needed", "only when nothing else fits"], ["allowed", "like any Forma"]])}</select></label>`
+    + `<label class="fp-pick">${escHtml(tr("Forma limit"))} <input type="number" min="0" step="1" data-r="forma_limit"`
+    + ` placeholder="${escHtml(tr("none"))}" value="${r.forma_limit ?? ""}"></label>`
+    + `</div><div class="exhint">${escHtml(tr("These rules apply to every weapon and every Warframe."))}</div>`
+    + `<div class="exlabel">${escHtml(tr("Plan together"))}</div><div class="fp-group">`
+    + `<label class="fp-tick"><input type="checkbox" checked disabled> ${escHtml(ctx.activeLabel)} `
+    + `<span class="dim">(${escHtml(tr("open"))})</span></label>`
+    + (partners
+      ? partners.map((p) => `<label class="fp-tick"><input type="checkbox" data-g="${escHtml(p.id)}"`
+        + `${group.has(p.id) ? " checked" : ""}> ${escHtml(p.name)}</label>`).join("")
+      : `<span class="dim">${escHtml(tr("a board build is planned on its own"))}</span>`)
+    + `</div><div class="exhint">${escHtml(tr("Builds of one item share its polarities. The plan finds one layout every ticked build fits, and moves the other builds' mods onto it."))}</div>`
+    + `<button class="ghost-btn small fp-run">${escHtml(tr("plan Forma"))}</button>`
+    + `<div class="fp-result">${result}</div>`;
+  box.querySelectorAll("[data-r]").forEach((el) => {
+    el.addEventListener("change", () => {
+      const next = formaRules();
+      const k = el.dataset.r;
+      if (el.type === "checkbox") next[k] = el.checked;
+      else if (k === "forma_limit") next[k] = el.value === "" ? null : Math.max(0, Math.floor(Number(el.value)) || 0);
+      else next[k] = el.value;
+      storeFormaRules(next);
+      ctx.changed();
+    });
+  });
+  box.querySelectorAll("[data-g]").forEach((el) => {
+    el.addEventListener("change", () => {
+      const ids = new Set(formaGroup(ctx.item));
+      if (el.checked) ids.add(el.dataset.g); else ids.delete(el.dataset.g);
+      storeFormaGroup(ctx.item, [...ids]);
+    });
+  });
+  box.querySelector(".fp-run").addEventListener("click", ctx.plan);
+}
+
+function renderBuilderFormaPlan() {
+  const w = presetWeapon();
+  renderFormaPlan($("forma-plan"), {
+    note: "builder",
+    at: `${w}\u0000${activePreset}`,
+    item: w,
+    activeLabel: presetLabel(buildNamed(activePreset)) || tr("this build"),
+    partners: officialBuildActive() ? null : loadPresetList(BUILDS)
+      .filter((p) => presetId(p) !== activePreset).map((p) => ({ id: presetId(p), name: presetLabel(p) })),
+    catalystLabel: "Orokin Catalyst",
+    grantLabel: weaponAxes().hasStance ? "Stance slot first" : null,
+    plan: async () => { await autoForma(); renderMods(); },
+    changed: () => renderMods(),
+  });
 }
 
 // ---- render mods ----
@@ -10629,7 +10765,7 @@ function renderMods() {
   // build it is about changes.
   if (typeof refreshBoardDoor === "function") refreshBoardDoor();
   const used = capacityUsed();
-  const cap = capOf($("weapon").value) + stanceGrant();
+  const cap = builderCap();
   const capEl = $("capacity");
   capEl.textContent = `${used} / ${cap}`;
   capEl.classList.toggle("over", used > cap);
@@ -10661,6 +10797,7 @@ function renderMods() {
   const st = $("stance");
   st.innerHTML = "";
   if (hasStance) st.appendChild(buildSlot(STANCE));
+  renderBuilderFormaPlan();
   refreshPanel();
 }
 
@@ -21170,9 +21307,8 @@ async function verifyOptRows(r) {
 }
 
 // An optimizer result as a builder-builds preset STATE (snapshotState
-// shape) — built without touching the build being edited. autoForma()
-// works on the global `slots`, so swap in a scratch array for the plan.
-function resultToState(res) {
+// shape) — built without touching the build being edited.
+async function resultToState(res) {
   // THE ROW'S OWN REQUEST, not a build re-derived from a description of one.
   //
   // `replay` is a complete simulate request written by the server out of the
@@ -21198,12 +21334,7 @@ function resultToState(res) {
   const st = stateFromBuild(payload, $("weapon").value, res.exilus);
   // …and the POLARITIES, which are the page's alone: a payload states the
   // build, and the cheapest layout that fits it is a plan the builder makes.
-  // `autoForma` works on the global `slots`, so swap in a scratch array.
-  const live = slots;
-  slots = st.slots.map((s, i) => ({ mod: s.mod, pol: innate[i], rank: s.rank }));
-  autoForma(); // minimum-Forma polarities, same as a hand-loaded build
-  st.slots = slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank }));
-  slots = live;
+  st.slots = await planSlotsAlone(st.slots.map((s, i) => ({ mod: s.mod, pol: innate[i], rank: s.rank })));
   // NO `sim`. Copying the optimizer's own buff config into the scenario so
   // that "add then Run Sim" matches its score makes a result rewrite the fight
   // you are working in; a result is a BUILD. The two configs can still
@@ -21217,12 +21348,13 @@ function resultToState(res) {
 // appended after the existing builds; the build being edited is never
 // clobbered. Auto-named "opt N" (rename in the preset bar if it earns a
 // real name).
-function addResult(res, btn) {
+async function addResult(res, btn) {
+  const state = await resultToState(res);
   const ps = loadPresetList(BUILDS);
   let n = 1;
   while (ps.some((p) => p.name === "opt " + n)) n++;
   const name = "opt " + n;
-  ps.push({ name, savedAt: Date.now(), state: resultToState(res) });
+  ps.push({ name, savedAt: Date.now(), state });
   storePresetList(BUILDS, ps);
   renderPresetBar(); // the builder's bar shows the new chip when you switch back
   if (btn) { btn.textContent = "✓ " + name; btn.disabled = true; }
@@ -21618,7 +21750,7 @@ function wfAuraGrant() {
   if (!s.pol) return g;
   return s.pol === m.polarity || s.pol === "Omni" ? g * 2 : Math.floor(g * 0.8);
 }
-const wfCapacity = () => WF_BASE_CAPACITY + wfAuraGrant();
+const wfCapacity = () => WF_BASE_CAPACITY / (formaRules().catalyst ? 1 : 2) + wfAuraGrant();
 function wfUsed() {
   let n = 0;
   for (let i = 0; i <= WF_EXILUS; i++) {
@@ -21653,36 +21785,66 @@ function wfFormaCount() {
   return { regular: Math.max(added, removed), umbra, omni };
 }
 
-/// The fewest Forma that fit. The AURA first — a matched aura slot doubles what
-/// it hands back, which is worth more than halving any single drain — then the
-/// innate colours on the biggest matching drains, then a Forma at a time on the
-/// biggest unmatched ones, Umbra last.
-function wfAutoForma() {
-  const pool = wfInnate().slice();
-  const take = (p) => { const k = pool.indexOf(p); if (k < 0) return false; pool.splice(k, 1); return true; };
-  const filled = [];
-  for (let i = 0; i <= WF_EXILUS; i++) { const m = wfMod(wf.slots[i].mod); if (m) filled.push({ i, m }); }
-  const aura = wfMod(wf.slots[WF_AURA].mod);
-  wf.slots.forEach((s) => { s.pol = null; });
-  if (aura && take(aura.polarity)) wf.slots[WF_AURA].pol = aura.polarity;
-  const order = filled.slice().sort((a, b) => wfDrainAt(b.m, wf.slots[b.i].rank) - wfDrainAt(a.m, wf.slots[a.i].rank));
-  for (const x of order) if (take(x.m.polarity)) wf.slots[x.i].pol = x.m.polarity;
-  // A colour cannot be put in a drawer: what no card wants sits on an empty
-  // slot, or on the smallest unmatched drain when there is none.
-  for (const p of pool) {
-    const k = wf.slots.findIndex((s, i) => i !== WF_AURA && !s.pol && !s.mod);
-    const x = order.slice().reverse().find((y) => !wf.slots[y.i].pol);
-    if (k >= 0) wf.slots[k].pol = p; else if (x) wf.slots[x.i].pol = p;
+/// A Warframe build as the planner reads it: the aura is the slot that grants.
+function wfFormaLoadout(st) {
+  const card = (s) => {
+    const m = s && s.mod ? wfMod(s.mod) : null;
+    return m ? { drain: wfDrainAt(m, s.rank), polarity: m.polarity } : null;
+  };
+  return { main: st.slots.slice(0, 8).map(card), exilus: card(st.slots[WF_EXILUS]), grant: card(st.slots[WF_AURA]) };
+}
+const wfItem = () => `warframe-${wf.frame}`;
+const wfActiveBuild = () => wfBarCfg().load().find((p) => p.name === wfActive) || null;
+function wfFormaPartners() {
+  const want = new Set(formaGroup(wfItem()));
+  const open = wfActiveBuild();
+  return wfBarCfg().load().filter((p) => p.id !== (open || {}).id && want.has(p.id));
+}
+
+/// The Warframe page's plan — `autoForma`'s, for a frame.
+async function wfAutoForma() {
+  const live = wf;
+  const sig = () => JSON.stringify(live.slots.map((s) => [s.mod, s.rank]));
+  const before = sig();
+  const partners = wfFormaPartners();
+  const names = [wfActive || tr("this build"), ...partners.map(presetLabel)];
+  const r = await api("/api/forma/plan", {
+    warframe: live.frame, rules: formaRules(),
+    loadouts: [wfFormaLoadout(live), ...partners.map((p) => wfFormaLoadout(wfNormalize(p.state, live.frame)))],
+  });
+  if (wf !== live || sig() !== before) return null;
+  formaNotes.warframe = { r, names, at: `${live.frame}\u0000${wfActive}` };
+  if (!r || !r.ok || !r.fits) return r;
+  placeFormaPlan(live.slots, r, 0);
+  if (partners.length) {
+    const cfg = wfBarCfg();
+    const ps = cfg.load();
+    partners.forEach((p, k) => {
+      const q = ps.find((x) => x.id === p.id);
+      if (!q) return;
+      const st = wfNormalize(q.state, live.frame);
+      placeFormaPlan(st.slots, r, k + 1);
+      q.state = st;
+    });
+    cfg.store(ps);
   }
-  const matched = (i, m) => wf.slots[i].pol === m.polarity;
-  const buy = [];
-  if (aura && !matched(WF_AURA, aura)) buy.push({ i: WF_AURA, m: aura });
-  buy.push(...order.filter((x) => !matched(x.i, x.m) && x.m.polarity !== "Umbra"));
-  buy.push(...order.filter((x) => !matched(x.i, x.m) && x.m.polarity === "Umbra"));
-  for (const x of buy) {
-    if (wfUsed() <= wfCapacity()) break;
-    wf.slots[x.i].pol = x.m.polarity;
-  }
+  return r;
+}
+
+function renderWfFormaPlan() {
+  const open = wfActiveBuild();
+  renderFormaPlan($("wf-forma-plan"), {
+    note: "warframe",
+    at: `${wf.frame}\u0000${wfActive}`,
+    item: wfItem(),
+    activeLabel: wfActive || tr("this build"),
+    partners: wfBarCfg().load().filter((p) => p.id !== (open || {}).id)
+      .map((p) => ({ id: p.id, name: presetLabel(p) })),
+    catalystLabel: "Orokin Reactor",
+    grantLabel: "Aura slot first",
+    plan: async () => { await wfAutoForma(); wfChanged(); },
+    changed: () => wfChanged(),
+  });
 }
 
 // ---- drawing ----
@@ -21764,6 +21926,7 @@ function renderWfMods() {
   $("wf-exilus").appendChild(wfSlotEl(WF_EXILUS));
   $("wf-aura").innerHTML = "";
   $("wf-aura").appendChild(wfSlotEl(WF_AURA));
+  renderWfFormaPlan();
 }
 
 function openWfPolMenu(i, anchor) {
@@ -22430,7 +22593,7 @@ async function showWarframe(id) {
   await loadWarframeCatalog();
   if (!wfWired) {
     wfWired = true;
-    $("wf-auto-forma").addEventListener("click", () => { wfAutoForma(); wfChanged(); });
+    $("wf-auto-forma").addEventListener("click", () => wfAutoForma().then(() => wfChanged()));
     $("wf-clear").addEventListener("click", () => {
       wf.slots = wfBlank(wf.frame).slots;
       wfChanged();

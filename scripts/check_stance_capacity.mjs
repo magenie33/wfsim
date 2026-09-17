@@ -54,7 +54,7 @@ const r = await evaluate(`(async () => {
   build.forEach((id, i) => { slots[i].mod = id; });
   slots[STANCE].mod = 'shattering_storm'; slots[STANCE].pol = null;
   renderMods(); await sleep(400);
-  autoForma(); renderMods(); await sleep(400);
+  await autoForma(); renderMods(); await sleep(400);
   out.autoCap = cap();
   out.autoForma = forma();
   return out;

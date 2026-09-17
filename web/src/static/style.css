@@ -556,6 +556,14 @@ body.on-enemies [data-module="builder"]{display:none}
 .slot.exl{cursor:default;justify-content:center}.slot.exl:hover{border-color:var(--line)}
 .exlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}
 .exhint{font-size:11px;line-height:1.45;color:var(--dim);margin-top:6px;max-width:46ch}
+.forma-plan{display:flex;flex-direction:column;gap:6px}
+.fp-rules,.fp-group{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.fp-tick,.fp-pick{display:inline-flex;gap:6px;align-items:center;font-size:12px}
+.fp-pick input{width:6em}
+.forma-plan .fp-run{align-self:flex-start}
+.fp-table{border-collapse:collapse;font-size:12px}
+.fp-table th,.fp-table td{padding:2px 12px 2px 0;text-align:left}
+.fp-bill{font-size:12px}
 
 /* floating popovers */
 .popover{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);width:340px;max-width:92vw;overflow:hidden}

@@ -1,12 +1,11 @@
 # Investment: what has been installed on this weapon
 
-**Status: CAPACITY IS REAL; THE ADAPTERS ARE STILL ASSUMED.**
-Phases 1 and 2 are done — capacity depends on rank, rank depends on Forma, and
-the client asks the server for both instead of carrying a literal 60. Phases 3
-and 4 (the three choices on screen, and carrying them in a share link) are not.
+**Status: CAPACITY IS REAL; THE PLAYER'S FORMA RULES ARE ON SCREEN; THE
+ADAPTERS ARE STILL ASSUMED.** Capacity depends on rank, rank depends on Forma,
+and the planner is the engine's (§The planner). Carrying anything in a share
+link is not done, and does not need to be: the rules are the player's.
 
-So the app still assumes an Orokin Catalyst, an Exilus adapter and an arcane
-adapter, silently. What it no longer assumes is the number those produce: an
+So the app still assumes an Exilus adapter and an arcane adapter, silently. What it no longer assumes is the number those produce: an
 adversary weapon ranks to 40 and finishes at 80, and every surface that prints
 a capacity says so.
 
@@ -57,8 +56,8 @@ whole of the policy:
   cost a Forma.** A mismatched slot is worse than a blank one (125% against
   100%), so "more polarities" is not worth anything on its own.
 
-`plan_forma` and the page's `autoFormaWith` both implement it, and
-`check_forma_plan` holds them to it.
+`mods::plan_forma` and `forma::plan` both implement it, and
+`check_forma_plan` holds the page to it.
 
 ## The mechanics, verified (wiki)
 
@@ -117,14 +116,8 @@ The right shape:
    builder has to push back.
 
 So the investment is an OUTPUT of the build, not a second thing to keep in
-sync with it. Only three genuine CHOICES remain, because only these three are
-the player's and not the build's:
-
-| choice | default | why it is a choice |
-| --- | --- | --- |
-| use Omni Forma | off | it matches any mod except Umbra mods, so it removes the colour puzzle — but it is a different, costlier item |
-| use Umbra Forma | **off** | precious. With it off the planner may not use Umbra polarity, so an Umbra mod pays full or mismatched drain |
-| polarise to max | **on** | 5 polarisations is what full mastery needs, even when the build would fit with 3 |
+sync with it. What remains are the player's RULES, which are not the build's —
+§The planner lists them.
 
 ## The planner
 
@@ -174,7 +167,21 @@ the others are rearranged onto the layout.
 | Forma limit | none |
 
 A player may also state what the item ALREADY carries (`Start`): that layout
-is free, and the Forma it took count toward the rank.
+is free, and the Forma it took count toward the rank. The page does not ask for
+it yet.
+
+**THE PAGE** asks `/api/forma/plan` and puts the answer in the slots — the
+"auto" button and the Forma plan box in the mods block run the same call, on
+the weapon page and the Warframe page alike. The rules live in
+`wfsim-forma-rules`; the builds planned with the open one in
+`wfsim-forma-group-<item>`, by preset id, where the item is the weapon id or
+`warframe-<frame>`. Planning writes the layout into every ticked build. A board
+build is read-only, so it is planned alone and offers no partners.
+
+The capacity line follows the rules (`builderCap`, `wfCapacity`): no Catalyst
+halves it, and without the mastery Forma a rank-40 weapon's rank is what the
+layout spent. The board judges every build at `BENCHMARK_INVESTMENT` whatever
+the player's rules say.
 
 ## Where the truth has to live
 

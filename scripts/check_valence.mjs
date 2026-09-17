@@ -403,7 +403,7 @@ const build = await evaluate(`(async () => {
                  'primed_pistol_gambit', 'primed_target_cracker',
                  'pathogen_rounds', 'primed_heated_charge', 'galvanized_shot'];
   eight.forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
-  autoForma(); renderMods(); await sleep(400);
+  await autoForma(); renderMods(); await sleep(400);
   const full = { text: document.getElementById('capacity').textContent,
                  over: document.getElementById('capacity').classList.contains('over'),
                  forma: document.getElementById('forma').textContent,
@@ -506,7 +506,7 @@ const door = await evaluate(`(async () => {
   pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1200);
   eight.forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   arcanes = [arc ? arc.id : 'none'];
-  autoForma(); renderMods(); renderArcanes(); await sleep(600);
+  await autoForma(); renderMods(); renderArcanes(); await sleep(600);
   // A build the board WILL take, with the store answering nothing useful.
   sent.length = 0;
   await offerBoardSubmit();
@@ -565,7 +565,7 @@ const forma = await evaluate(`(async () => {
   slots.forEach(s => { s.pol = null; });
   renderMods(); renderArcanes(); await sleep(400);
   const bare = { raw: capacityUsed(), door: await boardVerdict(boardPayload()) };
-  autoForma(); renderMods(); await sleep(400);
+  await autoForma(); renderMods(); await sleep(400);
   const planned = { raw: capacityUsed(), door: await boardVerdict(boardPayload()) };
 
   // …and the positive control: eight mods that cannot fit however much Forma
@@ -581,7 +581,7 @@ const forma = await evaluate(`(async () => {
     .slice(0, 8);
   heavy.forEach((m, i) => { slots[i].mod = m.id; slots[i].rank = m.max_rank; });
   arcanes = [(arcanePool(0) || [{ id: 'none' }])[0].id];
-  autoForma(); renderMods(); renderArcanes(); await sleep(400);
+  await autoForma(); renderMods(); renderArcanes(); await sleep(400);
   return { bare, planned, over: await boardVerdict(boardPayload()),
            cap: capOf('burston_prime') };
 })()`);
