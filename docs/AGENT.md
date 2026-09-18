@@ -6,7 +6,8 @@ question: open a weapon, change the build, change the fight, run it, read the
 number. The build is reachable axis by axis — mods and their ranks, slot
 polarities and the Forma plan, arcanes, evolutions, mode, valence — and the
 observation carries capacity, Forma and the active presets. Queries read the
-stats panel and the last run, and find weapons, mods, arcanes and targets.
+stats panel, the last run and the leaderboard, and find weapons, mods, arcanes
+and targets.
 
 Everything that drives the page from outside goes through one door:
 

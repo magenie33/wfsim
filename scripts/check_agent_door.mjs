@@ -193,6 +193,27 @@ check("the reader's own build is untouched by work on the copy", pre.back.ok ===
 check("a new build opens blank", pre.fresh.ok === true && pre.blank === true, JSON.stringify(pre.fresh));
 check("a build that does not exist is refused", pre.bad.ok === false && pre.bad.reason === "unknown_preset", JSON.stringify(pre.bad));
 
+// ---- the board: the measured leaders, and opening one -------------------------
+
+const board = await evaluate(`(async () => {
+  const out = {};
+  for (let i = 0; i < 40 && !BOARD[$("weapon").value]; i++) await new Promise(r => setTimeout(r, 250));
+  out.read = await window.wfsim.do("builder.board.read", { riven: "any", limit: 1 });
+  const top = out.read.ok && out.read.rows[0];
+  if (top) {
+    out.open = await window.wfsim.do("shell.preset.open", { bar: "build", preset: top.id });
+    out.onIt = window.wfsim.observe().build.preset === top.id;
+  }
+  await window.wfsim.do("shell.preset.new", { bar: "build" });
+  return out;
+})()`, { awaitPromise: true });
+
+check("the board reads back, ranked, each row with its mods",
+  board.read.ok === true && board.read.rows.length > 0 && board.read.rows.every(r => r.rank === 1 && r.mods.length > 0),
+  JSON.stringify(board.read).slice(0, 300));
+check("a board row opens as the build", !!board.open && board.open.ok === true && board.onIt === true,
+  JSON.stringify(board.open));
+
 // ---- the search: started, watched, stopped -----------------------------------
 //
 // A search is minutes long, so the door returns at once and is polled. The
