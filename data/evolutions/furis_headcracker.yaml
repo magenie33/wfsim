@@ -28,6 +28,8 @@ effects:
     max_stacks: 10
     duration: 2
     chance: 0.50
+    misprint: >-
+      the card leaves out that a headshot adds a stack only half the time: the wiki's notes cell gives the roll a 50% chance of activating, and the simulation rolls it
     # see notes: fifo_each_stack_own
     #
     # see notes: was_galvanized_rule_here
