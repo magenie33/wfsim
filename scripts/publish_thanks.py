@@ -48,7 +48,7 @@ BEIJING = dt.timezone(dt.timedelta(hours=8))
 # what LANDED and `cny_per_unit` is today's rate: the books are in CNY and the
 # ledger stores no historical rate, so a total is what the money is worth now.
 QUERY = """
-SELECT d.paid_at, d.channel, d.donor, d.donor_id, p.display_name,
+SELECT d.paid_at, d.channel, d.account, d.donor, d.donor_id, p.display_name,
        d.net_amount * r.cny_per_unit AS net_cny
   FROM donations d
   JOIN rates r ON r.currency = d.currency
@@ -83,11 +83,16 @@ def entities(rows: list[dict], as_of: dt.date) -> list[dict]:
     by_key: dict[str, dict] = {}
     for r in rows:
         key = f"#{r['donor_id']}" if r.get("donor_id") is not None \
-            else f"{r['channel']}:{r['donor']}"
+            else f"{r['channel']}:{r['account']}"
         day = dt.date.fromisoformat(r["paid_at"][:10])
-        e = by_key.setdefault(key, {"name": None, "handle": r["donor"], "cny": 0.0, "first": day})
+        e = by_key.setdefault(key, {"name": None, "handle": r["donor"], "handle_at": r["paid_at"],
+                                    "cny": 0.0, "first": day})
         e["cny"] += float(r["net_cny"])
         e["first"] = min(e["first"], day)
+        # A NICKNAME CAN CHANGE under one account, and the latest one is the
+        # name they go by now.
+        if r["paid_at"] > e["handle_at"]:
+            e["handle"], e["handle_at"] = r["donor"], r["paid_at"]
         # The person's chosen name wins wherever it is set; an account with none
         # is thanked under the handle that paid.
         if r.get("display_name"):
@@ -135,8 +140,9 @@ def self_test() -> int:
 
     today = dt.date(2026, 9, 10)
 
-    def row(donor, cny, day, donor_id=None, name=None, channel="kofi"):
-        return {"paid_at": f"{day}T12:00:00+08:00", "channel": channel, "donor": donor,
+    def row(donor, cny, day, donor_id=None, name=None, channel="kofi", account=None):
+        return {"paid_at": f"{day}T12:00:00+08:00", "channel": channel,
+                "account": account or donor, "donor": donor,
                 "donor_id": donor_id, "display_name": name, "net_cny": cny}
 
     names = lambda rows: [e["name"] for e in entities(rows, today)]
@@ -176,6 +182,12 @@ def self_test() -> int:
     # who it was is a real supporter with a real name on their account.
     say(names([row("nobody-linked-me", 40, "2026-01-01")]) == ["nobody-linked-me"],
         "an account with no donor_id is thanked under its own handle")
+
+    # THE ACCOUNT IS THE ID, NOT THE NICKNAME: a rename between two payments is
+    # still one account, thanked under the name it carries now.
+    say(names([row("old-nick", 10, "2026-01-01", account="18571868", channel="bilibili"),
+               row("new-nick", 10, "2026-03-01", account="18571868", channel="bilibili")])
+        == ["new-nick"], "one UID under two nicknames is one entry, under the later one")
 
     # AND NO AMOUNT LEAVES. The published shape is asserted, not described:
     # every key of every entry, so a field added later has to be decided on.

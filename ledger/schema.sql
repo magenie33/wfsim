@@ -16,7 +16,7 @@
 -- human with a Bilibili account and a Ko-fi account is one row here and two
 -- accounts on their payments, which is the only reason this table exists.
 --
--- AN ACCOUNT IS NOT A TABLE. `(channel, donor)` on a payment already names one,
+-- AN ACCOUNT IS NOT A TABLE. `(channel, account)` on a payment already names one,
 -- and a table of them would hold nothing a payment does not already carry.
 CREATE TABLE IF NOT EXISTS donors (
   id           INTEGER PRIMARY KEY,
@@ -48,9 +48,13 @@ CREATE TABLE IF NOT EXISTS donations (
   -- `bilibili`, `kofi`, `patreon`, `afdian` — the same spelling the page's
   -- `SUPPORT_CHANNELS` uses where the channel is on it.
   channel       TEXT NOT NULL,
-  -- WHAT THE CHANNEL CALLS THEM, verbatim (`-卢卡斯的斯-`). Never tidied: it
-  -- is how the row is found again in the channel's own list. With `channel` it
-  -- is the ACCOUNT, which is what a payment actually arrives from.
+  -- THE CHANNEL'S OWN ID FOR THE ACCOUNT — a Bilibili UID (`18571868`), never
+  -- the nickname: a nickname can be changed, and one person renaming between
+  -- two payments would be two accounts. With `channel` it is the ACCOUNT.
+  account       TEXT NOT NULL,
+  -- WHAT THE CHANNEL CALLED THEM ON THIS PAYMENT, verbatim (`-卢卡斯的斯-`).
+  -- Never tidied: it is how the row is found again in the channel's own list,
+  -- and the name an unattributed account is thanked under.
   donor         TEXT NOT NULL,
   -- WHICH PERSON THAT ACCOUNT IS, and NULL until somebody says. A batch can be
   -- entered without deciding, and attributing it later is one UPDATE — the
@@ -67,7 +71,7 @@ CREATE TABLE IF NOT EXISTS donations (
   net_amount    REAL NOT NULL,
   -- ONE PAYMENT, ONE ROW. Nothing is typed to say which payment this is, so
   -- this is what stops the same Bilibili list being entered twice.
-  UNIQUE (channel, paid_at, donor)
+  UNIQUE (channel, paid_at, account)
 );
 
 CREATE INDEX IF NOT EXISTS donations_paid_at ON donations (paid_at);
@@ -96,9 +100,9 @@ VALUES ('CNY', 1.0, '2026-09-10', 'the accounting currency, by definition');
 -- ENTERING A PAYMENT. Neither the rate nor the person is part of it:
 --
 --   INSERT INTO donations
---     (paid_at, channel, donor, currency, gross_amount, net_amount)
---   VALUES ('2026-09-02T16:40:06+08:00', 'bilibili', '-卢卡斯的斯-',
---           'CNY', 10.00, 6.72);
+--     (paid_at, channel, account, donor, currency, gross_amount, net_amount)
+--   VALUES ('2026-09-02T16:40:06+08:00', 'bilibili', '18571868',
+--           '-卢卡斯的斯-', 'CNY', 10.00, 6.72);
 --
 -- SAYING WHO AN ACCOUNT IS. The first line makes the person, the second points
 -- every payment from that account at them — past and future both, since the
@@ -106,7 +110,7 @@ VALUES ('CNY', 1.0, '2026-09-10', 'the accounting currency, by definition');
 --
 --   INSERT INTO donors (display_name) VALUES ('Lucas');
 --   UPDATE donations SET donor_id = last_insert_rowid()
---    WHERE channel = 'bilibili' AND donor = '-卢卡斯的斯-';
+--    WHERE channel = 'bilibili' AND account = '18571868';
 --
 -- A SECOND ACCOUNT OF THE SAME PERSON is that UPDATE again with their id, and
 -- merging two people who turned out to be one is the same shape:
@@ -143,9 +147,9 @@ VALUES ('CNY', 1.0, '2026-09-10', 'the accounting currency, by definition');
 --     FROM donations d
 --     JOIN rates r ON r.currency = d.currency
 --     LEFT JOIN donors p ON p.id = d.donor_id
---    GROUP BY COALESCE(CAST(d.donor_id AS TEXT), d.channel || ':' || d.donor)
+--    GROUP BY COALESCE(CAST(d.donor_id AS TEXT), d.channel || ':' || d.account)
 --    ORDER BY net_cny DESC;
 --
 -- WHICH ACCOUNTS ARE NOT ATTRIBUTED TO ANYONE YET:
 --
---   SELECT DISTINCT channel, donor FROM donations WHERE donor_id IS NULL;
+--   SELECT DISTINCT channel, account, donor FROM donations WHERE donor_id IS NULL;
