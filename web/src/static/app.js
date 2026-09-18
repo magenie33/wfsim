@@ -3160,6 +3160,11 @@ const buildPool = () => {
   const no = forbiddenByEvos();
   return poolWithRivens().filter((m) => !no.has(m.id));
 };
+/// WHICH SLOT A MOD MAY SIT IN, asked by the picker and the agent door alike.
+/// The exilus slot takes what `exilusPool()` says, the question the optimizer's
+/// exilus scope asks. The stance rule runs BOTH ways: a stance is legal in the
+/// stance slot and nowhere else, where an exilus mod may also sit in a main one.
+const modFitsSlot = (m, i) => (i !== EXILUS || !!m.exilus) && ((i === STANCE) === !!m.stance);
 /// What may go in the EXILUS slot. Both modules ask this one function: the
 /// builder used `poolWithRivens()` and the optimizer `currentPool`, which
 /// agreed only because no riven is exilus-eligible — a coincidence, not a
@@ -14069,14 +14074,7 @@ function renderMenu(slotIdx, query) {
   const here = slotModId(slots[slotIdx]);
   const group = (m) => (here === m.id ? 0 : 1);
   const hits = buildPool()
-    // The exilus slot takes what `exilusPool()` says, which is the same
-    // question the optimizer's exilus scope asks.
-    .filter((m) => slotIdx !== EXILUS || m.exilus)
-    // THE STANCE FILTER RUNS BOTH WAYS. A stance is legal in the stance slot
-    // and NOWHERE else — unlike an exilus mod, which the game lets sit in a
-    // main slot — so offering one in slot 3 would offer a build nobody can
-    // hold.
-    .filter((m) => (slotIdx === STANCE) === !!m.stance)
+    .filter((m) => modFitsSlot(m, slotIdx))
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => searchHit(m, q))
     // A CARD ON THE EVERY-RANK LIST is a row per rank, each with its own gain.
@@ -23315,6 +23313,10 @@ async function agentDo(id, args = {}) {
   // an unhandled rejection from a click is a failure with no reader-visible
   // symptom at all.
   try {
+    if (a.query) {
+      const out = await a.run(args);
+      return out && out.ok === false ? out : { ok: true, did: id, ...(out || {}) };
+    }
     const before = agentObserve();
     const out = await a.run(args);
     if (out && out.ok === false) return out;
@@ -23343,11 +23345,171 @@ const agentTools = () => AGENT_ACTIONS.map((a) => ({
 
 const agentWeaponIds = () => (META.weapons || []).map((w) => w.id);
 
+/// A FOUND LIST IS CAPPED, and says how many it left out, so a caller knows to
+/// narrow the query rather than believe the list is complete.
+const agentFound = (xs, limit, row) => ({
+  found: xs.length, rows: xs.slice(0, limit).map(row),
+  ...(xs.length > limit ? { more: xs.length - limit } : {}),
+});
+const agentFind = { query: { kind: "string", what: "name or effect words, in any language the page speaks" },
+  limit: { kind: "number", min: 1, max: 40, what: "rows to return, default 12" } };
+
+/// ONE STAT ROW as the panel draws it — the page's own wording, sources named.
+/// A row is the server's answer, never recomputed here.
+const agentStat = (x) => ({
+  label: x.label, base: x.base, final: x.final,
+  ...(x.note ? { note: x.note } : {}), ...(x.rule ? { rule: x.rule } : {}),
+  ...(x.sources && x.sources.length
+    ? { sources: x.sources.map((y) => `${y.mod} ${y.value}${y.note ? ` (${y.note})` : ""}`) } : {}),
+});
+
+/// THE LAST RUN, without the arrays that exist to draw a chart or a replay —
+/// the reader reads those as pictures, and the numbers they summarise are here.
+function agentRunSummary() {
+  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  const r = p && p.lastResult && p.lastResult.r;
+  if (!r) return null;
+  const n = (v) => (typeof v === "number" ? Number(sig2(v)) || v : v);
+  const total = (r.damage_sources || []).reduce((a, x) => a + (x.dmg || 0), 0) || 1;
+  return {
+    headline: agentResult(),
+    runs: r.runs, duration: r.duration,
+    dps: n(r.dps), dps_se: n(r.dps_se), burst_dps: n(r.burst_dps),
+    kills: n(r.kills), kills_min: r.kills_min, kills_max: r.kills_max, ttk: r.ttk,
+    crit_rate: n(r.crit_rate), headshot_rate: n(r.headshot_rate), procs: n(r.procs),
+    shots: n(r.shots), reloads: n(r.reloads), max_hit: n(r.max_hit), overkill_rate: n(r.overkill_rate),
+    target: r.target,
+    damage_sources: (r.damage_sources || []).slice().sort((a, b) => b.dmg - a.dmg).slice(0, 10)
+      .map((x) => ({ source: x.source, share: `${Math.round((x.dmg / total) * 1000) / 10}%`, by_type: x.by_type })),
+  };
+}
+
 /// THE ACTIONS. Phase 0 covers the loop that answers a question — open a
 /// weapon, change the build, change the fight, run it, read the number — and
 /// stops there. The optimizer is deliberately absent: a search is minutes
 /// long and a door onto it needs its own cancellation, which is its own step.
 const AGENT_ACTIONS = [
+  {
+    id: "builder.stats.read",
+    query: true,
+    what: "Read the stats panel for the build on screen: every stat per form and part, base and final, with the mod each change came from, and what this weapon's model does not cover.",
+    anchor: "#stats-rows",
+    needs_weapon: true,
+    args: {},
+    async run() {
+      const r = await api("/api/panel", buildPayload());
+      if (!r || r.ok === false) return agentNo("panel_failed", { because: r ? r.error : "no answer" });
+      const w = weaponInfo($("weapon").value) || {};
+      const gaps = gapsOf(w).slice();
+      if (w.passive_unmodeled) gaps.unshift("this weapon's passive is not modelled yet");
+      return {
+        policy: r.policy,
+        not_modelled: gaps.map(trGap),
+        forms: (r.forms || []).map((f) => ({
+          label: f.label, meta: f.meta,
+          stats: (f.stats || []).map(agentStat),
+          elements: (f.elements || []).map(agentStat),
+          indirect: (f.indirect || []).map(agentStat),
+          parts: (f.parts || []).map((pt) => ({
+            label: pt.label, meta: pt.meta, damage_total: pt.damage_total, damage: pt.damage,
+            stats: (pt.stats || []).map(agentStat),
+          })),
+        })),
+        conditionals: r.conditionals, buffs: r.buffs,
+      };
+    },
+  },
+  {
+    id: "simulator.result.read",
+    query: true,
+    what: "Read the last simulated fight for this build: the headline and whether it is still this build's, kills, time to kill, crit and headshot rates, and which damage sources dealt what share.",
+    anchor: "#sim-results",
+    needs_weapon: true,
+    args: {},
+    run() { return agentRunSummary() || agentNo("nothing_measured", { try: "simulator.run.start" }); },
+  },
+  {
+    id: "builder.weapons.find",
+    query: true,
+    what: "Find weapons by name, in any language the page speaks.",
+    anchor: "#weapon",
+    args: { ...agentFind, query: { ...agentFind.query, required: true } },
+    run({ query, limit = 12 }) {
+      const q = query.trim().toLowerCase();
+      return agentFound((META.weapons || []).filter((w) => searchHit(w, q)), limit,
+        (w) => ({ id: w.id, name: w.name, class: w.class }));
+    },
+  },
+  {
+    id: "builder.mods.find",
+    query: true,
+    what: "Find mods this weapon can seat, by name or effect; with a slot, only the ones that slot takes.",
+    anchor: "#mod-slots",
+    needs_weapon: true,
+    args: { ...agentFind, slot: { kind: "seat", what: "0-7, or \"exilus\" / \"stance\"" } },
+    run({ query = "", limit = 12, slot }) {
+      const q = query.trim().toLowerCase();
+      const i = slot == null ? null : agentSeat(slot);
+      return agentFound(buildPool().filter((m) => (i == null || modFitsSlot(m, i)) && searchHit(m, q)), limit,
+        (m) => ({ id: m.id, name: m.name, polarity: m.polarity, max_rank: m.max_rank,
+          drain: modDrain(m, m.max_rank), effects: (m.effects || []).slice(0, 4) }));
+    },
+  },
+  {
+    id: "builder.arcanes.find",
+    query: true,
+    what: "Find the arcanes a seat of this weapon takes.",
+    anchor: "#arcane-slots",
+    needs_weapon: true,
+    args: { ...agentFind, seat: { kind: "number", min: 0, max: 1, what: "arcane seat, default 0" } },
+    run({ query = "", limit = 12, seat = 0 }) {
+      const q = query.trim().toLowerCase();
+      return agentFound(arcanePool(seat).filter((a) => searchHit(a, q)), limit,
+        (a) => ({ id: a.id, name: a.name, max_rank: a.max_rank, effects: effectsAt(a, a.max_rank).slice(0, 4) }));
+    },
+  },
+  {
+    id: "builder.evolutions.list",
+    query: true,
+    what: "List this weapon's Incarnon evolution tiers, their options, and which tiers are open.",
+    anchor: "#evo-rows",
+    needs_weapon: true,
+    args: {},
+    run() {
+      return {
+        open_to: evoOpenTo(),
+        tiers: weaponEvos().map((t) => ({
+          tier: t.tier, installed: evoSel[t.tier] || null,
+          options: (t.options || []).map((x) => ({ id: x.id, name: x.name, lines: evoLines(x),
+            ...(x.broken ? { broken: "does not work in game; simulated as no effect" } : {}) })),
+        })),
+      };
+    },
+  },
+  {
+    id: "builder.modes.list",
+    query: true,
+    what: "List how this weapon can be played, and why a mode is unavailable where it is.",
+    anchor: "#mode-row",
+    needs_weapon: true,
+    args: {},
+    run() {
+      return { current: mode, modes: modeOpts(weaponInfo($("weapon").value) || {})
+        .map(([id, label, off]) => ({ id, label, ...(off ? { unavailable: off } : {}) })) };
+    },
+  },
+  {
+    id: "simulator.enemies.find",
+    query: true,
+    what: "Find targets for the fight by name, in any language the page speaks.",
+    anchor: "#sim-target",
+    args: { ...agentFind, query: { ...agentFind.query, required: true } },
+    run({ query, limit = 12 }) {
+      const q = query.trim().toLowerCase();
+      return agentFound(allEnemies().filter((e) => searchHit(e, q)), limit,
+        (e) => ({ id: e.id, name: e.name, faction: e.faction, can_be_eximus: !!e.can_be_eximus }));
+    },
+  },
   {
     id: "shell.module.open",
     what: "Open a module of the page, optionally on another weapon.",
@@ -23390,6 +23552,9 @@ const AGENT_ACTIONS = [
       if (mod === null) { equipMod(i, null); renderMods(); return { text: `emptied slot ${slot}` }; }
       const m = modById(mod);
       if (!m) return agentNo("unknown_mod", { argument: "mod", got: mod });
+      if (!buildPool().some((x) => x.id === mod) || !modFitsSlot(m, i)) {
+        return agentNo("not_equippable", { argument: "mod", because: "this weapon or this slot cannot hold it", try: "builder.mods.find" });
+      }
       if (rank != null && rank > m.max_rank) return agentNo("out_of_range", { argument: "rank", min: 0, max: m.max_rank });
       equipMod(i, mod, rank);
       renderMods();
@@ -23556,7 +23721,7 @@ window.wfsim = {
   observe: agentObserve,
   do: agentDo,
   tools: agentTools,
-  get actions() { return AGENT_ACTIONS.map((a) => ({ id: a.id, what: a.what, anchor: a.anchor })); },
+  get actions() { return AGENT_ACTIONS.map((a) => ({ id: a.id, what: a.what, anchor: a.anchor, query: !!a.query })); },
 };
 
 // THE BOOT IS OVER, one way or the other, and the page must say which.

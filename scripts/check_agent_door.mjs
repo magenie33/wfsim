@@ -35,6 +35,7 @@ check("the mod-exchange decision exists once", once("[a.mod, b.mod] = [b.mod, a.
 check("clearing back to innate polarities exists once", once("s.pol = innate[i]") === 1,
   once("s.pol = innate[i]"));
 check("the weapon control goes through the door", src.includes('wfsim.do("builder.weapon.set"'));
+check("which slot a mod may sit in is decided once", once("=== !!m.stance") === 1, once("=== !!m.stance"));
 
 await app.load("/weapons/Torid");
 
@@ -97,6 +98,7 @@ const loop = await evaluate(`(async () => {
   out.where = window.wfsim.observe().route.module;
   out.run = await window.wfsim.do("simulator.run.start", {});
   out.result = window.wfsim.observe().result;
+  out.read = await window.wfsim.do("simulator.result.read", {});
   return out;
 })()`, { awaitPromise: true });
 
@@ -157,6 +159,52 @@ check("the fight runs and answers", loop.run.ok === true && loop.run.result && l
   JSON.stringify(loop.run).slice(0, 200));
 check("...and the number is marked as this build's", !!(loop.result && loop.result.fresh === true),
   JSON.stringify(loop.result));
+check("the run reads back with where its damage came from",
+  loop.read.ok === true && loop.read.headline && loop.read.headline.fresh === true && loop.read.damage_sources.length > 0,
+  JSON.stringify(loop.read).slice(0, 300));
+
+// ---- queries -----------------------------------------------------------------
+//
+// A QUERY CHANGES NOTHING, which is what lets a consumer with no page in front
+// of it have them: the observation is identical on both sides of every one.
+
+const q = await evaluate(`(async () => {
+  const out = {};
+  await window.wfsim.do("shell.module.open", { module: "builder" });
+  await window.wfsim.do("builder.mod.set", { slot: 0, mod: "serration" });
+  const before = JSON.stringify(window.wfsim.observe());
+  out.stats = await window.wfsim.do("builder.stats.read", {});
+  out.weapons = await window.wfsim.do("builder.weapons.find", { query: "torid" });
+  out.mods = await window.wfsim.do("builder.mods.find", { query: "serration", slot: 1 });
+  out.exilusMods = await window.wfsim.do("builder.mods.find", { slot: "exilus", limit: 40 });
+  out.arcanes = await window.wfsim.do("builder.arcanes.find", {});
+  out.evos = await window.wfsim.do("builder.evolutions.list", {});
+  out.modes = await window.wfsim.do("builder.modes.list", {});
+  out.enemies = await window.wfsim.do("simulator.enemies.find", { query: allEnemies()[0].name, limit: 3 });
+  out.same = JSON.stringify(window.wfsim.observe()) === before;
+  out.queries = window.wfsim.actions.filter(a => a.query).map(a => a.id);
+  out.notExilus = await window.wfsim.do("builder.mod.set", { slot: "exilus", mod: "serration" });
+  await window.wfsim.do("builder.mods.clear", {});
+  return out;
+})()`, { awaitPromise: true });
+
+const cites = (q.stats.forms || []).some(f => (f.parts || []).concat([f]).some(p =>
+  (p.stats || []).some(s => (s.sources || []).some(x => /Serration/.test(x)))));
+check("the stats panel reads back, naming the mod behind a change", q.stats.ok === true && cites,
+  JSON.stringify(q.stats).slice(0, 300));
+check("...and says what this weapon's model leaves out", Array.isArray(q.stats.not_modelled));
+check("a weapon is found by name", q.weapons.ok === true && q.weapons.rows.some(r => r.id === "torid"),
+  JSON.stringify(q.weapons).slice(0, 200));
+check("a mod is found by name", q.mods.ok === true && q.mods.rows.some(r => r.id === "serration"),
+  JSON.stringify(q.mods).slice(0, 200));
+check("the exilus slot is offered only what it takes",
+  q.exilusMods.ok === true && !q.exilusMods.rows.some(r => r.id === "serration"), JSON.stringify(q.exilusMods).slice(0, 200));
+check("arcanes, evolutions and modes list", q.arcanes.ok && q.arcanes.found > 0 && q.evos.ok && q.modes.ok && q.modes.modes.length > 0);
+check("a target is found by name", q.enemies.ok === true && q.enemies.found > 0, JSON.stringify(q.enemies).slice(0, 200));
+check("no query changes the page", q.same === true);
+check("queries are marked as such", q.queries.length >= 8, q.queries.join(","));
+check("a mod the slot cannot take is refused", q.notExilus.ok === false && q.notExilus.reason === "not_equippable",
+  JSON.stringify(q.notExilus));
 
 // ---- refusals ----------------------------------------------------------------
 //

@@ -5,7 +5,8 @@ asserted by `scripts/check_agent_door.mjs`. It covers the loop that answers a
 question: open a weapon, change the build, change the fight, run it, read the
 number. The build is reachable axis by axis — mods and their ranks, slot
 polarities and the Forma plan, arcanes, evolutions, mode, valence — and the
-observation carries capacity, Forma and the active presets.
+observation carries capacity, Forma and the active presets. Queries read the
+stats panel and the last run, and find weapons, mods, arcanes and targets.
 
 Everything that drives the page from outside goes through one door:
 
@@ -52,6 +53,13 @@ is a second answer to a question that already has one — and the day the two
 disagree, one of them is on the reader's screen and the other is in a chat
 window. A selection the page performs is exposed AS a query rather than
 reimplemented beside one.
+
+**A query lives in the same table**, marked `query: true`: one list is what a
+model is handed, so a query added to the page reaches every agent with no edit
+anywhere else. It changes nothing — the check asserts the observation is
+identical on both sides of each — and it reports no `changed`. The stats read
+asks the panel endpoint the page asks; the finders use the picker's own
+`searchHit`, so a name in any locale the page speaks finds the same row.
 
 **What is not in the observation is not known.** A reader sees things this
 surface does not carry — a tooltip, a colour, the arena. An agent asked about
