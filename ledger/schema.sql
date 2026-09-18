@@ -20,8 +20,9 @@
 -- and a table of them would hold nothing a payment does not already carry.
 CREATE TABLE IF NOT EXISTS donors (
   id           INTEGER PRIMARY KEY,
-  -- WHAT THE THANKS LIST PRINTS — the name they chose. NULL means they were
-  -- never asked, and the list falls back to whichever handle paid.
+  -- THE NAME THEY ASKED TO BE THANKED UNDER, and NULL for everybody who has
+  -- not asked — they are off the thanks list, not listed under a guess. It is
+  -- the only name kept: a payment carries none, because a nickname changes.
   display_name TEXT,
   -- Anything worth remembering about them, in prose, read by a person.
   note         TEXT
@@ -52,16 +53,11 @@ CREATE TABLE IF NOT EXISTS donations (
   -- the nickname: a nickname can be changed, and one person renaming between
   -- two payments would be two accounts. With `channel` it is the ACCOUNT.
   account       TEXT NOT NULL,
-  -- WHAT THE CHANNEL CALLED THEM ON THIS PAYMENT, verbatim (`-卢卡斯的斯-`).
-  -- Never tidied: it is how the row is found again in the channel's own list,
-  -- and the name an unattributed account is thanked under.
-  donor         TEXT NOT NULL,
-  -- WHICH PERSON THAT ACCOUNT IS, and NULL until somebody says. A batch can be
-  -- entered without deciding, and attributing it later is one UPDATE — the
-  -- unattributed are one query, below. What it must never be is GUESSED: two
-  -- accounts with the same handle are two people until they are known not to
-  -- be, and a wrong link is a total that adds up perfectly and is wrong.
-  donor_id      INTEGER REFERENCES donors(id),
+  -- WHICH PERSON THAT ACCOUNT IS. A new account gets a person of its own on
+  -- entry; two accounts become one person only when that is KNOWN, never
+  -- guessed from a matching name — a wrong link is a total that adds up
+  -- perfectly and is wrong.
+  donor_id      INTEGER NOT NULL REFERENCES donors(id),
   -- WHAT BOTH AMOUNTS BELOW ARE IN, and the key into `rates`.
   currency      TEXT NOT NULL REFERENCES rates(currency),
   -- WHAT THEY PAID, and WHAT LANDED after the channel's cut. The gap is the
@@ -97,23 +93,26 @@ CREATE TABLE IF NOT EXISTS rates (
 INSERT OR IGNORE INTO rates (currency, cny_per_unit, updated_at, source)
 VALUES ('CNY', 1.0, '2026-09-10', 'the accounting currency, by definition');
 
--- ENTERING A PAYMENT. Neither the rate nor the person is part of it:
+-- ENTERING A PAYMENT FROM A NEW ACCOUNT makes its person first, unnamed:
 --
+--   INSERT INTO donors DEFAULT VALUES;
 --   INSERT INTO donations
---     (paid_at, channel, account, donor, currency, gross_amount, net_amount)
+--     (paid_at, channel, account, donor_id, currency, gross_amount, net_amount)
 --   VALUES ('2026-09-02T16:40:06+08:00', 'bilibili', '18571868',
---           '-卢卡斯的斯-', 'CNY', 10.00, 6.72);
+--           last_insert_rowid(), 'CNY', 10.00, 6.72);
 --
--- SAYING WHO AN ACCOUNT IS. The first line makes the person, the second points
--- every payment from that account at them — past and future both, since the
--- same statement run again picks up whatever has arrived since:
+-- A KNOWN ACCOUNT reuses its person, found by the account and nothing else:
 --
---   INSERT INTO donors (display_name) VALUES ('Lucas');
---   UPDATE donations SET donor_id = last_insert_rowid()
+--   SELECT DISTINCT donor_id FROM donations
 --    WHERE channel = 'bilibili' AND account = '18571868';
 --
--- A SECOND ACCOUNT OF THE SAME PERSON is that UPDATE again with their id, and
--- merging two people who turned out to be one is the same shape:
+-- SOMEBODY ASKS TO BE THANKED, or to be taken off, or renamed — one row:
+--
+--   UPDATE donors SET display_name = 'Lucas' WHERE id = 1;
+--   UPDATE donors SET display_name = NULL WHERE id = 1;
+--
+-- A SECOND ACCOUNT OF THE SAME PERSON, or two people who turned out to be one,
+-- is pointing one person's payments at the other:
 --
 --   UPDATE donations SET donor_id = 3 WHERE donor_id = 7;
 --   DELETE FROM donors WHERE id = 7;
@@ -138,18 +137,11 @@ VALUES ('CNY', 1.0, '2026-09-10', 'the accounting currency, by definition');
 --     FROM donations d JOIN rates r ON r.currency = d.currency
 --    GROUP BY month, d.channel ORDER BY month;
 --
--- PER PERSON, with everyone still unattributed falling back to their account —
--- so the list is complete before the linking is:
+-- PER PERSON:
 --
---   SELECT COALESCE(p.display_name, d.donor) AS name,
---          COUNT(*) AS payments,
+--   SELECT p.id, p.display_name AS name, COUNT(*) AS payments,
 --          ROUND(SUM(d.net_amount * r.cny_per_unit), 2) AS net_cny
 --     FROM donations d
 --     JOIN rates r ON r.currency = d.currency
---     LEFT JOIN donors p ON p.id = d.donor_id
---    GROUP BY COALESCE(CAST(d.donor_id AS TEXT), d.channel || ':' || d.account)
---    ORDER BY net_cny DESC;
---
--- WHICH ACCOUNTS ARE NOT ATTRIBUTED TO ANYONE YET:
---
---   SELECT DISTINCT channel, account, donor FROM donations WHERE donor_id IS NULL;
+--     JOIN donors p ON p.id = d.donor_id
+--    GROUP BY p.id ORDER BY net_cny DESC;

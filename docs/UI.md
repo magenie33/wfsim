@@ -393,6 +393,10 @@ leaves them is a list of NAMES, written to `site/thanks.json` by
 the edge is bound to the ledger, so no request to this site can ask what
 anybody gave.
 
+THE LIST IS OPT-IN. A supporter is on it only under a name they asked for
+(`donors.display_name`); everybody else is recorded and ranked, and printed
+nowhere. A nickname is never the fallback: it was not chosen for this list.
+
 THE ORDER IS THE ONLY THING THE RANKING SAYS. It combines what somebody gave
 with how long ago they first gave it — the rule is stated beside the constant
 that sets it — and the page prints no position, no band and no figure, because

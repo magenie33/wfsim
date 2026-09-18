@@ -48,11 +48,11 @@ BEIJING = dt.timezone(dt.timedelta(hours=8))
 # what LANDED and `cny_per_unit` is today's rate: the books are in CNY and the
 # ledger stores no historical rate, so a total is what the money is worth now.
 QUERY = """
-SELECT d.paid_at, d.channel, d.account, d.donor, d.donor_id, p.display_name,
+SELECT d.paid_at, d.donor_id, p.display_name,
        d.net_amount * r.cny_per_unit AS net_cny
   FROM donations d
   JOIN rates r ON r.currency = d.currency
-  LEFT JOIN donors p ON p.id = d.donor_id
+  JOIN donors p ON p.id = d.donor_id
 """
 
 
@@ -76,30 +76,20 @@ def d1_rows(database: str) -> list[dict]:
 def entities(rows: list[dict], as_of: dt.date) -> list[dict]:
     """Fold payments into the people who made them, and score each.
 
-    AN UNATTRIBUTED ACCOUNT IS ITS OWN ENTITY, so the list is complete before
-    the linking is: a payment nobody has said belongs to a person still names
-    somebody, and dropping it would thank fewer people than paid.
+    THE LIST IS OPT-IN: a person is on it only under the name they asked for
+    (`donors.display_name`), and nobody else is printed under anything.
     """
-    by_key: dict[str, dict] = {}
+    by_key: dict = {}
     for r in rows:
-        key = f"#{r['donor_id']}" if r.get("donor_id") is not None \
-            else f"{r['channel']}:{r['account']}"
         day = dt.date.fromisoformat(r["paid_at"][:10])
-        e = by_key.setdefault(key, {"name": None, "handle": r["donor"], "handle_at": r["paid_at"],
-                                    "cny": 0.0, "first": day})
+        e = by_key.setdefault(r["donor_id"], {"name": r["display_name"], "cny": 0.0, "first": day})
         e["cny"] += float(r["net_cny"])
         e["first"] = min(e["first"], day)
-        # A NICKNAME CAN CHANGE under one account, and the latest one is the
-        # name they go by now.
-        if r["paid_at"] > e["handle_at"]:
-            e["handle"], e["handle_at"] = r["donor"], r["paid_at"]
-        # The person's chosen name wins wherever it is set; an account with none
-        # is thanked under the handle that paid.
-        if r.get("display_name"):
-            e["name"] = r["display_name"]
 
     out = []
     for e in by_key.values():
+        if not e["name"]:
+            continue
         # A REFUND IS A NEGATIVE ROW, so a person can net to nothing — and a
         # negative raised to a fractional power is not a number. Nobody who has
         # given nothing on balance is on a list of people who gave.
@@ -110,7 +100,7 @@ def entities(rows: list[dict], as_of: dt.date) -> list[dict]:
         # `0 ** BETA` is 0, which drops them off the list on the one day they
         # would most notice.
         out.append({
-            "name": e["name"] or e["handle"],
+            "name": e["name"],
             "since": e["first"].strftime("%Y-%m"),
             "score": e["cny"] * (1 + max(days, 0)) ** BETA,
         })
@@ -140,10 +130,11 @@ def self_test() -> int:
 
     today = dt.date(2026, 9, 10)
 
-    def row(donor, cny, day, donor_id=None, name=None, channel="kofi", account=None):
-        return {"paid_at": f"{day}T12:00:00+08:00", "channel": channel,
-                "account": account or donor, "donor": donor,
-                "donor_id": donor_id, "display_name": name, "net_cny": cny}
+    # One person per name unless a `donor_id` says otherwise; `name=None` is
+    # somebody who never asked to be thanked.
+    def row(who, cny, day, donor_id=None, name=""):
+        return {"paid_at": f"{day}T12:00:00+08:00", "donor_id": donor_id or who,
+                "display_name": who if name == "" else name, "net_cny": cny}
 
     names = lambda rows: [e["name"] for e in entities(rows, today)]
 
@@ -169,7 +160,7 @@ def self_test() -> int:
 
     # TWO ACCOUNTS, ONE PERSON: one entry, one total, one seniority — the
     # earliest of the two, because that is when this person first chipped in.
-    merged = entities([row("bili", 50, "2025-09-10", donor_id=1, name="Lucas", channel="bilibili"),
+    merged = entities([row("bili", 50, "2025-09-10", donor_id=1, name="Lucas"),
                        row("kofi", 50, "2026-09-01", donor_id=1, name="Lucas")], today)
     say(len(merged) == 1 and merged[0]["since"] == "2025-09",
         "two accounts of one donor are one entry, dated from the first",
@@ -178,16 +169,10 @@ def self_test() -> int:
     say(names([row("refunded", 30, "2026-01-01"), row("refunded", -30, "2026-01-02")]) == [],
         "a payment that was refunded in full thanks nobody")
 
-    # THE UNATTRIBUTED ARE STILL THANKED. A batch entered before anybody said
-    # who it was is a real supporter with a real name on their account.
-    say(names([row("nobody-linked-me", 40, "2026-01-01")]) == ["nobody-linked-me"],
-        "an account with no donor_id is thanked under its own handle")
-
-    # THE ACCOUNT IS THE ID, NOT THE NICKNAME: a rename between two payments is
-    # still one account, thanked under the name it carries now.
-    say(names([row("old-nick", 10, "2026-01-01", account="18571868", channel="bilibili"),
-               row("new-nick", 10, "2026-03-01", account="18571868", channel="bilibili")])
-        == ["new-nick"], "one UID under two nicknames is one entry, under the later one")
+    # OPT-IN: somebody who never asked is counted and printed nowhere — not
+    # under a nickname, not as "anonymous".
+    say(names([row("asked", 10, "2026-01-01"), row("quiet", 500, "2025-01-01", name=None)])
+        == ["asked"], "a donor with no display_name is not on the list")
 
     # AND NO AMOUNT LEAVES. The published shape is asserted, not described:
     # every key of every entry, so a field added later has to be decided on.
