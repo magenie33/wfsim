@@ -62,8 +62,9 @@ CREATE TABLE IF NOT EXISTS donations (
   currency      TEXT NOT NULL REFERENCES rates(currency),
   -- WHAT THEY PAID, and WHAT LANDED after the channel's cut. The gap is the
   -- channel's, which is the number worth knowing per channel; the books read
-  -- the net. GROSS IS NULL WHERE THE CHANNEL DOES NOT SHOW IT — Bilibili lists
-  -- only the net — and never back-computed: the cut differs by payment platform.
+  -- the net. BILIBILI LISTS ONLY THE NET, so its gross is back-computed at the
+  -- Web cut — 10.00 paid lands as 6.72 — to the whole yuan; NULL where a
+  -- channel's gross cannot be derived at all.
   gross_amount  REAL,
   net_amount    REAL NOT NULL,
   -- ONE PAYMENT, ONE ROW. Nothing is typed to say which payment this is, so
