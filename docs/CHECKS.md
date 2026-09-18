@@ -31,10 +31,11 @@ reader can do — `docs/AGENT.md`. Two of its assertions are static, read off
 `app.js` rather than off the page, because duplication is invisible from
 inside a running page: the mod-exchange decision and the clear-to-innate rule
 each exist ONCE, and the weapon control calls the door instead of its own
-copy. The rest drive the page through the door itself — seat a mod, clear the
+copy. The rest drive the page through the door itself — seat a mod, set a
+polarity, plan the Forma, seat an arcane, install an evolution, clear the
 build, change the fight, open a module, run it — and assert the SLOT ON SCREEN
 redrew, which is the difference between an agent working the page and one
-working behind it. Then eight refusals, each of which must come back as
+working behind it. Then the refusals, each of which must come back as
 `ok:false` with a reason rather than as an exception.
 
 ## `check_parity`

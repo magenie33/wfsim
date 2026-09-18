@@ -3,7 +3,9 @@
 **Status: phase 0 implemented** — `window.wfsim` in `web/src/static/app.js`,
 asserted by `scripts/check_agent_door.mjs`. It covers the loop that answers a
 question: open a weapon, change the build, change the fight, run it, read the
-number.
+number. The build is reachable axis by axis — mods and their ranks, slot
+polarities and the Forma plan, arcanes, evolutions, mode, valence — and the
+observation carries capacity, Forma and the active presets.
 
 Everything that drives the page from outside goes through one door:
 

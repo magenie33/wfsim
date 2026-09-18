@@ -88,7 +88,7 @@ const loop = await evaluate(`(async () => {
   out.seated = window.wfsim.observe().build.slots.some(s => s.mod === mod);
   out.moved = slotHtml() !== before;
   out.clear = await window.wfsim.do("builder.mods.clear", {});
-  out.emptied = window.wfsim.observe().build.slots.length === 0;
+  out.emptied = window.wfsim.observe().build.slots.every(s => !s.mod);
   out.fight = await window.wfsim.do("simulator.scenario.set", { patch: { level: 130 } });
   out.level = window.wfsim.observe().scenario.level;
   out.runs = await window.wfsim.do("simulator.runs.set", { runs: 5 });
@@ -106,6 +106,50 @@ check("...and the slot on screen redrew", loop.moved === true);
 check("...and the change is reported back", !!(loop.seat.changed && loop.seat.changed.build),
   Object.keys(loop.seat.changed || {}).join(","));
 check("clearing empties every slot", loop.clear.ok === true && loop.emptied === true);
+
+// ---- the rest of the build ---------------------------------------------------
+
+const build = await evaluate(`(async () => {
+  const out = {};
+  const slotHtml = () => document.getElementById("mod-slots").innerHTML;
+  const before = slotHtml();
+  out.pol = await window.wfsim.do("builder.polarity.set", { slot: 1, polarity: "Madurai" });
+  out.polSeen = window.wfsim.observe().build.slots.some(s => s.seat === 1 && s.pol === "Madurai");
+  out.polMoved = slotHtml() !== before;
+  out.plan = await window.wfsim.do("builder.forma.plan", {});
+  const arc = arcanePool(0)[0];
+  out.arc = await window.wfsim.do("builder.arcane.set", { seat: 0, arcane: arc.id });
+  out.arcSeen = window.wfsim.observe().build.arcanes[0].arcane === arc.id;
+  out.arcOff = await window.wfsim.do("builder.arcane.set", { seat: 0, arcane: null });
+  out.arcGone = window.wfsim.observe().build.arcanes[0].arcane === null;
+  const mod = poolWithRivens()[0];
+  out.rank = await window.wfsim.do("builder.mod.set", { slot: 0, mod: mod.id, rank: 0 });
+  out.rankSeen = window.wfsim.observe().build.slots.find(s => s.seat === 0).rank === 0;
+  out.capacity = window.wfsim.observe().build.capacity;
+  const tiers = weaponEvos();
+  out.hasEvos = tiers.length > 1;
+  if (out.hasEvos) {
+    out.evoLocked = await window.wfsim.do("builder.evolution.set", { tier: 2, evolution: tiers[1].options[0].id });
+    out.evo = await window.wfsim.do("builder.evolution.set", { tier: 1, evolution: tiers[0].options[0].id });
+    out.evoSeen = window.wfsim.observe().build.evolutions[1] === tiers[0].options[0].id;
+  }
+  await window.wfsim.do("builder.mods.clear", {});
+  return out;
+})()`, { awaitPromise: true });
+
+check("a slot takes a polarity", build.pol.ok === true && build.polSeen === true, JSON.stringify(build.pol).slice(0, 200));
+check("...and the slot on screen redrew", build.polMoved === true);
+check("the Forma plan runs", build.plan.ok === true, JSON.stringify(build.plan).slice(0, 200));
+check("an arcane seats and is observed", build.arc.ok === true && build.arcSeen === true, JSON.stringify(build.arc).slice(0, 200));
+check("...and empties again", build.arcOff.ok === true && build.arcGone === true);
+check("a mod seats at the rank asked for", build.rank.ok === true && build.rankSeen === true);
+check("capacity is observed", !!build.capacity && typeof build.capacity.used === "number" && build.capacity.max > 0,
+  JSON.stringify(build.capacity));
+if (build.hasEvos) {
+  check("a tier past the open one is refused", build.evoLocked.ok === false && build.evoLocked.reason === "tier_locked",
+    JSON.stringify(build.evoLocked));
+  check("an evolution installs and is observed", build.evo.ok === true && build.evoSeen === true, JSON.stringify(build.evo).slice(0, 200));
+}
 check("the fight takes a new level", loop.fight.ok === true && loop.level === 130, loop.level);
 check("the run count is a preference the door can set", loop.runs.ok === true);
 check("a module opens", loop.open.ok === true && loop.where === "simulator", loop.where);
@@ -133,6 +177,11 @@ const no = await evaluate(`(async () => {
     nested: await ask("simulator.scenario.set", { patch: { buffs: {} } }),
     runs: await ask("simulator.runs.set", { runs: 0 }),
     extra: await ask("builder.mods.clear", { hurry: true }),
+    overRank: await ask("builder.mod.set", { slot: 0, mod: poolWithRivens()[0].id, rank: poolWithRivens()[0].max_rank + 1 }),
+    arcane: await ask("builder.arcane.set", { seat: 0, arcane: "no_such_arcane" }),
+    mode: await ask("builder.mode.set", { mode: "no_such_mode" }),
+    valence: await ask("builder.valence.set", { bonus: 0.5 }),
+    polarity: await ask("builder.polarity.set", { slot: 0, polarity: "Sparkly" }),
   };
 })()`, { awaitPromise: true });
 
@@ -148,5 +197,11 @@ check("a field with its own editor is refused", refused(no.nested, "not_a_scalar
 check("a run count out of range is refused rather than clamped",
   refused(no.runs, "out_of_range"), JSON.stringify(no.runs));
 check("an argument nothing reads is refused", refused(no.extra, "unknown_argument"), JSON.stringify(no.extra));
+check("a rank past the card's maximum is refused", refused(no.overRank, "out_of_range"), JSON.stringify(no.overRank));
+check("an arcane this seat cannot take is refused with ones it can",
+  refused(no.arcane, "not_equippable") && no.arcane.alternatives.length > 0, JSON.stringify(no.arcane));
+check("a mode the weapon does not have is refused", refused(no.mode, "bad_argument"), JSON.stringify(no.mode));
+check("valence on a weapon without one is refused", refused(no.valence, "no_valence"), JSON.stringify(no.valence));
+check("a polarity that does not exist is refused", refused(no.polarity, "bad_argument"), JSON.stringify(no.polarity));
 
 await finish("the door is one door");

@@ -8604,7 +8604,19 @@ let gainRefreshTimer = null;
 /// disagrees with what is stored. The enemy's own rule rides along, because it
 /// is a property of the FIGHT rather than of any one menu.
 function setScenarioFields(patch) {
-  Object.assign(sim, patch);
+  writeScenarioFields(patch);
+  markPresetDirty(); markScenarioDirty();
+  renderSim();
+}
+
+/// WRITING A FIGHT FIELD IS ONE DECISION, shared by every field control and
+/// the agent door — a copy per caller is how a door-set Tenno field once left
+/// the panel resolving against the old player. A null DELETES the key: an
+/// absent key is what the server reads as "unset", a null is not.
+function writeScenarioFields(patch) {
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === null) delete sim[k]; else sim[k] = v;
+  }
   // An explicit "yes, Eximus" cannot follow you onto a unit that has no Eximus
   // variant — the fight would be refused. Dropping it back to null hands the
   // new target its OWN default, which is the elite one wherever there is one.
@@ -8613,8 +8625,9 @@ function setScenarioFields(patch) {
     const picked = allEnemies().find((e) => e.id === sim.enemy);
     if (!(picked && picked.can_be_eximus)) sim.eximus = null;
   }
-  markPresetDirty(); markScenarioDirty();
-  renderSim();
+  // A TENNO field changes what the BUILD is worth, not just what the fight
+  // looks like — the panel resolves against the player, so it is asked again.
+  if (Object.keys(patch).some((k) => TENNO_KEYS.includes(k))) refreshPanel();
 }
 
 function markScenarioDirty() {
@@ -10345,9 +10358,11 @@ const lowerRanks = (m) => (!m.riven && everyRank().mods.includes(m.id)
 /// becomes a property of that menu rather than of the build.
 ///
 /// A mod already seated elsewhere is EXCHANGED with this slot, polarities stay
-/// with their slots, and a mod arrives at `rank`, else at its maximum.
+/// with their slots, a mod arrives at `rank`, else at its maximum, and a null
+/// id empties the slot.
 /// Redrawing is the caller's: a batch seats several and repaints once.
 function equipMod(i, id, rank) {
+  if (id === null) { slots[i].mod = null; return; }
   if (slots[i].mod === id) { if (rank != null) slots[i].rank = rank; return; }
   const at = placedAt(id, i);
   if (at >= 0) {
@@ -11920,7 +11935,7 @@ function buildSlot(i) {
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
       const nr = Math.max(0, Math.min(m.max_rank, r + Number(b.dataset.d)));
-      slots[i].rank = nr; renderMods();
+      equipMod(i, slots[i].mod, nr); renderMods();
     }));
   } else {
     el.className = "slot empty";
@@ -14160,7 +14175,7 @@ function openModSlotMenu(slotIdx, anchor) {
     onSwap: () => openPicker(slotIdx, slotEl(slotIdx)),
     // In place: the slot keeps its polarity, which is a property of the SLOT
     // and not of what was in it.
-    onPick: () => { slots[slotIdx].mod = null; renderMods(); },
+    onPick: () => { equipMod(slotIdx, null); renderMods(); },
   });
 }
 
@@ -14172,9 +14187,14 @@ function openPolMenu(slotIdx) {
     `<div class="mi ${!cur ? "sel" : ""}" data-p="">◇ none</div>`;
   place(menu, slotEl(slotIdx));
   menu.querySelectorAll(".mi").forEach((o) => o.addEventListener("click", () => {
-    slots[slotIdx].pol = o.dataset.p || null;
+    setSlotPolarity(slotIdx, o.dataset.p || null);
     closePopovers(); renderMods();
   }));
+}
+
+/// A slot's polarity, or none. The mod stays: polarity is the slot's.
+function setSlotPolarity(i, pol) {
+  slots[i].pol = pol || null;
 }
 
 // ---- Arcane ----
@@ -14981,13 +15001,7 @@ function renderValence() {
       removable: false,
       items: s.elements.map((e) => ({ key: e, value: e, label: DT(e) })),
       card: { name: DT(valence.element) },
-      onPick: (v) => {
-        if (!v || valence.element === v) return;
-        valence.element = v;
-        markPresetDirty();
-        renderValence();
-        refreshPanel();
-      },
+      onPick: (v) => { if (v && valence.element !== v) setValence({ element: v }); },
     },
   };
   box.innerHTML =
@@ -14997,12 +15011,30 @@ function renderValence() {
   bindRankedSlots(box, cfgs);
   const inp = $("valence-bonus");
   if (inp) {
-    inp.addEventListener("change", () => {
-      const v = Number(inp.value) / 100;
-      valence.bonus = Math.min(Math.max(Number.isFinite(v) ? v : s.min, s.min), s.max);
-      markPresetDirty(); renderValence(); refreshPanel();
-    });
+    inp.addEventListener("change", () => setValence({ bonus: Number(inp.value) / 100 }));
   }
+}
+
+/// AN ADVERSARY WEAPON'S VALENCE — its element, and a bonus clamped to what a
+/// Lich can roll, because a bonus past the cap is a weapon nobody can own.
+function setValence({ element, bonus }) {
+  const s = valenceSpec($("weapon").value);
+  if (element != null) valence.element = element;
+  if (bonus != null) valence.bonus = Math.min(Math.max(Number.isFinite(bonus) ? bonus : s.min, s.min), s.max);
+  markPresetDirty(); renderValence(); refreshPanel();
+}
+
+/// HOW THE BUILD IS PLAYED, set by the dropdown and the agent door alike.
+function setMode(v) {
+  mode = v;
+  // Keep the address bar honest: it may have said a mode, and it is not
+  // saying this one any more.
+  const q = new URLSearchParams(location.search);
+  if (q.get("mode") && q.get("mode") !== v) {
+    q.set("mode", v);
+    history.replaceState(null, "", `${location.pathname}?${q}`);
+  }
+  markPresetDirty(); renderMode(); refreshPanel();
 }
 
 function renderMode() {
@@ -15064,17 +15096,7 @@ function renderMode() {
       key: id, value: id, label: label + (offReason ? " ⊘" : ""),
       hint: offReason || "", disabled: !!offReason,
     })),
-    onPick: (v) => {
-      mode = v;
-      // Keep the address bar honest: it may have said a mode, and it is not
-      // saying this one any more.
-      const q = new URLSearchParams(location.search);
-      if (q.get("mode") && q.get("mode") !== v) {
-        q.set("mode", v);
-        history.replaceState(null, "", `${location.pathname}?${q}`);
-      }
-      markPresetDirty(); renderMode(); refreshPanel();
-    },
+    onPick: (v) => setMode(v),
   })}</label>${why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}${
     explain(mode)}`;
   wireFolds(box);
@@ -15479,8 +15501,8 @@ function renderWholeFight() {
     el.addEventListener("change", () => {
       const k = el.dataset.k;
       // See the other binding below for why an empty number DELETES the key.
-      if (el.type === "number" && el.value === "") delete sim[k];
-      else sim[k] = el.type === "checkbox" ? el.checked : Number(el.value);
+      writeScenarioFields({ [k]: el.type === "number" && el.value === "" ? null
+        : el.type === "checkbox" ? el.checked : Number(el.value) });
       markScenarioDirty();
       renderSim();
     });
@@ -15727,21 +15749,17 @@ function renderScenarioFields(ids, opts = {}) {
         // `else` below as a STRING, and a scenario field the server reads with
         // `get_u32` would silently fall back to its default — the control would
         // move and the fight would not.
-        if (el.dataset.wfovnum || el.dataset.num) { sim[k] = Number(el.value); }
-        else if (el.type === "checkbox") sim[k] = el.checked;
         // AN EMPTY NUMBER IS AN ABSENT KEY, not a zero. The pickup reach is
         // the field this exists for: blank means "any distance", which the
         // server reads off the missing key, where a 0 would mean a radius that
         // collects nothing.
-        else if (el.type === "number" && el.value === "") delete sim[k];
-        else if (el.type === "number") sim[k] = Number(el.value);
-        else sim[k] = el.value;
+        writeScenarioFields({ [k]: el.dataset.wfovnum || el.dataset.num ? Number(el.value)
+          : el.type === "checkbox" ? el.checked
+          : el.type === "number" && el.value === "" ? null
+          : el.type === "number" ? Number(el.value)
+          : el.value });
         // No `enemy` case here: the target is the picker's, not a field's, and
         // it repaints the arena through renderSim() like everything else.
-        // A TENNO field changes what the BUILD is worth, not just what the
-        // fight looks like — the panel resolves against the player now, so it
-        // has to be asked again. The enemy half changes no panel number.
-        if (TENNO_KEYS.includes(k)) refreshPanel();
         // ONLY the scenario. A build carries no copy of the fight, so a sim
         // knob does not dirty the build preset: this is the scenario's edit
         // and nobody else's.
@@ -23209,14 +23227,23 @@ function agentObserve() {
   if (r.weapon) {
     const st = snapshotState();
     out.weapon = { id: r.weapon, name: weaponInfo(r.weapon).name };
+    // A SLOT WITH A POLARITY AND NO MOD IS STILL PART OF THE BUILD — it is
+    // what the next mod will cost — so a slot is left out only when it carries
+    // neither.
+    const f = formaCount();
     out.build = {
+      preset: activePreset || null,
       slots: st.slots
         .map((s, i) => ({ seat: agentSeatName(i), mod: s.mod, rank: s.rank, pol: s.pol }))
-        .filter((s) => s.mod),
-      arcanes: st.arcane, evolutions: st.evoSel, mode: st.mode,
+        .filter((s) => s.mod || s.pol),
+      arcanes: st.arcane.map((id, i) => ({ seat: i, arcane: id === "none" ? null : id, rank: st.arcaneRank[i] })),
+      evolutions: st.evoSel, mode: st.mode,
       valence: st.valence, assembly: st.assembly, wielder: st.wielder,
+      capacity: { used: capacityUsed(), max: builderCap() },
+      forma: { regular: f.regular, umbra: f.umbra, omni: f.omni },
     };
     out.scenario = agentScenario();
+    out.scenario_preset = activeScenario || null;
     out.result = agentResult();
   }
   out.can = AGENT_ACTIONS.filter((a) => !a.needs_weapon || r.weapon).map((a) => a.id);
@@ -23360,9 +23387,10 @@ const AGENT_ACTIONS = [
     },
     run({ slot, mod, rank }) {
       const i = agentSeat(slot);
-      if (mod === null) { slots[i].mod = null; renderMods(); return { text: `emptied slot ${slot}` }; }
+      if (mod === null) { equipMod(i, null); renderMods(); return { text: `emptied slot ${slot}` }; }
       const m = modById(mod);
       if (!m) return agentNo("unknown_mod", { argument: "mod", got: mod });
+      if (rank != null && rank > m.max_rank) return agentNo("out_of_range", { argument: "rank", min: 0, max: m.max_rank });
       equipMod(i, mod, rank);
       renderMods();
       return { text: `seated ${m.name} in slot ${slot}` };
@@ -23375,6 +23403,105 @@ const AGENT_ACTIONS = [
     needs_weapon: true,
     args: {},
     run() { clearMods(); return { text: "cleared the build" }; },
+  },
+  {
+    id: "builder.polarity.set",
+    what: "Set a slot's polarity, or remove it with polarity=null. The mod in the slot stays.",
+    anchor: "#mod-slots",
+    needs_weapon: true,
+    args: {
+      slot: { kind: "seat", required: true, what: "0-7, or \"exilus\" / \"stance\"" },
+      polarity: { kind: "string", required: true, nullable: true, what: "polarity, or null", enum: () => GUN_POLS },
+    },
+    run({ slot, polarity }) {
+      setSlotPolarity(agentSeat(slot), polarity);
+      renderMods();
+      return { text: `slot ${slot} is ${polarity || "unpolarized"}` };
+    },
+  },
+  {
+    id: "builder.forma.plan",
+    what: "Re-polarize the slots for the fewest Forma that fit the seated mods, as the auto button does.",
+    anchor: "#auto-forma",
+    needs_weapon: true,
+    args: {},
+    async run() { await autoForma(); renderMods(); return { text: "planned the Forma" }; },
+  },
+  {
+    id: "builder.arcane.set",
+    what: "Seat an arcane, or empty the seat with arcane=null. Only arcanes this weapon's seat takes are accepted.",
+    anchor: "#arcane-slots",
+    needs_weapon: true,
+    args: {
+      seat: { kind: "number", required: true, min: 0, max: 1, what: "arcane seat, 0 unless the weapon has two" },
+      arcane: { kind: "string", required: true, nullable: true, what: "arcane id, or null" },
+      rank: { kind: "number", min: 0, max: 10, what: "defaults to the arcane's maximum" },
+    },
+    run({ seat, arcane, rank }) {
+      if (seat >= arcanePools().length) return agentNo("out_of_range", { argument: "seat", min: 0, max: arcanePools().length - 1 });
+      if (arcane === null) { setArcane("none", seat); renderArcanes(); return { text: `emptied arcane seat ${seat}` }; }
+      const a = arcanePool(seat).find((x) => x.id === arcane);
+      if (!a) return agentNo("not_equippable", { argument: "arcane", alternatives: arcanePool(seat).map((x) => x.id).slice(0, 8) });
+      if (rank != null && rank > a.max_rank) return agentNo("out_of_range", { argument: "rank", min: 0, max: a.max_rank });
+      setArcane(arcane, seat);
+      if (rank != null) setArcaneRank(seat, rank);
+      renderArcanes();
+      return { text: `seated ${a.name}` };
+    },
+  },
+  {
+    id: "builder.evolution.set",
+    what: "Install an Incarnon evolution in a tier, or empty it with evolution=null (which empties every tier after it). Tier N opens only once tier N-1 is filled.",
+    anchor: "#evo-rows",
+    needs_weapon: true,
+    args: {
+      tier: { kind: "number", required: true, min: 1, max: 4, what: "evolution tier" },
+      evolution: { kind: "string", required: true, nullable: true, what: "evolution id, or null" },
+    },
+    run({ tier, evolution }) {
+      const t = weaponEvos().find((x) => x.tier === tier);
+      if (!t) return agentNo("no_such_tier", { argument: "tier", alternatives: weaponEvos().map((x) => x.tier) });
+      if (evolution !== null) {
+        if (tier > evoOpenTo()) return agentNo("tier_locked", { argument: "tier", open_to: evoOpenTo() });
+        if (!(t.options || []).some((x) => x.id === evolution)) {
+          return agentNo("bad_argument", { argument: "evolution", alternatives: (t.options || []).map((x) => x.id) });
+        }
+      }
+      pickEvolution(tier, evolution);
+      return { text: evolution ? `installed ${evolution}` : `emptied tier ${tier}` };
+    },
+  },
+  {
+    id: "builder.mode.set",
+    what: "Choose how the build is played — the weapon's firing mode or form.",
+    anchor: "#mode-row",
+    needs_weapon: true,
+    args: { mode: { kind: "string", required: true, what: "mode id" } },
+    run({ mode: v }) {
+      const opts = modeOpts(weaponInfo($("weapon").value) || {});
+      const o = opts.find(([id]) => id === v);
+      if (!o) return agentNo("bad_argument", { argument: "mode", alternatives: opts.map(([id]) => id) });
+      if (o[2]) return agentNo("mode_unavailable", { argument: "mode", because: o[2] });
+      setMode(v);
+      return { text: `playing ${o[1]}` };
+    },
+  },
+  {
+    id: "builder.valence.set",
+    what: "An adversary weapon's valence: its element and its bonus as a fraction of base damage (clamped to what a Lich can roll).",
+    anchor: "#element-cfg",
+    needs_weapon: true,
+    args: {
+      element: { kind: "string", what: "element" },
+      bonus: { kind: "number", min: 0, max: 1, what: "e.g. 0.6 for 60%" },
+    },
+    run({ element, bonus }) {
+      const s = valenceSpec($("weapon").value);
+      if (!s) return agentNo("no_valence", { because: "this weapon is not an adversary weapon" });
+      if (element != null && !s.elements.includes(element)) return agentNo("bad_argument", { argument: "element", alternatives: s.elements });
+      setValence({ element, bonus });
+      return { text: `valence ${valence.element} ${Math.round(valence.bonus * 1000) / 10}%` };
+    },
   },
   {
     id: "simulator.scenario.set",
