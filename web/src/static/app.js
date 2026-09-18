@@ -8708,6 +8708,22 @@ const pickPreset = (cfg, key) => {
   cfg.rerender();
 };
 
+/// "+ new": a blank document of this bar's kind, made active, named with the
+/// bar's own noun ("riven N" on the riven bar). Activated FIRST so everything
+/// that renders during apply() (the sim's per-preset stored result) already
+/// sees the new one; the stored state is the live snapshot after the blank is
+/// applied, so it matches exactly what the editor shows.
+const newPreset = (cfg) => {
+  const ps = cfg.load();
+  const name = freeName(ps, (n) => autoPresetName(cfg.noun || "preset", n));
+  cfg.setActive(name);
+  whileApplying(() => cfg.apply(cfg.blank()));
+  ps.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
+  cfg.store(ps);
+  cfg.rerender();
+  return name;
+};
+
 // The copy captures the LIVE editor state and becomes the active document; the
 // original keeps what auto-save last wrote into it. For a read-only entry the
 // live state IS that entry, because selecting it is what put it there.
@@ -8719,6 +8735,7 @@ const copyActivePreset = (cfg) => {
   cfg.store(ps);
   cfg.setActive(name);
   cfg.rerender();
+  return name;
 };
 
 // THE BENCHMARK BAR — the official SCENARIOS, one per ruler, in a bar of their
@@ -8853,22 +8870,7 @@ function renderPresetBarIn(bar, cfg) {
   // Unique auto-names: "+ new" takes the smallest free "preset N";
   // duplicate takes "<name> copy", then "<name> copy 2", …
   const addBtn = bar.querySelector(".pchip.add");
-  addBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const ps2 = cfg.load();
-    // "preset N" everywhere except where the thing has its own noun — the
-    // riven bar names them "riven N", because that is what they are.
-    const name = freeName(ps2, (n) => autoPresetName(noun, n));
-    // Activate FIRST so everything that renders during apply() (e.g. the
-    // sim's per-preset stored result) already sees the NEW preset; then
-    // apply the blank and store the resulting live snapshot, so the stored
-    // state matches exactly what the editor now shows.
-    cfg.setActive(name);
-    whileApplying(() => cfg.apply(cfg.blank()));
-    ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
-    cfg.store(ps2);
-    cfg.rerender();
-  });
+  addBtn.addEventListener("click", (e) => { e.stopPropagation(); newPreset(cfg); });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
   on(".pop.dup", () => copyActivePreset(cfg));
   bar.querySelectorAll(".pop.unpin").forEach((b) => b.addEventListener("click", (e) => {
@@ -23388,7 +23390,55 @@ function agentRunSummary() {
 /// weapon, change the build, change the fight, run it, read the number — and
 /// stops there. The optimizer is deliberately absent: a search is minutes
 /// long and a door onto it needs its own cancellation, which is its own step.
+/// THE PRESET BARS the door reaches: the build's and the fight's. Picking,
+/// "+ new" and duplicate are the moves; rename and delete stay a reader's.
+const AGENT_BARS = { build: () => buildBarCfg(), scenario: () => scenarioBarCfg() };
+const agentPresetRows = (cfg) => cfg.load().map((p) => ({
+  id: presetId(p), name: presetLabel(p), active: presetId(p) === cfg.active(),
+  ...(cfg.readonly(p) ? { read_only: true } : {}),
+}));
+const agentBarArg = { kind: "string", required: true, what: "which bar", enum: () => Object.keys(AGENT_BARS) };
+
 const AGENT_ACTIONS = [
+  {
+    id: "shell.presets.list",
+    query: true,
+    what: "List the saved builds or fight scenarios for this weapon, which one is open, and which are read-only (benchmarks).",
+    anchor: "#preset-bar-builder-builds",
+    needs_weapon: true,
+    args: { bar: agentBarArg },
+    run({ bar }) { return { rows: agentPresetRows(AGENT_BARS[bar]()) }; },
+  },
+  {
+    id: "shell.preset.open",
+    what: "Open a saved build or scenario by the id presets.list gives.",
+    anchor: "#preset-bar-builder-builds",
+    needs_weapon: true,
+    args: { bar: agentBarArg, preset: { kind: "string", required: true, what: "preset id" } },
+    run({ bar, preset }) {
+      const cfg = AGENT_BARS[bar]();
+      const rows = agentPresetRows(cfg);
+      if (!rows.some((r) => r.id === preset)) return agentNo("unknown_preset", { argument: "preset", alternatives: rows.map((r) => r.id).slice(0, 12) });
+      pickPreset(cfg, preset);
+      return { text: `opened ${preset}` };
+    },
+  },
+  {
+    id: "shell.preset.new",
+    what: "Start a new blank build or scenario and open it; the one open before is kept as it was.",
+    anchor: "#preset-bar-builder-builds",
+    needs_weapon: true,
+    args: { bar: agentBarArg },
+    run({ bar }) { return { preset: newPreset(AGENT_BARS[bar]()) }; },
+  },
+  {
+    id: "shell.preset.copy",
+    what: "Duplicate the open build or scenario and open the copy — the way to try changes without touching the reader's own.",
+    anchor: "#preset-bar-builder-builds",
+    needs_weapon: true,
+    args: { bar: agentBarArg },
+    run({ bar }) { return { preset: copyActivePreset(AGENT_BARS[bar]()) }; },
+  },
   {
     id: "builder.stats.read",
     query: true,

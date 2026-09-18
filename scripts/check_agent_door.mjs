@@ -163,6 +163,36 @@ check("the run reads back with where its damage came from",
   loop.read.ok === true && loop.read.headline && loop.read.headline.fresh === true && loop.read.damage_sources.length > 0,
   JSON.stringify(loop.read).slice(0, 300));
 
+// ---- presets: an agent works on a copy ---------------------------------------
+
+const pre = await evaluate(`(async () => {
+  const out = {};
+  await window.wfsim.do("builder.mod.set", { slot: 0, mod: "serration" });
+  await new Promise(r => setTimeout(r, 700)); // auto-save births the reader's build
+  const mine = window.wfsim.observe().build.preset;
+  out.mine = mine;
+  out.copy = await window.wfsim.do("shell.preset.copy", { bar: "build" });
+  out.onCopy = window.wfsim.observe().build.preset;
+  await window.wfsim.do("builder.mods.clear", {});
+  await new Promise(r => setTimeout(r, 700));
+  out.list = await window.wfsim.do("shell.presets.list", { bar: "build" });
+  out.back = await window.wfsim.do("shell.preset.open", { bar: "build", preset: mine });
+  out.mineKept = window.wfsim.observe().build.slots.some(s => s.mod === "serration");
+  out.fresh = await window.wfsim.do("shell.preset.new", { bar: "build" });
+  out.blank = window.wfsim.observe().build.slots.every(s => !s.mod);
+  out.bad = await window.wfsim.do("shell.preset.open", { bar: "build", preset: "no such build" });
+  return out;
+})()`, { awaitPromise: true });
+
+check("the reader's build exists before the agent branches", !!pre.mine, JSON.stringify(pre.mine));
+check("a copy opens as a new build", pre.copy.ok === true && pre.onCopy && pre.onCopy !== pre.mine,
+  JSON.stringify([pre.copy, pre.onCopy]).slice(0, 200));
+check("presets list, marking the open one", pre.list.ok === true && pre.list.rows.some(r => r.active && r.id === pre.onCopy),
+  JSON.stringify(pre.list).slice(0, 300));
+check("the reader's own build is untouched by work on the copy", pre.back.ok === true && pre.mineKept === true);
+check("a new build opens blank", pre.fresh.ok === true && pre.blank === true, JSON.stringify(pre.fresh));
+check("a build that does not exist is refused", pre.bad.ok === false && pre.bad.reason === "unknown_preset", JSON.stringify(pre.bad));
+
 // ---- queries -----------------------------------------------------------------
 //
 // A QUERY CHANGES NOTHING, which is what lets a consumer with no page in front
