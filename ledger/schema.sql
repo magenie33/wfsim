@@ -62,8 +62,9 @@ CREATE TABLE IF NOT EXISTS donations (
   currency      TEXT NOT NULL REFERENCES rates(currency),
   -- WHAT THEY PAID, and WHAT LANDED after the channel's cut. The gap is the
   -- channel's, which is the number worth knowing per channel; the books read
-  -- the net.
-  gross_amount  REAL NOT NULL,
+  -- the net. GROSS IS NULL WHERE THE CHANNEL DOES NOT SHOW IT — Bilibili lists
+  -- only the net — and never back-computed: the cut differs by payment platform.
+  gross_amount  REAL,
   net_amount    REAL NOT NULL,
   -- ONE PAYMENT, ONE ROW. Nothing is typed to say which payment this is, so
   -- this is what stops the same Bilibili list being entered twice.
