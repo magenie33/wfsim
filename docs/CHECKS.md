@@ -24,6 +24,19 @@ second and third are the ones that matter most: an unhashed module path is a bro
 that can hold the PREVIOUS engine under this build's `app.js`, which is
 different answers from the same seed with no error anywhere.
 
+## `check_agent_door`
+
+`window.wfsim` is one door, and an action is something a
+reader can do — `docs/AGENT.md`. Two of its assertions are static, read off
+`app.js` rather than off the page, because duplication is invisible from
+inside a running page: the mod-exchange decision and the clear-to-innate rule
+each exist ONCE, and the weapon control calls the door instead of its own
+copy. The rest drive the page through the door itself — seat a mod, clear the
+build, change the fight, open a module, run it — and assert the SLOT ON SCREEN
+redrew, which is the difference between an agent working the page and one
+working behind it. Then eight refusals, each of which must come back as
+`ok:false` with a reason rather than as an exception.
+
 ## `check_parity`
 
 The builder and the optimizer offer the same options, the

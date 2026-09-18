@@ -56,6 +56,15 @@ jobs:
       # No browser: every one of them is a fact about the files.
       - name: The build says which release it is
         run: node scripts/check_release_identity.mjs
+      # THE PAGE'S ONE PROGRAMMATIC SURFACE. Everything that drives the page
+      # from outside — the checks, an in-page agent, a bot — stands on
+      # `window.wfsim`, so its two properties are worth a check rather than a
+      # convention: an action names a control that is on the page, and the
+      # decisions it shares with the page's own handlers exist once. Both fail
+      # silently — a door onto a button nobody has still answers, and a second
+      # copy of a rule behaves identically until one of them is edited.
+      - name: The agent door is one door
+        run: node scripts/check_agent_door.mjs
       - name: Builder / optimizer parity
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.

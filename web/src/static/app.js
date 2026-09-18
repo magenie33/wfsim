@@ -1811,10 +1811,10 @@ async function init() {
   await boardBoot;            // before presets: the board's rows ARE build presets
   applyWeapon(bootWeapon, d.mods);
 
-  $("weapon").addEventListener("change", () => {
-    switchWeapon($("weapon").value);
-    if (!document.querySelector(".config-page").hidden) nav(weaponModPath($("weapon").value));
-  });
+  // THROUGH THE DOOR, like every other consumer — see "The agent door". The
+  // control and an agent must move the page the same way, and the only thing
+  // that keeps them the same is that there is one implementation to move it.
+  $("weapon").addEventListener("change", () => { wfsim.do("builder.weapon.set", { weapon: $("weapon").value }); });
   $("run-sim").addEventListener("click", runSim);
   $("run-opt").addEventListener("click", runOptimize);
   $("opt-mod-filter").addEventListener("input", renderOptModList);
@@ -1863,7 +1863,7 @@ async function init() {
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
   $("auto-forma").addEventListener("click", () => autoForma().then(() => renderMods()));
-  $("clear-mods").addEventListener("click", () => { slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; }); renderMods(); });
+  $("clear-mods").addEventListener("click", () => { clearMods(); });
   document.addEventListener("click", (e) => {
     // `.rv-pick` opens the same popover from the riven tab, so its own click
     // must not be the click that closes it again.
@@ -8599,6 +8599,24 @@ let gainRefreshTimer = null;
 // The scenario's own auto-save. Same contract as the build's — the editor IS
 // the preset — but a different collection, because a build is tested against
 // several fights and each of them is worth keeping.
+/// CHANGING THE FIGHT IS ONE SEQUENCE — write, mark both collections dirty,
+/// redraw — and a caller that performs three of the four leaves a page that
+/// disagrees with what is stored. The enemy's own rule rides along, because it
+/// is a property of the FIGHT rather than of any one menu.
+function setScenarioFields(patch) {
+  Object.assign(sim, patch);
+  // An explicit "yes, Eximus" cannot follow you onto a unit that has no Eximus
+  // variant — the fight would be refused. Dropping it back to null hands the
+  // new target its OWN default, which is the elite one wherever there is one.
+  // An explicit "no" is legal everywhere and is kept.
+  if ("enemy" in patch && sim.eximus === true) {
+    const picked = allEnemies().find((e) => e.id === sim.enemy);
+    if (!(picked && picked.can_be_eximus)) sim.eximus = null;
+  }
+  markPresetDirty(); markScenarioDirty();
+  renderSim();
+}
+
 function markScenarioDirty() {
   if (presetApplying) return;
   clearTimeout(scenarioSaveTimer);
@@ -10320,6 +10338,35 @@ const lowerRanks = (m) => (!m.riven && everyRank().mods.includes(m.id)
   ? Array.from({ length: m.max_rank }, (_, r) =>
     ({ ...m, id: `${m.id}@${r}`, card: m.id, rank: r, drain: modDrain(m, r) }))
   : []);
+
+/// SEATING A MOD IS ONE DECISION, and it is made here — the picker, the agent
+/// door and every check take the same one. Written inside a menu's click
+/// handler instead, "what happens when this mod is already in another slot"
+/// becomes a property of that menu rather than of the build.
+///
+/// A mod already seated elsewhere is EXCHANGED with this slot, polarities stay
+/// with their slots, and a mod arrives at `rank`, else at its maximum.
+/// Redrawing is the caller's: a batch seats several and repaints once.
+function equipMod(i, id, rank) {
+  if (slots[i].mod === id) { if (rank != null) slots[i].rank = rank; return; }
+  const at = placedAt(id, i);
+  if (at >= 0) {
+    const a = slots[i], b = slots[at];
+    [a.mod, b.mod] = [b.mod, a.mod];
+    [a.rank, b.rank] = [b.rank, a.rank];
+    if (rank != null) a.rank = rank;
+  } else {
+    slots[i].mod = id;
+    slots[i].rank = rank ?? modById(id).max_rank;
+  }
+}
+
+/// A BARE WEAPON: no mods, and every slot back to the polarity the weapon
+/// itself came with — a polarity a reader changed is theirs, not the build's.
+function clearMods() {
+  slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; });
+  renderMods();
+}
 
 // Switching weapons rebuilds every weapon-scoped view. It runs as an
 // APPLY (auto-save stays out of the reset/reseed churn — the optimizer
@@ -14092,17 +14139,7 @@ function renderMenu(slotIdx, query) {
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     if (here === o.dataset.id) { closePopovers(); return; } // already here
     const [id, rank] = splitRank(o.dataset.id);
-    const at = placedAt(id, slotIdx);
-    if (at >= 0) {
-      // EXCHANGE the two slots' mods (+ranks); polarities stay with their slots
-      const a = slots[slotIdx], b = slots[at];
-      [a.mod, b.mod] = [b.mod, a.mod];
-      [a.rank, b.rank] = [b.rank, a.rank];
-      if (rank != null) a.rank = rank;
-    } else {
-      slots[slotIdx].mod = id; // polarity is decoupled — keep the slot's polarity
-      slots[slotIdx].rank = rank ?? modById(id).max_rank; // max unless the row names a rank
-    }
+    equipMod(slotIdx, id, rank);
     closePopovers(); renderMods();
   }));
 }
@@ -16082,16 +16119,8 @@ function renderEnemyMenu(query) {
        </div>`).join("")
     : `<div class="sim-empty">${escHtml(tr("no enemy matches"))}</div>`;
   menu.querySelectorAll("[data-e]").forEach((el) => el.onclick = () => {
-    sim.enemy = el.dataset.e;
-    // An explicit "yes, Eximus" cannot follow you onto a unit that has no
-    // Eximus variant — the fight would be refused. Dropping it back to null
-    // hands the new target its OWN default, which is the elite one wherever
-    // there is one. An explicit "no" is legal everywhere and is kept.
-    const picked = allEnemies().find((e) => e.id === sim.enemy);
-    if (sim.eximus === true && !(picked && picked.can_be_eximus)) sim.eximus = null;
     closePopovers();
-    markPresetDirty(); markScenarioDirty();
-    renderSim();
+    setScenarioFields({ enemy: el.dataset.e });
     if ($("opt-target")) renderOptEnemy();
   });
 }
@@ -23094,6 +23123,314 @@ async function showWarframe(id) {
   }
   renderWarframe();
 }
+
+// ---- The agent door ----------
+//
+// ONE DOOR, and everything that drives this page from outside goes through it:
+// the checks, an in-page agent, a future bot. A consumer that pokes the DOM
+// instead writes its own vocabulary of the page, which is what the checks'
+// raw clicks already cost — they break when a button moves, and none of them
+// can be reused by anything that is not a check.
+//
+// AN ACTION IS SOMETHING A READER CAN DO, and nothing else. Each one names the
+// control it stands for (`anchor`) and `check_agent_door.mjs` asserts that
+// control is on the page, so an action cannot outlive its button and the page
+// cannot grow a door no reader has. That is also what makes an agent's work
+// VISIBLE: the action moves the state the click moves, and the page redraws.
+
+/// THE ID IS THE WIRE: `<module>.<subject>.<verb>`, named after the DOMAIN and
+/// never after the widget — the same namespace `docs/ANALYTICS.md` fixes for
+/// event names, for the same reason. A name that dies with a button breaks
+/// every agent that already learned it, and an agent cannot be migrated.
+const AGENT_DOOR_V = 1;
+const AGENT_MODULES = ["builder", "simulator", "optimizer", "rivens", "enemies"];
+const AGENT_ID = /^[a-z]+\.[a-z]+\.[a-z]+$/;
+
+/// Where the reader is, READ OFF THE PAGE rather than parsed a second time.
+/// `route()` already turned the path into these classes; parsing the path here
+/// too would be a second answer to one question, free to disagree with the
+/// first the day a route is added.
+const agentRoute = () => {
+  const onWeapon = !document.querySelector(".config-page").hidden;
+  const mod = AGENT_MODULES.find((x) => document.body.classList.contains("on-" + x));
+  return {
+    module: onWeapon ? (mod || "builder") : null,
+    weapon: onWeapon ? $("weapon").value : null,
+    path: location.pathname,
+  };
+};
+
+/// A SEAT, NOT AN INDEX. The exilus and the stance are 8 and 9 because the
+/// slots are one array; that is this file's bookkeeping and no caller of the
+/// door should have to know it. Numbers still work for the eight main slots.
+const agentSeat = (v) =>
+  v === "exilus" ? EXILUS : v === "stance" ? STANCE
+  : (Number.isInteger(v) && v >= 0 && v < slots.length) ? v : -1;
+const agentSeatName = (i) => i === EXILUS ? "exilus" : i === STANCE ? "stance" : i;
+
+/// The fight, BOUNDED. A scenario carries the formation, and a 361-body one is
+/// not an observation, it is a dump — an agent pays for every byte of it in
+/// the same window it has to think in. Scalars travel as themselves, and
+/// everything else reports its SIZE, which is the part that can be acted on.
+/// Derived, not listed: a field added to a scenario is observed without this
+/// being edited.
+const agentScenario = () => {
+  const out = {};
+  for (const [k, v] of Object.entries(snapshotScenario())) {
+    out[k] = (v === null || typeof v !== "object")
+      ? v : { n: Array.isArray(v) ? v.length : Object.keys(v).length };
+  }
+  return out;
+};
+
+/// The last run, and WHETHER IT STILL DESCRIBES WHAT IS ON SCREEN. A number
+/// attached to a build that never produced it is the one lie this surface
+/// cannot tell, so `fresh` is stated rather than left to be inferred from a
+/// timestamp the caller would have to interpret.
+function agentResult() {
+  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  const lr = p && p.lastResult;
+  if (!lr || !lr.r) return null;
+  const m = metricOf(sim.metric);
+  return {
+    metric: m.id, unit: metricLabel(m), value: metricValue(m, lr.r),
+    duration: lr.r.duration, fresh: lr.key === simKey(),
+  };
+}
+
+/// ONE READ, and the agent's whole view of the page. It is deliberately not a
+/// DOM dump: what an action can be aimed at is state, and `can` says which
+/// actions are open from here so the caller does not have to guess and be
+/// refused.
+function agentObserve() {
+  if (!window.__wfsimReady) return { v: AGENT_DOOR_V, ready: false };
+  const r = agentRoute();
+  const out = { v: AGENT_DOOR_V, ready: true, route: r };
+  if (r.weapon) {
+    const st = snapshotState();
+    out.weapon = { id: r.weapon, name: weaponInfo(r.weapon).name };
+    out.build = {
+      slots: st.slots
+        .map((s, i) => ({ seat: agentSeatName(i), mod: s.mod, rank: s.rank, pol: s.pol }))
+        .filter((s) => s.mod),
+      arcanes: st.arcane, evolutions: st.evoSel, mode: st.mode,
+      valence: st.valence, assembly: st.assembly, wielder: st.wielder,
+    };
+    out.scenario = agentScenario();
+    out.result = agentResult();
+  }
+  out.can = AGENT_ACTIONS.filter((a) => !a.needs_weapon || r.weapon).map((a) => a.id);
+  return out;
+}
+
+/// A REFUSAL IS AN ANSWER. The engine saying a build cannot hold this mod, and
+/// the door saying there is no such weapon, are both results — so they carry a
+/// machine-readable `reason` and, wherever the question has near answers, the
+/// ones that would have worked. An exception would say only "no".
+const agentNo = (reason, extra = {}) => ({ ok: false, reason, ...extra });
+const agentNear = (id) => {
+  const head = String(id).split(".")[0];
+  const ids = AGENT_ACTIONS.map((a) => a.id);
+  return (ids.filter((x) => x.startsWith(head + ".")).length ? ids.filter((x) => x.startsWith(head + ".")) : ids).slice(0, 5);
+};
+
+const AGENT_KINDS = {
+  string: (v) => typeof v === "string" && !!v,
+  number: (v) => typeof v === "number" && Number.isFinite(v),
+  object: (v) => !!v && typeof v === "object" && !Array.isArray(v),
+  seat: (v) => agentSeat(v) >= 0,
+};
+
+function agentCheckArgs(a, args) {
+  for (const [k, spec] of Object.entries(a.args || {})) {
+    const has = k in args && !(args[k] === null && !spec.nullable);
+    if (!has) {
+      if (spec.required) return agentNo("missing_argument", { argument: k, wants: spec.kind });
+      continue;
+    }
+    if (args[k] === null && spec.nullable) continue;
+    if (!AGENT_KINDS[spec.kind](args[k])) {
+      return agentNo("bad_argument", { argument: k, wants: spec.kind, got: args[k] });
+    }
+    if (spec.enum && !spec.enum().includes(args[k])) {
+      return agentNo("bad_argument", { argument: k, alternatives: spec.enum().slice(0, 8) });
+    }
+    if (spec.kind === "number" && (args[k] < spec.min || args[k] > spec.max)) {
+      return agentNo("out_of_range", { argument: k, min: spec.min, max: spec.max });
+    }
+  }
+  for (const k of Object.keys(args)) {
+    if (!(a.args || {})[k]) return agentNo("unknown_argument", { argument: k, wants: Object.keys(a.args || {}) });
+  }
+  return null;
+}
+
+/// WHAT CHANGED, so the caller never needs a screenshot to find out. The diff
+/// is over the observation's own sections, which is the same granularity the
+/// actions are written at.
+const agentDiff = (a, b) => {
+  const out = {};
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    if (k === "v" || k === "can") continue;
+    if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) out[k] = b[k];
+  }
+  return out;
+};
+
+async function agentDo(id, args = {}) {
+  const a = AGENT_ACTIONS.find((x) => x.id === id);
+  if (!a) return agentNo("unknown_action", { alternatives: agentNear(id) });
+  if (a.needs_weapon && !agentRoute().weapon) return agentNo("no_weapon_open", { alternatives: ["shell.module.open"] });
+  const bad = agentCheckArgs(a, args);
+  if (bad) return bad;
+  // IT NEVER REJECTS. A caller that must wrap every call in a try is a caller
+  // that will forget once, and the page's own handlers call through here too —
+  // an unhandled rejection from a click is a failure with no reader-visible
+  // symptom at all.
+  try {
+    const before = agentObserve();
+    const out = await a.run(args);
+    if (out && out.ok === false) return out;
+    return { ok: true, did: id, changed: agentDiff(before, agentObserve()), ...(out || {}) };
+  } catch (e) {
+    return agentNo("action_failed", { because: String((e && e.message) || e) });
+  }
+}
+
+/// The table as a model sees it. DERIVED — a tool definition hand-written
+/// beside the action it describes is a second declaration, and the day they
+/// disagree the agent is calling something that does not exist.
+const agentTools = () => AGENT_ACTIONS.map((a) => ({
+  name: a.id,
+  description: a.what,
+  input_schema: {
+    type: "object",
+    properties: Object.fromEntries(Object.entries(a.args || {}).map(([k, s]) => [k, {
+      type: s.kind === "seat" ? ["string", "integer"] : s.kind,
+      description: s.what,
+      ...(s.enum ? { enum: s.enum() } : {}),
+    }])),
+    required: Object.entries(a.args || {}).filter(([, s]) => s.required).map(([k]) => k),
+  },
+}));
+
+const agentWeaponIds = () => (META.weapons || []).map((w) => w.id);
+
+/// THE ACTIONS. Phase 0 covers the loop that answers a question — open a
+/// weapon, change the build, change the fight, run it, read the number — and
+/// stops there. The optimizer is deliberately absent: a search is minutes
+/// long and a door onto it needs its own cancellation, which is its own step.
+const AGENT_ACTIONS = [
+  {
+    id: "shell.module.open",
+    what: "Open a module of the page, optionally on another weapon.",
+    anchor: "#module-tabs",
+    args: {
+      module: { kind: "string", required: true, what: "which module", enum: () => [...AGENT_MODULES, "home"] },
+      weapon: { kind: "string", what: "weapon id; defaults to the one already open", enum: agentWeaponIds },
+    },
+    run({ module, weapon }) {
+      if (module === "home") { nav("/"); return { text: "opened the roster" }; }
+      const id = weapon || agentRoute().weapon;
+      if (!id) return agentNo("no_weapon_open", { argument: "weapon" });
+      nav(weaponPath(id) + (module === "builder" ? "" : "/" + module));
+      return { text: `opened ${module} on ${weaponInfo(id).name}` };
+    },
+  },
+  {
+    id: "builder.weapon.set",
+    what: "Switch the builder to another weapon. Its own presets and fight come with it.",
+    anchor: "#weapon",
+    args: { weapon: { kind: "string", required: true, what: "weapon id", enum: agentWeaponIds } },
+    run({ weapon }) {
+      switchWeapon(weapon);
+      if (!document.querySelector(".config-page").hidden) nav(weaponModPath(weapon));
+      return { text: `switched to ${weaponInfo(weapon).name}` };
+    },
+  },
+  {
+    id: "builder.mod.set",
+    what: "Seat a mod in a slot, or empty the slot with mod=null. A mod already seated elsewhere is exchanged with this slot, as it is when a reader picks it.",
+    anchor: "#mod-slots",
+    needs_weapon: true,
+    args: {
+      slot: { kind: "seat", required: true, what: "0-7, or \"exilus\" / \"stance\"" },
+      mod: { kind: "string", required: true, nullable: true, what: "mod id, or null to empty the slot" },
+      rank: { kind: "number", min: 0, max: 20, what: "defaults to the mod's maximum" },
+    },
+    run({ slot, mod, rank }) {
+      const i = agentSeat(slot);
+      if (mod === null) { slots[i].mod = null; renderMods(); return { text: `emptied slot ${slot}` }; }
+      const m = modById(mod);
+      if (!m) return agentNo("unknown_mod", { argument: "mod", got: mod });
+      equipMod(i, mod, rank);
+      renderMods();
+      return { text: `seated ${m.name} in slot ${slot}` };
+    },
+  },
+  {
+    id: "builder.mods.clear",
+    what: "Empty every mod slot, leaving the weapon bare.",
+    anchor: "#clear-mods",
+    needs_weapon: true,
+    args: {},
+    run() { clearMods(); return { text: "cleared the build" }; },
+  },
+  {
+    id: "simulator.scenario.set",
+    what: "Change fields of the fight — the enemy, its level, the duration, the metric. Fields that are not a single value (the formation, the buffs) have their own editors and are refused here.",
+    anchor: "#sim-target",
+    needs_weapon: true,
+    args: { patch: { kind: "object", required: true, what: "fight fields to set" } },
+    run({ patch }) {
+      const shape = agentScenario();
+      for (const [k, v] of Object.entries(patch)) {
+        if (!(k in shape)) return agentNo("unknown_scenario_field", { argument: k, alternatives: Object.keys(shape).filter((x) => typeof shape[x] !== "object").slice(0, 12) });
+        if (shape[k] !== null && typeof shape[k] === "object") return agentNo("not_a_scalar_field", { argument: k });
+        if (v !== null && typeof v === "object") return agentNo("bad_argument", { argument: k, got: v });
+      }
+      if ("enemy" in patch && !allEnemies().some((e) => e.id === patch.enemy)) {
+        return agentNo("unknown_enemy", { argument: "enemy", got: patch.enemy });
+      }
+      if ("metric" in patch && !(META.metrics || []).some((m) => m.id === patch.metric)) {
+        return agentNo("unknown_metric", { argument: "metric", alternatives: (META.metrics || []).map((m) => m.id) });
+      }
+      setScenarioFields(patch);
+      return { text: `set ${Object.keys(patch).join(", ")}` };
+    },
+  },
+  {
+    id: "simulator.runs.set",
+    what: "How many times the simulator replays the fight. A preference of this browser, not part of the fight.",
+    anchor: "#sim-runs-block",
+    needs_weapon: true,
+    args: { runs: { kind: "number", required: true, min: 1, max: 20000, what: "replays per measurement" } },
+    run({ runs }) { setSimRuns(runs); renderSimRuns(); return { text: `${runs} runs per measurement` }; },
+  },
+  {
+    id: "simulator.run.start",
+    what: "Run the fight and return the headline number. Takes as long as the reader's own run takes.",
+    anchor: "#run-sim",
+    needs_weapon: true,
+    args: {},
+    async run() {
+      await runSim();
+      const r = agentResult();
+      return r ? { result: r, text: `${sig2(r.value)} ${r.unit}` } : agentNo("nothing_measured");
+    },
+  },
+];
+
+/// THE PUBLIC NAME. Everything an outside caller may touch, and nothing else:
+/// `observe` to see, `do` to act, `tools` to learn the table, `actions` to
+/// read it.
+window.wfsim = {
+  v: AGENT_DOOR_V,
+  observe: agentObserve,
+  do: agentDo,
+  tools: agentTools,
+  get actions() { return AGENT_ACTIONS.map((a) => ({ id: a.id, what: a.what, anchor: a.anchor })); },
+};
 
 // THE BOOT IS OVER, one way or the other, and the page must say which.
 //
