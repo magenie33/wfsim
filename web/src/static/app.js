@@ -21434,11 +21434,13 @@ let optSaveTimer = null;
 let optJobId = null;
 let optPollTimer = null;
 let optCancelling = false; // survives the poll's 500 ms re-renders
+let optLastStatus = null; // the running job's last poll, which the door reads
 
 const postJson = (url, body) => api(url, body);
 
 async function runOptimize() {
   clearCheckpoint(); // a fresh run supersedes any interrupted one
+  optLastStatus = null;
   $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
   $("opt-results").innerHTML = `<div class="placeholder">starting…</div>`;
   try {
@@ -21564,6 +21566,7 @@ async function pollOptimize() {
     return;
   }
   optJobId = st.job_id;
+  optLastStatus = st;
   if (st.phase === "error") {
     optFinish(`<div class="error">optimize failed: ${(st.result && st.result.error) || "unknown error"}</div>`);
     return;
@@ -21608,11 +21611,16 @@ function renderOptProgress(st) {
   // The 500 ms poll re-renders this whole block — `optCancelling` keeps the
   // button's cancelling state alive across re-renders, or it snaps back to a
   // live-looking "Cancel" and cancellation looks ignored.
-  $("opt-cancel").addEventListener("click", async () => {
-    optCancelling = true;
-    $("opt-cancel").disabled = true; $("opt-cancel").textContent = "Cancelling…";
-    try { await postJson("/api/optimize/cancel", { id: optJobId }); } catch (e) { /* poll reports */ }
-  });
+  $("opt-cancel").addEventListener("click", cancelOptimize);
+}
+
+/// STOPPING A SEARCH, from its button or the agent door. The poll reports the
+/// outcome; a stopped search keeps what it had ranked.
+async function cancelOptimize() {
+  optCancelling = true;
+  const b = $("opt-cancel");
+  if (b) { b.disabled = true; b.textContent = "Cancelling…"; }
+  try { await postJson("/api/optimize/cancel", { id: optJobId }); } catch (e) { /* poll reports */ }
 }
 
 // Reattach to a job that is still running server-side (e.g. after a page
@@ -21891,6 +21899,7 @@ async function addResult(res, btn) {
   storePresetList(BUILDS, ps);
   renderPresetBar(); // the builder's bar shows the new chip when you switch back
   if (btn) { btn.textContent = "✓ " + name; btn.disabled = true; }
+  return name;
 }
 
 /// RECLAIM WHAT THE OLD RULE LEFT BEHIND, once, on the way in.
@@ -23386,10 +23395,6 @@ function agentRunSummary() {
   };
 }
 
-/// THE ACTIONS. Phase 0 covers the loop that answers a question — open a
-/// weapon, change the build, change the fight, run it, read the number — and
-/// stops there. The optimizer is deliberately absent: a search is minutes
-/// long and a door onto it needs its own cancellation, which is its own step.
 /// THE PRESET BARS the door reaches: the build's and the fight's. Picking,
 /// "+ new" and duplicate are the moves; rename and delete stay a reader's.
 const AGENT_BARS = { build: () => buildBarCfg(), scenario: () => scenarioBarCfg() };
@@ -23399,7 +23404,92 @@ const agentPresetRows = (cfg) => cfg.load().map((p) => ({
 }));
 const agentBarArg = { kind: "string", required: true, what: "which bar", enum: () => Object.keys(AGENT_BARS) };
 
+/// A SEARCH'S ANSWER as a caller reads it: the ranking the page draws, with
+/// mods named. The page re-measures each row in the simulator after drawing it,
+/// so a caller that wants the number to quote saves the row and runs the fight.
+function agentSearchResults(limit) {
+  const r = optLast;
+  const rows = (r.results || []).slice(0, limit).map((res) => ({
+    rank: res.rank,
+    kpm: Number(sig2(kpm(res.kill_progress ?? res.kills, r.duration))),
+    dps: Math.round(res.dps || res.effective_dps || 0),
+    forma: res.forma && res.forma.used,
+    mods: (res.mods || []).map((id) => (modById(id) || { name: id }).name),
+    ...(res.exilus ? { exilus: (modById(res.exilus) || { name: res.exilus }).name } : {}),
+    ...(res.arcane && res.arcane.length ? { arcanes: [].concat(res.arcane) } : {}),
+    ...(res.evolutions ? { evolutions: res.evolutions } : {}),
+    ...(res.mode ? { mode: res.mode } : {}),
+    ...(res.valence ? { valence: res.valence } : {}),
+  }));
+  return {
+    phase: r.cancelled ? "cancelled" : "done",
+    duration: r.duration, ranked_by: "kills per minute",
+    ...(r.exhaustive ? { covered: "every candidate" } : r.coverage != null ? { covered: `${Math.round(r.coverage * 1000) / 10}% of ${r.space} candidates, sampled uniformly` } : {}),
+    results: rows,
+    note: "search numbers; the simulator re-measures a saved row",
+  };
+}
+
+/// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
+  {
+    id: "optimizer.search.start",
+    what: "Start a build search with the optimizer's current scope against the current fight. Returns at once; a search takes minutes — read its progress with optimizer.search.read.",
+    anchor: "#run-opt",
+    needs_weapon: true,
+    args: {},
+    async run() {
+      if (optJobId != null) return agentNo("search_running", { try: "optimizer.search.read" });
+      if ($("run-opt").disabled) return agentNo("scope_not_runnable", { because: $("opt-estimate").textContent.trim() });
+      await runOptimize();
+      return { text: "search started", candidates: $("opt-estimate").textContent.trim() };
+    },
+  },
+  {
+    id: "optimizer.search.read",
+    query: true,
+    what: "Read the build search: while it runs, how far along it is; once done, the ranked builds.",
+    anchor: "#opt-results",
+    needs_weapon: true,
+    args: { limit: { kind: "number", min: 1, max: 20, what: "ranked builds to return, default 5" } },
+    run({ limit = 5 }) {
+      if (optJobId != null) {
+        const st = optLastStatus || {};
+        return {
+          phase: st.phase || "starting",
+          progress: st.sims_planned ? `${Math.round((1000 * st.sims_done) / st.sims_planned) / 10}%` : null,
+          elapsed_s: st.elapsed_s != null ? Math.round(st.elapsed_s) : null,
+          ...(st.round ? { round: `${st.round}/${st.rounds}` } : {}),
+        };
+      }
+      if (optLast && (optLast.results || []).length) return agentSearchResults(limit);
+      return agentNo("no_search", { try: "optimizer.search.start" });
+    },
+  },
+  {
+    id: "optimizer.search.stop",
+    what: "Stop the running build search. What it has ranked so far is kept.",
+    anchor: "#run-opt",
+    needs_weapon: true,
+    args: {},
+    async run() {
+      if (optJobId == null) return agentNo("no_search_running");
+      await cancelOptimize();
+      return { text: "stopping" };
+    },
+  },
+  {
+    id: "optimizer.result.save",
+    what: "Save a ranked build from the last search as a new build preset (named opt N). Open it with shell.preset.open to measure it in the simulator.",
+    anchor: "#opt-results",
+    needs_weapon: true,
+    args: { rank: { kind: "number", required: true, min: 1, max: 1000, what: "the row's rank" } },
+    async run({ rank }) {
+      const res = optLast && (optLast.results || []).find((x) => x.rank === rank);
+      if (!res) return agentNo("no_such_result", { argument: "rank", alternatives: ((optLast && optLast.results) || []).map((x) => x.rank).slice(0, 10) });
+      return { preset: await addResult(res) };
+    },
+  },
   {
     id: "shell.presets.list",
     query: true,

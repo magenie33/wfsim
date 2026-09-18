@@ -193,6 +193,49 @@ check("the reader's own build is untouched by work on the copy", pre.back.ok ===
 check("a new build opens blank", pre.fresh.ok === true && pre.blank === true, JSON.stringify(pre.fresh));
 check("a build that does not exist is refused", pre.bad.ok === false && pre.bad.reason === "unknown_preset", JSON.stringify(pre.bad));
 
+// ---- the search: started, watched, stopped -----------------------------------
+//
+// A search is minutes long, so the door returns at once and is polled. The
+// check stops it rather than waiting it out: what is asserted is the shape of
+// the conversation, not the ranking.
+
+const opt = await evaluate(`(async () => {
+  const out = {};
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  await window.wfsim.do("builder.mod.set", { slot: 0, mod: "serration" });
+  await window.wfsim.do("shell.module.open", { module: "optimizer" });
+  await wait(400);
+  out.idle = await window.wfsim.do("optimizer.search.stop", {});
+  out.start = await window.wfsim.do("optimizer.search.start", {});
+  out.twice = await window.wfsim.do("optimizer.search.start", {});
+  out.running = await window.wfsim.do("optimizer.search.read", {});
+  out.stop = await window.wfsim.do("optimizer.search.stop", {});
+  for (let i = 0; i < 120 && optJobId != null; i++) await wait(500);
+  out.stopped = optJobId == null;
+  out.after = await window.wfsim.do("optimizer.search.read", {});
+  if (out.after.ok && out.after.results && out.after.results.length) {
+    out.save = await window.wfsim.do("optimizer.result.save", { rank: out.after.results[0].rank });
+  }
+  out.badRank = await window.wfsim.do("optimizer.result.save", { rank: 999 });
+  await window.wfsim.do("shell.module.open", { module: "builder" });
+  await window.wfsim.do("builder.mods.clear", {});
+  return out;
+})()`, { awaitPromise: true });
+
+check("stopping with nothing running is refused", opt.idle.ok === false && opt.idle.reason === "no_search_running",
+  JSON.stringify(opt.idle));
+check("a search starts and returns at once", opt.start.ok === true, JSON.stringify(opt.start).slice(0, 200));
+check("a second start is refused while one runs", opt.twice.ok === false && opt.twice.reason === "search_running",
+  JSON.stringify(opt.twice));
+check("a running search reports its phase", opt.running.ok === true && !!opt.running.phase, JSON.stringify(opt.running));
+check("a search stops when asked", opt.stop.ok === true && opt.stopped === true, JSON.stringify([opt.stop, opt.running, opt.after]).slice(0, 400));
+check("after stopping, it reads as ranked or as nothing yet",
+  (opt.after.ok === true && Array.isArray(opt.after.results)) || (opt.after.ok === false && opt.after.reason === "no_search"),
+  JSON.stringify(opt.after).slice(0, 300));
+if (opt.save) check("a ranked build saves as a preset", opt.save.ok === true && /^opt /.test(opt.save.preset), JSON.stringify(opt.save));
+check("a rank that does not exist is refused", opt.badRank.ok === false && opt.badRank.reason === "no_such_result",
+  JSON.stringify(opt.badRank));
+
 // ---- queries -----------------------------------------------------------------
 //
 // A QUERY CHANGES NOTHING, which is what lets a consumer with no page in front

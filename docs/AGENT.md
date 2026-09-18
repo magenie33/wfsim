@@ -114,9 +114,11 @@ build that never produced it is the one lie this surface cannot tell.
 
 ## What is deliberately absent
 
-**The optimizer.** A search is minutes long and a door onto it needs its own
-cancellation and its own progress — that is its own step, not a row in a table
-of things that return.
+**A search that blocks.** A search is minutes long, so `optimizer.search.start`
+returns at once and the caller polls `optimizer.search.read`, which reports
+progress while it runs and the ranking once it is done; `optimizer.search.stop`
+keeps what was ranked. Its SCOPE is not on the door yet — a search runs the
+scope the reader set.
 
 **Anything that leaves the browser.** Nothing here shares a build, submits to
 the board or opens a link. Those are outward actions and they want a reader's

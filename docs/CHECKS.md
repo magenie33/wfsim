@@ -35,7 +35,8 @@ copy. The rest drive the page through the door itself — seat a mod, set a
 polarity, plan the Forma, seat an arcane, install an evolution, clear the
 build, change the fight, open a module, run it — and assert the SLOT ON SCREEN
 redrew, which is the difference between an agent working the page and one
-working behind it. Every query must leave the observation byte-identical, and
+working behind it. A search must start, refuse a second start, report its phase and
+stop when asked. Every query must leave the observation byte-identical, and
 the stats read must name the mod behind a change. Then the refusals, each of which must come back as
 `ok:false` with a reason rather than as an exception.
 
