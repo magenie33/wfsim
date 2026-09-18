@@ -40,6 +40,13 @@ stop when asked. Every query must leave the observation byte-identical, and
 the stats read must name the mod behind a change. Then the refusals, each of which must come back as
 `ok:false` with a reason rather than as an exception.
 
+## `check_nona`
+
+Nona against a local stand-in provider speaking both protocols: the tools she
+is sent are the door's table plus the observation, a scripted tool call lands
+on the page and in the trail, and her first change branches the reader's build
+— which is asserted untouched afterwards.
+
 ## `check_parity`
 
 The builder and the optimizer offer the same options, the

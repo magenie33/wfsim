@@ -127,14 +127,21 @@ hand on them.
 
 ## What an in-page agent is bound by
 
-Four constraints, stated before the panel exists because each of them is
-cheapest to honour at the start and each is the kind a hurried implementation
-walks around.
+Four constraints, each cheapest to honour at the start and each the kind a
+hurried implementation walks around. The in-page agent is Nona (九九), in
+`app.js` §NONA: bring-your-own-key, OpenAI-compatible or Anthropic, calling the
+provider from the browser and running every tool against the local engine.
 
 **It works on a build of its own.** An agent never edits in place the build the
 reader has open — it branches, the way "+ new" already does. A player who
 watches an experiment happen to the thing they spent an hour on has been robbed
-whatever the result was.
+whatever the result was. The branch is made by the page (`nonaBranch`) before
+her first change, not asked of the model: a promise kept by instruction alone is
+kept only as often as the model obeys.
+
+**Her tools are the table.** She is handed `tools()` at each request and her
+prompt carries rules, never game data, so an action, a query or a weapon added
+to the page reaches her with no edit to her section.
 
 **The trail is derived, not written.** What happened is the sequence of
 `changed` sections the calls already return, so it cannot describe a move that

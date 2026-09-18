@@ -6,6 +6,27 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  # NONA, the in-page agent. Her Chinese name is her own name, not a
+  # translation of the English one.
+  "Nona": 九九
+  "New chat": 新对话
+  "Settings": 设置
+  "Close": 关闭
+  "Send": 发送
+  "Stop": 停止
+  "Save": 保存
+  "Provider": 服务商
+  "Base URL": 接口地址
+  "API key": API 密钥
+  "Model": 模型
+  "Custom (OpenAI-compatible)": 自定义（OpenAI 兼容）
+  "Ask Nona about this build…": 问问九九这套配装…
+  "Your key is stored only in this browser and is sent only to the provider you chose.": 密钥只保存在这个浏览器里，只会发给你选择的服务商。
+  "Set a provider, key and model first.": 请先设置服务商、密钥和模型。
+  "working on a copy": 在副本上操作
+  "step limit reached": 已达到步数上限
+  "stopped": 已停止
+  "The provider could not be reached from the browser — the network failed, or it does not accept requests from a web page (CORS).": 浏览器连不上这个服务商——可能是网络问题，也可能它不接受网页直接发来的请求（CORS）。
   # THE WARFRAME BUILDER. The stat names are DE's own, read off the zh card text
   # of the mods that grant them (Intensify 技能强度, Continuity 技能持续时间 …).
   "Warframes": 战甲

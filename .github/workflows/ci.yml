@@ -65,6 +65,11 @@ jobs:
       # copy of a rule behaves identically until one of them is edited.
       - name: The agent door is one door
         run: node scripts/check_agent_door.mjs
+      # NONA RUNS ON THE DOOR, against a local stand-in provider: her tools are
+      # the door's table at request time, and her first change branches the
+      # reader's build. Neither is visible until a reader loses a build.
+      - name: Nona works the page on a copy
+        run: node scripts/check_nona.mjs
       - name: Builder / optimizer parity
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.

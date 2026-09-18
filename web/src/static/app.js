@@ -23346,7 +23346,10 @@ const agentTools = () => AGENT_ACTIONS.map((a) => ({
   input_schema: {
     type: "object",
     properties: Object.fromEntries(Object.entries(a.args || {}).map(([k, s]) => [k, {
-      type: s.kind === "seat" ? ["string", "integer"] : s.kind,
+      // A NULLABLE argument says so in its type, or a model that follows the
+      // schema can never send the null that empties a slot.
+      type: ((ts) => (ts.length === 1 ? ts[0] : ts))(
+        [].concat(s.kind === "seat" ? ["string", "integer"] : s.kind, s.nullable ? ["null"] : [])),
       description: s.what,
       ...(s.enum ? { enum: s.enum() } : {}),
     }])),
@@ -23884,6 +23887,356 @@ const AGENT_ACTIONS = [
   },
 ];
 
+// ---- NONA (九九), THE IN-PAGE AGENT ------------------------------------------
+//
+// A model the reader brought their own key for, driving the page through the
+// agent door and nothing else — `docs/AGENT.md` §"What an in-page agent is
+// bound by". The key stays in this browser and goes only to the provider the
+// reader chose; the tools run here, against the local engine.
+//
+// NOTHING HERE LISTS WHAT SHE CAN DO. Her tools are `wfsim.tools()` at the
+// moment of each request, so an action or query added to the door reaches her
+// with no edit in this section.
+
+/// THE PROVIDERS, by the protocol they speak. Everything that speaks the OpenAI
+/// chat-completions shape is one adapter; a base URL is all that differs.
+const NONA_PROVIDERS = {
+  openrouter: { label: "OpenRouter", proto: "openai", base: "https://openrouter.ai/api/v1", model: "deepseek/deepseek-chat" },
+  deepseek: { label: "DeepSeek", proto: "openai", base: "https://api.deepseek.com/v1", model: "deepseek-chat" },
+  openai: { label: "OpenAI", proto: "openai", base: "https://api.openai.com/v1", model: "" },
+  anthropic: { label: "Anthropic", proto: "anthropic", base: "https://api.anthropic.com", model: "" },
+  custom: { label: "Custom (OpenAI-compatible)", proto: "openai", base: "", model: "" },
+};
+const NONA_KEY = "wfsim-nona";
+/// How many model turns one question may take. A turn is one request; a
+/// question that has not settled by then is handed back rather than billed on.
+const NONA_MAX_STEPS = 24;
+/// A tool result longer than this is cut, and says so: the model pays for every
+/// byte, and a list it needs more of can be narrowed with the tool's own limit.
+const NONA_RESULT_CAP = 16000;
+
+const nonaName = () => tr("Nona");
+const nonaSettings = () => {
+  try { return JSON.parse(localStorage.getItem(NONA_KEY) || "null") || {}; } catch (_) { return {}; }
+};
+const nonaStore = (v) => { try { localStorage.setItem(NONA_KEY, JSON.stringify(v)); } catch (_) { /* per-browser convenience */ } };
+
+/// A door id as a tool name. Providers allow [a-zA-Z0-9_-] only, and a door id
+/// is lowercase letters and dots, so the swap is its own inverse.
+const nonaToolName = (id) => id.replace(/\./g, "_");
+const nonaToolId = (name) => name.replace(/_/g, ".");
+
+/// THE ONE TOOL THAT IS NOT A DOOR ACTION: the observation itself, which the
+/// door exposes as `observe()` rather than as a row of its table.
+const NONA_OBSERVE = {
+  name: "shell_page_observe",
+  description: "See the page as it is now: which weapon and module are open, the build, the fight, the last result and what can be done from here.",
+  input_schema: { type: "object", properties: {}, required: [] },
+};
+const nonaTools = () => [NONA_OBSERVE].concat(
+  window.wfsim.tools().map((t) => ({ ...t, name: nonaToolName(t.name) })));
+
+/// HER RULES, and no game data: every fact about Warframe she states comes from
+/// a tool at the moment she needs it, so an update to the data or the door
+/// changes what she knows without this text changing.
+function nonaSystemPrompt() {
+  return [
+    `You are ${LANG === "zh" ? "九九 (Nona)" : "Nona (九九 in Chinese)"}, the in-page assistant of WFSim, a Warframe calculator whose numbers are measured to match the game. You speak as a friendly young woman who knows the game well and gets to the point.`,
+    `Reply in the reader's language. The page is in ${LANG === "zh" ? "Simplified Chinese" : "English"}; use Warframe's own names as the page shows them.`,
+    "You act only through the tools, which drive the page the reader is looking at: they see every change you make.",
+    "RULES:",
+    "1. Every number you state comes from a tool result in this conversation. Never estimate, recall or compute a damage figure yourself; if you have not measured it, measure it or say you have not.",
+    "2. What the tools do not report, you cannot see. Say so rather than guess.",
+    "3. When the stats read lists something as not modelled, say that the number leaves it out.",
+    "4. You work on a copy of the reader's build or scenario; the page makes the copy before your first change. Tell the reader which copy you worked on.",
+    "5. You cannot share, submit to the leaderboard or open links; tell the reader where to click instead.",
+    "6. A build search takes minutes: start it, then read it until it is done, and tell the reader it is running.",
+    "Start from shell_page_observe when you do not yet know what is on the page. Use the finders to turn names into ids. Keep replies short; use a list when comparing builds.",
+  ].join("\n");
+}
+
+// ---- the two protocols --------------------------------------------------------
+//
+// THE TRANSCRIPT IS PROVIDER-NEUTRAL — {role, text, calls} and {role:"tool"} —
+// and each adapter translates it on the way out, so switching provider in the
+// middle of a conversation keeps the conversation.
+
+async function nonaCallOpenAI(cfg, transcript, signal) {
+  const messages = [{ role: "system", content: nonaSystemPrompt() }];
+  for (const m of transcript) {
+    if (m.role === "user") messages.push({ role: "user", content: m.text });
+    else if (m.role === "assistant") {
+      messages.push({
+        role: "assistant", content: m.text || null,
+        ...(m.calls && m.calls.length ? { tool_calls: m.calls.map((c) => ({
+          id: c.id, type: "function", function: { name: c.name, arguments: JSON.stringify(c.args || {}) } })) } : {}),
+      });
+    } else if (m.role === "tool") messages.push({ role: "tool", tool_call_id: m.id, content: m.result });
+  }
+  const res = await fetch(cfg.base.replace(/\/+$/, "") + "/chat/completions", {
+    method: "POST", signal,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}`, "X-Title": "WFSim" },
+    body: JSON.stringify({
+      model: cfg.model, messages,
+      tools: nonaTools().map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } })),
+    }),
+  });
+  const body = await nonaJson(res);
+  const msg = ((body.choices || [])[0] || {}).message || {};
+  return {
+    text: msg.content || "",
+    calls: (msg.tool_calls || []).map((c) => ({ id: c.id, name: c.function.name, args: nonaArgs(c.function.arguments) })),
+  };
+}
+
+async function nonaCallAnthropic(cfg, transcript, signal) {
+  const messages = [];
+  const push = (role, block) => {
+    const last = messages[messages.length - 1];
+    if (last && last.role === role) last.content.push(block); else messages.push({ role, content: [block] });
+  };
+  for (const m of transcript) {
+    if (m.role === "user") push("user", { type: "text", text: m.text });
+    else if (m.role === "assistant") {
+      if (m.text) push("assistant", { type: "text", text: m.text });
+      for (const c of m.calls || []) push("assistant", { type: "tool_use", id: c.id, name: c.name, input: c.args || {} });
+    } else if (m.role === "tool") push("user", { type: "tool_result", tool_use_id: m.id, content: m.result });
+  }
+  const res = await fetch(cfg.base.replace(/\/+$/, "") + "/v1/messages", {
+    method: "POST", signal,
+    headers: {
+      "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({ model: cfg.model, max_tokens: 4096, system: nonaSystemPrompt(), messages, tools: nonaTools() }),
+  });
+  const body = await nonaJson(res);
+  const blocks = body.content || [];
+  return {
+    text: blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n"),
+    calls: blocks.filter((b) => b.type === "tool_use").map((b) => ({ id: b.id, name: b.name, args: b.input || {} })),
+  };
+}
+
+/// A PROVIDER'S REFUSAL IN ITS OWN WORDS. Every provider puts the reason in
+/// `error.message`; the status alone would say only that it failed.
+async function nonaJson(res) {
+  let body = null;
+  try { body = await res.json(); } catch (_) { /* reported below */ }
+  if (!res.ok) {
+    const why = body && ((body.error && (body.error.message || body.error)) || body.message);
+    throw new Error(`${res.status} ${typeof why === "string" ? why : res.statusText}`);
+  }
+  return body || {};
+}
+const nonaArgs = (s) => { try { return JSON.parse(s || "{}"); } catch (_) { return {}; } };
+
+// ---- the loop -----------------------------------------------------------------
+
+const nona = { transcript: [], busy: false, abort: null, owned: new Set(), trail: [] };
+
+/// THE COPY IS MADE HERE, not asked of the model. Rule 4 of her prompt is a
+/// promise to the reader, and a promise kept by instruction alone is kept only
+/// as often as the model obeys. The first change to a build or a fight that
+/// she did not make herself branches it first.
+async function nonaBranch(id) {
+  const bar = id === "simulator.scenario.set" ? "scenario"
+    : id.startsWith("builder.") && id !== "builder.weapon.set" ? "build" : null;
+  if (!bar) return null;
+  const active = bar === "build" ? activePreset : activeScenario;
+  if (active && nona.owned.has(`${bar}:${active}`)) return null;
+  // NOTHING SAVED YET: the page is showing a build nobody owns, so she starts
+  // one of her own rather than copying a document that does not exist.
+  const r = await window.wfsim.do(active ? "shell.preset.copy" : "shell.preset.new", { bar });
+  if (r && r.ok && r.preset) { nona.owned.add(`${bar}:${r.preset}`); return r.preset; }
+  return null;
+}
+
+async function nonaRunTool(call) {
+  if (call.name === NONA_OBSERVE.name) return window.wfsim.observe();
+  const id = nonaToolId(call.name);
+  const a = AGENT_ACTIONS.find((x) => x.id === id);
+  const branched = a && !a.query ? await nonaBranch(id) : null;
+  const r = await window.wfsim.do(id, call.args || {});
+  if (r && r.ok && (id === "shell.preset.new" || id === "shell.preset.copy") && r.preset) {
+    nona.owned.add(`${call.args.bar}:${r.preset}`);
+  }
+  return branched ? { ...r, branched_to_copy: branched } : r;
+}
+
+const nonaCap = (v) => {
+  const s = JSON.stringify(v);
+  return s.length <= NONA_RESULT_CAP ? s : s.slice(0, NONA_RESULT_CAP) + ` …[cut at ${NONA_RESULT_CAP} of ${s.length} characters]`;
+};
+
+async function nonaAsk(text) {
+  const cfg = nonaSettings();
+  if (!cfg.key || !cfg.base || !cfg.model) { nonaSay("error", tr("Set a provider, key and model first.")); nonaView("settings"); return; }
+  const call = NONA_PROVIDERS[cfg.provider] && NONA_PROVIDERS[cfg.provider].proto === "anthropic" ? nonaCallAnthropic : nonaCallOpenAI;
+  nona.transcript.push({ role: "user", text });
+  nonaSay("user", text);
+  nona.busy = true; nona.abort = new AbortController(); nonaPaint();
+  try {
+    for (let step = 0; step < NONA_MAX_STEPS; step++) {
+      const out = await call(cfg, nona.transcript, nona.abort.signal);
+      nona.transcript.push({ role: "assistant", text: out.text, calls: out.calls });
+      if (out.text) nonaSay("assistant", out.text);
+      if (!out.calls.length) return;
+      for (const c of out.calls) {
+        if (nona.abort.signal.aborted) return;
+        const line = nonaSay("tool", nonaCallLine(c));
+        let r;
+        try { r = await nonaRunTool(c); } catch (e) { r = { ok: false, reason: "action_failed", because: String(e && e.message || e) }; }
+        line.classList.add(r && r.ok === false ? "no" : "ok");
+        if (r && r.branched_to_copy) nonaSay("note", `${tr("working on a copy")}: ${r.branched_to_copy}`);
+        nona.transcript.push({ role: "tool", id: c.id, name: c.name, result: nonaCap(r) });
+      }
+    }
+    nonaSay("note", tr("step limit reached"));
+  } catch (e) {
+    if (nona.abort && nona.abort.signal.aborted) nonaSay("note", tr("stopped"));
+    else if (e instanceof TypeError) nonaSay("error", tr("The provider could not be reached from the browser — the network failed, or it does not accept requests from a web page (CORS)."));
+    else nonaSay("error", String(e.message || e));
+  } finally {
+    nona.busy = false; nona.abort = null; nonaPaint();
+  }
+}
+
+/// ONE LINE PER CALL, derived from the call itself — the trail cannot describe
+/// a move that was not made.
+const nonaCallLine = (c) => {
+  const args = Object.entries(c.args || {}).map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`).join(" ");
+  return `${nonaToolId(c.name)}${args ? " " + args : ""}`;
+};
+
+// ---- the panel ----------------------------------------------------------------
+
+/// A REPLY'S MARKUP: escaped first, then the few marks a chat reply uses. A
+/// model's text is not trusted as HTML.
+const nonaMarkup = (s) => escHtml(s)
+  .replace(/`([^`]+)`/g, "<code>$1</code>")
+  .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+  .split(/\n{2,}/).map((p) => /^\s*[-*] /m.test(p)
+    ? "<ul>" + p.split("\n").filter((l) => l.trim()).map((l) => `<li>${l.replace(/^\s*[-*] /, "")}</li>`).join("") + "</ul>"
+    : `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+
+function nonaSay(kind, text) {
+  const log = $("nona-log");
+  const el = document.createElement("div");
+  el.className = "nona-msg " + kind;
+  if (kind === "assistant") el.innerHTML = nonaMarkup(text);
+  else el.textContent = text;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+
+function nonaPaint() {
+  const send = $("nona-send");
+  if (!send) return;
+  send.textContent = nona.busy ? tr("Stop") : tr("Send");
+  send.classList.toggle("busy", nona.busy);
+  $("nona-input").disabled = nona.busy;
+}
+
+function nonaView(which) {
+  $("nona-chat").hidden = which !== "chat";
+  $("nona-settings").hidden = which !== "settings";
+  if (which === "settings") nonaFillSettings();
+}
+
+function nonaFillSettings() {
+  const s = nonaSettings();
+  const pick = $("nona-provider");
+  pick.innerHTML = Object.entries(NONA_PROVIDERS)
+    .map(([id, p]) => `<option value="${id}">${escHtml(tr(p.label))}</option>`).join("");
+  pick.value = s.provider || "openrouter";
+  const p = NONA_PROVIDERS[pick.value];
+  $("nona-base").value = s.base || p.base;
+  $("nona-model").value = s.model || p.model;
+  $("nona-model").placeholder = p.model || "model id";
+  $("nona-apikey").value = s.key || "";
+}
+
+function mountNona() {
+  if ($("nona-fab")) return;
+  const fab = document.createElement("button");
+  fab.id = "nona-fab";
+  fab.className = "nona-fab";
+  fab.textContent = nonaName();
+  fab.title = nonaName();
+  const panel = document.createElement("aside");
+  panel.id = "nona";
+  panel.className = "nona";
+  panel.hidden = true;
+  panel.innerHTML = `
+    <div class="nona-head">
+      <span class="nona-name">${escHtml(nonaName())}</span>
+      <button class="ghost-btn small" id="nona-new">${escHtml(tr("New chat"))}</button>
+      <button class="ghost-btn small" id="nona-gear">${escHtml(tr("Settings"))}</button>
+      <button class="ghost-btn small" id="nona-close" aria-label="${escHtml(tr("Close"))}">✕</button>
+    </div>
+    <div id="nona-chat" class="nona-chat">
+      <div id="nona-log" class="nona-log"></div>
+      <div class="nona-foot">
+        <textarea id="nona-input" rows="2" placeholder="${escHtml(tr("Ask Nona about this build…"))}"></textarea>
+        <button class="run-btn" id="nona-send">${escHtml(tr("Send"))}</button>
+      </div>
+    </div>
+    <div id="nona-settings" class="nona-settings" hidden>
+      <label>${escHtml(tr("Provider"))}<select id="nona-provider"></select></label>
+      <label>${escHtml(tr("Base URL"))}<input id="nona-base" type="url" autocomplete="off"></label>
+      <label>${escHtml(tr("API key"))}<input id="nona-apikey" type="password" autocomplete="off"></label>
+      <label>${escHtml(tr("Model"))}<input id="nona-model" type="text" autocomplete="off"></label>
+      <p class="nona-fine">${escHtml(tr("Your key is stored only in this browser and is sent only to the provider you chose."))}</p>
+      <button class="run-btn" id="nona-save">${escHtml(tr("Save"))}</button>
+    </div>`;
+  document.body.append(fab, panel);
+
+  fab.addEventListener("click", () => {
+    panel.hidden = !panel.hidden;
+    fab.hidden = !panel.hidden;
+    if (!panel.hidden) {
+      const s = nonaSettings();
+      nonaView(s.key ? "chat" : "settings");
+      if (s.key) $("nona-input").focus();
+    }
+  });
+  $("nona-close").addEventListener("click", () => { panel.hidden = true; fab.hidden = false; });
+  $("nona-gear").addEventListener("click", () => nonaView($("nona-settings").hidden ? "settings" : "chat"));
+  $("nona-new").addEventListener("click", () => {
+    if (nona.abort) nona.abort.abort();
+    nona.transcript = []; nona.owned.clear();
+    $("nona-log").innerHTML = "";
+    nonaView("chat");
+  });
+  $("nona-provider").addEventListener("change", () => {
+    const p = NONA_PROVIDERS[$("nona-provider").value];
+    $("nona-base").value = p.base;
+    $("nona-model").value = p.model;
+    $("nona-model").placeholder = p.model || "model id";
+  });
+  $("nona-save").addEventListener("click", () => {
+    nonaStore({
+      provider: $("nona-provider").value, base: $("nona-base").value.trim(),
+      key: $("nona-apikey").value.trim(), model: $("nona-model").value.trim(),
+    });
+    nonaView("chat");
+    $("nona-input").focus();
+  });
+  const submit = () => {
+    if (nona.busy) { if (nona.abort) nona.abort.abort(); return; }
+    const text = $("nona-input").value.trim();
+    if (!text) return;
+    $("nona-input").value = "";
+    nonaAsk(text);
+  };
+  $("nona-send").addEventListener("click", submit);
+  $("nona-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
+  });
+}
+
 /// THE PUBLIC NAME. Everything an outside caller may touch, and nothing else:
 /// `observe` to see, `do` to act, `tools` to learn the table, `actions` to
 /// read it.
@@ -23907,6 +24260,7 @@ init()
     window.__wfsimReady = true;
     const b = document.getElementById("booting");
     if (b) b.remove();
+    mountNona();
     // THE DESKTOP BUILD IS THE ONLY ONE WITH ANYTHING TO MOUNT HERE. The web
     // build's download entry is a static link in the topbar's overflow panel,
     // so there is nothing for it to draw.
