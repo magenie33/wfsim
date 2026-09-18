@@ -185,6 +185,7 @@ path, so an entry may be renamed but never renumbered.
 | [M98](measurements/M98-void-weakness-overguard-and-thrax-body.md) | Overguard takes Void ×1.5 on any unit; a Thrax Centurion's body takes it too, and the two never stack | ✅ 2026-09-15 (owner) |
 | [M99](measurements/M99-heat-strip-steps-without-a-tick.md) | Heat's armour strip reaches 50% on a burn too short to tick, in the four steps, on the capped 2700 (11 → 107 on a Steel Path 210 Heavy Gunner) | ✅ 2026-09-16 (owner) |
 | [M100](measurements/M100-electricity-and-gas-ticks-land-on-a-part.md) | an Electricity or Gas tick lands on a part of its own (a head adds the headshot brackets over 1x: 24 → 234), a Tesla arc carries the hit's head (130 on a neighbour), and lands on a neighbour's head 10 times in 189 | ✅ 2026-09-17 (owner) |
+| [M101](measurements/M101-furis-co-reads-its-own-base-under-haven-foray.md) | the Furis's CO term reads its own base in both forms (20 base, 100 Incarnon), and Haven Foray's +28 and overshield +30 both stay out of it (298 / 282 / 266, 626) | ✅ 2026-09-18 (owner) |
 
 ## By weapon
 
@@ -207,7 +208,7 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Cryotra | `cryotra` | [M47](measurements/M47-body-radius-on-the-floor.md) |
 | Dual Toxocyst | `dual_toxocyst` | [M9](measurements/M09-incarnon-transition-timings.md) · [M49](measurements/M49-dual-toxocyst-co-and-carnage-reign.md) |
 | Felarx | `felarx` | [M36](measurements/M36-felarx-incarnon-and-gun-co.md) · [M37](measurements/M37-debilitate-dot-attrition-bug.md) |
-| Furis | `furis` | [M35](measurements/M35-riven-stat-pools-counted.md) |
+| Furis | `furis` | [M35](measurements/M35-riven-stat-pools-counted.md) · [M101](measurements/M101-furis-co-reads-its-own-base-under-haven-foray.md) |
 | Gotva Prime | `gotva_prime` | [M30](measurements/M30-stat-lock-mod-bucket.md) |
 | Grimoire | `grimoire` | [M63](measurements/M63-grimoire-orb-strikes.md) · [M64](measurements/M64-tome-meter-is-a-clock.md) |
 | Kuva Nukor | `kuva_nukor` | [M78](measurements/M78-kuva-nukor-valence-in-co-base.md) |

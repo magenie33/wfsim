@@ -6700,6 +6700,31 @@ mod tests {
         assert!(on.co_base_fraction() < off.co_base_fraction());
     }
 
+    /// THE FURIS'S CO READS ITS OWN BASE IN BOTH FORMS, and both halves of
+    /// Haven Foray — the +28 and the overshield's +30 — stay out of it (M101).
+    /// +220% base damage, Galvanized Shot, overshields up. The base form's
+    /// 3 / 14 / 3 lands on whole units and the Incarnon is all Heat, so
+    /// quantization is exact here and the bracket IS the reading.
+    #[test]
+    fn furis_co_reads_its_own_base_under_haven_foray_in_both_forms() {
+        let shielded = tenno_who(|s| s.overshields = true);
+        for (id, own, readings) in [
+            ("furis", 20.0, &[(3.0, 2.0, 298.0), (2.0, 2.0, 282.0), (1.0, 2.0, 266.0)][..]),
+            ("furis_incarnon", 100.0, &[(3.0, 1.0, 626.0)][..]),
+        ] {
+            let base = WeaponBase::from_data(id, false, &["furis_haven_foray"]);
+            let p = resolve_for(&base, &[], StackPolicy::AssumedMax, &shielded);
+            let panel = p.modified_base;
+            assert!((panel - (own + 28.0 + 30.0)).abs() < 1e-9, "{id}: panel {panel}");
+            let co = p.co_base.fraction() * p.co_base.of();
+            assert!((co - own).abs() < 1e-9, "{id}: CO reads {co}");
+            for &(stacks, types, measured) in readings {
+                let got = panel * (1.0 + 2.2) + 0.4 * stacks * types * co;
+                assert!((got - measured).abs() < 0.5, "{id} {stacks}x{types}: {got} against {measured}");
+            }
+        }
+    }
+
     /// THE SAME WEAPON ANSWERS THE CO QUESTION TWO OPPOSITE WAYS, and one
     /// build reads both (MEASUREMENTS M83, M84).
     ///
