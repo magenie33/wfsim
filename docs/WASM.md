@@ -91,7 +91,7 @@ behavior change; `wfsim-wasm` builds for wasm32.
 
 ## Phase 3 — optimizer under wasm (single-threaded v1)
 
-- `optimizer/src/lib.rs` `evaluate_batch` uses `std::thread::scope` +
+- `optimizer/src/evaluate.rs` `evaluate_batch` uses `std::thread::scope` +
   `available_parallelism`: add a `#[cfg(target_arch = "wasm32")]` branch
   that evaluates the chunk loop sequentially (identical seeds → identical
   results, just serial).
