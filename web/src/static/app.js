@@ -10681,9 +10681,11 @@ function formaCount() {
 // edited is always one of them, first, and never moved.
 const FORMA_RULES_KEY = "wfsim-forma-rules";
 const FORMA_RULES_DEFAULT = Object.freeze({
-  catalyst: true, reach_max_rank: true, grant_slot_first: true,
+  catalyst: true, reach_max_rank: true, grant_slot_first: true, fixed_order: false,
   omni_forma: "never", umbra_forma: "when_needed", forma_limit: null,
 });
+/// The choices the planner offers for the two special Forma.
+const FORMA_SPECIAL = { omni_forma: ["never", "allowed", "preferred"], umbra_forma: ["never", "when_needed", "allowed"] };
 function formaRules() {
   let r = {};
   try { r = JSON.parse(localStorage.getItem(FORMA_RULES_KEY) || "{}") || {}; } catch (_) { r = {}; }
@@ -10693,6 +10695,12 @@ function formaRules() {
 }
 function storeFormaRules(r) {
   try { localStorage.setItem(FORMA_RULES_KEY, JSON.stringify(r)); } catch (_) { /* a private window keeps the defaults */ }
+}
+/// The Forma rules, patched. A limit is a whole number of Forma, or null for none.
+function setFormaRules(patch) {
+  const next = { ...formaRules(), ...patch };
+  if ("forma_limit" in patch && patch.forma_limit !== null) next.forma_limit = Math.max(0, Math.floor(Number(patch.forma_limit)) || 0);
+  storeFormaRules(next);
 }
 /// The OTHER builds planned with the open one, by preset id, per item.
 const formaGroupKey = (item) => `wfsim-forma-group-${item}`;
@@ -10704,6 +10712,12 @@ function formaGroup(item) {
 }
 function storeFormaGroup(item, ids) {
   try { localStorage.setItem(formaGroupKey(item), JSON.stringify(ids)); } catch (_) { /* kept for this page only */ }
+}
+/// One build in or out of the set planned together with the open one.
+function setFormaPartner(item, id, on) {
+  const ids = new Set(formaGroup(item));
+  if (on) ids.add(id); else ids.delete(id);
+  storeFormaGroup(item, [...ids]);
 }
 /// What the last plan for each page said, drawn by `renderFormaPlan`.
 const formaNotes = { builder: null, warframe: null };
@@ -10909,21 +10923,14 @@ function renderFormaPlan(box, ctx) {
   if (ctx.reach) wireFormaReach(box);
   box.querySelectorAll("[data-r]").forEach((el) => {
     el.addEventListener("change", () => {
-      const next = formaRules();
       const k = el.dataset.r;
-      if (el.type === "checkbox") next[k] = el.checked;
-      else if (k === "forma_limit") next[k] = el.value === "" ? null : Math.max(0, Math.floor(Number(el.value)) || 0);
-      else next[k] = el.value;
-      storeFormaRules(next);
+      setFormaRules({ [k]: el.type === "checkbox" ? el.checked
+        : k === "forma_limit" ? (el.value === "" ? null : Number(el.value)) : el.value });
       ctx.changed();
     });
   });
   box.querySelectorAll("[data-g]").forEach((el) => {
-    el.addEventListener("change", () => {
-      const ids = new Set(formaGroup(ctx.item));
-      if (el.checked) ids.add(el.dataset.g); else ids.delete(el.dataset.g);
-      storeFormaGroup(ctx.item, [...ids]);
-    });
+    el.addEventListener("change", () => setFormaPartner(ctx.item, el.dataset.g, el.checked));
   });
   box.querySelector(".fp-run").addEventListener("click", ctx.plan);
 }
@@ -11075,27 +11082,49 @@ function renderFormaReach() {
     + `<div class="fp-result">${out}</div></div>`;
 }
 
+/// The reach's scope, patched: which rulers, whether riven builds count,
+/// whether the builds planned together must fit too, and the line (a share of
+/// each ruler's leader, 1% to 100%). The line only chooses which point of a
+/// curve already worked out is marked — the curve stands.
+function setFormaReachScope(w, patch) {
+  const x = { ...formaReachScope(w), ...patch };
+  if ("threshold" in patch) x.threshold = Math.min(1, Math.max(0.01, Number(patch.threshold) || 0.8));
+  storeFormaReachScope(w, x);
+  if (formaReach && formaReach.at === w && formaReach.r && "threshold" in patch) {
+    formaReach.scope = formaReachScope(w);
+    const hit = (formaReach.r.curve || []).findIndex((p) => p.worst >= formaReach.scope.threshold - 1e-9);
+    if (hit >= 0) formaReach.sel = hit;
+    renderBuilderFormaPlan();
+  }
+}
+
+/// A RULER'S BUILD AT THE MARKED POINT, saved as a build of its own, placed on
+/// that point's polarities. Returns the name it was saved under.
+function saveReachBuild(gi) {
+  const x = formaReach;
+  const pt = x.r.curve[x.sel];
+  const k = pt.picks[gi];
+  const b = x.groups[gi].builds[k.build];
+  const st = JSON.parse(JSON.stringify(b.st));
+  placeFormaPlan(st.slots, { layout: pt.plan.layout, loadouts: [k.placed] }, 0);
+  const ps = loadPresetList(BUILDS);
+  const name = freeName(ps, (n) => `${benchmarkShort(x.groups[gi].benchmark)} ${reachPct(k.ratio)}${n > 1 ? ` ${n}` : ""}`);
+  ps.push({ name, savedAt: Date.now(), state: st });
+  storePresetList(BUILDS, ps);
+  renderPresetBar();
+  return name;
+}
+
 function wireFormaReach(box) {
   const w = presetWeapon();
-  const change = (f) => { const x = formaReachScope(w); f(x); storeFormaReachScope(w, x); };
-  box.querySelectorAll("[data-rb]").forEach((el) => el.addEventListener("change", () => change((x) => {
-    const on = new Set(x.benchmarks || boardRulersOf(w));
+  box.querySelectorAll("[data-rb]").forEach((el) => el.addEventListener("change", () => {
+    const on = new Set(formaReachScope(w).benchmarks || boardRulersOf(w));
     if (el.checked) on.add(el.dataset.rb); else on.delete(el.dataset.rb);
-    x.benchmarks = boardRulersOf(w).filter((b) => on.has(b));
-  })));
+    setFormaReachScope(w, { benchmarks: boardRulersOf(w).filter((b) => on.has(b)) });
+  }));
   box.querySelectorAll("[data-rs]").forEach((el) => el.addEventListener("change", () => {
-    change((x) => {
-      const k = el.dataset.rs;
-      if (k === "threshold") x.threshold = Math.min(100, Math.max(1, Number(el.value) || 80)) / 100;
-      else x[k] = el.checked;
-    });
-    // The line only chooses which point is marked; the curve stands.
-    if (formaReach && formaReach.at === w && formaReach.r && el.dataset.rs === "threshold") {
-      formaReach.scope = formaReachScope(w);
-      const hit = (formaReach.r.curve || []).findIndex((p) => p.worst >= formaReach.scope.threshold - 1e-9);
-      if (hit >= 0) formaReach.sel = hit;
-      renderBuilderFormaPlan();
-    }
+    const k = el.dataset.rs;
+    setFormaReachScope(w, { [k]: k === "threshold" ? (Number(el.value) || 80) / 100 : el.checked });
   }));
   const run = box.querySelector(".fp-reach-run");
   if (run) run.addEventListener("click", async () => { await runFormaReach(); renderBuilderFormaPlan(); });
@@ -11104,20 +11133,9 @@ function wireFormaReach(box) {
     renderBuilderFormaPlan();
   }));
   box.querySelectorAll("[data-save]").forEach((el) => el.addEventListener("click", () => {
-    const x = formaReach;
-    const pt = x.r.curve[x.sel];
-    const gi = Number(el.dataset.save);
-    const k = pt.picks[gi];
-    const b = x.groups[gi].builds[k.build];
-    const st = JSON.parse(JSON.stringify(b.st));
-    placeFormaPlan(st.slots, { layout: pt.plan.layout, loadouts: [k.placed] }, 0);
-    const ps = loadPresetList(BUILDS);
-    const name = freeName(ps, (n) => `${benchmarkShort(x.groups[gi].benchmark)} ${reachPct(k.ratio)}${n > 1 ? ` ${n}` : ""}`);
-    ps.push({ name, savedAt: Date.now(), state: st });
-    storePresetList(BUILDS, ps);
+    const name = saveReachBuild(Number(el.dataset.save));
     el.textContent = `✓ ${name}`;
     el.disabled = true;
-    renderPresetBar();
   }));
   const apply = box.querySelector("[data-apply]");
   if (apply) apply.addEventListener("click", async () => {
@@ -23526,7 +23544,6 @@ const AGENT_EXEMPT = [
   { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
   { sel: "#opk-gain", kind: "pref", why: "the search list's own quick-calc scan" },
   { sel: "#opt-fight-half", kind: "view", why: "the simulator's fight, shown read-only beside the search" },
-  { sel: "#forma-block", kind: "todo", why: "the Forma planner" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
   { sel: "#enemy-block", kind: "todo", why: "making custom targets" },
@@ -23569,7 +23586,148 @@ const agentArenaState = () => ({
   gap_m: Math.round((arenaSpan(sim) - CONTACT_M) * 100) / 100, max_bodies: ARENA_MAX_BODIES(),
 });
 
+/// THE REACH AS A CALLER READS IT: each point of the curve — what it costs in
+/// Forma and the weakest ruler's share of its leader — and, at the marked
+/// point, each ruler's best build that fits.
+function agentReach() {
+  const w = presetWeapon();
+  const x = formaReach && formaReach.at === w ? formaReach : null;
+  const scope = formaReachScope(w);
+  const base = { scope: { rulers: scope.benchmarks || boardRulersOf(w), riven: scope.riven, planned_builds_must_fit: scope.hard, line: scope.threshold } };
+  if (!x || x.busy) return { ...base, state: x ? "working" : "not run" };
+  if (x.error || (x.r && (!x.r.ok || !x.r.fits))) return { ...base, state: "no plan", because: x.error || (x.r && (x.r.error || x.r.reason)) };
+  const curve = x.r.curve || [];
+  const pt = curve[x.sel];
+  return {
+    ...base, exhaustive: !!x.r.exhaustive,
+    curve: curve.map((p, i) => ({ point: i, forma: reachBill(p.plan), weakest_ruler: reachPct(p.worst), marked: i === x.sel })),
+    at_marked: pt ? x.groups.map((g, gi) => {
+      const k = pt.picks[gi];
+      const b = k && g.builds[k.build];
+      return { ruler: benchmarkName(g.benchmark), ruler_index: gi, ...(b ? { share: reachPct(k.ratio), mode: b.row.mode || "base", riven: rowHasRiven(b.row) } : { fits: false }) };
+    }) : [],
+  };
+}
+
+/// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
+  {
+    id: "builder.forma.read",
+    query: true,
+    what: "Read the Forma planner: its rules (catalyst, reach max rank, grant slot first, Omni and Umbra Forma use, a Forma limit), which saved builds are planned together with this one, and the board-reach analysis if it has been run.",
+    anchor: "#forma-plan",
+    needs_weapon: true,
+    args: {},
+    run() {
+      const w = presetWeapon();
+      return { rules: formaRules(), planned_with: formaGroup(w), reach: agentReach() };
+    },
+  },
+  {
+    id: "builder.forma.rules",
+    what: "Change the Forma planner's rules — this browser's, for every build — which the Forma plan and the reach both obey. forma_limit is a whole number or null.",
+    keeps_build: true,
+    anchor: "#forma-plan",
+    needs_weapon: true,
+    args: {
+      catalyst: { kind: "boolean", what: "an Orokin Catalyst is installed" },
+      reach_max_rank: { kind: "boolean", what: "every mod reaches its max rank" },
+      grant_slot_first: { kind: "boolean", what: "fill the slot that grants capacity first" },
+      fixed_order: { kind: "boolean", what: "no mod is moved: each slot's polarity serves what every build keeps there" },
+      omni_forma: { kind: "string", what: "when Omni Forma may be used", enum: () => FORMA_SPECIAL.omni_forma },
+      umbra_forma: { kind: "string", what: "when Umbra Forma may be used", enum: () => FORMA_SPECIAL.umbra_forma },
+      forma_limit: { kind: "number", nullable: true, min: 0, max: 50, what: "most Forma, or null for none" },
+    },
+    run(patch) {
+      setFormaRules(patch);
+      renderBuilderFormaPlan();
+      return { rules: formaRules() };
+    },
+  },
+  {
+    id: "builder.forma.partner",
+    keeps_build: true,
+    what: "Plan another saved build of this weapon together with the open one (on=true) or stop — the Forma plan then fits both on one set of polarities.",
+    anchor: "#forma-plan",
+    needs_weapon: true,
+    args: { build: { kind: "string", required: true, what: "saved build id" }, on: { kind: "boolean", required: true, what: "planned together" } },
+    run({ build, on }) {
+      const own = loadPresetList(BUILDS).map((p) => presetId(p)).filter((id) => id !== activePreset);
+      if (!own.includes(build)) return agentNo("bad_argument", { argument: "build", alternatives: own.slice(0, 12) });
+      setFormaPartner(presetWeapon(), build, on);
+      renderBuilderFormaPlan();
+      return { planned_with: formaGroup(presetWeapon()) };
+    },
+  },
+  {
+    id: "builder.reach.run",
+    keeps_build: true,
+    what: "Work out what one polarity layout reaches across this weapon's board rulers, and what each extra Forma buys; optionally set the scope first. Returns the curve and, at the first point that meets the line, each ruler's best build that fits.",
+    anchor: "#forma-plan",
+    needs_weapon: true,
+    args: {
+      rulers: { kind: "array", what: "ruler ids to cover; omit for every ruler with rows" },
+      riven: { kind: "boolean", what: "count riven builds" },
+      planned_builds_must_fit: { kind: "boolean", what: "the builds planned together must fit the layout too" },
+      line: { kind: "number", min: 0.01, max: 1, what: "the share of each ruler's leader to reach, e.g. 0.8" },
+    },
+    async run({ rulers, riven, planned_builds_must_fit, line }) {
+      const w = presetWeapon();
+      const all = boardRulersOf(w);
+      if (!all.length) return agentNo("no_board_rows", { because: "this weapon has no board builds here" });
+      if (rulers && rulers.some((r) => !all.includes(r))) return agentNo("bad_argument", { argument: "rulers", alternatives: all });
+      const patch = {};
+      if (rulers) patch.benchmarks = all.filter((b) => rulers.includes(b));
+      if (riven != null) patch.riven = riven;
+      if (planned_builds_must_fit != null) patch.hard = planned_builds_must_fit;
+      if (line != null) patch.threshold = line;
+      setFormaReachScope(w, patch);
+      await runFormaReach();
+      renderBuilderFormaPlan();
+      return agentReach();
+    },
+  },
+  {
+    id: "builder.reach.mark",
+    keeps_build: true,
+    what: "Mark a point of the worked-out reach curve by its index, to read and apply that layout.",
+    anchor: "#forma-plan",
+    needs_weapon: true,
+    args: { point: { kind: "number", required: true, min: 0, max: 100, what: "point index" } },
+    run({ point }) {
+      if (!formaReach || !formaReach.r || !(formaReach.r.curve || [])[point]) return agentNo("no_such_point", { try: "builder.reach.run" });
+      formaReach.sel = point;
+      renderBuilderFormaPlan();
+      return agentReach();
+    },
+  },
+  {
+    id: "builder.reach.apply",
+    what: "Put the open build's slots on the marked point's polarities, as the planner's apply button does.",
+    anchor: "#forma-plan",
+    needs_weapon: true,
+    args: {},
+    async run() {
+      const pt = formaReach && formaReach.r && (formaReach.r.curve || [])[formaReach.sel];
+      if (!pt) return agentNo("no_point_marked", { try: "builder.reach.run" });
+      await autoForma({ onto: pt.plan });
+      renderMods();
+      return { text: `placed on ${reachBill(pt.plan)}` };
+    },
+  },
+  {
+    id: "builder.reach.save",
+    keeps_build: true,
+    what: "Save a ruler's best-fitting build at the marked point as a build of its own, on that point's polarities.",
+    anchor: "#forma-plan",
+    needs_weapon: true,
+    args: { ruler_index: { kind: "number", required: true, min: 0, max: 20, what: "the ruler's index in the reach read" } },
+    run({ ruler_index }) {
+      const pt = formaReach && formaReach.r && (formaReach.r.curve || [])[formaReach.sel];
+      if (!pt || !pt.picks[ruler_index]) return agentNo("nothing_fits", { try: "builder.reach.run" });
+      return { preset: saveReachBuild(ruler_index) };
+    },
+  },
   {
     id: "simulator.arena.read",
     query: true,
@@ -24694,6 +24852,8 @@ async function nonaBranch(id) {
   // A scope edit writes the reader's saved search; the fight's edits are
   // `agentWritesFight`'s.
   const act = AGENT_ACTIONS.find((x) => x.id === id);
+  // A planner preference or a saved copy leaves the open build as it was.
+  if (act && act.keeps_build) return null;
   const bar = id.startsWith("optimizer.scope.") ? "search"
     : act && agentWritesFight(act) ? "scenario"
     : id.startsWith("builder.") && id !== "builder.weapon.set" ? "build" : null;

@@ -265,6 +265,31 @@ check("...a part that does not exist is refused, and so is a part on a weapon wi
   more.badPart.ok === false && more.noParts.ok === false && more.noParts.reason === "no_parts",
   JSON.stringify([more.badPart, more.noParts]));
 
+// ---- the Forma planner --------------------------------------------------------
+
+const forma = await evaluate(`(async () => {
+  const out = {};
+  out.rules = await window.wfsim.do("builder.forma.rules", { fixed_order: true, omni_forma: "allowed", forma_limit: 3 });
+  out.read = await window.wfsim.do("builder.forma.read", {});
+  out.badOmni = await window.wfsim.do("builder.forma.rules", { omni_forma: "sometimes" });
+  await window.wfsim.do("builder.forma.rules", { fixed_order: false, omni_forma: "never", forma_limit: null });
+  out.reach = await window.wfsim.do("builder.reach.run", { line: 0.8 });
+  if (out.reach.ok && out.reach.curve && out.reach.curve.length) {
+    out.mark = await window.wfsim.do("builder.reach.mark", { point: 0 });
+    out.apply = await window.wfsim.do("builder.reach.apply", {});
+  }
+  return out;
+})()`, { awaitPromise: true });
+
+check("the Forma rules are set and read back — the stay-in-place rule included",
+  forma.rules.ok && forma.read.rules.fixed_order === true && forma.read.rules.omni_forma === "allowed" && forma.read.rules.forma_limit === 3,
+  JSON.stringify(forma.read.rules));
+check("...a choice the planner does not offer is refused", forma.badOmni.ok === false, JSON.stringify(forma.badOmni));
+check("the board reach runs and reads as a curve, or says why not",
+  (forma.reach.ok && Array.isArray(forma.reach.curve)) || (forma.reach.ok === false && forma.reach.reason === "no_board_rows")
+  || (forma.reach.ok && forma.reach.state === "no plan"), JSON.stringify(forma.reach).slice(0, 300));
+if (forma.mark) check("...a point is marked and applied", forma.mark.ok && forma.apply.ok, JSON.stringify([forma.mark.ok, forma.apply]));
+
 // ---- the board: the measured leaders, and opening one -------------------------
 
 const board = await evaluate(`(async () => {
