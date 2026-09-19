@@ -849,8 +849,8 @@ mod card_and_sim_agree {
     use crate::registry::weapon;
     use wfsim_engine::fight::FightParams;
     use wfsim_engine::build::loadout::resolve;
-use wfsim_engine::model::WeaponBase;
-use wfsim_engine::model::StackPolicy;
+    use wfsim_engine::model::WeaponBase;
+    use wfsim_engine::model::StackPolicy;
 
     /// Buffs the params do not own. `frenzy` is a weapon passive the api
     /// applies (`frenzy_apply`) rather than a field of the build; `arcane:*`

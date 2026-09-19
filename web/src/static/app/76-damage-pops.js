@@ -450,7 +450,7 @@ function renderResults(r, testedAt) {
   //
   // IT STATES THE WORK BEFORE IT STATES THE ASK, and both numbers are ones the
   // reader can check against the Detail table directly above it — `runs` is the
-  // count they set, and `pellets` is PER RUN on the wire (webapi/src/lib.rs),
+  // count they set, and `pellets` is PER RUN on the wire (webapi/src/simulate.rs),
   // so the product is the damage instances this answer was actually averaged
   // over. A figure a reader can verify is the only kind worth printing here.
   const askRuns = Math.round(r.runs || 0), askRolls = Math.round(askRuns * (r.pellets || 0));
