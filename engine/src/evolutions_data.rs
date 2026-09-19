@@ -2348,10 +2348,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         id: "on_status_multishot",
                         trigger: crate::loadout::BuffTrigger::HitEnemyWithStatus(*status),
                         grant: crate::loadout::BuffGrant::Multishot,
-                        // FIFO, each stack on its own 2 s clock — owner
-                        // observed in game. Harsher than the
-                        // Galvanized family: holding 3 needs 3 hits per
-                        // window, not one.
+                        // FIFO, each stack on its own clock — owner
+                        // observed in game, Stormburst and Riddled Target
+                        // (M102) alike. Harsher than the Galvanized family:
+                        // holding 3 needs 3 hits per window, not one.
                         decay: crate::loadout::BuffDecay::PerStackExpiry,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,

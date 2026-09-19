@@ -197,6 +197,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         derived_status_from_crit: None,
         derived_crit_from_status: None,
         consecutive_hit_damage: None,
+        consecutive_hit_radial_only: false,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
         magazine_growth_on_empty_reload: None,

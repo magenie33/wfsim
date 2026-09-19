@@ -85,6 +85,13 @@ attack:
   # forbid it (this attack has a `radial:`) is only the FALLBACK — see
   # AGENTS.md and `punch_through_mods`.
   punch_through_mods: false
+  # DOUBLE TAP REACHES ONLY THE EXPLOSION, and a landing counts twice.
+  # Measured on the Prime (MEASUREMENTS M102): the collision reads 148 with the
+  # pile empty and full while the explosion goes 387 -> 1935, and the pile
+  # climbs +40% a shot — collision and explosion one hit each. A bounce feeds
+  # it nothing. The wiki files the first half under Bugs; it is how the game
+  # plays, so it is what this fights.
+  consecutive_hit_radial_only: true
   # THE PROJECTILE BOUNCES. VERBATIM: *"a traveling projectile that can ricochet
   # off enemies and terrain, exploding up to 6 times with a 4 meter radius,
   # dealing damage once for any collision on enemies, and again for the

@@ -2543,12 +2543,11 @@ mod card_values_tests {
                 // crowd control against a target that never acts.
                 "dizzying_rounds :: a stun that opens finishers no distance and no \
                  finishers here",
-                // Three clauses that need a SECOND thing in the world — a
-                // bubble to hit, an ability to cast, an Incarnon bug to
-                // reproduce.
+                // Two clauses that need a SECOND thing in the world — a
+                // bubble to hit, an ability to cast. The third, the Latron
+                // Incarnon's, is modelled since M102.
                 "double_tap :: a bullet attraction bubble makes each hit count twice",
                 "double_tap :: hitting an object counts as a miss and clears the stacks",
-                "double_tap :: the latron incarnon bugs this mod only the aoe benefits",
                 // Crowd control again, and for the same reason it is worth
                 // nothing: the target never acts, so stone changes nothing it
                 // TAKES.

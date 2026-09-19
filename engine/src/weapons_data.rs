@@ -655,6 +655,13 @@ pub struct AttackSpec {
     /// take them. Nothing in the roster needs it yet.
     #[serde(default)]
     pub punch_through_mods: Option<bool>,
+    /// DOUBLE TAP ON AN ATTACK THAT EXPLODES, the Latron Incarnon's way
+    /// (MEASUREMENTS M102): only the `radial:` takes the bonus — the direct hit
+    /// reads the same with the pile full as with it empty — and each projectile
+    /// that lands counts TWO hits, its collision and its explosion. A bounce
+    /// counts none.
+    #[serde(default)]
+    pub consecutive_hit_radial_only: bool,
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
@@ -3978,6 +3985,7 @@ pub fn base_panel_assembled(
         tenno_scaled: Vec::new(),
         cannot_zoom: s.cannot_zoom,
         consecutive_hit_damage: None,
+        consecutive_hit_radial_only: s.attack.consecutive_hit_radial_only,
         bodyshot_crit_chance_multiplier: 1.0,
         round_restore_on_status: None,
         instant_reload_on_kill: None,

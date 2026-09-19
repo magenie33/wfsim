@@ -88,12 +88,12 @@ effects:
   # attractor is not wired to this count.
   - kind: a_bullet_attraction_bubble_makes_each_hit_count_twice
 
-  # The two LATRON INCARNON bugs the wiki records against this mod: "Only the
+  # The two LATRON INCARNON bugs the wiki records against this mod — "Only the
   # AoE benefits, not the direct damage", and switching forms snapshots the buff
-  # and restores the old value on the way back. Neither is modelled — the sim
-  # pays the direct hit, i.e. the mod as DESCRIBED rather than as it currently
-  # behaves.
-  - kind: the_latron_incarnon_bugs_this_mod_only_the_aoe_benefits
+  # and restores the old value on the way back — are both MODELLED, as the game
+  # plays rather than as the card reads (MEASUREMENTS M102). The first is the
+  # weapon's `consecutive_hit_radial_only`; the second is the fight loop keeping
+  # one pile per form, frozen at each transform's completion.
 
 source:
   url: https://wiki.warframe.com/w/Double_Tap

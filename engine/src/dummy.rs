@@ -1851,6 +1851,15 @@ struct DebuffState {
     stagger: Vec<f64>,
     /// Weakened stacks (10 s): +5% flat crit chance received per stack.
     weakened: Vec<f64>,
+    /// FLENSING SPIKES' count: BULLETS that have landed a Puncture proc on this
+    /// body, and it never goes down (MEASUREMENTS M102). Not a stack count —
+    /// one bullet proccing Puncture twice still counts once — and not a
+    /// window: the armour does not come back when the Puncture lapses.
+    flensed: u32,
+    /// The bullet (`RunResult::pellets` at its landing) that last counted
+    /// above, so a second proc off the same bullet — its explosion, a
+    /// multi-proc — is the same bullet and not another.
+    flensed_by: Option<u32>,
     /// Freeze (Cold) stacks: +0.10/+0.05 flat crit DAMAGE received; cap 4
     /// while overguard holds (never Frozen). The 10th proc consumes all
     /// stacks and enters the Frozen state (`frozen_until`).
@@ -2751,14 +2760,15 @@ impl DebuffState {
     }
 
     /// FLENSING SPIKES: a WEAPON removing armour off a status that strips
-    /// none by itself. `per` is the perk's rate per live Puncture stack, and
-    /// Puncture caps at five — so 20% a stack is the whole of the armour at the
-    /// cap, which is what the card adds up to and not a rounding of it.
+    /// none by itself. `per` is the perk's rate per BULLET that has procced
+    /// Puncture on this body — not per live stack, and never restored
+    /// (MEASUREMENTS M102): five such bullets take the whole of the armour,
+    /// while five stacks off fewer bullets leave some of it standing.
     fn puncture_strip(&self, per: f64) -> f64 {
         if per <= 0.0 {
             return 0.0;
         }
-        (per * self.weakened.len() as f64).min(1.0)
+        (per * f64::from(self.flensed)).min(1.0)
     }
 
     /// Prune and compute the live mitigation snapshot for `now`.
@@ -3187,6 +3197,8 @@ pub struct DummyParams {
     /// Double Tap: `(per stack, max stacks, seconds)`. Its OWN multiplier, and
     /// counted per TRIGGER PULL. See `ModEffect::ConsecutiveHitDamage`.
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
+    /// See [`crate::weapons_data::AttackSpec::consecutive_hit_radial_only`].
+    pub consecutive_hit_radial_only: bool,
     /// SYNTH CHARGE — see [`crate::loadout::ModEffect::LastRoundDamage`].
     pub last_round_damage: f64,
     /// THE CHAMBERS — see [`crate::loadout::ModEffect::FirstRoundDamage`].
@@ -4822,6 +4834,7 @@ impl DummyParams {
             derived_status_from_crit: panel.derived_status_from_crit,
             derived_crit_from_status: panel.derived_crit_from_status,
             consecutive_hit_damage: panel.consecutive_hit_damage,
+            consecutive_hit_radial_only: panel.consecutive_hit_radial_only,
             last_round_damage: panel.last_round_damage,
             first_round_damage: panel.first_round_damage,
             round_restore_on_status: panel.round_restore_on_status,
@@ -5245,6 +5258,7 @@ impl Default for DummyParams {
             derived_status_from_crit: None,
             derived_crit_from_status: None,
             consecutive_hit_damage: None,
+            consecutive_hit_radial_only: false,
             last_round_damage: 0.0,
             first_round_damage: 0.0,
             round_restore_on_status: None,
@@ -7156,6 +7170,14 @@ fn settle_procs(
                     gcap(WEAKENED_CAP),
                     at,
                 );
+                // FLENSING SPIKES counts the BULLET, once per body. The pellet
+                // counter has already ticked for the hit that carries these
+                // procs, so its explosion and any second proc read the same
+                // number and are not a second bullet.
+                if debuffs.flensed_by != Some(r.pellets) {
+                    debuffs.flensed_by = Some(r.pellets);
+                    debuffs.flensed += 1;
+                }
                 // Secondary Cryogenic: each Puncture status applies
                 // N Cold stacks to targets around the hit — the
                 // single-target arena collapses that onto the main
@@ -14023,6 +14045,22 @@ pub fn run_once_traced(
     // an enemy") and it cannot fire.
     let mut dt_hits: u32 = 0;
     let mut dt_expiry = f64::NEG_INFINITY;
+    // …AND THE OTHER FORM'S PILE, FROZEN. Each form of a transmuting weapon
+    // keeps its own Double Tap, snapshotted at the instant a transform
+    // COMPLETES and handed back, clock and all, when that form next completes
+    // its way in (MEASUREMENTS M102): a pile at +300% with 0.5 s left comes
+    // back at +300% with 0.5 s left, and a form never yet fired starts from
+    // nothing. `(hits, seconds left)`.
+    let mut dt_other: (u32, f64) = (0, 0.0);
+    macro_rules! swap_dt_pile {
+        ($t:expr) => {{
+            let now: f64 = $t;
+            let held = (dt_hits, (dt_expiry - now).max(0.0));
+            dt_hits = dt_other.0;
+            dt_expiry = if dt_other.1 > 0.0 { now + dt_other.1 } else { f64::NEG_INFINITY };
+            dt_other = held;
+        }};
+    }
     macro_rules! bump_buffs {
         ($trigger:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
@@ -15021,6 +15059,7 @@ pub fn run_once_traced(
                 // see `ClearedBy::Reload`.
                 magazine_refilled!(also_a_reload: false);
                 in_base_form = true;
+                swap_dt_pile!(t);
                 weapon_now!();
                 rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: false });
                 charges = 0;
@@ -15721,7 +15760,11 @@ pub fn run_once_traced(
                 if t >= dt_expiry {
                     dt_hits = 0;
                 }
-                let hits = dt_hits + rolled;
+                // AN EXPLODING PROJECTILE IS TWO HITS where the weapon says so
+                // — its collision and its explosion, +40% a projectile at rank
+                // 3 (M102). Only the aimed landing counts; a bounce adds none.
+                let per_projectile = if ap.consecutive_hit_radial_only && ap.radial.is_some() { 2 } else { 1 };
+                let hits = dt_hits + rolled * per_projectile;
                 dt_hits = hits;
                 dt_expiry = t + duration;
                 1.0 + per_stack * f64::from(hits.saturating_sub(1).min(max_stacks))
@@ -17151,6 +17194,7 @@ pub fn run_once_traced(
                 // is the same pellet on the same line, so if it took a head it
                 // keeps taking one.
                 let body_only = |x: f64| x / part_factor.max(1e-9);
+                let dt_here = if direct && ap.consecutive_hit_radial_only { 1.0 } else { dt_mult };
                 let raw = qtotal
                     * part_factor
                     * crit_multiplier
@@ -17161,7 +17205,9 @@ pub fn run_once_traced(
                     // DOUBLE TAP stands on its own: "multiplicatively stacks
                     // with damage bonuses like Serration and Faction Damage
                     // Bonus", so it is a factor here and never a bucket term.
-                    * dt_mult
+                    // ON THE LATRON INCARNON ONLY THE EXPLOSION TAKES IT: the
+                    // collision reads 148 with the pile empty and full (M102).
+                    * dt_here
                     // SYNTH CHARGE, on the magazine's LAST round only: "Damage
                     // stacks multiplicatively with Hornet Strike, and any area
                     // damage the weapon may have is also affected" — so it is a
@@ -17533,7 +17579,7 @@ pub fn run_once_traced(
                         // exists to catch — it only slipped because both are
                         // 1.0 in every build the check had run.
                         // `check_combat_record` asks it of EVERY row now.
-                        (crate::record::Factor::DoubleTap, dt_mult),
+                        (crate::record::Factor::DoubleTap, dt_here),
                         (crate::record::Factor::SynthCharge, sc_mult),
                         (crate::record::Factor::ChamberFirstRound, cc_mult),
                         (crate::record::Factor::SniperCombo, combo_mult),
@@ -18569,6 +18615,7 @@ pub fn run_once_traced(
                     }
                     r.transforms += 1;
                     in_base_form = false;
+                    swap_dt_pile!(t);
                     // The CHARGE magazine is filled by the gauge, not reloaded
                     // from reserve — it is outside the ammo economy, takes no
                     // efficiency, and so is always whole anyway.
@@ -18884,17 +18931,16 @@ pub fn run_once_traced(
                     crate::weapons_data::ChargeCadence::DrawThenRate => draw + 1.0 / rate,
                 }
             }
-            // A BURST pull fires `count` rounds and then waits. The listed
-            // rate is BURSTS per second, so one round costs a `count`-th of the
-            // cycle:
+            // A BURST pull fires `count` rounds and then waits; the listed
+            // rate is BURSTS per second. PLAYED ROUND BY ROUND, not averaged:
+            // inside a pull the next round waits the burst delay, and the
+            // pull's LAST round waits `1 / rate`. A pull the magazine cannot
+            // finish ends early — an Akarius with one rocket left fires it
+            // and reloads — so a lone round pays the full wait.
             //
-            //   Effective Fire Rate = Burst Count / [1/Fire Rate + (Burst
-            //   Count−1)·Burst Delay]                       (wiki, verbatim)
-            //
-            // `b.delay_seconds` arrives already shortened by the mod layer,
-            // where the wiki's net-negative exception lives. The LIVE buff
-            // factor is `rate / ap.fire_rate`, clamped so a live PENALTY does
-            // not stretch the burst.
+            // `b.delay_seconds` arrives already shortened by the mod layer
+            // (the wiki's net-negative exception); the LIVE buff factor is
+            // `rate / ap.fire_rate`, clamped so a penalty does not stretch it.
             // A MELEE SWING HAS ITS OWN LENGTH. A stance publishes a
             // sequence and a per-combo damage-per-second, so the combo lasts
             // `sum of multipliers / that rate` and the swings share it EVENLY —
@@ -18960,8 +19006,10 @@ pub fn run_once_traced(
             None => match ap.burst {
                 Some(b) if b.count > 1 => {
                     let live = (rate / ap.fire_rate.max(1e-9)).max(1.0);
-                    let cycle = 1.0 / rate + f64::from(b.count - 1) * b.delay_seconds / live;
-                    cycle / f64::from(b.count)
+                    let mag_now = if in_base_form { base_mag } else { magazine };
+                    let pull_goes_on =
+                        !rounds_this_mag.is_multiple_of(b.count) && can_fire(mag_now, 1.0);
+                    if pull_goes_on { b.delay_seconds / live } else { 1.0 / rate }
                 }
                 _ => 1.0 / rate,
             },
@@ -22627,14 +22675,15 @@ mod tests {
         );
         // ONE STACK PER BURST, and the arithmetic is the assertion. A burst
         // weapon's `fire_rate` is BURSTS per second (wiki), so 10 is ten bursts
-        // — thirty rounds — a second, and five bursts of climbing is 0.5 s. At
-        // one frame per 1/60 s the cap lands around frame 30. Per ROUND instead
-        // of per burst would have reached it in a third of that.
+        // — thirty rounds — a second. The rounds of a pull land together (this
+        // fixture's delay is zero) and pulls start 0.1 s apart from t = 0, so
+        // the fifth burst completes at 0.4 s: frame 24-25 at 1/60 s. Per ROUND
+        // instead of per burst would have reached it in a third of that.
         let first_cap = series.iter().position(|&v| v == 5).expect("reaches 5");
         let at = first_cap as f64 * trace.frame_seconds;
         assert!(
-            at > 0.45 && at < 0.56,
-            "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
+            at > 0.38 && at < 0.45,
+            "the fifth burst at ten bursts a second is 0.4 s: capped at {at:.3} s (frame {first_cap})"
         );
     }
 
@@ -34888,3 +34937,204 @@ mod overguard_status_tests {
 
 
 
+
+/// LATRON PRIME, both forms, against the owner's readings (MEASUREMENTS M102):
+/// Galvanized Aptitude and Riddled Target's +6 on the panel, Double Tap on
+/// each form and across the swap, and Flensing Spikes counting bullets.
+#[cfg(test)]
+mod m102_latron_prime_tests {
+    use super::*;
+    use crate::record::{Factor, Kind, Layer, Origin};
+
+    /// Double Tap's factor on one row — absent is 1.0.
+    fn dt(d: &crate::record::Damage) -> f64 {
+        d.layers
+            .iter()
+            .filter_map(|l| match l {
+                Layer::Mul { factor: Factor::DoubleTap, value, .. } => Some(*value),
+                _ => None,
+            })
+            .product()
+    }
+
+    fn with_double_tap(id: &str) -> crate::loadout::ResolvedPanel {
+        // NO RIDDLED TARGET here: its multishot rolls extra pellets, and every
+        // pellet is hits of its own, which would blur the count read below.
+        let evos = ["latron_prime_evo1_incarnon_form"];
+        let base = crate::loadout::WeaponBase::from_data(id, false, &evos);
+        let pool = crate::mods_data::pool_for_weapon("latron_prime");
+        let dt = pool.iter().find(|m| m.id == "double_tap").expect("double_tap on the Latron Prime");
+        crate::loadout::resolve(&base, &[dt], crate::loadout::StackPolicy::Emergent)
+    }
+
+    fn head_only() -> Vec<BodyPart> {
+        vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: true,
+            crit_bonus: false,
+        }]
+    }
+
+    /// THE PANEL, both forms: +165% base damage, Riddled Target's +6,
+    /// Galvanized Aptitude at 40% a stack per type. Written `stacks-types`.
+    /// Base form: the CO term reads the weapon's own 90, not the 96 — so it
+    /// ADDS to the bracket. Incarnon: a free-standing factor on the collision
+    /// alone, and the explosion (146 with the +6) takes none.
+    #[test]
+    fn m102_galvanized_and_the_plus_six_on_both_forms() {
+        let evo = ["latron_prime_riddled_target"];
+        let b = crate::loadout::WeaponBase::from_data("latron_prime", false, &evo);
+        let (panel, f) = (b.base_vector.total(), b.co_base_fraction());
+        assert!((panel - 96.0).abs() < 1e-9, "panel {panel}");
+        assert!((panel * f - 90.0).abs() < 1e-9, "CO reads {}", panel * f);
+        for (stacks, types, measured) in
+            [(0.0, 0.0, 254.0), (1.0, 2.0, 326.0), (2.0, 2.0, 398.0), (2.0, 3.0, 470.0)]
+        {
+            let got = panel * (1.0 + 1.65 + 0.4 * stacks * types * f);
+            assert!((got - measured).abs() < 0.5, "base {stacks}-{types}: {got} vs {measured}");
+            // DOUBLE TAP FULL is x5 on the whole hit, measured at 0-0, 1-3, 2-3.
+        }
+        for (hit, measured) in [(254.4_f64, 1272.0_f64), (362.4, 1812.0), (470.4, 2352.0)] {
+            assert!((hit * 5.0 - measured).abs() < 0.5);
+        }
+
+        let i = crate::loadout::WeaponBase::from_data("latron_prime_incarnon", false, &evo);
+        assert_eq!(i.co_behavior, crate::loadout::CoBehavior::Independent);
+        let direct = i.base_vector.total();
+        assert!((direct - 56.0).abs() < 1e-9, "collision {direct}");
+        for (stacks, types, measured) in [(0.0, 0.0, 148.0), (1.0, 3.0, 326.0), (2.0, 3.0, 505.0)] {
+            let got = direct * 2.65 * (1.0 + 0.4 * stacks * types);
+            assert!((got - measured).abs() < 0.5, "incarnon {stacks}-{types}: {got} vs {measured}");
+        }
+        let r = i.radial.as_ref().expect("the explosion");
+        assert!((r.base_vector.total() - 146.0).abs() < 1e-9, "explosion {}", r.base_vector.total());
+        assert!(!r.takes_condition_overload, "the explosion reads 387 at 2-3 as at 0-0");
+        assert!((146.0_f64 * 2.65 - 387.0).abs() < 0.5 && (146.0_f64 * 2.65 * 5.0 - 1935.0).abs() < 1.0);
+    }
+
+    /// ON THE INCARNON FORM DOUBLE TAP REACHES ONLY THE EXPLOSION, and each
+    /// landing projectile is two hits: the explosion reads +20%, +60%, +100%…
+    /// (hits 2, 4, 6 less one) up to the +400% cap, and the collision reads
+    /// x1 all along.
+    #[test]
+    fn m102_double_tap_on_the_incarnon_is_the_explosions_and_climbs_forty_a_shot() {
+        let panel = with_double_tap("latron_prime_incarnon");
+        assert!(panel.consecutive_hit_radial_only);
+        let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(4.0), &ArcaneFx::none());
+        p.target.base_health = 1e15;
+        let rec = record(&p, 3, 0.0, f64::INFINITY, 10_000, 0);
+        let mut radial = Vec::new();
+        for e in rec.events() {
+            if let Kind::Damage(d) = &e.kind {
+                if d.origin != Origin::Own || d.pellet.is_none() {
+                    continue;
+                }
+                if d.radial {
+                    radial.push(dt(d));
+                } else {
+                    assert!((dt(d) - 1.0).abs() < 1e-9, "the collision took Double Tap: x{}", dt(d));
+                }
+            }
+        }
+        // One explosion per shot on one body; several rows (one per type) per
+        // explosion carry the same factor, so collapse runs.
+        radial.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
+        assert!(radial.len() >= 11, "{radial:?}");
+        for (k, got) in radial.iter().enumerate().take(11) {
+            let want = (1.0 + 0.2 * (2.0 * (k as f64 + 1.0) - 1.0)).min(5.0);
+            assert!((got - want).abs() < 1e-9, "shot {}: x{got} vs x{want}", k + 1);
+        }
+    }
+
+    /// THE PILE IS PER FORM AND FROZEN AT EACH SWAP. The first Incarnon window
+    /// starts from nothing whatever the base form had built; the second picks
+    /// up the pile the first left — capped, with the clock it had left when
+    /// the way out completed — rather than starting again.
+    #[test]
+    fn m102_double_tap_snapshots_each_form_at_the_swap() {
+        let (pi, pb) = (with_double_tap("latron_prime_incarnon"), with_double_tap("latron_prime"));
+        let mut p = DummyParams::incarnon_cycle_from_panels(
+            &pi, &pb, false, LockMode::Initial(0),
+            &crate::arena::Arena::training(60.0), &ArcaneFx::none(),
+        );
+        p.body_parts = head_only();
+        p.target.base_health = 1e15;
+        let rec = record(&p, 5, 0.0, f64::INFINITY, 200_000, 0);
+        let (mut transmuted, mut fresh, mut firsts) = (false, false, Vec::new());
+        for e in rec.events() {
+            match &e.kind {
+                Kind::TransformEnd { transmuted: into } => {
+                    transmuted = *into;
+                    fresh = *into;
+                }
+                Kind::Damage(d) if transmuted && fresh && d.radial && d.origin == Origin::Own => {
+                    firsts.push(dt(d));
+                    fresh = false;
+                }
+                _ => {}
+            }
+        }
+        assert!(firsts.len() >= 2, "two Incarnon windows: {firsts:?}");
+        assert!((firsts[0] - 1.2).abs() < 1e-9, "the first window starts empty: {firsts:?}");
+        assert!((firsts[1] - 5.0).abs() < 1e-9, "the second resumes the frozen pile: {firsts:?}");
+    }
+
+    /// FLENSING SPIKES COUNTS BULLETS, not stacks, and never gives back.
+    #[test]
+    fn m102_flensing_counts_bullets_and_keeps_the_armour() {
+        // Five Puncture STACKS off two bullets are two bullets' worth.
+        let mut d = DebuffState { weakened: vec![10.0; 5], flensed: 2, ..Default::default() };
+        assert!((d.puncture_strip(0.2) - 0.4).abs() < 1e-9);
+        // …and with every stack gone the strip stays.
+        d.weakened.clear();
+        assert!((d.puncture_strip(0.2) - 0.4).abs() < 1e-9);
+        d.flensed = 7;
+        assert!((d.puncture_strip(0.2) - 1.0).abs() < 1e-9, "five bullets take all of it");
+    }
+}
+
+/// A BURST IS PLAYED ROUND BY ROUND. The Akarius Prime: two rockets 0.12 s
+/// apart, then 1/3.667 s to the next pull — and a magazine of nine fires its
+/// last rocket alone and reloads after that one pull's wait.
+#[cfg(test)]
+mod burst_cadence_tests {
+    use super::*;
+    use crate::record::Kind;
+
+    fn trace(mag: f64) -> (Vec<f64>, Vec<f64>) {
+        let base = crate::loadout::WeaponBase::from_data("akarius_prime", false, &[]);
+        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(4.0), &ArcaneFx::none());
+        p.magazine_size = mag;
+        p.target.base_health = 1e15;
+        let rec = record(&p, 1, 0.0, 4.0, 10_000, 0);
+        let (mut shots, mut reloads) = (Vec::new(), Vec::new());
+        for e in rec.events() {
+            match &e.kind {
+                Kind::Shot { .. } => shots.push(e.t),
+                Kind::ReloadStart { .. } => reloads.push(e.t),
+                _ => {}
+            }
+        }
+        (shots, reloads)
+    }
+
+    #[test]
+    fn the_akarius_fires_its_pairs_on_the_burst_delay_and_a_lone_last_rocket_alone() {
+        let wait = 1.0 / 3.667;
+        let (shots, reloads) = trace(8.0);
+        for pull in 0..4 {
+            let at = pull as f64 * (0.12 + wait);
+            assert!((shots[2 * pull] - at).abs() < 1e-9, "pull {pull} starts at {at}: {shots:?}");
+            assert!((shots[2 * pull + 1] - at - 0.12).abs() < 1e-9, "its second rocket: {shots:?}");
+        }
+        assert!((reloads[0] - (shots[7] + wait)).abs() < 1e-9, "reload one pull's wait after the 8th");
+
+        let (shots, reloads) = trace(9.0);
+        let lone = 4.0 * (0.12 + wait);
+        assert!((shots[8] - lone).abs() < 1e-9, "the ninth is a pull of its own: {shots:?}");
+        assert!((reloads[0] - (lone + wait)).abs() < 1e-9, "and the reload follows it: {reloads:?}");
+    }
+}

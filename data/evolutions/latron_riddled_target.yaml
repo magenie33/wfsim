@@ -19,6 +19,9 @@ effects:
   # It is LARGE on this family: the base form is 60-80% Puncture, so the trigger
   # is the weapon's own main damage type and four stacks is +100% multishot
   # held up for as long as the target keeps being shot.
+  #
+  # EACH STACK KEEPS ITS OWN 8 s CLOCK (MEASUREMENTS M102) — a new stack does
+  # not refresh the others — which is `PerStackExpiry`.
   - kind: stacking_multishot_on_puncture_status
     per_stack: 0.25
     max_stacks: 4

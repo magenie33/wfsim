@@ -2124,6 +2124,8 @@ pub struct WeaponBase {
     /// Double Tap: `(per stack, max stacks, seconds)`. See
     /// [`ModEffect::ConsecutiveHitDamage`].
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
+    /// See [`crate::weapons_data::AttackSpec::consecutive_hit_radial_only`].
+    pub consecutive_hit_radial_only: bool,
     /// Wiseman's Regard: `(rate, cap)` — "Increase Base Status Chance by 30% of
     /// current Critical Chance, up to 40%".
     ///
@@ -3947,6 +3949,8 @@ pub struct ResolvedPanel {
     /// Double Tap: `(per stack, max stacks, seconds)` — its OWN multiplier,
     /// counted per trigger pull. See [`ModEffect::ConsecutiveHitDamage`].
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
+    /// See [`crate::weapons_data::AttackSpec::consecutive_hit_radial_only`].
+    pub consecutive_hit_radial_only: bool,
     /// SYNTH CHARGE's multiplier for the magazine's LAST round — see
     /// [`ModEffect::LastRoundDamage`]. Zero on a continuous weapon and on an
     /// Incarnon form, resolved here because only this layer knows the form.
@@ -5877,6 +5881,7 @@ pub fn resolve_for(
         weakpoint_crit_chance_relative: wp_cc,
         bodyshot_crit_chance_multiplier: base.bodyshot_crit_chance_multiplier,
         consecutive_hit_damage: consecutive_hit.or(base.consecutive_hit_damage),
+        consecutive_hit_radial_only: base.consecutive_hit_radial_only,
         // OFF ON A CONTINUOUS WEAPON AND ON AN INCARNON FORM, both the mod's
         // own words. `base.form` is the entry being resolved, so an Incarnon
         // half of a cycle drops it while the base half keeps it — which is
