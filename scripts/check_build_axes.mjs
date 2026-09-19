@@ -18,7 +18,7 @@
 // COVERAGE: every axis the engine declares must be claimed by every surface
 // supposed to carry it. Plain node against the served meta and two source
 // files, so it sits in CI rather than being something to remember.
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { openApp } from "./cdp.mjs";
@@ -160,13 +160,16 @@ check("...and the answer-side guard it leans on is still here",
 // `request_field` is the engine's own spelling on the wire, which makes this a
 // coverage question rather than a list.
 {
-  const scorer = read("cli/src/bin/wfsim-board.rs");
+  const scorer = ["cli/src/bin/wfsim-board.rs"]
+    .concat(readdirSync(resolve(ROOT, "cli/src/board")).sort().map((f) => "cli/src/board/" + f))
+    .map(read)
+    .join(String.fromCharCode(10));
   const fields = meta.axes.filter((a) => a.on_board).map((a) => a.request_field);
   const missing = fields.filter((f) => !scorer.includes('"' + f + '"'));
   check(
     "the scorer names every axis a board row carries",
     missing.length === 0,
-    "never mentioned in wfsim-board.rs: " + missing.join(", "),
+    "never mentioned in the scorer (cli/src/board/): " + missing.join(", "),
   );
 }
 

@@ -271,6 +271,16 @@ pub fn get(id: &str) -> Option<&'static Benchmark> {
     all().iter().find(|b| b.id == id)
 }
 
+/// A benchmark id without its `_v<n>` suffix — `single_target_v2` and
+/// `single_target_v1` are the same ruler, and a build aimed at
+/// either belongs on the current one's board.
+pub fn family(id: &str) -> &str {
+    match id.rsplit_once("_v") {
+        Some((head, tail)) if !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit()) => head,
+        _ => id,
+    }
+}
+
 // The two halves of the rule below live under `cfg(test)`: the check is a DATA
 // discipline enforced in CI, the same way perk-id uniqueness and the mod-value
 // sweep are, and neither is something a running engine re-derives.
