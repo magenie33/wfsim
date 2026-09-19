@@ -48,7 +48,9 @@ code, not after.
 ## Map
 
 - `engine/` — all game mechanics, and it knows NO weapon names: weapons, mods
-  and the rest load from `data/`. `engine::arena::Arena` is BOTH actors of a
+  and the rest load from `data/`. Layered `rules/ model/ data/ build/` fight
+  `board/`, each naming only those below (`docs/CORE.md` §4).
+  `engine::arena::Arena` is BOTH actors of a
   fight; the web api and the optimizer build one from the same scenario and hand
   it to the same constructor. Every formula carries a comment citing its source.
 - `optimizer/` — build search. It only ever CALLS the engine — never add a

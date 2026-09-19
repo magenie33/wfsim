@@ -372,6 +372,9 @@ for the number a player waits for.
 
 See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 
+- `engine/src/` is six layers, bottom up: `rules/`, `model/`, `data/`,
+  `build/`, the fight (`target`, `formation`, `arena`, `fight/`, `record`) and
+  `board/`; `scripts/check_engine_layers.mjs` holds them apart.
 - `engine/`, `optimizer/`, `cli/`, `web/`, `webapi/`, `wasm/` — the Rust
   crates (Cargo workspace). `web` is the native dev server (UI in
   `web/src/static/`, where `app.js` is joined from `app/NN-name.js` in

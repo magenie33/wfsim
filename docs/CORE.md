@@ -133,39 +133,50 @@ corrected against in-game measurements during implementation.)*
 
 ## 4. Architecture & Modules
 
+The three verbs are three layers of one engine, and every module sits in one
+layer. **A module names its own layer and the ones below it, never one above,
+and no two modules reach each other** — `scripts/check_engine_layers.mjs`
+fails the first edge that does, because the compiler accepts a cycle inside a
+crate and nothing else would notice one.
+
 ```
-wfsim/
-├── docs/                 # design docs (this file lives here)
-├── data/                 # data layer: weapons, mods, enemies, faction
-│   ├── weapons/          #   resistance tables (versioned)
-│   ├── mods/
-│   ├── enemies/
-│   └── factions/
-├── engine/               # engine layer: pure functions, one per pipeline
-│   ├── modResolution     #   layer
-│   ├── elements
-│   ├── crit
-│   ├── status
-│   ├── hit               # range / ballistics / multishot / AoE
-│   ├── mitigation        # armor / shields / resistances
-│   └── simulate          # temporal-integration main loop
-├── optimizer/            # inverse search for the best mod combination
-├── tests/
-│   └── golden/           # golden tests vs in-game measurements (north star)
-└── cli/                  # the wfsim command-line entry point
+┌─ transports ─ web/ (native server) · wasm/ · cli/ · desktop/ ──────────────┐
+│  webapi/      the endpoints: request JSON → a fight / a panel / a search   │
+├─ optimizer/   SOLVE: enumerate, evaluate by calling the fight, schedule ───┤
+├─ engine/src/                                                               │
+│   board/      what makes two builds one row; the rulers rows are scored by │
+│   fight/      SIMULATE: the run, shot by shot — with target, formation,    │
+│   target arena formation record      arena (its inputs) and record (out)   │
+│   build/      BUILD: a loadout resolved into the panel a fight reads       │
+│   data/       the catalogs: data/*.yaml read into the model                │
+│   model/      the vocabulary: what a card, a buff, a weapon IS             │
+│   rules/      primitives and the game's formulas, pure functions           │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Data model (core entities, to be refined):**
-- `Weapon` — base damage vector, base crit/status, fire rate, magazine,
-  reload, multishot, ballistic properties, AoE properties, mod slots /
-  polarities.
-- `Mod` — affected bucket/field, value, polarity, conditions (combo /
-  on-kill / faction-limited, etc.).
-- `Enemy` — health/shields/armor, unit type, faction, level (for level
-  scaling), weaknesses/resistances.
-- `Scenario` — distance, headshots or not, combo state, buffs, engagement
-  duration — the combat context.
-- `Build` — weapon + chosen mod set (the optimizer's search unit).
+- **`rules/`** holds the stateless pipeline layers of §3 — `damage`,
+  `elements`, `status`, `scaling`, `capacity`, `space`, `chain` — and the buff
+  machinery the fight reads (`buffs`, `perks`, `sim`). It knows no weapon.
+- **`model/`** is the vocabulary every catalog writes in. `ModEffect`,
+  `EvoEffect` and `ArcEffect` are what a mod, an evolution and an arcane card
+  say; `BuffTrigger`, `BuffGrant`, `TennoCondition`, `IndirectStat` and their
+  `from_id` are the ONE spelling a data file uses for each word, in every
+  catalog (`data/README.md` §Conventions). A method that needs a Tenno, a
+  catalog or a fight lives in the layer that has one.
+- **`data/`** reads `data/` into the model — one module per family
+  (`data::weapons`, `data::mods`, …), over the compile-time-embedded tree.
+- **`build/`** resolves a loadout: `build::loadout::resolve` turns a weapon,
+  its mods and its evolutions into a `ResolvedPanel`.
+- **the fight** — `target` is who is shot, `formation` the crowd, `arena` both
+  actors, `fight` the simulation (`FightParams`, `run_once`, `monte_carlo`,
+  `replay`) and `record` what it wrote down.
+- **`board/`** is build identity (`board::builds`) and the rulers
+  (`board::benchmarks`).
+
+A directory module is split by the question each file answers (`resolve`,
+`panel`, `parse`, `apply`, `describe`, …) with its tests under `tests/`; its
+`mod.rs` re-exports the public items, so a caller names `data::weapons::spec`
+and never the file.
 
 ---
 
@@ -198,9 +209,9 @@ wfsim/
   among the candidates considered; strong typing and numeric reliability also
   fit "correctness first". A future web UI can reuse the engine compiled to
   WASM.
-- **Project shape:** a Cargo workspace with three crates: `engine/` (pure
-  pipeline functions), `optimizer/` (only calls the engine), `cli/` (the
-  `wfsim` entry point).
+- **Project shape:** a Cargo workspace — `engine/` (every mechanic, layered as
+  §4), `optimizer/` (only calls the engine), `webapi/` (the endpoints), and the
+  transports `web/`, `wasm/`, `cli/`.
 - **Optimizer evaluation:** **hybrid** — analytic expectation (fast, for
   coarse filtering during search) + Monte Carlo (slow, for final calibration
   and distributions, SimCraft-style).
