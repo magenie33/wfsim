@@ -9,7 +9,7 @@ import { sent, pageText, toolText } from "./view.js";
 /// results and page snapshots are set aside, the newest kept verbatim; they go
 /// in batches so each breaks the provider's prompt cache once rather than every
 /// turn. The ratios are starting points, tuned against `nona_eval`.
-export const BUDGET = { window: 64000, output: 4096, margin: 1500, mask_at: 0.5, force_at: 0.7,
+export const BUDGET = { context: 64000, output: 4096, margin: 1500, mask_at: 0.5, force_at: 0.7,
   keep_tools: 6, keep_pages: 2, batch: 15000 };
 
 /// TOKENS, ESTIMATED WITHOUT A TOKENIZER: a CJK character is about 0.6, any
@@ -27,7 +27,7 @@ export function calibrate(prev, estimated, billed) {
   return prev ? prev * 0.7 + r * 0.3 : r;
 }
 
-export const room = (window) => (window || BUDGET.window) - BUDGET.output - BUDGET.margin;
+export const room = (context) => (context || BUDGET.context) - BUDGET.output - BUDGET.margin;
 
 /// What the record costs to send, given the fixed part (rules, memory, tools).
 export function recordCost(record, fixed, ratio) {
@@ -39,10 +39,10 @@ export function recordCost(record, fixed, ratio) {
 /// window; the oldest tool results and snapshots past it, once enough would go
 /// (or the window is nearly full); all but the newest two and one when `force`,
 /// which is what an address saying "too long" gets.
-export function decide(record, { window, fixed, ratio, force }) {
+export function decide(record, { context, fixed, ratio, force }) {
   const est = recordCost(record, fixed, ratio);
   const none = { est, tools: [], pages: [] };
-  const limit = room(window);
+  const limit = room(context);
   if (!force && est < limit * BUDGET.mask_at) return none;
   const from = record.summary ? record.summary.upto : 0;
   const idx = (pred) => record.messages.map((m, i) => (i >= from && pred(m) ? i : -1)).filter((i) => i >= 0);

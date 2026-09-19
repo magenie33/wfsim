@@ -98,13 +98,13 @@ check("the rules are the same text every time for one reader", rules({ lang: "zh
 
 const big = freeze(convo(10));
 const fixed = RULES + JSON.stringify(TOOLS);
-const soft = budget.decide(big, { window: 20000, fixed, ratio: 1 });
+const soft = budget.decide(big, { context: 20000, fixed, ratio: 1 });
 const toolIdx = big.messages.map((m, i) => (m.role === "tool" ? i : -1)).filter((i) => i >= 0);
 check("past half the window the oldest tool results are set aside and the newest six kept",
   same(soft.tools, toolIdx.slice(0, 4)), JSON.stringify(soft.tools));
-check("...and forced, only the newest two stay", budget.decide(big, { window: 20000, fixed, ratio: 1, force: true }).tools.length === 8);
+check("...and forced, only the newest two stay", budget.decide(big, { context: 20000, fixed, ratio: 1, force: true }).tools.length === 8);
 check("under half the window, nothing is set aside",
-  budget.decide(convo(2, 50), { window: 200000, fixed, ratio: 1 }).tools.length === 0);
+  budget.decide(convo(2, 50), { context: 200000, fixed, ratio: 1 }).tools.length === 0);
 const marked = budget.applyMarks(big, soft);
 check("marks are written into a new record, the old one untouched",
   marked.messages[toolIdx[0]].masked === true && !big.messages[toolIdx[0]].masked);
@@ -121,7 +121,7 @@ check("a reply's cost counts cached input at a tenth",
 
 const long = freeze(convo(7, 4000));
 const users = long.messages.map((m, i) => (m.role === "user" ? i : -1)).filter((i) => i >= 0);
-const cut = summary.wantsSummary(long, { window: 12000, fixed: "", ratio: 1 });
+const cut = summary.wantsSummary(long, { context: 12000, fixed: "", ratio: 1 });
 check("past the budget the cut is the fourth-newest reader turn", cut === users[users.length - 4], String(cut));
 const input = summary.summaryInput(long, cut, (c) => c.name);
 check("the summariser is given the turns before the cut and none after",
@@ -131,7 +131,7 @@ const afterSum = sent(summed);
 check("what is sent starts from the summary and keeps the four turns",
   afterSum[0].text.startsWith("<summary of the conversation so far>\nSUMMARY") && afterSum.filter((m) => m.role === "user").length === 4);
 check("an already-summarised record is not summarised again at the same cut",
-  summary.wantsSummary(summed, { window: 12000, fixed: "", ratio: 1 }) === null);
+  summary.wantsSummary(summed, { context: 12000, fixed: "", ratio: 1 }) === null);
 
 // ---- 2: a number no tool returned is marked ---------------------------------------
 

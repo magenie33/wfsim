@@ -50,6 +50,11 @@ jobs:
       # stored shape migrates to are unit-tested here without a browser.
       - name: Nona's core logic holds
         run: node scripts/test_nona_core.mjs
+      # SHE REACHES THE PAGE ONLY THROUGH THE DOOR. A module can name any of
+      # app.js's top-level names and it works until one is renamed; this fails
+      # first, along with an import that points up a layer.
+      - name: Nona keeps to her side of the door
+        run: node scripts/check_nona_boundary.mjs
 
       - name: A rescore is triggered by everything that buys one
         run: node scripts/check_rescore_paths.mjs

@@ -72,6 +72,20 @@ decode a stream cut mid-line; memory writes the reader's own words and only
 proposes the rest. Verified to bite on four planted changes: keep five, pass
 three-digit whole numbers, stop merging same-role turns, never activate.
 
+## `check_nona_boundary`
+
+Not a page check: the files under `web/src/static/nona/`, read as text with
+comments and string contents blanked. No file names one of `app.js`'s
+top-level names unless it binds that name itself; imports point only down
+(core ← runtime ← ui ← index); `core/` names no browser object, clock or
+randomness, `runtime/` no DOM, `ui/` no network or storage, and the one
+`fetch` is `runtime/transport.js`; every file is listed in the dev server's
+`NONA_FILES` at its own path, the site build copies the directory whole, and
+the page loads the module after `app.js`. Verified to bite on a planted page
+function, a page variable, a `fetch` in ui, a clock in core, an upward import
+and an unlisted file — and to stay green on the same names in a comment and a
+string.
+
 ## `check_agent_coverage`
 
 Every control a reader can use is on the door or says why not. A control is

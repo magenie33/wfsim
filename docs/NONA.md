@@ -1,8 +1,5 @@
 # Nona (九九), the in-page agent
 
-**Status: steps 1–3 of §"Moving in" have landed; `check_nona_boundary` (step 4)
-is what is left before this structure is enforced rather than followed.**
-
 Nona is a model the reader brings their own key for, driving the page through
 the agent door (`docs/AGENT.md`). The door is the page's side of the contract;
 this document is hers. It states what must stay true, where each piece lives,
@@ -172,13 +169,16 @@ not in `tools()`, whatever it does.
 | Kind | What | Runs |
 | --- | --- | --- |
 | `test_nona_core` | Node, no browser: migrations from every fixture version; the view is deterministic and leaves the record unchanged; two consecutive views share their prefix; budget marks the oldest first and keeps the newest; the summary's input; the number checker; both protocols encode to their golden bodies and decode recorded streams; memory set / forget / undo / block | CI, seconds |
-| `check_nona_boundary` | static: no `nona/` file names an `app.js` identifier; every file is in the site build and the dev server lists | CI, seconds |
+| `check_nona_boundary` | static: no `nona/` file names an `app.js` identifier; imports point down; each layer keeps to what it may touch; every file is in the site build and the dev server lists | CI, seconds |
 | `check_nona` | the browser, against a stand-in provider: the loop end to end, the branch policy, storage, the ui | CI |
 | `nona_eval` | a real model, by hand: behaviour graded per case | after prompt, tool or door changes |
 
 A new test is trusted once it has failed on the broken input (`AGENTS.md`).
 
 ## Adding something
+
+One capability at a time, each landing with its checks green: a short design
+note first, then the code, then the case that fails without it.
 
 | To add | Do this | Never |
 | --- | --- | --- |
@@ -197,23 +197,3 @@ A new test is trusted once it has failed on the broken input (`AGENTS.md`).
 - **No outward action**: sharing, submitting to the board, opening a link.
 - **No hand action**: she proposes, the reader takes.
 - **No framework, bundler or dependency** — the page has none.
-
-## Moving in
-
-Each step lands on its own with every check green, and changes no behaviour a
-reader can see.
-
-1. **The door grows what she needs** — the observation fields, `writes`,
-   `shell.preset.read`, the `hand` actions — with `check_agent_door` cases.
-   *Landed*, and with it a page fix it exposed: a switch of document inside
-   the auto-save's debounce dropped the reader's last edit (`flushPresetSaves`).
-2. **`core/` and `test_nona_core`** — the pure logic moved out of `app.js` and
-   unit-tested; not yet wired. *Landed.*
-3. **`runtime/`, `ui/`, `index.js`** — the module loads beside `app.js`, the
-   §NONA section is deleted from it, the site build and the dev server serve
-   the directory, and `check_nona` passes reading only the page and the
-   requests, its pure-logic cases left to `test_nona_core`. *Landed.*
-4. **`check_nona_boundary`** — invariant 1 made to fail, proven on a planted
-   reference; the Status line above goes.
-
-Only then does a feature land again, one at a time.

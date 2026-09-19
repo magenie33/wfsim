@@ -84,7 +84,7 @@ export function createAgent(door) {
   /// Set aside what the budget says to, written into the record so the next
   /// request is sent the same prefix. Returns the estimate of what is sent.
   function fit(cfg, p, force) {
-    const d = budget.decide(s.conv, { window: cfg.context, fixed: p.rules + p.memory + JSON.stringify(p.tools),
+    const d = budget.decide(s.conv, { context: cfg.context, fixed: p.rules + p.memory + JSON.stringify(p.tools),
       ratio: store.ratio(cfg.model), force });
     if (d.tools.length || d.pages.length) {
       s.conv = budget.applyMarks(s.conv, d);
@@ -94,7 +94,7 @@ export function createAgent(door) {
   }
 
   async function summarise(cfg, p, signal) {
-    const cut = summary.wantsSummary(s.conv, { window: cfg.context, fixed: p.rules + JSON.stringify(p.tools), ratio: store.ratio(cfg.model) });
+    const cut = summary.wantsSummary(s.conv, { context: cfg.context, fixed: p.rules + JSON.stringify(p.tools), ratio: store.ratio(cfg.model) });
     if (cut == null) return false;
     const text = await transport.complete(cfg, summary.SUMMARY_RULES, summary.summaryInput(s.conv, cut, callLine), signal);
     s.conv = summary.applySummary(s.conv, cut, text);

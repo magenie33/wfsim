@@ -17,12 +17,12 @@ export const SUMMARY_RULES = [
 
 /// Where to cut — the index of the fourth-newest reader turn — or null when the
 /// record still fits, is too short, or is already summarised that far.
-export function wantsSummary(record, { window, fixed, ratio }) {
+export function wantsSummary(record, { context, fixed, ratio }) {
   const users = record.messages.map((m, i) => (m.role === "user" ? i : -1)).filter((i) => i >= 0);
   if (users.length <= KEEP_TURNS) return null;
   const cut = users[users.length - KEEP_TURNS];
   if (record.summary && record.summary.upto >= cut) return null;
-  return recordCost(record, fixed, ratio) > room(window) * BUDGET.force_at ? cut : null;
+  return recordCost(record, fixed, ratio) > room(context) * BUDGET.force_at ? cut : null;
 }
 
 /// What the summariser is given: the earlier summary, then the record up to the
