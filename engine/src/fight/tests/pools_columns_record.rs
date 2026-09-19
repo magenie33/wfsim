@@ -298,7 +298,7 @@ fn a_blast_aoe_carries_the_weak_point_and_a_toxin_dot_does_not() {
     assert!(
         (head / body - 3.0).abs() < 1e-9,
         "M54: a head-applied pile reaches a neighbour at exactly x3 — \
-         measured 3150 / 1050 = 3.000, got {head} / {body}"
+             measured 3150 / 1050 = 3.000, got {head} / {body}"
     );
     // …AND THE 10x BETWEEN THE TWO HALVES. Ten stacks are 300% each to the
     // neighbours against 30% each to the host: `1050 / 10.5 = 100` over ten

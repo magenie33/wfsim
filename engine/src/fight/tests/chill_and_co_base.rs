@@ -379,10 +379,10 @@ fn the_torid_base_forms_multiplying_co_reads_its_full_evolved_base() {
                     (solved(bare + 0.5, hit - 0.5), solved(bare - 0.5, hit + 0.5));
                 assert!(lo < 1.0 && 1.0 < hi,
                     "{perk} {part} {types} types: the full evolved base is outside \
-                     the display band [{lo:.4}, {hi:.4}]");
+                         the display band [{lo:.4}, {hi:.4}]");
                 assert!(lo > 0.85,
                     "{perk} {part} {types} types: the band [{lo:.4}, {hi:.4}] must \
-                     exclude a CO fed by the unevolved base");
+                         exclude a CO fed by the unevolved base");
             }
         }
     }

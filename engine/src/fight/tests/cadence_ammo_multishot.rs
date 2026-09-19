@@ -636,8 +636,8 @@ fn faction_mult_scales_direct_damage_linearly() {
 #[test]
 fn faction_bonus_applies_only_vs_matching_target_faction() {
     use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::{Faction, ModDef, ModEffect, Rarity, StackPolicy};
+    use crate::model::WeaponBase;
+    use crate::model::{Faction, ModDef, ModEffect, Rarity, StackPolicy};
     use crate::rules::capacity::Polarity;
     let expel = ModDef {
         stance: None,
@@ -1012,7 +1012,7 @@ fn an_efficiency_overdraw_carries_its_debt_through_the_reload() {
     assert!(
         (s.mean_shots - 25.0).abs() < 1e-9,
         "expected 25 shots (13 + 12, the debt carried); 26 would mean the \
-         reload wiped it. got {}",
+             reload wiped it. got {}",
         s.mean_shots
     );
 }
@@ -1295,7 +1295,7 @@ fn ammo_efficiency_does_not_pay_for_plentiful_mayhems_extra_projectiles() {
     assert!(
         (s.mean_pellets - 9.0).abs() < 1e-9,
         "expected 9 pellets (3+3+1+1+1); 15 would mean efficiency paid for \
-         the extras. got {}",
+             the extras. got {}",
         s.mean_pellets
     );
 }

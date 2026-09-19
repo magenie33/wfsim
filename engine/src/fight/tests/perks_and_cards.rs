@@ -73,8 +73,8 @@ fn reified_banes_empty_reload_damage_is_a_buff_that_starts_on() {
     // times out. What makes it a buff rather than a decoration is that
     // turning it off has to MOVE the damage.
     use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+    use crate::model::WeaponBase;
+    use crate::model::StackPolicy;
     let with = WeaponBase::from_data(
         "boar_prime", true, &["boar_prime_evo1_incarnon_form", "boar_prime_reified_bane"],
     );
@@ -114,8 +114,8 @@ fn evo_multishot_config_rescales_the_permanent_stacks() {
     // the resolved multishot; the per-buff config rescales it statically
     // (no in-sim trigger, no decay). Lock is meaningless and ignored.
     use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+    use crate::model::WeaponBase;
+    use crate::model::StackPolicy;
     let base = WeaponBase::from_data(
         "dual_toxocyst_incarnon",
         true,
@@ -911,7 +911,7 @@ fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
     assert!(on_reload > 0, "the fixture has to transform at all: {on_reload}");
     assert_eq!(from_empty, 0,
         "every transform here happens on eight rounds — none is a reload from \
-         empty, yet it earned {from_empty} (the plain reload trigger earned {on_reload})");
+             empty, yet it earned {from_empty} (the plain reload trigger earned {on_reload})");
 }
 
 /// KING'S GAMBIT: a body shot cannot crit, and a weak point crits more.

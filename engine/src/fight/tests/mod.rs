@@ -619,7 +619,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::build::loadout::Res
 /// ratchets below: is every card READ, and can every card be DENIED.
 fn every_buff_params() -> FightParams {
     use crate::model::TimedBuff;
-use crate::model::StackSpec;
+    use crate::model::StackSpec;
     let stack = |per_stack: f64, earned_on: &'static str| StackSpec {
         per_stack,
         max_stacks: 3,

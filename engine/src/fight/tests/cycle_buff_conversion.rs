@@ -38,6 +38,6 @@ fn a_fire_rate_buff_converts_against_each_forms_own_base() {
     assert!(
         rate_of(&pi) > rate_of(&pb),
         "the faster form must be worth more per stack, or the sim is reading one form's \
-         rate while firing the other"
+             rate while firing the other"
     );
 }

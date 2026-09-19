@@ -2810,7 +2810,7 @@ mod tests {
     #[test]
     fn a_broken_evolution_changes_nothing_whatever_it_grants() {
         use crate::model::WeaponBase;
-use crate::model::IndirectStat;
+        use crate::model::IndirectStat;
         let everything = |broken: bool| EvolutionDef {
             misprints: Vec::new(),
             id: "synthetic".into(),
@@ -3008,7 +3008,7 @@ use crate::model::WeaponBase;
     #[test]
     fn an_evolutions_handling_stats_reach_the_panel() {
         use crate::build::loadout::resolve;
-use crate::model::{IndirectStat, StackPolicy};
+        use crate::model::{IndirectStat, StackPolicy};
         let of = |weapon: &str, evo: &str| -> Vec<(IndirectStat, f64)> {
             let base = crate::model::WeaponBase::from_data(weapon, true, &[evo]);
             resolve(&base, &[], StackPolicy::Emergent).indirect
@@ -3054,8 +3054,8 @@ use crate::model::{IndirectStat, StackPolicy};
 mod furis_tier4_tests {
     use super::*;
     use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+    use crate::model::WeaponBase;
+    use crate::model::StackPolicy;
 
     fn cd_with(mods: &[&str], evos: &[&str]) -> f64 {
         let owned: Vec<String> = evos.iter().map(|s| (*s).to_string()).collect();
@@ -3417,8 +3417,8 @@ mod after_mods_layer_tests {
     #[test]
     fn the_two_layers_are_not_worth_the_same() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+        use crate::model::WeaponBase;
+        use crate::model::StackPolicy;
         let after = ["felarx_brutal_edge".to_string()];
         let a: Vec<&str> = after.iter().map(|s| s.as_str()).collect();
         // A crit mod, so the base layer has something to be multiplied by.
@@ -3494,8 +3494,8 @@ use crate::model::StackPolicy;
     #[test]
     fn a_gated_perk_asks_the_frame_holding_the_gun() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+        use crate::model::WeaponBase;
+        use crate::model::StackPolicy;
         let pt = |armor: f64| {
             let mut t = crate::data::tenno::default_tenno().clone();
             t.armor = armor;

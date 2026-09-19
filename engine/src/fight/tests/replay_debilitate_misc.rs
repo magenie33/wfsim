@@ -62,7 +62,7 @@ fn every_on_status_trigger_is_fired_somewhere() {
             .filter(|l| !l.trim_start().starts_with("//"))
             .any(|l| l.contains("bump_trigger") && l.contains(&needle));
         assert!(fired, "ArcTrigger::{name} is never bumped — an arcane that \
-            waits on it can never earn a stack");
+                waits on it can never earn a stack");
     }
 }
 
@@ -120,8 +120,8 @@ fn weakened_never_crits_an_explosion() {
 #[test]
 fn a_locked_buff_still_earns_stacks() {
     use crate::data::arcanes::ArcBuffSpec;
-use crate::model::ArcTrigger;
-use crate::model::ArcGrant;
+    use crate::model::ArcTrigger;
+    use crate::model::ArcGrant;
     let mk = |initial: u32| {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Impact, 100.0);
@@ -174,8 +174,8 @@ use crate::model::ArcGrant;
 #[test]
 fn one_config_reaches_every_grant_of_its_arcane() {
     use crate::data::arcanes::ArcBuffSpec;
-use crate::model::ArcTrigger;
-use crate::model::ArcGrant;
+    use crate::model::ArcTrigger;
+    use crate::model::ArcGrant;
     let spec = |grant: ArcGrant| ArcBuffSpec {
         owner: "primary_frostbite".into(),
         grant,
@@ -702,7 +702,7 @@ fn a_debilitate_split_lands_at_the_third_faction_layer() {
     assert!(
         (exponent_ratio / want - 1.0).abs() < 0.02,
         "split damage scaled by {exponent_ratio} across a {f} faction bonus; \
-         f³ is {want}, f² would be {}",
+             f³ is {want}, f² would be {}",
         f * f
     );
 }

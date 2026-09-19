@@ -1664,8 +1664,8 @@ fn an_element_is_never_a_malus() {
     #[test]
     fn a_rivens_damage_joins_serrations_bucket_and_does_not_multiply_it() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+        use crate::model::WeaponBase;
+        use crate::model::StackPolicy;
         let base = WeaponBase::from_data("torid", true, &[]);
         let serration = crate::data::mods::class_pool("rifle")
             .into_iter()

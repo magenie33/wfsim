@@ -1479,3 +1479,24 @@ impl TennoStat {
         }
     }
 }
+
+#[cfg(test)]
+mod infinite_punch_through_display {
+    use crate::model::IndirectStat;
+
+    /// A READER IS NEVER SHOWN THE SENTINEL — including with a mod's metres
+    /// added on top of it.
+    #[test]
+    fn infinite_punch_through_reads_as_a_word_and_only_for_that_stat() {
+        let pt = IndirectStat::PunchThrough;
+        let inf = crate::rules::space::INFINITE_BODY_PUNCH_THROUGH_M;
+        assert_eq!(pt.format(inf), "infinite");
+        assert_eq!(pt.format(inf + 2.4), "infinite", "a Seeker on top is still infinite");
+        // …and an ordinary depth is still metres.
+        assert_eq!(pt.format(2.4), "+2.4m");
+        assert_eq!(pt.format(0.0), "+0m");
+        // THE RULE IS THE STAT'S, not the number's: 999 of anything else is
+        // 999 of it.
+        assert_eq!(IndirectStat::BeamRange.format(inf), "+999m");
+    }
+}

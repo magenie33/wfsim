@@ -1513,8 +1513,8 @@ mod tests {
     #[test]
     fn a_cannonade_locks_fire_rate_both_ways() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+        use crate::model::WeaponBase;
+        use crate::model::StackPolicy;
         let base = WeaponBase::from_data("torid", false, &[]);
         let pool = pool_for_weapon("torid");
         let pick = |id: &str| {
@@ -1705,8 +1705,8 @@ use crate::model::StackPolicy;
     #[test]
     fn a_locking_mod_pins_its_stat_in_every_form_that_can_wear_it() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::StackPolicy;
+        use crate::model::WeaponBase;
+        use crate::model::StackPolicy;
         let read = |p: &crate::build::loadout::ResolvedPanel, key: &str| match key {
             "fire_rate" => p.fire_rate,
             "multishot" => p.multishot,
@@ -2705,8 +2705,8 @@ mod synth_charge_tests {
     #[test]
     fn synth_charge_is_the_last_round_only_and_only_where_it_can_be() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::{ModEffect, StackPolicy};
+        use crate::model::WeaponBase;
+        use crate::model::{ModEffect, StackPolicy};
         let pool = crate::data::mods::class_pool("pistol");
         let sc = pool.iter().find(|m| m.id == "synth_charge").expect("synth charge");
         assert!(
@@ -2753,8 +2753,8 @@ mod chamber_tests {
     #[test]
     fn the_chambers_sum_into_one_first_round_bracket_and_are_not_a_family() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::{ModEffect, StackPolicy};
+        use crate::model::WeaponBase;
+        use crate::model::{ModEffect, StackPolicy};
         let pool = crate::data::mods::class_pool("sniper");
         let pick = |id: &str| {
             pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}")).clone()
@@ -2971,9 +2971,9 @@ mod split_flights_tests {
     #[test]
     fn split_flights_reaches_the_panel_as_a_live_stacking_buff() {
         use crate::build::loadout::resolve;
-use crate::model::WeaponBase;
-use crate::model::{BuffDecay, BuffGrant, BuffTrigger};
-use crate::model::StackPolicy;
+        use crate::model::WeaponBase;
+        use crate::model::{BuffDecay, BuffGrant, BuffTrigger};
+        use crate::model::StackPolicy;
         let pool = crate::data::mods::class_pool("bow");
         let sf = pool.iter().find(|m| m.id == "split_flights").expect("split flights");
 

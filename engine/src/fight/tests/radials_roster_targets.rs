@@ -316,7 +316,7 @@ fn the_magazine_refill_pays_each_kill_once() {
     assert!(
         slow_reloads > bare_reloads / 3 && slow_reloads < bare_reloads,
         "a 5% refill halves the drain, it does not remove it: bare {bare_reloads}, \
-         with refill {slow_reloads}"
+             with refill {slow_reloads}"
     );
 
     // AND A REFILL IS NOT A RELOAD, which is the entire point of pairing it
@@ -334,7 +334,7 @@ fn the_magazine_refill_pays_each_kill_once() {
     assert!(
         r.crits as f64 / r.pellets.max(1) as f64 > 0.5,
         "tendrils must survive a refill — if the refill cleared them like a \
-         reload does, the crit rate would sit near zero"
+             reload does, the crit rate would sit near zero"
     );
 }
 
@@ -513,14 +513,14 @@ fn a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target() {
             (gp, gr),
             (*pellet, *radial),
             "row {} is pellet {pellet:?} {} — a volley settles pellet by \
-             pellet, got {rows:?}",
+                 pellet, got {rows:?}",
             i + 1,
             if *radial { "radial" } else { "direct" }
         );
         assert!(
             (gd - damage).abs() < 0.5,
             "row {} (pellet {pellet:?} {}) is {damage}, got {gd} — the \
-             whole volley: {rows:?}",
+                 whole volley: {rows:?}",
             i + 1,
             if *radial { "radial" } else { "direct" }
         );
@@ -582,8 +582,8 @@ fn the_explosion_rolls_its_own_crit_and_never_counts_as_a_pellet_crit() {
 #[test]
 fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
     use crate::data::arcanes::ArcBuffSpec;
-use crate::model::ArcTrigger;
-use crate::model::ArcGrant;
+    use crate::model::ArcTrigger;
+    use crate::model::ArcGrant;
     let radial = |crit_damage: f64| {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Heat, 300.0);

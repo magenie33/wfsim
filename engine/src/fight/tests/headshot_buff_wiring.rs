@@ -67,7 +67,7 @@ fn every_evolution_buff_card_is_backed_by_the_sim() {
             assert!(
                 listed,
                 "{} offers a buff card `{}` the sim never rosters — the panel would \
-                 show a control that does nothing",
+                     show a control that does nothing",
                 e.id, card.id
             );
         }

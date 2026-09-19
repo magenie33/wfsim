@@ -16,7 +16,7 @@ use super::*;
 #[test]
 fn no_rostered_buff_draws_a_flat_zero_it_did_not_earn() {
     use crate::model::{StackingBuff, TimedBuff};
-use crate::model::StackSpec;
+    use crate::model::StackSpec;
     let stack = |per_stack: f64, earned_on: &'static str| StackSpec {
         per_stack,
         max_stacks: 3,
@@ -83,7 +83,7 @@ use crate::model::StackSpec;
         assert!(
             first.stacks[i] > 0,
             "`{id}` is offered and configured to its cap, and the replay reads 0 — \
-             nothing in `sample_stacks` answers for it, so its curve is a flat line"
+                 nothing in `sample_stacks` answers for it, so its curve is a flat line"
         );
     }
 }
