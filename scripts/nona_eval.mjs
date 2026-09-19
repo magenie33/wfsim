@@ -11,17 +11,29 @@
 //   [NONA_PROTO=openai|anthropic] [WFSIM_BASE=http://127.0.0.1:8813] \
 //   node scripts/nona_eval.mjs [case-id …]
 //
+// A variable not set is read from `private/nona.env` in the MAIN checkout —
+// `NAME=value` lines, git-ignored — so one file serves every worktree and the
+// key never has to be typed where it is logged. The key is never printed, and
+// the record below does not hold it.
+//
 // Each run's full record is written to private/nona-eval/, which git ignores.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { dirname, join } from "node:path";
 import { openApp } from "./cdp.mjs";
 
+const ENV_FILE = join(dirname(execSync("git rev-parse --path-format=absolute --git-common-dir", { encoding: "utf8" }).trim()),
+  "private", "nona.env");
+const file = existsSync(ENV_FILE) ? Object.fromEntries(readFileSync(ENV_FILE, "utf8").split(/\r?\n/)
+  .map((l) => l.match(/^\s*(NONA_[A-Z]+)\s*=\s*(.*?)\s*$/)).filter(Boolean).map((m) => [m[1], m[2]])) : {};
+const env = (k) => process.env[k] || file[k];
 const cfg = {
-  base: process.env.NONA_BASE, key: process.env.NONA_KEY, model: process.env.NONA_MODEL,
-  proto: process.env.NONA_PROTO || (/anthropic\.com/.test(process.env.NONA_BASE || "") ? "anthropic" : "openai"),
+  base: env("NONA_BASE"), key: env("NONA_KEY"), model: env("NONA_MODEL"),
+  proto: env("NONA_PROTO") || (/anthropic\.com/.test(env("NONA_BASE") || "") ? "anthropic" : "openai"),
   remember: true,
 };
 if (!cfg.base || !cfg.key || !cfg.model) {
-  console.error("set NONA_BASE, NONA_KEY and NONA_MODEL");
+  console.error(`set NONA_BASE, NONA_KEY and NONA_MODEL, or write them to ${ENV_FILE}`);
   process.exit(2);
 }
 
@@ -164,7 +176,7 @@ const summary = {
 };
 console.log(`\n${summary.passed}/${summary.of} passed · ${summary.unmeasured} unmeasured · ${summary.calls} calls · ${summary.tokens} tokens${summary.cost ? ` · ≈$${summary.cost.toFixed(3)}` : ""}`);
 mkdirSync(new URL("../private/nona-eval/", import.meta.url), { recursive: true });
-const file = new URL(`../private/nona-eval/${summary.at.replace(/[:.]/g, "-")}.json`, import.meta.url);
-writeFileSync(file, JSON.stringify({ summary, results }, null, 1));
-console.log(`record: ${file.pathname}`);
+const out = new URL(`../private/nona-eval/${summary.at.replace(/[:.]/g, "-")}.json`, import.meta.url);
+writeFileSync(out, JSON.stringify({ summary, results }, null, 1));
+console.log(`record: ${out.pathname}`);
 await app.finish("nona eval");
