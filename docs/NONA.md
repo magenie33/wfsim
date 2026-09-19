@@ -1,6 +1,6 @@
 # Nona (九九), the in-page agent
 
-**Status: this is the target structure; step 1 of §"Moving in" has landed.**
+**Status: this is the target structure; steps 1 and 2 of §"Moving in" have landed.**
 Until step 3 does, the code lives in `web/src/static/app.js` §NONA and still
 reads page variables where the door now answers; step 3 removes each one.
 
@@ -209,7 +209,7 @@ reader can see.
    *Landed*, and with it a page fix it exposed: a switch of document inside
    the auto-save's debounce dropped the reader's last edit (`flushPresetSaves`).
 2. **`core/` and `test_nona_core`** — the pure logic moved out of `app.js` and
-   unit-tested; not yet wired.
+   unit-tested; not yet wired. *Landed.*
 3. **`runtime/`, `ui/`, `index.js`** — the module loads beside `app.js`, the
    §NONA section is deleted from it, the site build and the dev server serve
    the directory, and `check_nona` passes unchanged.

@@ -56,6 +56,20 @@ tool results (newest six kept, two when forced), and the key is kept for the
 tab unless the reader asks to remember it. Verified to bite: with the
 conversation store's write removed, the reopen assertions fail.
 
+## `test_nona_core`
+
+Not a page check: Node imports `web/src/static/nona/core/` directly, which is
+possible because nothing there touches the page, the network or the clock. A
+stored shape from before versions migrates and one newer than the code is left
+alone; no shipped field name leaves `FROZEN`; the view leaves a deep-frozen
+record untouched and a later request repeats the earlier one's prefix byte for
+byte in both protocols; the budget sets aside the oldest results and keeps the
+newest six (two when forced); the summary cuts at the fourth-newest turn; only
+unmeasured numbers are marked; both protocols encode to golden bodies and
+decode a stream cut mid-line; memory writes the reader's own words and only
+proposes the rest. Verified to bite on four planted changes: keep five, pass
+three-digit whole numbers, stop merging same-role turns, never activate.
+
 ## `check_agent_coverage`
 
 Every control a reader can use is on the door or says why not. A control is
