@@ -115,3 +115,112 @@ pub(super) struct Spool {
     pub(super) shots: f64,
     pub(super) due: f64,
 }
+
+/// THE MAGAZINE AND THE RESERVE — what is loaded, what is carried, what the
+/// magazine holds now, and the bookkeeping the ammo cards read.
+pub(super) struct Ammo {
+    /// ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
+    /// BURST completes: Reaver's Rapture wants a full burst, and a burst is
+    /// `burst.count` consecutive rounds out of one magazine. It restarts with
+    /// the magazine, so a magazine that does not divide by the count leaves a
+    /// partial burst at the end and that burst earns nothing.
+    ///
+    /// The intra-burst SPACING is averaged here — the cadence code spreads a
+    /// burst's rounds evenly, which is the wiki's own effective-rate formula —
+    /// so this counts which round completes a burst rather than pinning the
+    /// instant it happened. That is the precise part and the part that decides
+    /// which shots carry which stack count.
+    pub(super) rounds_this_mag: u32,
+    /// How many times the magazine has been full again — see the macro below.
+    pub(super) refills: u32,
+    /// …and the other half of that split: the reload FINISHED, for the buffs
+    /// that were counting reloads rather than shells.
+    ///
+    /// TWO TRIGGERS, ONE SITE. Every reload this loop performs is a reload from
+    /// empty — it only reloads when it cannot fire — so both fire here and the
+    /// difference between them lives at exactly one other place: the Incarnon
+    /// transform, which refills the base magazine whether or not it was empty
+    /// and therefore bumps `ReloadFromEmpty` alone, and only when it was.
+    /// THE MAGAZINE'S CAPACITY, LIVE. Resonant Restore grows it — "On Reload
+    /// From Empty: Increase Base Magazine Capacity by +15. Stacks up to 3x" —
+    /// so the capacity is a variable rather than `params.magazine_size`, and
+    /// EVERY read of it below goes through this name. It only ever rises, and
+    /// only at the one site that pays the stack, which is what lets it be a
+    /// plain number instead of a buff lookup at eight call sites.
+    pub(super) cap: f64,
+    pub(super) growth_stacks: u32,
+    /// PYRANA PRIME'S SECOND GUN multiplies that capacity while it is up, so a
+    /// growth stack landing meanwhile is paid at the same multiple and comes
+    /// back out whole when the gun leaves.
+    pub(super) summon_multiplier: f64,
+    /// SHELLS OWED TO THE PLAYER FOR THE RELOAD THEY ARE HALFWAY THROUGH.
+    ///
+    /// Entering the Incarnon form IS a reload — the transmute animation is the
+    /// weapon's reload time, which is how you can tell — and
+    /// the whole reload runs across the cycle: one shell as you go in, the rest
+    /// as you come out. So this holds the rest. Zero while nothing is owed,
+    /// which is also what entering on a full magazine leaves it.
+    pub(super) owed_shells: u32,
+    pub(super) loaded: f64,
+    pub(super) reserve: f64,
+    /// Deadly Efficiency's window. Opens at reload COMPLETION — `t` is already
+    /// past the reload when this is set, the same as `fire_rate_reload_expiry_seconds` — and
+    /// seeded from its card exactly like its three siblings.
+    /// READY RETALIATION's open window, or -inf while it is shut. Unlike the two
+    /// beside it this is not only read at a shot: it changes how long the NEXT
+    /// reload takes, so it is passed into every reload and every transmute.
+    /// Set by a pellet that rolled Executioner's Fortune, spent once by the shot.
+    pub(super) instant_reload_now: bool,
+}
+
+/// WHERE A TRANSMUTING WEAPON IS IN ITS CYCLE — which form is out, when the
+/// Incarnon window closes, the charges toward the next, and the base form's
+/// magazine held while it is away.
+pub(super) struct IncarnonState {
+    /// Incarnon cycle state. The engagement opens in the BASE form and earns
+    /// its way in — see `IncarnonCycle::starts_primed` for why, and for the
+    /// reading that opens transformed.
+    pub(super) in_base_form: bool,
+    /// When a CLOCK-ended Incarnon falls out of its window (`Ends::After`).
+    /// Unread by a gauge cycle, whose way out is a ammo.loaded.
+    ///
+    /// A RUN THAT OPENS WITH IT UP OPENS ITS CLOCK TOO — the card's `stacks`
+    /// knob is "you walked in with it", not "it is up and already expired".
+    pub(super) incarnon_until: f64,
+    /// READY RETALIATION IS ARMED BY THE EMPTY MAGAZINE, not by the reload.
+    ///
+    /// The owner's evidence is the transmute: empty the ammo.loaded
+    /// and transform immediately, and the TRANSFORM is faster too — which it
+    /// could only be if the buff was already on the weapon before any reload
+    /// started. It is then spent by the next reload, and coming out of Incarnon
+    /// form counts as one — leaving Incarnon is a reload as far as this buff is
+    /// concerned, and it is spent.
+    ///
+    /// So it is a flag rather than a clock. This card states a bonus and no
+    /// duration, and that is not an omission — there is nothing to time.
+    pub(super) charges: u32,
+    pub(super) base_magazine: f64,
+}
+
+/// THE WINDOWS A CARD OPENS AND A CLOCK CLOSES — reload and headshot buffs,
+/// their piles and their expiries.
+pub(super) struct CardWindows {
+    /// Pressurized Magazine's on-reload fire-rate buff clock (seeded active
+    /// only if configured so; defaults inactive).
+    pub(super) fire_rate_after_reload: f64,
+    /// Crosshairs (per-stack expiry FIFO + one refreshable buff); the on-head
+    /// buff seeds active per its `initial_active` (default on).
+    pub(super) crit_on_headshot: f64,
+    /// Crosshairs keeps a per-stack expiry rather than one clock — and takes
+    /// an infinite duration exactly like the rest.
+    pub(super) crit_on_headshot_stacks: Vec<f64>,
+    /// LINGERING JUDGEMENT: the recent headshots' timestamps, and the window
+    /// they have opened. The ring is at most `hits` long — older ones can never
+    /// matter, because a streak is the LAST `hits` inside `within`.
+    pub(super) headshot_times: Vec<f64>,
+    pub(super) streak: f64,
+    pub(super) base_damage_after_reload: f64,
+    /// EXIMUS ADVANTAGE's window, the same clock as the one above with a
+    /// different key. It never opens at all unless the target is an Eximus.
+    pub(super) base_damage_eximus: f64,
+}
