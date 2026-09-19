@@ -10,6 +10,7 @@
 //   node scripts/check_nona_boundary.mjs
 import fs from "node:fs";
 import path from "node:path";
+import { appSource } from "./app_source.mjs";
 
 const STATIC = "web/src/static";
 const NONA = path.join(STATIC, "nona");
@@ -105,7 +106,7 @@ function freeNames(c) {
 
 // ---- 1: no name of app.js ---------------------------------------------------------
 
-const app = fs.readFileSync(path.join(STATIC, "app.js"), "utf8");
+const app = appSource();
 const PAGE = new Set();
 for (const m of app.matchAll(/^(?:async\s+)?(?:function\*?|const|let|var|class)\s+([\w$]+)/gm)) PAGE.add(m[1]);
 for (const m of app.matchAll(/^(?:const|let|var)\s*\{([^}]*)\}/gm)) for (const x of m[1].matchAll(/([\w$]+)\s*(?=[,}]|$)/g)) PAGE.add(x[1]);

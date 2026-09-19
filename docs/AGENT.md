@@ -1,6 +1,6 @@
 # The agent door
 
-**Status: phase 0 implemented** — `window.wfsim` in `web/src/static/app.js`,
+**Status: phase 0 implemented** — `window.wfsim` in `web/src/static/app/` (`88-door.js`, `90-door-actions.js`),
 asserted by `scripts/check_agent_door.mjs`. It covers the loop that answers a
 question: open a weapon, change the build, change the fight, run it, read the
 number. Every control a reader can use on a weapon page is on the door or

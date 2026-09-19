@@ -181,7 +181,7 @@ mod tests {
         let n = manifest().ids.len();
         assert!(
             n <= CEILING,
-            "the share manifest holds {n} ids and the compact form spells only {CEILING} — give it a third character, and a new version character, in web/src/static/app.js"
+            "the share manifest holds {n} ids and the compact form spells only {CEILING} — give it a third character, and a new version character, in web/src/static/app/30-share.js"
         );
     }
 
