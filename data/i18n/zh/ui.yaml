@@ -33,6 +33,20 @@ ui:
   "cannot call tools — Nona needs them": 不支持工具调用，九九需要它
   "the address answered, but listed no models": 地址有响应，但没有列出任何模型
   "could not list models": 无法获取模型列表
+  "Pinned": 置顶
+  "Recent": 最近
+  "untitled": 未命名对话
+  "Pin": 置顶
+  "Unpin": 取消置顶
+  "Delete?": 确认删除？
+  "Delete": 删除
+  "cached": 缓存
+  "this chat": 本对话
+  "AI-generated content; it may be wrong.": 内容由 AI 生成，可能有误。
+  "earlier tool results were set aside to save space": 较早的工具结果已省略，以节省上下文
+  "she kept repeating the same step, so she stopped": 她在重复同一步，已停下
+  "Remember the key in this browser": 在这个浏览器里记住密钥
+  "Otherwise it is forgotten when this tab closes. Set a spending limit on the key at your provider.": 不勾选的话，关闭标签页后就会忘记。建议在服务商那里给密钥设置消费上限。
   "Ask Nona about this build…": 问问九九这套配装…
   "Your key is stored only in this browser and is sent only to the address above.": 密钥只保存在这个浏览器里，只会发给上面这个地址。
   "Set a provider, key and model first.": 请先设置服务商、密钥和模型。

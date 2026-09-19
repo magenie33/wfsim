@@ -54,6 +54,40 @@ const mock = createServer((req, res) => {
       : body.messages.filter((m) => m.role === "tool").length;
     const step = SCRIPT[Math.min(done, SCRIPT.length - 1)];
     const id = `call_${done}`;
+    // STREAMED WHEN ASKED, in pieces the way a provider sends them: text in two
+    // halves, a tool call's arguments split mid-JSON, usage at the end.
+    if (body.stream) {
+      res.writeHead(200, { ...cors, "Content-Type": "text/event-stream" });
+      const send = (o) => res.write(`data: ${JSON.stringify(o)}\n\n`);
+      const args = JSON.stringify(step.args || {});
+      const half = Math.floor(args.length / 2);
+      if (anthropic) {
+        send({ type: "message_start", message: { usage: { input_tokens: 200, cache_read_input_tokens: 800, output_tokens: 1 } } });
+        if (step.text) {
+          send({ type: "content_block_start", index: 0, content_block: { type: "text", text: "" } });
+          send({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text: step.text.slice(0, 10) } });
+          send({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text: step.text.slice(10) } });
+        } else {
+          send({ type: "content_block_start", index: 0, content_block: { type: "tool_use", id, name: step.name, input: {} } });
+          send({ type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: args.slice(0, half) } });
+          send({ type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: args.slice(half) } });
+        }
+        send({ type: "message_delta", usage: { output_tokens: 20 } });
+        send({ type: "message_stop" });
+      } else {
+        if (step.text) {
+          send({ choices: [{ delta: { content: step.text.slice(0, 10) } }] });
+          send({ choices: [{ delta: { content: step.text.slice(10) } }] });
+        } else {
+          send({ choices: [{ delta: { tool_calls: [{ index: 0, id, type: "function", function: { name: step.name, arguments: args.slice(0, half) } }] } }] });
+          send({ choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: args.slice(half) } }] } }] });
+        }
+        send({ choices: [], usage: { prompt_tokens: 1000, completion_tokens: 20, prompt_tokens_details: { cached_tokens: 800 } } });
+        res.write("data: [DONE]\n\n");
+      }
+      res.end();
+      return;
+    }
     const out = anthropic
       ? { content: step.text ? [{ type: "text", text: step.text }] : [{ type: "tool_use", id, name: step.name, input: step.args }] }
       : { choices: [{ message: step.text ? { role: "assistant", content: step.text }
@@ -76,19 +110,20 @@ const run = (provider, base) => evaluate(`(async () => {
   await window.wfsim.do("builder.mods.clear", {});
   await wait(600);
   const mine = window.wfsim.observe().build.preset;
-  localStorage.setItem("wfsim-nona", JSON.stringify({ proto: ${JSON.stringify(provider === "anthropic" ? "anthropic" : "openai")}, base: ${JSON.stringify(base)}, key: "test", model: "mock" }));
+  localStorage.setItem("wfsim-nona", JSON.stringify({ proto: ${JSON.stringify(provider === "anthropic" ? "anthropic" : "openai")}, base: ${JSON.stringify(base)}, key: "test", remember: true, model: "mock", price: [1, 2] }));
   document.getElementById("nona-fab").click();
   document.getElementById("nona-new").click();
   document.getElementById("nona-input").value = "seat serration";
   document.getElementById("nona-send").click();
   for (let i = 0; i < 80 && (nona.busy || !document.querySelector("#nona-log .assistant")); i++) await wait(250);
   const log = [...document.querySelectorAll("#nona-log .nona-msg")].map(e => e.className + " | " + e.textContent);
+  const foot = document.getElementById("nona-foot-note").textContent;
   const onCopy = window.wfsim.observe().build;
   await window.wfsim.do("shell.preset.open", { bar: "build", preset: mine });
   const mineAfter = window.wfsim.observe().build;
   document.getElementById("nona-close").click();
   return {
-    log, mine, copy: onCopy.preset,
+    log, mine, copy: onCopy.preset, foot,
     copyHasIt: onCopy.slots.some(s => s.mod === "serration"),
     mineClean: mineAfter.slots.every(s => !s.mod),
     tools: window.wfsim.tools().length,
@@ -112,7 +147,60 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
     r.copy && r.copy !== r.mine && r.copyHasIt === true && r.log.some((l) => /note \|.*copy/.test(l)),
     JSON.stringify([r.mine, r.copy, r.copyHasIt]));
   check(`${provider}: the reader's own build is untouched`, r.mineClean === true);
+  check(`${provider}: every request streams, and each reader message carries the page`,
+    sent.every((x) => x.body.stream === true) && JSON.stringify(sent[0].body.messages).includes("<page>"));
+  check(`${provider}: each reply shows what it cost, and the chat its total and the AI label`,
+    r.log.some((l) => /nona-msg usage \| .*tokens.*80%.*≈\$/.test(l)) && /tokens/.test(r.foot) && r.foot.length > 20,
+    JSON.stringify([r.log.filter((l) => /usage/.test(l)), r.foot]));
+  if (provider === "anthropic") {
+    const b = sent[0].body;
+    check("anthropic: the rules, the tools and the newest block carry cache breakpoints",
+      b.system[0].cache_control && b.tools[b.tools.length - 1].cache_control
+      && JSON.stringify(b.messages[b.messages.length - 1]).includes("cache_control"));
+  }
 }
+
+// ---- conversations outlive the page, and reopen as they were -----------------
+
+await app.load("/weapons/Torid");
+const kept = await evaluate(`(async () => {
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  document.getElementById("nona-fab").click();
+  for (let i = 0; i < 40 && !nona.list.length; i++) await wait(100);
+  const list = nona.list.map(c => ({ id: c.id, title: c.title, n: c.messages.length }));
+  if (!list.length) return { list, log: [] };
+  await nonaOpen(list[0].id);
+  const log = [...document.querySelectorAll("#nona-log .nona-msg")].map(e => e.className);
+  document.getElementById("nona-close").click();
+  return { list, log };
+})()`, { awaitPromise: true });
+check("both conversations were kept, titled from what was asked", kept.list.length >= 2 && kept.list.every((c) => /seat serration/.test(c.title)),
+  JSON.stringify(kept.list));
+check("a kept conversation reopens with its trail", kept.log.filter((c) => /tool ok/.test(c)).length === 2 && kept.log.some((c) => /assistant/.test(c)),
+  JSON.stringify(kept.log));
+
+// ---- the budget: old tool results are set aside, newest kept -----------------
+
+const budget = await evaluate(`(() => {
+  const saved = nona.conv;
+  nona.conv = nonaNewConversation();
+  for (let i = 0; i < 10; i++) {
+    nona.conv.messages.push({ role: "assistant", text: "", calls: [{ id: "t" + i, name: "builder_stats_read", args: {} }] });
+    nona.conv.messages.push({ role: "tool", id: "t" + i, name: "builder_stats_read", ok: true, line: "x", result: "x".repeat(6000) });
+  }
+  const cfg = { context: 20000, model: "budget-test" };
+  nonaFitBudget(cfg, false);
+  const soft = nona.conv.messages.filter(m => m.role === "tool").map(m => !!m.masked);
+  nonaFitBudget(cfg, true);
+  const hard = nona.conv.messages.filter(m => m.role === "tool").map(m => !!m.masked);
+  const sent = nonaToolText(nona.conv.messages[1]);
+  nona.conv = saved;
+  return { soft, hard, sent };
+})()`);
+check("past half the window the oldest tool results are set aside and the newest six kept",
+  budget.soft.slice(0, 4).every(Boolean) && budget.soft.slice(4).every((x) => !x), JSON.stringify(budget.soft));
+check("...forced, only the newest two stay", budget.hard.filter((x) => !x).length === 2, JSON.stringify(budget.hard));
+check("...and a set-aside result says how to get it back", /set aside/.test(budget.sent) && /call it again/.test(budget.sent), budget.sent);
 
 // ---- the settings: an address, a key, what it serves, a model picked ---------
 
@@ -148,6 +236,7 @@ const set = await evaluate(`(async () => {
   out.model = nonaDraft.model;
   document.getElementById("nona-save").click();
   out.saved = JSON.parse(localStorage.getItem("wfsim-nona") || "{}");
+  out.sessionKey = sessionStorage.getItem("wfsim-nona-key");
   document.getElementById("nona-close").click();
   return out;
 })()`, { awaitPromise: true });
@@ -159,9 +248,11 @@ check("the address and key are checked, and the protocol is detected",
 check("nothing is saved before a model is chosen", set.saveOff === true);
 check("the model list is the page's searchable dropdown, over the panel, with a tool-less model greyed",
   set.noToolsGreyed === true && set.popoverOnTop === true, JSON.stringify([set.noToolsGreyed, set.popoverOnTop]));
-check("the model picked is saved with the address, key and protocol",
-  set.model === "vendor/mock-tools" && set.saved.model === "vendor/mock-tools" && set.saved.proto === "openai" && set.saved.key === "test",
-  JSON.stringify(set.saved));
+check("the model picked is saved with the address, protocol, context and price",
+  set.model === "vendor/mock-tools" && set.saved.model === "vendor/mock-tools" && set.saved.proto === "openai"
+  && set.saved.context === 128000 && Array.isArray(set.saved.price), JSON.stringify(set.saved));
+check("the key is kept for this tab only, unless the reader asks to remember it",
+  !("key" in set.saved) && set.sessionKey === "test", JSON.stringify([set.saved, set.sessionKey]));
 
 mock.close();
 await finish("Nona works the page through the door, on a copy");

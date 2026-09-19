@@ -42,10 +42,16 @@ the stats read must name the mod behind a change. Then the refusals, each of whi
 
 ## `check_nona`
 
-Nona against a local stand-in provider speaking both protocols: the tools she
-is sent are the door's table plus the observation, a scripted tool call lands
-on the page and in the trail, and her first change branches the reader's build
-— which is asserted untouched afterwards.
+Nona against a local stand-in provider speaking both protocols, streamed in
+pieces the way providers send them: the tools she is sent are the door's table
+plus the observation, every reader message carries the page, a scripted tool
+call lands on the page and in the trail, and her first change branches the
+reader's build — which is asserted untouched afterwards. Each reply shows its
+usage and cost, Anthropic requests carry cache breakpoints, conversations
+survive a reload and reopen with their trail, the budget sets aside the oldest
+tool results (newest six kept, two when forced), and the key is kept for the
+tab unless the reader asks to remember it. Verified to bite: with the
+conversation store's write removed, the reopen assertions fail.
 
 ## `check_agent_coverage`
 

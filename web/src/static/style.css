@@ -2666,3 +2666,7 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .nona-status.bad{color:var(--critical)}
 .nona-settings .dd{width:100%}
 .nona-settings .run-btn:disabled{opacity:.5;cursor:not-allowed}
+.nona-convs{display:flex;gap:6px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--line)}
+.nona-convs .dd{flex:1;min-width:0}
+.nona-msg.usage{align-self:flex-start;font-size:10.5px;color:var(--muted);margin-top:-4px;padding-left:4px}
+.nona-foot-note{font-size:10.5px;color:var(--muted);padding:0 12px 8px}
