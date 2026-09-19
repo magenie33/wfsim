@@ -12,7 +12,9 @@ import { CAPS, clip, estimate } from "../web/src/static/nona/core/size.js";
 import { markNumbers, numbersIn } from "../web/src/static/nona/core/measure.js";
 import * as memory from "../web/src/static/nona/core/memory.js";
 import { rules } from "../web/src/static/nona/core/prompt.js";
-import { allTools, toolName, toolId, OWN } from "../web/src/static/nona/core/tools.js";
+import { fixedTools } from "../web/src/static/nona/core/tools.js";
+import { catalogue, skillDoc, docsOf } from "../web/src/static/nona/core/skills.js";
+import { calc } from "../web/src/static/nona/core/calc.js";
 import { sseSplit } from "../web/src/static/nona/core/protocols/sse.js";
 import * as openai from "../web/src/static/nona/core/protocols/openai.js";
 import * as anthropic from "../web/src/static/nona/core/protocols/anthropic.js";
@@ -26,8 +28,9 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 /// A FROZEN record: a core function that writes into its input throws here.
 const freeze = (o) => { if (o && typeof o === "object") { Object.values(o).forEach(freeze); Object.freeze(o); } return o; };
 
-const DOOR = [{ name: "builder.mod.set", description: "seat a mod", input_schema: { type: "object", properties: {} } }];
-const TOOLS = allTools(DOOR);
+const SKILLS = [{ id: "builder", what: "the build on screen", actions: ["builder.mod.set", "builder.stats.read"] },
+  { id: "simulator", what: "the fight", actions: ["simulator.run.start"] }];
+const TOOLS = fixedTools(SKILLS, catalogue(SKILLS));
 const RULES = rules({ lang: "zh", concise: false });
 
 function convo(turns, resultSize = 6000) {
@@ -101,7 +104,7 @@ const FIXED = { rules: RULES, memory: "<memory of this reader>\n- [m1] riven_pol
 const within = (rec, opts = {}) => {
   const z = budget.measure(rec, FIXED);
   const c = budget.caps(z, budget.room(opts));
-  return { z, c, ok: z.H <= c.H && z.P <= c.P && z.S + z.T + z.M + z.K + z.H + z.P <= c.W };
+  return { z, c, ok: z.K <= CAPS.K && z.H <= c.H && z.P <= c.P && z.S + z.T + z.M + z.K + z.H + z.P <= c.W };
 };
 /// The agent's maintenance loop, with a stand-in summariser: plan, mark,
 /// summarise, until the plan asks for nothing more.
@@ -173,11 +176,16 @@ let seed = 42;
 const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
 const words = (n) => Array.from({ length: n }, () => (rnd() < 0.5 ? "伤害" : "dmg ")).join("");
 const opts = [{}, { context: 32000 }, { context: 1000000 }, { budget: 40000 }];
+const MODS = ["builder", "simulator", "optimizer", "rivens"];
+/// A skill document of a random size up to the per-skill cap.
+const skillText = (id) => clip(`<skill ${id}>\n${words(Math.floor(rnd() * 2400))}`, CAPS.skill - 10) + "\n</skill>";
 let bad = [], rounds = 0, summaries = 0, stops = 0;
 for (const o of opts) {
   let rec = { ...convo(0), messages: [] };
   for (let t = 0; t < 250; t++) {
-    rec = { ...rec, messages: [...rec.messages, { role: "user", text: words(Math.floor(rnd() * 3000)), page: words(Math.floor(rnd() * 1500)) }] };
+    const mod = MODS[Math.floor(rnd() * MODS.length)];
+    rec = { ...rec, messages: [...rec.messages, { role: "user", text: words(Math.floor(rnd() * 3000)), page: words(Math.floor(rnd() * 1500)),
+      ...(rnd() < 0.3 ? { preload: skillText(mod), skills: [mod] } : {}) }] };
     const steps = Math.floor(rnd() * 7);
     for (let st = 0; st <= steps; st++) {
       const before = rec;
@@ -191,9 +199,12 @@ for (const o of opts) {
       if (!w.ok) { bad.push(`t${t} ${JSON.stringify(o)}: H ${w.z.H}/${w.c.H} P ${w.z.P}/${w.c.P} W ${w.c.W}`); break; }
       if (st === steps) { rec = { ...rec, messages: [...rec.messages, { role: "assistant", text: words(Math.floor(rnd() * 800)), calls: [] }] }; break; }
       const id = `c${t}-${st}`;
+      const load = rnd() < 0.15 ? MODS[Math.floor(rnd() * MODS.length)] : null;
       rec = { ...rec, messages: [...rec.messages,
-        { role: "assistant", text: words(Math.floor(rnd() * 200)), calls: [{ id, name: "builder_stats_read", args: {} }] },
-        { role: "tool", id, name: "builder_stats_read", ok: true, line: "x", result: clip(words(Math.floor(rnd() * 20000)), CAPS.result) }] };
+        { role: "assistant", text: words(Math.floor(rnd() * 200)), calls: [{ id, name: load ? "skill_load" : "act", args: {} }] },
+        load ? { role: "tool", id, name: "skill_load", ok: true, line: "x", skills: [load], result: skillText(load) }
+          : { role: "tool", id, name: "act", action: `${MODS[Math.floor(rnd() * MODS.length)]}.x.read`, ok: true, line: "x",
+            result: clip(words(Math.floor(rnd() * 20000)), CAPS.result) }] };
     }
   }
 }
@@ -316,11 +327,71 @@ let notes = memory.emptyMemory();
 for (let i = 0; i < memory.NOTES_MAX + 5; i++) notes = memory.set(notes, { value: `n${i}`, quote: "x" }, ctx(`n${i}`, "x")).mem;
 check("notes are capped, keeping the newest", notes.items.length === memory.NOTES_MAX && notes.items[0].value === "n5");
 
-// ---- 8: her tools --------------------------------------------------------------------
+// ---- 8: her tools, and the door's reached through skills ------------------------------
 
-check("her tools are the door's, renamed, then her own in fixed order",
-  TOOLS[0].name === "builder_mod_set" && same(TOOLS.slice(1).map((t) => t.name), OWN.map((t) => t.name)));
-check("a door id and its tool name map back and forth", toolId(toolName("simulator.arena.add")) === "simulator.arena.add");
+check("her tools are seven, in a fixed order, whatever the door holds",
+  same(TOOLS.map((t) => t.name), ["shell_page_observe", "shell_history_search", "memory_set", "memory_forget", "skill_load", "act", "calc"]));
+check("the catalogue rides in skill_load and names every skill and action",
+  /builder — the build/.test(TOOLS[4].description) && /mod\.set/.test(TOOLS[4].description)
+  && same(TOOLS[4].input_schema.properties.skills.items.enum, SKILLS.map((x) => x.id)));
+const DOOR_TOOLS = [
+  { name: "builder.mod.set", description: "Seat a mod.", input_schema: { type: "object",
+    properties: { slot: { type: ["string", "integer"], description: "0-7" }, mod: { type: ["string", "null"], description: "mod id" } }, required: ["slot", "mod"] } },
+  { name: "builder.weapon.set", description: "Open a weapon.", input_schema: { type: "object",
+    properties: { weapon: { type: "string", enum: Array.from({ length: 300 }, (_, i) => `w${i}`) }, mode: { type: "string", enum: ["a", "b"] } }, required: ["weapon"] } },
+];
+const doc = skillDoc({ id: "builder", what: "the build", actions: ["builder.mod.set", "builder.weapon.set"] }, DOOR_TOOLS);
+check("a skill's document is each action's signature, what it does, and its arguments — a required one starred",
+  /builder\.mod\.set — Seat a mod\./.test(doc) && /slot\*: string\|integer — 0-7/.test(doc) && doc.startsWith("<skill builder>"));
+check("...a long list of values is counted, not copied; a short one is listed",
+  /weapon\*: one of 300 values/.test(doc) && /mode: one of "a"\|"b"/.test(doc) && !/w299/.test(doc));
+check("a document splits back into its skills", same(docsOf(doc + "\n\n" + doc.replace(/builder/g, "rivens")).map((d) => d.id), ["builder", "rivens"]));
+
+// K: the least recently used skill goes first; a skill's document is K's alone.
+const big = (id) => `<skill ${id}>\n${"x ".repeat(3000)}\n</skill>`;
+const kRec = { ...convo(0), messages: [
+  { role: "user", text: "q1", page: "{}", preload: big("builder"), skills: ["builder"] },
+  { role: "assistant", text: "", calls: [{ id: "k1", name: "skill_load", args: { skills: ["simulator"] } }] },
+  { role: "tool", id: "k1", name: "skill_load", ok: true, line: "x", skills: ["simulator"], result: big("simulator") },
+  { role: "assistant", text: "", calls: [{ id: "k2", name: "act", args: { id: "builder.stats.read" } }] },
+  { role: "tool", id: "k2", name: "act", action: "builder.stats.read", ok: true, line: "x", result: "{}" },
+  { role: "user", text: "q2", page: "{}" },
+  { role: "assistant", text: "", calls: [{ id: "k3", name: "skill_load", args: { skills: ["optimizer"] } }] },
+  { role: "tool", id: "k3", name: "skill_load", ok: true, line: "x", skills: ["optimizer"], result: big("optimizer") },
+] };
+freeze(kRec);
+const zK = budget.measure(kRec, FIXED);
+check("a skill document counts in K, not in the zone it sits in",
+  zK.K > 5000 && zK.H < 1000 && zK.P < 1000, JSON.stringify([zK.K, zK.H, zK.P]));
+const pK = budget.plan(kRec, FIXED);
+check("K over its cap: the least recently used go first — simulator, never used, then builder; optimizer, newest, stays",
+  same(pK.marks.tools, [2]) && same(pK.marks.skills, [0]), JSON.stringify(pK.marks));
+const kAfter = budget.applyMarks(kRec, pK.marks);
+check("...and it leaves a line saying so", /skill simulator unloaded — load it again/.test(view(kAfter, FIXED).turns[2].text));
+check("...and the set-aside passes of H and P never touch a skill", (() => {
+  const r = { ...convo(0), messages: [kRec.messages[0], kRec.messages[1], kRec.messages[2],
+    ...Array.from({ length: 12 }, (_, i) => ({ role: "tool", id: `f${i}`, name: "act", action: "builder.stats.read", ok: true, line: "x", result: "y".repeat(4000) }))] };
+  const pl = budget.plan(r, FIXED);
+  return pl.marks.tools.length > 3 && !pl.marks.tools.includes(2) && !pl.marks.skills.length;
+})());
+const carried = summary.applySummary(kRec, 5, "S");
+check("a summary carries the skills in view before its cut, as they were loaded",
+  same(carried.summary.skills.map((d) => d.id), ["builder", "simulator"]) && carried.summary.skills[1].text === big("simulator")
+  && view(carried, FIXED).turns[0].text.includes("<skill simulator>"));
+const unl = budget.applyMarks(carried, { summary: ["simulator"] });
+check("...and one it carries can be unloaded like any other", !view(unl, FIXED).turns[0].text.includes("<skill simulator>")
+  && view(unl, FIXED).turns[0].text.includes("<skill builder>"));
+
+// calc: arithmetic on what she was sent, and nothing else.
+const sentNums = [51.98, 29.32, 1234.5, 0.35];
+check("calc works out a difference and a percentage of measured numbers",
+  calc("51.98 - 29.32", sentNums).value === 22.66 && calc("(51.98 / 29.32 - 1) * 100", sentNums).value === 77.2851);
+check("...with precedence, brackets, unary minus, × and ÷", calc("-1234.5 × 2 + 29.32 ÷ 2", sentNums).value === -2454.34);
+check("...and a percentage as a fraction", calc("1234.5 * 35%", sentNums).value === 432.075);
+const refused = calc("530 - 29.32", sentNums);
+check("a number she was never sent is refused, and named", refused.ok === false && refused.reason === "unmeasured" && same(refused.numbers, ["530"]));
+check("a broken expression says why", calc("(51.98 - ", sentNums).reason === "bad_expression" && calc("51.98 / 0", sentNums).reason === "not_a_number"
+  && calc("alert(1)", sentNums).reason === "bad_expression");
 check("the whole view estimates as text", viewText(v1).length > 0);
 
 console.log(failed ? `\n${failed} failed` : "\nnona's core holds");

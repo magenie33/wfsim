@@ -60,6 +60,13 @@ const table = await evaluate(`(() => {
     if (a.query && a.writes) bad.push(a.id + ": a query that writes");
     if (a.hand && tools.some(t => t.name === a.id)) bad.push(a.id + ": a reader's-hand action offered as a tool");
   }
+  // EVERY TOOL IS IN EXACTLY ONE SKILL, and every skill says what it is for:
+  // an agent that loads the table by skills cannot reach an action left out.
+  for (const t of tools) {
+    const n = window.wfsim.skills.filter(s => s.actions.includes(t.name)).length;
+    if (n !== 1) bad.push(t.name + ": in " + n + " skills");
+  }
+  for (const s of window.wfsim.skills) if (!s.what || !s.actions.length) bad.push("skill " + s.id + ": empty");
   return { bad, n: window.wfsim.actions.length, untooled: untooled.map(a => a.id),
     hands: window.wfsim.actions.filter(a => a.hand).length };
 })()`);

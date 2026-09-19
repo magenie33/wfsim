@@ -8,6 +8,7 @@
 import { CAPS, clip } from "./size.js";
 import { toolText } from "./view.js";
 import { toolId } from "./tools.js";
+import { docsOf } from "./skills.js";
 
 export const SUMMARY_RULES = [
   "You write the working summary of a conversation between a Warframe player and Nona, the assistant of the WFSim calculator, so the conversation can continue without its early part.",
@@ -21,12 +22,28 @@ export const SUMMARY_RULES = [
 export function summaryInput(record, cut, callLine) {
   const from = record.summary ? record.summary.upto : 0;
   const lines = record.messages.slice(from, cut).filter((m) => m.role !== "card" && m.role !== "memory").map((m) =>
-    (m.role === "tool" ? `[tool ${toolId(m.name)}] ${toolText(m)}`
+    (m.role === "tool" && m.skills ? `[skill ${m.skills.join(", ")} loaded]`
+      : m.role === "tool" ? `[tool ${m.action || toolId(m.name)}] ${toolText(m)}`
       : m.role === "assistant" ? `[Nona] ${m.text || ""}${(m.calls || []).map((x) => ` <calls ${callLine(x)}>`).join("")}`
       : m.role === "user" ? `[reader] ${m.text}` : `[note] ${m.text}`)).join("\n");
   return `${record.summary ? `<earlier summary>\n${record.summary.text}\n</earlier summary>\n\n` : ""}<record>\n${lines}\n</record>`;
 }
 
-/// The summary in place — cut to its cap whatever the model wrote, since a cap
-/// the model is only asked to respect is not a cap.
-export const applySummary = (record, cut, text) => ({ ...record, summary: { upto: cut, text: clip(text, CAPS.summary - 50) } });
+/// THE SUMMARY IN PLACE — cut to its cap whatever the model wrote, since a cap
+/// the model is only asked to respect is not a cap — carrying every skill
+/// document that was in view before the cut, as it was loaded, so the skills
+/// she was using stay loaded and their bytes do not change.
+export function applySummary(record, cut, text) {
+  const from = record.summary ? record.summary.upto : 0;
+  const carried = ((record.summary && record.summary.skills) || []).filter((d) => !d.unloaded);
+  for (const m of record.messages.slice(from, cut)) {
+    const docs = m.role === "user" && m.preload && !m.skillsMasked ? docsOf(m.preload)
+      : m.role === "tool" && m.skills && !m.masked ? docsOf(m.result) : [];
+    for (const d of docs) {
+      const i = carried.findIndex((x) => x.id === d.id);
+      if (i >= 0) carried.splice(i, 1);
+      carried.push({ id: d.id, text: d.text });
+    }
+  }
+  return { ...record, summary: { upto: cut, text: clip(text, CAPS.summary - 50), skills: carried } };
+}

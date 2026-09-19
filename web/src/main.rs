@@ -41,11 +41,13 @@ const LOGO_SVG: &str = include_str!("static/logo.svg");
 const NONA_FILES: &[(&str, &str)] = &[
     ("index.js", include_str!("static/nona/index.js")),
     ("core/budget.js", include_str!("static/nona/core/budget.js")),
+    ("core/calc.js", include_str!("static/nona/core/calc.js")),
     ("core/measure.js", include_str!("static/nona/core/measure.js")),
     ("core/memory.js", include_str!("static/nona/core/memory.js")),
     ("core/prompt.js", include_str!("static/nona/core/prompt.js")),
     ("core/record.js", include_str!("static/nona/core/record.js")),
     ("core/size.js", include_str!("static/nona/core/size.js")),
+    ("core/skills.js", include_str!("static/nona/core/skills.js")),
     ("core/summary.js", include_str!("static/nona/core/summary.js")),
     ("core/tools.js", include_str!("static/nona/core/tools.js")),
     ("core/view.js", include_str!("static/nona/core/view.js")),

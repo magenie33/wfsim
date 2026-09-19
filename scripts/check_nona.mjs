@@ -16,13 +16,15 @@
 // internals; the pure logic under them is `test_nona_core`'s.
 import { createServer } from "node:http";
 import { openApp } from "./cdp.mjs";
+import { CAPS, estimate } from "../web/src/static/nona/core/size.js";
+import { skillDoc } from "../web/src/static/nona/core/skills.js";
 
 const seen = [];
 // THE SCRIPT: seat a mod, read the panel, then answer. Keyed by how many tool
 // results the conversation already holds, which is what a model would see.
 const SCRIPT = [
-  { name: "builder_mod_set", args: { slot: 0, mod: "serration" } },
-  { name: "builder_stats_read", args: {} },
+  { name: "act", args: { id: "builder.mod.set", args: { slot: 0, mod: "serration" } } },
+  { name: "act", args: { id: "builder.stats.read", args: {} } },
   { text: "Serration is seated on the copy." },
 ];
 
@@ -150,7 +152,8 @@ const run = (provider, base) => evaluate(`(async () => {
     taken: takenObs.open.build === mine && taken.slots.some(s => s.mod === "serration"),
     copyHasIt: onCopy.slots.some(s => s.mod === "serration"),
     mineClean: mineAfter.slots.every(s => !s.mod),
-    tools: window.wfsim.tools().length,
+    door: window.wfsim.tools(),
+    skills: window.wfsim.skills,
   };
 })()`, { awaitPromise: true });
 
@@ -160,9 +163,21 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
   const sent = seen.filter((x) => x.url === path);
   const tools = (sent[0] && sent[0].body.tools) || [];
   const names = tools.map((t) => (t.function ? t.function.name : t.name));
-  check(`${provider}: she is sent every door tool, plus the observation, her history search and her memory`,
-    names.length === r.tools + 4 && names.includes("builder_board_read") && names.includes("shell_page_observe")
-    && names.includes("shell_history_search") && names.includes("memory_set"), `${names.length} vs ${r.tools + 4}`);
+  check(`${provider}: she is sent her seven tools, whatever the door holds`,
+    JSON.stringify(names) === JSON.stringify(["shell_page_observe", "shell_history_search", "memory_set", "memory_forget", "skill_load", "act", "calc"]),
+    names.join(","));
+  const load = tools.find((t) => (t.function ? t.function.name : t.name) === "skill_load");
+  const loadText = load.function ? load.function.description : load.description;
+  const missing = r.door.filter((t) => !loadText.includes(t.name.split(".").slice(1).join("."))).map((t) => t.name);
+  check(`${provider}: the catalogue she is sent names every action of the door`, !missing.length, missing.join(", "));
+  check(`${provider}: the skill of the module the reader is on rides with their message`,
+    JSON.stringify(sent[0].body.messages).includes("<skill builder>"));
+  if (provider === "openrouter") {
+    const t = estimate(JSON.stringify(tools.map((x) => ({ name: x.function.name, description: x.function.description, input_schema: x.function.parameters }))));
+    check("the tools and the catalogue fit zone T", t <= CAPS.T, `${t} > ${CAPS.T}`);
+    const over = r.skills.map((k) => [k.id, estimate(skillDoc(k, r.door))]).filter(([, n]) => n > CAPS.skill);
+    check("every skill's document fits its cap", !over.length, JSON.stringify(over));
+  }
   check(`${provider}: the loop runs to an answer`, sent.length === 3 && r.log.some((l) => /assistant \| Serration is seated/.test(l)),
     JSON.stringify(r.log));
   check(`${provider}: each call is a line in the trail, and landed`,

@@ -17,6 +17,7 @@ window.wfsim.observe()          // where the reader is, what is built, what was 
 window.wfsim.do(id, args)       // one action, by id
 window.wfsim.tools()            // the table as tool definitions a model can be handed
 window.wfsim.actions            // the table as ids, descriptions and anchors
+window.wfsim.skills             // the table by module: what each is for, and its actions
 window.wfsim.ui                 // the page's tr, dropdown and escaping, for a panel on the page
 ```
 

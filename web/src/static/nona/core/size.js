@@ -3,10 +3,10 @@
 // are starting values tuned against `nona_eval`.
 
 /// THE CAPS, in estimated tokens. S, T, M, K, H and P are the zones; `summary`,
-/// `page`, `text` and `result` bound the pieces inside them.
+/// `page`, `text`, `result` and `skill` bound the pieces inside them.
 export const CAPS = {
   S: 1500, T: 2000, M: 800, K: 4000, H: 6000, P: 6000,
-  summary: 1500, page: 500, text: 1500, result: 2000,
+  summary: 1500, page: 500, text: 1500, result: 2000, skill: 2500,
 };
 /// A zone over its cap is brought down to this share of it, not just under the
 /// line: each compaction breaks the provider's cache once, and the room left is

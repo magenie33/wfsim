@@ -12,17 +12,32 @@ import { CAPS, clip, estimate } from "./size.js";
 /// budget measure exactly what the view sends. The reader's words, the page and
 /// a result are each cut to their cap here; the record keeps them whole.
 export const pageText = (m) => (m.page && !m.pageMasked ? `\n\n<page>${clip(m.page, CAPS.page)}</page>` : "");
-export const userText = (m) => clip(m.text || "", CAPS.text) + pageText(m);
-export const toolText = (m) => (m.masked
-  ? `[set aside: the result of ${toolId(m.name)} (${Math.round(((m.result || "").length / 1024) * 10) / 10} KB) — call it again if you need it]`
-  : clip(m.result || "", CAPS.result));
-export const summaryText = (s) => `<summary of the conversation so far>\n${s.text}\n</summary>\n\n`;
+/// The skill documents attached to a reader's message (the module they are on).
+export const preloadText = (m) => (m.preload && !m.skillsMasked ? `\n\n${m.preload}` : "");
+export const userText = (m) => clip(m.text || "", CAPS.text) + pageText(m) + preloadText(m);
+/// A SKILL'S RESULT IS NOT CUT: its size is bounded where it is made, and it
+/// is K's to account for. Unloaded, it says so and how to have it back.
+export const toolText = (m) => (m.skills
+  ? (m.masked ? `[skill ${m.skills.join(", ")} unloaded — load it again if you need it]` : m.result || "")
+  : m.masked
+    ? `[set aside: the result of ${m.action || toolId(m.name)} (${Math.round(((m.result || "").length / 1024) * 10) / 10} KB) — call it again if you need it]`
+    : clip(m.result || "", CAPS.result));
+/// THE SUMMARY, and after it the skill documents it carries — the ones in view
+/// when it was written, as they were loaded, so she need not load them again.
+export const summarySkillsText = (s) => (s.skills || []).filter((d) => !d.unloaded).map((d) => `${d.text}\n\n`).join("");
+export const summaryText = (s) => `<summary of the conversation so far>\n${s.text}\n</summary>\n\n${summarySkillsText(s)}`;
 
-/// What one message costs to send, in estimated tokens.
+/// WHAT ONE MESSAGE COSTS TO SEND, in estimated tokens, split between K (the
+/// skill documents it carries) and the zone it sits in (H or P).
+export function skillSizeOf(m) {
+  if (m.role === "user") return m.preload && !m.skillsMasked ? estimate(preloadText(m)) : 0;
+  if (m.role === "tool" && m.skills && !m.masked) return estimate(toolText(m));
+  return 0;
+}
 export function sizeOf(m) {
-  if (m.role === "user") return estimate(userText(m));
+  if (m.role === "user") return estimate(userText(m)) - skillSizeOf(m);
   if (m.role === "assistant") return estimate((m.text || "") + JSON.stringify(m.calls || []));
-  if (m.role === "tool") return estimate(toolText(m));
+  if (m.role === "tool") return estimate(toolText(m)) - skillSizeOf(m);
   return 0;
 }
 

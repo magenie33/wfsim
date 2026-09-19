@@ -23463,6 +23463,23 @@ async function agentDo(id, args = {}, opts = {}) {
   }
 }
 
+/// THE SKILLS: one per module of the table, and what it is for in one line. An
+/// agent that cannot carry the whole table sees these and loads one module's
+/// part when it needs it (docs/NONA.md §"Skills"). Which actions a skill holds
+/// is read off their ids; a module an action names and this does not fails
+/// `check_agent_door`.
+const AGENT_SKILLS = {
+  builder: "the build on screen: weapon, mods, arcanes, evolutions, mode, valence, Forma, the stats panel, finders and the leaderboard",
+  simulator: "the fight: the scenario, enemy and level, buffs, abilities, auras, the arena, and running it",
+  optimizer: "the build search: its scope, starting it, reading it, stopping it, saving a result",
+  rivens: "riven cards: listing, making, copying, opening and writing one",
+  enemies: "custom targets: listing, making, copying, opening and editing one",
+  shell: "documents and moving around: saved builds and scenarios, copies, undo, opening a module",
+};
+const agentSkills = () => Object.entries(AGENT_SKILLS).map(([id, what]) => ({
+  id, what, actions: AGENT_ACTIONS.filter((a) => !a.hand && a.id.startsWith(id + ".")).map((a) => a.id),
+}));
+
 /// The table as a model sees it. DERIVED — a tool definition hand-written
 /// beside the action it describes is a second declaration, and the day they
 /// disagree the agent is calling something that does not exist.
@@ -24921,6 +24938,7 @@ window.wfsim = {
   observe: agentObserve,
   do: agentDo,
   tools: agentTools,
+  get skills() { return agentSkills(); },
   // THE PAGE'S UI KIT, for a panel that lives on the page (Nona's): its
   // translation, its dropdown and its escaping, so such a panel looks and
   // reads like the page without reaching into it.

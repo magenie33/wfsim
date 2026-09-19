@@ -20,8 +20,8 @@ wish, and this module has already shown what wishes turn into.
 | 5 | **The record is whole and append-only.** Everything sent to a model is a pure function of the record, the settings, the memory and the tool table. Compaction writes marks into the record; it never rewrites or drops a message. | `test_nona_core` (view is deterministic; record unchanged by building it) |
 | 6 | **The prefix is stable.** Rules, memory and tools are byte-identical from one request to the next between two summaries, so a provider's prompt cache keeps matching. | `test_nona_core` (two consecutive views share their prefix byte for byte) |
 | 7 | **Every stored shape is versioned, and a name that ships is frozen.** Conversations, memory and settings live in readers' browsers; they are a wire. | `test_nona_core` (each old fixture migrates; no shipped name leaves `FROZEN`) |
-| 8 | **Her tools are the door's table at request time**, plus her own few, appended after it in a fixed order. Nothing in her code lists what the page can do. | `check_nona` (tools sent = door + own). *Becomes, with §"Skills": every door action is reachable through a skill generated from the table; `check_nona` asserts the catalogue covers `tools()`.* |
-| 9 | **Every zone of a request is under its cap, and the whole under W** — however long the conversation. | `test_nona_core`: over a thousand generated turns in four windows, every zone under its cap after every maintenance; S, T and one skill's size by build-time checks once skills land |
+| 8 | **Every door action reaches her through a skill generated from the table at request time**, by seven fixed tools. Nothing in her code lists what the page can do. | `check_agent_door` (every action in exactly one skill); `check_nona` (seven tools; the catalogue names every action) |
+| 9 | **Every zone of a request is under its cap, and the whole under W** — however long the conversation. | `test_nona_core`: over a thousand generated turns in four windows, every zone under its cap after every maintenance; T and one skill's size by `check_nona` |
 
 ## The layers
 
@@ -56,13 +56,15 @@ web/src/static/nona/
   core/
     record.js              Conversation, Message, Settings, Memory shapes; migrate(); FROZEN
     size.js                the caps; estimate(); clip()
+    skills.js              the catalogue and a skill's document, from the door's table
+    calc.js                arithmetic on numbers she was sent
     view.js                each message as sent; view(record, parts) -> { system, tools, turns }
     budget.js              measure(record) -> zones; plan() -> what to set aside, where to summarise
     summary.js             summaryInput(); applySummary(), cut to its cap; SUMMARY_RULES
     measure.js             numbersIn(record); markNumbers(text, numbers)
     memory.js              set / forget / undo / block over a Memory value
     prompt.js              RULES(settings) — the byte-stable system text
-    tools.js               her own tools (observe, history, memory), in fixed order
+    tools.js               her seven fixed tools
     protocols/
       sse.js               chunks -> events
       openai.js            encode(view, settings) -> body; decode(events | json) -> reply
@@ -151,23 +153,22 @@ same functions, so the two cannot drift.
 
 ## Skills, and her fixed tools
 
-**Status: designed, not built.** Today every door action is its own tool.
-
 The door's table is too large to send whole on every request, and most of it is
 not needed for any one question. So it reaches her the way a skill does: a
 catalogue she always sees, and the full text of a part only once she asks
 for it.
 
-- **A skill is a door module** — `builder`, `simulator`, `optimizer`,
-  `rivens`, `enemies`, `shell` — taken from the first segment of each action's
-  id. Nothing in her code lists them, so an action added to the door is in its
-  skill with no edit here.
+- **A skill is a door module** — the door's `skills`, one line each of what it
+  is for (`AGENT_SKILLS` in `app.js`), its actions read off their ids. Nothing
+  in her code lists them, so an action added to the door is in its skill with
+  no edit here, and `check_agent_door` fails an action in no skill.
 - **The catalogue** is one line per skill: what it is for, and its actions'
-  names. It sits in zone T.
-- **`skill_load(skills)`** returns the named skills' documents: each action as
-  a compact signature and one line of what it does, generated from the door's
-  `actions` and `tools()` at the moment of the call. An argument that is one of
-  a long list names the query that finds it instead of listing it.
+  names. It rides in `skill_load`'s description, in zone T.
+- **`skill_load(skills)`** returns the named skills' documents: each action,
+  what it does, and its arguments one per line, generated from the door's
+  `tools()` at the moment of the call and recorded as they were. An argument
+  that is one of a long list says how many, not which: the finders find them.
+  A skill already in view is not loaded twice.
 - **`act(id, args)`** calls any door action. It runs through the same path a
   named tool did — branch before a write, the loop guard, the trail line with
   the real action id — and the door refuses a `hand` action to it as to
@@ -175,7 +176,7 @@ for it.
 - **`calc(expression)`** does arithmetic on measured numbers: `+ − × ÷`,
   brackets and percentages, parsed, never `eval`'d. Every number in the
   expression must be one she was sent in this request (§"What measured means",
-  below); small whole numbers pass, as they do for the marker. A difference
+  below); whole numbers under 100 and powers of ten are constants. A difference
   between two measured scores is then itself measured, and a figure she made up
   cannot be laundered through it.
 
@@ -192,10 +193,9 @@ is a reason to keep a few actions as named tools again, not to guess.
 
 ## The context budget
 
-**Status: built (`core/size.js`, `core/budget.js`, `core/summary.js`),
-except K and T's cap, which arrive with skills — until then T is the door's
-whole table and H and P share what it leaves of W.** The numbers are starting
-values, tuned against `nona_eval`; the structure is the rule.
+The code is `core/size.js` (the caps), `core/budget.js` (the plan) and
+`core/summary.js`. The numbers are starting values, tuned against `nona_eval`;
+the structure is the rule.
 
 A conversation may go on for ever. What makes that possible is two stores of
 different kinds: **the record**, whole and append-only, in the reader's
@@ -223,9 +223,9 @@ each is kept under it by the mechanism named, and nothing else writes it.
 | Zone | Holds | Cap | Kept under it by |
 | --- | --- | --- | --- |
 | **S** rules | who she is, what she may do | 1.5k | a build-time check: over it, CI fails and the rules are rewritten |
-| **T** tools | her fixed tools and the skill catalogue | 2k | a build-time check: a door that outgrows it fails CI until descriptions are shortened |
+| **T** tools | her fixed tools and the skill catalogue | 2k | `check_nona`: a door that outgrows it fails CI until the catalogue is shortened |
 | **M** memory | the reader's profile, as frozen for this stretch | 0.8k | memory compaction |
-| **K** skills | the skill documents she has loaded | 4k, one skill ≤ 2k | unloading the least recently used; a skill over 2k fails a build-time check |
+| **K** skills | the skill documents in view, wherever they sit | 4k, one skill ≤ 2.5k | unloading the least recently used; a skill over 2.5k fails `check_nona` |
 | **H** history | the summary, then the turns since it | 6k, summary ≤ 1.5k | setting results aside, then summarising |
 | **P** this turn | the reader's message, its page, this turn's calls and results | 6k; page ≤ 0.5k, one result ≤ 2k | setting this turn's older results aside |
 | **O** output | her reply | 2k–4k | the request's `max_tokens` |
@@ -264,9 +264,9 @@ The cheapest step comes first:
 
 **A SUMMARY IS THE MOMENT FOR EVERYTHING ELSE.** Summarising breaks the cache
 anyway, so M's snapshot is refreshed then, and memories written since take
-effect in the prefix. The loaded skills' documents are regenerated from the
-door after the summary, from the list kept in the record, with no call from
-her. Between summaries the prefix does not move.
+effect in the prefix. The skill documents in view before the cut are carried
+into the summary as they were loaded — the same bytes, with no call from her.
+Between summaries the prefix does not move.
 
 The function's contract: after it runs, every zone is under its cap and the
 whole is under W. `test_nona_core` holds it to that over generated records of

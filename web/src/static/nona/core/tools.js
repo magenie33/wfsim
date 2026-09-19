@@ -1,5 +1,5 @@
-// HER TOOLS: the door's table at request time, then her own few in a fixed
-// order. Nothing here lists what the page can do — that is `wfsim.tools()`.
+// HER TOOLS: seven, fixed for a release. The door's actions reach her through
+// skills (`skills.js`) and `act`; nothing here lists what the page can do.
 
 import { SLOTS, VALUE_MAX } from "./memory.js";
 
@@ -39,12 +39,32 @@ export const MEMORY_FORGET = {
   input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
 };
 
-/// Her own, in the order they are appended. A new one goes at the END, so the
-/// tools already sent keep their bytes and the prompt cache keeps matching.
-export const OWN = [OBSERVE, HISTORY, MEMORY_SET, MEMORY_FORGET];
+/// The door's table, a part at a time: the catalogue rides in the description,
+/// so it is in the tools and in the cached prefix with them.
+export const skillLoad = (skills, catalogueText) => ({
+  name: "skill_load",
+  description: "Load skills' documents — their actions, what each does and its arguments — before calling them with act. A loaded skill stays in view until a line says it was unloaded. Skills:\n" + catalogueText,
+  input_schema: { type: "object", properties: {
+    skills: { type: "array", items: { type: "string", enum: skills.map((s) => s.id) }, description: "which skills to load" },
+  }, required: ["skills"] },
+});
 
-/// The whole list she is sent: the door's tools (renamed for providers), then
-/// her own. `doorTools` is `wfsim.tools()`.
-export const allTools = (doorTools) => doorTools.map((t) => ({ ...t, name: toolName(t.name) })).concat(OWN);
+export const ACT = {
+  name: "act",
+  description: "Call one action of the page by its id, with its arguments, as a loaded skill describes them. It returns what changed. Actions that do not depend on each other can be called together in one reply.",
+  input_schema: { type: "object", properties: {
+    id: { type: "string", description: "the action's id, e.g. builder.mod.set" },
+    args: { type: "object", description: "its arguments" },
+  }, required: ["id"] },
+};
 
-export const isOwn = (name) => OWN.some((t) => t.name === name);
+export const CALC = {
+  name: "calc",
+  description: "Arithmetic on numbers you were sent: + - * / ( ) and %. Every number in it must be one a tool, the page, the reader or the summary gave you; whole numbers under 100 are free. Use it for any difference, ratio or percentage you state.",
+  input_schema: { type: "object", properties: { expression: { type: "string", description: "e.g. (51.98 - 29.32) / 29.32 * 100" } }, required: ["expression"] },
+};
+
+/// THE SEVEN SHE IS SENT, in this order, the same on every request of a
+/// release. `skills` is `wfsim.skills`; `catalogueText` is its catalogue.
+export const fixedTools = (skills, catalogueText) =>
+  [OBSERVE, HISTORY, MEMORY_SET, MEMORY_FORGET, skillLoad(skills, catalogueText), ACT, CALC];

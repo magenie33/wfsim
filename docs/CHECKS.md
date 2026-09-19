@@ -31,7 +31,8 @@ reader can do — `docs/AGENT.md`. Two of its assertions are static, read off
 `app.js` rather than off the page, because duplication is invisible from
 inside a running page: the mod-exchange decision and the clear-to-innate rule
 each exist ONCE, and the weapon control calls the door instead of its own
-copy. The rest drive the page through the door itself — seat a mod, set a
+copy. Every tool is in exactly one of the door's skills, and every skill says
+what it is for. The rest drive the page through the door itself — seat a mod, set a
 polarity, plan the Forma, seat an arcane, install an evolution, clear the
 build, change the fight, open a module, run it — and assert the SLOT ON SCREEN
 redrew, which is the difference between an agent working the page and one
@@ -47,16 +48,20 @@ the stats read must name the mod behind a change. Then the refusals, each of whi
 
 Nona against a local stand-in provider speaking both protocols, streamed in
 pieces the way providers send them, read only through the page and the
-requests — never her module's internals. The tools she is sent are the door's
-table plus her own four, every reader message carries the page, a scripted
-tool call lands on the page and in the trail, and her first change branches
+requests — never her module's internals. She is sent her seven fixed tools,
+whose catalogue names every door action; the tools fit zone T and every
+skill's document its cap; every reader message carries the page and the skill
+of the module they are on; a scripted `act` lands on the page and in the
+trail, and her first change branches
 the reader's build — which is asserted untouched afterwards, and taken back
 through the change card. Each reply shows its usage and cost, Anthropic
 requests carry cache breakpoints, conversations survive a reload and reopen
 from the picker with their trail, memory rides a request except an incognito
 one, an incognito chat is not kept, and the key is kept for the tab unless the
 reader asks to remember it. Verified to bite: with the branch policy disabled
-and the incognito guard removed from the save, seven assertions fail.
+and the incognito guard removed from the save, seven assertions fail; with the
+preload off, or a skill dropped from the door, the catalogue and preload
+assertions fail.
 
 ## `test_nona_core`
 

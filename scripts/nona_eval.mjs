@@ -179,7 +179,7 @@ for (const c of run) {
     const o = door.observe();
     return {
       calls: m.filter(x => x.role === "tool").map(x => {
-        const id = x.name.replace(/_/g, ".");
+        const id = x.action || x.name.replace(/_/g, ".");
         const a = door.actions.find(y => y.id === id);
         return { id, ok: x.ok, query: !a || !!a.query };
       }),

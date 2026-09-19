@@ -9,7 +9,10 @@ import * as budget from "../core/budget.js";
 import * as summary from "../core/summary.js";
 import * as memoryOps from "../core/memory.js";
 import { rules } from "../core/prompt.js";
-import { allTools, toolId, OBSERVE, HISTORY, MEMORY_SET, MEMORY_FORGET } from "../core/tools.js";
+import { fixedTools, toolId, OBSERVE, HISTORY, MEMORY_SET, MEMORY_FORGET, ACT } from "../core/tools.js";
+import { catalogue, skillDoc } from "../core/skills.js";
+import { calc } from "../core/calc.js";
+import { numbersIn } from "../core/measure.js";
 import * as transport from "./transport.js";
 import * as store from "./store.js";
 import { branch, madeBy } from "./policy.js";
@@ -21,8 +24,10 @@ const MAX_STEPS = 24;
 /// ONE LINE PER CALL, derived from the call itself — the trail cannot describe
 /// a move that was not made.
 export const callLine = (c) => {
-  const args = Object.entries(c.args || {}).map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`).join(" ");
-  return `${toolId(c.name)}${args ? " " + args : ""}`;
+  const act = c.name === "act" && c.args && typeof c.args.id === "string";
+  const shown = act ? c.args.args || {} : c.args || {};
+  const args = Object.entries(shown).map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`).join(" ");
+  return `${act ? c.args.id : toolId(c.name)}${args ? " " + args : ""}`;
 };
 
 /// A RESULT IS CUT TO ITS CAP WHEN IT IS RECORDED, and says so: the model pays
@@ -83,8 +88,7 @@ export function createAgent(door) {
     return {
       rules: rules({ lang: door.observe().lang, concise: !!cfg.concise }),
       memory: (s.conv.memory && s.conv.memory.text) || "",
-      tools: allTools(door.tools()),
-      skills: "",
+      tools: fixedTools(door.skills, catalogue(door.skills)),
     };
   }
 
@@ -97,8 +101,9 @@ export function createAgent(door) {
     for (let round = 0; round < 3; round++) {
       const pl = budget.plan(s.conv, p, { context: cfg.context, budget: cfg.budget, ratio: store.ratio(cfg.model) * s.shrink });
       if (pl.refuse) return { refuse: true };
-      if (pl.marks.tools.length || pl.marks.pages.length) {
-        s.conv = budget.applyMarks(s.conv, pl.marks);
+      const mk = pl.marks;
+      if (mk.tools.length || mk.pages.length || mk.skills.length || mk.summary.length) {
+        s.conv = budget.applyMarks(s.conv, mk);
         say("note", "earlier tool results were set aside to save space");
       }
       if (pl.summarize == null) return { p, stop: pl.stop };
@@ -121,7 +126,7 @@ export function createAgent(door) {
       const text = m.role === "tool" ? m.result || "" : m.text || "";
       const at = text.toLowerCase().indexOf(needle);
       if (at >= 0 && hits.length < 8) {
-        hits.push({ turn: i, role: m.role, ...(m.name ? { tool: toolId(m.name) } : {}),
+        hits.push({ turn: i, role: m.role, ...(m.name ? { tool: m.action || toolId(m.name) } : {}),
           text: text.slice(Math.max(0, at - 150), at + 150 + needle.length) });
       }
     });
@@ -141,22 +146,59 @@ export function createAgent(door) {
     return result;
   }
 
-  async function runTool(call) {
-    const args = call.args || {};
-    if (call.name === OBSERVE.name) return door.observe();
-    if (call.name === HISTORY.name) return historySearch(args.query);
-    if (call.name === MEMORY_SET.name) return memorySet(args);
-    if (call.name === MEMORY_FORGET.name) return store.memory.forget(args.id);
-    const id = toolId(call.name);
+  /// Skills whose documents are in view now — never loaded twice.
+  const loaded = () => new Set(budget.skillsInView(s.conv).flatMap((e) => e.ids));
+
+  /// The documents of `ids`, as generated from the door now.
+  const docsFor = (ids) => {
+    const all = door.skills, tools = door.tools();
+    return ids.map((id) => skillDoc(all.find((x) => x.id === id), tools)).join("\n\n");
+  };
+
+  /// SKILL_LOAD: the documents, skipping what is in view, refusing what would
+  /// not fit the skill zone at once. What it returns is the documents
+  /// themselves, recorded as they are so they are resent byte for byte.
+  function skillLoad(args) {
+    const want = [].concat(args.skills || []).filter(Boolean);
+    const known = door.skills.map((x) => x.id);
+    const bad = want.filter((x) => !known.includes(x));
+    if (!want.length || bad.length) return { r: { ok: false, reason: "bad_argument", argument: "skills", alternatives: known } };
+    const have = loaded();
+    const ids = want.filter((x) => !have.has(x));
+    if (!ids.length) return { r: { ok: true, text: `already loaded: ${want.join(", ")}` } };
+    const text = docsFor(ids);
+    if (estimate(text) > CAPS.K) return { r: { ok: false, reason: "too_large", because: "load fewer skills at once" } };
+    return { r: { ok: true }, result: text, skills: ids };
+  }
+
+  /// ACT: one door action, through the same path as ever — branch before a
+  /// write, the door's own checks, and what the action made is hers.
+  async function act(id, args) {
     const b = await branch(door, id, s.owned);
     if (b) {
       s.owned.add(b.owned);
       if (b.pair) s.conv.pairs = [...(s.conv.pairs || []), b.pair];
     }
-    const r = await door.do(id, args);
-    const made = madeBy(id, args, r);
+    const r = await door.do(id, args || {});
+    const made = madeBy(id, args || {}, r);
     if (made) s.owned.add(made);
     return b ? { ...r, branched_to_copy: b.copy } : r;
+  }
+
+  /// One call, run: what it returned, and what the tool message records beside it.
+  async function runTool(call) {
+    const args = call.args || {};
+    if (call.name === OBSERVE.name) return { r: door.observe() };
+    if (call.name === HISTORY.name) return { r: historySearch(args.query) };
+    if (call.name === MEMORY_SET.name) return { r: memorySet(args) };
+    if (call.name === MEMORY_FORGET.name) return { r: store.memory.forget(args.id) };
+    if (call.name === "skill_load") return skillLoad(args);
+    if (call.name === "calc") return { r: calc(args.expression, numbersIn(s.conv)) };
+    if (call.name === ACT.name) {
+      if (typeof args.id !== "string" || !args.id) return { r: { ok: false, reason: "missing_argument", argument: "id" } };
+      return { r: await act(args.id, args.args), action: args.id };
+    }
+    return { r: { ok: false, reason: "unknown_tool", because: "call the page's actions with act" } };
   }
 
   /// THE CHANGE CARD'S CONTENT: her copy as it is now, read through the door,
@@ -164,7 +206,7 @@ export function createAgent(door) {
   async function card(asked) {
     const c = s.conv;
     const pair = (c.pairs || [])[(c.pairs || []).length - 1];
-    if (!pair || !c.messages.slice(asked).some((m) => m.role === "tool" && m.ok && /^builder\./.test(toolId(m.name)))) return;
+    if (!pair || !c.messages.slice(asked).some((m) => m.role === "tool" && m.ok && /^builder\./.test(m.action || ""))) return;
     const r = await door.do("shell.preset.read", { bar: "build", preset: pair.copy });
     if (r && r.ok) append({ role: "card", pair: { ...pair, state: { mods: r.mods, arcanes: r.arcanes, mode: r.mode } } });
   }
@@ -179,7 +221,11 @@ export function createAgent(door) {
     }
     if (!c.memory) freezeMemory();
     const { can, ...page } = door.observe();
-    append({ role: "user", text, page: JSON.stringify(page), at: Date.now() });
+    // THE SKILL OF THE MODULE THE READER IS ON rides with their message, unless
+    // it is in view already: most questions then need no load first.
+    const here = (page.route || {}).module;
+    const preload = here && door.skills.some((x) => x.id === here) && !loaded().has(here) ? { preload: docsFor([here]), skills: [here] } : {};
+    append({ role: "user", text, page: JSON.stringify(page), at: Date.now(), ...preload });
     const asked = s.conv.messages.length;
     s.busy = true; s.abort = new AbortController(); emit({ type: "busy" });
     const signal = s.abort.signal;
@@ -230,9 +276,12 @@ export function createAgent(door) {
             return;
           }
           emit({ type: "calling", line: callLine(call) });
-          let r;
-          try { r = await runTool(call); } catch (e) { r = { ok: false, reason: "action_failed", because: String((e && e.message) || e) }; }
-          append({ role: "tool", id: call.id, name: call.name, ok: !(r && r.ok === false), line: callLine(call), result: cap(r) });
+          let ran;
+          try { ran = await runTool(call); } catch (e) { ran = { r: { ok: false, reason: "action_failed", because: String((e && e.message) || e) } }; }
+          const r = ran.r;
+          append({ role: "tool", id: call.id, name: call.name, ok: !(r && r.ok === false), line: callLine(call),
+            ...(ran.action ? { action: ran.action } : {}),
+            ...(ran.skills ? { skills: ran.skills, result: ran.result } : { result: cap(r) }) });
           if (call.name === MEMORY_SET.name && r && r.ok) append({ role: "memory", id: r.id });
           if (r && r.branched_to_copy) append({ role: "note", text: `${door.ui.tr("working on a copy")}: ${r.branched_to_copy}` });
           await save();
