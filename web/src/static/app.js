@@ -3676,6 +3676,48 @@ function ensureRivenList() {
   return loadPresetList(RIVENS);
 }
 
+/// OPEN A SAVED RIVEN for editing, or "" for the list. Its card is re-read from
+/// storage by the render.
+function openRiven(id) {
+  activeRiven = id;
+  if (id) localStorage.setItem(presetActiveKey(RIVENS), id);
+  else localStorage.removeItem(presetActiveKey(RIVENS));
+  riven = null;
+  renderRivens();
+}
+
+/// "+ new riven": a blank card, saved and opened. Returns its id.
+function newRiven() {
+  const ps = loadPresetList(RIVENS);
+  const name = freeName(ps, (n) => autoPresetName("riven", n));
+  const id = newRivenId(loadPresetWhole(RIVENS));
+  riven = { ...withDrafts(blankRiven()), __weapon: $("weapon").value };
+  ps.push({ id, name, savedAt: Date.now(), state: snapshotRiven() });
+  storePresetList(RIVENS, ps);
+  openRiven(id);
+  // THE LIST SHOWS NUMBERS, and they are the engine's — so a card that has
+  // just appeared has to ask for them.
+  refreshRivenNames();
+  return id;
+}
+
+/// ⧉ on the open riven: a copy, saved and opened. Returns its id. The copy is
+/// worth what the original is, so its printed values are seeded from it — a
+/// copy of an identical spec cannot answer differently.
+function copyRiven() {
+  const open = activeRivenId();
+  const ps = loadPresetList(RIVENS);
+  const from = ps.find((x) => x.id === open) || {};
+  const name = freeName(ps, (n) => (from.name || "riven") + " copy" + (n > 1 ? " " + n : ""));
+  const id = newRivenId(loadPresetWhole(RIVENS));
+  ps.push({ id, name, savedAt: Date.now(), state: snapshotRiven() });
+  if (rivenNames[open]) rivenNames[id] = rivenNames[open];
+  storePresetList(RIVENS, ps);
+  openRiven(id);
+  refreshRivenNames();
+  return id;
+}
+
 function renderRivens() {
   if (!META || !$("riven-block")) return;
   const w = weaponInfo($("weapon").value);
@@ -5829,45 +5871,12 @@ function renderRivenTools() {
   }
   wireUndoButtons(box, RIVENS);
   const q = (s) => box.querySelector(s);
-  const openIt = (id) => {
-    activeRiven = id;
-    if (id) localStorage.setItem(presetActiveKey(RIVENS), id);
-    else localStorage.removeItem(presetActiveKey(RIVENS));
-    riven = null;
-    renderRivens();
-  };
+  const openIt = openRiven;
   const click = (sel, fn) => { const b = q(sel); if (b) b.onclick = (e) => { e.stopPropagation(); fn(); }; };
 
-  click(".cu-new", () => {
-    const ps2 = loadPresetList(RIVENS);
-    const name = freeName(ps2, (n) => autoPresetName("riven", n));
-    const id = newRivenId(loadPresetWhole(RIVENS));
-    riven = { ...withDrafts(blankRiven()), __weapon: $("weapon").value };
-    ps2.push({ id, name, savedAt: Date.now(), state: snapshotRiven() });
-    storePresetList(RIVENS, ps2);
-    openIt(id);
-    // THE LIST SHOWS NUMBERS, and they are the engine's — so a card that has
-    // just appeared has to ask for them. Without this the row is blank until
-    // something else happens to refresh it, which is what dragging a value was
-    // secretly doing.
-    refreshRivenNames();
-  });
+  click(".cu-new", newRiven);
   click(".cu-back", () => openIt(""));
-  click(".cu-dup", () => {
-    const ps2 = loadPresetList(RIVENS);
-    const from = ps2.find((x) => x.id === open) || {};
-    const name = freeName(ps2, (n) => (from.name || "riven") + " copy" + (n > 1 ? " " + n : ""));
-    const id = newRivenId(loadPresetWhole(RIVENS));
-    ps2.push({ id, name, savedAt: Date.now(), state: snapshotRiven() });
-    // THE COPY IS WORTH WHAT THE ORIGINAL IS, so the list can say so at once.
-    // Its printed values come from `/api/riven`, which is a round trip away —
-    // and a copy of an identical spec cannot answer differently, so seeding it
-    // is not an optimistic guess, it is the same answer.
-    if (rivenNames[open]) rivenNames[id] = rivenNames[open];
-    storePresetList(RIVENS, ps2);
-    openIt(id);
-    refreshRivenNames();
-  });
+  click(".cu-dup", copyRiven);
   click(".cu-del", () => {
     storePresetList(RIVENS, loadPresetList(RIVENS).filter((x) => x.id !== open));
     // …AND EVERY SAVED BUILD IN THE FAMILY LETS IT GO. `pruneDanglingRivens`
@@ -9012,17 +9021,34 @@ function renderWielder() {
     value, search: items.length > 6, items,
     onPick: (pick) => {
       const [kind, frame, preset] = String(pick).split(":");
-      buildWielder = kind === "preset" ? { frame, preset } : kind === "frame" ? { frame } : null;
-      renderWielder();
-      renderWeaponName();
-      markPresetDirty();
-      refreshPanel();
+      setWielder(kind === "preset" ? { frame, preset } : kind === "frame" ? { frame } : null);
     },
   })}</label>`
     + (f ? ` <a class="ghost-btn small" href="${warframePath(f)}">${escHtml(tr("edit on the Warframe page"))}</a>` : "");
   const sub = $("wielder-sub");
   if (sub) sub.textContent = allowed.length ? tr("only these can hold it") : "";
 }
+
+/// WHO HOLDS THE WEAPON — a frame, a frame's saved build, or null for the
+/// Prototype every board is scored on. Set by the dropdown and the door alike.
+function setWielder(v) {
+  buildWielder = v;
+  renderWielder();
+  renderWeaponName();
+  markPresetDirty();
+  refreshPanel();
+}
+/// The frames that may hold this weapon, each with its saved builds.
+const wielderChoices = () => {
+  const w = weaponInfo($("weapon").value) || {};
+  const allowed = w.wielders || [];
+  return {
+    prototype_allowed: !allowed.length,
+    frames: (META.warframes || []).filter((f) => !allowed.length || allowed.includes(f.id)).map((f) => ({
+      id: f.id, name: f.name, builds: presetListWithIds(WF_BUILDS, f.id).map((p) => ({ id: p.id, name: p.name })),
+    })),
+  };
+};
 
 // ---- THE OFFICIAL BUILDS ----------------------------------------------
 //
@@ -14840,6 +14866,14 @@ function defaultAssembly(id, st) {
 /// three additive deltas that may be NEGATIVE, plus a magazine and a reload.
 /// A list of twenty names would say none of it, which is the Mode control's own
 /// lesson.
+/// ONE PART OF A KITGUN, swapped. A part is never absent, so there is no null.
+function setAssemblyPart(part, v) {
+  assembly = { ...assembly, [part]: v };
+  markPresetDirty();
+  renderAssembly();
+  refreshPanel();
+}
+
 function renderAssembly() {
   const block = $("assembly-block");
   const box = $("assembly-row");
@@ -14901,13 +14935,7 @@ function renderAssembly() {
       // part it belongs to.
       items: items.map((it) => ({ key: part + ":" + it.id, value: it.id, label: it.label, hint: it.hint })),
       card: cur ? { name: cur.label, lines: cur.hint ? [cur.hint] : [], title: hint } : null,
-      onPick: (v) => {
-        if (!v || assembly[part] === v) return;
-        assembly = { ...assembly, [part]: v };
-        markPresetDirty();
-        renderAssembly();
-        refreshPanel();
-      },
+      onPick: (v) => { if (v && assembly[part] !== v) setAssemblyPart(part, v); },
     };
     return rankedSlot(id, partCfgs[id]);
   };
@@ -23274,6 +23302,7 @@ const AGENT_KINDS = {
   string: (v) => typeof v === "string" && !!v,
   number: (v) => typeof v === "number" && Number.isFinite(v),
   object: (v) => !!v && typeof v === "object" && !Array.isArray(v),
+  array: (v) => Array.isArray(v),
   seat: (v) => agentSeat(v) >= 0,
 };
 
@@ -23351,6 +23380,7 @@ const agentTools = () => AGENT_ACTIONS.map((a) => ({
       type: ((ts) => (ts.length === 1 ? ts[0] : ts))(
         [].concat(s.kind === "seat" ? ["string", "integer"] : s.kind, s.nullable ? ["null"] : [])),
       description: s.what,
+      ...(s.kind === "array" ? { items: { type: "object" } } : {}),
       ...(s.enum ? { enum: s.enum() } : {}),
     }])),
     required: Object.entries(a.args || {}).filter(([, s]) => s.required).map(([k]) => k),
@@ -23463,9 +23493,8 @@ const AGENT_EXEMPT = [
   { sel: "#opt-plan", kind: "todo", why: "the search's scope: which mods, arcanes, evolutions, modes, sizes" },
   { sel: "#opt-fight-half", kind: "todo", why: "the search's view of the fight" },
   { sel: "#forma-block", kind: "todo", why: "the Forma planner" },
-  { sel: "#wielder-block", kind: "todo", why: "the Warframe holding the weapon" },
-  { sel: "#assembly-row", kind: "todo", why: "a Kitgun's grip and loader" },
-  { sel: "#riven-block", kind: "todo", why: "making and editing rivens" },
+  { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
+  { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
   { sel: "#enemy-block", kind: "todo", why: "making custom targets" },
   { sel: "[data-bev], [data-bevg], .bevg", kind: "todo", why: "which buff triggers the fight allows" },
   { sel: "[data-cr]", kind: "todo", why: "a fight's per-class rules" },
@@ -23474,8 +23503,193 @@ const AGENT_EXEMPT = [
   { sel: "#wfbuff-block", kind: "todo", why: "Warframe ability buffs" },
 ];
 
+/// THE OPEN RIVEN AS A CALLER READS IT: what the engine made of it — the
+/// printed values, its generated name, and anything illegal about it.
+const agentRivenCard = () => ({
+  id: activeRivenId(), seat_as: RIVEN_PREFIX + activeRivenId(),
+  shape: riven && riven.shape, rank: riven && riven.rank, polarity: riven && riven.polarity,
+  name: rivenResolved && rivenResolved.name,
+  stats: ((rivenResolved && rivenResolved.stats) || []).map((x) => ({
+    slot: x.slot, stat: x.id, text: x.text, roll: x.roll, range: `${x.min} to ${x.max}`, ...(x.modeled ? {} : { modeled: false }) })),
+  ...(rivenResolved && rivenResolved.illegal && rivenResolved.illegal.length ? { illegal: rivenResolved.illegal } : {}),
+});
+
 /// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
+  {
+    id: "rivens.cards.list",
+    query: true,
+    what: "List the rivens saved for this weapon's family, with the id builder.mod.set seats each one by.",
+    anchor: "#riven-tools, #riven-all",
+    needs_weapon: true,
+    args: {},
+    run() {
+      return { open: activeRivenId() || null, rivens: loadPresetList(RIVENS).map((p) => ({
+        id: p.id, name: p.name, seat_as: RIVEN_PREFIX + p.id, card: (rivenNames[p.id] || {}).name || null,
+        lines: (rivenNames[p.id] || {}).lines || [] })) };
+    },
+  },
+  {
+    id: "rivens.stats.list",
+    query: true,
+    what: "List the stats a riven for this weapon can roll, which can be the malus, and which are modelled.",
+    anchor: "#riven-stats, #riven-tools",
+    needs_weapon: true,
+    args: {},
+    run() {
+      return { shapes: RIVEN_SHAPES.map((x) => x.id), rolls: rivenRules(), stats: rivenPool().map((x) => ({
+        id: x.id, name: rivenStatName(x), bonus: x.bonus !== false, malus: !!x.malus, ...(x.modeled ? {} : { modeled: false }) })) };
+    },
+  },
+  {
+    id: "rivens.card.new",
+    what: "Make a blank riven for this weapon's family and open it for editing.",
+    anchor: "#riven-tools",
+    needs_weapon: true,
+    args: {},
+    run() { return { riven: newRiven() }; },
+  },
+  {
+    id: "rivens.card.copy",
+    what: "Duplicate the open riven and open the copy.",
+    anchor: "#riven-tools",
+    needs_weapon: true,
+    args: {},
+    run() {
+      if (!activeRivenId()) return agentNo("no_riven_open", { try: "rivens.card.open" });
+      return { riven: copyRiven() };
+    },
+  },
+  {
+    id: "rivens.card.open",
+    what: "Open a saved riven for editing, by the id rivens.cards.list gives.",
+    anchor: "#riven-tools, #riven-all",
+    needs_weapon: true,
+    args: { riven: { kind: "string", required: true, what: "riven id" } },
+    run({ riven: id }) {
+      const ps = loadPresetList(RIVENS);
+      if (!ps.some((p) => p.id === id)) return agentNo("unknown_riven", { alternatives: ps.map((p) => p.id).slice(0, 12) });
+      openRiven(id);
+      return { text: `opened ${id}` };
+    },
+  },
+  {
+    id: "rivens.card.set",
+    what: "Write the open riven whole: its shape, each bonus and the malus by stat id with either the value printed on the card or a roll (0.9 to 1.1), its rank and polarity. Returns what the engine made of it — printed values, generated name, anything illegal.",
+    anchor: "#riven-shape, #riven-stats, #riven-foot",
+    needs_weapon: true,
+    args: {
+      shape: { kind: "string", required: true, what: "e.g. \"3+1\" (three bonuses and a malus) or \"2+0\"", enum: () => RIVEN_SHAPES.map((x) => x.id) },
+      bonuses: { kind: "array", required: true, what: "[{stat, value} or {stat, roll}], one per bonus" },
+      malus: { kind: "object", nullable: true, what: "{stat, value} or {stat, roll}; omit or null when the shape has none" },
+      rank: { kind: "number", min: 0, max: 8, what: "defaults to the maximum" },
+      polarity: { kind: "string", what: "madurai, vazarin or naramon" },
+    },
+    async run({ shape, bonuses, malus = null, rank, polarity }) {
+      if (!activeRivenId() || !riven) return agentNo("no_riven_open", { try: "rivens.card.new" });
+      const sh = RIVEN_SHAPES.find((x) => x.id === shape);
+      if (bonuses.length !== sh.bonuses) return agentNo("bad_argument", { argument: "bonuses", because: `${shape} has ${sh.bonuses}` });
+      if (!!malus !== !!sh.malus) return agentNo("bad_argument", { argument: "malus", because: sh.malus ? `${shape} has a malus` : `${shape} has none` });
+      const pool = rivenPool();
+      const all = bonuses.concat(malus ? [malus] : []);
+      for (const [i, b] of all.entries()) {
+        const isMalus = malus && i === all.length - 1;
+        const def = pool.find((x) => x.id === (b && b.stat));
+        if (!def || (isMalus ? !def.malus : def.bonus === false)) {
+          return agentNo("bad_stat", { argument: isMalus ? "malus" : `bonuses[${i}]`, got: b && b.stat,
+            alternatives: pool.filter((x) => (isMalus ? x.malus : x.bonus !== false)).map((x) => x.id) });
+        }
+      }
+      if (new Set(all.map((b) => b.stat)).size !== all.length) return agentNo("bad_argument", { because: "a stat appears twice" });
+      const pols = rivenRules().polarities || ["madurai", "vazarin", "naramon"];
+      if (polarity != null && !pols.includes(polarity)) return agentNo("bad_argument", { argument: "polarity", alternatives: pols });
+      const slot = (b) => ({ id: b.stat, roll: typeof b.roll === "number" ? b.roll : 1.0 });
+      riven.drafts[riven.shape] = { bonuses: riven.bonuses, malus: riven.malus };
+      riven.shape = shape;
+      riven.drafts[shape] = { bonuses: bonuses.map(slot), malus: malus ? slot(malus) : null };
+      riven.bonuses = riven.drafts[shape].bonuses;
+      riven.malus = riven.drafts[shape].malus;
+      if (rank != null) riven.rank = rank;
+      if (polarity != null) riven.polarity = polarity;
+      markRivenDirty();
+      renderRivens();
+      // A PRINTED VALUE BECOMES ITS ROLL THE WAY THE NUMBER BOX DOES IT: the
+      // engine turns it into the roll it implies, clamped, one slot at a time.
+      const typed = all.map((b, i) => ({ b, slot: malus && i === all.length - 1 ? "malus" : String(i) }))
+        .filter((x) => typeof x.b.value === "number");
+      for (const t of typed) await resolveRiven({ slot: t.slot, value: t.b.value });
+      await resolveRiven();
+      refreshRivenNames();
+      return agentRivenCard();
+    },
+  },
+  {
+    id: "builder.wielders.list",
+    query: true,
+    what: "List who can hold this weapon: the Warframes allowed, each with the builds saved for it, and whether the unmodded Prototype (the board's floor) is allowed.",
+    anchor: "#wielder-row",
+    needs_weapon: true,
+    args: {},
+    run() { return { current: buildWielder, ...wielderChoices() }; },
+  },
+  {
+    id: "builder.wielder.set",
+    what: "Choose who holds the weapon: a Warframe unmodded, a Warframe with one of its saved builds, or frame=null for the Prototype. The wielder's abilities and stats change the weapon's numbers.",
+    anchor: "#wielder-row",
+    needs_weapon: true,
+    args: {
+      frame: { kind: "string", required: true, nullable: true, what: "Warframe id, or null for the Prototype" },
+      build: { kind: "string", what: "one of that frame's saved build ids" },
+    },
+    run({ frame, build }) {
+      const c = wielderChoices();
+      if (frame === null) {
+        if (!c.prototype_allowed) return agentNo("prototype_not_allowed", { alternatives: c.frames.map((f) => f.id) });
+        setWielder(null);
+        return { text: "held by the Prototype" };
+      }
+      const f = c.frames.find((x) => x.id === frame);
+      if (!f) return agentNo("bad_argument", { argument: "frame", alternatives: c.frames.map((x) => x.id).slice(0, 12) });
+      if (build != null && !f.builds.some((b) => b.id === build)) {
+        return agentNo("bad_argument", { argument: "build", alternatives: f.builds.map((b) => b.id) });
+      }
+      setWielder(build != null ? { frame, preset: build } : { frame });
+      return { text: `held by ${f.name}` };
+    },
+  },
+  {
+    id: "builder.parts.list",
+    query: true,
+    what: "List a Kitgun's grips and loaders, with the pair installed now; read their numbers with builder.stats.read after installing.",
+    anchor: "#assembly-row",
+    needs_weapon: true,
+    args: {},
+    run() {
+      const s = assemblySpec($("weapon").value);
+      if (!s) return agentNo("no_parts", { because: "this weapon is not a Kitgun" });
+      const row = (x) => ({ id: x.id, name: x.name });
+      return { installed: assembly, grips: s.grips.map(row), loaders: s.loaders.map(row), other_slot: slotSibling($("weapon").value) || null };
+    },
+  },
+  {
+    id: "builder.part.set",
+    what: "Swap a Kitgun's grip or loader. The chamber is the weapon itself; the other slot's version of the same chamber is another weapon id (builder.weapon.set).",
+    anchor: "#assembly-row",
+    needs_weapon: true,
+    args: {
+      part: { kind: "string", required: true, what: "grip or loader", enum: () => ["grip", "loader"] },
+      id: { kind: "string", required: true, what: "the part's id" },
+    },
+    run({ part, id }) {
+      const s = assemblySpec($("weapon").value);
+      if (!s) return agentNo("no_parts", { because: "this weapon is not a Kitgun" });
+      const list = part === "grip" ? s.grips : s.loaders;
+      const hit = list.find((x) => x.id === id);
+      if (!hit) return agentNo("bad_argument", { argument: "id", alternatives: list.map((x) => x.id) });
+      setAssemblyPart(part, id);
+      return { text: `${part} ${hit.name}` };
+    },
+  },
   {
     id: "builder.board.read",
     query: true,
@@ -24081,6 +24295,14 @@ const nona = { transcript: [], busy: false, abort: null, owned: new Set(), trail
 /// as often as the model obeys. The first change to a build or a fight that
 /// she did not make herself branches it first.
 async function nonaBranch(id) {
+  // A RIVEN IS THE READER'S ITEM like a build is: edited on a copy too.
+  if (id === "rivens.card.set") {
+    const open = activeRivenId();
+    if (!open || nona.owned.has(`riven:${open}`)) return null;
+    const r = await window.wfsim.do("rivens.card.copy", {});
+    if (r && r.ok) { nona.owned.add(`riven:${r.riven}`); return r.riven; }
+    return null;
+  }
   const bar = id === "simulator.scenario.set" ? "scenario"
     : id.startsWith("builder.") && id !== "builder.weapon.set" ? "build" : null;
   if (!bar) return null;
@@ -24102,6 +24324,7 @@ async function nonaRunTool(call) {
   if (r && r.ok && (id === "shell.preset.new" || id === "shell.preset.copy") && r.preset) {
     nona.owned.add(`${call.args.bar}:${r.preset}`);
   }
+  if (r && r.ok && (id === "rivens.card.new" || id === "rivens.card.copy")) nona.owned.add(`riven:${r.riven}`);
   return branched ? { ...r, branched_to_copy: branched } : r;
 }
 

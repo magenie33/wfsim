@@ -25,7 +25,7 @@ import { openApp } from "./cdp.mjs";
 
 // THE TODO RATCHET: lower it when a feature reaches the door, never raise it to
 // make a red run green.
-const TODO_MAX = 14;
+const TODO_MAX = 11;
 
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish, send } = app;
@@ -82,6 +82,10 @@ for (const w of WEAPONS) {
   await app.load(`/weapons/${w}`);
   for (const m of MODULES) {
     await evaluate(`window.wfsim.do("shell.module.open", { module: ${JSON.stringify(m)} })`, { awaitPromise: true });
+    // AN EDITOR'S CONTROLS EXIST ONLY WITH SOMETHING OPEN IN IT, so each gets
+    // a document before the scan: a list with nothing open hides the editor.
+    if (m === "rivens") await evaluate(`window.wfsim.do("rivens.card.new", {})`, { awaitPromise: true });
+    if (m === "enemies") await evaluate(`(() => { const b = document.querySelector("#enemy-tools .cu-new"); if (b) b.click(); })()`);
     // EVERY FOLD OPEN: a control inside a shut block is still one a reader can
     // reach, and a block that ships shut would otherwise hide its whole feature.
     await evaluate(`document.querySelectorAll("[data-fold].shut").forEach(b => setFold(b, false))`);

@@ -193,6 +193,58 @@ check("the reader's own build is untouched by work on the copy", pre.back.ok ===
 check("a new build opens blank", pre.fresh.ok === true && pre.blank === true, JSON.stringify(pre.fresh));
 check("a build that does not exist is refused", pre.bad.ok === false && pre.bad.reason === "unknown_preset", JSON.stringify(pre.bad));
 
+// ---- rivens, the wielder, a Kitgun's parts -----------------------------------
+
+const more = await evaluate(`(async () => {
+  const out = {};
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  await window.wfsim.do("shell.preset.new", { bar: "build" });
+  // A RIVEN, written from the numbers printed on a card and seated.
+  out.stats = await window.wfsim.do("rivens.stats.list", {});
+  const b = out.stats.stats.filter(x => x.bonus && x.modeled !== false).slice(0, 2).map(x => x.id);
+  const m = out.stats.stats.find(x => x.malus && !b.includes(x.id)).id;
+  out.made = await window.wfsim.do("rivens.card.new", {});
+  out.card = await window.wfsim.do("rivens.card.set", { shape: "2+1",
+    bonuses: [{ stat: b[0], roll: 1.1 }, { stat: b[1], roll: 0.95 }], malus: { stat: m, roll: 0.9 } });
+  out.badShape = await window.wfsim.do("rivens.card.set", { shape: "2+1", bonuses: [{ stat: b[0], roll: 1 }], malus: null });
+  out.list = await window.wfsim.do("rivens.cards.list", {});
+  out.seat = await window.wfsim.do("builder.mod.set", { slot: 0, mod: out.card.seat_as });
+  out.seated = window.wfsim.observe().build.slots.some(s => s.mod === out.card.seat_as);
+  // THE WIELDER.
+  out.wielders = await window.wfsim.do("builder.wielders.list", {});
+  const f = out.wielders.frames[0];
+  out.held = await window.wfsim.do("builder.wielder.set", { frame: f.id });
+  out.heldSeen = (window.wfsim.observe().build.wielder || {}).frame === f.id;
+  out.proto = await window.wfsim.do("builder.wielder.set", { frame: null });
+  await window.wfsim.do("builder.mods.clear", {});
+  // A KITGUN'S PARTS, on a Kitgun.
+  const kit = (META.weapons || []).find(w => w.assembly);
+  out.onKit = await window.wfsim.do("builder.weapon.set", { weapon: kit.id });
+  await wait(600);
+  out.parts = await window.wfsim.do("builder.parts.list", {});
+  const g = out.parts.grips.find(x => x.id !== out.parts.installed.grip);
+  out.part = await window.wfsim.do("builder.part.set", { part: "grip", id: g.id });
+  out.partSeen = window.wfsim.observe().build.assembly.grip === g.id;
+  out.badPart = await window.wfsim.do("builder.part.set", { part: "loader", id: "no_such_loader" });
+  await window.wfsim.do("builder.weapon.set", { weapon: "torid" });
+  await wait(600);
+  out.noParts = await window.wfsim.do("builder.part.set", { part: "grip", id: g.id });
+  return out;
+})()`, { awaitPromise: true });
+
+check("a riven is made and written, and the engine prints it back",
+  more.made.ok === true && more.card.ok === true && more.card.stats.length === 3 && more.card.stats.every(x => x.text),
+  JSON.stringify(more.card).slice(0, 300));
+check("...a card whose shape and stats disagree is refused", more.badShape.ok === false, JSON.stringify(more.badShape));
+check("...it lists, and seats as a mod", more.list.rivens.some(r => r.seat_as === more.card.seat_as) && more.seat.ok === true && more.seated === true,
+  JSON.stringify(more.seat));
+check("a Warframe takes the weapon, and the Prototype takes it back",
+  more.held.ok === true && more.heldSeen === true && more.proto.ok === true, JSON.stringify([more.held, more.proto]));
+check("a Kitgun's grip swaps and is observed", more.part.ok === true && more.partSeen === true, JSON.stringify(more.part));
+check("...a part that does not exist is refused, and so is a part on a weapon without them",
+  more.badPart.ok === false && more.noParts.ok === false && more.noParts.reason === "no_parts",
+  JSON.stringify([more.badPart, more.noParts]));
+
 // ---- the board: the measured leaders, and opening one -------------------------
 
 const board = await evaluate(`(async () => {
