@@ -181,6 +181,15 @@ const pre = await evaluate(`(async () => {
   out.fresh = await window.wfsim.do("shell.preset.new", { bar: "build" });
   out.blank = window.wfsim.observe().build.slots.every(s => !s.mod);
   out.bad = await window.wfsim.do("shell.preset.open", { bar: "build", preset: "no such build" });
+  // UNDO walks the bar's own history back through a change.
+  await window.wfsim.do("builder.mod.set", { slot: 3, mod: "hellfire" });
+  await new Promise(r => setTimeout(r, 700));
+  out.undo = await window.wfsim.do("shell.preset.undo", { bar: "build" });
+  await new Promise(r => setTimeout(r, 300));
+  out.undone = !window.wfsim.observe().build.slots.some(s => s.mod === "hellfire");
+  out.redo = await window.wfsim.do("shell.preset.undo", { bar: "build", redo: true });
+  out.searches = await window.wfsim.do("shell.presets.list", { bar: "search" });
+  await window.wfsim.do("builder.mods.clear", {});
   return out;
 })()`, { awaitPromise: true });
 
@@ -192,6 +201,9 @@ check("presets list, marking the open one", pre.list.ok === true && pre.list.row
 check("the reader's own build is untouched by work on the copy", pre.back.ok === true && pre.mineKept === true);
 check("a new build opens blank", pre.fresh.ok === true && pre.blank === true, JSON.stringify(pre.fresh));
 check("a build that does not exist is refused", pre.bad.ok === false && pre.bad.reason === "unknown_preset", JSON.stringify(pre.bad));
+check("undo takes the last change back, and redo returns it", pre.undo.ok === true && pre.undone === true && pre.redo.ok === true,
+  JSON.stringify([pre.undo, pre.redo]));
+check("the saved searches list like any other bar", pre.searches.ok === true && Array.isArray(pre.searches.rows), JSON.stringify(pre.searches));
 
 // ---- rivens, the wielder, a Kitgun's parts -----------------------------------
 

@@ -21081,7 +21081,13 @@ function applyOptPreset(st) {
 function renderOptPresetBars() {
   const bar = $("preset-bar-" + OPT_DOMAIN);
   if (!bar) return;
-  renderPresetBarIn(bar, {
+  renderPresetBarIn(bar, optBarCfg());
+}
+
+/// The search bar's document model — what the bar and the agent door both
+/// pick, start and copy.
+function optBarCfg() {
+  return {
     domain: OPT_DOMAIN,
     label: tr("Searches"),
     noun: "search",
@@ -21094,7 +21100,7 @@ function renderOptPresetBars() {
     apply: (st) => applyOptPreset(st || {}),
     blank: blankOpt,
     rerender: renderOptPresetBars,
-  });
+  };
 }
 
 function renderOptTools() {
@@ -23445,11 +23451,13 @@ function agentRunSummary() {
 
 /// THE PRESET BARS the door reaches: the build's and the fight's. Picking,
 /// "+ new" and duplicate are the moves; rename and delete stay a reader's.
-const AGENT_BARS = { build: () => buildBarCfg(), scenario: () => scenarioBarCfg() };
+const AGENT_BARS = { build: () => buildBarCfg(), scenario: () => scenarioBarCfg(), search: () => optBarCfg() };
 const agentPresetRows = (cfg) => cfg.load().map((p) => ({
   id: presetId(p), name: presetLabel(p), active: presetId(p) === cfg.active(),
-  ...(cfg.readonly(p) ? { read_only: true } : {}),
+  ...(cfg.readonly && cfg.readonly(p) ? { read_only: true } : {}),
 }));
+/// Which undo history each bar's edits land in.
+const AGENT_UNDO = { build: BUILDS, scenario: SCENARIOS, search: OPT_DOMAIN, riven: RIVENS };
 const agentBarArg = { kind: "string", required: true, what: "which bar", enum: () => Object.keys(AGENT_BARS) };
 
 /// A SEARCH'S ANSWER as a caller reads it: the ranking the page draws, with
@@ -23503,10 +23511,9 @@ const AGENT_EXEMPT = [
   { sel: "#qq-copy-foot", kind: "outward", why: "copies the community group number" },
   { sel: ".pop.ren", kind: "reader", why: "renaming a build is the reader's" },
   { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
-  { sel: ".pundo", kind: "todo", why: "undo and redo in a preset bar" },
-  { sel: "#preset-bar-optimizer", kind: "todo", why: "saved search scopes" },
   { sel: "#opk-gain", kind: "pref", why: "the search list's own quick-calc scan" },
-  { sel: "#opt-fight-half", kind: "todo", why: "the search's view of the fight" },
+  { sel: "#opt-fight-half", kind: "view", why: "the simulator's fight, shown read-only beside the search" },
+  { sel: "#sim-target-arena", kind: "todo", why: "placing the formation, the aim and the distance on the arena" },
   { sel: "#forma-block", kind: "todo", why: "the Forma planner" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
@@ -24048,7 +24055,7 @@ const AGENT_ACTIONS = [
     id: "shell.presets.list",
     query: true,
     what: "List the saved builds or fight scenarios for this weapon, which one is open, and which are read-only (benchmarks).",
-    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
     needs_weapon: true,
     args: { bar: agentBarArg },
     run({ bar }) { return { rows: agentPresetRows(AGENT_BARS[bar]()) }; },
@@ -24056,7 +24063,7 @@ const AGENT_ACTIONS = [
   {
     id: "shell.preset.open",
     what: "Open a saved build or scenario by the id presets.list gives.",
-    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
     needs_weapon: true,
     args: { bar: agentBarArg, preset: { kind: "string", required: true, what: "preset id" } },
     run({ bar, preset }) {
@@ -24070,15 +24077,31 @@ const AGENT_ACTIONS = [
   {
     id: "shell.preset.new",
     what: "Start a new blank build or scenario and open it; the one open before is kept as it was.",
-    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
     needs_weapon: true,
     args: { bar: agentBarArg },
     run({ bar }) { return { preset: newPreset(AGENT_BARS[bar]()) }; },
   },
   {
+    id: "shell.preset.undo",
+    what: "Undo the last change to a bar's documents — the build, the scenario, the search or the riven — or redo it with redo=true.",
+    anchor: ".pundo",
+    needs_weapon: true,
+    args: {
+      bar: { kind: "string", required: true, what: "which history", enum: () => Object.keys(AGENT_UNDO) },
+      redo: { kind: "boolean", what: "redo instead of undo" },
+    },
+    run({ bar, redo = false }) {
+      const d = AGENT_UNDO[bar];
+      if (!(redo ? canRedoIn(d) : canUndoIn(d))) return agentNo(redo ? "nothing_to_redo" : "nothing_to_undo");
+      if (redo) redoIn(d); else undoIn(d);
+      return { text: redo ? "redone" : "undone" };
+    },
+  },
+  {
     id: "shell.preset.copy",
     what: "Duplicate the open build or scenario and open the copy — the way to try changes without touching the reader's own.",
-    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy",
+    anchor: "#preset-bar-builder-builds, #preset-bar-simulator-scenarios, #bench-bar-simulator-scenarios, #sim-official-copy, #preset-bar-optimizer",
     needs_weapon: true,
     args: { bar: agentBarArg },
     run({ bar }) { return { preset: copyActivePreset(AGENT_BARS[bar]()) }; },
@@ -24569,11 +24592,13 @@ async function nonaBranch(id) {
     return null;
   }
   // EVERY SIMULATOR ACTION WRITES THE FIGHT except running it and the run
-  // count, which is a preference of this browser.
-  const bar = id.startsWith("simulator.") && id !== "simulator.run.start" && id !== "simulator.runs.set" ? "scenario"
+  // count, which is a preference of this browser; a scope edit writes the
+  // reader's saved search.
+  const bar = id.startsWith("optimizer.scope.") ? "search"
+    : id.startsWith("simulator.") && id !== "simulator.run.start" && id !== "simulator.runs.set" ? "scenario"
     : id.startsWith("builder.") && id !== "builder.weapon.set" ? "build" : null;
   if (!bar) return null;
-  const active = bar === "build" ? activePreset : activeScenario;
+  const active = bar === "build" ? activePreset : bar === "search" ? activeOptPreset : activeScenario;
   if (active && nona.owned.has(`${bar}:${active}`)) return null;
   // NOTHING SAVED YET: the page is showing a build nobody owns, so she starts
   // one of her own rather than copying a document that does not exist.
