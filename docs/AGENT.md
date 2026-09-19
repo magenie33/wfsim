@@ -163,6 +163,17 @@ an action reaches inside the page's own state.
 board, anything that leaves the browser: permanently a person's gesture, not a
 row in the table. This is not a phase-0 limit to be relaxed later.
 
+## Measuring her
+
+`check_nona` proves the machinery against a scripted stand-in and runs in CI.
+Her BEHAVIOUR is measured against a real model by `scripts/nona_eval.mjs`, run
+by hand with a key (`NONA_BASE`, `NONA_KEY`, `NONA_MODEL`): each case asks a
+reader's question on a fresh page and grades what she did — the tools called,
+whether she worked on a copy, whether the reader's build was left alone, and
+how many numbers in her answer no tool returned (the target is none). Run it
+after changing her prompt, her tools or the door, and compare the totals with
+the last run; the records land in `private/nona-eval/`.
+
 ## The consumers
 
 The checks drive the page through raw clicks, which is why each of them carries
