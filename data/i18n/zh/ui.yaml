@@ -47,6 +47,31 @@ ui:
   "Back to my build": 回到我的配装
   "applied": 已应用
   "the early part of this chat was summarised to save space": 较早的对话已整理成摘要，以节省上下文
+  "forgotten": 已忘记
+  "Nona would like to remember": 九九想记住
+  "Remember": 记住
+  "Don't": 不要
+  "Nona remembered": 九九记住了
+  "Undo": 撤销
+  "Continue": 接着上次
+  "this chat neither reads nor writes memory, and is not kept": 这次对话不读也不写记忆，也不会保存
+  "Incognito": 无痕
+  "Concise mode — no persona": 简洁模式（关闭角色腔）
+  "What Nona remembers": 九九记得的事
+  "kept only in this browser": 只保存在这个浏览器里
+  "note": 笔记
+  "unconfirmed": 待确认
+  "nothing yet": 还没有
+  "Pause memory": 暂停记忆
+  "Copy as JSON": 复制为 JSON
+  "Forget everything": 全部忘掉
+  "Forget everything?": 确认全部忘掉？
+  "Answers": 回答方式
+  "Content": 常玩内容
+  "Budget": 资源投入
+  "Owned": 已拥有
+  "Dislikes": 不喜欢
+  "Playstyle": 玩法
   "What is this weapon's best build without a riven?": 这把武器不带紫卡的最强配装是什么？
   "How could my build do better?": 我这套配装还能怎么提升？
   "Put together a build for this weapon": 帮我给这把武器配一套配装

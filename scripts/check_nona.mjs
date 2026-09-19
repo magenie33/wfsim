@@ -152,9 +152,9 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
   const sent = seen.filter((x) => x.url === path);
   const tools = (sent[0] && sent[0].body.tools) || [];
   const names = tools.map((t) => (t.function ? t.function.name : t.name));
-  check(`${provider}: she is sent every door tool, plus the observation and her history search`,
-    names.length === r.tools + 2 && names.includes("builder_board_read") && names.includes("shell_page_observe")
-    && names.includes("shell_history_search"), `${names.length} vs ${r.tools + 2}`);
+  check(`${provider}: she is sent every door tool, plus the observation, her history search and her memory`,
+    names.length === r.tools + 4 && names.includes("builder_board_read") && names.includes("shell_page_observe")
+    && names.includes("shell_history_search") && names.includes("memory_set"), `${names.length} vs ${r.tools + 4}`);
   check(`${provider}: the loop runs to an answer`, sent.length === 3 && r.log.some((l) => /assistant \| Serration is seated/.test(l)),
     JSON.stringify(r.log));
   check(`${provider}: each call is a line in the trail, and landed`,
@@ -226,6 +226,40 @@ check("past the budget, all but the newest four turns are summarised", sum.cut =
 check("...what is sent starts from the summary and keeps the four turns", /<summary/.test(sum.first) && sum.sentUsers === 4,
   JSON.stringify([sum.first.slice(0, 60), sum.sentUsers]));
 check("...and the record stays whole: an early turn is still searchable", sum.found >= 1, JSON.stringify(sum.found));
+
+// ---- memory: backed by the reader's words, seen, undone, paused --------------
+
+const mem = await evaluate(`(async () => {
+  const saved = nona.conv;
+  localStorage.removeItem("wfsim-nona-memory");
+  nona.conv = nonaNewConversation();
+  nona.conv.messages.push({ role: "user", text: "我平时不用紫卡，记住这点" });
+  const said = nonaMemorySet({ slot: "riven_policy", value: "不用紫卡", quote: "不用紫卡" });
+  const guessed = nonaMemorySet({ slot: "content", value: "钢铁之路", quote: "钢铁之路" });
+  const block = nonaMemoryBlock();
+  const changed = nonaMemorySet({ slot: "riven_policy", value: "偶尔用紫卡", quote: "不用紫卡" });
+  const oneSlot = nonaMemory().items.filter(x => x.key === "riven_policy").length;
+  nonaMemoryUndo(changed.id);
+  const undone = nonaMemory().items.find(x => x.key === "riven_policy").value;
+  const m = nonaMemory(); m.paused = true; nonaMemoryStore(m);
+  const pausedBlock = nonaMemoryBlock();
+  const pausedSet = nonaMemorySet({ slot: "budget", value: "x", quote: "x" });
+  m.paused = false; nonaMemoryStore(m);
+  nona.conv.incognito = true;
+  const incogBlock = nonaMemoryBlock();
+  const before = (await nonaDb.all()).length;
+  await nonaSave();
+  const after = (await nonaDb.all()).length;
+  nona.conv = saved;
+  return { said, guessed, block, oneSlot, undone, pausedBlock, pausedSet, incogBlock, keptIncognito: after !== before };
+})()`, { awaitPromise: true });
+check("a memory the reader's own words back takes effect; one they did not say is only proposed",
+  mem.said.status === "active" && mem.guessed.status === "proposed", JSON.stringify([mem.said, mem.guessed]));
+check("...only the confirmed one reaches her", /riven_policy: 不用紫卡/.test(mem.block) && !/钢铁之路/.test(mem.block), mem.block);
+check("...a slot is written over in place, and undo brings the old value back", mem.oneSlot === 1 && mem.undone === "不用紫卡",
+  JSON.stringify([mem.oneSlot, mem.undone]));
+check("paused, memory is neither read nor written", mem.pausedBlock === "" && mem.pausedSet.ok === false);
+check("an incognito chat reads no memory and is not kept", mem.incogBlock === "" && mem.keptIncognito === false);
 
 // ---- a number she did not measure is marked -----------------------------------
 
