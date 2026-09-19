@@ -12,11 +12,11 @@ effects:
   # NOT the base-damage bucket). Consumed by the next shot fired (hit or miss);
   # all multishot pellets of that shot benefit. Repeated casts re-arm it.
   - kind: buff
-    trigger: on_ability_cast
+    trigger: ability_cast
     grants: final_damage
     rank0: 2.0                 # cap as a bonus: x3 at rank 0
     rankMax: 7.0               # x8 at rank 5
-    # NOT LOADED: `arcanes_data` reads neither `per_energy_bonus` nor
+    # NOT LOADED: `data::arcanes` reads neither `per_energy_bonus` nor
     # `consumed_on_shot`, so the buff resolves at its CAP and never spends
     # itself (data/README.md). Both directions of error are recorded rather
     # than hidden: the sim has no energy pool, so assuming the cap is the

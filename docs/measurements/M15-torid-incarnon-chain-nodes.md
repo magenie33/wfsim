@@ -87,7 +87,7 @@ under either model.
 
 **Outcome mapping.** `false` (current) is what is implemented; `true` flips one
 line in `data/weapons/primary/torid_incarnon.yaml` and its pinned assertion in
-`weapons_data`. Neither value changes a single-target result — the sphere adds
+`data::weapons`. Neither value changes a single-target result — the sphere adds
 no damage to a target the beam already struck — so nothing is blocked today.
 It stops being free the moment the 2D model reads this line, which is why the
 default was corrected before that model exists rather than after.

@@ -1297,7 +1297,7 @@ and the two that were choices are:
 ### A crowd in three numbers, expanded ONCE
 
 `formation_grid: {cols, rows, spacing_m}` becomes an ordinary `formation` list
-in `benchmarks_data`, at the moment the yaml is parsed — not at simulate time.
+in `board::benchmarks`, at the moment the yaml is parsed — not at simulate time.
 361 bodies written out is 360 lines nobody can check by reading, and a ruler
 whose terms cannot be argued with is not a ruler.
 

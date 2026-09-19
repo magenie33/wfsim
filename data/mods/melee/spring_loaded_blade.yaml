@@ -14,7 +14,7 @@ effects:
   # so each status buys its own 24 s, and two stacks need two statuses inside
   # that window.
   - kind: stacking_buff
-    trigger: on_status_applied
+    trigger: status_applied
     grants: melee_range
     decay: per_stack_expiry
     rank0: 0.2

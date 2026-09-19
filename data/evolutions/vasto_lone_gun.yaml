@@ -45,7 +45,7 @@ effects:
   # equipped."
   - kind: gated_by_tenno
     condition: solo_weapon
-    grant: flat_base_damage
+    grants: flat_base_damage
     value: 40.0
   # …and the magazine half. "Increased Base Magazine Capacity does not affect
   # Incarnon Form", which the engine obeys from the form it is resolving rather
@@ -53,7 +53,7 @@ effects:
   # Volley) already carries.
   - kind: gated_by_tenno
     condition: solo_weapon
-    grant: flat_base_magazine
+    grants: flat_base_magazine
     value: 14.0
 
 source:

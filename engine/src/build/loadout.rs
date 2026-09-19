@@ -63,7 +63,7 @@ impl ModEffect {
         use ModEffect::*;
         match *self {
             // The gate is stated as a suffix so the inner line reads normally.
-            WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.label()),
+            WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.describe()),
             // WHAT THE MODEL ACTUALLY COMPUTES, which is the armour half of the
             // card: this engine has no term for a shield POOL shrinking, so the
             // line says armour and the mod's own `unmodeled` says the rest.
@@ -1307,7 +1307,7 @@ pub fn resolve_for(
     let open_flat = || {
         base.gated
             .iter()
-            .filter(|t| t.grant == GatedGrant::FlatBaseDamage && t.gate.open(tenno))
+            .filter(|t| t.grant == GatedGrant::FlatBaseDamage && t.gate.holds(tenno))
     };
     let gated_flat: f64 = open_flat().map(|t| t.value).sum();
     // …AND HOW MUCH OF IT THE GunCO TERM'S BASE GROWS BY, which is the perk's
@@ -1327,7 +1327,7 @@ pub fn resolve_for(
     let gated_mag: f64 = if base.gauge_form.is_none() {
         base.gated
             .iter()
-            .filter(|t| t.grant == GatedGrant::FlatBaseMagazine && t.gate.open(tenno))
+            .filter(|t| t.grant == GatedGrant::FlatBaseMagazine && t.gate.holds(tenno))
             .map(|t| t.value)
             .sum()
     } else {
@@ -1443,7 +1443,7 @@ pub fn resolve_for(
     let gate = |g: GatedGrant| -> f64 {
         base.gated
             .iter()
-            .filter(|t| t.grant == g && t.gate.open(tenno))
+            .filter(|t| t.grant == g && t.gate.holds(tenno))
             .map(|t| t.value)
             .sum()
     };
@@ -1994,7 +1994,7 @@ pub fn resolve_for(
             crate::model::ArcGrant::Multishot => multishot += v,
             crate::model::ArcGrant::CritDamage => cd += v,
             // A grant no card has asked for yet. Loudly nothing rather than
-            // quietly the wrong bucket: `mods_data` refuses an unknown grant
+            // quietly the wrong bucket: `data::mods` refuses an unknown grant
             // at load, so reaching here means one was added to that list and
             // not to this one.
             _ => {}
@@ -2154,7 +2154,7 @@ pub fn resolve_for(
     // AND IT IS AIM-GATED, which is not a footnote on a weapon like this: the
     // whole card reads "on aim", so a scenario whose Tenno is not aiming gets
     // nothing at all rather than a reduced share. Same treatment every
-    // `while_aiming` mod gets — the condition is a question about the player.
+    // `aiming` mod gets — the condition is a question about the player.
     let mut compression = None;
     if let Some(c) = base.compression.as_ref().filter(|_| tenno.state.aiming) {
         // WHICH radius. The attack's own, modded — unless the row names one
@@ -3967,7 +3967,7 @@ mod tests {
                 WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()])
                     .gated
                     .iter()
-                    .any(|t| t.gate == TennoGate::HasOvershields)
+                    .any(|t| t.gate == TennoCondition::Overshields)
             })
             .map(|e| e.id.as_str())
             .collect();
@@ -4049,7 +4049,7 @@ mod tests {
                 WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()])
                     .gated
                     .iter()
-                    .any(|t| t.gate == TennoGate::SoloWeapon)
+                    .any(|t| t.gate == TennoCondition::SoloWeapon)
             })
             .map(|e| e.id.as_str())
             .collect();
@@ -4386,7 +4386,7 @@ mod tests {
             "the Incarnon form is using the BASE form's crit chance — the Arsenal's bug");
     }
 
-    /// Satisfying `while_aiming` silently fires every aim-gated buff whether or
+    /// Satisfying `aiming` silently fires every aim-gated buff whether or
     /// not the scenario implies aiming. `resolve_with(.., aiming)` is the knob;
     /// `resolve` assumes aim.
     #[test]
@@ -4564,7 +4564,7 @@ mod tests {
         let ms_of = |b: &ResolvedPanel| {
             b.stacking_buffs
                 .iter()
-                .filter(|s| s.grant == BuffGrant::Multishot)
+                .filter(|s| s.grant == BuffGrant::FlatMultishot)
                 .map(|s| s.per_stack * s.max_stacks as f64)
                 .sum::<f64>()
         };
@@ -4579,7 +4579,7 @@ mod tests {
         let locked = resolve(&base, &[&lock], StackPolicy::Emergent);
         assert_eq!(ms_of(&locked), 0.0, "and nothing at all under the lock");
         assert!(
-            !locked.stacking_buffs.iter().any(|s| s.grant == BuffGrant::Multishot),
+            !locked.stacking_buffs.iter().any(|s| s.grant == BuffGrant::FlatMultishot),
             "the buff is not offered — a card that stacks and grants nothing is              a measurement nobody can make"
         );
         // The lock is about ONE stat: this evolution's OTHER half, a flat +28

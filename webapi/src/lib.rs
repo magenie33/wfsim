@@ -1484,7 +1484,7 @@ pub fn meta_json() -> Value {
                 "disposition": w.disposition,
                 // WHAT WARFRAME.MARKET CALLS THIS WEAPON'S RIVEN AUCTIONS, so
                 // the riven card can offer the one price we do not compute.
-                // Absent where no riven exists for it — see `market_data`.
+                // Absent where no riven exists for it — see `data::market`.
                 "market_riven_slug": wfsim_engine::data::market::riven_weapon_slug(&w.id),
                 // …AND THE WEAPON ITSELF, which is SOLD or AUCTIONED and never
                 // both. A Prime's item is its SET; a Kuva or Tenet weapon has
@@ -3158,7 +3158,7 @@ fn card_trigger(
     refs: &[&ModDef],
     arcane: &wfsim_engine::data::arcanes::ArcaneFx,
 ) -> Option<Option<&'static str>> {
-    use wfsim_engine::data::buff_events::{arc_trigger_id, of_builtin, trigger_id};
+    use wfsim_engine::data::buff_events::of_builtin;
     if let Some(t) = of_builtin(id) {
         return Some(t);
     }
@@ -3168,14 +3168,14 @@ fn card_trigger(
             .buffs
             .iter()
             .find(|b| if b.owner.is_empty() { arcane_id } else { &b.owner } == owner)
-            .map(|b| arc_trigger_id(b.trigger));
+            .map(|b| b.trigger.id());
     }
     // A MOD-DECLARED BUFF, named by the trigger its data states. Condition
     // Overload is the id that NEEDS this: melee's card is unconditional and the
     // Galvanized family earns the same payload on a kill, so the mod answers
     // and no table here does.
     let declared = |e: &ModEffect| match e {
-        ModEffect::GrantsStackingBuff(b) if b.id == id => Some(Some(trigger_id(b.trigger))),
+        ModEffect::GrantsStackingBuff(b) if b.id == id => Some(Some(b.trigger.id())),
         ModEffect::ConditionOverload { earned_on, .. } if id == "condition_overload" => {
             Some(*earned_on)
         }
@@ -3619,7 +3619,7 @@ fn enumerate_buffs(
             // "0/1" knob for it would invite switching off a number the frame
             // simply has. It rides the buff machinery to reach its bucket;
             // that is an implementation detail and it stops here. Its own control is WF Armor, in the Tenno block.
-            if b.trigger == wfsim_engine::data::arcanes::ArcTrigger::Passive {
+            if b.trigger == wfsim_engine::model::ArcTrigger::Passive {
                 continue;
             }
             let owner = if b.owner.is_empty() { arcane.id.clone() } else { b.owner.clone() };
@@ -4029,8 +4029,8 @@ pub fn panel_json(v: &Value) -> Value {
             // row says what the mod WOULD give and gives nothing — which is
             // the whole reason the condition is modelled rather than folded
             // in. Unwrap here, let the ordinary arms push, tag them below.
-            let (e, tenno_gate): (&ModEffect, Option<&'static str>) = match e {
-                WhileTenno(c, inner) => (&**inner, Some(c.label())),
+            let (e, tenno_gate): (&ModEffect, Option<String>) = match e {
+                WhileTenno(c, inner) => (&**inner, Some(c.describe())),
                 other => (other, None),
             };
             match *e {
@@ -4512,7 +4512,7 @@ pub fn panel_json(v: &Value) -> Value {
             }
             // Tag whatever the arms just pushed, so the panel never shows a
             // contribution without the condition that earns it.
-            if let Some(cond) = tenno_gate {
+            if let Some(cond) = &tenno_gate {
                 for row in src.iter_mut().skip(before) {
                     row.3 = Some(match row.3.take() {
                         Some(t) => format!("{t}; {cond}"),
@@ -4533,7 +4533,7 @@ pub fn panel_json(v: &Value) -> Value {
         let arc = arcane_fx_for(v, info, &forms_list[0].2, policy);
         let t = tenno_from(v, info);
         for b in arc.buffs.iter() {
-            if b.trigger != wfsim_engine::data::arcanes::ArcTrigger::Passive {
+            if b.trigger != wfsim_engine::model::ArcTrigger::Passive {
                 continue;
             }
             let what = match b.grant {
@@ -10266,7 +10266,7 @@ mod asset_tests {
         // this is the crowd being real rather than declared, and it exercises
         // the shorthand through the one path that counts bodies.
         // 361 BODIES, AND THE YAML SAYS THREE NUMBERS. The expansion happens
-        // once, where the yaml becomes a scenario (`benchmarks_data`), so what
+        // once, where the yaml becomes a scenario (`board::benchmarks`), so what
         // this ruler HOLDS by the time anything reads it is bodies — which is
         // also what lets the canvas draw the crowd it is about to simulate.
         let n = bench
@@ -11665,7 +11665,7 @@ use wfsim_engine::model::StackPolicy;
                     .fx(a.max_rank, StackPolicy::Emergent, base.traits, &tenno)
                     .buffs
                     .iter()
-                    .filter(|b| b.trigger == wfsim_engine::data::arcanes::ArcTrigger::Passive)
+                    .filter(|b| b.trigger == wfsim_engine::model::ArcTrigger::Passive)
                     .map(|b| {
                         format!(
                             "arcane:{}",

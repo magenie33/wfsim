@@ -10,8 +10,8 @@ description: "On Hit:\n+X% Accuracy when Aiming for Xs"
 
 effects:
   - kind: buff
-    trigger: on_hit
-    condition: while_aiming
+    trigger: hit
+    condition: aiming
     grants: accuracy
     rank0: 0.05
     rankMax: 0.3

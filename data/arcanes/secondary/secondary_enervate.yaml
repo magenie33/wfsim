@@ -17,7 +17,7 @@ effects:
   # these constants are the spec of record, and the perk's
   # from_rank_matches_the_arcane_yaml test pins code == data.
   - kind: buff
-    trigger: on_hit
+    trigger: hit
     grants: crit_chance
     rank0: 0.1
     rankMax: 0.1

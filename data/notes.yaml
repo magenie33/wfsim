@@ -450,7 +450,7 @@ notes:
     WFCD export carries no such field, so this module is the only
     structured source for what a mod REFUSES to be equipped on.
   decay_read_mods_data: |
-    `decay` is NOT read by mods_data. The engine hardcodes the matching model
+    `decay` is NOT read by data::mods. The engine hardcodes the matching model
     per effect kind — `LiveStacks` (engine/src/fight/stacks.rs): on timeout lose ONE stack and
     reset the timer. This line is the written record, not the source.
   declared_no_co_catalog: |
@@ -722,7 +722,7 @@ notes:
   loaded_any_code_data: |
     NOT LOADED BY ANY CODE. `data/debuffs/` is the written SPEC for status
     effects: no `files_under("debuffs/")` call exists, and the behaviour is
-    hand-implemented in `engine::dummy` / `engine::rules::status`, which cite these
+    hand-implemented in `engine::fight` / `engine::rules::status`, which cite these
     files by name. Changing a number here changes nothing on its own — it is a
     documentation change that also needs the matching code edit and a test.
     See data/README.md "Conventions".

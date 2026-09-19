@@ -24,7 +24,7 @@ effects:
   # see notes: nothing_here_takes_overshields
   - kind: gated_by_tenno
     condition: overshields
-    grant: flat_base_damage
+    grants: flat_base_damage
     value: 50.0
 
 source:

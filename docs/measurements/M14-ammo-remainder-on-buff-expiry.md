@@ -45,7 +45,7 @@ one 0.25 shot dropped the readout from 5 to 4. That only happens from 4.25 →
 would land on 4.75 and the readout would have stayed at **5**. The UI's rounding
 is doing the measuring here.
 
-**Consequence for the model.** `engine::dummy` had rules 1 and 2 right already —
+**Consequence for the model.** `engine::fight` had rules 1 and 2 right already —
 the fire gate is `magazine < 1e-9` and the cost is `1 − efficiency`, so a
 partial round fires and the counter is allowed to go negative. Rule 3 was
 **wrong**: the reload did `magazine = refill`, silently forgiving the debt and

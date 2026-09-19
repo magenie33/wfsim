@@ -22,7 +22,7 @@
 use std::sync::OnceLock;
 
 use serde::Deserialize;
-use crate::model::{TennoCondition, TennoGate, TennoScaledTerm, TennoStat};
+use crate::model::{TennoCondition, TennoScaledTerm, TennoStat};
 
 /// The player's stat block plus what the player is doing — the fight's second
 /// actor, and the counterpart of [`crate::target::TargetParams`].
@@ -225,7 +225,6 @@ fn slowest_frame() -> f64 {
     0.9
 }
 
-
 fn yes() -> bool {
     true
 }
@@ -235,7 +234,7 @@ fn yes() -> bool {
 /// Tenno holding the rest, is two places for one kind of fact.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct TennoState {
-    /// Holding aim. Gates every `while_aiming` mod (Galvanized Crosshairs /
+    /// Holding aim. Gates every `aiming` mod (Galvanized Crosshairs /
     /// Scope, Argon Scope, Sharpened Bullets, …). Defaults TRUE — the panel's
     /// optimistic view, and what the sim silently assumed before any of this
     /// was configurable, so no stored scenario changes meaning.
@@ -487,22 +486,6 @@ impl Tenno {
 // The vocabulary (`crate::model`) states a condition; the Tenno answers it, so
 // the answers live beside the Tenno and the vocabulary names no player.
 
-impl TennoGate {
-    /// Does this player satisfy it?
-    pub fn open(self, tenno: &Tenno) -> bool {
-        match self {
-            TennoGate::SprintAtLeast(x) => tenno.sprint >= x,
-            TennoGate::ArmorOver(x) => tenno.armor > x,
-            TennoGate::EnergyMaxOver(x) => tenno.energy > x,
-            TennoGate::EnergyMaxAtLeast(x) => tenno.energy >= x,
-            TennoGate::HasOvershields => tenno.state.overshields,
-            TennoGate::ChannelingAbility => tenno.state.channeling,
-            TennoGate::MeleeEquipped => tenno.state.melee_equipped,
-            TennoGate::SoloWeapon => tenno.state.solo_weapon,
-        }
-    }
-}
-
 impl TennoStat {
     pub fn of(self, t: &Tenno) -> f64 {
         match self {
@@ -521,14 +504,14 @@ impl TennoCondition {
             TennoCondition::Aiming => t.state.aiming,
             TennoCondition::Invisible => t.state.invisible,
             TennoCondition::Airborne => t.state.airborne,
-        }
-    }
-
-    pub fn label(self) -> &'static str {
-        match self {
-            TennoCondition::Aiming => "while aiming",
-            TennoCondition::Invisible => "while Invisible",
-            TennoCondition::Airborne => "while Airborne",
+            TennoCondition::SprintAtLeast(x) => t.sprint >= x,
+            TennoCondition::ArmorOver(x) => t.armor > x,
+            TennoCondition::MaxEnergyOver(x) => t.energy > x,
+            TennoCondition::MaxEnergyAtLeast(x) => t.energy >= x,
+            TennoCondition::Overshields => t.state.overshields,
+            TennoCondition::Channeling => t.state.channeling,
+            TennoCondition::MeleeEquipped => t.state.melee_equipped,
+            TennoCondition::SoloWeapon => t.state.solo_weapon,
         }
     }
 }

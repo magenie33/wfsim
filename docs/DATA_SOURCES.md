@@ -507,7 +507,7 @@ in Archwing, and the arena is on the ground.
 
 WHERE A BEAM HAS NO ROW, LEAVE IT UNTRANSCRIBED. The Onos Incarnon's beam lists
 none; `infinite` is a claim and the page does not make it. `range_m` absent
-means "nobody has looked", which is what the ratchet in `weapons_data` counts —
+means "nobody has looked", which is what the ratchet in `data::weapons` counts —
 203 of 224 today.
 
 ## The module pages TRUNCATE, and a summariser will fill the gap

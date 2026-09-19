@@ -377,7 +377,7 @@ impl FightParams {
     /// is `None`, and nothing downstream learns the concept exists.
     /// Weapon-scoped: recurses into the cycle's base form.
     pub fn deny_buff_triggers(&mut self, denied: &[String]) {
-        use crate::data::buff_events::{arc_trigger_id, of_builtin, trigger_id};
+        use crate::data::buff_events::of_builtin;
         if denied.is_empty() {
             return;
         }
@@ -466,8 +466,8 @@ impl FightParams {
                 *spec = None;
             }
         }
-        self.stacking_buffs.retain(|b| !hit(Some(trigger_id(b.trigger))));
-        self.arcane.buffs.retain(|b| !hit(arc_trigger_id(b.trigger)));
+        self.stacking_buffs.retain(|b| !hit(Some(b.trigger.id())));
+        self.arcane.buffs.retain(|b| !hit(b.trigger.id()));
         if let Some(cy) = self.cycle.as_mut() {
             cy.base_form.deny_buff_triggers(denied);
         }

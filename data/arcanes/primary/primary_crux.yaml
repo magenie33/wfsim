@@ -27,21 +27,21 @@ effects:
   #    natural weak points only, which is what `BodyPart::is_head` models.
   #  - Ammo efficiency is "additive with other sources", i.e. Frenzy's bucket.
   - kind: buff
-    trigger: on_weakpoint_hit
+    trigger: weakpoint_hit
     grants: status_chance
     rank0: 0.05
     rankMax: 0.3
     max_stacks: 10
     duration: 10
-    decay: all_drop_on_timeout
+    decay: all_at_once
   - kind: buff
-    trigger: on_weakpoint_hit
+    trigger: weakpoint_hit
     grants: ammo_efficiency
     rank0: 0.01
     rankMax: 0.06
     max_stacks: 10
     duration: 10
-    decay: all_drop_on_timeout
+    decay: all_at_once
 
 source:
   url: https://wiki.warframe.com/w/Primary_Crux

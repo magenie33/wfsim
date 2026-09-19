@@ -47,7 +47,7 @@ effects:
   # reaching a body, so the Cernos Prime's three arrows and a punched-through
   # second body each earn one without any of it being arranged here.
   - kind: stacking_buff
-    trigger: on_hit
+    trigger: hit
     grants: multishot
     rank0: 0.167
     rankMax: 1.0

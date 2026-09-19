@@ -8,7 +8,8 @@
 //! of what a shot does once it leaves the barrel. docs/MECHANICS.md is the
 //! reference; body parts, crit tiers and the headcrit fold-in are its §5/§7.
 
-use crate::data::arcanes::{ArcBuffSpec, ArcTrigger, ArcaneFx};
+use crate::data::arcanes::{ArcBuffSpec, ArcaneFx};
+use crate::model::ArcTrigger;
 use crate::model::ArcGrant;
 use crate::rules::buffs::BuffBar;
 use crate::rules::damage::{DamageType, DamageVector};

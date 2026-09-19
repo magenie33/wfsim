@@ -3,7 +3,7 @@
 //!
 //! For now it runs the basic "shoot the training dummy" Monte Carlo: Dual
 //! Toxocyst base form + Secondary Enervate, 50% headshots, 1000 runs x 10 s.
-//! See `engine::dummy` for the (deliberately basic) model and its assumptions.
+//! See `engine::fight` for the (deliberately basic) model and its assumptions.
 
 use std::path::Path;
 use wfsim_engine::data::arcanes::ArcaneFx;

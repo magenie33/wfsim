@@ -21,8 +21,9 @@ effects:
   # below records. Measure it after DE fixes it, then model it.
   # One stack of a stacking buff — see dual_toxocyst_ripper_rounds.yaml.
   - kind: stacking_buff
-    trigger: on_headshot
-    per_stack: { toxin_damage_bonus: 0.70 }
+    trigger: headshot
+    grants: toxin_damage
+    per_stack: 0.70
     max_stacks: 1
     duration: 3
 

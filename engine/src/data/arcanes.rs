@@ -24,6 +24,7 @@ use serde_norway::Value;
 use crate::model::{Rarity, StackPolicy};
 use crate::model::{count_x, fill_x, pct};
 use crate::model::{ArcGrant, TennoStat};
+use crate::model::ArcTrigger;
 
 #[derive(Debug, Deserialize)]
 struct ArcaneFile {
@@ -77,42 +78,6 @@ impl Scale {
         }
         r0 + (self.rank_max - r0) * rank.min(max_rank) as f64 / max_rank as f64
     }
-}
-
-/// What event grants/refreshes a stack.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ArcTrigger {
-    /// Any kill (Secondary Merciless).
-    Kill,
-    /// Direct-pellet headshot kill (Secondary Deadhead's precision boundary).
-    HeadshotKill,
-    /// Melee kill — the sim has no melee: the buff starts full (user
-    /// setting) and only decays (Secondary Dexterity).
-    MeleeKill,
-    /// A Heat status this weapon applies (Cascadia Flare).
-    HeatStatus,
-    /// An Electricity status this weapon applies (Conjunction Voltage).
-    ElectricityStatus,
-    /// A Toxin status this weapon applies (Primary Blight). Blight is
-    /// stricter than the other on-status arcanes — wiki: "stacking the
-    /// Blight buff requires the Toxin proc to be inflicted by using the
-    /// attached primary weapon" — which is exactly what the sim can see.
-    ToxinStatus,
-    /// A Cold status this weapon applies (Primary Frostbite).
-    ColdStatus,
-    /// Nothing grants it — it is simply ON. A Tenno-scaled arcane (Primary
-    /// Bulwark, Primary Overcharge) reads a Warframe stat that does not change
-    /// during the fight, so its buff starts at its one stack, is pinned there,
-    /// and no event has to fire. It rides the buff machinery rather than a new
-    /// static bucket because the GRANTS are the same ones the on-kill arcanes
-    /// already feed correctly.
-    Passive,
-    /// A direct-pellet hit on a natural weak point (Primary Crux) — a HIT, not
-    /// a kill, and PER PELLET: "Multiple individual pellets from a single shot
-    /// (either innate to the weapon or generated via Multishot) can build
-    /// stacks" (wiki). Weak spots created by Banshee's Sonar do NOT count,
-    /// which is also exactly what `BodyPart::is_head` means here.
-    WeakpointHit,
 }
 
 /// One emergent stacking buff, resolved at a rank.
@@ -614,16 +579,16 @@ pub fn arc_condition(v: &Value) -> Option<ArcCondition> {
         "target_has_10_radiation_stacks" => ArcCondition::TargetRadiationStacks(10),
         // The three Tenno states, NAMED rather than matched by shape: a new one
         // has to be added here, which is the whole mechanism.
-        "while_sliding_or_aim_gliding"
-        | "while_overshields_active"
-        | "while_buffing_ally_warframes"
+        "sliding_or_aim_gliding"
+        | "overshields"
+        | "buffing_ally_warframes"
         // AIRBORNE, which is the same family: a state of the TENNO that this
         // arena does not model, so the house reading treats it as satisfied. It
         // costs nothing to be optimistic here because Pax Soar's three grants —
         // accuracy, recoil and aim glide — all pay zero either way; the gate is
         // recorded so that the day one of them can be paid, the condition is
         // already the right kind.
-        | "while_airborne" => ArcCondition::AssumedTennoState,
+        | "airborne" => ArcCondition::AssumedTennoState,
         other => ArcCondition::Unknown(other.to_string()),
     })
 }
@@ -635,26 +600,18 @@ fn effect(v: &Value) -> Option<ArcEffect> {
         "buff" => {
             let trigger = s(v, "trigger")?;
             let grants = s(v, "grants")?;
-            let all_drop = s(v, "decay") == Some("all_drop_on_timeout");
+            let all_drop = crate::model::BuffDecay::from_id(s(v, "decay")) == crate::model::BuffDecay::AllAtOnce;
             let trig = match trigger {
-                "on_kill" => ArcTrigger::Kill,
-                "on_precision_headshot_kill" => ArcTrigger::HeadshotKill,
-                "on_melee_kill" => ArcTrigger::MeleeKill,
-                "on_heat_status" => ArcTrigger::HeatStatus,
-                "on_electricity_status" => ArcTrigger::ElectricityStatus,
-                "on_toxin_status" => ArcTrigger::ToxinStatus,
-                "on_cold_status" => ArcTrigger::ColdStatus,
                 // Longbow Sharpshot: armed by a headshot, spent on the next
                 // shot, and MULTIPLICATIVE — "Damage bonus is multiplicative to
                 // mods like Serration". It reaches the same final-damage
                 // multiplier as the ability-cast one because that is the
                 // bucket, not because the trigger is alike.
-                "on_weakpoint_hit" if grants == "final_damage" => {
+                "weakpoint_hit" if grants == "final_damage" => {
                     return Some(ArcEffect::FinalDamageCap(scale(v)))
                 }
-                "on_weakpoint_hit" => ArcTrigger::WeakpointHit,
                 // Non-simmed triggers with modeled grants:
-                "on_swap_consume_combo" => {
+                "swap_consume_combo" => {
                     return Some(match grants {
                         "crit_chance" => ArcEffect::CondCritChanceStacked {
                             scale: scale(v),
@@ -667,18 +624,21 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                         other => ArcEffect::Inert(format!("on_swap grant {other}")),
                     })
                 }
-                "on_roll" if grants == "weakpoint_crit_chance" => {
+                "roll" if grants == "weakpoint_crit_chance" => {
                     return Some(ArcEffect::WeakpointCritChance(scale(v)))
                 }
-                "on_ability_cast" if grants == "final_damage" => {
+                "ability_cast" if grants == "final_damage" => {
                     return Some(ArcEffect::FinalDamageCap(scale(v)))
                 }
-                "on_ability_cast" if grants == "reload_speed" => {
+                "ability_cast" if grants == "reload_speed" => {
                     return Some(ArcEffect::CondReloadSpeed(scale(v)))
                 }
                 // Enervate's on_hit buff is implemented by its perk.
-                "on_hit" => return Some(ArcEffect::Elsewhere("on_hit".into())),
-                other => return inert(&format!("trigger {other}")),
+                "hit" => return Some(ArcEffect::Elsewhere("on_hit".into())),
+                other => match ArcTrigger::from_id(other) {
+                    Some(t) => t,
+                    None => return inert(&format!("trigger {other}")),
+                },
             };
             let grant = match grants {
                 "base_damage" => ArcGrant::BaseDamage,

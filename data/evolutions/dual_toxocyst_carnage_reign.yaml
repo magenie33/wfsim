@@ -66,8 +66,8 @@ effects:
   # nothing here generalises to it — the same per-entry rule the CO catalog is
   # read under.
   - kind: gated_by_tenno
-    condition: "energy_max >= 200"
-    grant: condition_overload
+    condition: "max_energy >= 200"
+    grants: condition_overload
     value: 0.33
     # THE CO SEMANTICS ARE NOT ON THIS ENTRY and never were: the gate feeds the
     # same `co` term `innate_co_per_type` does (`loadout.rs`), so `co_behavior`

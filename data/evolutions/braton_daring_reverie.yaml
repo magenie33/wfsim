@@ -27,7 +27,7 @@ effects:
   # see notes: family_conditional_half_larger
   - kind: gated_by_tenno
     condition: channeling
-    grant: flat_base_damage
+    grants: flat_base_damage
     value: 30.0
   - kind: out_of_scope
     clause: "With Channeled Ability active: +50% Ammo Efficiency"

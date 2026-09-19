@@ -11,7 +11,7 @@ effects:
   # ADDITIVE with their buckets (Pistol Gambit / Target Cracker). Swapping with
   # a LOWER combo does not override a stronger active buff.
   - kind: buff
-    trigger: on_swap_consume_combo
+    trigger: swap_consume_combo
     grants: crit_chance
     rank0: 0.05
     rankMax: 0.2
@@ -19,7 +19,7 @@ effects:
     max_stacks: 12
     duration: 30
   - kind: buff
-    trigger: on_swap_consume_combo
+    trigger: swap_consume_combo
     grants: crit_damage
     rank0: 0.05
     rankMax: 0.2

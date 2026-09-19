@@ -12,21 +12,21 @@ effects:
   # proc; on timeout ALL stacks drop at once (on-status family, wiki-confirmed
   # same behavior as Cascadia Flare).
   - kind: buff
-    trigger: on_electricity_status
+    trigger: electricity_status
     grants: reload_speed
     rank0: 0.0025
     rankMax: 0.015
     max_stacks: 40
     duration: 12
-    decay: all_drop_on_timeout
+    decay: all_at_once
   - kind: buff
-    trigger: on_electricity_status
+    trigger: electricity_status
     grants: multishot
     rank0: 0.005
     rankMax: 0.03
     max_stacks: 40
     duration: 12
-    decay: all_drop_on_timeout
+    decay: all_at_once
 
 source:
   url: https://wiki.warframe.com/w/Conjunction_Voltage

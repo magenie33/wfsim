@@ -14,7 +14,7 @@ effects:
   # Condition Overload payload: +rankMax per status TYPE on the target, per
   # stack, DIRECT hits only. Its arithmetic is per-weapon (weapon co_behavior).
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: condition_overload
     rank0: 0.036
     rankMax: 0.4

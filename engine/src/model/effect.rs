@@ -73,18 +73,92 @@ impl CondBucket {
     }
 }
 
-/// A player STATE a mod can be conditional on. One variant per field of
-/// [`crate::data::tenno::TennoState`] — the two are meant to be read together.
+/// WHAT A CARD ASKS OF THE PLAYER — one vocabulary for "while aiming" and
+/// "with armor over 450" alike, read from a data file's `condition:` and
+/// answered by the fight's Tenno (`crate::data::tenno`).
 ///
-/// `Aiming` is in here rather than beside it: it was a bool threaded through
-/// `resolve` while the other states lived on the Tenno, which is two homes for
-/// one kind of fact and two places to remember when the third state lands. A card says "while X"; the fight says who is doing what;
-/// one enum joins them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// A STATE (`Aiming`, `Overshields`, …) is one field of
+/// [`crate::data::tenno::TennoState`]; a THRESHOLD reads a stat the frame
+/// has. The neutral player claims nothing (sprint 0.9, no armor, no energy),
+/// so a gated card pays zero until someone says which frame holds the gun.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TennoCondition {
     Aiming,
     Invisible,
     Airborne,
+    /// `sprint_speed >= x`
+    SprintAtLeast(f64),
+    /// `armor > x`
+    ArmorOver(f64),
+    /// `max_energy > x`
+    MaxEnergyOver(f64),
+    /// `max_energy >= x` — the Dual Toxocyst's Carnage Reign, whose per-status
+    /// clause carries an UNLISTED "With Energy Max >= 200". Its own variant
+    /// rather than `MaxEnergyOver(199)`: the card says >=, and a threshold
+    /// written one off reads as a typo the moment a frame lands between the two.
+    MaxEnergyAtLeast(f64),
+    /// `overshields` — Haven Foray, Guardian's Might: "With Overshields".
+    Overshields,
+    /// `channeling` — "With Channeled Ability active": the ability must be
+    /// DRAINING ENERGY over time.
+    Channeling,
+    /// `melee_equipped` — *"With Melee Weapon Equipped"*: DRAWN, not quick-melee.
+    MeleeEquipped,
+    /// `solo_weapon` — the Vasto's Lone Gun: "With No Primary Equipped". It
+    /// asks about the LOADOUT, not the frame: the arena firing one weapon says
+    /// nothing about what else is in the other two slots.
+    SoloWeapon,
+}
+
+impl TennoCondition {
+    /// The condition a data file's `condition:` names — the one spelling every
+    /// catalog uses. `None` for a word that is not a question about the player.
+    pub fn from_id(c: &str) -> Option<Self> {
+        use TennoCondition as C;
+        let num = |s: &str| s.trim().parse::<f64>().ok();
+        // `>=` BEFORE `>`: reading them in card order is how the next one gets
+        // added correctly (the strict prefix carries a trailing space, so the
+        // two cannot be confused either way).
+        let threshold = [
+            ("sprint_speed >= ", C::SprintAtLeast as fn(f64) -> C),
+            ("armor > ", C::ArmorOver),
+            ("max_energy >= ", C::MaxEnergyAtLeast),
+            ("max_energy > ", C::MaxEnergyOver),
+        ];
+        for (prefix, make) in threshold {
+            if let Some(x) = c.strip_prefix(prefix).and_then(num) {
+                return Some(make(x));
+            }
+        }
+        Some(match c {
+            "aiming" => C::Aiming,
+            "invisible" => C::Invisible,
+            "airborne" => C::Airborne,
+            "overshields" => C::Overshields,
+            "channeling" => C::Channeling,
+            "melee_equipped" => C::MeleeEquipped,
+            "solo_weapon" => C::SoloWeapon,
+            _ => return None,
+        })
+    }
+
+    /// The words a card shows. English is the source; the overlay translates.
+    pub fn describe(self) -> String {
+        use TennoCondition as C;
+        match self {
+            C::Aiming => "while aiming".to_string(),
+            C::Invisible => "while Invisible".to_string(),
+            C::Airborne => "while Airborne".to_string(),
+            C::SprintAtLeast(x) => format!("at sprint speed {x} or higher"),
+            C::ArmorOver(x) => format!("with armor over {x}"),
+            C::MaxEnergyOver(x) => format!("with max energy over {x}"),
+            C::MaxEnergyAtLeast(x) => format!("with max energy of {x} or higher"),
+            C::Overshields => "with overshields".to_string(),
+            C::Channeling => "with a channeled ability active".to_string(),
+            C::SoloWeapon => "with no other weapon equipped".to_string(),
+            C::MeleeEquipped => "with the melee weapon drawn".to_string(),
+        }
+    }
 }
 
 /// One resolved effect of a mod at its equipped rank.
@@ -307,7 +381,7 @@ pub enum ModEffect {
     /// Reflex Draw: temporary handling buff on weapon swap-in. Conditional
     /// and handling-only — never a static panel stat.
     OnEquipHandling { recoil: f64, accuracy: f64, duration: f64 },
-    /// An effect gated on the player AIMING (`condition: while_aiming` in the
+    /// An effect gated on the player AIMING (`condition: aiming` in the
     /// data: Galvanized Crosshairs / Scope, Argon Scope, Hydraulic Crosshairs,
     /// Sharpened Bullets, Bladed Rounds, Pressurized Magazine, the Catalyzers).
     ///
@@ -740,6 +814,35 @@ pub enum IndirectStat {
 }
 
 impl IndirectStat {
+    /// The stat a data file names — a `grants:` on a card, or a `stat:` on an
+    /// evolution's `indirect` effect. One table for both.
+    pub fn from_id(id: &str) -> Option<Self> {
+        Some(match id {
+            "recoil" => IndirectStat::Recoil,
+            "accuracy" => IndirectStat::Accuracy,
+            "noise" => IndirectStat::Noise,
+            "zoom" => IndirectStat::Zoom,
+            "ammo_max" => IndirectStat::AmmoMax,
+            "projectile_speed" => IndirectStat::ProjectileSpeed,
+            "holstered_reload" => IndirectStat::HolsteredReload,
+            "dodge_speed" => IndirectStat::DodgeSpeed,
+            "acrobatic_speed" => IndirectStat::AcrobaticSpeed,
+            "punch_through" => IndirectStat::PunchThrough,
+            "range" => IndirectStat::Range,
+            "beam_range" => IndirectStat::BeamRange,
+            "beam_range_percent" => IndirectStat::BeamRangePercent,
+            "movement_speed" => IndirectStat::MovementSpeed,
+            "sprint_speed" => IndirectStat::SprintSpeed,
+            "ability_strength" => IndirectStat::AbilityStrength,
+            "ability_duration" => IndirectStat::AbilityDuration,
+            "ability_efficiency" => IndirectStat::AbilityEfficiency,
+            "energy_regen" => IndirectStat::EnergyRegen,
+            "ally_buff" => IndirectStat::AllyBuff,
+            "strip_on_kill" => IndirectStat::StripOnKill,
+            "orb_drop" => IndirectStat::OrbDrop,
+            _ => return None,
+        })
+    }
     pub fn label(&self) -> &'static str {
         match self {
             IndirectStat::AbilityStrength => "Ability Strength",
@@ -909,7 +1012,7 @@ pub struct ModDef {
     /// gate: that one equips and sits inert, this one is never offered.
     pub requires_weapon: Option<&'static str>,
     /// The weapons this mod may be equipped on, and nothing else. Empty means
-    /// "any weapon whose pool carries it" — see `mods_data`.
+    /// "any weapon whose pool carries it" — see `data::mods`.
     pub exclusive_to: &'static [&'static str],
     /// DE's INCOMPATIBILITY tags for this mod, lowercased — the mirror of
     /// `requires_weapon`, and the reason Amalgam Serration is not offered on

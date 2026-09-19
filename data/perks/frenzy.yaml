@@ -5,7 +5,7 @@ name: Frenzy
 # group (the buff persists across transforms and headshots keep triggering
 # it while transformed — user-confirmed 2026-07-24). The stateful
 # implementation is engine::rules::perks::frenzy, looked up by this id.
-trigger: on_headshot
+trigger: headshot
 scope: weapon
 duration_seconds: 3
 refreshable: true

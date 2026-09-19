@@ -9328,7 +9328,7 @@ function boardRowIdentity(row) {
 /// ZERO IS "EVERYTHING THE BOARD KEPT", and it is offered because the
 /// alternative is a reader who cannot tell a build that was never submitted
 /// from one the page declined to draw. What it bottoms out at is the board's
-/// own ENTRY LINE — a tenth of the group's leader, `boards_data`'s
+/// own ENTRY LINE — a tenth of the group's leader, `data::boards`'s
 /// `KEEP_LEADER_SHARE` — and the number is not repeated here: zero means "no
 /// filter", which stays true wherever that line is drawn, and a copy of it
 /// would be a second answer to one question the day the line moves.
@@ -11273,7 +11273,7 @@ function renderMods() {
 // Mods keep slot order (elements are position-sensitive).
 //
 // It carries the TENNO as well as the weapon, because half of what a build is
-// worth is a question about the player: a mod gated `while_invisible` pays or
+// worth is a question about the player: a mod gated `invisible` pays or
 // does not, and Primary Bulwark is worth +500% or nothing depending on the
 // frame's armor. A panel resolving against the NEUTRAL player while the sim
 // resolves against the fight's offers a buff card the sim never runs, and

@@ -44,7 +44,7 @@ effects:
   # worth exactly the magazine after it and never the one they were fired from.
   # Nothing times out — the count is a magazine's, not a clock's.
   - kind: stacking_buff
-    trigger: on_reload
+    trigger: reload_complete
     grants: status_chance
     per_shell: true
     cleared_by: magazine_refilled
@@ -52,7 +52,7 @@ effects:
     rankMax: 0.15
     max_stacks: 15
   - kind: stacking_buff
-    trigger: on_reload
+    trigger: reload_complete
     grants: multishot
     per_shell: true
     cleared_by: magazine_refilled

@@ -7,7 +7,7 @@ card is "+330% Damage **while Invisible**"; the file was a flat
 `base_damage_bonus`, so every build collected it.
 
 Invisibility is a WARFRAME state, and the fight now has a Warframe in it:
-`condition: while_invisible` is asked of the arena's Tenno. The neutral Tenno
+`condition: invisible` is asked of the arena's Tenno. The neutral Tenno
 is visible, so the mod contributes nothing and the panel's row says why
 ("+330%, while Invisible"). Verified: Torid, Thrax Lv 300 SP, 120 s, 100 runs —
 0.2865 with no fifth mod, **0.2865 with Spectral Serration**, 0.3437 with plain

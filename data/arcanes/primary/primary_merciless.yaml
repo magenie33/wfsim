@@ -10,7 +10,7 @@ effects:
   # (the Serration bucket here), so it scales ModifiedBase too. On timeout:
   # lose ONE stack and reset the timer (kill-family decay).
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: base_damage
     rank0: 0.05
     rankMax: 0.3

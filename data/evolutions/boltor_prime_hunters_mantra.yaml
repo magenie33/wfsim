@@ -26,7 +26,7 @@ effects:
   # see notes: accuracy_half_now_pays
   - kind: gated_by_tenno
     condition: channeling
-    grant: accuracy_bonus
+    grants: accuracy
     value: 0.40
 
 source:

@@ -41,7 +41,7 @@ effects:
   # bonus off — an invisible Tenno collects it, exactly as Spectral Serration
   # collects its +330%.
   #
-  # `condition: while_invisible` is asked of `data/tenno/`, whose neutral entry
+  # `condition: invisible` is asked of `data/tenno/`, whose neutral entry
   # is not invisible, so this contributes nothing until the fight's Tenno is.
   #
   # "Critical Damage bonus is additive with other crit damage mods (e.g. Vital
@@ -49,7 +49,7 @@ effects:
   # "Fixed the Unseen Dread augment increasing Critical Chance instead of the
   # intended Critical Damage while invisible."
   - kind: crit_damage_bonus
-    condition: while_invisible
+    condition: invisible
     rank0: 0.50
     rankMax: 1.75
 

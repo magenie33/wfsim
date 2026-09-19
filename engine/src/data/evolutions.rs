@@ -329,7 +329,7 @@ enum EvoEffect {
     /// One variant for all of them: the gate and the bracket are both data, so
     /// the next perk that asks about the player is a yaml block.
     GatedByTenno {
-        gate: crate::model::TennoGate,
+        gate: crate::model::TennoCondition,
         grant: crate::model::GatedGrant,
         value: f64,
     },
@@ -708,7 +708,7 @@ impl EvolutionDef {
             .filter_map(|e| match e {
                 EvoEffect::GatedByTenno { gate, grant, value }
                     if *grant == crate::model::GatedGrant::FlatBaseMagazine
-                        && gate.open(tenno) =>
+                        && gate.holds(tenno) =>
                 {
                     Some(*value)
                 }
@@ -1418,27 +1418,6 @@ impl EvolutionDef {
     }
 }
 
-/// `stat:` names an [`IndirectStat`]. Deliberately EXPLICIT rather than a
-/// fuzzy match: an unknown name falls through to `Inert(...)` and the pinned
-/// inert test then fails, which is how a typo announces itself instead of
-/// silently contributing nothing.
-fn indirect_stat(name: &str) -> Option<crate::model::IndirectStat> {
-    use crate::model::IndirectStat as I;
-    Some(match name {
-        "recoil" => I::Recoil,
-        "accuracy" => I::Accuracy,
-        "punch_through" => I::PunchThrough,
-        "projectile_speed" => I::ProjectileSpeed,
-        "holstered_reload_per_second" => I::HolsteredReload,
-        "movement_speed_aiming" => I::MovementSpeed,
-        "ammo_max" => I::AmmoMax,
-        "zoom" => I::Zoom,
-        "range" => I::Range,
-        "beam_range" => I::BeamRange,
-        "noise" => I::Noise,
-        _ => return None,
-    })
-}
 
 fn f(v: &Value, k: &str) -> Option<f64> {
     v.get(k).and_then(Value::as_f64)
@@ -1481,7 +1460,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             let ty = |k: &str| {
                 v.get(k).and_then(Value::as_str).and_then(crate::rules::damage::DamageType::from_name)
             };
-            match (ty("trigger"), ty("applies")) {
+            match (ty("from"), ty("to")) {
                 (Some(from), Some(to)) => EvoEffect::ProcConversion {
                     from,
                     to,
@@ -1517,7 +1496,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // The handling family. `indirect` names its target in `stat:`; the
         // rest are named kinds that predate it and keep their spelling so the
         // yaml still reads like the card.
-        "indirect" => match v.get("stat").and_then(Value::as_str).and_then(indirect_stat) {
+        "indirect" => match v.get("stat").and_then(Value::as_str).and_then(crate::model::IndirectStat::from_id) {
             Some(st) => EvoEffect::Indirect(st, f(v, "value").unwrap_or(0.0)),
             None => EvoEffect::Inert(format!(
                 "indirect ({})",
@@ -1585,47 +1564,35 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             EvoEffect::MultishotConsumesAmmo(f(v, "value").unwrap_or(0.0))
         }
         // REAVER'S RAPTURE, and the trigger is what picks this arm: a
-        // `base_damage_bonus` payload on a `full_burst_hit` trigger. Both are
-        // read rather than assumed — the same payload on another trigger is a
-        // different perk and stays inert until someone models it.
+        // `base_damage` grant on a `full_burst` trigger. Both are read rather
+        // than assumed — the same grant on another trigger is a different perk
+        // and stays inert until someone models it.
         "stacking_buff"
-            if v.get("trigger").and_then(Value::as_str) == Some("full_burst_hit")
-                && v.get("per_stack")
-                    .and_then(|p| p.get("base_damage_bonus"))
-                    .is_some() =>
+            if v.get("trigger").and_then(Value::as_str) == Some("full_burst")
+                && v.get("grants").and_then(Value::as_str) == Some("base_damage") =>
         {
             EvoEffect::BaseDamagePerFullBurst {
-                per_stack: v
-                    .get("per_stack")
-                    .and_then(|p| p.get("base_damage_bonus"))
-                    .and_then(Value::as_f64)
-                    .unwrap_or(0.0),
+                per_stack: f(v, "per_stack").unwrap_or(0.0),
                 max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
             }
         }
         // THE GENERAL ARM. Everything the sim's own vocabulary can already
         // express, named by a yaml: trigger, grant, size, cap, clock, decay and
-        // what takes the pile. It sits BELOW the two arms above, which carry
+        // what takes the pile. It sits BELOW the arm above, which carries
         // reasoning a generic one cannot.
         "stacking_buff"
-            if v.get("trigger").and_then(Value::as_str).and_then(buff_trigger).is_some()
-                && v.get("per_stack")
-                    .and_then(Value::as_mapping)
-                    .and_then(|m| m.keys().next().and_then(Value::as_str))
-                    .and_then(buff_grant)
-                    .is_some() =>
+            if v.get("trigger").and_then(Value::as_str).and_then(crate::model::BuffTrigger::from_id).is_some()
+                && v.get("grants").and_then(Value::as_str).and_then(crate::model::BuffGrant::from_id).is_some() =>
         {
-            let trigger = buff_trigger(v.get("trigger").and_then(Value::as_str).unwrap()).unwrap();
-            let per = v.get("per_stack").and_then(Value::as_mapping).unwrap();
-            let (key, val) = per.iter().next().unwrap();
-            let grant = buff_grant(key.as_str().unwrap()).unwrap();
+            let trigger = crate::model::BuffTrigger::from_id(v.get("trigger").and_then(Value::as_str).unwrap()).unwrap();
+            let grant = crate::model::BuffGrant::from_id(v.get("grants").and_then(Value::as_str).unwrap()).unwrap();
             let duration = f(v, "duration_seconds")
                 .or_else(|| f(v, "duration"))
                 .unwrap_or(crate::model::NO_TIMEOUT);
             EvoEffect::StackingGrant {
                 trigger,
                 grant,
-                per_stack: val.as_f64().unwrap_or(0.0),
+                per_stack: f(v, "per_stack").unwrap_or(0.0),
                 max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
                 duration,
                 // Default 1.0 so a perk that does NOT roll reads as certain
@@ -1635,17 +1602,8 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 chance: f(v, "chance").unwrap_or(1.0),
                 // The Galvanized family unless the card says otherwise: one
                 // stack drops on timeout and the timer restarts.
-                decay: match v.get("decay").and_then(Value::as_str) {
-                    Some("per_stack_expiry") => crate::model::BuffDecay::PerStackExpiry,
-                    Some("all_at_once") => crate::model::BuffDecay::AllAtOnce,
-                    _ => crate::model::BuffDecay::LoseOneAndReset,
-                },
-                cleared_by: match v.get("cleared_by").and_then(Value::as_str) {
-                    Some("reload") => crate::model::ClearedBy::Reload,
-                    Some("magazine_refilled") => crate::model::ClearedBy::MagazineRefilled,
-                    Some("empty_magazine") => crate::model::ClearedBy::EmptyMagazine,
-                    _ => crate::model::ClearedBy::Nothing,
-                },
+                decay: crate::model::BuffDecay::from_id(v.get("decay").and_then(Value::as_str)),
+                cleared_by: crate::model::ClearedBy::from_id(v.get("cleared_by").and_then(Value::as_str)),
                 // TRANSCRIBED FROM THE CARD, and false is not "it decays" — it
                 // is "the card does not say". Two of the twenty buffs that
                 // reach this arm with no clock and no clear actually state it,
@@ -1657,28 +1615,18 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             }
         }
         "stacking_buff" => {
-            // Only the multishot payload is modeled (Fevered Frenzy);
-            // other stacking payloads load inert until needed.
-            let per = v
-                .get("per_stack")
-                .and_then(|p| p.get("multishot_bonus"))
-                .and_then(Value::as_f64);
+            // Only the multishot grant is modeled here (Fevered Frenzy, whose
+            // trigger the sim has no event for); other payloads load inert.
             let max = v.get("max_stacks").and_then(Value::as_u64).unwrap_or(0);
-            match per {
-                Some(p) => EvoEffect::AssumedMaxMultishot {
-                    total: p * max as f64,
+            match v.get("grants").and_then(Value::as_str) {
+                Some("multishot") => EvoEffect::AssumedMaxMultishot {
+                    total: f(v, "per_stack").unwrap_or(0.0) * max as f64,
                     max_stacks: max as u32,
                 },
                 // NAME the payload. "unmodeled payload" told the pinned inert
                 // list nothing: two different unmodelled buffs read as the
                 // same entry, and neither said what it granted.
-                None => EvoEffect::Inert(format!(
-                    "stacking_buff {}",
-                    v.get("per_stack")
-                        .and_then(Value::as_mapping)
-                        .and_then(|m| m.keys().next().and_then(|k| k.as_str()).map(str::to_string))
-                        .unwrap_or_else(|| "no payload".into())
-                )),
+                other => EvoEffect::Inert(format!("stacking_buff {}", other.unwrap_or("no payload"))),
             }
         }
         // THE CONDITION IS READ NOW, and it is a question about the PLAYER
@@ -1737,13 +1685,13 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             let Some(gate) = tenno_condition(v) else {
                 return Some(EvoEffect::Inert("gated_by_tenno with an unreadable `condition:`".into()));
             };
-            let grant = match v.get("grant").and_then(Value::as_str) {
+            let grant = match v.get("grants").and_then(Value::as_str) {
                 Some("condition_overload") => crate::model::GatedGrant::ConditionOverload,
                 Some("fire_rate") => crate::model::GatedGrant::FireRate,
                 Some("multishot") => crate::model::GatedGrant::Multishot,
                 Some("base_crit_damage") => crate::model::GatedGrant::BaseCritDamage,
                 Some("projectile_speed") => crate::model::GatedGrant::ProjectileSpeed,
-                Some("accuracy_bonus") => crate::model::GatedGrant::Accuracy,
+                Some("accuracy") => crate::model::GatedGrant::Accuracy,
                 Some("flat_base_damage") => crate::model::GatedGrant::FlatBaseDamage,
                 Some("flat_base_magazine") => crate::model::GatedGrant::FlatBaseMagazine,
                 other => {
@@ -1776,7 +1724,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             needs_melee_equipped: v
                 .get("condition")
                 .and_then(Value::as_str)
-                .is_some_and(|c| c == "with_melee_equipped"),
+                .is_some_and(|c| c == "melee_equipped"),
         },
         // The CONDITION is the only thing that varies between the roster's
         // three copies, and it is read rather than assumed: absent means any
@@ -1881,10 +1829,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             chance: f(v, "chance").unwrap_or(1.0),
             // The Galvanized family unless the card says otherwise — the same
             // default and the same word every other stacking buff here uses.
-            decay: match v.get("decay").and_then(Value::as_str) {
-                Some("per_stack_expiry") => crate::model::BuffDecay::PerStackExpiry,
-                _ => crate::model::BuffDecay::LoseOneAndReset,
-            },
+            decay: crate::model::BuffDecay::from_id(v.get("decay").and_then(Value::as_str)),
         },
         "crit_multiplier_below_crit_chance" => EvoEffect::CritMultiplierBelowCritChance {
             value: f(v, "value").unwrap_or(0.0),
@@ -2193,7 +2138,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::ConditionOverload { per_type, min_sprint } => {
                     if *min_sprint > 0.0 {
                         base.gated.push(crate::model::GatedTerm {
-                            gate: crate::model::TennoGate::SprintAtLeast(*min_sprint),
+                            gate: crate::model::TennoCondition::SprintAtLeast(*min_sprint),
                             grant: crate::model::GatedGrant::ConditionOverload,
                             value: *per_type,
                             into_co: 0.0,
@@ -2254,9 +2199,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::FireRateBonus { value, min_sprint, needs_melee_equipped } => {
                     let gate = if *min_sprint > 0.0 {
-                        Some(crate::model::TennoGate::SprintAtLeast(*min_sprint))
+                        Some(crate::model::TennoCondition::SprintAtLeast(*min_sprint))
                     } else if *needs_melee_equipped {
-                        Some(crate::model::TennoGate::MeleeEquipped)
+                        Some(crate::model::TennoCondition::MeleeEquipped)
                     } else {
                         None
                     };
@@ -2325,7 +2270,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         grant: if *is_base {
                             crate::model::BuffGrant::BaseMultishot
                         } else {
-                            crate::model::BuffGrant::MultishotPercent
+                            crate::model::BuffGrant::Multishot
                         },
                         // NO CLOCK, so the decay never runs; the reload is what
                         // ends it. Both wiki pages say so in the same words —
@@ -2347,7 +2292,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "on_status_multishot",
                         trigger: crate::model::BuffTrigger::HitEnemyWithStatus(*status),
-                        grant: crate::model::BuffGrant::Multishot,
+                        grant: crate::model::BuffGrant::FlatMultishot,
                         // FIFO, each stack on its own clock — owner
                         // observed in game, Stormburst and Riddled Target
                         // (M102) alike. Harsher than the Galvanized family:
@@ -2478,45 +2423,6 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     }
 }
 
-/// The yaml's word for a trigger. `None` = not one this engine runs, which is
-/// what makes the general `stacking_buff` arm fall through to the inert one
-/// instead of inventing a mechanic.
-fn buff_trigger(s: &str) -> Option<crate::model::BuffTrigger> {
-    use crate::model::BuffTrigger as T;
-    Some(match s {
-        "firing" => T::Firing,
-        "headshot" => T::Headshot,
-        "punch_through" => T::PunchThrough,
-        "consecutive_headshot" => T::ConsecutiveHeadshot,
-        "hit" => T::Hit,
-        "plain_hit" => T::PlainHit,
-        "reload_complete" => T::ReloadComplete,
-        "reload_from_empty" => T::ReloadFromEmpty,
-        "status_applied" => T::StatusApplied,
-        "kill" => T::Kill,
-        _ => return None,
-    })
-}
-
-/// The yaml's word for a grant — the KEY of the `per_stack:` map, so the payload
-/// names its own bracket and a perk cannot land in the wrong one by omission.
-fn buff_grant(s: &str) -> Option<crate::model::BuffGrant> {
-    use crate::model::BuffGrant as G;
-    Some(match s {
-        "base_damage_bonus" => G::BaseDamage,
-        "base_damage" => G::FlatBaseDamage,
-        "fire_rate_bonus" => G::FireRate,
-        "reload_speed_bonus" => G::ReloadSpeed,
-        "multishot" => G::Multishot,
-        "base_multishot" => G::BaseMultishot,
-        "multishot_percent" => G::MultishotPercent,
-        "base_crit_damage" => G::BaseCritDamage,
-        "crit_chance" => G::CritChance,
-        "headshot_damage_bonus" => G::HeadshotDamage,
-        _ => return None,
-    })
-}
-
 /// THE BUFF CARD'S ID, derived from what the buff IS rather than carried in the
 /// yaml. It is a durable name — the roster, the saved config and the sampler all
 /// key on it — so it is a finite reviewable table and not a formatted string.
@@ -2556,49 +2462,15 @@ fn stacking_card_id(
 /// speed. Kept for the two kinds that spell their gate this way.
 fn sprint_condition(v: &Value) -> f64 {
     match tenno_condition(v) {
-        Some(crate::model::TennoGate::SprintAtLeast(x)) => x,
+        Some(crate::model::TennoCondition::SprintAtLeast(x)) => x,
         _ => 0.0,
     }
 }
 
-/// `condition:` as a GATE — one spelling for every question a perk asks about
-/// the player. Unknown wording returns `None`, which the caller turns into an
-/// inert effect rather than a silently ungated grant: a condition nobody reads
-/// is a perk that pays on every build including the ones that cannot have it.
-fn tenno_condition(v: &Value) -> Option<crate::model::TennoGate> {
-    use crate::model::TennoGate as G;
-    let c = v.get("condition").and_then(Value::as_str)?;
-    let num = |s: &str| s.trim().parse::<f64>().ok();
-    if let Some(x) = c.strip_prefix("sprint_speed >= ").and_then(num) {
-        return Some(G::SprintAtLeast(x));
-    }
-    if let Some(x) = c.strip_prefix("armor > ").and_then(num) {
-        return Some(G::ArmorOver(x));
-    }
-    // `>=` BEFORE `>`, and not because the parser would confuse them (the
-    // strict prefix carries a trailing space, so it cannot match `>=`) — because
-    // reading them in card order is how the next gate gets added correctly.
-    if let Some(x) = c.strip_prefix("energy_max >= ").and_then(num) {
-        return Some(G::EnergyMaxAtLeast(x));
-    }
-    if let Some(x) = c.strip_prefix("energy_max > ").and_then(num) {
-        return Some(G::EnergyMaxOver(x));
-    }
-    // The one gate with no number: the card asks whether you HAVE overshields,
-    // not how many.
-    if c == "overshields" {
-        return Some(G::HasOvershields);
-    }
-    if c == "channeling" {
-        return Some(G::ChannelingAbility);
-    }
-    // THE LOADOUT, not the frame and not what it is doing: "With No Primary
-    // Equipped". Off by default, because the fight's Tenno walks in carrying
-    // everything unless the scenario says otherwise.
-    if c == "solo_weapon" {
-        return Some(G::SoloWeapon);
-    }
-    None
+/// The `condition:` a perk asks of the player. An unknown word is `None`, which
+/// the caller turns into an inert effect rather than a silently ungated grant.
+fn tenno_condition(v: &Value) -> Option<crate::model::TennoCondition> {
+    v.get("condition").and_then(Value::as_str).and_then(crate::model::TennoCondition::from_id)
 }
 
 /// WHY a clause can never pay out here — `docs/UNMODELLED.md`'s classes, as a
@@ -2920,7 +2792,7 @@ mod tests {
         let at = |energy: f64| {
             let mut t = crate::data::tenno::default_tenno().clone();
             t.energy = energy;
-            gate.0.open(&t)
+            gate.0.holds(&t)
         };
         assert!(!at(150.0), "the neutral Tenno is under the gate — this is what M49 measured");
         assert!(!at(199.0), "under the threshold");
@@ -3098,7 +2970,7 @@ use crate::model::WeaponBase;
             // punch through, multi-target only. Neurotoxin: "+70% Toxin for 3 s
             // on headshot" — the one genuine gap here, though it is also
             // `currently_broken` and `apply` skips those, so they cancel out.
-            "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage_bonus",
+            "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage",
             // WHAT EACH ENTRY IS WAITING ON: docs/INCARNON.md §"Perks this
             // loader does not model, and what each needs".
             //

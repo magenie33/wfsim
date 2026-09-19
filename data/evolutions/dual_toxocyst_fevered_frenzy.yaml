@@ -28,11 +28,12 @@ effects:
     # BEFORE mods - and therefore inside ModdedBase (DoT ticks scale too).
     value: 50
   - kind: stacking_buff
-    trigger: on_ability_cast
-    per_stack: { multishot_bonus: 0.05 }   # additive with multishot mods
+    trigger: ability_cast
+    grants: multishot
+    per_stack: 0.05   # additive with multishot mods
     max_stacks: 20
-    # `duration`/`cleared_on` are NOT loaded: `evolutions_data` maps a
-    # `stacking_buff` with a `multishot_bonus` payload to
+    # `duration`/`cleared_on` are NOT loaded: `data::evolutions` maps a
+    # `stacking_buff` granting `multishot` to
     # `AssumedMaxMultishot`, which carries only the total and the cap. That IS
     # the permanence — a buff with no timer and no in-sim trigger is a static
     # choice, full by default — so the two keys are the written record of why,

@@ -1998,7 +1998,7 @@ pub fn run_once_traced(
             }
             // Stormburst: "+0.4 Multishot", flat — same reason Final Fusillade
             // sits here rather than in the bucket above.
-            + buff_total!(ap, crate::model::BuffGrant::Multishot, t)
+            + buff_total!(ap, crate::model::BuffGrant::FlatMultishot, t)
             // BLAZING BARREL, both of its shapes, and they are two brackets.
             //
             // "+0.05 BASE Multishot" is added before mods and is therefore
@@ -2014,7 +2014,7 @@ pub fn run_once_traced(
             } else {
                 buff_total!(ap, crate::model::BuffGrant::BaseMultishot, t)
                     * (ap.multishot / ap.base_multishot.max(1e-9))
-                    + buff_total!(ap, crate::model::BuffGrant::MultishotPercent, t)
+                    + buff_total!(ap, crate::model::BuffGrant::Multishot, t)
                         * ap.base_multishot
             };
         let rolled = ms_eff.floor() as u32 + d.spine.chance(ms_eff.fract()) as u32;

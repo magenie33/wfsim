@@ -148,7 +148,7 @@ nothing invented.
   damage bonus is based on the number of status effects on the target directly
   struck by the attack … the number of status effects on the enemies receiving
   Melee Influence damage is not part of the calculation."* Every other spread in
-  `dummy` divides the aimed body's CO bucket out and multiplies the receiver's
+  `fight` divides the aimed body's CO bucket out and multiplies the receiver's
   in; this one must not, which is why it is not a `SpreadBy` arm.
 - **Its status burns off the SWING's base, not the spread instance's.** An
   ordinary Extra Hit replaces the base its status reads because it is a

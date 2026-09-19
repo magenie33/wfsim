@@ -141,7 +141,7 @@ builds that carry the mod. Four things, and three of them are prose that has
 gone stale:
 
 1. **`RadialSpec` has no `co_base_fraction`.** A radial's `co_base` is always
-   its own vector total (`weapons_data.rs`, `co_base: v.total()`), and only an
+   its own vector total (`data/weapons.rs`, `co_base: v.total()`), and only an
    evolution's flat damage can part the two. The missing piece is the yaml
    field, nothing else: `RadialBase` already carries its own `co_base` and
    `engine/src/fight/` already computes the explosion's term off `r.co_base_fraction`,

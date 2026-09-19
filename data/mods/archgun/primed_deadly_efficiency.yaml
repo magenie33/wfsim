@@ -24,7 +24,7 @@ effects:
   # sim reloads on empty anyway; a magazine-position-aware trigger is what
   # would make it exact.
   - kind: buff
-    trigger: on_reload
+    trigger: reload_complete
     grants: base_damage
     rank0: 0.2
     rankMax: 2.2

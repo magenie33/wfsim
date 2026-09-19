@@ -13,14 +13,14 @@ effects:
   # and the recoil half is NEGATIVE (a reduction), which is the sign convention
   # every recoil mod in `data/` already uses. 8s at every rank (WFCD levelStats).
   - kind: buff
-    trigger: on_equip
+    trigger: equip
     grants: recoil
     rank0: -0.1
     rankMax: -0.4
     max_stacks: 1
     duration: 8
   - kind: buff
-    trigger: on_equip
+    trigger: equip
     grants: accuracy
     rank0: 0.1
     rankMax: 0.4

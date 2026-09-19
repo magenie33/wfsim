@@ -16,7 +16,7 @@ effects:
   # This one is 4 stacks at +30% each, 20 s, and its unconditional half is
   # +110% against the rifle's +80% (WFCD levelStats r0/r10).
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: multishot
     rank0: 0.027
     rankMax: 0.3

@@ -26,8 +26,8 @@ effects:
   # ALL THREE VARIANTS — the row's variant cells are one `colspan="3" | -`.
   - kind: stacking_buff
     trigger: punch_through
-    per_stack:
-      fire_rate_bonus: 0.40
+    grants: fire_rate
+    per_stack: 0.40
     max_stacks: 1
     duration_seconds: 6.0
 

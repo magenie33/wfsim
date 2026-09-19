@@ -932,7 +932,7 @@ fn main() {
     // from measuring two different fights.
     let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
     // WHAT THIS RULER JUDGES BY, asked of the benchmark rather than resolved
-    // here. A ruler names exactly one core and `benchmarks_data` is where that
+    // here. A ruler names exactly one core and `board::benchmarks` is where that
     // rule is applied, so this cannot fall back on anything: a default reached
     // at the point of use publishes a whole ranking in the units of a question
     // nobody asked, and the number looks exactly like a right one.

@@ -29,7 +29,7 @@ together because one reading settles all three:
 
 **Consequence for the model.**
 
-- `engine::dummy` schedules a fresh `FieldState` with `next_tick: t` (was
+- `engine::fight` schedules a fresh `FieldState` with `next_tick: t` (was
   `t + 1/tick_rate`) and `ticks_left = duration × tick_rate`. Pinned by
   `one_grenade_leaves_ten_ticks_starting_with_the_impact`.
 - `FieldStacking` stays a two-branch DATA field on the weapon rather than

@@ -23,7 +23,7 @@ instances. It also independently corroborates the verbatim AoE rules
 (`Status_Effect`: each enemy hit gets its own status roll; Laetum: "Initial
 hit and explosion apply status separately") from the perk side.
 
-That is what `engine::dummy` implements — the trigger is evaluated inside the
+That is what `engine::fight` implements — the trigger is evaluated inside the
 attack-stage loop, so each stage judges its own crit and its own proc list.
 Pinned by `the_explosion_arms_an_on_hit_buff_of_its_own`, which gives the
 radial ZERO damage so the only thing it can contribute is the second arming.

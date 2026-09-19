@@ -16,7 +16,7 @@ effects:
     condition: channeling
   - kind: gated_by_tenno
     condition: channeling
-    grant: accuracy_bonus
+    grants: accuracy
     value: 0.40
 
 source:

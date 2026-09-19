@@ -71,6 +71,6 @@ Heat at 50% strip  (240 / 1296 + 1.5)        × 0.364  =  87.9 / 471.8
 `lands_on_a_part` names the two families, and `Dot::landing` carries the
 second layer over the whole tick. The Tesla arc posts its seed unchanged, and
 `drain_area_procs` draws each neighbour's landing at
-`TESLA_HEAD_LANDING_CHANCE` from its own stream. `m100_*` in `engine::dummy`
+`TESLA_HEAD_LANDING_CHANCE` from its own stream. `m100_*` in `engine::fight`
 replays the body, head and neighbour readings on the real unit and checks the
 rate.

@@ -30,7 +30,7 @@ effects:
   # Under the house assumed-max reading the gate would be treated as satisfied;
   # it makes no difference here, because the grants pay nothing either way.
   - kind: unmodeled
-    condition: while_airborne
+    condition: airborne
     rank0: 0.125
     rankMax: 0.50
 

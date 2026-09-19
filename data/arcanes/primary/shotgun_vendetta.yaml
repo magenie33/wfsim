@@ -27,7 +27,7 @@ effects:
   # uptime for a player fighting at range and is exact for the shotgun range
   # this arcane is built for. Recorded here rather than silently assumed.
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: multishot
     rank0: 0.3
     rankMax: 1.8
@@ -37,7 +37,7 @@ effects:
   # form the loader knows; the buff's own duration is what the card states, and
   # a 15 s window on a shotgun's reload cadence is most of the fight.
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: reload_speed
     rank0: 0.125
     rankMax: 0.75

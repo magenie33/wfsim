@@ -23,7 +23,7 @@ effects:
   # same way a mod's percentage is.
   - kind: gated_by_tenno
     condition: "armor > 450"
-    grant: multishot
+    grants: multishot
     value: 0.8
 
 source:

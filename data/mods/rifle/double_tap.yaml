@@ -5,7 +5,7 @@ polarity: madurai
 base_drain: 10                # max drain 13 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MoreDamageonTripleTapRifleMod
-# DE's own card, minus its third line — see OMITS_A_CLAUSE in i18n_data.rs.
+# DE's own card, minus its third line — see OMITS_A_CLAUSE in data/i18n.rs.
 # VERBATIM, rank 0: "ON HIT:\n5% Bonus Damage on next Shot for 0.5s.\nStacks up
 # to 80x outside of Conclave."
 #

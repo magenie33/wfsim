@@ -8,51 +8,6 @@
 //! the data tells apart — a weak-point KILL is not a kill, and the coarse
 //! vocabulary this replaced collapsed exactly those.
 
-use crate::data::arcanes::ArcTrigger;
-use crate::model::BuffTrigger;
-
-/// The wire id of a data-declared trigger — what a scenario, a share link and a
-/// benchmark carry.
-///
-/// EXHAUSTIVE ON PURPOSE — no `_` arm, so a trigger added to [`BuffTrigger`]
-/// cannot compile until it is named here, where a default would leave the next
-/// card with no switch and nothing to notice it by.
-pub fn trigger_id(t: BuffTrigger) -> &'static str {
-    match t {
-        BuffTrigger::Kill => "kill",
-        BuffTrigger::Hit => "hit",
-        BuffTrigger::PlainHit => "plain_hit",
-        BuffTrigger::Headshot => "headshot",
-        BuffTrigger::ConsecutiveHeadshot => "consecutive_headshot",
-        BuffTrigger::PunchThrough => "punch_through",
-        BuffTrigger::StatusApplied => "status_applied",
-        // The element is not part of the id: the condition is "the target
-        // already carries this status", and a fight handing out none of them
-        // hands out none of any type.
-        BuffTrigger::HitEnemyWithStatus(_) => "hit_enemy_with_status",
-        BuffTrigger::ReloadComplete => "reload_complete",
-        BuffTrigger::ReloadFromEmpty => "reload_from_empty",
-        BuffTrigger::FullBurst => "full_burst",
-        BuffTrigger::Firing => "firing",
-    }
-}
-
-/// The same for an arcane's own vocabulary. `None` for [`ArcTrigger::Passive`]:
-/// nothing grants it, so no switch may take it away.
-pub fn arc_trigger_id(t: ArcTrigger) -> Option<&'static str> {
-    Some(match t {
-        ArcTrigger::Kill => "kill",
-        ArcTrigger::HeadshotKill => "headshot_kill",
-        ArcTrigger::MeleeKill => "melee_kill",
-        ArcTrigger::WeakpointHit => "weakpoint_hit",
-        ArcTrigger::HeatStatus => "heat_status",
-        ArcTrigger::ElectricityStatus => "electricity_status",
-        ArcTrigger::ToxinStatus => "toxin_status",
-        ArcTrigger::ColdStatus => "cold_status",
-        ArcTrigger::Passive => return None,
-    })
-}
-
 /// EVERY TRIGGER, IN THE ORDER THE PAGE DRAWS THEM, with the group each sits
 /// under. The order is the wire's and the panel's, so it lives in one place.
 ///
@@ -141,6 +96,7 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::{ArcTrigger, BuffTrigger};
 
     /// EVERY TRIGGER THE ENUMS SPELL HAS A SWITCH, AND EVERY SWITCH IS SPELLED.
     /// A trigger with no entry in [`ALL`] is a buff no scenario can reach; an
@@ -156,16 +112,16 @@ mod tests {
             BuffTrigger::ReloadComplete, BuffTrigger::ReloadFromEmpty,
             BuffTrigger::FullBurst, BuffTrigger::Firing,
         ] {
-            spelled.push(trigger_id(t));
+            spelled.push(t.id());
         }
         for t in [
             ArcTrigger::Kill, ArcTrigger::HeadshotKill, ArcTrigger::MeleeKill,
             ArcTrigger::WeakpointHit, ArcTrigger::HeatStatus,
             ArcTrigger::ElectricityStatus, ArcTrigger::ToxinStatus, ArcTrigger::ColdStatus,
         ] {
-            spelled.push(arc_trigger_id(t).expect("only Passive has none"));
+            spelled.push(t.id().expect("only Passive has none"));
         }
-        assert_eq!(arc_trigger_id(ArcTrigger::Passive), None);
+        assert_eq!(ArcTrigger::Passive.id(), None);
         spelled.sort_unstable();
         spelled.dedup();
         let mut listed: Vec<&str> = ALL.iter().map(|(id, _)| *id).collect();

@@ -346,7 +346,7 @@ fn ocucor_tendrils_pay_only_once_there_is_a_second_body() {
 /// Two claims, and each one was a bug on its own day.
 ///
 /// It needs somebody to echo to — *"deal X% of the hit damage to enemies
-/// within Xm"* — which is why `arcanes_data` filed it with the TEAM buffs,
+/// within Xm"* — which is why `data::arcanes` filed it with the TEAM buffs,
 /// correctly, until there was a formation (group report via the owner,
 /// 2026-08-17).
 ///

@@ -581,7 +581,8 @@ fn the_explosion_rolls_its_own_crit_and_never_counts_as_a_pellet_crit() {
 /// with deliberately different bases can catch that half.
 #[test]
 fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
-    use crate::data::arcanes::{ArcBuffSpec, ArcTrigger};
+    use crate::data::arcanes::ArcBuffSpec;
+use crate::model::ArcTrigger;
 use crate::model::ArcGrant;
     let radial = |crit_damage: f64| {
         let mut damage = DamageVector::default();
@@ -766,7 +767,7 @@ fn every_buff_the_roster_offers_is_actually_read() {
 /// come back; anything else is a shape nobody remembered.
 #[test]
 fn every_buff_the_roster_offers_can_be_denied() {
-    use crate::data::buff_events::{arc_trigger_id, of_builtin, trigger_id, ALL};
+    use crate::data::buff_events::{of_builtin, ALL};
     let params = every_buff_params();
     let before: Vec<String> = params.buff_roster().into_iter().map(|b| b.id).collect();
     assert!(before.len() > 10, "the fixture stopped covering the roster: {before:?}");
@@ -793,7 +794,7 @@ fn every_buff_the_roster_offers_can_be_denied() {
             .map(|_| false)
             .or_else(|| {
                 params.arcane.buffs.iter().find(|b| format!("arcane:{}", b.owner) == id)
-                    .map(|b| arc_trigger_id(b.trigger).is_none())
+                    .map(|b| b.trigger.id().is_none())
             })
             .unwrap_or_else(|| panic!("`{id}` is rostered and names no trigger"))
     };
@@ -804,7 +805,6 @@ fn every_buff_the_roster_offers_can_be_denied() {
     denied.deny_buff_triggers(&every);
     // The sweep above is over the LIST; a trigger the enums spell and the
     // list forgot is `the_switch_list_and_the_triggers_agree`, not here.
-    let _ = trigger_id;
     let after: Vec<String> = denied.buff_roster().into_iter().map(|b| b.id).collect();
     assert_eq!(
         after, want,

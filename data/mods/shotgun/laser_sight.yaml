@@ -12,8 +12,8 @@ effects:
   # is the whole mod for free. The shotgun twin of Argon Scope (rifle) and
   # Hydraulic Crosshairs (pistol), numbers included.
   - kind: buff
-    trigger: on_headshot
-    condition: while_aiming
+    trigger: headshot
+    condition: aiming
     grants: crit_chance          # relative crit chance
     rank0: 0.2
     rankMax: 1.2

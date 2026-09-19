@@ -76,7 +76,7 @@ GLOBAL perk namespace**:
 # weapon_a.yaml — defines a one-off perk INLINE (no ceremony needed)
 perks:
   - id: venom_burst
-    trigger: on_kill
+    trigger: kill
     grants: { ... }
 
 # weapon_b.yaml — a later carrier just references the bare id,
@@ -119,7 +119,7 @@ sharing requirement: it is a pure move — no referencing entry changes.
 | `warframe_arcanes/` | Warframe arcanes | `rarity`, `max_rank`, `description`, typed `effects` as above |
 | `warframe_abilities/` | an ability's CARD — cost, icon, text, and for a seated frame its numbers; `abilities/` is the BUFF one hands a weapon | `frame`, `slot`, `energy_cost`, `subsumable`, `augments`, `icon`, `drain_per_second`, `stats` (`value` at max rank, `scales_with`, `helminth_value`, `adds_to_base`, `channel_multiplier`) |
 | `factions/` | faction damage modifiers (post-U36, faction-wide) as **numeric multipliers** per damage type (unlisted = 1.0; today's values happen to be 1.5/0.5 — never assume it). Loaded by `engine::data::factions`; an enemy's key resolves through `faction_damage_override ?? faction`. The **fifteen columns here are the whole system** (the wiki's `Damage/Overview_Table`, verified cell by cell) — a faction they do not name takes every damage type as written | `factions.<id>.<damage_type>: <mult>`, `special` (Object, Overguard pools), `faction_mods` (Bane system) |
-| `tenno/` | the **player** (loaded by `engine::data::tenno`), shaped like a Warframe — the field names are the wiki module's. `state` gates mods: a `condition: while_aiming` / `while_invisible` / `while_airborne` is asked of it. `armor` and `energy` are read by the `tenno_scaled` arcanes (Primary Bulwark, Primary Overcharge). The rest is still INERT — nothing shoots back yet, and `health`/`shield` are PLACEHOLDERS at 1, not Warframe stats | `health`, `shield`, `overguard`, `armor`, `energy`, `sprint`, `state.{aiming,invisible,airborne,energy_pct}` |
+| `tenno/` | the **player** (loaded by `engine::data::tenno`), shaped like a Warframe — the field names are the wiki module's. `state` gates mods: a `condition: aiming` / `invisible` / `airborne` is asked of it. `armor` and `energy` are read by the `tenno_scaled` arcanes (Primary Bulwark, Primary Overcharge). The rest is still INERT — nothing shoots back yet, and `health`/`shield` are PLACEHOLDERS at 1, not Warframe stats | `health`, `shield`, `overguard`, `armor`, `energy`, `sprint`, `state.{aiming,invisible,airborne,energy_pct}` |
 
 ## Where a parameter lives
 
@@ -172,21 +172,31 @@ family (checked). Do not confuse it with `excludes_weapon`.
   fields. Structured game facts WITHOUT a consumer yet (e.g. an unmodeled
   mechanic's parameters) may stay as fields — they are columns awaiting a
   consumer, and they must be values, not sentences.
+- **One vocabulary across the catalogs.** A mod, an evolution and an arcane
+  that name the same trigger, grant, condition, decay or clearing event spell
+  it the same way, and the spelling is the one `engine::model` parses
+  (`BuffTrigger::from_id`, `BuffGrant::from_id`, `IndirectStat::from_id`,
+  `TennoCondition::from_id`, …). A bare grant is its RELATIVE bucket
+  (`multishot` is the mods' +%); `flat_` adds to the number itself and `base_`
+  to the weapon's base before the mods multiply. A `stacking_buff` states
+  `trigger`, `grants` and `per_stack` (or `rank0`/`rankMax`) the same way in
+  every catalog. `data::tests::every_word_in_the_catalogs_is_the_vocabulary`
+  fails on any other word.
 - **An effect the loader does not parse must SAY SO, in a comment.** The three
   loaders disagree about what happens to a `kind` they do not recognise, and
   only one of them leaves a trace:
-  - `evolutions_data` falls through to `EvoEffect::Inert(kind)`, which the UI
+  - `data::evolutions` falls through to `EvoEffect::Inert(kind)`, which the UI
     renders as *"<kind> (no single-target DPS effect)"* — visible, honest.
-  - `arcanes_data` has an explicit `kind: unmodeled` carrying a **`note`**,
+  - `data::arcanes` has an explicit `kind: unmodeled` carrying a **`note`**,
     which `describe()` renders. There, `note` IS a consumed field.
-  - `mods_data` hits `_ => return None`: the effect is dropped and the mod
+  - `data::mods` hits `_ => return None`: the effect is dropped and the mod
     loads **as if the entry were not there**, with nothing on screen to say so.
   That silence is how `blast_radius_bonus` sat inert on Fulmination for months.
   So any entry whose `kind` its own loader does not match carries a comment
   naming the consequence. Grep the loader before assuming a kind is live —
   `note`/`desc` are consumed for arcanes and dead everywhere else.
 - **`data/debuffs/` is loaded by nothing.** It is the written spec for status
-  effects; the behaviour is hand-implemented in `engine::dummy` /
+  effects; the behaviour is hand-implemented in `engine::fight` /
   `engine::rules::status`, which cite the files by name. Treat a change there as a
   documentation change that also needs code.
 - Two metadata fields are kept by convention even without a code consumer:

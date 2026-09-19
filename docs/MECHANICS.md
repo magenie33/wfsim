@@ -197,7 +197,7 @@ ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
   share of this weapon's Ammo Pickup (§"THE AMMO ECONOMY"). No damage of its
   own, and worth nothing while the reserve is infinite.
 - **Accuracy / recoil / on-equip handling**: aim inputs for the future
-  shooter model (recoil is already an `Indirect` bucket, §mods_data); no
+  shooter model (recoil is already an `Indirect` bucket, §data::mods); no
   theoretical-DPS effect (Magnum Force −55% accuracy downside, Reflex Draw
   on-equip, …).
 
@@ -724,7 +724,7 @@ element procs are weighted, not uniform.
   differ only in their counter: Condition Overload (Galvanized Shot,
   Carnage Reign innate) counts distinct status TYPES on the target;
   Secondary Shiver counts Cold STACKS (Frozen counts as the full 10).
-  `engine::dummy` folds them through one `gunco_sources` list.
+  `engine::fight` folds them through one `gunco_sources` list.
 - **Negative-duration per-type detail** (outdated-flagged wiki table):
   no-delay DoTs still land their t=0 tick (Tesla Chain "occurs"), Heat's
   panic animation plays flameless, Blast expiry damage occurs with the
@@ -1391,7 +1391,7 @@ radius is not reduced"* — it pays nothing and collects anyway — and its
 arcane is a top-tier multiplier in the base form and literally inert in the
 transformed one.
 
-**How the sim runs it** (`engine::dummy`): each landed projectile walks a
+**How the sim runs it** (`engine::fight`): each landed projectile walks a
 short list of ATTACK STAGES — the direct hit, then the radial when the weapon
 declares one. A stage is one damage instance: it rolls its own crit tier, its
 own status draw, and reports into its own damage source. The direct stage
@@ -2003,7 +2003,7 @@ enemies that are quick may run through the cloud without taking any damage"*
 describes the grenade ARMING; reading it as a delayed first tick cost a full
 tenth of the field's damage.
 
-**How the sim runs it** (`engine::dummy`): every landed direct pellet spawns a
+**How the sim runs it** (`engine::fight`): every landed direct pellet spawns a
 `FieldState` — per PELLET, since each multishot projectile is its own grenade
 and its own cloud — whose first tick is due immediately. Ticks are settled
 by `process_field_ticks`, INTERLEAVED with the status settlement so that each
@@ -2082,7 +2082,7 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 > frame chosen, nothing running, energy full.
 >
 > **Player STATE gates mods.** One wrapper covers all of it:
-> `condition: while_aiming | while_invisible | while_airborne` in a mod file
+> `condition: aiming | invisible | airborne` in a mod file
 > resolves to `ModEffect::WhileTenno(TennoCondition, …)`, which
 > `build::loadout::resolve_for` asks of the fight's Tenno. All of them live there,
 > aiming included — one home for one kind of fact. A gated
@@ -2601,7 +2601,7 @@ Energized Munitions page states outright: *"The way this works is by dividing
 the ammo cost so each shot consumes a quarter of the original, and keeps track
 of the fractions as well."* So the per-shot cost is `ammo_cost × (1 −
 efficiency)` and the magazine carries a fractional value — which is exactly what
-`engine::dummy` does (`magazine -= 1.0 - efficiency`, evaluated live per shot so
+`engine::fight` does (`magazine -= 1.0 - efficiency`, evaluated live per shot so
 a decaying buff is read at the moment of firing).
 
 **A partial round still fires.** The single-round-magazine case proves the gate
@@ -2665,7 +2665,7 @@ it is exempt from efficiency entirely.
 in game. The last round is followed by the ordinary fire interval, and that
 delay shortens with fire rate; only when the next shot is due and cannot fire
 does the reload begin. So a 12-round magazine at 2.5 shots/s fires its last
-round at 4.4 s and starts reloading at 4.8 s. `engine::dummy` asks at the top of
+round at 4.4 s and starts reloading at 4.8 s. `engine::fight` asks at the top of
 the shot loop, after the previous shot's interval; moving the check to the end
 of a shot would start every reload one interval early.
 

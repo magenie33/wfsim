@@ -34,8 +34,8 @@ description: "Impact Status Effects have X% chance to apply a Magnetic Status Ef
 
 effects:
   - kind: proc_conversion
-    trigger: impact
-    applies: magnetic
+    from: impact
+    to: magnetic
     rank0: 0.1
     rankMax: 0.35
     condition: fire_rate_below_2.5   # the chance is DOUBLED while this holds

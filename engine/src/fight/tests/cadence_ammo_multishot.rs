@@ -126,7 +126,7 @@ fn blazing_barrel_is_cleared_by_a_reload_and_not_by_a_refill() {
         .iter()
         .find(|b| b.id == "on_firing_multishot")
         .expect("the Sybaris carries it too");
-    assert_eq!(s.grant, crate::model::BuffGrant::MultishotPercent);
+    assert_eq!(s.grant, crate::model::BuffGrant::Multishot);
     assert_eq!(s.max_stacks, 10);
 }
 
@@ -1441,7 +1441,7 @@ fn a_reload_draws_whole_rounds_and_leaves_the_fraction_behind() {
 /// the timer runs out and the whole pile goes at once. The other family
 /// (Merciless/Deadhead/Dexterity) loses ONE stack and resets the timer.
 ///
-/// `arcanes_data` already pins Crux's flag; this pins that the flag still
+/// `data::arcanes` already pins Crux's flag; this pins that the flag still
 /// means something by the time the shot loop reads it.
 #[test]
 fn arcane_stacks_all_drop_on_timeout_or_bleed_off_one_at_a_time() {

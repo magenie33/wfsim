@@ -109,7 +109,7 @@ contradicting it — the neutral Tenno this repo ships has **150** max energy, s
 every run that found nothing was made UNDER the threshold. The experiment this
 section asked for ("a frame with ≥ 200 max energy") is what the owner supplied.
 
-Modelled as `gated_by_tenno` with `condition: "energy_max >= 200"` and
+Modelled as `gated_by_tenno` with `condition: "max_energy >= 200"` and
 `grant: condition_overload`, which feeds the same CO term
 `innate_co_per_type` does — so the behaviour, the base exclusion and
 direct-damage-only all keep coming from where they already came from. Measured

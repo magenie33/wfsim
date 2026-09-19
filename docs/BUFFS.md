@@ -171,7 +171,7 @@ bucket effect **and** a `kind: buff` effect.
 ```yaml
 - kind: buff
   trigger: on_kill        # on_kill | on_headshot | on_headshot_kill | on_ability_cast | on_reload | on_hit | passive
-  condition: while_aiming # optional
+  condition: aiming # optional
   grants: multishot       # the bucket it feeds (multishot | condition_overload | crit_chance | crit_damage | status_chance | fire_rate | accuracy | …)
   rank0: 0.027            # per-stack value at rank 0
   rankMax: 0.30           # per-stack value at max rank
@@ -252,7 +252,7 @@ it is worth having exactly where a fight is short or a build is thin.
 
 The three other 40-stack on-status arcanes (Primary Blight, Primary Frostbite,
 Conjunction Voltage) do NOT carry the flag: their pages do not state the rule,
-and absence is not evidence of it. `arcanes_data` asserts them false so a
+and absence is not evidence of it. `data::arcanes` asserts them false so a
 copy-paste cannot spread it quietly.
 
 ### `condition:` — the state that has to hold
@@ -266,18 +266,18 @@ resolve to `ModEffect::WhileTenno(TennoCondition, …)`, which
 
 | value | `TennoState` field | means |
 |---|---|---|
-| `while_aiming` | `aiming` | aiming down sights — Galvanized Crosshairs / Scope, Argon Scope, … |
-| `while_invisible` | `invisible` | Spectral Serration's "+330% Damage while Invisible" |
-| `while_airborne` | `airborne` | the Aero set |
+| `aiming` | `aiming` | aiming down sights — Galvanized Crosshairs / Scope, Argon Scope, … |
+| `invisible` | `invisible` | Spectral Serration's "+330% Damage while Invisible" |
+| `airborne` | `airborne` | the Aero set |
 
-`while_aiming` is one of these rather than a case beside them: it was a bool
+`aiming` is one of these rather than a case beside them: it was a bool
 threaded through the resolver while the other states lived on the Tenno, which
 is two homes for one kind of fact.
 
 The neutral Tenno is aiming and doing nothing else, so a while-Invisible mod
 contributes nothing until a scenario says otherwise — and the panel labels the
 row with the condition rather than hiding it. An unrecognised `condition:`
-gates NOTHING, which `mods_data`'s card-vs-model test catches as "the card
+gates NOTHING, which `data::mods`'s card-vs-model test catches as "the card
 states a condition and the model has none".
 
 ## Arcane data: a Warframe stat is `kind: tenno_scaled`

@@ -34,7 +34,7 @@ effects:
   # and multishot off one Cold proc. They are the same stack count by
   # construction — the card gives them one number and one timer.
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: projectile_speed
     rank0: 0.0273
     rankMax: 0.3
@@ -54,7 +54,7 @@ effects:
   # length is ever read there. The assumption and the fights it applies to do
   # not overlap with the fights that would expose it.
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: beam_range_percent
     rank0: 0.0273
     rankMax: 0.3

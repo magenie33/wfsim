@@ -27,8 +27,8 @@ effects:
   # see notes: stack_cap_was_separate
   - kind: stacking_buff
     trigger: hit
-    per_stack:
-      base_damage: 15.0
+    grants: flat_base_damage
+    per_stack: 15.0
     max_stacks: 4
     duration_seconds: 3.0
 

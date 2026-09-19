@@ -13,7 +13,7 @@ effects:
   # Additive with base-damage mods (Hornet Strike bucket) - so it also scales
   # ModifiedBase (DoT payloads, elemental amounts).
   - kind: buff
-    trigger: on_precision_headshot_kill
+    trigger: headshot_kill
     grants: base_damage
     rank0: 0.2
     rankMax: 1.2
@@ -27,7 +27,7 @@ effects:
   - kind: headshot_multiplier_bonus
     rankMax: 0.3
     unlocks_at_rank: 5
-  # NOT LOADED: `arcanes_data` has no `recoil_reduction` arm, so this entry is
+  # NOT LOADED: `data::arcanes` has no `recoil_reduction` arm, so this entry is
   # dropped (data/README.md). The MODS loader has one — different loader,
   # different vocabulary. Recoil is handling, not a damage bucket.
   - kind: recoil_reduction

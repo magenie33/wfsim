@@ -12,7 +12,7 @@ effects:
     rank0: 0.1
     rankMax: 1.1
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: multishot
     rank0: 0.027
     rankMax: 0.3

@@ -47,7 +47,7 @@ effects:
   # The Y is written into the bullet rather than into a column, so both take +30.
   - kind: gated_by_tenno
     condition: overshields
-    grant: flat_base_damage
+    grants: flat_base_damage
     value: 30.0
 
 source:

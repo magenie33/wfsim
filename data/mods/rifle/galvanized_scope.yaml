@@ -13,8 +13,8 @@ effects:
   # chance, which is the whole mod's value handed over for free. Identical
   # shape to the pistol twin Galvanized Crosshairs, same numbers.
   - kind: buff
-    trigger: on_headshot
-    condition: while_aiming
+    trigger: headshot
+    condition: aiming
     grants: crit_chance          # relative crit chance
     rank0: 0.1091
     rankMax: 1.2
@@ -22,14 +22,14 @@ effects:
     duration: 12
   # Unlike the other Galvanized mods, each stack has its OWN duration.
   - kind: buff
-    trigger: on_headshot_kill
-    condition: while_aiming
+    trigger: headshot_kill
+    condition: aiming
     grants: crit_chance
     rank0: 0.0364
     rankMax: 0.4
     max_stacks: 5
     duration: 12
-    # `decay` is NOT read by mods_data. The engine hardcodes the matching model
+    # `decay` is NOT read by data::mods. The engine hardcodes the matching model
     # per effect kind — `ch_stacks` (engine/src/fight/) keeps one expiry PER stack and
     # retains the live ones. This line is the written record, not the source.
     decay: per_stack_expiry

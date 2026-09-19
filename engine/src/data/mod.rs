@@ -47,6 +47,73 @@ pub fn files_under(prefix: &str) -> impl Iterator<Item = (&'static str, &'static
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_norway::Value;
+
+    /// ONE WORD, ONE MEANING, ACROSS EVERY CATALOG. A mod, an evolution and an
+    /// arcane that name the same trigger, grant or condition spell it the same
+    /// way, and the spelling is the one `crate::model` parses — so a word from
+    /// before the vocabulary was unified (`on_kill`, `while_aiming`, a
+    /// `base_damage` that meant a flat add) cannot come back unnoticed.
+    #[test]
+    fn every_word_in_the_catalogs_is_the_vocabulary() {
+        use crate::model::{ArcTrigger, BuffGrant, BuffTrigger, IndirectStat, TennoCondition, UNSIMULATED_EVENTS};
+        let trigger = |w: &str| {
+            BuffTrigger::from_id(w).is_some() || ArcTrigger::from_id(w).is_some() || UNSIMULATED_EVENTS.contains(&w)
+        };
+        // A grant is a buff's bracket, an indirect stat, or one of the few
+        // payloads a card pays that is neither (and says so where it is read).
+        let grant = |w: &str| {
+            BuffGrant::from_id(w).is_some()
+                || IndirectStat::from_id(w).is_some()
+                || [
+                    "status_damage", "condition_overload", "magazine_refill", "crit_and_status", "toxin_damage",
+                    "final_damage", "ammo_efficiency", "weakpoint_crit_chance", "flat_base_magazine",
+                ]
+                .contains(&w)
+        };
+        let condition = |w: &str| {
+            TennoCondition::from_id(w).is_some()
+                || w.starts_with("fire_rate_below_")
+                || ["sliding_or_aim_gliding", "buffing_ally_warframes", "target_has_10_radiation_stacks"].contains(&w)
+                || BuffTrigger::from_id(w).is_some()
+                || ArcTrigger::from_id(w).is_some()
+        };
+        let decay = |w: &str| ["lose_one_and_reset", "per_stack_expiry", "all_at_once"].contains(&w);
+        let cleared_by = |w: &str| ["reload", "magazine_refilled", "empty_magazine"].contains(&w);
+        let mut bad = Vec::new();
+        for family in ["mods/", "evolutions/", "arcanes/", "warframe_mods/", "warframe_arcanes/", "perks/"] {
+            for (path, text) in files_under(family) {
+                let Ok(doc) = serde_norway::from_str::<Value>(text) else { continue };
+                let mut stack = vec![&doc];
+                while let Some(v) = stack.pop() {
+                    match v {
+                        Value::Mapping(m) => {
+                            for (k, x) in m {
+                                let (Some(k), Some(w)) = (k.as_str(), x.as_str()) else {
+                                    stack.push(x);
+                                    continue;
+                                };
+                                let ok = match k {
+                                    "trigger" => trigger(w),
+                                    "grants" => grant(w),
+                                    "condition" => condition(w),
+                                    "decay" => decay(w),
+                                    "cleared_by" => cleared_by(w),
+                                    _ => true,
+                                };
+                                if !ok {
+                                    bad.push(format!("{path}: {k}: {w}"));
+                                }
+                            }
+                        }
+                        Value::Sequence(s) => stack.extend(s.iter()),
+                        _ => {}
+                    }
+                }
+            }
+        }
+        assert!(bad.is_empty(), "words outside the vocabulary:\n{}", bad.join("\n"));
+    }
 
     #[test]
     fn the_embedded_tree_covers_every_data_family() {

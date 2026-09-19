@@ -721,7 +721,7 @@ pub struct WeaponBase {
     /// See `data::weapons::WeaponSpec::headshot_bonus_multiplicative`.
     pub headshot_bonus_multiplicative: bool,
     /// Does a fire-rate bonus shorten the DRAW? False for Arch-Guns, whose
-    /// fire rate paces only the interval — see `weapons_data`.
+    /// fire rate paces only the interval — see `data::weapons`.
     pub fire_rate_shortens_draw: bool,
     /// Which charge formula paces it — see [`crate::model::ChargeCadence`].
     pub charge_cadence: crate::model::ChargeCadence,
@@ -902,7 +902,7 @@ pub struct WeaponBase {
     /// THIS FORM CANNOT AIM DOWN SIGHTS — see
     /// [`crate::data::weapons::WeaponSpec::cannot_zoom`]. `resolve_for` answers
     /// the aim question FALSE for it whatever the scenario says, so every
-    /// `while_aiming` mod, arcane and evolution pays nothing here.
+    /// `aiming` mod, arcane and evolution pays nothing here.
     pub cannot_zoom: bool,
     /// RESONANT RESTORE: `(per stack, max stacks)` — "On Reload From Empty:
     /// Increase Base Magazine Capacity by +N. Stacks up to Nx", in the card's

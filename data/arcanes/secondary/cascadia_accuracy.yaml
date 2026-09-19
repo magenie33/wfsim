@@ -10,7 +10,7 @@ effects:
   # crit-chance bucket (wiki: additive to Pistol Gambit AND Pistol Acuity).
   # Waits on the weakpoint subsystem; the engine has headshot/is_head today.
   - kind: buff
-    trigger: on_roll
+    trigger: roll
     grants: weakpoint_crit_chance
     rank0: 0.5
     rankMax: 3.0

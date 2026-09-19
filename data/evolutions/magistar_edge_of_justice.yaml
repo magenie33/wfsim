@@ -15,7 +15,7 @@ effects:
     # "With a Melee Weapon equipped" means the weapon is DRAWN — a quick-melee
     # swing out of a gun does not satisfy it. The arena's default is drawn, so
     # this pays on every ruler; a scenario that says otherwise turns it off.
-    condition: with_melee_equipped
+    condition: melee_equipped
 
 source:
   url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

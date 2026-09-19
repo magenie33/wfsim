@@ -11,8 +11,8 @@ effects:
   # CONDITIONAL — the shotgun twin of Pressurized Magazine (rifle) and
   # Lethal Torrent's on-reload family. The window opens on the RELOAD.
   - kind: buff
-    trigger: on_reload
-    condition: while_aiming
+    trigger: reload_complete
+    condition: aiming
     grants: fire_rate
     rank0: 0.175
     rankMax: 1.05

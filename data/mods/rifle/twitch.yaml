@@ -20,14 +20,14 @@ effects:
   # model here (the sim assumes perfect aim), so this stays inert - but it must
   # not read as an unconditional stat change in the builder panel.
   - kind: buff
-    trigger: on_equip
-    grants: recoil_reduction
+    trigger: equip
+    grants: recoil
     rank0: -0.1
     rankMax: -0.4
     max_stacks: 1
     duration: 8
   - kind: buff
-    trigger: on_equip
+    trigger: equip
     grants: accuracy
     rank0: 0.1
     rankMax: 0.4

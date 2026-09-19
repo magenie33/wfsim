@@ -110,7 +110,7 @@ impl TargetState {
     /// Mitigation model (docs/MECHANICS.md §8, unverified). Order is
     /// Overguard → Shields → Health, and every component is first
     /// scaled by the vulnerability COLUMN the pool reads (System B,
-    /// `factions_data`) — which is what `shares` is for.
+    /// `data::factions`) — which is what `shares` is for.
     /// - Overguard: raw × its column × Disrupt amp, no armour, and Toxin does
     ///   NOT bypass it. What the pool cannot absorb CARRIES ON into what is
     ///   under it — the depletion protection is the PLAYER's alone (M82).

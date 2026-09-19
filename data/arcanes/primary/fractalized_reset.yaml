@@ -11,7 +11,7 @@ effects:
   # is out of scope, which is why it is written as a real buff rather than as
   # `unmodeled`.
   - kind: buff
-    trigger: on_ability_cast
+    trigger: ability_cast
     grants: reload_speed
     rank0: 0.4
     rankMax: 2.4

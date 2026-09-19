@@ -20,7 +20,7 @@ effects:
     rankMax: 1.1
   # On Melee Kill: +30% Critical Damage for 20s, four stacks.
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: crit_damage
     rank0: 0.027273
     rankMax: 0.3

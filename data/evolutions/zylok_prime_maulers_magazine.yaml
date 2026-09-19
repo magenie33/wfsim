@@ -33,8 +33,8 @@ effects:
   # grant — `resolve` converts the card's number into the post-mod multiplier it
   # is worth, the same conversion a flat base-damage grant takes.
   - kind: stacking_buff
-    per_stack:
-      base_crit_damage: 1.0
+    grants: base_crit_damage
+    per_stack: 1.0
     max_stacks: 2
     trigger: reload_from_empty
 

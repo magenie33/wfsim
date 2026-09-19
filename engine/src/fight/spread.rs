@@ -867,7 +867,7 @@ pub(super) fn spread_from_ricochet(
 ///
 /// Secondary Irradiate is the only member: *"deal X% of the hit damage to
 /// enemies within Xm"*, 80% to 180% of it over a 4.5 m to 7 m sphere. It sat in
-/// `arcanes_data` with the TEAM buffs — "no sim payload" — and that was right
+/// `data::arcanes` with the TEAM buffs — "no sim payload" — and that was right
 /// while the arena held one body, because an echo needs somebody to echo to.
 ///
 /// PER DIRECT HIT, which is per landing PELLET: the arcane's own file says

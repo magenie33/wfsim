@@ -1102,7 +1102,7 @@ fn riven_class(weapon: &str) -> &'static str {
 /// IS THIS SHAPE A RIVEN THIS WEAPON CAN ACTUALLY ROLL?
 ///
 /// The board may not rank an item the game cannot produce, and this is the one
-/// place that decides it. `rivens_data`'s own rules answer it — the derived
+/// place that decides it. `build::rivens`'s own rules answer it — the derived
 /// pool for the weapon's riven FAMILY, plus the per-family exceptions — so a
 /// stat that stops being rollable in a hotfix stops being rankable in the same
 /// data change, with no list here to remember.

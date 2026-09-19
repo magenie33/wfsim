@@ -229,7 +229,7 @@ to everything still on this list:
 
 - **Rapid Reinforcement** is the MOST COMMON PERK IN THE SET — 14 guns by the
   count above, more than any other name — and this is its first appearance in
-  the repo. It is a reload-speed bonus, which `evolutions_data` has no arm for
+  the repo. It is a reload-speed bonus, which `data::evolutions` has no arm for
   even though the MODS loader does. Implementing that one arm removes a slot
   from half the remaining program, which is exactly what the ordering section
   predicted.
@@ -526,7 +526,7 @@ Boar Prime cost nothing to verify). New sessions are needed for:
 
 ## Perks this loader does not model, and what each needs
 
-`evolutions_data`'s `every_inert_perk_is_accounted_for` pins the list; this is
+`data::evolutions`'s `every_inert_perk_is_accounted_for` pins the list; this is
 what each entry is waiting on. An unknown effect kind is the only spelling that
 means "nothing models this yet" and stays true — the kinds that would fit all
 pay out UNCONDITIONALLY, so `flat_base_damage` would load Haven Foray's

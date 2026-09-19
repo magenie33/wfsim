@@ -15,7 +15,7 @@ effects:
   # the pistol twin's 4 (Galvanized Diffusion), and the unconditional half is
   # +80% against its +110%.
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: multishot
     rank0: 0.0273
     rankMax: 0.3

@@ -9,7 +9,7 @@ effects:
   # Additive with base-damage mods (Hornet Strike bucket). On timeout: lose ONE
   # stack and reset the timer. Companion melee kills also trigger it.
   - kind: buff
-    trigger: on_melee_kill
+    trigger: melee_kill
     grants: base_damage
     rank0: 0.1
     rankMax: 0.6
@@ -18,7 +18,7 @@ effects:
     decay: lose_one_and_reset
   # Melee Combo Counter duration (seconds) - a melee stat, inert for the
   # secondary-weapon calc.
-  # NOT LOADED: `arcanes_data` has no `combo_duration_bonus` arm, so this entry
+  # NOT LOADED: `data::arcanes` has no `combo_duration_bonus` arm, so this entry
   # is dropped entirely (data/README.md). Doubly inert — it is a MELEE stat and
   # this is a gun calc — but the drop is the reason nothing shows on the panel.
   - kind: combo_duration_bonus

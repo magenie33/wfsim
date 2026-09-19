@@ -11,7 +11,7 @@ effects:
   # `stat` is unread. Holstered regen needs a weapon-swap model the sim has no
   # concept of: it fires one weapon continuously.
   - kind: indirect          # holstered regen - no in-fight payload here
-    stat: holstered_reload_per_second
+    stat: holstered_reload
     value: 0.30
 
 source:

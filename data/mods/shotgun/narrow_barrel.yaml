@@ -13,8 +13,8 @@ effects:
   # arena has no spread, so it lands in the indirect bucket; written with its
   # real trigger so the card's window survives (WFCD levelStats: 2s -> 9s).
   - kind: buff
-    trigger: on_hit
-    condition: while_aiming
+    trigger: hit
+    condition: aiming
     grants: accuracy
     rank0: 0.05
     rankMax: 0.3

@@ -21,7 +21,7 @@ effects:
   # e.g. the Torid's cloud takes it on the target the grenade is stuck to
   # (MECHANICS section 7).
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: condition_overload
     rank0: 0.0364
     rankMax: 0.4

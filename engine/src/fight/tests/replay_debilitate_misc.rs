@@ -119,7 +119,8 @@ fn weakened_never_crits_an_explosion() {
 /// worth more than one stack.
 #[test]
 fn a_locked_buff_still_earns_stacks() {
-    use crate::data::arcanes::{ArcBuffSpec, ArcTrigger};
+    use crate::data::arcanes::ArcBuffSpec;
+use crate::model::ArcTrigger;
 use crate::model::ArcGrant;
     let mk = |initial: u32| {
         let mut damage = DamageVector::default();
@@ -172,7 +173,8 @@ use crate::model::ArcGrant;
 /// display trick over a split model.
 #[test]
 fn one_config_reaches_every_grant_of_its_arcane() {
-    use crate::data::arcanes::{ArcBuffSpec, ArcTrigger};
+    use crate::data::arcanes::ArcBuffSpec;
+use crate::model::ArcTrigger;
 use crate::model::ArcGrant;
     let spec = |grant: ArcGrant| ArcBuffSpec {
         owner: "primary_frostbite".into(),

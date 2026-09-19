@@ -132,117 +132,12 @@ fn n(v: &Value, k: &str) -> Option<f64> {
     x.as_f64().or_else(|| x.as_i64().map(|i| i as f64))
 }
 
-/// A buff's `grants:` naming an INDIRECT stat rather than a damage bucket.
-///
-/// Both spellings of recoil are here because the data has both: a standalone
-/// `kind: recoil_reduction` and a buff granting `recoil`. They mean the same
-/// stat and the same sign convention — a reduction is stored NEGATIVE, which
-/// every recoil mod in `data/` already does.
-fn indirect_grant(grants: &str) -> Option<IndirectStat> {
-    Some(match grants {
-        "recoil" | "recoil_reduction" => IndirectStat::Recoil,
-        "accuracy" => IndirectStat::Accuracy,
-        "noise" => IndirectStat::Noise,
-        "zoom" => IndirectStat::Zoom,
-        "ammo_max" => IndirectStat::AmmoMax,
-        "projectile_speed" => IndirectStat::ProjectileSpeed,
-        "holstered_reload" => IndirectStat::HolsteredReload,
-        "dodge_speed" => IndirectStat::DodgeSpeed,
-        "acrobatic_speed" => IndirectStat::AcrobaticSpeed,
-        "punch_through" => IndirectStat::PunchThrough,
-        "range" => IndirectStat::Range,
-        "beam_range" => IndirectStat::BeamRange,
-        "beam_range_percent" => IndirectStat::BeamRangePercent,
-        "movement_speed" => IndirectStat::MovementSpeed,
-        "sprint_speed" => IndirectStat::SprintSpeed,
-        // TOME MODS — see the enum for why each is its own bucket.
-        "ability_strength" => IndirectStat::AbilityStrength,
-        "ability_duration" => IndirectStat::AbilityDuration,
-        "ability_efficiency" => IndirectStat::AbilityEfficiency,
-        "energy_regen" => IndirectStat::EnergyRegen,
-        "ally_buff" => IndirectStat::AllyBuff,
-        "strip_on_kill" => IndirectStat::StripOnKill,
-        "orb_drop" => IndirectStat::OrbDrop,
-        _ => return None,
-    })
-}
-
 /// Map one YAML effect entry to a [`ModEffect`] at max rank (None = no damage
 /// effect / not modeled — the mod still loads).
-/// `condition:` values that name a PLAYER STATE. Each maps to a
-/// [`TennoCondition`], which resolve asks of the fight's Tenno — so the mod
-/// pays exactly when the player is doing the thing. `while_aiming` is one of
-/// these, not a case beside them: a card gates on aim the same way it gates on
-/// invisibility, and there is one place to look for either.
-///
-/// An unrecognised string gates nothing, which the mod-condition test catches
-/// as "the card states a condition, the model has none".
-fn tenno_condition(cond: Option<&str>) -> Option<crate::model::TennoCondition> {
-    match cond? {
-        "while_aiming" => Some(crate::model::TennoCondition::Aiming),
-        "while_invisible" => Some(crate::model::TennoCondition::Invisible),
-        "while_airborne" => Some(crate::model::TennoCondition::Airborne),
-        _ => None,
-    }
-}
-
-/// A buff's `trigger:` naming an EVENT the sim already fires. One line per
-/// trigger, and adding one here is the whole cost of a mod that stacks on it —
-/// see [`crate::model::ModEffect::GrantsStackingBuff`].
-fn buff_trigger(name: &str) -> Option<crate::model::BuffTrigger> {
-    use crate::model::BuffTrigger as T;
-    Some(match name {
-        "on_hit" => T::Hit,
-        "on_plain_hit" => T::PlainHit,
-        "on_headshot" => T::Headshot,
-        "on_consecutive_headshot" => T::ConsecutiveHeadshot,
-        "on_kill" => T::Kill,
-        "on_firing" => T::Firing,
-        "on_status_applied" => T::StatusApplied,
-        "on_full_burst" => T::FullBurst,
-        "on_reload" => T::ReloadComplete,
-        "on_reload_from_empty" => T::ReloadFromEmpty,
-        _ => return None,
-    })
-}
-
-/// A buff's `grants:` naming a BRACKET. The multishot spellings are three
-/// because the brackets are three — see [`crate::model::BuffGrant`].
-fn buff_grant(name: &str) -> Option<crate::model::BuffGrant> {
-    use crate::model::BuffGrant as G;
-    Some(match name {
-        "multishot" => G::MultishotPercent,
-        "flat_multishot" => G::Multishot,
-        "base_multishot" => G::BaseMultishot,
-        "base_damage" | "damage" => G::BaseDamage,
-        "flat_base_damage" => G::FlatBaseDamage,
-        "base_crit_damage" => G::BaseCritDamage,
-        "crit_damage" => G::CritDamage,
-        "status_chance" => G::StatusChance,
-        "headshot_damage" => G::HeadshotDamage,
-        "fire_rate" => G::FireRate,
-        "reload_speed" => G::ReloadSpeed,
-        "initial_combo" => G::InitialCombo,
-        "melee_range" => G::MeleeRange,
-        _ => return None,
-    })
-}
-
-fn buff_decay(name: Option<&str>) -> crate::model::BuffDecay {
-    use crate::model::BuffDecay as D;
-    match name {
-        Some("all_at_once") => D::AllAtOnce,
-        Some("per_stack_expiry") => D::PerStackExpiry,
-        // The Galvanized family's, which is what every buff written before the
-        // third decay model was implemented does.
-        _ => D::LoseOneAndReset,
-    }
-}
-
 fn effect(id: &str, v: &Value) -> Option<ModEffect> {
     let kind = v.get("kind").and_then(Value::as_str)?;
     let max = |k: &str| f(v, k).unwrap_or(0.0);
-    // `condition:` gates ANY effect, not only a triggered one. `while_aiming`
+    // `condition:` gates ANY effect, not only a triggered one. `aiming`
     // has its own wrapper (it predates the Tenno); every other player state is
     // a `TennoCondition`, asked of `data/tenno/` at resolve time.
     // Critical Focus is a flat crit bonus that simply does not exist unless
@@ -253,7 +148,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
     let cond = v.get("condition").and_then(Value::as_str);
     // A `kind: buff` reads its own condition below (it wraps what the trigger
     // resolves to); every other kind wraps here.
-    let tenno_cond = if kind == "buff" { None } else { tenno_condition(cond) };
+    let tenno_cond = if kind == "buff" { None } else { cond.and_then(crate::model::TennoCondition::from_id) };
     let out = match kind {
         // A BONUS THE PLAYER DECIDES — Dreadful Killshot, and the mod-side twin
         // of the arcanes' `tenno_scaled`. The value is a step function of one of
@@ -413,13 +308,13 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // it is what stops those four from drifting.
         "stacking_buff" => ModEffect::GrantsStackingBuff(crate::model::StackingBuff {
             id: Box::leak(id.to_string().into_boxed_str()),
-            trigger: buff_trigger(v.get("trigger").and_then(Value::as_str)?)?,
-            grant: buff_grant(v.get("grants").and_then(Value::as_str)?)?,
+            trigger: crate::model::BuffTrigger::from_id(v.get("trigger").and_then(Value::as_str)?)?,
+            grant: crate::model::BuffGrant::from_id(v.get("grants").and_then(Value::as_str)?)?,
             per_stack: max("rankMax"),
             max_stacks: u(v, "max_stacks").max(1),
             duration: n(v, "duration").unwrap_or(0.0),
             chance: n(v, "chance").unwrap_or(1.0),
-            decay: buff_decay(v.get("decay").and_then(Value::as_str)),
+            decay: crate::model::BuffDecay::from_id(v.get("decay").and_then(Value::as_str)),
             initial_stacks: 0,
             stacks_per_trigger: 1,
             per_shell: false,
@@ -498,7 +393,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             let grants = v.get("grants").and_then(Value::as_str)?;
             // The condition wraps whatever this buff resolves to, so the
             // fight's Tenno decides whether it arms at all.
-            let tenno_cond = tenno_condition(v.get("condition").and_then(Value::as_str));
+            let tenno_cond = v.get("condition").and_then(Value::as_str).and_then(crate::model::TennoCondition::from_id);
             let per = max("rankMax"); // per-stack value at max rank
             let stacks = u(v, "max_stacks");
             let dur = f(v, "duration").unwrap_or(0.0);
@@ -507,10 +402,10 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 None => e,
             };
             wrap(match (trigger, grants) {
-                ("on_kill", "multishot") => {
+                ("kill", "multishot") => {
                     ModEffect::OnKillMultishot { per_stack: per, max_stacks: stacks, duration: dur }
                 }
-                ("on_kill", "condition_overload") => {
+                ("kill", "condition_overload") => {
                     // THE GALVANIZED FAMILY EARNS IT on a kill, so it opens at
                     // zero and a fight that denies kills denies it — the
                     // difference from melee's own card one screen up.
@@ -519,14 +414,14 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                         earned_on: Some("kill"),
                     }
                 }
-                ("on_headshot", "crit_chance") => {
+                ("headshot", "crit_chance") => {
                     ModEffect::OnHeadshotCritChance { bonus: per, duration: dur }
                 }
-                ("on_headshot_kill", "crit_chance") => {
+                ("headshot_kill", "crit_chance") => {
                     ModEffect::OnHeadshotKillCritChance { per_stack: per, max_stacks: stacks, duration: dur }
                 }
                 // Sharpened Bullets / Pressurized Magazine: the sim has kill
-                // and reload events, so these run emergently (the while_aiming
+                // and reload events, so these run emergently (the aiming
                 // condition is satisfied — the sim assumes constant aiming).
                 // SENTIENT SURGE — one card, three numbers, so one effect.
                 // The trigger word is `per_tendril` because that is what the
@@ -537,25 +432,25 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 ("per_tendril", "crit_and_status") => {
                     ModEffect::PerTendril { crit_chance: per, status_chance: per }
                 }
-                ("on_kill", "magazine_refill") => ModEffect::MagazineRefillOnKill(per),
-                ("on_kill", "crit_damage") => {
+                ("kill", "magazine_refill") => ModEffect::MagazineRefillOnKill(per),
+                ("kill", "crit_damage") => {
                     ModEffect::OnKillCritDamage { bonus: per, duration: dur }
                 }
                 // "On Reload From Empty: +X% Damage" — its own event, because
                 // the window opens when the RELOAD COMPLETES and a CondBuff
                 // would have to pretend it is always on.
-                ("on_reload", "base_damage") | ("on_reload", "damage") => {
+                ("reload_complete", "base_damage") => {
                     ModEffect::OnReloadDamage { bonus: per, duration: dur }
                 }
-                ("on_reload", "fire_rate") => {
+                ("reload_complete", "fire_rate") => {
                     ModEffect::OnReloadFireRate { bonus: per, duration: dur }
                 }
-                // Any other trigger (on_ability_cast / on_reload / on_hit / …):
+                // Any other trigger (ability_cast / reload_complete / hit / …):
                 // contribute at the assumed-max total via CondBuff when the grant
                 // maps to a DPS bucket. Indirect grants (accuracy/recoil) → None.
                 _ => {
                     let bucket = match grants {
-                        "base_damage" | "damage" => CondBucket::BaseDamage,
+                        "base_damage" => CondBucket::BaseDamage,
                         "multishot" => CondBucket::Multishot,
                         "crit_chance" => CondBucket::CritChance,
                         "crit_damage" => CondBucket::CritDamage,
@@ -573,13 +468,13 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                         // damage payload has nothing to gate in this sim, and
                         // the 2D world wants the magnitude either way.
                         // `wrap`, not a bare return: Targeting Subsystem is
-                        // `condition: while_aiming`, and skipping the wrapper
+                        // `condition: aiming`, and skipping the wrapper
                         // would report it on the panel as an unconditional
                         // stat change — the exact thing the buff shape exists
                         // to prevent. The outer `aim_gated` is false for
                         // `kind: buff`, so this cannot double-wrap.
                         _ => {
-                            let stat = indirect_grant(grants)?;
+                            let stat = IndirectStat::from_id(grants)?;
                             let v = per * stacks.max(1) as f64;
                             return Some(wrap(ModEffect::Indirect(stat, v)));
                         }
@@ -591,11 +486,11 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // Weak-point effects (Pistol Acuity): conditional on the part hit.
         "weakpoint_damage_bonus" => ModEffect::WeakpointDamage(max("rankMax")),
         "weakpoint_crit_chance_bonus" => ModEffect::WeakpointCritChance(max("rankMax")),
-        // Hemorrhage: `trigger` status rolls `rankMax` to also apply the
-        // `applies` status; `condition: fire_rate_below_<x>` doubles it.
+        // Hemorrhage: a `from` status rolls `rankMax` to also apply the `to`
+        // status; `condition: fire_rate_below_<x>` doubles it.
         "proc_conversion" => {
-            let from = element(v.get("trigger").and_then(Value::as_str)?)?;
-            let to = element(v.get("applies").and_then(Value::as_str)?)?;
+            let from = element(v.get("from").and_then(Value::as_str)?)?;
+            let to = element(v.get("to").and_then(Value::as_str)?)?;
             let (threshold, mult) = match v.get("condition").and_then(Value::as_str) {
                 Some(c) if c.starts_with("fire_rate_below_") => (
                     c["fire_rate_below_".len()..].parse().ok()?,
@@ -2325,7 +2220,7 @@ mod class_tests {
     /// for a mod nobody has thought about yet:
     ///
     ///   · "Weak Point" on the card ⇒ some effect is a `weakpoint_*` kind;
-    ///   · "when/while Aiming" ⇒ a DAMAGE effect is wrapped in `while_aiming`
+    ///   · "when/while Aiming" ⇒ a DAMAGE effect is wrapped in `aiming`
     ///     (a mod whose only payload is movement speed or accuracy is exempt —
     ///     the condition cannot change a number this calculator produces).
     #[test]
@@ -3125,7 +3020,7 @@ use crate::model::StackPolicy;
         // not `Multishot` (a flat add) and not `BaseMultishot` (added before
         // mods). Split Chamber's +90% is in the same one, which is also why the
         // two share a family and cannot be equipped together.
-        assert_eq!(b.grant, BuffGrant::MultishotPercent);
+        assert_eq!(b.grant, BuffGrant::Multishot);
         assert!((b.per_stack - 1.0).abs() < 1e-9, "+100% a stack at rank 5");
         assert_eq!(b.max_stacks, 4);
         assert!((b.duration - 2.0).abs() < 1e-9);

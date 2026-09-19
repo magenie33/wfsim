@@ -34,10 +34,10 @@ effects:
   # bursts and the first four are spent climbing, so a full magazine averages
   # about +87%.
   - kind: stacking_buff
-    per_stack:
-      base_damage_bonus: 0.20
+    grants: base_damage
+    per_stack: 0.20
     max_stacks: 5
-    trigger: full_burst_hit
+    trigger: full_burst
 
 source:
   url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

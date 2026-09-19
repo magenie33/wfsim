@@ -19,7 +19,7 @@ effects:
   # pair table knows today. It is the one clause of this shape left in the pool
   # that a fight could earn.
   - kind: buff
-    trigger: on_headshot_kill
+    trigger: headshot_kill
     grants: fire_rate
     rank0: 0.0833
     rankMax: 0.5
@@ -32,7 +32,7 @@ effects:
   # it is an honest no-op, because a live reload-speed timer is machinery
   # nothing else in the sim needs yet.
   - kind: buff
-    trigger: on_headshot_kill
+    trigger: headshot_kill
     grants: reload_speed
     max_stacks: 1
     rank0: 0.1667

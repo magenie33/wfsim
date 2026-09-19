@@ -33,7 +33,7 @@ effects:
   # headshot does not benefit from it, even if the bow has multishot": one shot
   # in a 180 s engagement, and not modelled.
   - kind: buff
-    trigger: on_weakpoint_hit
+    trigger: weakpoint_hit
     grants: final_damage
     rank0: 0.5
     rankMax: 3.0

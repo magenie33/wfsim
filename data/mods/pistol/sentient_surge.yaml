@@ -35,7 +35,7 @@ effects:
   # IN CARD ORDER, because the description's X placeholders are filled from
   # these in sequence — the refill line comes first on DE's card.
   - kind: buff
-    trigger: on_kill
+    trigger: kill
     grants: magazine_refill
     rank0: 0.03
     rankMax: 0.20
@@ -52,7 +52,7 @@ effects:
     # have no timer at all: they are cleared by a magazine event
     # ("Reloading the weapon will reset the bonuses, as they are directly tied
     # to its tendril effect which resets on reload"), which is why this is not
-    # written as `on_kill` with a duration. The count lives in the sim, keyed
+    # written as a `kill` trigger with a duration. The count lives in the sim, keyed
     # off kills and reloads.
 
 source:

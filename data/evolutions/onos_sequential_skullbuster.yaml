@@ -29,8 +29,8 @@ effects:
   # exception.
   - kind: stacking_buff
     trigger: consecutive_headshot
-    per_stack:
-      headshot_damage_bonus: 0.30
+    grants: headshot_damage
+    per_stack: 0.30
     max_stacks: 4
 
 source:

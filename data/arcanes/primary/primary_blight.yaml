@@ -20,21 +20,21 @@ effects:
   # buckets (ArcaneDef::fx) - so this is a MODELING CHOICE, not a cited fact,
   # and a measurement can overturn it.
   - kind: buff
-    trigger: on_toxin_status
+    trigger: toxin_status
     grants: crit_damage
     rank0: 0.006
     rankMax: 0.036
     max_stacks: 40
     duration: 12
-    decay: all_drop_on_timeout
+    decay: all_at_once
   - kind: buff
-    trigger: on_toxin_status
+    trigger: toxin_status
     grants: multishot
     rank0: 0.003
     rankMax: 0.018
     max_stacks: 40
     duration: 12
-    decay: all_drop_on_timeout
+    decay: all_at_once
 
 source:
   url: https://wiki.warframe.com/w/Primary_Blight

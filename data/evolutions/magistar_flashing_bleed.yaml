@@ -12,8 +12,8 @@ selection: choose_one
 effects:
   # from: "+50% Chance of a Slash Status Effect on an Impact Status Effect"
   - kind: proc_conversion
-    trigger: impact
-    applies: slash
+    from: impact
+    to: slash
     value: 0.5
 
 source:

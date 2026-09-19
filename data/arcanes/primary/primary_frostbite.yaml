@@ -10,21 +10,21 @@ effects:
   # timer. The weapon-only trigger restriction is carried over BY ANALOGY with
   # Blight's explicit wiki note - not separately cited for this arcane.
   - kind: buff
-    trigger: on_cold_status
+    trigger: cold_status
     grants: crit_damage
     rank0: 0.005
     rankMax: 0.03
     max_stacks: 40
     duration: 12
-    decay: all_drop_on_timeout
+    decay: all_at_once
   - kind: buff
-    trigger: on_cold_status
+    trigger: cold_status
     grants: multishot
     rank0: 0.0038
     rankMax: 0.0225
     max_stacks: 40
     duration: 12
-    decay: all_drop_on_timeout
+    decay: all_at_once
 
 source:
   url: https://wiki.warframe.com/w/Primary_Frostbite

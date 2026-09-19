@@ -22,8 +22,8 @@ effects:
   # see notes: stack_cap_was_separate
   - kind: stacking_buff
     trigger: firing
-    per_stack:
-      fire_rate_bonus: 0.20
+    grants: fire_rate
+    per_stack: 0.20
     max_stacks: 5
     duration_seconds: 0.5
 

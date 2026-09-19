@@ -31,8 +31,8 @@ effects:
   # runs on infinite ammo (UNMODELLED.md). It is declared below rather than
   # folded in silently.
   - kind: stacking_buff
-    per_stack:
-      base_damage: 2.0
+    grants: flat_base_damage
+    per_stack: 2.0
     max_stacks: 4
     duration_seconds: 5.0
     trigger: kill

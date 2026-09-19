@@ -13,8 +13,8 @@ effects:
   # trigger exists, it simply never fires here, so the mod contributes nothing
   # rather than contributing its full value for free.
   - kind: buff
-    trigger: on_ability_cast
-    condition: while_aiming
+    trigger: ability_cast
+    condition: aiming
     grants: status_chance
     rank0: 0.15
     rankMax: 0.9

@@ -12,8 +12,8 @@ effects:
   # CONDITIONAL - pistol twin Sharpened Bullets, but the rifle grants +120%
   # against its +75%.
   - kind: buff
-    trigger: on_kill
-    condition: while_aiming
+    trigger: kill
+    condition: aiming
     grants: crit_damage
     rank0: 0.2
     rankMax: 1.2

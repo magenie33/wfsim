@@ -9,8 +9,8 @@ description: "On Ability Cast:\n+X% Status Chance when Aiming for Xs"
 
 effects:
   - kind: buff
-    trigger: on_ability_cast
-    condition: while_aiming
+    trigger: ability_cast
+    condition: aiming
     grants: status_chance
     rank0: 0.15
     rankMax: 0.9

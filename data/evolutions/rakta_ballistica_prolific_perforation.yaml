@@ -13,8 +13,8 @@ effects:
   # see notes: ballistica_bolt_that_went_through
   - kind: stacking_buff
     trigger: punch_through
-    per_stack:
-      crit_chance: 0.10
+    grants: crit_chance
+    per_stack: 0.10
     max_stacks: 8
     duration_seconds: 3.0
     decay: all_at_once

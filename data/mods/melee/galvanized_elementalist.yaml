@@ -23,7 +23,7 @@ effects:
   # its own clock, rather than losing one and restarting the rest. That is not
   # this parser's default, which the Galvanized family otherwise takes.
   - kind: stacking_buff
-    trigger: on_kill
+    trigger: kill
     grants: status_chance
     rank0: 0.027273
     rankMax: 0.3

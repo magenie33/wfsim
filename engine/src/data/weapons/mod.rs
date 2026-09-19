@@ -288,7 +288,7 @@ impl ShotType {
 /// Absence has to keep meaning unlimited — 121 entries have never been
 /// transcribed and must go on working — but it now means "nobody has looked"
 /// rather than "there is no limit", and the two are separable by a script.
-/// `weapons_data`'s own ratchet counts the entries that say NEITHER, so the
+/// `data::weapons`'s own ratchet counts the entries that say NEITHER, so the
 /// number can only be driven down.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(untagged)]

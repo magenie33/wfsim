@@ -13,8 +13,8 @@ effects:
   # arena casts no abilities, so this contributes only through the assumed-max
   # CondBuff path, never emergently.
   - kind: buff
-    trigger: on_ability_cast
-    condition: while_aiming
+    trigger: ability_cast
+    condition: aiming
     grants: status_chance
     rank0: 0.1
     rankMax: 0.6

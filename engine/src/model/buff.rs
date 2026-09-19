@@ -2,6 +2,7 @@
 //! WHAT A BUFF IS: the trigger that grants it, what it grants, how it stacks,
 //! decays and is cleared, and the gates on the Tenno that open it.
 
+use super::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TimedBuff {
@@ -16,52 +17,6 @@ pub struct TimedBuff {
     pub initial_active: bool,
 }
 
-/// A QUESTION ABOUT THE PLAYER that a weapon perk asks — "With Sprint Speed 1.2
-/// or Higher", "With Armor Over 450", "With Energy Max Over 700".
-///
-/// One vocabulary rather than a field pair per grant. The first two of these
-/// (Condition Overload, fire rate) each carried their own `_gated` value and
-/// `_min_*` threshold on [`WeaponBase`], and the note left there said the third
-/// should turn them into one mechanism. This is that.
-///
-/// Answered in [`resolve_for`], where the Tenno is — `apply` works on the raw
-/// weapon and the player is not there. The neutral player claims nothing
-/// (sprint 0.9, no armor, no energy), so a gated perk pays zero until someone
-/// says which frame is holding the gun.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum TennoGate {
-    /// `sprint_speed >= x`
-    SprintAtLeast(f64),
-    /// `armor > x`
-    ArmorOver(f64),
-    /// `energy_max > x`
-    EnergyMaxOver(f64),
-    /// `energy_max >= x` — the Dual Toxocyst's Carnage Reign, whose per-status
-    /// clause carries an UNLISTED "With Energy Max >= 200".
-    ///
-    /// A separate variant rather than `EnergyMaxOver(199)`: the card says >=,
-    /// and a threshold written one off so the operator comes out right is a
-    /// transcription that reads as a typo and is wrong the moment a frame lands
-    /// between the two. `SprintAtLeast` is the same distinction already made.
-    EnergyMaxAtLeast(f64),
-    /// `overshields` — Haven Foray, Guardian's Might: "With Overshields".
-    /// A yes/no rather than a threshold, which is what the card asks.
-    HasOvershields,
-    /// `channeling` — Daring Reverie, Hunter's Mantra: "With Channeled Ability
-    /// active". A yes/no, and its definition is the card's own note: the
-    /// ability must be DRAINING ENERGY over time.
-    ChannelingAbility,
-    /// *"With Melee Weapon Equipped"* — the weapon DRAWN, not quick-melee.
-    MeleeEquipped,
-    /// `solo_weapon` — the Vasto's Lone Gun: "With No Primary Equipped".
-    ///
-    /// The first gate that asks about the LOADOUT rather than about the frame
-    /// or what it is doing, and the difference matters: this arena has always
-    /// fired one weapon for a whole engagement, which says nothing about what
-    /// else is in the other two slots. See [`crate::data::tenno::TennoState`].
-    SoloWeapon,
-}
-
 /// ONE GRANT THE PLAYER'S STATE GATES, carried until `resolve_for` has a Tenno
 /// to ask.
 ///
@@ -73,7 +28,7 @@ pub enum TennoGate {
 /// the very same card (MEASUREMENTS M83).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GatedTerm {
-    pub gate: TennoGate,
+    pub gate: TennoCondition,
     pub grant: GatedGrant,
     pub value: f64,
     /// How much of `value` the GunCO term's base grows by — 0 on every grant
@@ -92,23 +47,6 @@ pub struct TennoScaledTerm {
     pub per_unit: f64,
     pub cap: f64,
     pub grant: crate::model::ArcGrant,
-}
-
-impl TennoGate {
-
-    /// The sentence a card shows. English is the source; the overlay translates.
-    pub fn describe(self) -> String {
-        match self {
-            TennoGate::SprintAtLeast(x) => format!("at sprint speed {x} or higher"),
-            TennoGate::ArmorOver(x) => format!("with armor over {x}"),
-            TennoGate::EnergyMaxOver(x) => format!("with max energy over {x}"),
-            TennoGate::EnergyMaxAtLeast(x) => format!("with max energy of {x} or higher"),
-            TennoGate::HasOvershields => "with overshields".to_string(),
-            TennoGate::ChannelingAbility => "with a channeled ability active".to_string(),
-            TennoGate::SoloWeapon => "with no other weapon equipped".to_string(),
-            TennoGate::MeleeEquipped => "with the melee weapon drawn".to_string(),
-        }
-    }
 }
 
 /// WHAT A GATED PERK GRANTS. One arm per bracket, and each keeps its own —
@@ -264,14 +202,14 @@ pub enum BuffGrant {
     /// Stormburst: "+0.4 Multishot", a FLAT add rather than a percentage of
     /// the weapon's base — so it joins `ms_eff` beside Final Fusillade's, not
     /// the multishot BUCKET.
-    Multishot,
+    FlatMultishot,
     /// Blazing Barrel on the Strun family: "+0.05 **Base** Multishot".
     ///
     /// "Base" is the whole difference and the wiki spells out what it buys on
     /// the neighbouring perk (Forceful Finality, "+5 BASE Multishot"): it is
     /// "added before mods, and is thus multiplied by multishot bonuses". So a
     /// build carrying Hell's Chamber gets 0.05 x that bucket a stack, where
-    /// [`BuffGrant::Multishot`] would have given it a flat 0.05.
+    /// [`BuffGrant::FlatMultishot`] would have given it a flat 0.05.
     BaseMultishot,
     /// The RELATIVE crit-damage bucket — Organ Shatter's, not a base grant.
     /// Galvanized Steel's on-kill `+30% Critical Damage` is this one, and the
@@ -292,7 +230,7 @@ pub enum BuffGrant {
     /// are laid side by side: the same perk NAME grants a flat base add on one
     /// family and a percentage on another, and they are different numbers on
     /// any build that carries a multishot mod.
-    MultishotPercent,
+    Multishot,
     /// Striking Succession: *"Increase Base Damage by +15"* — an ABSOLUTE add
     /// to the weapon's base, not a share of the base-damage bucket.
     ///
@@ -337,6 +275,42 @@ pub enum BuffGrant {
 }
 
 impl BuffGrant {
+    /// THE GRANT'S ONE SPELLING — a data file's `grants:`. A bare stat is its
+    /// relative bucket (`multishot` is the mods' +%), `flat_` adds to the
+    /// number itself and `base_` to the weapon's base before the mods multiply.
+    pub fn id(self) -> &'static str {
+        match self {
+            BuffGrant::BaseDamage => "base_damage",
+            BuffGrant::FlatBaseDamage => "flat_base_damage",
+            BuffGrant::BaseMultishot => "base_multishot",
+            BuffGrant::Multishot => "multishot",
+            BuffGrant::FlatMultishot => "flat_multishot",
+            BuffGrant::ReloadSpeed => "reload_speed",
+            BuffGrant::FireRate => "fire_rate",
+            BuffGrant::BaseCritDamage => "base_crit_damage",
+            BuffGrant::CritDamage => "crit_damage",
+            BuffGrant::CritChance => "crit_chance",
+            BuffGrant::StatusChance => "status_chance",
+            BuffGrant::HeadshotDamage => "headshot_damage",
+            BuffGrant::InitialCombo => "initial_combo",
+            BuffGrant::MeleeRange => "melee_range",
+        }
+    }
+
+    /// The grant a data file names.
+    pub fn from_id(id: &str) -> Option<Self> {
+        use BuffGrant as G;
+        [
+            G::BaseDamage, G::FlatBaseDamage, G::BaseMultishot, G::Multishot, G::FlatMultishot, G::ReloadSpeed,
+            G::FireRate, G::BaseCritDamage, G::CritDamage, G::CritChance, G::StatusChance, G::HeadshotDamage,
+            G::InitialCombo, G::MeleeRange,
+        ]
+        .into_iter()
+        .find(|g| g.id() == id)
+    }
+}
+
+impl BuffGrant {
     /// The `disables:` key this grant feeds — the SAME vocabulary a locking
     /// mod writes ("multishot", "fire_rate"). Derived rather than listed: a
     /// lock says "set to its default ignoring other bonuses, even negative
@@ -349,10 +323,10 @@ impl BuffGrant {
     pub fn locked_stat(self) -> &'static str {
         match self {
             BuffGrant::BaseDamage | BuffGrant::FlatBaseDamage => "base_damage",
-            BuffGrant::BaseMultishot | BuffGrant::MultishotPercent => "multishot",
+            BuffGrant::BaseMultishot | BuffGrant::Multishot => "multishot",
             BuffGrant::ReloadSpeed => "reload_speed",
             BuffGrant::FireRate => "fire_rate",
-            BuffGrant::Multishot => "multishot",
+            BuffGrant::FlatMultishot => "multishot",
             BuffGrant::BaseCritDamage | BuffGrant::CritDamage => "crit_damage",
             BuffGrant::CritChance => "crit_chance",
             BuffGrant::StatusChance => "status_chance",
@@ -371,8 +345,8 @@ impl BuffGrant {
             BuffGrant::BaseDamage => "Base Damage",
             BuffGrant::FlatBaseDamage => "flat Base Damage",
             BuffGrant::BaseMultishot => "Base Multishot",
-            BuffGrant::MultishotPercent => "Multishot",
-            BuffGrant::Multishot => "flat Multishot",
+            BuffGrant::Multishot => "Multishot",
+            BuffGrant::FlatMultishot => "flat Multishot",
             BuffGrant::ReloadSpeed => "Reload Speed",
             BuffGrant::FireRate => "Fire Rate",
             BuffGrant::BaseCritDamage => "Base Critical Damage",
@@ -554,4 +528,146 @@ pub enum ClearedBy {
     /// and picking either as "close enough" is a stack count nobody can
     /// reproduce.
     Reload,
+}
+
+/// What event grants/refreshes a stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArcTrigger {
+    /// Any kill (Secondary Merciless).
+    Kill,
+    /// Direct-pellet headshot kill (Secondary Deadhead's precision boundary).
+    HeadshotKill,
+    /// Melee kill — the sim has no melee: the buff starts full (user
+    /// setting) and only decays (Secondary Dexterity).
+    MeleeKill,
+    /// A Heat status this weapon applies (Cascadia Flare).
+    HeatStatus,
+    /// An Electricity status this weapon applies (Conjunction Voltage).
+    ElectricityStatus,
+    /// A Toxin status this weapon applies (Primary Blight). Blight is
+    /// stricter than the other on-status arcanes — wiki: "stacking the
+    /// Blight buff requires the Toxin proc to be inflicted by using the
+    /// attached primary weapon" — which is exactly what the sim can see.
+    ToxinStatus,
+    /// A Cold status this weapon applies (Primary Frostbite).
+    ColdStatus,
+    /// Nothing grants it — it is simply ON. A Tenno-scaled arcane (Primary
+    /// Bulwark, Primary Overcharge) reads a Warframe stat that does not change
+    /// during the fight, so its buff starts at its one stack, is pinned there,
+    /// and no event has to fire. It rides the buff machinery rather than a new
+    /// static bucket because the GRANTS are the same ones the on-kill arcanes
+    /// already feed correctly.
+    Passive,
+    /// A direct-pellet hit on a natural weak point (Primary Crux) — a HIT, not
+    /// a kill, and PER PELLET: "Multiple individual pellets from a single shot
+    /// (either innate to the weapon or generated via Multishot) can build
+    /// stacks" (wiki). Weak spots created by Banshee's Sonar do NOT count,
+    /// which is also exactly what `BodyPart::is_head` means here.
+    WeakpointHit,
+}
+
+/// EVENTS A CARD NAMES THAT NO FIGHT HERE RAISES — an ability cast, a roll, a
+/// weapon swap. They are words of the same vocabulary as [`BuffTrigger`]'s, so
+/// a file spells them the same way; the card is read at its assumed maximum or
+/// stays inert, and says which (docs/UNMODELLED.md).
+pub const UNSIMULATED_EVENTS: &[&str] =
+    &["equip", "ability_cast", "bullet_jump_land", "swap_consume_combo", "roll", "per_tendril", "puncture_status"];
+
+// ---- THE TRIGGER VOCABULARY -----------------------------------------------
+//
+// ONE SPELLING per event, and it is this id: a data file's `trigger:`, a
+// scenario's switch, a share link and a benchmark all carry it. A file that
+// spells one any other way does not load (`every_trigger_in_the_data_is_a_word`).
+
+impl BuffTrigger {
+    /// The wire id of a data-declared trigger — what a scenario, a share link and a
+    /// benchmark carry.
+    ///
+    /// EXHAUSTIVE ON PURPOSE — no `_` arm, so a trigger added to [`BuffTrigger`]
+    /// cannot compile until it is named here, where a default would leave the next
+    /// card with no switch and nothing to notice it by.
+    pub fn id(self) -> &'static str {
+        match self {
+            BuffTrigger::Kill => "kill",
+            BuffTrigger::Hit => "hit",
+            BuffTrigger::PlainHit => "plain_hit",
+            BuffTrigger::Headshot => "headshot",
+            BuffTrigger::ConsecutiveHeadshot => "consecutive_headshot",
+            BuffTrigger::PunchThrough => "punch_through",
+            BuffTrigger::StatusApplied => "status_applied",
+            // The element is not part of the id: the condition is "the target
+            // already carries this status", and a fight handing out none of them
+            // hands out none of any type.
+            BuffTrigger::HitEnemyWithStatus(_) => "hit_enemy_with_status",
+            BuffTrigger::ReloadComplete => "reload_complete",
+            BuffTrigger::ReloadFromEmpty => "reload_from_empty",
+            BuffTrigger::FullBurst => "full_burst",
+            BuffTrigger::Firing => "firing",
+        }
+    }
+
+    /// The trigger a data file names. An event carrying a payload
+    /// (`HitEnemyWithStatus`) is never named by a file on its own.
+    pub fn from_id(id: &str) -> Option<Self> {
+        use BuffTrigger as T;
+        [
+            T::Kill, T::Hit, T::PlainHit, T::Headshot, T::ConsecutiveHeadshot, T::PunchThrough,
+            T::StatusApplied, T::ReloadComplete, T::ReloadFromEmpty, T::FullBurst, T::Firing,
+        ]
+        .into_iter()
+        .find(|t| t.id() == id)
+    }
+}
+
+impl ArcTrigger {
+    /// The same for an arcane's own vocabulary. `None` for [`ArcTrigger::Passive`]:
+    /// nothing grants it, so no switch may take it away.
+    pub fn id(self) -> Option<&'static str> {
+        Some(match self {
+            ArcTrigger::Kill => "kill",
+            ArcTrigger::HeadshotKill => "headshot_kill",
+            ArcTrigger::MeleeKill => "melee_kill",
+            ArcTrigger::WeakpointHit => "weakpoint_hit",
+            ArcTrigger::HeatStatus => "heat_status",
+            ArcTrigger::ElectricityStatus => "electricity_status",
+            ArcTrigger::ToxinStatus => "toxin_status",
+            ArcTrigger::ColdStatus => "cold_status",
+            ArcTrigger::Passive => return None,
+        })
+    }
+
+    /// The trigger an arcane's file names.
+    pub fn from_id(id: &str) -> Option<Self> {
+        use ArcTrigger as T;
+        [
+            T::Kill, T::HeadshotKill, T::MeleeKill, T::HeatStatus, T::ElectricityStatus, T::ToxinStatus,
+            T::ColdStatus, T::WeakpointHit,
+        ]
+        .into_iter()
+        .find(|t| t.id() == Some(id))
+    }
+}
+
+impl BuffDecay {
+    /// The decay a data file's `decay:` names; absent is the Galvanized
+    /// family's, which is what every buff written before the other two did.
+    pub fn from_id(id: Option<&str>) -> Self {
+        match id {
+            Some("per_stack_expiry") => BuffDecay::PerStackExpiry,
+            Some("all_at_once") => BuffDecay::AllAtOnce,
+            _ => BuffDecay::LoseOneAndReset,
+        }
+    }
+}
+
+impl ClearedBy {
+    /// What a data file's `cleared_by:` names; absent is the buff's own clock.
+    pub fn from_id(id: Option<&str>) -> Self {
+        match id {
+            Some("reload") => ClearedBy::Reload,
+            Some("magazine_refilled") => ClearedBy::MagazineRefilled,
+            Some("empty_magazine") => ClearedBy::EmptyMagazine,
+            _ => ClearedBy::Nothing,
+        }
+    }
 }

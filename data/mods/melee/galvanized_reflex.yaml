@@ -16,7 +16,7 @@ effects:
   # than a percentage, so it raises the floor the counter returns to. On a heavy
   # mode that is the build: +80 points is four tiers that cost nothing to hold.
   - kind: stacking_buff
-    trigger: on_kill
+    trigger: kill
     grants: initial_combo
     rank0: 2.0
     rankMax: 20.0

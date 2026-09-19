@@ -14,12 +14,12 @@ effects:
   # Acuity's "Weak Point".
   #
   # Invisibility is a WARFRAME state, and the calculator now has one to ask:
-  # `condition: while_invisible` is read against `data/tenno/`, whose neutral
+  # `condition: invisible` is read against `data/tenno/`, whose neutral
   # entry is not invisible — so this contributes nothing, in the panel and in
   # the sim alike. Give the Tenno `state.invisible: true` and it pays, with no
   # code change anywhere.
   - kind: base_damage_bonus
-    condition: while_invisible
+    condition: invisible
     rank0: 0.3
     rankMax: 3.3
 

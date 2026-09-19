@@ -8,7 +8,7 @@
 #
 # WHY THIS FILE MENTIONS NO WEAPON, AND MAY NOT. Same rule as every ruler and
 # the same reason: it has to hold for a roster it has never seen, and
-# `benchmarks_data.rs` refuses it any weapon, mod, arcane or evolution id.
+# `board/benchmarks.rs` refuses it any weapon, mod, arcane or evolution id.
 id: group_clear
 
 name: "Group Clear · 19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM"

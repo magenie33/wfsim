@@ -11,8 +11,8 @@ effects:
   # CONDITIONAL — the shotgun twin of Bladed Rounds (rifle) and Sharpened
   # Bullets (pistol). +99% against the rifle's +120%.
   - kind: buff
-    trigger: on_kill
-    condition: while_aiming
+    trigger: kill
+    condition: aiming
     grants: crit_damage
     rank0: 0.165
     rankMax: 0.99

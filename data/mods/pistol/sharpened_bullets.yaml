@@ -10,8 +10,8 @@ description: "On Kill:\n+X% Critical Damage when Aiming for Xs"
 
 effects:
   - kind: buff
-    trigger: on_kill
-    condition: while_aiming
+    trigger: kill
+    condition: aiming
     grants: crit_damage
     rank0: 0.125
     rankMax: 0.75

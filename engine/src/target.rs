@@ -3,7 +3,7 @@
 //! level, the faction and its vulnerability columns, the body parts a shot can
 //! land on, and how the fight treats a death.
 //!
-//! A catalog entry (`enemy_data`) becomes one of these; the fight, the arena
+//! A catalog entry (`data::enemies`) becomes one of these; the fight, the arena
 //! and the formation all hold one. It is the input, never the fight's state —
 //! what a body has LEFT mid-fight is `fight::TargetState`.
 
@@ -271,7 +271,7 @@ impl TargetParams {
         }
     }
 
-    /// Impossible-combination check (see `enemy_data` for the rigor rule).
+    /// Impossible-combination check (see `data::enemies` for the rigor rule).
     pub fn validate(&self) -> Result<(), String> {
         if self.eximus && !self.can_be_eximus {
             return Err(format!(

@@ -14,7 +14,7 @@ effects:
   # On a KILL, two stacks of ten seconds.
   #
   # `stacking_buff` AND NOT `buff`: the second dispatches on a closed list of
-  # (trigger, grants) pairs and `on_kill`+`fire_rate` is not on it, so the
+  # (trigger, grants) pairs and `kill`+`fire_rate` is not on it, so the
   # clause became a CondBuff — paid IN FULL on the panel and in the optimizer,
   # and worth NOTHING in the fight. The two surfaces disagreed about the card
   # rather than either of them being blank.
@@ -24,7 +24,7 @@ effects:
   # lose-one-and-reset. UNMEASURED: it is a guess between two models that agree
   # while kills keep coming and differ when they stop.
   - kind: stacking_buff
-    trigger: on_kill
+    trigger: kill
     grants: fire_rate
     decay: per_stack_expiry
     rank0: 0.058333
