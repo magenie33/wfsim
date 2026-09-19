@@ -3302,13 +3302,19 @@ const applyClassRule = (el) => {
   const cr = el.dataset.cr;
   if (!cr) return false;
   const [cls, id] = cr.split("|");
-  const v = el.type === "checkbox" ? el.checked : Number(el.value);
-  const dflt = el.dataset.crdef;
-  const same = dflt !== undefined
-    && String(v) === (dflt === "true" || dflt === "false" ? dflt : String(Number(dflt)));
-  setClassRule(cls, id, same ? undefined : v);
+  writeClassRule(cls, id, el.type === "checkbox" ? el.checked : Number(el.value));
   return true;
 };
+/// The value the CAPABILITY gives a class on this axis, read off any weapon of
+/// that class — what a cleared rule falls back to.
+const classRuleDefault = (cls, id) => {
+  const f = settledAxis((META.weapons || []).find((x) => x.weapon_class === cls), id);
+  return f ? f.value : false;
+};
+/// A class rule as a control or the door states it: stored only where it
+/// differs from the default, and `null` clears it.
+const writeClassRule = (cls, id, v) =>
+  setClassRule(cls, id, v === null || v === classRuleDefault(cls, id) ? undefined : v);
 
 /// Write one, or clear it with `undefined`.
 ///
@@ -15420,11 +15426,8 @@ function houseRulesRow(w) {
     const body = pairs.length
       ? pairs.map(([, id]) => {
           const rule = classRuleOf(cls, id);
-          // The value the CAPABILITY gives, read off any weapon of this class —
-          // which is what the tick falls back to and what clearing it restores.
-          const sample = (META.weapons || []).find((x) => x.weapon_class === cls);
-          const f = settledAxis(sample, id);
-          const dflt = f ? f.value : false;
+          const f = settledAxis((META.weapons || []).find((x) => x.weapon_class === cls), id);
+          const dflt = classRuleDefault(cls, id);
           const on = rule === undefined ? !!dflt : !!rule;
           return `<label class="check" title="${escHtml(f ? tr(f.why) : "")}">`
             + `<input type="checkbox" data-cr="${escHtml(cls)}|${escHtml(id)}" data-crdef="${!!dflt}"`
@@ -15790,20 +15793,23 @@ function renderScenarioFields(ids, opts = {}) {
   boxes.forEach((box) =>
     box.querySelectorAll("[data-xk]").forEach((el) => {
       el.addEventListener("change", () => {
-        const next = { ...(sim.extra_stats || {}) };
         // TYPED IN PERCENT, stored as the fraction every bucket in the engine
         // holds — the same units a mod's `rankMax` is in.
-        const v = Number(el.value) / 100;
-        if (!Number.isFinite(v) || v === 0) delete next[el.dataset.xk];
-        else next[el.dataset.xk] = v;
-        sim.extra_stats = next;
-        // It changes what the BUILD is worth, so the panel has to be asked
-        // again — the same reason a Tenno field does.
-        refreshPanel();
-        markScenarioDirty();
+        setExtraStat(el.dataset.xk, Number(el.value) / 100);
         if (opts.after) opts.after();
       });
     }));
+}
+
+/// ONE OF THE FIGHT'S OWN STAT BONUSES, as a fraction; zero or not a number
+/// clears it. It changes what the BUILD is worth, so the panel is asked again —
+/// the same reason a Tenno field is.
+function setExtraStat(k, v) {
+  const next = { ...(sim.extra_stats || {}) };
+  if (!Number.isFinite(v) || v === 0) delete next[k]; else next[k] = v;
+  sim.extra_stats = next;
+  refreshPanel();
+  markScenarioDirty();
 }
 
 // WHAT THE WARFRAME BRINGS: the squad's AURA and the frame's ARCHON SHARDS.
@@ -23297,6 +23303,8 @@ const AGENT_KINDS = {
   number: (v) => typeof v === "number" && Number.isFinite(v),
   object: (v) => !!v && typeof v === "object" && !Array.isArray(v),
   array: (v) => Array.isArray(v),
+  boolean: (v) => typeof v === "boolean",
+  scalar: (v) => typeof v === "boolean" || (typeof v === "number" && Number.isFinite(v)),
   seat: (v) => agentSeat(v) >= 0,
 };
 
@@ -23372,7 +23380,8 @@ const agentTools = () => AGENT_ACTIONS.map((a) => ({
       // A NULLABLE argument says so in its type, or a model that follows the
       // schema can never send the null that empties a slot.
       type: ((ts) => (ts.length === 1 ? ts[0] : ts))(
-        [].concat(s.kind === "seat" ? ["string", "integer"] : s.kind, s.nullable ? ["null"] : [])),
+        [].concat(s.kind === "seat" ? ["string", "integer"] : s.kind === "scalar" ? ["boolean", "number"] : s.kind,
+          s.nullable ? ["null"] : [])),
       description: s.what,
       ...(s.kind === "array" ? { items: { type: "object" } } : {}),
       ...(s.enum ? { enum: s.enum() } : {}),
@@ -23490,10 +23499,7 @@ const AGENT_EXEMPT = [
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
   { sel: "#enemy-block", kind: "todo", why: "making custom targets" },
-  { sel: "[data-bev], [data-bevg], .bevg", kind: "todo", why: "which buff triggers the fight allows" },
-  { sel: "[data-cr]", kind: "todo", why: "a fight's per-class rules" },
   { sel: "#sim-squad", kind: "todo", why: "squad auras and shards" },
-  { sel: "#sim-extra", kind: "todo", why: "the fight's own stat bonuses" },
   { sel: "#wfbuff-block", kind: "todo", why: "Warframe ability buffs" },
 ];
 
@@ -23521,6 +23527,81 @@ const agentMarks = (map, name) => {
 
 /// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
+  {
+    id: "simulator.triggers.list",
+    query: true,
+    what: "List the buff triggers the fight can switch off (a buff whose trigger is off never fires, though the run still does the action), by group, with which are off.",
+    anchor: "[data-bev], [data-bevg]",
+    needs_weapon: true,
+    args: {},
+    run() {
+      const off = new Set(sim.buff_triggers_off || []);
+      return { groups: buffTriggerGroups().map((g) => ({ id: g.id, triggers: g.ids.map((id) => ({ id, off: off.has(id) })) })) };
+    },
+  },
+  {
+    id: "simulator.trigger.set",
+    what: "Switch a buff trigger off (off=true) or back on, or a whole group of them by the group's id.",
+    anchor: "[data-bev], [data-bevg]",
+    needs_weapon: true,
+    args: {
+      id: { kind: "string", required: true, what: "trigger id or group id" },
+      off: { kind: "boolean", required: true, what: "true = buffs from it do not fire" },
+    },
+    run({ id, off }) {
+      const groups = buffTriggerGroups();
+      if (groups.some((g) => g.id === id)) toggleBuffTriggerGroup(id, off);
+      else if ((META.buff_triggers || []).some((t) => t.id === id)) toggleBuffTrigger(id, off);
+      else return agentNo("bad_argument", { argument: "id", alternatives: groups.flatMap((g) => [g.id, ...g.ids]).slice(0, 30) });
+      return { off: sim.buff_triggers_off || [] };
+    },
+  },
+  {
+    id: "simulator.extra.set",
+    what: "Set one of the fight's own stat bonuses — what the weapon is handed by something outside its build (a squad buff, another weapon's arcane) — as a percentage into the same bucket a mod of that stat feeds. 0 or null clears it.",
+    anchor: "[data-xk]",
+    needs_weapon: true,
+    args: {
+      stat: { kind: "string", required: true, what: "which stat", enum: () => EXTRA_STAT_KEYS.map(([k]) => k) },
+      percent: { kind: "number", required: true, nullable: true, min: -1000, max: 10000, what: "e.g. 30 for +30%" },
+    },
+    run({ stat, percent }) {
+      setExtraStat(stat, percent === null ? 0 : percent / 100);
+      renderSim();
+      return { extra_stats: sim.extra_stats };
+    },
+  },
+  {
+    id: "simulator.rules.list",
+    query: true,
+    what: "List the per-class rules a fight may make — what the simulator simplifies for a whole weapon class — with each one's default and this fight's value.",
+    anchor: "[data-cr]",
+    needs_weapon: true,
+    args: {},
+    run() {
+      return { rules: overridablePairs().map(([cls, id]) => ({ class: cls, rule: id, default: classRuleDefault(cls, id),
+        ...(classRuleOf(cls, id) !== undefined ? { this_fight: classRuleOf(cls, id) } : {}) })) };
+    },
+  },
+  {
+    id: "simulator.rule.set",
+    what: "Set a per-class rule for this fight, or null to fall back to the default. Only the pairs simulator.rules.list gives exist.",
+    anchor: "[data-cr]",
+    needs_weapon: true,
+    args: {
+      class: { kind: "string", required: true, what: "weapon class" },
+      rule: { kind: "string", required: true, what: "the axis" },
+      value: { kind: "scalar", required: true, nullable: true, what: "true/false or a number; null clears" },
+    },
+    run({ class: cls, rule, value }) {
+      if (!overridablePairs().some(([c, id]) => c === cls && id === rule)) {
+        return agentNo("bad_argument", { argument: "rule", alternatives: overridablePairs().map((p) => p.join(".")) });
+      }
+      writeClassRule(cls, rule, value);
+      renderSim();
+      return { this_fight: classRuleOf(cls, rule) ?? null, default: classRuleDefault(cls, rule) };
+    },
+  },
   {
     id: "optimizer.scope.read",
     query: true,
@@ -24394,7 +24475,9 @@ async function nonaBranch(id) {
     if (r && r.ok) { nona.owned.add(`riven:${r.riven}`); return r.riven; }
     return null;
   }
-  const bar = id === "simulator.scenario.set" ? "scenario"
+  // EVERY SIMULATOR ACTION WRITES THE FIGHT except running it and the run
+  // count, which is a preference of this browser.
+  const bar = id.startsWith("simulator.") && id !== "simulator.run.start" && id !== "simulator.runs.set" ? "scenario"
     : id.startsWith("builder.") && id !== "builder.weapon.set" ? "build" : null;
   if (!bar) return null;
   const active = bar === "build" ? activePreset : activeScenario;

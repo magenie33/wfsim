@@ -266,6 +266,40 @@ check("the board reads back, ranked, each row with its mods",
 check("a board row opens as the build", !!board.open && board.open.ok === true && board.onIt === true,
   JSON.stringify(board.open));
 
+// ---- the fight's own editors: triggers, stat bonuses, class rules ------------
+
+const fight = await evaluate(`(async () => {
+  const out = {};
+  out.triggers = await window.wfsim.do("simulator.triggers.list", {});
+  const g = out.triggers.groups[0];
+  out.off = await window.wfsim.do("simulator.trigger.set", { id: g.triggers[0].id, off: true });
+  out.offSeen = (sim.buff_triggers_off || []).includes(g.triggers[0].id);
+  out.on = await window.wfsim.do("simulator.trigger.set", { id: g.triggers[0].id, off: false });
+  out.extra = await window.wfsim.do("simulator.extra.set", { stat: "crit_chance", percent: 30 });
+  out.extraSeen = (sim.extra_stats || {}).crit_chance === 0.3;
+  out.extraOff = await window.wfsim.do("simulator.extra.set", { stat: "crit_chance", percent: null });
+  out.extraGone = !(sim.extra_stats || {}).crit_chance;
+  out.rules = await window.wfsim.do("simulator.rules.list", {});
+  const r = out.rules.rules.find(x => typeof x.default === "boolean");
+  if (r) {
+    out.rule = await window.wfsim.do("simulator.rule.set", { class: r.class, rule: r.rule, value: !r.default });
+    out.ruleSeen = classRuleOf(r.class, r.rule) === !r.default;
+    out.ruleSame = await window.wfsim.do("simulator.rule.set", { class: r.class, rule: r.rule, value: r.default });
+    out.rulePruned = classRuleOf(r.class, r.rule) === undefined;
+  }
+  out.badTrigger = await window.wfsim.do("simulator.trigger.set", { id: "no_such_trigger", off: true });
+  return out;
+})()`, { awaitPromise: true });
+
+check("a buff trigger switches off and back on", fight.off.ok && fight.offSeen && fight.on.ok, JSON.stringify(fight.off));
+check("a fight stat bonus is set in percent and stored as a fraction, and clears",
+  fight.extra.ok && fight.extraSeen && fight.extraOff.ok && fight.extraGone, JSON.stringify(fight.extra));
+if (fight.rule) {
+  check("a class rule is written, and one that agrees with the default is not stored",
+    fight.rule.ok && fight.ruleSeen && fight.ruleSame.ok && fight.rulePruned, JSON.stringify([fight.rule, fight.ruleSame]));
+}
+check("a trigger that does not exist is refused", fight.badTrigger.ok === false, JSON.stringify(fight.badTrigger));
+
 // ---- the search's scope, set through the page's own rules ---------------------
 
 const scope = await evaluate(`(async () => {
