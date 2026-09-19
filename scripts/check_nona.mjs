@@ -48,6 +48,13 @@ const mock = createServer((req, res) => {
     }
     const body = JSON.parse(raw || "{}");
     const anthropic = req.url.endsWith("/v1/messages");
+    // A REQUEST WITH NO TOOLS is the summary being asked for.
+    if (!body.tools) {
+      res.writeHead(200, { ...cors, "Content-Type": "application/json" });
+      const t = "SUMMARY: the reader wants a Torid build; DPS 1234 measured by simulator.run.start on build 1.";
+      res.end(JSON.stringify(anthropic ? { content: [{ type: "text", text: t }] } : { choices: [{ message: { content: t } }] }));
+      return;
+    }
     seen.push({ url: req.url, body });
     const done = anthropic
       ? body.messages.flatMap((m) => (Array.isArray(m.content) ? m.content : [])).filter((b) => b.type === "tool_result").length
@@ -145,9 +152,9 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
   const sent = seen.filter((x) => x.url === path);
   const tools = (sent[0] && sent[0].body.tools) || [];
   const names = tools.map((t) => (t.function ? t.function.name : t.name));
-  check(`${provider}: she is sent every door tool, plus the observation`,
-    names.length === r.tools + 1 && names.includes("builder_board_read") && names.includes("shell_page_observe"),
-    `${names.length} vs ${r.tools + 1}`);
+  check(`${provider}: she is sent every door tool, plus the observation and her history search`,
+    names.length === r.tools + 2 && names.includes("builder_board_read") && names.includes("shell_page_observe")
+    && names.includes("shell_history_search"), `${names.length} vs ${r.tools + 2}`);
   check(`${provider}: the loop runs to an answer`, sent.length === 3 && r.log.some((l) => /assistant \| Serration is seated/.test(l)),
     JSON.stringify(r.log));
   check(`${provider}: each call is a line in the trail, and landed`,
@@ -190,6 +197,35 @@ check("both conversations were kept, titled from what was asked", kept.list.leng
   JSON.stringify(kept.list));
 check("a kept conversation reopens with its trail", kept.log.filter((c) => /tool ok/.test(c)).length === 2 && kept.log.some((c) => /assistant/.test(c)),
   JSON.stringify(kept.log));
+
+// ---- the second step: early turns summarised, the record kept whole ----------
+
+const sum = await evaluate(`(async () => {
+  const saved = nona.conv;
+  nona.conv = nonaNewConversation();
+  for (let i = 0; i < 7; i++) {
+    nona.conv.messages.push({ role: "user", text: "question " + i + (i === 1 ? " about the Plinx" : ""), page: "{}" });
+    nona.conv.messages.push({ role: "assistant", text: "", calls: [{ id: "s" + i, name: "builder_stats_read", args: {} }] });
+    nona.conv.messages.push({ role: "tool", id: "s" + i, name: "builder_stats_read", ok: true, line: "x", result: "y".repeat(4000) });
+    nona.conv.messages.push({ role: "assistant", text: "answer " + i });
+  }
+  const cfg = { context: 12000, model: "sum-test", proto: "openai", base: ${JSON.stringify(MOCK + "/v1")}, key: "t" };
+  nonaFitBudget(cfg, false);
+  const cut = nonaWantsSummary(cfg);
+  const users = nona.conv.messages.map((m, i) => (m.role === "user" ? i : -1)).filter(i => i >= 0);
+  if (cut != null) await nonaSummarize(cfg, cut, new AbortController().signal);
+  const sent = nonaSent(nona.conv);
+  const found = nonaHistorySearch("Plinx");
+  const out = { cut, expect: users[users.length - 4], summary: (nona.conv.summary || {}).text || "",
+    first: (sent[0] || {}).text || "", sentUsers: sent.filter(m => m.role === "user").length, found: found.found };
+  nona.conv = saved;
+  return out;
+})()`, { awaitPromise: true });
+check("past the budget, all but the newest four turns are summarised", sum.cut === sum.expect && /SUMMARY/.test(sum.summary),
+  JSON.stringify(sum));
+check("...what is sent starts from the summary and keeps the four turns", /<summary/.test(sum.first) && sum.sentUsers === 4,
+  JSON.stringify([sum.first.slice(0, 60), sum.sentUsers]));
+check("...and the record stays whole: an early turn is still searchable", sum.found >= 1, JSON.stringify(sum.found));
 
 // ---- a number she did not measure is marked -----------------------------------
 

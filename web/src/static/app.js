@@ -24861,7 +24861,14 @@ const NONA_OBSERVE = {
   description: "See the page as it is now: which weapon and module are open, the build, the fight, the last result and what can be done from here.",
   input_schema: { type: "object", properties: {}, required: [] },
 };
-const nonaTools = () => [NONA_OBSERVE].concat(
+/// …AND THE CONVERSATION'S OWN RECORD, searchable once it has been summarised
+/// or set aside: what the model is sent is trimmed, what is kept is not.
+const NONA_HISTORY = {
+  name: "shell_history_search",
+  description: "Search this conversation's full record — earlier messages and tool results, including ones summarised or set aside — for a word or an id.",
+  input_schema: { type: "object", properties: { query: { type: "string", description: "text to find" } }, required: ["query"] },
+};
+const nonaTools = () => [NONA_OBSERVE, NONA_HISTORY].concat(
   window.wfsim.tools().map((t) => ({ ...t, name: nonaToolName(t.name) })));
 
 /// HER RULES, and no game data: every fact about Warframe she states comes from
@@ -24995,6 +25002,14 @@ function nonaCalibrate(model, estimated, billed) {
   try { localStorage.setItem("wfsim-nona-calib", JSON.stringify(c)); } catch (_) { /* next time */ }
 }
 
+/// WHAT IS SENT, from the summary on: the messages after it, the first of
+/// which carries the summary ahead of its own text.
+function nonaSent(conv) {
+  const sum = conv.summary;
+  if (!sum) return conv.messages.filter((m) => m.role !== "note" && m.role !== "card");
+  return conv.messages.slice(sum.upto).filter((m) => m.role !== "note" && m.role !== "card")
+    .map((m, i) => (i === 0 ? { ...m, text: `<summary of the conversation so far>\n${sum.text}\n</summary>\n\n${m.text}` } : m));
+}
 const nonaPageText = (m) => (m.page && !m.pageMasked ? `\n\n<page>${m.page}</page>` : "");
 const nonaToolText = (m) => (m.masked
   ? `[set aside: the result of ${nonaToolId(m.name)} (${Math.round((m.result || "").length / 1024 * 10) / 10} KB) — call it again if you need it]`
@@ -25008,11 +25023,12 @@ function nonaFitBudget(cfg, force) {
   const B = NONA_BUDGET;
   const room = (cfg.context || B.window) - B.output - B.margin;
   const whole = nonaSystemPrompt() + JSON.stringify(nonaTools())
-    + c.messages.map((m) => (m.role === "tool" ? nonaToolText(m) : (m.text || "") + nonaPageText(m) + JSON.stringify(m.calls || []))).join("");
+    + nonaSent(c).map((m) => (m.role === "tool" ? nonaToolText(m) : (m.text || "") + nonaPageText(m) + JSON.stringify(m.calls || []))).join("");
   const est = nonaEstimate(whole, cfg.model);
   if (!force && est < room * B.mask_at) return est;
-  const tools = c.messages.filter((m) => m.role === "tool" && !m.masked);
-  const pages = c.messages.filter((m) => m.role === "user" && m.page && !m.pageMasked);
+  const live = c.messages.slice((c.summary || {}).upto || 0);
+  const tools = live.filter((m) => m.role === "tool" && !m.masked);
+  const pages = live.filter((m) => m.role === "user" && m.page && !m.pageMasked);
   const oldTools = tools.slice(0, Math.max(0, tools.length - (force ? 2 : B.keep_tools)));
   const oldPages = pages.slice(0, Math.max(0, pages.length - (force ? 1 : B.keep_pages)));
   const freed = nonaEstimate(oldTools.map((m) => m.result).join("") + oldPages.map((m) => m.page).join(""), cfg.model);
@@ -25021,6 +25037,63 @@ function nonaFitBudget(cfg, force) {
   oldPages.forEach((m) => { m.pageMasked = true; });
   if (oldTools.length || oldPages.length) nonaSay("note", tr("earlier tool results were set aside to save space"));
   return est - freed;
+}
+
+/// THE SECOND STEP, once setting results aside is not enough: everything before
+/// the newest four reader turns is written up by the model, and what it wrote
+/// replaces them in what is sent. A measured number survives ONLY with where it
+/// came from — the summary is instructed to drop one that has lost its source —
+/// so rule 1 holds across it: a figure without one has to be measured again.
+const NONA_KEEP_TURNS = 4;
+const NONA_SUMMARY_RULES = [
+  "You write the working summary of a conversation between a Warframe player and Nona, the assistant of the WFSim calculator, so the conversation can continue without its early part.",
+  "Write in the conversation's language, as short sections: the reader's goal; preferences they confirmed; the builds, scenarios, rivens and targets in play by their ids; every number measured, each with the tool and the build and fight it was measured on; decisions made; what is still to do.",
+  "Keep a number only with its source. Drop any number whose source you cannot state. Never invent one.",
+].join("\n");
+
+function nonaWantsSummary(cfg) {
+  const c = nona.conv;
+  const B = NONA_BUDGET;
+  const room = (cfg.context || B.window) - B.output - B.margin;
+  const users = c.messages.map((m, i) => (m.role === "user" ? i : -1)).filter((i) => i >= 0);
+  if (users.length <= NONA_KEEP_TURNS) return null;
+  const cut = users[users.length - NONA_KEEP_TURNS];
+  if (c.summary && c.summary.upto >= cut) return null;
+  const est = nonaEstimate(nonaSystemPrompt() + JSON.stringify(nonaTools())
+    + nonaSent(c).map((m) => (m.role === "tool" ? nonaToolText(m) : (m.text || "") + nonaPageText(m))).join(""), cfg.model);
+  return est > room * B.force_at ? cut : null;
+}
+
+async function nonaSummarize(cfg, cut, signal) {
+  const c = nona.conv;
+  const from = (c.summary || {}).upto || 0;
+  const record = c.messages.slice(from, cut).filter((m) => m.role !== "card").map((m) =>
+    (m.role === "tool" ? `[tool ${nonaToolId(m.name)}] ${nonaToolText(m)}`
+      : m.role === "assistant" ? `[Nona] ${m.text || ""}${(m.calls || []).map((x) => ` <calls ${nonaCallLine(x)}>`).join("")}`
+      : m.role === "user" ? `[reader] ${m.text}` : `[note] ${m.text}`)).join("\n");
+  const text = await nonaComplete(cfg, NONA_SUMMARY_RULES,
+    `${c.summary ? `<earlier summary>\n${c.summary.text}\n</earlier summary>\n\n` : ""}<record>\n${record}\n</record>`, signal);
+  c.summary = { upto: cut, text };
+  nonaSay("note", tr("the early part of this chat was summarised to save space"));
+}
+
+/// ONE PLAIN ANSWER, no tools and no stream — what the summary asks for.
+async function nonaComplete(cfg, system, text, signal) {
+  if (cfg.proto === "anthropic") {
+    const res = await fetch(nonaAnthropicRoot(cfg.base) + "/v1/messages", {
+      method: "POST", signal, headers: { "Content-Type": "application/json", ...nonaAnthropicHeaders(cfg.key) },
+      body: JSON.stringify({ model: cfg.model, max_tokens: 2048, system, messages: [{ role: "user", content: text }] }),
+    });
+    const body = await nonaJson(res);
+    return (body.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+  }
+  const res = await fetch(cfg.base.replace(/\/+$/, "") + "/chat/completions", {
+    method: "POST", signal,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}`, "X-Title": "WFSim" },
+    body: JSON.stringify({ model: cfg.model, messages: [{ role: "system", content: system }, { role: "user", content: text }] }),
+  });
+  const body = await nonaJson(res);
+  return (((body.choices || [])[0] || {}).message || {}).content || "";
 }
 
 // ---- the two protocols --------------------------------------------------------
@@ -25054,7 +25127,7 @@ const nonaIsStream = (res) => /event-stream/.test(res.headers.get("content-type"
 
 async function nonaCallOpenAI(cfg, conv, signal, onText) {
   const messages = [{ role: "system", content: nonaSystemPrompt() }];
-  for (const m of conv.messages) {
+  for (const m of nonaSent(conv)) {
     if (m.role === "user") messages.push({ role: "user", content: m.text + nonaPageText(m) });
     else if (m.role === "assistant") {
       messages.push({
@@ -25104,7 +25177,7 @@ async function nonaCallAnthropic(cfg, conv, signal, onText) {
     const last = messages[messages.length - 1];
     if (last && last.role === role) last.content.push(block); else messages.push({ role, content: [block] });
   };
-  for (const m of conv.messages) {
+  for (const m of nonaSent(conv)) {
     if (m.role === "user") push("user", { type: "text", text: m.text + nonaPageText(m) });
     else if (m.role === "assistant") {
       if (m.text) push("assistant", { type: "text", text: m.text });
@@ -25314,6 +25387,7 @@ function nonaChangeCard(pair) {
 
 async function nonaRunTool(call) {
   if (call.name === NONA_OBSERVE.name) return window.wfsim.observe();
+  if (call.name === NONA_HISTORY.name) return nonaHistorySearch((call.args || {}).query);
   const id = nonaToolId(call.name);
   const a = AGENT_ACTIONS.find((x) => x.id === id);
   const branched = a && !a.query ? await nonaBranch(id) : null;
@@ -25330,6 +25404,22 @@ const nonaCap = (v) => {
   const s = JSON.stringify(v);
   return s.length <= NONA_RESULT_CAP ? s : s.slice(0, NONA_RESULT_CAP) + ` …[cut at ${NONA_RESULT_CAP} of ${s.length} characters]`;
 };
+
+/// Up to eight places the record mentions `q`, each with a little around it.
+function nonaHistorySearch(q) {
+  const needle = String(q || "").trim().toLowerCase();
+  if (!needle) return { ok: false, reason: "missing_argument", argument: "query" };
+  const hits = [];
+  nona.conv.messages.forEach((m, i) => {
+    const text = m.role === "tool" ? m.result || "" : m.text || "";
+    const at = text.toLowerCase().indexOf(needle);
+    if (at >= 0 && hits.length < 8) {
+      hits.push({ turn: i, role: m.role, ...(m.name ? { tool: nonaToolId(m.name) } : {}),
+        text: text.slice(Math.max(0, at - 150), at + 150 + needle.length) });
+    }
+  });
+  return { found: hits.length, hits };
+}
 
 /// The page, as a reader message carries it — the observation without its
 /// list of available actions, which the tools already are.
@@ -25360,7 +25450,9 @@ async function nonaAsk(text) {
   const seen = [];
   try {
     for (let step = 0; step < NONA_MAX_STEPS; step++) {
-      const est = nonaFitBudget(cfg, false);
+      let est = nonaFitBudget(cfg, false);
+      const cut = nonaWantsSummary(cfg);
+      if (cut != null) { await nonaSummarize(cfg, cut, nona.abort.signal); await nonaSave(); est = nonaFitBudget(cfg, false); }
       const bubble = nonaSay("assistant", "");
       let out;
       try {
