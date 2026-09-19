@@ -10,8 +10,7 @@ effects:
   # from: "Reload toggles the weapon between +100% Projectile Speed and +4m Punch Through"
   # …of which only the projectile-speed side is modelled; the toggle and the
   # punch-through side are declared below.
-  - kind: indirect
-    stat: projectile_speed
+  - kind: projectile_speed_bonus
     value: 1.0
   # NOT MODELLED — a TODO, not an edge, and the clause is why. It is a TOGGLE
   # between two grants and only ONE of them is out of scope: +4 m punch through

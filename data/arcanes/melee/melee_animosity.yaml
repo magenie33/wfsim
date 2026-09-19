@@ -11,7 +11,7 @@ effects:
   # It needs a stack that LIGHT swings build and a HEAVY swing spends, which
   # is a shape this engine has no bucket for — every other stacking crit
   # card here is spent by time or by a reload, not by one of seven modes.
-  - kind: unmodeled
+  - kind: unmodelled
 
 source:
   url: https://wiki.warframe.com/w/Melee_Animosity

@@ -10,7 +10,7 @@ description: "+100% chance to increase Melee Combo Counter when <DT_SLASH_COLOR>
 # Rank 0: +25% chance to increase Melee Combo Counter when <DT_SLASH_COLOR>Slash Status deals damage.
 effects:
   # a combo point when a Slash DoT TICKS - the counter is fed from the hit path and a status tick is a different one, so this is not paid
-  - kind: unmodeled
+  - kind: unmodelled
 
 source:
   url: https://wiki.warframe.com/w/Relentless_Combination

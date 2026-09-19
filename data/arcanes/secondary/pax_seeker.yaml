@@ -44,7 +44,7 @@ effects:
   #     proc each, and they aim for the head — except on a Catchmoon, which
   #     cannot headshot with them;
   #   * unaffected by punch through.
-  - kind: unmodeled
+  - kind: unmodelled
     rank0: 1
     rankMax: 4
 

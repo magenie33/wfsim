@@ -14,7 +14,7 @@ name: Synth
 # refill in.
 members: 4
 bonus:
-  kind: unmodeled
+  kind: unmodelled
   per_mod: 0.0
 source:
   url: https://wiki.warframe.com/w/Synth_Set

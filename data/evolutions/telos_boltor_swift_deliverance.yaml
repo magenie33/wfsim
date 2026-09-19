@@ -13,8 +13,7 @@ effects:
   # describes a real travel time — the arena still models none, being
   # single-target at a fixed engagement, so it reaches the panel through the
   # indirect bucket and changes no shot.
-  - kind: indirect
-    stat: projectile_speed
+  - kind: projectile_speed_bonus
     value: 0.60
 
 source:

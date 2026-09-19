@@ -733,7 +733,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             cap: scale(v),
         },
         "debilitate" => ArcEffect::Debilitate(scale(v)),
-        "unmodeled" => ArcEffect::Unmodeled { scale: scale(v) },
+        "unmodelled" => ArcEffect::Unmodeled { scale: scale(v) },
         "out_of_scope" => ArcEffect::OutOfScope { scale: scale(v) },
         other => return inert(other),
     })

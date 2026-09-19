@@ -24,7 +24,7 @@ effects:
   # AND THE FIELD'S DAMAGE DOES NOT COMBINE WITH THE WEAPON'S ELEMENTS. It stays
   # Cold, which is why a build's own elemental pairing cannot be read into
   # it.
-  - kind: unmodeled
+  - kind: unmodelled
     trigger: kill
     rank0: 3
     rankMax: 12

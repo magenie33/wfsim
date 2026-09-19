@@ -17,8 +17,7 @@ effects:
   # "Does not affect Incarnon Form" is `base_form_only` above, and the CHAIN is
   # untouched either way: a hop reads `chain_range_m`, which no range mod or
   # perk in the roster moves.
-  - kind: indirect
-    stat: beam_range
+  - kind: beam_range_bonus
     value: 7.0
 
 source:

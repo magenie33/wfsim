@@ -10,8 +10,7 @@ effects:
   # resolves to `EvoEffect::Inert` — the UI renders "indirect (no single-target
   # DPS effect)" and the engine takes nothing (data/README.md). `stat` is unread
   # too; it is the column a handling model would consume.
-  - kind: indirect          # handling only - no single-target DPS payload
-    stat: recoil
+  - kind: recoil_reduction          # handling only - no single-target DPS payload
     value: -0.40
 
 source:

@@ -11,7 +11,7 @@ effects:
   # a per-TYPE status chance, and this engine holds one status chance and a
   # damage vector that decides which type a proc draws — so the number the
   # card asks for does not exist here as a stat.
-  - kind: unmodeled
+  - kind: unmodelled
 
 source:
   url: https://wiki.warframe.com/w/Melee_Doughty

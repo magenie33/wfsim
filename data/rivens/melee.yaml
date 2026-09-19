@@ -138,7 +138,7 @@ stats:
     prefix: "exi"
     suffix: "cta"
     text: "|val|% Finisher Damage"
-    kind: unmodeled
+    kind: unmodelled
   - id: heat
     tag: WeaponFireDamageMod
     order: 7

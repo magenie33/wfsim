@@ -17,7 +17,7 @@ effects:
   # resolved once at build time and this one is per swing.
   - kind: tennokai
     window_seconds: 4.0
-  - kind: unmodeled
+  - kind: unmodelled
 
 family: tennokai
 

@@ -11,7 +11,7 @@ name: Motus
 # is what is not.
 members: 3
 bonus:
-  kind: unmodeled
+  kind: unmodelled
   per_mod: 0.0
 source:
   url: https://wiki.warframe.com/w/Motus_Set

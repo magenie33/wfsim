@@ -13,7 +13,7 @@ name: Jugulus
 # and would be modellable the day this arena grows a second body.
 members: 3
 bonus:
-  kind: unmodeled
+  kind: unmodelled
   per_mod: 0.0
 source:
   url: https://wiki.warframe.com/w/Jugulus_Set

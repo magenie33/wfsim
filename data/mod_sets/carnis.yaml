@@ -13,7 +13,7 @@ name: Carnis
 # defend against (docs/UNMODELLED.md, classes 4 and 6).
 members: 3
 bonus:
-  kind: unmodeled
+  kind: unmodelled
   per_mod: 0.0
 source:
   url: https://wiki.warframe.com/w/Carnis_Set

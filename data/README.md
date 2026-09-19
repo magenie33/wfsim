@@ -187,7 +187,7 @@ family (checked). Do not confuse it with `excludes_weapon`.
   only one of them leaves a trace:
   - `data::evolutions` falls through to `EvoEffect::Inert(kind)`, which the UI
     renders as *"<kind> (no single-target DPS effect)"* — visible, honest.
-  - `data::arcanes` has an explicit `kind: unmodeled` carrying a **`note`**,
+  - `data::arcanes` has an explicit `kind: unmodelled` carrying a **`note`**,
     which `describe()` renders. There, `note` IS a consumed field.
   - `data::mods` hits `_ => return None`: the effect is dropped and the mod
     loads **as if the entry were not there**, with nothing on screen to say so.

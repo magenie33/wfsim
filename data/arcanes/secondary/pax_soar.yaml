@@ -29,7 +29,7 @@ effects:
   # sim does not model — the same family as Akimbo Slip Shot's sliding gate.
   # Under the house assumed-max reading the gate would be treated as satisfied;
   # it makes no difference here, because the grants pay nothing either way.
-  - kind: unmodeled
+  - kind: unmodelled
     condition: airborne
     rank0: 0.125
     rankMax: 0.50

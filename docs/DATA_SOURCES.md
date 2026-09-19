@@ -766,7 +766,7 @@ would draw nothing.
 
 All 10 `PRIMARY` mods are recorded.
 **Hunter Munitions is modeled** — see MECHANICS §"Slash on critical". Four
-still carry `kind: unmodeled`, and none of them is costly the way that one
+still carry `kind: unmodelled`, and none of them is costly the way that one
 would have been: corpse explosions (Combustion Beam) and status spread
 (Shivering Contagion) only pay against a second target, aim-glide zoom (Aero
 Periphery) has no damage term, and beam range (Sinister Reach) has no mod kind

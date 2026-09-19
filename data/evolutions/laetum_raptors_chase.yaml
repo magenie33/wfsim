@@ -9,8 +9,7 @@ effects:
   # NOT LOADED: `indirect` resolves to `EvoEffect::Inert` — the UI says "no
   # single-target DPS effect" and the engine takes nothing (data/README.md).
   # `stat` is unread; it is the column a movement model would consume.
-  - kind: indirect          # mobility only
-    stat: movement_speed
+  - kind: movement_speed_bonus          # mobility only
     value: 0.50
 
 source:

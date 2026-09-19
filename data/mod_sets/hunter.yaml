@@ -6,7 +6,7 @@ name: Hunter
 # damage, so it is declared UNMODELED rather than left undefined.
 members: 6
 bonus:
-  kind: unmodeled
+  kind: unmodelled
   per_mod: 0.0
 
 source:

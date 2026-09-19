@@ -8,8 +8,7 @@ selection: choose_one
 
 effects:
   # from: "+50% Projectile Speed"
-  - kind: indirect
-    stat: projectile_speed
+  - kind: projectile_speed_bonus
     value: 0.5
 
 source:

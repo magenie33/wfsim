@@ -10,8 +10,7 @@ effects:
   # single-target DPS effect" and the engine takes nothing (data/README.md).
   # `stat` is unread. Holstered regen needs a weapon-swap model the sim has no
   # concept of: it fires one weapon continuously.
-  - kind: indirect          # holstered regen - no in-fight payload here
-    stat: holstered_reload
+  - kind: holstered_reload          # holstered regen - no in-fight payload here
     value: 0.30
 
 source:

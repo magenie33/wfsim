@@ -11,8 +11,7 @@ effects:
   # level carries its own damage or crit bonus on many weapons, so a change to
   # it can be a change to damage. On this weapon the wiki states no such bonus,
   # so there is nothing to lose here beyond the sight picture.
-  - kind: indirect
-    stat: zoom
+  - kind: zoom_bonus
     value: -0.30
 
 source:

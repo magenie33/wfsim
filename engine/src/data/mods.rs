@@ -509,36 +509,17 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // INDIRECT stats: outside the theoretical-DPS formula, but real
         // panel buckets a future shooter model consumes (aim, travel,
         // ammo sustain) — the panel states every bonus.
-        "recoil_reduction" => ModEffect::Indirect(IndirectStat::Recoil, max("rankMax")),
-        "noise_reduction" => ModEffect::Indirect(IndirectStat::Noise, max("rankMax")),
-        "ammo_max_bonus" => ModEffect::Indirect(IndirectStat::AmmoMax, max("rankMax")),
-        "projectile_speed_bonus" => ModEffect::Indirect(IndirectStat::ProjectileSpeed, max("rankMax")),
-        "holstered_reload" => ModEffect::Indirect(IndirectStat::HolsteredReload, max("rankMax")),
-        "dodge_speed_bonus" => ModEffect::Indirect(IndirectStat::DodgeSpeed, max("rankMax")),
-        "acrobatic_speed_bonus" => ModEffect::Indirect(IndirectStat::AcrobaticSpeed, max("rankMax")),
-        "punch_through_bonus" => ModEffect::Indirect(IndirectStat::PunchThrough, max("rankMax")),
+        // One table (`IndirectStat::from_kind`) names every such kind, here and
+        // in the evolutions alike.
+        k if IndirectStat::from_kind(k).is_some() => {
+            ModEffect::Indirect(IndirectStat::from_kind(k).expect("guarded"), max("rankMax"))
+        }
         // TOME MODS. Each carries its real number into the panel and pays
         // nothing, which is what `IndirectStat` is for — see the enum for why
         // the three ability stats are three buckets and not one.
-        "ability_strength_bonus" => {
-            ModEffect::Indirect(IndirectStat::AbilityStrength, max("rankMax"))
-        }
-        "ability_duration_bonus" => {
-            ModEffect::Indirect(IndirectStat::AbilityDuration, max("rankMax"))
-        }
-        "ability_efficiency_bonus" => {
-            ModEffect::Indirect(IndirectStat::AbilityEfficiency, max("rankMax"))
-        }
-        "energy_regen_bonus" => ModEffect::Indirect(IndirectStat::EnergyRegen, max("rankMax")),
-        "ally_buff" => ModEffect::Indirect(IndirectStat::AllyBuff, max("rankMax")),
-        "strip_on_kill" => ModEffect::Indirect(IndirectStat::StripOnKill, max("rankMax")),
-        "orb_drop_chance" => ModEffect::Indirect(IndirectStat::OrbDrop, max("rankMax")),
-        "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, max("rankMax")),
-        "accuracy_bonus" => ModEffect::Indirect(IndirectStat::Accuracy, max("rankMax")),
         // 2D groundwork: these were `kind: unmodeled`, i.e. the
         // mod equipped and the number was thrown away. They carry no
         // SINGLE-TARGET damage, which is what `Indirect` is for.
-        "range_bonus" => ModEffect::Indirect(IndirectStat::Range, max("rankMax")),
         // NIGHTWATCH NAPALM: the mod LEAVES A FIELD. Every number the field
         // needs is stated here rather than borrowed from the weapon, because
         // this fire is not the rocket's — see `ModEffect::GrantsLingering`.
@@ -602,19 +583,8 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         }
         // HARKONAR SCOPE: seconds onto the sniper combo's decay window.
         "combo_duration_bonus" => ModEffect::ComboDuration(n(v, "duration_seconds")?),
-        "beam_range_bonus" => ModEffect::Indirect(IndirectStat::BeamRange, max("rankMax")),
         // …and the PERCENTAGE half, which is a different bucket because it
         // lands in a different place — see `range_m` in `build::loadout::resolve`.
-        "beam_range_percent" => {
-            ModEffect::Indirect(IndirectStat::BeamRangePercent, max("rankMax"))
-        }
-        "movement_speed_bonus" => ModEffect::Indirect(IndirectStat::MovementSpeed, max("rankMax")),
-        "sprint_speed_bonus" => ModEffect::Indirect(IndirectStat::SprintSpeed, max("rankMax")),
-        "ammo_conversion" => ModEffect::Indirect(IndirectStat::AmmoConversion, max("rankMax")),
-        "stagger_resist_bonus" => ModEffect::Indirect(IndirectStat::StaggerResist, max("rankMax")),
-        "self_stagger_reduction" => ModEffect::Indirect(IndirectStat::SelfStagger, max("rankMax")),
-        "double_jump_refresh" => ModEffect::Indirect(IndirectStat::DoubleJump, max("rankMax")),
-        "explosion_on_kill" => ModEffect::Indirect(IndirectStat::KillExplosion, max("rankMax")),
         // A syndicate augment's radial scale ("+1 Truth"). Its damage is
         // real; its TRIGGER counts affinity, which the sim does not track.
         // A syndicate augment names one of the six effects; its payload lives
@@ -629,7 +599,6 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             ),
             amount: max("rankMax"),
         },
-        "status_spread_chance" => ModEffect::Indirect(IndirectStat::StatusSpread, max("rankMax")),
         // NOT indirect: a CHARGE-rate bonus shortens the draw, and a charged
         // form's cadence IS its draw (`ChargeCadence`), so this is DPS. It is
         // its own bucket rather than `fire_rate_bonus` because Shell Rush says
@@ -724,7 +693,7 @@ fn to_moddef_at(mut mf: ModFile, rank: Option<u32>) -> ModDef {
                 .collect();
             &*Box::leak(v.into_boxed_slice())
         });
-    let unmodeled = has("unmodeled");
+    let unmodeled = has("unmodelled");
     let out_of_scope = has("out_of_scope");
     ModDef {
         stance,
@@ -1172,7 +1141,7 @@ pub fn unmodeled_effects(id: &str) -> &'static [String] {
                 .filter_map(|e| e.get("kind").and_then(Value::as_str))
                 // The two that already have their own flag and their own line
                 // on the card.
-                .filter(|k| *k != "unmodeled" && *k != "out_of_scope")
+                .filter(|k| *k != "unmodelled" && *k != "out_of_scope")
                 // `life_steal_on_own_damage` -> "life steal on own damage": the
                 // kind IS the description, in the vocabulary the yaml chose.
                 .map(|k| k.replace('_', " "))

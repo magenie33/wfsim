@@ -38,7 +38,7 @@ effects:
   # THE SYNDICATE HALF. `+1 'Truth'` builds toward a syndicate radial, which is
   # a proc this arena has machinery for and this card has no measured trigger
   # rate for — it is the one clause of the four still owed.
-  - kind: unmodeled
+  - kind: unmodelled
 
 family: tennokai
 

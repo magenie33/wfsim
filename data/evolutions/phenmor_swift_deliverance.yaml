@@ -13,8 +13,7 @@ effects:
   # engagement and models neither travel time nor range. The number reaches the
   # panel through the indirect bucket the mods use, so it is stated rather than
   # silently dropped.
-  - kind: indirect
-    stat: projectile_speed
+  - kind: projectile_speed_bonus
     value: 0.80
 
 source:

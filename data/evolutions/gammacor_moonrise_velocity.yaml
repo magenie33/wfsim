@@ -10,8 +10,7 @@ effects:
   # "RANGE" ON A BEAM WEAPON IS THE BEAM'S — metres in the same flat bucket
   # Ruinous Extension lands in, outside the percentage (`build::loadout::resolve`).
   # The Gammacor beam is 25 m and this takes it to 33.
-  - kind: indirect
-    stat: beam_range
+  - kind: beam_range_bonus
     value: 8.0
 
 source:

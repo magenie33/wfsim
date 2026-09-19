@@ -8,7 +8,7 @@ name: Augur
 # up in a weapon pool at all.
 members: 6
 bonus:
-  kind: unmodeled
+  kind: unmodelled
   per_mod: 0.0
 
 # "X% of energy spent is converted to shields." at 40/80/120/160/200/240% for

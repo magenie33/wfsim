@@ -21,7 +21,7 @@ effects:
     grants: base_damage
     rank0: 4.2
     rankMax: 4.2              # the 420% cap does not move with rank
-  - kind: unmodeled
+  - kind: unmodelled
 
 source:
   url: https://wiki.warframe.com/w/Melee_Retaliation

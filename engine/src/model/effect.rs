@@ -843,6 +843,44 @@ impl IndirectStat {
             _ => return None,
         })
     }
+
+    /// The effect KIND a card states this stat with — `kind: zoom_bonus` — in
+    /// every catalog. One table, read both ways.
+    const KINDS: &'static [(IndirectStat, &'static str)] = &[
+        (IndirectStat::Recoil, "recoil_reduction"),
+        (IndirectStat::Noise, "noise_reduction"),
+        (IndirectStat::AmmoMax, "ammo_max_bonus"),
+        (IndirectStat::ProjectileSpeed, "projectile_speed_bonus"),
+        (IndirectStat::HolsteredReload, "holstered_reload"),
+        (IndirectStat::DodgeSpeed, "dodge_speed_bonus"),
+        (IndirectStat::AcrobaticSpeed, "acrobatic_speed_bonus"),
+        (IndirectStat::PunchThrough, "punch_through_bonus"),
+        (IndirectStat::AbilityStrength, "ability_strength_bonus"),
+        (IndirectStat::AbilityDuration, "ability_duration_bonus"),
+        (IndirectStat::AbilityEfficiency, "ability_efficiency_bonus"),
+        (IndirectStat::EnergyRegen, "energy_regen_bonus"),
+        (IndirectStat::AllyBuff, "ally_buff"),
+        (IndirectStat::StripOnKill, "strip_on_kill"),
+        (IndirectStat::OrbDrop, "orb_drop_chance"),
+        (IndirectStat::Zoom, "zoom_bonus"),
+        (IndirectStat::Accuracy, "accuracy_bonus"),
+        (IndirectStat::Range, "range_bonus"),
+        (IndirectStat::BeamRange, "beam_range_bonus"),
+        (IndirectStat::BeamRangePercent, "beam_range_percent"),
+        (IndirectStat::MovementSpeed, "movement_speed_bonus"),
+        (IndirectStat::SprintSpeed, "sprint_speed_bonus"),
+        (IndirectStat::AmmoConversion, "ammo_conversion"),
+        (IndirectStat::StaggerResist, "stagger_resist_bonus"),
+        (IndirectStat::SelfStagger, "self_stagger_reduction"),
+        (IndirectStat::DoubleJump, "double_jump_refresh"),
+        (IndirectStat::KillExplosion, "explosion_on_kill"),
+        (IndirectStat::StatusSpread, "status_spread_chance"),
+    ];
+
+    /// The stat a card's `kind:` names, if that kind is a handling stat.
+    pub fn from_kind(kind: &str) -> Option<Self> {
+        Self::KINDS.iter().find(|(_, k)| *k == kind).map(|(s, _)| *s)
+    }
     pub fn label(&self) -> &'static str {
         match self {
             IndirectStat::AbilityStrength => "Ability Strength",

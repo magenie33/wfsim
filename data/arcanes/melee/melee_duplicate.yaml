@@ -15,7 +15,7 @@ effects:
   # repeats the instance itself off a crit ROLL, which is a trigger nothing
   # here has. Declared rather than approximated, because at 100% on a crit
   # build the approximation would be most of the weapon.
-  - kind: unmodeled
+  - kind: unmodelled
 
 source:
   url: https://wiki.warframe.com/w/Melee_Duplicate

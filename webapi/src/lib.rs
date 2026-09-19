@@ -2319,7 +2319,7 @@ pub fn meta_json() -> Value {
                                 // An element stat makes the card ORDERED — see
                                 // the mod's own `elemental`.
                                 "elemental": s.kind == "elemental_damage_bonus",
-                                "modeled": s.kind != "unmodeled",
+                                "modeled": s.kind != "unmodelled",
                             }))
                             .collect::<Vec<_>>()),
                     )
@@ -3063,7 +3063,7 @@ pub fn riven_json(v: &Value) -> Value {
                     wfsim_engine::build::rivens::Shown::Multiplier => "x",
                     wfsim_engine::build::rivens::Shown::Number => "",
                 },
-                "bonus": bonus, "modeled": def.kind != "unmodeled",
+                "bonus": bonus, "modeled": def.kind != "unmodelled",
             })
         })
         .collect();

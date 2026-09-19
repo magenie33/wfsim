@@ -12,7 +12,7 @@ effects:
   # KNOCKS IT DOWN or FLINGS it. Both are crowd control this arena does not
   # model — it carries Knockdown as a status because Condition Overload
   # counts it, and not as an event a card can hang extra stacks on.
-  - kind: unmodeled
+  - kind: unmodelled
 
 source:
   url: https://wiki.warframe.com/w/Melee_Afflictions

@@ -1493,16 +1493,6 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "flat_base_damage_on_empty_reload" => {
             EvoEffect::FlatBaseDamageOnEmptyReload(f(v, "value").unwrap_or(0.0))
         }
-        // The handling family. `indirect` names its target in `stat:`; the
-        // rest are named kinds that predate it and keep their spelling so the
-        // yaml still reads like the card.
-        "indirect" => match v.get("stat").and_then(Value::as_str).and_then(crate::model::IndirectStat::from_id) {
-            Some(st) => EvoEffect::Indirect(st, f(v, "value").unwrap_or(0.0)),
-            None => EvoEffect::Inert(format!(
-                "indirect ({})",
-                v.get("stat").and_then(Value::as_str).unwrap_or("no stat")
-            )),
-        },
         // A CONDITION IS NEVER IGNORED. This arm read `value` and nothing else
         // for as long as it existed, so Fortress Salvo's "With Armor Over 450"
         // paid out to everybody — the exact failure `gated_by_tenno` was written
@@ -1521,20 +1511,11 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 ),
             }
         }
-        "punch_through_bonus" => {
-            EvoEffect::Indirect(crate::model::IndirectStat::PunchThrough, f(v, "value").unwrap_or(0.0))
-        }
-        "accuracy_bonus" => {
-            EvoEffect::Indirect(crate::model::IndirectStat::Accuracy, f(v, "value").unwrap_or(0.0))
-        }
-        // NEGATIVE means less recoil, the same convention the MODS carry
-        // (Primed Stabilizer ramps -0.15 -> -0.9). A positive value here would
-        // read as more recoil, which no evolution grants.
-        "recoil_reduction" => {
-            EvoEffect::Indirect(crate::model::IndirectStat::Recoil, f(v, "value").unwrap_or(0.0))
-        }
-        "holstered_magazine_regen" => EvoEffect::Indirect(
-            crate::model::IndirectStat::HolsteredReload,
+        // THE HANDLING FAMILY — the same kinds a mod states them with, from the
+        // one table (`IndirectStat::from_kind`). NEGATIVE recoil means less, the
+        // convention the mods carry (Primed Stabilizer ramps -0.15 -> -0.9).
+        k if crate::model::IndirectStat::from_kind(k).is_some() => EvoEffect::Indirect(
+            crate::model::IndirectStat::from_kind(k).expect("guarded"),
             f(v, "value").unwrap_or(0.0),
         ),
         "multishot_beyond_range" => EvoEffect::MultishotBeyondRange {

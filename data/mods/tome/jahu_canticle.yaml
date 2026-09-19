@@ -37,7 +37,7 @@ effects:
   # mid-fight. It costs less than it sounds — a shield is a small pool that a
   # damaging build breaks in the first second — but it is a real part of the
   # card and is admitted rather than folded into the line above.
-  - kind: unmodeled
+  - kind: unmodelled
     clause: "and Shields"
 
 source:

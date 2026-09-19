@@ -19,7 +19,7 @@ effects:
   # % of the full potential bonus" - a sim that always reloads from empty gets
   # the full value.
   # Only the DURATION scales with rank: 3 / 4 / 5 / 6 / 8 / 10 s.
-  - kind: unmodeled
+  - kind: unmodelled
     # on reload: +0.15*sqrt(5*magazine) damage (additive) for 10s at max rank
     rank0: 3
     rankMax: 10

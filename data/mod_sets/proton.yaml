@@ -10,7 +10,7 @@ name: Proton
 # nothing here would reduce. Blocked on both halves.
 members: 3
 bonus:
-  kind: unmodeled
+  kind: unmodelled
   per_mod: 0.0
 source:
   url: https://wiki.warframe.com/w/Proton_Set

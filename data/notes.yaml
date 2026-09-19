@@ -20,7 +20,7 @@ notes:
       165 x (1 + 0.8 x 1 x f) = 196  ->  f = 0.235
   2d_groundwork_real_stat: |
     2D groundwork: a real stat with no SINGLE-TARGET damage
-    payload — never `kind: unmodeled`, which throws the number away.
+    payload — never `kind: unmodelled`, which throws the number away.
   5_multishot_percentage_weapon: |
     "+5% Multishot" — a PERCENTAGE of the weapon's base, which is what a
     multishot MOD grants, so it joins their bucket. The Strun family's Blazing
@@ -731,7 +731,7 @@ notes:
     as it always did; what the stack buys is room for the next draw to use.
   malus_false_wiki_listed: |
     `malus: false` = wiki-listed bonus-only, never the negative stat.
-    `kind: unmodeled` = a real riven stat the engine does not model; it
+    `kind: unmodelled` = a real riven stat the engine does not model; it
     still occupies a rolled slot and still shapes the name.
   max_rank_at_100: |
     Max rank at 100% Ability Duration, in seconds. The page lets you
