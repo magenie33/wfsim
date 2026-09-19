@@ -104,6 +104,11 @@ for (const [name, p] of [["openai", openai], ["anthropic", anthropic]]) {
 }
 check("the rules are the same text every time for one reader", rules({ lang: "zh", concise: false }) === RULES
   && rules({ lang: "zh", concise: true }) !== RULES);
+check("her rules and character fit zone S, in every language and mode",
+  [["zh", false], ["zh", true], ["en", false], ["en", true]].every(([lang, concise]) => estimate(rules({ lang, concise })) <= CAPS.S),
+  String(estimate(RULES)));
+check("concise mode drops the character, not the rules",
+  !/contrast/.test(rules({ lang: "zh", concise: true })) && /contrast/.test(RULES) && /never agree to please/.test(rules({ lang: "zh", concise: true })));
 
 // ---- 9: every zone under its cap, however long the conversation -------------------
 
