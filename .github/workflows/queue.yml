@@ -51,6 +51,10 @@ on:
         description: "ask for EVERY row of one ruler again (a benchmark id)"
         type: string
         default: ""
+      weapons:
+        description: "…of these weapons only (space-separated ids; blank = every weapon)"
+        type: string
+        default: ""
       stale_days:
         description: "how many days unmeasured counts as stale (blank = 3)"
         type: string
@@ -250,6 +254,7 @@ jobs:
           # string interpolated into `run:` is executed by it; through the
           # environment it is only ever a value.
           RULER: ${{ inputs.rescore }}
+          WEAPONS: ${{ inputs.weapons }}
         run: |
           set -euo pipefail
           # AN ID, AND THEN A RULER THAT EXISTS. The pattern is what keeps this
@@ -267,6 +272,18 @@ jobs:
           # list a row that already has a fact — the one path in this tool that
           # asks for something already measured.
           jq -r '.[].weapon' library.json | sort -u > weapons.txt
+          # …OR THE ONES A PERSON NAMED, when a model change reaches one family
+          # and not the roster: the same ids, narrowed, and each one still has
+          # to be a weapon the library holds.
+          if [ -n "$WEAPONS" ]; then
+            tr -s ' ,' '\n\n' <<< "$WEAPONS" | grep . | sort -u > named.txt
+            if grep -q '[^a-z0-9_]' named.txt; then
+              echo "::error::not a weapon id in: $WEAPONS"; exit 1
+            fi
+            comm -12 weapons.txt named.txt > weapons.txt.new
+            mv weapons.txt.new weapons.txt
+            [ -s weapons.txt ] || { echo "::error::none of these are in the library: $WEAPONS"; exit 1; }
+          fi
           ./target/release/wfsim-board "$RULER" \
             --dry-run \
             --facts-in facts-known.ndjson \
