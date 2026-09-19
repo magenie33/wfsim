@@ -1050,7 +1050,7 @@ fn main() {
             .and_then(Value::as_str)
             .filter(|x| !x.is_empty());
         // THE PARTS, flat, exactly as the worker stores them and as the page's
-        // own door reads them (`webapi::board_assembly_of`). The chamber is the
+        // own door reads them (`webapi::kitgun::board_assembly_of`). The chamber is the
         // weapon's, never the record's.
         let asm = {
             let g = s.get("grip").and_then(Value::as_str).unwrap_or("");

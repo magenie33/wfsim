@@ -188,7 +188,7 @@ saved builds — by its preset `id` — or a modelled frame with no build, or th
 Warframe has at rank 30, with no mods and no passive.
 
 - The fight's player is that build's `resolve` — health, shields, armor, energy,
-  sprint — with its archon shards and its own aura (`webapi::wielder_from`).
+  sprint — with its archon shards and its own aura (`webapi::tenno::wielder_from`).
 - The FIGHT keeps what others hand the wielder: its state, its own stat bonuses,
   the squad's auras, and the ticked overrides, which replace a resolved number.
   A scenario names no frame and no shards.
