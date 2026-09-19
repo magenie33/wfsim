@@ -266,6 +266,43 @@ check("the board reads back, ranked, each row with its mods",
 check("a board row opens as the build", !!board.open && board.open.ok === true && board.onIt === true,
   JSON.stringify(board.open));
 
+// ---- the search's scope, set through the page's own rules ---------------------
+
+const scope = await evaluate(`(async () => {
+  const out = {};
+  await window.wfsim.do("shell.module.open", { module: "optimizer" });
+  out.req = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "serration", mark: "fixed" });
+  out.pool = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "hellfire", mark: "search" });
+  out.size = await window.wfsim.do("optimizer.scope.size", { min: 2, max: 4 });
+  out.read = await window.wfsim.do("optimizer.scope.read", {});
+  out.onScreen = !!document.querySelector('#opt-mods .seg.on[data-m="serration"]');
+  out.off = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "serration", mark: "off" });
+  out.after = await window.wfsim.do("optimizer.scope.read", {});
+  out.bad = await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "no_such_mod", mark: "fixed" });
+  const t = weaponEvos()[0];
+  if (t) {
+    out.evo = await window.wfsim.do("optimizer.scope.mark", { axis: "evolutions", tier: t.tier, id: t.options[0].id, mark: "search" });
+    out.empty = await window.wfsim.do("optimizer.scope.empty", { axis: "evolutions", key: String(t.tier), empty: "never" });
+    out.evoRead = (await window.wfsim.do("optimizer.scope.read", {})).evolutions[t.tier];
+  }
+  await window.wfsim.do("optimizer.scope.mark", { axis: "mods", id: "hellfire", mark: "off" });
+  await window.wfsim.do("optimizer.scope.size", { min: 0, max: 8 });
+  await window.wfsim.do("shell.module.open", { module: "builder" });
+  return out;
+})()`, { awaitPromise: true });
+
+check("the search's scope takes a required and a searched mod, and reads them back",
+  scope.req.ok && scope.pool.ok && scope.read.mods.fixed.includes("serration") && scope.read.mods.search.includes("hellfire"),
+  JSON.stringify(scope.read).slice(0, 300));
+check("...the scope on screen moved with it", scope.onScreen === true);
+check("...its size bounds hold", scope.size.ok && scope.read.size.min === 2 && scope.read.size.max === 4, JSON.stringify(scope.read.size));
+check("...a mark clears", scope.off.ok && !scope.after.mods.fixed.includes("serration"), JSON.stringify(scope.after.mods));
+check("...a mod the weapon cannot take is refused", scope.bad.ok === false && scope.bad.reason === "not_in_scope", JSON.stringify(scope.bad));
+if (scope.evo) {
+  check("an evolution tier is searched, and never left empty", scope.evo.ok && scope.empty.ok
+    && scope.evoRead.search.length === 1 && scope.evoRead.empty === undefined, JSON.stringify(scope.evoRead));
+}
+
 // ---- the search: started, watched, stopped -----------------------------------
 //
 // A search is minutes long, so the door returns at once and is polled. The

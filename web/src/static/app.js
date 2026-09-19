@@ -1821,15 +1821,9 @@ async function init() {
   $("opt-arc-filter").addEventListener("input", renderOptArcanes);
   // How full a build must be, as a RANGE. The two ends are one setting: a
   // ceiling below the floor is not a scope, so each end pushes the other.
-  $("opt-size").addEventListener("input", () => {
-    // THE CEILING MAY BE 0, like every other axis's: 0–0
-    // is "search it empty, and keep the marks". On this axis that is the bare
-    // weapon, and reaching it by unmarking everything would cost the reader
-    // exactly what 0–0 exists to protect.
-    opt.size = Math.max(0, Math.min(8, Number($("opt-size").value) || 0));
-    if (opt.min > opt.size) { opt.min = opt.size; $("opt-min").value = opt.min; }
-    updateOptEstimate();
-  });
+  // THE CEILING MAY BE 0, like every other axis's: 0–0 is "search it empty,
+  // and keep the marks" — the bare weapon, without unmarking everything.
+  $("opt-size").addEventListener("input", () => setOptSizes({ size: Number($("opt-size").value) || 0 }));
   // THE FLOOR STARTS AT 0, AND 0 IS THE DEFAULT. Every
   // other axis here treats "nothing marked" as the EMPTY option — an unmarked
   // exilus slot stays empty, an unmarked arcane seat searches no arcane — and
@@ -1839,19 +1833,12 @@ async function init() {
   // It costs nothing anywhere else: the moment anything is marked, the DERIVED
   // floor (every required mod, plus one pooled) is at least 1 and wins, so 0
   // and 1 differ in exactly the one case above.
-  $("opt-min").addEventListener("input", () => {
-    opt.min = Math.max(0, Math.min(8, Number($("opt-min").value) || 0));
-    if (opt.min > opt.size) { opt.size = opt.min; $("opt-size").value = opt.size; }
-    updateOptEstimate();
-  });
+  $("opt-min").addEventListener("input", () => setOptSizes({ min: Number($("opt-min").value) || 0 }));
   // updateOptEstimate is also the scope's auto-save, so finalists lands in the
   // active preset the same way every other search setting does.
   $("opt-finalists").value = optRun.finalists;
   $("opt-finalists").title = tr("how many builds survive to the last round — each is then run at the final-round run count beside this");
-  $("opt-finalists").addEventListener("input", () => {
-    optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
-    updateOptEstimate();
-  });
+  $("opt-finalists").addEventListener("input", () => setOptSizes({ finalists: Number($("opt-finalists").value) || 10 }));
   // (The final-round run count is not wired here: it is a PREFERENCE and
   // draws itself — `renderOptRuns`, outside both halves because it is in
   // neither preset. There is no CPU-thread box, because the topbar's compute
@@ -20302,6 +20289,24 @@ function setSlotRange(marks, emptyId, lo, hi) {
   else delete marks[emptyId];                   // always filled
 }
 
+/// A SINGLE SLOT'S RANGE on a search axis — the exilus slot, an arcane seat
+/// (`key` its pool) or an evolution tier (`key` the tier): whether the search
+/// may, must or must not leave it empty.
+function setOptRange(axis, key, lo, hi) {
+  if (axis === "exilus") {
+    setSlotRange(opt.exilus, "none", lo, hi);
+    renderOptMods(); renderOptExilus();
+  } else if (axis === "arcanes") {
+    setSlotRange(opt.arcanes, arcaneEmptyId(key), lo, hi);
+    renderOptArcanes();
+  } else {
+    opt.evos[key] = opt.evos[key] || {};
+    setSlotRange(opt.evos[key], "none", lo, hi);
+    renderOptEvos();
+  }
+  updateOptEstimate();
+}
+
 /// The row itself. One renderer for four axes, so a change to how a range is
 /// stated reaches all of them.
 ///
@@ -20577,19 +20582,17 @@ function renderOptExilus() {
     rangeHost.innerHTML = ax.length ? slotRangeHtml("exilus", {
       label: tr("This slot holds"), lo: r.lo, hi: r.hi, locked: r.locked, note,
     }) : "";
-    wireSlotRange(rangeHost, 1, (_k, lo, hi) => {
-      setSlotRange(opt.exilus, "none", lo, hi);
-      renderOptMods(); renderOptExilus(); updateOptEstimate();
-    });
+    wireSlotRange(rangeHost, 1, (_k, lo, hi) => setOptRange("exilus", null, lo, hi));
   }
   $("opt-exilus").querySelectorAll(".seg:not(.dis)").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = el.dataset.m, want = el.dataset.s;
-      setSingleSlotMark(opt.exilus, id, want);
-      if (opt.exilus[id] === "fixed") clearFamMarks(id);
-      renderOptMods(); renderOptExilus(); updateOptEstimate();
-    }));
+    el.addEventListener("click", (e) => { e.stopPropagation(); markOptExilus(el.dataset.m, el.dataset.s); }));
+}
+
+/// The exilus slot's mark: one slot, so a pin clears the rest of the group.
+function markOptExilus(id, want) {
+  setSingleSlotMark(opt.exilus, id, want);
+  if (opt.exilus[id] === "fixed") clearFamMarks(id);
+  renderOptMods(); renderOptExilus(); updateOptEstimate();
 }
 
 // Arcane scope — the SAME rich rows as the arcane picker (image, name, effect
@@ -20647,30 +20650,28 @@ function renderOptModes() {
       note: tr("one way — there is no build without a mode"),
     });
   box.querySelectorAll(".seg:not(.dis)").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = el.dataset.m, want = el.dataset.s;
-      // ONE GROUP, because a build is played ONE way: the marks here behave
-      // like a single slot's — `req` pins it and clears the pool, `pool` opens
-      // it and gives way on the pin.
-      const was = opt.modes[id];
-      if (want === "fixed") {
-        opt.modes = { [id]: "fixed" };
-      } else if (was === "search") {
-        delete opt.modes[id];
-      } else {
-        Object.keys(opt.modes).forEach((k) => { if (opt.modes[k] === "fixed") delete opt.modes[k]; });
-        opt.modes[id] = "search";
-      }
-      if (was === "fixed" && want === "fixed") delete opt.modes[id];
-      // NEVER EMPTY. A scope with no mode is not "search them all", it is a
-      // question with no answer — the server would fall back to the request's
-      // single mode and the screen would not say so.
-      if (!Object.keys(opt.modes).length) opt.modes = { [id]: "fixed" };
-      renderOptModes();
-      updateOptEstimate(); // the scope's auto-save
-    })
-  );
+    el.addEventListener("click", (e) => { e.stopPropagation(); markOptOneWay("modes", el.dataset.m, el.dataset.s); }));
+}
+
+/// THE MODE AND VALENCE MARKS — ONE GROUP each, because a build is played one
+/// way and carries one element: `req` pins it and clears the pool, `pool` opens
+/// it and gives way on the pin. NEVER EMPTY: a scope with no mode is not
+/// "search them all", it is a question with no answer, so clearing the last
+/// mark pins it instead.
+function markOptOneWay(axis, id, want) {
+  const was = opt[axis][id];
+  if (want === "fixed") {
+    opt[axis] = { [id]: "fixed" };
+  } else if (was === "search") {
+    delete opt[axis][id];
+  } else {
+    Object.keys(opt[axis]).forEach((k) => { if (opt[axis][k] === "fixed") delete opt[axis][k]; });
+    opt[axis][id] = "search";
+  }
+  if (was === "fixed" && want === "fixed") delete opt[axis][id];
+  if (!Object.keys(opt[axis]).length) opt[axis] = { [id]: "fixed" };
+  if (axis === "modes") renderOptModes(); else renderOptValence();
+  updateOptEstimate(); // the scope's auto-save
 }
 
 /// THE VALENCE AXIS, searched exactly like the mode: `pool` opens it, `req`
@@ -20711,24 +20712,7 @@ function renderOptValence() {
       note: tr("one progenitor element — the weapon always has one"),
     });
   box.querySelectorAll(".seg").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = el.dataset.m, want = el.dataset.s;
-      const was = opt.valence[id];
-      if (want === "fixed") {
-        opt.valence = { [id]: "fixed" };
-      } else if (was === "search") {
-        delete opt.valence[id];
-      } else {
-        Object.keys(opt.valence).forEach((k) => { if (opt.valence[k] === "fixed") delete opt.valence[k]; });
-        opt.valence[id] = "search";
-      }
-      if (was === "fixed" && want === "fixed") delete opt.valence[id];
-      if (!Object.keys(opt.valence).length) opt.valence = { [id]: "fixed" };
-      renderOptValence();
-      updateOptEstimate();
-    })
-  );
+    el.addEventListener("click", (e) => { e.stopPropagation(); markOptOneWay("valence", el.dataset.m, el.dataset.s); }));
 }
 
 function renderOptArcanes() {
@@ -20780,33 +20764,29 @@ function renderOptArcanes() {
       })}</div>`;
     })
     .join("");
-  wireSlotRange($("opt-arcanes"), 1, (key, lo, hi) => {
-    setSlotRange(opt.arcanes, arcaneEmptyId(key.slice(4)), lo, hi);
-    renderOptArcanes(); updateOptEstimate();
-  });
+  wireSlotRange($("opt-arcanes"), 1, (key, lo, hi) => setOptRange("arcanes", key.slice(4), lo, hi));
   $("opt-arcanes").querySelectorAll(".seg:not(.dis)").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      // The group is this arcane's OWN pool: pinning a Primary must not
-      // clear a Secondary mark, because they fill different slots.
-      const own = arcaneById(el.dataset.a);
-      const group = {};
-      Object.keys(opt.arcanes).forEach((id) => {
-        if (sameArcaneSeat(arcaneById(id), own)) group[id] = opt.arcanes[id];
-      });
-      setSingleSlotMark(group, el.dataset.a, el.dataset.s);
-      Object.keys(opt.arcanes).forEach((id) => {
-        if (sameArcaneSeat(arcaneById(id), own)) delete opt.arcanes[id];
-      });
-      Object.assign(opt.arcanes, group);
-      // A PIN SETTLES THE SEAT, so its range goes with it. The group above is
-      // built from `sameArcaneSeat`, which `none:<pool>` is not a member of —
-      // it is the seat's range rather than an arcane — so it is cleared here.
-      if (el.dataset.s === "fixed") {
-        arcaneSeats(own).forEach((pool) => { delete opt.arcanes[arcaneEmptyId(pool)]; });
-      }
-      renderOptArcanes(); updateOptEstimate();
-    }));
+    el.addEventListener("click", (e) => { e.stopPropagation(); markOptArcane(el.dataset.a, el.dataset.s); }));
+}
+
+/// AN ARCANE'S MARK. The group is this arcane's OWN seat: pinning a Primary
+/// must not clear a Secondary mark, because they fill different slots. A pin
+/// settles the seat, so the seat's range (`none:<pool>`) goes with it.
+function markOptArcane(aid, want) {
+  const own = arcaneById(aid);
+  const group = {};
+  Object.keys(opt.arcanes).forEach((id) => {
+    if (sameArcaneSeat(arcaneById(id), own)) group[id] = opt.arcanes[id];
+  });
+  setSingleSlotMark(group, aid, want);
+  Object.keys(opt.arcanes).forEach((id) => {
+    if (sameArcaneSeat(arcaneById(id), own)) delete opt.arcanes[id];
+  });
+  Object.assign(opt.arcanes, group);
+  if (want === "fixed") {
+    arcaneSeats(own).forEach((pool) => { delete opt.arcanes[arcaneEmptyId(pool)]; });
+  }
+  renderOptArcanes(); updateOptEstimate();
 }
 
 // Evolution scope — per tier, the option rows with their verbatim description
@@ -20868,25 +20848,20 @@ function renderOptEvos() {
       ? `title="${escHtml(tr("install the previous tier first"))}"` : ""
     }><div class="opt-tier-h">EVO ${ROMAN(t.tier)}</div><div class="combo-menu opt-evolist">${rows}</div>${range}</div>`;
   }).join("");
-  wireSlotRange($("opt-evos"), 1, (key, lo, hi) => {
-    const t = key.slice(4);
-    opt.evos[t] = opt.evos[t] || {};
-    setSlotRange(opt.evos[t], "none", lo, hi);
-    renderOptEvos(); updateOptEstimate();
-  });
+  wireSlotRange($("opt-evos"), 1, (key, lo, hi) => setOptRange("evolutions", key.slice(4), lo, hi));
   $("opt-evos").querySelectorAll(".seg:not(.dis):not(.tlocked)").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const t = el.dataset.t, id = el.dataset.e, want = el.dataset.s;
-      opt.evos[t] = opt.evos[t] || {};
-      setSingleSlotMark(opt.evos[t], id, want);
-      // Clearing a tier shuts every tier above it, marks and all — the same
-      // cascade the builder does, for the same reason.
-      if (!evoRealMarks(t).length) {
-        tiers.forEach((x) => { if (x.tier > Number(t)) delete opt.evos[x.tier]; });
-      }
-      renderOptEvos(); updateOptEstimate();
-    }));
+    el.addEventListener("click", (e) => { e.stopPropagation(); markOptEvo(el.dataset.t, el.dataset.e, el.dataset.s); }));
+}
+
+/// AN EVOLUTION'S MARK in its tier. Clearing a tier shuts every tier above it,
+/// marks and all — the same cascade the builder does, for the same reason.
+function markOptEvo(t, id, want) {
+  opt.evos[t] = opt.evos[t] || {};
+  setSingleSlotMark(opt.evos[t], id, want);
+  if (!evoRealMarks(t).length) {
+    weaponEvos().forEach((x) => { if (x.tier > Number(t)) delete opt.evos[x.tier]; });
+  }
+  renderOptEvos(); updateOptEstimate();
 }
 
 // ---- The optimizer preset — ONE document per weapon.
@@ -21276,13 +21251,32 @@ function renderOptModList() {
     ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
     : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
   $("opt-mods").querySelectorAll(".seg:not(.dis)").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = el.dataset.m, want = el.dataset.s, cur = opt.mods[id] || "off";
-      if (cur === want) delete opt.mods[id]; else opt.mods[id] = want; // toggle off if same
-      if (opt.mods[id] === "fixed") clearFamMarks(id);
-      renderOptMods(); renderOptExilus(); updateOptEstimate();
-    }));
+    el.addEventListener("click", (e) => { e.stopPropagation(); markOptMod(el.dataset.m, el.dataset.s); }));
+}
+
+/// A MOD'S MARK IN THE SEARCH: "fixed" (required), "search" (pooled), or the
+/// same mark again to clear it. Requiring one clears its family everywhere.
+function markOptMod(id, want) {
+  const cur = opt.mods[id] || "off";
+  if (cur === want) delete opt.mods[id]; else opt.mods[id] = want;
+  if (opt.mods[id] === "fixed") clearFamMarks(id);
+  renderOptMods(); renderOptExilus(); updateOptEstimate();
+}
+
+/// HOW MANY MODS A SEARCHED BUILD HOLDS (min to size, 0 to 8) and how many
+/// builds reach the last round. The two bounds push each other, never cross.
+function setOptSizes({ size, min, finalists }) {
+  if (size != null) {
+    opt.size = Math.max(0, Math.min(8, size));
+    if (opt.min > opt.size) opt.min = opt.size;
+  }
+  if (min != null) {
+    opt.min = Math.max(0, Math.min(8, min));
+    if (opt.min > opt.size) opt.size = opt.min;
+  }
+  if (finalists != null) optRun.finalists = Math.max(1, Math.min(100, finalists));
+  $("opt-size").value = opt.size; $("opt-min").value = opt.min; $("opt-finalists").value = optRun.finalists;
+  updateOptEstimate();
 }
 
 function updateOptEstimate() {
@@ -23490,7 +23484,7 @@ const AGENT_EXEMPT = [
   { sel: ".pop.del", kind: "reader", why: "deleting a build is the reader's" },
   { sel: ".pundo", kind: "todo", why: "undo and redo in a preset bar" },
   { sel: "#preset-bar-optimizer", kind: "todo", why: "saved search scopes" },
-  { sel: "#opt-plan", kind: "todo", why: "the search's scope: which mods, arcanes, evolutions, modes, sizes" },
+  { sel: "#opk-gain", kind: "pref", why: "the search list's own quick-calc scan" },
   { sel: "#opt-fight-half", kind: "todo", why: "the search's view of the fight" },
   { sel: "#forma-block", kind: "todo", why: "the Forma planner" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
@@ -23514,8 +23508,105 @@ const agentRivenCard = () => ({
   ...(rivenResolved && rivenResolved.illegal && rivenResolved.illegal.length ? { illegal: rivenResolved.illegal } : {}),
 });
 
+/// A SEARCH AXIS'S MARKS, grouped the way the scope reads: pinned, pooled,
+/// and whether the slot may stay empty (the `none` marks are its range).
+const agentMarks = (map, name) => {
+  const out = { fixed: [], search: [] };
+  for (const [id, st] of Object.entries(map || {})) {
+    if (id === "none" || id.startsWith("none:")) { out.empty = st === "fixed" ? "only" : "allowed"; continue; }
+    if (out[st]) out[st].push(name ? name(id) : id);
+  }
+  return out;
+};
+
 /// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
+  {
+    id: "optimizer.scope.read",
+    query: true,
+    what: "Read the build search's scope: which mods, exilus mods, arcanes, evolutions, modes and elements are required (fixed) or searched (search), whether a single slot may stay empty, how many mods a build holds, and the candidate count.",
+    anchor: "#opt-plan",
+    needs_weapon: true,
+    args: {},
+    run() {
+      return {
+        size: { min: opt.min, max: opt.size }, finalists: optRun.finalists,
+        mods: agentMarks(opt.mods), exilus: agentMarks(opt.exilus), arcanes: agentMarks(opt.arcanes),
+        evolutions: Object.fromEntries(Object.entries(opt.evos).map(([t, m]) => [t, agentMarks(m)])),
+        modes: agentMarks(opt.modes), valence: agentMarks(opt.valence),
+        estimate: $("opt-estimate").textContent.trim(),
+      };
+    },
+  },
+  {
+    id: "optimizer.scope.mark",
+    what: "Mark one option in the build search's scope: \"fixed\" requires it, \"search\" lets the search try it, \"off\" clears it. Axes: mods, exilus, arcanes, evolutions (give the tier), modes, valence. The page's own rules apply: requiring a mod clears its family, one slot takes one pin, a build is played one way.",
+    anchor: "#opt-plan",
+    needs_weapon: true,
+    args: {
+      axis: { kind: "string", required: true, what: "which axis", enum: () => ["mods", "exilus", "arcanes", "evolutions", "modes", "valence"] },
+      id: { kind: "string", required: true, what: "the mod, arcane, evolution, mode or element id" },
+      mark: { kind: "string", required: true, what: "fixed, search or off", enum: () => ["fixed", "search", "off"] },
+      tier: { kind: "number", min: 1, max: 4, what: "the evolution's tier" },
+    },
+    run({ axis, id, mark, tier }) {
+      const cur = axis === "evolutions" ? ((opt.evos[tier] || {})[id]) : (opt[axis] || {})[id];
+      const known = {
+        mods: () => buildPool().some((m) => m.id === id && !m.stance),
+        exilus: () => buildPool().some((m) => m.id === id && m.exilus),
+        arcanes: () => arcanePools().some((_, i) => arcanePool(i).some((a) => a.id === id)),
+        evolutions: () => (weaponEvos().find((t) => t.tier === tier) || { options: [] }).options.some((o) => o.id === id),
+        modes: () => modeOpts(weaponInfo($("weapon").value) || {}).some(([m]) => m === id),
+        valence: () => ((valenceSpec($("weapon").value) || {}).elements || []).includes(id),
+      }[axis];
+      if (axis === "evolutions" && tier == null) return agentNo("missing_argument", { argument: "tier" });
+      if (!known()) return agentNo("not_in_scope", { argument: "id", because: `this weapon's ${axis} have no ${id}` });
+      if (mark === "off" && !cur) return { text: "already clear" };
+      const want = mark === "off" ? cur : mark;
+      if (mark !== "off" && cur === want) return { text: "already marked" };
+      if (axis === "mods") markOptMod(id, want);
+      else if (axis === "exilus") markOptExilus(id, want);
+      else if (axis === "arcanes") markOptArcane(id, want);
+      else if (axis === "evolutions") markOptEvo(String(tier), id, want);
+      else markOptOneWay(axis, id, want);
+      return { estimate: $("opt-estimate").textContent.trim() };
+    },
+  },
+  {
+    id: "optimizer.scope.empty",
+    what: "Say whether the search may leave a single slot empty: the exilus slot, an arcane seat (give the seat's pool, e.g. primary) or an evolution tier. never = always filled, allowed = both, only = searched empty.",
+    anchor: "#opt-plan",
+    needs_weapon: true,
+    args: {
+      axis: { kind: "string", required: true, what: "which slot", enum: () => ["exilus", "arcanes", "evolutions"] },
+      key: { kind: "string", what: "the arcane seat's pool, or the evolution tier" },
+      empty: { kind: "string", required: true, what: "never, allowed or only", enum: () => ["never", "allowed", "only"] },
+    },
+    run({ axis, key, empty }) {
+      if (axis === "arcanes" && !arcanePools().includes(key)) return agentNo("bad_argument", { argument: "key", alternatives: arcanePools() });
+      if (axis === "evolutions" && !weaponEvos().some((t) => String(t.tier) === String(key))) {
+        return agentNo("bad_argument", { argument: "key", alternatives: weaponEvos().map((t) => String(t.tier)) });
+      }
+      const [lo, hi] = { never: [1, 1], allowed: [0, 1], only: [0, 0] }[empty];
+      setOptRange(axis, axis === "exilus" ? null : String(key), lo, hi);
+      return { estimate: $("opt-estimate").textContent.trim() };
+    },
+  },
+  {
+    id: "optimizer.scope.size",
+    what: "How many mods a searched build holds (min to max, 0 to 8), and how many builds reach the search's last round.",
+    anchor: "#opt-plan",
+    needs_weapon: true,
+    args: {
+      min: { kind: "number", min: 0, max: 8, what: "fewest mods" },
+      max: { kind: "number", min: 0, max: 8, what: "most mods" },
+      finalists: { kind: "number", min: 1, max: 100, what: "builds in the last round" },
+    },
+    run({ min, max, finalists }) {
+      setOptSizes({ size: max, min, finalists });
+      return { size: { min: opt.min, max: opt.size }, finalists: optRun.finalists, estimate: $("opt-estimate").textContent.trim() };
+    },
+  },
   {
     id: "rivens.cards.list",
     query: true,
