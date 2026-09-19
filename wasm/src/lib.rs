@@ -17,31 +17,13 @@ use wasm_bindgen::prelude::*;
 use wfsim_optimizer::FunnelState;
 
 /// Dispatch a quick endpoint call: `endpoint` is the API path as the
-/// frontend knows it ("/api/meta", "/api/panel", "/api/simulate", "/api/log", "/api/targets",
-/// "/api/opt-buffs"), `body` the request JSON ("" or "{}" for /api/meta).
-/// Returns the response JSON as a string.
+/// frontend knows it (any path in `wfsim_webapi::ROUTES`), `body` the request
+/// JSON ("" or "{}" for /api/meta). Returns the response JSON as a string.
 #[wasm_bindgen]
 pub fn api(endpoint: &str, body: &str) -> String {
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
-    let out = match endpoint {
-        "/api/meta" => wfsim_webapi::meta_json(),
-        "/api/i18n" => wfsim_webapi::i18n_json(),
-        "/api/panel" => wfsim_webapi::panel_json(&v),
-        "/api/pairings" => wfsim_webapi::pairings_json(&v),
-        "/api/simulate" => wfsim_webapi::simulate_json(&v),
-        "/api/log" => wfsim_webapi::log_json(&v),
-        "/api/opt-buffs" => wfsim_webapi::opt_buffs_json(&v),
-        "/api/riven" => wfsim_webapi::riven_json(&v),
-        "/api/targets" => wfsim_webapi::targets_json(&v),
-        "/api/board/check" => wfsim_webapi::board_check_json(&v),
-        "/api/build/keys" => wfsim_webapi::build_keys_json(&v),
-        "/api/forma/plan" => wfsim_webapi::forma_plan_json(&v),
-        "/api/forma/optimize" => wfsim_webapi::forma_optimize_json(&v),
-        "/api/warframe/catalog" => wfsim_webapi::warframe_catalog_json(),
-        "/api/warframe/panel" => wfsim_webapi::warframe_panel_json(&v),
-        "/api/operator/panel" => wfsim_webapi::operator_panel_json(&v),
-        other => wfsim_webapi::err_json(format!("unknown endpoint: {other}")),
-    };
+    let out = wfsim_webapi::route(endpoint, &v)
+        .unwrap_or_else(|| wfsim_webapi::err_json(format!("unknown endpoint: {endpoint}")));
     out.to_string()
 }
 
@@ -115,38 +97,11 @@ pub fn simulate_merged(body: &str, shards: &str) -> String {
 }
 
 /// Snapshot `FunnelState` into the native /api/optimize/status shape (minus
-/// `job_id`/`result` — the worker protocol owns those).
+/// `job_id`/`result` — the worker protocol owns those), plus `rewalking`, which
+/// only this transport reports.
 fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>, elapsed_s: f64) -> String {
-    let notes: Vec<serde_json::Value> = state
-        .notes
-        .lock()
-        .unwrap()
-        .iter()
-        .map(|n| {
-            serde_json::json!({
-                "round": n.round, "jobs": n.jobs, "runs": n.runs,
-                "by_kills": n.by_kills, "kept": n.kept, "best": n.best, "multishot": n.multishot,
-            })
-        })
-        .collect();
-    let mut out = serde_json::json!({
-        "ok": true,
-        "phase": phase,
-        "elapsed_s": elapsed_s,
-        "round": state.round.load(Ordering::Relaxed),
-        "rounds": state.rounds.load(Ordering::Relaxed),
-        "round_jobs": state.round_jobs.load(Ordering::Relaxed),
-        "round_runs": state.round_runs.load(Ordering::Relaxed),
-        "sims_done": state.sims_done.load(Ordering::Relaxed),
-        "sims_planned": state.sims_planned.load(Ordering::Relaxed),
-        "enumerated": state.enumerated.load(Ordering::Relaxed),
-        "rewalking": state.rewalking.load(Ordering::Relaxed),
-        "notes": notes,
-    });
-    if let Some((cands, jobs)) = counts {
-        out["candidates"] = serde_json::json!(cands);
-        out["jobs"] = serde_json::json!(jobs);
-    }
+    let mut out = wfsim_webapi::funnel_status_json(state, phase, counts, elapsed_s);
+    out["rewalking"] = serde_json::json!(state.rewalking.load(Ordering::Relaxed));
     out.to_string()
 }
 

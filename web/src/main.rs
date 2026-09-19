@@ -18,16 +18,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use serde_json::{json, Value};
 use wfsim_optimizer::FunnelState;
-use wfsim_webapi::{
-    board_check_json, build_keys_json, err_json, forma_optimize_json, forma_plan_json, i18n_json, log_json, meta_json, opt_buffs_json,
-    pairings_json,
-    panel_json,
-    parse_optimize, riven_json,
-    run_optimize,
-    targets_json,
-    simulate_json,
-    warframe_catalog_json, warframe_panel_json, operator_panel_json,
-};
+use wfsim_webapi::{err_json, funnel_status_json, parse_optimize, run_optimize};
 
 // ---- Embedded static assets (self-contained binary) --------------------
 
@@ -273,12 +264,31 @@ fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
     respond_redirect(stream, &format!("https://cdn.warframestat.us/img/{name}"))
 }
 
+/// THE METHOD A PURE ENDPOINT ANSWERS, which `api()` in app.js matches: these
+/// two are GET and every other one is a POST. `wfsim_webapi::route` owns the
+/// paths; the method is this transport's, and a wrong one falls through.
+const GET_ENDPOINTS: &[&str] = &["/api/meta", "/api/i18n"];
+
+fn endpoint_method(path: &str) -> &'static str {
+    if GET_ENDPOINTS.contains(&path) {
+        "GET"
+    } else {
+        "POST"
+    }
+}
+
 fn handle(mut stream: TcpStream) -> std::io::Result<()> {
     let Some(req) = read_request(&stream)? else {
         return Ok(());
     };
     // Strip any query string.
     let path = req.path.split('?').next().unwrap_or("/");
+    let body = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+    if req.method == endpoint_method(path) {
+        if let Some(out) = wfsim_webapi::route(path, &body) {
+            return respond_json(&mut stream, &out);
+        }
+    }
 
     match (req.method.as_str(), path) {
         ("GET", "/") => respond(&mut stream, "200 OK", "text/html; charset=utf-8", INDEX_HTML.as_bytes()),
@@ -290,78 +300,9 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         ),
         ("GET", "/style.css") => respond(&mut stream, "200 OK", "text/css; charset=utf-8", STYLE_CSS.as_bytes()),
         ("GET", "/logo.svg") => respond(&mut stream, "200 OK", "image/svg+xml", LOGO_SVG.as_bytes()),
-        ("GET", "/api/meta") => respond_json(&mut stream, &meta_json()),
-        ("GET", "/api/i18n") => respond_json(&mut stream, &i18n_json()),
-        ("POST", "/api/simulate") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &simulate_json(&value))
-        }
-        ("POST", "/api/log") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &log_json(&value))
-        }
-        ("POST", "/api/optimize") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &optimize_start(&value))
-        }
-        ("POST", "/api/optimize/status") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &optimize_status(&value))
-        }
-        ("POST", "/api/optimize/cancel") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &optimize_cancel(&value))
-        }
-        ("POST", "/api/opt-buffs") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &opt_buffs_json(&value))
-        }
-        ("POST", "/api/riven") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &riven_json(&value))
-        }
-        ("POST", "/api/targets") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &targets_json(&value))
-        }
-        // THE BOARD'S OWN DOOR, asked before knocking. The submission itself
-        // goes to a service this server is not; this only answers whether it
-        // would be accepted, which is the engine's question.
-        ("POST", "/api/board/check") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &board_check_json(&value))
-        }
-        // THE ROW KEY FOR A LIST OF BUILDS — see `build_keys_json`. It is how
-        // the page asks whether the build on screen is already a board row.
-        ("POST", "/api/build/keys") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &build_keys_json(&value))
-        }
-        ("POST", "/api/forma/optimize") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &forma_optimize_json(&value))
-        }
-        ("POST", "/api/forma/plan") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &forma_plan_json(&value))
-        }
-        ("POST", "/api/panel") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &panel_json(&value))
-        }
-        ("POST", "/api/warframe/catalog") => respond_json(&mut stream, &warframe_catalog_json()),
-        ("POST", "/api/warframe/panel") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &warframe_panel_json(&value))
-        }
-        ("POST", "/api/operator/panel") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &operator_panel_json(&value))
-        }
-        ("POST", "/api/pairings") => {
-            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &pairings_json(&value))
-        }
+        ("POST", "/api/optimize") => respond_json(&mut stream, &optimize_start(&body)),
+        ("POST", "/api/optimize/status") => respond_json(&mut stream, &optimize_status(&body)),
+        ("POST", "/api/optimize/cancel") => respond_json(&mut stream, &optimize_cancel(&body)),
         ("GET", p) if p.starts_with("/nona/") => match NONA_FILES.iter().find(|(f, _)| *f == &p[6..]) {
             Some((_, body)) => respond(&mut stream, "200 OK", "text/javascript; charset=utf-8", body.as_bytes()),
             None => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
@@ -440,37 +381,10 @@ fn optimize_status(v: &Value) -> Value {
     let Some(j) = opt_job(v) else {
         return err_json("no such optimize job");
     };
-    let st = &j.state;
-    let notes: Vec<Value> = st
-        .notes
-        .lock()
-        .unwrap()
-        .iter()
-        .map(|n| {
-            json!({
-                "round": n.round, "jobs": n.jobs, "runs": n.runs,
-                "by_kills": n.by_kills, "kept": n.kept, "best": n.best, "multishot": n.multishot,
-            })
-        })
-        .collect();
-    let mut out = json!({
-        "ok": true,
-        "job_id": j.id,
-        "phase": *j.phase.lock().unwrap(),
-        "elapsed_s": j.started.elapsed().as_secs_f64(),
-        "round": st.round.load(Ordering::Relaxed),
-        "rounds": st.rounds.load(Ordering::Relaxed),
-        "round_jobs": st.round_jobs.load(Ordering::Relaxed),
-        "round_runs": st.round_runs.load(Ordering::Relaxed),
-        "sims_done": st.sims_done.load(Ordering::Relaxed),
-        "sims_planned": st.sims_planned.load(Ordering::Relaxed),
-        "enumerated": st.enumerated.load(Ordering::Relaxed),
-        "notes": notes,
-    });
-    if let Some((cands, jobs)) = *j.counts.lock().unwrap() {
-        out["candidates"] = json!(cands);
-        out["jobs"] = json!(jobs);
-    }
+    let phase = *j.phase.lock().unwrap();
+    let counts = *j.counts.lock().unwrap();
+    let mut out = funnel_status_json(&j.state, phase, counts, j.started.elapsed().as_secs_f64());
+    out["job_id"] = json!(j.id);
     if let Some(r) = j.result.lock().unwrap().clone() {
         out["result"] = r;
     }

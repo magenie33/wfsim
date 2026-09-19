@@ -190,7 +190,7 @@ check("comment style ...and no note outlives its last use",
 // `.md`, `.html` and `.css` are outside both counts, which is what makes
 // "move the subject to docs/" an answer rather than a shuffle.
 const ESSAY_LIMIT = 20;
-const ESSAY_CEILING = 25;
+const ESSAY_CEILING = 24;
 const RATIO_CEILING = 0.31;
 const LINE_COMMENT = /^\s*(\/\/\/|\/\/!|\/\/|#)/;
 let essays = 0;

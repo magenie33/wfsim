@@ -287,7 +287,7 @@ Two things follow, and both have been mistaken for something else:
 
 ONE COPY, so an improvement reaches every module: `monte_carlo` (the fight),
 `FightParams::*_from_panel[s]` (its parameters), `build::loadout::resolve_for` (mods to
-a panel), `webapi::parse_fight` (json to a fight — five call sites, including
+a panel), `webapi::fight::parse_fight` (json to a fight — five call sites, including
 `optimize_json`), `board::builds::BUILD_AXES` (what a build is).
 
 WRITTEN TWICE, so a change has to be made twice:
