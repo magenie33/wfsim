@@ -3,7 +3,8 @@
 // draws those events; it never writes the record. docs/NONA.md §"One turn".
 
 import * as record from "../core/record.js";
-import { view } from "../core/view.js";
+import { view, viewText } from "../core/view.js";
+import { CAPS, clip, estimate } from "../core/size.js";
 import * as budget from "../core/budget.js";
 import * as summary from "../core/summary.js";
 import * as memoryOps from "../core/memory.js";
@@ -16,9 +17,6 @@ import { branch, madeBy } from "./policy.js";
 /// How many model turns one question may take. A question that has not settled
 /// by then is handed back rather than billed on.
 const MAX_STEPS = 24;
-/// A tool result longer than this is cut, and says so: the model pays for every
-/// byte, and a list it needs more of can be narrowed with the tool's own limit.
-const RESULT_CAP = 16000;
 
 /// ONE LINE PER CALL, derived from the call itself — the trail cannot describe
 /// a move that was not made.
@@ -27,10 +25,10 @@ export const callLine = (c) => {
   return `${toolId(c.name)}${args ? " " + args : ""}`;
 };
 
-const cap = (v) => {
-  const s = JSON.stringify(v);
-  return s.length <= RESULT_CAP ? s : s.slice(0, RESULT_CAP) + ` …[cut at ${RESULT_CAP} of ${s.length} characters]`;
-};
+/// A RESULT IS CUT TO ITS CAP WHEN IT IS RECORDED, and says so: the model pays
+/// for every byte, and a list it needs more of can be narrowed with the tool's
+/// own limit. It also bounds what one round can add to the record.
+const cap = (v) => clip(JSON.stringify(v), CAPS.result);
 const uid = (p) => `${p}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 /// EVENTS: `open` (a conversation replaced the one shown), `list`, `append`
@@ -40,7 +38,7 @@ const uid = (p) => `${p}${Date.now().toString(36)}${Math.random().toString(36).s
 export function createAgent(door) {
   const listeners = new Set();
   const emit = (ev) => listeners.forEach((f) => f(ev));
-  const s = { conv: null, list: [], busy: false, abort: null, owned: new Set() };
+  const s = { conv: null, list: [], busy: false, abort: null, owned: new Set(), shrink: 1 };
 
   function append(m) {
     s.conv.messages.push(m);
@@ -68,39 +66,50 @@ export function createAgent(door) {
     s.conv = c ? JSON.parse(JSON.stringify(c))
       : record.newConversation({ id: uid("c"), now: Date.now(), weapon: (door.observe().route || {}).weapon });
     s.owned = new Set(s.conv.made || []);
+    s.shrink = 1;
     emit({ type: "open" });
   }
 
-  /// What every request of this turn shares: her rules, the reader's memory and
-  /// the tool table — the stable prefix.
+  /// M, FROZEN FOR A STRETCH: taken when the conversation starts and again at
+  /// each summary, which breaks the cache anyway. A memory written in between
+  /// is in the conversation as her tool result, so the prefix never moves for it.
+  function freezeMemory() {
+    s.conv.memory = { text: memoryOps.block(store.memory.get(), Date.now(), !!s.conv.incognito), at: Date.now() };
+  }
+
+  /// What every request shares: her rules, the reader's memory and the tool
+  /// table — S, M and T, the stable prefix.
   function parts(cfg) {
     return {
       rules: rules({ lang: door.observe().lang, concise: !!cfg.concise }),
-      memory: memoryOps.block(store.memory.get(), Date.now(), !!s.conv.incognito),
+      memory: (s.conv.memory && s.conv.memory.text) || "",
       tools: allTools(door.tools()),
+      skills: "",
     };
   }
 
-  /// Set aside what the budget says to, written into the record so the next
-  /// request is sent the same prefix. Returns the estimate of what is sent.
-  function fit(cfg, p, force) {
-    const d = budget.decide(s.conv, { context: cfg.context, fixed: p.rules + p.memory + JSON.stringify(p.tools),
-      ratio: store.ratio(cfg.model), force });
-    if (d.tools.length || d.pages.length) {
-      s.conv = budget.applyMarks(s.conv, d);
-      say("note", "earlier tool results were set aside to save space");
+  /// EVERY ZONE UNDER ITS CAP before a request: set aside what `plan` says to,
+  /// summarise when it says to, and ask again until it asks for nothing more.
+  /// `shrink` is how much smaller than the estimate the address has shown the
+  /// window to be. Returns the parts to send, or why not to send.
+  async function maintain(cfg, signal) {
+    let p = parts(cfg);
+    for (let round = 0; round < 3; round++) {
+      const pl = budget.plan(s.conv, p, { context: cfg.context, budget: cfg.budget, ratio: store.ratio(cfg.model) * s.shrink });
+      if (pl.refuse) return { refuse: true };
+      if (pl.marks.tools.length || pl.marks.pages.length) {
+        s.conv = budget.applyMarks(s.conv, pl.marks);
+        say("note", "earlier tool results were set aside to save space");
+      }
+      if (pl.summarize == null) return { p, stop: pl.stop };
+      const text = await transport.complete(cfg, summary.SUMMARY_RULES, summary.summaryInput(s.conv, pl.summarize, callLine), signal);
+      s.conv = summary.applySummary(s.conv, pl.summarize, text);
+      freezeMemory();
+      p = parts(cfg);
+      say("note", "the early part of this chat was summarised to save space");
+      await save();
     }
-    return d.est;
-  }
-
-  async function summarise(cfg, p, signal) {
-    const cut = summary.wantsSummary(s.conv, { context: cfg.context, fixed: p.rules + JSON.stringify(p.tools), ratio: store.ratio(cfg.model) });
-    if (cut == null) return false;
-    const text = await transport.complete(cfg, summary.SUMMARY_RULES, summary.summaryInput(s.conv, cut, callLine), signal);
-    s.conv = summary.applySummary(s.conv, cut, text);
-    say("note", "the early part of this chat was summarised to save space");
-    await save();
-    return true;
+    return { p, stop: false };
   }
 
   /// Up to eight places the record mentions `q`, each with a little around it.
@@ -168,6 +177,7 @@ export function createAgent(door) {
       const w = door.observe().weapon;
       c.title = record.titleOf(text, w && w.id === c.weapon ? w.name : null);
     }
+    if (!c.memory) freezeMemory();
     const { can, ...page } = door.observe();
     append({ role: "user", text, page: JSON.stringify(page), at: Date.now() });
     const asked = s.conv.messages.length;
@@ -177,16 +187,21 @@ export function createAgent(door) {
     const seen = [];
     try {
       for (let step = 0; step < MAX_STEPS; step++) {
-        let p = parts(cfg);
-        let est = fit(cfg, p, false);
-        if (await summarise(cfg, p, signal)) { p = parts(cfg); est = fit(cfg, p, false); }
+        const m = await maintain(cfg, signal);
+        if (m.refuse) { say("error", "This model's context window is too small for Nona."); return; }
+        // THIS TURN ALONE HAS OUTGROWN ITS ZONE: it ends here, and the next
+        // message starts a turn that can summarise this one.
+        if (m.stop) { say("note", "this question has taken many steps — ask me to go on and I will continue from here"); return; }
+        const v = view(s.conv, m.p);
+        const est = estimate(viewText(v)) * store.ratio(cfg.model);
         let out;
         try {
-          out = await transport.send(cfg, view(s.conv, p), { signal, onText: (t) => emit({ type: "stream", text: t }) });
+          out = await transport.send(cfg, v, { signal, onText: (t) => emit({ type: "stream", text: t }) });
         } catch (e) {
           emit({ type: "stream", text: null });
-          // TOO LONG FOR THE ADDRESS: set aside everything but the newest, once.
-          if (!retried && transport.tooLong(e)) { retried = true; fit(cfg, p, true); step--; continue; }
+          // TOO LONG FOR THE ADDRESS: its window is smaller than it said or than
+          // the estimate thinks; plan against a third less, once.
+          if (!retried && transport.tooLong(e)) { retried = true; s.shrink *= 1.5; step--; continue; }
           throw e;
         }
         emit({ type: "stream", text: null });

@@ -45,6 +45,7 @@ const NONA_FILES: &[(&str, &str)] = &[
     ("core/memory.js", include_str!("static/nona/core/memory.js")),
     ("core/prompt.js", include_str!("static/nona/core/prompt.js")),
     ("core/record.js", include_str!("static/nona/core/record.js")),
+    ("core/size.js", include_str!("static/nona/core/size.js")),
     ("core/summary.js", include_str!("static/nona/core/summary.js")),
     ("core/tools.js", include_str!("static/nona/core/tools.js")),
     ("core/view.js", include_str!("static/nona/core/view.js")),

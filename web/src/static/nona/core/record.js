@@ -9,7 +9,7 @@ export const V = 1;
 /// Every field name a shipped version has written, by kind. It only grows:
 /// `test_nona_core` fails if a name here is missing from the current shape.
 export const FROZEN = {
-  conversation: ["v", "id", "title", "pinned", "created_at", "updated_at", "weapon", "made", "pairs", "summary", "usage", "messages"],
+  conversation: ["v", "id", "title", "pinned", "created_at", "updated_at", "weapon", "made", "pairs", "summary", "memory", "usage", "messages"],
   message: ["role", "text", "page", "at", "pageMasked", "calls", "usage", "id", "name", "ok", "line", "result", "masked", "pair", "state"],
   memory: ["v", "paused", "items"],
   memoryItem: ["id", "kind", "key", "value", "status", "source", "created_at", "updated_at", "history"],
@@ -21,7 +21,7 @@ export const SENT_ROLES = ["user", "assistant", "tool"];
 
 export function newConversation({ id, now, weapon }) {
   return { v: V, id, title: "", pinned: false, created_at: now, updated_at: now, weapon: weapon || null,
-    made: [], pairs: [], summary: null, usage: { input: 0, output: 0, cached: 0, cost: 0 }, messages: [] };
+    made: [], pairs: [], summary: null, memory: null, usage: { input: 0, output: 0, cached: 0, cost: 0 }, messages: [] };
 }
 
 /// A title from the first thing asked, and the weapon it was asked on: free,
@@ -38,7 +38,7 @@ export function migrate(kind, value) {
   const v = kind === "memory" ? (value.v ?? value.schema ?? 0) : (value.v ?? 0);
   if (v > V) return null;
   if (kind === "conversation") {
-    return { pairs: [], summary: null, made: [], usage: { input: 0, output: 0, cached: 0, cost: 0 }, pinned: false,
+    return { pairs: [], summary: null, memory: null, made: [], usage: { input: 0, output: 0, cached: 0, cost: 0 }, pinned: false,
       ...value, v: V };
   }
   if (kind === "memory") {

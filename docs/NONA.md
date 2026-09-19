@@ -18,10 +18,10 @@ wish, and this module has already shown what wishes turn into.
 | 3 | **The reader's documents are never edited in place.** The agent loop branches a build, fight, search, riven or target before her first write to it — policy in code, not in the prompt. Taking her copy back is a reader's click. | `check_nona` (reader's build asserted untouched) |
 | 4 | **The key goes only to the address the reader chose**, and is kept past the tab only if they ask. | `check_nona` (storage assertions); one `fetch` in the module (`runtime/transport.js`) |
 | 5 | **The record is whole and append-only.** Everything sent to a model is a pure function of the record, the settings, the memory and the tool table. Compaction writes marks into the record; it never rewrites or drops a message. | `test_nona_core` (view is deterministic; record unchanged by building it) |
-| 6 | **The prefix is stable.** Rules, memory and tools are byte-identical from one request to the next within a conversation, so a provider's prompt cache keeps matching. | `test_nona_core` (two consecutive views share their prefix byte for byte) |
+| 6 | **The prefix is stable.** Rules, memory and tools are byte-identical from one request to the next between two summaries, so a provider's prompt cache keeps matching. | `test_nona_core` (two consecutive views share their prefix byte for byte) |
 | 7 | **Every stored shape is versioned, and a name that ships is frozen.** Conversations, memory and settings live in readers' browsers; they are a wire. | `test_nona_core` (each old fixture migrates; no shipped name leaves `FROZEN`) |
 | 8 | **Her tools are the door's table at request time**, plus her own few, appended after it in a fixed order. Nothing in her code lists what the page can do. | `check_nona` (tools sent = door + own). *Becomes, with §"Skills": every door action is reachable through a skill generated from the table; `check_nona` asserts the catalogue covers `tools()`.* |
-| 9 | **Every zone of a request is under its cap, and the whole under W** — however long the conversation. *Designed (§"The context budget").* | `test_nona_core` over generated records of any length; S, T and one skill's size by build-time checks |
+| 9 | **Every zone of a request is under its cap, and the whole under W** — however long the conversation. | `test_nona_core`: over a thousand generated turns in four windows, every zone under its cap after every maintenance; S, T and one skill's size by build-time checks once skills land |
 
 ## The layers
 
@@ -55,10 +55,11 @@ web/src/static/nona/
   index.js                 mount: waits for the page's boot, builds the runtime, mounts the ui
   core/
     record.js              Conversation, Message, Settings, Memory shapes; migrate(); FROZEN
-    view.js                view(record, settings, memory, tools) -> { system, messages }
-    budget.js              estimate(); decide(record, window) -> marks to add
-    summary.js             wantsSummary(); summaryInput(); SUMMARY_RULES
-    measure.js             numbersIn(results); unmeasured(text, numbers)
+    size.js                the caps; estimate(); clip()
+    view.js                each message as sent; view(record, parts) -> { system, tools, turns }
+    budget.js              measure(record) -> zones; plan() -> what to set aside, where to summarise
+    summary.js             summaryInput(); applySummary(), cut to its cap; SUMMARY_RULES
+    measure.js             numbersIn(record); markNumbers(text, numbers)
     memory.js              set / forget / undo / block over a Memory value
     prompt.js              RULES(settings) — the byte-stable system text
     tools.js               her own tools (observe, history, memory), in fixed order
@@ -101,6 +102,7 @@ untouched and read-only rather than guessed at.
 ```
 Conversation { v, id, title, pinned, created_at, updated_at, weapon,
                made: string[], pairs: {copy, from}[], summary: {upto, text} | null,
+               memory: {text, at} | null,   // M, frozen until the next summary
                usage: {input, output, cached, cost}, messages: Message[] }
 Message = { role: "user", text, page, at, pageMasked? }
         | { role: "assistant", text, calls: {id, name, args}[], usage? }
@@ -190,10 +192,10 @@ is a reason to keep a few actions as named tools again, not to guess.
 
 ## The context budget
 
-**Status: designed, not built.** The code sets old tool results aside past
-half the window and summarises past 70% of it (`core/budget.js`,
-`core/summary.js`); this section replaces that with zones. The numbers below
-are starting values, tuned against `nona_eval`; the structure is the rule.
+**Status: built (`core/size.js`, `core/budget.js`, `core/summary.js`),
+except K and T's cap, which arrive with skills — until then T is the door's
+whole table and H and P share what it leaves of W.** The numbers are starting
+values, tuned against `nona_eval`; the structure is the rule.
 
 A conversation may go on for ever. What makes that possible is two stores of
 different kinds: **the record**, whole and append-only, in the reader's
@@ -244,7 +246,10 @@ The cheapest step comes first:
 
 1. **P over its cap.** This turn's older tool results are set aside, each
    replaced by one line saying what it was and that the call can be repeated.
-   The newest two stay verbatim.
+   The newest two stay verbatim — the newest one, when two do not fit. A turn
+   still over its cap with nothing left to set aside is not sent: it ends
+   there, saying so, and the reader's next message starts a turn that can
+   summarise it.
 2. **H over its cap.** First, the results of earlier turns are set aside. Then
    the older page snapshots go. Then the oldest turns are summarised by the
    model into the summary, which keeps every measured number only with its

@@ -1,7 +1,7 @@
 // HER TOOLS: the door's table at request time, then her own few in a fixed
 // order. Nothing here lists what the page can do — that is `wfsim.tools()`.
 
-import { SLOTS } from "./memory.js";
+import { SLOTS, VALUE_MAX } from "./memory.js";
 
 /// A door id as a tool name. Providers allow [a-zA-Z0-9_-] only, and a door id
 /// is lowercase letters and dots, so the swap is its own inverse.
@@ -28,7 +28,7 @@ export const MEMORY_SET = {
     + Object.entries(SLOTS).map(([k, v]) => `${k} — ${v}`).join("; ") + ".",
   input_schema: { type: "object", properties: {
     slot: { type: "string", enum: Object.keys(SLOTS), description: "which slot; omit for a note" },
-    value: { type: "string", description: "what to remember, in the reader's language" },
+    value: { type: "string", maxLength: VALUE_MAX, description: "what to remember, in the reader's language, briefly" },
     quote: { type: "string", description: "the reader's own words this comes from" },
   }, required: ["value"] },
 };

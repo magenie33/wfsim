@@ -7,6 +7,7 @@
 // Pure: every function takes the memory and returns a new one.
 
 import { V } from "./record.js";
+import { CAPS, estimate } from "./size.js";
 
 /// THE SLOTS, and what each is for — the model reads the descriptions.
 export const SLOTS = {
@@ -24,6 +25,9 @@ export const SLOT_LABELS = { answers: "Answers", riven_policy: "Rivens", content
 /// Past this, a memory is shown to her as old, to be confirmed before use.
 export const STALE_DAYS = 90;
 export const NOTES_MAX = 30;
+/// One memory is a fact, not a document: past this it is refused, which is what
+/// keeps the profile's slots from growing the zone they ride in.
+export const VALUE_MAX = 120;
 const DAY = 864e5;
 
 export const emptyMemory = () => ({ v: V, paused: false, items: [] });
@@ -38,6 +42,7 @@ const squash = (s) => String(s).replace(/\s+/g, "");
 export function set(mem, { slot, value, quote }, ctx) {
   if (mem.paused) return { mem, result: { ok: false, reason: "memory_off" } };
   if (!value || typeof value !== "string") return { mem, result: { ok: false, reason: "missing_argument", argument: "value" } };
+  if (value.length > VALUE_MAX) return { mem, result: { ok: false, reason: "too_long", argument: "value", max_characters: VALUE_MAX } };
   if (slot && !SLOTS[slot]) return { mem, result: { ok: false, reason: "bad_argument", argument: "slot", alternatives: Object.keys(SLOTS) } };
   const byUser = !!quote && squash(ctx.lastUserText || "").includes(squash(quote));
   const status = byUser ? "active" : "proposed";
@@ -80,13 +85,18 @@ export function confirm(mem, id, value, now) {
 }
 
 /// THE PROFILE AS SHE READS IT, one line per active memory; empty when there is
-/// none or memory is off — and then nothing is sent at all.
-export function block(mem, now, off) {
+/// none or memory is off — and then nothing is sent at all. Over its zone's cap,
+/// the notes least recently touched are left out first, then the oldest slots;
+/// the reader's memory page still shows all of them.
+export function block(mem, now, off, cap = CAPS.M) {
   if (off || mem.paused) return "";
-  const live = mem.items.filter((x) => x.status === "active");
-  if (!live.length) return "";
-  return "<memory of this reader>\n" + live.map((x) => {
+  const live = mem.items.filter((x) => x.status === "active")
+    .sort((a, b) => (a.kind === b.kind ? b.updated_at - a.updated_at : a.kind === "profile" ? -1 : 1));
+  const text = (xs) => (xs.length ? "<memory of this reader>\n" + xs.map((x) => {
     const age = Math.floor((now - x.updated_at) / DAY);
     return `- [${x.id}] ${x.key ? x.key + ": " : "note: "}${x.value}${age > STALE_DAYS ? ` (saved ${age} days ago — confirm before relying on it)` : ""}`;
-  }).join("\n") + "\n</memory>";
+  }).join("\n") + "\n</memory>" : "");
+  let keep = live;
+  while (keep.length && estimate(text(keep)) > cap) keep = keep.slice(0, -1);
+  return text(keep);
 }

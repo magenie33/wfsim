@@ -5,9 +5,10 @@
 // what a stored shape becomes is checked here in milliseconds. docs/NONA.md
 // §"The invariants" names which of them this is the enforcement for.
 import * as record from "../web/src/static/nona/core/record.js";
-import { view, sent, viewText } from "../web/src/static/nona/core/view.js";
+import { view, sent, viewText, sizeOf } from "../web/src/static/nona/core/view.js";
 import * as budget from "../web/src/static/nona/core/budget.js";
 import * as summary from "../web/src/static/nona/core/summary.js";
+import { CAPS, clip, estimate } from "../web/src/static/nona/core/size.js";
 import { markNumbers, numbersIn } from "../web/src/static/nona/core/measure.js";
 import * as memory from "../web/src/static/nona/core/memory.js";
 import { rules } from "../web/src/static/nona/core/prompt.js";
@@ -44,7 +45,7 @@ function convo(turns, resultSize = 6000) {
 
 check("a conversation written before versions migrates to v1 with its missing fields",
   same(Object.keys(record.migrate("conversation", { id: "a", messages: [] })).sort(),
-    ["id", "made", "messages", "pairs", "pinned", "summary", "usage", "v"]));
+    ["id", "made", "memory", "messages", "pairs", "pinned", "summary", "usage", "v"]));
 check("a memory written as schema 1 migrates to v1", (() => {
   const m = record.migrate("memory", { schema: 1, items: [{ id: "x" }], paused: true });
   return m.v === 1 && !("schema" in m) && m.items.length === 1 && m.paused === true;
@@ -94,44 +95,124 @@ for (const [name, p] of [["openai", openai], ["anthropic", anthropic]]) {
 check("the rules are the same text every time for one reader", rules({ lang: "zh", concise: false }) === RULES
   && rules({ lang: "zh", concise: true }) !== RULES);
 
-// ---- the budget: oldest set aside first, newest kept ------------------------------
+// ---- 9: every zone under its cap, however long the conversation -------------------
 
-const big = freeze(convo(10));
-const fixed = RULES + JSON.stringify(TOOLS);
-const soft = budget.decide(big, { context: 20000, fixed, ratio: 1 });
-const toolIdx = big.messages.map((m, i) => (m.role === "tool" ? i : -1)).filter((i) => i >= 0);
-check("past half the window the oldest tool results are set aside and the newest six kept",
-  same(soft.tools, toolIdx.slice(0, 4)), JSON.stringify(soft.tools));
-check("...and forced, only the newest two stay", budget.decide(big, { context: 20000, fixed, ratio: 1, force: true }).tools.length === 8);
-check("under half the window, nothing is set aside",
-  budget.decide(convo(2, 50), { context: 200000, fixed, ratio: 1 }).tools.length === 0);
-const marked = budget.applyMarks(big, soft);
+const FIXED = { rules: RULES, memory: "<memory of this reader>\n- [m1] riven_policy: none\n</memory>", tools: TOOLS, skills: "" };
+const within = (rec, opts = {}) => {
+  const z = budget.measure(rec, FIXED);
+  const c = budget.caps(z, budget.room(opts));
+  return { z, c, ok: z.H <= c.H && z.P <= c.P && z.S + z.T + z.M + z.K + z.H + z.P <= c.W };
+};
+/// The agent's maintenance loop, with a stand-in summariser: plan, mark,
+/// summarise, until the plan asks for nothing more.
+function maintain(rec, summarizer, opts = {}) {
+  for (let round = 0; round < 3; round++) {
+    const pl = budget.plan(rec, FIXED, opts);
+    if (pl.refuse) return { rec, refuse: true, rounds: round };
+    rec = budget.applyMarks(rec, pl.marks);
+    if (pl.summarize == null) return { rec, stop: pl.stop, rounds: round };
+    rec = summary.applySummary(rec, pl.summarize, summarizer());
+  }
+  return { rec, stop: false, rounds: 3 };
+}
+
+const brief = freeze(convo(2, 300));
+const quiet = budget.plan(brief, FIXED);
+check("under its caps, nothing is set aside and nothing summarised: the prefix does not move",
+  !quiet.marks.tools.length && !quiet.marks.pages.length && quiet.summarize == null && !quiet.stop);
+
+// THIS TURN: one question, eight large results.
+const turn = { ...convo(0), messages: [{ role: "user", text: "q", page: "{}" }] };
+for (let i = 0; i < 8; i++) {
+  turn.messages.push({ role: "assistant", text: "", calls: [{ id: `p${i}`, name: "builder_stats_read", args: {} }] });
+  turn.messages.push({ role: "tool", id: `p${i}`, name: "builder_stats_read", ok: true, line: "x", result: "z".repeat(5000) });
+}
+freeze(turn);
+const pTurn = budget.plan(turn, FIXED);
+const pIdx = turn.messages.map((m, i) => (m.role === "tool" ? i : -1)).filter((i) => i >= 0);
+check("this turn over its cap: its oldest results go first, the newest two stay",
+  pTurn.marks.tools.length > 0 && same(pTurn.marks.tools, pIdx.slice(0, pTurn.marks.tools.length))
+  && !pTurn.marks.tools.includes(pIdx[7]) && !pTurn.marks.tools.includes(pIdx[6]), JSON.stringify(pTurn.marks.tools));
+const pAfter = within(budget.applyMarks(turn, pTurn.marks));
+check("...toward its low water mark, not just under the line — as far as the newest two allow",
+  pAfter.z.P <= pAfter.c.P && (pAfter.z.P <= pAfter.c.P * 0.6 || pTurn.marks.tools.length === 6), JSON.stringify([pAfter.z.P, pAfter.c.P]));
 check("marks are written into a new record, the old one untouched",
-  marked.messages[toolIdx[0]].masked === true && !big.messages[toolIdx[0]].masked);
+  budget.applyMarks(turn, pTurn.marks).messages[pIdx[0]].masked === true && !turn.messages[pIdx[0]].masked);
 check("a set-aside result says how to get it back",
-  /set aside.*call it again/.test(view(marked, { rules: RULES, memory: "", tools: TOOLS }).turns[2].text));
-check("the estimate reads CJK at about twice Latin",
-  budget.estimate("你".repeat(100)) > budget.estimate("a".repeat(100)) * 1.8);
+  /set aside.*call it again/.test(view(budget.applyMarks(turn, pTurn.marks), FIXED).turns[2].text));
+
+const wordy = { ...convo(0), messages: [{ role: "user", text: "q", page: "{}" }] };
+for (let i = 0; i < 20; i++) wordy.messages.push({ role: "assistant", text: "话".repeat(600), calls: [{ id: `w${i}`, name: "x", args: {} }] });
+check("a turn over its cap with nothing left to set aside ends, rather than being sent",
+  budget.plan(freeze(wordy), FIXED).stop === true && budget.plan(brief, FIXED).stop === false);
+
+// HISTORY: earlier results go before anything is summarised.
+const hist = freeze(convo(10, 3000));
+const pHist = budget.plan(hist, FIXED);
+check("history over its cap: earlier results are set aside before any summary",
+  pHist.marks.tools.length > 0 && pHist.summarize == null, JSON.stringify([pHist.marks.tools.length, pHist.summarize]));
+const talky = { ...convo(0), messages: [] };
+for (let i = 0; i < 40; i++) talky.messages.push({ role: "user", text: "长".repeat(600), page: "{}" }, { role: "assistant", text: "答".repeat(600), calls: [] });
+freeze(talky);
+const pTalk = budget.plan(talky, FIXED);
+check("words alone over the cap: the oldest turns are summarised, at a reader turn",
+  pTalk.summarize != null && talky.messages[pTalk.summarize].role === "user", String(pTalk.summarize));
+const input = summary.summaryInput(talky, 4, (c) => c.name);
+check("the summariser is given the turns before the cut and none after",
+  (input.match(/\[reader\]/g) || []).length === 2 && input.startsWith("<record>"));
+const summed = summary.applySummary(talky, pTalk.summarize, "S".repeat(20000));
+check("a summary is cut to its cap whatever the model wrote", estimate(summed.summary.text) <= CAPS.summary);
+check("what is sent starts from the summary", view(summed, FIXED).turns[0].text.startsWith("<summary of the conversation so far>"));
+check("a window too small for the fixed zones is refused, not run badly",
+  budget.plan(brief, FIXED, { context: 9000 }).refuse === true && budget.plan(brief, FIXED).refuse === false);
+
+// FOR EVER: a seeded conversation of hundreds of turns, every size random, the
+// maintenance run before every request. After it, every zone is under its cap
+// and the whole under W; no message is ever removed and no mark undone.
+let seed = 42;
+const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+const words = (n) => Array.from({ length: n }, () => (rnd() < 0.5 ? "伤害" : "dmg ")).join("");
+const opts = [{}, { context: 32000 }, { context: 1000000 }, { budget: 40000 }];
+let bad = [], rounds = 0, summaries = 0, stops = 0;
+for (const o of opts) {
+  let rec = { ...convo(0), messages: [] };
+  for (let t = 0; t < 250; t++) {
+    rec = { ...rec, messages: [...rec.messages, { role: "user", text: words(Math.floor(rnd() * 3000)), page: words(Math.floor(rnd() * 1500)) }] };
+    const steps = Math.floor(rnd() * 7);
+    for (let st = 0; st <= steps; st++) {
+      const before = rec;
+      const m = maintain(rec, () => words(Math.floor(rnd() * 4000)), o);
+      rec = m.rec;
+      rounds = Math.max(rounds, m.rounds);
+      if (rec.summary !== before.summary) summaries++;
+      if (rec.messages.length !== before.messages.length || before.messages.some((x, i) => x.masked && !rec.messages[i].masked)) bad.push(`t${t}: record changed shape`);
+      if (m.stop) { stops++; break; }
+      const w = within(rec, o);
+      if (!w.ok) { bad.push(`t${t} ${JSON.stringify(o)}: H ${w.z.H}/${w.c.H} P ${w.z.P}/${w.c.P} W ${w.c.W}`); break; }
+      if (st === steps) { rec = { ...rec, messages: [...rec.messages, { role: "assistant", text: words(Math.floor(rnd() * 800)), calls: [] }] }; break; }
+      const id = `c${t}-${st}`;
+      rec = { ...rec, messages: [...rec.messages,
+        { role: "assistant", text: words(Math.floor(rnd() * 200)), calls: [{ id, name: "builder_stats_read", args: {} }] },
+        { role: "tool", id, name: "builder_stats_read", ok: true, line: "x", result: clip(words(Math.floor(rnd() * 20000)), CAPS.result) }] };
+    }
+  }
+}
+check("over 1,000 turns in four windows, every zone stays under its cap and the whole under W",
+  !bad.length, bad.slice(0, 3).join(" | "));
+check("...the maintenance settles within two rounds, and summaries did happen", rounds <= 2 && summaries > 10, JSON.stringify({ rounds, summaries, stops }));
+
+// ---- small pieces ---------------------------------------------------------------------
+
+check("the estimate reads CJK at about twice Latin", estimate("你".repeat(100)) > estimate("a".repeat(100)) * 1.8);
+check("a result, the reader's words and the page are each sent cut to their caps, whatever the record holds",
+  sizeOf({ role: "tool", name: "x", result: "r".repeat(90000) }) <= CAPS.result
+  && sizeOf({ role: "user", text: "t".repeat(90000), page: "p".repeat(90000) }) <= CAPS.text + CAPS.page + 10);
+check("a clipped text fits its cap and says how much is missing",
+  estimate(clip("x".repeat(50000), 500)) <= 500 && /cut: \d+ more characters/.test(clip("x".repeat(50000), 500)));
 check("calibration moves toward what the provider billed",
   budget.calibrate(1, 1000, 2000) > 1 && budget.calibrate(1, 1000, 500) < 1);
 check("a reply's cost counts cached input at a tenth",
   Math.abs(budget.cost([1, 2], { input: 1000, cached: 1000, output: 0 }) - 0.0001) < 1e-12);
-
-// ---- the summary: all but the newest four turns -----------------------------------
-
-const long = freeze(convo(7, 4000));
-const users = long.messages.map((m, i) => (m.role === "user" ? i : -1)).filter((i) => i >= 0);
-const cut = summary.wantsSummary(long, { context: 12000, fixed: "", ratio: 1 });
-check("past the budget the cut is the fourth-newest reader turn", cut === users[users.length - 4], String(cut));
-const input = summary.summaryInput(long, cut, (c) => c.name);
-check("the summariser is given the turns before the cut and none after",
-  input.includes("[reader] question 0") && !input.includes("question 3") && input.startsWith("<record>"));
-const summed = summary.applySummary(long, cut, "SUMMARY");
-const afterSum = sent(summed);
-check("what is sent starts from the summary and keeps the four turns",
-  afterSum[0].text.startsWith("<summary of the conversation so far>\nSUMMARY") && afterSum.filter((m) => m.role === "user").length === 4);
-check("an already-summarised record is not summarised again at the same cut",
-  summary.wantsSummary(summed, { context: 12000, fixed: "", ratio: 1 }) === null);
 
 // ---- 2: a number no tool returned is marked ---------------------------------------
 
