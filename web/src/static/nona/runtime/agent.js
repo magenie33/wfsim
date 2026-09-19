@@ -229,7 +229,7 @@ export function createAgent(door) {
     const asked = s.conv.messages.length;
     s.busy = true; s.abort = new AbortController(); emit({ type: "busy" });
     const signal = s.abort.signal;
-    let retried = false;
+    let retried = false, nudged = false;
     const seen = [];
     try {
       for (let step = 0; step < MAX_STEPS; step++) {
@@ -261,6 +261,15 @@ export function createAgent(door) {
         }
         append({ role: "assistant", text: out.text, calls: out.calls, usage: out.usage || null });
         await save();
+        // A TURN ENDED IN SILENCE is sent back once, from the page: some models
+        // stop with neither words nor calls, and the reader would see nothing.
+        if (!String(out.text || "").trim() && !out.calls.length) {
+          if (nudged) { say("note", "she gave no answer"); return; }
+          nudged = true;
+          append({ role: "check", text: "Your last reply was empty. Answer the reader now, or call a tool if something is still to be done." });
+          await save();
+          continue;
+        }
         if (!out.calls.length) return;
         for (const call of out.calls) {
           if (signal.aborted) return;

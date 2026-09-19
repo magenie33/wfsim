@@ -64,7 +64,12 @@ const mock = createServer((req, res) => {
     const done = anthropic
       ? body.messages.flatMap((m) => (Array.isArray(m.content) ? m.content : [])).filter((b) => b.type === "tool_result").length
       : body.messages.filter((m) => m.role === "tool").length;
-    const step = SCRIPT[Math.min(done, SCRIPT.length - 1)];
+    // A MODEL THAT STOPS IN SILENCE: asked for a "blank", it answers with
+    // nothing at all — until the page's check comes back to it.
+    const all = JSON.stringify(body.messages.filter((m) => m.role !== "system"));
+    const step = all.includes("blank please")
+      ? { text: all.includes("<check>") ? "Answered after the check." : "" }
+      : SCRIPT[Math.min(done, SCRIPT.length - 1)];
     const id = `call_${done}`;
     // STREAMED WHEN ASKED, in pieces the way a provider sends them: text in two
     // halves, a tool call's arguments split mid-JSON, usage at the end.
@@ -75,7 +80,7 @@ const mock = createServer((req, res) => {
       const half = Math.floor(args.length / 2);
       if (anthropic) {
         send({ type: "message_start", message: { usage: { input_tokens: 200, cache_read_input_tokens: 800, output_tokens: 1 } } });
-        if (step.text) {
+        if ("text" in step) {
           send({ type: "content_block_start", index: 0, content_block: { type: "text", text: "" } });
           send({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text: step.text.slice(0, 10) } });
           send({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text: step.text.slice(10) } });
@@ -87,7 +92,7 @@ const mock = createServer((req, res) => {
         send({ type: "message_delta", usage: { output_tokens: 20 } });
         send({ type: "message_stop" });
       } else {
-        if (step.text) {
+        if ("text" in step) {
           send({ choices: [{ delta: { content: step.text.slice(0, 10) } }] });
           send({ choices: [{ delta: { content: step.text.slice(10) } }] });
         } else {
@@ -101,8 +106,8 @@ const mock = createServer((req, res) => {
       return;
     }
     const out = anthropic
-      ? { content: step.text ? [{ type: "text", text: step.text }] : [{ type: "tool_use", id, name: step.name, input: step.args }] }
-      : { choices: [{ message: step.text ? { role: "assistant", content: step.text }
+      ? { content: "text" in step ? [{ type: "text", text: step.text }] : [{ type: "tool_use", id, name: step.name, input: step.args }] }
+      : { choices: [{ message: "text" in step ? { role: "assistant", content: step.text }
         : { role: "assistant", content: null, tool_calls: [{ id, type: "function", function: { name: step.name, arguments: JSON.stringify(step.args) } }] } }] };
     res.writeHead(200, { ...cors, "Content-Type": "application/json" });
     res.end(JSON.stringify(out));
@@ -230,6 +235,29 @@ check("both conversations were kept, titled from what was asked", kept.list.leng
   JSON.stringify(kept.list));
 check("a kept conversation reopens with its trail", kept.log.filter((c) => /tool ok/.test(c)).length === 2 && kept.log.some((c) => /assistant/.test(c)),
   JSON.stringify(kept.log));
+
+// ---- a turn ended in silence is sent back once --------------------------------
+
+seen.length = 0;
+const blank = await evaluate(`(async () => {
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.setItem("wfsim-nona", JSON.stringify({ proto: "openai", base: ${JSON.stringify(MOCK + "/v1")}, key: "test", remember: true, model: "mock" }));
+  document.getElementById("nona-fab").click();
+  document.getElementById("nona-new").click();
+  document.getElementById("nona-input").value = "blank please";
+  document.getElementById("nona-send").click();
+  await wait(300);
+  const busy = () => document.getElementById("nona-send").classList.contains("busy");
+  for (let i = 0; i < 40 && busy(); i++) await wait(250);
+  const log = [...document.querySelectorAll("#nona-log .nona-msg")].map(e => e.className + " | " + e.textContent);
+  document.getElementById("nona-close").click();
+  return log;
+})()`, { awaitPromise: true });
+const blankSent = seen.filter((x) => x.body.tools);
+check("a reply with nothing in it is sent back once by the page, and she then answers",
+  blankSent.length === 2 && JSON.stringify(blankSent[1].body.messages).includes("<check>")
+  && blank.some((l) => /assistant \| Answered after the check/.test(l)) && blank.some((l) => /nona-msg note/.test(l)),
+  JSON.stringify([blankSent.length, blank]));
 
 // ---- memory rides every request, except an incognito one ----------------------
 

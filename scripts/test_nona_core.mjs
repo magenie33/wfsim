@@ -82,6 +82,13 @@ check("notes, cards and memory chips are drawn, never sent", (() => {
   return sent(r).every((m) => record.SENT_ROLES.includes(m.role));
 })());
 
+check("a reply with neither words nor calls is not sent; the page's check is, as the reader's side of the turn", (() => {
+  const r = { ...convo(0), messages: [{ role: "user", text: "q", page: "{}" }, { role: "assistant", text: " ", calls: [] },
+    { role: "check", text: "Your last reply was empty." }] };
+  const v = view(freeze(r), { rules: RULES, memory: "", tools: TOOLS });
+  return v.turns.length === 2 && v.turns[1].role === "user" && v.turns[1].text === "<check>Your last reply was empty.</check>";
+})());
+
 // ---- 6: the prefix is stable -------------------------------------------------------
 
 const r2 = convo(4, 100);

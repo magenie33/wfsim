@@ -58,6 +58,7 @@ export function mountPanel(door, agent) {
       calling = null;
       el.classList.add(m.ok === false ? "no" : "ok");
     } else if (m.role === "note") line("note", m.text);
+    else if (m.role === "check") line("note", tr("she stopped without answering, so the page asked her to finish"));
     else if (m.role === "card") drawCard(door, m.pair);
     else if (m.role === "memory") drawChip(m.id);
   }

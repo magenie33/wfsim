@@ -109,6 +109,7 @@ Conversation { v, id, title, pinned, created_at, updated_at, weapon,
 Message = { role: "user", text, page, at, pageMasked? }
         | { role: "assistant", text, calls: {id, name, args}[], usage? }
         | { role: "tool", id, name, ok, line, result, masked? }
+        | { role: "check", text }                     // the page, in the reader's place: a turn she ended in silence, sent back once
         | { role: "note", text }                      // shown, never sent
         | { role: "card", pair: {copy, from, state} } // shown, never sent
         | { role: "memory", id }                      // shown, never sent

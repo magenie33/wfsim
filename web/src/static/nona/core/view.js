@@ -34,18 +34,22 @@ export function skillSizeOf(m) {
   if (m.role === "tool" && m.skills && !m.masked) return estimate(toolText(m));
   return 0;
 }
+export const checkText = (m) => `<check>${m.text}</check>`;
 export function sizeOf(m) {
   if (m.role === "user") return estimate(userText(m)) - skillSizeOf(m);
+  if (m.role === "check") return estimate(checkText(m));
   if (m.role === "assistant") return estimate((m.text || "") + JSON.stringify(m.calls || []));
   if (m.role === "tool") return estimate(toolText(m)) - skillSizeOf(m);
   return 0;
 }
 
 /// The messages sent, from the summary on: the ones after it, the first of which
-/// carries the summary ahead of its own text.
+/// carries the summary ahead of its own text. A reply with neither words nor
+/// calls says nothing, and some providers refuse one, so it is not sent.
+const blank = (m) => m.role === "assistant" && !String(m.text || "").trim() && !(m.calls || []).length;
 export function sent(record) {
   const from = record.summary ? record.summary.upto : 0;
-  return record.messages.slice(from).filter((m) => SENT_ROLES.includes(m.role))
+  return record.messages.slice(from).filter((m) => SENT_ROLES.includes(m.role) && !blank(m))
     .map((m, i) => (i === 0 && record.summary ? { ...m, summary: record.summary } : m));
 }
 
@@ -56,6 +60,7 @@ export function view(record, { rules, memory, tools }) {
     system: [rules, memory].filter(Boolean),
     tools,
     turns: sent(record).map((m) => (m.role === "user" ? { role: "user", text: (m.summary ? summaryText(m.summary) : "") + userText(m) }
+      : m.role === "check" ? { role: "user", text: (m.summary ? summaryText(m.summary) : "") + checkText(m) }
       : m.role === "assistant" ? { role: "assistant", text: m.text || "", calls: m.calls || [] }
       : { role: "tool", id: m.id, name: m.name, text: toolText(m) })),
   };

@@ -61,7 +61,8 @@ one, an incognito chat is not kept, and the key is kept for the tab unless the
 reader asks to remember it. Verified to bite: with the branch policy disabled
 and the incognito guard removed from the save, seven assertions fail; with the
 preload off, or a skill dropped from the door, the catalogue and preload
-assertions fail.
+assertions fail. A model that answers with nothing is sent the page's check
+once and then answers; with the check removed, that assertion fails.
 
 ## `test_nona_core`
 

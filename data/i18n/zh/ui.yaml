@@ -89,6 +89,10 @@ ui:
   "working on a copy": 在副本上操作
   "step limit reached": 已达到步数上限
   "stopped": 已停止
+  "she stopped without answering, so the page asked her to finish": 她没有回答就停下了，页面已提醒她继续
+  "she gave no answer": 她没有给出回答
+  "this question has taken many steps — ask me to go on and I will continue from here": 这个问题的步骤太多了——让我继续，我会从这里接着做
+  "This model's context window is too small for Nona.": 这个模型的上下文窗口太小，九九用不了。
   "The provider could not be reached from the browser — the network failed, or it does not accept requests from a web page (CORS).": 浏览器连不上这个服务商——可能是网络问题，也可能它不接受网页直接发来的请求（CORS）。
   # THE WARFRAME BUILDER. The stat names are DE's own, read off the zh card text
   # of the mods that grant them (Intensify 技能强度, Continuity 技能持续时间 …).

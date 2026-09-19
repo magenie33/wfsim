@@ -16,8 +16,10 @@ export const FROZEN = {
   settings: ["v", "base", "proto", "model", "context", "price", "remember", "concise", "key"],
 };
 
-/// The roles a model is sent. The others are drawn in the panel only.
-export const SENT_ROLES = ["user", "assistant", "tool"];
+/// The roles a model is sent. The others are drawn in the panel only. A
+/// `check` is the page speaking to her in the reader's place — a turn she
+/// ended without answering, sent back once.
+export const SENT_ROLES = ["user", "assistant", "tool", "check"];
 
 export function newConversation({ id, now, weapon }) {
   return { v: V, id, title: "", pinned: false, created_at: now, updated_at: now, weapon: weapon || null,
