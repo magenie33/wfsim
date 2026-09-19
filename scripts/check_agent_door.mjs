@@ -288,6 +288,22 @@ const fight = await evaluate(`(async () => {
     out.rulePruned = classRuleOf(r.class, r.rule) === undefined;
   }
   out.badTrigger = await window.wfsim.do("simulator.trigger.set", { id: "no_such_trigger", off: true });
+  out.auras = await window.wfsim.do("simulator.auras.list", {});
+  const au = out.auras.auras.find(x => x.stacks) || out.auras.auras[0];
+  out.aura = await window.wfsim.do("simulator.aura.set", { aura: au.id, count: 4 });
+  out.auraSeen = (sim.auras || []).find(a => a.id === au.id);
+  out.auraMax = au.stacks ? 4 : 1;
+  out.auraOff = await window.wfsim.do("simulator.aura.set", { aura: au.id, count: 0 });
+  out.auraGone = !(sim.auras || []).some(a => a.id === au.id);
+  out.abilities = await window.wfsim.do("simulator.abilities.list", {});
+  const ab = out.abilities.abilities.find(x => x.elements) || out.abilities.abilities[0];
+  out.ability = await window.wfsim.do("simulator.ability.set", { ability: ab.id, on: true, ...(ab.elements ? { element: ab.elements[ab.elements.length - 1] } : {}) });
+  out.abilitySeen = wfPick(ab.id);
+  out.abilityEl = ab.elements ? ab.elements[ab.elements.length - 1] : null;
+  out.strength = await window.wfsim.do("simulator.strength.set", { percent: 250 });
+  out.strengthSeen = sim.ability_strength === 2.5;
+  out.abilityOff = await window.wfsim.do("simulator.ability.set", { ability: ab.id, on: false });
+  out.abilityGone = !wfPick(ab.id);
   return out;
 })()`, { awaitPromise: true });
 
@@ -299,6 +315,13 @@ if (fight.rule) {
     fight.rule.ok && fight.ruleSeen && fight.ruleSame.ok && fight.rulePruned, JSON.stringify([fight.rule, fight.ruleSame]));
 }
 check("a trigger that does not exist is refused", fight.badTrigger.ok === false, JSON.stringify(fight.badTrigger));
+check("a squad aura is run by as many as it stacks for, and removed",
+  fight.aura.ok && fight.auraSeen && fight.auraSeen.count === fight.auraMax && fight.auraOff.ok && fight.auraGone,
+  JSON.stringify([fight.aura, fight.auraSeen]));
+check("a Warframe ability runs with the element asked for, at the strength set, and stops",
+  fight.ability.ok && fight.abilitySeen && (!fight.abilityEl || fight.abilitySeen.element === fight.abilityEl)
+  && fight.strength.ok && fight.strengthSeen && fight.abilityOff.ok && fight.abilityGone,
+  JSON.stringify([fight.ability, fight.abilitySeen]));
 
 // ---- the search's scope, set through the page's own rules ---------------------
 

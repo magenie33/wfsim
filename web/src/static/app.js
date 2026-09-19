@@ -15933,19 +15933,30 @@ function renderSquad(host, w, sim, opts) {
   }));
   box.querySelectorAll("[data-sqcount]").forEach((el) => el.addEventListener("change", () => {
     const i = num(el, "sqcount");
-    // 1-4: a squad is four people, and a count of zero is the remove button.
-    const n = Math.min(4, Math.max(1, Math.round(Number(el.value) || 1)));
-    if (i >= 0 && sim.auras[i]) { sim.auras[i] = { ...sim.auras[i], count: n }; touched(); }
+    if (i >= 0 && sim.auras[i]) { setSquadAura(sim.auras[i].id, Math.max(1, Number(el.value) || 1)); touched(); }
   }));
   box.querySelectorAll("[data-sqdrop]").forEach((el) => el.addEventListener("click", () => {
-    sim.auras = auras.filter((_, k) => k !== num(el, "sqdrop"));
-    touched();
+    const a = auras[num(el, "sqdrop")];
+    if (a) { setSquadAura(a.id, 0); touched(); }
   }));
   box.querySelectorAll("[data-sqadd]").forEach((el) => el.addEventListener("change", () => {
     if (!el.value) return;
-    sim.auras = auras.concat([{ id: el.value, count: 1 }]);
+    setSquadAura(el.value, 1);
     touched();
   }));
+}
+
+/// HOW MANY OF THE SQUAD RUN AN AURA — 1 to 4, because a squad is four people;
+/// 0 removes it. An aura that does not stack with itself counts once whatever
+/// is asked. Its place in the list is kept, so the rows do not jump.
+function setSquadAura(id, count) {
+  const list = sim.auras || [];
+  if (!count) { sim.auras = list.filter((a) => a.id !== id); return; }
+  const d = AURAS().find((x) => x.id === id);
+  const n = d && d.squad_stacking ? Math.min(4, Math.max(1, Math.round(count))) : 1;
+  sim.auras = list.some((a) => a.id === id)
+    ? list.map((a) => (a.id === id ? { ...a, count: n } : a))
+    : list.concat([{ id, count: n }]);
 }
 
 // The unit's portrait, or NOTHING — never an empty box holding its place.
@@ -16357,34 +16368,35 @@ function renderWfBuffs(host, readonly) {
   }
   const touched = () => { markScenarioDirty(); renderSim(); };
   const str = $(`${host}-str`);
-  if (str) str.addEventListener("change", () => {
-    sim.ability_strength = Math.max(0, Number(str.value) || 0) / 100;
-    touched();
-  });
+  if (str) str.addEventListener("change", () => { setAbilityStrength(Number(str.value) || 0); touched(); });
   box.querySelectorAll("[data-wfel]").forEach((el) => el.addEventListener("change", () => {
-    const p = wfPick(el.dataset.wfel);
-    if (p) p.element = el.value;
+    setWfAbility(el.dataset.wfel, true, el.value);
     touched();
   }));
   box.querySelectorAll("[data-wf]").forEach((el) => el.addEventListener("change", () => {
-    const id = el.dataset.wf;
-    sim.abilities = (sim.abilities || []).filter((a) => a.id !== id);
-    // TICKING IT OPENS IT AT THE WIKI'S OWN DURATION, not at "whole fight":
-    // the honest default for "I cast Roar" is one Roar, and the whole-fight
-    // box is the deliberate other question.
-    // `secs: null` = the whole engagement. The only thing the page offers
-    // today, and the honest question to ask of a build: what is this weapon
-    // worth UNDER the buff, rather than around it.
-    if (el.checked) {
-      const def = wfAbilities().find((a) => a.id === id);
-      // AN EXPLICIT ELEMENT from the first tick, where there is a choice: a
-      // pick that omits it is answered by the definition's first entry, and a
-      // player reading the card should see the same thing the sim runs.
-      const first = def && (def.elements || [])[0];
-      sim.abilities.push(first ? { id, secs: null, element: first } : { id, secs: null });
-    }
+    setWfAbility(el.dataset.wf, el.checked);
     touched();
   }));
+}
+
+/// The fight's Ability Strength, typed in percent as the arsenal shows it.
+function setAbilityStrength(percent) {
+  sim.ability_strength = Math.max(0, percent) / 100;
+}
+
+/// A WARFRAME ABILITY RUNNING IN THE FIGHT, or not. `secs: null` is the whole
+/// engagement — the one question the page asks today: what is this weapon
+/// worth UNDER the buff. Where the ability offers an element, a pick always
+/// names one (the definition's first by default), so what the card shows is
+/// what the sim runs; an element given to one already running changes it.
+function setWfAbility(id, on, element) {
+  const was = wfPick(id);
+  if (on && was) { if (element) was.element = element; return; }
+  sim.abilities = (sim.abilities || []).filter((a) => a.id !== id);
+  if (!on) return;
+  const def = wfAbilities().find((a) => a.id === id);
+  const el = element || (def && (def.elements || [])[0]);
+  sim.abilities.push(el ? { id, secs: null, element: el } : { id, secs: null });
 }
 
 /// THE RUN COUNT, on its own — the page's, not the fight's.
@@ -23499,8 +23511,6 @@ const AGENT_EXEMPT = [
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
   { sel: "#enemy-block", kind: "todo", why: "making custom targets" },
-  { sel: "#sim-squad", kind: "todo", why: "squad auras and shards" },
-  { sel: "#wfbuff-block", kind: "todo", why: "Warframe ability buffs" },
 ];
 
 /// THE OPEN RIVEN AS A CALLER READS IT: what the engine made of it — the
@@ -23527,6 +23537,89 @@ const agentMarks = (map, name) => {
 
 /// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
+  {
+    id: "simulator.auras.list",
+    query: true,
+    what: "List the squad auras, which of them pay this weapon anything, which stack across the squad, and how many run each in this fight.",
+    anchor: "#sim-squad",
+    needs_weapon: true,
+    args: {},
+    run() {
+      const paid = new Set((weaponInfo($("weapon").value) || {}).auras || []);
+      const on = new Map((sim.auras || []).map((a) => [a.id, a.count || 1]));
+      return { auras: AURAS().map((x) => ({ id: x.id, name: LN("auras", x.id, x.name), pays_this_weapon: paid.has(x.id),
+        stacks: !!x.squad_stacking, ...(on.has(x.id) ? { running: on.get(x.id) } : {}) })) };
+    },
+  },
+  {
+    id: "simulator.aura.set",
+    what: "Set how many of the squad run an aura (1 to 4 for one that stacks, else 1); 0 removes it. An aura is the fight's, never the build's.",
+    anchor: "#sim-squad",
+    needs_weapon: true,
+    args: {
+      aura: { kind: "string", required: true, what: "aura id" },
+      count: { kind: "number", required: true, min: 0, max: 4, what: "players running it; 0 removes" },
+    },
+    run({ aura, count }) {
+      if (!AURAS().some((x) => x.id === aura)) return agentNo("bad_argument", { argument: "aura", alternatives: AURAS().map((x) => x.id).slice(0, 30) });
+      setSquadAura(aura, count);
+      refreshPanel(); markScenarioDirty(); renderSim();
+      return { auras: sim.auras };
+    },
+  },
+  {
+    id: "simulator.abilities.list",
+    query: true,
+    what: "List the Warframe abilities that can run in the fight as buffs, with each one's value at the fight's ability strength, its element choices, whether it is on, and whether a stronger one of its kind supersedes it.",
+    anchor: "#sim-wfbuffs",
+    needs_weapon: true,
+    args: {},
+    run() {
+      const running = wfRunning();
+      return {
+        ability_strength_percent: Math.round((Number(sim.ability_strength) || 0) * 100),
+        abilities: wfAbilities().map((a) => {
+          const p = wfPick(a.id);
+          return { id: a.id, name: wfName(a), frame: a.frame, value: wfValueLabel(a), what: wfEffectLine(a),
+            ...((a.elements || []).length ? { elements: a.elements } : {}),
+            ...(p ? { on: true, ...(p.element ? { element: p.element } : {}), ...(running.has(a.id) ? {} : { superseded: true }) } : {}) };
+        }),
+      };
+    },
+  },
+  {
+    id: "simulator.ability.set",
+    what: "Run a Warframe ability as a buff for the whole fight (on=true) or stop it; where it offers one, choose its element.",
+    anchor: "#sim-wfbuffs",
+    needs_weapon: true,
+    args: {
+      ability: { kind: "string", required: true, what: "ability id" },
+      on: { kind: "boolean", required: true, what: "running or not" },
+      element: { kind: "string", what: "one of the ability's elements" },
+    },
+    run({ ability, on, element }) {
+      const def = wfAbilities().find((a) => a.id === ability);
+      if (!def) return agentNo("bad_argument", { argument: "ability", alternatives: wfAbilities().map((a) => a.id).slice(0, 30) });
+      if (element != null && !(def.elements || []).includes(element)) {
+        return agentNo("bad_argument", { argument: "element", alternatives: def.elements || [] });
+      }
+      setWfAbility(ability, on, element);
+      markScenarioDirty(); renderSim();
+      return { abilities: sim.abilities };
+    },
+  },
+  {
+    id: "simulator.strength.set",
+    what: "The Warframe's Ability Strength for the fight, in percent as the arsenal shows it; every ability buff scales with it.",
+    anchor: "#sim-wfbuffs",
+    needs_weapon: true,
+    args: { percent: { kind: "number", required: true, min: 0, max: 1000, what: "e.g. 250" } },
+    run({ percent }) {
+      setAbilityStrength(percent);
+      markScenarioDirty(); renderSim();
+      return { ability_strength_percent: percent };
+    },
+  },
   {
     id: "simulator.triggers.list",
     query: true,

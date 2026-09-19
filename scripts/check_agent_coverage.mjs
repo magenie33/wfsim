@@ -25,7 +25,7 @@ import { openApp } from "./cdp.mjs";
 
 // THE TODO RATCHET: lower it when a feature reaches the door, never raise it to
 // make a red run green.
-const TODO_MAX = 7;
+const TODO_MAX = 5;
 
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish, send } = app;
