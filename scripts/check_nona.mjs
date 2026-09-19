@@ -11,6 +11,9 @@
 //   * a tool call she makes lands on the page the reader is watching;
 //   * her first change branches the reader's build — the reader's own build is
 //     untouched afterwards, whatever the model decided.
+//
+// Everything is read off the page and the requests, never off her module's
+// internals; the pure logic under them is `test_nona_core`'s.
 import { createServer } from "node:http";
 import { openApp } from "./cdp.mjs";
 
@@ -120,10 +123,12 @@ const run = (provider, base) => evaluate(`(async () => {
   localStorage.setItem("wfsim-nona", JSON.stringify({ proto: ${JSON.stringify(provider === "anthropic" ? "anthropic" : "openai")}, base: ${JSON.stringify(base)}, key: "test", remember: true, model: "mock", price: [1, 2] }));
   document.getElementById("nona-fab").click();
   document.getElementById("nona-new").click();
+  for (let i = 0; i < 20 && !document.querySelector("#nona-suggest [data-q]"); i++) await wait(100);
   const suggested = [...document.querySelectorAll("#nona-suggest [data-q]")].map(e => e.dataset.q);
   document.getElementById("nona-input").value = "seat serration";
   document.getElementById("nona-send").click();
-  for (let i = 0; i < 80 && (nona.busy || !document.querySelector("#nona-log .assistant")); i++) await wait(250);
+  const busy = () => document.getElementById("nona-send").classList.contains("busy");
+  for (let i = 0; i < 80 && (busy() || !document.querySelector("#nona-log .assistant")); i++) await wait(250);
   const log = [...document.querySelectorAll("#nona-log .nona-msg")].map(e => e.className + " | " + e.textContent);
   const foot = document.getElementById("nona-foot-note").textContent;
   const card = !!document.querySelector("#nona-log .card [data-card=apply]");
@@ -184,117 +189,66 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
 
 // ---- conversations outlive the page, and reopen as they were -----------------
 
+/// The page's conversation picker, opened: each row's id and text.
+const PICKER = `(async () => {
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  for (let i = 0; i < 40 && !document.querySelector("#nona-conv"); i++) await wait(100);
+  document.getElementById("nona-conv").click();
+  await wait(150);
+  return [...document.querySelectorAll("#dd-menu .opt[data-v]")];
+})()`;
+
 await app.load("/weapons/Torid");
 const kept = await evaluate(`(async () => {
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
   document.getElementById("nona-fab").click();
-  for (let i = 0; i < 40 && !nona.list.length; i++) await wait(100);
-  const list = nona.list.map(c => ({ id: c.id, title: c.title, n: c.messages.length }));
-  if (!list.length) return { list, log: [] };
-  await nonaOpen(list[0].id);
+  let rows = [];
+  for (let i = 0; i < 20 && !rows.length; i++) { rows = await ${PICKER}; if (!rows.length) await wait(100); }
+  const list = rows.map(r => ({ id: r.dataset.v, text: r.textContent }));
+  if (rows.length) rows[0].click();
+  await wait(300);
   const log = [...document.querySelectorAll("#nona-log .nona-msg")].map(e => e.className);
   document.getElementById("nona-close").click();
   return { list, log };
 })()`, { awaitPromise: true });
-check("both conversations were kept, titled from what was asked", kept.list.length >= 2 && kept.list.every((c) => /seat serration/.test(c.title)),
+check("both conversations were kept, titled from what was asked", kept.list.length >= 2 && kept.list.every((c) => /seat serration/.test(c.text)),
   JSON.stringify(kept.list));
 check("a kept conversation reopens with its trail", kept.log.filter((c) => /tool ok/.test(c)).length === 2 && kept.log.some((c) => /assistant/.test(c)),
   JSON.stringify(kept.log));
 
-// ---- the second step: early turns summarised, the record kept whole ----------
+// ---- memory rides every request, except an incognito one ----------------------
 
-const sum = await evaluate(`(async () => {
-  const saved = nona.conv;
-  nona.conv = nonaNewConversation();
-  for (let i = 0; i < 7; i++) {
-    nona.conv.messages.push({ role: "user", text: "question " + i + (i === 1 ? " about the Plinx" : ""), page: "{}" });
-    nona.conv.messages.push({ role: "assistant", text: "", calls: [{ id: "s" + i, name: "builder_stats_read", args: {} }] });
-    nona.conv.messages.push({ role: "tool", id: "s" + i, name: "builder_stats_read", ok: true, line: "x", result: "y".repeat(4000) });
-    nona.conv.messages.push({ role: "assistant", text: "answer " + i });
-  }
-  const cfg = { context: 12000, model: "sum-test", proto: "openai", base: ${JSON.stringify(MOCK + "/v1")}, key: "t" };
-  nonaFitBudget(cfg, false);
-  const cut = nonaWantsSummary(cfg);
-  const users = nona.conv.messages.map((m, i) => (m.role === "user" ? i : -1)).filter(i => i >= 0);
-  if (cut != null) await nonaSummarize(cfg, cut, new AbortController().signal);
-  const sent = nonaSent(nona.conv);
-  const found = nonaHistorySearch("Plinx");
-  const out = { cut, expect: users[users.length - 4], summary: (nona.conv.summary || {}).text || "",
-    first: (sent[0] || {}).text || "", sentUsers: sent.filter(m => m.role === "user").length, found: found.found };
-  nona.conv = saved;
-  return out;
+const ask = (incognito) => evaluate(`(async () => {
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  document.getElementById("nona-fab").click();
+  document.getElementById("nona-new").click();
+  for (let i = 0; i < 20 && !document.querySelector("#nona-suggest [data-incog]"); i++) await wait(100);
+  if (${incognito}) document.querySelector("#nona-suggest [data-incog]").click();
+  document.getElementById("nona-input").value = "incognito question";
+  document.getElementById("nona-send").click();
+  await wait(300);
+  const busy = () => document.getElementById("nona-send").classList.contains("busy");
+  for (let i = 0; i < 80 && busy(); i++) await wait(250);
+  document.getElementById("nona-close").click();
+  document.getElementById("nona-fab").click();
+  const rows = (await ${PICKER}).map(r => r.textContent);
+  document.body.click();
+  document.getElementById("nona-close").click();
+  return rows;
 })()`, { awaitPromise: true });
-check("past the budget, all but the newest four turns are summarised", sum.cut === sum.expect && /SUMMARY/.test(sum.summary),
-  JSON.stringify(sum));
-check("...what is sent starts from the summary and keeps the four turns", /<summary/.test(sum.first) && sum.sentUsers === 4,
-  JSON.stringify([sum.first.slice(0, 60), sum.sentUsers]));
-check("...and the record stays whole: an early turn is still searchable", sum.found >= 1, JSON.stringify(sum.found));
-
-// ---- memory: backed by the reader's words, seen, undone, paused --------------
-
-const mem = await evaluate(`(async () => {
-  const saved = nona.conv;
-  localStorage.removeItem("wfsim-nona-memory");
-  nona.conv = nonaNewConversation();
-  nona.conv.messages.push({ role: "user", text: "我平时不用紫卡，记住这点" });
-  const said = nonaMemorySet({ slot: "riven_policy", value: "不用紫卡", quote: "不用紫卡" });
-  const guessed = nonaMemorySet({ slot: "content", value: "钢铁之路", quote: "钢铁之路" });
-  const block = nonaMemoryBlock();
-  const changed = nonaMemorySet({ slot: "riven_policy", value: "偶尔用紫卡", quote: "不用紫卡" });
-  const oneSlot = nonaMemory().items.filter(x => x.key === "riven_policy").length;
-  nonaMemoryUndo(changed.id);
-  const undone = nonaMemory().items.find(x => x.key === "riven_policy").value;
-  const m = nonaMemory(); m.paused = true; nonaMemoryStore(m);
-  const pausedBlock = nonaMemoryBlock();
-  const pausedSet = nonaMemorySet({ slot: "budget", value: "x", quote: "x" });
-  m.paused = false; nonaMemoryStore(m);
-  nona.conv.incognito = true;
-  const incogBlock = nonaMemoryBlock();
-  const before = (await nonaDb.all()).length;
-  await nonaSave();
-  const after = (await nonaDb.all()).length;
-  nona.conv = saved;
-  return { said, guessed, block, oneSlot, undone, pausedBlock, pausedSet, incogBlock, keptIncognito: after !== before };
-})()`, { awaitPromise: true });
-check("a memory the reader's own words back takes effect; one they did not say is only proposed",
-  mem.said.status === "active" && mem.guessed.status === "proposed", JSON.stringify([mem.said, mem.guessed]));
-check("...only the confirmed one reaches her", /riven_policy: 不用紫卡/.test(mem.block) && !/钢铁之路/.test(mem.block), mem.block);
-check("...a slot is written over in place, and undo brings the old value back", mem.oneSlot === 1 && mem.undone === "不用紫卡",
-  JSON.stringify([mem.oneSlot, mem.undone]));
-check("paused, memory is neither read nor written", mem.pausedBlock === "" && mem.pausedSet.ok === false);
-check("an incognito chat reads no memory and is not kept", mem.incogBlock === "" && mem.keptIncognito === false);
-
-// ---- a number she did not measure is marked -----------------------------------
-
-const marks = await evaluate(`(() => {
-  const html = nonaMarkNumbers(escHtml("1,234.5 DPS at 35% crit, 999.9 per hit, 12.0k total, slot 3"), [1234.5, 0.35, 12003]);
-  return [...html.matchAll(/nona-unmeasured[^>]*>([^<]+)</g)].map(m => m[1]);
-})()`);
-check("a number no tool returned is marked; measured ones, percentages of fractions, k-scaled and small counts are not",
-  JSON.stringify(marks) === JSON.stringify(["999.9"]), JSON.stringify(marks));
-
-// ---- the budget: old tool results are set aside, newest kept -----------------
-
-const budget = await evaluate(`(() => {
-  const saved = nona.conv;
-  nona.conv = nonaNewConversation();
-  for (let i = 0; i < 10; i++) {
-    nona.conv.messages.push({ role: "assistant", text: "", calls: [{ id: "t" + i, name: "builder_stats_read", args: {} }] });
-    nona.conv.messages.push({ role: "tool", id: "t" + i, name: "builder_stats_read", ok: true, line: "x", result: "x".repeat(6000) });
-  }
-  const cfg = { context: 20000, model: "budget-test" };
-  nonaFitBudget(cfg, false);
-  const soft = nona.conv.messages.filter(m => m.role === "tool").map(m => !!m.masked);
-  nonaFitBudget(cfg, true);
-  const hard = nona.conv.messages.filter(m => m.role === "tool").map(m => !!m.masked);
-  const sent = nonaToolText(nona.conv.messages[1]);
-  nona.conv = saved;
-  return { soft, hard, sent };
-})()`);
-check("past half the window the oldest tool results are set aside and the newest six kept",
-  budget.soft.slice(0, 4).every(Boolean) && budget.soft.slice(4).every((x) => !x), JSON.stringify(budget.soft));
-check("...forced, only the newest two stay", budget.hard.filter((x) => !x).length === 2, JSON.stringify(budget.hard));
-check("...and a set-aside result says how to get it back", /set aside/.test(budget.sent) && /call it again/.test(budget.sent), budget.sent);
+await evaluate(`localStorage.setItem("wfsim-nona-memory", JSON.stringify({ v: 1, paused: false, items: [{ id: "m1", kind: "profile",
+  key: "riven_policy", value: "no rivens", status: "active", source: { conversation: "c", quote: "no rivens", by: "user" },
+  created_at: Date.now(), updated_at: Date.now(), history: [] }] }))`);
+const memoryIn = () => JSON.stringify(seen.filter((x) => x.body.tools)[0].body).includes("riven_policy: no rivens");
+seen.length = 0;
+const plainRows = await ask(false);
+const plainHasMemory = memoryIn();
+seen.length = 0;
+const incogRows = await ask(true);
+check("her memory rides a request, and not an incognito one", plainHasMemory === true && memoryIn() === false,
+  JSON.stringify([plainHasMemory, memoryIn()]));
+check("an incognito chat is not kept", incogRows.filter((t) => /incognito question/.test(t)).length === plainRows.filter((t) => /incognito question/.test(t)).length
+  && plainRows.some((t) => /incognito question/.test(t)), JSON.stringify([plainRows, incogRows]));
 
 // ---- the settings: an address, a key, what it serves, a model picked ---------
 
@@ -312,8 +266,9 @@ const set = await evaluate(`(async () => {
   base.value = ${JSON.stringify(MOCK + "/v1")}; base.dispatchEvent(new Event("change"));
   const key = document.getElementById("nona-apikey");
   key.value = "test"; key.dispatchEvent(new Event("change"));
-  for (let i = 0; i < 40 && nonaDraft.state !== "ok" && nonaDraft.state !== "error"; i++) await wait(100);
-  out.state = nonaDraft.state; out.proto = nonaDraft.proto; out.status = document.querySelector(".nona-status").textContent;
+  for (let i = 0; i < 40 && !document.querySelector(".nona-status.good, .nona-status.bad"); i++) await wait(100);
+  out.state = document.querySelector(".nona-status.good") ? "ok" : "error";
+  out.status = document.querySelector(".nona-status").textContent;
   out.saveOff = document.getElementById("nona-save").disabled;
   // THE PAGE'S OWN SEARCHABLE DROPDOWN: open it, search, pick.
   document.getElementById("nona-model-dd").click();
@@ -327,7 +282,7 @@ const set = await evaluate(`(async () => {
   const pick = rows.find(r => r.dataset.v === "vendor/mock-tools");
   if (pick) pick.click();
   await wait(100);
-  out.model = nonaDraft.model;
+  out.model = document.getElementById("nona-model-dd").value;
   document.getElementById("nona-save").click();
   out.saved = JSON.parse(localStorage.getItem("wfsim-nona") || "{}");
   out.sessionKey = sessionStorage.getItem("wfsim-nona-key");
@@ -338,7 +293,7 @@ const set = await evaluate(`(async () => {
 check("with no key saved, the panel opens on its settings", set.settingsFirst === true);
 check("a quick fill puts an address in the address box", set.filled === true);
 check("the address and key are checked, and the protocol is detected",
-  set.state === "ok" && set.proto === "openai" && /2/.test(set.status), JSON.stringify([set.state, set.proto, set.status]));
+  set.state === "ok" && /OpenAI/.test(set.status) && /2/.test(set.status), JSON.stringify([set.state, set.status]));
 check("nothing is saved before a model is chosen", set.saveOff === true);
 check("the model list is the page's searchable dropdown, over the panel, with a tool-less model greyed",
   set.noToolsGreyed === true && set.popoverOnTop === true, JSON.stringify([set.noToolsGreyed, set.popoverOnTop]));

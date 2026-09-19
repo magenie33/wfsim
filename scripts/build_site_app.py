@@ -359,13 +359,13 @@ def keep_one_generation(out: Path, wrote: list[str]) -> None:
     # is kept. Starting from an empty set instead would delete it, which is the
     # tear this exists to prevent, happening once on the way to preventing it.
     manifest = out / GENERATION
-    previous = [f.name for f in out.iterdir() if f.is_file()]
+    previous = [f.name for f in out.iterdir()]
     if manifest.exists():
         previous = json.loads(manifest.read_text(encoding="utf-8")).get("names", [])
     keep = {*wrote, *previous, GENERATION}
     for old in out.iterdir():
         if old.name not in keep:
-            old.unlink()
+            shutil.rmtree(old) if old.is_dir() else old.unlink()
     manifest.write_text(json.dumps({"names": sorted(wrote)}, indent=1) + "\n",
                         encoding="utf-8", newline="\n")
 
@@ -445,15 +445,38 @@ def publish_hashed(html: str) -> str:
 
     app_url = place(APP / "app.js", "app", ".js")
     css_url = place(APP / "style.css", "style", ".css")
+    nona_url = place_nona(out, wrote)
 
     for was, now in ((quote_attr("/app.js"), quote_attr(app_url)),
-                     (quote_attr("/style.css"), quote_attr(css_url))):
+                     (quote_attr("/style.css"), quote_attr(css_url)),
+                     (quote_attr("/nona/index.js"), quote_attr(nona_url))):
         if was not in html:
             sys.exit(f"index.html: {was} not found — the page would name a file that is gone")
         html = html.replace(was, now)
     keep_one_generation(out, wrote)
-    print(f"assets: {app_url}  {css_url}  {worker_url}")
+    print(f"assets: {app_url}  {css_url}  {worker_url}  {nona_url}")
     return html
+
+
+def nona_files() -> list[Path]:
+    """Every file of Nona's module tree, in a fixed order."""
+    return sorted(p for p in (STATIC / "nona").rglob("*") if p.is_file())
+
+
+def place_nona(out: Path, wrote: list[str]) -> str:
+    """NONA'S MODULES AS ONE DIRECTORY, named by a digest over every file in it
+    — paths and bytes — so her relative imports keep working and a release that
+    changes any one of them is a new directory. docs/NONA.md §Loading."""
+    src = STATIC / "nona"
+    h = hashlib.sha256()
+    for f in nona_files():
+        h.update(f.relative_to(src).as_posix().encode("utf-8") + b"\0" + f.read_bytes())
+    name = f"nona.{h.hexdigest()[:12]}"
+    if (out / name).exists():
+        shutil.rmtree(out / name)
+    shutil.copytree(src, out / name)
+    wrote.append(name)
+    return f"/{ASSET_DIR}/{name}/index.js"
 
 
 def quote_attr(path: str) -> str:
@@ -479,6 +502,8 @@ def release_id() -> str:
     h = hashlib.sha256()
     for name in ("index.html", "app.js", "style.css", "worker.js"):
         h.update((STATIC / name).read_bytes())
+    for f in nona_files():
+        h.update(f.read_bytes())
     for name in ("wfsim_wasm.js", "wfsim_wasm_bg.wasm"):
         h.update((WASM_PKG / name).read_bytes())
     return h.hexdigest()[:12]

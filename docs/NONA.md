@@ -1,8 +1,7 @@
 # Nona (九九), the in-page agent
 
-**Status: this is the target structure; steps 1 and 2 of §"Moving in" have landed.**
-Until step 3 does, the code lives in `web/src/static/app.js` §NONA and still
-reads page variables where the door now answers; step 3 removes each one.
+**Status: steps 1–3 of §"Moving in" have landed; `check_nona_boundary` (step 4)
+is what is left before this structure is enforced rather than followed.**
 
 Nona is a model the reader brings their own key for, driving the page through
 the agent door (`docs/AGENT.md`). The door is the page's side of the contract;
@@ -23,7 +22,7 @@ wish, and this module has already shown what wishes turn into.
 | 4 | **The key goes only to the address the reader chose**, and is kept past the tab only if they ask. | `check_nona` (storage assertions); one `fetch` in the module (`runtime/transport.js`) |
 | 5 | **The record is whole and append-only.** Everything sent to a model is a pure function of the record, the settings, the memory and the tool table. Compaction writes marks into the record; it never rewrites or drops a message. | `test_nona_core` (view is deterministic; record unchanged by building it) |
 | 6 | **The prefix is stable.** Rules, memory and tools are byte-identical from one request to the next within a conversation, so a provider's prompt cache keeps matching. | `test_nona_core` (two consecutive views share their prefix byte for byte) |
-| 7 | **Every stored shape is versioned, and a name that ships is frozen.** Conversations, memory and settings live in readers' browsers; they are a wire. | `test_nona_core` (each old fixture migrates; `FROZEN` only shrinks) |
+| 7 | **Every stored shape is versioned, and a name that ships is frozen.** Conversations, memory and settings live in readers' browsers; they are a wire. | `test_nona_core` (each old fixture migrates; no shipped name leaves `FROZEN`) |
 | 8 | **Her tools are the door's table at request time**, plus her own few, appended after it in a fixed order. Nothing in her code lists what the page can do. | `check_nona` (tools sent = door + own) |
 
 ## The layers
@@ -75,12 +74,13 @@ web/src/static/nona/
     policy.js              branch-before-write, from the door's observation and actions
     agent.js               ask(): the loop; emits events
   ui/
+    kit.js                 the page's tr, dropdown and escaping (`wfsim.ui`), the reply markup
     panel.js  settings.js  cards.js  chips.js
 ```
 
 **Loading.** Native ES modules, no bundler and no dependencies, as everywhere
 else in the page. `index.html` loads `nona/index.js` with `type="module"`
-after `app.js`. The site build publishes the whole directory as
+after `app.js`, and it mounts on the page's `wfsim:ready`. The site build publishes the whole directory as
 `site/asset/nona.<digest>/`, the digest taken over every file in it, so relative
 imports keep working and a new release is a new directory; the dev server
 serves the embedded files at `/nona/…`. A file added under `nona/` and missing
@@ -151,18 +151,17 @@ same functions, so the two cannot drift.
 
 ## The page's side
 
-Everything she reads or changes is on the door. What the current code takes
-from `app.js` directly moves there first:
+Everything she reads or changes is on the door:
 
-| She needs | Today | On the door |
-| --- | --- | --- |
-| which build, scenario, search, riven and target are open; whether the fight is an official ruler | `activePreset`, `activeScenario`, `activeOptPreset`, `activeRivenId()`, `activeEnemyName()`, `officialScenarioActive()` | fields of `observe()` |
-| whether an action writes, and what it writes | `AGENT_ACTIONS`, `agentWritesFight()` | `actions[i].query` and a declared `writes` (build, scenario, search, riven, target, none) |
-| a build's contents, to compare her copy with the reader's | `loadPresetList`, `snapshotState` | a query `shell.preset.read` |
-| the reader taking her copy back | `storePresetList`, `whileApplying`, `pickPreset` | an action marked **`hand`**: offered to the page's own controls, never in `tools()` — a model cannot call it |
-| names of mods and arcanes, localized | `modById`, `arcaneById`, `tr` | the finders; the page's `tr` for her own ui strings, passed in at mount |
-| the leaderboard, for suggestions | `BOARD` | `builder.board.read` |
-| the page's dropdown | `ddButton` | a small ui kit the page exports at mount, declared in `index.js` |
+| She needs | On the door |
+| --- | --- |
+| which build, scenario, search, riven and target are open; whether the fight is an official ruler | `observe().open`, `observe().official_scenario` |
+| whether an action writes, and what it writes | `actions[i].query` and a declared `writes` (build, scenario, search, riven, target, prefs, bar, none) |
+| a build's contents, named, to compare her copy with the reader's | the query `shell.preset.read` |
+| the reader taking her copy back | `shell.preset.adopt`, an action marked **`hand`**: offered to the page's own controls, never in `tools()` — a model cannot call it |
+| the leaderboard, for suggestions | `builder.board.read` |
+| the page's translation, dropdown and escaping, for her own ui | `wfsim.ui` |
+| when the page has booted | `observe().ready` and the `wfsim:ready` event |
 
 `hand` is the rule `docs/AGENT.md` already states for outward actions —
 "a reader's gesture" — made checkable: an action a model must never call is
@@ -212,7 +211,8 @@ reader can see.
    unit-tested; not yet wired. *Landed.*
 3. **`runtime/`, `ui/`, `index.js`** — the module loads beside `app.js`, the
    §NONA section is deleted from it, the site build and the dev server serve
-   the directory, and `check_nona` passes unchanged.
+   the directory, and `check_nona` passes reading only the page and the
+   requests, its pure-logic cases left to `test_nona_core`. *Landed.*
 4. **`check_nona_boundary`** — invariant 1 made to fail, proven on a planted
    reference; the Status line above goes.
 

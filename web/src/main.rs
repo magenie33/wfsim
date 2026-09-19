@@ -36,6 +36,32 @@ const APP_JS: &str = include_str!("static/app.js");
 const STYLE_CSS: &str = include_str!("static/style.css");
 const LOGO_SVG: &str = include_str!("static/logo.svg");
 
+/// NONA'S MODULES, served at `/nona/<path>`. Every file under `static/nona/` is
+/// listed here and in no other way; `check_nona_boundary` fails on one missing.
+const NONA_FILES: &[(&str, &str)] = &[
+    ("index.js", include_str!("static/nona/index.js")),
+    ("core/budget.js", include_str!("static/nona/core/budget.js")),
+    ("core/measure.js", include_str!("static/nona/core/measure.js")),
+    ("core/memory.js", include_str!("static/nona/core/memory.js")),
+    ("core/prompt.js", include_str!("static/nona/core/prompt.js")),
+    ("core/record.js", include_str!("static/nona/core/record.js")),
+    ("core/summary.js", include_str!("static/nona/core/summary.js")),
+    ("core/tools.js", include_str!("static/nona/core/tools.js")),
+    ("core/view.js", include_str!("static/nona/core/view.js")),
+    ("core/protocols/anthropic.js", include_str!("static/nona/core/protocols/anthropic.js")),
+    ("core/protocols/openai.js", include_str!("static/nona/core/protocols/openai.js")),
+    ("core/protocols/sse.js", include_str!("static/nona/core/protocols/sse.js")),
+    ("runtime/agent.js", include_str!("static/nona/runtime/agent.js")),
+    ("runtime/policy.js", include_str!("static/nona/runtime/policy.js")),
+    ("runtime/store.js", include_str!("static/nona/runtime/store.js")),
+    ("runtime/transport.js", include_str!("static/nona/runtime/transport.js")),
+    ("ui/cards.js", include_str!("static/nona/ui/cards.js")),
+    ("ui/chips.js", include_str!("static/nona/ui/chips.js")),
+    ("ui/kit.js", include_str!("static/nona/ui/kit.js")),
+    ("ui/panel.js", include_str!("static/nona/ui/panel.js")),
+    ("ui/settings.js", include_str!("static/nona/ui/settings.js")),
+];
+
 // ---- main / server loop ------------------------------------------------
 
 fn main() {
@@ -332,6 +358,10 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &pairings_json(&value))
         }
+        ("GET", p) if p.starts_with("/nona/") => match NONA_FILES.iter().find(|(f, _)| *f == &p[6..]) {
+            Some((_, body)) => respond(&mut stream, "200 OK", "text/javascript; charset=utf-8", body.as_bytes()),
+            None => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
+        },
         ("GET", p) if p.starts_with("/pol/") => match pol_icon(&p[5..]) {
             Some((bytes, ct)) => respond_asset(&mut stream, ct, bytes),
             None => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
