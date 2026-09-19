@@ -49,6 +49,7 @@ export const memory = {
   forget(id) { let out; memory.change((m) => { const r = memoryOps.forget(m, id); out = r.result; return r.mem; }); return out; },
   pause: (on) => memory.change((m) => ({ ...m, paused: !!on })),
   clear: () => memory.change((m) => ({ ...memoryOps.emptyMemory(), paused: m.paused })),
+  restore: () => memory.change(memoryOps.restore),
 };
 
 // ---- the token estimate's correction, per model -------------------------------

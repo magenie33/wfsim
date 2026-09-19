@@ -30,3 +30,20 @@ export function drawChip(id) {
   log.appendChild(el);
   log.scrollTop = log.scrollHeight;
 }
+
+/// "NONA TIDIED HER MEMORY" — the profile rewritten shorter, and the version
+/// before it one tap away.
+export function drawMerged([before, after]) {
+  const log = $("nona-log");
+  if (!log) return;
+  const el = document.createElement("div");
+  el.className = "nona-msg memory merged";
+  el.innerHTML = `<span>${esc(tr("Nona tidied her memory"))}: ${before} → ${after}</span>`
+    + `<button class="ghost-btn small" data-mem="restore">${esc(tr("Undo"))}</button>`;
+  el.querySelector('[data-mem="restore"]').onclick = (e) => {
+    store.memory.restore();
+    e.currentTarget.replaceWith(document.createTextNode(` · ${tr("undone")}`));
+  };
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}

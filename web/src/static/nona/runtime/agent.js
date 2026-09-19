@@ -75,6 +75,22 @@ export function createAgent(door) {
     emit({ type: "open" });
   }
 
+  /// A PROFILE OVER ITS CAP, TIDIED by the model and taken only if the page can
+  /// check the result (`memoryOps.parseMerge`); otherwise it stays as it was.
+  /// It runs where M is taken anyway, so it never moves a prefix on its own.
+  async function tidyMemory(cfg, signal) {
+    if (s.conv.incognito) return;
+    const mem = store.memory.get();
+    if (!memoryOps.needsMerge(mem, Date.now())) return;
+    let text;
+    try { text = await transport.complete(cfg, memoryOps.MERGE_RULES, memoryOps.mergeInput(mem), signal); } catch (_) { return; }
+    const checked = memoryOps.parseMerge(mem, text, Date.now());
+    if (!checked.ok) return;
+    const before = mem.items.filter((x) => x.status === "active").length;
+    const next = store.memory.change((m) => memoryOps.merge(m, checked.lines, Date.now(), (i) => uid(`m${i}`)));
+    append({ role: "memory", merged: [before, next.items.filter((x) => x.status === "active").length] });
+  }
+
   /// M, FROZEN FOR A STRETCH: taken when the conversation starts and again at
   /// each summary, which breaks the cache anyway. A memory written in between
   /// is in the conversation as her tool result, so the prefix never moves for it.
@@ -109,6 +125,7 @@ export function createAgent(door) {
       if (pl.summarize == null) return { p, stop: pl.stop };
       const text = await transport.complete(cfg, summary.SUMMARY_RULES, summary.summaryInput(s.conv, pl.summarize, callLine), signal);
       s.conv = summary.applySummary(s.conv, pl.summarize, text);
+      await tidyMemory(cfg, signal);
       freezeMemory();
       p = parts(cfg);
       say("note", "the early part of this chat was summarised to save space");
@@ -219,7 +236,6 @@ export function createAgent(door) {
       const w = door.observe().weapon;
       c.title = record.titleOf(text, w && w.id === c.weapon ? w.name : null);
     }
-    if (!c.memory) freezeMemory();
     const { can, ...page } = door.observe();
     // THE SKILL OF THE MODULE THE READER IS ON rides with their message, unless
     // it is in view already: most questions then need no load first.
@@ -232,6 +248,9 @@ export function createAgent(door) {
     let retried = false, nudged = false;
     const seen = [];
     try {
+      // M IS TAKEN when the conversation starts — tidied first if it has grown
+      // past its cap — and then left alone until a summary.
+      if (!s.conv.memory) { await tidyMemory(cfg, signal); freezeMemory(); }
       for (let step = 0; step < MAX_STEPS; step++) {
         const m = await maintain(cfg, signal);
         if (m.refuse) { say("error", "This model's context window is too small for Nona."); return; }

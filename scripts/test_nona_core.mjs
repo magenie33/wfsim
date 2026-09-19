@@ -339,6 +339,37 @@ let notes = memory.emptyMemory();
 for (let i = 0; i < memory.NOTES_MAX + 5; i++) notes = memory.set(notes, { value: `n${i}`, quote: "x" }, ctx(`n${i}`, "x")).mem;
 check("notes are capped, keeping the newest", notes.items.length === memory.NOTES_MAX && notes.items[0].value === "n5");
 
+// A PROFILE OVER ITS CAP, tidied by a model and checked by the page.
+const fat = { ...memory.emptyMemory(), items: [
+  { id: "p1", kind: "profile", key: "riven_policy", value: "不用紫卡", status: "active", source: {}, created_at: 1, updated_at: 5, history: [] },
+  { id: "q1", kind: "note", value: "想试试", status: "proposed", source: {}, created_at: 1, updated_at: 1, history: [] },
+  ...Array.from({ length: 20 }, (_, i) => ({ id: `n${i}`, kind: "note", value: `主玩钢铁之路，偏好单体高伤害配装，第${i}条记录`.repeat(3).slice(0, 110),
+    status: "active", source: {}, created_at: 10 + i, updated_at: 20 + i, history: [] })) ] };
+freeze(fat);
+const ids = (a, b) => Array.from({ length: b - a }, (_, i) => `n${a + i}`).join(",");
+const good = `- [p1] riven_policy: 不用紫卡\n- [${ids(0, 10)}] note: 主玩钢铁之路\n- [${ids(10, 20)}] note: 偏好单体高伤害配装`;
+check("a profile past its cap is offered for tidying; one within it is not",
+  memory.needsMerge(fat, 100) === true && memory.needsMerge(said.mem, 1000) === false);
+check("the model is given every active memory, and no proposed one",
+  (memory.mergeInput(fat).match(/^- \[/gm) || []).length === 21 && !memory.mergeInput(fat).includes("q1"));
+const okMerge = memory.parseMerge(fat, "Sure! Here it is:\n" + good, 100);
+check("a tidy that names its sources, keeps every slot and is smaller is taken", okMerge.ok === true && okMerge.lines.length === 3);
+const tidied = memory.merge(fat, okMerge.lines, 100, (i) => `t${i}`);
+check("...notes are replaced by the merged ones, which say where they came from; slots and proposals stay",
+  tidied.items.filter((x) => x.kind === "note" && x.status === "active").length === 2
+  && same(tidied.items.find((x) => x.id === "t0").source.from, ids(0, 10).split(","))
+  && tidied.items.some((x) => x.id === "p1") && tidied.items.some((x) => x.id === "q1"));
+check("...and it fits the memory zone", estimate(memory.block(tidied, 100)) <= CAPS.M && memory.needsMerge(tidied, 100) === false);
+check("...and the version before comes back in one step", same(memory.restore(tidied).items, fat.items));
+for (const [why, text] of [
+  ["a source that does not exist", good.replace("[p1]", "[p9]")],
+  ["a slot dropped", good.split("\n").slice(1).join("\n")],
+  ["a slot invented", good + "\n- [n0] budget: 很多钱"],
+  ["a value past its length", good.replace("主玩钢铁之路", "长".repeat(200))],
+  ["nothing smaller", memory.mergeInput(fat)],
+  ["no lines at all", "I could not do that."],
+]) check(`a tidy is refused for ${why}, and the profile stays as it was`, memory.parseMerge(fat, text, 100).ok === false, why);
+
 // ---- 8: her tools, and the door's reached through skills ------------------------------
 
 check("her tools are seven, in a fixed order, whatever the door holds",

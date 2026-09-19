@@ -53,7 +53,18 @@ const mock = createServer((req, res) => {
     }
     const body = JSON.parse(raw || "{}");
     const anthropic = req.url.endsWith("/v1/messages");
-    // A REQUEST WITH NO TOOLS is the summary being asked for.
+    // A REQUEST WITH NO TOOLS is the profile being tidied, or the summary.
+    const system = anthropic ? String(body.system || "") : String((body.messages[0] || {}).content || "");
+    if (!body.tools && /tidy the saved profile/.test(system)) {
+      const input = anthropic ? body.messages[0].content : body.messages[1].content;
+      const rows = [...input.matchAll(/^- \[([^\]]+)\] ([\w-]+): /gm)];
+      const notes = rows.filter((m) => m[2] === "note").map((m) => m[1]);
+      const t = rows.filter((m) => m[2] !== "note").map((m) => `- [${m[1]}] ${m[2]}: kept`)
+        .concat(notes.length ? [`- [${notes.join(",")}] note: plays the Steel Path`] : []).join("\n");
+      res.writeHead(200, { ...cors, "Content-Type": "application/json" });
+      res.end(JSON.stringify(anthropic ? { content: [{ type: "text", text: t }] } : { choices: [{ message: { content: t } }] }));
+      return;
+    }
     if (!body.tools) {
       res.writeHead(200, { ...cors, "Content-Type": "application/json" });
       const t = "SUMMARY: the reader wants a Torid build; DPS 1234 measured by simulator.run.start on build 1.";
@@ -67,7 +78,7 @@ const mock = createServer((req, res) => {
     // A MODEL THAT STOPS IN SILENCE: asked for a "blank", it answers with
     // nothing at all — until the page's check comes back to it.
     const all = JSON.stringify(body.messages.filter((m) => m.role !== "system"));
-    const step = all.includes("blank please")
+    const step = all.includes("tidy please") ? { text: "Noted." } : all.includes("blank please")
       ? { text: all.includes("<check>") ? "Answered after the check." : "" }
       : SCRIPT[Math.min(done, SCRIPT.length - 1)];
     const id = `call_${done}`;
@@ -292,6 +303,38 @@ check("her memory rides a request, and not an incognito one", plainHasMemory ===
   JSON.stringify([plainHasMemory, memoryIn()]));
 check("an incognito chat is not kept", incogRows.filter((t) => /incognito question/.test(t)).length === plainRows.filter((t) => /incognito question/.test(t)).length
   && plainRows.some((t) => /incognito question/.test(t)), JSON.stringify([plainRows, incogRows]));
+
+// ---- a profile past its cap is tidied, and can be taken back ----------------------
+
+const tidy = await evaluate(`(async () => {
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  const note = (i) => ({ id: "n" + i, kind: "note", value: ("plays the Steel Path, likes single-target builds, note " + i).repeat(2).slice(0, 110),
+    status: "active", source: {}, created_at: i, updated_at: i, history: [] });
+  const slot = { id: "p1", kind: "profile", key: "riven_policy", value: "no rivens", status: "active", source: {}, created_at: 1, updated_at: 1, history: [] };
+  localStorage.setItem("wfsim-nona-memory", JSON.stringify({ v: 1, paused: false, items: [slot, ...Array.from({ length: 25 }, (_, i) => note(i))] }));
+  localStorage.setItem("wfsim-nona", JSON.stringify({ proto: "openai", base: ${JSON.stringify(MOCK + "/v1")}, key: "test", remember: true, model: "mock" }));
+  document.getElementById("nona-fab").click();
+  document.getElementById("nona-new").click();
+  document.getElementById("nona-input").value = "tidy please";
+  document.getElementById("nona-send").click();
+  await wait(300);
+  const busy = () => document.getElementById("nona-send").classList.contains("busy");
+  for (let i = 0; i < 40 && busy(); i++) await wait(250);
+  const mem = () => JSON.parse(localStorage.getItem("wfsim-nona-memory")).items.filter(x => x.status === "active");
+  const after = mem().map(x => x.kind + ":" + x.value);
+  const chip = document.querySelector("#nona-log .merged");
+  const chipText = chip ? chip.textContent : "";
+  if (chip) chip.querySelector("[data-mem=restore]").click();
+  const restored = mem().length;
+  document.getElementById("nona-close").click();
+  return { after, chipText, restored };
+})()`, { awaitPromise: true });
+const tidySent = JSON.stringify(seen.filter((x) => x.body.tools).slice(-1)[0].body);
+check("a profile past its cap is tidied before she is asked, and the reader is told",
+  tidy.after.length === 2 && tidy.after.includes("note:plays the Steel Path") && tidy.after.includes("profile:kept")
+  && /26 → 2/.test(tidy.chipText), JSON.stringify(tidy));
+check("...she is sent the tidied profile", tidySent.includes("note: plays the Steel Path") && !tidySent.includes("note 24"));
+check("...and the reader can take the old one back in one tap", tidy.restored === 26, String(tidy.restored));
 
 // ---- the settings: an address, a key, what it serves, a model picked ---------
 

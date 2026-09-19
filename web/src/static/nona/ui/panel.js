@@ -8,7 +8,7 @@ import { toolId } from "../core/tools.js";
 import * as store from "../runtime/store.js";
 import { tr, esc, dd, $, k, usd, markup, usageLine, line } from "./kit.js";
 import { drawCard } from "./cards.js";
-import { drawChip } from "./chips.js";
+import { drawChip, drawMerged } from "./chips.js";
 import { fillSettings } from "./settings.js";
 
 export function mountPanel(door, agent) {
@@ -60,7 +60,7 @@ export function mountPanel(door, agent) {
     } else if (m.role === "note") line("note", m.text);
     else if (m.role === "check") line("note", tr("she stopped without answering, so the page asked her to finish"));
     else if (m.role === "card") drawCard(door, m.pair);
-    else if (m.role === "memory") drawChip(m.id);
+    else if (m.role === "memory") { if (m.merged) drawMerged(m.merged); else drawChip(m.id); }
   }
 
   function render() {

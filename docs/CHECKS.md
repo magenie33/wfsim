@@ -62,7 +62,10 @@ reader asks to remember it. Verified to bite: with the branch policy disabled
 and the incognito guard removed from the save, seven assertions fail; with the
 preload off, or a skill dropped from the door, the catalogue and preload
 assertions fail. A model that answers with nothing is sent the page's check
-once and then answers; with the check removed, that assertion fails.
+once and then answers; with the check removed, that assertion fails. A
+profile past its cap is tidied before she is asked — she is sent the tidied
+one, the reader is told, and one tap brings the old one back; with the tidy
+switched off, those assertions fail.
 
 ## `test_nona_core`
 
@@ -75,7 +78,8 @@ byte in both protocols; the budget sets aside the oldest results and keeps the
 newest six (two when forced); the summary cuts at the fourth-newest turn; only
 unmeasured numbers are marked; both protocols encode to golden bodies and
 decode a stream cut mid-line; memory writes the reader's own words and only
-proposes the rest. Verified to bite on four planted changes: keep five, pass
+proposes the rest, and a model's tidy of it is refused for an unknown source,
+a slot dropped or invented, a value too long or a result over the cap. Verified to bite on four planted changes: keep five, pass
 three-digit whole numbers, stop merging same-role turns, never activate.
 
 ## `check_nona_boundary`

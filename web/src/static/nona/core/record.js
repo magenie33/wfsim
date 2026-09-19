@@ -10,8 +10,8 @@ export const V = 1;
 /// `test_nona_core` fails if a name here is missing from the current shape.
 export const FROZEN = {
   conversation: ["v", "id", "title", "pinned", "created_at", "updated_at", "weapon", "made", "pairs", "summary", "memory", "usage", "messages"],
-  message: ["role", "text", "page", "at", "pageMasked", "calls", "usage", "id", "name", "ok", "line", "result", "masked", "pair", "state", "action", "skills", "preload", "skillsMasked"],
-  memory: ["v", "paused", "items"],
+  message: ["role", "text", "page", "at", "pageMasked", "calls", "usage", "id", "name", "ok", "line", "result", "masked", "pair", "state", "action", "skills", "preload", "skillsMasked", "merged"],
+  memory: ["v", "paused", "items", "archive"],
   memoryItem: ["id", "kind", "key", "value", "status", "source", "created_at", "updated_at", "history"],
   settings: ["v", "base", "proto", "model", "context", "price", "remember", "concise", "key"],
 };

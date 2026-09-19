@@ -97,7 +97,7 @@ untouched and read-only rather than guessed at.
 | --- | --- | --- |
 | `wfsim-nona` | localStorage | `{ v, base, proto, model, context, price, remember, concise, key? }` — `key` only when `remember` |
 | `wfsim-nona-key` | sessionStorage | the key, when not remembered |
-| `wfsim-nona-memory` | localStorage | `{ v, paused, items: MemoryItem[] }` |
+| `wfsim-nona-memory` | localStorage | `{ v, paused, items: MemoryItem[], archive?: {at, items}[] }` — `archive`, the versions before the last tidies |
 | `wfsim-nona-calib` | localStorage | `{ [model]: ratio }` — token estimate calibration |
 | `wfsim-nona` / `conversations` | IndexedDB | `Conversation` |
 
@@ -113,6 +113,7 @@ Message = { role: "user", text, page, at, pageMasked? }
         | { role: "note", text }                      // shown, never sent
         | { role: "card", pair: {copy, from, state} } // shown, never sent
         | { role: "memory", id }                      // shown, never sent
+        | { role: "memory", merged: [before, after] } // the profile was tidied; shown with its undo
 MemoryItem { id, kind: "profile" | "note", key?, value, status: "active" | "proposed",
              source: {conversation, quote, by: "user" | "inferred"},
              created_at, updated_at, history: {value, until}[] }
@@ -257,11 +258,16 @@ The cheapest step comes first:
    source. A summary over its own cap is summarised again.
 3. **K over its cap.** The least recently used skill is unloaded and replaced
    by one line saying it can be loaded again.
-4. **M over its cap.** Profile slots are overwritten in place and cannot
-   grow. Notes are cut oldest-unused first, and unconfirmed items are never
-   sent. If that is not enough, the model merges notes into fewer, and the
-   result is shown to the reader as a proposal they can undo: memory is
-   theirs, and it is not rewritten behind their back.
+4. **M over its cap.** A memory is at most 120 characters and a slot is
+   written over in place; unconfirmed items are never sent. A profile past its
+   cap is handed to the model to rewrite shorter — merging notes, dropping what
+   a later one contradicts — as lines that each name the memories they come
+   from. The page takes the result only if every source exists, every slot is
+   still there and nothing is new, and it fits the cap; anything else is thrown
+   away and the profile stays. The reader is told, and the version before is
+   one tap away (`archive`, the last three). Until a tidy succeeds, the notes
+   least recently touched are left out of what is sent. This runs when the
+   conversation starts and at each summary, where M is taken anyway.
 
 **A SUMMARY IS THE MOMENT FOR EVERYTHING ELSE.** Summarising breaks the cache
 anyway, so M's snapshot is refreshed then, and memories written since take
