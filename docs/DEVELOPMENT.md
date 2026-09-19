@@ -134,7 +134,7 @@ evolutions per tier — option set against option set, plus what each module
 decides to SHOW. Exits non-zero on any mismatch, so it can gate a push.
 
 Run it after adding a weapon, a mod pool, or anything a weapon can carry. It
-is the check that makes `weaponAxes()` in `web/src/static/app.js` worth having:
+is the check that makes `weaponAxes()` in `app.js` worth having:
 that function is one description of a weapon's axes so a special case is a
 one-place change, and this is what notices when a second place appears
 anyway. In the two hours around its own writing it caught the optimizer
@@ -374,7 +374,8 @@ See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 
 - `engine/`, `optimizer/`, `cli/`, `web/`, `webapi/`, `wasm/` — the Rust
   crates (Cargo workspace). `web` is the native dev server (UI in
-  `web/src/static/`); `webapi` holds endpoint logic shared with the
+  `web/src/static/`, where `app.js` is joined from `app/NN-name.js` in
+  filename order — `docs/CHECKS.md` §`check_app_parts`); `webapi` holds endpoint logic shared with the
   `wasm` build; `site/` is generated from it by
   `scripts/build_site_app.py`.
 - `data/` — versioned game data (weapons, mods, enemies, factions, arcanes).

@@ -22,7 +22,7 @@ how you contribute:
 - **A branch's base rots in days, not months.** A large PR opened against last
   week's `main` will not merge cleanly. That is not the contributor's fault and
   it is not a judgement on the work — it is arithmetic.
-- **Some files are rewritten constantly** — `web/src/static/app.js`,
+- **Some files are rewritten constantly** — `web/src/static/app/`,
   `webapi/src/lib.rs`, `engine/src/build/loadout.rs`. A PR touching them competes with
   the maintainer's own edits every day it stays open.
 - **`engine/` and `optimizer/` are maintainer-led.** They carry the model every

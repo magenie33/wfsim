@@ -6,8 +6,20 @@ assert — this file is the shape of each and why it is shaped that way.
 
 ## `check_page_bodies`
 
-`node --check` over every check script. No browser; runs
-first in CI.
+`node --check` over every check script, and over `app.js` joined from its
+parts. No browser; runs first in CI.
+
+## `check_app_parts`
+
+`app.js` is `web/src/static/app/NN-name.js`, joined in filename order with
+nothing between the parts: `web/build.rs` for the dev server, `app_source()` in
+`scripts/build_site_app.py` for `site/`, `scripts/app_source.mjs` for every
+check that reads the page's source. The filename prefix is the only statement
+of order, and a part is a fragment of one classic script — the page's
+top-level names stay globals. It asserts that nothing but parts sits in the
+directory, that no two share a prefix, that no part runs past the line ceiling
+(a ratchet: split a part, never raise it), and that no whole
+`web/src/static/app.js` competes with the parts. No browser.
 
 ## `check_release_identity`
 

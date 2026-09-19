@@ -12,8 +12,8 @@ actually exercised, and whether a visit produces a RESULT or nothing.
 ## The problem this exists to solve
 
 The deployed site makes **zero server requests after boot**. `api()`
-(`web/src/static/app.js:282`) takes the wasm branch on the static build
-(`WASM = !!window.WFSIM_WASM`, line 10) and dispatches to worker RPC —
+(`web/src/static/app/08-checkpoint-api.js`) takes the wasm branch on the static build
+(`WASM = !!window.WFSIM_WASM`) and dispatches to worker RPC —
 `/api/simulate`, `/api/optimize` and the rest never touch the network. The
 same property that makes the site fast, offline-capable, and unblockable
 also makes it invisible to server-side analytics: Cloudflare cannot tell a

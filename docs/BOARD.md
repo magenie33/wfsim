@@ -153,7 +153,7 @@ back fails CI rather than being discovered in a published number.
 | the board | `site/board/<weapon>.json` | generated, committed, fetched at runtime |
 | ranked across weapons | `site/board/index.json` | derived from the files beside it |
 | which board this is | `site/board.meta.json` | a digest per published file |
-| consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
+| consent + submit | `web/src/static/app/68-board-submit.js` (`offerBoardSubmit`) | the player's browser |
 | the library | one D1 database, `wfsim` (binding `LIBRARY`) | written by the endpoint |
 | the facts | the `scores` table in it | written by `ship_facts.sh` |
 | the deploy | `wrangler.jsonc` | `scripts/deploy.sh`, from a git push |

@@ -32,7 +32,8 @@ use wfsim_webapi::{
 // ---- Embedded static assets (self-contained binary) --------------------
 
 const INDEX_HTML: &str = include_str!("static/index.html");
-const APP_JS: &str = include_str!("static/app.js");
+// `APP_JS`, joined from `static/app/*.js` by `build.rs`.
+include!(concat!(env!("OUT_DIR"), "/app_js.rs"));
 const STYLE_CSS: &str = include_str!("static/style.css");
 const LOGO_SVG: &str = include_str!("static/logo.svg");
 

@@ -18,7 +18,9 @@
 //   node scripts/check_page_bodies.mjs
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { spawnSync } from "node:child_process";
+import { appSource } from "./app_source.mjs";
 
 const DIR = "scripts";
 const me = path.basename(new URL(import.meta.url).pathname);
@@ -40,6 +42,18 @@ for (const name of files) {
   console.log(`  FAIL  ${name} does not parse\n        ${why}`);
 }
 
+// THE PAGE'S OWN SCRIPT PARSES TOO, checked JOINED: a part of `app.js` is a
+// fragment and does not parse on its own, so a broken seam shows only here.
+const joined = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "wfsim-app-")), "app.js");
+fs.writeFileSync(joined, appSource());
+const whole = spawnSync(process.execPath, ["--check", joined], { encoding: "utf8" });
+if (whole.status !== 0) {
+  bad += 1;
+  console.log(`  FAIL  app.js (joined from web/src/static/app/) does not parse\n        ${
+    (whole.stderr || "").split("\n").filter((l) => l.trim() && !l.includes("node:internal")).slice(0, 4).join("\n        ")}`);
+}
+fs.rmSync(path.dirname(joined), { recursive: true, force: true });
+
 // THE NEGATIVE CONTROL, and not a formality: a run that found no files would
 // pass silently for ever, and this file's whole value is that nobody has to
 // remember it exists.
@@ -48,5 +62,5 @@ if (!files.length) {
   bad += 1;
 }
 
-console.log(bad ? `\n${bad} failed` : `\n${files.length} scripts parse`);
+console.log(bad ? `\n${bad} failed` : `\n${files.length} scripts parse, and app.js`);
 process.exit(bad ? 1 : 0);

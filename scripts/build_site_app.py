@@ -5,7 +5,8 @@ Steps:
   1. cargo build --release -p wfsim-wasm --target wasm32-unknown-unknown
   2. wasm-bindgen --target no-modules  ->  site/app/pkg/
   3. wasm-opt -Oz (if available; optional)
-  4. copy web/src/static/{index.html,app.js,style.css,worker.js,logo.svg,pol/} -> site/
+  4. copy web/src/static/{index.html,style.css,worker.js,logo.svg,pol/} -> site/,
+     and app.js joined from web/src/static/app/*.js
   5. inject <script>window.WFSIM_WASM = true;</script> into the copied
      index.html — that flag flips app.js's api() from fetch to worker RPC.
   6. write site/_headers and site/_redirects (what the edge is told about each
@@ -65,6 +66,16 @@ WASM = ROOT / "target" / "wasm32-unknown-unknown" / "release" / "wfsim_wasm.wasm
 # module" of a path that does not move.
 WASM_PKG = ROOT / "target" / "wasm-pkg"
 SITE = "https://wfsim.app"
+
+
+def app_source() -> str:
+    """`app.js`: every `web/src/static/app/*.js`, joined in filename order with
+    nothing between them — the same join as `web/build.rs`. Everything that
+    reads, hashes or publishes `app.js` goes through this."""
+    parts = sorted((STATIC / "app").glob("*.js"))
+    if not parts:
+        sys.exit("web/src/static/app/: no parts — app.js would be empty")
+    return b"".join(p.read_bytes() for p in parts).decode("utf-8")
 
 
 def past_the_scanner(do):
@@ -500,7 +511,9 @@ def release_id() -> str:
     that same release too.
     """
     h = hashlib.sha256()
-    for name in ("index.html", "app.js", "style.css", "worker.js"):
+    h.update((STATIC / "index.html").read_bytes())
+    h.update(app_source().encode("utf-8"))
+    for name in ("style.css", "worker.js"):
         h.update((STATIC / name).read_bytes())
     for f in nona_files():
         h.update(f.read_bytes())
@@ -1225,8 +1238,8 @@ def build_stamp() -> str:
     # substituted `BUILD_ID`, so hashing those would hash the answer into the
     # question and give a value that moved every run for no reason.
     h = hashlib.sha256()
-    for name in ("app.js", "index.html"):
-        h.update((STATIC / name).read_bytes())
+    h.update(app_source().encode("utf-8"))
+    h.update((STATIC / "index.html").read_bytes())
     return h.hexdigest()[:8]
 
 
@@ -1387,7 +1400,8 @@ def main() -> None:
     pkg = ship_wasm_pkg()
     release = release_id()
 
-    for name in ("app.js", "style.css", "worker.js", "logo.svg"):
+    (APP / "app.js").write_bytes(app_source().encode("utf-8"))
+    for name in ("style.css", "worker.js", "logo.svg"):
         shutil.copy2(STATIC / name, APP / name)
     shutil.copytree(STATIC / "pol", APP / "pol", dirs_exist_ok=True)
 

@@ -111,7 +111,7 @@ Worker and the per-round progress arrives.
 
 ## Phase 4 — frontend transport shim + deployment
 
-- `web/src/static/app.js`: introduce `api(path, body)` used by all fetch
+- `app.js` (joined from `web/src/static/app/`): introduce `api(path, body)` used by all fetch
   sites (`/api/meta`, `/api/panel`, `/api/simulate`, `/api/opt-buffs`,
   runOptimize/poll/cancel). Native mode: fetch as today. Wasm mode
   (`window.WFSIM_WASM = true`, set by the static deployment's index.html):

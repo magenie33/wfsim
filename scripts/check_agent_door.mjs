@@ -18,8 +18,8 @@
 //     between an agent working the page and an agent working behind it;
 //   * and the decisions the door shares with the page's own handlers exist
 //     ONCE — a second copy is how the click and the call start to disagree.
-import { readFileSync } from "node:fs";
 import { openApp } from "./cdp.mjs";
+import { appSource } from "./app_source.mjs";
 
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish } = app;
@@ -28,7 +28,7 @@ const { evaluate, check, finish } = app;
 //
 // Asserted on the SOURCE, because the page cannot see its own duplication: two
 // copies of the exchange rule behave identically until one of them is edited.
-const src = readFileSync(new URL("../web/src/static/app.js", import.meta.url), "utf8");
+const src = appSource();
 const once = (needle) => src.split(needle).length - 1;
 check("the mod-exchange decision exists once", once("[a.mod, b.mod] = [b.mod, a.mod]") === 1,
   once("[a.mod, b.mod] = [b.mod, a.mod]"));

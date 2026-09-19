@@ -21,6 +21,7 @@
 //   node scripts/check_board_submit.mjs
 import worker, { AXES, MAX_MODS } from "../worker/index.js";
 import fs from "node:fs";
+import { appSource } from "./app_source.mjs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -90,7 +91,7 @@ const post = async (body, db) =>
   );
 
 // THE PAYLOAD THE PAGE ACTUALLY SENDS, field for field — `boardPayload()` in
-// web/src/static/app.js. An adversary weapon, because that is the case with the
+// web/src/static/app/. An adversary weapon, because that is the case with the
 // most axes on it.
 const PAYLOAD = {
   benchmark: "single_target_v1",
@@ -121,7 +122,7 @@ console.log("the board's submission endpoint\n");
 // is, `AXES` is what the endpoint knows how to keep, and a name in one and not
 // the other is the bug, before any request is made.
 {
-  const src = fs.readFileSync("web/src/static/app.js", "utf8");
+  const src = appSource();
   const body = src.slice(src.indexOf("function boardPayload()"));
   const ret = body.slice(body.indexOf("return {"), body.indexOf("\n  };"));
   // Keys of the returned literal sit at four spaces, as `name:` or bare

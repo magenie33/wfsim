@@ -22,6 +22,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { appSource } from "./app_source.mjs";
 
 const NL = String.fromCharCode(10);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -70,11 +71,17 @@ const NARRATIVE = new RegExp(
 // ratchet and not a hard zero.
 const NARRATIVE_CEILING = 6;
 
+// THE PARTS OF `app.js` ARE READ AS THE ONE FILE THEY JOIN INTO: a cut at a
+// part boundary would otherwise exempt the block it opens as a file header.
+const APP_JS = "web/src/static/app.js";
+const isAppPart = (f) => f.startsWith("web/src/static/app/");
 const files = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")
   .filter((f) => f && !EXEMPT.has(f) && !EXEMPT_UNDER.some((d) => f.startsWith(d))
-    && !SKIP.some((d) => f.startsWith(d))
-    && EXTS.some((e) => f.endsWith(e)));
+    && !SKIP.some((d) => f.startsWith(d)) && !isAppPart(f)
+    && EXTS.some((e) => f.endsWith(e)))
+  .concat(APP_JS);
+const readSource = (rel) => (rel === APP_JS ? appSource() : readFileSync(resolve(ROOT, rel), "utf8"));
 
 let failures = 0;
 const check = (name, ok, detail) => {
@@ -86,7 +93,7 @@ const attributions = [];
 let narrative = 0;
 for (const rel of files) {
   let src;
-  try { src = readFileSync(resolve(ROOT, rel), "utf8"); } catch { continue; }
+  try { src = readSource(rel); } catch { continue; }
   for (const rx of ATTRIBUTION) {
     for (const m of src.matchAll(rx)) {
       const line = src.slice(0, m.index).split("\n").length;
@@ -119,7 +126,7 @@ const used = new Map();
 for (const rel of files) {
   if (!rel.startsWith("data/")) continue;
   let src;
-  try { src = readFileSync(resolve(ROOT, rel), "utf8"); } catch { continue; }
+  try { src = readSource(rel); } catch { continue; }
   for (const m of src.matchAll(/# see notes: ([a-z0-9_]+)/g)) {
     used.set(m[1], (used.get(m[1]) || 0) + 1);
   }
@@ -193,7 +200,7 @@ const worst = [];
 for (const rel of files) {
   if (rel.endsWith(".md") || rel.endsWith(".html") || rel.endsWith(".css")) continue;
   let src;
-  try { src = readFileSync(resolve(ROOT, rel), "utf8"); } catch { continue; }
+  try { src = readSource(rel); } catch { continue; }
   let run = 0, start = 0;
   const lines = src.split(NL);
   allLines += lines.length;

@@ -22,6 +22,7 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { openApp } from "./cdp.mjs";
+import { appSource } from "./app_source.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(resolve(ROOT, p), "utf8");
@@ -59,7 +60,7 @@ check("...with axes on both sides of the board line",
 /// this measures.
 const claimed = (src, re) => [...src.matchAll(re)].map((m) => m[1]);
 
-const appJs = read("web/src/static/app.js");
+const appJs = appSource();
 const workerJs = read("worker/index.js");
 
 // ---- 1. THE PAGE'S BUILD STATE ----------------------------------------
