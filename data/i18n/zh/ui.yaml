@@ -15,13 +15,26 @@ ui:
   "Send": 发送
   "Stop": 停止
   "Save": 保存
-  "Provider": 服务商
   "Base URL": 接口地址
   "API key": API 密钥
   "Model": 模型
-  "Custom (OpenAI-compatible)": 自定义（OpenAI 兼容）
+  "Quick fill": 快速填入
+  "Qwen (DashScope)": 通义千问
+  "SiliconFlow": 硅基流动
+  "Check": 检测
+  "checking the address…": 正在检测地址…
+  "connected": 已连接
+  "OpenAI-compatible": OpenAI 兼容
+  "models": 个模型
+  "model id": 模型 ID
+  "choose a model": 选择模型
+  "context": 上下文
+  "per million tokens in / out": 每百万 token（输入 / 输出）
+  "cannot call tools — Nona needs them": 不支持工具调用，九九需要它
+  "the address answered, but listed no models": 地址有响应，但没有列出任何模型
+  "could not list models": 无法获取模型列表
   "Ask Nona about this build…": 问问九九这套配装…
-  "Your key is stored only in this browser and is sent only to the provider you chose.": 密钥只保存在这个浏览器里，只会发给你选择的服务商。
+  "Your key is stored only in this browser and is sent only to the address above.": 密钥只保存在这个浏览器里，只会发给上面这个地址。
   "Set a provider, key and model first.": 请先设置服务商、密钥和模型。
   "working on a copy": 在副本上操作
   "step limit reached": 已达到步数上限

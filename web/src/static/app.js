@@ -24795,15 +24795,18 @@ const AGENT_ACTIONS = [
 // moment of each request, so an action or query added to the door reaches her
 // with no edit in this section.
 
-/// THE PROVIDERS, by the protocol they speak. Everything that speaks the OpenAI
-/// chat-completions shape is one adapter; a base URL is all that differs.
-const NONA_PROVIDERS = {
-  openrouter: { label: "OpenRouter", proto: "openai", base: "https://openrouter.ai/api/v1", model: "deepseek/deepseek-chat" },
-  deepseek: { label: "DeepSeek", proto: "openai", base: "https://api.deepseek.com/v1", model: "deepseek-chat" },
-  openai: { label: "OpenAI", proto: "openai", base: "https://api.openai.com/v1", model: "" },
-  anthropic: { label: "Anthropic", proto: "anthropic", base: "https://api.anthropic.com", model: "" },
-  custom: { label: "Custom (OpenAI-compatible)", proto: "openai", base: "", model: "" },
-};
+/// QUICK FILLS FOR THE ADDRESS, and nothing more: a provider is its base URL.
+/// The reader may type any other, and which protocol it speaks and which models
+/// it serves are DETECTED from the address and the key, never read off this list.
+const NONA_PRESETS = [
+  ["OpenRouter", "https://openrouter.ai/api/v1"],
+  ["DeepSeek", "https://api.deepseek.com/v1"],
+  ["OpenAI", "https://api.openai.com/v1"],
+  ["Anthropic", "https://api.anthropic.com"],
+  ["Qwen (DashScope)", "https://dashscope.aliyuncs.com/compatible-mode/v1"],
+  ["Kimi", "https://api.moonshot.cn/v1"],
+  ["SiliconFlow", "https://api.siliconflow.cn/v1"],
+];
 const NONA_KEY = "wfsim-nona";
 /// How many model turns one question may take. A turn is one request; a
 /// question that has not settled by then is handed back rather than billed on.
@@ -24899,12 +24902,9 @@ async function nonaCallAnthropic(cfg, transcript, signal) {
       for (const c of m.calls || []) push("assistant", { type: "tool_use", id: c.id, name: c.name, input: c.args || {} });
     } else if (m.role === "tool") push("user", { type: "tool_result", tool_use_id: m.id, content: m.result });
   }
-  const res = await fetch(cfg.base.replace(/\/+$/, "") + "/v1/messages", {
+  const res = await fetch(nonaAnthropicRoot(cfg.base) + "/v1/messages", {
     method: "POST", signal,
-    headers: {
-      "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
+    headers: { "Content-Type": "application/json", ...nonaAnthropicHeaders(cfg.key) },
     body: JSON.stringify({ model: cfg.model, max_tokens: 4096, system: nonaSystemPrompt(), messages, tools: nonaTools() }),
   });
   const body = await nonaJson(res);
@@ -24913,6 +24913,44 @@ async function nonaCallAnthropic(cfg, transcript, signal) {
     text: blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n"),
     calls: blocks.filter((b) => b.type === "tool_use").map((b) => ({ id: b.id, name: b.name, args: b.input || {} })),
   };
+}
+
+/// The Anthropic API's root, whether or not the address was typed with /v1.
+const nonaAnthropicRoot = (base) => base.replace(/\/+$/, "").replace(/\/v1$/, "");
+const nonaAnthropicHeaders = (key) => ({
+  "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true",
+});
+
+/// WHAT AN ADDRESS SPEAKS AND SERVES, asked of the address itself: its model
+/// list, in whichever of the two protocols answers. The one whose host names
+/// it is tried first. A model that states it cannot call tools is marked, since
+/// Nona does nothing without them; one that says nothing is taken on trust.
+async function nonaDetect(base, key) {
+  const root = base.replace(/\/+$/, "");
+  const tries = [
+    ["openai", () => fetch(root + "/models", { headers: { Authorization: `Bearer ${key}` } })],
+    ["anthropic", () => fetch(nonaAnthropicRoot(root) + "/v1/models?limit=1000", { headers: nonaAnthropicHeaders(key) })],
+  ];
+  if (/anthropic\.com/.test(root)) tries.reverse();
+  let last = null;
+  for (const [proto, go] of tries) {
+    try {
+      const body = await nonaJson(await go());
+      const list = Array.isArray(body.data) ? body.data : Array.isArray(body) ? body : null;
+      if (!list || !list.length) { last = new Error(tr("the address answered, but listed no models")); continue; }
+      return {
+        proto,
+        models: list.map((m) => ({
+          id: m.id, name: m.display_name || m.name || m.id,
+          context: m.context_length || m.context_window || null,
+          price: m.pricing && Number(m.pricing.prompt) >= 0
+            ? [Number(m.pricing.prompt) * 1e6, Number(m.pricing.completion) * 1e6] : null,
+          tools: Array.isArray(m.supported_parameters) ? m.supported_parameters.includes("tools") : null,
+        })).sort((a, b) => a.id.localeCompare(b.id)),
+      };
+    } catch (e) { last = e; }
+  }
+  throw last || new Error("no answer");
 }
 
 /// A PROVIDER'S REFUSAL IN ITS OWN WORDS. Every provider puts the reason in
@@ -24993,7 +25031,7 @@ const nonaCap = (v) => {
 async function nonaAsk(text) {
   const cfg = nonaSettings();
   if (!cfg.key || !cfg.base || !cfg.model) { nonaSay("error", tr("Set a provider, key and model first.")); nonaView("settings"); return; }
-  const call = NONA_PROVIDERS[cfg.provider] && NONA_PROVIDERS[cfg.provider].proto === "anthropic" ? nonaCallAnthropic : nonaCallOpenAI;
+  const call = cfg.proto === "anthropic" ? nonaCallAnthropic : nonaCallOpenAI;
   nona.transcript.push({ role: "user", text });
   nonaSay("user", text);
   nona.busy = true; nona.abort = new AbortController(); nonaPaint();
@@ -25066,17 +25104,93 @@ function nonaView(which) {
   if (which === "settings") nonaFillSettings();
 }
 
+/// THE SETTINGS BEING EDITED — not saved until Save, so trying an address
+/// does not lose the one that works.
+const nonaDraft = { base: "", key: "", proto: null, model: "", models: null, state: "", error: "" };
+
 function nonaFillSettings() {
   const s = nonaSettings();
-  const pick = $("nona-provider");
-  pick.innerHTML = Object.entries(NONA_PROVIDERS)
-    .map(([id, p]) => `<option value="${id}">${escHtml(tr(p.label))}</option>`).join("");
-  pick.value = s.provider || "openrouter";
-  const p = NONA_PROVIDERS[pick.value];
-  $("nona-base").value = s.base || p.base;
-  $("nona-model").value = s.model || p.model;
-  $("nona-model").placeholder = p.model || "model id";
-  $("nona-apikey").value = s.key || "";
+  Object.assign(nonaDraft, { base: s.base || NONA_PRESETS[0][1], key: s.key || "", proto: s.proto || null,
+    model: s.model || "", models: null, state: "", error: "" });
+  nonaPaintSettings();
+  if (nonaDraft.key) nonaRedetect();
+}
+
+/// The model control: the page's own searchable dropdown once the address has
+/// listed its models, a typed id while it has not (some addresses list none).
+function nonaModelControl() {
+  const d = nonaDraft;
+  if (!d.models) {
+    return `<input id="nona-model" type="text" autocomplete="off" value="${escHtml(d.model)}" placeholder="${escHtml(tr("model id"))}">`;
+  }
+  const k = (n) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
+  const usd = (x) => `$${x < 1 ? x.toFixed(2) : x.toFixed(1)}`;
+  return ddButton("nona-model-dd", {
+    value: d.model, search: true, placeholder: tr("choose a model"),
+    items: d.models.map((m) => ({
+      value: m.id, label: m.name === m.id ? m.id : `${m.name} · ${m.id}`,
+      group: m.id.includes("/") ? m.id.split("/")[0] : undefined,
+      hint: [m.context ? `${k(m.context)} ${tr("context")}` : "",
+        m.price ? `${usd(m.price[0])} / ${usd(m.price[1])} ${tr("per million tokens in / out")}` : "",
+        m.tools === false ? tr("cannot call tools — Nona needs them") : ""].filter(Boolean).join(" · ") || undefined,
+      disabled: m.tools === false || undefined,
+    })),
+    onPick: (v) => { d.model = v; nonaPaintSettings(); },
+  });
+}
+
+function nonaPaintSettings() {
+  const d = nonaDraft;
+  const box = $("nona-settings");
+  const status = d.state === "working" ? tr("checking the address…")
+    : d.state === "ok" ? `${tr("connected")} · ${d.proto === "anthropic" ? "Anthropic" : tr("OpenAI-compatible")} · ${d.models.length} ${tr("models")}`
+    : d.state === "error" ? d.error : "";
+  box.innerHTML = `
+    <div class="nona-presets"><span class="nona-lbl">${escHtml(tr("Quick fill"))}</span>${NONA_PRESETS.map(([name, url]) =>
+      `<span class="pchip${url === d.base ? " sel" : ""}" data-nona-base="${escHtml(url)}">${escHtml(tr(name))}</span>`).join("")}</div>
+    <label>${escHtml(tr("Base URL"))}<input id="nona-base" type="url" autocomplete="off" value="${escHtml(d.base)}"></label>
+    <label>${escHtml(tr("API key"))}<input id="nona-apikey" type="password" autocomplete="off" value="${escHtml(d.key)}"></label>
+    <div class="nona-detect"><button class="ghost-btn small" id="nona-check">${escHtml(tr("Check"))}</button>
+      <span class="nona-status${d.state === "error" ? " bad" : d.state === "ok" ? " good" : ""}">${escHtml(status)}</span></div>
+    <label>${escHtml(tr("Model"))}${nonaModelControl()}</label>
+    <p class="nona-fine">${escHtml(tr("Your key is stored only in this browser and is sent only to the address above."))}</p>
+    <button class="run-btn" id="nona-save"${d.model && d.key && d.base ? "" : " disabled"}>${escHtml(tr("Save"))}</button>`;
+  box.querySelectorAll("[data-nona-base]").forEach((el) => el.addEventListener("click", () => {
+    d.base = el.dataset.nonaBase; d.models = null; d.proto = null; d.state = "";
+    nonaPaintSettings();
+    if (d.key) nonaRedetect();
+  }));
+  const base = $("nona-base"), key = $("nona-apikey"), typed = $("nona-model");
+  base.addEventListener("change", () => { d.base = base.value.trim(); d.models = null; d.proto = null; if (d.key) nonaRedetect(); else nonaPaintSettings(); });
+  key.addEventListener("change", () => { d.key = key.value.trim(); if (d.key && d.base) nonaRedetect(); else nonaPaintSettings(); });
+  if (typed) typed.addEventListener("input", () => { d.model = typed.value.trim(); $("nona-save").disabled = !(d.model && d.key && d.base); });
+  $("nona-check").addEventListener("click", () => { d.base = base.value.trim(); d.key = key.value.trim(); nonaRedetect(); });
+  $("nona-save").addEventListener("click", () => {
+    nonaStore({ base: d.base, key: d.key, proto: d.proto || (/anthropic\.com/.test(d.base) ? "anthropic" : "openai"), model: d.model });
+    nonaView("chat");
+    $("nona-input").focus();
+  });
+}
+
+/// Ask the address what it serves. A later answer to an earlier question is
+/// dropped: the reader may have changed the address while it was out.
+async function nonaRedetect() {
+  const d = nonaDraft;
+  if (!d.base || !d.key) return;
+  const ask = `${d.base}\u0000${d.key}`;
+  d.asking = ask; d.state = "working"; nonaPaintSettings();
+  try {
+    const r = await nonaDetect(d.base, d.key);
+    if (d.asking !== ask) return;
+    Object.assign(d, { proto: r.proto, models: r.models, state: "ok", error: "" });
+    if (d.model && !r.models.some((m) => m.id === d.model)) d.model = "";
+  } catch (e) {
+    if (d.asking !== ask) return;
+    Object.assign(d, { models: null, state: "error",
+      error: e instanceof TypeError ? tr("The provider could not be reached from the browser — the network failed, or it does not accept requests from a web page (CORS).")
+        : `${tr("could not list models")}: ${e.message || e}` });
+  }
+  nonaPaintSettings();
 }
 
 function mountNona() {
@@ -25104,46 +25218,26 @@ function mountNona() {
         <button class="run-btn" id="nona-send">${escHtml(tr("Send"))}</button>
       </div>
     </div>
-    <div id="nona-settings" class="nona-settings" hidden>
-      <label>${escHtml(tr("Provider"))}<select id="nona-provider"></select></label>
-      <label>${escHtml(tr("Base URL"))}<input id="nona-base" type="url" autocomplete="off"></label>
-      <label>${escHtml(tr("API key"))}<input id="nona-apikey" type="password" autocomplete="off"></label>
-      <label>${escHtml(tr("Model"))}<input id="nona-model" type="text" autocomplete="off"></label>
-      <p class="nona-fine">${escHtml(tr("Your key is stored only in this browser and is sent only to the provider you chose."))}</p>
-      <button class="run-btn" id="nona-save">${escHtml(tr("Save"))}</button>
-    </div>`;
+    <div id="nona-settings" class="nona-settings" hidden></div>`;
   document.body.append(fab, panel);
 
   fab.addEventListener("click", () => {
     panel.hidden = !panel.hidden;
     fab.hidden = !panel.hidden;
+    document.body.classList.toggle("nona-open", !panel.hidden);
     if (!panel.hidden) {
       const s = nonaSettings();
       nonaView(s.key ? "chat" : "settings");
       if (s.key) $("nona-input").focus();
     }
   });
-  $("nona-close").addEventListener("click", () => { panel.hidden = true; fab.hidden = false; });
+  $("nona-close").addEventListener("click", () => { panel.hidden = true; fab.hidden = false; document.body.classList.remove("nona-open"); });
   $("nona-gear").addEventListener("click", () => nonaView($("nona-settings").hidden ? "settings" : "chat"));
   $("nona-new").addEventListener("click", () => {
     if (nona.abort) nona.abort.abort();
     nona.transcript = []; nona.owned.clear();
     $("nona-log").innerHTML = "";
     nonaView("chat");
-  });
-  $("nona-provider").addEventListener("change", () => {
-    const p = NONA_PROVIDERS[$("nona-provider").value];
-    $("nona-base").value = p.base;
-    $("nona-model").value = p.model;
-    $("nona-model").placeholder = p.model || "model id";
-  });
-  $("nona-save").addEventListener("click", () => {
-    nonaStore({
-      provider: $("nona-provider").value, base: $("nona-base").value.trim(),
-      key: $("nona-apikey").value.trim(), model: $("nona-model").value.trim(),
-    });
-    nonaView("chat");
-    $("nona-input").focus();
   });
   const submit = () => {
     if (nona.busy) { if (nona.abort) nona.abort.abort(); return; }

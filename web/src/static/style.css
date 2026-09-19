@@ -2656,3 +2656,13 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .nona-settings input,.nona-settings select{font:inherit;font-size:13px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--plane);color:var(--text)}
 .nona-fine{font-size:11px;color:var(--muted);margin:0}
 .nona-settings .run-btn{margin-top:4px}
+/* The page's own dropdown opens ABOVE the panel it was opened from. */
+.nona-open .popover{z-index:62}
+.nona-presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.nona-lbl{font-size:12px;color:var(--text-2);width:100%}
+.nona-detect{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nona-status{font-size:12px;color:var(--muted)}
+.nona-status.good{color:var(--good-text)}
+.nona-status.bad{color:var(--critical)}
+.nona-settings .dd{width:100%}
+.nona-settings .run-btn:disabled{opacity:.5;cursor:not-allowed}
