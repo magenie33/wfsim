@@ -113,17 +113,26 @@ const run = (provider, base) => evaluate(`(async () => {
   localStorage.setItem("wfsim-nona", JSON.stringify({ proto: ${JSON.stringify(provider === "anthropic" ? "anthropic" : "openai")}, base: ${JSON.stringify(base)}, key: "test", remember: true, model: "mock", price: [1, 2] }));
   document.getElementById("nona-fab").click();
   document.getElementById("nona-new").click();
+  const suggested = [...document.querySelectorAll("#nona-suggest [data-q]")].map(e => e.dataset.q);
   document.getElementById("nona-input").value = "seat serration";
   document.getElementById("nona-send").click();
   for (let i = 0; i < 80 && (nona.busy || !document.querySelector("#nona-log .assistant")); i++) await wait(250);
   const log = [...document.querySelectorAll("#nona-log .nona-msg")].map(e => e.className + " | " + e.textContent);
   const foot = document.getElementById("nona-foot-note").textContent;
+  const card = !!document.querySelector("#nona-log .card [data-card=apply]");
+  const cardText = (document.querySelector("#nona-log .card") || {}).textContent || "";
   const onCopy = window.wfsim.observe().build;
   await window.wfsim.do("shell.preset.open", { bar: "build", preset: mine });
   const mineAfter = window.wfsim.observe().build;
+  // THE READER TAKES THE CHANGE: the card writes the copy over their build.
+  const apply = document.querySelector("#nona-log .card [data-card=apply]");
+  if (apply) apply.click();
+  await wait(300);
+  const taken = window.wfsim.observe().build;
   document.getElementById("nona-close").click();
   return {
-    log, mine, copy: onCopy.preset, foot,
+    log, mine, copy: onCopy.preset, foot, suggested, card, cardText,
+    taken: taken.preset === mine && taken.slots.some(s => s.mod === "serration"),
     copyHasIt: onCopy.slots.some(s => s.mod === "serration"),
     mineClean: mineAfter.slots.every(s => !s.mod),
     tools: window.wfsim.tools().length,
@@ -147,6 +156,9 @@ for (const [provider, base, path] of [["openrouter", `${MOCK}/v1`, "/v1/chat/com
     r.copy && r.copy !== r.mine && r.copyHasIt === true && r.log.some((l) => /note \|.*copy/.test(l)),
     JSON.stringify([r.mine, r.copy, r.copyHasIt]));
   check(`${provider}: the reader's own build is untouched`, r.mineClean === true);
+  check(`${provider}: an empty conversation offers questions read off the page`, r.suggested.length >= 1, JSON.stringify(r.suggested));
+  check(`${provider}: a change card shows what she changed, and applying it gives the reader the copy`,
+    r.card === true && /Serration|膛线/.test(r.cardText) && r.taken === true, JSON.stringify([r.cardText, r.taken]));
   check(`${provider}: every request streams, and each reader message carries the page`,
     sent.every((x) => x.body.stream === true) && JSON.stringify(sent[0].body.messages).includes("<page>"));
   check(`${provider}: each reply shows what it cost, and the chat its total and the AI label`,
@@ -178,6 +190,15 @@ check("both conversations were kept, titled from what was asked", kept.list.leng
   JSON.stringify(kept.list));
 check("a kept conversation reopens with its trail", kept.log.filter((c) => /tool ok/.test(c)).length === 2 && kept.log.some((c) => /assistant/.test(c)),
   JSON.stringify(kept.log));
+
+// ---- a number she did not measure is marked -----------------------------------
+
+const marks = await evaluate(`(() => {
+  const html = nonaMarkNumbers(escHtml("1,234.5 DPS at 35% crit, 999.9 per hit, 12.0k total, slot 3"), [1234.5, 0.35, 12003]);
+  return [...html.matchAll(/nona-unmeasured[^>]*>([^<]+)</g)].map(m => m[1]);
+})()`);
+check("a number no tool returned is marked; measured ones, percentages of fractions, k-scaled and small counts are not",
+  JSON.stringify(marks) === JSON.stringify(["999.9"]), JSON.stringify(marks));
 
 // ---- the budget: old tool results are set aside, newest kept -----------------
 

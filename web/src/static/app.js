@@ -25243,8 +25243,73 @@ async function nonaBranch(id) {
   // NOTHING SAVED YET: the page is showing a build nobody owns, so she starts
   // one of her own rather than copying a document that does not exist.
   const r = await window.wfsim.do(active ? "shell.preset.copy" : "shell.preset.new", { bar });
-  if (r && r.ok && r.preset) { nona.owned.add(`${bar}:${r.preset}`); return r.preset; }
+  if (r && r.ok && r.preset) {
+    nona.owned.add(`${bar}:${r.preset}`);
+    // WHICH BUILD THE COPY CAME FROM, so the change card can compare the two
+    // and hand the result back.
+    if (bar === "build" && active) nona.conv.pairs = [...(nona.conv.pairs || []), { copy: r.preset, from: active }];
+    return r.preset;
+  }
   return null;
+}
+
+/// A BUILD'S STATE AS IT IS NOW — live if it is the one on screen, since the
+/// stored copy trails the editor by the auto-save's debounce.
+const nonaBuildState = (id) => (activePreset === id ? snapshotState()
+  : ((loadPresetList(BUILDS).find((p) => presetId(p) === id) || {}).state || null));
+const nonaNameOf = (id) => ((modById(id) || arcaneById(id) || {}).name || id);
+
+/// WHAT SHE CHANGED, between the reader's build and her copy of it: mods and
+/// arcanes in and out, and whether the mode moved.
+function nonaDiff(from, b) {
+  const a = nonaBuildState(from);
+  if (!a || !b) return null;
+  const mods = (st) => (st.slots || []).map((x) => x.mod).filter(Boolean).concat((st.arcane || []).filter((x) => x && x !== "none"));
+  const ma = mods(a), mb = mods(b);
+  return {
+    added: mb.filter((x) => !ma.includes(x)).map(nonaNameOf),
+    removed: ma.filter((x) => !mb.includes(x)).map(nonaNameOf),
+    mode: a.mode !== b.mode ? `${a.mode} → ${b.mode}` : null,
+  };
+}
+
+/// THE CHANGE CARD: after she has worked on a copy, what differs from the
+/// reader's build, and three ways on — look at it, take it, or go back.
+/// Taking it is the reader's click: the door has no action that writes over a
+/// build she did not make. The copy's state is TAKEN WHEN THE CARD IS MADE,
+/// while it is still the build on screen: the stored one trails the editor by
+/// the auto-save's debounce, and a reader who switches away inside it would
+/// otherwise apply a copy from before her last change.
+function nonaChangeCard(pair) {
+  const d = nonaDiff(pair.from, pair.state);
+  if (!d || (!d.added.length && !d.removed.length && !d.mode)) return;
+  const log = $("nona-log");
+  const el = document.createElement("div");
+  el.className = "nona-msg card";
+  const line = (sign, xs) => (xs.length ? `<div class="nona-diff ${sign === "+" ? "add" : "del"}">${sign} ${xs.map(escHtml).join(" · ")}</div>` : "");
+  el.innerHTML = `<div class="nona-card-h">${escHtml(tr("Changes on the copy"))} <b>${escHtml(pair.copy)}</b></div>`
+    + line("+", d.added) + line("−", d.removed) + (d.mode ? `<div class="nona-diff">${escHtml(d.mode)}</div>` : "")
+    + `<div class="nona-card-b"><button class="ghost-btn small" data-card="open">${escHtml(tr("Open the copy"))}</button>`
+    + `<button class="ghost-btn small" data-card="apply">${escHtml(tr("Apply to my build"))} <b>${escHtml(pair.from)}</b></button>`
+    + `<button class="ghost-btn small" data-card="back">${escHtml(tr("Back to my build"))}</button></div>`;
+  log.appendChild(el);
+  nonaScroll();
+  const cfg = buildBarCfg();
+  el.querySelector('[data-card="open"]').onclick = () => pickPreset(cfg, pair.copy);
+  el.querySelector('[data-card="back"]').onclick = () => pickPreset(cfg, pair.from);
+  el.querySelector('[data-card="apply"]').onclick = (e) => {
+    const state = pair.state;
+    const ps = loadPresetList(BUILDS);
+    const at = ps.findIndex((p) => presetId(p) === pair.from);
+    if (!state || at < 0) return;
+    ps[at] = { ...ps[at], savedAt: Date.now(), state: JSON.parse(JSON.stringify(state)) };
+    storePresetList(BUILDS, ps);
+    cfg.setActive(pair.from);
+    whileApplying(() => cfg.apply(ps[at].state));
+    cfg.rerender();
+    e.currentTarget.textContent = `✓ ${tr("applied")}`;
+    e.currentTarget.disabled = true;
+  };
 }
 
 async function nonaRunTool(call) {
@@ -25287,7 +25352,9 @@ async function nonaAsk(text) {
   const c = nona.conv;
   if (!c.messages.length) c.title = nonaTitle(c, text);
   c.messages.push({ role: "user", text, page: nonaSnapshot(), at: Date.now() });
+  const asked = c.messages.length;
   nonaSay("user", text);
+  nonaPaintSuggest();
   nona.busy = true; nona.abort = new AbortController(); nonaPaint();
   let retried = false;
   const seen = [];
@@ -25304,7 +25371,7 @@ async function nonaAsk(text) {
         if (!retried && nonaTooLong(e)) { retried = true; nonaFitBudget(cfg, true); step--; continue; }
         throw e;
       }
-      if (out.text) bubble.innerHTML = nonaMarkup(out.text); else bubble.remove();
+      if (out.text) bubble.innerHTML = nonaMarkup(out.text, nonaMeasured()); else bubble.remove();
       if (out.usage) {
         nonaCalibrate(cfg.model, est, out.usage.input);
         const cost = nonaCost(cfg, out.usage);
@@ -25350,8 +25417,15 @@ async function nonaAsk(text) {
     else nonaSay("error", String(e.message || e));
   } finally {
     nona.busy = false; nona.abort = null; nonaPaint();
+    const pair = (c.pairs || [])[(c.pairs || []).length - 1];
+    if (pair && c.messages.slice(asked).some((m) => m.role === "tool" && m.ok && /^builder\./.test(nonaToolId(m.name)))) {
+      const card = { ...pair, state: nonaBuildState(pair.copy) };
+      c.messages.push({ role: "card", pair: card });
+      nonaChangeCard(card);
+    }
     await nonaSave();
     nonaPaintFoot();
+    nonaPaintSuggest();
   }
 }
 
@@ -25372,14 +25446,51 @@ function nonaUsageLine(u) {
 
 // ---- the panel ----------------------------------------------------------------
 
+/// EVERY NUMBER A TOOL RETURNED in this conversation, as plain values — what a
+/// number in her reply is checked against.
+function nonaMeasured() {
+  const out = [];
+  for (const m of (nona.conv && nona.conv.messages) || []) {
+    if (m.role !== "tool" || !m.result) continue;
+    for (const x of m.result.match(/-?\d+(?:\.\d+)?/g) || []) out.push(Number(x));
+  }
+  return out;
+}
+
+/// A NUMBER SHE DID NOT MEASURE IS MARKED, not hidden: rule 1 of her prompt is
+/// a promise, and this is where the reader can see it kept. A figure counts as
+/// measured when some tool result holds it to the precision she wrote it at —
+/// read as written, as a percentage of a fraction, or scaled by k / 万 / M.
+/// Small whole numbers (slot 3, 4 Forma) are left alone: they are counts and
+/// labels far more often than measurements.
+function nonaCheckNumber(raw, suffix, measured) {
+  const v = Number(raw.replace(/,/g, ""));
+  if (!Number.isFinite(v)) return true;
+  const decimals = (raw.split(".")[1] || "").length;
+  if (!decimals && Math.abs(v) < 100 && suffix !== "%") return true;
+  const scale = { k: 1e3, K: 1e3, "万": 1e4, M: 1e6 }[suffix] || 1;
+  const want = [v * scale];
+  if (suffix === "%") want.push(v / 100);
+  const tol = (x) => Math.max(0.5 * 10 ** -decimals * (x === v / 100 ? 0.01 : scale), Math.abs(x) * 0.005);
+  return measured.some((t) => want.some((x) => Math.abs(t - x) <= tol(x)));
+}
+
 /// A REPLY'S MARKUP: escaped first, then the few marks a chat reply uses. A
-/// model's text is not trusted as HTML.
-const nonaMarkup = (s) => escHtml(s)
+/// model's text is not trusted as HTML. `measured` (the numbers the tools
+/// returned) turns on the unmeasured-number mark.
+const nonaMarkup = (s, measured) => nonaMarkNumbers(escHtml(s), measured)
   .replace(/`([^`]+)`/g, "<code>$1</code>")
   .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
   .split(/\n{2,}/).map((p) => /^\s*[-*] /m.test(p)
     ? "<ul>" + p.split("\n").filter((l) => l.trim()).map((l) => `<li>${l.replace(/^\s*[-*] /, "")}</li>`).join("") + "</ul>"
     : `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+
+function nonaMarkNumbers(html, measured) {
+  if (!measured) return html;
+  return html.replace(/(\d[\d,]*(?:\.\d+)?)(%|k|K|万|M)?/g, (all, raw, suffix) =>
+    (nonaCheckNumber(raw, suffix, measured) ? all
+      : `<span class="nona-unmeasured" title="${escHtml(tr("not measured in this conversation"))}">${all}</span>`));
+}
 
 const nonaScroll = () => { const log = $("nona-log"); if (log) log.scrollTop = log.scrollHeight; };
 
@@ -25394,6 +25505,16 @@ function nonaSay(kind, text) {
   return el;
 }
 
+/// The numbers measured before this reply — what it was checked against live.
+function nonaMeasuredBefore(msg) {
+  const at = nona.conv.messages.indexOf(msg);
+  const saved = nona.conv.messages;
+  nona.conv.messages = saved.slice(0, at);
+  const out = nonaMeasured();
+  nona.conv.messages = saved;
+  return out;
+}
+
 /// THE RECORD, DRAWN — the same lines the live loop draws, so a conversation
 /// reopened tomorrow reads exactly as it did.
 function nonaRender() {
@@ -25403,12 +25524,14 @@ function nonaRender() {
   for (const m of nona.conv.messages) {
     if (m.role === "user") nonaSay("user", m.text);
     else if (m.role === "assistant") {
-      if (m.text) nonaSay("assistant", m.text);
+      if (m.text) nonaSay("assistant", "").innerHTML = nonaMarkup(m.text, nonaMeasuredBefore(m));
       if (m.usage) nonaSay("usage", nonaUsageLine(m.usage));
     } else if (m.role === "tool") nonaSay("tool", m.line || nonaToolId(m.name)).classList.add(m.ok === false ? "no" : "ok");
     else if (m.role === "note") nonaSay("note", m.text);
+    else if (m.role === "card") nonaChangeCard(m.pair);
   }
   nonaPaintFoot();
+  nonaPaintSuggest();
 }
 
 function nonaPaint() {
@@ -25451,6 +25574,28 @@ function nonaPaintHead() {
       nonaOpen(null);
     };
   }
+}
+
+/// THREE QUESTIONS THE PAGE SUGGESTS, read off its own state rather than asked
+/// of a model: specific to what is open, and free. Shown on an empty
+/// conversation only — once one is going, the reader knows what to ask.
+function nonaSuggestions() {
+  const o = window.wfsim.observe();
+  if (!o.route || !o.route.weapon) return [];
+  const out = [];
+  if ((BOARD[o.route.weapon] || []).length) out.push(tr("What is this weapon's best build without a riven?"));
+  if (o.build && o.build.slots.some((x) => x.mod)) out.push(tr("How could my build do better?"));
+  else out.push(tr("Put together a build for this weapon"));
+  if (o.result && o.result.fresh && (BOARD[o.route.weapon] || []).length) out.push(tr("Why does my build score below the board's leader?"));
+  return out.slice(0, 3);
+}
+function nonaPaintSuggest() {
+  const host = $("nona-suggest");
+  if (!host) return;
+  const list = nona.conv && !nona.conv.messages.length && !nona.busy ? nonaSuggestions() : [];
+  host.innerHTML = list.map((q) => `<span class="pchip" data-q="${escHtml(q)}">${escHtml(q)}</span>`).join("");
+  host.hidden = !list.length;
+  host.querySelectorAll("[data-q]").forEach((el) => { el.onclick = () => nonaAsk(el.dataset.q); });
 }
 
 /// The running total, and the label the law and the providers both ask for.
@@ -25547,7 +25692,7 @@ function nonaPaintSettings() {
 async function nonaRedetect() {
   const d = nonaDraft;
   if (!d.base || !d.key) return;
-  const ask = `${d.base} ${d.key}`;
+  const ask = `${d.base}\u0000${d.key}`;
   d.asking = ask; d.state = "working"; nonaPaintSettings();
   try {
     const r = await nonaDetect(d.base, d.key);
@@ -25584,6 +25729,7 @@ function mountNona() {
     <div class="nona-convs" id="nona-convs"></div>
     <div id="nona-chat" class="nona-chat">
       <div id="nona-log" class="nona-log"></div>
+      <div id="nona-suggest" class="nona-suggest" hidden></div>
       <div class="nona-foot">
         <textarea id="nona-input" rows="2" placeholder="${escHtml(tr("Ask Nona about this build…"))}"></textarea>
         <button class="run-btn" id="nona-send">${escHtml(tr("Send"))}</button>

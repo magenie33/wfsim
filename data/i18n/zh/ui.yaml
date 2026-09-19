@@ -40,6 +40,16 @@ ui:
   "Unpin": 取消置顶
   "Delete?": 确认删除？
   "Delete": 删除
+  "not measured in this conversation": 本次对话里没有测量过这个数
+  "Changes on the copy": 副本上的改动
+  "Open the copy": 打开副本
+  "Apply to my build": 应用到我的配装
+  "Back to my build": 回到我的配装
+  "applied": 已应用
+  "What is this weapon's best build without a riven?": 这把武器不带紫卡的最强配装是什么？
+  "How could my build do better?": 我这套配装还能怎么提升？
+  "Put together a build for this weapon": 帮我给这把武器配一套配装
+  "Why does my build score below the board's leader?": 为什么我的配装比排行榜第一低？
   "cached": 缓存
   "this chat": 本对话
   "AI-generated content; it may be wrong.": 内容由 AI 生成，可能有误。

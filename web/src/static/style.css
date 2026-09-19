@@ -2670,3 +2670,12 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .nona-convs .dd{flex:1;min-width:0}
 .nona-msg.usage{align-self:flex-start;font-size:10.5px;color:var(--muted);margin-top:-4px;padding-left:4px}
 .nona-foot-note{font-size:10.5px;color:var(--muted);padding:0 12px 8px}
+.nona-unmeasured{text-decoration:underline dotted var(--gold);text-underline-offset:3px;cursor:help}
+.nona-msg.card{align-self:stretch;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--panel3);font-size:12.5px}
+.nona-card-h{margin-bottom:4px;color:var(--text-2)}
+.nona-diff{font-size:12px;margin:2px 0}
+.nona-diff.add{color:var(--good-text)}
+.nona-diff.del{color:var(--critical)}
+.nona-card-b{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.nona-suggest{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.nona-suggest .pchip{height:auto;padding:5px 10px;line-height:1.3;white-space:normal}
