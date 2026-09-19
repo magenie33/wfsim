@@ -134,29 +134,42 @@ for (const c of run) {
     const wait = (ms) => new Promise(r => setTimeout(r, ms));
     localStorage.setItem("wfsim-nona", ${JSON.stringify(JSON.stringify(cfg))});
     ${c.setup || ""}
-    const readerBuild = activePreset;
-    const readerState = readerBuild ? JSON.stringify(nonaBuildState(readerBuild).slots) : null;
+    // READ THROUGH THE DOOR AND THE PAGE ONLY, as a reader's tools would: the
+    // build by its query, the conversation from her own store.
+    const door = window.wfsim;
+    const readerBuild = door.observe().open.build;
+    const read = async (id) => JSON.stringify(((await door.do("shell.preset.read", { bar: "build", preset: id })) || {}).mods || null);
+    const readerState = readerBuild ? await read(readerBuild) : null;
     document.getElementById("nona-fab").click();
-    nonaOpen(null);
+    document.getElementById("nona-new").click();
     const t0 = Date.now();
-    nonaAsk(${JSON.stringify(c.ask)});
+    document.getElementById("nona-input").value = ${JSON.stringify(c.ask)};
+    document.getElementById("nona-send").click();
     await wait(300);
-    while (nona.busy && Date.now() - t0 < 240000) await wait(500);
-    const m = nona.conv.messages;
+    const busy = () => document.getElementById("nona-send").classList.contains("busy");
+    while (busy() && Date.now() - t0 < 240000) await wait(500);
+    const all = await new Promise((ok) => {
+      const req = indexedDB.open("wfsim-nona", 1);
+      req.onsuccess = () => { const g = req.result.transaction("conversations").objectStore("conversations").getAll(); g.onsuccess = () => ok(g.result); };
+      req.onerror = () => ok([]);
+    });
+    const conv = all.sort((a, b) => b.updated_at - a.updated_at)[0] || { messages: [], made: [], usage: null };
+    const m = conv.messages;
     const replies = m.filter(x => x.role === "assistant" && x.text).map(x => x.text);
-    const readerAfter = readerBuild ? JSON.stringify(((loadPresetList(BUILDS).find(p => presetId(p) === readerBuild) || {}).state || {}).slots) : null;
+    const readerAfter = readerBuild ? await read(readerBuild) : null;
+    const o = door.observe();
     return {
       calls: m.filter(x => x.role === "tool").map(x => {
-        const id = nonaToolId(x.name);
-        const a = AGENT_ACTIONS.find(y => y.id === id);
+        const id = x.name.replace(/_/g, ".");
+        const a = door.actions.find(y => y.id === id);
         return { id, ok: x.ok, query: !a || !!a.query };
       }),
       reply: replies[replies.length - 1] || "",
       unmeasured: document.querySelectorAll("#nona-log .nona-unmeasured").length,
-      copied: nona.owned.size > 0,
+      copied: (conv.made || []).length > 0,
       readerIntact: readerBuild === null || readerState === readerAfter,
-      officialAfter: officialScenarioActive() && (sim.level === 200),
-      usage: nona.conv.usage, seconds: Math.round((Date.now() - t0) / 1000),
+      officialAfter: !!o.official_scenario && !!o.scenario && o.scenario.level === 200,
+      usage: conv.usage, seconds: Math.round((Date.now() - t0) / 1000),
       errors: [...document.querySelectorAll("#nona-log .error")].map(e => e.textContent),
       record: m,
     };
