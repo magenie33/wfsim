@@ -8,16 +8,20 @@
 //! catalog, a Tenno or a fight to answer a question keeps that method in the
 //! layer that has one. `scripts/check_engine_layers.mjs` holds the line.
 
+mod arcane;
 mod buff;
 mod effect;
 mod enemy;
+mod evolution;
 mod shape;
 mod text;
 mod weapon;
 
+pub use arcane::*;
 pub use buff::*;
 pub use effect::*;
 pub use enemy::*;
+pub use evolution::*;
 pub use shape::*;
 pub use text::*;
 pub use weapon::*;

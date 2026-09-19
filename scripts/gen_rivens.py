@@ -62,7 +62,7 @@ POOLS = {
     "melee": "/Lotus/Upgrades/Mods/Randomized/PlayerMeleeWeaponRandomModRare",
 }
 
-# DE's tag -> our effect kind (engine/src/data/mods.rs `effect`). `None` = a
+# DE's tag -> our effect kind (engine/src/data/mods/parse.rs `effect`). `None` = a
 # stat the engine does not model; it still loads and still counts as a rolled
 # stat, it simply contributes nothing, exactly like an unmodeled mod.
 KIND = {

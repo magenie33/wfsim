@@ -23,7 +23,7 @@ how you contribute:
   week's `main` will not merge cleanly. That is not the contributor's fault and
   it is not a judgement on the work — it is arithmetic.
 - **Some files are rewritten constantly** — `web/src/static/app/`,
-  `webapi/src/lib.rs`, `engine/src/build/loadout.rs`. A PR touching them competes with
+  `webapi/src/lib.rs`, `engine/src/build/loadout/`. A PR touching them competes with
   the maintainer's own edits every day it stays open.
 - **`engine/` and `optimizer/` are maintainer-led.** They carry the model every
   number in the product comes out of, they move fastest, and a change in them is

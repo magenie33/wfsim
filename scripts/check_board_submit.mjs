@@ -306,7 +306,7 @@ console.log("the board's submission endpoint\n");
 // refuses every full MELEE build with "bad mods", which is a legal build lost
 // at the one hop neither the engine nor the page is watching.
 {
-  const src = fs.readFileSync(new URL("../engine/src/board/builds.rs", import.meta.url), "utf8");
+  const src = fs.readFileSync(new URL("../engine/src/board/builds/axes.rs", import.meta.url), "utf8");
   const m = src.match(/pub const MAIN_SLOTS: usize = (\d+);/);
   const mainSlots = m ? Number(m[1]) : NaN;
   check("the engine's MAIN_SLOTS is readable", Number.isFinite(mainSlots), String(mainSlots));

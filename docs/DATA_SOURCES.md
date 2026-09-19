@@ -626,7 +626,7 @@ source belongs as a third CHECK, not as a replacement for either.
 | --- | --- | --- |
 | [calamity-inc/warframe-public-export-plus](https://github.com/calamity-inc/warframe-public-export-plus) | DE's own PUBLIC EXPORT, mirrored and enriched | WFCD is a cleaned second-hand dataset and has gaps: **Primed Deadly Efficiency is absent entirely** — no entry, no `imageName`, and the CDN 404s the card — and its `i18n.json` carries only `name` for riven items, no localized `upgradeEntries`. DE's export would answer both. |
 | [oracle.browse.wf/dicts](https://oracle.browse.wf/dicts/zh.json) | DE's own localization dictionaries, per language | our Chinese is assembled from three paths (WFCD i18n whole sentences, a hand-written `effect_phrases` table, hand-written names). One source could unify them. |
-| [pa001024/riven-mirror](https://github.com/pa001024/riven-mirror) (MIT) | a riven calculator, source-available | ALREADY USED as a third opinion on the riven config multipliers — see the table in `engine/src/build/rivens.rs`. It is where the "community calculators read 1.0" claim actually comes from, and reading its source is what turned that from a rumour into a citation that can be weighed. |
+| [pa001024/riven-mirror](https://github.com/pa001024/riven-mirror) (MIT) | a riven calculator, source-available | ALREADY USED as a third opinion on the riven config multipliers — see the table in `engine/src/build/rivens/`. It is where the "community calculators read 1.0" claim actually comes from, and reading its source is what turned that from a rumour into a citation that can be weighed. |
 
 The rest of Tenno Hub's list is worldstate and market data (`api.warframestat.us`,
 `api.warframe.market`, `oracle.browse.wf/worldState.json`, `browse.wf/arbys.txt`),
@@ -1300,7 +1300,7 @@ Three files, and which one DECIDES is the whole design:
 
 | file | role |
 |---|---|
-| `engine/src/build/rivens.rs::derived_for` | **the model** — the weapon's physical shares, its ammo pool, whether anything it fires travels |
+| `engine/src/build/rivens/pools.rs::derived_for` | **the model** — the weapon's physical shares, its ammo pool, whether anything it fires travels |
 | `data/rivens/exceptions.yaml` | **the overrides** — hand-written, per riven FAMILY, every entry carrying the evidence it came from |
 | `data/rivens/pools.yaml` | **the check** — a count over live warframe.market listings, read by a test and by nothing else |
 

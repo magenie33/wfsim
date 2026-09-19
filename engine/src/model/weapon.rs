@@ -1067,7 +1067,7 @@ pub struct WeaponBase {
     /// Reload-speed bonus from evolutions, into the same bucket the mods feed.
     pub evo_reload_bonus: f64,
     /// READY RETALIATION's window — see
-    /// [`crate::data::evolutions::EvoEffect::ReloadSpeedOnEmptyReload`]. Same
+    /// [`crate::model::EvoEffect::ReloadSpeedOnEmptyReload`]. Same
     /// bucket as `evo_reload_bonus`, but only while the window is open.
     /// READY RETALIATION: *"On Reload From Empty: +100% Reload Speed"*, as a
     /// plain bonus rather than a timed buff.

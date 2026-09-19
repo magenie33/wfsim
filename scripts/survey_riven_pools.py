@@ -4,7 +4,7 @@
 The wiki states one rule and admits it is not a law: "Weapons without more
 than 25% of a physical damage type usually cannot roll that respective
 attribute... Exceptions exist on a case by case basis." `excluded_for` in
-engine/src/build/rivens.rs derives what it can from the weapon, and it lands on
+engine/src/build/rivens/ derives what it can from the weapon, and it lands on
 the right answer for most of the roster — but it is a heuristic, and the
 exceptions are exactly the cases a player notices, because what a wrong answer
 does is refuse a stat their real card carries.
@@ -167,7 +167,7 @@ def main():
         "#",
         "# `never` = essentially absent. `rollable` = it appears at the rate a",
         "# rolling stat does on this family. Anything in neither is UNCLEAR and",
-        "# the engine keeps its own derivation for it (engine/src/build/rivens.rs",
+        "# the engine keeps its own derivation for it (engine/src/build/rivens/pools.rs",
         "# `excluded_for`).",
         "#",
         "# A count is a sample, not a proof: absence is strong evidence and not a",

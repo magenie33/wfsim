@@ -1,0 +1,97 @@
+use super::*;
+
+/// One Focus node that reaches the Warframe, at max rank.
+#[derive(Debug, Clone)]
+pub struct FocusNode {
+    pub id: String,
+    pub name: String,
+    pub text: String,
+    /// No Operator action is needed; the node always applies.
+    pub always: bool,
+    pub when: String,
+    pub effects: Vec<FrameEffect>,
+    pub tags: Vec<TagGrant>,
+}
+
+/// A Focus school. Only the ACTIVE school's nodes apply: "Active and Passive ways
+/// are only usable in the specific focus school they belong to" (W`Focus`).
+#[derive(Debug, Clone)]
+pub struct FocusSchool {
+    pub id: String,
+    pub name: String,
+    pub nodes: Vec<FocusNode>,
+    /// The school's Tektolyst Artifact: one per school, seated by the Operator.
+    pub artifact: Option<ArtifactDef>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ArtifactDef {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub(super) struct RawNode {
+    pub(super) id: String,
+    pub(super) name: String,
+    pub(super) text: String,
+    #[serde(default)]
+    pub(super) always: bool,
+    #[serde(default)]
+    pub(super) when: String,
+    #[serde(default)]
+    pub(super) effects: Vec<RawEffect>,
+    #[serde(default)]
+    pub(super) tags: Vec<RawTag>,
+}
+
+#[derive(Debug, Deserialize)]
+pub(super) struct RawSchool {
+    pub(super) id: String,
+    pub(super) name: String,
+    pub(super) nodes: Vec<RawNode>,
+    #[serde(default)]
+    pub(super) artifact: Option<ArtifactDef>,
+    #[serde(default)]
+    pub(super) source: SourceFile,
+}
+
+pub fn focus_schools() -> &'static [FocusSchool] {
+    static F: OnceLock<Vec<FocusSchool>> = OnceLock::new();
+    F.get_or_init(|| {
+        crate::data::files_under("focus/")
+            .map(|(p, text)| {
+                let r: RawSchool = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                FocusSchool {
+                    id: r.id,
+                    name: r.name,
+                    nodes: r
+                        .nodes
+                        .iter()
+                        .map(|n| {
+                            assert!(n.always || !n.when.is_empty(), "{p}: {} says neither `always` nor `when`", n.id);
+                            FocusNode {
+                                id: n.id.clone(),
+                                name: n.name.clone(),
+                                text: n.text.clone(),
+                                always: n.always,
+                                when: n.when.clone(),
+                                effects: n.effects.iter().map(|e| effect(p, e)).collect(),
+                                tags: tags_of(p, &n.tags),
+                            }
+                        })
+                        .collect(),
+                    artifact: r.artifact,
+                    url: r.source.url,
+                }
+            })
+            .collect()
+    })
+}
+
+pub fn focus_school(id: &str) -> Option<&'static FocusSchool> {
+    focus_schools().iter().find(|s| s.id == id)
+}
+
+// ---- the Tektolyst Artifact ------------------------------------------------

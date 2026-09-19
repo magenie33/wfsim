@@ -655,7 +655,7 @@ pub struct ResolvedPanel {
     /// bonuses" says it should do.
     pub base_damage_on_eximus_weakpoint: Option<TimedBuff>,
     /// READY RETALIATION's window — see
-    /// [`crate::data::evolutions::EvoEffect::ReloadSpeedOnEmptyReload`]. It joins
+    /// [`crate::model::EvoEffect::ReloadSpeedOnEmptyReload`]. It joins
     /// the reload bucket the mods and `evo_reload_bonus` feed, but only while
     /// open, and only a reload FROM EMPTY opens it.
     /// READY RETALIATION as the sim holds it: a buff with NO DURATION that is

@@ -48,10 +48,10 @@ simpler and removes the cwd assumption entirely; preferred).
 
 Loaders to convert (each is a `read_dir` + `read_to_string` pair):
 
-- `engine/src/data/mods.rs:267` (`data/mods/<class>/*.yaml`)
-- `engine/src/data/arcanes.rs:654,685` (`data/arcanes/*`)
-- `engine/src/data/evolutions.rs:235-251` (`data/evolutions/*.yaml`)
-- `engine/src/data/enemies.rs:152,230,249` (`data/enemies/*.yaml`, incl.
+- `engine/src/data/mods/pools.rs` (`data/mods/<class>/*.yaml`)
+- `engine/src/data/arcanes/pools.rs` (`data/arcanes/*`)
+- `engine/src/data/evolutions/catalog.rs` (`data/evolutions/*.yaml`)
+- `engine/src/data/enemies.rs` (`data/enemies/*.yaml`, incl.
   `custom/`; note `EnemySpec::load(path)` single-file API also used by the
   CLI — keep it, backed by the embedded set + a native fs fallback)
 - `engine/src/fight/tests/` (test paths — tests may keep fs)
