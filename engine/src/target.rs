@@ -7,12 +7,12 @@
 //! and the formation all hold one. It is the input, never the fight's state —
 //! what a body has LEFT mid-fight is `fight::TargetState`.
 
-use crate::damage::{DamageType, DamageVector};
-use crate::scaling;
+use crate::rules::damage::{DamageType, DamageVector};
+use crate::rules::scaling;
 
 /// The simulated target: base stats + level, scaled via [`scaling`].
 ///
-/// Prefer building this through `enemy_data::EnemySpec::target_params`, which
+/// Prefer building this through `data::enemies::EnemySpec::target_params`, which
 /// rejects combinations that do not exist in-game (e.g. an Eximus of a unit
 /// with no Eximus variant). Hand-built values are re-checked at spawn.
 #[derive(Debug, Clone)]
@@ -24,7 +24,7 @@ pub struct TargetParams {
     pub base_armor: f64,
     pub base_overguard: f64,
     /// What this unit is worth in affinity BEFORE level scaling — the enemy
-    /// file's own number. Scaled by `scaling::affinity_multiplier` at the kill.
+    /// file's own number. Scaled by `rules::scaling::affinity_multiplier` at the kill.
     pub base_affinity: f64,
     /// Base shields (mitigation order: Overguard → Shield → Health;
     /// Toxin bypasses shields but NOT overguard).
@@ -36,12 +36,12 @@ pub struct TargetParams {
     /// Per-unit status stack caps; `None` = the normal per-status caps.
     pub stack_caps: Option<StackCaps>,
     /// Cold never converts on this target — see
-    /// [`crate::enemy_data::EnemySpec::cannot_be_frozen`]. The stacks climb to
+    /// [`crate::data::enemies::EnemySpec::cannot_be_frozen`]. The stacks climb to
     /// the ordinary ten-stack cap and STAY there, so the Cold crit-damage bonus
     /// is up for the whole fight instead of being spent every tenth proc.
     pub cannot_be_frozen: bool,
     /// THE SECOND HALF OF A THRAX'S DEATH, when the FIGHT asked for it —
-    /// `enemy_data::SpectralForm`. `None` is a unit that dies once, which is
+    /// `data::enemies::SpectralForm`. `None` is a unit that dies once, which is
     /// every other enemy and every fight that leaves the box unticked.
     pub spectral: Option<crate::model::SpectralForm>,
     /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
@@ -67,7 +67,7 @@ pub struct TargetParams {
     /// pool's. A per-COMPONENT multiplier, independent of `faction` above —
     /// the two systems have different keys and stack multiplicatively
     /// (docs/MECHANICS.md §8).
-    pub type_mods: crate::factions_data::Columns,
+    pub type_mods: crate::data::factions::Columns,
     /// A FLAT MULTIPLIER THIS UNIT APPLIES INSIDE THE FACTION BRACKET, 1.0 on
     /// everything that does not declare one. It is NOT attenuation and not a
     /// vulnerability column: it rides `faction_at_time`, so it is re-applied at
@@ -196,7 +196,7 @@ impl TypeShares {
 
     /// The whole instance's multiplier under a column. Each component takes
     /// its own factor, so with shares summing to 1 this is the weighted mean.
-    pub(crate) fn whole(&self, col: &crate::factions_data::Column) -> f64 {
+    pub(crate) fn whole(&self, col: &crate::data::factions::Column) -> f64 {
         if !self.shaped() {
             return 1.0;
         }
@@ -208,7 +208,7 @@ impl TypeShares {
 
     /// The part that does NOT bypass shields, already column-scaled — a
     /// PORTION of the instance, not a multiplier on it.
-    pub(crate) fn non_toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
+    pub(crate) fn non_toxin_portion(&self, col: &crate::data::factions::Column) -> f64 {
         if !self.shaped() {
             return 1.0;
         }
@@ -216,7 +216,7 @@ impl TypeShares {
     }
 
     /// The Toxin part, already column-scaled. Goes straight to health.
-    pub(crate) fn toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
+    pub(crate) fn toxin_portion(&self, col: &crate::data::factions::Column) -> f64 {
         self.toxin() * col.get(DamageType::Toxin)
     }
 
@@ -265,7 +265,7 @@ impl TargetParams {
             status_immunities: Vec::new(),
             faction: crate::model::Faction::Unknown,
             // A training dummy has no faction and takes damage as written.
-            type_mods: crate::factions_data::Columns::NEUTRAL,
+            type_mods: crate::data::factions::Columns::NEUTRAL,
             faction_bracket_multiplier: 1.0,
             mode: TargetMode::InfiniteHealth,
         }
@@ -464,7 +464,7 @@ impl BodyPart {
 /// A CATALOG ENTRY BECOMES A TARGET here, not in the catalog: the enemy file
 /// says what a unit is, and only the layer that holds `TargetParams` says what
 /// the fight makes of it.
-impl crate::enemy_data::EnemySpec {
+impl crate::data::enemies::EnemySpec {
     /// Build the simulation target. Fails on combinations that do not exist
     /// in-game (e.g. `eximus` for a unit with no Eximus variant).
     pub fn target_params(
@@ -489,12 +489,12 @@ impl crate::enemy_data::EnemySpec {
         // part of it, and a player inventing a target does not get to invent
         // that.
         let type_mods = if self.damage_modifiers.is_some() {
-            crate::factions_data::Columns {
-                faction: crate::factions_data::Column::from_multipliers(&self.inline_column()?),
-                overguard: crate::factions_data::overguard_column(),
+            crate::data::factions::Columns {
+                faction: crate::data::factions::Column::from_multipliers(&self.inline_column()?),
+                overguard: crate::data::factions::overguard_column(),
             }
         } else {
-            crate::factions_data::columns_for(self.damage_column_key())
+            crate::data::factions::columns_for(self.damage_column_key())
         };
         Ok(TargetParams {
             name: self.name.clone(),
@@ -530,7 +530,7 @@ impl crate::enemy_data::EnemySpec {
                 .status_immunities
                 .iter()
                 .map(|k| {
-                    crate::damage::DamageType::from_name(k)
+                    crate::rules::damage::DamageType::from_name(k)
                         .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))
                 })
                 .collect::<Result<Vec<_>, _>>()?,
@@ -549,14 +549,14 @@ impl crate::enemy_data::EnemySpec {
     /// entry: the whole point of the field is to state something unusual, and
     /// "heatt: 0" that quietly does nothing is a target the reader believes is
     /// immune and is not.
-    fn inline_column(&self) -> Result<Vec<(crate::damage::DamageType, f64)>, String> {
+    fn inline_column(&self) -> Result<Vec<(crate::rules::damage::DamageType, f64)>, String> {
         let m = match &self.damage_modifiers {
             Some(m) => m,
             None => return Ok(Vec::new()),
         };
         m.iter()
             .map(|(k, v)| {
-                let t = crate::damage::DamageType::from_name(k)
+                let t = crate::rules::damage::DamageType::from_name(k)
                     .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))?;
                 if !(0.0..=100.0).contains(v) {
                     return Err(format!("{}: {k} x{v} is not a damage multiplier", self.name));

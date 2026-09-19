@@ -20,7 +20,7 @@ effects:
   # THE BRACKET IS ON THIS PAGE, which is why it took so long to find — it is
   # stated about the OTHER mod, in this one's Notes: "Sinister Reach will not be
   # affected by this mod as it gives a flat beam length increase AFTER percent
-  # bonuses." So `loadout::resolve` computes `range x (1 + percent) + flat`, and
+  # bonuses." So `build::loadout::resolve` computes `range x (1 + percent) + flat`, and
   # the Phantasma — the one weapon that can hold both — is 38 m rather than
   # 41.6 m on a 20 m beam.
   #

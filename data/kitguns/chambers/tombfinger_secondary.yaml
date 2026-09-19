@@ -87,7 +87,7 @@ blast:
   radius_mods: [fulmination]
   self_stagger: true
   # ONE ENTRY PER FIRING FORM, keyed by that form's own id in
-  # `weapons_data::FormKind`. This slot has exactly one.
+  # `data::weapons::FormKind`. This slot has exactly one.
   forms:
    base:
     radius_m: 1.9

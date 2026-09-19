@@ -12,7 +12,7 @@
 # `never` = the stat was essentially absent from the sample.
 # `rollable` = it appeared at or above the rate a rolling stat should.
 # Anything in neither is UNCLEAR and the engine keeps its own
-# derivation for it (engine/src/rivens_data.rs `excluded_for`).
+# derivation for it (engine/src/build/rivens.rs `excluded_for`).
 #
 # A count is a sample, not a proof: absence in 500 listings is strong
 # evidence and not a guarantee. An in-game card that contradicts a

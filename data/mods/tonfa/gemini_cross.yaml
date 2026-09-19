@@ -11,7 +11,7 @@ description: "A style exhibiting sweeping slash attacks and swift jabs."
 # THE MATCHING STANCE ON A PRAEDOS, which is the only thing that separates the
 # two Tonfa cards before their combos are compared: the slot is Madurai, so this
 # grants the full 10 capacity where Sovereign Outcast grants 4
-# (`mods::stance_capacity`).
+# (`rules::capacity::stance_capacity`).
 #
 # LONGER AND FLATTER THAN SOVEREIGN OUTCAST. Vagrant Blight is 5 inputs over
 # 4.6 s against Rogue Edict's 4 over 2.85, and most of its rows are 100% — so it

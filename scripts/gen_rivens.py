@@ -62,7 +62,7 @@ POOLS = {
     "melee": "/Lotus/Upgrades/Mods/Randomized/PlayerMeleeWeaponRandomModRare",
 }
 
-# DE's tag -> our effect kind (engine/src/mods_data.rs `effect`). `None` = a
+# DE's tag -> our effect kind (engine/src/data/mods.rs `effect`). `None` = a
 # stat the engine does not model; it still loads and still counts as a rolled
 # stat, it simply contributes nothing, exactly like an unmodeled mod.
 KIND = {
@@ -137,7 +137,7 @@ NEVER_MALUS = {
 # Its base is NEGATIVE (-0.01165) because it already IS the malus, which is
 # what makes it different from Weapon Recoil: recoil's negative base is the
 # BONUS ("-90% Weapon Recoil" is the good one) and flips positive in the malus
-# slot, while this one stays negative there. `engine::rivens_data` carries that
+# slot, while this one stays negative there. `engine::build::rivens` carries that
 # rule; this set is what tells it which stats it applies to.
 NEVER_BONUS = {
     "WeaponMeleeComboPointsOnHitMod",

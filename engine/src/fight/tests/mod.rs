@@ -41,11 +41,11 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
-            sample_by: crate::metrics::RunStat::KillProgress,
+            sample_by: crate::rules::metrics::RunStat::KillProgress,
             // Ordinary: only one measured entry differs (see the field).
             echo_multiplier: 1.0,
             // A FIXTURE BRINGS NO WARFRAME: no auras, no shards.
-            squad: crate::tenno_data::SquadEffects::default(),
+            squad: crate::data::tenno::SquadEffects::default(),
             enervate_stacks: 0,
             influence_open: None,
             rage_open: None,
@@ -65,8 +65,8 @@ impl Default for FightParams {
             // …and nothing may miss: a fixture that dropped shots would put
             // every golden value in this file at the mercy of an aim roll.
             spread: None,
-            player_at: crate::space::Vec2::ORIGIN,
-            target_at: crate::space::Vec2::ORIGIN,
+            player_at: crate::rules::space::Vec2::ORIGIN,
+            target_at: crate::rules::space::Vec2::ORIGIN,
             lingering: None,
             continuous: false,
             field_duration_on_empty_reload: 1.0,
@@ -114,7 +114,7 @@ impl Default for FightParams {
             ammo_conversion: 0.0,
             pickup_range_m: f64::INFINITY,
             landscape: false,
-            ammo_class: Some(crate::ammo::Pickup::Primary),
+            ammo_class: Some(crate::rules::ammo::Pickup::Primary),
             ammo_cost: 1.0,
             reserve_ammo: 72.0,
             ammo_efficiency_applies: true,
@@ -213,7 +213,7 @@ impl Default for FightParams {
             },
             body_parts: BodyPart::humanoid(),
             target: TargetParams::training_dummy(),
-            tenno: crate::tenno_data::default_tenno().clone(),
+            tenno: crate::data::tenno::default_tenno().clone(),
             duration_seconds: 10.0,
             // ONE BODY — a fixture, not a formation.
             others: Vec::new(),
@@ -266,7 +266,7 @@ pub(super) fn no_status() -> FightParams {
 /// A secondary arcane at max rank under the Emergent policy (crit-base
 /// 0 — none of these tests use the assumed-max relative crit paths).
 fn arc(id: &str) -> ArcaneFx {
-    crate::arcanes_data::secondary(id).unwrap().fx(5, crate::model::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno())
+    crate::data::arcanes::secondary(id).unwrap().fx(5, crate::model::StackPolicy::Emergent, &[], crate::data::tenno::default_tenno())
 }
 
 /// The same arcane with its stacks ALREADY EARNED.
@@ -307,7 +307,7 @@ fn flat_base() -> FightParams {
 /// the only head in the fight is one a bounce found.
 #[cfg(test)]
 /// A CROWD, not a line, and the change is the mechanic's. A bounce
-/// REFLECTS (`space::bounce_path`), so where it goes next is geometry: off
+/// REFLECTS (`rules::space::bounce_path`), so where it goes next is geometry: off
 /// a lone body strung out at 5 m intervals it flies into the open and the
 /// path ends. Density is what a bounce weapon needs, which is the same
 /// thing the community says about this family — it wants a tight corridor.
@@ -316,7 +316,7 @@ fn flat_base() -> FightParams {
 fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> FightParams {
     let base = crate::model::WeaponBase::from_data("latron_prime_incarnon", false, &[]);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(10.0);
     // A SQUARE around the aimed body at 0.6 m, which is just over a body's
     // width — the packing a reflected projectile can actually travel in.
@@ -327,7 +327,7 @@ fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> FightParams {
             if i == 0 && j == 0 {
                 continue;
             }
-            at.push(crate::space::Vec2::new(
+            at.push(crate::rules::space::Vec2::new(
                 i as f64 * 0.6,
                 arena.target_at.y + j as f64 * 0.6,
             ));
@@ -345,7 +345,7 @@ fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> FightParams {
             at: p,
         })
         .collect();
-    let mut p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+    let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
     // A BODY SHOT EVERY TIME on the aimed body — `body_parts` is where
     // the scenario's headshot rate lives, so one part with no head is a
     // player who never lands one. The OTHER bodies keep their heads, which
@@ -395,10 +395,10 @@ pub(super) fn mono_body(multiplier: f64) -> Vec<BodyPart> {
 /// for 10 s, its own 15% / 2.0x crit and 25% status, and the Torid's
 /// anomalous CO eligibility. `stacking` picks the branch (MEASUREMENTS M13
 /// measured `stack`; `refresh` is the other weapon-data option).
-fn cloud(stacking: crate::model::FieldStacking) -> crate::loadout::ResolvedLingering {
+fn cloud(stacking: crate::model::FieldStacking) -> crate::build::loadout::ResolvedLingering {
     let mut damage = DamageVector::default();
     damage.set(DamageType::Toxin, 40.0);
-    crate::loadout::ResolvedLingering {
+    crate::build::loadout::ResolvedLingering {
         damage,
         modified_base: 40.0,
         crit_chance: 0.0,   // crit off: tick COUNTS are the assertion
@@ -414,7 +414,7 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::loadout::ResolvedLinge
         // find a head. Stated rather than defaulted, because these are the
         // values the ten-tick arithmetic below rests on.
         first_tick_delay_seconds: 0.0,
-        forced_procs: crate::damage::ForcedProcs::from_types([]),
+        forced_procs: crate::rules::damage::ForcedProcs::from_types([]),
         radius_m: 3.0,
         falloff_start_m: 0.0,
         falloff_reduction: 1.0,
@@ -426,8 +426,8 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::loadout::ResolvedLinge
 /// A GRIMOIRE-SHAPED ORB: 280 a strike, one a second, six of them over a
 /// six second fuse, then a 200 detonation. Geometry and a clock — what it
 /// DEALS is the attack's own damage and radial, which `from_panel` derives.
-fn orb_spec() -> crate::loadout::ResolvedOrb {
-    crate::loadout::ResolvedOrb {
+fn orb_spec() -> crate::build::loadout::ResolvedOrb {
+    crate::build::loadout::ResolvedOrb {
         fuse_seconds: 6.0,
         strike_interval_seconds: 1.0,
         strike_radius_m: 6.0,
@@ -453,10 +453,10 @@ fn orb_spec() -> crate::loadout::ResolvedOrb {
 /// The part an orb strike settles — the attack's own hit, in the shape a
 /// timed instance is resolved from. `from_panel` builds this from the
 /// resolved panel; a unit fixture states it.
-fn orb_part(damage: f64) -> crate::loadout::ResolvedLingering {
+fn orb_part(damage: f64) -> crate::build::loadout::ResolvedLingering {
     let mut v = DamageVector::default();
     v.set(DamageType::Electricity, damage);
-    crate::loadout::ResolvedLingering {
+    crate::build::loadout::ResolvedLingering {
         damage: v,
         modified_base: damage,
         crit_chance: 0.0,
@@ -468,7 +468,7 @@ fn orb_part(damage: f64) -> crate::loadout::ResolvedLingering {
         tick_rate: 1.0,
         duration_seconds: 0.0,
         first_tick_delay_seconds: 0.0,
-        forced_procs: crate::damage::ForcedProcs::from_types([]),
+        forced_procs: crate::rules::damage::ForcedProcs::from_types([]),
         radius_m: f64::INFINITY,
         falloff_start_m: f64::INFINITY,
         falloff_reduction: 0.0,
@@ -488,7 +488,7 @@ fn orb_thrower() -> FightParams {
         // drift one uses this, because a moving orb changes WHO is in
         // reach, and a test about the clock, the crit or the forced proc
         // should not be reading geometry it did not ask about.
-        orb: Some(crate::loadout::ResolvedOrb {
+        orb: Some(crate::build::loadout::ResolvedOrb {
             speed_after_contact_mps: 0.0,
             ..orb_spec()
         }),
@@ -522,7 +522,7 @@ fn orb_thrower() -> FightParams {
 /// follows from it.
 fn metered() -> FightParams {
     FightParams {
-        meter: Some(crate::loadout::ResolvedMeter {
+        meter: Some(crate::build::loadout::ResolvedMeter {
             seconds_to_fill: 45.0,
             seconds_per_hit: 1.0,
             seconds_per_ammo_pickup: 10.0,
@@ -543,8 +543,8 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
         base_overguard: overguard,
         base_affinity: 0.0,
         base_shield: 0.0,
-        health_curve: crate::scaling::health::UNAFFILIATED,
-        shield_curve: crate::scaling::shield::GRINEER,
+        health_curve: crate::rules::scaling::health::UNAFFILIATED,
+        shield_curve: crate::rules::scaling::shield::GRINEER,
         attenuation: None,
         stack_caps: None,
         cannot_be_frozen: false,
@@ -553,7 +553,7 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
         can_be_eximus: false,
         status_immunities: Vec::new(),
         faction: crate::model::Faction::Unknown,
-        type_mods: crate::factions_data::Columns::NEUTRAL,
+        type_mods: crate::data::factions::Columns::NEUTRAL,
         faction_bracket_multiplier: 1.0,
         mode,
     }
@@ -562,7 +562,7 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
 /// A radial params fixture: the direct hit is inert (no damage roll
 /// noise, no status), so everything the run reports comes from the
 /// explosion.
-fn radial_only(radial: crate::loadout::ResolvedRadial) -> FightParams {
+fn radial_only(radial: crate::build::loadout::ResolvedRadial) -> FightParams {
     FightParams {
         damage: DamageVector::default(),
         radial: Some(radial),
@@ -578,10 +578,10 @@ fn radial_only(radial: crate::loadout::ResolvedRadial) -> FightParams {
     }
 }
 
-fn radial_of(status_chance: f64, crit_chance: f64) -> crate::loadout::ResolvedRadial {
+fn radial_of(status_chance: f64, crit_chance: f64) -> crate::build::loadout::ResolvedRadial {
     let mut damage = DamageVector::default();
     damage.set(DamageType::Heat, 300.0);
-    crate::loadout::ResolvedRadial {
+    crate::build::loadout::ResolvedRadial {
         blast_kind: crate::model::BlastKind::Contact,
         damage,
         modified_base: 300.0,
@@ -703,7 +703,7 @@ fn bare(forced: DamageType) -> FightParams {
 /// The infinite dummy, wearing one faction's column.
 fn column_dummy(key: &str, overguard: f64) -> TargetParams {
     TargetParams {
-        type_mods: crate::factions_data::columns_for(key),
+        type_mods: crate::data::factions::columns_for(key),
         ..frail_target(TargetMode::InfiniteHealth, 0.0, overguard)
     }
 }
@@ -735,7 +735,7 @@ fn shielded_target(shield: f64, health: f64) -> TargetParams {
 /// Steel Path level 210 Corrupted Heavy Gunner — and, with `neighbours`,
 /// that many more of them 2 m away. `head` aims every shot at the head.
 fn m100_fixture(element: DamageType, head: bool, neighbours: usize) -> FightParams {
-    let unit = crate::enemy_data::all()
+    let unit = crate::data::enemies::all()
         .into_iter()
         .find(|e| e.id == "corrupted_heavy_gunner")
         .expect("the roster has one");
@@ -753,7 +753,7 @@ fn m100_fixture(element: DamageType, head: bool, neighbours: usize) -> FightPara
                 id: String::new(),
                 params: target.clone(),
                 body_parts: BodyPart::humanoid(),
-                at: crate::space::Vec2::new(2.0 * a.cos(), 2.0 * a.sin()),
+                at: crate::rules::space::Vec2::new(2.0 * a.cos(), 2.0 * a.sin()),
             }
         })
         .collect();
@@ -767,7 +767,7 @@ fn m100_fixture(element: DamageType, head: bool, neighbours: usize) -> FightPara
         dot_modified_base: Some(160.0),
         headshot_damage_bonus: 0.5,
         // THE VALENCE SHAPE: an added element in the element's own bracket.
-        arcane: crate::arcanes_data::ArcaneFx {
+        arcane: crate::data::arcanes::ArcaneFx {
             headshot_multiplier_bonus: 0.3,
             added_elements: vec![(element, 2.0)],
             ..ArcaneFx::none()

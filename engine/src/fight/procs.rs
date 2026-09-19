@@ -134,7 +134,7 @@ pub(super) fn debilitate_split(
     if chance <= 0.0 || stacks_with_this < DEBILITATE_STACKS {
         return None;
     }
-    let (a, b) = crate::elements::components_of(landed)?;
+    let (a, b) = crate::rules::elements::components_of(landed)?;
     if rng.next_f64() >= chance {
         return None;
     }
@@ -180,12 +180,12 @@ pub(super) fn fire_extra_hits(
     rec: &mut crate::record::Record,
     rng: &mut Rng,
 ) -> bool {
-    let hits = crate::abilities_data::extra_hits_at(&params.abilities, at);
+    let hits = crate::data::abilities::extra_hits_at(&params.abilities, at);
     if hits.is_empty() || trigger_raw <= 0.0 {
         return false;
     }
     let f = params.faction_at_time(at);
-    for crate::abilities_data::ExtraHitLive { element: ty, fraction, forced_status } in hits {
+    for crate::data::abilities::ExtraHitLive { element: ty, fraction, forced_status } in hits {
         let raw = trigger_raw * fraction * bracket * part_again * f;
         let mut breakdown = Breakdown::default();
         let settled = target.apply(
@@ -318,7 +318,7 @@ pub(super) fn fire_extra_hits(
 /// [`DebuffState::area_out`] for the mechanic and its sources). THE ORIGIN IS
 /// SKIPPED: it already has the DoT, and that IS the cloud's damage to the body
 /// standing in it. A cloud reaches a body when any part of it touches
-/// (`space::caught_by_blast`), the rule every sphere here uses.
+/// (`rules::space::caught_by_blast`), the rule every sphere here uses.
 #[allow(clippy::too_many_arguments)]
 /// HOW MANY DoTs OF ONE KIND A BODY CAN CARRY: the unit's own cap where it
 /// declares one, and TEN otherwise — "Up to 10 instances of the effect can
@@ -368,11 +368,11 @@ pub(super) fn drain_area_procs(
     target: &mut TargetState,
     others: &mut [SpreadFoe],
     params: &FightParams,
-    // WHO IS NEAR WHOM, built once per run — see `space::Neighbours`. Asking
+    // WHO IS NEAR WHOM, built once per run — see `rules::space::Neighbours`. Asking
     // per proc is `O(bodies)` and a dense grid produces thousands of procs a
     // second: the Phantasma Prime on a 19x19 ruler was 9,551 multishot a run against
     // 88 with the spread off, entirely on that scan.
-    near: &crate::space::Neighbours,
+    near: &crate::rules::space::Neighbours,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     at_now: f64,
@@ -483,7 +483,7 @@ pub(super) fn drain_area_procs(
             // flat where it does not — a Blast detonation reaches everyone
             // inside its sphere for the same number.
             let share = if hit.linear_falloff {
-                let reach = crate::space::blast_reach(centre_gap);
+                let reach = crate::rules::space::blast_reach(centre_gap);
                 (1.0 - reach / hit.radius_m).clamp(0.0, 1.0)
             } else {
                 1.0

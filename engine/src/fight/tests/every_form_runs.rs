@@ -22,11 +22,11 @@ fn every_entry_builds_and_fires() {
     let arena = crate::arena::Arena::training(3.0);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
     let mut ran = 0;
-    for w in crate::weapons_data::all() {
+    for w in crate::data::weapons::all() {
         let base = crate::model::WeaponBase::from_data(&w.id, false, &[]);
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        let p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         let s = monte_carlo(&p, 2, 3);
         assert!(
             s.mean_damage > 0.0,
@@ -56,12 +56,12 @@ fn a_shotgun_loses_exactly_its_published_share_over_its_published_window() {
     let direct_at = |gap: f64| {
         let mut arena = crate::arena::Arena::training(10.0);
         arena.target_at =
-            crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
+            crate::rules::space::Vec2::new(0.0, gap + crate::rules::space::CONTACT_RANGE_M);
         let base = crate::model::WeaponBase::from_data("boar", false, &[]);
         let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        let mut p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         // ONE MECHANIC PER TEST. The aim model is switched off here so the
         // only thing that can move between these ranges is the falloff: the
         // Boar's 12.5 accuracy is an 8-degree cone and it drops most of its
@@ -90,12 +90,12 @@ fn a_falloff_floor_is_what_remains_not_what_is_removed() {
     let direct_at = |gap: f64| {
         let mut arena = crate::arena::Arena::training(10.0);
         arena.target_at =
-            crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
+            crate::rules::space::Vec2::new(0.0, gap + crate::rules::space::CONTACT_RANGE_M);
         let base = crate::model::WeaponBase::from_data("hek", false, &[]);
         let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        let mut p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         p.spread = None; // the aim model has its own tests
         run_once(&p, &mut Rng::new(0x5EED)).sources.direct
     };
@@ -118,12 +118,12 @@ fn a_weapon_without_a_published_falloff_is_the_same_at_any_range() {
     let direct_at = |gap: f64| {
         let mut arena = crate::arena::Arena::training(10.0);
         arena.target_at =
-            crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
+            crate::rules::space::Vec2::new(0.0, gap + crate::rules::space::CONTACT_RANGE_M);
         let base = crate::model::WeaponBase::from_data("latron", false, &[]);
         let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        let mut p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         p.spread = None; // the aim model has its own tests
         run_once(&p, &mut Rng::new(0x5EED)).sources.direct
     };
@@ -136,11 +136,11 @@ fn a_weapon_without_a_published_falloff_is_the_same_at_any_range() {
 #[cfg(test)]
 fn landed(weapon: &str, range: f64) -> u32 {
     let mut arena = crate::arena::Arena::training(10.0);
-    arena.target_at = crate::space::Vec2::new(0.0, range);
+    arena.target_at = crate::rules::space::Vec2::new(0.0, range);
     let base = crate::model::WeaponBase::from_data(weapon, false, &[]);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-    let p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
     run_once(&p, &mut Rng::new(0x5EED)).pellets
 }
 
@@ -189,7 +189,7 @@ fn an_entry_with_no_transcribed_spread_lands_everything_and_admits_it() {
     // melee entry has no cone by construction and it does miss — past its
     // reach, which is a wall rather than a cone — so it answers this
     // question with a completely different mechanic.
-    let id = crate::weapons_data::all()
+    let id = crate::data::weapons::all()
         .iter()
         .filter(|w| w.slot != "melee")
         .map(|w| w.id.clone())
@@ -198,7 +198,7 @@ fn an_entry_with_no_transcribed_spread_lands_everything_and_admits_it() {
     let close = landed(&id, 0.0);
     assert!(close > 0, "{id}: the fixture fired nothing");
     assert_eq!(landed(&id, 60.0), close, "{id} must not miss");
-    let spec = crate::weapons_data::spec(&id).unwrap();
+    let spec = crate::data::weapons::spec(&id).unwrap();
     assert!(
         spec.unmodeled_parts
             .iter()
@@ -226,7 +226,7 @@ fn an_entry_with_no_transcribed_spread_lands_everything_and_admits_it() {
 fn a_range_gated_clause_pays_past_its_range_and_nothing_at_point_blank() {
     let multishot_at = |range: f64| {
         let mut arena = crate::arena::Arena::training(10.0);
-        arena.target_at = crate::space::Vec2::new(0.0, range);
+        arena.target_at = crate::rules::space::Vec2::new(0.0, range);
         let base = crate::model::WeaponBase::from_data(
             "vectis",
             false,
@@ -234,8 +234,8 @@ fn a_range_gated_clause_pays_past_its_range_and_nothing_at_point_blank() {
         );
         let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none()).multishot
+            crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none()).multishot
     };
     let base = multishot_at(0.0);
     assert!(base > 0.0, "the fixture has no multishot");
@@ -256,7 +256,7 @@ fn a_range_gated_clause_pays_past_its_range_and_nothing_at_point_blank() {
 #[test]
 fn a_card_that_grants_accuracy_narrows_the_cone() {
     let cone = |channeling: bool| {
-        let mut tenno = crate::tenno_data::default_tenno().clone();
+        let mut tenno = crate::data::tenno::default_tenno().clone();
         tenno.state.channeling = channeling;
         let base = crate::model::WeaponBase::from_data(
             "boltor",
@@ -264,7 +264,7 @@ fn a_card_that_grants_accuracy_narrows_the_cone() {
             &["boltor_hunters_mantra"],
         );
         let refs: Vec<&crate::model::ModDef> = Vec::new();
-        crate::loadout::resolve_for(
+        crate::build::loadout::resolve_for(
             &base,
             &refs,
             crate::model::StackPolicy::Emergent,
@@ -311,8 +311,8 @@ fn at_point_blank_a_cone_changes_nothing_at_all() {
         let base = crate::model::WeaponBase::from_data(id, false, &[]);
         let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        let with = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let with = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         assert!(with.spread.is_some(), "{id} has no cone to switch off");
         let without = FightParams { spread: None, ..with.clone() };
         let a = run_once(&with, &mut Rng::new(0x5EED));
@@ -360,9 +360,9 @@ fn the_larkspur_family_each_carries_its_own_cone() {
 #[test]
 fn every_entry_either_has_a_spread_or_admits_it_has_none() {
     let (mut with, mut without) = (0, 0);
-    for w in crate::weapons_data::all() {
+    for w in crate::data::weapons::all() {
         // A SWING HAS NO CONE, and that is the GAME's answer rather than a
-        // gap in ours — the same split `scenario::Absence` draws. A cone is
+        // gap in ours — the same split `build::scenario::Absence` draws. A cone is
         // where a projectile went; a melee attack has a REACH and a body
         // either stands inside it or does not. So there is nothing to
         // transcribe, and `spread_not_transcribed` would be a false
@@ -395,14 +395,14 @@ fn every_deployment_builds_and_fires() {
     let arena = crate::arena::Arena::training(3.0);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
     let mut ran = 0;
-    for w in crate::weapons_data::all() {
-        for dep in crate::weapons_data::deployments_of(&w.id) {
+    for w in crate::data::weapons::all() {
+        for dep in crate::data::weapons::deployments_of(&w.id) {
             let mut base = crate::model::WeaponBase::from_data(&w.id, false, &[]);
-            crate::weapons_data::apply_deployment(&mut base, &w.id, &dep);
+            crate::data::weapons::apply_deployment(&mut base, &w.id, &dep);
             let panel =
-                crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+                crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
             let p =
-                FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+                FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
             assert!(
                 monte_carlo(&p, 2, 3).mean_damage > 0.0,
                 "{} in {dep}: fires nothing",

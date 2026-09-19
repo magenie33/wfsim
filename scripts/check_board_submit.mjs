@@ -4,7 +4,7 @@
 // A build reaches the board through three things: the PAGE builds a payload,
 // the WORKER writes it to KV, the SCORER reads it back and validates it. The
 // outer two are covered by `check_parity.mjs` and by
-// `engine::builds::validate_for_board`; the middle one is where builds were
+// `engine::board::builds::validate_for_board`; the middle one is where builds were
 // being lost.
 //
 // TWICE, the same way. `mode` was sent by the page and never written down, so
@@ -285,7 +285,7 @@ console.log("the board's submission endpoint\n");
 
 // ---- A MOD BELOW MAX RANK IS AN ID OF ITS OWN ----------------------------
 //
-// `<card>@<rank>` (`engine::mods_data::RANK_MARK`) rides `mods` and `exilus`,
+// `<card>@<rank>` (`engine::data::mods::RANK_MARK`) rides `mods` and `exilus`,
 // and no other axis: an arcane's rank is scored at its ceiling.
 {
   const db = database();
@@ -305,7 +305,7 @@ console.log("the board's submission endpoint\n");
 // refuses every full MELEE build with "bad mods", which is a legal build lost
 // at the one hop neither the engine nor the page is watching.
 {
-  const src = fs.readFileSync(new URL("../engine/src/builds.rs", import.meta.url), "utf8");
+  const src = fs.readFileSync(new URL("../engine/src/board/builds.rs", import.meta.url), "utf8");
   const m = src.match(/pub const MAIN_SLOTS: usize = (\d+);/);
   const mainSlots = m ? Number(m[1]) : NaN;
   check("the engine's MAIN_SLOTS is readable", Number.isFinite(mainSlots), String(mainSlots));

@@ -71,7 +71,7 @@ attack:
   # main beam's damage") mean a flat 60% on both of ITS hops.
   #
   # "Each enemy hit by the main beam from Punch Through can generate a new set
-  # of 3 chains" is the punch-through rule `chain::resolve` already applies from
+  # of 3 chains" is the punch-through rule `rules::chain::resolve` already applies from
   # its seeds — it falls out here rather than being arranged.
   #
   # NO DAMAGE RADIUS: the page gives none, so only the body the beam struck

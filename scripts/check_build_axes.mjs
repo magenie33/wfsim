@@ -5,7 +5,7 @@
 // no list. This one holds the list, for the surfaces an answer cannot reach — a
 // share link nobody has clicked, a board record nobody has submitted.
 //
-// `engine::builds::BUILD_AXES` is the single declaration, served at
+// `engine::board::builds::BUILD_AXES` is the single declaration, served at
 // `/api/meta.build_axes`. Three JS surfaces carry their own SPELLINGS of those
 // axes, because renaming them would migrate every stored preset:
 //

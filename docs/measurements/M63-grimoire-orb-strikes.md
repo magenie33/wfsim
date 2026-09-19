@@ -111,7 +111,7 @@ own falloff distance. An orb has a PLACE OF ITS OWN, it moves, and every strike
 reaches exactly one body — so who is in reach is a question about where the orb
 is, and a field cannot ask it.
 
-`weapons_data::OrbSpec` is that type. It carries geometry and a clock and
+`data::weapons::OrbSpec` is that type. It carries geometry and a clock and
 nothing about damage: a fuse, a strike interval, a reach, the two speeds, and
 the chain. What a strike DEALS is the attack's own `damage:`, and what the fuse
 ends in is the attack's own `radial:` — the same division `beam:` already makes.
@@ -287,7 +287,7 @@ the status payload OUT — so a hop at 0.31 of the strike still seeded a full-si
 Electricity DoT, and the two readings of the ambiguity came out 4.6% apart when
 one of them should have been half the other.
 
-`chain::Instance::share` says which bracket a chain belongs in, and it is
+`rules::chain::Instance::share` says which bracket a chain belongs in, and it is
 explicit: *"a beam with a smaller base damage, so it scales the hit AND the
 status base that hit computes its DoTs from"*. Scaling the part's own
 `modified_base` is that, and it put the two readings 1.92x apart (146,590 DPS

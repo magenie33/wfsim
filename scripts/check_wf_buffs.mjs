@@ -336,7 +336,7 @@ for (const lang of ["en", "zh"]) {
     r.values.every((v) => !/ [a-z]/.test(v)), JSON.stringify(r.values));
   // THE QUICK CALC READS THE SCENARIO, and this is part of the scenario.
   // BOTH PICKS TRAVEL, and that is right: settling a family is the ENGINE's job
-  // (`abilities_data::resolve`), so the payload carries what you ticked and the
+  // (`data::abilities::resolve`), so the payload carries what you ticked and the
   // sim carries what runs. A page that filtered here would be a second
   // implementation of the rule.
   check(`[${lang}] the quick calc measures under the buffs`,

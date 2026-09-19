@@ -12,7 +12,7 @@
 use std::time::Instant;
 use wfsim_engine::fight::LockMode;
 use wfsim_engine::target::TargetMode;
-use wfsim_engine::enemy_data::EnemySpec;
+use wfsim_engine::data::enemies::EnemySpec;
 use wfsim_engine::model::WeaponBase;
 use wfsim_optimizer::*;
 
@@ -87,7 +87,7 @@ fn main() {
             target_id: "e1".to_string(),
             // The CLI has no scenario UI, so it fights the NEUTRAL Tenno:
             // aiming, no frame, nothing running — resolve()'s own default.
-            tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+            tenno: wfsim_engine::data::tenno::default_tenno().clone(),
             target: spec
                 .target_params(9999, true, false, TargetMode::InstantRespawn)
                 .expect("valid target"),
@@ -95,8 +95,8 @@ fn main() {
             // …at point blank, for the same reason: a range is a term of a
             // fight the CLI has no way to state, and 0 is the fight every
             // number this engine has reported was measured under.
-            player_at: wfsim_engine::space::Vec2::ORIGIN,
-            target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
+            player_at: wfsim_engine::rules::space::Vec2::ORIGIN,
+            target_at: wfsim_engine::rules::space::Vec2::new(0.0, wfsim_engine::rules::space::CONTACT_RANGE_M),
             duration_seconds,
             // …and nothing is being cast on them either. A CLI search is a
             // statement about the WEAPON.
@@ -109,7 +109,7 @@ fn main() {
             aim_at: None,
         },
         // The CLI drives Dual Toxocyst, which carries the Frenzy passive.
-        frenzy: wfsim_engine::weapons_data::has_perk("dual_toxocyst", "frenzy"),
+        frenzy: wfsim_engine::data::weapons::has_perk("dual_toxocyst", "frenzy"),
         // Unused here: the CLI runs the cycle, which bakes its own lock.
         frenzy_locks: Vec::new(),
         // The CLI drives one weapon with an infinite reserve and no companion,
@@ -179,7 +179,7 @@ fn main() {
             8, // exact 8-mod builds: the CLI stress test's classic space
             8,
             60,
-            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
+            &wfsim_engine::data::weapons::innate_slots("dual_toxocyst"),
             &constraints,
             &[None], // CLI stress test: exilus slot left empty
         );
@@ -202,7 +202,7 @@ fn main() {
     // The arcane is a SEARCH DIMENSION like the mod choice: every candidate is evaluated under each arcane,
     // resolved at MAX RANK from data/arcanes/secondary under the Emergent
     // policy (non-simmable triggers are honest no-ops there).
-    use wfsim_engine::arcanes_data::{self, ArcaneFx};
+    use wfsim_engine::data::arcanes::{self, ArcaneFx};
     use wfsim_engine::model::StackPolicy;
     let arc_base = wfsim_engine::model::WeaponBase::from_data(
         "dual_toxocyst",
@@ -217,8 +217,8 @@ fn main() {
         if id == "none" {
             return ArcaneFx::none();
         }
-        let d = arcanes_data::secondary(id).unwrap_or_else(|| panic!("unknown arcane id: {id}"));
-        d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, wfsim_engine::tenno_data::default_tenno())
+        let d = arcanes::secondary(id).unwrap_or_else(|| panic!("unknown arcane id: {id}"));
+        d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, wfsim_engine::data::tenno::default_tenno())
     };
     let arcanes: Vec<ArcaneFx> = match &arcane_only {
         Some(a) => vec![fx_of(a)],

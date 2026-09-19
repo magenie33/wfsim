@@ -152,7 +152,7 @@ There are no standalone `data/perks/` / `data/buffs/` files: a triggered
 buff is 1:1 with its granter, so the pair is declared together (the block's
 trigger/condition IS the perk; the rest IS the buff). The block may carry a
 `perk: <id>` field when the mechanic needs a hand-written stateful
-implementation (`engine::perks::<id>` behind the `impl Perk` trait) — the
+implementation (`engine::rules::perks::<id>` behind the `impl Perk` trait) — the
 data still records the trigger, values, and wiki-verified boundary notes;
 the code implements the state machine (Enervate's ramp/reset, Frenzy's
 multiplicative fire rate + injection). A buff would GRADUATE back to a
@@ -262,7 +262,7 @@ bucket and the bucket only counts while the state holds.
 
 Every value names a state of the fight's TENNO (`data/tenno/`), and they all
 resolve to `ModEffect::WhileTenno(TennoCondition, …)`, which
-`loadout::resolve_for` evaluates against the Tenno it was handed:
+`build::loadout::resolve_for` evaluates against the Tenno it was handed:
 
 | value | `TennoState` field | means |
 |---|---|---|
@@ -303,7 +303,7 @@ adding a static bucket to the damage path. A bonus of zero produces NO buff at
 all — a zero-value stack would still list in the picker and invite someone to
 turn it up.
 
-`engine::mods_data` maps the modeled `(trigger, grants)` combos to the buff
+`engine::data::mods` maps the modeled `(trigger, grants)` combos to the buff
 `ModEffect` variants at max rank (`OnKillMultishot`, `ConditionOverload`,
 `OnHeadshotCritChance`, `OnHeadshotKillCritChance`); triggers not yet modeled
 keep their uniform data and resolve to a no-op until the generic interpreter
@@ -333,7 +333,7 @@ Locking removes the **expiry and nothing else**. The count
 still starts where the card sets it and still climbs on every trigger.
 
 **It is not a flag. It is the duration**. `apply_buff_config`
-writes `loadout::NO_TIMEOUT` (`f64::INFINITY`) into the buff's own `duration`,
+writes `build::loadout::NO_TIMEOUT` (`f64::INFINITY`) into the buff's own `duration`,
 and that is the entire implementation — every clock in the sim is
 `expiry = now + duration`, so an infinite duration is a buff that earns
 normally and never falls off. Nothing downstream knows the concept exists:
@@ -423,7 +423,7 @@ distinctions the data draws: `on_headshot` and `on_headshot_kill` became one
 "weak-point" event, and there was no way to switch off Galvanized Scope's kill
 half while its hit half kept paying.
 
-Nineteen, in `engine::buff_events::ALL`, each with the GROUP the panel draws it
+Nineteen, in `engine::data::buff_events::ALL`, each with the GROUP the panel draws it
 under — killing, hitting, status effects, reloading, firing. **A group is
 presentation and the switches are the truth**: a header ticks its members and
 stores nothing of its own, so a ruler says `kill`, or names `headshot_kill`
@@ -459,7 +459,7 @@ is dropped at load and the value is folded into a panel number before the fight
 exists. Galvanized Acceleration is the whole of it today — its on-kill
 projectile speed and beam range are read at assumed max (the mod's own comment
 argues why) and no switch can take them back. Reaching them means handing the
-denied set to `loadout::resolve`, which is where a mod bucket is still a bucket.
+denied set to `build::loadout::resolve`, which is where a mod bucket is still a bucket.
 
 **IT IS THE FIGHT'S, NOT THE BUILD'S**, so it rides the scenario as
 `buff_triggers_off: [headshot_kill]` beside `aiming` and `headshot_pct` — which is what
@@ -602,7 +602,7 @@ Supporting rules:
   randomness. Makes Monte Carlo reproducible and golden tests stable. (Critical
   here because random big crits can *feed back* into a buff's own reset.)
 
-  The seed drives THREE streams rather than one (`rng::Draws`):
+  The seed drives THREE streams rather than one (`rules::rng::Draws`):
   `spine` (multishot, crit tier, promotion, body part), `status` (whether a hit
   procs and with what), `extra` (buff triggers, arcane rolls). One stream made
   the sim answer "what does this mod change?" much more loudly than the mod: a
@@ -715,7 +715,7 @@ weapon, and `roar_is_used_twice_on_a_status_tick_and_eclipse_once` is the test.
 
 `add_element` is the one with a shape of its own. **It does not combine**
  — every one of the four augment pages says so — so it is
-added AFTER `elements::combine` has run: a weapon whose mods make Radiation,
+added AFTER `rules::elements::combine` has run: a weapon whose mods make Radiation,
 under Volt, deals Radiation *and* pure Electricity. It is still **sized** like
 an elemental mod ("additive with elemental mods"): a percentage of that attack
 part's own ModifiedBase, which is why an explosion's share differs from the
@@ -724,7 +724,7 @@ direct hit's, and why it also raises that element's DoT bracket.
 ### Strength, duration, and what moves when frames land
 
 Two inputs, both supplied by the caller rather than read from anywhere:
-`abilities_data::resolve(picks, strength)`. Today the page asks for an Ability
+`data::abilities::resolve(picks, strength)`. Today the page asks for an Ability
 Strength and a per-buff duration; when Warframes are modelled, the strength comes
 from the frame and the duration from its Ability Duration. **The definitions do
 not change then** — that is the point of taking both as arguments, and the reason

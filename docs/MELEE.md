@@ -302,7 +302,7 @@ say which entry is the stance by looking at it. That is exactly what the exilus
 slot could NOT do — an exilus-eligible mod is legal in a main slot too — which
 is why THAT one travels in a field of its own (AGENTS.md) and this
 one rides `mods`, appended. Nothing about the share link, the board record, the
-worker's table or `builds::identity` had to change.
+worker's table or `board::builds::identity` had to change.
 
 **A TENNOKAI HEAVY BREAKS THE CHAIN**, so the next light swing starts the combo
 over. The wiki says nothing about a stance chain's position
@@ -319,7 +319,7 @@ the whole difference.
 
 The slot is drawn on a melee weapon and on nothing else, the picker's filter
 runs BOTH ways (a stance is refused from the eight, and only a stance is offered
-in the tenth), and `builds::validate_with` does not count it against
+in the tenth), and `board::builds::validate_with` does not count it against
 `MAIN_SLOTS` — a melee build carrying one is `8 + 1` in the same list.
 
 **THE COMBOS COME FROM `Module:Stances/data`**, the wiki's own Lua table, which
@@ -366,17 +366,17 @@ The module's whole vocabulary, for whoever transcribes the next stance:
 
 | piece | where |
 | --- | --- |
-| seven melee `FormKind`s, each its own mode | `weapons_data::FormKind`, `play_modes` |
-| the combo script — a swing with its own multiplier, delay, wind-up, hit count, Impact and Slash bonuses, 360deg flag, forced procs and trailing slam | `weapons_data::ComboHit` |
+| seven melee `FormKind`s, each its own mode | `data::weapons::FormKind`, `play_modes` |
+| the combo script — a swing with its own multiplier, delay, wind-up, hit count, Impact and Slash bonuses, 360deg flag, forced procs and trailing slam | `data::weapons::ComboHit` |
 | combo points an ORDINARY slam grants per body (Shockwave Synergy) | `EvoEffect::ComboCountOnSlamHit`, gated off a swing that spends the counter |
-| a STANCE as a mod that supplies those scripts | `loadout::ModDef::stance`, `resolve` |
+| a STANCE as a mod that supplies those scripts | `build::loadout::ModDef::stance`, `resolve` |
 | the combo counter, its ladder and its refilling floor | `fight::melee_combo_multiplier`, `melee_combo_points` |
 | Blood Rush / Weeping Wounds | one `(combo - 1)` term in each of two existing brackets |
 | Follow Through, `FT^(n-1)` over the bodies a swing reached | `spread_from_follow_through`, `Origin::FollowThrough` |
 | a slam's epicentre at the wielder's own feet | `BlastKind::Slam` |
 | the heavy wind-up as its own clock | `ComboHit::windup_seconds`, `ModEffect::HeavyWindUpSpeed` |
 | Knockdown as a real status | `fight::DebuffState::knockdown` |
-| melee has no ammo, aims at nothing, puts nothing on a head | `scenario::Capability` |
+| melee has no ammo, aims at nothing, puts nothing on a head | `build::scenario::Capability` |
 | eleven mod effect kinds | crit/status per combo, combo duration as seconds and as a multiplier, initial combo, heavy efficiency, heavy damage, slam damage, melee reach in metres, combo count chance, wind-up speed, crit chance on a slide |
 | six evolution effect kinds | relative base damage, initial combo, melee reach, follow through, slam radius, wind-up speed, proc conversion |
 | the melee riven pool, and the counter it can STOP | `data/rivens/melee.yaml`, `ResolvedWeapon::combo_frozen` |
@@ -511,7 +511,7 @@ wind-up reads, off the CLASS's charge. A heavy build carrying both wind-up
 cards therefore charges a Tennokai attack SLOWER than its ordinary one, which
 is the card's own clause and not an artefact. The window's own speed-up is
 **+100%** and it is the one number in the mechanic DE publishes nothing for —
-`loadout::TENNOKAI_WINDUP_SPEED`, declared on every melee entry.
+`build::loadout::TENNOKAI_WINDUP_SPEED`, declared on every melee entry.
 
 **A SLIDE OPENS IT TOO.** A slide attack lands direct melee hits like any light
 swing, so it rolls for the flash, and a slide loop that gets one fires the
@@ -549,7 +549,7 @@ applies to.
    any of them an angle.
 6. **Forma on the stance SLOT.** The grant itself is modelled — a stance is an
    Aura, not a cost, and hands back 5 points or 10 on a matching slot
-   (`mods::stance_capacity`, and the slot's polarity is the weapon's own). What
+   (`rules::capacity::stance_capacity`, and the slot's polarity is the weapon's own). What
    is not planned is REPOLARIZING that slot to buy the double, which the wiki
    says a Forma can do, so a build that would spend one reads five capacity low
    here — the conservative direction: a build that fits here fits in game.

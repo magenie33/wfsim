@@ -116,7 +116,7 @@ def rule_out(uniq, name, carried_names):
     # CONCLAVE. The path is an ORIGIN and not a restriction — Update 17.9 made
     # a set of these PvE-legal, and thirteen of them are in our pools — so a
     # PvP-path mod we do NOT carry is one the wiki's mod tables tag "Exclusive
-    # to PvP". `engine::mods_data::only_pve_legal_conclave_mods_are_in_the_pools`
+    # to PvP". `engine::data::mods::only_pve_legal_conclave_mods_are_in_the_pools`
     # is the other half of the same rule, pinning the survivors by name.
     # DE'S OWN INTERNAL TIERS. `/Beginner/` and `/Intermediate/` carry the same
     # DISPLAY NAME as the card a player holds and different numbers — the

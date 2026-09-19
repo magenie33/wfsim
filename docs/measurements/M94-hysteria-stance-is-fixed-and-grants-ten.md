@@ -16,12 +16,12 @@ card, so no source stated its grant or its polarity. W`Exalted_Weapon` says ever
 melee Exalted weapon has "a Zenurik stance polarity and associated stance mod
 that cannot be removed", and W`Valkyr_Talons`' patch history removed Forma from
 the Exalted stance slot. The grant is the ordinary stance rule
-(`mods::stance_capacity`: 5, doubled on a matching slot), so the card is Zenurik.
+(`rules::capacity::stance_capacity`: 5, doubled on a matching slot), so the card is Zenurik.
 
 ### Where it is read
 
 `data/mods/valkyr_talons/hysteria.yaml` (Zenurik), `fixed_stance:` on
-`data/weapons/melee/valkyr_talons.yaml`, `builds::validate_with` (a build without
+`data/weapons/melee/valkyr_talons.yaml`, `board::builds::validate_with` (a build without
 it is refused), and the builder's stance slot, which seats it and offers neither
 removal nor a polarity. `a_fixed_stance_is_required_and_grants_its_capacity`
 holds the 10.

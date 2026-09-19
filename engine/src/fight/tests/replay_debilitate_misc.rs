@@ -15,7 +15,7 @@ fn the_crit_tier_keeps_climbing_where_the_rate_saturates() {
             base_crit_chance: cc,
             // Measure the ROLL, not a promotion or a stacking arcane.
             crit_tier_upgrade_chance: 0.0,
-            arcane: crate::arcanes_data::ArcaneFx::none(),
+            arcane: crate::data::arcanes::ArcaneFx::none(),
             ..Default::default()
         };
         monte_carlo(&p, 400, 11)
@@ -119,7 +119,7 @@ fn weakened_never_crits_an_explosion() {
 /// worth more than one stack.
 #[test]
 fn a_locked_buff_still_earns_stacks() {
-    use crate::arcanes_data::{ArcBuffSpec, ArcTrigger};
+    use crate::data::arcanes::{ArcBuffSpec, ArcTrigger};
 use crate::model::ArcGrant;
     let mk = |initial: u32| {
         let mut damage = DamageVector::default();
@@ -172,7 +172,7 @@ use crate::model::ArcGrant;
 /// display trick over a split model.
 #[test]
 fn one_config_reaches_every_grant_of_its_arcane() {
-    use crate::arcanes_data::{ArcBuffSpec, ArcTrigger};
+    use crate::data::arcanes::{ArcBuffSpec, ArcTrigger};
 use crate::model::ArcGrant;
     let spec = |grant: ArcGrant| ArcBuffSpec {
         owner: "primary_frostbite".into(),
@@ -346,15 +346,15 @@ fn a_body_followed_on_asking_gets_the_series_it_would_have_had() {
     // crowd take damage: every body on it is struck, so the replay has more
     // than the aimed one to rank.
     p.punch_through_m = 20.0;
-    p.player_at = crate::space::Vec2::ORIGIN;
-    p.target_at = crate::space::Vec2::new(0.0, 2.0);
+    p.player_at = crate::rules::space::Vec2::ORIGIN;
+    p.target_at = crate::rules::space::Vec2::new(0.0, 2.0);
     let (x, y) = (p.target_at.x, p.target_at.y);
     p.others = (1..=12)
         .map(|i| crate::formation::FoeSpec {
             id: format!("e{}", i + 1),
             params: TargetParams::training_dummy(),
             body_parts: BodyPart::humanoid(),
-            at: crate::space::Vec2::new(x, y + f64::from(i) * 0.6),
+            at: crate::rules::space::Vec2::new(x, y + f64::from(i) * 0.6),
         })
         .collect();
     let state = Rng::new(0x5EED).state();
@@ -385,7 +385,7 @@ fn asking_never_drops_the_aimed_body_or_repeats_one() {
             id: format!("e{}", i + 1),
             params: TargetParams::training_dummy(),
             body_parts: BodyPart::humanoid(),
-            at: crate::space::Vec2::new(f64::from(i) * 0.6, p.target_at.y),
+            at: crate::rules::space::Vec2::new(f64::from(i) * 0.6, p.target_at.y),
         })
         .collect();
     let rep = replay_following(&p, 7, 8, &[2, 2, 0, 99]);
@@ -494,7 +494,7 @@ fn debilitate_splits_only_a_saturated_combination() {
         DamageType::Radiation,
         DamageType::Gas,
     ] {
-        let (a, b) = crate::elements::components_of(combined).expect("a combination");
+        let (a, b) = crate::rules::elements::components_of(combined).expect("a combination");
         for _ in 0..64 {
             let got = debilitate_split(combined, DEBILITATE_STACKS, 1.0, &mut rng)
                 .expect("certain at rank 5");
@@ -548,9 +548,9 @@ fn the_tenth_application_is_the_one_that_splits() {
             // split that lands shows up as DoT damage and nothing else can
             // put damage in that bucket.
             elem_dot_bonus: vec![(DamageType::Toxin, 1.0)],
-            arcane: crate::arcanes_data::ArcaneFx {
+            arcane: crate::data::arcanes::ArcaneFx {
                 debilitate_chance: chance,
-                ..crate::arcanes_data::ArcaneFx::none()
+                ..crate::data::arcanes::ArcaneFx::none()
             },
             ..FightParams::default()
         };
@@ -586,9 +586,9 @@ fn a_blast_build_actually_reaches_the_debilitate_threshold() {
         // Heat is the half of Blast that ticks, so a split that lands is
         // visible as damage; Cold's half is a slow and adds none.
         elem_dot_bonus: vec![(DamageType::Heat, 2.0), (DamageType::Cold, 2.0)],
-        arcane: crate::arcanes_data::ArcaneFx {
+        arcane: crate::data::arcanes::ArcaneFx {
             debilitate_chance: chance,
-            ..crate::arcanes_data::ArcaneFx::none()
+            ..crate::data::arcanes::ArcaneFx::none()
         },
         ..FightParams::default()
     };
@@ -674,9 +674,9 @@ fn a_debilitate_split_lands_at_the_third_faction_layer() {
         // and Electricity real mod bonuses so the split has something to
         // read and the two branches are not both 1.0.
         elem_dot_bonus: vec![(DamageType::Toxin, 1.5), (DamageType::Electricity, 1.5)],
-        arcane: crate::arcanes_data::ArcaneFx {
+        arcane: crate::data::arcanes::ArcaneFx {
             debilitate_chance: chance,
-            ..crate::arcanes_data::ArcaneFx::none()
+            ..crate::data::arcanes::ArcaneFx::none()
         },
         ..FightParams::default()
     };
@@ -733,9 +733,9 @@ fn a_debilitate_split_burns_off_modified_base_not_the_hit() {
         magazine_size: 1e9,
         infinite_reserve: true,
         elem_dot_bonus: vec![(DamageType::Toxin, 1.5), (DamageType::Electricity, 1.5)],
-        arcane: crate::arcanes_data::ArcaneFx {
+        arcane: crate::data::arcanes::ArcaneFx {
             debilitate_chance: chance,
-            ..crate::arcanes_data::ArcaneFx::none()
+            ..crate::data::arcanes::ArcaneFx::none()
         },
         ..FightParams::default()
     };
@@ -775,13 +775,13 @@ fn a_debilitate_split_burns_off_modified_base_not_the_hit() {
 /// exactly where it was.
 #[test]
 fn compression_pays_into_the_bracket_its_row_names() {
-    let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
+    let fx = crate::data::arcanes::for_slot("primary", "primary_compression")
         .unwrap()
-        .fx(5, crate::model::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
+        .fx(5, crate::model::StackPolicy::Emergent, &[], crate::data::tenno::default_tenno());
     let arena = crate::arena::Arena::training(30.0);
     let gain = |weapon: &str, mods: &[&crate::model::ModDef]| {
         let base = crate::model::WeaponBase::from_data(weapon, true, &[]);
-        let panel = crate::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
         let with = monte_carlo(
             &FightParams::from_panel(&panel, &arena, &fx), 8, 0xC0FFEE,
         ).mean_damage;
@@ -790,14 +790,14 @@ fn compression_pays_into_the_bracket_its_row_names() {
         ).mean_damage;
         with / without
     };
-    let pool = crate::mods_data::class_pool("rifle");
+    let pool = crate::data::mods::class_pool("rifle");
     let serration = pool.iter().find(|m| m.id == "serration").expect("serration");
     let mods: Vec<&crate::model::ModDef> = vec![serration];
 
     // The bracket each row names, before any fight runs.
     let shedu = crate::model::WeaponBase::from_data("shedu", true, &[]);
     let p = FightParams::from_panel(
-        &crate::loadout::resolve(&shedu, &[], crate::model::StackPolicy::Emergent), &arena, &fx,
+        &crate::build::loadout::resolve(&shedu, &[], crate::model::StackPolicy::Emergent), &arena, &fx,
     );
     // 1 + 6.6 x 0.8 — spelled out, because clippy reads the literal 6.28
     // as an approximation of TAU and it is nothing of the sort.
@@ -805,7 +805,7 @@ fn compression_pays_into_the_bracket_its_row_names() {
     assert_eq!(p.compression_base_damage, 0.0);
     let braton = crate::model::WeaponBase::from_data("braton_incarnon", true, &[]);
     let p = FightParams::from_panel(
-        &crate::loadout::resolve(&braton, &[], crate::model::StackPolicy::Emergent), &arena, &fx,
+        &crate::build::loadout::resolve(&braton, &[], crate::model::StackPolicy::Emergent), &arena, &fx,
     );
     assert!((p.compression_base_damage - 2.4).abs() < 1e-9, "3.0 m x 0.8 = +240%");
     assert_eq!(p.compression_multiplier, 1.0);
@@ -839,14 +839,14 @@ fn compression_pays_into_the_bracket_its_row_names() {
 fn a_kill_leaves_a_ghost_standing_where_the_weapon_says_so() {
     let spec = crate::model::SpawnOnKillSpec { seconds: 7.0, range_m: 50.0 };
     let build = |declared: bool, metres_away: f64| FightParams {
-        player_at: crate::space::Vec2::new(0.0, 0.0),
-        target_at: crate::space::Vec2::new(0.0, metres_away),
+        player_at: crate::rules::space::Vec2::new(0.0, 0.0),
+        target_at: crate::rules::space::Vec2::new(0.0, metres_away),
         damage: DamageVector::new().with(DamageType::Impact, 5000.0),
         fire_rate: 5.0,
         magazine_size: 1e9,
         infinite_reserve: true,
         duration_seconds: 30.0,
-        arcane: crate::arcanes_data::ArcaneFx::none(),
+        arcane: crate::data::arcanes::ArcaneFx::none(),
         target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         body_parts: mono_body(1.0),
         spawn_on_kill: declared.then_some(spec),
@@ -894,7 +894,7 @@ fn a_kill_streak_summons_a_second_gun_and_only_a_streak_does() {
         reload_seconds: 5.0,
         infinite_reserve: true,
         duration_seconds: 30.0,
-        arcane: crate::arcanes_data::ArcaneFx::none(),
+        arcane: crate::data::arcanes::ArcaneFx::none(),
         target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
         body_parts: mono_body(1.0),
         kill_streak_summon: summon,
@@ -937,7 +937,7 @@ fn death_knell_adds_its_stacks_to_the_finished_crit_multiplier() {
         magazine_size: 1e9,
         infinite_reserve: true,
         weakpoint_stacks: passive.then_some(spec),
-        arcane: crate::arcanes_data::ArcaneFx::none(),
+        arcane: crate::data::arcanes::ArcaneFx::none(),
         weakpoint_crit_chance_relative: 0.0,
         body_parts: vec![BodyPart {
             name: if head { "head".into() } else { "body".into() },
@@ -993,7 +993,7 @@ fn gotva_super_crit_arms_on_status_and_only_on_status() {
         // fixture WITH Secondary Enervate, whose arcane contributes crit —
         // so without these the "0% crit weapon never crits" control fails
         // for a reason that has nothing to do with the passive.
-        arcane: crate::arcanes_data::ArcaneFx::none(),
+        arcane: crate::data::arcanes::ArcaneFx::none(),
         crit_tier_upgrade_chance: 0.0,
         weakpoint_crit_chance_relative: 0.0,
         body_parts: vec![BodyPart {

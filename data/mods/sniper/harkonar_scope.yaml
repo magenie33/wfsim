@@ -9,7 +9,7 @@ description: "+Xs Combo Duration"
 
 effects:
   # THE SNIPER COMBO'S CLOCK, and nothing else. The counter drops by one after
-  # `seconds` without a landing hit (`weapons_data::SniperCombo::seconds`), and
+  # `seconds` without a landing hit (`data::weapons::SniperCombo::seconds`), and
   # this mod adds to that window: "+12s Combo Duration" at max rank.
   #
   # IT IS A PER-WEAPON NUMBER IT ADDS TO, which the card cannot say and the

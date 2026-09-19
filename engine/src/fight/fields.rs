@@ -10,7 +10,7 @@ pub(super) struct FieldState {
     /// The part AS RESOLVED BY THE FORM THAT SPAWNED IT. A cloud outlives a
     /// transmute, and only one form of a transform group has a field at all, so
     /// the field cannot be re-read from the active form.
-    pub(super) part: crate::loadout::ResolvedLingering,
+    pub(super) part: crate::build::loadout::ResolvedLingering,
     /// Plentiful Mayhem: the independent damage multiplier the SPAWNING pellet
     /// carried (1.0 for the weapon's own projectile, 1+bonus for one multishot
     /// generated). Per field, because within one pull some grenades have it and
@@ -41,7 +41,7 @@ pub(super) struct FieldCtx {
     /// with the whole additive headshot ladder folded on (M60: they ADD).
     ///
     /// Read by a field whose ticks can find a head at all (the Grimoire's orb;
-    /// [`crate::loadout::ResolvedLingering::headshot_chance`]), and by nothing
+    /// [`crate::build::loadout::ResolvedLingering::headshot_chance`]), and by nothing
     /// else — a cloud carries no body part.
     ///
     /// DELIBERATELY NOT the pellet loop's own copy of this ladder, which stays
@@ -69,10 +69,10 @@ impl FightParams {
     /// run loop, and every one of them is a thing the BASE form is doing —
     /// which is why they only ever pay here and not in `transformed`.
     pub fn tome_cycle_from_panels(
-        base: &crate::loadout::ResolvedPanel,
-        orb_form: &crate::loadout::ResolvedPanel,
+        base: &crate::build::loadout::ResolvedPanel,
+        orb_form: &crate::build::loadout::ResolvedPanel,
         arena: &crate::arena::Arena,
-        arcane: &crate::arcanes_data::ArcaneFx,
+        arcane: &crate::data::arcanes::ArcaneFx,
     ) -> Self {
         let mut d = Self::from_panel(base, arena, arcane);
         let thrown = Self::from_panel(orb_form, arena, arcane);
@@ -113,7 +113,7 @@ pub(super) fn process_field_ticks(
     rec: &mut crate::record::Record,
     // A field tick decides BOTH a crit and its procs, so it takes the whole
     // set of streams rather than one of them.
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     // THE REST OF THE FORMATION. A cloud is an AREA, so everyone standing in
     // it burns — which is the base form's half of what a radius mod buys, and
     // the half a grenade lives on. Empty for every fight
@@ -178,13 +178,13 @@ pub(super) fn process_field_ticks(
         // dying inside it.
         for (bi, spec) in params.others.iter().enumerate() {
             let dist = spec.at.distance(params.target_at);
-            if !crate::space::caught_by_blast(dist, part.radius_m) {
+            if !crate::rules::space::caught_by_blast(dist, part.radius_m) {
                 continue;
             }
             let SpreadFoe { state, debuffs: fd } = &mut others[bi];
             field_tick(
                 &part,
-                damage_multiplier * part.falloff_at(crate::space::blast_reach(dist)),
+                damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist)),
                 at,
                 ctx,
                 fd,
@@ -237,7 +237,7 @@ pub(super) fn process_field_ticks(
 /// attached target, which a single-target arena always is.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn field_tick(
-    f: &crate::loadout::ResolvedLingering,
+    f: &crate::build::loadout::ResolvedLingering,
     // Plentiful Mayhem's independent multiplier, carried from the grenade that
     // left this cloud (1.0 = the weapon's own projectile, or no such perk).
     damage_multiplier: f64,
@@ -251,7 +251,7 @@ pub(super) fn field_tick(
     ap: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     // WHICH BODY THIS BURNS — `params.target` until a cloud could stand over
     // more than one. Its pools, its stack caps, its immunities.
     foe: &TargetParams,

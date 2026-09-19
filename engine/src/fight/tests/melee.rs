@@ -30,20 +30,20 @@ fn magistar_params(
     cfg: &[(&str, (u32, bool))],
 ) -> Summary {
     let base = crate::model::WeaponBase::from_data(form, true, evos);
-    let pool = crate::mods_data::pool_for_weapon(form);
+    let pool = crate::data::mods::pool_for_weapon(form);
     let refs: Vec<&crate::model::ModDef> =
         mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let arena = crate::arena::Arena::training(60.0);
     // The same decision the page makes — see `melee_fight`.
-    let p = FightParams::for_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none(), || {
+    let p = FightParams::for_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none(), || {
         let unarmed: Vec<&str> = evos
             .iter()
             .copied()
-            .filter(|id| !crate::evolutions_data::states_incarnon_window(id))
+            .filter(|id| !crate::data::evolutions::states_incarnon_window(id))
             .collect();
         let b = crate::model::WeaponBase::from_data(form, true, &unarmed);
-        crate::loadout::resolve(&b, &refs, crate::model::StackPolicy::Emergent)
+        crate::build::loadout::resolve(&b, &refs, crate::model::StackPolicy::Emergent)
     });
     let mut p = p;
     if !cfg.is_empty() {
@@ -74,10 +74,10 @@ fn magistar_params(
 fn a_stance_decides_what_the_weapon_fires() {
     let script = |mods: &[&str], form: &str| {
         let base = crate::model::WeaponBase::from_data(form, false, &[]);
-        let pool = crate::mods_data::pool_for_weapon(form);
+        let pool = crate::data::mods::pool_for_weapon(form);
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-        let p = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let p = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         p.combo_script.iter().map(|h| h.multiplier).collect::<Vec<_>>()
     };
     let bare = script(&[], "magistar");
@@ -292,7 +292,7 @@ fn orokin_reach_buys_metres_and_not_damage() {
         "magistar", true, &["magistar_evo1_incarnon_form", "magistar_orokin_reach"],
     );
     let refs: Vec<&crate::model::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     assert!(
         (panel.range_m - 3.9).abs() < 1e-9,
         "2.5 m + 1.4 m should be 3.9 m, got {:.2}",
@@ -343,10 +343,10 @@ fn a_card_that_names_an_attack_pays_on_that_attack_alone() {
 #[test]
 fn reach_is_metres_and_metres_are_bodies() {
     let bare = crate::model::WeaponBase::from_data("magistar", false, &[]);
-    let pool = crate::mods_data::pool_for_weapon("magistar");
+    let pool = crate::data::mods::pool_for_weapon("magistar");
     let pr: Vec<&crate::model::ModDef> =
         pool.iter().filter(|m| m.id == "primed_reach").collect();
-    let panel = crate::loadout::resolve(&bare, &pr, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&bare, &pr, crate::model::StackPolicy::Emergent);
     assert!(
         (panel.range_m - 5.5).abs() < 1e-9,
         "2.5 m + 3 m should be 5.5 m, got {:.2}",
@@ -398,10 +398,10 @@ fn corrupt_charge_buys_the_floor_and_sells_the_clock() {
     );
     let clock = |mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("magistar", false, &[]);
-        let pool = crate::mods_data::pool_for_weapon("magistar");
+        let pool = crate::data::mods::pool_for_weapon("magistar");
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent)
+        crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent)
             .combo_duration_seconds
     };
     assert!((clock(&[]) - 5.0).abs() < 1e-9, "the weapon's own clock is 5 s");
@@ -427,24 +427,24 @@ fn corrupt_charge_buys_the_floor_and_sells_the_clock() {
 /// carrying it pays exactly the same as one that does not.
 #[test]
 fn a_zero_combo_clock_stops_the_counter_rather_than_shortening_it() {
-    let riven = |malus: &str| crate::rivens_data::RivenSpec {
+    let riven = |malus: &str| crate::build::rivens::RivenSpec {
         class: "melee".to_string(),
-        bonuses: vec![crate::rivens_data::RolledStat { id: "melee_damage".into(), roll: 1.0 }],
-        malus: Some(crate::rivens_data::RolledStat { id: malus.to_string(), roll: 1.0 }),
+        bonuses: vec![crate::build::rivens::RolledStat { id: "melee_damage".into(), roll: 1.0 }],
+        malus: Some(crate::build::rivens::RolledStat { id: malus.to_string(), roll: 1.0 }),
         rank: 8,
-        polarity: crate::mods::Polarity::Madurai,
+        polarity: crate::rules::capacity::Polarity::Madurai,
     };
     let fight = |malus: &str, mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("magistar", false, &[]);
-        let pool = crate::mods_data::pool_for_weapon("magistar");
+        let pool = crate::data::mods::pool_for_weapon("magistar");
         let rv = riven(malus).to_mod_def("riven:test", 1.35);
         let mut refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
         refs.push(&rv);
         let panel =
-            crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+            crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let arena = crate::arena::Arena::training(30.0);
-        let p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         (panel.combo_frozen, panel.combo_duration_seconds, monte_carlo(&p, 24, 909).mean_damage)
     };
 
@@ -500,10 +500,10 @@ fn an_extra_combo_point_pays_whatever_reads_the_counter() {
 fn a_crit_card_that_says_x2_on_a_heavy_is_doubled_only_there() {
     let cc = |form: &str, mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data(form, false, &[]);
-        let pool = crate::mods_data::pool_for_weapon(form);
+        let pool = crate::data::mods::pool_for_weapon(form);
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent).crit_chance
+        crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent).crit_chance
     };
     // 20% base. `20 x (1 + 1.20)` is 44%, and doubled it is `20 x (1 + 2.40)`
     // = 68% — the card's own arithmetic, on the two forms that spend combo.
@@ -523,10 +523,10 @@ fn a_crit_card_that_says_x2_on_a_heavy_is_doubled_only_there() {
 fn maiming_strike_pays_the_slide_and_no_other_swing() {
     let cc = |form: &str| {
         let base = crate::model::WeaponBase::from_data(form, false, &[]);
-        let pool = crate::mods_data::pool_for_weapon(form);
+        let pool = crate::data::mods::pool_for_weapon(form);
         let refs: Vec<&crate::model::ModDef> =
             pool.iter().filter(|m| m.id == "maiming_strike").collect();
-        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent).crit_chance
+        crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent).crit_chance
     };
     // `20 x (1 + 1.50)` = 50% on the slide, and the weapon's own 20%
     // everywhere else.
@@ -625,7 +625,7 @@ fn a_stance_slam_lands_and_seismic_wave_pays_it() {
 #[test]
 fn hysteria_earns_its_measured_combo_points() {
     let round = |id: &str| -> f64 {
-        crate::weapons_data::spec(id)
+        crate::data::weapons::spec(id)
             .unwrap()
             .attack
             .combo_script
@@ -805,7 +805,7 @@ fn spring_loaded_blade_stacks_reach_and_reaches_what_it_brings_into_range() {
     assert!(near_on > near_off * 2.0, "two stacks reach the 3.5 m ring: {near_off:.0} -> {near_on:.0}");
     assert_eq!(dps(&[], 20.0), dps(&["spring_loaded_blade"], 20.0), "4.5 m reaches nothing at 20 m");
 
-    let card = crate::mods_data::pool_for_weapon("praedos")
+    let card = crate::data::mods::pool_for_weapon("praedos")
         .into_iter()
         .find(|m| m.id == "spring_loaded_blade")
         .expect("in the melee pool");
@@ -856,10 +856,10 @@ fn a_tennokai_heavy_restarts_the_stance_combo() {
     // Magistar's neutral combo opens at 400% and finishes at 500%.
     let script = |mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("magistar", false, &[]);
-        let pool = crate::mods_data::pool_for_weapon("magistar");
+        let pool = crate::data::mods::pool_for_weapon("magistar");
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent)
+        crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent)
             .combo_script.iter().map(|h| h.multiplier).collect::<Vec<_>>()
     };
     assert_eq!(script(&[]).len(), 5, "the fixture's combo is four swings and a slam");
@@ -973,11 +973,11 @@ fn a_tennokai_swing_lands_once_however_many_the_swing_it_replaced_landed() {
 fn a_tennokai_attacks_wind_up_ignores_every_card_that_buys_wind_up() {
     let panel = |mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("praedos_heavy", false, &[]);
-        let pool = crate::mods_data::pool_for_weapon("praedos_heavy");
+        let pool = crate::data::mods::pool_for_weapon("praedos_heavy");
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
         assert_eq!(refs.len(), mods.len(), "every named mod is in this weapon's pool");
-        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent)
+        crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent)
     };
     let cards = ["killing_blow", "amalgam_organ_shatter", "mentors_legacy"];
     let bare = panel(&["mentors_legacy"]);
@@ -1077,10 +1077,10 @@ fn melee_fight(
     spacing: Option<f64>,
 ) -> Summary {
     let base = crate::model::WeaponBase::from_data(form, false, evos);
-    let pool = crate::mods_data::pool_for_weapon(form);
+    let pool = crate::data::mods::pool_for_weapon(form);
     let refs: Vec<&crate::model::ModDef> =
         mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(duration);
     // A RING OF BODIES AT `gap` METRES, built here rather than in `Arena`:
     // the fixture is the one place that wants a crowd, and `training` is
@@ -1093,7 +1093,7 @@ fn melee_fight(
                     id: format!("e{}", i + 1),
                     params: crate::target::TargetParams::training_dummy(),
                     body_parts: crate::target::BodyPart::humanoid(),
-                    at: crate::space::Vec2::new(gap * a.cos(), gap * a.sin()),
+                    at: crate::rules::space::Vec2::new(gap * a.cos(), gap * a.sin()),
                 }
             })
             .collect();
@@ -1105,8 +1105,8 @@ fn melee_fight(
     //
     // AT ITS MAX RANK, which is the only rank a board row is ever built
     // at and the one the card's own numbers are printed for.
-    let fx = arcane.map_or_else(crate::arcanes_data::ArcaneFx::none, |id| {
-        let card = crate::arcanes_data::pool_for_weapon(form, "melee")
+    let fx = arcane.map_or_else(crate::data::arcanes::ArcaneFx::none, |id| {
+        let card = crate::data::arcanes::pool_for_weapon(form, "melee")
             .into_iter()
             .find(|a| a.id == id)
             .unwrap_or_else(|| panic!("the melee pool seats {id}"));
@@ -1114,17 +1114,17 @@ fn melee_fight(
             card.max_rank,
             crate::model::StackPolicy::Emergent,
             &[],
-            crate::tenno_data::default_tenno(),
+            crate::data::tenno::default_tenno(),
         )
     });
     let p = FightParams::for_panel(&panel, &arena, &fx, || {
         let unarmed: Vec<&str> = evos
             .iter()
             .copied()
-            .filter(|id| !crate::evolutions_data::states_incarnon_window(id))
+            .filter(|id| !crate::data::evolutions::states_incarnon_window(id))
             .collect();
         let b = crate::model::WeaponBase::from_data(form, false, &unarmed);
-        crate::loadout::resolve(&b, &refs, crate::model::StackPolicy::Emergent)
+        crate::build::loadout::resolve(&b, &refs, crate::model::StackPolicy::Emergent)
     });
     monte_carlo(&p, 24, 909)
 }
@@ -1133,10 +1133,10 @@ fn melee_fight(
 /// reaches, since a stance slam is a sphere and reaches the room.
 fn swings_only(form: &str, mods: &[&str], spacing: Option<f64>) -> Summary {
     let base = crate::model::WeaponBase::from_data(form, false, &[]);
-    let pool = crate::mods_data::pool_for_weapon(form);
+    let pool = crate::data::mods::pool_for_weapon(form);
     let refs: Vec<&crate::model::ModDef> =
         mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-    let mut panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let mut panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     // A SLAM TAKEN OFF LEAVES ITS TIME BEHIND: Winding Temper keeps its
     // whole 2.25 s on the slam row, and the three swings alone take none.
     let mut kept: Vec<crate::model::ComboHit> = Vec::new();
@@ -1157,12 +1157,12 @@ fn swings_only(form: &str, mods: &[&str], spacing: Option<f64>) -> Summary {
                     id: format!("e{}", i + 1),
                     params: crate::target::TargetParams::training_dummy(),
                     body_parts: crate::target::BodyPart::humanoid(),
-                    at: crate::space::Vec2::new(gap * a.cos(), gap * a.sin()),
+                    at: crate::rules::space::Vec2::new(gap * a.cos(), gap * a.sin()),
                 }
             })
             .collect();
     }
-    monte_carlo(&FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none()), 24, 909)
+    monte_carlo(&FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none()), 24, 909)
 }
 
 /// **SHOCKWAVE SYNERGY IS PAID BY THE CROWD**, and it is the only card in
@@ -1274,10 +1274,10 @@ fn a_standing_heavy_waits_the_seventh_of_a_second_that_buys_a_tier() {
     let dps = |mods: &[&str]| {
         let form = "magistar_heavy";
         let base = crate::model::WeaponBase::from_data(form, false, &[]);
-        let pool = crate::mods_data::pool_for_weapon(form);
+        let pool = crate::data::mods::pool_for_weapon(form);
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-        let mut panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let mut panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         for h in &mut panel.combo_script {
             h.delay_seconds = 0.0;
         }
@@ -1330,7 +1330,7 @@ fn every_melee_form_carries_the_weapons_combo_clock() {
     ] {
         let base = crate::model::WeaponBase::from_data(form, false, &[]);
         let refs: Vec<&crate::model::ModDef> = Vec::new();
-        let p = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let p = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         assert_eq!(p.combo_duration_seconds, 5.0, "{form} lost the counter's clock");
     }
 }
@@ -1383,11 +1383,11 @@ fn heavy_attack_efficiency_keeps_the_counter_and_it_regenerates_from_there() {
 fn a_slams_toxin_reaches_health_through_a_shield() {
     let pools = |mods: &[&str]| -> Vec<(crate::target::Pool, DamageType)> {
         let base = crate::model::WeaponBase::from_data("magistar_heavy_slam", false, &[]);
-        let pool = crate::mods_data::pool_for_weapon("magistar_heavy_slam");
+        let pool = crate::data::mods::pool_for_weapon("magistar_heavy_slam");
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        let spec = crate::enemy_data::EnemySpec::load(std::path::Path::new(concat!(
+        let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let spec = crate::data::enemies::EnemySpec::load(std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../data/enemies/crewman.yaml"
         )))
@@ -1495,12 +1495,12 @@ fn killing_blow_joins_the_bucket_and_seismic_wave_multiplies_it() {
 fn galvanized_reflex_earns_initial_combo_and_a_heavy_mode_keeps_it() {
     let killing = |mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("magistar_heavy_slam", false, &[]);
-        let pool = crate::mods_data::pool_for_weapon("magistar_heavy_slam");
+        let pool = crate::data::mods::pool_for_weapon("magistar_heavy_slam");
         let refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
-        let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(60.0);
-        let spec = crate::enemy_data::EnemySpec::load(std::path::Path::new(concat!(
+        let spec = crate::data::enemies::EnemySpec::load(std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../data/enemies/thrax_centurion.yaml"
         )))
@@ -1540,9 +1540,9 @@ fn galvanized_reflex_earns_initial_combo_and_a_heavy_mode_keeps_it() {
 fn melee_exposure_holds_its_stacks_and_pays_the_explosion() {
     let base = crate::model::WeaponBase::from_data("magistar_heavy_slam", false, &[]);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let arena = crate::arena::Arena::training(60.0);
-    let card = crate::arcanes_data::pool_for_weapon("magistar_heavy_slam", "melee")
+    let card = crate::data::arcanes::pool_for_weapon("magistar_heavy_slam", "melee")
         .into_iter()
         .find(|a| a.id == "melee_exposure")
         .expect("the melee pool seats it");
@@ -1550,7 +1550,7 @@ fn melee_exposure_holds_its_stacks_and_pays_the_explosion() {
         card.max_rank,
         crate::model::StackPolicy::Emergent,
         &[],
-        crate::tenno_data::default_tenno(),
+        crate::data::tenno::default_tenno(),
     );
     // FOUR STACKS OF 60%, and EMERGENT is the policy the board runs: a card
     // whose stacks are assumed must not be assumed only under assumed-max.
@@ -1891,13 +1891,13 @@ fn truths_flame_pays_where_it_can_kill_and_charges_where_it_cannot() {
 #[test]
 fn a_swing_under_full_stance_damage_still_earns_its_point() {
     let base = crate::model::WeaponBase::from_data("praedos", false, &[]);
-    let pool = crate::mods_data::pool_for_weapon("praedos");
+    let pool = crate::data::mods::pool_for_weapon("praedos");
     let stance = pool
         .iter()
         .find(|m| m.id == "sovereign_outcast")
         .expect("the stance is in the pool");
     let refs = vec![stance];
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     // ONE PRESS is the entries up to and including the first that waits.
     let press: Vec<_> = panel
         .combo_script
@@ -1971,14 +1971,14 @@ fn a_swing_sweeps_an_arc_rather_than_everything_in_front() {
             body_parts: BodyPart::humanoid(),
             // 2.8 m centre to centre is a 2.3 m gap against a 2.5 m reach:
             // comfortably inside, and not the knife edge 3.0 would be.
-            at: crate::space::Vec2::new(2.8 * a.cos(), 2.8 * a.sin()),
+            at: crate::rules::space::Vec2::new(2.8 * a.cos(), 2.8 * a.sin()),
         }
     };
     let base = crate::model::WeaponBase::from_data("magistar", false, &[]);
-    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let mut arena = crate::arena::Arena::training(1.0);
     arena.others = vec![body_at(30.0), body_at(60.0)];
-    let p = FightParams::for_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none(), || {
+    let p = FightParams::for_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none(), || {
         panel.clone()
     });
     assert_eq!(

@@ -60,7 +60,7 @@ EVOLUTION IS TAKEN THE WEAPON COUNTS AS PURELY SEMI-AUTO**, so the Cannonade is
 equippable; once it is taken, it is not.
 
 So the pool is a question about the BUILD, not about the weapon:
-`mods_data::pool_for_build(weapon, evolutions)` is the rule and
+`data::mods::pool_for_build(weapon, evolutions)` is the rule and
 `pool_for_weapon` is that function with nothing installed. A firing MODE is the
 weapon's own trigger plus that of any form an evolution UNLOCKS — a CHARGED
 form is not one, because charged vs uncharged is chosen on every trigger pull

@@ -41,13 +41,13 @@ fn id(rec: &Value, key: &str) -> String {
 
 /// THE RIVEN A RECORD STATES, as a shape. `riven_pos` empty means no riven —
 /// a malus alone is not one.
-fn riven_of(rec: &Value) -> Option<wfsim_engine::rivens_data::RivenShape> {
+fn riven_of(rec: &Value) -> Option<wfsim_engine::build::rivens::RivenShape> {
     let bonuses = ids(rec, "riven_pos");
     if bonuses.is_empty() {
         return None;
     }
     let malus = id(rec, "riven_neg");
-    Some(wfsim_engine::rivens_data::RivenShape {
+    Some(wfsim_engine::build::rivens::RivenShape {
         bonuses,
         malus: Some(malus).filter(|m| !m.is_empty()),
     })
@@ -66,7 +66,7 @@ fn riven_of(rec: &Value) -> Option<wfsim_engine::rivens_data::RivenShape> {
 /// about a build can become a different build by being played differently. It
 /// was in the door's key until now, and the same cards sent from two modes were
 /// two rows in a table whose whole promise is one row per build.
-fn canonical(v: &wfsim_engine::builds::ValidBuild) -> Value {
+fn canonical(v: &wfsim_engine::board::builds::ValidBuild) -> Value {
     let mut rec = json!({
         "weapon": v.weapon,
         "mods": v.mods,
@@ -115,7 +115,7 @@ fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
 /// row at full Forma and every valence at the roll's maximum: anything a player
 /// can eventually reach is not part of what a row states.
 ///
-/// A STAT LOSES ITS SIGN FOR A LISTED REASON (`rivens_data::ambiguous_stats`),
+/// A STAT LOSES ITS SIGN FOR A LISTED REASON (`build::rivens::ambiguous_stats`),
 /// AND A CARD LOSES ITS MAX RANK ONLY BY BEING NAMED in
 /// `data/search/every_rank.yaml`. Only those are asked, every combination of
 /// them: a Status Duration malus at its deep end is off the -100% cliff, and a
@@ -125,14 +125,14 @@ fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
 /// another and the corner that wins a crowd need not win one target, so what
 /// comes back is the SET — usually one build. Empty is a riven this engine
 /// cannot resolve.
-fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<wfsim_engine::builds::ValidBuild> {
-    let class = wfsim_engine::rivens_data::class_for_weapon(&v.weapon);
+fn corners_for(v: &wfsim_engine::board::builds::ValidBuild) -> Vec<wfsim_engine::board::builds::ValidBuild> {
+    let class = wfsim_engine::build::rivens::class_for_weapon(&v.weapon);
     let rolls: Vec<Vec<f64>> = match (&v.riven, class) {
         (None, _) => vec![Vec::new()],
         (Some(_), None) => return Vec::new(),
-        (Some(shape), Some(_)) => wfsim_engine::rivens_data::corners(
+        (Some(shape), Some(_)) => wfsim_engine::build::rivens::corners(
             shape,
-            &wfsim_engine::rivens_data::ambiguous_stats(shape, &v.weapon),
+            &wfsim_engine::build::rivens::ambiguous_stats(shape, &v.weapon),
         ),
     };
     let mods = rank_choices(v);
@@ -152,18 +152,18 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<wfsim_engine::builds
     }
     let spec_of = |r: &[f64]| v.riven.as_ref().zip(class).map(|(shape, class)| shape.at(class, r));
 
-    let modes: Vec<wfsim_engine::weapons_data::WeaponPlayMode> =
-        wfsim_engine::weapons_data::play_modes(&v.weapon)
+    let modes: Vec<wfsim_engine::data::weapons::WeaponPlayMode> =
+        wfsim_engine::data::weapons::play_modes(&v.weapon)
             .into_iter()
             .filter(|m| m.sustainable)
             .collect();
     let mut found: BTreeMap<String, (Vec<f64>, Vec<String>)> = BTreeMap::new();
-    for bench in wfsim_engine::benchmarks_data::all() {
+    for bench in wfsim_engine::board::benchmarks::all() {
         let metric = bench.metric();
         let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
         let duration = scenario.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
         for played in &modes {
-            let best = wfsim_engine::rivens_data::perfect(
+            let best = wfsim_engine::build::rivens::perfect(
                 default.clone(),
                 alternatives.iter().cloned(),
                 |c| {
@@ -191,7 +191,7 @@ fn corners_for(v: &wfsim_engine::builds::ValidBuild) -> Vec<wfsim_engine::builds
 /// spread nothing says whether a gap is a difference or a draw.
 fn score_of(
     out: &Value,
-    metric: &wfsim_engine::metrics::MetricDef,
+    metric: &wfsim_engine::rules::metrics::MetricDef,
     duration: f64,
 ) -> Option<(f64, f64)> {
     if !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
@@ -206,9 +206,9 @@ fn score_of(
 
 /// EVERY MOD LIST A BUILD MAY BE STORED WITH, the build as it stands first:
 /// each card the every-rank list names at each of its ranks, crossed.
-fn rank_choices(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<String>> {
-    let listed = &wfsim_engine::mods_data::every_rank().mods;
-    let pool = wfsim_engine::mods_data::pool_for_weapon(&v.weapon);
+fn rank_choices(v: &wfsim_engine::board::builds::ValidBuild) -> Vec<Vec<String>> {
+    let listed = &wfsim_engine::data::mods::every_rank().mods;
+    let pool = wfsim_engine::data::mods::pool_for_weapon(&v.weapon);
     let mut out: Vec<Vec<String>> = vec![v.mods.clone()];
     for (i, id) in v.mods.iter().enumerate() {
         let Some(card) = pool.iter().find(|m| m.id == id.as_str() && listed.iter().any(|l| l == m.id))
@@ -216,8 +216,8 @@ fn rank_choices(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<String>> {
             continue;
         };
         let lower: Vec<String> = (0..card.max_rank)
-            .map(|r| wfsim_engine::mods_data::ranked_id(card.id, r, card.max_rank))
-            .filter(|r| wfsim_engine::mods_data::at_rank(r).is_some())
+            .map(|r| wfsim_engine::data::mods::ranked_id(card.id, r, card.max_rank))
+            .filter(|r| wfsim_engine::data::mods::at_rank(r).is_some())
             .collect();
         out = out
             .into_iter()
@@ -240,7 +240,7 @@ fn rank_choices(v: &wfsim_engine::builds::ValidBuild) -> Vec<Vec<String>> {
 /// A CARD'S RANK IS NOT PART OF WHAT ARRIVES: every card is stored at max rank,
 /// and [`corners_for`] asks the fight about the ones the every-rank list names.
 fn at_max_rank(id: &str) -> String {
-    wfsim_engine::mods_data::split_rank(id).0.to_string()
+    wfsim_engine::data::mods::split_rank(id).0.to_string()
 }
 
 fn flag(name: &str) -> Option<String> {
@@ -267,20 +267,20 @@ fn flag(name: &str) -> Option<String> {
 fn asked_row(
     sent_ruler: &str,
     sent_mode: &str,
-    v: &wfsim_engine::builds::ValidBuild,
+    v: &wfsim_engine::board::builds::ValidBuild,
     key: &str,
 ) -> Option<Value> {
     // A RULER THE ROSTER STILL HAS, by family — a `_vN` record names the ruler
     // it is a version of. One it no longer has asks for nothing: `purge_queue`
     // would delete the row and the reconciliation covers the build anyway.
-    let ruler = wfsim_engine::benchmarks_data::all()
+    let ruler = wfsim_engine::board::benchmarks::all()
         .iter()
         .map(|b| b.id.clone())
         .find(|b| benchmark_family(b) == benchmark_family(sent_ruler))?;
     // …AND A MODE THE WEAPON CAN SUSTAIN. The scorer enumerates sustainable
     // modes and matches the queue on that id, so a row naming any other mode is
     // a row nothing will ever take.
-    let modes: Vec<String> = wfsim_engine::weapons_data::play_modes(&v.weapon)
+    let modes: Vec<String> = wfsim_engine::data::weapons::play_modes(&v.weapon)
         .into_iter()
         .filter(|m| m.sustainable)
         .map(|m| m.id.to_string())
@@ -342,14 +342,14 @@ fn intake(
 
         let weapon = id(&rec, "weapon");
         let riven = riven_of(&rec);
-        let assembly = wfsim_engine::weapons_data::kitguns::assembly_of(
+        let assembly = wfsim_engine::data::weapons::kitguns::assembly_of(
             &weapon,
             &id(&rec, "grip"),
             &id(&rec, "loader"),
         );
         let mods: Vec<String> = ids(&rec, "mods").iter().map(|m| at_max_rank(m)).collect();
         let exilus = at_max_rank(&id(&rec, "exilus"));
-        let v = match wfsim_engine::builds::validate_with(
+        let v = match wfsim_engine::board::builds::validate_with(
             &weapon,
             &mods,
             &ids(&rec, "evolutions"),
@@ -384,7 +384,7 @@ fn intake(
         for corner in corners {
             // A CORNER'S MODS ARE CANONICALISED AGAIN: a lower rank drains
             // less, and the representative orders plain cards by drain.
-            let v = match wfsim_engine::builds::validate_with(
+            let v = match wfsim_engine::board::builds::validate_with(
                 &corner.weapon,
                 &corner.mods,
                 &corner.evolutions,
@@ -404,7 +404,7 @@ fn intake(
             // THE ROLLS GO ON THE BUILD BEFORE THE KEY IS TAKEN. They are part
             // of the fight, so they are part of the identity the id hashes —
             // two ends of one shape are two builds with two numbers.
-            let key = wfsim_engine::builds::build_id(&v);
+            let key = wfsim_engine::board::builds::build_id(&v);
             let rec = if rolls.is_empty() {
                 canonical(&v)
             } else {
@@ -666,7 +666,7 @@ mod tests {
     #[test]
     fn every_listed_card_is_crossed_at_every_rank() {
         let mods: Vec<String> = ["hunter_track", "continuous_misery", "serration"].map(String::from).to_vec();
-        let v = wfsim_engine::builds::validate("braton_prime", &mods, &[], &[], "").expect("legal");
+        let v = wfsim_engine::board::builds::validate("braton_prime", &mods, &[], &[], "").expect("legal");
         let choices = rank_choices(&v);
         assert_eq!(choices.len(), 6 * 4);
         assert_eq!(choices[0], v.mods, "the build as it stands comes first");
@@ -680,7 +680,7 @@ mod tests {
     /// did not run", and the default then stands without a word.
     #[test]
     fn a_probe_reads_the_fight_it_ran() {
-        for bench in wfsim_engine::benchmarks_data::all() {
+        for bench in wfsim_engine::board::benchmarks::all() {
             let mut req: Value = serde_json::to_value(&bench.scenario).expect("scenario");
             let o = req.as_object_mut().expect("a mapping");
             o.insert("weapon".into(), json!("braton_prime"));
@@ -746,7 +746,7 @@ mod tests {
             json!({ "benchmark": "single_target", "mode": "transformed" }),
         )]);
         assert_eq!(asked.len(), 1);
-        let modes: Vec<String> = wfsim_engine::weapons_data::play_modes("torid")
+        let modes: Vec<String> = wfsim_engine::data::weapons::play_modes("torid")
             .into_iter()
             .filter(|m| m.sustainable)
             .map(|m| m.id.to_string())

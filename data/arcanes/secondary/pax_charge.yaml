@@ -12,7 +12,7 @@ seats: [kitgun]
 
 effects:
   # THE MAGAZINE BECOMES A BATTERY, which this engine has modelled since the
-  # Shedu (`weapons_data::Battery`) — so the arcane is a rate the WEAPON states
+  # Shedu (`data::weapons::Battery`) — so the arcane is a rate the WEAPON states
   # plus a reload-speed bonus, and nothing new in the sim.
   #
   # THE DELAY IS THE RELOAD. "Similar to Archguns and the Cycron, base recharge

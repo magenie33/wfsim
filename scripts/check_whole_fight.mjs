@@ -7,7 +7,7 @@
 // part of the fight and still travels. So "the same fight across two weapons"
 // was a claim nobody could check; this asserts that it can be.
 //
-// AND THAT THE RULE IS THE ENGINE'S: `engine::scenario::settled_for` decides,
+// AND THAT THE RULE IS THE ENGINE'S: `engine::build::scenario::settled_for` decides,
 // `/api/meta` states the consequence per weapon, and the page reads it. The
 // forcing rules must not be re-derived in `app.js` from weapon flags, because a
 // forced field looks identical whoever forced it.

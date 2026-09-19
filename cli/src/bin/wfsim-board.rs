@@ -59,7 +59,7 @@ fn carried(row_benchmark: Option<&str>, bench_id: &str, live: &std::collections:
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
-    /// THE BUILD THIS ROW IS, without the mode — `builds::build_id`, which is
+    /// THE BUILD THIS ROW IS, without the mode — `board::builds::build_id`, which is
     /// what the `builds` table is keyed by.
     ///
     /// Carried so the run can prove every validated build ended up somewhere:
@@ -82,7 +82,7 @@ struct Row {
     /// maximum, which is investment rather than a choice.
     valence: String,
     /// THE EXILUS SLOT'S MOD, empty on almost every row. Optional as of
-    /// 2026-08-25 — see `benchmarks_data::BuildRequirement::allows_exilus`.
+    /// 2026-08-25 — see `board::benchmarks::BuildRequirement::allows_exilus`.
     exilus: String,
     /// THE PARTS, on a modular weapon's row; empty on every other. They are the
     /// BUILD — a grip sets damage, fire rate and the charge — so a row that
@@ -92,7 +92,7 @@ struct Row {
     loader: String,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats and which is the
     /// malus, never a roll. A row states a shape and the shape is scored at its
-    /// own ceiling (`rivens_data::perfect`), for the reason every row is scored
+    /// own ceiling (`build::rivens::perfect`), for the reason every row is scored
     /// at full Forma: what one copy landed on is luck, and the board does not
     /// rank luck.
     ///
@@ -113,7 +113,7 @@ struct RowRiven {
     bonuses: Vec<String>,
     malus: Option<String>,
     /// One roll per stat, bonuses first then the malus — the corner
-    /// `rivens_data::perfect` picked for THIS fight. Not part of the identity.
+    /// `build::rivens::perfect` picked for THIS fight. Not part of the identity.
     rolls: Vec<f64>,
 }
 
@@ -157,10 +157,10 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
         "mode": r.mode,
         "score": r.score,
         // The number stays EXACT and the string beside it is what the page
-        // prints. Formatting lives in `boards_data::format_score`, so "four
+        // prints. Formatting lives in `data::boards::format_score`, so "four
         // significant figures, four decimals" is one rule in one language
         // rather than a Rust copy and a JS copy that drift.
-        "shown": wfsim_engine::boards_data::format_score(r.score),
+        "shown": wfsim_engine::data::boards::format_score(r.score),
         "mods": r.mods,
         "evolutions": r.evolutions,
         "arcanes": r.arcanes,
@@ -354,14 +354,14 @@ fn identity_of(key: &str) -> String {
 /// A RECORD NAMING NO ROLLS is what the library held before `wfsim-intake`
 /// resolved them, and the god roll is what it would resolve to today.
 fn card_of(
-    v: &wfsim_engine::builds::ValidBuild,
-    shape: &wfsim_engine::rivens_data::RivenShape,
+    v: &wfsim_engine::board::builds::ValidBuild,
+    shape: &wfsim_engine::build::rivens::RivenShape,
 ) -> Vec<f64> {
     if !v.riven_rolls.is_empty() {
         return v.riven_rolls.clone();
     }
-    let cls = wfsim_engine::rivens_data::class_for_weapon(&v.weapon).unwrap_or("");
-    let g = wfsim_engine::rivens_data::god_roll(shape, cls);
+    let cls = wfsim_engine::build::rivens::class_for_weapon(&v.weapon).unwrap_or("");
+    let g = wfsim_engine::build::rivens::god_roll(shape, cls);
     g.bonuses.iter().map(|b| b.roll).chain(g.malus.iter().map(|m| m.roll)).collect()
 }
 
@@ -583,7 +583,7 @@ struct CrossFact {
 /// nothing, and a build whose only facts are its own is owed a first fight.
 fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
     let Some(path) = spec else { return Vec::new() };
-    let live: std::collections::BTreeSet<String> = wfsim_engine::benchmarks_data::all()
+    let live: std::collections::BTreeSet<String> = wfsim_engine::board::benchmarks::all()
         .iter()
         .map(|b| family(&b.id).to_string())
         .collect();
@@ -666,7 +666,7 @@ fn entry_floor(kept: &mut Vec<Row>) -> std::collections::BTreeSet<String> {
         kept.iter().map(|r| r.identity.clone()).collect();
     kept.retain(|r| {
         let k = (r.weapon.clone(), r.mode.clone(), r.riven.is_some());
-        wfsim_engine::boards_data::clears_entry(r.score, leader[&k])
+        wfsim_engine::data::boards::clears_entry(r.score, leader[&k])
     });
     // WHOSE ROWS ALL FELL UNDER IT. A build that reached no row is a FIFTH
     // outcome beside refused, published, deferred and paused, and the run's
@@ -710,7 +710,7 @@ fn park_under_entry_line(
     let mut parked: std::collections::BTreeSet<String> = Default::default();
     pending.retain(|(id, _mode)| {
         let share = best.get(id.as_str()).copied();
-        if !wfsim_engine::boards_data::keeps_earning(share) {
+        if !wfsim_engine::data::boards::keeps_earning(share) {
             parked.insert(id.clone());
             return false;
         }
@@ -918,7 +918,7 @@ fn main() {
     // WHAT THIS RUN MEASURED, for the accounting line at the end.
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
 
-    let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
+    let bench = wfsim_engine::board::benchmarks::get(&bench_id).unwrap_or_else(|| {
         eprintln!("unknown benchmark: {bench_id}");
         std::process::exit(2);
     });
@@ -1016,7 +1016,7 @@ fn main() {
         // by the person whose build it refused, either.
         // AN ADVERSARY WEAPON'S PROGENITOR ELEMENT is part of the submission,
         // like its mods and its evolutions — a different element is a different
-        // build, not a weaker one. `builds::validate` refuses one the weapon
+        // build, not a weaker one. `board::builds::validate` refuses one the weapon
         // cannot have and refuses a MISSING one on a weapon that always has
         // one, so neither can arrive by omission — a legality rule rather than
         // a ruler's, since a build without an element is not a build a ruler
@@ -1025,14 +1025,14 @@ fn main() {
         // A RIVEN'S SHAPE, when the submission carries one. Two flat lists, the
         // way the endpoint stores them: the ROLLS are never submitted because
         // they are never ranked — `wfsim-intake` finds this shape's own best
-        // corner (`rivens_data::perfect`).
+        // corner (`build::rivens::perfect`).
         let shape = {
             let bonuses = get("riven_pos");
             let malus = s
                 .get("riven_neg")
                 .and_then(Value::as_str)
                 .filter(|x| !x.is_empty());
-            (!bonuses.is_empty()).then(|| wfsim_engine::rivens_data::RivenShape {
+            (!bonuses.is_empty()).then(|| wfsim_engine::build::rivens::RivenShape {
                 bonuses: {
                     let mut b = bonuses;
                     b.sort();
@@ -1042,7 +1042,7 @@ fn main() {
             })
         };
         // THE EXILUS SLOT'S MOD. Optional as of 2026-08-25 — see
-        // `benchmarks_data::BuildRequirement::allows_exilus` — and its own
+        // `board::benchmarks::BuildRequirement::allows_exilus` — and its own
         // field on the wire because a flat `mods` list cannot say which entry
         // came out of the exilus slot.
         let exilus = s
@@ -1055,18 +1055,18 @@ fn main() {
         let asm = {
             let g = s.get("grip").and_then(Value::as_str).unwrap_or("");
             let l = s.get("loader").and_then(Value::as_str).unwrap_or("");
-            (!(g.is_empty() && l.is_empty())).then(|| wfsim_engine::weapons_data::kitguns::Assembly {
+            (!(g.is_empty() && l.is_empty())).then(|| wfsim_engine::data::weapons::kitguns::Assembly {
                 // The chamber's WEAPON id, which is what `Assembly` holds.
-                chamber: wfsim_engine::weapons_data::spec(&weapon)
+                chamber: wfsim_engine::data::weapons::spec(&weapon)
                     .and_then(|sp| sp.kitgun.clone())
-                    .and_then(|r| wfsim_engine::weapons_data::kitguns::default_assembly(&r))
+                    .and_then(|r| wfsim_engine::data::weapons::kitguns::default_assembly(&r))
                     .map(|d| d.chamber)
                     .unwrap_or_default(),
                 grip: g.to_string(),
                 loader: l.to_string(),
             })
         };
-        let v = match wfsim_engine::builds::validate_for_board_with(
+        let v = match wfsim_engine::board::builds::validate_for_board_with(
             &bench_id,
             &weapon,
             &mods,
@@ -1116,7 +1116,7 @@ fn main() {
         // IT PASSED THE DOOR, so it owes a row somewhere. Recorded before the
         // modes are enumerated, because what has to be provable is that a
         // VALIDATED build was ranked — not that some particular mode of it was.
-        let ident = wfsim_engine::builds::build_id(&v);
+        let ident = wfsim_engine::board::builds::build_id(&v);
         scored_ids.insert(ident.clone());
         // …AND WHAT THE ENTRY LINE WILL NEED TO SAY ABOUT IT. Recorded here,
         // beside the identity, because both are facts about the BUILD and
@@ -1145,8 +1145,8 @@ fn main() {
         // way to play for three hundred seconds, and a board may not rank a
         // fight nobody can hold — derived from the mode, so no benchmark has to
         // carry a list of what it will not take.
-        let modes: Vec<wfsim_engine::weapons_data::WeaponPlayMode> =
-            wfsim_engine::weapons_data::play_modes(&v.weapon)
+        let modes: Vec<wfsim_engine::data::weapons::WeaponPlayMode> =
+            wfsim_engine::data::weapons::play_modes(&v.weapon)
                 .into_iter()
                 .filter(|m| m.sustainable)
                 .collect();
@@ -1170,7 +1170,7 @@ fn main() {
             // `validate` has already put both into the same canonical form. The
             // MODE is part of that identity: one build played two ways is two
             // entrants, and collapsing them would keep whichever arrived first.
-            let key = wfsim_engine::builds::board_key(&v, played.id);
+            let key = wfsim_engine::board::builds::board_key(&v, played.id);
             if !seen_ids.insert(key.clone()) {
                 continue;
             }
@@ -1189,7 +1189,7 @@ fn main() {
             // which is why asking costs the board nothing where deleting the
             // fact would have left a hole.
             let asked = (
-                wfsim_engine::builds::build_id(&v),
+                wfsim_engine::board::builds::build_id(&v),
                 if played.id.is_empty() { "base".to_string() } else { played.id.to_string() },
             );
             let take = taking.as_ref().is_some_and(|t| t.contains(&asked));
@@ -1366,7 +1366,7 @@ fn main() {
                     // need the precision the published number does.
                     if let Some(shape) = &v.riven {
                         let cls =
-                            wfsim_engine::rivens_data::class_for_weapon(&v.weapon).unwrap_or("");
+                            wfsim_engine::build::rivens::class_for_weapon(&v.weapon).unwrap_or("");
                         // THE BUILD NAMES ITS OWN CARD. `wfsim-intake`
                         // resolved the shape when the record entered the
                         // library — the god roll, unless a stat's sign had
@@ -1450,7 +1450,7 @@ fn main() {
             };
             let exilus_for_row = v.exilus.clone().unwrap_or_default();
             rows.push(Row {
-                identity: wfsim_engine::builds::build_id(&v),
+                identity: wfsim_engine::board::builds::build_id(&v),
                 weapon: v.weapon,
                 mode: played.id.to_string(),
                 score,
@@ -1499,7 +1499,7 @@ fn main() {
         if dropped > 0 {
             eprintln!(
                 "entry line: {dropped} row(s) under {:.0}% of their group's leader, {} build(s) with none left",
-                wfsim_engine::boards_data::KEEP_LEADER_SHARE * 100.0,
+                wfsim_engine::data::boards::KEEP_LEADER_SHARE * 100.0,
                 floored_ids.len(),
             );
         }
@@ -1582,7 +1582,7 @@ fn main() {
         if gate {
             eprintln!(
                 "entry line: {parked} build(s) under {:.0}% of every group's leader — no row asked for",
-                wfsim_engine::boards_data::KEEP_LEADER_SHARE * 100.0,
+                wfsim_engine::data::boards::KEEP_LEADER_SHARE * 100.0,
             );
         }
     }
@@ -1647,7 +1647,7 @@ fn main() {
         // the ruler it is a version of, so a live ruler's older version is not
         // an orphan.
         let live_rulers: std::collections::BTreeSet<&str> =
-            wfsim_engine::benchmarks_data::all().iter().map(|b| family(&b.id)).collect();
+            wfsim_engine::board::benchmarks::all().iter().map(|b| family(&b.id)).collect();
         let mut by_weapon: std::collections::BTreeMap<String, Vec<Box<RawValue>>> =
             Default::default();
         if let Ok(rd) = std::fs::read_dir(dir) {
@@ -2172,7 +2172,7 @@ mod tests {
     #[test]
     fn two_modes_sharing_one_form_are_two_requests() {
         let scenario = json!({ "enemy": "thrax_centurion", "level": 9999 });
-        let build = |id: &str| wfsim_engine::builds::ValidBuild {
+        let build = |id: &str| wfsim_engine::board::builds::ValidBuild {
             weapon: id.to_string(),
             mods: vec![],
             evolutions: vec![],
@@ -2186,8 +2186,8 @@ mod tests {
             drain: 0,
         };
         let mut shared = 0usize;
-        for w in wfsim_engine::weapons_data::roster() {
-            let modes = wfsim_engine::weapons_data::play_modes(&w.id);
+        for w in wfsim_engine::data::weapons::roster() {
+            let modes = wfsim_engine::data::weapons::play_modes(&w.id);
             let v = build(&w.id);
             for (i, a) in modes.iter().enumerate() {
                 for b in modes.iter().skip(i + 1) {
@@ -2229,8 +2229,8 @@ mod tests {
     #[test]
     fn one_build_is_a_distinct_row_in_every_mode_it_can_be_played() {
         let mut multi = 0usize;
-        for w in wfsim_engine::weapons_data::roster() {
-            let v = wfsim_engine::builds::ValidBuild {
+        for w in wfsim_engine::data::weapons::roster() {
+            let v = wfsim_engine::board::builds::ValidBuild {
                 weapon: w.id.clone(),
                 mods: vec![],
                 evolutions: vec![],
@@ -2243,7 +2243,7 @@ mod tests {
                 forma: 0,
                 drain: 0,
             };
-            let modes: Vec<_> = wfsim_engine::weapons_data::play_modes(&w.id)
+            let modes: Vec<_> = wfsim_engine::data::weapons::play_modes(&w.id)
                 .into_iter()
                 .filter(|m| m.sustainable)
                 .collect();
@@ -2253,7 +2253,7 @@ mod tests {
             let mut keys = std::collections::HashSet::new();
             for m in &modes {
                 assert!(
-                    keys.insert(wfsim_engine::builds::board_key(&v, m.id)),
+                    keys.insert(wfsim_engine::board::builds::board_key(&v, m.id)),
                     "{}: `{}` shares a board key with another of its modes, so the                      fan-out would publish one row for both",
                     w.id,
                     m.id
@@ -2276,7 +2276,7 @@ mod tests {
             // about — how a benchmark declares a fight with no kills in it.
             "buff_triggers_off": ["headshot_kill"],
         });
-        let v = wfsim_engine::builds::ValidBuild {
+        let v = wfsim_engine::board::builds::ValidBuild {
             weapon: "ballistica_prime".to_string(),
             mods: vec![],
             evolutions: vec![],
@@ -2289,7 +2289,7 @@ mod tests {
             forma: 0,
             drain: 0,
         };
-        let modes = wfsim_engine::weapons_data::play_modes("ballistica_prime");
+        let modes = wfsim_engine::data::weapons::play_modes("ballistica_prime");
         let m = modes
             .iter()
             .find(|m| m.id == "alternate_cycle")
@@ -2376,7 +2376,7 @@ mod page_row_tests {
     /// `publish.yml` will not run from a commit whose tests failed.
     #[test]
     fn a_row_under_a_ruler_the_roster_no_longer_has_is_not_carried() {
-        let live: std::collections::BTreeSet<&str> = wfsim_engine::benchmarks_data::all()
+        let live: std::collections::BTreeSet<&str> = wfsim_engine::board::benchmarks::all()
             .iter()
             .map(|b| family(&b.id))
             .collect();
@@ -2450,21 +2450,21 @@ mod page_row_tests {
             for r in &rows {
                 let bench = r.get("benchmark").and_then(Value::as_str).unwrap_or("");
                 assert!(
-                    wfsim_engine::benchmarks_data::get(bench).is_some(),
+                    wfsim_engine::board::benchmarks::get(bench).is_some(),
                     "{weapon} names benchmark {bench:?}, which does not exist",
                 );
-                let riven = r.get("riven").map(|rv| wfsim_engine::rivens_data::RivenShape {
+                let riven = r.get("riven").map(|rv| wfsim_engine::build::rivens::RivenShape {
                     bonuses: strings(rv, "bonuses"),
                     malus: rv.get("malus").and_then(Value::as_str).map(str::to_owned),
                 });
                 let grip = r.get("grip").and_then(Value::as_str).unwrap_or("");
                 let assembly = (!grip.is_empty()).then(|| {
-                    let chamber = wfsim_engine::weapons_data::spec(&weapon)
+                    let chamber = wfsim_engine::data::weapons::spec(&weapon)
                         .and_then(|s| s.kitgun.clone())
-                        .and_then(|k| wfsim_engine::weapons_data::kitguns::default_assembly(&k))
+                        .and_then(|k| wfsim_engine::data::weapons::kitguns::default_assembly(&k))
                         .map(|d| d.chamber)
                         .unwrap_or_default();
-                    wfsim_engine::weapons_data::kitguns::Assembly {
+                    wfsim_engine::data::weapons::kitguns::Assembly {
                         chamber,
                         grip: grip.to_string(),
                         loader: r
@@ -2474,7 +2474,7 @@ mod page_row_tests {
                             .to_string(),
                     }
                 });
-                let v = wfsim_engine::builds::validate_for_board_with(
+                let v = wfsim_engine::board::builds::validate_for_board_with(
                     bench,
                     &weapon,
                     &strings(r, "mods"),

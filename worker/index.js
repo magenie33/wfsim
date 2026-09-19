@@ -26,7 +26,7 @@ const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 // derive it, so the only thing keeping the two in step is that assertion.
 export const MAX_MODS = 9;
 const ID_PLAIN = /^[a-z0-9_]{1,64}$/;
-// A MOD BELOW ITS MAX RANK is `<card>@<rank>` (`engine::mods_data::RANK_MARK`),
+// A MOD BELOW ITS MAX RANK is `<card>@<rank>` (`engine::data::mods::RANK_MARK`),
 // and only the axes marked `ranked` may carry one.
 const RANKED_ID = /^[a-z0-9_]{1,64}(@[0-9]{1,2})?$/;
 
@@ -45,7 +45,7 @@ const RANKED_ID = /^[a-z0-9_]{1,64}(@[0-9]{1,2})?$/;
 // EXPORTED for `scripts/check_board_submit.mjs`, which asserts this table
 // against the keys the PAGE actually sends, so a name added to `boardPayload()`
 // and not here fails immediately. `axis` names which of
-// `engine::builds::BUILD_AXES` an entry carries — not this worker's list to
+// `engine::board::builds::BUILD_AXES` an entry carries — not this worker's list to
 // keep, so `scripts/check_build_axes.mjs` asserts every `on_board` axis is
 // claimed by a row here.
 export const AXES = [

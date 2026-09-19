@@ -32,7 +32,7 @@ wielders: [valkyr_prime, valkyr]
 wielder_names:
   valkyr_prime: Valkyr Prime Talons
 # EXALTED: the module's CompatibilityTags `POWER_WEAPON`, so a card still tagged
-# incompatible with it is refused (`mods_data::pool_for_build`); the combo,
+# incompatible with it is refused (`data::mods::pool_for_build`); the combo,
 # Acolyte and Amalgam cards are not (see notes: exalted_mods_reenabled).
 exalted: true
 accuracy: ~

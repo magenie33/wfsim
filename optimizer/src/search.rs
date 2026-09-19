@@ -156,7 +156,7 @@ fn key_of(subset: &[usize]) -> u64 {
 pub fn search(
     space: &SubsetSpace,
     expand: &Expand<'_>,
-    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
     cfg: &SearchConfig,
     state: Option<&FunnelState>,
@@ -448,7 +448,7 @@ type Evaluated = (
 fn evaluate_proposals(
     batch: &[Proposal],
     expand: &Expand<'_>,
-    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
     cfg: &SearchConfig,
     state: Option<&FunnelState>,
@@ -475,7 +475,7 @@ fn evaluate_proposals(
 fn evaluate_proposals(
     batch: &[Proposal],
     expand: &Expand<'_>,
-    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
     cfg: &SearchConfig,
     state: Option<&FunnelState>,
@@ -493,7 +493,7 @@ fn evaluate_proposals(
 fn eval_one(
     p: &Proposal,
     expand: &Expand<'_>,
-    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
     cfg: &SearchConfig,
     state: Option<&FunnelState>,

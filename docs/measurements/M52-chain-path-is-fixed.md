@@ -2,7 +2,7 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
-The first measurement of chaining, and the only part of `engine::chain` that
+The first measurement of chaining, and the only part of `engine::rules::chain` that
 rests on something fired in game rather than on a wiki line.
 
 **THE SETUP.** A **5 x 4** formation in the Simulacrum, bottom-left `(1,1)` and
@@ -66,7 +66,7 @@ Not reproduce it (2026-08-17). A 100% reproduction is not asked for, only that
 the THINKING match: if the bodies never move, the chain path is fixed for ever —
 holding that property is enough.
 
-So `chain::resolve` breaks ties by the lowest body index — arbitrary, and
+So `rules::chain::resolve` breaks ties by the lowest body index — arbitrary, and
 STABLE, which is the honest pair when the real rule is unknowable. A formation
 that does not move always chains the same way, and a test asserts it a hundred
 times over, with a body walked off the map as the negative control.

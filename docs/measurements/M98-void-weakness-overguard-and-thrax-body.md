@@ -27,7 +27,7 @@ unit after its armour was removed, so the armour term is not in the reading.
 
 Already the engine's rule, so nothing moved:
 
-- `engine::factions_data` gives Overguard its own column (neutral, Void ×1.5),
+- `engine::data::factions` gives Overguard its own column (neutral, Void ×1.5),
   and `engine::dummy` routes the pool to its column — "Overguard … is a layer
   over the unit rather than part of it, so the unit's own column never reaches
   it."

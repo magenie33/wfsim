@@ -79,7 +79,7 @@ def riven_families(weapon_refs, errors):
 
     THE FAMILY IS THE KEY BECAUSE THE FAMILY IS THE FACT. Which entry belongs
     to which family — and that a form takes the family of the weapon it
-    transforms from — is OUR structure, and `engine::market_data` applies it at
+    transforms from — is OUR structure, and `engine::data::market` applies it at
     lookup. Spelling it out per entry here would put our structure in a
     generated file, where a new form silently gets no link until someone
     remembers to re-run this.

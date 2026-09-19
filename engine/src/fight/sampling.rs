@@ -57,7 +57,7 @@ pub(super) fn sample_stacks(
         .iter()
         .map(|b| match b.id.as_str() {
             // A weapon passive, not a stack: it is up or it is not.
-            "frenzy" => (live(bar.get(crate::perks::frenzy::BUFF_ID).is_some()), never),
+            "frenzy" => (live(bar.get(crate::rules::perks::frenzy::BUFF_ID).is_some()), never),
             // PERMANENT (no trigger, no decay): whatever it was configured to,
             // for the whole run. `multishot` already carries it, so the count
             // is reconstructed from the fraction that survived the config.
@@ -72,7 +72,7 @@ pub(super) fn sample_stacks(
                     .fold(unknown, |a: f64, e| if a.is_nan() { e } else { a.min(e) }))
             }
 
-            crate::rage::BUFF_ID => (cap((arc.rage_bonus(now) * 100.0).round() as u32), unknown),
+            crate::data::rage::BUFF_ID => (cap((arc.rage_bonus(now) * 100.0).round() as u32), unknown),
             // THE WHOLE STACKING FAMILY, by id. The roster pushed these ids
             // from the same Vec this reads, so a rostered buff can never fall
             // through to a zero it did not earn.

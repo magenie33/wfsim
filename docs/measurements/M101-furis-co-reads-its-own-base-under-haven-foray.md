@@ -38,4 +38,4 @@ more on the first reading alone.
   the gated +30 as well as the +28, in both forms — the rule M83 measured on the
   Paris Prime, now on a second weapon and in a second form.
 - The engine already answered this way; the reading is pinned by
-  `loadout::tests::furis_co_reads_its_own_base_under_haven_foray_in_both_forms`.
+  `build::loadout::tests::furis_co_reads_its_own_base_under_haven_foray_in_both_forms`.

@@ -3,7 +3,7 @@
 //! cadences, and the per-weapon mechanics a yaml can declare.
 
 use super::*;
-use crate::damage::{DamageType, DamageVector};
+use crate::rules::damage::{DamageType, DamageVector};
 use serde::Deserialize;
 
 /// Direct-hit damage falloff: full damage inside `start_m`, decreasing
@@ -13,7 +13,7 @@ use serde::Deserialize;
 /// is the fraction REMOVED — the same reading as [`RadialSpec::falloff_reduction`].
 /// Hek's is 0.8 and its page says *"from 100% to 20% from 10m to 20m"* — read
 /// as the share kept, it would keep 80% where the game keeps 20%.
-/// `loadout::Falloff::keep` is its complement.
+/// `build::loadout::Falloff::keep` is its complement.
 #[derive(Debug, Clone, Deserialize)]
 pub struct FalloffSpec {
     /// Metres out to which damage is full.
@@ -78,7 +78,7 @@ pub struct MeterSpec {
     pub seconds_per_hit: f64,
     /// What one ammo pickup takes off it. *"Picking up secondary or universal
     /// ammo"* — a PRIMARY pickup does nothing, which is why the drop model
-    /// behind it has to know which kind fell (`ammo::SECONDARY_PICKUP_ON_KILL`).
+    /// behind it has to know which kind fell (`rules::ammo::SECONDARY_PICKUP_ON_KILL`).
     pub seconds_per_ammo_pickup: f64,
 }
 
@@ -450,7 +450,7 @@ pub struct SuperCritSpec {
 /// is not affected by net negative Fire Rate bonuses."* The second makes this
 /// cheap — a bonus scales BOTH terms, so a positive-bonus build is an auto
 /// weapon at the effective rate — and the third is where burst stops being a
-/// relabelling (`loadout::resolve`).
+/// relabelling (`build::loadout::resolve`).
 ///
 /// PRIMARY COMPRESSION's per-weapon row — see docs/CATALOGS.md §2.
 ///
@@ -676,15 +676,15 @@ pub struct WeaponBase {
     /// evolutions say *"Does not affect Incarnon Form"* and this is what lets
     /// them be obeyed rather than transcribed and ignored.
     /// PUNCH-THROUGH DEPTH the WEAPON brings, in metres of material — see
-    /// [`crate::weapons_data::AttackSpec::punch_through_m`].
+    /// [`crate::data::weapons::AttackSpec::punch_through_m`].
     pub punch_through_m: f64,
-    /// [`crate::weapons_data::AttackSpec::projectile_width_m`] — 0 is a ray.
+    /// [`crate::data::weapons::AttackSpec::projectile_width_m`] — 0 is a ray.
     pub projectile_width_m: f64,
-    /// [`crate::weapons_data::AttackSpec::range_m`] — `INFINITY` when the
+    /// [`crate::data::weapons::AttackSpec::range_m`] — `INFINITY` when the
     /// weapon declares none, which is what every weapon did before 2026-08-19.
     pub range_m: f64,
     /// Whether this attack takes punch-through MODS — see
-    /// [`crate::weapons_data::AttackSpec::punch_through_mods`]. `None` means
+    /// [`crate::data::weapons::AttackSpec::punch_through_mods`]. `None` means
     /// the class rule decides.
     pub punch_through_mods: Option<bool>,
     pub form: crate::model::FormKind,
@@ -705,7 +705,7 @@ pub struct WeaponBase {
     /// the listed stat (Cernos Prime: 1.0), which is what reads it as a stat
     /// (Hemorrhage's below-2.5 gate) still sees.
     pub charge_seconds: Option<f64>,
-    /// See [`crate::weapons_data::AttackSpec::charge_ammo_per_second`]. Set,
+    /// See [`crate::data::weapons::AttackSpec::charge_ammo_per_second`]. Set,
     /// the charge spends the magazine and the damage rides on it.
     pub charge_ammo_per_second: Option<f64>,
     /// See [`crate::model::SustainedFireRate`]. It rides through the mod
@@ -718,7 +718,7 @@ pub struct WeaponBase {
     pub battery: Option<crate::model::Battery>,
     /// Ammo spent per shot / per beam tick (weapon data `attack.ammo_cost`).
     pub ammo_cost: f64,
-    /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
+    /// See `data::weapons::WeaponSpec::headshot_bonus_multiplicative`.
     pub headshot_bonus_multiplicative: bool,
     /// Does a fire-rate bonus shorten the DRAW? False for Arch-Guns, whose
     /// fire rate paces only the interval — see `weapons_data`.
@@ -735,30 +735,30 @@ pub struct WeaponBase {
     pub fire_rate_mod_multiplier: f64,
     /// Stored pellet count (wiki Multishot).
     pub base_multishot: f64,
-    /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`].
+    /// See [`crate::data::weapons::AttackSpec::unaimed_headshot_chance`].
     pub unaimed_headshot_chance: Option<f64>,
-    /// See [`crate::weapons_data::AttackSpec::windup_seconds`] — unmodded here;
+    /// See [`crate::data::weapons::AttackSpec::windup_seconds`] — unmodded here;
     /// `resolve` divides it by the fire-rate bucket.
     pub windup_seconds: f64,
-    /// See [`crate::weapons_data::AttackSpec::no_magazine`].
+    /// See [`crate::data::weapons::AttackSpec::no_magazine`].
     pub no_magazine: bool,
     // ---- MELEE, as the ENTRY states it -----------------------------------
-    /// See [`crate::weapons_data::AttackSpec::combo_script`] — the swings a
+    /// See [`crate::data::weapons::AttackSpec::combo_script`] — the swings a
     /// melee form loops, unmodded. `resolve` shortens the delays by the
     /// attack-speed bucket and nothing else touches them.
     pub combo_script: Vec<crate::model::ComboHit>,
-    /// See [`crate::weapons_data::AttackSpec::follow_through`].
+    /// See [`crate::data::weapons::AttackSpec::follow_through`].
     pub follow_through: Option<f64>,
-    /// See [`crate::weapons_data::AttackSpec::slam`] — the weapon's own slam,
+    /// See [`crate::data::weapons::AttackSpec::slam`] — the weapon's own slam,
     /// unmodded, fired by a combo swing that ends on one.
     pub slam: Option<RadialBase>,
-    /// See [`crate::weapons_data::AttackSpec::heavy`] — the class's heavy
+    /// See [`crate::data::weapons::AttackSpec::heavy`] — the class's heavy
     /// attack, stated on every melee form because Tennokai turns a LIGHT swing
     /// into one.
     pub heavy: Option<crate::model::HeavyAttack>,
-    /// See [`crate::weapons_data::AttackSpec::spends_combo`].
+    /// See [`crate::data::weapons::AttackSpec::spends_combo`].
     pub spends_combo: bool,
-    /// See [`crate::weapons_data::WeaponSpec::combo_duration_seconds`] —
+    /// See [`crate::data::weapons::WeaponSpec::combo_duration_seconds`] —
     /// unmodded; `resolve` adds the Drifting Contact bucket and floors it.
     pub combo_duration_seconds: f64,
     /// See [`crate::model::OrbSpec`] — unmodded; `resolve` scales the
@@ -788,15 +788,15 @@ pub struct WeaponBase {
     /// `ammo_max`: false only where the weapon states none, which today is
     /// every sentinel weapon ("Ammo Max: ∞ / Ammo Type: None").
     pub has_reserve: bool,
-    /// [`crate::weapons_data::WeaponSpec::ammo_pickup`] — rounds one pickup
+    /// [`crate::data::weapons::WeaponSpec::ammo_pickup`] — rounds one pickup
     /// gives. No mod in this roster moves it (the Scavenger auras would).
     pub ammo_pickup: f64,
     /// Gotva Prime's passive: a status-triggered crit-chance SET. See
-    /// `weapons_data::SuperCritSpec`.
+    /// `data::weapons::SuperCritSpec`.
     pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
-    /// [`crate::weapons_data::WeaponSpec::weakpoint_stacks`] — no mod moves it.
+    /// [`crate::data::weapons::WeaponSpec::weakpoint_stacks`] — no mod moves it.
     pub weakpoint_stacks: Option<crate::model::WeakpointStacksSpec>,
-    /// [`crate::weapons_data::WeaponSpec::spawn_on_kill`] — counted, no more.
+    /// [`crate::data::weapons::WeaponSpec::spawn_on_kill`] — counted, no more.
     pub spawn_on_kill: Option<crate::model::SpawnOnKillSpec>,
     /// [`crate::model::KillStreakSummonSpec`] — no mod moves it.
     pub kill_streak_summon: Option<crate::model::KillStreakSummonSpec>,
@@ -804,41 +804,41 @@ pub struct WeaponBase {
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See `fight::DebuffState::microwave`.
     pub applies_microwave: bool,
-    /// See `weapons_data::WeaponSpec::independent_procs`. No mod adds or
+    /// See `data::weapons::WeaponSpec::independent_procs`. No mod adds or
     /// removes one — it is what the weapon DOES, not what the build asks for.
     pub independent_procs: &'static [&'static str],
     /// Damage types forced on every DIRECT hit — see
-    /// `weapons_data::AttackSpec::forced_procs`.
+    /// `data::weapons::AttackSpec::forced_procs`.
     pub forced_procs: Vec<DamageType>,
     /// ONE PULL, ONE ELEMENT EACH — see
-    /// `weapons_data::AttackSpec::pellet_elements`. Empty on every weapon
+    /// `data::weapons::AttackSpec::pellet_elements`. Empty on every weapon
     /// whose projectiles share an element, which is all but one of them.
     pub pellet_elements: Vec<DamageType>,
-    /// See `weapons_data::AttackSpec::multishot_adds_damage`.
+    /// See `data::weapons::AttackSpec::multishot_adds_damage`.
     pub multishot_adds_damage: bool,
-    /// See `weapons_data::AttackSpec::attractor_seconds`.
+    /// See `data::weapons::AttackSpec::attractor_seconds`.
     pub attractor_seconds: Option<f64>,
     /// How many tendrils this weapon can hold up (0 = it has none). See
-    /// `weapons_data::TendrilSpec` for why the COUNT is modelled and the
+    /// `data::weapons::TendrilSpec` for why the COUNT is modelled and the
     /// tendrils' own damage is not.
     pub tendril_max: u32,
     /// How far a tendril reaches and how far off the reticle it will take a
-    /// body — see [`crate::weapons_data::TendrilSpec`]. Both zero on every
+    /// body — see [`crate::data::weapons::TendrilSpec`]. Both zero on every
     /// weapon that has no tendrils.
     pub tendril_range_m: f64,
     pub tendril_acquire_deg: f64,
     /// The sniper's Shot Combo Counter, before `resolve` asks whether the
-    /// Tenno is aiming — see `weapons_data::SniperCombo`.
+    /// Tenno is aiming — see `data::weapons::SniperCombo`.
     pub sniper_combo: Option<crate::model::SniperCombo>,
     /// ...and the scope's headshot bonus at its top zoom level, likewise
     /// unspent until `resolve` (0.0 = no scope).
     pub scope_headshot_damage: f64,
     /// ...or the scope's CRIT bonuses, for the weapons whose zoom grants those
     /// instead. Spent by `resolve`, like the headshot one, and only while
-    /// aiming. See `weapons_data::ScopeSpec`.
+    /// aiming. See `data::weapons::ScopeSpec`.
     pub scope_crit_chance: f64,
     pub scope_crit_multiplier: f64,
-    /// The Lanka's kind — see `weapons_data::ScopeSpec::crit_chance_post_mod`.
+    /// The Lanka's kind — see `data::weapons::ScopeSpec::crit_chance_post_mod`.
     pub scope_crit_chance_post_mod: f64,
     /// ...and can it NOT be refilled mid-fight? See `WeaponSpec::no_resupply`.
     /// Separate from the above on purpose — most weapons have a reserve AND a
@@ -850,7 +850,7 @@ pub struct WeaponBase {
     /// into a battery; this is the only part of the mechanic the weapon owns,
     /// because the DELAY is the reload and the reload is the loader's.
     pub recharge_per_second: Option<f64>,
-    /// See `weapons_data::WeaponSpec::echo_multiplier` — a MEASURED,
+    /// See `data::weapons::WeaponSpec::echo_multiplier` — a MEASURED,
     /// unexplained coefficient on Secondary Irradiate's echo, 1.0 everywhere
     /// but the Laetum's Incarnon form.
     pub echo_multiplier: f64,
@@ -894,13 +894,13 @@ pub struct WeaponBase {
     /// tenfold. The rounds come FROM THE AMMO POOL, so a dry reserve restores
     /// nothing — and a refill is not a reload, the same rule
     /// `magazine_refill_on_kill` follows.
-    pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
+    pub round_restore_on_status: Option<(crate::rules::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere, including a status
     /// kill — reloads instantly. See the ResolvedPanel field for why it is not
     /// `instant_reload_on_headshot`.
     pub instant_reload_on_kill: Option<f64>,
     /// THIS FORM CANNOT AIM DOWN SIGHTS — see
-    /// [`crate::weapons_data::WeaponSpec::cannot_zoom`]. `resolve_for` answers
+    /// [`crate::data::weapons::WeaponSpec::cannot_zoom`]. `resolve_for` answers
     /// the aim question FALSE for it whatever the scenario says, so every
     /// `while_aiming` mod, arcane and evolution pays nothing here.
     pub cannot_zoom: bool,
@@ -916,7 +916,7 @@ pub struct WeaponBase {
     /// Double Tap: `(per stack, max stacks, seconds)`. See
     /// [`ModEffect::ConsecutiveHitDamage`].
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
-    /// See [`crate::weapons_data::AttackSpec::consecutive_hit_radial_only`].
+    /// See [`crate::data::weapons::AttackSpec::consecutive_hit_radial_only`].
     pub consecutive_hit_radial_only: bool,
     /// Wiseman's Regard: `(rate, cap)` — "Increase Base Status Chance by 30% of
     /// current Critical Chance, up to 40%".
@@ -1063,11 +1063,11 @@ pub struct WeaponBase {
     pub evo_heavy_windup_speed: f64,
     /// A proc conversion granted by an evolution — `(from, to, chance)`.
     /// See [`ModEffect::ProcConversion`], whose runtime this shares.
-    pub evo_proc_conversion: Option<(crate::damage::DamageType, crate::damage::DamageType, f64)>,
+    pub evo_proc_conversion: Option<(crate::rules::damage::DamageType, crate::rules::damage::DamageType, f64)>,
     /// Reload-speed bonus from evolutions, into the same bucket the mods feed.
     pub evo_reload_bonus: f64,
     /// READY RETALIATION's window — see
-    /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. Same
+    /// [`crate::data::evolutions::EvoEffect::ReloadSpeedOnEmptyReload`]. Same
     /// bucket as `evo_reload_bonus`, but only while the window is open.
     /// READY RETALIATION: *"On Reload From Empty: +100% Reload Speed"*, as a
     /// plain bonus rather than a timed buff.
@@ -1113,7 +1113,7 @@ pub struct WeaponBase {
     /// bracket `(1 + Σ)`. Direct hits only — a radial never headshots.
     pub headshot_damage_bonus: f64,
     /// The WEAPON's own headshot multiplier where it overrules the enemy body
-    /// part's — see `weapons_data::WeaponSpec::headshot_multiplier`. A weapon
+    /// part's — see `data::weapons::WeaponSpec::headshot_multiplier`. A weapon
     /// stat and never a mod's, so it rides the base rather than the buckets.
     pub headshot_multiplier: Option<f64>,
     /// Devouring Attrition: `(chance, bonus)` — on an instance that did

@@ -1,5 +1,5 @@
 use super::*;
-use crate::damage::DamageVector;
+use crate::rules::damage::DamageVector;
 
 /// A DAMAGING STATUS LANDS ON A FULL OVERGUARD BAR, and its ticks come off
 /// the Overguard rather than waiting for it.
@@ -35,7 +35,7 @@ fn a_dot_ticks_into_a_full_overguard_bar() {
     p.target.base_overguard = 1e15;
     p.target.base_armor = 2700.0;
     p.target.base_health = 1e15;
-    let r = run_once(&p, &mut crate::rng::Rng::new(7));
+    let r = run_once(&p, &mut crate::rules::rng::Rng::new(7));
     assert!(r.procs > 0, "the status has to land at all");
     assert!(r.meter.dot() > 0.0, "and its ticks have to do damage");
     // UNMITIGATED: Overguard has no armor, so the tick keeps its full

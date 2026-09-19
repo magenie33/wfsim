@@ -11,7 +11,7 @@
 // A build is not its spelling: `canonical_mods` sorts the non-elementals by
 // drain and leaves the elementals in the order that PAIRS them, evolutions are
 // a set, a riven is a shape — and only the engine has the mod POOL that tells
-// an elemental mod from any other. `/api/build/keys` IS `builds::board_key`,
+// an elemental mod from any other. `/api/build/keys` IS `board::builds::board_key`,
 // the key the scorer files rows under.
 //
 // THE NEGATIVE CONTROL IS THE HALF THAT MATTERS. "Nothing is uploaded" passes

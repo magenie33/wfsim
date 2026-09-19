@@ -9,7 +9,7 @@ in all capital case"*. That field IS the riven family, named by DE, and nothing
 else in any source we read says what a family is called.
 
 WHY IT MATTERS. `riven_family` decides three things: which weapons share a pool
-(`rivens_data::derived_for`), which weapons an `exceptions.yaml` entry covers,
+(`build::rivens::derived_for`), which weapons an `exceptions.yaml` entry covers,
 and — because the market is queried by family — whether a family can be
 surveyed at all. A name nobody else uses is not a small typo: it silently makes
 the family a singleton and silently makes the survey come back empty.

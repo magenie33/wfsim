@@ -90,11 +90,11 @@ def roster() -> list[dict]:
     """The weapons that get a page: one per WEAPON, not per form.
 
     `default_form` is the arsenal's form and therefore the roster row
-    (engine::weapons_data::roster does the same filter) — a bow's tapped shot
+    (engine::data::weapons::roster does the same filter) — a bow's tapped shot
     and an Incarnon form are forms of a weapon, not separate pages.
     """
     # A FORM MAY BE THE DEFAULT, and a form states only what DIFFERS from its
-    # weapon (`weapons_data::INHERITED`). The Nataruk is the case: its arsenal
+    # weapon (`data::weapons::INHERITED`). The Nataruk is the case: its arsenal
     # shows the PERFECT shot, so `default_form` sits on an entry that inherits
     # its class, slot and mastery rank — and this loader read the yaml raw and
     # died on the missing `class`. The engine merges before it
@@ -1159,7 +1159,7 @@ def check_data_parses() -> None:
     shipped once (2026-08-18: an unescaped double quote inside a double-quoted
     zh string, which `cargo test` catches and this script did not).
 
-    `cargo test` DOES catch it — `i18n_data::locales()` panics on a parse error
+    `cargo test` DOES catch it — `data::i18n::locales()` panics on a parse error
     and a test calls it — so this is not a second source of truth. It is the
     gate on the path that does not run tests: `python scripts/build_site_app.py`
     is what turns data into something a browser loads, and it had no reason to
@@ -1330,7 +1330,7 @@ def freeze_share_order() -> None:
     spelled out, in an older and longer form — so forgetting to freeze one
     costs every link that carries it and breaks nothing, which is the kind of
     mistake nobody finds. Running the generator HERE is what makes forgetting
-    impossible: it only ever appends, and the ratchet in `engine::share_order`
+    impossible: it only ever appends, and the ratchet in `engine::data::share_order`
     refuses anything else.
 
     BEFORE THE CARGO BUILD, because `data/` is embedded at COMPILE TIME: a

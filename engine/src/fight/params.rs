@@ -85,12 +85,12 @@ pub struct IncarnonCycle {
 pub struct FightParams {
     /// WHICH RUN IS THE BENCHMARK FIGHT: runs are ranked by this and the one at
     /// `len / 2` is replayed. The scenario's metric decides it.
-    pub sample_by: crate::metrics::RunStat,
+    pub sample_by: crate::rules::metrics::RunStat,
     /// WHAT THE WARFRAME BRINGS, resolved from the Tenno's auras and shards.
     /// Computed once in `from_panel` rather than re-derived per shot, and read
     /// wherever a squad effect lands — the armour multiplier at mitigation, the
     /// stack ceiling at the proc.
-    pub squad: crate::tenno_data::SquadEffects,
+    pub squad: crate::data::tenno::SquadEffects,
     /// The weapon's (modded) base damage vector. Quantized once per run for
     /// dealing damage and proc-type weighting.
     pub damage: DamageVector,
@@ -107,7 +107,7 @@ pub struct FightParams {
     /// PRELUDE OF MIGHT's live gate — `(the part of `crit_multiplier` this
     /// perk is, the crit-chance threshold)`. Carried rather than settled
     /// because the condition is read at the moment of the hit; see
-    /// [`crate::loadout::ResolvedPanel::crit_multiplier_below_crit_chance`]. Per FORM, which
+    /// [`crate::build::loadout::ResolvedPanel::crit_multiplier_below_crit_chance`]. Per FORM, which
     /// is what a cycle needs: the Furis's base form sits at 5% and its
     /// Incarnon form at 26%, so the same Weakened stacks push one over the
     /// 40% line and leave the other under it.
@@ -124,7 +124,7 @@ pub struct FightParams {
     /// Forced procs on every hit (weapon data, per attack part).
     pub forced_procs: Vec<DamageType>,
     /// Seconds of Bullet Attractor this attack PLANTS on the target — see
-    /// `weapons_data::AttackSpec::attractor_seconds`. `None` for every weapon
+    /// `data::weapons::AttackSpec::attractor_seconds`. `None` for every weapon
     /// but the thrown spearguns.
     pub attractor_seconds: Option<f64>,
     /// Status duration multiplier (1.0 = unmodded).
@@ -156,7 +156,7 @@ pub struct FightParams {
     pub battery: Option<crate::model::Battery>,
     /// SECONDARY IRRADIATE'S ECHO, TIMES THIS — a MEASURED coefficient with no
     /// explanation behind it. 1.0 for every entry in the roster but one; see
-    /// [`crate::weapons_data::WeaponSpec::echo_multiplier`].
+    /// [`crate::data::weapons::WeaponSpec::echo_multiplier`].
     pub echo_multiplier: f64,
     /// A BURST trigger's modded shape — see [`crate::model::BurstSpec`].
     pub burst: Option<crate::model::BurstSpec>,
@@ -166,7 +166,7 @@ pub struct FightParams {
     /// ammo efficiency (ammo is infinite here anyway).
     pub frenzy: bool,
     /// Stats an equipped mod has LOCKED at the weapon's default — the panel's
-    /// [`crate::loadout::ResolvedPanel::locked`], carried in because the panel's
+    /// [`crate::build::loadout::ResolvedPanel::locked`], carried in because the panel's
     /// arithmetic is not the whole of the stat.
     ///
     /// "Equipping this mod will set weapon's Fire Rate to its default ignoring
@@ -190,11 +190,11 @@ pub struct FightParams {
     /// its own crit tier and draws its own procs from its own damage
     /// vector. Those procs land on the same target and therefore DO feed
     /// Condition Overload on subsequent direct hits.
-    pub radial: Option<crate::loadout::ResolvedRadial>,
+    pub radial: Option<crate::build::loadout::ResolvedRadial>,
     /// THE BOMBLETS this attack's explosion throws out, when it throws any —
-    /// see [`crate::weapons_data::ClusterSpec`]. Each one is TWO more instances
+    /// see [`crate::data::weapons::ClusterSpec`]. Each one is TWO more instances
     /// on top of the explosion, resolved where the explosion was.
-    pub cluster: Option<crate::loadout::ResolvedCluster>,
+    pub cluster: Option<crate::build::loadout::ResolvedCluster>,
     /// DIRECT-hit damage falloff, when this attack lists one. Read against the
     /// distance the shot travelled; `None` = full damage wherever it lands.
     ///
@@ -213,7 +213,7 @@ pub struct FightParams {
     /// own status draw ("Toxin clouds can proc Hunter Munitions on each tick
     /// of damage"), the weapon's mod buckets, and Condition Overload live off
     /// the target's current status count. MECHANICS §7.
-    pub lingering: Option<crate::loadout::ResolvedLingering>,
+    pub lingering: Option<crate::build::loadout::ResolvedLingering>,
     /// CONTINUOUS (beam) weapon: `fire_rate` is ticks per second, and multishot
     /// beams on one target MERGE into a single damage instance.
     pub continuous: bool,
@@ -225,7 +225,7 @@ pub struct FightParams {
     /// on a charge-backed form, so this field just carries what survived.
     pub multishot_on_last_round: f64,
     /// The same window in the BASE bracket — see
-    /// [`crate::loadout::ResolvedPanel::base_multishot_on_last_round`]. It is
+    /// [`crate::build::loadout::ResolvedPanel::base_multishot_on_last_round`]. It is
     /// carried separately rather than folded into the panel's `multishot`
     /// because it is conditional on the magazine position, which only the sim
     /// can evaluate.
@@ -285,7 +285,7 @@ pub struct FightParams {
     /// Which class this weapon's reserve takes. `None` on a weapon outside the
     /// two classes a body drops (an Arch-Gun takes HEAVY, whose drop is a
     /// per-enemy table this engine does not model).
-    pub ammo_class: Option<crate::ammo::Pickup>,
+    pub ammo_class: Option<crate::rules::ammo::Pickup>,
     /// Whether BuffBar ammo efficiency (Frenzy's +100%) reduces consumption.
     /// False for charge-backed magazines (Incarnon) - they are outside the
     /// ammo economy entirely.
@@ -320,10 +320,10 @@ pub struct FightParams {
     /// rescales it by the configured stacks ("evo_multishot"). No live
     /// machinery — the trigger (ability cast) cannot fire in the sim and the
     /// stacks never decay, so the count is static for the whole run.
-    pub evo_multishot: Option<crate::loadout::EvoMsBuff>,
+    pub evo_multishot: Option<crate::build::loadout::EvoMsBuff>,
     /// The evolution's PERMANENT flat base damage (Reified Bane): the vector
     /// already carries it, and `apply_buff_config` scales it back out.
-    pub evo_base_damage: Option<crate::loadout::EvoBdBuff>,
+    pub evo_base_damage: Option<crate::build::loadout::EvoBdBuff>,
     /// Live on-kill CO stacks, live per StackSpec (Emergent policy).
     pub co_stack: Option<crate::model::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
@@ -354,7 +354,7 @@ pub struct FightParams {
     /// [`FightParams::ability_final_at`] and
     /// [`FightParams::ability_element_at`] are the three reads, one per effect
     /// kind, and there is no fourth.
-    pub abilities: Vec<crate::abilities_data::ActiveAbility>,
+    pub abilities: Vec<crate::data::abilities::ActiveAbility>,
     /// ModifiedBase for status-payload formulas (base × (1 + damage mods),
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).
@@ -367,7 +367,7 @@ pub struct FightParams {
     /// multiplier of true weak points, before the headshot bracket.
     pub weakpoint_damage: f64,
     /// The weapon's own headshot multiplier where it overrules the enemy body
-    /// part's — see `weapons_data::WeaponSpec::headshot_multiplier`. `None` on
+    /// part's — see `data::weapons::WeaponSpec::headshot_multiplier`. `None` on
     /// every weapon whose head is worth what the body part says.
     pub headshot_multiplier: Option<f64>,
     /// ABSOLUTE crit chance added on weak-point pellets only (Acuity).
@@ -385,7 +385,7 @@ pub struct FightParams {
     /// Double Tap: `(per stack, max stacks, seconds)`. Its OWN multiplier, and
     /// counted per TRIGGER PULL. See `ModEffect::ConsecutiveHitDamage`.
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
-    /// See [`crate::weapons_data::AttackSpec::consecutive_hit_radial_only`].
+    /// See [`crate::data::weapons::AttackSpec::consecutive_hit_radial_only`].
     pub consecutive_hit_radial_only: bool,
     /// SYNTH CHARGE — see [`crate::model::ModEffect::LastRoundDamage`].
     pub last_round_damage: f64,
@@ -439,7 +439,7 @@ pub struct FightParams {
     pub follow_through: Option<f64>,
     /// THE WEAPON'S OWN SLAM, fired by a combo swing that ends on one — three
     /// of Crushing Ruin's four combos do. `None` everywhere else.
-    pub slam: Option<crate::loadout::ResolvedRadial>,
+    pub slam: Option<crate::build::loadout::ResolvedRadial>,
     /// THE CLASS'S HEAVY ATTACK, on every melee form — what a TENNOKAI swing
     /// fires when the window is open on a light combo.
     pub heavy: Option<crate::model::HeavyAttack>,
@@ -453,7 +453,7 @@ pub struct FightParams {
     /// Prime 6, Pulmonars 9, Vitrica 10) and the mods that extend it.
     pub combo_duration_seconds: f64,
     /// …AND WHETHER IT IS STOPPED ALTOGETHER — see
-    /// [`crate::loadout::ResolvedWeapon::combo_frozen`].
+    /// [`crate::build::loadout::ResolvedWeapon::combo_frozen`].
     pub combo_frozen: bool,
     /// THE FLOOR THE COUNTER RETURNS TO, in points.
     ///
@@ -487,7 +487,7 @@ pub struct FightParams {
     /// TARGET IS SIMULATED: `Lifted` is a status this engine tracks, forced by
     /// every heavy slam and by a heavy attack.
     pub combo_count_chance_on_lifted: f64,
-    /// Chance to Gain Combo Count — see `loadout::ResolvedPanel::combo_gain_chance`.
+    /// Chance to Gain Combo Count — see `build::loadout::ResolvedPanel::combo_gain_chance`.
     pub combo_gain_chance: f64,
     /// COMBO POINTS PER BODY THE SLAM REACHED (Shockwave Synergy), before the
     /// combo count chance that scales them. Zero on every other weapon.
@@ -538,24 +538,24 @@ pub struct FightParams {
     /// per PELLET that lands in a head, like every other on-hit trigger here.
     pub headshot_streak: Option<crate::model::HeadshotStreak>,
     /// SPITEFUL DEFILEMENT: `(threshold, bonus)` — see
-    /// [`crate::loadout::ResolvedPanel::crit_damage_below_status_count`].
+    /// [`crate::build::loadout::ResolvedPanel::crit_damage_below_status_count`].
     pub crit_damage_below_status_count: Option<(u32, f64)>,
     /// A syndicate augment's radial (Gilded Truth grants Truth) — armed by
     /// AFFINITY this weapon earns, fired on its own cooldown.
-    pub syndicate_radial: Option<crate::syndicates_data::SyndicateDef>,
+    pub syndicate_radial: Option<crate::data::syndicates::SyndicateDef>,
     /// Where a continuous weapon's damage ramp STARTS, as a fraction of full.
     /// 0.20 "for most weapons" (wiki); Phantasma Prime is 0.15.
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See [`DebuffState::microwave`].
     pub applies_microwave: bool,
-    /// See `weapons_data::WeaponSpec::independent_procs` — status effects this
+    /// See `data::weapons::WeaponSpec::independent_procs` — status effects this
     /// attack lands on its own, outside the damage-type draw.
     pub independent_procs: &'static [&'static str],
     /// ONE RESOLVED VECTOR PER PROJECTILE, `(direct, radial)`, for a weapon
     /// whose missiles carry different innate elements. EMPTY on every other
     /// weapon, and then the loop reads `damage` as it always did.
-    pub pellet_damage: Vec<(crate::damage::DamageVector, crate::damage::DamageVector)>,
-    /// See `weapons_data::AttackSpec::multishot_adds_damage`.
+    pub pellet_damage: Vec<(crate::rules::damage::DamageVector, crate::rules::damage::DamageVector)>,
+    /// See `data::weapons::AttackSpec::multishot_adds_damage`.
     pub multishot_adds_damage: bool,
     /// THE SHOT COMBO COUNTER, or `None` — which is what a sniper fired from
     /// the hip already resolved to, so nothing here asks about aiming.
@@ -568,21 +568,21 @@ pub struct FightParams {
     /// ...and the card's "no timeout": the counter never decays.
     pub combo_held: bool,
     /// The Ocucor's tendril cap (0 = no tendrils). Their own damage is not
-    /// modelled and should not be — see `weapons_data::TendrilSpec`; the COUNT
+    /// modelled and should not be — see `data::weapons::TendrilSpec`; the COUNT
     /// is what Sentient Surge reads.
     pub tendril_max: u32,
     /// How far a tendril reaches, and how far off the reticle it will take a
-    /// body — see [`crate::weapons_data::TendrilSpec`].
+    /// body — see [`crate::data::weapons::TendrilSpec`].
     /// THE AIMED BODY'S NAME (`arena::Arena::target_id`) — every other body's
     /// is on its own `formation::FoeSpec`.
     pub target_id: String,
     /// PUNCH-THROUGH DEPTH in metres of material — innate plus mods, and 0 on
-    /// an attack that cannot use it. See [`crate::space::BODY_MATERIAL_M`].
+    /// an attack that cannot use it. See [`crate::rules::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
-    /// How wide the projectile is — see `loadout::WeaponBase::projectile_width_m`.
+    /// How wide the projectile is — see `build::loadout::WeaponBase::projectile_width_m`.
     pub projectile_width_m: f64,
     /// HOW FAR THIS WEAPON REACHES, metres — `INFINITY` when it declares none.
-    /// See [`crate::weapons_data::AttackSpec::range_m`].
+    /// See [`crate::data::weapons::AttackSpec::range_m`].
     pub range_m: f64,
     pub tendril_range_m: f64,
     pub tendril_acquire_deg: f64,
@@ -610,9 +610,9 @@ pub struct FightParams {
     /// modded value and every crit bonus are ignored, because the card says
     /// "Set Critical Chance ignores all other modifiers".
     pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
-    /// See `loadout::WeaponBase::weakpoint_stacks` — the Knell's Death Knell.
+    /// See `build::loadout::WeaponBase::weakpoint_stacks` — the Knell's Death Knell.
     pub weakpoint_stacks: Option<crate::model::WeakpointStacksSpec>,
-    /// See `loadout::WeaponBase::spawn_on_kill` — the Ballistica's ghosts.
+    /// See `build::loadout::WeaponBase::spawn_on_kill` — the Ballistica's ghosts.
     pub spawn_on_kill: Option<crate::model::SpawnOnKillSpec>,
     /// Pyrana Prime's second gun — see [`crate::model::KillStreakSummonSpec`].
     pub kill_streak_summon: Option<crate::model::KillStreakSummonSpec>,
@@ -621,7 +621,7 @@ pub struct FightParams {
     /// ...and the streak's card: the kills already banked when it opens.
     pub kill_streak_opens_at: u32,
     /// Hemorrhage's status-conversion roll (per damage instance, max one).
-    pub proc_conversion: Option<crate::loadout::ProcConv>,
+    pub proc_conversion: Option<crate::build::loadout::ProcConv>,
     /// The equipped secondary arcane, resolved at its rank from
     /// data/arcanes/secondary (fixed equipment per scenario; the optimizer
     /// compares scenarios per arcane). `ArcaneFx::none()` = empty slot.
@@ -638,13 +638,13 @@ pub struct FightParams {
     /// The same arcane's `adds` row: a flat addition to the base-damage
     /// bracket, beside a live buff's. Per form, for the same reason.
     pub compression_base_damage: f64,
-    /// See [`crate::loadout::ResolvedPanel::base_damage_below_half_health`]. Per ATTACK
+    /// See [`crate::build::loadout::ResolvedPanel::base_damage_below_half_health`]. Per ATTACK
     /// PART, like every other bracket here, so a radial that the catalog
     /// exempts can carry a different number than the direct hit.
     pub base_damage_below_half_health: f64,
-    /// See [`crate::loadout::ResolvedPanel::crit_chance_on_undamaged`].
+    /// See [`crate::build::loadout::ResolvedPanel::crit_chance_on_undamaged`].
     pub crit_chance_on_undamaged: f64,
-    /// See [`crate::loadout::ResolvedPanel::crit_damage_on_undamaged`].
+    /// See [`crate::build::loadout::ResolvedPanel::crit_damage_on_undamaged`].
     pub crit_damage_on_undamaged: f64,
     /// Secondary Enervate's stack count at t = 0. Its own field because the
     /// ramp lives in a PERK rather than in `arcane.buffs`, so the ordinary
@@ -660,7 +660,7 @@ pub struct FightParams {
     /// lock. `None` leaves the roll to do its own work.
     pub influence_open: Option<f64>,
     /// RAGE AS THE READER SET IT — the share the fight opens at, and whether
-    /// the meter is held. `None` builds it from zero (`crate::rage`).
+    /// the meter is held. `None` builds it from zero (`crate::data::rage`).
     pub rage_open: Option<(f64, bool)>,
     pub body_parts: Vec<BodyPart>,
     /// The TARGET — one of the fight's two actors.
@@ -672,7 +672,7 @@ pub struct FightParams {
     /// WHERE THE WEAPON POINTS — see [`crate::arena::Arena::aim_at`]. `None`
     /// is "at the target", and every fight this engine ran before a formation
     /// existed is that.
-    pub aim_at: Option<crate::space::Vec2>,
+    pub aim_at: Option<crate::rules::space::Vec2>,
     /// The beam's own geometry, when this attack is one: the damage radius that
     /// SEEDS the chains and the chain's three constants. `None` for everything
     /// that is not a chaining beam, which is the whole roster but one form.
@@ -681,41 +681,41 @@ pub struct FightParams {
     /// bounce is this attack's collision and this attack's explosion arriving
     /// again, at a body it has not hit yet.
     pub ricochet: Option<crate::model::Ricochet>,
-    /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`] — this
+    /// See [`crate::data::weapons::AttackSpec::unaimed_headshot_chance`] — this
     /// attack is not pointed at anything, so where each of its instances lands
     /// is a flat chance of its own rather than the scenario's `headshot_pct`.
     pub unaimed_headshot_chance: Option<f64>,
-    /// See [`crate::loadout::ResolvedPanel::windup_seconds`] — how long after
+    /// See [`crate::build::loadout::ResolvedPanel::windup_seconds`] — how long after
     /// the trigger a round actually leaves.
     pub windup_seconds: f64,
-    /// See [`crate::weapons_data::AttackSpec::no_magazine`]. The loop tops the
+    /// See [`crate::data::weapons::AttackSpec::no_magazine`]. The loop tops the
     /// magazine up silently instead of reloading, so a reload never happens and
     /// nothing keyed to one ever fires.
     pub no_magazine: bool,
-    /// A DEPLOYED ORB'S geometry and clock — see [`crate::loadout::ResolvedOrb`].
+    /// A DEPLOYED ORB'S geometry and clock — see [`crate::build::loadout::ResolvedOrb`].
     ///
     /// `Some` changes what a SHOT IS: it deploys rather than arrives, so the
     /// pellet loop settles no collision and no explosion, and one orb goes out
     /// however much multishot is on the build.
-    pub orb: Option<crate::loadout::ResolvedOrb>,
+    pub orb: Option<crate::build::loadout::ResolvedOrb>,
     /// WHAT ONE OF ITS STRIKES DEALS — the attack's own hit, in the shape a
     /// timed instance is resolved from. Built in [`Self::from_panel`] rather
     /// than declared in the data, because it IS the attack's `damage:` and
     /// writing it twice is how the two come to disagree.
-    pub orb_strike: Option<crate::loadout::ResolvedLingering>,
+    pub orb_strike: Option<crate::build::loadout::ResolvedLingering>,
     /// …AND WHAT ITS FUSE ENDS IN: the attack's own `radial:`, in the same
     /// shape, fired from wherever the orb had got to.
-    pub orb_blast: Option<crate::loadout::ResolvedLingering>,
+    pub orb_blast: Option<crate::build::loadout::ResolvedLingering>,
     /// THE RECHARGE METER THAT GATES THE ORB — see
-    /// [`crate::loadout::ResolvedMeter`].
+    /// [`crate::build::loadout::ResolvedMeter`].
     ///
     /// `Some` moves the throw off the TRIGGER and onto the clock: the shot loop
     /// stops deploying, and an orb goes out whenever the meter fills. That is
     /// the whole difference between "what this form is worth if you could hold
     /// it" — which is what this weapon reported before the meter existed, and
     /// an enormous overstatement — and what it is worth in a fight.
-    pub meter: Option<crate::loadout::ResolvedMeter>,
-    /// HOW BIG THE SQUAD IS, for the ammo drop table — see [`crate::ammo`].
+    pub meter: Option<crate::build::loadout::ResolvedMeter>,
+    /// HOW BIG THE SQUAD IS, for the ammo drop table — see [`crate::rules::ammo`].
     /// One, because this arena has one player.
     pub squad_size: u32,
     /// The TENNO — the other one. Who is holding this weapon, and what they
@@ -724,13 +724,13 @@ pub struct FightParams {
     /// stats. It rides on the params rather than being resolved away so the
     /// fight can be replayed, reported and shared as what it was: somebody,
     /// shooting somebody.
-    pub tenno: crate::tenno_data::Tenno,
+    pub tenno: crate::data::tenno::Tenno,
     /// WHERE THE TWO OF THEM STAND — straight off the arena, in metres
-    /// (`crate::space`). Points rather than the distance between them, so that
+    /// (`crate::rules::space`). Points rather than the distance between them, so that
     /// the thing a damage instance asks — "how far did this travel to get where
     /// it went off" — keeps the same shape when the answer is no longer always
     /// the target's position (an explosion's epicentre, a second body).
-    pub player_at: crate::space::Vec2,
-    pub target_at: crate::space::Vec2,
+    pub player_at: crate::rules::space::Vec2,
+    pub target_at: crate::rules::space::Vec2,
     pub duration_seconds: f64,
 }

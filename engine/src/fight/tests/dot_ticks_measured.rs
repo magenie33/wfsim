@@ -33,7 +33,7 @@ fn longer_status_duration_slows_the_heat_strip_ramp() {
 /// the 2700 cap, so the five strip steps read 29/50/73/89/107.
 #[test]
 fn m99_heat_strip_climbs_without_a_tick_on_capped_armour() {
-    let unit = crate::enemy_data::all()
+    let unit = crate::data::enemies::all()
         .into_iter()
         .find(|e| e.id == "corrupted_heavy_gunner")
         .expect("the roster has one");
@@ -92,7 +92,7 @@ fn no_dot_ticks_once_status_duration_is_gone() {
 /// procs folded in — the measured 1164 is 23 of them at the full strip.
 #[test]
 fn m99_a_refreshed_short_burn_ticks_every_second() {
-    let unit = crate::enemy_data::all()
+    let unit = crate::data::enemies::all()
         .into_iter()
         .find(|e| e.id == "corrupted_heavy_gunner")
         .expect("the roster has one");
@@ -119,7 +119,7 @@ fn m99_a_refreshed_short_burn_ticks_every_second() {
     };
     let ignite = DEBUFF_ROSTER.iter().position(|(id, _)| *id == "ignite").expect("a row");
     let mut rec = crate::record::Record::window(0.0, 10.0, 100_000, 0);
-    let _ = run_once_traced(&p, &mut crate::rng::Rng::new(1), None, &mut rec);
+    let _ = run_once_traced(&p, &mut crate::rules::rng::Rng::new(1), None, &mut rec);
     let ticks: Vec<(f64, f64)> = rec
         .events()
         .iter()
@@ -441,7 +441,7 @@ fn only_a_finite_reserve_ends_a_run_early_and_its_size_then_matters() {
         duration_seconds: 30.0,
         infinite_reserve: !finite,
         reserve_ammo: reserve,
-        arcane: crate::arcanes_data::ArcaneFx::none(),
+        arcane: crate::data::arcanes::ArcaneFx::none(),
         ..Default::default()
     };
     let shots = |p: &FightParams| monte_carlo(p, 1, 5).mean_shots;

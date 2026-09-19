@@ -626,7 +626,7 @@ source belongs as a third CHECK, not as a replacement for either.
 | --- | --- | --- |
 | [calamity-inc/warframe-public-export-plus](https://github.com/calamity-inc/warframe-public-export-plus) | DE's own PUBLIC EXPORT, mirrored and enriched | WFCD is a cleaned second-hand dataset and has gaps: **Primed Deadly Efficiency is absent entirely** — no entry, no `imageName`, and the CDN 404s the card — and its `i18n.json` carries only `name` for riven items, no localized `upgradeEntries`. DE's export would answer both. |
 | [oracle.browse.wf/dicts](https://oracle.browse.wf/dicts/zh.json) | DE's own localization dictionaries, per language | our Chinese is assembled from three paths (WFCD i18n whole sentences, a hand-written `effect_phrases` table, hand-written names). One source could unify them. |
-| [pa001024/riven-mirror](https://github.com/pa001024/riven-mirror) (MIT) | a riven calculator, source-available | ALREADY USED as a third opinion on the riven config multipliers — see the table in `engine/src/rivens_data.rs`. It is where the "community calculators read 1.0" claim actually comes from, and reading its source is what turned that from a rumour into a citation that can be weighed. |
+| [pa001024/riven-mirror](https://github.com/pa001024/riven-mirror) (MIT) | a riven calculator, source-available | ALREADY USED as a third opinion on the riven config multipliers — see the table in `engine/src/build/rivens.rs`. It is where the "community calculators read 1.0" claim actually comes from, and reading its source is what turned that from a rumour into a citation that can be weighed. |
 
 The rest of Tenno Hub's list is worldstate and market data (`api.warframestat.us`,
 `api.warframe.market`, `oracle.browse.wf/worldState.json`, `browse.wf/arbys.txt`),
@@ -838,7 +838,7 @@ this before "fixing" either (audited 2026-08-01):
   tell the two apart; the authority is the wiki's `Rifle_Mods` / `Pistol_Mods`
   tables, which tag the restricted ones "Exclusive to PvP". The allowlist that
   encodes this lives in the engine test
-  `mods_data::tests::only_pve_legal_conclave_mods_are_in_the_pools`, so the
+  `data::mods::tests::only_pve_legal_conclave_mods_are_in_the_pools`, so the
   rule ships with the repo even though the script does not.
 - `--type Shotgun` reports 10 MISSING: **Bounty Hunter, Crash Shot, Flak Shot,
   Hydraulic Chamber, Kill Switch, Loaded Capacity, Loose Chamber, Momentary
@@ -1002,7 +1002,7 @@ apart and never by the same hand:
   publishes** — Dread 2.5, Miter 2.5, Paris 2, Paris Prime 3, Strun Prime 0.8,
   both Vectis 1, Ballistica Prime 1, both Opticors 1, Battacor 2, Enkaus 1. Four
   of those had zeroed it on purpose, under the rule that an AoE attack takes no
-  punch through — but `loadout::resolve` gates only the MODS on the attack's
+  punch through — but `build::loadout::resolve` gates only the MODS on the attack's
   shape and always keeps the innate metres, so the rule had been applied to the
   wrong half. It cost nothing while the arena held one body and costs a lot
   since the formation landed.
@@ -1213,7 +1213,7 @@ The enemy modules use 18 distinct `Faction` values; the damage table publishes
 **That is not a gap — it is the answer.** The fifteen are the whole system, so
 a faction the table leaves out is a unit the game gives no vulnerability or
 resistance to, and it takes every damage type as written.
-`factions_data::column()` returns the neutral column for an unlisted key
+`data::factions::column()` returns the neutral column for an unlisted key
 rather than reporting an error, and the file holds exactly the fifteen — no
 hand-added neutral rows, with a test locking the set so "everything else is
 neutral" cannot quietly come to mean "we lost a
@@ -1300,7 +1300,7 @@ Three files, and which one DECIDES is the whole design:
 
 | file | role |
 |---|---|
-| `engine/src/rivens_data.rs::derived_for` | **the model** — the weapon's physical shares, its ammo pool, whether anything it fires travels |
+| `engine/src/build/rivens.rs::derived_for` | **the model** — the weapon's physical shares, its ammo pool, whether anything it fires travels |
 | `data/rivens/exceptions.yaml` | **the overrides** — hand-written, per riven FAMILY, every entry carrying the evidence it came from |
 | `data/rivens/pools.yaml` | **the check** — a count over live warframe.market listings, read by a test and by nothing else |
 

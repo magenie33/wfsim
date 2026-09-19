@@ -347,7 +347,7 @@ fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
 /// pins that the two mods differ ONLY in what triggers them.
 #[test]
 fn an_internal_bleeding_bleed_is_indistinguishable_from_any_other_slash() {
-    use crate::loadout::ProcConv;
+    use crate::build::loadout::ProcConv;
     let base = || FightParams {
         damage: DamageVector::new().with(DamageType::Impact, 75.0),
         base_crit_chance: 0.0,
@@ -391,7 +391,7 @@ fn an_internal_bleeding_bleed_is_indistinguishable_from_any_other_slash() {
 
 #[test]
 fn the_vigilante_promotion_reaches_an_explosion_too() {
-    let radial = crate::loadout::ResolvedRadial {
+    let radial = crate::build::loadout::ResolvedRadial {
         blast_kind: crate::model::BlastKind::Contact,
         damage: {
             let mut d = DamageVector::default();
@@ -466,7 +466,7 @@ fn the_vigilante_promotion_reaches_an_explosion_too() {
 /// second bleed quietly going missing.
 #[test]
 fn hunter_munitions_and_internal_bleeding_union_to_the_wikis_numbers() {
-    use crate::loadout::ProcConv;
+    use crate::build::loadout::ProcConv;
     // Pure Impact at 100% status: every pellet lands the Impact proc that
     // Internal Bleeding converts from, and every pellet crits.
     let build = |fire_rate: f64| FightParams {
@@ -605,7 +605,7 @@ fn weakened_takes_prelude_of_might_away() {
         body_parts: mono_body(1.0),
         fire_rate: 1.0,
         duration_seconds: 5.0,
-        arcane: crate::arcanes_data::ArcaneFx::none(),
+        arcane: crate::data::arcanes::ArcaneFx::none(),
         target: TargetParams { base_health: 1e15, ..FightParams::default().target },
         ..no_status()
     };
@@ -639,7 +639,7 @@ fn prelude_of_might_is_off_exactly_at_its_threshold() {
         body_parts: mono_body(1.0),
         fire_rate: 1.0,
         duration_seconds: 5.0,
-        arcane: crate::arcanes_data::ArcaneFx::none(),
+        arcane: crate::data::arcanes::ArcaneFx::none(),
         target: TargetParams { base_health: 1e15, ..FightParams::default().target },
         ..no_status()
     };
@@ -664,12 +664,12 @@ fn a_base_multishot_grant_is_multiplied_by_multishot_mods() {
     let arena = crate::arena::Arena::training(20.0);
     let pellets = |evo: &[&str], mods: &[&crate::model::ModDef]| {
         let base = crate::model::WeaponBase::from_data("burston_prime", true, evo);
-        let panel = crate::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
         let p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         let s = monte_carlo(&p, 200, 0xB0A2);
         (s.mean_pellets / s.mean_shots, panel.multishot, panel.magazine_size)
     };
-    let pool = crate::mods_data::class_pool("rifle");
+    let pool = crate::data::mods::class_pool("rifle");
     let split = pool.iter().find(|m| m.id == "split_chamber").expect("split chamber");
     let mods: Vec<&crate::model::ModDef> = vec![split];
 
@@ -706,12 +706,12 @@ fn a_plain_multishot_grant_is_not_multiplied() {
     let arena = crate::arena::Arena::training(20.0);
     let pellets = |evo: &[&str], mods: &[&crate::model::ModDef]| {
         let base = crate::model::WeaponBase::from_data("torid", true, evo);
-        let panel = crate::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
         let p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         let s = monte_carlo(&p, 200, 0xB0A2);
         (s.mean_pellets / s.mean_shots, panel.magazine_size)
     };
-    let pool = crate::mods_data::class_pool("rifle");
+    let pool = crate::data::mods::class_pool("rifle");
     let split = pool.iter().find(|m| m.id == "split_chamber").expect("split chamber");
     let mods: Vec<&crate::model::ModDef> = vec![split];
 
@@ -863,16 +863,16 @@ fn tendrils_buy_crit_chance_and_a_reload_takes_it_back() {
 /// pass both of them.
 #[test]
 fn the_napalm_burns_and_only_the_base_damage_bucket_feeds_it() {
-    let pool = crate::mods_data::pool_for_build("ogris", &[]);
+    let pool = crate::data::mods::pool_for_build("ogris", &[]);
     let by = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
     let base = crate::model::WeaponBase::from_data("ogris", false, &[]);
     // The FIELD's own share of the run, off `RunResult::sources` — a total
     // would answer with the rocket's damage and hide the fire inside it.
     let field_damage = |mods: &[&_]| {
-        let panel = crate::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
         let arena = crate::arena::Arena::training(10.0);
         let p = FightParams::from_panel(
-            &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
+            &panel, &arena, &crate::data::arcanes::ArcaneFx::none(),
         );
         let mut total = 0.0;
         for seed in 0..5u64 {
@@ -906,13 +906,13 @@ fn the_napalm_burns_and_only_the_base_damage_bucket_feeds_it() {
 /// being cleared from a single shot". Nothing enumerates the chain.
 #[test]
 fn acid_shells_explodes_a_corpse_and_the_blast_chains() {
-    let pool = crate::mods_data::pool_for_build("sobek", &[]);
+    let pool = crate::data::mods::pool_for_build("sobek", &[]);
     let acid = pool.iter().find(|m| m.id == "acid_shells").expect("the augment");
     let base = crate::model::WeaponBase::from_data("sobek", false, &[]);
     // A LINE OF FRAIL BODIES two metres apart, well inside the 15 m reach:
     // one killed by the gun, the rest reachable only by the chain.
     let fight = |mods: &[&_]| {
-        let panel = crate::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(6.0);
         // FRAIL, and deliberately: 50 health is under a single Corrosive
         // 450, so what the chain does is visible as KILLS rather than as a
@@ -923,13 +923,13 @@ fn acid_shells_explodes_a_corpse_and_the_blast_chains() {
                 id: format!("e{}", i + 1),
                 params: arena.target.clone(),
                 body_parts: arena.body_parts.clone(),
-                at: crate::space::Vec2::new(
+                at: crate::rules::space::Vec2::new(
                     0.0,
-                    crate::space::CONTACT_RANGE_M + f64::from(i) * 2.0,
+                    crate::rules::space::CONTACT_RANGE_M + f64::from(i) * 2.0,
                 ),
             })
             .collect();
-        let p = FightParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
         monte_carlo(&p, 3, 5)
     };
     let without = fight(&[]);

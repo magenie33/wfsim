@@ -73,7 +73,7 @@ is the single biggest structural gap in the model.
 ### 2. DISTANCE — MOSTLY MODELLED SINCE 2026-08-15
 
 The fight has a range. The arena carries two POINTS rather than a distance
-(`engine::space`), the scenario's *Distance (m)* sets it, and **both official
+(`engine::rules::space`), the scenario's *Distance (m)* sets it, and **both official
 rulers pin it at 0**, which is the fight every board row and every golden value
 was measured under — so nothing moved when this landed.
 
@@ -141,7 +141,7 @@ flat bucket Ruinous Extension lands in, and
 `a_range_perk_moves_the_beam_wall_the_way_a_range_mod_does` holds both the wall
 and the addition.
 
-The reason itself was retired from `evolutions_data::Scope` rather than left
+The reason itself was retired from `data::evolutions::Scope` rather than left
 available: it said *"every shot lands at point blank, so distance changes
 nothing"*, and that set's own rule is that a member must be a property of the
 ARENA and not something a reader can invalidate by editing their scenario. The
@@ -212,7 +212,7 @@ setting's own logic rather than by ours.
 Lone Gun is the only card in the roster the setting turns on today, and that is
 the honest scope of it — the option exists so the next one does not need a
 ruling, and
-`loadout::tests::lone_gun_pays_its_two_halves_only_with_no_other_weapon` asserts
+`build::loadout::tests::lone_gun_pays_its_two_halves_only_with_no_other_weapon` asserts
 the list is CLOSED so a card that spells the condition some other way fails
 rather than paying nothing in silence.
 
@@ -276,7 +276,7 @@ economy, the GunCO "Adding" omission list (Vex Armor, Furious Javelin,
 Parasitic Link — MECHANICS §6).
 
 **What would have to exist first:** a Warframe, with stats and mods of its own.
-When it lands, `abilities_data::resolve`'s two inputs (strength, duration) come
+When it lands, `data::abilities::resolve`'s two inputs (strength, duration) come
 from the frame and nothing about the buff definitions changes — that is why they
 are arguments.
 

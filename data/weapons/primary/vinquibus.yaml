@@ -21,7 +21,7 @@ max_rank: 30
 accuracy: 33.6
 disposition: 0.7             # riven disposition
 # THE MODULE PUBLISHES TWO, `['Madurai', 'Aura']`, and only one of them is
-# transcribed. There is no Aura polarity in `engine::mods::Polarity` and no
+# transcribed. There is no Aura polarity in `engine::rules::capacity::Polarity` and no
 # weapon mod carries one, so an Aura slot matches nothing a gun can wear — the
 # conservative reading is an UNPOLARISED second slot (full drain) rather than a
 # guessed colour that would halve some mod's cost. Stated in `unmodeled:`.

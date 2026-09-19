@@ -4,11 +4,11 @@ fn vectis_prime(duration: f64) -> FightParams {
     let base = crate::model::WeaponBase::from_data("vectis_prime", false, &[]);
     let refs: Vec<&crate::model::ModDef> = Vec::new();
     let panel =
-        crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     FightParams::from_panel(
         &panel,
         &crate::arena::Arena::training(duration),
-        &crate::arcanes_data::ArcaneFx::none(),
+        &crate::data::arcanes::ArcaneFx::none(),
     )
 }
 
@@ -71,12 +71,12 @@ fn a_cycle_pays_the_base_forms_combo() {
     let arena = crate::arena::Arena::training(60.0);
     let cycle = |initial: u32, held: bool| {
         let mut p = FightParams::incarnon_cycle_from_panels(
-            &crate::loadout::resolve(&inc, &refs, pol),
-            &crate::loadout::resolve(&base, &refs, pol),
+            &crate::build::loadout::resolve(&inc, &refs, pol),
+            &crate::build::loadout::resolve(&base, &refs, pol),
             false,
             LockMode::Initial(0),
             &arena,
-            &crate::arcanes_data::ArcaneFx::none(),
+            &crate::data::arcanes::ArcaneFx::none(),
         );
         p.combo_initial = initial;
         p.combo_held = held;

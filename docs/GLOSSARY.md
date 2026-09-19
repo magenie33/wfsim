@@ -64,8 +64,8 @@ conflate them:
   is answered by the WEAPON — the default form of its `transform_group`,
   which is the entry the arsenal lists. That is the trigger a mod's rule is
   judged against, and it is the MOD POOL: modding happens on the weapon, so
-  naming a form resolves the weapon's pool. `mods_data::weapon_of` is the one
-  spelling of it, and `weapons_data::INHERITED` is the list of which facts are
+  naming a form resolves the weapon's pool. `data::mods::weapon_of` is the one
+  spelling of it, and `data::weapons::INHERITED` is the list of which facts are
   the weapon's. An empty pool is indistinguishable from a weapon that refuses
   everything, which is why no form has one:
   `every_form_is_modded_as_the_weapon_it_is_a_form_of` walks all of them.
@@ -76,7 +76,7 @@ The last two rows above are both **forms** — an attack profile with its own
 weapon entry — and every entry **registers** which one it is with a required
 `form:` field. Weapons are operated differently one from the next, but the set
 of MODES they are operated in is small and shared, so the vocabulary is CLOSED
-(`engine::weapons_data::FormKind`) and an unregistered name is a hard error:
+(`engine::data::weapons::FormKind`) and an unregistered name is a hard error:
 
 | `form:` | what it is | who |
 |---|---|---|

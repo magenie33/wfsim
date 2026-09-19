@@ -207,7 +207,7 @@ fn the_panel_remembers_that_the_perk_counts_shells() {
         &["felarx_evo1_incarnon_form", "felarx_mounting_momentum"],
     );
     let panel =
-        crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+        crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let mm = panel
         .stacking_buffs
         .iter()

@@ -22,7 +22,7 @@ fixed value; the scaling in the Update 34 notes does not apply to it.
 
 ### Where it is read
 
-`engine::warframes_data::resolve` — a cast's gate is Catalyzing Shields' fixed
+`engine::data::warframes::resolve` — a cast's gate is Catalyzing Shields' fixed
 seconds whenever the card is seated, and W`Shield`'s formula at the refilled
 shields otherwise. `the_shield_gate_follows_the_shield_page_and_catalyzing_shields`
 holds it with a 10-of-37 refill.

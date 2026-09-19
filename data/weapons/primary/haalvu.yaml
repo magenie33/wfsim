@@ -20,7 +20,7 @@ polarities: [madurai, madurai]
 # UNIVERSAL, not the weapon's own Madurai. The module states it and the page
 # never mentions the exilus slot, so the copied value looked right; it meant
 # every exilus mod but a Madurai one paid full drain. A universal slot
-# "matches any mod except Umbra mods" (`mods::Polarity::Universal`).
+# "matches any mod except Umbra mods" (`rules::capacity::Polarity::Universal`).
 exilus_polarity: universal
 riven_family: Haalvu
 traits: [sentient]

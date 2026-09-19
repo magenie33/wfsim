@@ -6,7 +6,7 @@ fn thrax_9999_takes_everything_on_overguard_neutrally() {
     // (9.67M health behind 15.5M overguard) - every instance (direct
     // pellets AND Cinematic bleed ticks) lands on the neutral Overguard
     // pool, so effective == raw exactly, and nothing ever dies.
-    let spec = crate::enemy_data::EnemySpec::load(std::path::Path::new(concat!(
+    let spec = crate::data::enemies::EnemySpec::load(std::path::Path::new(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../data/enemies/thrax_centurion.yaml"
     )))
@@ -102,7 +102,7 @@ fn the_by_type_breakdown_follows_the_column_too() {
     let v = DamageVector::new()
         .with(DamageType::Impact, 50.0)
         .with(DamageType::Slash, 50.0);
-    let grineer = crate::factions_data::column("grineer");
+    let grineer = crate::data::factions::column("grineer");
     let mut dst = [0.0f64; DamageType::ALL.len()];
     // 125 effective is what 50 Impact ×1.5 + 50 Slash ×1.0 comes to.
     add_by_type(&mut dst, &v, 125.0, &grineer);
@@ -110,7 +110,7 @@ fn the_by_type_breakdown_follows_the_column_too() {
     assert!((dst[DamageType::Slash as usize] - 50.0).abs() < 1e-9, "{dst:?}");
     // Neutral: the plain proportional split it always was.
     let mut flat = [0.0f64; DamageType::ALL.len()];
-    add_by_type(&mut flat, &v, 100.0, &crate::factions_data::Column::NEUTRAL);
+    add_by_type(&mut flat, &v, 100.0, &crate::data::factions::Column::NEUTRAL);
     assert!((flat[DamageType::Impact as usize] - 50.0).abs() < 1e-9);
 }
 
@@ -187,7 +187,7 @@ fn the_column_follows_each_component_into_the_pool_it_lands_in() {
             duration_seconds: 0.65,
             magazine_size: 100.0,
             target: TargetParams {
-                type_mods: crate::factions_data::columns_for(key),
+                type_mods: crate::data::factions::columns_for(key),
                 base_shield: 10_000.0,
                 base_health: 160.0,
                 ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
@@ -557,7 +557,7 @@ fn a_hit_that_breaks_a_shield_leaks_five_per_cent_to_health() {
     // that neither bypasses a shield nor reads a column, so the fixture
     // measures the GATE and nothing else.
     let leak_for = |hit: f64, head: bool| -> (f64, f64) {
-        let mut st = TargetState::spawn(&target, crate::space::Vec2::ORIGIN);
+        let mut st = TargetState::spawn(&target, crate::rules::space::Vec2::ORIGIN);
         let before_shield = st.shield;
         let before_health = st.health;
         st.apply(

@@ -17,7 +17,7 @@ introduced: "42"
 # THE AMMO SYSTEM IS THE WEAPON'S, so this form carries it too — "This weapon
 # does not use ammo pickups; ammo regenerates over time" is a weapon-level
 # Characteristic and both firing modes draw on the same battery. `battery:` is
-# not in `weapons_data::INHERITED` (it is not a scalar a form can partially
+# not in `data::weapons::INHERITED` (it is not a scalar a form can partially
 # take), so it is restated rather than inherited; the values are the base
 # entry's and the comment there explains why empty is the FAST delay.
 #

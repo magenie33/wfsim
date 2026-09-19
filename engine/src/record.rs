@@ -16,7 +16,7 @@
 //! NOT: AGENTS.md §"A FIGHT POPS NUMBERS" and §"THE STREAM IS THE FOUR THINGS
 //! A FIGHT DOES".
 
-use crate::damage::DamageType;
+use crate::rules::damage::DamageType;
 
 /// WHICH FORM THE WEAPON WAS IN, and how much was left in it.
 ///
@@ -463,7 +463,7 @@ pub enum Layer {
         out: f64,
     },
     /// Each component snaps to a multiple of `scale` — see
-    /// [`crate::damage::DamageVector::quantized_against`]. Not a multiplier and
+    /// [`crate::rules::damage::DamageVector::quantized_against`]. Not a multiplier and
     /// never drawn as one.
     Quantize {
         /// `ModifiedBase / 32`.

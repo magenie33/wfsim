@@ -13,7 +13,7 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Grimoire/KhraAuraMod
 description: "Enemies have a X% chance to drop a Universal Orb on death."
 effects:
-  # A DROP THIS ENGINE HAS NO POOL FOR. `engine::ammo` models what a kill leaves
+  # A DROP THIS ENGINE HAS NO POOL FOR. `engine::rules::ammo` models what a kill leaves
   # on the floor and the Grimoire's meter reads it, so "a drop is not a damage
   # model" is no longer the reason — a drop can be one now.
   #

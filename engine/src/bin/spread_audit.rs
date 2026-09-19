@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 fn main() {
     let mut rows: Vec<(String, String, String)> = Vec::new();
     let mut tally: BTreeMap<&str, usize> = BTreeMap::new();
-    for w in wfsim_engine::weapons_data::all() {
+    for w in wfsim_engine::data::weapons::all() {
         let a = &w.attack;
         let mut how: Vec<String> = Vec::new();
         if let Some(b) = &a.beam {
@@ -53,7 +53,7 @@ fn main() {
                 format!(
                     "punches {:.1} m of material ({} bodies)",
                     a.punch_through_m,
-                    1 + (a.punch_through_m / wfsim_engine::space::BODY_MATERIAL_M) as usize
+                    1 + (a.punch_through_m / wfsim_engine::rules::space::BODY_MATERIAL_M) as usize
                 )
             });
         }
@@ -87,7 +87,7 @@ fn main() {
         println!("{id:<32}{k:<11}{how}");
     }
     println!("\n{} entries reach a formation, of {} in the roster", rows.len(),
-             wfsim_engine::weapons_data::all().len());
+             wfsim_engine::data::weapons::all().len());
     for (k, n) in &tally {
         println!("  {k:<10} {n}");
     }

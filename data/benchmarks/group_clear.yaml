@@ -76,7 +76,7 @@ scenario:
   # will line up), and a spread weapon's wandering epicentre catches a couple
   # more on wide MISSES. docs/BOARD.md carries the tables.
   #
-  # COST IS NOT WHY. `chain::Layout` made the grid's size almost free — a chain
+  # COST IS NOT WHY. `rules::chain::Layout` made the grid's size almost free — a chain
   # resolves against a precomputed neighbour list, so 361 bodies cost 21.2 s per
   # 1000 runs against 19.5 s for 49. The size is settled by saturation alone.
   #

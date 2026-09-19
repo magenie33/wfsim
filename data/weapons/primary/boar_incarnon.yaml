@@ -132,7 +132,7 @@ attack:
       origin: radius_targets
     # SELF-AIMING, and the aimed body is one of the three. ONLY THE BODY THE
     # PLAYER POINTED AT MAY HEADSHOT — measured (M85); the two the weapon took
-    # for itself lock BODIES, which is what `chain::Acquire` seeds.
+    # for itself lock BODIES, which is what `rules::chain::Acquire` seeds.
     beams:
       count: 3
       acquire_deg: 10.0

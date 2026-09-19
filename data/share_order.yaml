@@ -2,7 +2,7 @@
 #
 # APPEND-ONLY, FOREVER. A share link names a mod by its INDEX in this
 # list, so reordering or removing a line silently reinterprets every link
-# already posted. `engine::share_order` recomputes `digest` over the whole
+# already posted. `engine::data::share_order` recomputes `digest` over the whole
 # list and fails on any change that is not an append.
 #
 # Never edit by hand: run the generator, which only ever appends.

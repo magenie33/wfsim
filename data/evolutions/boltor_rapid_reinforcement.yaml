@@ -11,7 +11,7 @@ effects:
   # THE MOST COMMON PERK IN THE WHOLE INCARNON SET — docs/INCARNON.md counts it
   # on 14 guns, more than any other name — and this is the first of them here.
   #
-  # NOT LOADED: `evolutions_data::effect()` has no `reload_speed_bonus` arm (the
+  # NOT LOADED: `data::evolutions::effect()` has no `reload_speed_bonus` arm (the
   # MODS loader has one — different loader, different vocabulary). It would be
   # real: this arena reloads, and a 2.4-2.6 s reload is a large share of a
   # 60-round magazine's cycle.

@@ -56,7 +56,7 @@ whole of the policy:
   cost a Forma.** A mismatched slot is worse than a blank one (125% against
   100%), so "more polarities" is not worth anything on its own.
 
-`mods::plan_forma` and `forma::plan` both implement it, and
+`rules::capacity::plan_forma` and `build::forma::plan` both implement it, and
 `check_forma_plan` holds the page to it.
 
 ## The mechanics, verified (wiki)
@@ -121,7 +121,7 @@ sync with it. What remains are the player's RULES, which are not the build's —
 
 ## The planner
 
-`engine::forma::plan` answers for ONE item and ANY NUMBER of its configs,
+`engine::build::forma::plan` answers for ONE item and ANY NUMBER of its configs,
 under the player's RULES. The item is a `Board` (a weapon or a Warframe:
 main slots, an exilus slot, and a slot that GRANTS capacity — the stance or
 the aura); each config is a `Loadout`.
@@ -139,7 +139,7 @@ multiset over it is billed, and the buckets are walked cheapest first. A colour
 nobody carries only ever mismatches, so it is not tried. Positions are free in
 that walk, which never under-rates a layout, so it both orders the exact work
 and says when to stop. `free_drain` is the positions-free drain, a greedy held
-to the Hungarian answer by `free_drain_is_the_optimal_assignment`. `mods::fit`
+to the Hungarian answer by `free_drain_is_the_optimal_assignment`. `rules::capacity::fit`
 stays the optimizer's greedy planner; `one_loadout_bills_what_fit_bills` holds
 the two to the same bill on one config.
 
@@ -195,7 +195,7 @@ build is read-only, so it is planned alone and offers no partners.
 
 ## The optimizer of the plan
 
-`engine::forma::optimize` answers the question a plan cannot: what ONE layout
+`engine::build::forma::optimize` answers the question a plan cannot: what ONE layout
 reaches across whole groups of builds, and what each Forma buys. A group is
 covered by the best of its builds that fits, as a share of its leader; hard
 loadouts must fit every answer. The result is a CURVE — the cheapest layout
@@ -223,12 +223,12 @@ the player's rules say.
 
 ## Where the truth has to live
 
-`engine::mods` owns the whole model, and the client consumes its conclusions.
+`engine::rules::capacity` owns the whole model, and the client consumes its conclusions.
 
 This is not tidiness, it is the lesson of 2026-08-04 applied before the fact.
 The JS today reimplements this arithmetic in FOUR functions — `slotDrain`,
 `modDrain`, `capacityUsed`, `autoForma` — and they have already diverged:
-`Omni` exists in the JS polarity set and **not in `mods::Polarity` at all**.
+`Omni` exists in the JS polarity set and **not in `rules::capacity::Polarity` at all**.
 That divergence is harmless today only because user-chosen polarities are never
 sent to the engine. The moment Omni becomes a planning input it stops being
 harmless.
@@ -241,7 +241,7 @@ what replaces them is a number the server computed.
 
 Each one is independently shippable and independently verifiable.
 
-1. ~~**Engine only, no UI risk.**~~ **DONE 2026-08-04** (`engine::mods`):
+1. ~~**Engine only, no UI risk.**~~ **DONE 2026-08-04** (`engine::rules::capacity`):
    `Polarity::Omni`, `rank_after`, `forma_to_max_rank`, `Investment`,
    `FormaCost`, `plan_forma_with`, and `fit` — which owns the whole question
    and is what the UI will call. Thirteen tests, the wiki's own numbers pinned.
@@ -255,16 +255,16 @@ Each one is independently shippable and independently verifiable.
    actually spent, and spending more than five is never a contradiction.
 2. **The wire.** PART DONE 2026-08-04 — the SERVER no longer hardcodes 60.
    `WeaponSpec.max_rank` is read (the data carried it and nothing looked),
-   `builds::validate` judges a submission at the weapon's own capacity, and
+   `board::builds::validate` judges a submission at the weapon's own capacity, and
    `/api/simulate`'s `forma` block reports `rank`, `cap` and the bill split by
-   item. `engine::mods::cost_of` answers the OTHER question — what the layout
+   item. `engine::rules::capacity::cost_of` answers the OTHER question — what the layout
    you actually set costs, as against what the cheapest would be — which until
    now existed only as `formaCount()` in the client.
 
    **The literal 60 is gone.** `/api/meta` states `max_rank`,
    `capacity` and `forma_min` per weapon — the ANSWER, not the ladder — so the
    client holds no capacity arithmetic of its own: `capOf(id)` and
-   `formaMin(id)` read what the server computed with `mods::capacity` /
+   `formaMin(id)` read what the server computed with `rules::capacity::capacity` /
    `rank_after` / `forma_to_max_rank`. That is what makes an adversary weapon
    count against 80 in the builder, on the share card, and in the auto plan.
    Nothing moved for an existing build: every rank-30 weapon answers 60 and 0.

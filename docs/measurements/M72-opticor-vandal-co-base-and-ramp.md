@@ -22,7 +22,7 @@ it is carrying**.
 ### 1. 388 IS 400 QUANTIZED, and the panel is already the full-charge figure
 
 The entry's base is the published 400 (40 Impact / 280 Puncture / 80 Slash).
-Quantization is 1/32 of the modded base (`damage::QUANTIZATION_DENOMINATOR`),
+Quantization is 1/32 of the modded base (`rules::damage::QUANTIZATION_DENOMINATOR`),
 and this split lands at 10% / 70% / 20% — 3.2 / 22.4 / 6.4 thirty-seconds,
 each to the nearest step is 3 / 22 / 6, **31 of 32**. Every reading is the
 plain arithmetic times 31/32:

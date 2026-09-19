@@ -29,7 +29,7 @@ attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). The same cone as
   # the charged shot's, stated rather than inherited because an ATTACK is never
-  # inherited (`weapons_data::INHERITED`).
+  # inherited (`data::weapons::INHERITED`).
   spread:
     min_deg: 0.0
     max_deg: 12.0

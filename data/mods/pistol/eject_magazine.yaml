@@ -5,7 +5,7 @@
 #   both PvE and Conclave".
 # The authority is the Rifle_Mods / Pistol_Mods table, which tags the genuinely
 # restricted ones "Exclusive to PvP" — this mod is NOT tagged. Do not delete it
-# on the strength of the path alone (engine::mods_data pins the whole set).
+# on the strength of the path alone (engine::data::mods pins the whole set).
 id: eject_magazine
 name: Eject Magazine
 rarity: rare

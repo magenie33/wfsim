@@ -17,6 +17,6 @@ Two cards of one other school count as ONE school: the card says "unique".
 
 ### Where it is read
 
-`engine::warframes_data::ArtifactMod::bonus_count`, served by
+`engine::data::warframes::ArtifactMod::bonus_count`, served by
 `/api/operator/panel`. `the_artifact_seats_five_known_mods_once_and_one_arcane`
 holds it with two Madurai, two Vazarin and one Naramon card.

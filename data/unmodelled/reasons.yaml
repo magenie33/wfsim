@@ -30,7 +30,7 @@ reasons:
   zoom_steps:
     text: "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
   # NO `damage_falloff` — IT IS MODELLED. The arena has a range
-  # now (`engine::space`), the direct hit takes its published window, and the
+  # now (`engine::rules::space`), the direct hit takes its published window, and the
   # twenty-three weapons that carried this line say nothing because there is
   # nothing left to admit. Kept as a note rather than silently deleted: this
   # file is where a reader looks to find out whether a gap is still a gap.

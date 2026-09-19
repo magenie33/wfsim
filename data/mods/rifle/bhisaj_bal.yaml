@@ -13,7 +13,7 @@ description: "Restore X Health for every 3 Status effects.\n+X% Status Chance"
 exclusive_to: [paris_prime]
 
 # An EXILUS WEAPON MOD in game ([[Category:Exilus Weapon Mods]]). That slot is
-# out of scope here (engine::builds: eight main slots, the exilus dropped), so
+# out of scope here (engine::board::builds: eight main slots, the exilus dropped), so
 # it sits in the ordinary pool like every other exilus-eligible card and costs
 # a main slot — the same treatment Cautious Shot gets.
 #

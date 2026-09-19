@@ -3,11 +3,11 @@
 //! the conditions and stacking rules they state them under.
 
 use super::*;
-use crate::damage::DamageType;
-use crate::mods::Polarity;
+use crate::rules::damage::DamageType;
+use crate::rules::capacity::Polarity;
 
 /// Combat faction — the key for faction-damage mods (Bane/Expel/Cleanse/Smite,
-/// "System A"). Distinct from [`crate::enemy_data::ScalingFaction`] (stat
+/// "System A"). Distinct from [`crate::data::enemies::ScalingFaction`] (stat
 /// scaling) and from the per-type vulnerability column ("System B"). `Unknown`
 /// = no faction mod ever applies (e.g. Zariman Thrax, faction "Unknown").
 /// Strict matching: Grineer mods do NOT hit Corrupted/Narmer units. The
@@ -74,7 +74,7 @@ impl CondBucket {
 }
 
 /// A player STATE a mod can be conditional on. One variant per field of
-/// [`crate::tenno_data::TennoState`] — the two are meant to be read together.
+/// [`crate::data::tenno::TennoState`] — the two are meant to be read together.
 ///
 /// `Aiming` is in here rather than beside it: it was a bool threaded through
 /// `resolve` while the other states lived on the Tenno, which is two homes for
@@ -275,7 +275,7 @@ pub enum ModEffect {
         per_stack: f64,
         max_stacks: u32,
         duration: f64,
-        /// WHICH SWITCH GRANTS IT (`buff_events::ALL`), and `None` when
+        /// WHICH SWITCH GRANTS IT (`data::buff_events::ALL`), and `None` when
         /// nothing does.
         ///
         /// `None` IS MELEE'S CONDITION OVERLOAD, which is the original and is
@@ -318,7 +318,7 @@ pub enum ModEffect {
     /// variant keeps every other arm of the resolver unaware that aiming
     /// exists.
     /// Gated on what the PLAYER is doing — "while aiming", "while Invisible",
-    /// "while Airborne". Asked of [`crate::tenno_data::Tenno`], the fight's
+    /// "while Airborne". Asked of [`crate::data::tenno::Tenno`], the fight's
     /// second actor, so a card's condition and the fight's state meet in one
     /// place instead of aiming having its own parameter.
     WhileTenno(TennoCondition, Box<ModEffect>),
@@ -651,7 +651,7 @@ pub enum IndirectStat {
     AcrobaticSpeed,
     Accuracy,
     /// Punch-through depth in METERS. It joins `punch_through_m` on the panel
-    /// and `space::struck_along` spends it per body crossed, so it pays only
+    /// and `rules::space::struck_along` spends it per body crossed, so it pays only
     /// against a formation — a lone target has nothing behind it.
     PunchThrough,
     /// Aim zoom (FOV) — pistol zoom carries no damage bonus (unlike snipers).
@@ -797,7 +797,7 @@ impl IndirectStat {
         // sentinel (see it for why) and no reader is shown it. `>=`, because
         // mods add to it — a Seeker takes the total to 1001.4.
         if *self == IndirectStat::PunchThrough
-            && v >= crate::space::INFINITE_BODY_PUNCH_THROUGH_M
+            && v >= crate::rules::space::INFINITE_BODY_PUNCH_THROUGH_M
         {
             return "infinite".to_string();
         }
@@ -823,7 +823,7 @@ impl IndirectStat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AbilityStat {
     /// Vome Invocation. Multiplies what Roar, Eclipse and Nourish are worth —
-    /// `abilities_data::at_strength` is linear, so a strength bonus is a
+    /// `data::abilities::at_strength` is linear, so a strength bonus is a
     /// straight multiplier on the ability's own number.
     Strength,
     /// Ris Invocation. Extends how long they last.
@@ -920,7 +920,7 @@ pub struct ModDef {
     pub excludes_weapon: Vec<&'static str>,
     /// The MOD SET this mod belongs to (`data/mod_sets/<id>.yaml`). A set
     /// bonus is granted by the group, not by any member, and it scales per
-    /// equipped member with no threshold — see [`crate::mod_sets_data`].
+    /// equipped member with no threshold — see [`crate::data::mod_sets`].
     pub set: Option<&'static str>,
     /// Weapon TRAIT this mod's effects require to apply (else the whole mod is
     /// inert — a calc-layer gate, NOT an equip block). Declared only for
@@ -1026,7 +1026,7 @@ pub struct StackSpec {
     /// Stacks at t = 0 (user setting: full by default, 0 for a cold
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
-    /// WHICH SWITCH GRANTS THESE STACKS (`buff_events::ALL`), `None` when
+    /// WHICH SWITCH GRANTS THESE STACKS (`data::buff_events::ALL`), `None` when
     /// nothing does — the answer `FightParams::deny_buff_triggers` reads and
     /// the same one the card is greyed by, so the page and the run cannot
     /// disagree. It travels on the spec because the data states it and the

@@ -3,13 +3,13 @@
 # RULES (data/README.md "i18n"): ids are NEVER translated — this file maps
 # id → display name only. Missing entries fall back to English, so partial
 # translation is always safe. Every key must be a real id (machine-enforced
-# by engine::i18n_data tests — a typo fails the build).
+# by engine::data::i18n tests — a typo fails the build).
 #
 # Canonical reference: the official CN client (WFCD i18n, joined on
 # internal_name), cross-checked against the community wiki's 对照 table
 # https://warframe.huijiwiki.com/wiki/Project:中英名称对照
 #
-# A locale is a DIRECTORY and its files are merged (engine::i18n_data):
+# A locale is a DIRECTORY and its files are merged (engine::data::i18n):
 #   names.yaml         this file — hand-written
 #   ui.yaml            UI strings + the phrase-substitution fallback
 #   descriptions.yaml  GENERATED from DE's client strings, never hand-edited

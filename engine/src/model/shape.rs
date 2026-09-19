@@ -3,7 +3,7 @@
 //! ricochets, beams, gauges and the melee combo script.
 
 use super::*;
-use crate::damage::DamageVector;
+use crate::rules::damage::DamageVector;
 use serde::Deserialize;
 
 /// What happens when a second field lands on a target that already has one.
@@ -34,11 +34,11 @@ pub struct LingeringBase {
     /// How long the field lives (`EffectDuration`: Torid 10 s), from its own
     /// first tick.
     pub duration_seconds: f64,
-    /// See [`crate::weapons_data::LingeringSpec::first_tick_delay_seconds`].
+    /// See [`crate::data::weapons::LingeringSpec::first_tick_delay_seconds`].
     pub first_tick_delay_seconds: f64,
-    /// See [`crate::weapons_data::LingeringSpec::forced_procs`] — the field's
+    /// See [`crate::data::weapons::LingeringSpec::forced_procs`] — the field's
     /// OWN, never the direct part's.
-    pub forced_procs: crate::damage::ForcedProcs,
+    pub forced_procs: crate::rules::damage::ForcedProcs,
     pub radius_m: f64,
     pub falloff_start_m: f64,
     /// Torid's cloud is `reduction 1.0` — damage falls to ZERO at the rim,
@@ -52,11 +52,11 @@ pub struct LingeringBase {
     /// would not get it, but the programmer let it"), so the weapon declares it
     /// rather than the engine assuming every field behaves that way.
     pub takes_condition_overload: bool,
-    /// See [`crate::weapons_data::LingeringSpec::elemental_mods_apply`].
+    /// See [`crate::data::weapons::LingeringSpec::elemental_mods_apply`].
     pub elemental_mods_apply: bool,
-    /// See [`crate::weapons_data::LingeringSpec::can_crit`].
+    /// See [`crate::data::weapons::LingeringSpec::can_crit`].
     pub can_crit: bool,
-    /// See [`crate::weapons_data::LingeringSpec::status_mods_apply`].
+    /// See [`crate::data::weapons::LingeringSpec::status_mods_apply`].
     pub status_mods_apply: bool,
 }
 
@@ -73,16 +73,16 @@ pub struct RadialBase {
     pub blast_kind: crate::model::BlastKind,
     /// Blast radius = the falloff `end` distance.
     pub radius_m: f64,
-    /// See [`crate::weapons_data::RadialSpec::takes_blast_radius_mods`].
+    /// See [`crate::data::weapons::RadialSpec::takes_blast_radius_mods`].
     pub takes_blast_radius_mods: bool,
     /// Linear falloff window and the fraction of damage REMOVED at max
     /// distance: `mult(d) = 1 − reduction × clamp((d−start)/(end−start))`.
     /// Only bites once the sim has targets away from the epicentre.
     pub falloff_start_m: f64,
     pub falloff_reduction: f64,
-    /// See [`crate::weapons_data::RadialSpec::forced_procs`] — the EXPLOSION's
+    /// See [`crate::data::weapons::RadialSpec::forced_procs`] — the EXPLOSION's
     /// own, which is not the direct part's.
-    pub forced_procs: crate::damage::ForcedProcs,
+    pub forced_procs: crate::rules::damage::ForcedProcs,
     /// Does this explosion take Condition Overload? **Default NO** — the mods
     /// say CO boosts DIRECT hits, so an AoE part is not supposed to receive it
     /// at all. Some entries do anyway, and the CO catalog lists them one at a
@@ -91,7 +91,7 @@ pub struct RadialBase {
     /// single-target arena always is. Declared per weapon because it is a
     /// per-entry quirk, never a rule (MECHANICS §6).
     pub takes_condition_overload: bool,
-    /// See [`crate::weapons_data::RadialSpec::takes_multishot`].
+    /// See [`crate::data::weapons::RadialSpec::takes_multishot`].
     pub takes_multishot: bool,
     /// THE ORIGINAL BASE of this explosion — the radial's own [`WeaponBase::co_base`],
     /// and it needs its own because an evolution can raise what the explosion
@@ -100,11 +100,11 @@ pub struct RadialBase {
 }
 
 /// THE BOMBLETS AN EXPLOSION THROWS OUT, unmodded — see
-/// [`crate::weapons_data::ClusterSpec`].
+/// [`crate::data::weapons::ClusterSpec`].
 ///
 /// BOTH HALVES ARE A [`RadialBase`] so they resolve through exactly the mod
 /// buckets an explosion does, and the CONTACT hit is the one that needs saying:
-/// its radius is [`crate::space::BODY_RADIUS_M`], the smallest sphere that
+/// its radius is [`crate::rules::space::BODY_RADIUS_M`], the smallest sphere that
 /// means "the body this bomblet touched and nobody else". A radius of ZERO
 /// would mean nobody at all — `falloff_at` is exclusive at the edge.
 #[derive(Debug, Clone)]
@@ -244,7 +244,7 @@ impl Spread {
     /// The deviation ONE pellet drew, in degrees, from a uniform `u` in [0,1).
     ///
     /// UNIFORM INSIDE THE AIMED CONE, i.e. `[0, min_deg)`. Two readings of the
-    /// wiki decide that and both are quoted at [`crate::weapons_data::
+    /// wiki decide that and both are quoted at [`crate::data::weapons::
     /// SpreadSpec`]: spread is *"an angle in degrees from the reticle"*, so the
     /// stat is the cone's RADIUS and a shot lands somewhere inside it rather
     /// than on its rim; and `min` is named *"Deviation With Aim"*, which is the
@@ -340,7 +340,7 @@ pub struct BeamGeometry {
     /// Does every chain NODE carry a sphere too? UNVERIFIED (MEASUREMENTS
     /// M15) — one line of weapon data so a measurement flips it.
     pub chain_nodes_have_radius: bool,
-    /// BEAMS THAT AIM THEMSELVES — `chain::Acquire`. 1 is an ordinary weapon
+    /// BEAMS THAT AIM THEMSELVES — `rules::chain::Acquire`. 1 is an ordinary weapon
     /// and the aimed body is one of the count, never extra to it.
     pub beams_count: u32,
     pub beams_acquire_deg: f64,
@@ -421,7 +421,7 @@ pub enum BlastKind {
     /// buys more DIRECT hits, as on any other weapon; and it moves the
     /// explosion DOWN THE LINE — onto whichever body the round cannot get out
     /// of, which in a crowd is deeper and better and against a lone enemy is
-    /// past it and worse. `space::dissipation_point` is the geometry.
+    /// past it and worse. `rules::space::dissipation_point` is the geometry.
     Terminal,
     /// A GROUND SLAM: the sphere is centred on the WIELDER'S OWN FEET, not on
     /// anything the attack touched.
@@ -560,11 +560,11 @@ impl ComboHit {
     /// A name the engine does not know is a LOUD failure rather than a silent
     /// drop: a stance table transcribed with a typo would otherwise ship a
     /// swing that forces nothing and reads as merely weak.
-    pub fn split_forced(&self) -> (Vec<crate::damage::DamageType>, Vec<&'static str>) {
+    pub fn split_forced(&self) -> (Vec<crate::rules::damage::DamageType>, Vec<&'static str>) {
         let mut types = Vec::new();
         let mut independent = Vec::new();
         for p in &self.forced_procs {
-            if let Some(ty) = crate::damage::DamageType::from_name(p) {
+            if let Some(ty) = crate::rules::damage::DamageType::from_name(p) {
                 types.push(ty);
             } else {
                 match p.as_str() {

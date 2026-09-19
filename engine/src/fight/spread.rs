@@ -128,7 +128,7 @@ pub(super) fn spread_from_influence(
     // WHERE EVERY BODY STANDS, built once for the fight rather than per landed
     // hit — Influence spreads 20 m across a 361-body formation, so that was the
     // allocation this engine could least afford.
-    bodies: &[crate::space::Vec2],
+    bodies: &[crate::rules::space::Vec2],
     others: &mut [SpreadFoe],
     target: &mut TargetState,
     debuffs: &mut DebuffState,
@@ -148,7 +148,7 @@ pub(super) fn spread_from_influence(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
     if landed.is_empty() || radius_m <= 0.0 {
@@ -172,7 +172,7 @@ pub(super) fn spread_from_influence(
     for (b, at) in bodies.iter().copied().enumerate() {
         // ANY PART OF A BODY TOUCHING IS ENOUGH — the rule every sphere in
         // this engine uses.
-        if !crate::space::caught_by_blast(epicentre.distance(at), radius_m) {
+        if !crate::rules::space::caught_by_blast(epicentre.distance(at), radius_m) {
             continue;
         }
         let (state, dbf, tparams) = match b.checked_sub(1) {
@@ -241,7 +241,7 @@ pub(super) fn spread_from_influence(
             // …AND THE STATUS ITSELF, which is the half the card is named for.
             // Forced: the arcane does not roll, it copies what landed.
             let forced = std::slice::from_ref(&ty);
-            let procs = crate::status::procs_for_hit(
+            let procs = crate::rules::status::procs_for_hit(
                 forced,
                 0.0,
                 &DamageVector::new().with(ty, raw),
@@ -286,12 +286,12 @@ pub(super) fn spread_from_influence(
 ///     body's own procs have stripped.
 ///   · ITS OWN PROCS AND ITS OWN DEATH.
 ///
-/// NEVER A HEADSHOT. `chain::Instance::headshot` is true for the directly
+/// NEVER A HEADSHOT. `rules::chain::Instance::headshot` is true for the directly
 /// struck body alone, so `part_factor` is 1.0 here and the hit lands on the
 /// body — which is the clause that reorders builds in a crowd (MECHANICS §12).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn spread_hit(
-    inst: &crate::chain::Instance,
+    inst: &crate::rules::chain::Instance,
     foe: &mut SpreadFoe,
     spec: &crate::formation::FoeSpec,
     // The aimed hit with its OWN CO bucket divided back out, so this body can
@@ -311,7 +311,7 @@ pub(super) fn spread_hit(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
     // WHICH MECHANISM PUT IT HERE — see [`SpreadBy`]. The only thing it
     // changes is which kills spawn another tendril.
@@ -486,7 +486,7 @@ pub(super) fn spread_hit(
     // rolls the whole status chance — which is why a chain is worth more in
     // procs than it is in damage.
     arc.next_instance();
-    let procs = crate::status::procs_for_hit(
+    let procs = crate::rules::status::procs_for_hit(
         forced,
         status_chance,
         vector,
@@ -578,7 +578,7 @@ pub(super) struct SpreadShot {
 /// projectile, bullet or beam can pass through before dissipating"* — so a body
 /// behind the aimed one takes the shot itself, at FULL damage: the page names
 /// no attenuation per body and the engine invents none. What the budget buys is
-/// HOW MANY (`space::struck_along`, priced by `space::BODY_MATERIAL_M`).
+/// HOW MANY (`rules::space::struck_along`, priced by `rules::space::BODY_MATERIAL_M`).
 ///
 /// A DIRECT HIT IN EVERY SENSE: it may HEADSHOT and it is per PELLET, the
 /// opposite of a chain hop. ONLY FOR A WEAPON WITH NO BEAM — where there is
@@ -612,7 +612,7 @@ pub(super) fn spread_from_follow_through(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
     for (n, &sidx) in struck.iter().enumerate().skip(1) {
@@ -622,7 +622,7 @@ pub(super) fn spread_from_follow_through(
         }
         let Some(idx) = sidx.checked_sub(1) else { continue };
         let Some(fs) = params.others.get(idx) else { continue };
-        let inst = crate::chain::Instance {
+        let inst = crate::rules::chain::Instance {
             target: sidx,
             share,
             multishot: true,
@@ -660,7 +660,7 @@ pub(super) fn spread_from_punch_through(
     // Both carried rather than re-rolled: the same round flying in a straight
     // line enters the same part of whatever is behind. The multiplier is
     // already inside `raw_per_bucket` for the HIT and is needed all the same
-    // for the STATUSES — see `chain::Instance::status_part_factor`.
+    // for the STATUSES — see `rules::chain::Instance::status_part_factor`.
     head_direct: bool,
     head_part_factor: f64,
     // …and what a tick its statuses leave is worth there (`Dot::landing`).
@@ -669,7 +669,7 @@ pub(super) fn spread_from_punch_through(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
     // The FIRST is the body the rest of the engagement is already scored
@@ -688,7 +688,7 @@ pub(super) fn spread_from_punch_through(
         //
         // BREAK, NOT CONTINUE: `struck_bodies` is in the order the ray meets
         // them, so the first one out of reach is the end of the line.
-        let gap_here = (params.range_to(fs.at) - crate::space::BODY_RADIUS_M).max(0.0);
+        let gap_here = (params.range_to(fs.at) - crate::rules::space::BODY_RADIUS_M).max(0.0);
         if gap_here > ap.range_m {
             break;
         }
@@ -713,7 +713,7 @@ pub(super) fn spread_from_punch_through(
         if ratio <= 0.0 {
             continue;
         }
-        let inst = crate::chain::Instance {
+        let inst = crate::rules::chain::Instance {
             target: s,
             // THE WHOLE SHOT, undiminished — except by the distance it flew.
             share: ratio,
@@ -743,7 +743,7 @@ pub(super) fn spread_from_punch_through(
             // …AND THE STATUSES NEED IT ANYWAY. Heat and Blast read the hit's
             // weak point and are built from the modded base, which carries no
             // head factor — so the one place the hit must not see it again is
-            // the one place its payloads must. See `chain::Instance`.
+            // the one place its payloads must. See `rules::chain::Instance`.
             status_part_factor: head_part_factor,
             status_landing: head_status_landing,
         };
@@ -814,7 +814,7 @@ pub(super) fn spread_from_ricochet(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
     for &(body, head) in path {
@@ -822,7 +822,7 @@ pub(super) fn spread_from_ricochet(
         // came from, and `bounce_path` has it visited before the walk starts.
         let Some(idx) = body.checked_sub(1) else { continue };
         let Some(fs) = params.others.get(idx) else { continue };
-        let inst = crate::chain::Instance {
+        let inst = crate::rules::chain::Instance {
             target: body,
             // THE WHOLE COLLISION, undiminished.
             share: 1.0,
@@ -901,11 +901,11 @@ pub(super) fn spread_from_echo(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
     // THE ARCANE'S SHARE, TIMES THE WEAPON'S OWN COEFFICIENT — see
-    // `weapons_data::WeaponSpec::echo_multiplier`. It is 1.0 for every entry in
+    // `data::weapons::WeaponSpec::echo_multiplier`. It is 1.0 for every entry in
     // the roster but the Laetum's Incarnon form, where the echo was MEASURED at
     // 3.6x a 1.8x arcane and nobody knows why.
     let share = params.arcane.echo_share * params.echo_multiplier;
@@ -927,12 +927,12 @@ pub(super) fn spread_from_echo(
     }
     // FROM THE BODY THAT WAS HIT, at the surface the round met — the same
     // epicentre every other sphere in this engine uses.
-    let at = crate::space::detonation_point(params.target_at, params.player_at);
+    let at = crate::rules::space::detonation_point(params.target_at, params.player_at);
     for (i, spec) in params.others.iter().enumerate() {
-        if !crate::space::caught_by_blast(spec.at.distance(at), radius) {
+        if !crate::rules::space::caught_by_blast(spec.at.distance(at), radius) {
             continue;
         }
-        let inst = crate::chain::Instance {
+        let inst = crate::rules::chain::Instance {
             target: i + 1,
             share,
             multishot: false,
@@ -1006,7 +1006,7 @@ pub(super) fn spread_from_tendrils(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
     if live == 0 || params.tendril_max == 0 {
@@ -1014,11 +1014,11 @@ pub(super) fn spread_from_tendrils(
     }
     let aim = params.aim_at.unwrap_or(params.target_at);
     // EVERY BODY A TENDRIL COULD TAKE, nearest to the RETICLE first —
-    // `chain::acquired`, which is also how the Boar Incarnon's three beams pick
+    // `rules::chain::acquired`, which is also how the Boar Incarnon's three beams pick
     // theirs. Two weapons, two pages saying the same thing, one rule.
-    let bodies: Vec<crate::space::Vec2> =
+    let bodies: Vec<crate::rules::space::Vec2> =
         std::iter::once(params.target_at).chain(params.others.iter().map(|f| f.at)).collect();
-    let cand = crate::chain::acquired(
+    let cand = crate::rules::chain::acquired(
         &bodies,
         params.player_at,
         aim,
@@ -1030,7 +1030,7 @@ pub(super) fn spread_from_tendrils(
     // main beam's target are only COSMETIC, and don't deal any additional
     // damage or status effects". Index 0 is that body.
     for i in cand.into_iter().filter(|&i| i != 0).map(|i| i as usize - 1).take(live as usize) {
-        let inst = crate::chain::Instance {
+        let inst = crate::rules::chain::Instance {
             target: i + 1,
             // A WHOLE BEAM, not a share of one.
             share: 1.0,
@@ -1090,11 +1090,11 @@ pub(super) fn spread_from_blast(
     // WHERE THE ROUND WENT OFF, decided by the caller from the pellet's own
     // deviation — not assumed to be the aimed body's surface, which is what it
     // was until 2026-08-19 and the whole of the bug this signature ends.
-    det: crate::space::Detonation,
+    det: crate::rules::space::Detonation,
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
-    rad: &crate::loadout::ResolvedRadial,
+    rad: &crate::build::loadout::ResolvedRadial,
     // The aimed hit with its own CO bucket AND its own falloff divided back
     // out, so each body can multiply in its own of both.
     raw_per_bucket_per_falloff: f64,
@@ -1110,7 +1110,7 @@ pub(super) fn spread_from_blast(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
     blast_at(
@@ -1146,11 +1146,11 @@ pub(super) fn spread_from_blast(
 /// there — any body touching the sphere is caught, each reads its own falloff.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn blast_at(
-    det: crate::space::Detonation,
+    det: crate::rules::space::Detonation,
     others: &mut [SpreadFoe],
     params: &FightParams,
     ap: &FightParams,
-    rad: &crate::loadout::ResolvedRadial,
+    rad: &crate::build::loadout::ResolvedRadial,
     raw_per_bucket_per_falloff: f64,
     shares: TypeShares,
     crit_multiplier: f64,
@@ -1164,7 +1164,7 @@ pub(super) fn blast_at(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
     by: SpreadBy,
 ) {
@@ -1173,14 +1173,14 @@ pub(super) fn blast_at(
         // went are legs of the same triangle, and a pellet that sailed above
         // the crowd is genuinely farther from every one of them.
         let dist = det.distance_to(spec.at);
-        if !crate::space::caught_by_blast(dist, rad.radius_m) {
+        if !crate::rules::space::caught_by_blast(dist, rad.radius_m) {
             continue;
         }
-        let share = rad.falloff_at(crate::space::blast_reach(dist));
+        let share = rad.falloff_at(crate::rules::space::blast_reach(dist));
         if share <= 0.0 {
             continue;
         }
-        let inst = crate::chain::Instance {
+        let inst = crate::rules::chain::Instance {
             target: i + 1,
             share,
             multishot: false,
@@ -1250,16 +1250,16 @@ pub(super) fn spread_from_seeds(
     arc: &mut ArcRuntime,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     t: f64,
-    layout: Option<&crate::chain::Layout>,
+    layout: Option<&crate::rules::chain::Layout>,
     multishot_half: bool,
     // EVERY BODY THE BEAM STRUCK, in ray order — one of them ordinarily, more
     // with punch through, and EMPTY when it struck the floor. It decides who
     // may headshot and who carries multishot, and nothing else.
     struck: &[usize],
 ) {
-    let spec = crate::chain::Spec {
+    let spec = crate::rules::chain::Spec {
         hops: beam.chain_hops,
         range_m: beam.chain_range_m,
         falloff: beam.chain_damage_per_hop,
@@ -1273,20 +1273,20 @@ pub(super) fn spread_from_seeds(
     // instance what `resolve` does (`a_layout_answers_exactly_what_the_scan_does`),
     // which is what makes this an optimisation rather than a model change.
     let landed = match layout {
-        Some(layout) => crate::chain::resolve_in(layout, params.others.len() + 1, struck, spec),
+        Some(layout) => crate::rules::chain::resolve_in(layout, params.others.len() + 1, struck, spec),
         // No layout means no formation — the one-body fight, where the chain
         // has nowhere to go and the old path is as cheap as anything.
         None => {
             let mut bodies = Vec::with_capacity(others.len() + 1);
             bodies.push(params.target_at);
             bodies.extend(params.others.iter().map(|f| f.at));
-            crate::chain::resolve(
+            crate::rules::chain::resolve(
                 &bodies,
                 struck,
-                crate::chain::Splash {
+                crate::rules::chain::Splash {
                     at: match (struck.first(), params.aim_at) {
                         (Some(_), _) => {
-                            crate::space::detonation_point(params.target_at, params.player_at)
+                            crate::rules::space::detonation_point(params.target_at, params.player_at)
                         }
                         (None, Some(a)) => a,
                         (None, None) => params.target_at,
@@ -1339,7 +1339,7 @@ pub(super) fn spread_from_seeds(
 /// inside it.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn fire_syndicate_radial(
-    sy: &crate::syndicates_data::SyndicateDef,
+    sy: &crate::data::syndicates::SyndicateDef,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
     target: &mut TargetState,

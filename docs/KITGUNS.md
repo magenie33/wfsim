@@ -38,7 +38,7 @@ at the other slot's disposition too.
 A build carries `{grip, loader}` (the chamber is the entry). The builder binds
 one pair, the optimizer and the ranked picker bind the set, a board row carries
 its parts so two assemblies are two rows, and a share link carries them inline.
-A request naming no parts is fought with `weapons_data::kitguns::default_assembly` — the
+A request naming no parts is fought with `data::weapons::kitguns::default_assembly` — the
 grip nearest the chamber's own `base` preview and the first loader that changes
 nothing — never with the preview itself, which no player can build.
 

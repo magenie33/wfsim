@@ -48,7 +48,7 @@ The smell was named before the mechanic was: the blast takes NO MULTISHOT, so
 it is a FAKE AoE, and it should be a TYPE rather than a pile of per-weapon
 exceptions.
 
-`weapons_data::BlastKind`, two values:
+`data::weapons::BlastKind`, two values:
 
 | kind | detonates | punch-through mods | example |
 | --- | --- | --- | --- |

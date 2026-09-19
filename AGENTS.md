@@ -120,7 +120,7 @@ Each of these fails silently. That is why it is here and not in a document.
 - **A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE TENNO IS ASSUMED.**
   A data file stating a rule the engine does not apply is worse than one that
   omits it: to anyone auditing, it reads as if the rule were being applied.
-- **A BUILD'S AXES ARE DECLARED ONCE**, in `engine::builds::BUILD_AXES`, served
+- **A BUILD'S AXES ARE DECLARED ONCE**, in `engine::board::builds::BUILD_AXES`, served
   at `/api/meta.build_axes`. Every surface declares which axis its own fields
   cover; `buildState()` REQUIRES a value for every state key.
 - **Data discipline** (`data/`): define once, reference by `id` (stable English

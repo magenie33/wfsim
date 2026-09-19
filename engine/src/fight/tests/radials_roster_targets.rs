@@ -350,13 +350,13 @@ fn the_magazine_refill_pays_each_kill_once() {
 /// 30 s cooldown BOUNDS it however fast you kill.
 #[test]
 fn a_syndicate_radial_arms_on_affinity_and_is_capped_by_its_cooldown() {
-    let truth = *crate::syndicates_data::get("truth").expect("truth");
+    let truth = *crate::data::syndicates::get("truth").expect("truth");
     // A target worth 200 affinity at level 1: the multiplier is
     // 1 + 0.1425 = 1.1425, so 228 floored, and the weapon's half is 114.
     // Nine kills fill the 1000-point gauge.
     let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
     t.base_affinity = 200.0;
-    let build = |secs: f64, radial: Option<crate::syndicates_data::SyndicateDef>| FightParams {
+    let build = |secs: f64, radial: Option<crate::data::syndicates::SyndicateDef>| FightParams {
         syndicate_radial: radial,
         magazine_size: 100_000.0,
         fire_rate: 10.0,
@@ -430,7 +430,7 @@ fn an_explosion_forces_its_own_procs_with_no_status_chance_anywhere() {
     let quiet = run_once(&radial_only(r), &mut Rng::new(11));
     assert_eq!(quiet.procs, 0, "nothing forced and 0% SC = no procs at all");
 
-    r.forced_procs = crate::damage::ForcedProcs::from_types([DamageType::Impact]);
+    r.forced_procs = crate::rules::damage::ForcedProcs::from_types([DamageType::Impact]);
     let forced = run_once(&radial_only(r), &mut Rng::new(11));
     assert_eq!(
         forced.procs, forced.shots,
@@ -461,8 +461,8 @@ fn a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target() {
         // FORCED ON BOTH HALVES, which is what makes the fourth stack the
         // fourth instance's and the ladder one step per row.
         forced_procs: vec![DamageType::Viral],
-        radial: Some(crate::loadout::ResolvedRadial {
-            forced_procs: crate::damage::ForcedProcs::from_types([DamageType::Viral]),
+        radial: Some(crate::build::loadout::ResolvedRadial {
+            forced_procs: crate::rules::damage::ForcedProcs::from_types([DamageType::Viral]),
             damage: blast,
             modified_base: 600.0,
             // AT THE EPICENTRE, so the explosion's number is its own and
@@ -534,7 +534,7 @@ fn a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target() {
 fn a_radials_forced_proc_does_not_reach_the_direct_hit() {
     let mut p = radial_only(radial_of(0.0, 0.0));
     p.radial.as_mut().unwrap().forced_procs =
-        crate::damage::ForcedProcs::from_types([DamageType::Impact]);
+        crate::rules::damage::ForcedProcs::from_types([DamageType::Impact]);
     // The direct part has 0% status and forces nothing, so a proc from IT
     // would show as more procs than there are explosions.
     let r = run_once(&p, &mut Rng::new(11));
@@ -581,12 +581,12 @@ fn the_explosion_rolls_its_own_crit_and_never_counts_as_a_pellet_crit() {
 /// with deliberately different bases can catch that half.
 #[test]
 fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
-    use crate::arcanes_data::{ArcBuffSpec, ArcTrigger};
+    use crate::data::arcanes::{ArcBuffSpec, ArcTrigger};
 use crate::model::ArcGrant;
     let radial = |crit_damage: f64| {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Heat, 300.0);
-        crate::loadout::ResolvedRadial {
+        crate::build::loadout::ResolvedRadial {
             blast_kind: crate::model::BlastKind::Contact,
             damage,
             modified_base: 300.0,
@@ -655,7 +655,7 @@ use crate::model::ArcGrant;
 #[test]
 fn the_explosion_arms_an_on_hit_buff_of_its_own() {
     let mk = |with_radial: bool| {
-        let radial = with_radial.then(|| crate::loadout::ResolvedRadial {
+        let radial = with_radial.then(|| crate::build::loadout::ResolvedRadial {
             blast_kind: crate::model::BlastKind::Contact,
             damage: DamageVector::default(), // 0 damage: a pure extra INSTANCE
             modified_base: 0.0,
@@ -766,7 +766,7 @@ fn every_buff_the_roster_offers_is_actually_read() {
 /// come back; anything else is a shape nobody remembered.
 #[test]
 fn every_buff_the_roster_offers_can_be_denied() {
-    use crate::buff_events::{arc_trigger_id, of_builtin, trigger_id, ALL};
+    use crate::data::buff_events::{arc_trigger_id, of_builtin, trigger_id, ALL};
     let params = every_buff_params();
     let before: Vec<String> = params.buff_roster().into_iter().map(|b| b.id).collect();
     assert!(before.len() > 10, "the fixture stopped covering the roster: {before:?}");
@@ -1057,7 +1057,7 @@ fn a_hit_that_breaks_overguard_carries_the_rest_into_health() {
     // 100 of Overguard in front of 50 of health, and no armour: a 1000
     // hit spends 100 and the other 900 has to land.
     let target = frail_target(TargetMode::InstantRespawn, 0.0, 100.0);
-    let mut st = TargetState::spawn(&target, crate::space::Vec2::ORIGIN);
+    let mut st = TargetState::spawn(&target, crate::rules::space::Vec2::ORIGIN);
     let og = st.overguard;
     let hp = st.health;
     let settled = st.apply(

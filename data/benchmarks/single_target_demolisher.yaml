@@ -79,7 +79,7 @@ scenario:
   # rung: four, because that is the squad Disruption is actually run in.
   #
   # IT ALSO SETS THE AMMO DROP RATE, which FALLS as a squad grows
-  # (`engine::ammo`). One number, both answers — so the fight cannot be
+  # (`engine::rules::ammo`). One number, both answers — so the fight cannot be
   # four-player in its target and solo in what the floor gives back.
   squad_size: 4
 

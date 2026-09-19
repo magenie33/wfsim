@@ -78,14 +78,14 @@ fn one_orb_strikes_six_times_a_second_apart_and_none_of_them_is_a_collision() {
 fn a_strike_with_nobody_in_reach_is_spent() {
     let strikes = |gap_m: f64| {
         let p = FightParams {
-            target_at: crate::space::Vec2::new(gap_m, 0.0),
+            target_at: crate::rules::space::Vec2::new(gap_m, 0.0),
             ..orb_thrower()
         };
         (monte_carlo(&p, 4, 3).mean_damage / 280.0).round() as u32
     };
     // AT CONTACT the target is inside the reach from the muzzle, so the
     // first strike lands at the throw and all six do.
-    assert_eq!(strikes(crate::space::CONTACT_RANGE_M), 6, "at contact");
+    assert_eq!(strikes(crate::rules::space::CONTACT_RANGE_M), 6, "at contact");
     // …and far enough out that the orb spends its whole fuse getting
     // there, none of them does. 6 m/s x 6 s is 36 m of travel, and the
     // reach adds 6 more.
@@ -111,7 +111,7 @@ fn an_unaimed_attack_decides_where_its_own_strikes_land() {
     let run = |chance: Option<f64>| {
         monte_carlo(
             &FightParams {
-                orb: Some(crate::loadout::ResolvedOrb {
+                orb: Some(crate::build::loadout::ResolvedOrb {
                     unaimed_headshot_chance: chance,
                     speed_after_contact_mps: 0.0,
                     ..orb_spec()
@@ -174,7 +174,7 @@ fn an_orb_strike_on_an_eligible_head_folds_the_crit_in() {
         part.crit_damage = 2.0;
         monte_carlo(
             &FightParams {
-                orb: Some(crate::loadout::ResolvedOrb {
+                orb: Some(crate::build::loadout::ResolvedOrb {
                     unaimed_headshot_chance: Some(1.0),
                     speed_after_contact_mps: 0.0,
                     ..orb_spec()
@@ -219,7 +219,7 @@ fn an_orb_strike_forces_its_own_procs_and_one_declaring_none_gets_none() {
     let forced = {
         let mut part = orb_part(280.0);
         part.forced_procs =
-            crate::damage::ForcedProcs::from_types([DamageType::Electricity]);
+            crate::rules::damage::ForcedProcs::from_types([DamageType::Electricity]);
         monte_carlo(&FightParams { orb_strike: Some(part), ..orb_thrower() }, 4, 3)
             .mean_damage
     };
@@ -288,9 +288,9 @@ fn the_detonation_goes_off_where_the_orb_got_to() {
 /// taken out, which is why the weapon's page calls this a floor.
 #[test]
 fn an_orb_that_drifts_leaves_a_lone_target_behind() {
-    let strikes = |gap_m: f64, orb: crate::loadout::ResolvedOrb| {
+    let strikes = |gap_m: f64, orb: crate::build::loadout::ResolvedOrb| {
         let p = FightParams {
-            target_at: crate::space::Vec2::new(gap_m, 0.0),
+            target_at: crate::rules::space::Vec2::new(gap_m, 0.0),
             orb: Some(orb),
             ..orb_thrower()
         };
@@ -298,13 +298,13 @@ fn an_orb_that_drifts_leaves_a_lone_target_behind() {
     };
     // AT CONTACT the departure window alone decides it: 6.25 / 2 = 3.13 s,
     // which holds four strike instants.
-    assert_eq!(strikes(crate::space::CONTACT_RANGE_M, orb_spec()), 4, "at contact");
+    assert_eq!(strikes(crate::rules::space::CONTACT_RANGE_M, orb_spec()), 4, "at contact");
     // …AND NO THROW DISTANCE BUYS SIX. The approach adds at most another
     // 1.04 s, so five is the ceiling — asserted across the whole range
     // rather than at a distance somebody picked, because "six somewhere"
     // is exactly the claim being tested.
     let ladder: Vec<u32> = (0..=30)
-        .map(|g| strikes(f64::from(g).max(crate::space::CONTACT_RANGE_M), orb_spec()))
+        .map(|g| strikes(f64::from(g).max(crate::rules::space::CONTACT_RANGE_M), orb_spec()))
         .collect();
     assert!(
         ladder.iter().all(|&n| n <= 5),
@@ -314,17 +314,17 @@ fn an_orb_that_drifts_leaves_a_lone_target_behind() {
     // WHAT WOULD BUY SIX, which is how the wall was found: neither of
     // these is the real answer, and the second one is what a room does to
     // an orb that bounces. A slower drift does…
-    let slower = crate::loadout::ResolvedOrb {
+    let slower = crate::build::loadout::ResolvedOrb {
         speed_after_contact_mps: 1.2,
         ..orb_spec()
     };
-    assert_eq!(strikes(crate::space::CONTACT_RANGE_M, slower), 6, "at 1.2 m/s");
+    assert_eq!(strikes(crate::rules::space::CONTACT_RANGE_M, slower), 6, "at 1.2 m/s");
     // …and so does an orb that stops where it touches.
-    let held = crate::loadout::ResolvedOrb {
+    let held = crate::build::loadout::ResolvedOrb {
         speed_after_contact_mps: 0.0,
         ..orb_spec()
     };
-    assert_eq!(strikes(crate::space::CONTACT_RANGE_M, held), 6, "held still");
+    assert_eq!(strikes(crate::rules::space::CONTACT_RANGE_M, held), 6, "held still");
 }
 
 /// JAHU CANTICLE: A KILL STRIPS EVERYONE INSIDE AFFINITY RANGE, and the
@@ -342,7 +342,7 @@ fn an_orb_that_drifts_leaves_a_lone_target_behind() {
 fn a_kill_strips_the_armour_of_everyone_inside_affinity_range() {
     let mut damage = DamageVector::default();
     damage.set(DamageType::Impact, 400.0);
-    let armoured = |at: crate::space::Vec2| {
+    let armoured = |at: crate::rules::space::Vec2| {
         let mut params = FightParams::default().target.clone();
         params.base_health = 400.0;
         params.base_armor = 600.0;
@@ -357,14 +357,14 @@ fn a_kill_strips_the_armour_of_everyone_inside_affinity_range() {
             at,
         }
     };
-    let fought = |strip: Option<(f64, f64)>, at: crate::space::Vec2| {
+    let fought = |strip: Option<(f64, f64)>, at: crate::rules::space::Vec2| {
         let mut p = FightParams {
             damage,
             // AN EXPLOSION, so the shot reaches the crowd body at all. A
             // plain single-target pellet lands on the aimed one and nothing
             // else, and a strip nobody is standing in the blast of is a
             // strip nothing can measure.
-            radial: Some(crate::loadout::ResolvedRadial {
+            radial: Some(crate::build::loadout::ResolvedRadial {
                 radius_m: 8.0,
                 falloff_reduction: 0.0,
                 ..radial_of(0.0, 0.0)
@@ -391,8 +391,8 @@ fn a_kill_strips_the_armour_of_everyone_inside_affinity_range() {
         let s = monte_carlo(&p, 8, 3);
         s.mean_damage_by_body.0[1]
     };
-    let near = crate::space::Vec2::new(3.0, 0.0);
-    let far = crate::space::Vec2::new(400.0, 0.0);
+    let near = crate::rules::space::Vec2::new(3.0, 0.0);
+    let far = crate::rules::space::Vec2::new(400.0, 0.0);
     let bare = fought(None, near);
     let stripped = fought(Some((0.05, 50.0)), near);
     assert!(bare > 0.0, "the fixture reaches the crowd body: {bare}");
@@ -536,7 +536,7 @@ fn a_meter_opens_full_and_throws_one_orb_every_time_it_refills() {
     // fires its base attack, so a zero-damage pellet is a landing pellet
     // and the first version of this test was measuring two terms at once.
     let mut p = metered();
-    p.meter = p.meter.map(|m| crate::loadout::ResolvedMeter { seconds_per_hit: 0.0, ..m });
+    p.meter = p.meter.map(|m| crate::build::loadout::ResolvedMeter { seconds_per_hit: 0.0, ..m });
     let s = monte_carlo(&p, 4, 3);
     // Four throws in 180 s: t=0 (it opens full), 45, 90, 135. The one at
     // 180 does not happen — the engagement ends as it fills.
@@ -635,7 +635,7 @@ fn a_landing_pellet_takes_a_second_off_the_meter() {
 fn a_kill_that_drops_secondary_ammo_fills_the_meter() {
     let worth = |seconds_per_ammo_pickup: f64| {
         let mut p = metered();
-        p.meter = p.meter.map(|m| crate::loadout::ResolvedMeter {
+        p.meter = p.meter.map(|m| crate::build::loadout::ResolvedMeter {
             seconds_per_hit: 0.0,
             seconds_per_ammo_pickup,
             ..m

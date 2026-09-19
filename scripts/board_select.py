@@ -42,7 +42,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-# THE SLOT'S NAME, and `builds::RIVEN_SLOT` is where it is decided. A row
+# THE SLOT'S NAME, and `board::builds::RIVEN_SLOT` is where it is decided. A row
 # carries it in `mods` like any other card, which is what makes "with a riven"
 # a membership test rather than a shape to parse.
 RIVEN_SLOT = "riven"

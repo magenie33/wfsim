@@ -17,7 +17,7 @@ effects:
   #
   # see notes: taken_at_cap_weapon
   #
-  # AND IT PAYS. `abilities_data::at_strength` is linear, so Ability Strength is
+  # AND IT PAYS. `data::abilities::at_strength` is linear, so Ability Strength is
   # a straight multiplier on what Roar, Eclipse or Nourish is worth — a mod on
   # the BUILD raising a knob on the FIGHT, which meet in
   # `FightParams::from_panel` and nowhere else. Worth nothing with no Warframe

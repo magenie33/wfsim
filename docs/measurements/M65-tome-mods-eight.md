@@ -19,7 +19,7 @@ The wiki settles nothing either way — it says "ally" and does not say whether
 the caster is one — so the measurement decides. Lohk is +7.5% to +30% fire rate
 for 15 s on kill, and it is worth **+11.7%** in a fight with kills in it.
 
-**"A drop is not a damage model."** It is now. `engine::ammo` (M64) turns a kill
+**"A drop is not a damage model."** It is now. `engine::rules::ammo` (M64) turns a kill
 into what it leaves on the floor, so Khra Canticle's Universal Orb is no longer
 refused for being a drop. What refuses it is what the orb CONTAINS: health and
 energy, and this arena gives the player neither.
@@ -67,7 +67,7 @@ PICKS and the strength they were resolved at, and `from_panel` resolves them
 again when a card asks.
 
 RE-RESOLVED RATHER THAN RESCALED, for a reason that is easy to miss:
-`abilities_data::resolve` settles the same-family contest BY the resolved value,
+`data::abilities::resolve` settles the same-family contest BY the resolved value,
 so a bonus big enough to make a Helminth Roar beat a Rhino's has to be in hand
 before the winner is picked. Nothing re-resolves without a card asking, so every
 other fight takes the arena's list byte for byte.

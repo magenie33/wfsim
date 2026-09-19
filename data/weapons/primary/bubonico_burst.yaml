@@ -11,7 +11,7 @@ transform_group: bubonico
 introduced: "29.5"
 
 # THE AMMO SYSTEM IS THE WEAPON'S, so this form carries it too — `battery:` is
-# not in `weapons_data::INHERITED` (it is not a scalar a form can partially
+# not in `data::weapons::INHERITED` (it is not a scalar a form can partially
 # take), so it is restated rather than inherited.
 battery:
   regen_per_second: 9.0

@@ -180,7 +180,7 @@ pub(super) fn add_by_type(
     dst: &mut [f64; DamageType::ALL.len()],
     v: &DamageVector,
     effective: f64,
-    col: &crate::factions_data::Column,
+    col: &crate::data::factions::Column,
 ) {
     let weighted: f64 = v.iter_nonzero().map(|(t, a)| a * col.get(t)).sum();
     if weighted <= 0.0 {
@@ -251,7 +251,7 @@ pub struct RunResult {
     /// `kills` while the reach is infinite, which is the default.
     pub kills_in_reach: u32,
     /// ROUNDS PICKED UP off the bodies — what the reserve was resupplied by,
-    /// after the waste (`ammo::credit` consumes a whole pack for whatever
+    /// after the waste (`rules::ammo::credit` consumes a whole pack for whatever
     /// headroom is left). 0 with an infinite reserve, which is what the rulers
     /// are scored under.
     pub picked_up_ammo: f64,

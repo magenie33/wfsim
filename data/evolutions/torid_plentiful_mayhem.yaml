@@ -24,7 +24,7 @@ selection: choose_one
 # reading from asserting the second. It is now belt AND braces — the class
 # answers before any declaration on a `Multiplying` entry — but the scope stays,
 # because it is the true statement about what was read where.
-# `evolutions_data::excludes_co_base`.
+# `data::evolutions::excludes_co_base`.
 co_base_excludes_this_evolution: true
 co_base_excludes_only_form: incarnon
 

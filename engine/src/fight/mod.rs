@@ -8,19 +8,19 @@
 //! of what a shot does once it leaves the barrel. docs/MECHANICS.md is the
 //! reference; body parts, crit tiers and the headcrit fold-in are its §5/§7.
 
-use crate::arcanes_data::{ArcBuffSpec, ArcTrigger, ArcaneFx};
+use crate::data::arcanes::{ArcBuffSpec, ArcTrigger, ArcaneFx};
 use crate::model::ArcGrant;
-use crate::buffs::BuffBar;
-use crate::damage::{DamageType, DamageVector};
-use crate::perks::frenzy::Frenzy;
-use crate::perks::secondary_enervate::SecondaryEnervate;
-use crate::perks::Perk;
-use crate::rng::Rng;
-use crate::scaling;
-use crate::sim::{Event, Hit};
-use crate::status;
+use crate::rules::buffs::BuffBar;
+use crate::rules::damage::{DamageType, DamageVector};
+use crate::rules::perks::frenzy::Frenzy;
+use crate::rules::perks::secondary_enervate::SecondaryEnervate;
+use crate::rules::perks::Perk;
+use crate::rules::rng::Rng;
+use crate::rules::scaling;
+use crate::rules::sim::{Event, Hit};
+use crate::rules::status;
 use crate::target::*;
-use crate::metrics::RunStat;
+use crate::rules::metrics::RunStat;
 use crate::record::PopKind;
 
 mod locks;

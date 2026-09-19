@@ -29,7 +29,7 @@ disposition: 0.6
 polarities: [madurai, naramon]
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
 # discount: 10 on a matching slot, 5 on a bare one, 4 on the wrong colour
-# (`mods::stance_capacity`). Madurai, so Gemini Cross grants 10 here and
+# (`rules::capacity::stance_capacity`). Madurai, so Gemini Cross grants 10 here and
 # Sovereign Outcast grants 4 until a Forma says otherwise.
 stance_polarity: madurai
 introduced: "Update 31.5"

@@ -19,8 +19,8 @@
 //! the number is an upper bound rather than a typical one.
 use std::time::Instant;
 use wfsim_engine::fight::{run_once, FightParams};
-use wfsim_engine::rng::Rng;
-use wfsim_engine::space::Vec2;
+use wfsim_engine::rules::rng::Rng;
+use wfsim_engine::rules::space::Vec2;
 
 fn main() {
     let a: Vec<String> = std::env::args().skip(1).collect();
@@ -56,7 +56,7 @@ fn main() {
     // A REAL UNIT at a level it can die at: a training dummy has infinite
     // health, and a crowd that cannot die never re-targets, never feeds an
     // on-kill buff and never shortens a run — which would flatter the cost.
-    let specs = wfsim_engine::enemy_data::all();
+    let specs = wfsim_engine::data::enemies::all();
     let unit = specs
         .iter()
         .find(|e| e.id == "corrupted_heavy_gunner")
@@ -67,7 +67,7 @@ fn main() {
 
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
     let base = wfsim_engine::model::WeaponBase::from_data(&weapon, false, &evo_refs);
-    let pool = wfsim_engine::mods_data::pool_for_weapon(&weapon);
+    let pool = wfsim_engine::data::mods::pool_for_weapon(&weapon);
     let refs: Vec<&wfsim_engine::model::ModDef> = mod_ids
         .iter()
         .map(|id| {
@@ -77,21 +77,21 @@ fn main() {
         })
         .collect();
     let panel =
-        wfsim_engine::loadout::resolve(&base, &refs, wfsim_engine::model::StackPolicy::Emergent);
+        wfsim_engine::build::loadout::resolve(&base, &refs, wfsim_engine::model::StackPolicy::Emergent);
     let fx = match &arcane {
         Some(id) => {
-            let def = wfsim_engine::arcanes_data::slots()
+            let def = wfsim_engine::data::arcanes::slots()
                 .iter()
-                .find_map(|s| wfsim_engine::arcanes_data::for_slot(s, id))
+                .find_map(|s| wfsim_engine::data::arcanes::for_slot(s, id))
                 .unwrap_or_else(|| panic!("no arcane {id}"));
             def.fx(
                 def.max_rank,
                 wfsim_engine::model::StackPolicy::Emergent,
                 base.traits,
-                wfsim_engine::tenno_data::default_tenno(),
+                wfsim_engine::data::tenno::default_tenno(),
             )
         }
-        None => wfsim_engine::arcanes_data::ArcaneFx::none(),
+        None => wfsim_engine::data::arcanes::ArcaneFx::none(),
     };
 
     println!(

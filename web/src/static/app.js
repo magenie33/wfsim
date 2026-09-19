@@ -362,7 +362,7 @@ const capOf = (id) => (weaponInfo(id) || {}).capacity || 60;
 // 5 when maxed, doubling it to 10 when placed on the matching polarity" (wiki,
 // Stance), and the Aura page's third case — a slot of a DIFFERENT polarity
 // grants "80% of listed drain, rounded down", which is 4. Mirrors
-// `engine::mods::stance_capacity`.
+// `engine::rules::capacity::stance_capacity`.
 const stancePolOf = (id) => (weaponInfo(id) || {}).stance_polarity || null;
 /// A STANCE THE WEAPON CANNOT TAKE OFF (Valkyr Talons' Hysteria, MEASUREMENTS
 /// M94): seated on every build, never removed, and its slot takes no Forma.
@@ -372,7 +372,7 @@ function stanceGrant() {
   const m = s && s.mod ? modById(s.mod) : null;
   if (!m) return 0;
   // NULL IS NO POLARITY, not "whatever the weapon was born with": the slot
-  // draws blank, and `engine::mods::stance_capacity` answers 5 for it. Reading
+  // draws blank, and `engine::rules::capacity::stance_capacity` answers 5 for it. Reading
   // the factory colour here made a blanked slot grant 4 while showing nothing.
   const pol = s.pol;
   if (!pol) return 5;
@@ -2276,7 +2276,7 @@ function renderHome() {
 let benchPick = null;
 
 const benchList = () => META.benchmarks || [];
-// THE LIST IS ALREADY IN THE RIGHT ORDER: `benchmarks_data::all()` puts the
+// THE LIST IS ALREADY IN THE RIGHT ORDER: `board::benchmarks::all()` puts the
 // PRIMARY ruler first, so `[0]` is the one a reader should meet. It was path
 // order until a second ruler arrived and put a brand-new empty board in front
 // of the populated one.
@@ -3259,7 +3259,7 @@ const squadOf = () => Number(sim.squad_size) || 1;
 /// WHAT THIS WEAPON SETTLES THIS FIELD TO, AND WHY — or null when the choice is
 /// the reader's.
 ///
-/// THE RULE IS THE ENGINE'S. `engine::scenario::forced_for`
+/// THE RULE IS THE ENGINE'S. `engine::build::scenario::forced_for`
 /// decides and `/api/meta` states the consequence per weapon; this reads it.
 /// Re-deriving the three rules here from weapon flags is two implementations
 /// of one rule, and a forced field looks identical whoever forced it, so they
@@ -4346,7 +4346,7 @@ const arenaSpan = (s) =>
 /// which is what point blank means to a player. The 0.4 m
 /// between the two centres is the model's business; nobody should subtract it
 /// to find out how far away they are standing. Everything the page displays,
-/// sets and marks is this number; `engine::space::gap` is the same one.
+/// sets and marks is this number; `engine::rules::space::gap` is the same one.
 const arenaDistance = (s) => Math.max(0, arenaSpan(s) - CONTACT_M);
 
 /// EVERY BODY ON THE FLOOR, aimed one first — the order the api and the engine
@@ -4397,7 +4397,7 @@ const arenaAim = (s) => s.aim_at || s.target_at;
 // meta that failed to load, where nothing else works either.
 const ARENA_MAX_BODIES = () => (META && META.max_bodies) || 50;
 
-/// WHICH BODY A SHOT CROSSES FIRST — `engine::space::first_hit`, drawn rather
+/// WHICH BODY A SHOT CROSSES FIRST — `engine::rules::space::first_hit`, drawn rather
 /// than computed for damage. The page needs it for ONE reason: to show which
 /// body the beam is on, because aiming is a direction and the answer is not
 /// always the nearest thing to the cursor.
@@ -4451,7 +4451,7 @@ function arenaSvg(s, en, heat, sel) {
   }
   const d = arenaDistance(s);
   // THE MUZZLE — where the shot actually leaves, a point on the player's own
-  // circumference facing the target (`engine::space::muzzle`). Drawn because
+  // circumference facing the target (`engine::rules::space::muzzle`). Drawn because
   // it is load-bearing rather than decorative: the cone widens over the flight
   // from HERE, which is one radius shorter than the line between the two
   // bodies, and at contact it puts the muzzle on the enemy's surface — which
@@ -4597,7 +4597,7 @@ function arenaAddFoe(s) {
 
 /// KEEP A DRAGGED BODY OUT OF EVERYONE ELSE, not just out of the player.
 /// Circles do not overlap, and that rule was written for two bodies
-/// (`engine::space::CONTACT_RANGE_M`); with fifty it has to hold pairwise.
+/// (`engine::rules::space::CONTACT_RANGE_M`); with fifty it has to hold pairwise.
 /// WHERE A DRAGGED BODY MAY ACTUALLY GO — or `null`, meaning it does not move.
 ///
 /// A body is pushed out of the ONE body it is entering, which is what makes two
@@ -5953,7 +5953,7 @@ function renderRivenTools() {
 //
 // Encoding: three forms measured against each other and the shortest sent,
 // behind a one-character version so the reader knows what it is holding —
-// `shareUrl` picks, and `engine::share_order` holds the price of v3.
+// `shareUrl` picks, and `engine::data::share_order` holds the price of v3.
 const SHARE_PARAM = "b";
 /// THE KILL SWITCH FOR SHARING, and it is worth keeping rather than deleting:
 /// with it false an incoming `?b=` is dropped, the query is stripped, and the
@@ -5999,7 +5999,7 @@ const SHARE_V_TEXT = "3";
 ///
 /// IT IS A RESPELLING, NEVER A RENUMBERING. `data/share_order.yaml` stays
 /// append-only and every v3 link still reads — the ratchet in
-/// `engine::share_order` guards the same thing it always did.
+/// `engine::data::share_order` guards the same thing it always did.
 ///
 /// Headroom is 3844, about double what is used. Crossing it is a THIRD width,
 /// which is another version character; that is what the version character is
@@ -6028,7 +6028,7 @@ const si62Back = (t) => {
   return n < 0 ? "" : (shareIndex().from.get(n) || "");
 };
 /// A RIVEN ROLL IS 200 STEPS, NOT FIVE CHARACTERS. Every stat rolls in
-/// 0.9–1.1 (`engine::rivens_data::{ROLL_MIN, ROLL_MAX}`) and the payload
+/// 0.9–1.1 (`engine::build::rivens::{ROLL_MIN, ROLL_MAX}`) and the payload
 /// already rounds to three decimals, so a roll is one of 201 values — two
 /// characters, losslessly, where `1.052` cost five.
 ///
@@ -6415,7 +6415,7 @@ const evoPrefix = () => {
 /// cannot iterate a served list the way the state table can — appending a field
 /// is a format decision, not a loop. What it can do is DECLARE, and
 /// `scripts/check_build_axes.mjs` holds this against
-/// `engine::builds::BUILD_AXES`: a new axis fails the check until somebody
+/// `engine::board::builds::BUILD_AXES`: a new axis fails the check until somebody
 /// writes its id here, and writing it means being in this function looking at
 /// the tuple. That is the whole mechanism — a forced touch point, rather than a
 /// hope that the next person remembers a file they have never opened.
@@ -8093,7 +8093,7 @@ const BUILDS = "builder-builds";
 /// the optimizer's "+ add", which a player measured at 22.34 KPM against 17.44.
 /// So every producer NAMES every axis, `undefined` stays a legal value meaning
 /// "the weapon's default", and adding a row here breaks all five at once.
-/// …and the LIST itself is not declared here. `engine::builds::BUILD_AXES` is
+/// …and the LIST itself is not declared here. `engine::board::builds::BUILD_AXES` is
 /// the one place a build's axes are named, and it arrives in `/api/meta`; this
 /// table only says which of THIS page's state keys carry each of them, because
 /// the spellings are the page's own and renaming them would migrate every
@@ -8295,7 +8295,7 @@ function restoreState(st, weapon) {
 const kpm = (score, duration) => (duration > 0 ? ((score || 0) * 60) / duration : 0);
 
 /// WHAT A SCENARIO IS JUDGED BY — resolved against the table `/api/meta`
-/// publishes (`engine::metrics`), never asked as "is it dps".
+/// publishes (`engine::rules::metrics`), never asked as "is it dps".
 ///
 /// THAT QUESTION IS THE FAILURE MODE. `metric === "dps" ? … : KPM` reads a
 /// third metric as kills per minute — silently, in the units of a different
@@ -8339,7 +8339,7 @@ const sig2 = (x, min = 2) => {
 };
 const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
 
-/// A SCORE, SPELLED THE WAY THE BOARD SPELLS IT — `boards_data::format_score`,
+/// A SCORE, SPELLED THE WAY THE BOARD SPELLS IT — `data::boards::format_score`,
 /// transcribed. Four significant figures with four decimals as the floor, which
 /// on anything above 1 is simply four decimals.
 ///
@@ -9647,7 +9647,7 @@ function buildBarCfg() {
 
 /// A BUILD'S CONTENTS, IN ONE LINE — every axis it varies on and no other.
 ///
-/// `engine::builds::BUILD_AXES` declares what a build consists of, so a
+/// `engine::board::builds::BUILD_AXES` declares what a build consists of, so a
 /// describer that omits one is a ranking that cannot say what it scored — on an
 /// adversary weapon, which ELEMENT. docs/CHECKS.md `check_opt_row_axes`.
 ///
@@ -10403,7 +10403,7 @@ const show = (id, on) => {
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
 const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx && s.mod === id);
 // A CARD BELOW ITS MAX RANK IS AN ID OF ITS OWN on the wire, `<card>@<rank>`
-// (`engine::mods_data::RANK_MARK`), so every list of mod ids carries its ranks.
+// (`engine::data::mods::RANK_MARK`), so every list of mod ids carries its ranks.
 // A slot keeps the card and the rank apart, and these are the crossings.
 const splitRank = (id) => {
   const m = typeof id === "string" && !isRivenId(id) ? /^(.+)@(\d+)$/.exec(id) : null;
@@ -10783,7 +10783,7 @@ function placeFormaPlan(ss, plan, k) {
 }
 
 /// A weapon build as the planner reads it. A stance hands back five on a bare
-/// slot (`mods::STANCE_CAPACITY_GRANT`).
+/// slot (`rules::capacity::STANCE_CAPACITY_GRANT`).
 /// An ELEMENT-BEARING card is `ordered`: its place among the others is part of
 /// the build, so the plan moves it only in order.
 function weaponLoadout(ss, strict = false) {
@@ -11706,7 +11706,7 @@ const modWikiUrl = (m) => (m.riven ? wikiUrl("Riven Mods") : wikiUrl(m.name_en |
 ///
 /// warframe.market is the authority there and we are not competing with it, so
 /// a tradeable card carries a mark that opens its page. The slug comes from
-/// `/api/meta` (`engine::market_data`), never from the display name: a name
+/// `/api/meta` (`engine::data::market`), never from the display name: a name
 /// join pairs "Blaze" the mod with "Blaze" the arcane, and a localized page
 /// has no English name to join on at all.
 ///
@@ -13213,7 +13213,7 @@ const gainChipFor = (id, where) => {
 // elements a mod set is three builds, and on the Burston Prime the best is
 // 3.3x the worst (2.074 against 0.627 kills/min, measured). Canonicalising
 // instead would have frozen whichever pairing the insertion order produced:
-// `builds::canonical_mods` normalises only the freedoms that are provably free
+// `board::builds::canonical_mods` normalises only the freedoms that are provably free
 // and never moves the PARTITION. Taking the max is also the optimizer's own
 // rule — it searches this dimension — so a chip cannot rank a mod under a
 // build the search would never return.
@@ -13339,7 +13339,7 @@ async function scanOptGains(onTick) {
 
   // ONE call for every set the scan will measure, the reference first. The
   // browser is never taught to pair elements: that would be a second copy of
-  // `elements::combine`'s innate rules, and it would be wrong the first time a
+  // `rules::elements::combine`'s innate rules, and it would be wrong the first time a
   // weapon carried an innate element — the Burston's Incarnon form carries
   // Heat, so Cold + Toxin is already Viral + Heat with no Heat mod equipped.
   const base = { ...tennoPayload(), weapon: $("weapon").value, evolutions,
@@ -14344,7 +14344,7 @@ const arcanePool = (i = 0) => {
 // every one of them goes through here instead of being trusted (a SECONDARY
 // arcane rode a saved state onto the first primary weapon).
 // The engine refuses the same thing independently
-// (`arcanes_data::for_slot`); this keeps the UI from ever showing a build the
+// (`data::arcanes::for_slot`); this keeps the UI from ever showing a build the
 // sim would not run.
 // Pre-data short names, from builds saved before arcane ids were data. They
 // are rewritten HERE, at the one point an id enters state, so the wire format
@@ -14627,7 +14627,7 @@ const TRIGGER_WORD = {
   auto: "fully automatic", semi_auto: "semi-auto", burst: "burst",
   charge: "charged", held: "held", projectile: "projectile",
 };
-/// WHAT FILLS A GAUGE, in words. Mirrors `loadout::ChargeOn` — a member the
+/// WHAT FILLS A GAUGE, in words. Mirrors `build::loadout::ChargeOn` — a member the
 /// page has no word for falls back to the id, which reads as obviously missing
 /// rather than as a silently empty sentence.
 const CHARGE_WORD = {
@@ -15169,7 +15169,7 @@ function renderMode() {
   const why = (opts.find(([id]) => id === mode) || [])[2];
   if (sub) sub.textContent = tr("how this build is played");
   // RANKED, because a mode is a build axis like every other
-  // (`engine::builds::BUILD_AXES`) and the cheapest of them to try: it moves
+  // (`engine::board::builds::BUILD_AXES`) and the cheapest of them to try: it moves
   // no other part of the build, so each one is a single simulation against the
   // same baseline. STILL A DROPDOWN — the axis is what measures a list, not
   // the shape of the control that opens it, so how a weapon is played stays
@@ -16284,7 +16284,7 @@ const wfAbilities = () => (META && META.abilities) || [];
 const wfName = (a) => ((I18N && I18N.abilities) || {})[a.id] || a.name;
 const wfPick = (id) => (sim.abilities || []).find((a) => a.id === id);
 // The strength-scaled value, which is the number the card shows. Linear, and
-// the engine agrees by construction: `abilities_data::at_strength` is the same
+// the engine agrees by construction: `data::abilities::at_strength` is the same
 // multiply, and `check_wf_buffs.mjs` asserts the screen and the sim match.
 // …AND THE ONES THE KNOB DOES NOT MOVE. Energized Munitions' ammo efficiency is
 // a flat 75% — its wiki row carries no Ability Strength icon — so multiplying it
@@ -16837,7 +16837,7 @@ let boardState = "";   // "" | "sent" | "failed" | "onboard"
 let boardOnBoard = null;
 
 /// How many mods a board build is, from the ENGINE via META — never a literal
-/// here. The rule is `builds::validate_for_board`; this is the page repeating
+/// here. The rule is `board::builds::validate_for_board`; this is the page repeating
 /// what it was told so it can explain itself before sending nothing.
 const boardBuildMods = () => (META || {}).board_build_mods || 8;
 /// The slots a benchmark build is made of: the main ones. `slots` holds nine —
@@ -16931,10 +16931,10 @@ async function boardVerdict(body) {
 /// that already holds it.
 ///
 /// A BUILD IS NOT ITS SPELLING, which is why this cannot be a comparison here:
-/// `builds::canonical_mods` sorts the non-elementals by drain and leaves the
+/// `board::builds::canonical_mods` sorts the non-elementals by drain and leaves the
 /// elementals in the order that PAIRS them, evolutions are a set, a riven is a
 /// shape rather than its rolls, and only the engine has the mod POOL that tells
-/// an elemental mod from any other. `/api/build/keys` IS `builds::board_key`,
+/// an elemental mod from any other. `/api/build/keys` IS `board::builds::board_key`,
 /// the key the scorer files rows under, asked of the build on screen and every
 /// row this weapon holds in one pass.
 ///
@@ -17855,7 +17855,7 @@ const rpUncapped = (b) => !!b.uncapped || Number(b.max) === 0;
 // the average, the live readout and the ramp.
 //
 // `unit: "%"` means the engine's numbers are fractions and the reader
-// multiplies by 100 — the same convention `loadout::pct` uses on the Rust side.
+// multiplies by 100 — the same convention `build::loadout::pct` uses on the Rust side.
 // The engine states the quantity; this states the presentation.
 const rpValueOf = (b, stacks) => {
   const v = b && b.value;
@@ -22393,7 +22393,7 @@ const wfDrainAt = (m, rank) =>
   m.drain - m.max_rank + (rank == null ? m.max_rank : Math.max(0, Math.min(m.max_rank, rank)));
 
 /// What the aura hands back: twice its drain on its own polarity, 80% rounded
-/// down on another (W`Aura`). Mirrors `warframes_data::aura_capacity`.
+/// down on another (W`Aura`). Mirrors `data::warframes::aura_capacity`.
 function wfAuraGrant() {
   const s = wf.slots[WF_AURA];
   const m = wfMod(s.mod);

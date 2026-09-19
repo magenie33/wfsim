@@ -402,7 +402,7 @@ implemented.
 The three radial rows print a "relative" figure that is not a discount at all:
 it is an evolution raising the explosion's DAMAGE without raising the base its
 CO term multiplies, which the engine already does (`RadialBase::co_base_fraction`,
-set in `evolutions_data::apply`). Nothing is transcribed for these, and the
+set in `data::evolutions::apply`). Nothing is transcribed for these, and the
 numbers come out:
 
 | row | prints | engine |
@@ -927,7 +927,7 @@ between "checked" and "nobody looked".
 The arcane brings two ramps PER METRE; the weapon brings the metres and the
 bracket. They meet in one place and it is not the one you would guess:
 
-- `loadout::resolve_for` computes `panel.compression` — how many metres THIS
+- `build::loadout::resolve_for` computes `panel.compression` — how many metres THIS
   build gives up (modded radius × the row × 0.8), and whether the row `adds`.
   Aim-gated: the card says "on aim", so a Tenno who is not aiming gets `None`.
 - `FightParams::from_panel(panel, arena, arcane)` spends the arcane against

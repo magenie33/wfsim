@@ -73,7 +73,7 @@ pub(super) struct ArcRuntime {
     pub(super) blast_pops: Vec<f64>,
     /// THE WIELDER'S RAGE, when the wielder has one. Here because every path
     /// that reads the live base-damage bucket already carries this runtime.
-    pub(super) rage: Option<crate::rage::Rage>,
+    pub(super) rage: Option<crate::data::rage::Rage>,
 }
 
 impl ArcRuntime {
@@ -99,9 +99,9 @@ impl ArcRuntime {
                 .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
             instance: 0,
             blast_pops: Vec::new(),
-            rage: crate::warframes_data::warframe(&params.tenno.id).and_then(|f| f.rage).map(|s| {
+            rage: crate::data::warframes::warframe(&params.tenno.id).and_then(|f| f.rage).map(|s| {
                 let (start, held) = params.rage_open.unwrap_or((0.0, false));
-                crate::rage::Rage::new(s, start, held)
+                crate::data::rage::Rage::new(s, start, held)
             }),
         }
     }

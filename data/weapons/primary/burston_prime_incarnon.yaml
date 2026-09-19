@@ -78,7 +78,7 @@ pseudo_reload:
 # evolution's flat base damage. The "13" is what CO still multiplies, so the
 # explosion does NOT take it into its CO base, and 13/55 is the 24% the third
 # column prints. One row settles both halves of a question the engine had
-# marked "INFERENCE, not a citation" (evolutions_data::apply).
+# marked "INFERENCE, not a citation" (data::evolutions::apply).
 co_behavior: additive_with_base_damage
 
 attack:

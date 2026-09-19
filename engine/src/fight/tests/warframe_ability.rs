@@ -1,6 +1,6 @@
 use super::*;
-use crate::abilities_data::{resolve, AbilityPick};
-use crate::damage::DamageVector;
+use crate::data::abilities::{resolve, AbilityPick};
+use crate::rules::damage::DamageVector;
 
 /// THE FOUR READINGS OF M79, and the arithmetic that lands on all of them.
 ///
@@ -93,7 +93,7 @@ fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> FightPara
 }
 
 fn direct(p: &FightParams) -> f64 {
-    run_once(p, &mut crate::rng::Rng::new(3)).sources.direct
+    run_once(p, &mut crate::rules::rng::Rng::new(3)).sources.direct
 }
 
 /// MICROWAVE IS A STATUS TYPE AND NOTHING ELSE, which is exactly what makes
@@ -123,7 +123,7 @@ fn microwave_is_one_more_status_type_and_nothing_else() {
         p.co_base = crate::model::CoBase::whole();
         p.magazine_size = 1e9;
         p.duration_seconds = 20.0;
-        run_once(&p, &mut crate::rng::Rng::new(17))
+        run_once(&p, &mut crate::rules::rng::Rng::new(17))
     };
     let off = fixture(false).sources.direct;
     let on = fixture(true).sources.direct;
@@ -136,8 +136,8 @@ fn microwave_is_one_more_status_type_and_nothing_else() {
 
     // …AND A WEAPON THAT DOES NOT APPLY IT CANNOT BE HANDED ONE. Two
     // weapons in the game have it and the data says which.
-    assert!(crate::weapons_data::spec("kuva_nukor").is_some_and(|s| s.applies_microwave));
-    assert!(crate::weapons_data::spec("torid").is_some_and(|s| !s.applies_microwave));
+    assert!(crate::data::weapons::spec("kuva_nukor").is_some_and(|s| s.applies_microwave));
+    assert!(crate::data::weapons::spec("torid").is_some_and(|s| !s.applies_microwave));
 }
 
 /// ENERGIZED MUNITIONS BUYS RELOADS, not damage — the first ability buff in
@@ -164,7 +164,7 @@ fn energized_munitions_quarters_what_a_shot_costs_the_magazine() {
         p.reload_seconds = 1.0;
         p.duration_seconds = 120.0;
         p.infinite_reserve = true;
-        run_once(&p, &mut crate::rng::Rng::new(5))
+        run_once(&p, &mut crate::rules::rng::Rng::new(5))
     };
     let plain = fixture(&[]);
     let buffed = fixture(&[("energized_munitions", None)]);
@@ -193,7 +193,7 @@ fn energized_munitions_quarters_what_a_shot_costs_the_magazine() {
         p.reload_seconds = 1.0;
         p.duration_seconds = 120.0;
         p.infinite_reserve = true;
-        run_once(&p, &mut crate::rng::Rng::new(5))
+        run_once(&p, &mut crate::rules::rng::Rng::new(5))
     };
     assert_eq!(strong.reloads, buffed.reloads,
         "ammo efficiency is not affected by ability strength");
@@ -293,7 +293,7 @@ fn a_dot_follows_its_source_and_a_buff_that_ends_stops_paying() {
         // the reading.
         p.fire_rate = 0.02;
         p.duration_seconds = 30.0;
-        run_once(&p, &mut crate::rng::Rng::new(3)).meter.dot()
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).meter.dot()
     };
     let none = bleed(Some(0.0));
     let whole = bleed(None);
@@ -328,7 +328,7 @@ fn a_dot_follows_its_source_and_a_buff_that_ends_stops_paying() {
         p.target.base_health = 1e15;
         p.fire_rate = 0.02;
         p.duration_seconds = 30.0;
-        run_once(&p, &mut crate::rng::Rng::new(3)).meter.dot()
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).meter.dot()
     };
     let e_whole = ebleed(None);
     let e_brief = ebleed(Some(2.0));
@@ -364,7 +364,7 @@ fn roar_is_used_twice_on_a_status_tick_and_eclipse_once() {
         p.status_chance = 1.0;
         p.base_status_chance = 1.0;
         p.target.base_health = 1e15;
-        run_once(&p, &mut crate::rng::Rng::new(3)).meter.dot()
+        run_once(&p, &mut crate::rules::rng::Rng::new(3)).meter.dot()
     };
     // A base large enough that the accumulator is below the tolerance.
     let big = 1e9;
@@ -399,7 +399,7 @@ fn an_ability_element_lands_beside_the_weapons_own_instead_of_combining() {
     let mut p = params(&[("shock_trooper", None)], 1.0);
     p.damage = DamageVector::new().with(DamageType::Heat, 100.0);
     p.dot_modified_base = Some(100.0);
-    let r = run_once(&p, &mut crate::rng::Rng::new(3));
+    let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
     let by = &r.sources.direct_by_type;
     let at = |t: DamageType| by[t as usize];
     assert!(at(DamageType::Heat) > 0.0, "the weapon keeps its own element");
@@ -494,7 +494,7 @@ fn the_wiki_worked_example_reproduces_to_the_digit() {
     let one = |p: &FightParams| {
         let mut q = p.clone();
         q.duration_seconds = 0.001;
-        run_once(&q, &mut crate::rng::Rng::new(3))
+        run_once(&q, &mut crate::rules::rng::Rng::new(3))
     };
 
     // QUANTISATION IS THE ONE DIFFERENCE, and it is ours being right rather
@@ -568,7 +568,7 @@ fn one_shot_with_fuse(p: &FightParams) -> FusedRun {
     // longer than the run leaves the fuse alone to expire.
     q.magazine_size = 1.0;
     q.reload_seconds = 1e6;
-    let r = run_once(&q, &mut crate::rng::Rng::new(3));
+    let r = run_once(&q, &mut crate::rules::rng::Rng::new(3));
     FusedRun {
         blast: r.sources.status[DamageType::Blast as usize],
         extra_hit: r.sources.extra_hit,
@@ -581,7 +581,7 @@ fn one_shot_with_fuse(p: &FightParams) -> FusedRun {
 /// would predict.
 #[test]
 fn the_extra_hit_takes_the_faction_bonus_a_second_time() {
-    let r = run_once(&measured(), &mut crate::rng::Rng::new(3));
+    let r = run_once(&measured(), &mut crate::rules::rng::Rng::new(3));
     let ratio = r.sources.extra_hit / r.sources.direct;
     assert!(
         (ratio - 0.26 * 1.55).abs() < 1e-9,
@@ -612,7 +612,7 @@ fn the_extra_hit_takes_the_body_part_multiplier_a_second_time() {
             is_head: true,
             crit_bonus: false,
         }];
-        let r = run_once(&p, &mut crate::rng::Rng::new(3));
+        let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
         r.sources.extra_hit / r.sources.direct
     };
     let body = head(1.0);
@@ -647,10 +647,10 @@ fn an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer() {
     p.duration_seconds = 1.9;
     p.status_chance = 0.0;
     p.forced_procs = vec![DamageType::Blast];
-    let r = run_once(&p, &mut crate::rng::Rng::new(3));
+    let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
 
     // 117.6 Blast is 38.4 steps of 98/32 and snaps to 38.
-    let qtotal = 98.0 + 38.0 * (98.0 / crate::damage::QUANTIZATION_DENOMINATOR);
+    let qtotal = 98.0 + 38.0 * (98.0 / crate::rules::damage::QUANTIZATION_DENOMINATOR);
     let bracket = qtotal / 98.0;
     let hit = qtotal * 1.55;
     // The detonation reads ModifiedBase — 98 — which quantization never
@@ -693,7 +693,7 @@ fn a_dot_tick_triggers_no_extra_hit() {
     p.damage = DamageVector::new().with(DamageType::Slash, 98.0);
     p.status_chance = 0.0;
     p.forced_procs = vec![DamageType::Slash];
-    let r = run_once(&p, &mut crate::rng::Rng::new(3));
+    let r = run_once(&p, &mut crate::rules::rng::Rng::new(3));
     assert!(r.meter.dot() > 0.0, "the bleed has to be ticking for this to mean anything");
     // Only the hits paid one, so the ratio is the plain 0.26 x faction —
     // exactly as if the DoT were not there.
@@ -717,7 +717,7 @@ fn the_void_proc_pays_condition_overload_and_no_damage() {
         // either, so any movement in the hit is the CO counter and not a
         // second damage source.
         p.damage = DamageVector::new().with(DamageType::Impact, 98.0);
-        let r = run_once(&p, &mut crate::rng::Rng::new(7));
+        let r = run_once(&p, &mut crate::rules::rng::Rng::new(7));
         (r.sources.direct, r.sources.status[DamageType::Void as usize])
     };
     let (quiet, _) = co(false);

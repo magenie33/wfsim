@@ -18,17 +18,17 @@ fn main() {
     let k = 0.4 * 3.0 * 2.0;
 
     let mut rows: Vec<(f64, String)> = Vec::new();
-    for w in wfsim_engine::weapons_data::all() {
+    for w in wfsim_engine::data::weapons::all() {
         // EVOLUTIONS ARE KEYED ON THE GROUP'S DEFAULT FORM, and the catalog's
         // rows are usually written against the INCARNON one ("Dual Toxocyst |
         // Incarnon Mode"), which is a separate weapon entry. So each entry asks
         // its group's default for the perk list and then resolves it against
         // ITSELF — otherwise every Incarnon form is silently skipped, which is
         // exactly the half the question is about.
-        let forms = wfsim_engine::weapons_data::forms_of(&w.id);
+        let forms = wfsim_engine::data::weapons::forms_of(&w.id);
         let Some(key) = forms.iter().find(|f| f.is_default).map(|f| f.weapon_id) else { continue };
         for tier in 1..=5u32 {
-            for e in wfsim_engine::evolutions_data::options(key, tier) {
+            for e in wfsim_engine::data::evolutions::options(key, tier) {
                 let with = WeaponBase::from_data(&w.id, false, &[&e.id]);
                 let bare = WeaponBase::from_data(&w.id, false, &[]);
                 let (evolved, orig) = (with.base_vector.total(), bare.base_vector.total());

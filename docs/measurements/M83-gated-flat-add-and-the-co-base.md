@@ -43,12 +43,12 @@ catalog's figure for this row at the same time.
 
 `resolve_for` folded a gated flat add with `add_flat_base_damage(flat, flat)` —
 the CO base grew with the panel. The unconditional half of the *same card* went
-through `evolutions_data::apply`, which asks `EvolutionDef::excludes_co_base`
+through `data::evolutions::apply`, which asks `EvolutionDef::excludes_co_base`
 and, on this `Adding` weapon, feeds nothing. So Guardian's Might's +20 and its
 +74 answered the question differently, and picking up an overshield moved a
 number that no card says it moves.
 
-The answer now rides on `loadout::GatedTerm::into_co`, recorded where the perk
+The answer now rides on `build::loadout::GatedTerm::into_co`, recorded where the perk
 still exists. `resolve_for` opens the gate long after the evolution is gone, so
 that is the only place the two halves can be made to agree.
 

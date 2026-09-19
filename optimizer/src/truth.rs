@@ -60,7 +60,7 @@ impl Truth {
     pub fn measure(
         cands: &[Candidate],
         jobs: &[Job],
-        arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+        arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
         scenario: &Scenario,
         runs: u32,
         seed: u64,

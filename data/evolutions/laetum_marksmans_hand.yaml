@@ -6,7 +6,7 @@ description: "-40% Recoil."
 selection: choose_one
 
 effects:
-  # NOT LOADED: `indirect` has no arm in `evolutions_data::effect()`, so it
+  # NOT LOADED: `indirect` has no arm in `data::evolutions::effect()`, so it
   # resolves to `EvoEffect::Inert` — the UI renders "indirect (no single-target
   # DPS effect)" and the engine takes nothing (data/README.md). `stat` is unread
   # too; it is the column a handling model would consume.

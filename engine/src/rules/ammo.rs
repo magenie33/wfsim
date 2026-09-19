@@ -1,0 +1,205 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! WHAT FALLS OFF A BODY, and what a weapon can do with it.
+//!
+//! The first mechanic in this engine that reads a KILL as a resource rather
+//! than as an end: the Grimoire's meter is refilled by picking ammo up, so
+//! whether the last enemy dropped any is a term in that weapon's fire rate.
+//!
+//! IT NEEDS NO PER-ENEMY DROP TABLE, which is what made it tractable — the
+//! chance is a property of the SQUAD and the place:
+//!
+//! > *"Chance to drop Primary or Secondary Ammo scales with squad size"* —
+//! > solo 45% (60% in Landscapes), 2 players 37.5% (52.5%), 3 players 30%
+//! > (45%), 4 players 22.5% (37.5%). *"For most enemies, each roll of their
+//! > drop table will only result in a maximum of one Ammo Pickup."*
+//! > (wiki `Pickups`)
+//!
+//! The one thing the page makes an enemy's own is the EXIMUS guarantee, which
+//! is ADDITIONAL rather than instead: *"Eximus are guaranteed to drop either a
+//! Primary or Secondary Ammo … This does not overwrite the enemies normal
+//! chance of dropping an Ammo pickup."*
+//!
+//! WHAT IS NOT HERE until it is measured: health and energy ORBS (listed with
+//! no drop chance, and paying nothing in an arena with no ability economy),
+//! RESOURCES (a per-enemy table feeding none of BUILD, SIMULATE or SOLVE), and
+//! HEAVY ammo, the one kind that IS per enemy.
+
+/// Which ammo a pickup turned out to be.
+///
+/// The split matters because a weapon may care about one kind and not the
+/// other: the Grimoire's meter reads *"secondary or universal ammo"* and a
+/// primary pickup does nothing for it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Pickup {
+    Primary,
+    Secondary,
+}
+
+/// Chance one ordinary body drops an ammo pickup of EITHER kind, by squad size.
+///
+/// Indexed by `squad_size - 1`, so `[0]` is solo. Verbatim from the table
+/// quoted above; the landscape column is [`DROP_CHANCE_LANDSCAPE`].
+pub const DROP_CHANCE: [f64; 4] = [0.45, 0.375, 0.30, 0.225];
+
+/// …and the same table in a LANDSCAPE, where every rate is higher.
+pub const DROP_CHANCE_LANDSCAPE: [f64; 4] = [0.60, 0.525, 0.45, 0.375];
+
+/// The share of ammo pickups that are SECONDARY rather than primary.
+///
+/// STATED for the Eximus guarantee — *"each having the same chance of
+/// dropping"* — and ASSUMED for the ordinary roll, which the page gives as one
+/// number for "Primary or Secondary" without splitting it. Half is the reading
+/// the Eximus sentence supports and the only one that invents no preference;
+/// it is a constant with a name rather than a bare `0.5` so that when somebody
+/// measures the real split there is one place to put it.
+pub const SECONDARY_SHARE: f64 = 0.5;
+
+/// WHAT ONE BODY DROPS, rolled.
+///
+/// `rng` is one uniform draw for the ordinary chance and a second for the
+/// kind, plus the same pair again for an Eximus's guaranteed drop — which is
+/// ADDITIONAL to the ordinary roll rather than instead of it, so an Eximus can
+/// leave two pickups.
+///
+/// Returns how many of them are of each kind, because a caller reading only
+/// one kind still has to know the other fell (a future weapon may read both).
+pub fn on_kill(
+    squad_size: u32,
+    landscape: bool,
+    eximus: bool,
+    rng: &mut crate::rules::rng::Rng,
+) -> (u32, u32) {
+    let table = if landscape { &DROP_CHANCE_LANDSCAPE } else { &DROP_CHANCE };
+    let chance = table[(squad_size.clamp(1, 4) - 1) as usize];
+    let (mut primary, mut secondary) = (0, 0);
+    let drop = |rng: &mut crate::rules::rng::Rng, primary: &mut u32, secondary: &mut u32| {
+        if rng.next_f64() < SECONDARY_SHARE {
+            *secondary += 1;
+        } else {
+            *primary += 1;
+        }
+    };
+    if rng.next_f64() < chance {
+        drop(rng, &mut primary, &mut secondary);
+    }
+    if eximus {
+        drop(rng, &mut primary, &mut secondary);
+    }
+    (primary, secondary)
+}
+
+/// WHAT ONE PICKUP IS WORTH TO THIS WEAPON, in rounds — the four rules in
+/// docs/MECHANICS.md §"THE AMMO ECONOMY", of which the wiki states only the
+/// first as prose:
+///
+/// 1. the amount is the WEAPON's own *"Ammo Pickup"*;
+/// 2. a FULL reserve refuses the pack and it stays on the floor;
+/// 3. the WHOLE pack is consumed for whatever headroom is left — UNMEASURED,
+///    and the pessimistic of the two readings (docs/UNMODELLED.md);
+/// 4. the other class pays only through a mutation mod, at `conversion` of the
+///    same amount.
+///
+/// Returns 0 for a pack that is refused, unmatched and unconverted.
+pub fn credit(
+    kind: Pickup,
+    weapon_takes: Pickup,
+    reserve: f64,
+    reserve_max: f64,
+    pickup: f64,
+    conversion: f64,
+) -> f64 {
+    let headroom = reserve_max - reserve;
+    if headroom <= 1e-9 {
+        return 0.0;
+    }
+    let offered = if kind == weapon_takes { pickup } else { pickup * conversion };
+    offered.min(headroom).max(0.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// THE PUBLISHED TABLE, transcribed — and the direction that makes it
+    /// checkable: every landscape rate is higher than its own squad's, and
+    /// every rate falls as the squad grows. A transposed column would pass a
+    /// spot check on one cell and fail both of these.
+    #[test]
+    fn the_drop_table_is_the_published_one() {
+        assert!((DROP_CHANCE[0] - 0.45).abs() < 1e-12, "solo is 45%");
+        assert!((DROP_CHANCE_LANDSCAPE[0] - 0.60).abs() < 1e-12, "…and 60% outdoors");
+        for i in 0..4 {
+            assert!(
+                DROP_CHANCE_LANDSCAPE[i] > DROP_CHANCE[i],
+                "a landscape drops more at squad {}", i + 1
+            );
+        }
+        assert!(DROP_CHANCE.windows(2).all(|w| w[0] > w[1]), "a bigger squad drops less");
+        assert!(DROP_CHANCE_LANDSCAPE.windows(2).all(|w| w[0] > w[1]));
+        // …and the four-player rate indoors is the solo rate outdoors' opposite
+        // number, which is the one coincidence in the table and is worth
+        // pinning so a paste of the wrong column is visible.
+        assert!((DROP_CHANCE[3] - 0.225).abs() < 1e-12);
+    }
+
+    /// AN EXIMUS DROPS MORE, AND IT IS ADDITIONAL. *"This does not overwrite
+    /// the enemies normal chance"*, so its expected pickups are the ordinary
+    /// chance PLUS one rather than one flat — 1.45 solo against 0.45.
+    ///
+    /// Asserted as a mean over many rolls rather than on a single kill, because
+    /// the ordinary half is a coin and a single roll says nothing.
+    #[test]
+    fn an_eximus_drop_is_additional_to_the_ordinary_roll() {
+        let mean = |eximus: bool| {
+            let mut rng = crate::rules::rng::Rng::new(0x5EED);
+            let n = 200_000;
+            let total: u32 = (0..n)
+                .map(|_| {
+                    let (p, s) = on_kill(1, false, eximus, &mut rng);
+                    p + s
+                })
+                .sum();
+            f64::from(total) / f64::from(n)
+        };
+        let ordinary = mean(false);
+        let eximus = mean(true);
+        assert!((ordinary - 0.45).abs() < 0.01, "solo drops 0.45 an ordinary kill: {ordinary}");
+        assert!((eximus - 1.45).abs() < 0.01, "and an Eximus 1.45: {eximus}");
+    }
+
+    /// THE FOUR RULES OF A PICKUP, each on the case that tells it apart.
+    #[test]
+    fn a_pickup_is_worth_the_weapons_own_amount_and_no_more() {
+        let p = |r: f64, conv: f64, kind| credit(kind, Pickup::Primary, r, 330.0, 15.0, conv);
+        // The weapon's own 15, not a class constant.
+        assert!((p(0.0, 0.0, Pickup::Primary) - 15.0).abs() < 1e-9);
+        // A FULL RESERVE REFUSES IT — the pack stays on the floor.
+        assert_eq!(p(330.0, 0.0, Pickup::Primary), 0.0);
+        // THE WHOLE PACK IS CONSUMED: one round of headroom takes one round,
+        // and the other fourteen are gone rather than left for later.
+        assert!((p(329.0, 0.0, Pickup::Primary) - 1.0).abs() < 1e-9);
+        // THE OTHER CLASS IS WORTH NOTHING without a mutation mod…
+        assert_eq!(p(0.0, 0.0, Pickup::Secondary), 0.0);
+        // …and its stated share of the weapon's own pickup with one.
+        assert!((p(0.0, 0.92, Pickup::Secondary) - 13.8).abs() < 1e-9);
+        // A conversion is capped by the headroom exactly as a match is.
+        assert!((p(329.0, 0.92, Pickup::Secondary) - 1.0).abs() < 1e-9);
+    }
+
+    /// HALF OF THEM ARE SECONDARY, which is what a weapon reading one kind
+    /// depends on. Stated for the Eximus guarantee and assumed for the roll;
+    /// pinned here so the assumption is one number in one place.
+    #[test]
+    fn half_of_what_falls_is_secondary() {
+        let mut rng = crate::rules::rng::Rng::new(7);
+        let n = 200_000;
+        let (mut p, mut s) = (0u32, 0u32);
+        for _ in 0..n {
+            let (a, b) = on_kill(1, false, false, &mut rng);
+            p += a;
+            s += b;
+        }
+        let share = f64::from(s) / f64::from(p + s);
+        assert!((share - 0.5).abs() < 0.01, "half: {share}");
+    }
+}

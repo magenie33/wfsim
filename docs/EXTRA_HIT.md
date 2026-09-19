@@ -113,7 +113,7 @@ they needed exactly three fields and no new mechanism:
   rides on the PICK, so one definition serves all ten and the page draws its
   dropdown from the data's own list in the game's own order.
 - **`class_bonus_for` / `class_bonus`** — Resupply is 20/30/40/50% on Sniper
-  Rifles against 10/15/20/25%. Applied in `abilities_data::resolve`, the one
+  Rifles against 10/15/20/25%. Applied in `data::abilities::resolve`, the one
   function handed both the ability and the weapon it is cast on, so the sim
   never learns what a sniper is.
 

@@ -415,24 +415,24 @@ fn the_torid_base_forms_multiplying_co_reads_its_full_evolved_base() {
 #[test]
 fn a_respawned_body_in_the_formation_starts_with_no_statuses() {
     let base = crate::model::WeaponBase::from_data("soma_prime", true, &[]);
-    let pool = crate::mods_data::pool_for_weapon("soma_prime");
+    let pool = crate::data::mods::pool_for_weapon("soma_prime");
     let refs: Vec<&crate::model::ModDef> = ["malignant_force", "primed_cryo_rounds"]
         .iter()
         .filter_map(|id| pool.iter().find(|m| m.id == *id))
         .collect();
     assert_eq!(refs.len(), 2, "Viral needs both halves");
-    let panel = crate::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
     let frail = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
     let mut arena = crate::arena::Arena::training(30.0);
-    arena.target_at = crate::space::Vec2::new(0.0, 1.0);
+    arena.target_at = crate::rules::space::Vec2::new(0.0, 1.0);
     arena.others = vec![crate::formation::FoeSpec {
         id: "e2".into(),
         params: frail.clone(),
         body_parts: BodyPart::humanoid(),
-        at: crate::space::Vec2::new(0.0, 2.0),
+        at: crate::rules::space::Vec2::new(0.0, 2.0),
     }];
     let mut p = FightParams::from_panel(
-        &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
+        &panel, &arena, &crate::data::arcanes::ArcaneFx::none(),
     );
     p.target = frail;
     // Enough to cross both bodies and keep going.

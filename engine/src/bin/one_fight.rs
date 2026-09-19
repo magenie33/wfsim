@@ -31,11 +31,11 @@
 
 use std::time::Instant;
 
-use wfsim_engine::arcanes_data::ArcaneFx;
+use wfsim_engine::data::arcanes::ArcaneFx;
 use wfsim_engine::arena::Arena;
 use wfsim_engine::fight::{monte_carlo, FightParams};
 use wfsim_engine::target::TargetMode;
-use wfsim_engine::loadout::resolve;
+use wfsim_engine::build::loadout::resolve;
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::StackPolicy;
 
@@ -153,7 +153,7 @@ fn crowd(mut arena: Arena, bodies: usize, spacing: f64) -> Arena {
     let side = (bodies as f64).sqrt().round().max(1.0) as usize;
     let at = wfsim_engine::formation::Formation::grid_around(
         arena.target_at,
-        wfsim_engine::space::Vec2::new(0.0, 1.0),
+        wfsim_engine::rules::space::Vec2::new(0.0, 1.0),
         side,
         side,
         spacing,
@@ -181,16 +181,16 @@ fn arcanes_for(weapon: &str, ids: &[&str]) -> ArcaneFx {
         .iter()
         .filter(|id| !id.is_empty())
         .map(|id| {
-            let card = wfsim_engine::arcanes_data::pool_for_weapon(weapon, "primary")
+            let card = wfsim_engine::data::arcanes::pool_for_weapon(weapon, "primary")
                 .into_iter()
-                .chain(wfsim_engine::arcanes_data::pool_for_weapon(weapon, "secondary"))
+                .chain(wfsim_engine::data::arcanes::pool_for_weapon(weapon, "secondary"))
                 .find(|a| a.id == *id)
                 .unwrap_or_else(|| panic!("no arcane seat for {id} on {weapon}"));
             card.fx(
                 card.max_rank,
                 StackPolicy::Emergent,
                 &[],
-                wfsim_engine::tenno_data::default_tenno(),
+                wfsim_engine::data::tenno::default_tenno(),
             )
         })
         .collect();
@@ -213,7 +213,7 @@ fn arena_for(c: &Cfg) -> Arena {
     if c.enemy == "training" {
         return crowd(Arena::training(c.duration), c.bodies, c.spacing);
     }
-    let e = wfsim_engine::enemy_data::all()
+    let e = wfsim_engine::data::enemies::all()
         .into_iter()
         .find(|e| e.id == c.enemy)
         .unwrap_or_else(|| panic!("unknown enemy: {}", c.enemy));
@@ -224,7 +224,7 @@ fn arena_for(c: &Cfg) -> Arena {
     crowd(Arena {
         squad_size: 1,
         target_id: "e1".to_string(),
-        tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+        tenno: wfsim_engine::data::tenno::default_tenno().clone(),
         target: e
             .target_params(c.level, c.steel_path, e.can_be_eximus, TargetMode::InstantRespawn)
             .expect("the target this fight names"),
@@ -233,8 +233,8 @@ fn arena_for(c: &Cfg) -> Arena {
         // the ANSWER did not move, so its fight has to be the one every saved
         // baseline was taken under — a range would move a falloff weapon's
         // number and report an optimisation as a bug.
-        player_at: wfsim_engine::space::Vec2::ORIGIN,
-        target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
+        player_at: wfsim_engine::rules::space::Vec2::ORIGIN,
+        target_at: wfsim_engine::rules::space::Vec2::new(0.0, wfsim_engine::rules::space::CONTACT_RANGE_M),
         duration_seconds: c.duration,
         abilities: Vec::new(),
         ability_picks: Vec::new(),
@@ -250,7 +250,7 @@ fn arena_for(c: &Cfg) -> Arena {
 fn measure(weapon: &str, c: &Cfg) -> Shape {
     let Cfg { mod_ids, runs, seed, repeats, verbose, .. } = *c;
     let base = WeaponBase::from_data(weapon, true, &[]);
-    let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
+    let pool = wfsim_engine::data::mods::pool_for_weapon(weapon);
     let mut refs = Vec::new();
     for id in mod_ids {
         match pool.iter().find(|m| m.id == *id) {
@@ -319,7 +319,7 @@ fn measure(weapon: &str, c: &Cfg) -> Shape {
 /// subsystem, which is exactly what a profile is.
 fn ablate(weapon: &str, c: &Cfg) {
     let base = WeaponBase::from_data(weapon, true, &[]);
-    let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
+    let pool = wfsim_engine::data::mods::pool_for_weapon(weapon);
     let refs: Vec<_> = c
         .mod_ids
         .iter()

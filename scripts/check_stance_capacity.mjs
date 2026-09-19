@@ -8,7 +8,7 @@
 // the stance's.
 //
 // ASSERTED ON SCREEN, because the page owns this arithmetic: it mirrors
-// `engine::mods::stance_capacity` rather than asking for it, so an engine that
+// `engine::rules::capacity::stance_capacity` rather than asking for it, so an engine that
 // is right and a page that is not would still read wrong to everyone.
 //
 //   node scripts/check_stance_capacity.mjs

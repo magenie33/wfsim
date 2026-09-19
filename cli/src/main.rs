@@ -6,14 +6,14 @@
 //! See `engine::dummy` for the (deliberately basic) model and its assumptions.
 
 use std::path::Path;
-use wfsim_engine::arcanes_data::ArcaneFx;
-use wfsim_engine::damage::{DamageType, DamageVector};
+use wfsim_engine::data::arcanes::ArcaneFx;
+use wfsim_engine::rules::damage::{DamageType, DamageVector};
 use wfsim_engine::fight::{monte_carlo, BuffLock, FightParams, LockedBuff};
 use wfsim_engine::target::TargetMode;
 use wfsim_engine::target::{BodyPart, TargetParams};
-use wfsim_engine::enemy_data::EnemySpec;
+use wfsim_engine::data::enemies::EnemySpec;
 use wfsim_engine::model::CoBehavior;
-use wfsim_engine::scaling;
+use wfsim_engine::rules::scaling;
 
 // ---- Demo-build fixtures (harness-local) --------------------------------
 // The ENGINE knows no specific weapon; this demo harness does. Values are
@@ -23,7 +23,7 @@ use wfsim_engine::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
-        sample_by: wfsim_engine::metrics::RunStat::KillProgress,
+        sample_by: wfsim_engine::rules::metrics::RunStat::KillProgress,
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
         combo_script: Vec::new(),
@@ -48,7 +48,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         // Ordinary — only the Laetum's Incarnon form differs, and this is not it.
         echo_multiplier: 1.0,
         // NO WARFRAME behind this fixture: no auras, no shards.
-        squad: wfsim_engine::tenno_data::SquadEffects::default(),
+        squad: wfsim_engine::data::tenno::SquadEffects::default(),
         abilities: Vec::new(),
         target_id: "e1".to_string(),
         punch_through_m: 0.0,
@@ -78,14 +78,14 @@ fn dual_toxocyst_baseline() -> FightParams {
         enervate_stacks: 0,
         influence_open: None,
         rage_open: None,
-        tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+        tenno: wfsim_engine::data::tenno::default_tenno().clone(),
         // The historical calibration profile is a point-blank fight, and this
         // weapon lists no falloff to notice a range with anyway.
         falloff: None,
         // …and nothing misses: the calibration profile is a fixed reference.
         spread: None,
-        player_at: wfsim_engine::space::Vec2::ORIGIN,
-        target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
+        player_at: wfsim_engine::rules::space::Vec2::ORIGIN,
+        target_at: wfsim_engine::rules::space::Vec2::new(0.0, wfsim_engine::rules::space::CONTACT_RANGE_M),
         // Not a charge weapon: inert without charge_seconds.
         charge_cadence: wfsim_engine::model::ChargeCadence::DrawThenRate,
         sustained_fire_rate: None,

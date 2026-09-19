@@ -32,7 +32,7 @@ pseudo_reload:
 # THE CO CATALOG'S ROW IS ABOUT THIS FORM'S RADIAL, and both halves of it are
 # already modelled: the class by `takes_condition_overload` on the radial, and
 # the "relative" figure by the radial's OWN `co_base_fraction`, which
-# `evolutions_data::apply` derives — an evolution raises the explosion's damage
+# `data::evolutions::apply` derives — an evolution raises the explosion's damage
 # without raising the base its CO term multiplies.
 #
 # The row's printed 90% is the one figure in that catalog this engine does not

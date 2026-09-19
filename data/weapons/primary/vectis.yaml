@@ -18,7 +18,7 @@ unmodeled:
     seconds: 2
 # THE TWO SNIPER MECHANICS. Both are the WEAPON's rather than the build's, both
 # are paid only while scoped in, and neither is a stat on the panel — see
-# `weapons_data::SniperCombo` and `ScopeSpec` for the rules and their sources.
+# `data::weapons::SniperCombo` and `ScopeSpec` for the rules and their sources.
 #
 # The Vectis has the SMALLEST minimum combo in the game: one hit arms 1.5x.
 sniper_combo:

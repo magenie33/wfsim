@@ -160,8 +160,8 @@ fn elemental_damage_moves_the_hit_and_never_the_blast_detonation() {
         // Valence Formation is the only source that can add Blast as its
         // own element rather than by combining two — see
         // `data/abilities/valence_formation.yaml`.
-        abilities: crate::abilities_data::resolve(
-            &[crate::abilities_data::AbilityPick {
+        abilities: crate::data::abilities::resolve(
+            &[crate::data::abilities::AbilityPick {
                 id: "valence_formation",
                 duration_seconds: None,
                 element: Some("blast"),
@@ -801,9 +801,9 @@ fn cryogenic_cold_bursts_raise_crit_damage_received() {
 #[test]
 fn surge_assumed_max_is_a_final_multiplier() {
     // AssumedMax: the ×8 cap on every shot — 10 × 75 × 8 = 6000.
-    let fx = crate::arcanes_data::secondary("secondary_surge")
+    let fx = crate::data::arcanes::secondary("secondary_surge")
         .unwrap()
-        .fx(5, crate::model::StackPolicy::AssumedMax, &[], crate::tenno_data::default_tenno());
+        .fx(5, crate::model::StackPolicy::AssumedMax, &[], crate::data::tenno::default_tenno());
     let p = FightParams {
         arcane: fx,
         ..flat_base()
@@ -821,7 +821,7 @@ fn hemorrhage_converts_impact_procs_to_bleeds() {
     // Fire rate 1 < 2.5: chance 0.35 × 2 = 0.7 per damage instance —
     // forced Impact procs seed Slash bleeds (35% ticks of ModifiedBase).
     let with = FightParams {
-        proc_conversion: Some(crate::loadout::ProcConv {
+        proc_conversion: Some(crate::build::loadout::ProcConv {
             from: DamageType::Impact,
             to: DamageType::Slash,
             chance: 0.35,
@@ -872,7 +872,7 @@ fn hemorrhage_converts_impact_procs_to_bleeds() {
 fn proc_conversion_obeys_its_three_notes() {
     let welt = |rate: f64, forced: Vec<DamageType>| FightParams {
         fire_rate: rate,
-        proc_conversion: Some(crate::loadout::ProcConv {
+        proc_conversion: Some(crate::build::loadout::ProcConv {
             from: DamageType::Impact,
             to: DamageType::Slash,
             chance: 0.35,

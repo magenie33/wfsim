@@ -11,7 +11,7 @@ offer it, and the reason given is that the Incarnon form uses it.
 
 ### What the editor was doing
 
-`rivens_data::excluded_for` derived a weapon's rollable pool from two rules: the
+`build::rivens::excluded_for` derived a weapon's rollable pool from two rules: the
 wiki's *"weapons without more than 25% of a physical damage type usually cannot
 roll that respective attribute… Exceptions exist on a case by case basis"*, and
 "a stat the weapon does not have" (no ammo pool, nothing that flies, a sentinel

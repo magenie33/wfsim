@@ -16,7 +16,7 @@ transforms_to: vectis_prime_incarnon
 unmodeled:
   - reason: sniper_combo_miss
     seconds: 2
-# THE TWO SNIPER MECHANICS — see `weapons_data::SniperCombo` and `ScopeSpec`.
+# THE TWO SNIPER MECHANICS — see `data::weapons::SniperCombo` and `ScopeSpec`.
 #
 # "The Vectis Prime has the largest shot combo requirement of the sniper
 # rifles, needing 5 shots to initiate the 1.5x damage multiplier" (wiki) — so

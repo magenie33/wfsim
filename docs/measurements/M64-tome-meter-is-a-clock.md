@@ -61,7 +61,7 @@ not, and they do not have to:
 > (wiki `Pickups`)
 
 Ammo is a property of the SQUAD and the place, not of the body — a Lancer and a
-Crewman drop it at the same rate. `engine::ammo` is that table; the only
+Crewman drop it at the same rate. `engine::rules::ammo` is that table; the only
 per-enemy term is the Eximus guarantee, which is ADDITIONAL to the ordinary roll
 (1.45 expected pickups solo, not 1.0) and which this engine already knows.
 

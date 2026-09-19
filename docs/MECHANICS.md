@@ -76,7 +76,7 @@ distinction matters (see [`GLOSSARY.md`](GLOSSARY.md)):
   on its own):
   `effective_fire_rate = base × (1 + Σ mod_bonuses) × Π multipliers`.
 
-**Mod capacity & polarity** (wiki `Polarity`; `engine::mods`). Capacity =
+**Mod capacity & polarity** (wiki `Polarity`; `engine::rules::capacity`). Capacity =
 weapon rank (max 30), doubled by an Orokin Catalyst (60). Slot drain:
 **matching polarity −50% rounded UP** (11 → 6); **mismatched +25% rounded
 half-UP** (11 → 14; measured 2026-07-26: 10 → 12.5 → 13); unpolarized = full drain. Aura/Stance slots
@@ -126,7 +126,7 @@ defined position (Frenzy appends "+100% Toxin" at the **end** of the order).
 **Ammo efficiency.** `shots_per_ammo = 1 / (1 - e)`; sources add (except
 Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 
-**Mod restrictions & conditional-buff activation** (`loadout::resolve`).
+**Mod restrictions & conditional-buff activation** (`build::loadout::resolve`).
 - **`requires: <trait>`** (ModDef): a mod whose required weapon trait
   (`WeaponBase.traits`, e.g. `semi_auto`/`beam`) is absent is INERT — all its
   effects/locks are skipped. Calc-layer, NOT an equip gate. Declared only when a
@@ -149,7 +149,7 @@ Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
   stacks/uptime — a future "test build") will sit between the two (BUFFS.md).
 
 **Physical (IPS) damage mods vs elemental mods — DIFFERENT math** (wiki
-`Damage/Calculation`; engine `loadout::resolve`). A physical mod (+X%
+`Damage/Calculation`; engine `build::loadout::resolve`). A physical mod (+X%
 Impact/Puncture/Slash, e.g. Rupture) scales the BASE of THAT physical type and
 is a SEPARATE multiplier, multiplicative with base damage, and NEVER enters the
 elemental hierarchy:
@@ -427,7 +427,7 @@ Consequences worth stating, because they are what the model has to reproduce:
   form that was carrying it (26% + 3 stacks = 41%), while the base form's own 5%
   never crosses the line.
 
-Implemented in two halves, deliberately: `loadout::resolve` GRANTS it against
+Implemented in two halves, deliberately: `build::loadout::resolve` GRANTS it against
 the panel (`ResolvedPanel::crit_mult_below_cc` records what it granted) and the
 sim takes it back on any hit whose `effective_cc` has reached the threshold.
 The panel test remains sound as a short-circuit because every live source is a
@@ -477,7 +477,7 @@ numbers.
 > 103.125 off a 100 panel — +3.1%, far beyond our matching tolerance).
 > Implemented: `DamageVector::quantized_against(modded_base)` (per-hit
 > vector, BEFORE crits/type-modifiers/faction multipliers — those
-> multiply quantized values) and `damage::quantize_base_crit_damage`
+> multiply quantized values) and `rules::damage::quantize_base_crit_damage`
 > (wired into the CD bucket when mod resolution lands). The page's
 > flagged "conflicting info" is a mathematical pseudo-conflict: for pure
 > multipliers, `Round(v/s)·s·k ≡ Round(kv/ks)·ks` — the two descriptions
@@ -709,7 +709,7 @@ element procs are weighted, not uniform.
   §Status Immunity Interactions): types the target is status-immune to
   are EXCLUDED from the draw and the remaining weights renormalize (the
   roll is never wasted). Independent of damage-type immunity.
-  Implemented in `status::draw_proc_type`.
+  Implemented in `rules::status::draw_proc_type`.
 - **Independent procs** exist outside the damage-type system (Knockdown,
   Lifted, Ragdoll, Stun, Sleep, Silence, Slow, Disarmed, Big Stagger,
   Microwave — see `data/debuffs/independent_procs.yaml`); Knockdown /
@@ -1037,7 +1037,7 @@ silently flatters every build carrying one: a Dual Toxocyst with Galvanized
 Crosshairs measures **52.33% crit rate / 203,591 DPS** aiming against **36.92% /
 150,041 DPS** hip-firing — a quarter of the DPS handed over for free. So it is
 `aiming` on the Sim and Optimizer scenario (default ON), gating
-`ModEffect::WhileAiming` in `loadout::resolve_with`. The optimizer reads the
+`ModEffect::WhileAiming` in `build::loadout::resolve_with`. The optimizer reads the
 same flag: scoring a build with aim assumed and replaying it without would rank
 a buff the replay never grants.
 
@@ -1156,7 +1156,7 @@ alt-fire 100, Angstrum Incarnon 1, Cyanex 1, Sporelacer 3, Mandonel 2,
 Velocitus ∞ (Archwing only), and twelve throwing melees at 3.
 
 **WHAT THIS ENGINE DOES, AND THE TWO ASSUMPTIONS IN IT.** Both mechanics run
-through one `ricochet:` block and `chain::bounce_path`, which walks to the
+through one `ricochet:` block and `rules::chain::bounce_path`, which walks to the
 NEAREST body not yet hit.
 
 - For a true RICOCHET that is the mechanic: it seeks enemies, and `range_m`
@@ -1417,7 +1417,7 @@ verbatim separate-status rule above from the perk side.
 Five entries throw **bomblets**: the shell detonates, and its detonation
 releases child projectiles that each land a **contact hit** and an **explosion
 of their own**. It is a third damage layer under the attack's own, declared as
-`cluster:` beside `radial:` (`weapons_data::ClusterSpec`), and it is what made
+`cluster:` beside `radial:` (`data::weapons::ClusterSpec`), and it is what made
 those five read as a floor before it existed.
 
 | entry | count | contact | explosion |
@@ -1599,7 +1599,7 @@ multishot, not a rounding error.
 magazine is the charge pool rather than a reloaded magazine, so there is no
 "last shot in magazine" to gate on. Both forms load the *same* evolution id, so
 the engine gates on the form's own charge-backed marker (`incarnon.is_some()`)
-rather than on a weapon id — `engine::evolutions_data::apply` drops it there.
+rather than on a weapon id — `engine::data::evolutions::apply` drops it there.
 
 ### The two ends of a magazine, and why only one of them is "the magazine was full"
 
@@ -1756,7 +1756,7 @@ only place the answer changes.
 The Vectis Prime page's own table diverges from the page's own formula at tier
 7 (it prints 3675 and 11025 where `5 x 3^k` gives 3645 and 10935). The formula
 is implemented; the divergence is recorded in
-`weapons_data::sniper_tests::the_combo_ladder_is_the_wikis` and is unreachable
+`data::weapons::sniper_tests::the_combo_ladder_is_the_wikis` and is unreachable
 in any fight this sim runs.
 
 **What builds it.** One per LANDING hit — *"weapons with Multishot will count
@@ -1777,7 +1777,7 @@ here — this arena has no distance and every shot lands (docs/UNMODELLED.md) �
 so the counter runs slightly generous, and each sniper says so on its card.
 
 **Where the gate is.** *"Building combo and benefiting from its multiplier
-requires being scoped in."* `loadout::resolve` empties `sniper_combo` when the
+requires being scoped in."* `build::loadout::resolve` empties `sniper_combo` when the
 Tenno is not aiming, and it is the only place that decides — so the simulator
 and the optimizer agree without either of them knowing what a sniper is. It is
 also the one mechanic where not aiming changes what a weapon HAS rather than
@@ -2074,7 +2074,7 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 > each build one from the same scenario and hand it to the same constructor,
 > which is what makes a search's winner scored under the fight the replay runs.
 >
-> The **Tenno** (`data/tenno/`, `engine::tenno_data`) is shaped like a
+> The **Tenno** (`data/tenno/`, `engine::data::tenno`) is shaped like a
 > WARFRAME: health, shield, overguard, armor, energy, sprint — the wiki's own
 > `Module:Warframes/data` field names, so a transcribed frame fills these in
 > rather than needing a second vocabulary — plus a `state` block for what the
@@ -2084,7 +2084,7 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 > **Player STATE gates mods.** One wrapper covers all of it:
 > `condition: while_aiming | while_invisible | while_airborne` in a mod file
 > resolves to `ModEffect::WhileTenno(TennoCondition, …)`, which
-> `loadout::resolve_for` asks of the fight's Tenno. All of them live there,
+> `build::loadout::resolve_for` asks of the fight's Tenno. All of them live there,
 > aiming included — one home for one kind of fact. A gated
 > effect whose
 > condition is false is absent from the static buckets AND from the emergent
@@ -2151,7 +2151,7 @@ Full table in `data/factions/damage_modifiers.yaml` (e.g. Grineer: +Impact
 layers: **Object** health takes no crits/status/modifiers; **Overguard** is
 neutral except x1.5 Void, blocks status spillover, and grants CC immunity.
 
-*Engine: modeled — `engine::factions_data` loads the table,
+*Engine: modeled — `engine::data::factions` loads the table,
 `EnemySpec::target_params` resolves the one column (`FactionDamageOverride ??
 Faction`) plus the Overguard column onto `TargetParams::type_mods`, and
 `TargetState::apply` scales each component by the column the POOL it lands in
@@ -2397,7 +2397,7 @@ complete rule set; the Impact page's list is a subset).
   (Larvlings, Thralls, Hounds, Liches, Sisters) is a separate flow.
 
 **Level cap.** Enemy levels cap at **9999**; only Void Fissure missions exceed
-it. Implemented in `engine::scaling` with regression tests at the cap.
+it. Implemented in `engine::rules::scaling` with regression tests at the cap.
 
 **Eximus** (wiki `Eximus`, `Eximus/Compatibilities`). Eximus are empowered
 variants of normal units: Overguard (base **12**, scaled by the overguard
@@ -2462,13 +2462,13 @@ the cycle 0.96 s.
 
 The fire-rate STAT is still the stat — it is what fire-rate gates read
 (Hemorrhage's below-2.5 doubling), which is why the engine keeps both:
-`base_fire_rate` and `charge_seconds` (`engine::loadout::WeaponBase`).
+`base_fire_rate` and `charge_seconds` (`engine::build::loadout::WeaponBase`).
 
 A tapped bow shot pays no draw, so the nock alone paces it (`charge_seconds:
 0.0` → 1.54 shots/s on Cernos Prime). That is the bow formula taken at its
 word rather than a measurement — **MEASUREMENTS M16**. A non-bow charge weapon
 (Tombfinger's primary) takes the second formula, `1 / (Modded Charge Time + 1 /
-Modded Fire Rate)` — `weapons_data::ChargeCadence::DrawThenRate`.
+Modded Fire Rate)` — `data::weapons::ChargeCadence::DrawThenRate`.
 
 ### Fire rate that MOVES while the trigger is held — the spool
 
@@ -2546,7 +2546,7 @@ they are the same shape as.
 
 ### THE AMMO ECONOMY — what a body drops, and what a pack is worth
 
-`engine::ammo` is the whole of it, and it is two halves: what falls, and what
+`engine::rules::ammo` is the whole of it, and it is two halves: what falls, and what
 this weapon can do with it. Both bite only when the reserve is finite — with
 `infinite_ammo` on (every ruler) the weapon already has everything.
 
@@ -2558,7 +2558,7 @@ Pickup"* (wiki `Ammo`). An **Eximus** is *"guaranteed to drop either a Primary
 or Secondary Ammo … This does not overwrite the enemies normal chance"*, so its
 expected drop is 1.45 rather than 1. Which of the two classes falls is half and
 half — stated for the Eximus guarantee, assumed for the ordinary roll
-(`ammo::SECONDARY_SHARE`). **Post-Update-32 there are three ammo classes**
+(`rules::ammo::SECONDARY_SHARE`). **Post-Update-32 there are three ammo classes**
 (Primary, Secondary, Heavy) and one Primary pack serves every primary weapon,
 shotguns and snipers included. Heavy is the one per-enemy rate and is not
 modelled; nor are health and energy ORBS (`docs/UNMODELLED.md`).
@@ -2569,7 +2569,7 @@ because this arena's Tenno never walks, which makes a finite reach a wall rather
 than a delay. The game's own numbers are a 3 m innate radius and 13.5 m with a
 maxed Vacuum or Fetch. Collection is instant: no flight time.
 
-**WHAT A PACK IS WORTH** (`ammo::credit`), and only the first of these is stated
+**WHAT A PACK IS WORTH** (`rules::ammo::credit`), and only the first of these is stated
 by the wiki as prose:
 
 1. The amount is the WEAPON's own *"Ammo Pickup"* — a Phantasma's 15 against an
@@ -2876,7 +2876,7 @@ identical. A fraction is enough; a second snap is not needed.
 
 ## 11. THE ARENA'S GEOMETRY — where a shot leaves, and what counts as a hit
 
-The fight is two circles on a floor (`engine::space`). Everything below falls
+The fight is two circles on a floor (`engine::rules::space`). Everything below falls
 out of three facts, and none of it is a special case.
 
 **A BODY HAS A RADIUS: 0.25 m**, so two of them touch at 0.5 m centre to
@@ -2957,7 +2957,7 @@ and clawed back by exactly the mods the source says cannot touch it.
 
 ## 12. BEAM CHAINING — the mechanic a second target turns on
 
-`engine::chain` implements this section: given where the bodies are and where
+`engine::rules::chain` implements this section: given where the bodies are and where
 the shot landed, it answers which of them takes an instance, at what share of
 the direct hit, and under which rules. What each instance then DOES is the
 ordinary damage pipeline's, because a chain hop is not a special kind of hit —
@@ -3010,7 +3010,7 @@ The 75% COMPOUNDS ALONG A PATH, so the difference grows with the crowd.
   leaves scale with its own damage the way any hit's do, so no clause of the
   damage pipeline needs to know a chain exists.
 
-`engine::chain` is the model. It answers the geometric half — which bodies take
+`engine::rules::chain` is the model. It answers the geometric half — which bodies take
 an instance, at what share, whether multishot reaches it, whether it may
 headshot — and hands each instance to the ordinary pipeline.
 
@@ -3029,7 +3029,7 @@ aimed at.
 **A PATH'S WHOLE OUTPUT IS A CONSTANT** once the formation is dense enough that
 five hops never run out of bodies: `1 + f + … + f⁵` = **3.2881** for the Torid.
 So the total is `seeds x 3.2881`, and neither the aim point nor the tie-breaking
-moves it — ties redistribute and never add. `engine::chain` asserts that over
+moves it — ties redistribute and never add. `engine::rules::chain` asserts that over
 500 random tie-breaks.
 
 **A RADIUS MOD BUYS SEEDS, and that is the whole of what it buys.** Primed
@@ -3057,7 +3057,7 @@ approximating.
 ### A BLAST MEETS A BODY AT ITS NEAREST SURFACE
 
 Three rulings, and they are one idea: a body is a CIRCLE, so a blast touches it
-before it reaches its centre. `engine::space` owns all three.
+before it reaches its centre. `engine::rules::space` owns all three.
 
 | | rule |
 | --- | --- |
@@ -3115,7 +3115,7 @@ And that gate compared `aim_offset` where the damage compares
 WHICH WAY the pellet went is now drawn whenever there is a crowd, not only when
 the weapon points away — against one body only the magnitude decides anything,
 which is why it was gated that way, and a crowd makes the side decide who is in
-the blast. It comes off `rng::Draws::blast_dir`, a stream of its own, so adding
+the blast. It comes off `rules::rng::Draws::blast_dir`, a stream of its own, so adding
 the draw shifts no other roll.
 
 ### What a radius mod is worth — and the reach is what decides it
@@ -3142,7 +3142,7 @@ into.
 
 ### What the engine does with it now
 
-The run loop consumes `chain::resolve`, so a formation takes the damage a chain
+The run loop consumes `rules::chain::resolve`, so a formation takes the damage a chain
 spreads into it — through the ORDINARY pipeline, one instance at a time. Each
 body computes its own Condition Overload bucket (exact, not approximated: the
 bucket is one multiplicative factor of `raw`, so `raw x share x bucket_here /
@@ -3161,7 +3161,7 @@ them, and nothing on the body side changes.
 structural. Chains launched from the body the beam STRUCK fire inside the pellet
 loop, so they fire once per landing pellet — a merged beam's multishot IS its
 pellet count. Chains launched from a body the RADIUS caught fire once for the
-shot. `chain::Instance::multishot` is the flag that sorts them.
+shot. `rules::chain::Instance::multishot` is the flag that sorts them.
 
 **AND NOBODY IS PROMOTED**, because nobody stays dead: `TargetState::apply`
 respawns a body instantly where it stood, so a formation is N streams of targets
@@ -3277,7 +3277,7 @@ every relative position is identical, so what the order depends on is the
 COLLIDER — the game's spatial query returning bodies in world-space broadphase
 order, which is not a function of the formation.
 
-So the model does not reproduce it. `chain::resolve` breaks ties by the lowest
+So the model does not reproduce it. `rules::chain::resolve` breaks ties by the lowest
 body index: arbitrary, and STABLE, so **a formation that does not move always
 chains the same way** — which is the property asked for in place of fidelity.
 The unknowable part never reaches the answer, because the total is invariant to
@@ -3390,7 +3390,7 @@ On a chaining weapon the two mechanics compose, and the wiki is explicit:
 
 That last clause is the owner's own rule for two chains meeting: a
 body takes a second instance only when a SECOND independent link reaches it.
-`chain::resolve` takes the struck bodies as its seed list and each seed keeps
+`rules::chain::resolve` takes the struck bodies as its seed list and each seed keeps
 its own `seen` set, so this falls out rather than being arranged.
 
 ### An AoE attack takes none of it — from its weapon or from a mod
@@ -3438,7 +3438,7 @@ question that found it).
 ### …and "an AoE attack" is TWO KINDS of attack
 
 The class rule's own sentence opens *"With a very few exceptions"* and never
-says which. `weapons_data::BlastKind` is the type:
+says which. `data::weapons::BlastKind` is the type:
 
 - a **`contact`** blast goes off on the first thing it touches, and is the true
   area-of-effect attack the rule means;
@@ -3568,7 +3568,7 @@ every body — `O(bodies)` per proc, thousands of procs a second.
 `space::Neighbours` answers it once per run: per body, its neighbours within
 `AREA_MAX_M` (a full-stack gas cloud plus a body radius), nearest first, so a
 lookup at any smaller radius is a prefix that stops at the first body out of
-range. Same shape and same reason as `chain::Layout` — nothing in this arena
+range. Same shape and same reason as `rules::chain::Layout` — nothing in this arena
 moves.
 
 **The cap.** `dot_cap` was the unit's declared `stack_caps.general` and `None`

@@ -25,7 +25,7 @@
 #   `elements:` is the whole of it — the page draws a picker, the pick travels
 #   with the buff, and `resolve` substitutes it. The order below is the wheel's.
 # - IT DOUBLES ON SNIPER RIFLES. `class_bonus_for: sniper` — applied in
-#   `abilities_data::resolve`, the one place handed both the ability and the
+#   `data::abilities::resolve`, the one place handed both the ability and the
 #   weapon, so the sim never has to know what a sniper is.
 #
 # ITS STATUS IS A CERTAINTY: "the selected Elemental Damage AND Status Effect".

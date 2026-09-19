@@ -17,8 +17,8 @@
 
 use crate::target::BodyPart;
 use crate::target::TargetParams;
-use crate::space::Vec2;
-use crate::tenno_data::Tenno;
+use crate::rules::space::Vec2;
+use crate::data::tenno::Tenno;
 
 /// One engagement: who shoots, who is shot, from where, for how long.
 #[derive(Debug, Clone)]
@@ -35,7 +35,7 @@ pub struct Arena {
     /// `condition:` on a mod card asks about).
     pub tenno: Tenno,
     /// Where the player stands, and where the target stands — the fight's 2D
-    /// layer (`crate::space`).
+    /// layer (`crate::rules::space`).
     ///
     /// Two POINTS rather than one distance, because the distance is what a
     /// second body cannot be described by. They belong to the arena rather than
@@ -87,7 +87,7 @@ pub struct Arena {
     ///
     /// ONE PLAYER STILL FIRES. This is not three more guns: the arena has one
     /// shooter and this number changes what is SHOT AT — how often a body drops
-    /// ammo (`crate::ammo`), and the health of a unit whose health reads the
+    /// ammo (`crate::rules::ammo`), and the health of a unit whose health reads the
     /// squad (a Demolisher). It rides here for the reason `duration_seconds`
     /// does, and so the optimizer inherits it from the same constructor.
     pub squad_size: u32,
@@ -100,10 +100,10 @@ pub struct Arena {
     /// them getting it is not — so it rides with the fight, the optimizer gets
     /// it by construction, and the BOARD sends none.
     ///
-    /// Already RESOLVED (`abilities_data::resolve`): Ability Strength applied
+    /// Already RESOLVED (`data::abilities::resolve`): Ability Strength applied
     /// and the same-family conflicts settled, so nothing downstream can forget
     /// that two Roars do not stack.
-    pub abilities: Vec<crate::abilities_data::ActiveAbility>,
+    pub abilities: Vec<crate::data::abilities::ActiveAbility>,
     /// WHAT WAS PICKED, unresolved, and the strength it was resolved AT.
     ///
     /// Carried beside the resolved list because a MOD can raise Ability
@@ -118,7 +118,7 @@ pub struct Arena {
     pub ability_strength: f64,
 }
 
-/// An [`crate::abilities_data::AbilityPick`] that owns its strings.
+/// An [`crate::data::abilities::AbilityPick`] that owns its strings.
 ///
 /// The borrowed form points into the request's JSON and cannot outlive the
 /// parse; this one rides on the Arena to the place where the build is known.
@@ -131,16 +131,16 @@ pub struct OwnedAbilityPick {
 
 impl Arena {
     /// Metres between the two of them, CENTRE TO CENTRE. The model's own
-    /// distance: it never goes below `space::CONTACT_RANGE_M`, because circles
+    /// distance: it never goes below `rules::space::CONTACT_RANGE_M`, because circles
     /// do not overlap.
     pub fn engagement_range(&self) -> f64 {
         self.player_at.distance(self.target_at)
     }
 
     /// THE GAP — surface to surface, and what a reader is shown. Zero at
-    /// contact, which is what point blank means (`space::gap`).
+    /// contact, which is what point blank means (`rules::space::gap`).
     pub fn gap(&self) -> f64 {
-        crate::space::gap(self.player_at, self.target_at)
+        crate::rules::space::gap(self.player_at, self.target_at)
     }
 
     /// The engine's own fixture: the neutral Tenno against a training dummy
@@ -150,7 +150,7 @@ impl Arena {
     pub fn training(duration_seconds: f64) -> Self {
         Self {
             target_id: "e1".to_string(),
-            tenno: crate::tenno_data::default_tenno().clone(),
+            tenno: crate::data::tenno::default_tenno().clone(),
             // SOLO, like every fight that does not say otherwise.
             squad_size: 1,
             target: TargetParams::training_dummy(),
@@ -163,7 +163,7 @@ impl Arena {
             // radius forward, so at contact nothing can miss at any cone width
             // and no golden value depends on a weapon's spread.
             player_at: Vec2::ORIGIN,
-            target_at: Vec2::new(0.0, crate::space::CONTACT_RANGE_M),
+            target_at: Vec2::new(0.0, crate::rules::space::CONTACT_RANGE_M),
             // ONE BODY. The fixture measures weapon numbers, and a second one
             // would put every golden value at the mercy of a formation nobody
             // asked for.
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn the_training_arena_is_fought_at_contact() {
         let a = Arena::training(10.0);
-        assert_eq!(a.engagement_range(), crate::space::CONTACT_RANGE_M);
+        assert_eq!(a.engagement_range(), crate::rules::space::CONTACT_RANGE_M);
         assert_eq!(a.gap(), 0.0);
     }
 

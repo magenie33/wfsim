@@ -47,7 +47,7 @@ co_behavior: additive_with_base_damage
 #    and status"
 #
 # A FULL INSTANCE EACH, on a body of its own — `spread_from_tendrils`, which
-# picks that body by `chain::acquired`, the same rule the Boar Incarnon's three
+# picks that body by `rules::chain::acquired`, the same rule the Boar Incarnon's three
 # beams are picked by. Two weapons, two pages saying the same thing, one rule.
 #
 # AGAINST ONE TARGET THEY ARE WORTH NOTHING, and the page says why:

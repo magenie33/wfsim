@@ -10,7 +10,7 @@ wiki's *"The chain from the target hit after the Punch Through can deal damage
 to the first target, and vice versa"* is what a crowded corner still produces,
 and the fallback is what produces it.
 
-**IT IS THE CHAIN'S RULE, not the Boar's.** `chain::resolve_in` and
+**IT IS THE CHAIN'S RULE, not the Boar's.** `rules::chain::resolve_in` and
 `resolve_with` are the two paths every chaining weapon in the roster resolves
 through, so the Amprex, the Atomos, the Torid Incarnon, the Larkspur, the Kuva
 Nukor and the Ignis all take it.

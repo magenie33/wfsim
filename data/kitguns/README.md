@@ -2,7 +2,7 @@
 
 A Kitgun has no published stat line. It has a **Chamber**, a **Grip** and a
 **Loader**, and a composition rule that turns the three into one. This directory
-is the parts; `engine::weapons_data::kitguns` is the rule.
+is the parts; `engine::data::weapons::kitguns` is the rule.
 
 ## THE WEAPON IS THE CHAMBER
 

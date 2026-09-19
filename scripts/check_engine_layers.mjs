@@ -11,22 +11,22 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Bottom first. A module may name its own layer and the ones before it.
+// Bottom first. A module may name its own layer and the ones before it. A
+// layer that is a folder (`rules/`, `data/`, `build/`, `board/`) holds its own
+// modules; the rest are named here one by one.
 const LAYERS = [
   // RULES: primitives and the game's formulas, pure functions over numbers.
-  ["rules", "naming rng damage mods space scaling sim mercy metrics chain elements status ammo buffs perks"],
+  ["rules", "naming"],
   // MODEL: the vocabulary — what a card, a buff, a weapon IS.
   ["model", "model"],
   // DATA: the catalogs, yaml read into the vocabulary.
-  ["data", "data auras_data shards_data tenno_data warframes_data factions_data abilities_data weapons_data "
-    + "syndicates_data evolutions_data mods_data mod_sets_data arcanes_data i18n_data boards_data share_order "
-    + "market_data rage enemy_data buff_events"],
+  ["data", ""],
   // BUILD: a loadout resolved into the numbers a fight reads.
-  ["build", "loadout forma scenario rivens_data"],
-  // FIGHT: who is shot, where, and the simulation itself.
+  ["build", ""],
+  // FIGHT: who is shot, where, the simulation itself and what it recorded.
   ["fight", "target formation arena record fight"],
   // BOARD: build identity and the rulers every row is measured by.
-  ["board", "benchmarks_data builds"],
+  ["board", ""],
 ];
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -39,15 +39,25 @@ const check = (ok, name, detail) => {
 };
 
 const layerOf = new Map();
-LAYERS.forEach(([, mods], i) => mods.split(" ").forEach((m) => layerOf.set(m, i)));
+LAYERS.forEach(([, mods], i) => mods.split(" ").filter(Boolean).forEach((m) => layerOf.set(m, i)));
+const FOLDERS = new Map(LAYERS.map(([name], i) => [name, i]));
+// `model/` and `fight/` are each ONE module, split into files — not folders of modules.
+FOLDERS.delete("model");
+FOLDERS.delete("fight");
 
 const walk = (dir) => readdirSync(dir).flatMap((f) => {
   const p = resolve(dir, f);
   return statSync(p).isDirectory() ? walk(p) : p.endsWith(".rs") ? [p] : [];
 });
 
-// The top-level module a file belongs to: `fight/run.rs` is `fight`.
-const owner = (p) => relative(SRC, p).split(sep)[0].replace(/\.rs$/, "");
+// The module a file belongs to: `fight/run.rs` is `fight`, `data/weapons/kitguns.rs`
+// is `data::weapons` — a layer folder's children are its modules.
+const owner = (p) => {
+  const parts = relative(SRC, p).split(sep).map((x) => x.replace(/\.rs$/, ""));
+  if (FOLDERS.has(parts[0]) && parts.length > 1 && parts[1] !== "mod") return `${parts[0]}::${parts[1]}`;
+  return parts[0];
+};
+const layerOfModule = (m) => FOLDERS.get(m.split("::")[0]) ?? layerOf.get(m);
 
 // Production lines only: drop comments, a `tests` directory, and every inline
 // `#[cfg(test)] mod x { … }` (closed by the `}` at its own indent).
@@ -68,10 +78,18 @@ const production = (text) => {
   return out.join(NL);
 };
 
-// Every top-level module named after `crate::`, including inside a `{…}` group.
+// `data::weapons::spec` names the module `data::weapons`; `fight::X` names `fight`.
+const groupEntry = (w) => {
+  const seg = w.split("::").filter(Boolean);
+  return FOLDERS.has(seg[0]) && seg[1] ? `${seg[0]}::${seg[1]}` : seg[0];
+};
+
+// Every module named after `crate::`, including inside a `{…}` group.
 const references = (text) => {
   const found = new Set();
-  for (const m of text.matchAll(/crate::([a-z_][a-z0-9_]*)/g)) found.add(m[1]);
+  for (const m of text.matchAll(/crate::([a-z_][a-z0-9_]*)(?:::([a-z_][a-z0-9_]*))?/g)) {
+    found.add(FOLDERS.has(m[1]) && m[2] ? `${m[1]}::${m[2]}` : m[1]);
+  }
   for (const m of text.matchAll(/crate::\{/g)) {
     let depth = 1;
     let word = "";
@@ -80,10 +98,9 @@ const references = (text) => {
       const c = text[i];
       if (c === "{") depth += 1;
       else if (c === "}") depth -= 1;
-      if (depth === 1 && /[a-z0-9_]/.test(c) && atTop) word += c;
-      else if (word) { found.add(word); word = ""; }
+      if (depth === 1 && /[a-z0-9_:]/.test(c) && atTop) word += c;
+      else if (word) { found.add(groupEntry(word)); word = ""; }
       if (depth === 1 && c === ",") atTop = true;
-      else if (depth === 1 && c === ":") atTop = false;
     }
   }
   return found;
@@ -98,10 +115,16 @@ for (const p of walk(SRC)) {
   for (const d of references(production(readFileSync(p, "utf8")))) if (d !== mod) deps.add(d);
   graph.set(mod, deps);
 }
-for (const deps of graph.values()) for (const d of [...deps]) if (!graph.has(d)) deps.delete(d);
+for (const deps of graph.values()) {
+  for (const d of [...deps]) {
+    // `crate::data::file` is the data layer's own root; the rest must be modules.
+    if (FOLDERS.has(d) && graph.has(d)) continue;
+    if (!graph.has(d)) deps.delete(d);
+  }
+}
 if (process.env.GRAPH) for (const [m, deps] of [...graph].sort()) console.log(`${m} -> ${[...deps].sort().join(" ")}`);
 
-const unplaced = [...graph.keys()].filter((m) => !layerOf.has(m)).sort();
+const unplaced = [...graph.keys()].filter((m) => layerOfModule(m) === undefined).sort();
 check(unplaced.length === 0, `every module has a layer (${graph.size})`,
   `place ${unplaced.join(", ")} in LAYERS — the lowest layer that holds everything it names`);
 const stale = [...layerOf.keys()].filter((m) => !graph.has(m)).sort();
@@ -110,8 +133,10 @@ check(stale.length === 0, "...and every layer entry is a module", `no module nam
 const upward = [];
 for (const [m, deps] of graph) {
   for (const d of deps) {
-    if (layerOf.has(m) && layerOf.has(d) && layerOf.get(d) > layerOf.get(m)) {
-      upward.push(`${m} (${LAYERS[layerOf.get(m)][0]}) -> ${d} (${LAYERS[layerOf.get(d)][0]})`);
+    const lm = layerOfModule(m);
+    const ld = layerOfModule(d);
+    if (lm !== undefined && ld !== undefined && ld > lm) {
+      upward.push(`${m} (${LAYERS[lm][0]}) -> ${d} (${LAYERS[ld][0]})`);
     }
   }
 }

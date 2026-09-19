@@ -3,7 +3,7 @@
 //
 // A metric is a term of the SCENARIO. Two are shipped and there will be more,
 // so the property worth asserting is not "KPM and DPS both work" — it is that
-// nothing between `engine::metrics::ALL` and the headline number names a metric
+// nothing between `engine::rules::metrics::ALL` and the headline number names a metric
 // at all. Written as `metric === "dps" ? ... : KPM`, a third one is drawn as
 // kills per minute: silently, in the units of a different question, and that
 // fork was in eight places.

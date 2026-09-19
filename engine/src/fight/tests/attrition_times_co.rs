@@ -20,7 +20,7 @@ use super::*;
 #[test]
 fn devastating_attrition_multiplies_with_gun_condition_overload() {
     let base = crate::model::WeaponBase::from_data("felarx", true, &[]);
-    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
     assert_eq!(
         panel.co_behavior,
         crate::model::CoBehavior::Independent,
@@ -37,7 +37,7 @@ fn devastating_attrition_multiplies_with_gun_condition_overload() {
         // the question is about the BRACKET, not about the odds.
         p.noncrit_bonus = attrition.then_some((1.0, 20.0));
         p.co_per_type = if co { 0.8 } else { 0.0 };
-        let mut rng = crate::rng::Rng::new(11);
+        let mut rng = crate::rules::rng::Rng::new(11);
         run_once(&p, &mut rng).total_damage()
     };
     let plain = run(false, false);

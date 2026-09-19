@@ -82,7 +82,7 @@ attack:
   # says "of the previous chain's" and means 50% and then 25%.
   #
   # "If multiple enemies are hit with the main beam thanks to punch through, up
-  # to 2 chains are generated from each of them" is `chain::resolve` taking the
+  # to 2 chains are generated from each of them" is `rules::chain::resolve` taking the
   # struck bodies as its seeds, which this weapon gets for free.
   beam:
     range_m: 28.0

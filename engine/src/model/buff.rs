@@ -58,7 +58,7 @@ pub enum TennoGate {
     /// The first gate that asks about the LOADOUT rather than about the frame
     /// or what it is doing, and the difference matters: this arena has always
     /// fired one weapon for a whole engagement, which says nothing about what
-    /// else is in the other two slots. See [`crate::tenno_data::TennoState`].
+    /// else is in the other two slots. See [`crate::data::tenno::TennoState`].
     SoloWeapon,
 }
 
@@ -66,7 +66,7 @@ pub enum TennoGate {
 /// to ask.
 ///
 /// `into_co` is the second sum [`WeaponBase::add_flat_base_damage`] takes, and
-/// it rides HERE because the question it answers — [`crate::evolutions_data::
+/// it rides HERE because the question it answers — [`crate::data::evolutions::
 /// EvolutionDef::excludes_co_base`] — is the granting perk's, and the perk is
 /// gone by the time the gate is opened. A gated flat add that decided this in
 /// `resolve_for` instead would answer it differently from the ungated add on
@@ -171,7 +171,7 @@ pub enum BuffTrigger {
     /// buff to a build with no Electricity in it at all) and can be expressed
     /// here: a live buff is bumped inside the fight, where the target's
     /// debuffs are in hand.
-    HitEnemyWithStatus(crate::damage::DamageType),
+    HitEnemyWithStatus(crate::rules::damage::DamageType),
     /// Mounting Momentum: a completed RELOAD, not a shot. The first trigger in
     /// this vocabulary that is not something the weapon does to a target — and
     /// the first that grants more than one stack at a time, because what it

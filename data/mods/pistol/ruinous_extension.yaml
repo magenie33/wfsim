@@ -38,7 +38,7 @@ effects:
   # BRACKET, and the wiki does state it — on Galvanized Acceleration's page
   # rather than on this one: "Sinister Reach will not be affected by this mod
   # as it gives a flat beam length increase AFTER percent bonuses." So a flat
-  # add lands outside the percentage, and `loadout::resolve` computes
+  # add lands outside the percentage, and `build::loadout::resolve` computes
   # `range x (1 + percent) + flat`.
   - kind: beam_range_bonus
     rank0: 2.0

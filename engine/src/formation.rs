@@ -19,7 +19,7 @@
 //! A formation does NOT MOVE. Bodies stand where they are put, which is what
 //! makes a chain's path fixed (M52) and what the 2D arena assumes.
 
-use crate::space::Vec2;
+use crate::rules::space::Vec2;
 
 /// HOW MANY BODIES A FORMATION MAY HOLD — fifty.
 ///
@@ -86,7 +86,7 @@ impl Formation {
     pub fn is_empty(&self) -> bool {
         self.foes.is_empty()
     }
-    /// Where every body stands, in index order — what [`crate::chain::resolve`]
+    /// Where every body stands, in index order — what [`crate::rules::chain::resolve`]
     /// takes.
     pub fn positions(&self) -> Vec<Vec2> {
         self.foes.iter().map(|f| f.at).collect()
@@ -102,7 +102,7 @@ impl Formation {
         (0..self.foes.len())
             .filter(|&i| alive(i))
             .min_by(|&a, &b| {
-                // Ties by INDEX, for the same reason `chain::resolve` breaks
+                // Ties by INDEX, for the same reason `rules::chain::resolve` breaks
                 // them that way: arbitrary is fine, unstable is not.
                 self.foes[a]
                     .at
@@ -255,13 +255,13 @@ mod tests {
     fn the_grid_fixture_reproduces_the_documented_chain_totals() {
         let (p, b) = spec();
         let f = Formation::grid(p, b, 3, 3, 3.0, Vec2::new(0.0, 5.0));
-        let torid = crate::chain::Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true };
+        let torid = crate::rules::chain::Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true };
         let at = f.foes[f.aimed].at;
         let total = |radius_m: f64| -> f64 {
-            crate::chain::resolve(
+            crate::rules::chain::resolve(
                 &f.positions(),
                 &[f.aimed],
-                crate::chain::Splash { at, radius_m },
+                crate::rules::chain::Splash { at, radius_m },
                 torid,
             )
             .iter()

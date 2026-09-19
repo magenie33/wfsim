@@ -29,23 +29,23 @@ pub mod space;
 /// search half of this crate is only as good as what measures it.
 pub mod truth;
 
-use wfsim_engine::damage::DamageType;
+use wfsim_engine::rules::damage::DamageType;
 use wfsim_engine::fight::{
     monte_carlo, BuffConfig, BuffLock, FightParams, LockMode, Summary,
 };
 use wfsim_engine::arena::Arena;
-use wfsim_engine::tenno_data::Tenno;
-use wfsim_engine::loadout::{resolve_for, ResolvedPanel};
+use wfsim_engine::data::tenno::Tenno;
+use wfsim_engine::build::loadout::{resolve_for, ResolvedPanel};
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::{ModDef, StackPolicy};
-use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
+use wfsim_engine::rules::capacity::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
 /// The searchable mod pool of one CLASS at MAX RANK (drain = base +
 /// max_rank), from `data/mods/<class>/*.yaml`. Exilus (utility) mods have no
 /// damage model — enumerating them only multiplies the search space, so the
 /// optimizer's pool excludes them; the exilus SLOT is its own dimension.
 pub fn class_pool(class: &str) -> Vec<ModDef> {
-    wfsim_engine::mods_data::class_pool(class)
+    wfsim_engine::data::mods::class_pool(class)
         .into_iter()
         .filter(|m| !m.exilus)
         .collect()
@@ -139,7 +139,7 @@ pub fn enumerate_candidates(
         // The NEUTRAL Tenno and the ordinary policy: this front predates the
         // scenario and is used by the CLI and the tests, which have no fight to
         // draw either from.
-        wfsim_engine::tenno_data::default_tenno(),
+        wfsim_engine::data::tenno::default_tenno(),
         StackPolicy::Emergent,
     );
     (out, stats)
@@ -671,7 +671,7 @@ pub struct Scenario {
     /// one form keeps it — a cycle is not what grants it.
     pub frenzy_locks: Vec<BuffLock>,
     /// Does the weapon under search carry the Frenzy passive? It is a
-    /// per-weapon perk, not a constant — see weapons_data::has_perk.
+    /// per-weapon perk, not a constant — see data::weapons::has_perk.
     pub frenzy: bool,
     /// Per-buff configured policy applied to every evaluated build (same id
     /// scheme as the web Sim panel). Empty = the emergent default.
@@ -695,7 +695,7 @@ pub struct Scenario {
 /// Evaluate one candidate with a given arcane: engine Monte Carlo only.
 pub fn evaluate(
     c: &Candidate,
-    arcane: &wfsim_engine::arcanes_data::ArcaneFx,
+    arcane: &wfsim_engine::data::arcanes::ArcaneFx,
     s: &Scenario,
     runs: u32,
     seed: u64,
@@ -1008,7 +1008,7 @@ pub(crate) fn job_seed(seed: u64, ci: usize, ai: usize) -> u64 {
 pub fn evaluate_batch(
     cands: &[Candidate],
     jobs: &[Job],
-    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
     runs: u32,
     seed: u64,
@@ -1055,7 +1055,7 @@ pub fn evaluate_batch(
 pub fn evaluate_batch(
     cands: &[Candidate],
     jobs: &[Job],
-    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
     runs: u32,
     seed: u64,
@@ -1237,7 +1237,7 @@ const BOARD_EVERY: usize = 4096;
 #[allow(clippy::too_many_arguments)] // search-config surface, like enumerate_candidates
 pub fn run_funnel(
     cands: &[Candidate],
-    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    arcanes: &[wfsim_engine::data::arcanes::ArcaneFx],
     scenario: &Scenario,
     mut alive: Vec<Job>,
     rounds: &[(u32, usize, bool)],
@@ -1475,14 +1475,14 @@ mod tests {
         use wfsim_engine::target::BodyPart;
         let pool = pool();
         let base = wfsim_engine::model::WeaponBase::from_data("dual_toxocyst", true, &[]);
-        let innate = wfsim_engine::weapons_data::innate_slots("dual_toxocyst");
+        let innate = wfsim_engine::data::weapons::innate_slots("dual_toxocyst");
         let (cands, _stats, _c) = enumerate_candidates_observed(
             &pool, &base, None, 0, 8, 8, 60, &innate,
             &Constraints::default(), &[None], None, 400,
-            wfsim_engine::tenno_data::default_tenno(), StackPolicy::Emergent,
+            wfsim_engine::data::tenno::default_tenno(), StackPolicy::Emergent,
         );
         assert!(cands.len() > 40, "need a field to cut, got {}", cands.len());
-        let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+        let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
         let scenario = Scenario {
             arena: Arena {
                 body_parts: vec![BodyPart {
@@ -1647,7 +1647,7 @@ mod tests {
             8,
             8,
             60,
-            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
+            &wfsim_engine::data::weapons::innate_slots("dual_toxocyst"),
             &Constraints::default(),
             &[None],
         );
@@ -1684,7 +1684,7 @@ mod tests {
             0,
             8,
             60,
-            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
+            &wfsim_engine::data::weapons::innate_slots("dual_toxocyst"),
             &Constraints::default(),
             &[None],
         );
@@ -1717,7 +1717,7 @@ mod tests {
         ];
         let p: Vec<ModDef> = pool().into_iter().filter(|m| ids.contains(&m.id)).collect();
         assert_eq!(p.len(), ids.len());
-        let full = wfsim_engine::mods_data::pistol_pool();
+        let full = wfsim_engine::data::mods::pistol_pool();
         let ex = full
             .iter()
             .find(|m| m.exilus)
@@ -1742,7 +1742,7 @@ mod tests {
                 8,
                 8,
                 60,
-                &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
+                &wfsim_engine::data::weapons::innate_slots("dual_toxocyst"),
                 &Constraints::default(),
                 opts,
             )
@@ -1851,7 +1851,7 @@ mod tests {
             8,
             8,
             60,
-            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
+            &wfsim_engine::data::weapons::innate_slots("dual_toxocyst"),
             &cons,
             &[None],
         );

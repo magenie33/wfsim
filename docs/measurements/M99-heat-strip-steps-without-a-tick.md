@@ -63,7 +63,7 @@ once per proc folded in, so 1164 is `23 × 50.59 = 1163.6`.
 
 Already the engine's rule, so nothing moved: `data/debuffs/ignite.yaml`
 anchors the ramp to the proc and scales its steps by status duration, and
-`scaling::ARMOR_CAP` clamps spawn armour before any strip.
+`rules::scaling::ARMOR_CAP` clamps spawn armour before any strip.
 `m99_heat_strip_climbs_without_a_tick_on_capped_armour` in `engine::dummy`
 replays this build on the real unit and fails if the ramp waits for a tick;
 `m99_a_refreshed_short_burn_ticks_every_second` holds the fire, fails if a

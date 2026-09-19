@@ -22,10 +22,10 @@ fn a_fire_rate_buff_converts_against_each_forms_own_base() {
     let inc = crate::model::WeaponBase::from_data("furis_incarnon", true, &evos);
     let base = crate::model::WeaponBase::from_data("furis", true, &evos);
     let pol = crate::model::StackPolicy::Emergent;
-    let pi = crate::loadout::resolve(&inc, &[], pol);
-    let pb = crate::loadout::resolve(&base, &[], pol);
+    let pi = crate::build::loadout::resolve(&inc, &[], pol);
+    let pb = crate::build::loadout::resolve(&base, &[], pol);
 
-    let rate_of = |p: &crate::loadout::ResolvedPanel| {
+    let rate_of = |p: &crate::build::loadout::ResolvedPanel| {
         p.stacking_buffs
             .iter()
             .find(|b| b.grant == crate::model::BuffGrant::FireRate)

@@ -24,7 +24,7 @@ attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). Identical to the
   # primary fire's, which is stated rather than inherited because an ATTACK is
-  # never inherited (`weapons_data::INHERITED`).
+  # never inherited (`data::weapons::INHERITED`).
   spread:
     min_deg: 4.0
     max_deg: 6.0

@@ -26,7 +26,7 @@ arithmetic, it came from counting bodies in a fight.
 **ONLY THE AIMED BODY CAN HEADSHOT.** The two beams the weapon acquires for
 itself lock BODIES. So a headshot is a
 property of where the player is pointing and not of the weapon, which is the
-rule `chain::Instance` already carried for every other spread — a splash, a
+rule `rules::chain::Instance` already carried for every other spread — a splash, a
 chain hop, a tendril — and it now has a reading behind it here rather than an
 inheritance.
 

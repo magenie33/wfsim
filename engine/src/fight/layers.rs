@@ -111,7 +111,7 @@ pub(super) fn pellet_layers(
     // engine's ModdedBase, and the two are exactly proportional: quantizing
     // `kX` against `ks` is `k` times quantizing `X` against `s`. So this is the
     // GAME's grid, on the game's base, and it lands on the same number.
-    let scale = at / crate::damage::QUANTIZATION_DENOMINATOR;
+    let scale = at / crate::rules::damage::QUANTIZATION_DENOMINATOR;
     if scale > 0.0 && pre_quantization.total() > 0.0 {
         let k = if stage_mb > 0.0 { at / stage_mb } else { 1.0 };
         let mut components = Vec::new();

@@ -7,7 +7,7 @@ description: "+50% Magazine Reloaded/s when holstered."
 selection: choose_one
 
 effects:
-  # NOT LOADED: no `holstered_magazine_regen` arm in `evolutions_data::effect()`,
+  # NOT LOADED: no `holstered_magazine_regen` arm in `data::evolutions::effect()`,
   # so this resolves to `EvoEffect::Inert` and the engine takes nothing
   # (data/README.md). It needs a weapon-swap model the sim has no concept of —
   # it fires one weapon continuously, so nothing is ever holstered.

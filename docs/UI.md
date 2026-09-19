@@ -7,7 +7,7 @@ the fight**.
 ## Every scenario has ONE core metric, and nothing on the page names it
 
 What a run is judged by is a term of the SCENARIO. The metrics are declared
-once, in `engine::metrics::ALL` — an id, the response field it reads, whether
+once, in `engine::rules::metrics::ALL` — an id, the response field it reads, whether
 that field is a total to turn into a per-minute rate, and its unit — and served
 at `/api/meta.metrics`. The Measure control, the headline number and its unit,
 the picker's and the optimizer's gain scans, the board strip and the scorer all
@@ -66,7 +66,7 @@ drift DPS shows over the same pair (18,653 vs 20,551).
 | UI concept | engine |
 |---|---|
 | the fight, both actors | `arena::Arena` (a `Tenno`, a target with its hitboxes, a duration) |
-| the player | `tenno_data::Tenno` — stats, and a `state` every conditional mod is asked about |
+| the player | `data::tenno::Tenno` — stats, and a `state` every conditional mod is asked about |
 | target that never wastes DPS | `fight::TargetMode::InstantRespawn` |
 | aim quality / headshot feel | `fight::BodyPart::aim_weight` |
 | plane, positions, ranges | **nothing yet** — see below |
@@ -279,7 +279,7 @@ fields, which is why `importShare` has no scenario step to guard rather than a
 guarded one. `check_share` builds such a link by hand and asserts the reader's
 own fight, their scenario list and the build's `lastResult` are all untouched.
 A v3 link names an id by its place in `data/share_order.yaml`, which is
-APPEND-ONLY and held there by a ratchet — `engine::share_order` recomputes the
+APPEND-ONLY and held there by a ratchet — `engine::data::share_order` recomputes the
 generator's digest over the whole list and fails on anything that is not an
 append, so a reorder is a red test rather than a link that quietly opens
 somebody else's build. It is worth 3.4x: the same Laetum is 279 characters as
@@ -736,6 +736,6 @@ socket in a scenario any more: both are the linked Warframe build's.
 ## Not decided yet
 
 - Rendering cadence vs simulation tick (fixed 240 fps sim clock exists in
-  `sim::SimConfig`).
+  `rules::sim::SimConfig`).
 - How movement paths (target walking, player strafing) are authored in the
   arena view.

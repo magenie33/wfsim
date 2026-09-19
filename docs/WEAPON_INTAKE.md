@@ -70,7 +70,7 @@ a MELEE one, Valkyr Talons, taken at 100% ability strength (docs/MELEE.md §7c).
 
 **KITGUNS ARE IN, one roster entry per CHAMBER PER SLOT** — all six chambers,
 twelve entries, `data/kitguns/README.md`. A Kitgun has no published stat line:
-the entry names its chamber record (`kitgun:`) and `weapons_data::spec_assembled`
+the entry names its chamber record (`kitgun:`) and `data::weapons::spec_assembled`
 composes the chosen grip and loader over it, so the slot — and with it the mod
 pool — is settled before any part is picked. A chamber is TWO files in
 `data/kitguns/chambers/` (off `Module:Modular/data`) and two entries here (off
@@ -165,7 +165,7 @@ Three consequences, and each is why the axis exists rather than a field:
 - **Nothing downstream had to learn it.** It arrives as the weapon's own base
   vector — merging into that element if the weapon already deals it — and an
   innate element already composes with the mod elements the way MECHANICS §3
-  rule 2 says. `weapons_data::apply_valence` is the whole implementation, called
+  rule 2 says. `data::weapons::apply_valence` is the whole implementation, called
   where `apply_deployment` is called, which is every path that builds a weapon
   for a request.
 - **The BOARD ranks one, and the row states its element.** 25% and 60% are a
@@ -174,8 +174,8 @@ Three consequences, and each is why the axis exists rather than a field:
   therefore carries `valence`, the ruler scores every row at the roll's MAXIMUM
   (which every player can reach by Valence Fusion, so it is a term of the
   standard rather than a property of somebody's copy), and the element is part
-  of `builds::identity` — two elements are two entrants, exactly as two modes
-  are. A build with NO element is refused by `builds::validate`, which is
+  of `board::builds::identity` — two elements are two entrants, exactly as two modes
+  are. A build with NO element is refused by `board::builds::validate`, which is
   legality rather than a ruler's opinion.
 
   **A weapon with no row is not blocked, it is unsubmitted.** The board is fed
@@ -302,7 +302,7 @@ and stating that override is the whole point. Do NOT copy the mastery rank, the
 disposition, the polarities, the riven family, the internal name or the ammo
 block: a guard rejects any value identical to the weapon's, because a
 restatement carries no information and is the only way the two entries can
-drift apart. `weapons_data::INHERITED` is the list.
+drift apart. `data::weapons::INHERITED` is the list.
 
 
 One weapon ENTRY carries one attack. A weapon with a second attack you can

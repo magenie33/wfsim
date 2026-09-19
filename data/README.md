@@ -27,7 +27,7 @@ item  ──references──▶  perk (trigger + grants)
 
 - ids are NEVER translated; every entity's own `name` field is the English
   source of truth. A locale is a DIRECTORY — `data/i18n/<locale>/` — whose
-  yaml files are MERGED into one overlay (`engine::i18n_data`), and there is
+  yaml files are MERGED into one overlay (`engine::data::i18n`), and there is
   no English overlay at all:
 
   | file | written by | holds |
@@ -40,7 +40,7 @@ item  ──references──▶  perk (trigger + grants)
   not a last-one-wins.
 - Overlays may be arbitrarily incomplete: a missing entry falls back to
   English in the UI. Partial translation is always a valid state.
-- Referential integrity is machine-enforced (`engine::i18n_data` tests):
+- Referential integrity is machine-enforced (`engine::data::i18n` tests):
   every overlay key must be a real id — a translator's typo fails CI, so a
   translation PR can never break the app.
 - **Dual verification**: every localized name should be witnessed by BOTH
@@ -89,12 +89,12 @@ The three rules:
 
 1. **Define once, anywhere.** A perk's single definition may live in
    `perks/<id>.yaml` (the table) or inline in one item's `perks:` list.
-   Resolution (`engine::weapons_data::perk`) searches the table first, then
+   Resolution (`engine::data::weapons::perk`) searches the table first, then
    every item's inline definitions.
 2. **Every other carrier writes the bare id.** Never a second copy — both
    Dual Toxocyst forms reference `frenzy` (a table perk).
 3. **Ids are globally unique, machine-enforced** —
-   `weapons_data::tests::perk_ids_are_globally_unique_across_table_and_inlines`
+   `data::weapons::tests::perk_ids_are_globally_unique_across_table_and_inlines`
    fails the build on a duplicate (inline shadowing a table id, or the same
    id inlined twice), so a bare id is never ambiguous.
 
@@ -105,21 +105,21 @@ sharing requirement: it is a pure move — no referencing entry changes.
 
 | dir | holds | key fields |
 |---|---|---|
-| `perks/` | grantors (weapon passives; loaded by `engine::weapons_data::perks`) | `trigger`, `scope`, `duration_seconds`, `max_stacks`, `grants` (inline effect block) |
+| `perks/` | grantors (weapon passives; loaded by `engine::data::weapons::perks`) | `trigger`, `scope`, `duration_seconds`, `max_stacks`, `grants` (inline effect block) |
 | `arcanes/` | arcane **items** | `rarity`, `max_rank`, `arcanes_to_max`, `drop_chance`, `perk` |
 | `weapons/` | weapons | **`form`** (REQUIRED — which form this entry is, from the closed vocabulary `base` / `charged` / `incarnon`; see [`../docs/GLOSSARY.md`](../docs/GLOSSARY.md) "FORMS"), `transform_group` (the entries that are forms of ONE weapon), `perks` (perk id list), `incarnon_evolutions` |
 | `mods/` | mods | `polarity`, `base_drain`/`max_rank` (drain = base+rank), bucketed `effects` with `per_rank`, **`family` + `incompatible_with`** (variants of one mod are mutually exclusive - the wiki module's `Incompatible` field, machine-readable) |
 | `debuffs/` | **debuffs** applied by procs — same shape as `buffs/`, scoped to the target (a proc is only the trigger; see BUFFS.md "Debuffs") | `applied_by.damage_type`, `duration_seconds`, `max_stacks`, `stack_overflow`, `per_stack_modifiers`, `modifier_caps/conditions`, `cc_effects`, `aliases`, `internal_name` |
-| `enemies/` | enemies (loaded by `engine::enemy_data`; `custom/` holds synthetic test targets, `acolytes/` the six that share one statline) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `faction` (the COMBAT one — what Bane answers to) + `scaling_faction` (the level curves), `can_be_eximus`, `mercy_eligible`, `status_stack_caps`, `attenuation`, `image` (wiki-hosted portrait — enemy art is NOT in `assets.yaml`, see [`../docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md)), `unmodeled` (gaps the target card prints), `faction_damage_override`, `synthetic`, raw `mechanics` |
-| `i18n/` | one DIRECTORY per locale (`zh/`, files merged; loaded by `engine::i18n_data`, served at `/api/i18n`) | `id → name` maps (`weapons`, `enemies`, `damage_types`, `mods`, `arcanes`, `evolutions`, `auras`, `shards`, `warframe_mods`, `warframe_arcanes`, `warframe_abilities`), `ui` + `effect_phrases`, and the generated `mod_descriptions` / `arcane_descriptions` (DE's card text, one entry per rank) |
-| `warframes/` | the frames the Warframe builder seats (loaded by `engine::warframes_data`; armor, energy and sprint stay in `frames.yaml`) | rank-30 `health` and `shield`, innate `polarities`, `aura_polarity`, `passive`, `abilities` (four ids in slot order) |
+| `enemies/` | enemies (loaded by `engine::data::enemies`; `custom/` holds synthetic test targets, `acolytes/` the six that share one statline) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `faction` (the COMBAT one — what Bane answers to) + `scaling_faction` (the level curves), `can_be_eximus`, `mercy_eligible`, `status_stack_caps`, `attenuation`, `image` (wiki-hosted portrait — enemy art is NOT in `assets.yaml`, see [`../docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md)), `unmodeled` (gaps the target card prints), `faction_damage_override`, `synthetic`, raw `mechanics` |
+| `i18n/` | one DIRECTORY per locale (`zh/`, files merged; loaded by `engine::data::i18n`, served at `/api/i18n`) | `id → name` maps (`weapons`, `enemies`, `damage_types`, `mods`, `arcanes`, `evolutions`, `auras`, `shards`, `warframe_mods`, `warframe_arcanes`, `warframe_abilities`), `ui` + `effect_phrases`, and the generated `mod_descriptions` / `arcane_descriptions` (DE's card text, one entry per rank) |
+| `warframes/` | the frames the Warframe builder seats (loaded by `engine::data::warframes`; armor, energy and sprint stay in `frames.yaml`) | rank-30 `health` and `shield`, innate `polarities`, `aura_polarity`, `passive`, `abilities` (four ids in slot order) |
 | `warframe_mods/` | Warframe mods and augments (auras are `auras/`) | `polarity`, `base_drain`/`max_rank`, `exilus`, `family`, `set` + `set_bonus`, `augments` (the ability it needs), `description`, typed `effects` (`<stat>_bonus` at `rankMax`, else `unmodelled` with the card's `text`) |
 | `artifact_mods/` | Antique mods for the Operator's Tektolyst Artifact | `school`, `max_rank`, `description` (the card at max rank), `bonus` (the second line: `per` = `unique_school` or a school id, `value`, `unit`, `stat`) |
 | `artifact_arcanes/` | Tektolyst Artifact arcanes | `rarity`, `max_rank`, `description` |
 | `warframe_arcanes/` | Warframe arcanes | `rarity`, `max_rank`, `description`, typed `effects` as above |
 | `warframe_abilities/` | an ability's CARD — cost, icon, text, and for a seated frame its numbers; `abilities/` is the BUFF one hands a weapon | `frame`, `slot`, `energy_cost`, `subsumable`, `augments`, `icon`, `drain_per_second`, `stats` (`value` at max rank, `scales_with`, `helminth_value`, `adds_to_base`, `channel_multiplier`) |
-| `factions/` | faction damage modifiers (post-U36, faction-wide) as **numeric multipliers** per damage type (unlisted = 1.0; today's values happen to be 1.5/0.5 — never assume it). Loaded by `engine::factions_data`; an enemy's key resolves through `faction_damage_override ?? faction`. The **fifteen columns here are the whole system** (the wiki's `Damage/Overview_Table`, verified cell by cell) — a faction they do not name takes every damage type as written | `factions.<id>.<damage_type>: <mult>`, `special` (Object, Overguard pools), `faction_mods` (Bane system) |
-| `tenno/` | the **player** (loaded by `engine::tenno_data`), shaped like a Warframe — the field names are the wiki module's. `state` gates mods: a `condition: while_aiming` / `while_invisible` / `while_airborne` is asked of it. `armor` and `energy` are read by the `tenno_scaled` arcanes (Primary Bulwark, Primary Overcharge). The rest is still INERT — nothing shoots back yet, and `health`/`shield` are PLACEHOLDERS at 1, not Warframe stats | `health`, `shield`, `overguard`, `armor`, `energy`, `sprint`, `state.{aiming,invisible,airborne,energy_pct}` |
+| `factions/` | faction damage modifiers (post-U36, faction-wide) as **numeric multipliers** per damage type (unlisted = 1.0; today's values happen to be 1.5/0.5 — never assume it). Loaded by `engine::data::factions`; an enemy's key resolves through `faction_damage_override ?? faction`. The **fifteen columns here are the whole system** (the wiki's `Damage/Overview_Table`, verified cell by cell) — a faction they do not name takes every damage type as written | `factions.<id>.<damage_type>: <mult>`, `special` (Object, Overguard pools), `faction_mods` (Bane system) |
+| `tenno/` | the **player** (loaded by `engine::data::tenno`), shaped like a Warframe — the field names are the wiki module's. `state` gates mods: a `condition: while_aiming` / `while_invisible` / `while_airborne` is asked of it. `armor` and `energy` are read by the `tenno_scaled` arcanes (Primary Bulwark, Primary Overcharge). The rest is still INERT — nothing shoots back yet, and `health`/`shield` are PLACEHOLDERS at 1, not Warframe stats | `health`, `shield`, `overguard`, `armor`, `energy`, `sprint`, `state.{aiming,invisible,airborne,energy_pct}` |
 
 ## Where a parameter lives
 
@@ -145,7 +145,7 @@ The pool tag is not the whole rule, and every part of the rule is DATA:
 | `family` | mod | mutually exclusive with its family-mates |
 | `requires` | mod | a calc-layer gate: it equips and sits inert |
 
-`engine::mods_data::pool_for_build` is the only place that combines them
+`engine::data::mods::pool_for_build` is the only place that combines them
 (`pool_for_weapon` is it with nothing installed), and `/api/meta` sends each
 weapon the resulting **id list** — plus `evo_forbids`, what each evolution
 takes OFF that list, because installing a form gives the weapon a second firing
@@ -167,7 +167,7 @@ family (checked). Do not confuse it with `excludes_weapon`.
   consumes; human narrative is a comment.** Every field must have a consumer —
   the engine, the UI, a script, or a code==data pin test (e.g. Secondary
   Enervate's ramp constants, pinned by
-  `perks::secondary_enervate::tests::from_rank_matches_the_arcane_yaml`).
+  `rules::perks::secondary_enervate::tests::from_rank_matches_the_arcane_yaml`).
   Notes, rules-as-prose, caveats and reasoning go in `#` comments, never in
   fields. Structured game facts WITHOUT a consumer yet (e.g. an unmodeled
   mechanic's parameters) may stay as fields — they are columns awaiting a
@@ -187,7 +187,7 @@ family (checked). Do not confuse it with `excludes_weapon`.
   `note`/`desc` are consumed for arcanes and dead everywhere else.
 - **`data/debuffs/` is loaded by nothing.** It is the written spec for status
   effects; the behaviour is hand-implemented in `engine::dummy` /
-  `engine::status`, which cite the files by name. Treat a change there as a
+  `engine::rules::status`, which cite the files by name. Treat a change there as a
   documentation change that also needs code.
 - Two metadata fields are kept by convention even without a code consumer:
   `source` (`url` — provenance, see

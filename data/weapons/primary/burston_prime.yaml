@@ -4,7 +4,7 @@ slot: primary
 # THE ROSTER'S FIRST BURST WEAPON, and the reason `attack.burst` exists. A
 # burst trigger is not a slower auto: the listed fire rate counts BURSTS, so
 # reading it as rounds per second understates this weapon by its burst count.
-# See `weapons_data::BurstSpec` for the wiki formula and what it costs.
+# See `data::weapons::BurstSpec` for the wiki formula and what it costs.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)

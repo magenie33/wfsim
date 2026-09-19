@@ -15,7 +15,7 @@ use std::collections::BTreeSet;
 
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::{ModDef, StackPolicy};
-use wfsim_engine::mods::{plan_forma, PlannedMod};
+use wfsim_engine::rules::capacity::{plan_forma, PlannedMod};
 use wfsim_optimizer::space::SubsetSpace;
 use wfsim_optimizer::{enumerate_candidates_observed, Constraints};
 
@@ -38,7 +38,7 @@ const SCOPE: &[&str] = &[
 ];
 
 fn pool() -> Vec<ModDef> {
-    let p: Vec<ModDef> = wfsim_engine::mods_data::pool_for_weapon("verglas_prime")
+    let p: Vec<ModDef> = wfsim_engine::data::mods::pool_for_weapon("verglas_prime")
         .into_iter()
         .filter(|m| SCOPE.contains(&m.id))
         .collect();
@@ -55,7 +55,7 @@ fn sorted(v: &[usize]) -> Vec<usize> {
 fn run(required: &[&str], min: u32, max: u32) {
     let pool = pool();
     let base = WeaponBase::from_data("verglas_prime", true, &[]);
-    let innate = wfsim_engine::weapons_data::innate_slots("verglas_prime");
+    let innate = wfsim_engine::data::weapons::innate_slots("verglas_prime");
     const CAP: u32 = 60;
     let constraints = Constraints {
         require: required.iter().map(|s| s.to_string()).collect(),
@@ -76,7 +76,7 @@ fn run(required: &[&str], min: u32, max: u32) {
         &[None],
         None,
         0,
-        wfsim_engine::tenno_data::default_tenno(),
+        wfsim_engine::data::tenno::default_tenno(),
         StackPolicy::Emergent,
     );
     assert!(complete, "the fixture must be walkable to the end");

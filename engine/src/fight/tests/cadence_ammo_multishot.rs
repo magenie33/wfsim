@@ -18,12 +18,12 @@ fn a_flat_base_damage_buff_keeps_its_worth_when_a_damage_mod_goes_in() {
     let arena = crate::arena::Arena::training(120.0);
     let dmg = |evo: &[&str], mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("paris_prime", true, evo);
-        let pool = crate::mods_data::pool_for_weapon("paris_prime");
+        let pool = crate::data::mods::pool_for_weapon("paris_prime");
         let multishot: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
             .collect();
-        let panel = crate::loadout::resolve(&base, &multishot, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, &multishot, crate::model::StackPolicy::Emergent);
         let p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         let s = monte_carlo(&p, 8, 0x5017);
         s.mean_damage / s.mean_pellets.max(1e-9)
@@ -60,12 +60,12 @@ fn blazing_barrel_lands_in_the_bracket_its_card_names() {
     // climbing.
     let pellets = |evo: &[&str], mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("strun_prime", true, evo);
-        let pool = crate::mods_data::pool_for_weapon("strun_prime");
+        let pool = crate::data::mods::pool_for_weapon("strun_prime");
         let multishot: Vec<&crate::model::ModDef> = mods
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
             .collect();
-        let panel = crate::loadout::resolve(&base, &multishot, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, &multishot, crate::model::StackPolicy::Emergent);
         let p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         let s = monte_carlo(&p, 12, 0xB1A2);
         s.mean_pellets / s.mean_shots
@@ -147,7 +147,7 @@ fn the_latrons_puncture_perks_read_the_status_they_name() {
     let arena = crate::arena::Arena::training(30.0);
     let run = |evo: &[&str]| {
         let base = crate::model::WeaponBase::from_data("latron_prime", true, evo);
-        let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         // ARMOUR, and a target that survives long enough to carry five
         // Puncture stacks. The training dummy has none of either.
@@ -182,7 +182,7 @@ fn the_latrons_puncture_perks_read_the_status_they_name() {
     // target with none, the perk is worth nothing at all.
     let bare = |evo: &[&str]| {
         let base = crate::model::WeaponBase::from_data("latron_prime", true, evo);
-        let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         p.target.base_armor = 0.0;
         p.target.base_health = 2_000_000.0;
@@ -220,7 +220,7 @@ fn a_bounce_needs_a_crowd_and_one_body_bounces_nowhere() {
     // 4 m explosion reaches bodies the bounce never touched, so what is
     // countable here is that a packed formation takes far more than one
     // body does. The bounce COUNT is a ceiling and it is asserted where it
-    // is decided, in `space::tests` — this level cannot see it, because
+    // is decided, in `rules::space::tests` — this level cannot see it, because
     // the blast and the bounce reach the same bodies.
     let (many, dmg_many) = crowd(24);
     assert!(many > 1, "a crowd is reached: {many} bodies");
@@ -288,9 +288,9 @@ fn swift_punishment_wants_1_1_however_the_card_reads() {
     );
     let bare = crate::model::WeaponBase::from_data("latron_prime", true, &[]);
     let at = |sprint: f64| {
-        let mut t = crate::tenno_data::default_tenno().clone();
+        let mut t = crate::data::tenno::default_tenno().clone();
         t.sprint = sprint;
-        crate::loadout::resolve_for(&base, &[], crate::model::StackPolicy::Emergent, &t)
+        crate::build::loadout::resolve_for(&base, &[], crate::model::StackPolicy::Emergent, &t)
     };
     assert_eq!(at(0.9).co_per_type, 0.0, "0.9 reaches neither reading");
     assert_eq!(at(1.05).co_per_type, 0.0, "just under the real threshold");
@@ -299,7 +299,7 @@ fn swift_punishment_wants_1_1_however_the_card_reads() {
     assert!((at(1.1).co_per_type - 0.30).abs() < 1e-9, "the threshold itself");
     assert!((at(1.2).co_per_type - 0.30).abs() < 1e-9, "and above it");
     // …and the flat half is the perk's either way.
-    let plain = crate::loadout::resolve(&bare, &[], crate::model::StackPolicy::Emergent);
+    let plain = crate::build::loadout::resolve(&bare, &[], crate::model::StackPolicy::Emergent);
     assert!(at(0.9).modified_base > plain.modified_base, "the +6 pays regardless");
     assert!((at(0.9).modified_base - at(1.2).modified_base).abs() < 1e-9);
 }
@@ -325,7 +325,7 @@ fn amalgam_serration_opens_the_sprint_gate_for_the_slowest_frame() {
     let base = crate::model::WeaponBase::from_data(
         "latron_prime", true, &["latron_prime_swift_punishment"],
     );
-    let pool = crate::mods_data::class_pool("rifle");
+    let pool = crate::data::mods::class_pool("rifle");
     let pick = |id: &str| pool.iter().find(|m| m.id == id)
         .unwrap_or_else(|| panic!("{id} in the rifle pool"));
     let amalgam = pick("amalgam_serration");
@@ -337,9 +337,9 @@ fn amalgam_serration_opens_the_sprint_gate_for_the_slowest_frame() {
             e, crate::model::ModEffect::Indirect(crate::model::IndirectStat::SprintSpeed, _))),
         "{:?}", amalgam.effects);
     let with = |m: &crate::model::ModDef| {
-        let t = crate::tenno_data::default_tenno().clone();   // sprint 0.9
+        let t = crate::data::tenno::default_tenno().clone();   // sprint 0.9
         assert_eq!(t.sprint, 0.9, "the neutral wielder is the slowest frame");
-        crate::loadout::resolve_for(&base, &[m], crate::model::StackPolicy::Emergent, &t)
+        crate::build::loadout::resolve_for(&base, &[m], crate::model::StackPolicy::Emergent, &t)
     };
     assert!((with(amalgam).co_per_type - 0.30).abs() < 1e-9,
         "0.9 x 1.25 = 1.125 clears 1.1: {}", with(amalgam).co_per_type);
@@ -439,7 +439,7 @@ fn a_reload_bonus_composes_with_the_bucket_it_joins() {
 /// A BATTERY REFILLS BETWEEN SHOTS, and slowing the weapon enough removes
 /// its reload entirely.
 ///
-/// The Shedu's numbers (wiki, verbatim in `weapons_data::Battery`): a
+/// The Shedu's numbers (wiki, verbatim in `data::weapons::Battery`): a
 /// 7-round battery, 28 rounds a second, a 0.4 s delay with rounds left.
 /// Only the part of the gap BEYOND the delay pays, so the weapon breaks
 /// even at `0.4 + 1/28 = 0.4357 s` a shot — **2.295 rounds a second**,
@@ -635,10 +635,10 @@ fn faction_mult_scales_direct_damage_linearly() {
 
 #[test]
 fn faction_bonus_applies_only_vs_matching_target_faction() {
-    use crate::loadout::resolve;
+    use crate::build::loadout::resolve;
 use crate::model::WeaponBase;
 use crate::model::{Faction, ModDef, ModEffect, Rarity, StackPolicy};
-    use crate::mods::Polarity;
+    use crate::rules::capacity::Polarity;
     let expel = ModDef {
         stance: None,
         exclusive_to: &[],
@@ -1065,10 +1065,10 @@ fn a_locked_stat_ignores_the_live_sources_too() {
 
     // ---- MULTISHOT: an arcane's live stacks (Primary Overcharge, a
     // `Passive` trigger — simply ON, so it needs no event to arm).
-    let mut tenno = crate::tenno_data::default_tenno().clone();
+    let mut tenno = crate::data::tenno::default_tenno().clone();
     tenno.energy = 1000.0;
     tenno.state.energy_pct = 1.0;
-    let over = crate::arcanes_data::for_slot("primary", "primary_overcharge")
+    let over = crate::data::arcanes::for_slot("primary", "primary_overcharge")
         .expect("primary_overcharge");
     let fx = over.fx(5, crate::model::StackPolicy::Emergent, &[], &tenno);
     assert!(!fx.buffs.is_empty(), "a 1,000-energy frame arms it");
@@ -1095,7 +1095,7 @@ fn a_locked_stat_ignores_the_live_sources_too() {
         let p = FightParams {
             // NO arcane at all — the fixture's own would otherwise be the
             // difference being measured.
-            arcane: crate::arcanes_data::ArcaneFx::none(),
+            arcane: crate::data::arcanes::ArcaneFx::none(),
             multishot: 1.0,
             base_multishot: 1.0,
             magazine_size: 1e9,
@@ -1313,7 +1313,7 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
         // stagger adds no damage of its own to confound the field's total.
         damage: DamageVector::default(),
         forced_procs: vec![DamageType::Impact],
-        lingering: Some(crate::loadout::ResolvedLingering {
+        lingering: Some(crate::build::loadout::ResolvedLingering {
             takes_condition_overload: takes,
             ..cloud(crate::model::FieldStacking::Stack)
         }),
@@ -1356,7 +1356,7 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
 /// open.
 #[test]
 fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
-    let radial = |takes: bool| crate::loadout::ResolvedRadial {
+    let radial = |takes: bool| crate::build::loadout::ResolvedRadial {
         blast_kind: crate::model::BlastKind::Contact,
         damage: {
             let mut d = DamageVector::default();

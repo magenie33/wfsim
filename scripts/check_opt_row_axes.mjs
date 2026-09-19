@@ -1,6 +1,6 @@
 // A RESULT ROW STATES EVERY AXIS THE SEARCH VARIED, AND THE ELEMENT IS ONE.
 //
-// `engine::builds::BUILD_AXES` declares what a build consists of — mods,
+// `engine::board::builds::BUILD_AXES` declares what a build consists of — mods,
 // evolutions, arcanes, arcane ranks, mode, assembly, valence, riven — and a row
 // that omits one is a ranking nobody can reproduce. The element is the case
 // that made this worth a check: an adversary weapon's progenitor is part of

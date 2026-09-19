@@ -36,7 +36,7 @@ disposition: 1.35
 polarities: []
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
 # discount: 10 on a matching slot, 5 on a bare one, 4 on the wrong colour
-# (`mods::stance_capacity`). Vazarin, so Shattering Storm grants 10 here and
+# (`rules::capacity::stance_capacity`). Vazarin, so Shattering Storm grants 10 here and
 # Crushing Ruin grants 4 until a Forma says otherwise.
 stance_polarity: vazarin
 introduced: "Update 11.5"
@@ -67,7 +67,7 @@ attack:
   shot_type: hit_scan
   # ATTACK SPEED, in the fire-rate bucket — which is what makes Fury and
   # Berserker ordinary mods here. A stance's swing delays are published at 1.0x,
-  # and `loadout::resolve` divides the whole script by this bucket.
+  # and `build::loadout::resolve` divides the whole script by this bucket.
   fire_rate: 0.833
   multishot: 1.0
   ammo_cost: 0

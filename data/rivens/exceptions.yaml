@@ -1,7 +1,7 @@
 # PER-FAMILY EXCEPTIONS to the derivation — the only riven data that decides
 # anything.
 #
-# THE RULES GENERATE THE POOL. `engine/src/rivens_data.rs::derived_for` reads
+# THE RULES GENERATE THE POOL. `engine/src/build/rivens.rs::derived_for` reads
 # the weapon — its physical shares, its ammo pool, whether anything it fires
 # travels — and that is the model. This file is the "exceptions exist on a case
 # by case basis" half of the wiki's own sentence, and it is hand-written,

@@ -45,7 +45,7 @@ attack:
   crit_multiplier: 2.6
   status_chance: 0.3
   # THE WEAPON'S OWN PUNCH THROUGH. An AoE attack takes no punch-through
-  # MODS (MECHANICS §13), which `loadout::resolve` decides from the attack's
+  # MODS (MECHANICS §13), which `build::loadout::resolve` decides from the attack's
   # shape — the INNATE metres are the weapon's and are kept. They were a zero
   # here until 2026-08-20, which was the mod rule applied to the wrong half.
   # "Innate 1 meter punch through" (wiki).

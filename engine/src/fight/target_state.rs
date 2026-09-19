@@ -23,7 +23,7 @@ pub(super) struct TargetState {
     /// into the Tenno's hand: `engine::ammo` pays a pickup only to a player
     /// within `pickup_range_m` of it. A respawn puts the new body in the same
     /// place, which is what `TargetMode::InstantRespawn` means.
-    pub(super) at: crate::space::Vec2,
+    pub(super) at: crate::rules::space::Vec2,
     pub(super) overguard: f64,
     pub(super) shield: f64,
     pub(super) health: f64,
@@ -52,11 +52,11 @@ pub(super) fn target_undamaged(t: &TargetState, p: &TargetParams) -> bool {
 }
 
 impl TargetState {
-    pub(super) fn spawn(p: &TargetParams, at: crate::space::Vec2) -> Self {
+    pub(super) fn spawn(p: &TargetParams, at: crate::rules::space::Vec2) -> Self {
         Self::spawn_at(p, 0.0, at)
     }
 
-    pub(super) fn spawn_at(p: &TargetParams, now: f64, at: crate::space::Vec2) -> Self {
+    pub(super) fn spawn_at(p: &TargetParams, now: f64, at: crate::rules::space::Vec2) -> Self {
         if let Err(e) = p.validate() {
             panic!("invalid target: {e}");
         }
@@ -96,7 +96,7 @@ impl TargetState {
     /// own table — exposed so a caller can split the reported damage by type
     /// the way the target actually took it. Call it BEFORE `apply`: the pool
     /// it answers for is the one that is still standing.
-    pub(super) fn incoming_column(&self, p: &TargetParams) -> crate::factions_data::Column {
+    pub(super) fn incoming_column(&self, p: &TargetParams) -> crate::data::factions::Column {
         if self.overguard > 0.0 {
             p.type_mods.overguard
         } else {

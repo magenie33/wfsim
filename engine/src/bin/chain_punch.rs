@@ -4,7 +4,7 @@
 //! Reported for the Tenet Glaxion (信条·冷冻光束步枪), a chaining cold beam, and
 //! said to be the same mechanic as the Larkspur's. The wiki's rule is *"Each
 //! enemy hit by the main beam from Punch Through can generate a new set of 3
-//! chains"*, and `chain::resolve` takes the struck bodies as its seeds — so the
+//! chains"*, and `rules::chain::resolve` takes the struck bodies as its seeds — so the
 //! engine is supposed to do this already. This is the experiment that says
 //! whether it does.
 //!
@@ -14,22 +14,22 @@
 //!
 //!   cargo run --release --bin chain_punch
 use wfsim_engine::arena::Arena;
-use wfsim_engine::arcanes_data::ArcaneFx;
+use wfsim_engine::data::arcanes::ArcaneFx;
 use wfsim_engine::fight::{monte_carlo, FightParams};
 use wfsim_engine::target::TargetMode;
-use wfsim_engine::enemy_data;
+use wfsim_engine::data::enemies;
 use wfsim_engine::formation::FoeSpec;
-use wfsim_engine::loadout::resolve;
+use wfsim_engine::build::loadout::resolve;
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::StackPolicy;
-use wfsim_engine::space::Vec2;
+use wfsim_engine::rules::space::Vec2;
 
 const RUNS: u32 = 200;
 const SEED: u64 = 0x5eed;
 const DURATION: f64 = 20.0;
 
 fn arena(weapon_bodies: usize, spacing_m: f64) -> Arena {
-    let e = enemy_data::all()
+    let e = enemies::all()
         .into_iter()
         .find(|e| e.id == "thrax_centurion")
         .expect("the ruler's enemy");
@@ -48,7 +48,7 @@ fn arena(weapon_bodies: usize, spacing_m: f64) -> Arena {
     Arena {
         squad_size: 1,
         target_id: "e1".to_string(),
-        tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+        tenno: wfsim_engine::data::tenno::default_tenno().clone(),
         target: e
             .target_params(150, true, false, TargetMode::InstantRespawn)
             .expect("target"),
@@ -66,7 +66,7 @@ fn arena(weapon_bodies: usize, spacing_m: f64) -> Arena {
 
 fn run(weapon: &str, mods: &[&str], bodies: usize, spacing: f64) -> (f64, f64, usize) {
     let base = WeaponBase::from_data(weapon, true, &[]);
-    let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
+    let pool = wfsim_engine::data::mods::pool_for_weapon(weapon);
     let mut refs = Vec::new();
     for id in mods {
         match pool.iter().find(|m| m.id == *id) {
@@ -96,7 +96,7 @@ fn main() {
         ("+sabot rounds", &["sabot_rounds"]),
     ];
     for weapon in ["tenet_glaxion", "larkspur", "amprex"] {
-        if wfsim_engine::weapons_data::all().iter().all(|w| w.id != weapon) {
+        if wfsim_engine::data::weapons::all().iter().all(|w| w.id != weapon) {
             println!("(no entry: {weapon})");
             continue;
         }
@@ -104,7 +104,7 @@ fn main() {
         println!("{:<28} {:>10} {:>12} {:>8}", "build", "punch (m)", "damage", "bodies");
         for (label, mods) in cases {
             let ok = mods.iter().all(|id| {
-                wfsim_engine::mods_data::pool_for_weapon(weapon)
+                wfsim_engine::data::mods::pool_for_weapon(weapon)
                     .iter()
                     .any(|m| m.id == *id)
             });

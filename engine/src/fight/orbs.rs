@@ -12,7 +12,7 @@ use super::*;
 /// the same place every other shot in this arena leaves from, and the reason
 /// the orb's reach is measured from somewhere real rather than from the target. A degenerate aim (nowhere to face) throws along +x.
 pub(super) fn throw_orb(
-    o: crate::loadout::ResolvedOrb,
+    o: crate::build::loadout::ResolvedOrb,
     params: &FightParams,
     t: f64,
     live: &mut Vec<OrbState>,
@@ -29,13 +29,13 @@ pub(super) fn throw_orb(
     // one replaces it.
     live.clear();
     let aim = params.aim_point();
-    let muzzle = crate::space::muzzle(params.player_at, aim);
+    let muzzle = crate::rules::space::muzzle(params.player_at, aim);
     let (dx, dy) = (aim.x - muzzle.x, aim.y - muzzle.y);
     let len = dx.hypot(dy);
     let dir = if len > 0.0 {
-        crate::space::Vec2::new(dx / len, dy / len)
+        crate::rules::space::Vec2::new(dx / len, dy / len)
     } else {
-        crate::space::Vec2::new(1.0, 0.0)
+        crate::rules::space::Vec2::new(1.0, 0.0)
     };
     // …AND IT LEAVES AFTER THE WIND-UP, not on the trigger pull. `t` is when
     // you pressed; the orb exists `throw_seconds` later and its strike clock
@@ -68,14 +68,14 @@ pub(super) fn throw_orb(
 /// arithmetic of settling a damage instance and nothing else.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct OrbState {
-    pub(super) part: crate::loadout::ResolvedOrb,
+    pub(super) part: crate::build::loadout::ResolvedOrb,
     /// Where it is. Advanced to each event's time as that event is settled,
     /// which is all the resolution this needs — nothing between two strikes
     /// asks where it is.
-    pub(super) at: crate::space::Vec2,
+    pub(super) at: crate::rules::space::Vec2,
     /// Unit heading, fixed at the throw: touching a body slows it and does not
     /// turn it.
-    pub(super) dir: crate::space::Vec2,
+    pub(super) dir: crate::rules::space::Vec2,
     /// The clock `at` was last advanced to.
     pub(super) at_time: f64,
     /// Has it touched a body yet? The one thing that changes its speed.
@@ -101,14 +101,14 @@ impl OrbState {
     /// position model exists to get right.
     /// This orb `metres` further along its heading. `dir` is a unit vector, so
     /// there is nothing to normalise.
-    pub(super) fn step(&self, metres: f64) -> crate::space::Vec2 {
-        crate::space::Vec2::new(
+    pub(super) fn step(&self, metres: f64) -> crate::rules::space::Vec2 {
+        crate::rules::space::Vec2::new(
             self.at.x + self.dir.x * metres,
             self.at.y + self.dir.y * metres,
         )
     }
 
-    pub(super) fn advance(&mut self, to: f64, bodies: &[crate::space::Vec2]) {
+    pub(super) fn advance(&mut self, to: f64, bodies: &[crate::rules::space::Vec2]) {
         while self.at_time < to - 1e-12 {
             let speed = if self.contacted {
                 self.part.speed_after_contact_mps
@@ -123,7 +123,7 @@ impl OrbState {
             let hit = if self.contacted {
                 None
             } else {
-                crate::space::first_hit(self.at, self.dir, bodies).filter(|(_, d)| *d <= reach + 1e-9)
+                crate::rules::space::first_hit(self.at, self.dir, bodies).filter(|(_, d)| *d <= reach + 1e-9)
             };
             match hit {
                 Some((_, d)) => {
@@ -172,7 +172,7 @@ pub(super) fn process_orbs(
     ctx: &FieldCtx,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     others: &mut [SpreadFoe],
 ) {
     if orbs.is_empty() {
@@ -214,7 +214,7 @@ pub(super) fn process_orbs(
         // every sphere in this engine uses.
         let in_reach: Vec<usize> = (0..bodies.len())
             .filter(|&b| {
-                crate::space::caught_by_blast(bodies[b].distance(orb.at), orb.part.strike_radius_m)
+                crate::rules::space::caught_by_blast(bodies[b].distance(orb.at), orb.part.strike_radius_m)
             })
             .collect();
         if in_reach.is_empty() {
@@ -237,7 +237,7 @@ pub(super) fn process_orbs(
         if reached > 1 {
             let mut rest: Vec<usize> = in_reach.into_iter().filter(|&b| b != seed).collect();
             // Nearest first from wherever the path has got to, ties by index —
-            // the same walk `chain::Layout` does, and nobody twice.
+            // the same walk `rules::chain::Layout` does, and nobody twice.
             while path.len() < reached {
                 let from = *path.last().expect("seeded");
                 let Some((k, _)) = rest
@@ -292,12 +292,12 @@ pub(super) fn orb_strike(
     ap: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     others: &mut [SpreadFoe],
 ) -> bool {
     let Some(mut part) = ap.orb_strike else { return false };
     // A CHAINED BODY TAKES A SMALLER STRIKE, and "smaller" means a smaller BASE
-    // — not a multiplier on the finished number. `chain::Instance::share` is
+    // — not a multiplier on the finished number. `rules::chain::Instance::share` is
     // explicit about which: *"a beam with a smaller base damage, so it scales
     // the hit AND the status base that hit computes its DoTs from"*, and the
     // hop's own page states its fraction of the beam rather than of the hit.
@@ -349,18 +349,18 @@ pub(super) fn orb_detonation(
     ap: &FightParams,
     r: &mut RunResult,
     rec: &mut crate::record::Record,
-    d: &mut crate::rng::Draws,
+    d: &mut crate::rules::rng::Draws,
     others: &mut [SpreadFoe],
-    bodies: &[crate::space::Vec2],
+    bodies: &[crate::rules::space::Vec2],
 ) {
     let Some(part) = ap.orb_blast else { return };
     for (b, &pos) in bodies.iter().enumerate() {
         let dist = pos.distance(orb.at);
-        if !crate::space::caught_by_blast(dist, part.radius_m) {
+        if !crate::rules::space::caught_by_blast(dist, part.radius_m) {
             continue;
         }
         // LINEAR FALLOFF MEASURED FROM THE ORB rather than from a body.
-        let mult = orb.damage_multiplier * part.falloff_at(crate::space::blast_reach(dist));
+        let mult = orb.damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist));
         match b.checked_sub(1) {
             None => {
                 field_tick(

@@ -7,18 +7,18 @@
 //! every roster row — which is the number that reaches the chart.
 //!
 //!   cargo run --release --bin stack_probe
-use wfsim_engine::arcanes_data::ArcaneFx;
+use wfsim_engine::data::arcanes::ArcaneFx;
 use wfsim_engine::arena::Arena;
 use wfsim_engine::fight::{replay, FightParams, DEBUFF_ROSTER};
 use wfsim_engine::target::TargetMode;
-use wfsim_engine::enemy_data;
-use wfsim_engine::loadout::resolve;
+use wfsim_engine::data::enemies;
+use wfsim_engine::build::loadout::resolve;
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::StackPolicy;
-use wfsim_engine::space::Vec2;
+use wfsim_engine::rules::space::Vec2;
 
 fn main() {
-    let e = enemy_data::all()
+    let e = enemies::all()
         .into_iter()
         .find(|x| x.id == "thrax_centurion")
         .expect("the ruler's enemy");
@@ -28,13 +28,13 @@ fn main() {
     let arena = Arena {
         squad_size: 1,
         target_id: "e1".to_string(),
-        tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+        tenno: wfsim_engine::data::tenno::default_tenno().clone(),
         target: e
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("target"),
         body_parts: e.aim_parts(&[("body", 1.0)]).expect("a body"),
         player_at: Vec2::ORIGIN,
-        target_at: Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
+        target_at: Vec2::new(0.0, wfsim_engine::rules::space::CONTACT_RANGE_M),
         duration_seconds: 60.0,
         abilities: Vec::new(),
         ability_picks: Vec::new(),
@@ -59,12 +59,12 @@ fn main() {
 
     for (label, mods) in cases {
         let weapon = label.split(' ').next().expect("a weapon id");
-        if wfsim_engine::weapons_data::all().iter().all(|w| w.id != weapon) {
+        if wfsim_engine::data::weapons::all().iter().all(|w| w.id != weapon) {
             println!("(no entry: {weapon})");
             continue;
         }
         let base = WeaponBase::from_data(weapon, true, &[]);
-        let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
+        let pool = wfsim_engine::data::mods::pool_for_weapon(weapon);
         let refs: Vec<_> = mods
             .iter()
             .filter_map(|id| pool.iter().find(|m| m.id == *id))

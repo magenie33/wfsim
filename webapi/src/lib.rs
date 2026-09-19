@@ -18,16 +18,16 @@
 use serde_json::{json, Value};
 use wfsim_engine::fight::{BuffLock, FightParams, LockMode, LockedBuff};
 use wfsim_engine::target::{BodyPart, TargetMode};
-use wfsim_engine::enemy_data::EnemySpec;
+use wfsim_engine::data::enemies::EnemySpec;
 // NO `resolve` HERE, and that is the point: it is the neutral-Tenno wrapper, and
 // the panel above was its last caller in this crate. Every endpoint now resolves
 // for the FIGHT's player, which is what "one player, both answers" means when it
 // is true rather than intended.
-use wfsim_engine::loadout::{resolve_for, ResolvedPanel};
+use wfsim_engine::build::loadout::{resolve_for, ResolvedPanel};
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::{ModDef, ModEffect, StackPolicy};
 use wfsim_engine::model::pct as fpct;
-use wfsim_engine::mods::{PlannedMod, Polarity};
+use wfsim_engine::rules::capacity::{PlannedMod, Polarity};
 use wfsim_optimizer::{
     enumerate_candidates_observed, run_funnel, schedule_to, Candidate, Constraints, FunnelState,
     Job, Scenario,
@@ -40,7 +40,7 @@ use wfsim_engine::fight::Summary;
 // anything new in data/enemies/ appends after them in path order.
 fn enemies() -> Vec<EnemySpec> {
     let preferred = ["thrax_centurion"];
-    let mut specs = wfsim_engine::enemy_data::all();
+    let mut specs = wfsim_engine::data::enemies::all();
     specs.sort_by_key(|s| {
         preferred
             .iter()
@@ -104,7 +104,7 @@ fn polarity_label(p: &str) -> String {
 }
 
 pub fn warframe_catalog_json() -> Value {
-    use wfsim_engine::warframes_data as wf;
+    use wfsim_engine::data::warframes as wf;
     let a = assets();
     let tags = |t: &[wf::TagGrant]| t.iter().map(|g| json!({ "tag": g.tag.id(), "when": g.when })).collect::<Vec<_>>();
     json!({
@@ -221,7 +221,7 @@ pub fn warframe_catalog_json() -> Value {
 /// `/api/operator/panel`: the Operator page's artifact, each seated card with its
 /// bonus line paid out for what is seated beside it.
 pub fn operator_panel_json(v: &Value) -> Value {
-    use wfsim_engine::warframes_data as wf;
+    use wfsim_engine::data::warframes as wf;
     let pick: wf::ArtifactPick = match serde_json::from_value(v.get("artifact").cloned().unwrap_or_else(|| json!({}))) {
         Ok(p) => p,
         Err(e) => return err_json(format!("bad artifact: {e}")),
@@ -239,7 +239,7 @@ pub fn operator_panel_json(v: &Value) -> Value {
 }
 
 pub fn warframe_panel_json(v: &Value) -> Value {
-    use wfsim_engine::warframes_data as wf;
+    use wfsim_engine::data::warframes as wf;
     let build: wf::Build = match serde_json::from_value(v.clone()) {
         Ok(b) => b,
         Err(e) => return err_json(format!("bad Warframe build: {e}")),
@@ -360,7 +360,7 @@ struct WeaponInfo {
     /// WHAT THIS ENTRY DOES THAT NOBODY CAN EXPLAIN and the engine reproduces
     /// anyway. The OPPOSITE of `unmodeled` beside it: that says the number is a
     /// floor, this says the number is right and the reason is unknown — see
-    /// `weapons_data::WeaponSpec::live_bugs`.
+    /// `data::weapons::WeaponSpec::live_bugs`.
     live_bugs: Vec<String>,
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
     subtype: String,
@@ -407,7 +407,7 @@ fn title_case(snake: &str) -> String {
 }
 
 /// One line stating a form's trigger/shot mechanics, from the weapon data.
-fn attack_desc(s: &wfsim_engine::weapons_data::WeaponSpec) -> String {
+fn attack_desc(s: &wfsim_engine::data::weapons::WeaponSpec) -> String {
     let mut parts = vec![title_case(&s.attack.trigger).replace(' ', "-")];
     if let Some(st) = s.attack.shot_type {
         parts.push(st.label().to_string());
@@ -436,8 +436,8 @@ fn attack_desc(s: &wfsim_engine::weapons_data::WeaponSpec) -> String {
 /// it. Deduped, because a group's forms can carry the same perk.
 fn passives_of(id: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
-    for f in wfsim_engine::weapons_data::forms_of(id) {
-        for line in wfsim_engine::weapons_data::passive_lines(f.weapon_id) {
+    for f in wfsim_engine::data::weapons::forms_of(id) {
+        for line in wfsim_engine::data::weapons::passive_lines(f.weapon_id) {
             if !out.contains(&line) {
                 out.push(line);
             }
@@ -452,7 +452,7 @@ fn weapons() -> &'static [WeaponInfo] {
     use std::sync::OnceLock;
     static W: OnceLock<Vec<WeaponInfo>> = OnceLock::new();
     W.get_or_init(|| {
-        wfsim_engine::weapons_data::roster()
+        wfsim_engine::data::weapons::roster()
             .map(|s| {
                 let sentinel = s.class.contains("sentinel");
                 let incarnon = s.transforms_to.is_some();
@@ -461,12 +461,12 @@ fn weapons() -> &'static [WeaponInfo] {
                 // closed vocabulary. The two-form CYCLE is not in this list:
                 // it is a mode over two of these forms, published separately
                 // as `has_cycle`.
-                let forms = wfsim_engine::weapons_data::forms_of(&s.id)
+                let forms = wfsim_engine::data::weapons::forms_of(&s.id)
                     .into_iter()
                     .map(|f| {
                         // THE GAME'S NAME FOR IT where the entry states one —
                         // a tapped shot is a "Normal Shot", never a "Base Form".
-                        let label = wfsim_engine::weapons_data::spec(f.weapon_id)
+                        let label = wfsim_engine::data::weapons::spec(f.weapon_id)
                             .map_or_else(|| f.kind.label().to_string(),
                                 |x| x.form_label().to_string());
                         (f.kind.id(), label, f.is_default)
@@ -490,14 +490,14 @@ fn weapons() -> &'static [WeaponInfo] {
                     // reader is looking at one weapon and both halves are
                     // theirs to know about — and the Laetum's doubling is on
                     // the INCARNON entry, which is not the one the page names.
-                    live_bugs: wfsim_engine::weapons_data::forms_of(&s.id)
+                    live_bugs: wfsim_engine::data::weapons::forms_of(&s.id)
                         .iter()
-                        .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
+                        .filter_map(|f| wfsim_engine::data::weapons::spec(f.weapon_id))
                         .flat_map(|x| x.live_bugs.iter().cloned())
                         .collect(),
-                    unmodeled: wfsim_engine::weapons_data::forms_of(&s.id)
+                    unmodeled: wfsim_engine::data::weapons::forms_of(&s.id)
                         .iter()
-                        .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
+                        .filter_map(|f| wfsim_engine::data::weapons::spec(f.weapon_id))
                         .flat_map(|x| x.unmodeled.iter().cloned())
                         .collect(),
                     // WHAT KIND OF WEAPON IT IS, for the picker's filter and
@@ -513,13 +513,13 @@ fn weapons() -> &'static [WeaponInfo] {
                     },
                     sentinel,
                     forms,
-                    has_cycle: wfsim_engine::weapons_data::has_gauge_switched_form(&s.id),
+                    has_cycle: wfsim_engine::data::weapons::has_gauge_switched_form(&s.id),
                     slot: s.slot.clone(),
                     uses_arcane: !sentinel,
                     // THE ENGINE'S ANSWER, not a second copy of the rule:
-                    // `builds::validate_for_board` needs the same seat count to
+                    // `board::builds::validate_for_board` needs the same seat count to
                     // decide whether every arcane seat is filled.
-                    arcane_pools: wfsim_engine::weapons_data::arcane_pools(&s.id)
+                    arcane_pools: wfsim_engine::data::weapons::arcane_pools(&s.id)
                         .into_iter()
                         .map(String::from)
                         .collect(),
@@ -538,8 +538,8 @@ fn weapon(id: &str) -> &'static WeaponInfo {
 }
 
 // ---- spec-derived lookups: no weapon ids are hardcoded anywhere below ----
-fn wspec(id: &str) -> &'static wfsim_engine::weapons_data::WeaponSpec {
-    wfsim_engine::weapons_data::spec(id).expect("weapon data")
+fn wspec(id: &str) -> &'static wfsim_engine::data::weapons::WeaponSpec {
+    wfsim_engine::data::weapons::spec(id).expect("weapon data")
 }
 
 /// The transform group's second-form entry (the Incarnon form), if any.
@@ -564,11 +564,11 @@ fn evo_group(info: &WeaponInfo) -> &'static str {
 /// pool, not by assuming that: a stat evolution that ever changed a trigger
 /// would be answered correctly without a line changing here.
 fn evo_forbids(info: &WeaponInfo) -> serde_json::Map<String, Value> {
-    let bare = wfsim_engine::mods_data::pool_for_weapon(&info.id);
+    let bare = wfsim_engine::data::mods::pool_for_weapon(&info.id);
     let group = evo_group(info);
     let mut out = serde_json::Map::new();
-    for e in wfsim_engine::evolutions_data::pool().iter().filter(|e| e.weapon == group) {
-        let with = wfsim_engine::mods_data::pool_for_build(&info.id, &[e.id.as_str()]);
+    for e in wfsim_engine::data::evolutions::pool().iter().filter(|e| e.weapon == group) {
+        let with = wfsim_engine::data::mods::pool_for_build(&info.id, &[e.id.as_str()]);
         let lost: Vec<&str> = bare
             .iter()
             .map(|m| m.id)
@@ -586,7 +586,7 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
     // that happens to hold for the Incarnon weapons in the roster and says
     // nothing about the next one.
     let group = evo_group(info);
-    wfsim_engine::evolutions_data::pool()
+    wfsim_engine::data::evolutions::pool()
         .iter()
         .find(|e| e.weapon == group && e.unlocks_form().is_some())
         .map(|e| e.id.as_str())
@@ -605,14 +605,14 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
 /// A COMPANION WEAPON IS CARRIED BY A SENTINEL, whose stat block this keeps —
 /// 450/130/80 against a Warframe's 250/0/105 — while the Warframe behind it
 /// still brings the shards and the aura: `rifle_amp` reaches an Artax.
-fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
-    use wfsim_engine::warframes_data as wf;
+fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::tenno::Tenno {
+    use wfsim_engine::data::warframes as wf;
     let mut t = if info.sentinel {
-        wfsim_engine::tenno_data::sentinel_wielder().clone()
+        wfsim_engine::data::tenno::sentinel_wielder().clone()
     } else {
-        wfsim_engine::tenno_data::default_tenno().clone()
+        wfsim_engine::data::tenno::default_tenno().clone()
     };
-    let allowed: &[String] = wfsim_engine::weapons_data::spec(&info.id).map_or(&[], |s| s.wielders.as_slice());
+    let allowed: &[String] = wfsim_engine::data::weapons::spec(&info.id).map_or(&[], |s| s.wielders.as_slice());
     let asked: Option<wf::Build> = v.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok());
     let build = match asked {
         Some(b) if allowed.is_empty() || allowed.contains(&b.frame) => Some(b),
@@ -632,8 +632,8 @@ fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno
     }
     // FIVE SOCKETS, and a sixth is a typo rather than a build.
     t.shards = build.shards.iter().take(5).cloned().collect();
-    if let Some(a) = build.aura.as_ref().filter(|a| wfsim_engine::auras_data::by_id(&a.id).is_some()) {
-        t.auras.push(wfsim_engine::auras_data::AuraPick { id: a.id.clone(), count: 1 });
+    if let Some(a) = build.aura.as_ref().filter(|a| wfsim_engine::data::auras::by_id(&a.id).is_some()) {
+        t.auras.push(wfsim_engine::data::auras::AuraPick { id: a.id.clone(), count: 1 });
     }
     t
 }
@@ -650,7 +650,7 @@ fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno
 /// on-HEADSHOT half of an aiming mod: `default_headshot_pct` is 0 for a
 /// sentinel, so no headshot lands and no on-headshot buff fires. So the state is
 /// on, the triggers stay dead, and the request cannot say otherwise.
-fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
+fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::tenno::Tenno {
     let mut t = wielder_from(v, info);
     t.state.aiming = info.sentinel || get_bool(v, "aiming", true);
     t.state.invisible = get_bool(v, "invisible", t.state.invisible);
@@ -680,7 +680,7 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // two readers of one JSON is how a field drifts.
     if let Some(o) = v.get("extra_stats").and_then(|x| x.as_object()) {
         let g = |k: &str| o.get(k).and_then(Value::as_f64).unwrap_or(0.0);
-        t.bonuses = wfsim_engine::tenno_data::StatBonuses {
+        t.bonuses = wfsim_engine::data::tenno::StatBonuses {
             base_damage: g("base_damage"),
             multishot: g("multishot"),
             crit_chance: g("crit_chance"),
@@ -703,7 +703,7 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // and different squads are two fights — and it is what keeps them off the
     // BOARD. An aura the wielder already wears is not counted twice.
     if let Some(a) = v.get("auras").and_then(Value::as_array) {
-        for p in a.iter().filter_map(|x| serde_json::from_value::<wfsim_engine::auras_data::AuraPick>(x.clone()).ok()) {
+        for p in a.iter().filter_map(|x| serde_json::from_value::<wfsim_engine::data::auras::AuraPick>(x.clone()).ok()) {
             if !t.auras.iter().any(|w| w.id == p.id) {
                 t.auras.push(p);
             }
@@ -745,7 +745,7 @@ fn value_json(v: Option<wfsim_engine::fight::StackValue>) -> Value {
 ///
 /// `class_rules` is `{ "<slot>": { "<axis>": value } }` on the wire — a fight
 /// carries rules for every class, and a weapon reads only its own column.
-/// Returned typed, so `scenario::resolve` never sees a `serde_json::Value`.
+/// Returned typed, so `build::scenario::resolve` never sees a `serde_json::Value`.
 ///
 /// A RULE FOR AN AXIS THAT TAKES NEITHER SHAPE IS DROPPED here rather than
 /// reaching the resolver as a guess: the resolver's own answer for an axis
@@ -753,10 +753,10 @@ fn value_json(v: Option<wfsim_engine::fight::StackValue>) -> Value {
 fn class_rules_for(
     v: &Value,
     weapon_id: &str,
-) -> std::collections::BTreeMap<String, wfsim_engine::scenario::AxisValue> {
-    use wfsim_engine::scenario::AxisValue;
+) -> std::collections::BTreeMap<String, wfsim_engine::build::scenario::AxisValue> {
+    use wfsim_engine::build::scenario::AxisValue;
     let mut out = std::collections::BTreeMap::new();
-    let Some(class) = wfsim_engine::scenario::class_of(weapon_id) else {
+    let Some(class) = wfsim_engine::build::scenario::class_of(weapon_id) else {
         return out;
     };
     let Some(map) = v.get("class_rules").and_then(|c| c.get(class)).and_then(|c| c.as_object())
@@ -781,10 +781,10 @@ fn class_rules_for(
 fn resolved_flag(
     axis_id: &str,
     weapon_id: &str,
-    rule: Option<wfsim_engine::scenario::AxisValue>,
+    rule: Option<wfsim_engine::build::scenario::AxisValue>,
     readers: bool,
 ) -> bool {
-    use wfsim_engine::scenario::{self, AxisValue};
+    use wfsim_engine::build::scenario::{self, AxisValue};
     let Some(a) = scenario::axis(axis_id) else { return readers };
     scenario::resolve(a, weapon_id, rule)
         .value(AxisValue::Flag(readers))
@@ -796,10 +796,10 @@ fn resolved_flag(
 fn resolved_number(
     axis_id: &str,
     weapon_id: &str,
-    rule: Option<wfsim_engine::scenario::AxisValue>,
+    rule: Option<wfsim_engine::build::scenario::AxisValue>,
     readers: f64,
 ) -> f64 {
-    use wfsim_engine::scenario::{self, AxisValue};
+    use wfsim_engine::build::scenario::{self, AxisValue};
     let Some(a) = scenario::axis(axis_id) else { return readers };
     scenario::resolve(a, weapon_id, rule)
         .value(AxisValue::Number(readers))
@@ -834,7 +834,7 @@ fn default_weapon_id() -> &'static str {
 /// `evos` is the build's chosen evolutions — the pool is a question about the
 /// weapon AS CONFIGURED, not about the weapon.
 fn mod_pool_for(weapon_id: &str, evos: &[&str]) -> Vec<ModDef> {
-    wfsim_engine::mods_data::pool_for_build(weapon_id, evos)
+    wfsim_engine::data::mods::pool_for_build(weapon_id, evos)
 }
 
 /// A mod id that must outlive the request. Riven ids are made from a name the
@@ -873,19 +873,19 @@ fn intern(s: String) -> &'static str {
 /// "not in this weapon's pool" would be untrue. Asking the pool twice decides
 /// which of the two it is.
 fn mod_not_here(id: &str, weapon: &WeaponInfo, evos: &[&str]) -> String {
-    if let (card, Some(rank)) = wfsim_engine::mods_data::split_rank(id) {
-        if wfsim_engine::mods_data::at_rank(id).is_none() {
+    if let (card, Some(rank)) = wfsim_engine::data::mods::split_rank(id) {
+        if wfsim_engine::data::mods::at_rank(id).is_none() {
             return format!("{card} cannot be simulated at rank {rank}");
         }
         return mod_not_here(card, weapon, evos);
     }
-    let known = wfsim_engine::mods_data::classes()
+    let known = wfsim_engine::data::mods::classes()
         .into_iter()
-        .any(|c| wfsim_engine::mods_data::class_pool(c).iter().any(|m| m.id == id));
+        .any(|c| wfsim_engine::data::mods::class_pool(c).iter().any(|m| m.id == id));
     if !known {
         return format!("unknown mod id: {id}");
     }
-    let bare = wfsim_engine::mods_data::pool_for_weapon(&weapon.id);
+    let bare = wfsim_engine::data::mods::pool_for_weapon(&weapon.id);
     if !evos.is_empty() && bare.iter().any(|m| m.id == id) {
         let name = bare.iter().find(|m| m.id == id).map(|m| m.name).unwrap_or(id);
         return format!(
@@ -908,7 +908,7 @@ fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
     let mut b = WeaponBase::from_data_assembled(id, true, evos, asm.as_ref());
     let dep = get_str(v, "deployment", "");
     if !dep.is_empty() {
-        wfsim_engine::weapons_data::apply_deployment(&mut b, id, dep);
+        wfsim_engine::data::weapons::apply_deployment(&mut b, id, dep);
     }
     apply_valence_from(v, id, &mut b);
     b
@@ -928,12 +928,12 @@ fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
 /// other slot, a loader that does not exist — which would otherwise compose to
 /// nothing and panic the panel, and which arrives from a stale share link
 /// rather than from an omission.
-pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::weapons_data::kitguns::Assembly> {
-    let spec = wfsim_engine::weapons_data::spec(id)?;
+pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::data::weapons::kitguns::Assembly> {
+    let spec = wfsim_engine::data::weapons::spec(id)?;
     let record = spec.kitgun.as_deref()?;
-    let fallback = wfsim_engine::weapons_data::kitguns::default_assembly(record);
+    let fallback = wfsim_engine::data::weapons::kitguns::default_assembly(record);
     let Some(a) = v.get("assembly") else { return fallback };
-    let mut asked = wfsim_engine::weapons_data::kitguns::Assembly {
+    let mut asked = wfsim_engine::data::weapons::kitguns::Assembly {
         // THE CHAMBER IS THE WEAPON'S, never the request's. A request that could
         // name one would be naming a different weapon than the id it sent.
         chamber: fallback.as_ref().map(|f| f.chamber.clone()).unwrap_or_default(),
@@ -946,18 +946,18 @@ pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::weapons_d
     // alone — and the difference is visible, since a discarded loader moves the
     // magazine, the reload and all three of crit, crit damage and status.
     let f = fallback?;
-    if !wfsim_engine::weapons_data::kitguns::grips()
+    if !wfsim_engine::data::weapons::kitguns::grips()
         .iter()
         .any(|g| g.id == asked.grip && Some(g.slot.as_str()) == kitgun_slot(spec))
     {
         asked.grip = f.grip.clone();
     }
-    if !wfsim_engine::weapons_data::kitguns::loaders().iter().any(|l| l.id == asked.loader) {
+    if !wfsim_engine::data::weapons::kitguns::loaders().iter().any(|l| l.id == asked.loader) {
         asked.loader = f.loader.clone();
     }
     // …and if the pair still does not compose, the whole default, because a
     // panel is about to be derived from it and there is nothing else to give.
-    match wfsim_engine::weapons_data::spec_assembled(spec, Some(&asked)) {
+    match wfsim_engine::data::weapons::spec_assembled(spec, Some(&asked)) {
         Some(_) => Some(asked),
         None => Some(f),
     }
@@ -973,7 +973,7 @@ pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::weapons_d
 /// there has to be something to draw; this is answering whether a BUILD is one
 /// the board can take, and quietly swapping a part would accept a record that
 /// scores as something else.
-pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::weapons_data::kitguns::Assembly> {
+pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::data::weapons::kitguns::Assembly> {
     let grip = get_str(v, "grip", "");
     let loader = get_str(v, "loader", "");
     if grip.is_empty() && loader.is_empty() {
@@ -983,12 +983,12 @@ pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::weapons_data:
     // `Assembly::chamber_record` looks the record up by (chamber, slot) and the
     // slot follows from the grip, so a record id here resolves to nothing and
     // every legal pair reads as "these do not make a Tombfinger".
-    let chamber = wfsim_engine::weapons_data::spec(get_str(v, "weapon", ""))
+    let chamber = wfsim_engine::data::weapons::spec(get_str(v, "weapon", ""))
         .and_then(|s| s.kitgun.clone())
-        .and_then(|r| wfsim_engine::weapons_data::kitguns::default_assembly(&r))
+        .and_then(|r| wfsim_engine::data::weapons::kitguns::default_assembly(&r))
         .map(|d| d.chamber)
         .unwrap_or_default();
-    Some(wfsim_engine::weapons_data::kitguns::Assembly {
+    Some(wfsim_engine::data::weapons::kitguns::Assembly {
         chamber,
         grip: grip.to_string(),
         loader: loader.to_string(),
@@ -996,9 +996,9 @@ pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::weapons_data:
 }
 
 /// Which slot a modular entry's grips must belong to.
-fn kitgun_slot(spec: &wfsim_engine::weapons_data::WeaponSpec) -> Option<&str> {
+fn kitgun_slot(spec: &wfsim_engine::data::weapons::WeaponSpec) -> Option<&str> {
     let record = spec.kitgun.as_deref()?;
-    wfsim_engine::weapons_data::kitguns::chambers()
+    wfsim_engine::data::weapons::kitguns::chambers()
         .iter()
         .find(|c| c.id == record)
         .map(|c| c.slot.as_str())
@@ -1014,7 +1014,7 @@ fn kitgun_slot(spec: &wfsim_engine::weapons_data::WeaponSpec) -> Option<&str> {
 /// A weapon with no valence spec ignores both fields, so an ordinary weapon
 /// cannot be handed one by a request.
 pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
-    let Some(s) = wfsim_engine::weapons_data::valence_of(id) else { return };
+    let Some(s) = wfsim_engine::data::weapons::valence_of(id) else { return };
     let el = valence_element_of(v, id);
     if el.is_empty() {
         return;
@@ -1024,7 +1024,7 @@ pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
     // hands out and not the one five fusions bought — the optimistic reading
     // belongs to the player who typed it.
     let bonus = get_f64(v, "valence_bonus", s.min);
-    wfsim_engine::weapons_data::apply_valence(b, id, &el, bonus);
+    wfsim_engine::data::weapons::apply_valence(b, id, &el, bonus);
 }
 
 /// The progenitor element a request is for.
@@ -1046,7 +1046,7 @@ pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
 /// this field — the panel's base and the optimizer's variant table — which is
 /// why they read it through one function.
 pub(crate) fn valence_element_of(v: &Value, id: &str) -> String {
-    let Some(s) = wfsim_engine::weapons_data::valence_of(id) else {
+    let Some(s) = wfsim_engine::data::weapons::valence_of(id) else {
         return String::new();
     };
     let el = get_str(v, "valence_element", "");
@@ -1058,7 +1058,7 @@ pub(crate) fn valence_element_of(v: &Value, id: &str) -> String {
 
 fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
     let class = riven_class(info);
-    let pool = wfsim_engine::rivens_data::pool(&class);
+    let pool = wfsim_engine::build::rivens::pool(&class);
     let known = |x: &Value| -> Result<(), String> {
         let Some(id) = x.get("id").and_then(|i| i.as_str()) else { return Ok(()) };
         if id.is_empty() || pool.iter().any(|s| s.id == id) {
@@ -1085,7 +1085,7 @@ fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
 }
 
 fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
-    use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
+    use wfsim_engine::build::rivens::{RivenSpec, RolledStat};
     let class = riven_class(info);
     let rolled = |x: &Value| -> Option<RolledStat> {
         if !x.is_object() {
@@ -1122,9 +1122,9 @@ fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
                         malus: s.get("malus").or_else(|| s.get("curse")).and_then(rolled),
                         rank: s.get("rank").and_then(|x| x.as_u64()).unwrap_or(8) as u32,
                         polarity: match s.get("polarity").and_then(|x| x.as_str()).unwrap_or("madurai") {
-                            "vazarin" => wfsim_engine::mods::Polarity::Vazarin,
-                            "naramon" => wfsim_engine::mods::Polarity::Naramon,
-                            _ => wfsim_engine::mods::Polarity::Madurai,
+                            "vazarin" => wfsim_engine::rules::capacity::Polarity::Vazarin,
+                            "naramon" => wfsim_engine::rules::capacity::Polarity::Naramon,
+                            _ => wfsim_engine::rules::capacity::Polarity::Madurai,
                         },
                     };
                     Some(spec.to_mod_def(intern(format!("riven:{name}")), info.disposition))
@@ -1150,14 +1150,14 @@ fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
 /// A BROKEN ONE IS AN ERROR, not a silent fallback to the default target: the
 /// number a fight produces is meaningless if the target was quietly not the
 /// one asked for.
-fn custom_enemies(v: &Value) -> Result<Vec<wfsim_engine::enemy_data::EnemySpec>, String> {
+fn custom_enemies(v: &Value) -> Result<Vec<wfsim_engine::data::enemies::EnemySpec>, String> {
     let Some(arr) = v.get("custom_enemies").and_then(|a| a.as_array()) else {
         return Ok(Vec::new());
     };
     let published = enemies();
-    let mut out: Vec<wfsim_engine::enemy_data::EnemySpec> = Vec::new();
+    let mut out: Vec<wfsim_engine::data::enemies::EnemySpec> = Vec::new();
     for e in arr {
-        let spec: wfsim_engine::enemy_data::EnemySpec =
+        let spec: wfsim_engine::data::enemies::EnemySpec =
             serde_json::from_value(e.clone()).map_err(|err| format!("custom enemy: {err}"))?;
         if spec.body_parts.is_empty() {
             return Err(format!("{}: an enemy needs at least one body part", spec.name));
@@ -1187,7 +1187,7 @@ fn custom_enemies(v: &Value) -> Result<Vec<wfsim_engine::enemy_data::EnemySpec>,
 /// for a bow today, and would find a real bow pool the day one exists,
 /// without a weapon having to name it.
 fn riven_class(info: &WeaponInfo) -> String {
-    wfsim_engine::rivens_data::class_for_weapon(&info.id).unwrap_or_default().to_string()
+    wfsim_engine::build::rivens::class_for_weapon(&info.id).unwrap_or_default().to_string()
 }
 
 /// The build's pool PLUS the request's own rivens.
@@ -1204,7 +1204,7 @@ fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModD
             _ => {}
         }
     }
-    wfsim_engine::mods_data::with_ranks(&mut p, named);
+    wfsim_engine::data::mods::with_ranks(&mut p, named);
     p.extend(rivens_from(v, info));
     p
 }
@@ -1218,9 +1218,9 @@ fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModD
 // weapon's slot count, which is what decides where a leftover innate colour can
 // sit for free.
 fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
-    let mut v = wfsim_engine::weapons_data::innate_slots(id).to_vec();
-    if wfsim_engine::weapons_data::has_exilus_slot(id) {
-        v.push(wfsim_engine::weapons_data::exilus_polarity(id));
+    let mut v = wfsim_engine::data::weapons::innate_slots(id).to_vec();
+    if wfsim_engine::data::weapons::has_exilus_slot(id) {
+        v.push(wfsim_engine::data::weapons::exilus_polarity(id));
     }
     v
 }
@@ -1233,7 +1233,7 @@ fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
 /// overlay.
 pub fn i18n_json() -> Value {
     let mut out = serde_json::Map::new();
-    for (code, l) in wfsim_engine::i18n_data::locales() {
+    for (code, l) in wfsim_engine::data::i18n::locales() {
         out.insert(
             code.clone(),
             json!({
@@ -1279,8 +1279,8 @@ pub fn i18n_json() -> Value {
 ///
 /// `Value::Null` for every weapon that is not one.
 fn assembly_meta(id: &str) -> Value {
-    use wfsim_engine::weapons_data::kitguns as kg;
-    let Some(record) = wfsim_engine::weapons_data::spec(id).and_then(|s| s.kitgun.as_deref())
+    use wfsim_engine::data::weapons::kitguns as kg;
+    let Some(record) = wfsim_engine::data::weapons::spec(id).and_then(|s| s.kitgun.as_deref())
     else {
         return Value::Null;
     };
@@ -1386,7 +1386,7 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // out — see `engine::share_order`. Absent for an id the
                 // manifest has not been told about yet, which a link
                 // falls back to spelling.
-                "si": wfsim_engine::share_order::index_of(m.id),
+                "si": wfsim_engine::data::share_order::index_of(m.id),
 
                 // DE's own name, straight from the yaml, never a
                 // title-cased id: "Semi-Shotgun Cannonade" loses its hyphen
@@ -1421,7 +1421,7 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // WHAT WARFRAME.MARKET CALLS IT. Absent means it does not trade
                 // there at all — Umbral and Galvanized cards carry no link, and
                 // that absence is the only tradeability rule the app has.
-                "market_slug": wfsim_engine::market_data::mod_slug(m.id),
+                "market_slug": wfsim_engine::data::market::mod_slug(m.id),
                 // One line per modeled effect — engine describe() stays the
                 // model's own statement (search + panel attribution).
                 "effects": m.effects.iter().map(|e| e.describe()).collect::<Vec<_>>(),
@@ -1440,13 +1440,13 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // model its life steal, so calling the whole card unmodelled
                 // would be a second untruth. Derived from what the loader
                 // actually dropped.
-                "unmodeled_effects": wfsim_engine::mods_data::unmodeled_effects(m.id),
+                "unmodeled_effects": wfsim_engine::data::mods::unmodeled_effects(m.id),
             });
             // The verbatim in-game DESCRIPTION per rank (X filled) — what
             // the picker and the configured slot display. Absent for pools
             // without yaml descriptions (the hardcoded rifle pool): the UI
             // falls back to the effect lines.
-            if let Some(info) = wfsim_engine::mods_data::desc_info(m.id) {
+            if let Some(info) = wfsim_engine::data::mods::desc_info(m.id) {
                 let dr: Vec<String> = (0..=info.max_rank).map(|r| info.at(r)).collect();
                 j["desc_ranks"] = json!(dr);
             }
@@ -1460,10 +1460,10 @@ pub fn meta_json() -> Value {
         .iter()
         .map(|w| {
             let max_rank = wspec(&w.id).max_rank;
-            let forma_min = wfsim_engine::mods::forma_to_max_rank(max_rank);
-            let cap = wfsim_engine::mods::capacity(
-                wfsim_engine::mods::rank_after(max_rank, forma_min),
-                wfsim_engine::mods::Investment::default().catalyst,
+            let forma_min = wfsim_engine::rules::capacity::forma_to_max_rank(max_rank);
+            let cap = wfsim_engine::rules::capacity::capacity(
+                wfsim_engine::rules::capacity::rank_after(max_rank, forma_min),
+                wfsim_engine::rules::capacity::Investment::default().catalyst,
             );
             json!({
                 "id": w.id,
@@ -1472,7 +1472,7 @@ pub fn meta_json() -> Value {
                 // out — see `engine::share_order`. Absent for an id the
                 // manifest has not been told about yet, which a link
                 // falls back to spelling.
-                "si": wfsim_engine::share_order::index_of(&w.id),
+                "si": wfsim_engine::data::share_order::index_of(&w.id),
                 "name": w.name,
                 // The pools to union, in order. `mod_class` stays as the
                 // NARROWEST one, which is what labels and filters read.
@@ -1485,13 +1485,13 @@ pub fn meta_json() -> Value {
                 // WHAT WARFRAME.MARKET CALLS THIS WEAPON'S RIVEN AUCTIONS, so
                 // the riven card can offer the one price we do not compute.
                 // Absent where no riven exists for it — see `market_data`.
-                "market_riven_slug": wfsim_engine::market_data::riven_weapon_slug(&w.id),
+                "market_riven_slug": wfsim_engine::data::market::riven_weapon_slug(&w.id),
                 // …AND THE WEAPON ITSELF, which is SOLD or AUCTIONED and never
                 // both. A Prime's item is its SET; a Kuva or Tenet weapon has
                 // no item at all, because the valence it rolled is part of what
                 // changes hands, so it is auctioned like a riven.
-                "market_slug": wfsim_engine::market_data::weapon_slug(&w.id),
-                "market_auction": wfsim_engine::market_data::adversary_auction(&w.id)
+                "market_slug": wfsim_engine::data::market::weapon_slug(&w.id),
+                "market_auction": wfsim_engine::data::market::adversary_auction(&w.id)
                     .map(|(kind, slug)| json!({ "type": kind, "slug": slug })),
                 // WHOSE RIVEN THIS IS. A riven belongs to a weapon FAMILY, not
                 // to one entry in it: *"Riven mods can be used on variants of a
@@ -1511,17 +1511,17 @@ pub fn meta_json() -> Value {
                 // no Ammo Maximum, and a weapon with no IPS rolls no physical
                 // attribute (wiki's 25% rule). Sent as a list rather than a
                 // filtered pool so the class table stays shared.
-                "riven_excludes": wfsim_engine::rivens_data::excluded_for(&w.id),
+                "riven_excludes": wfsim_engine::build::rivens::excluded_for(&w.id),
                 // WHERE it is fired, when that changes the weapon. Fewer than
                 // two means the axis does not exist for it and nothing should
                 // offer a choice - the same rule every other axis follows.
-                "deployments": wfsim_engine::weapons_data::deployments_of(&w.id),
+                "deployments": wfsim_engine::data::weapons::deployments_of(&w.id),
                 // THE VALENCE BONUS this weapon can carry — its progenitor
                 // elements and the roll's floor and ceiling. Absent (null) on
                 // every weapon that is not an adversary weapon, which is the
                 // same "fewer than two means no axis" rule the deployments
                 // follow: the block draws only where there is a choice.
-                "valence": wfsim_engine::weapons_data::valence_of(&w.id).map(|s| json!({
+                "valence": wfsim_engine::data::weapons::valence_of(&w.id).map(|s| json!({
                     "elements": s.elements,
                     "min": s.min,
                     "max": s.max,
@@ -1549,8 +1549,8 @@ pub fn meta_json() -> Value {
                 // rank. Derived from its forms and one question about the second
                 // one — does entering it cost a gauge you have to earn — so a
                 // weapon added later needs no entry anywhere for the board to
-                // hold it twice. See `weapons_data::play_modes`.
-                "modes": wfsim_engine::weapons_data::play_modes(&w.id)
+                // hold it twice. See `data::weapons::play_modes`.
+                "modes": wfsim_engine::data::weapons::play_modes(&w.id)
                     .iter()
                     .filter(|m| m.sustainable)
                     .map(|m| m.id)
@@ -1566,10 +1566,10 @@ pub fn meta_json() -> Value {
                 // Reading one as the other disabled the box on the whole
                 // roster, so the only weapon whose ammo you could adjust was
                 // the one weapon whose ammo the game does not let you adjust.
-                "has_reserve": wfsim_engine::weapons_data::spec(&w.id)
+                "has_reserve": wfsim_engine::data::weapons::spec(&w.id)
                     .and_then(|s| s.ammo_max)
                     .is_some_and(|a| a > 0.0),
-                "no_resupply": wfsim_engine::weapons_data::spec(&w.id)
+                "no_resupply": wfsim_engine::data::weapons::spec(&w.id)
                     .is_some_and(|s| s.no_resupply),
                 // …AND THE CONSEQUENCE, so the page stops deriving it. The two
                 // flags above stay because the roster grid reads them, but a
@@ -1589,16 +1589,16 @@ pub fn meta_json() -> Value {
                 // where the capability's absence is OUR stand-in rather than
                 // the game's rule. A reader looking at a greyed row wants to
                 // know which of the two they are looking at.
-                "settled": wfsim_engine::scenario::SCENARIO_AXES.iter()
-                    .filter_map(|a| wfsim_engine::scenario::settled_for(a, &w.id)
+                "settled": wfsim_engine::build::scenario::SCENARIO_AXES.iter()
+                    .filter_map(|a| wfsim_engine::build::scenario::settled_for(a, &w.id)
                         .map(|(v, why)| (a.id.to_string(), json!([
                             match v {
-                                wfsim_engine::scenario::AxisValue::Flag(b) => json!(b),
-                                wfsim_engine::scenario::AxisValue::Number(n) => json!(n),
+                                wfsim_engine::build::scenario::AxisValue::Flag(b) => json!(b),
+                                wfsim_engine::build::scenario::AxisValue::Number(n) => json!(n),
                             },
                             why,
-                            wfsim_engine::scenario::overridable_pairs().iter().any(|(c, id)| {
-                                Some(*c) == wfsim_engine::scenario::class_of(&w.id) && *id == a.id
+                            wfsim_engine::build::scenario::overridable_pairs().iter().any(|(c, id)| {
+                                Some(*c) == wfsim_engine::build::scenario::class_of(&w.id) && *id == a.id
                             }),
                         ]))))
                     .collect::<serde_json::Map<_, _>>(),
@@ -1606,7 +1606,7 @@ pub fn meta_json() -> Value {
                 // rather than re-derived, so the page can point a Burston at
                 // the `primary` column and an Arch-Gun at its own without
                 // holding a copy of the mapping.
-                "weapon_class": wfsim_engine::scenario::class_of(&w.id),
+                "weapon_class": wfsim_engine::build::scenario::class_of(&w.id),
                 // A PASSIVE WE DO NOT MODEL, so the page can say the number is
                 // a floor rather than let it read as the weapon's real output.
                 // Empty today — Gotva Prime's was the only one and it is
@@ -1641,9 +1641,9 @@ pub fn meta_json() -> Value {
                 // about. Taking only the base entry's leaves the two lists
                 // different lengths, and the banner then draws three lines for
                 // four gaps (`check_disclosure`).
-                "unmodeled_parts": wfsim_engine::weapons_data::forms_of(&w.id)
+                "unmodeled_parts": wfsim_engine::data::weapons::forms_of(&w.id)
                     .iter()
-                    .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
+                    .filter_map(|f| wfsim_engine::data::weapons::spec(f.weapon_id))
                     .flat_map(|s| s.unmodeled_parts.iter())
                     .map(|u| json!({
                     "text": u.text,
@@ -1658,7 +1658,7 @@ pub fn meta_json() -> Value {
                 // and the copy goes stale the moment the engine learns a rule
                 // (Amalgam mods off sentinel weapons, ammo mods off an infinite
                 // reserve).
-                "mods": wfsim_engine::mods_data::pool_for_weapon(&w.id)
+                "mods": wfsim_engine::data::mods::pool_for_weapon(&w.id)
                     .iter()
                     .map(|m| m.id)
                     .collect::<Vec<_>>(),
@@ -1694,7 +1694,7 @@ pub fn meta_json() -> Value {
                 // a Lex — and a second such rule would go the same way.
                 "arcanes": w.arcane_pools
                     .iter()
-                    .flat_map(|p| wfsim_engine::arcanes_data::pool_for_weapon(&w.id, p))
+                    .flat_map(|p| wfsim_engine::data::arcanes::pool_for_weapon(&w.id, p))
                     .map(|a| a.id.clone())
                     .collect::<Vec<_>>(),
                 // WHICH AURAS PAY THIS WEAPON — the CONSEQUENCE, computed by
@@ -1703,8 +1703,8 @@ pub fn meta_json() -> Value {
                 // reaches bows and launchers, Dead Eye is a CLASS and does
                 // not), and a page that re-derived that rule would go stale the
                 // first time an aura arrived with a third kind of gate.
-                "auras": wfsim_engine::auras_data::all().iter()
-                    .filter(|a| wfsim_engine::weapons_data::spec(&w.id)
+                "auras": wfsim_engine::data::auras::all().iter()
+                    .filter(|a| wfsim_engine::data::weapons::spec(&w.id)
                         .is_some_and(|s| a.pays(&s.class,
                             &s.mod_pools.iter().map(|p| p.as_str()).collect::<Vec<_>>())))
                     .map(|a| a.id.clone()).collect::<Vec<_>>(),
@@ -1714,7 +1714,7 @@ pub fn meta_json() -> Value {
                 // `equip_classes` is keyed on it, and title-casing for display
                 // is exactly the kind of transform that makes a comparison
                 // silently fail.
-                "class": wfsim_engine::weapons_data::spec(&w.id)
+                "class": wfsim_engine::data::weapons::spec(&w.id)
                     .map(|s| s.class.clone())
                     .unwrap_or_default(),
                 "sentinel": w.sentinel,
@@ -1731,8 +1731,8 @@ pub fn meta_json() -> Value {
                 // Evolution tiers THIS weapon has, keyed on its transform group
                 // — the page needs it to tell a complete ladder from a partial
                 // one, and the count differs per weapon (Laetum 5, a rifle 0).
-                "evo_tiers": wfsim_engine::evolutions_data::tier_count(
-                    wfsim_engine::weapons_data::spec(&w.id)
+                "evo_tiers": wfsim_engine::data::evolutions::tier_count(
+                    wfsim_engine::data::weapons::spec(&w.id)
                         .and_then(|s| s.transform_group.as_deref())
                         .unwrap_or(&w.id),
                 ),
@@ -1758,27 +1758,27 @@ pub fn meta_json() -> Value {
                     .collect::<Vec<_>>(),
                 // …AND THE STANCE SLOT'S OWN, which is not one of those nine:
                 // it decides a capacity GRANT rather than a discount, so the
-                // page needs it to answer 5 or 10 (`mods::stance_capacity`).
-                "stance_polarity": wfsim_engine::weapons_data::stance_polarity(&w.id)
+                // page needs it to answer 5 or 10 (`rules::capacity::stance_capacity`).
+                "stance_polarity": wfsim_engine::data::weapons::stance_polarity(&w.id)
                     .map(|p| format!("{p:?}")),
                 // A STANCE THE WEAPON CANNOT TAKE OFF: the page seats it, offers
                 // no removal and no polarity for its slot.
-                "fixed_stance": wfsim_engine::weapons_data::spec(&w.id)
+                "fixed_stance": wfsim_engine::data::weapons::spec(&w.id)
                     .and_then(|s| s.fixed_stance.clone()),
                 // WHO MAY HOLD IT, and what it is called in whose hands — empty
                 // on a weapon anyone carries.
-                "wielders": wfsim_engine::weapons_data::spec(&w.id)
+                "wielders": wfsim_engine::data::weapons::spec(&w.id)
                     .map(|s| s.wielders.clone()).unwrap_or_default(),
-                "wielder_names": wfsim_engine::weapons_data::spec(&w.id)
+                "wielder_names": wfsim_engine::data::weapons::spec(&w.id)
                     .map(|s| s.wielder_names.clone()).unwrap_or_default(),
                 "forms": w.forms.iter()
                     .map(|(id, name, def)| {
                         // THE ENTRY BEHIND THIS FORM, once. Everything below is
                         // read off it rather than re-derived per field.
-                        let s = wfsim_engine::weapons_data::forms_of(&w.id)
+                        let s = wfsim_engine::data::weapons::forms_of(&w.id)
                             .iter()
                             .find(|f| f.kind.id() == *id)
-                            .and_then(|f| wfsim_engine::weapons_data::spec(f.weapon_id));
+                            .and_then(|f| wfsim_engine::data::weapons::spec(f.weapon_id));
                         // WHAT THIS FORM SWINGS, in the three numbers that
                         // decide between melee's seven modes: how many swings,
                         // what they come to, and how long they take. Absent on
@@ -1823,14 +1823,14 @@ pub fn meta_json() -> Value {
                         // Every other melee entry carries the weapon's own
                         // vector, where this is 1.0 and nothing moves.
                         "swing_share": s.and_then(|f| {
-                            let base: f64 = wfsim_engine::weapons_data::spec(&w.id)
+                            let base: f64 = wfsim_engine::data::weapons::spec(&w.id)
                                 .map(|b| b.attack.damage.values().sum())
                                 .unwrap_or(0.0);
                             (base > 0.0)
                                 .then(|| r3(f.attack.damage.values().sum::<f64>() / base))
                         }),
                         "radial_share": s.and_then(|f| {
-                            let base: f64 = wfsim_engine::weapons_data::spec(&w.id)
+                            let base: f64 = wfsim_engine::data::weapons::spec(&w.id)
                                 .map(|b| b.attack.damage.values().sum())
                                 .unwrap_or(0.0);
                             let r = f.attack.radial.as_ref()?;
@@ -1842,7 +1842,7 @@ pub fn meta_json() -> Value {
                         // that cannot be worn beside that unlock (`evo_forbids`)
                         // says the weapon does not have one, so the option goes
                         // with it rather than the sim refusing the build later.
-                        "gauge_switched": s.is_some_and(wfsim_engine::weapons_data::WeaponSpec::has_gauge),
+                        "gauge_switched": s.is_some_and(wfsim_engine::data::weapons::WeaponSpec::has_gauge),
                         // HOW THIS FORM IS FIRED, and what a gauge costs to
                         // reach it. Sent so the builder can STATE what a mode
                         // is instead of naming it and leaving the reader to
@@ -1867,15 +1867,15 @@ pub fn meta_json() -> Value {
                 // hold several — charged vs uncharged is a free choice, not a
                 // transformation).
                 "has_cycle": w.has_cycle,
-                "evolutions": (1u32..=wfsim_engine::evolutions_data::tier_count(evo_group(w)))
+                "evolutions": (1u32..=wfsim_engine::data::evolutions::tier_count(evo_group(w)))
                     .map(|tier| json!({
                         "tier": tier,
-                        "options": wfsim_engine::evolutions_data::options(evo_group(w), tier)
+                        "options": wfsim_engine::data::evolutions::options(evo_group(w), tier)
                             .iter()
                             .map(|e| json!({
                                 "id": e.id,
                                 // See the `si` on a mod above.
-                                "si": wfsim_engine::share_order::index_of(&e.id),
+                                "si": wfsim_engine::data::share_order::index_of(&e.id),
                                 "name": e.name,
                                 "icon": e.icon,
                                 "broken": e.currently_broken,
@@ -1989,7 +1989,7 @@ pub fn meta_json() -> Value {
                 // less of, which is half of what picks a build's elements.
                 // Keyed by FactionDamageOverride ?? Faction, so a Thrax shows
                 // Zariman's Void x1.5 while answering to no faction mod.
-                "type_modifiers": wfsim_engine::factions_data::columns_for(e.damage_column_key())
+                "type_modifiers": wfsim_engine::data::factions::columns_for(e.damage_column_key())
                     .faction
                     .listed()
                     .into_iter()
@@ -2012,12 +2012,12 @@ pub fn meta_json() -> Value {
     // faction and be shown what that faction means. The table is the whole of
     // what a faction does to incoming damage, and a copy of it in the UI would
     // be a second source for a number the engine already owns.
-    let factions: Vec<Value> = wfsim_engine::factions_data::keys()
+    let factions: Vec<Value> = wfsim_engine::data::factions::keys()
         .into_iter()
         .map(|k| {
             json!({
                 "id": k,
-                "modifiers": wfsim_engine::factions_data::column(k)
+                "modifiers": wfsim_engine::data::factions::column(k)
                     .listed()
                     .into_iter()
                     .map(|(t, m)| json!({ "type": t.name(), "mult": m }))
@@ -2034,8 +2034,8 @@ pub fn meta_json() -> Value {
     let mut arcanes_json: Vec<Value> = vec![json!(
         {"id": "none", "name": "None", "image": null, "ranks": [], "max_rank": 0, "rarity": null, "slot": null}
     )];
-    for slot in wfsim_engine::arcanes_data::slots() {
-    for a in wfsim_engine::arcanes_data::slot_pool(slot) {
+    for slot in wfsim_engine::data::arcanes::slots() {
+    for a in wfsim_engine::data::arcanes::slot_pool(slot) {
         let ranks: Vec<Vec<String>> = (0..=a.max_rank).map(|r| a.describe_at(r)).collect();
         // The verbatim in-game description per rank (X filled) — the display
         // text; `ranks` (model describe lines) stays for search.
@@ -2043,12 +2043,12 @@ pub fn meta_json() -> Value {
         arcanes_json.push(json!({
             "id": a.id,
             // See the `si` on a mod above.
-            "si": wfsim_engine::share_order::index_of(&a.id),
+            "si": wfsim_engine::data::share_order::index_of(&a.id),
             "name": a.name,
             "image": assets().arcanes.get(&a.id),
             // See the `market_slug` on a mod above — absent means it does not
             // trade there, and that absence is the whole rule.
-            "market_slug": wfsim_engine::market_data::arcane_slug(&a.id),
+            "market_slug": wfsim_engine::data::market::arcane_slug(&a.id),
             "ranks": ranks,
             "desc_ranks": desc_ranks,
             "max_rank": a.max_rank,
@@ -2060,7 +2060,7 @@ pub fn meta_json() -> Value {
             "unmodeled_effects": a.unmodeled_effects(),
             // WHICH WEAPON CLASSES MAY EQUIP IT. Empty = any weapon whose slot
             // seats it. The page filters its picker on this so the arsenal and
-            // the app offer the same set — `arcanes_data::pool_for_weapon` is
+            // the app offer the same set — `data::arcanes::pool_for_weapon` is
             // the engine's own answer and this is it speaking.
             "equip_classes": a.equip_classes,
             "out_of_scope": a.has_out_of_scope(),
@@ -2091,9 +2091,9 @@ pub fn meta_json() -> Value {
         // One pool per mod CLASS present in data/mods/ — a weapon's
         // `mod_class` (derived from its mod_eligibility) indexes into this.
         // Adding data/mods/rifle/ publishes a rifle pool with no code change.
-        "mod_pools": wfsim_engine::mods_data::classes()
+        "mod_pools": wfsim_engine::data::mods::classes()
             .into_iter()
-            .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
+            .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::data::mods::class_pool(c)))))
             .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
         // OUR RIVEN STAT ID → THE SLUG AN AUCTION SEARCH FILTERS ON. The page
@@ -2101,7 +2101,7 @@ pub fn meta_json() -> Value {
         // rivens that compete with the one on screen instead of on every
         // riven for the weapon — which is also the only way past the
         // auction's own 500-result ceiling.
-        "market_riven_stats": wfsim_engine::market_data::riven_stats()
+        "market_riven_stats": wfsim_engine::data::market::riven_stats()
             .map(|(k, v)| (k.to_string(), Value::from(v)))
             .collect::<serde_json::Map<String, Value>>(),
         // WHAT THE WARFRAME BRINGS, so the page can OFFER it rather than make
@@ -2109,14 +2109,14 @@ pub fn meta_json() -> Value {
         // instead of folding them into the custom bonuses: a named shard has a
         // source that can be checked and updated with the wiki; a typed +45%
         // has nothing.
-        "auras": wfsim_engine::auras_data::all().iter()
-            .filter(|a| wfsim_engine::auras_data::in_fight(a))
+        "auras": wfsim_engine::data::auras::all().iter()
+            .filter(|a| wfsim_engine::data::auras::in_fight(a))
             .map(|a| json!({
             "id": a.id,
             "name": a.name,
             "squad_stacking": a.squad_stacking,
         })).collect::<Vec<_>>(),
-        "shards": wfsim_engine::shards_data::all().iter().map(|d| json!({
+        "shards": wfsim_engine::data::shards::all().iter().map(|d| json!({
             "id": d.id,
             "name": d.name,
             "colour": d.colour,
@@ -2137,7 +2137,7 @@ pub fn meta_json() -> Value {
         })).collect::<Vec<_>>(),
         // THE FRAMES THE WARFRAME BUILDER SEATS — the home grid and the router
         // need only these three fields; the rest is `/api/warframe/catalog`.
-        "warframes": wfsim_engine::warframes_data::warframes().iter().map(|f| json!({
+        "warframes": wfsim_engine::data::warframes::warframes().iter().map(|f| json!({
             "id": f.id,
             "name": f.name,
             "image": assets().warframes.get(&f.id),
@@ -2146,7 +2146,7 @@ pub fn meta_json() -> Value {
         "operator_image": assets().operators.get("operator"),
         // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the
         // panel fills its fields from whichever is picked.
-        "frames": wfsim_engine::tenno_data::frames()
+        "frames": wfsim_engine::data::tenno::frames()
             .iter()
             .map(|f| json!({
                 "id": f.id, "name": f.name,
@@ -2174,22 +2174,22 @@ pub fn meta_json() -> Value {
         // The FORCED map is per weapon and only carries what is actually
         // forced: `{ "<weapon id>": { "<axis>": [value, "why"] } }`. Absent
         // means the reader's, which is the ordinary case for almost every pair.
-        "scenario_axes": wfsim_engine::scenario::SCENARIO_AXES.iter().map(|a| {
+        "scenario_axes": wfsim_engine::build::scenario::SCENARIO_AXES.iter().map(|a| {
             json!({
                 "id": a.id,
                 "group": match a.group {
-                    wfsim_engine::scenario::Group::Target => "target",
-                    wfsim_engine::scenario::Group::Engagement => "engagement",
-                    wfsim_engine::scenario::Group::Wielder => "wielder",
-                    wfsim_engine::scenario::Group::Squad => "squad",
+                    wfsim_engine::build::scenario::Group::Target => "target",
+                    wfsim_engine::build::scenario::Group::Engagement => "engagement",
+                    wfsim_engine::build::scenario::Group::Wielder => "wielder",
+                    wfsim_engine::build::scenario::Group::Squad => "squad",
                 },
                 "requires": a.requires.iter().map(|r| format!("{:?}", r.cap)).collect::<Vec<_>>(),
                 "kind": match a.kind {
-                    wfsim_engine::scenario::AxisKind::Flag => json!({ "t": "flag" }),
-                    wfsim_engine::scenario::AxisKind::Number { min, max } =>
+                    wfsim_engine::build::scenario::AxisKind::Flag => json!({ "t": "flag" }),
+                    wfsim_engine::build::scenario::AxisKind::Number { min, max } =>
                         json!({ "t": "number", "min": min, "max": max }),
-                    wfsim_engine::scenario::AxisKind::Id => json!({ "t": "id" }),
-                    wfsim_engine::scenario::AxisKind::Structured => json!({ "t": "structured" }),
+                    wfsim_engine::build::scenario::AxisKind::Id => json!({ "t": "id" }),
+                    wfsim_engine::build::scenario::AxisKind::Structured => json!({ "t": "structured" }),
                 },
             })
         }).collect::<Vec<_>>(),
@@ -2211,14 +2211,14 @@ pub fn meta_json() -> Value {
         // to unsimplify", and `overridable_pairs` grows only when a capability
         // is deliberately reclassified.
         "class_rules": {
-            "classes": wfsim_engine::scenario::WEAPON_CLASSES,
-            "overridable": wfsim_engine::scenario::overridable_pairs()
+            "classes": wfsim_engine::build::scenario::WEAPON_CLASSES,
+            "overridable": wfsim_engine::build::scenario::overridable_pairs()
                 .iter()
                 .map(|(c, a)| json!([c, a]))
                 .collect::<Vec<_>>(),
         },
-        "tenno_floor": floor_json(wfsim_engine::tenno_data::default_tenno()),
-        "sentinel_floor": floor_json(wfsim_engine::tenno_data::sentinel_wielder()),
+        "tenno_floor": floor_json(wfsim_engine::data::tenno::default_tenno()),
+        "sentinel_floor": floor_json(wfsim_engine::data::tenno::sentinel_wielder()),
         "factions": factions,
         // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
         // draws from (`data/abilities/`). `value` and `duration_seconds` are the
@@ -2228,14 +2228,14 @@ pub fn meta_json() -> Value {
         //
         // `family` travels because the "only the strongest runs" rule has to be
         // visible while you tick the boxes, not just enforced afterwards — the
-        // engine settles it either way (`abilities_data::resolve`), and a page
+        // engine settles it either way (`data::abilities::resolve`), and a page
         // that showed both as active would be lying about a number it printed.
-        "abilities": wfsim_engine::abilities_data::all().iter().map(|a| {
+        "abilities": wfsim_engine::data::abilities::all().iter().map(|a| {
             // EVERY BRACKET THE CAST TOUCHES, as (kind, value, element). A LIST
             // because one ability can grant more than one — Redline sets fire
             // rate and reload speed off a single gauge — and the card has to
             // print both or it states half of what the sim runs.
-            use wfsim_engine::abilities_data::AbilityEffect as AE;
+            use wfsim_engine::data::abilities::AbilityEffect as AE;
             let grants: Vec<Value> = a.effects.iter().map(|e| {
                 let (kind, v, element) = match *e {
                     AE::FactionDamage(v) => ("faction_damage", v, None),
@@ -2296,10 +2296,10 @@ pub fn meta_json() -> Value {
         // Riven stat pools, keyed by mod class. The builder needs the whole
         // pool to offer choices; the VALUES it must ask for, because the
         // formula lives in one place (`/api/riven`).
-        "riven_stats": wfsim_engine::mods_data::classes()
+        "riven_stats": wfsim_engine::data::mods::classes()
             .into_iter()
             .filter_map(|c| {
-                let p = wfsim_engine::rivens_data::pool(c);
+                let p = wfsim_engine::build::rivens::pool(c);
                 (!p.is_empty()).then(|| {
                     (
                         c.to_string(),
@@ -2309,7 +2309,7 @@ pub fn meta_json() -> Value {
                                 "id": s.id,
                                 // See the `si` on a mod: a riven's SHAPE names
                                 // its stats and a share link carries the shape.
-                                "si": wfsim_engine::share_order::index_of(&s.id),
+                                "si": wfsim_engine::data::share_order::index_of(&s.id),
                                 "text": s.text, "base": s.base,
                                 "prefix": s.prefix, "suffix": s.suffix,
                                 // BOTH DIRECTIONS. The picker draws two lists
@@ -2327,9 +2327,9 @@ pub fn meta_json() -> Value {
             })
             .collect::<serde_json::Map<String, Value>>(),
         "riven_rules": {
-            "roll_min": wfsim_engine::rivens_data::ROLL_MIN,
-            "roll_max": wfsim_engine::rivens_data::ROLL_MAX,
-            "max_rank": wfsim_engine::rivens_data::MAX_RANK,
+            "roll_min": wfsim_engine::build::rivens::ROLL_MIN,
+            "roll_max": wfsim_engine::build::rivens::ROLL_MAX,
+            "max_rank": wfsim_engine::build::rivens::MAX_RANK,
             // The polarities a riven rolls (wiki: one of three).
             "polarities": ["madurai", "vazarin", "naramon"],
             "mastery_min": 8,
@@ -2349,7 +2349,7 @@ pub fn meta_json() -> Value {
         // HOW MANY MAIN SLOTS A BUILD HAS. Not the admission rule — that is the
         // benchmark's, and travels with it below — just the one number the page
         // needs to count filled slots against.
-        "board_build_mods": wfsim_engine::builds::MAIN_SLOTS,
+        "board_build_mods": wfsim_engine::board::builds::MAIN_SLOTS,
         // WHAT A BUILD CONSISTS OF, from the one place that declares it
         // (`engine::builds::BUILD_AXES`). Served for the same reason
         // `board_build_mods` is: the page and the worker each carry a table of
@@ -2366,7 +2366,7 @@ pub fn meta_json() -> Value {
         // order the panel draws them and with the group each sits under — a
         // vocabulary rather than a list on the page, because two declarations
         // of one set is one that goes stale.
-        "buff_triggers": wfsim_engine::buff_events::ALL.iter()
+        "buff_triggers": wfsim_engine::data::buff_events::ALL.iter()
             .map(|(id, group)| json!({ "id": id, "group": group }))
             .collect::<Vec<_>>(),
         // WHAT A RUN CAN BE JUDGED BY, from the one table that declares it
@@ -2374,38 +2374,38 @@ pub fn meta_json() -> Value {
         // the Measure control, the headline's unit and the gain scan's label
         // all resolve an id against this, so a metric added here reaches every
         // surface without any of them naming it.
-        "metrics": wfsim_engine::metrics::ALL,
-        "metric_default": wfsim_engine::metrics::DEFAULT,
+        "metrics": wfsim_engine::rules::metrics::ALL,
+        "metric_default": wfsim_engine::rules::metrics::DEFAULT,
         // HOW BIG A BODY IS, because the PAGE draws the same floor the engine
         // fights on: the muzzle sits one radius forward, two circles touch at
         // two radii, and the distance a reader is shown is the gap between
         // their SURFACES. The page carried its own copy of this number and the
         // two drifted — the arena called a contact-range fight 0.1 m and the
         // crowd 2.6 m apart where the engine had 0 and 2.5.
-        "body_radius_m": wfsim_engine::space::BODY_RADIUS_M,
+        "body_radius_m": wfsim_engine::rules::space::BODY_RADIUS_M,
         // The cards the quick calc tries at every rank unless the page's own
         // list says otherwise, and the spelling a lower rank travels in.
-        "every_rank": wfsim_engine::mods_data::every_rank(),
-        "rank_mark": wfsim_engine::mods_data::RANK_MARK.to_string(),
-        "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
+        "every_rank": wfsim_engine::data::mods::every_rank(),
+        "rank_mark": wfsim_engine::data::mods::RANK_MARK.to_string(),
+        "build_axes": wfsim_engine::board::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
             "request_field": a.request_field,
             "on_board": a.on_board,
         })).collect::<Vec<_>>(),
-        "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
+        "benchmarks": wfsim_engine::board::benchmarks::all().iter().map(|b| json!({
             "primary": b.primary, "id": b.id,
             "name": b.name,
             // HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. Paired with
             // the library's own size (`/api/board/pending`), it is what lets a
-            // STATIC board say how far behind it is — see `boards_data::Board`.
-            "submissions": wfsim_engine::boards_data::of(&b.id)
+            // STATIC board say how far behind it is — see `data::boards::Board`.
+            "submissions": wfsim_engine::data::boards::of(&b.id)
                 .map(|x| x.submissions).unwrap_or(0),
             // …AND WHEN IT WAS SCORED. The count says how far behind the board
             // is in BUILDS; this says how old its numbers are, which no
             // fingerprint can answer — a fingerprint says whether an input
             // moved, never when a measurement was taken. Zero is "unknown", not
             // 1970: a board written before the field existed carries none.
-            "scored_at_epoch_seconds": wfsim_engine::boards_data::of(&b.id)
+            "scored_at_epoch_seconds": wfsim_engine::data::boards::of(&b.id)
                 .map(|x| x.scored_at_epoch_seconds).unwrap_or(0),
             // The standard AT LENGTH — the name is the same thing in one line.
             // A reader deciding whether a ranking answers their question needs
@@ -2519,7 +2519,7 @@ pub fn meta_json() -> Value {
             // ruler's published row — ranks by the same thing. The default is
             // the table's, not a literal: `engine::metrics` is where a metric
             // is declared and where the first one is chosen.
-            "metric": wfsim_engine::metrics::DEFAULT,
+            "metric": wfsim_engine::rules::metrics::DEFAULT,
             // 180 s, the same length as the official rulers. A default that disagreed with the board made every
             // first comparison a puzzle, and on a build that compounds the gap
             // is not small — the Felarx's board score moved 30% on this number
@@ -2556,10 +2556,10 @@ pub fn meta_json() -> Value {
 ///
 /// The ROLLS are deliberately not on the wire: a row states a SHAPE and the
 /// scorer finds that shape's own best corner for the ruler's fight
-/// (`rivens_data::perfect`). Sending a roll would be sending something nobody
+/// (`build::rivens::perfect`). Sending a roll would be sending something nobody
 /// ranks, and would invite the question of why the board's number is not the
 /// one on the submitter's card.
-pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::rivens_data::RivenShape> {
+pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::build::rivens::RivenShape> {
     let bonuses: Vec<String> = v
         .get("riven_pos")
         .and_then(Value::as_array)
@@ -2570,7 +2570,7 @@ pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::rivens_data::R
     }
     let mut bonuses = bonuses;
     bonuses.sort();
-    Some(wfsim_engine::rivens_data::RivenShape {
+    Some(wfsim_engine::build::rivens::RivenShape {
         bonuses,
         malus: Some(get_str(v, "riven_neg", "").to_string()).filter(|x| !x.is_empty()),
     })
@@ -2610,7 +2610,7 @@ pub fn build_keys_json(v: &Value) -> Value {
                     .map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
                     .unwrap_or_default()
             };
-            match wfsim_engine::builds::validate_with(
+            match wfsim_engine::board::builds::validate_with(
                 get_str(b, "weapon", ""),
                 &list("mods"),
                 &list("evolutions"),
@@ -2620,7 +2620,7 @@ pub fn build_keys_json(v: &Value) -> Value {
                 Some(get_str(b, "exilus", "")).filter(|x| !x.is_empty()),
                 board_assembly_of(b).as_ref(),
             ) {
-                Ok(vb) => json!(wfsim_engine::builds::board_key(&vb, get_str(b, "mode", ""))),
+                Ok(vb) => json!(wfsim_engine::board::builds::board_key(&vb, get_str(b, "mode", ""))),
                 Err(_) => Value::Null,
             }
         })
@@ -2675,11 +2675,11 @@ fn seconds_of(script: &[wfsim_engine::model::ComboHit]) -> f64 {
 /// Cards travel as `{drain, polarity}` at the rank the page set them to, so a
 /// riven or a lowered mod needs nothing from here; the capacity, the bill and
 /// the layout are the engine's.
-fn placed_json(l: &wfsim_engine::forma::Placed) -> Value {
+fn placed_json(l: &wfsim_engine::build::forma::Placed) -> Value {
     json!({ "slots": l.slots, "drain": l.drain, "grant": l.grant, "spare": l.spare, "moved": l.moved })
 }
 
-fn plan_json(p: &wfsim_engine::forma::Plan) -> Value {
+fn plan_json(p: &wfsim_engine::build::forma::Plan) -> Value {
     let name = |p: Option<Polarity>| p.map(|p| format!("{p:?}"));
     json!({
         "layout": {
@@ -2700,9 +2700,9 @@ fn plan_json(p: &wfsim_engine::forma::Plan) -> Value {
 /// What both Forma endpoints read: the item, the player's rules, and what the
 /// item already carries.
 struct FormaAsk {
-    board: wfsim_engine::forma::Board,
-    rules: wfsim_engine::forma::Rules,
-    start: Option<wfsim_engine::forma::Start>,
+    board: wfsim_engine::build::forma::Board,
+    rules: wfsim_engine::build::forma::Rules,
+    start: Option<wfsim_engine::build::forma::Start>,
 }
 
 fn forma_polarity(x: &Value) -> Result<Option<Polarity>, String> {
@@ -2712,7 +2712,7 @@ fn forma_polarity(x: &Value) -> Result<Option<Polarity>, String> {
             "omni" | "universal" => Ok(Some(Polarity::Omni)),
             "aura" => Ok(Some(Polarity::Aura)),
             p @ ("madurai" | "naramon" | "vazarin" | "zenurik" | "unairu" | "penjaga" | "umbra") => {
-                Ok(Some(wfsim_engine::weapons_data::polarity(p)))
+                Ok(Some(wfsim_engine::data::weapons::polarity(p)))
             }
             other => Err(format!("unknown polarity: {other}")),
         },
@@ -2721,37 +2721,37 @@ fn forma_polarity(x: &Value) -> Result<Option<Polarity>, String> {
 
 /// A card travels as `{drain, polarity, ordered}` at the rank the page set it
 /// to: `ordered` marks an element-bearing mod, whose order is part of the build.
-fn forma_card(x: &Value) -> Result<Option<wfsim_engine::forma::Card>, String> {
+fn forma_card(x: &Value) -> Result<Option<wfsim_engine::build::forma::Card>, String> {
     if x.is_null() {
         return Ok(None);
     }
     let polarity = forma_polarity(&x["polarity"])?.ok_or("a card needs a polarity")?;
-    Ok(Some(wfsim_engine::forma::Card {
+    Ok(Some(wfsim_engine::build::forma::Card {
         drain: get_u32(x, "drain", 0),
         polarity,
         ordered: get_bool(x, "ordered", false),
     }))
 }
 
-fn forma_loadout(l: &Value) -> Result<wfsim_engine::forma::Loadout, String> {
-    Ok(wfsim_engine::forma::Loadout {
+fn forma_loadout(l: &Value) -> Result<wfsim_engine::build::forma::Loadout, String> {
+    Ok(wfsim_engine::build::forma::Loadout {
         main: l["main"].as_array().map(Vec::as_slice).unwrap_or(&[]).iter().map(forma_card).collect::<Result<_, _>>()?,
         exilus: forma_card(&l["exilus"])?,
         grant: forma_card(&l["grant"])?,
     })
 }
 
-fn forma_loadouts(v: &Value) -> Result<Vec<wfsim_engine::forma::Loadout>, String> {
+fn forma_loadouts(v: &Value) -> Result<Vec<wfsim_engine::build::forma::Loadout>, String> {
     v.as_array().map(Vec::as_slice).unwrap_or(&[]).iter().map(forma_loadout).collect()
 }
 
 fn forma_ask(v: &Value) -> Result<FormaAsk, String> {
-    use wfsim_engine::forma::{Board, Layout, OmniUse, Rules, Start, UmbraUse};
+    use wfsim_engine::build::forma::{Board, Layout, OmniUse, Rules, Start, UmbraUse};
     let board = if let Some(id) = v["weapon"].as_str() {
         Board::weapon(id).ok_or_else(|| format!("unknown weapon: {id}"))?
     } else if let Some(id) = v["warframe"].as_str() {
         Board::warframe(
-            wfsim_engine::warframes_data::warframe(id).ok_or_else(|| format!("unknown Warframe: {id}"))?,
+            wfsim_engine::data::warframes::warframe(id).ok_or_else(|| format!("unknown Warframe: {id}"))?,
         )
     } else {
         return Err("name a weapon or a warframe".into());
@@ -2795,8 +2795,8 @@ fn forma_ask(v: &Value) -> Result<FormaAsk, String> {
 }
 
 /// A refusal is an answer: the reason, in a shape the page words itself.
-fn forma_refusal(e: &wfsim_engine::forma::PlanError) -> Result<Value, String> {
-    use wfsim_engine::forma::PlanError;
+fn forma_refusal(e: &wfsim_engine::build::forma::PlanError) -> Result<Value, String> {
+    use wfsim_engine::build::forma::PlanError;
     Ok(match e {
         PlanError::Invalid(_) => return Err(e.to_string()),
         PlanError::OverLimit { need, limit } => json!({ "kind": "over_limit", "need": need, "limit": limit }),
@@ -2814,7 +2814,7 @@ fn forma_refusal(e: &wfsim_engine::forma::PlanError) -> Result<Value, String> {
 /// needs nothing from here; the capacity, the bill and the layout are the
 /// engine's.
 pub fn forma_plan_json(v: &Value) -> Value {
-    use wfsim_engine::forma::{self, PlanError};
+    use wfsim_engine::build::forma::{self, PlanError};
     let run = || -> Result<Value, String> {
         let ask = forma_ask(v)?;
         let loadouts = forma_loadouts(&v["loadouts"])?;
@@ -2848,7 +2848,7 @@ pub fn forma_plan_json(v: &Value) -> Value {
 /// curve over groups of builds, with the page's own configs as hard loadouts.
 /// A group is `{builds: [{loadout, ratio}]}`; `floor` drops what is under it.
 pub fn forma_optimize_json(v: &Value) -> Value {
-    use wfsim_engine::forma::{self, Group, GroupBuild};
+    use wfsim_engine::build::forma::{self, Group, GroupBuild};
     let run = || -> Result<Value, String> {
         let ask = forma_ask(v)?;
         let hard = forma_loadouts(&v["hard"])?;
@@ -2890,7 +2890,7 @@ pub fn board_check_json(v: &Value) -> Value {
             .unwrap_or_default()
     };
     let valence = get_str(v, "valence", "");
-    match wfsim_engine::builds::validate_for_board_with(
+    match wfsim_engine::board::builds::validate_for_board_with(
         bench,
         weapon,
         &list("mods"),
@@ -2955,7 +2955,7 @@ pub fn targets_json(v: &Value) -> Value {
                         "overguard": t.overguard(),
                         // The armour figure alone says little at this level —
                         // what a build feels is the reduction it buys.
-                        "armor_dr": wfsim_engine::scaling::armor_damage_reduction(armor),
+                        "armor_dr": wfsim_engine::rules::scaling::armor_damage_reduction(armor),
                     })
                 }
                 // Unreachable with the unit's own flag, and reported rather
@@ -2968,7 +2968,7 @@ pub fn targets_json(v: &Value) -> Value {
 }
 
 pub fn riven_json(v: &Value) -> Value {
-    use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
+    use wfsim_engine::build::rivens::{RivenSpec, RolledStat};
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
     let class = riven_class(info);
     // A slot may carry a `roll` OR a `value`. `value` is what you type off a
@@ -2997,11 +2997,11 @@ pub fn riven_json(v: &Value) -> Value {
             .map(|a| a.iter().filter_map(rolled).collect())
             .unwrap_or_default(),
         malus: field("malus", "curse").and_then(rolled),
-        rank: get_u32(v, "rank", wfsim_engine::rivens_data::MAX_RANK),
+        rank: get_u32(v, "rank", wfsim_engine::build::rivens::MAX_RANK),
         polarity: match get_str(v, "polarity", "madurai") {
-            "vazarin" => wfsim_engine::mods::Polarity::Vazarin,
-            "naramon" => wfsim_engine::mods::Polarity::Naramon,
-            _ => wfsim_engine::mods::Polarity::Madurai,
+            "vazarin" => wfsim_engine::rules::capacity::Polarity::Vazarin,
+            "naramon" => wfsim_engine::rules::capacity::Polarity::Naramon,
+            _ => wfsim_engine::rules::capacity::Polarity::Madurai,
         },
     };
     let evo_refs: Vec<&str> = Vec::new();
@@ -3013,7 +3013,7 @@ pub fn riven_json(v: &Value) -> Value {
     let want_value = |arr: Option<&Value>, i: usize| -> Option<f64> {
         arr?.as_array()?.get(i)?.get("value")?.as_f64()
     };
-    let p = wfsim_engine::rivens_data::pool(&class);
+    let p = wfsim_engine::build::rivens::pool(&class);
     // A typed value arrives in the units the CARD shows — "200" means 200%,
     // "0.59" on a faction stat means a x0.59 multiplier. `from_shown` is the
     // engine's own inverse of what it printed, so a number copied off a real
@@ -3052,16 +3052,16 @@ pub fn riven_json(v: &Value) -> Value {
                 "decimals": def.decimals(),
                 // Where the roll landed in its own band, 0-100 — the one
                 // number that compares two stats on one card.
-                "percentile": wfsim_engine::rivens_data::percentile(roll),
+                "percentile": wfsim_engine::build::rivens::percentile(roll),
                 // The ends of the roll band, in shown units — what a number
                 // box may be typed to without leaving the legal riven.
                 "min": def.shown(lo), "max": def.shown(hi),
                 // A multiplier has no sign to read, so the box needs to be
                 // told the number it holds is not a percentage.
                 "unit": match def.shown_as() {
-                    wfsim_engine::rivens_data::Shown::Percent => "%",
-                    wfsim_engine::rivens_data::Shown::Multiplier => "x",
-                    wfsim_engine::rivens_data::Shown::Number => "",
+                    wfsim_engine::build::rivens::Shown::Percent => "%",
+                    wfsim_engine::build::rivens::Shown::Multiplier => "x",
+                    wfsim_engine::build::rivens::Shown::Number => "",
                 },
                 "bonus": bonus, "modeled": def.kind != "unmodeled",
             })
@@ -3156,9 +3156,9 @@ struct BuffMeta {
 fn card_trigger(
     id: &str,
     refs: &[&ModDef],
-    arcane: &wfsim_engine::arcanes_data::ArcaneFx,
+    arcane: &wfsim_engine::data::arcanes::ArcaneFx,
 ) -> Option<Option<&'static str>> {
-    use wfsim_engine::buff_events::{arc_trigger_id, of_builtin, trigger_id};
+    use wfsim_engine::data::buff_events::{arc_trigger_id, of_builtin, trigger_id};
     if let Some(t) = of_builtin(id) {
         return Some(t);
     }
@@ -3212,9 +3212,9 @@ fn enumerate_buffs(
     // from the list — a build nobody would ever assemble (eighty mods at once)
     // silently removing a card from a build they would.
     always: &[&ModDef],
-    arcane: &wfsim_engine::arcanes_data::ArcaneFx,
+    arcane: &wfsim_engine::data::arcanes::ArcaneFx,
     info: &WeaponInfo,
-    tenno: &wfsim_engine::tenno_data::Tenno,
+    tenno: &wfsim_engine::data::tenno::Tenno,
 ) -> Vec<BuffMeta> {
     // Sentinels resolve under BaseOnly — conditional buffs never fire, so
     // there is nothing to configure.
@@ -3258,7 +3258,7 @@ fn enumerate_buffs(
     // see on the panel: the streak buys a gun and the gun moves two stats the
     // stat block never shows moving. The gun's NAME is the weapon's, so it is
     // read off the entry rather than written here.
-    if let Some(s) = wfsim_engine::weapons_data::spec(&info.id).and_then(|w| w.kill_streak_summon) {
+    if let Some(s) = wfsim_engine::data::weapons::spec(&info.id).and_then(|w| w.kill_streak_summon) {
         push(BuffMeta {
             id: wfsim_engine::model::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
             name: "Kill Streak".into(),
@@ -3302,7 +3302,7 @@ fn enumerate_buffs(
     // scenario shows no card AND scores no combo, rather than showing a
     // control that moves nothing.
     if tenno.state.aiming {
-        if let Some(c) = wfsim_engine::weapons_data::spec(&info.id).and_then(|w| w.sniper_combo) {
+        if let Some(c) = wfsim_engine::data::weapons::spec(&info.id).and_then(|w| w.sniper_combo) {
             push(BuffMeta {
                 id: "sniper_combo".into(),
                 name: "Shot Combo Counter".into(),
@@ -3498,7 +3498,7 @@ fn enumerate_buffs(
                 // construction, so it is ONE card that names both, the same
                 // rule Frostbite's follows.
                 PerTendril { .. } => {
-                    let cap = wfsim_engine::weapons_data::spec(&info.id)
+                    let cap = wfsim_engine::data::weapons::spec(&info.id)
                         .and_then(|w| w.tendrils)
                         .map_or(0, |t| t.max);
                     if cap > 0 {
@@ -3543,7 +3543,7 @@ fn enumerate_buffs(
     if arcane.enervate_rank.is_some() {
         push(BuffMeta {
             id: "arcane:secondary_enervate".into(),
-            name: wfsim_engine::arcanes_data::secondary("secondary_enervate")
+            name: wfsim_engine::data::arcanes::secondary("secondary_enervate")
                 .map(|d| d.name.clone())
                 .unwrap_or_else(|| prettify("secondary_enervate")),
             grants: String::new(),
@@ -3565,7 +3565,7 @@ fn enumerate_buffs(
     if arcane.influence_chance > 0.0 {
         push(BuffMeta {
             id: "arcane:melee_influence".into(),
-            name: wfsim_engine::arcanes_data::secondary("melee_influence")
+            name: wfsim_engine::data::arcanes::secondary("melee_influence")
                 .map(|d| d.name.clone())
                 .unwrap_or_else(|| prettify("melee_influence")),
             grants: String::new(),
@@ -3579,11 +3579,11 @@ fn enumerate_buffs(
         });
     }
     // RAGE IS THE WIELDER'S, earned by a melee weapon: a card in whole percent
-    // that opens the meter and, locked, holds it (`wfsim_engine::rage`).
-    let melee = wfsim_engine::weapons_data::spec(&info.id).is_some_and(|s| s.slot == "melee");
-    if let Some(s) = wfsim_engine::warframes_data::warframe(&tenno.id).and_then(|f| f.rage).filter(|_| melee) {
+    // that opens the meter and, locked, holds it (`wfsim_engine::data::rage`).
+    let melee = wfsim_engine::data::weapons::spec(&info.id).is_some_and(|s| s.slot == "melee");
+    if let Some(s) = wfsim_engine::data::warframes::warframe(&tenno.id).and_then(|f| f.rage).filter(|_| melee) {
         push(BuffMeta {
-            id: wfsim_engine::rage::BUFF_ID.into(),
+            id: wfsim_engine::data::rage::BUFF_ID.into(),
             name: "Rage".into(),
             grants: String::new(),
             max_stacks: (s.cap * 100.0).round() as u32,
@@ -3608,7 +3608,7 @@ fn enumerate_buffs(
         // two identically-named cards the player could not tell apart, which
         // is the whole reason `ArcBuffSpec::owner` exists.
         let named = |id: &str| {
-            wfsim_engine::arcanes_data::secondary(id)
+            wfsim_engine::data::arcanes::secondary(id)
                 .map(|d| d.name.clone())
                 .unwrap_or_else(|| prettify(id))
         };
@@ -3619,7 +3619,7 @@ fn enumerate_buffs(
             // "0/1" knob for it would invite switching off a number the frame
             // simply has. It rides the buff machinery to reach its bucket;
             // that is an implementation detail and it stops here. Its own control is WF Armor, in the Tenno block.
-            if b.trigger == wfsim_engine::arcanes_data::ArcTrigger::Passive {
+            if b.trigger == wfsim_engine::data::arcanes::ArcTrigger::Passive {
                 continue;
             }
             let owner = if b.owner.is_empty() { arcane.id.clone() } else { b.owner.clone() };
@@ -3682,7 +3682,7 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
     // modeled — nothing to remember to add on this side.
     evo_ids
         .iter()
-        .filter_map(|id| wfsim_engine::evolutions_data::get(id))
+        .filter_map(|id| wfsim_engine::data::evolutions::get(id))
         .flat_map(|def| {
             def.buff_cards().into_iter().map(move |c| BuffMeta {
                 id: c.id.into(),
@@ -3696,15 +3696,15 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
                 // card's default depends on the weapon — the ceiling is the
                 // same for every weapon that has the perk.
                 default_stacks: match c.opens_at {
-                    wfsim_engine::evolutions_data::CardOpens::Full => c.max_stacks,
-                    wfsim_engine::evolutions_data::CardOpens::Zero => 0,
+                    wfsim_engine::data::evolutions::CardOpens::Full => c.max_stacks,
+                    wfsim_engine::data::evolutions::CardOpens::Zero => 0,
                 },
                 default_locked: false,
                 permanent: c.permanent,
                 uncapped: false,
                 // An evolution's card ids are the engine's own, so the table
                 // answers all of them with no pool and no arcane.
-                trigger: card_trigger(c.id, &[], &wfsim_engine::arcanes_data::ArcaneFx::none())
+                trigger: card_trigger(c.id, &[], &wfsim_engine::data::arcanes::ArcaneFx::none())
                     .unwrap_or_default(),
             })
         })
@@ -3734,25 +3734,25 @@ fn arcane_fx_for(
     info: &WeaponInfo,
     base: &WeaponBase,
     policy: StackPolicy,
-) -> wfsim_engine::arcanes_data::ArcaneFx {
+) -> wfsim_engine::data::arcanes::ArcaneFx {
     if !info.uses_arcane {
-        return wfsim_engine::arcanes_data::ArcaneFx::none();
+        return wfsim_engine::data::arcanes::ArcaneFx::none();
     }
     // The same player the sim and the optimizer fight as: an arcane that
     // scales off Warframe armor or energy reads it from here.
     let tenno = tenno_from(v, info);
-    let parts: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arcane_choices(v, info)
+    let parts: Vec<wfsim_engine::data::arcanes::ArcaneFx> = arcane_choices(v, info)
         .into_iter()
         .filter_map(|(pool, aid, rank)| {
             // POOL-scoped: an arcane from another pool is not equippable in
             // that slot, so it resolves to nothing rather than being applied.
-            let def = wfsim_engine::arcanes_data::for_slot(&pool, &aid)?;
+            let def = wfsim_engine::data::arcanes::for_slot(&pool, &aid)?;
             let rank = rank.unwrap_or(def.max_rank).min(def.max_rank);
             Some(def.fx(rank, policy, base.traits, &tenno))
         })
         .collect();
     // Two arcanes are one effect set — see `ArcaneFx::merged`.
-    wfsim_engine::arcanes_data::ArcaneFx::merged(&parts)
+    wfsim_engine::data::arcanes::ArcaneFx::merged(&parts)
 }
 
 /// An arcane by id, in ANY pool this weapon seats. The optimizer's scope is a
@@ -3762,22 +3762,22 @@ fn arcane_fx_for(
 fn arcane_in_pools(
     info: &WeaponInfo,
     id: &str,
-) -> Option<&'static wfsim_engine::arcanes_data::ArcaneDef> {
+) -> Option<&'static wfsim_engine::data::arcanes::ArcaneDef> {
     info.arcane_pools
         .iter()
-        .find_map(|p| wfsim_engine::arcanes_data::for_slot(p, id))
+        .find_map(|p| wfsim_engine::data::arcanes::for_slot(p, id))
 }
 
 /// The arcane a scope mark names in `pool`, and the rank it names: `<id>` is
 /// max rank, `<id>@<rank>` a lower one (the mods' [`RANK_MARK`] spelling).
 ///
-/// [`RANK_MARK`]: wfsim_engine::mods_data::RANK_MARK
+/// [`RANK_MARK`]: wfsim_engine::data::mods::RANK_MARK
 fn arcane_at_rank(
     pool: &str,
     mark: &str,
-) -> Option<(&'static wfsim_engine::arcanes_data::ArcaneDef, u32)> {
-    let (id, rank) = wfsim_engine::mods_data::split_rank(mark);
-    let d = wfsim_engine::arcanes_data::for_slot(pool, id)?;
+) -> Option<(&'static wfsim_engine::data::arcanes::ArcaneDef, u32)> {
+    let (id, rank) = wfsim_engine::data::mods::split_rank(mark);
+    let d = wfsim_engine::data::arcanes::for_slot(pool, id)?;
     match rank {
         None => Some((d, d.max_rank)),
         Some(r) if r < d.max_rank => Some((d, r)),
@@ -3931,9 +3931,9 @@ pub fn panel_json(v: &Value) -> Value {
     // EIGHT MAIN, ONE EXILUS — AND A STANCE BESIDE THEM, which is a slot of its
     // own and not one of the nine. A melee build sends ten ids and every one of
     // them is legal; counting the flat list refused the full build outright.
-    // `builds::validate_with` has subtracted the stances before comparing since
+    // `board::builds::validate_with` has subtracted the stances before comparing since
     // the slot landed, and this is the same subtraction.
-    let stance_pool = wfsim_engine::mods_data::pool_naming(&info.id, &mod_ids);
+    let stance_pool = wfsim_engine::data::mods::pool_naming(&info.id, &mod_ids);
     let stances = mod_ids
         .iter()
         .filter(|id| {
@@ -3945,7 +3945,7 @@ pub fn panel_json(v: &Value) -> Value {
     }
     // …AND ONE STANCE, because there is one slot for it. Two in a list is a
     // build nobody can hold, and admitting it would resolve two combo scripts
-    // with only the first ever read — the same refusal `builds::validate_with`
+    // with only the first ever read — the same refusal `board::builds::validate_with`
     // has made since the slot landed.
     if stances > 1 {
         return err_json(format!("{stances} stances, and there is one stance slot"));
@@ -3969,7 +3969,7 @@ pub fn panel_json(v: &Value) -> Value {
     // Section titles come from the REGISTERED form (`data/weapons` `form:`),
     // so a bow's first section says "Charged Shot" rather than "Base Form".
     let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
-    for f in wfsim_engine::weapons_data::forms_of(&info.id) {
+    for f in wfsim_engine::data::weapons::forms_of(&info.id) {
         // A gauge-switched form exists only while its tier-1 unlock is chosen.
         // THE ADAPTER, not the gauge: this hides a form until its unlock is in
         // the build, and a form that needs no adapter is never hidden.
@@ -3995,9 +3995,9 @@ pub fn panel_json(v: &Value) -> Value {
         // is worth depends on what is beside it, which is exactly what this
         // list is for — and the row is drawn dim when the set is short, so a
         // reader can see the 25% they are one card away from.
-        let self_scale = wfsim_engine::mod_sets_data::self_scale_for(m, &refs);
-        if let Some(set) = m.set.and_then(wfsim_engine::mod_sets_data::set_def) {
-            if set.kind == wfsim_engine::mod_sets_data::SetBonusKind::SelfScaling {
+        let self_scale = wfsim_engine::data::mod_sets::self_scale_for(m, &refs);
+        if let Some(set) = m.set.and_then(wfsim_engine::data::mod_sets::set_def) {
+            if set.kind == wfsim_engine::data::mod_sets::SetBonusKind::SelfScaling {
                 let have = refs.iter().filter(|x| x.set == Some(set.id)).count();
                 conditionals.push(json!({
                     "mod": name,
@@ -4105,11 +4105,11 @@ pub fn panel_json(v: &Value) -> Value {
                 // counter at all, which is a question about the WEAPON (a
                 // sniper) and about the fight (scoped in). The panel states
                 // both rather than printing "+12s" beside a weapon that has no
-                // window — see `loadout::ModEffect::ComboDuration`.
+                // window — see `build::loadout::ModEffect::ComboDuration`.
                 ComboDuration(v) => {
                     // The WEAPON's own window, read the same way the buff
                     // card's roster reads it one screen up.
-                    let window = wfsim_engine::weapons_data::spec(&info.id)
+                    let window = wfsim_engine::data::weapons::spec(&info.id)
                         .and_then(|w| w.sniper_combo)
                         .map(|c| c.seconds);
                     conditionals.push(json!({
@@ -4243,7 +4243,7 @@ pub fn panel_json(v: &Value) -> Value {
                 SyndicateRadial { .. } => {}
                 PerTendril { crit_chance, status_chance } => {
                     let cap = f64::from(
-                        wfsim_engine::weapons_data::spec(&info.id)
+                        wfsim_engine::data::weapons::spec(&info.id)
                             .and_then(|w| w.tendrils)
                             .map_or(0, |t| t.max),
                     );
@@ -4533,7 +4533,7 @@ pub fn panel_json(v: &Value) -> Value {
         let arc = arcane_fx_for(v, info, &forms_list[0].2, policy);
         let t = tenno_from(v, info);
         for b in arc.buffs.iter() {
-            if b.trigger != wfsim_engine::arcanes_data::ArcTrigger::Passive {
+            if b.trigger != wfsim_engine::data::arcanes::ArcTrigger::Passive {
                 continue;
             }
             let what = match b.grant {
@@ -4578,7 +4578,7 @@ pub fn panel_json(v: &Value) -> Value {
         };
         for def in evo_refs
             .iter()
-            .filter_map(|id| wfsim_engine::evolutions_data::get(id))
+            .filter_map(|id| wfsim_engine::data::evolutions::get(id))
         {
             let name = format!("{} ({})", def.name, tiername(def.tier));
             let v = def.flat_base_damage();
@@ -5071,7 +5071,7 @@ pub fn panel_json(v: &Value) -> Value {
         // below has to add it or it would state less than the sim applies.
         let mut arcane_wp_cc = 0.0;
         for (pool, aid, want_rank) in arcane_choices(v, info) {
-            if let Some(def) = wfsim_engine::arcanes_data::for_slot(&pool, &aid) {
+            if let Some(def) = wfsim_engine::data::arcanes::for_slot(&pool, &aid) {
                 let rank = want_rank.unwrap_or(def.max_rank).min(def.max_rank);
                 let fx = def.fx(rank, policy, base.traits, &tenno);
                 arcane_wp_cc += fx.weakpoint_crit_chance_relative;
@@ -5223,7 +5223,7 @@ pub fn panel_json(v: &Value) -> Value {
             .partition(|r| ON_PROJECTILE.contains(&key_of(r).as_str()));
 
         // A damage vector as displayed rows: type, amount, share of the total.
-        let vector_rows = |v: &wfsim_engine::damage::DamageVector| {
+        let vector_rows = |v: &wfsim_engine::rules::damage::DamageVector| {
             let total = v.total();
             v.iter_nonzero()
                 .map(|(t, amt)| {
@@ -5352,7 +5352,7 @@ pub fn panel_json(v: &Value) -> Value {
         if let (Some(cb), Some(cr)) = (base.cluster.as_ref(), panel.cluster.as_ref()) {
             let n = display_number(cr.count);
             let part_rows = |b: &wfsim_engine::model::RadialBase,
-                             r: &wfsim_engine::loadout::ResolvedRadial| {
+                             r: &wfsim_engine::build::loadout::ResolvedRadial| {
                 vec![
                     json!({ "key": "base_damage", "label": "Base Damage",
                         "base": num(b.base_vector.total()), "final": num(r.modified_base),
@@ -5578,8 +5578,8 @@ parts.push(json!({
             if !said.insert(set_id) {
                 continue;
             }
-            let Some(def) = wfsim_engine::mod_sets_data::set_def(set_id) else { continue };
-            let ours = wfsim_engine::mod_sets_data::members_carried(set_id);
+            let Some(def) = wfsim_engine::data::mod_sets::set_def(set_id) else { continue };
+            let ours = wfsim_engine::data::mod_sets::members_carried(set_id);
             if ours >= def.members {
                 continue;
             }
@@ -5654,7 +5654,7 @@ parts.push(json!({
 }
 
 /// The five numbers a wielder floor is, for `/api/meta`.
-fn floor_json(t: &wfsim_engine::tenno_data::Tenno) -> Value {
+fn floor_json(t: &wfsim_engine::data::tenno::Tenno) -> Value {
     json!({
         "name": t.name, "health": t.health, "shield": t.shield,
         "armor": t.armor, "energy": t.energy, "sprint": t.sprint,
@@ -5666,7 +5666,7 @@ fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {
     let heads: Vec<_> = spec.body_parts.iter().filter(|p| p.is_head).collect();
     let bodies: Vec<_> = spec.body_parts.iter().filter(|p| !p.is_head).collect();
 
-    let make = |b: &wfsim_engine::enemy_data::BodyPartSpec, w: f64| BodyPart {
+    let make = |b: &wfsim_engine::data::enemies::BodyPartSpec, w: f64| BodyPart {
         name: b.name.clone(),
         aim_weight: w,
         multiplier: b.multiplier,
@@ -5725,7 +5725,7 @@ fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {
 /// the only place the rule holds — a preset saved before it existed, or a
 /// hand-built request, still carries the gap, and the engine would price it.
 fn ladder_prefix(ids: Vec<String>) -> Vec<String> {
-    let tier_of = |id: &String| wfsim_engine::evolutions_data::get(id).map(|e| e.tier);
+    let tier_of = |id: &String| wfsim_engine::data::evolutions::get(id).map(|e| e.tier);
     let mut tiers: Vec<u32> = ids.iter().filter_map(tier_of).collect();
     tiers.sort_unstable();
     let reach = tiers
@@ -5734,7 +5734,7 @@ fn ladder_prefix(ids: Vec<String>) -> Vec<String> {
         .take_while(|(i, t)| **t == *i as u32 + 1)
         .count() as u32;
     ids.into_iter()
-        .filter(|id| wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.tier <= reach))
+        .filter(|id| wfsim_engine::data::evolutions::get(id).is_some_and(|e| e.tier <= reach))
         .collect()
 }
 
@@ -5744,7 +5744,7 @@ fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String
         ladder_prefix(
             ids.into_iter()
                 .filter(|id| {
-                    wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.weapon == group)
+                    wfsim_engine::data::evolutions::get(id).is_some_and(|e| e.weapon == group)
                 })
                 .collect(),
         )
@@ -5757,7 +5757,7 @@ fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String
             .map(String::from)
             .collect();
         for id in &ids {
-            if wfsim_engine::evolutions_data::get(id).is_none() {
+            if wfsim_engine::data::evolutions::get(id).is_none() {
                 return Err(format!("unknown evolution id: {id}"));
             }
         }
@@ -5819,7 +5819,7 @@ pub(crate) struct Fight {
     /// built — so a custom target reported its own id as its name.
     pub(crate) enemy_name: String,
     /// WHAT A RUN IS JUDGED BY, and therefore which run is the benchmark fight.
-    pub(crate) metric: &'static wfsim_engine::metrics::MetricDef,
+    pub(crate) metric: &'static wfsim_engine::rules::metrics::MetricDef,
     /// The MODE asked for, resolved to one this weapon has. The optimizer reads
     /// it as the fallback for a request that names no mode axis. It replaced
     /// `form` and `untransformed_id`, which the optimizer was the only reader
@@ -5839,7 +5839,7 @@ pub(crate) struct Fight {
     /// read it from one place.
     pub(crate) eximus: bool,
     pub(crate) headshot_pct: f64,
-    pub(crate) tenno: wfsim_engine::tenno_data::Tenno,
+    pub(crate) tenno: wfsim_engine::data::tenno::Tenno,
     pub(crate) infinite_ammo: bool,
     /// DO THE BODIES DROP AMMO, and how far is a pack collected from — the
     /// other half of the ammo economy, and the half that decides nothing while
@@ -5889,7 +5889,7 @@ pub(crate) fn firing_entry(fight: &Fight) -> String {
 /// One call for the whole scan rather than one per candidate: the client sends
 /// every set it means to measure (the reference, and the reference plus each
 /// candidate) and gets back the orders to simulate. The alternative — teaching
-/// the browser to pair elements — would be a second copy of `elements::combine`
+/// the browser to pair elements — would be a second copy of `rules::elements::combine`
 /// rules 2 and 3, and it would be wrong about innate elements the first time a
 /// weapon carried one.
 pub fn pairings_json(v: &Value) -> Value {
@@ -5916,10 +5916,10 @@ pub fn pairings_json(v: &Value) -> Value {
             // Unknown ids are DROPPED, not rejected: the client's scope can
             // name a mod this form cannot equip (an evolution forbids it), and
             // the honest answer there is the set without it — the same rule
-            // `builds::normalize` applies to a submission.
+            // `board::builds::normalize` applies to a submission.
             let named: Vec<&str> =
                 set.as_array().map(|a| a.iter().filter_map(|x| x.as_str()).collect()).unwrap_or_default();
-            let pool = wfsim_engine::mods_data::pool_naming(&fire, &named);
+            let pool = wfsim_engine::data::mods::pool_naming(&fire, &named);
             let ids: Vec<String> = set
                 .as_array()
                 .map(|a| {
@@ -5930,10 +5930,10 @@ pub fn pairings_json(v: &Value) -> Value {
                         .collect()
                 })
                 .unwrap_or_default();
-            let orders: Vec<Value> = wfsim_engine::builds::element_orders(&fire, &ids, &evos)
+            let orders: Vec<Value> = wfsim_engine::board::builds::element_orders(&fire, &ids, &evos)
                 .into_iter()
                 .map(|o| {
-                    let name = |t: wfsim_engine::damage::DamageType| format!("{t:?}");
+                    let name = |t: wfsim_engine::rules::damage::DamageType| format!("{t:?}");
                     json!({
                         "mods": o.mods,
                         "combined": o.combined.iter().copied().map(name).collect::<Vec<_>>(),
@@ -5957,13 +5957,13 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // build is exactly where this arrives, and answering it with kills per
     // minute is a number the reader cannot tell from a right one.
     let metric_id = match get_str(v, "metric", "") {
-        "" => wfsim_engine::metrics::DEFAULT,
+        "" => wfsim_engine::rules::metrics::DEFAULT,
         id => id,
     };
-    let Some(metric) = wfsim_engine::metrics::get(metric_id) else {
+    let Some(metric) = wfsim_engine::rules::metrics::get(metric_id) else {
         return Err(err_json(format!(
             "unknown metric: {metric_id} — a scenario is judged by one of {}",
-            wfsim_engine::metrics::ALL
+            wfsim_engine::rules::metrics::ALL
                 .iter()
                 .map(|m| m.id)
                 .collect::<Vec<_>>()
@@ -5983,7 +5983,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         .map(|a| {
             a.iter()
                 .filter_map(Value::as_str)
-                .filter(|s| wfsim_engine::buff_events::ALL.iter().any(|(id, _)| id == s))
+                .filter(|s| wfsim_engine::data::buff_events::ALL.iter().any(|(id, _)| id == s))
                 .map(String::from)
                 .collect()
         })
@@ -6018,8 +6018,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // The passive belongs to the WEAPON: a request can only turn Frenzy off
     // or configure it, never grant it to a weapon that does not list the
     // perk. Without this the Laetum inherited Dual Toxocyst's ×2.5 fire rate.
-    let has_frenzy = wfsim_engine::weapons_data::has_perk(&info.id, "frenzy")
-        || incarnon_id(info).is_some_and(|i| wfsim_engine::weapons_data::has_perk(i, "frenzy"));
+    let has_frenzy = wfsim_engine::data::weapons::has_perk(&info.id, "frenzy")
+        || incarnon_id(info).is_some_and(|i| wfsim_engine::data::weapons::has_perk(i, "frenzy"));
     // One value for all three forms: the weapon must OWN the passive, and
     // the request may still switch it off (or configure it via buff_cfg).
     // The cycle reads it too, or its knob is dead.
@@ -6034,7 +6034,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // `form` is still READ when no mode is named, because share links and
     // scenario presets written before this carry it. A stale `form` is not
     // migrated, it is simply obeyed one last time.
-    let modes = wfsim_engine::weapons_data::play_modes(&info.id);
+    let modes = wfsim_engine::data::weapons::play_modes(&info.id);
     let asked = v.get("mode").and_then(Value::as_str);
     let form = match asked {
         Some(want) => modes
@@ -6093,7 +6093,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // weapon with no Incarnon form — a sentinel weapon, a bow — transforming on
     // a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of animation), and the
     // dead time comes straight off its DPS.
-    let registered = wfsim_engine::weapons_data::forms_of(&info.id);
+    let registered = wfsim_engine::data::weapons::forms_of(&info.id);
     // `default` = however THIS weapon is played: the cycle where there is one
     // to run, its own default form where there is not. A weapon that
     // transforms is played transforming.
@@ -6153,7 +6153,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // fight is ONE DOCUMENT that any weapon can be tested against, so the rules
     // it holds for the classes it is not currently pointed at travel with it and
     // are legible on any weapon's page. Looked up once here and handed to
-    // `scenario::resolve`, which keeps that module free of the wire format.
+    // `build::scenario::resolve`, which keeps that module free of the wire format.
     let class_rules = class_rules_for(v, &info.id);
     let rule = |id: &str| class_rules.get(id).copied();
     // OVERRIDES SIT BEHIND LEGALITY. A companion cannot put a shot on a head,
@@ -6218,21 +6218,21 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // Capped at 300 m rather than at nothing: past the longest falloff window
     // and the widest cone in the roster every extra metre is the same answer,
     // and a fight at 10 km is a typo rather than a scenario.
-    let point = |k: &str, dflt: wfsim_engine::space::Vec2| match v.get(k).and_then(|p| p.as_array()) {
-        Some(a) if a.len() == 2 => wfsim_engine::space::Vec2::new(
+    let point = |k: &str, dflt: wfsim_engine::rules::space::Vec2| match v.get(k).and_then(|p| p.as_array()) {
+        Some(a) if a.len() == 2 => wfsim_engine::rules::space::Vec2::new(
             a[0].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
             a[1].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
         ),
         _ => dflt,
     };
-    let player_at = point("player_at", wfsim_engine::space::Vec2::ORIGIN);
+    let player_at = point("player_at", wfsim_engine::rules::space::Vec2::ORIGIN);
     let target_at = point(
         "target_at",
-        wfsim_engine::space::Vec2::new(
+        wfsim_engine::rules::space::Vec2::new(
             0.0,
             // A GAP, so the two CENTRES stand one contact further apart —
             // the legacy field and the arena agree on what a distance means.
-            get_f64(v, "distance", 0.0).clamp(0.0, 300.0) + wfsim_engine::space::CONTACT_RANGE_M,
+            get_f64(v, "distance", 0.0).clamp(0.0, 300.0) + wfsim_engine::rules::space::CONTACT_RANGE_M,
         ),
     );
     // …and the bodies are pushed apart if the request put them through each
@@ -6241,14 +6241,14 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // the same spot and there is no line to speak of.
     let target_at = {
         let d = player_at.distance(target_at);
-        let floor = wfsim_engine::space::CONTACT_RANGE_M;
+        let floor = wfsim_engine::rules::space::CONTACT_RANGE_M;
         if d >= floor {
             target_at
         } else if d <= 0.0 {
-            wfsim_engine::space::Vec2::new(player_at.x, player_at.y + floor)
+            wfsim_engine::rules::space::Vec2::new(player_at.x, player_at.y + floor)
         } else {
             let k = floor / d;
-            wfsim_engine::space::Vec2::new(
+            wfsim_engine::rules::space::Vec2::new(
                 player_at.x + (target_at.x - player_at.x) * k,
                 player_at.y + (target_at.y - player_at.y) * k,
             )
@@ -6262,19 +6262,19 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // multiplies. `abilities` is what the player ticked, each with its own
     // seconds — omit `secs` (or send null) for the whole fight.
     //
-    // Resolved right here rather than carried raw: `abilities_data::resolve`
+    // Resolved right here rather than carried raw: `data::abilities::resolve`
     // applies the strength AND settles the same-family conflicts, so nothing
     // downstream — not the sim, not the optimizer, not the replay — can end up
     // adding two Roars together.
     let strength = get_f64(v, "ability_strength", 1.0).clamp(0.0, 10.0);
-    let picks: Vec<wfsim_engine::abilities_data::AbilityPick<'_>> = v
+    let picks: Vec<wfsim_engine::data::abilities::AbilityPick<'_>> = v
         .get("abilities")
         .and_then(Value::as_array)
         .map(|seq| {
             seq.iter()
                 .filter_map(|e| {
                     let id = e.get("id").and_then(Value::as_str)?;
-                    Some(wfsim_engine::abilities_data::AbilityPick {
+                    Some(wfsim_engine::data::abilities::AbilityPick {
                         id,
                         duration_seconds: e
                             .get("secs")
@@ -6294,11 +6294,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // Resupply is 20/30/40/50% on Sniper Rifles. `resolve` is the one function
     // handed both the ability and the weapon, so nothing downstream has to know
     // what a sniper is.
-    let abilities = wfsim_engine::abilities_data::resolve(
+    let abilities = wfsim_engine::data::abilities::resolve(
         &picks,
         strength,
-        wfsim_engine::weapons_data::spec(&info.id).map_or("", |s| s.class.as_str()),
-        wfsim_engine::weapons_data::spec(&info.id).map_or("", |s| s.slot.as_str()),
+        wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.class.as_str()),
+        wfsim_engine::data::weapons::spec(&info.id).map_or("", |s| s.slot.as_str()),
     );
 
     // The published roster PLUS whatever this request brought with it. A
@@ -6401,7 +6401,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 .and_then(Value::as_array)
                 .filter(|a| a.len() == 2)
                 .map(|a| {
-                    wfsim_engine::space::Vec2::new(
+                    wfsim_engine::rules::space::Vec2::new(
                         a[0].as_f64().unwrap_or(0.0),
                         a[1].as_f64().unwrap_or(0.0),
                     )
@@ -6445,7 +6445,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         .and_then(Value::as_array)
         .filter(|a| a.len() == 2)
         .map(|a| {
-            wfsim_engine::space::Vec2::new(
+            wfsim_engine::rules::space::Vec2::new(
                 a[0].as_f64().unwrap_or(0.0),
                 a[1].as_f64().unwrap_or(0.0),
             )
@@ -6478,14 +6478,14 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 at: target_at,
             }];
         all.extend(formation);
-        let muzzle = wfsim_engine::space::muzzle(player_at, aim);
-        let dir = wfsim_engine::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
+        let muzzle = wfsim_engine::rules::space::muzzle(player_at, aim);
+        let dir = wfsim_engine::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
         let bodies: Vec<_> = all.iter().map(|f| f.at).collect();
         // NOBODY ON THE LINE keeps the NEAREST body as the arena's target. It
         // is not being shot at — the geometry says so and the numbers follow —
         // but it is the body whose pools the run reports, and the one a chain
         // or a splash is most likely to reach.
-        let aimed = wfsim_engine::space::first_hit(muzzle, dir, &bodies)
+        let aimed = wfsim_engine::rules::space::first_hit(muzzle, dir, &bodies)
             .map(|(i, _)| i)
             .or_else(|| {
                 (0..bodies.len()).min_by(|&a, &b| {
@@ -6617,8 +6617,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
 pub const RIVEN_ITEM: &str = "riven:board";
 
 /// One riven, as the `rivens` array of a simulate request.
-pub fn riven_request(spec: &wfsim_engine::rivens_data::RivenSpec) -> Value {
-    let stat = |s: &wfsim_engine::rivens_data::RolledStat| json!({ "id": s.id, "roll": s.roll });
+pub fn riven_request(spec: &wfsim_engine::build::rivens::RivenSpec) -> Value {
+    let stat = |s: &wfsim_engine::build::rivens::RolledStat| json!({ "id": s.id, "roll": s.roll });
     json!([{
         "name": RIVEN_ITEM.trim_start_matches("riven:"),
         "spec": {
@@ -6641,8 +6641,8 @@ pub fn riven_request(spec: &wfsim_engine::rivens_data::RivenSpec) -> Value {
 /// inline in a scoring loop is one no test can reach.
 pub fn simulate_request(
     scenario: &Value,
-    v: &wfsim_engine::builds::ValidBuild,
-    played: wfsim_engine::weapons_data::WeaponPlayMode,
+    v: &wfsim_engine::board::builds::ValidBuild,
+    played: wfsim_engine::data::weapons::WeaponPlayMode,
 ) -> Value {
     let mut req = scenario.clone();
     let Some(o) = req.as_object_mut() else {
@@ -6658,7 +6658,7 @@ pub fn simulate_request(
         json!(v
             .mods
             .iter()
-            .map(|m| if m == wfsim_engine::builds::RIVEN_SLOT {
+            .map(|m| if m == wfsim_engine::board::builds::RIVEN_SLOT {
                 RIVEN_ITEM.to_string()
             } else {
                 m.clone()
@@ -6674,7 +6674,7 @@ pub fn simulate_request(
     // farmed — the same reason every row here is scored at full Forma.
     if !v.valence.is_empty() {
         o.insert("valence_element".into(), json!(v.valence));
-        let max = wfsim_engine::weapons_data::valence_of(&v.weapon).map_or(0.0, |s| s.max);
+        let max = wfsim_engine::data::weapons::valence_of(&v.weapon).map_or(0.0, |s| s.max);
         o.insert("valence_bonus".into(), json!(max));
     }
     // THE PARTS. Without them the fight is fought with the chamber's DEFAULT
@@ -6789,7 +6789,7 @@ fn sim_params(
     policy: StackPolicy,
     evo_refs: &[&str],
     refs: &[&ModDef],
-    tenno: &wfsim_engine::tenno_data::Tenno,
+    tenno: &wfsim_engine::data::tenno::Tenno,
     arena: &wfsim_engine::arena::Arena,
     cycle_from: Option<&str>,
     single_form: &str,
@@ -6861,7 +6861,7 @@ fn sim_params(
             let unarmed: Vec<&str> = evo_refs
                 .iter()
                 .copied()
-                .filter(|id| !wfsim_engine::evolutions_data::states_incarnon_window(id))
+                .filter(|id| !wfsim_engine::data::evolutions::states_incarnon_window(id))
                 .collect();
             resolve_for(&base_for(v, single_form, &unarmed), refs, policy, tenno)
         });
@@ -7336,17 +7336,17 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // weapon reaches 80 — the literal 60 here was a rank-30 answer standing in
     // for the rule (docs/INVESTMENT.md). `fit` owns the whole question: the
     // rank the Forma buy, the capacity that gives, and the bill by item.
-    let inv = wfsim_engine::mods::Investment::default();
+    let inv = wfsim_engine::rules::capacity::Investment::default();
     // …AND THE STANCE HANDS CAPACITY BACK rather than taking it, which is why
     // the panel's own bill has to ask for it too: a melee build reads five to
     // ten points of headroom the weapon's rank did not buy.
     let stance = refs.iter().find(|m| m.stance.is_some()).map(|m| {
-        wfsim_engine::mods::StanceSlot {
+        wfsim_engine::rules::capacity::StanceSlot {
             mod_polarity: m.polarity,
-            slot_polarity: wfsim_engine::weapons_data::stance_polarity(&info.id),
+            slot_polarity: wfsim_engine::data::weapons::stance_polarity(&info.id),
         }
     });
-    let forma = match wfsim_engine::mods::fit(
+    let forma = match wfsim_engine::rules::capacity::fit(
         wspec(&info.id).max_rank,
         &innate_slots_for(&info.id),
         &planned,
@@ -7384,8 +7384,8 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // An arcane the weapon cannot seat is an ERROR here, not a silent drop:
     // the sim is the one place a visitor is owed a reason.
     for (pool, aid, _) in arcane_choices(v, info) {
-        if wfsim_engine::arcanes_data::for_slot(&pool, &aid).is_none() {
-            return err_json(match wfsim_engine::arcanes_data::slot_of(&aid) {
+        if wfsim_engine::data::arcanes::for_slot(&pool, &aid).is_none() {
+            return err_json(match wfsim_engine::data::arcanes::slot_of(&aid) {
                 Some(s) => format!(
                     "{aid} is a {s} arcane — {} seats {}",
                     info.name,
@@ -7460,7 +7460,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // (the Haalvu) every per-type array in the engine went out of
     // range and this table would have named the wrong types if it had not.
     let type_name = |i: usize| -> String {
-        let n = wfsim_engine::damage::DamageType::ALL[i].name();
+        let n = wfsim_engine::rules::damage::DamageType::ALL[i].name();
         let mut c = n.chars();
         match c.next() {
             Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
@@ -7471,7 +7471,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // A WEAPON-damage row expands into the vector that dealt it — a status
     // row is already one type, which is what a proc is. Parts are ordered
     // biggest-first, the same rule the rows themselves follow.
-    let by_type = |split: &[f64; wfsim_engine::damage::DamageType::ALL.len()]| -> Option<Value> {
+    let by_type = |split: &[f64; wfsim_engine::rules::damage::DamageType::ALL.len()]| -> Option<Value> {
         let mut parts: Vec<(String, f64)> = split
             .iter()
             .enumerate()
@@ -7589,7 +7589,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // only ever grows, so the last frame names all of them and an earlier
         // frame simply reads zero there.
         let last = rep.frames.last().cloned().unwrap_or_default();
-        let pick = |f: &wfsim_engine::fight::Frame, k: &str| -> (f64, [f64; wfsim_engine::damage::DamageType::ALL.len()]) {
+        let pick = |f: &wfsim_engine::fight::Frame, k: &str| -> (f64, [f64; wfsim_engine::rules::damage::DamageType::ALL.len()]) {
             match k {
                 "direct" => (f.sources.direct, f.sources.direct_by_type),
                 "radial" => (f.sources.radial, f.sources.radial_by_type),
@@ -7598,10 +7598,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 "syndicate" => (f.sources.syndicate, f.sources.syndicate_by_type),
                 "extra hit" => (f.sources.extra_hit, f.sources.extra_hit_by_type),
                 other => {
-                    let i = (0..wfsim_engine::damage::DamageType::ALL.len())
+                    let i = (0..wfsim_engine::rules::damage::DamageType::ALL.len())
                         .position(|i| type_name(i) == other)
                         .unwrap_or(0);
-                    (f.sources.status[i], [0.0; wfsim_engine::damage::DamageType::ALL.len()])
+                    (f.sources.status[i], [0.0; wfsim_engine::rules::damage::DamageType::ALL.len()])
                 }
             }
         };
@@ -7617,7 +7617,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                     // per-type breakdown however much of them a weapon dealt.
                     // Same fault class as the `[f64; 15]` arrays in `dummy`,
                     // found the same way: by counting.
-                    (0..wfsim_engine::damage::DamageType::ALL.len())
+                    (0..wfsim_engine::rules::damage::DamageType::ALL.len())
                         .filter(|&i| pick(&last, name).1[i] > 0.0)
                         .map(|i| {
                             json!({
@@ -7830,7 +7830,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "timeline": m.curve.buckets()[..nb].to_vec(),
         "replay": replay,
         "transforms": s.mean_transforms,
-        // COUNTED, NOT FOUGHT — `weapons_data::SpawnOnKillSpec`. Absent on
+        // COUNTED, NOT FOUGHT — `data::weapons::SpawnOnKillSpec`. Absent on
         // every weapon that leaves nothing, so the page draws no row for them.
         "ghosts": (s.mean_ghosts > 0.0).then_some(s.mean_ghosts),
         "ghosts_peak": (s.mean_ghosts > 0.0).then_some(s.ghosts_peak),
@@ -7947,7 +7947,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
         .filter(|m| ids.iter().any(|id| id.as_str() == m.id))
         .collect();
     let mut out: Vec<BuffMeta> = Vec::new();
-    let none = wfsim_engine::arcanes_data::ArcaneFx::none();
+    let none = wfsim_engine::data::arcanes::ArcaneFx::none();
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
     let tenno = tenno_from(v, info);
     let always: Vec<&ModDef> = full
@@ -7997,7 +7997,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
 /// Everything the heavy phase needs, validated up front.
 /// ONE MODE, resolved into the weapon entries it fires.
 ///
-/// Everything here is derived from `weapons_data::play_modes` — a mode names
+/// Everything here is derived from `data::weapons::play_modes` — a mode names
 /// the entry it fires and, for a cycle, the one it returns to — plus the
 /// evolution that unlocks a second form and what to fire without it. It is the
 /// same resolution `parse_fight` does for the single mode a simulate names,
@@ -8023,9 +8023,9 @@ pub(crate) struct ModeForms {
 /// Resolve one mode into the entries it fires — the optimizer's counterpart of
 /// what `parse_fight` does for a simulate.
 pub(crate) fn mode_forms(info: &WeaponInfo, mode_id: &str) -> ModeForms {
-    let modes = wfsim_engine::weapons_data::play_modes(&info.id);
+    let modes = wfsim_engine::data::weapons::play_modes(&info.id);
     let m = modes.iter().find(|m| m.id == mode_id).or(modes.first());
-    let registered = wfsim_engine::weapons_data::forms_of(&info.id);
+    let registered = wfsim_engine::data::weapons::forms_of(&info.id);
     let untransformed = registered
         .iter()
         .find(|f| f.is_default)
@@ -8082,7 +8082,7 @@ pub struct OptimizePlan {
     /// as long as `pool`.
     variant_forbids: Vec<Vec<bool>>,
     exilus_defs: Vec<Option<ModDef>>,
-    arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx>,
+    arcanes: Vec<wfsim_engine::data::arcanes::ArcaneFx>,
     /// What each entry of `arcanes` IS, in pool order — one id per slot,
     /// "none" for an empty one. The effects are merged and cannot be read
     /// back apart, so the naming travels beside them.
@@ -8237,9 +8237,9 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // refusing a build the simulator would accept rather than crowning one it
     // would not.
     let cap = 60 + stance_def.as_ref().map_or(0, |m| {
-        wfsim_engine::mods::stance_capacity(
+        wfsim_engine::rules::capacity::stance_capacity(
             m.polarity,
-            wfsim_engine::weapons_data::stance_polarity(&info.id),
+            wfsim_engine::data::weapons::stance_polarity(&info.id),
         )
     });
 
@@ -8395,7 +8395,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // The tier COUNT is per weapon (DT 4, Laetum 5) — read it from the data.
     let evo_req = v.get("evolutions").and_then(|x| x.as_object());
     let mut evo_sets: Vec<Vec<String>> = vec![Vec::new()];
-    let evo_tiers = wfsim_engine::evolutions_data::tier_count(
+    let evo_tiers = wfsim_engine::data::evolutions::tier_count(
         wspec(&info.id).transform_group.as_deref().unwrap_or(&info.id),
     );
     for tier in 1u32..=evo_tiers {
@@ -8439,7 +8439,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     evo_sets.dedup();
     for set in &evo_sets {
         for id in set {
-            if wfsim_engine::evolutions_data::get(id).is_none() {
+            if wfsim_engine::data::evolutions::get(id).is_none() {
                 return Err(err_json(format!("unknown evolution id: {id}")));
             }
         }
@@ -8536,7 +8536,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // rejected id and report those runs as if they had been real options.
     // Each slot also always offers the EMPTY choice, so "one arcane, not two"
     // stays reachable — the scope says what MAY be worn, not what must be.
-    let per_slot: Vec<Vec<(String, wfsim_engine::arcanes_data::ArcaneFx)>> = info
+    let per_slot: Vec<Vec<(String, wfsim_engine::data::arcanes::ArcaneFx)>> = info
         .arcane_pools
         .iter()
         .map(|pool| {
@@ -8559,10 +8559,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             let fx = |id: &str| {
                 arcane_at_rank(pool, id)
                     .map(|(d, rank)| d.fx(rank, StackPolicy::Emergent, arc_base.traits, tenno))
-                    .unwrap_or_else(wfsim_engine::arcanes_data::ArcaneFx::none)
+                    .unwrap_or_else(wfsim_engine::data::arcanes::ArcaneFx::none)
             };
             let empty = || {
-                ("none".to_string(), wfsim_engine::arcanes_data::ArcaneFx::none())
+                ("none".to_string(), wfsim_engine::data::arcanes::ArcaneFx::none())
             };
             // A PIN settles the slot: one option, and no other choice —
             // including a pinned EMPTY, which is "search this seat unworn"
@@ -8594,7 +8594,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             if marked.is_empty() {
                 return vec![empty()];
             }
-            let mut opts: Vec<(String, wfsim_engine::arcanes_data::ArcaneFx)> =
+            let mut opts: Vec<(String, wfsim_engine::data::arcanes::ArcaneFx)> =
                 if empty_mark == Some("search") { vec![empty()] } else { Vec::new() };
             opts.extend(marked.into_iter().map(|(id, _)| ((*id).clone(), fx(id))));
             opts
@@ -8606,11 +8606,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // shape `modes` and `arcanes` use; `valence_element` is what a request with
     // no axis pins, and what every caller written before the axis existed sends.
     let valence_bonus = {
-        let min = wfsim_engine::weapons_data::valence_of(&info.id).map_or(0.0, |s| s.min);
+        let min = wfsim_engine::data::weapons::valence_of(&info.id).map_or(0.0, |s| s.min);
         get_f64(v, "valence_bonus", min)
     };
     let valences: Vec<String> = {
-        let spec = wfsim_engine::weapons_data::valence_of(&info.id);
+        let spec = wfsim_engine::data::weapons::valence_of(&info.id);
         let marked: Vec<String> = v
             .get("valence")
             .and_then(|x| x.as_object())
@@ -8635,8 +8635,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         }
     };
     let mut arcane_sets: Vec<Vec<String>> = vec![Vec::new()];
-    let mut arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> =
-        vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+    let mut arcanes: Vec<wfsim_engine::data::arcanes::ArcaneFx> =
+        vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     for slot in &per_slot {
         let mut ids = Vec::new();
         let mut fxs = Vec::new();
@@ -8645,7 +8645,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 let mut s = set.clone();
                 s.push(id.clone());
                 ids.push(s);
-                fxs.push(wfsim_engine::arcanes_data::ArcaneFx::merged(&[
+                fxs.push(wfsim_engine::data::arcanes::ArcaneFx::merged(&[
                     fx.clone(),
                     add.clone(),
                 ]));
@@ -8690,7 +8690,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // sent at all — and then the run plays the ONE mode the request named,
     // which is what every caller written before this does and what a share
     // link or a board submission means.
-    let playable = wfsim_engine::weapons_data::play_modes(&info.id);
+    let playable = wfsim_engine::data::weapons::play_modes(&info.id);
     let mode_ids: Vec<String> = match v.get("modes").and_then(Value::as_object) {
         Some(m) => {
             let pinned: Vec<String> = m
@@ -8923,10 +8923,10 @@ pub fn grade_optimize(
     let deployed = |id: &str, refs: &[&str], val: &str| {
         let mut b = WeaponBase::from_data(id, true, refs);
         if !deployment.is_empty() {
-            wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
+            wfsim_engine::data::weapons::apply_deployment(&mut b, id, &deployment);
         }
         if !val.is_empty() {
-            wfsim_engine::weapons_data::apply_valence(&mut b, id, val, valence_bonus);
+            wfsim_engine::data::weapons::apply_valence(&mut b, id, val, valence_bonus);
         }
         b
     };
@@ -9267,10 +9267,10 @@ pub fn run_optimize_resumable(
     let deployed = |id: &str, refs: &[&str], val: &str| {
         let mut b = WeaponBase::from_data(id, true, refs);
         if !deployment.is_empty() {
-            wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
+            wfsim_engine::data::weapons::apply_deployment(&mut b, id, &deployment);
         }
         if !val.is_empty() {
-            wfsim_engine::weapons_data::apply_valence(&mut b, id, val, valence_bonus);
+            wfsim_engine::data::weapons::apply_valence(&mut b, id, val, valence_bonus);
         }
         b
     };
@@ -9324,8 +9324,8 @@ pub fn run_optimize_resumable(
         let (ids, ranks): (Vec<String>, Vec<u32>) = marked
             .iter()
             .map(|id| {
-                let card = wfsim_engine::mods_data::split_rank(id).0;
-                let rank = wfsim_engine::arcanes_data::slot_of(card)
+                let card = wfsim_engine::data::mods::split_rank(id).0;
+                let rank = wfsim_engine::data::arcanes::slot_of(card)
                     .and_then(|s| arcane_at_rank(s, id))
                     .map_or(0, |(_, r)| r);
                 (card.to_string(), rank)
@@ -9753,16 +9753,16 @@ pub fn run_optimize_resumable(
 mod wielder_tests {
     use super::*;
 
-    fn resolved(frame: &str) -> wfsim_engine::warframes_data::Resolved {
-        let b = wfsim_engine::warframes_data::Build { frame: frame.into(), ..Default::default() };
-        wfsim_engine::warframes_data::resolve(&b).expect("a modelled frame")
+    fn resolved(frame: &str) -> wfsim_engine::data::warframes::Resolved {
+        let b = wfsim_engine::data::warframes::Build { frame: frame.into(), ..Default::default() };
+        wfsim_engine::data::warframes::resolve(&b).expect("a modelled frame")
     }
 
     /// THE WIELDER IS THE LINKED BUILD, THE LOCKED FRAME, OR THE PROTOTYPE — and
     /// a ticked override still wins over whichever it is.
     #[test]
     fn the_wielder_is_the_linked_build_the_locked_frame_or_the_prototype() {
-        use wfsim_engine::warframes_data::FrameStat;
+        use wfsim_engine::data::warframes::FrameStat;
         let praedos = weapon("praedos");
         let bare = tenno_from(&json!({}), praedos);
         assert_eq!((bare.name.as_str(), bare.health, bare.armor), ("Prototype", 250.0, 105.0));
@@ -9790,7 +9790,7 @@ mod wielder_tests {
     #[test]
     fn a_melee_weapon_in_valkyrs_hands_builds_rage_and_it_pays() {
         let req = |extra: serde_json::Value| {
-            let b = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler");
+            let b = wfsim_engine::board::benchmarks::get("group_clear").expect("the ruler");
             let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
             let o = m.as_object_mut().expect("a mapping");
             o.insert("weapon".into(), json!("praedos"));
@@ -10121,7 +10121,7 @@ mod asset_tests {
         // what it spreads, so a fight too small or too short to spread in
         // cannot tell the two apart.
         let req = |buffs: serde_json::Value| {
-            let b = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler");
+            let b = wfsim_engine::board::benchmarks::get("group_clear").expect("the ruler");
             let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
             let o = m.as_object_mut().expect("a mapping");
             o.insert("weapon".into(), serde_json::json!("praedos"));
@@ -10237,11 +10237,11 @@ mod asset_tests {
     /// SHAPE of the fight and not about the board's precision.
     #[test]
     fn the_group_clear_ruler_runs_and_measures_the_crowd() {
-        let bench = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler exists");
+        let bench = wfsim_engine::board::benchmarks::get("group_clear").expect("the ruler exists");
         let single =
-            wfsim_engine::benchmarks_data::get("single_target").expect("its companion exists");
+            wfsim_engine::board::benchmarks::get("single_target").expect("its companion exists");
         // THE RULER'S OWN SCENARIO, with only the cost terms overridden.
-        let req = |b: &wfsim_engine::benchmarks_data::Benchmark| {
+        let req = |b: &wfsim_engine::board::benchmarks::Benchmark| {
             let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
             let o = m.as_object_mut().expect("a mapping");
             o.insert("weapon".into(), serde_json::json!("torid"));
@@ -10378,17 +10378,17 @@ mod asset_tests {
             // The ENTRY's own `mod_pools`, not `WeaponInfo`'s — that one is
             // derived and carries the SLOT ("sentinel"), so it is never empty
             // and this skip would never fire off it.
-            let unmoddable = wfsim_engine::weapons_data::spec(&w.id)
+            let unmoddable = wfsim_engine::data::weapons::spec(&w.id)
                 .is_some_and(|s| s.mod_pools.is_empty());
             if unmoddable {
                 continue;
             }
             let class = riven_class(w);
-            let n = wfsim_engine::rivens_data::pool(&class).len();
+            let n = wfsim_engine::build::rivens::pool(&class).len();
             // What is left after the weapon's own exclusions is what the
             // editor actually offers — a pool the weapon excludes down to
             // nothing is the same empty card by another route.
-            let excluded = wfsim_engine::rivens_data::excluded_for(&w.id).len();
+            let excluded = wfsim_engine::build::rivens::excluded_for(&w.id).len();
             if n == 0 || n <= excluded {
                 orphans.push(format!("{} (pools {:?} -> {class:?}, {n} stats, {excluded} excluded)",
                     w.id, w.mod_pools));
@@ -10402,7 +10402,7 @@ mod asset_tests {
         // pool somebody forgot to fill in.
         let unmoddable: Vec<&str> = weapons()
             .iter()
-            .filter(|w| wfsim_engine::weapons_data::spec(&w.id)
+            .filter(|w| wfsim_engine::data::weapons::spec(&w.id)
                 .is_some_and(|s| s.mod_pools.is_empty()))
             .map(|w| w.id.as_str())
             .collect();
@@ -10436,15 +10436,15 @@ mod asset_tests {
                 missing.push(format!("weapon {}", w.id));
             }
         }
-        for class in wfsim_engine::mods_data::classes() {
-            for m in wfsim_engine::mods_data::class_pool(class) {
+        for class in wfsim_engine::data::mods::classes() {
+            for m in wfsim_engine::data::mods::class_pool(class) {
                 if !a.mods.contains_key(m.id) {
                     missing.push(format!("mod {}", m.id));
                 }
             }
         }
-        for slot in wfsim_engine::arcanes_data::slots() {
-            for arc in wfsim_engine::arcanes_data::slot_pool(slot) {
+        for slot in wfsim_engine::data::arcanes::slots() {
+            for arc in wfsim_engine::data::arcanes::slot_pool(slot) {
                 if !a.arcanes.contains_key(arc.id.as_str()) {
                     missing.push(format!("arcane {}", arc.id));
                 }
@@ -10839,7 +10839,7 @@ mod form_tests {
     ///
     /// Eight main slots, one exilus and a STANCE beside them — the stance is a
     /// slot of its own, so counting the flat list refused the full build
-    /// outright. `builds::validate_with` has subtracted the stances before
+    /// outright. `board::builds::validate_with` has subtracted the stances before
     /// comparing since the slot landed, and the panel does the same
     /// subtraction now.
     ///
@@ -11195,7 +11195,7 @@ mod equip_rule_tests {
     /// other exactly where it was.
     #[test]
     fn an_empty_arcane_mark_widens_only_the_seat_it_names() {
-        let pools = wfsim_engine::weapons_data::arcane_pools("mausolon");
+        let pools = wfsim_engine::data::weapons::arcane_pools("mausolon");
         assert_eq!(pools, vec!["primary", "secondary"], "an Arch-Gun seats two");
         let plan = parse_optimize(&json!({
             "weapon": "mausolon",
@@ -11560,7 +11560,7 @@ mod scope_lock_tests {
 mod card_and_sim_agree {
     use super::*;
     use wfsim_engine::fight::FightParams;
-    use wfsim_engine::loadout::resolve;
+    use wfsim_engine::build::loadout::resolve;
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::StackPolicy;
 
@@ -11580,24 +11580,24 @@ use wfsim_engine::model::StackPolicy;
         let params = FightParams::from_panel(
             &p,
             &wfsim_engine::arena::Arena::training(30.0),
-            &wfsim_engine::arcanes_data::ArcaneFx::none(),
+            &wfsim_engine::data::arcanes::ArcaneFx::none(),
         );
         params.buff_roster().into_iter().map(|b| b.id).collect()
     }
 
     #[test]
     fn every_mod_that_draws_a_card_arms_the_sim() {
-        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
-        let none = wfsim_engine::arcanes_data::ArcaneFx::none();
+        let tenno = wfsim_engine::data::tenno::default_tenno().clone();
+        let none = wfsim_engine::data::arcanes::ArcaneFx::none();
         let mut pairs = 0;
-        for w in wfsim_engine::weapons_data::roster() {
+        for w in wfsim_engine::data::weapons::roster() {
             let info = weapon(&w.id);
             // A sentinel resolves BaseOnly: no conditional ever fires, so
             // `enumerate_buffs` returns nothing by design.
             if info.sentinel {
                 continue;
             }
-            for m in wfsim_engine::mods_data::pool_for_build(&w.id, &[]) {
+            for m in wfsim_engine::data::mods::pool_for_build(&w.id, &[]) {
                 let refs = vec![&m];
                 let cards: Vec<String> = enumerate_buffs(&refs, &refs, &none, info, &tenno)
                     .into_iter()
@@ -11627,9 +11627,9 @@ use wfsim_engine::model::StackPolicy;
     /// The same rule for ARCANES, whose cards come from a third enumeration.
     #[test]
     fn every_arcane_that_draws_a_card_arms_the_sim() {
-        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
+        let tenno = wfsim_engine::data::tenno::default_tenno().clone();
         let mut seen = 0;
-        for w in wfsim_engine::weapons_data::roster() {
+        for w in wfsim_engine::data::weapons::roster() {
             let info = weapon(&w.id);
             if info.sentinel {
                 continue;
@@ -11638,7 +11638,7 @@ use wfsim_engine::model::StackPolicy;
             for a in info
                 .arcane_pools
                 .iter()
-                .flat_map(|p| wfsim_engine::arcanes_data::pool_for_weapon(&info.id, p))
+                .flat_map(|p| wfsim_engine::data::arcanes::pool_for_weapon(&info.id, p))
             {
                 let fx = a.fx(a.max_rank, StackPolicy::Emergent, base.traits, &tenno);
                 let cards: Vec<String> = enumerate_buffs(&[], &[], &fx, info, &tenno)
@@ -11665,7 +11665,7 @@ use wfsim_engine::model::StackPolicy;
                     .fx(a.max_rank, StackPolicy::Emergent, base.traits, &tenno)
                     .buffs
                     .iter()
-                    .filter(|b| b.trigger == wfsim_engine::arcanes_data::ArcTrigger::Passive)
+                    .filter(|b| b.trigger == wfsim_engine::data::arcanes::ArcTrigger::Passive)
                     .map(|b| {
                         format!(
                             "arcane:{}",
@@ -11759,7 +11759,7 @@ mod display_number_tests {
     #[test]
     fn no_weapon_prints_a_float_artefact_in_its_falloff() {
         let mut checked = 0;
-        for w in wfsim_engine::weapons_data::all() {
+        for w in wfsim_engine::data::weapons::all() {
             for r in w.attack.radial.iter() {
                 let Some(red) = r.falloff_reduction else { continue };
                 checked += 1;
@@ -11790,9 +11790,9 @@ mod one_picture_one_weapon {
     /// mastery track, one riven, one wiki page and therefore one picture. See
     /// data/kitguns/README.md.
     fn subject(id: &str) -> &str {
-        let Some(s) = wfsim_engine::weapons_data::spec(id) else { return id };
+        let Some(s) = wfsim_engine::data::weapons::spec(id) else { return id };
         match s.kitgun.as_deref().and_then(|k| {
-            wfsim_engine::weapons_data::kitguns::chambers().iter().find(|c| c.id == k)
+            wfsim_engine::data::weapons::kitguns::chambers().iter().find(|c| c.id == k)
         }) {
             Some(c) => c.chamber.as_str(),
             None => s.group(),
@@ -11823,7 +11823,7 @@ mod one_picture_one_weapon {
     /// error.
     #[test]
     fn every_weapon_has_an_image() {
-        for w in wfsim_engine::weapons_data::roster() {
+        for w in wfsim_engine::data::weapons::roster() {
             assert!(
                 assets().weapons.contains_key(&w.id),
                 "{} has no entry in data/assets.yaml",
@@ -11914,7 +11914,7 @@ mod the_demolisher_ruler {
     #[test]
     fn the_demolisher_ruler_changes_the_target_and_the_squad_and_nothing_else() {
         let of = |id: &str| {
-            wfsim_engine::benchmarks_data::all()
+            wfsim_engine::board::benchmarks::all()
                 .iter()
                 .find(|b| b.id == id)
                 .unwrap_or_else(|| panic!("no ruler {id}"))
@@ -11928,7 +11928,7 @@ mod the_demolisher_ruler {
         // every newcomer in a 361-body fight. Alphabetically this file lands
         // between `single_target` and `single_target_no_aim`, so the guard is
         // worth an assertion rather than a reading of the filename.
-        let order: Vec<&str> = wfsim_engine::benchmarks_data::all()
+        let order: Vec<&str> = wfsim_engine::board::benchmarks::all()
             .iter()
             .map(|b| b.id.as_str())
             .collect();
@@ -12048,17 +12048,17 @@ mod buff_event_cards {
     /// sources of a card live.
     #[test]
     fn every_buff_card_says_what_triggers_it() {
-        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
+        let tenno = wfsim_engine::data::tenno::default_tenno().clone();
         let mut checked = 0usize;
         let mut orphans: Vec<String> = Vec::new();
         for info in weapons() {
-            let pool = wfsim_engine::mods_data::pool_for_weapon(&info.id);
+            let pool = wfsim_engine::data::mods::pool_for_weapon(&info.id);
             let refs: Vec<&ModDef> = pool.iter().collect();
             let base = WeaponBase::from_data(&info.id, true, &[]);
             // ONE ARCANE AT A TIME: a card is keyed by its own arcane.
-            let mut fxs = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+            let mut fxs = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
             for pool_id in &info.arcane_pools {
-                for def in wfsim_engine::arcanes_data::slot_pool(pool_id) {
+                for def in wfsim_engine::data::arcanes::slot_pool(pool_id) {
                     fxs.push(def.fx(def.max_rank, StackPolicy::Emergent, base.traits, &tenno));
                 }
             }
@@ -12072,13 +12072,13 @@ mod buff_event_cards {
             }
             // …AND THE EVOLUTIONS, whose cards never touch the mod pool.
             let group = evo_group(info);
-            let evo_ids: Vec<String> = (1..=wfsim_engine::evolutions_data::tier_count(group))
-                .flat_map(|t| wfsim_engine::evolutions_data::options(group, t))
+            let evo_ids: Vec<String> = (1..=wfsim_engine::data::evolutions::tier_count(group))
+                .flat_map(|t| wfsim_engine::data::evolutions::options(group, t))
                 .map(|d| d.id.clone())
                 .collect();
             for b in evo_buffs(&evo_ids) {
                 checked += 1;
-                if card_trigger(&b.id, &[], &wfsim_engine::arcanes_data::ArcaneFx::none())
+                if card_trigger(&b.id, &[], &wfsim_engine::data::arcanes::ArcaneFx::none())
                     .is_none()
                 {
                     orphans.push(format!("{} on {}", b.id, info.id));
@@ -12103,12 +12103,12 @@ mod buff_event_cards {
     #[test]
     fn condition_overloads_card_says_what_that_weapons_mod_says() {
         let of = |weapon: &str| {
-            let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
+            let pool = wfsim_engine::data::mods::pool_for_weapon(weapon);
             let refs: Vec<&ModDef> = pool.iter().collect();
             card_trigger(
                 "condition_overload",
                 &refs,
-                &wfsim_engine::arcanes_data::ArcaneFx::none(),
+                &wfsim_engine::data::arcanes::ArcaneFx::none(),
             )
         };
         assert_eq!(of("lex_prime"), Some(Some("kill")), "Galvanized Shot earns it on a kill");
@@ -12130,12 +12130,12 @@ mod buff_event_cards {
     /// whose other half still fires.
     #[test]
     fn an_arcanes_buffs_all_want_the_same_thing() {
-        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
+        let tenno = wfsim_engine::data::tenno::default_tenno().clone();
         let mut split: Vec<String> = Vec::new();
         for info in weapons() {
             let base = WeaponBase::from_data(&info.id, true, &[]);
             for pool_id in &info.arcane_pools {
-                for def in wfsim_engine::arcanes_data::slot_pool(pool_id) {
+                for def in wfsim_engine::data::arcanes::slot_pool(pool_id) {
                     let fx = def.fx(def.max_rank, StackPolicy::Emergent, base.traits, &tenno);
                     let mut by_owner: std::collections::BTreeMap<&str, Vec<_>> = Default::default();
                     for b in &fx.buffs {
@@ -12227,14 +12227,14 @@ mod a_passive_names_itself {
     /// is.
     #[test]
     fn a_weapon_with_a_buff_card_has_a_passive_line() {
-        for s in wfsim_engine::weapons_data::roster() {
+        for s in wfsim_engine::data::weapons::roster() {
             let panel = super::panel_json(&json!({ "weapon": s.id, "mods": [] }));
             let cards: Vec<&str> = panel["buffs"]
                 .as_array()
                 .map(|a| {
                     a.iter()
                         .filter_map(|b| b["id"].as_str())
-                        .filter(|id| *id != wfsim_engine::rage::BUFF_ID)
+                        .filter(|id| *id != wfsim_engine::data::rage::BUFF_ID)
                         .collect()
                 })
                 .unwrap_or_default();
@@ -12242,7 +12242,7 @@ mod a_passive_names_itself {
                 continue;
             }
             assert!(
-                !wfsim_engine::weapons_data::passive_lines(&s.id).is_empty(),
+                !wfsim_engine::data::weapons::passive_lines(&s.id).is_empty(),
                 "{} offers {cards:?} and states no passive",
                 s.id
             );
@@ -12303,7 +12303,7 @@ mod lower_ranks {
     /// AN ARCANE MARK MAY NAME A RANK; max rank is the bare id.
     #[test]
     fn an_arcane_mark_names_its_rank() {
-        let id = wfsim_engine::arcanes_data::slot_pool("primary")
+        let id = wfsim_engine::data::arcanes::slot_pool("primary")
             .iter()
             .find(|a| a.max_rank > 1)
             .map(|a| a.id.clone())

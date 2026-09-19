@@ -14,7 +14,7 @@ instead takes the same build to ~76.
     already posted.  (AGENTS.md)
 
 So the table stays append-only forever, and that is not a promise — it is a
-ratchet. `engine::share_order`'s test recomputes the digest of every entry that
+ratchet. `engine::data::share_order`'s test recomputes the digest of every entry that
 was already frozen and fails on a reorder or a deletion; this script only ever
 APPENDS, so the ordinary way of working cannot break it.
 
@@ -104,7 +104,7 @@ def main():
     # back at the END — a valid, freshly-digested manifest in which every index
     # after the hole names something else, and every link already posted opens
     # somebody's other build. Nothing would fail: the ratchet in
-    # `engine::share_order` compares the file against ITSELF, and this script
+    # `engine::data::share_order` compares the file against ITSELF, and this script
     # would just have made those agree again.
     #
     # So a disagreement stops here, where the evidence still exists.
@@ -155,7 +155,7 @@ def main():
         "#",
         "# APPEND-ONLY, FOREVER. A share link names a mod by its INDEX in this",
         "# list, so reordering or removing a line silently reinterprets every link",
-        "# already posted. `engine::share_order` recomputes `digest` over the whole",
+        "# already posted. `engine::data::share_order` recomputes `digest` over the whole",
         "# list and fails on any change that is not an append.",
         "#",
         "# Never edit by hand: run the generator, which only ever appends.",

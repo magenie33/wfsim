@@ -7,7 +7,7 @@ inherits: scourge
 # enemies within 14 meters of the impact point." Its own entry because its
 # damage, its element split, its crit and its explosion are all its own, and
 # `alt_fire` because it is reached with a button and costs no gauge — the kind
-# was added the day this weapon needed it (weapons_data::FormKind).
+# was added the day this weapon needed it (data::weapons::FormKind).
 form: alt_fire
 transform_group: scourge
 

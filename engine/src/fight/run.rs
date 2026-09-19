@@ -34,25 +34,25 @@ pub(super) fn combo_at(
 
 /// A stacking spec's decay period, or 0 when the spec is absent.
 /// PYRANA PRIME'S STREAK, as the bar holds it: `stacks` kills on one clock.
-pub(super) fn kill_streak(s: crate::model::KillStreakSummonSpec, stacks: u32, t: f64) -> crate::buffs::Buff {
-    crate::buffs::Buff {
+pub(super) fn kill_streak(s: crate::model::KillStreakSummonSpec, stacks: u32, t: f64) -> crate::rules::buffs::Buff {
+    crate::rules::buffs::Buff {
         id: crate::model::KillStreakSummonSpec::STREAK_BUFF_ID.into(),
-        scope: crate::buffs::BuffScope::Weapon,
+        scope: crate::rules::buffs::BuffScope::Weapon,
         stacks,
         expiry_seconds: Some(t + s.kill_window_seconds),
-        contributions: crate::buffs::Contributions::default(),
+        contributions: crate::rules::buffs::Contributions::default(),
     }
 }
 
 /// PYRANA PRIME'S SECOND GUN, as the bar holds it: the fire-rate half is a
 /// bar multiplier like Frenzy's, and the magazine half reads whether it is up.
-pub(super) fn summoned_gun(s: crate::model::KillStreakSummonSpec, t: f64) -> crate::buffs::Buff {
-    crate::buffs::Buff {
+pub(super) fn summoned_gun(s: crate::model::KillStreakSummonSpec, t: f64) -> crate::rules::buffs::Buff {
+    crate::rules::buffs::Buff {
         id: crate::model::KillStreakSummonSpec::BUFF_ID.into(),
-        scope: crate::buffs::BuffScope::Weapon,
+        scope: crate::rules::buffs::BuffScope::Weapon,
         stacks: 1,
         expiry_seconds: Some(t + s.duration_seconds),
-        contributions: crate::buffs::Contributions {
+        contributions: crate::rules::buffs::Contributions {
             fire_rate_multiplier: s.fire_rate_multiplier,
             ..Default::default()
         },
@@ -90,7 +90,7 @@ pub fn run_once_traced(
     // only its status chance must not re-roll this engagement's crits.
     let started_at = rng.state();
     let _ = rng.next_f64();
-    let d = &mut crate::rng::Draws::new(started_at);
+    let d = &mut crate::rules::rng::Draws::new(started_at);
     // HOW FAR THE TARGET SITS OFF THE AIM LINE — a CONSTANT for the whole
     // engagement, because neither body moves. It was read per PELLET when the
     // aim line arrived, which costs an acos and two hypots on every pellet of
@@ -104,7 +104,7 @@ pub fn run_once_traced(
             || params.combo_script.iter().any(|h| h.delay_seconds + h.windup_seconds > 0.0),
         "a combo script whose rows take no time never advances the clock",
     );
-    // THE CHAIN'S STATIC HALF (`chain::Layout`). Nothing in this arena moves,
+    // THE CHAIN'S STATIC HALF (`rules::chain::Layout`). Nothing in this arena moves,
     // so which body the sphere catches and which body is nearest to which are
     // constants — asked once here instead of once per landing pellet, which on
     // a 19x19 grid was ~11,000 distance computations a pellet to reach the same
@@ -124,13 +124,13 @@ pub fn run_once_traced(
     // and hoisted because MELEE INFLUENCE rebuilt this list on every landed hit
     // — a 361-element allocation per proc per swing, in the mechanic this
     // engine is least willing to be slow at.
-    let body_at: Vec<crate::space::Vec2> = std::iter::once(params.target_at)
+    let body_at: Vec<crate::rules::space::Vec2> = std::iter::once(params.target_at)
         .chain(params.others.iter().map(|f| f.at))
         .collect();
     let area_near = if params.others.is_empty() {
-        crate::space::Neighbours::default()
+        crate::rules::space::Neighbours::default()
     } else {
-        crate::space::Neighbours::build(&body_at)
+        crate::rules::space::Neighbours::build(&body_at)
     };
     // WHERE A BOUNCE GOES, precomputed for the same reason the chain's is:
     // nothing in this arena moves, so "which body is nearest to this one" is a
@@ -140,7 +140,7 @@ pub fn run_once_traced(
     // WHERE EVERY BODY IS, built once. The SEEKING path reads the neighbour
     // layout below; the REFLECTING one reads these positions, because a bounce
     // is geometry and a neighbour list has thrown the geometry away.
-    let bounce_bodies: Vec<crate::space::Vec2> = if params.ricochet.is_some() {
+    let bounce_bodies: Vec<crate::rules::space::Vec2> = if params.ricochet.is_some() {
         let mut v = Vec::with_capacity(params.others.len() + 1);
         v.push(params.target_at);
         v.extend(params.others.iter().map(|f| f.at));
@@ -153,14 +153,14 @@ pub fn run_once_traced(
             let mut bodies = Vec::with_capacity(params.others.len() + 1);
             bodies.push(params.target_at);
             bodies.extend(params.others.iter().map(|f| f.at));
-            Some(crate::chain::Layout::build(
+            Some(crate::rules::chain::Layout::build(
                 &bodies,
                 // NO SPLASH SEEDS. A bounce starts from the body the projectile
                 // struck and from nowhere else, so the sphere here is empty —
                 // the explosion each bounce sets off is fired separately, by
                 // the blast path, at that bounce's own body.
-                crate::chain::Splash { at: params.target_at, radius_m: 0.0 },
-                crate::chain::Spec {
+                crate::rules::chain::Splash { at: params.target_at, radius_m: 0.0 },
+                crate::rules::chain::Spec {
                     hops: rc.bounces,
                     range_m: rc.range_m,
                     falloff: 1.0,
@@ -177,24 +177,24 @@ pub fn run_once_traced(
             bodies.extend(params.others.iter().map(|f| f.at));
             // THE SPLASH CENTRE IS STATIC TOO: the round goes off on the aimed
             // body's surface facing the shooter, and neither of them moves.
-            let at = crate::space::detonation_point(params.target_at, params.player_at);
-            let layout = crate::chain::Layout::build(
+            let at = crate::rules::space::detonation_point(params.target_at, params.player_at);
+            let layout = crate::rules::chain::Layout::build(
                 &bodies,
-                crate::chain::Splash { at, radius_m: b.damage_radius_m },
-                crate::chain::Spec {
+                crate::rules::chain::Splash { at, radius_m: b.damage_radius_m },
+                crate::rules::chain::Spec {
                     hops: b.chain_hops,
                     range_m: b.chain_range_m,
                     falloff: b.chain_damage_per_hop,
                     compounds: b.chain_compounds,
                 },
             );
-            // AND WHO ELSE THE SHOT TAKES ON ITS OWN — `chain::acquired`, the
+            // AND WHO ELSE THE SHOT TAKES ON ITS OWN — `rules::chain::acquired`, the
             // same rule the Ocucor's tendrils are picked by.
             Some(layout.acquiring(
                 &bodies,
                 params.player_at,
                 params.aim_at.unwrap_or(params.target_at),
-                crate::chain::Acquire {
+                crate::rules::chain::Acquire {
                     count: b.beams_count,
                     cone_deg: b.beams_acquire_deg,
                     range_m: b.beams_range_m,
@@ -570,7 +570,7 @@ pub fn run_once_traced(
     // here for the same reason the single one is: the vector is static for the
     // whole fight, and quantizing it six times a shot would be six times the
     // work for the same answer.
-    let variant_pre = |p: &FightParams| -> Vec<(crate::damage::DamageVector, f64, f64)> {
+    let variant_pre = |p: &FightParams| -> Vec<(crate::rules::damage::DamageVector, f64, f64)> {
         p.pellet_damage
             .iter()
             .map(|(d, _)| {
@@ -580,7 +580,7 @@ pub fn run_once_traced(
             })
             .collect()
     };
-    let variant_rad = |p: &FightParams| -> Vec<crate::damage::DamageVector> {
+    let variant_rad = |p: &FightParams| -> Vec<crate::rules::damage::DamageVector> {
         // An explosion is its OWN attack part, so its denominator is the
         // radial's ModifiedBase and not the direct hit's (MECHANICS §7).
         p.pellet_damage
@@ -883,7 +883,7 @@ pub fn run_once_traced(
     let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
     let mut tendrils = tendril_seed;
     // HELD-TRIGGER SPOOL — shots since the trigger was last released, and the
-    // moment the next one was due. See `weapons_data::SustainedFireRate`.
+    // moment the next one was due. See `data::weapons::SustainedFireRate`.
     let mut spool_shots = 0.0f64;
     let mut spool_due = f64::NEG_INFINITY;
     // ---- THE MELEE COMBO COUNTER ----------------------------------------
@@ -1029,7 +1029,7 @@ pub fn run_once_traced(
         // asks whether this shot can be fired — otherwise an empty magazine
         // goes straight to the reload branch and the mechanic never gets a
         // turn. The gap is the one a spool reads: `t - spool_due` is what the
-        // weapon spent not firing (`weapons_data::Battery`).
+        // weapon spent not firing (`data::weapons::Battery`).
         //
         // THE EMPTY CASE IS NOT HERE — that is the ordinary reload, whose
         // `reload_seconds` already IS `delay_empty + magazine/rate` (1.25 s on
@@ -1070,7 +1070,7 @@ pub fn run_once_traced(
                     + weakpoint_ammo(params.weakpoint_stacks, &mut weakpoint_pile, t),
                 params.arcane.ammo_efficiency,
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
-                crate::abilities_data::ammo_efficiency_at(&params.abilities, t),
+                crate::data::abilities::ammo_efficiency_at(&params.abilities, t),
             );
             // `ap` already picks the form whose magazine is about to be
             // checked, so this is THAT form's cost.
@@ -1767,7 +1767,7 @@ pub fn run_once_traced(
                 + weakpoint_ammo(params.weakpoint_stacks, &mut weakpoint_pile, t),
             params.arcane.ammo_efficiency,
             arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
-            crate::abilities_data::ammo_efficiency_at(&params.abilities, t),
+            crate::data::abilities::ammo_efficiency_at(&params.abilities, t),
         );
         // Final Fusillade's gate, read BEFORE the round is spent: this pull is
         // the magazine's last round if there is at most one left to fire. On a
@@ -1831,7 +1831,7 @@ pub fn run_once_traced(
         // mods"*, which is this bucket exactly: it lands on every attack part
         // and is never multiplied by a crit-chance card.
         let flat_crit = contribs.flat_crit_chance
-            + crate::abilities_data::flat_crit_at(&params.abilities, t);
+            + crate::data::abilities::flat_crit_at(&params.abilities, t);
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
         // Relative, shared by every stage: Crosshairs' on-headshot buff and
         // its per-stack-expiry kill stacks (assumes constant aiming), plus the
@@ -2324,12 +2324,12 @@ pub fn run_once_traced(
             strip_kills_seen = r.kills;
             if fresh > 0 && share > 0.0 {
                 let keep = (1.0 - share).powi(fresh as i32);
-                if crate::space::gap(params.player_at, params.target_at) <= radius {
+                if crate::rules::space::gap(params.player_at, params.target_at) <= radius {
                     debuffs.canticle_armor_strip =
                         1.0 - (1.0 - debuffs.canticle_armor_strip) * keep;
                 }
                 for (bi, spec) in params.others.iter().enumerate() {
-                    if crate::space::gap(params.player_at, spec.at) > radius {
+                    if crate::rules::space::gap(params.player_at, spec.at) > radius {
                         continue;
                     }
                     if let Some(SpreadFoe { debuffs: fd, .. }) = others.get_mut(bi) {
@@ -2345,7 +2345,7 @@ pub fn run_once_traced(
         // is what keeps two builds of one weapon on the same dice.
         let (mut dropped_primary, mut dropped_secondary) = (0u32, 0u32);
         for _ in 0..r.kills_in_reach.saturating_sub(drop_kills_seen) {
-            let (p, s) = crate::ammo::on_kill(
+            let (p, s) = crate::rules::ammo::on_kill(
                 params.squad_size,
                 params.landscape,
                 params.target.eximus,
@@ -2355,17 +2355,17 @@ pub fn run_once_traced(
             dropped_secondary += s;
         }
         drop_kills_seen = r.kills_in_reach;
-        // …AND WHAT THIS WEAPON DOES WITH THEM (`ammo::credit`). Nothing at all
+        // …AND WHAT THIS WEAPON DOES WITH THEM (`rules::ammo::credit`). Nothing at all
         // while the reserve is infinite: the house rule already hands the
         // weapon everything a pack could.
         if params.ammo_drops && !params.infinite_reserve {
             if let Some(takes) = params.ammo_class {
                 for (kind, n) in [
-                    (crate::ammo::Pickup::Primary, dropped_primary),
-                    (crate::ammo::Pickup::Secondary, dropped_secondary),
+                    (crate::rules::ammo::Pickup::Primary, dropped_primary),
+                    (crate::rules::ammo::Pickup::Secondary, dropped_secondary),
                 ] {
                     for _ in 0..n {
-                        let got = crate::ammo::credit(
+                        let got = crate::rules::ammo::credit(
                             kind,
                             takes,
                             reserve,
@@ -2848,7 +2848,7 @@ pub fn run_once_traced(
                     // Against one body only the magnitude decides anything;
                     // with a crowd the side decides who is in the blast. Off
                     // `blast_dir`, a stream of its own, so adding the draw
-                    // shifts no other roll — see `rng::Draws`. No board ruler
+                    // shifts no other roll — see `rules::rng::Draws`. No board ruler
                     // sets an aim point, so nothing that was drawn from `aim`
                     // before is drawn from it now either.
                     let phi = if off_axis > 0.0 || !params.others.is_empty() {
@@ -2864,18 +2864,18 @@ pub fn run_once_traced(
             };
             let aim_offset = match ap.spread {
                 Some(s) if !s.is_pinpoint() && range > 0.0 => {
-                    crate::space::miss_distance_off_axis(range, off_axis, dev, phi)
+                    crate::rules::space::miss_distance_off_axis(range, off_axis, dev, phi)
                 }
                 // A PINPOINT WEAPON POINTED ELSEWHERE still misses: no spread
                 // does not mean no aim.
-                _ => crate::space::miss_distance(range, off_axis),
+                _ => crate::rules::space::miss_distance(range, off_axis),
             };
             // …AND A BODY IS A CIRCLE OF ONE RADIUS: hitting the circle is a
             // hit, so this is ray-versus-circle and nothing more
-            // (`space::miss_distance`). It asks only whether the pellet reached
+            // (`rules::space::miss_distance`). It asks only whether the pellet reached
             // the target; where on it a landed pellet went is `headshot_pct`'s
             // question, already pinned per pellet, and folding a silhouette's
-            // height in here would ask that twice. `space::BODY_RADIUS_M` is
+            // height in here would ask that twice. `rules::space::BODY_RADIUS_M` is
             // the model's one free parameter.
             //
             // AT CONTACT THIS IS ALWAYS TRUE at any cone width, because the
@@ -2891,7 +2891,7 @@ pub fn run_once_traced(
             // `gap` is what the shot flies and what the arena prints, so "20 m"
             // is the number on the scene. `INFINITY` where none is declared.
             let in_range = gap_m <= ap.range_m;
-            let pellet_lands = aim_offset <= crate::space::BODY_RADIUS_M && in_range;
+            let pellet_lands = aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range;
             // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
             // EXPLOSION.
             //
@@ -2909,13 +2909,13 @@ pub fn run_once_traced(
             // back to the aimed body IS `aim_offset` — so this cannot move the
             // aimed body's number, which is asserted in `space`.
             let det = if pellet_lands {
-                crate::space::Detonation {
-                    at: crate::space::detonation_point(params.target_at, params.player_at),
+                crate::rules::space::Detonation {
+                    at: crate::rules::space::detonation_point(params.target_at, params.player_at),
                     height_m: 0.0,
                 }
             } else {
-                crate::space::detonation_of_miss(
-                    crate::space::muzzle(params.player_at, params.aim_point()),
+                crate::rules::space::detonation_of_miss(
+                    crate::rules::space::muzzle(params.player_at, params.aim_point()),
                     params.aim_point(),
                     params.target_at,
                     range,
@@ -2960,7 +2960,7 @@ pub fn run_once_traced(
                 }
             }
             // A TERMINAL BLAST GOES OFF WHERE THE ROUND DISSIPATES, not on the
-            // first body it touched — see `weapons_data::BlastKind` and
+            // first body it touched — see `data::weapons::BlastKind` and
             // MEASUREMENTS M53. The budget buys MATERIAL,
             // so the round crosses bodies until it cannot get out of one and
             // detonates there; what is left over when it clears them all is
@@ -2979,7 +2979,7 @@ pub fn run_once_traced(
             let det = if ap.radial.as_ref().map(|r| r.blast_kind)
                 == Some(crate::model::BlastKind::Slam)
             {
-                crate::space::Detonation { at: params.player_at, height_m: det.height_m }
+                crate::rules::space::Detonation { at: params.player_at, height_m: det.height_m }
             } else if pellet_lands
                 && ap.radial.as_ref().map(|r| r.blast_kind)
                     == Some(crate::model::BlastKind::Terminal)
@@ -2988,10 +2988,10 @@ pub fn run_once_traced(
                 let mut bodies = Vec::with_capacity(params.others.len() + 1);
                 bodies.push(params.target_at);
                 bodies.extend(params.others.iter().map(|f| f.at));
-                crate::space::Detonation {
-                    at: crate::space::dissipation_point(
+                crate::rules::space::Detonation {
+                    at: crate::rules::space::dissipation_point(
                         det.at,
-                        crate::space::muzzle(params.player_at, aim),
+                        crate::rules::space::muzzle(params.player_at, aim),
                         aim,
                         &bodies,
                         params.punch_through_m,
@@ -3008,7 +3008,7 @@ pub fn run_once_traced(
             // second one to conflict with, and one radial stage per shot is
             // what the loop is built around.
             let attack_radial = match (swing.as_ref().and_then(|h| h.slam_multiplier), ap.slam) {
-                (Some(k), Some(slam)) => Some(crate::loadout::ResolvedRadial {
+                (Some(k), Some(slam)) => Some(crate::build::loadout::ResolvedRadial {
                     damage: slam.damage.scale(k),
                     modified_base: slam.modified_base * k,
                     ..slam
@@ -3040,7 +3040,7 @@ pub fn run_once_traced(
                 swing_mult
             };
             let radial_stage = match radial_stage {
-                Some(r) if (radial_mult - 1.0).abs() > 1e-12 => Some(crate::loadout::ResolvedRadial {
+                Some(r) if (radial_mult - 1.0).abs() > 1e-12 => Some(crate::build::loadout::ResolvedRadial {
                     damage: r.damage.scale(radial_mult),
                     modified_base: r.modified_base * radial_mult,
                     ..r
@@ -3164,8 +3164,8 @@ pub fn run_once_traced(
                     // standing where it landed. Asked with
                     // `blast_reach(aim_offset)`, the same reach the damage
                     // below uses, or it fires one body radius early.
-                    let reaches = |b: crate::space::Vec2| {
-                        r.falloff_at(crate::space::blast_reach(det.distance_to(b))) > 0.0
+                    let reaches = |b: crate::rules::space::Vec2| {
+                        r.falloff_at(crate::rules::space::blast_reach(det.distance_to(b))) > 0.0
                     };
                     if !reaches(params.target_at)
                         && !params.others.iter().any(|f| reaches(f.at))
@@ -3369,7 +3369,7 @@ pub fn run_once_traced(
                 // applies a Status Effect", and a hit that always procs can
                 // never be one.
                 let ability_forced =
-                    crate::abilities_data::forced_status_elements_at(&params.abilities, t);
+                    crate::data::abilities::forced_status_elements_at(&params.abilities, t);
                 // ONE SLOT PER DAMAGE TYPE IS ENOUGH: both sources are sets of
                 // types and the merge below refuses a duplicate, so the union
                 // can never be longer than the type list itself.
@@ -3449,11 +3449,11 @@ pub fn run_once_traced(
                     // THE EXPLOSION reads the distance from its EPICENTRE to
                     // the body's NEAREST POINT, not to its centre — a body
                     // standing across a falloff gradient takes the best number
-                    // on it (`space::blast_reach`,). Zero when
+                    // on it (`rules::space::blast_reach`,). Zero when
                     // the pellet hit, and zero for anything the blast is
                     // standing inside.
                     (Some(r), _) => {
-                        r.falloff_at(crate::space::blast_reach(det.distance_to(params.target_at)))
+                        r.falloff_at(crate::rules::space::blast_reach(det.distance_to(params.target_at)))
                     }
                     // THE DIRECT HIT reads the GAP, which IS the distance it
                     // flew: a bullet vanishes at the surface it hits.
@@ -3593,7 +3593,7 @@ pub fn run_once_traced(
                         let Some(idx) = body.checked_sub(1) else { continue };
                         let Some(fs) = params.others.get(idx) else { continue };
                         blast_at(
-                            crate::space::Detonation {
+                            crate::rules::space::Detonation {
                                 at: fs.at,
                                 height_m: 0.0,
                             },
@@ -3646,17 +3646,17 @@ pub fn run_once_traced(
                         let hops = if rc.range_m.is_finite() {
                             ricochet_layout
                                 .as_ref()
-                                .map(|l| crate::chain::bounce_path(l, n, from, rc.bounces))
+                                .map(|l| crate::rules::chain::bounce_path(l, n, from, rc.bounces))
                                 .unwrap_or_default()
                         } else {
-                            crate::space::bounce_path(
+                            crate::rules::space::bounce_path(
                                 params.player_at,
                                 &bounce_bodies,
                                 from,
                                 rc.bounces,
                                 // WHERE ON THE FIRST BODY IT LANDED, uniform
                                 // across the width. The one assumption in the
-                                // path; see `space::bounce_path`.
+                                // path; see `rules::space::bounce_path`.
                                 d.spine.next_f64() * 2.0 - 1.0,
                             )
                         };
@@ -5127,12 +5127,12 @@ pub fn run_once_traced(
                     // A SLAM GOES OFF AT THE WIELDER'S OWN FEET — the same
                     // epicentre the explosion itself used, so the count and the
                     // damage agree on who was in it.
-                    let det = crate::space::Detonation {
+                    let det = crate::rules::space::Detonation {
                         at: params.player_at,
                         height_m: 0.0,
                     };
                     let reached = (target.health > 0.0
-                        && crate::space::caught_by_blast(
+                        && crate::rules::space::caught_by_blast(
                             det.distance_to(params.target_at),
                             rad.radius_m,
                         )) as u32
@@ -5142,7 +5142,7 @@ pub fn run_once_traced(
                             .enumerate()
                             .filter(|(i, spec)| {
                                 others[*i].state.health > 0.0
-                                    && crate::space::caught_by_blast(
+                                    && crate::rules::space::caught_by_blast(
                                         det.distance_to(spec.at),
                                         rad.radius_m,
                                     )

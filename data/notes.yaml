@@ -318,7 +318,7 @@ notes:
   stance_grants_capacity: |
     A STANCE GRANTS CAPACITY RATHER THAN COSTING IT — the export carries
     `baseDrain: -2` — so the drain here is ZERO and the grant is
-    `mods::STANCE_CAPACITY_GRANT`, which the wiki states once for every stance
+    `rules::capacity::STANCE_CAPACITY_GRANT`, which the wiki states once for every stance
     rather than per card: 5 at max rank, 10 on a matching slot.
 
     RANK 0 FOR THE SAME REASON. A stance's ranks buy capacity and nothing else —
@@ -559,7 +559,7 @@ notes:
   form_of_its_weapon_inherits: |
     A FORM OF ITS WEAPON: everything that describes the WEAPON rather than this
     attack is inherited from the entry named in `inherits:`, and only what
-    DIFFERS is written here. See `weapons_data::INHERITED`.
+    DIFFERS is written here. See `data::weapons::INHERITED`.
   form_transformation_releasing_early: |
     A FORM, NOT A TRANSFORMATION: releasing early costs nothing — no gauge,
     no transmute animation, just a shorter press — which is why this entry
@@ -705,13 +705,13 @@ notes:
     mods even when equipped on Primary Kitguns" (Riven Mods).
   kitgun_entry_is_default_assembly: |
     A KITGUN HAS NO PUBLISHED STAT LINE, so the numbers in this entry are its
-    DEFAULT ASSEMBLY's (`weapons_data::kitguns::default_assembly`: the grip nearest the
+    DEFAULT ASSEMBLY's (`data::weapons::kitguns::default_assembly`: the grip nearest the
     chamber's own `base` preview, and the first loader that changes nothing) —
     what a request naming no parts is fought with. A build that names parts gets
-    its own from `weapons_data::spec_assembled`, composed over these.
+    its own from `data::weapons::spec_assembled`, composed over these.
   kitgun_has_no_published: |
     A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
-    and `engine::weapons_data::kitguns` composes them. This file is the CHAMBER's half —
+    and `engine::data::weapons::kitguns` composes them. This file is the CHAMBER's half —
     everything a grip and a loader do not touch, plus the two tables that are
     published PER GRIP because DE publishes them that way rather than as a
     formula.
@@ -722,7 +722,7 @@ notes:
   loaded_any_code_data: |
     NOT LOADED BY ANY CODE. `data/debuffs/` is the written SPEC for status
     effects: no `files_under("debuffs/")` call exists, and the behaviour is
-    hand-implemented in `engine::dummy` / `engine::status`, which cite these
+    hand-implemented in `engine::dummy` / `engine::rules::status`, which cite these
     files by name. Changing a number here changes nothing on its own — it is a
     documentation change that also needs the matching code edit and a test.
     See data/README.md "Conventions".
@@ -991,14 +991,14 @@ notes:
   terminal_blast_bores_through: |
     A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
     which is why this weapon takes punch-through mods where an ordinary
-    explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+    explosive cannot. See `data::weapons::BlastKind` and MEASUREMENTS M53.
   terminal_blast_form_carries: |
     A TERMINAL BLAST. This form carries an explosion AND an evolution that
     rewards punch-through hits ("Gunsmoke Pick Up — On Punch Through Hit: 20%
     chance for 10% Ammo restored"), so it cannot be a weapon that refuses
     punch through. DEFAULTED to the Burston's answer
     rather than measured: one shot at one enemy would confirm whether the
-    blast lands on it or behind it. See `weapons_data::BlastKind` and
+    blast lands on it or behind it. See `data::weapons::BlastKind` and
     MEASUREMENTS M53.
   threshold_50_family_against: |
     The threshold is 50% on this family against the Furis's 40%, and it bites

@@ -41,7 +41,7 @@ const SCOPE: &[&str] = &[
 ];
 
 fn scenario(duration: f64, level: u32) -> Scenario {
-    let spec = wfsim_engine::enemy_data::all()
+    let spec = wfsim_engine::data::enemies::all()
         .into_iter()
         .find(|s| s.id == "thrax_centurion")
         .expect("thrax_centurion");
@@ -55,11 +55,11 @@ fn scenario(duration: f64, level: u32) -> Scenario {
             abilities: Vec::new(),
             ability_picks: Vec::new(),
             ability_strength: 1.0,
-            tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+            tenno: wfsim_engine::data::tenno::default_tenno().clone(),
             // Point blank: this test grades the SEARCH against an exhaustive
             // reference, so the fight has to be the plainest one there is.
-            player_at: wfsim_engine::space::Vec2::ORIGIN,
-            target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
+            player_at: wfsim_engine::rules::space::Vec2::ORIGIN,
+            target_at: wfsim_engine::rules::space::Vec2::new(0.0, wfsim_engine::rules::space::CONTACT_RANGE_M),
             target: spec
                 .target_params(level, true, false, TargetMode::InstantRespawn)
                 .expect("target"),
@@ -93,7 +93,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
 /// The exhaustive scope: every legal 8-mod build over `SCOPE`, every element
 /// order, deduped — the same walk the production search starts from.
 fn pool() -> Vec<ModDef> {
-    let pool: Vec<ModDef> = wfsim_engine::mods_data::pool_for_weapon("verglas_prime")
+    let pool: Vec<ModDef> = wfsim_engine::data::mods::pool_for_weapon("verglas_prime")
         .into_iter()
         .filter(|m| SCOPE.contains(&m.id))
         .collect();
@@ -104,7 +104,7 @@ fn pool() -> Vec<ModDef> {
 fn exhaust(scenario: &Scenario, min: u32) -> (Vec<Candidate>, Vec<Job>) {
     let pool = pool();
     let base = WeaponBase::from_data("verglas_prime", true, &[]);
-    let innate = wfsim_engine::weapons_data::innate_slots("verglas_prime");
+    let innate = wfsim_engine::data::weapons::innate_slots("verglas_prime");
     let (cands, _stats, complete) = enumerate_candidates_observed(
         &pool,
         &base,
@@ -135,7 +135,7 @@ fn the_reference_reproduces_itself_under_a_different_seed() {
     const RUNS: u32 = 60;
     let s = scenario(30.0, 150);
     let (cands, jobs) = exhaust(&s, 8);
-    let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let a = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let b = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xB0B);
 
@@ -186,8 +186,8 @@ fn run_pipeline(
 ) -> (Verdict, SearchStats, usize) {
     let pool = pool();
     let base = WeaponBase::from_data("verglas_prime", true, &[]);
-    let innate = wfsim_engine::weapons_data::innate_slots("verglas_prime");
-    let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+    let innate = wfsim_engine::data::weapons::innate_slots("verglas_prime");
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let families: Vec<Option<&'static str>> = pool.iter().map(|m| m.family).collect();
     let usable: Vec<usize> = (0..pool.len()).collect();
     let space = SubsetSpace::new(&families, &usable, &[], min, 8);
@@ -261,7 +261,7 @@ fn a_scope_that_fits_is_searched_exhaustively_and_solved() {
     const RUNS: u32 = 60;
     let s = scenario(30.0, 150);
     let (cands, jobs) = exhaust(&s, 8);
-    let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 8, 0);
     println!(
@@ -290,7 +290,7 @@ fn a_budget_it_cannot_finish_leaves_an_honest_sample() {
     const RUNS: u32 = 40;
     let s = scenario(30.0, 150);
     let (cands, jobs) = exhaust(&s, 1);
-    let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
     let (v, stats, unmatched) = run_pipeline(&s, &truth, &cands, &jobs, 1, 120);
     println!(
@@ -322,7 +322,7 @@ fn the_funnel_lands_inside_the_reference_answer_set() {
     const RUNS: u32 = 60;
     let s = scenario(30.0, 150);
     let (cands, jobs) = exhaust(&s, 8);
-    let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+    let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
     let truth = Truth::measure(&cands, &jobs, &arcanes, &s, RUNS, 0xA11CE);
 
     let rounds = schedule_to(jobs.len(), RUNS, 10);

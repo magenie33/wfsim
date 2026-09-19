@@ -8,14 +8,14 @@
 //!
 //!   cargo run --release --bin formation_value -- [cols] [rows] [spacing_m]
 //!
-//! It is the SHOT's geometry — `chain::resolve` over a formation, summed —
+//! It is the SHOT's geometry — `rules::chain::resolve` over a formation, summed —
 //! with every body identical and at full health, which is what makes the answer
 //! a clean multiplier against the same shot on one enemy.
 //!
 //! It is NOT the fight: per-body armor, status, death and re-targeting live in
 //! the run loop and change WHO dies and WHEN, not the multiplier below, which
 //! is what one shot delivers before the receiving end has had a say.
-use wfsim_engine::chain::{resolve, Spec, Splash};
+use wfsim_engine::rules::chain::{resolve, Spec, Splash};
 use wfsim_engine::formation::Formation;
 
 /// The Torid Incarnon's, and the only chaining beam in the roster today.
@@ -34,7 +34,7 @@ fn main() {
         cols,
         rows,
         spacing,
-        wfsim_engine::space::Vec2::new(0.0, 5.0),
+        wfsim_engine::rules::space::Vec2::new(0.0, 5.0),
     );
     let pos = f.positions();
     let at = pos[f.aimed];
@@ -85,7 +85,7 @@ fn main() {
             cols,
             rows,
             s,
-            wfsim_engine::space::Vec2::new(0.0, 5.0),
+            wfsim_engine::rules::space::Vec2::new(0.0, 5.0),
         );
         let p = g.positions();
         let a0 = p[g.aimed];
@@ -103,7 +103,7 @@ fn main() {
     // radius plus a body radius — and that is the number every step above sits
     // on. Reading the radius alone put both edges one body too close in, and
     // said a mod was worth nothing that is worth four times the shot.
-    let br = wfsim_engine::space::BODY_RADIUS_M;
+    let br = wfsim_engine::rules::space::BODY_RADIUS_M;
     println!(
         "
 the edges are the REACH — radius plus a body radius, because any part of a

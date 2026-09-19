@@ -15,14 +15,14 @@ fn dt(d: &crate::record::Damage) -> f64 {
         .product()
 }
 
-fn with_double_tap(id: &str) -> crate::loadout::ResolvedPanel {
+fn with_double_tap(id: &str) -> crate::build::loadout::ResolvedPanel {
     // NO RIDDLED TARGET here: its multishot rolls extra pellets, and every
     // pellet is hits of its own, which would blur the count read below.
     let evos = ["latron_prime_evo1_incarnon_form"];
     let base = crate::model::WeaponBase::from_data(id, false, &evos);
-    let pool = crate::mods_data::pool_for_weapon("latron_prime");
+    let pool = crate::data::mods::pool_for_weapon("latron_prime");
     let dt = pool.iter().find(|m| m.id == "double_tap").expect("double_tap on the Latron Prime");
-    crate::loadout::resolve(&base, &[dt], crate::model::StackPolicy::Emergent)
+    crate::build::loadout::resolve(&base, &[dt], crate::model::StackPolicy::Emergent)
 }
 
 fn head_only() -> Vec<BodyPart> {

@@ -158,7 +158,7 @@ pub(super) fn weakpoint_ammo(
 
 /// DOES A KILL HERE LEAVE ONE STANDING? The weapon has to say so, and the body
 /// has to be inside the range the card names.
-pub(super) fn leaves_one(ap: &FightParams, from: crate::space::Vec2, body: crate::space::Vec2) -> bool {
+pub(super) fn leaves_one(ap: &FightParams, from: crate::rules::space::Vec2, body: crate::rules::space::Vec2) -> bool {
     ap.spawn_on_kill
         .is_some_and(|g| (body.x - from.x).hypot(body.y - from.y) <= g.range_m)
 }

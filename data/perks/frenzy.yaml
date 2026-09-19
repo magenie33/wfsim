@@ -4,7 +4,7 @@ name: Frenzy
 # Dual Toxocyst's weapon passive, shared by BOTH entries of the transform
 # group (the buff persists across transforms and headshots keep triggering
 # it while transformed — user-confirmed 2026-07-24). The stateful
-# implementation is engine::perks::frenzy, looked up by this id.
+# implementation is engine::rules::perks::frenzy, looked up by this id.
 trigger: on_headshot
 scope: weapon
 duration_seconds: 3

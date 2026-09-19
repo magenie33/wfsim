@@ -80,7 +80,7 @@ pseudo_reload:
 # take that into its CO base, and 13/55 is the 24% printed. THIS weapon's
 # radial base is 3 Heat, so the same two rules give it 45 and 3, a CO base of
 # 6.7% rather than 24%. Nothing is transcribed from the Prime; the rules are,
-# and they are what the engine implements (evolutions_data::apply, where this
+# and they are what the engine implements (data::evolutions::apply, where this
 # row retired a comment reading "INFERENCE, not a citation").
 co_behavior: additive_with_base_damage
 

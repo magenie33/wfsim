@@ -113,7 +113,7 @@ DURABLE NAME. Renaming it migrates every stored preset and invalidates every
 share link ever posted, so those spellings stay as they are even where they
 break a rule above — `wf_armor`, `wf_energy_pct`, `headshot_pct`, `no_resupply`.
 
-This is the same rule `engine::builds::BUILD_AXES` already states for build
+This is the same rule `engine::board::builds::BUILD_AXES` already states for build
 axes: the LIST is shared, the SPELLINGS are per-protocol. What this file governs
 is everything else, which is almost everything.
 
@@ -196,7 +196,7 @@ A UNIT IS PART OF THE NAME and has ONE spelling: `_m`, `_seconds`, `_deg`,
 WHAT IS FROZEN IS THE WIRE. A field inside a saved preset, a share link or a
 board record is a durable name and stays as it is — `wf_armor`,
 `wf_energy_pct`, `headshot_pct`, `no_resupply` — the same rule
-`builds::BUILD_AXES` states for axes. `naming::FROZEN` is that list and it may
+`board::builds::BUILD_AXES` states for axes. `naming::FROZEN` is that list and it may
 only SHRINK.
 The ratchet walks every yaml key and every engine field rather than a list of
 names. A ratchet that cannot fail is not a ratchet; prove it bites.

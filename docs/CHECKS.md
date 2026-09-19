@@ -144,7 +144,7 @@ the clamp reddened twelve assertions between them, each naming its own half.
 
 ## `check_metrics`
 
-Every metric `engine::metrics::ALL` declares reaches the page, and the check
+Every metric `engine::rules::metrics::ALL` declares reaches the page, and the check
 does not know what they are either: it reads `/api/meta.metrics`, asserts each
 is offered by the Measure control, and picks each one to see ITS unit and ITS
 number on the headline. So a metric added to the engine is covered without this
@@ -359,7 +359,7 @@ because no single one has every axis live.
 ## `check_build_axes`
 
 The cheap half of that pair, and the file says so.
-`engine::builds::BUILD_AXES` is the one declaration, served at
+`engine::board::builds::BUILD_AXES` is the one declaration, served at
 `/api/meta.build_axes`; the three JS surfaces that carry their own spellings —
 the page's build state, the share tuple, the worker's board record — each
 declare which axis their fields cover. It asserts coverage BOTH ways and that
@@ -400,13 +400,13 @@ makes Shattering Storm free at 70 and Crushing Ruin 65 unless a Forma is spent
 on the slot, and all four readings are asserted ON SCREEN.
 
 It is a page check rather than an engine one because the page owns this
-arithmetic: `capacityUsed()` and its Forma bill MIRROR `engine::mods`, so an
+arithmetic: `capacityUsed()` and its Forma bill MIRROR `engine::rules::capacity`, so an
 engine that is right and a mirror that is not still reads wrong to everyone.
 
 It also asserts the AUTO PLAN, because that mirror drifted the same way twice:
 planning against the weapon's own capacity and not the stance's grant buys
 polarizations the build does not need, and reaches for an UMBRA FORMA to do it —
-the one item `engine::mods::fit` is written to spare. The engine answers five
+the one item `engine::rules::capacity::fit` is written to spare. The engine answers five
 regular Forma and no Umbra for that build; the page has to say the same.
 
 ## `check_opt_upload`
@@ -425,7 +425,7 @@ staying blank.
 
 ## `check_opt_row_axes`
 
-**A RESULT ROW STATES EVERY AXIS THE SEARCH VARIED.** `engine::builds::BUILD_AXES`
+**A RESULT ROW STATES EVERY AXIS THE SEARCH VARIED.** `engine::board::builds::BUILD_AXES`
 declares what a build consists of, and a ranking row that omits one cannot be
 reproduced. The case that earned the check is the VALENCE: an adversary weapon's
 progenitor element is part of what the build IS — two Kuva Nukors differing only
@@ -516,7 +516,7 @@ of all six axes.
 
 The riven editor offers the stats that weapon's rivens
 actually roll, in BOTH slots. THE RULES DECIDE AND THE SURVEY CHECKS:
-`rivens_data::derived_for` is the model, `data/rivens/exceptions.yaml`
+`build::rivens::derived_for` is the model, `data/rivens/exceptions.yaml`
 overrides it per riven FAMILY with the evidence in each entry, and
 `data/rivens/pools.yaml` (from `scripts/survey_riven_pools.py`) is read by a
 TEST and by nothing else. See DATA_SOURCES §"Riven pools" (MEASUREMENTS M35).
@@ -701,7 +701,7 @@ faster than the 250 ms repaint throttle, so nothing is ever drawn.
 ## `check_board_dedup`
 
 A build the board already holds is not sent to it again,
-and the page asks the ENGINE which (`/api/build/keys` → `builds::board_key`).
+and the page asks the ENGINE which (`/api/build/keys` → `board::builds::board_key`).
 A build is not its spelling: `canonical_mods` sorts the non-elementals by
 drain and leaves the elementals in the order that PAIRS them, evolutions are a
 set, a riven is a shape and not its rolls, and the mod POOL is what tells an

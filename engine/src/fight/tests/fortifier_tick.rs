@@ -1,5 +1,5 @@
 use super::*;
-use crate::damage::DamageVector;
+use crate::rules::damage::DamageVector;
 
 /// SECONDARY FORTIFIER MULTIPLIES A TICK, ONCE, WHILE THE OVERGUARD HOLDS.
 ///
@@ -32,7 +32,7 @@ fn bleeder(og: f64, mult: f64) -> FightParams {
 #[test]
 fn the_arcane_multiplies_a_status_tick_exactly_once() {
     let dot = |og: f64, mult: f64| {
-        let mut rng = crate::rng::Rng::new(4);
+        let mut rng = crate::rules::rng::Rng::new(4);
         run_once(&bleeder(og, mult), &mut rng).meter.dot()
     };
     // A pool deep enough that it survives the run, so every tick lands on

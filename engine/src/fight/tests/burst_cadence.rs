@@ -6,7 +6,7 @@ use crate::record::Kind;
 
 fn trace(mag: f64) -> (Vec<f64>, Vec<f64>) {
     let base = crate::model::WeaponBase::from_data("akarius_prime", false, &[]);
-    let panel = crate::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(4.0), &ArcaneFx::none());
     p.magazine_size = mag;
     p.target.base_health = 1e15;

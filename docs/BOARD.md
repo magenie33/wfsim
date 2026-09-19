@@ -74,8 +74,8 @@ second source.
 | the fact | its one source | what is DERIVED from it |
 | --- | --- | --- |
 | a build exists | `builds` | the count at `/api/board/pending` |
-| a build is legal | `engine::builds::validate_for_board` | the page's door, the worker's door — both ASK it |
-| a build's axes | `engine::builds::BUILD_AXES` | every surface's fields, `/api/meta` |
+| a build is legal | `engine::board::builds::validate_for_board` | the page's door, the worker's door — both ASK it |
+| a build's axes | `engine::board::builds::BUILD_AXES` | every surface's fields, `/api/meta` |
 | a ruler's terms | `data/benchmarks/*.yaml` | the picker, the arena, the scenario bar |
 | a row's score | the `scores` row for what the build READS | everything below |
 | what is published | `site/board/<weapon>.json` | `board/index.json`, `board.meta.json`, `data/board_state.yaml` |
@@ -97,7 +97,7 @@ because it is not about the ruler — it is about the number. It therefore decid
 nothing, on the same terms as `measured_by`.
 
 **A TEST HAS ONE CORE.** A ruler names exactly one metric and that one is what
-ranks; `engine::benchmarks_data::core_metric` is where the rule is applied, at
+ranks; `engine::board::benchmarks::core_metric` is where the rule is applied, at
 the moment a file becomes a benchmark, so no consumer downstream has to decide
 what an unnamed one means — and both answers available there are wrong. Refusing
 at the point of use is a whole run wasted on a file that could have been read in
@@ -621,7 +621,7 @@ three in 4-6, the same three interleaved with the rest, and the non-elementals
 reshuffled all score an identical 146,707.582. Only the elementals' order
 **relative to each other** is the build.
 
-So `builds::canonical_mods` gives every build ONE representative: elementals
+So `board::builds::canonical_mods` gives every build ONE representative: elementals
 LAST in the order they arrived, everything else ahead of them by biggest drain
 then by DE's own English name. The endpoint stores what was
 submitted verbatim — it has no mod pool and cannot tell an elemental mod from
@@ -638,7 +638,7 @@ what was placed.
 Every step below is a rule, not a description — each one is somewhere a wrong
 answer could be published.
 
-1. **One representative per build.** `builds::canonical_mods` — elementals last
+1. **One representative per build.** `board::builds::canonical_mods` — elementals last
    in the order that pairs them, everything else ahead by biggest drain then by
    DE's English name. Substantively identical builds are one row.
 2. **We collect builds. We compute the score.** No submission carries a number
@@ -670,7 +670,7 @@ answer could be published.
    changes the multiplier and not the bug). Ranking never noticed — it is a linear rescale — but a
    ranking is not what people read.
 7. **Shown at four significant figures AND four decimals**,
-   by `boards_data::format_score`. Four decimals is where two builds a player is
+   by `data::boards::format_score`. Four decimals is where two builds a player is
    choosing between stop tying; four significant figures is what keeps a small
    metric from publishing as `0.0001`. The RECORD keeps full precision — the
    yaml writes the shortest string that reads back identical, and the scorer
@@ -742,7 +742,7 @@ part of what a row states. Two players who rolled the same stats submitted the
 same build.
 
 **AND A FIGHT IS ASKED ONLY WHERE THE SIGN HAS STOPPED ANSWERING**
-(`rivens_data::ambiguous_stats`). Three sources and no fourth:
+(`build::rivens::ambiguous_stats`). Three sources and no fourth:
 
 - **the three physical stats, on every weapon.** A physical bonus does not add
   damage beside the rest, it changes the SHARE each damage type holds of the
@@ -754,7 +754,7 @@ same build.
   the band, on the edge of that cliff; only the two ends are asked, and the edge
   is reached by a low-rank card instead (below).
 - **a stat the WEAPON takes the sign off**, one row each in
-  `rivens_data::SIGN_IS_NOT_THE_ANSWER`. A weapon earns a row by paying for NOT
+  `build::rivens::SIGN_IS_NOT_THE_ANSWER`. A weapon earns a row by paying for NOT
   having something, which makes whatever supplies it a cost: `+2000% on
   non-critical hits` or a crit multiplier granted only BELOW a threshold makes
   critical chance one, a multiplier granted below a status count makes status
@@ -773,10 +773,10 @@ same build.
 and every card is stored at max rank, except the cards
 `data/search/every_rank.yaml` names: each of those in the build is asked at
 every rank, crossed with every riven corner, under the same rule below
-(`rivens_data::perfect`). A deep Status Duration malus plus a low-rank Hunter
+(`build::rivens::perfect`). A deep Status Duration malus plus a low-rank Hunter
 Track is how the edge of the -100% cliff is reached. A card joins the list by
 name, never by resembling one on it, and its rank is part of the id —
-`<card>@<rank>` in `mods` (`mods_data::RANK_MARK`).
+`<card>@<rank>` in `mods` (`data::mods::RANK_MARK`).
 
 Measured over the library: 1,948 of 2,418 riven builds are answered by the god
 roll and never reach a fight; 470 name a stat worth asking about, and all but
@@ -806,7 +806,7 @@ be as shallow as it goes. A per-stat table could state neither case.
 build's other elementals, so the record carries the bare `riven` at the riven's
 own position in `mods`. A riven may bring TWO elements, which makes it an ATOM
 in the pairing — adjacent, in its own order, unsplittable — and
-`builds::canonical_mods_with` searches for a representative rather than
+`board::builds::canonical_mods_with` searches for a representative rather than
 constructing one when an atom is present.
 
 **THE RANKING IS ONE LIST; THE DEPTH'S GROUP IS NOT.** A riven build does not
@@ -892,14 +892,14 @@ calc's `tied` marking exists to admit rather than to rank.
 `mods`. An exilus-eligible mod is legal in a MAIN slot too, so a flat list
 cannot say which one came out of the exilus slot — only the page has the slots.
 For the same reason it is its own field in `ValidBuild`, in the worker's `AXES`,
-in the board row, and in `builds::identity`: the last of those was found by
+in the board row, and in `board::builds::identity`: the last of those was found by
 scoring two Atomos builds differing only in `ruinous_extension` and getting ONE
 row back.
 
 ## The entry line
 
 **A BUILD IS ON THE BOARD ONLY WHERE IT REACHES A TENTH OF ITS GROUP'S LEADER.**
-`boards_data::KEEP_LEADER_SHARE`, and it decides two things at two
+`data::boards::KEEP_LEADER_SHARE`, and it decides two things at two
 granularities:
 
 | | | |
@@ -1184,7 +1184,7 @@ Measured across four weapons, one per mechanism, 180 s, per 1000 runs:
 
 ### …and then the size was made free
 
-The table above is what a chain cost BEFORE `chain::Layout`. Nothing in this
+The table above is what a chain cost BEFORE `rules::chain::Layout`. Nothing in this
 arena moves — the shooter stands still, the formation stands still, and a body
 that dies respawns where it was — so both of the O(N) scans inside `resolve`
 were asking a constant question once per landing pellet: which body the sphere
@@ -1203,7 +1203,7 @@ entry in a list that is already in order".
 size stopped being an argument at all. The answer is identical, not
 approximate: `near` is sorted by (distance, index), which is exactly the scan's
 "nearest, ties to the lowest index", and
-`chain::tests::a_layout_answers_exactly_what_the_scan_does` asserts it instance
+`rules::chain::tests::a_layout_answers_exactly_what_the_scan_does` asserts it instance
 for instance over every seed of a grid, at three spacings, for both chain
 shapes.
 
@@ -1319,7 +1319,7 @@ first-time visitor's default SCENARIO became a 361-body fight, because the app
 seeds the active scenario from the first builtin.
 
 `primary: true` on `single_target.yaml` is the declaration, and
-`benchmarks_data::all()` sorts on it, so both consumers inherit one answer
+`board::benchmarks::all()` sorts on it, so both consumers inherit one answer
 rather than each carrying its own idea of which ruler leads.
 
 ### An empty board is a real state
@@ -1340,7 +1340,7 @@ one would cost.
 
 | link | how it learns of a new ruler |
 |---|---|
-| the engine | `benchmarks_data::all()` globs `data/benchmarks/*.yaml` |
+| the engine | `board::benchmarks::all()` globs `data/benchmarks/*.yaml` |
 | `/api/meta` | maps that list |
 | the page's ruler picker, scenario bar, board page | read `META.benchmarks` |
 | the worker | validates `benchmark` as an ID, holds no whitelist |
@@ -1772,7 +1772,7 @@ the model: *forgetting an entry is slow and never wrong.*
 
 **1. THE LIBRARY IS PERMANENT AND CHEAP.** Builds are configurations; storing
 every one for ever costs almost nothing, and it is the only thing here that
-cannot be regenerated. Deduplicated by `builds::identity`, which keeps mod
+cannot be regenerated. Deduplicated by `board::builds::identity`, which keeps mod
 ORDER because elements pair in first-placement order — the same cards in two
 arrangements are two builds with two scores.
 
@@ -2237,7 +2237,7 @@ against one file and the official rulers are written in the same language a
 player's own fight is.
 
 THE ENGINE DECIDES WHAT MAY BE RULED ON, derived rather than listed.
-`scenario::Capability::absence()` sorts every capability into two kinds and
+`build::scenario::Capability::absence()` sorts every capability into two kinds and
 that is the whole guard: a GAME FACT is the game's own rule — a Sentinel
 cannot put a shot on a head — and a HOUSE RULE is ours. A scenario may say
 *"in my fight, Arch-Guns have infinite ammo"* and may not say *"in my fight,
@@ -2263,8 +2263,8 @@ RULER REFUSES ONE, like every other edit — `sim-whole-fight-body` is in
 THE ENGINE WHICH.** `officialBuildActive()` answers whether the ACTIVE PRESET
 is a builtin, which is true of a board row opened from the picker and false of
 the same build reached any other way. `/api/build/keys` keys a LIST of builds
-through `builds::board_key`, so the build on screen and every row its weapon
-holds are keyed by one engine in one pass. `builds::board_key` is that one
+through `board::builds::board_key`, so the build on screen and every row its weapon
+holds are keyed by one engine in one pass. `board::builds::board_key` is that one
 spelling — `format!("{}#{}", identity(&v), mode)`, defaulting a blank mode to
 `base` — and THE MODE IS PART OF THE KEY, because one build played two ways is
 two entrants. The one order that IS the identity is the elemental one: Torid

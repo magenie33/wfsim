@@ -23,14 +23,14 @@ fn extra_pellets(mods: &[&str]) -> f64 {
     let evos = ["furis_evo1_incarnon_form", "furis_stormburst", "furis_extended_volley"];
     let inc = crate::model::WeaponBase::from_data("furis_incarnon", true, &evos);
     let base = crate::model::WeaponBase::from_data("furis", true, &evos);
-    let pool = crate::mods_data::pool_for_weapon("furis_incarnon");
+    let pool = crate::data::mods::pool_for_weapon("furis_incarnon");
     let picked: Vec<&crate::model::ModDef> = mods
         .iter()
         .map(|id| pool.iter().find(|m| m.id == *id).unwrap_or_else(|| panic!("{id}")))
         .collect();
     let pol = crate::model::StackPolicy::Emergent;
-    let pi = crate::loadout::resolve(&inc, &picked, pol);
-    let pb = crate::loadout::resolve(&base, &picked, pol);
+    let pi = crate::build::loadout::resolve(&inc, &picked, pol);
+    let pb = crate::build::loadout::resolve(&base, &picked, pol);
     let params = FightParams::incarnon_cycle_from_panels(
         &pi,
         &pb,

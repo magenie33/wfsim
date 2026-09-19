@@ -37,7 +37,7 @@ GUN_TYPES = {'Primary Mod', 'Secondary Mod', 'Shotgun Mod'}
 # and both make a row here rather than a gap:
 #
 #   PvP — a Conclave-exclusive mod is a separate balance pass and cannot be
-#   equipped in PvE at all. `engine::mods_data`'s
+#   equipped in PvE at all. `engine::data::mods`'s
 #   `only_pve_legal_conclave_mods_are_in_the_pools` already refuses to let one
 #   into a pool; without this table the survey would keep pointing at six mods
 #   that test forbids. The evidence is each page's own opening sentence, which

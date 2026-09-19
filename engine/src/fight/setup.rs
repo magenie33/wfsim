@@ -5,8 +5,8 @@ impl FightParams {
     /// fell and the Tenno does not walk, so the answer is a distance and
     /// nothing else — the flight time a real pickup takes is idealised away
     /// (it is collected the instant the body dies).
-    pub fn drop_is_in_reach(&self, body_at: crate::space::Vec2) -> bool {
-        crate::space::gap(self.player_at, body_at) <= self.pickup_range_m
+    pub fn drop_is_in_reach(&self, body_at: crate::rules::space::Vec2) -> bool {
+        crate::rules::space::gap(self.player_at, body_at) <= self.pickup_range_m
     }
 
     /// Is this stat LOCKED at the weapon's default by an equipped mod?
@@ -97,8 +97,8 @@ impl FightParams {
         }
         // RAGE, in whole percent out of its cap — the gauge the game draws.
         if !self.combo_script.is_empty() {
-            if let Some(s) = crate::warframes_data::warframe(&self.tenno.id).and_then(|f| f.rage) {
-                push!(crate::rage::BUFF_ID, (s.cap * 100.0).round() as u32);
+            if let Some(s) = crate::data::warframes::warframe(&self.tenno.id).and_then(|f| f.rage) {
+                push!(crate::data::rage::BUFF_ID, (s.cap * 100.0).round() as u32);
             }
         }
         if self.sniper_combo.is_some()
@@ -320,7 +320,7 @@ impl FightParams {
         }
         // RAGE TAKES THEM AS PERCENT: what the fight opens at, and a lock that
         // stops the decay.
-        if let Some(&(stacks, locked)) = cfg.get(crate::rage::BUFF_ID) {
+        if let Some(&(stacks, locked)) = cfg.get(crate::data::rage::BUFF_ID) {
             self.rage_open = Some((f64::from(stacks) / 100.0, locked));
         }
         if let Some(b) = self.crit_chance_on_headshot.as_mut() {
@@ -369,7 +369,7 @@ impl FightParams {
         }
     }
 
-    /// NONE OF THESE TRIGGERS FIRES A BUFF HERE — `crate::buff_events`, and
+    /// NONE OF THESE TRIGGERS FIRES A BUFF HERE — `crate::data::buff_events`, and
     /// `docs/BUFFS.md` for why. The events still happen and still score.
     ///
     /// **A DENIED BUFF IS REMOVED, NOT ZEROED**, by the argument `NO_TIMEOUT`
@@ -377,7 +377,7 @@ impl FightParams {
     /// is `None`, and nothing downstream learns the concept exists.
     /// Weapon-scoped: recurses into the cycle's base form.
     pub fn deny_buff_triggers(&mut self, denied: &[String]) {
-        use crate::buff_events::{arc_trigger_id, of_builtin, trigger_id};
+        use crate::data::buff_events::{arc_trigger_id, of_builtin, trigger_id};
         if denied.is_empty() {
             return;
         }
@@ -558,7 +558,7 @@ impl FightParams {
     /// The product above is what the damage takes; this is what a reader can
     /// CHECK against a mod, and the two are told apart nowhere else.
     pub fn faction_bracket_at(&self, t: f64) -> f64 {
-        self.faction_multiplier + crate::abilities_data::faction_bonus_at(&self.abilities, t)
+        self.faction_multiplier + crate::data::abilities::faction_bonus_at(&self.abilities, t)
     }
 
     /// ECLIPSE'S OWN MULTIPLIER at `t`, or 1.0. Applied ONCE wherever it is
@@ -566,7 +566,7 @@ impl FightParams {
     /// which double dips for status effects, the one from Eclipse is applied
     /// once."
     pub fn ability_final_at(&self, t: f64) -> f64 {
-        crate::abilities_data::final_mult_at(&self.abilities, t)
+        crate::data::abilities::final_mult_at(&self.abilities, t)
     }
 
     /// The ability-added share of ONE element's bonus bracket at `t`.
@@ -583,7 +583,7 @@ impl FightParams {
         let arcane: f64 =
             self.arcane.added_elements.iter().filter(|(e, _)| *e == ty).map(|(_, v)| v).sum();
         arcane
-            + crate::abilities_data::added_elements_at(&self.abilities, t)
+            + crate::data::abilities::added_elements_at(&self.abilities, t)
                 .iter()
                 .filter(|(e, _)| *e == ty)
                 .map(|(_, v)| v)
@@ -591,14 +591,14 @@ impl FightParams {
     }
 
     /// The finished vector with the ability elements ON TOP — never through
-    /// [`crate::elements::combine`], because they do not combine. A weapon whose mods make Radiation and whose squad
+    /// [`crate::rules::elements::combine`], because they do not combine. A weapon whose mods make Radiation and whose squad
     /// has Volt deals Radiation AND pure Electricity.
     ///
     /// `stage_mb` is THAT attack part's ModifiedBase: an explosion's elemental
     /// mods are a percentage of the explosion's own base (MECHANICS §7), and
     /// an ability sized "additive with elemental mods" is sized the same way.
     pub(super) fn with_ability_elements(&self, qvec: DamageVector, stage_mb: f64, t: f64) -> DamageVector {
-        let mut added = crate::abilities_data::added_elements_at(&self.abilities, t);
+        let mut added = crate::data::abilities::added_elements_at(&self.abilities, t);
         for &(ty, v) in &self.arcane.added_elements {
             match added.iter_mut().find(|(t2, _)| *t2 == ty) {
                 Some(slot) => slot.1 += v,
@@ -630,34 +630,34 @@ impl FightParams {
     /// "how far to where this went off" — rather than read off a scenario
     /// field, because the point stops being the target's the moment an
     /// explosion has an epicentre of its own. FROM THE MUZZLE, a point on the
-    /// player's own circumference (`space::muzzle`), so every range here is one
+    /// player's own circumference (`rules::space::muzzle`), so every range here is one
     /// radius shorter than the distance between the two bodies.
-    pub fn range_to(&self, p: crate::space::Vec2) -> f64 {
-        crate::space::muzzle(self.player_at, self.target_at).distance(p)
+    pub fn range_to(&self, p: crate::rules::space::Vec2) -> f64 {
+        crate::rules::space::muzzle(self.player_at, self.target_at).distance(p)
     }
 
     /// The ray-versus-circle test's own leg — muzzle to the target's CENTRE,
-    /// and not a flight (`space::range_to_centre`). What a shot flies is
+    /// and not a flight (`rules::space::range_to_centre`). What a shot flies is
     /// [`Self::gap`].
     pub fn range_to_centre(&self) -> f64 {
-        crate::space::range_to_centre(self.player_at, self.target_at)
+        crate::rules::space::range_to_centre(self.player_at, self.target_at)
     }
 
     /// WHERE THE WEAPON POINTS, resolved — the aim point when one is set, and
     /// the target itself when none is, which is the fight this engine ran until
     /// aim became a place you choose. Spelled out here because three callers
     /// were writing `self.aim_at.unwrap_or(self.target_at)` by hand.
-    pub fn aim_point(&self) -> crate::space::Vec2 {
+    pub fn aim_point(&self) -> crate::rules::space::Vec2 {
         self.aim_at.unwrap_or(self.target_at)
     }
 
     /// HOW FAR THE TARGET SITS OFF THE AIM LINE, in degrees — 0 whenever the
-    /// weapon points at it (`space::off_axis_deg`).
+    /// weapon points at it (`rules::space::off_axis_deg`).
     pub fn off_axis_deg(&self) -> f64 {
         match self.aim_at {
             None => 0.0,
-            Some(a) => crate::space::off_axis_deg(
-                crate::space::muzzle(self.player_at, a),
+            Some(a) => crate::rules::space::off_axis_deg(
+                crate::rules::space::muzzle(self.player_at, a),
                 a,
                 self.target_at,
             ),
@@ -677,12 +677,12 @@ impl FightParams {
             return vec![0];
         }
         let aim = self.aim_point();
-        let muzzle = crate::space::muzzle(self.player_at, aim);
+        let muzzle = crate::rules::space::muzzle(self.player_at, aim);
         let mut bodies = Vec::with_capacity(self.others.len() + 1);
         bodies.push(self.target_at);
         bodies.extend(self.others.iter().map(|f| f.at));
-        let dir = crate::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
-        let hit = crate::space::struck_along(
+        let dir = crate::rules::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
+        let hit = crate::rules::space::struck_along(
             muzzle, dir, &bodies, self.punch_through_m, self.projectile_width_m,
         );
         // THE AIMED BODY IS STRUCK BY DEFINITION. The ray is cast at the aim
@@ -717,15 +717,15 @@ impl FightParams {
         }
         // WHICH WAY THE SWING FACES — the same line the shot leaves on.
         let aim = self.aim_point();
-        let mut out: Vec<(usize, f64)> = vec![(0, crate::space::gap(self.player_at, self.target_at))];
+        let mut out: Vec<(usize, f64)> = vec![(0, crate::rules::space::gap(self.player_at, self.target_at))];
         for (i, f) in self.others.iter().enumerate() {
-            let gap = crate::space::gap(self.player_at, f.at);
-            if !crate::space::within(gap, reach) {
+            let gap = crate::rules::space::gap(self.player_at, f.at);
+            if !crate::rules::space::within(gap, reach) {
                 continue;
             }
             if !all_around
-                && !crate::space::within(
-                    crate::space::off_axis_deg(self.player_at, aim, f.at),
+                && !crate::rules::space::within(
+                    crate::rules::space::off_axis_deg(self.player_at, aim, f.at),
                     MELEE_ARC_DEG / 2.0,
                 )
             {
@@ -749,11 +749,11 @@ impl FightParams {
     /// radius longer and is not a flight — it is the leg the ray-circle test
     /// measures its perpendicular from.
     pub fn gap(&self) -> f64 {
-        crate::space::gap(self.player_at, self.target_at)
+        crate::rules::space::gap(self.player_at, self.target_at)
     }
 
     pub fn from_panel(
-        panel: &crate::loadout::ResolvedPanel,
+        panel: &crate::build::loadout::ResolvedPanel,
         arena: &crate::arena::Arena,
         arcane: &ArcaneFx,
     ) -> Self {
@@ -807,7 +807,7 @@ impl FightParams {
         // they can: a mod belongs to the BUILD and an ability to the FIGHT, and
         // this function is the one that holds both.
         //
-        // RE-RESOLVED rather than rescaled. `abilities_data::resolve` applies
+        // RE-RESOLVED rather than rescaled. `data::abilities::resolve` applies
         // the strength AND settles the same-family contest, and the contest is
         // decided BY the resolved value — so a bonus big enough to make a
         // Helminth Roar beat a Rhino's has to be in hand before the winner is
@@ -820,9 +820,9 @@ impl FightParams {
         let abilities = if panel.ability_strength_bonus > 0.0
             || panel.ability_duration_bonus > 0.0
         {
-            let picks: Vec<crate::abilities_data::AbilityPick<'_>> = ability_picks
+            let picks: Vec<crate::data::abilities::AbilityPick<'_>> = ability_picks
                 .iter()
-                .map(|p| crate::abilities_data::AbilityPick {
+                .map(|p| crate::data::abilities::AbilityPick {
                     id: p.id.as_str(),
                     // DURATION IS A MULTIPLIER ON WHAT WAS ASKED FOR. "The
                     // whole fight" is already the whole fight and cannot be
@@ -834,7 +834,7 @@ impl FightParams {
                     element: p.element.as_deref(),
                 })
                 .collect();
-            crate::abilities_data::resolve(
+            crate::data::abilities::resolve(
                 &picks,
                 ability_strength + panel.ability_strength_bonus,
                 panel.class,
@@ -875,7 +875,7 @@ impl FightParams {
                 .map(|(_, v)| v)
                 .sum::<f64>();
         Self {
-            sample_by: crate::metrics::RunStat::KillProgress,
+            sample_by: crate::rules::metrics::RunStat::KillProgress,
             faction_multiplier,
             // RESOLVED ONCE. The picks are the state and this is a view of them,
             // so a pick can never disagree with its effect. The weapon's CLASS
@@ -930,7 +930,7 @@ impl FightParams {
             // whichever mechanism produced it. What is NOT shared is who it
             // lands on, and that is the whole difference between an orb and a
             // field — decided in `process_orbs`, not here.
-            orb_strike: panel.orb.map(|_| crate::loadout::ResolvedLingering {
+            orb_strike: panel.orb.map(|_| crate::build::loadout::ResolvedLingering {
                 damage: panel.damage,
                 modified_base: panel.modified_base,
                 crit_chance: panel.crit_chance,
@@ -944,7 +944,7 @@ impl FightParams {
                 tick_rate: 1.0,
                 duration_seconds: 0.0,
                 first_tick_delay_seconds: 0.0,
-                forced_procs: crate::damage::ForcedProcs::from_types(
+                forced_procs: crate::rules::damage::ForcedProcs::from_types(
                     panel.forced_procs.iter().copied(),
                 ),
                 // A STRIKE HAS NO FALLOFF. It reaches one body, at full damage,
@@ -956,7 +956,7 @@ impl FightParams {
                 stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: false,
             }),
-            orb_blast: panel.orb.and(panel.radial).map(|r| crate::loadout::ResolvedLingering {
+            orb_blast: panel.orb.and(panel.radial).map(|r| crate::build::loadout::ResolvedLingering {
                 damage: r.damage,
                 modified_base: r.modified_base,
                 crit_chance: r.crit_chance,
@@ -1200,8 +1200,8 @@ impl FightParams {
             // weapon files and never disagrees with `slot`, so it is derived
             // here rather than read twice.
             ammo_class: match panel.slot {
-                "primary" => Some(crate::ammo::Pickup::Primary),
-                "secondary" => Some(crate::ammo::Pickup::Secondary),
+                "primary" => Some(crate::rules::ammo::Pickup::Primary),
+                "secondary" => Some(crate::rules::ammo::Pickup::Secondary),
                 _ => None,
             },
             tenno,
@@ -1220,10 +1220,10 @@ impl FightParams {
     /// WEAPON AGAIN without the tiers that state the window, and only the
     /// caller knows how to resolve. It is never called on a gun.
     pub fn for_panel(
-        panel: &crate::loadout::ResolvedPanel,
+        panel: &crate::build::loadout::ResolvedPanel,
         arena: &crate::arena::Arena,
         arcane: &ArcaneFx,
-        unarmed: impl FnOnce() -> crate::loadout::ResolvedPanel,
+        unarmed: impl FnOnce() -> crate::build::loadout::ResolvedPanel,
     ) -> Self {
         match panel.melee_incarnon {
             Some(window) => {
@@ -1247,8 +1247,8 @@ impl FightParams {
     /// attacks, so both transitions are instant and there is no charge
     /// magazine to spend — [`Ends::After`] is the clock instead.
     pub fn melee_incarnon_from_panels(
-        armed: &crate::loadout::ResolvedPanel,
-        unarmed: &crate::loadout::ResolvedPanel,
+        armed: &crate::build::loadout::ResolvedPanel,
+        unarmed: &crate::build::loadout::ResolvedPanel,
         window: crate::model::MeleeIncarnon,
         arena: &crate::arena::Arena,
         arcane: &ArcaneFx,
@@ -1284,8 +1284,8 @@ impl FightParams {
     /// pays Primary Compression +240% and its Incarnon beam pays nothing, so
     /// each form spends the arcane against its OWN radius.
     pub fn incarnon_cycle_from_panels(
-        incarnon: &crate::loadout::ResolvedPanel,
-        base: &crate::loadout::ResolvedPanel,
+        incarnon: &crate::build::loadout::ResolvedPanel,
+        base: &crate::build::loadout::ResolvedPanel,
         frenzy: bool,
         frenzy_lock: LockMode,
         arena: &crate::arena::Arena,

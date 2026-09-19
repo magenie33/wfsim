@@ -9,7 +9,7 @@ effects:
   # IT TRADES BLAST RADIUS FOR DAMAGE, so what it is worth is a property of the
   # WEAPON and not of this card — which is why both ramps below are PER METRE
   # and neither is a bonus until a radius is known. The fold happens in
-  # `loadout::resolve_for`, the one place that has the modded radius and the
+  # `build::loadout::resolve_for`, the one place that has the modded radius and the
   # weapon's own row:
   #
   #   radius_lost  = radius_MODDED x (1 - 0.2)      # continuous, not per whole metre

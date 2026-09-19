@@ -4,7 +4,7 @@ slot: primary
 # THE CHAIN LIGHTNING RIFLE. Its beam reaches 18 m and then jumps: three
 # enemies, 10 m apart, each hop at half the last one's damage — and a body
 # reached by PUNCH THROUGH starts a chain of its own, which is the wiki's own
-# rule and falls out of `chain::resolve` taking the struck bodies as seeds.
+# rule and falls out of `rules::chain::resolve` taking the struck bodies as seeds.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -54,7 +54,7 @@ attack:
   # meters of each other, with each chain doing 50% of the previous chain's
   # damage", and "each enemy hit by the main beam from Punch Through can
   # generate a new set of 3 chains" — the second sentence needs no arrangement
-  # here: `chain::resolve` seeds from the struck bodies and each keeps its own
+  # here: `rules::chain::resolve` seeds from the struck bodies and each keeps its own
   # `seen`. NO damage radius: the AOE tag on this weapon is the chain, and the
   # page states no blast.
   beam:

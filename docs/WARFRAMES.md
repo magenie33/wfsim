@@ -2,7 +2,7 @@
 
 A Warframe has a BUILDER and nothing else. What it produces is a frame's stats
 and its four abilities at those stats; nothing here reaches a fight yet, and a
-weapon page does not read it. `engine::warframes_data` is the whole engine side,
+weapon page does not read it. `engine::data::warframes` is the whole engine side,
 `/api/warframe/catalog` and `/api/warframe/panel` are its two doors, and
 `/warframes/<Wiki_Name>` is the page.
 
@@ -19,7 +19,7 @@ weapon page does not read it. `engine::warframes_data` is the whole engine side,
 
 **AN AURA IS FILED ONCE.** `data/auras/` is read by the fight's Tenno and by
 this builder; a card the fight cannot use says `kind: out_of_scope`, and
-`auras_data::in_fight` keeps it off the simulator's squad list. Coaction Drift is
+`data::auras::in_fight` keeps it off the simulator's squad list. Coaction Drift is
 filed there because the fight reads it, and is seated in the EXILUS slot
 (`exilus: true`).
 
@@ -49,7 +49,7 @@ needs beyond them, and loading one whose id is not in the roster panics.
 - **An aura's capacity** doubles on its own polarity and is 80% rounded down on
   another (W`Aura`). W`Mod` says 75% rounded half up; the two differ only at a
   capacity of 2, 6, 10 or 14, which no max-rank aura has. The stance slot follows
-  the same page (`mods::stance_capacity`).
+  the same page (`rules::capacity::stance_capacity`).
 - **Polarity** is a set without positions (the module names none) and moves
   freely between the eight slots, the exilus slot and the aura slot: the exilus
   slot's since Techrot Encore, the aura slot's since 38.5.
@@ -59,7 +59,7 @@ needs beyond them, and loading one whose id is not in the roster panics.
 **A FRAME'S BUILD IS READ BY WHAT IT CAN DO, NOT RANKED BY A NUMBER.** A frame
 answers survival, abilities and movement at once, so no single score orders two
 builds. What a build states instead is a closed set of tags
-(`warframes_data::Capability`), each with every source that grants it:
+(`data::warframes::Capability`), each with every source that grants it:
 
 | tag | means |
 | --- | --- |
@@ -167,7 +167,7 @@ module's `Subsumable` flag, which covers the Helminth's own abilities too.
 
 **A PASSIVE THAT MOVES A WEAPON'S NUMBER IS SIMULATED**, and it reaches a fight
 through the wielder. Valkyr's Nimble moves none. Rage is `rage:` on both
-Valkyrs, run by `engine::rage`:
+Valkyrs, run by `engine::data::rage`:
 
 - Every body a melee hit lands on adds 3% and every melee kill 12%, up to 300%.
   The meter sits in the base-damage bucket: "additive with mods like Pressure
@@ -182,7 +182,7 @@ Valkyrs, run by `engine::rage`:
 ## A weapon's wielder
 
 **A WEAPON IS ALWAYS HELD BY SOMEBODY, AND A WEAPON BUILD SAYS WHO.** The
-`wielder` build axis (`builds::BUILD_AXES`) is a link to one of this module's
+`wielder` build axis (`board::builds::BUILD_AXES`) is a link to one of this module's
 saved builds — by its preset `id` — or a modelled frame with no build, or the
 **Prototype**: `data/tenno/default.yaml`, every stat the lowest any released
 Warframe has at rank 30, with no mods and no passive.

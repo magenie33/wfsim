@@ -10,7 +10,7 @@ description: "On Reload From Empty: +100% Reload Speed."
 selection: choose_one
 
 effects:
-  # NOT LOADED: `evolutions_data::effect()` has no `reload_speed_bonus` arm
+  # NOT LOADED: `data::evolutions::effect()` has no `reload_speed_bonus` arm
   # (the MODS loader has one — different loader, different vocabulary), so this
   # resolves to `EvoEffect::Inert`; `condition` is unread there too. Same
   # encoding as dual_toxocyst_ready_retaliation, minus that weapon's

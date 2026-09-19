@@ -56,7 +56,7 @@ Because legality never changes damage, it runs *after*
 canonicalization and *before* evaluation, per candidate:
 
 1. **Rearrange the innate polarity slots.** Innate polarities are a
-   freely repositionable **pool** (`engine::mods::plan_forma` step 1):
+   freely repositionable **pool** (`engine::rules::capacity::plan_forma` step 1):
    spend them on the biggest-drain matching mods.
 2. **Spend Forma greedily** on the biggest-drain unmatched mod until
    the build fits the capacity cap (`plan_forma` step 2). Mismatched
@@ -111,8 +111,8 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   distinct-element-order permutations, second-level dedup on the
   resolved post-[2] vector (1,452,146 order variants → 391,789
   candidates, ~1 s).
-- §2 legalization via `engine::mods::plan_forma` per subset.
-- §3 `StackPolicy::AssumedMax` in `engine::loadout::resolve`.
+- §2 legalization via `engine::rules::capacity::plan_forma` per subset.
+- §3 `StackPolicy::AssumedMax` in `engine::build::loadout::resolve`.
 - Constraint hooks (prescribed-mods presets): `require=<mod_id>` / `forbid=<mod_id>`
   CLI args filter the space before enumeration.
 - Evaluation: **successive halving** across all cores — rounds of
@@ -280,7 +280,7 @@ these two tabs still disagree about what a build is.
 ## A card is searched at max rank, unless it is named
 
 **A CARD BELOW ITS MAX RANK IS AN ID OF ITS OWN**, `<card>@<rank>`
-(`mods_data::RANK_MARK`), resolved by `mods_data::at_rank` with the same linear
+(`data::mods::RANK_MARK`), resolved by `data::mods::at_rank` with the same linear
 ladder the card text is filled from. It rides every mod list — a request, a
 scope, a result row, a board record — so no surface grows a rank field it could
 drop. Max rank is the bare id. A card whose ladder is not linear says
@@ -374,7 +374,7 @@ and a list has to be maintained by whoever adds the fifth; this one is an
 ANSWER that has to match, so it covers axes that do not exist yet.
 `scripts/check_opt_replay.mjs` asserts it in CI and is verified to bite —
 reinstating the bug moves the Nukor from 0.6514 to 0.2118.
-`engine::builds::BUILD_AXES` plus `scripts/check_build_axes.mjs` cover what an
+`engine::board::builds::BUILD_AXES` plus `scripts/check_build_axes.mjs` cover what an
 answer cannot reach: a share link nobody has clicked, a board record nobody has
 submitted.
 
@@ -932,7 +932,7 @@ row that fails it is marked `≠`.
 ## A build’s axes are declared once — in the engine
 
 **A BUILD'S AXES ARE DECLARED ONCE — IN THE ENGINE.**
-`engine::builds::BUILD_AXES` is the list, served at `/api/meta.build_axes`.
+`engine::board::builds::BUILD_AXES` is the list, served at `/api/meta.build_axes`.
 The SPELLINGS stay per-protocol (`arcane` on a request, `arcanes` on a board
 record, `arcaneRank` in page state) because renaming them would migrate every
 stored preset; what is shared is the list, and each surface declares which
