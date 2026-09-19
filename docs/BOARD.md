@@ -171,7 +171,7 @@ one key and the second overwrote the first. `scripts/check_board_submit.mjs`
 now asserts both properties against every axis, derived from a real payload
 rather than listed — the stranded records themselves are unrecoverable, since
 what they are missing was never stored.
-| the scorer | `cli/src/bin/wfsim-board.rs` | the scheduled job |
+| the scorer | `cli/src/board/` (run by `cli/src/bin/wfsim-board.rs`) | the scheduled job |
 | the automation | `.github/workflows/scores.yml` | GitHub Actions |
 
 **The board is in the repo AND in the database, and they are different

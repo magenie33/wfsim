@@ -26,6 +26,8 @@ use std::collections::BTreeMap;
 use std::io::{BufRead, Write};
 
 use serde_json::{json, Value};
+use wfsim_cli::args::flag;
+use wfsim_engine::board::benchmarks::family;
 
 /// The ids a record carries under `key`, in order.
 fn ids(rec: &Value, key: &str) -> Vec<String> {
@@ -243,11 +245,6 @@ fn at_max_rank(id: &str) -> String {
     wfsim_engine::data::mods::split_rank(id).0.to_string()
 }
 
-fn flag(name: &str) -> Option<String> {
-    let a: Vec<String> = std::env::args().collect();
-    a.iter().position(|x| x == name).and_then(|i| a.get(i + 1).cloned())
-}
-
 /// THE FIGHT AN ARRIVAL NAMED, as a queue row — and this is the only place in
 /// the pipeline that can say it.
 ///
@@ -276,7 +273,7 @@ fn asked_row(
     let ruler = wfsim_engine::board::benchmarks::all()
         .iter()
         .map(|b| b.id.clone())
-        .find(|b| benchmark_family(b) == benchmark_family(sent_ruler))?;
+        .find(|b| family(b) == family(sent_ruler))?;
     // …AND A MODE THE WEAPON CAN SUSTAIN. The scorer enumerates sustainable
     // modes and matches the queue on that id, so a row naming any other mode is
     // a row nothing will ever take.
@@ -287,15 +284,6 @@ fn asked_row(
         .collect();
     let mode = modes.iter().find(|m| *m == sent_mode).or_else(|| modes.first())?;
     Some(json!({ "build_id": key, "ruler": ruler, "mode": mode }))
-}
-
-/// A benchmark id without its `_v<n>` suffix — the same rule `wfsim-board`
-/// applies, so a record naming an older version asks for the current ruler.
-fn benchmark_family(id: &str) -> &str {
-    id.rsplit_once("_v")
-        .filter(|(_, n)| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
-        .map(|(base, _)| base)
-        .unwrap_or(id)
 }
 
 /// WHAT ONE PASS OF THE INBOX PRODUCES: the builds, the fights the arrivals

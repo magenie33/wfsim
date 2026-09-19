@@ -43,7 +43,7 @@ STATE_FIELDS = ("scored_at_epoch_seconds", "submissions", "listed", "held")
 # THE PUBLISHER'S OWN DERIVED FILE, under the same directory as the weapons and
 # therefore not one of them. It has a digest here like any other file a client
 # has to keep in step; it is excluded from `weapons` and `rows`, which are counts
-# of the BOARD. Matches `INDEX_STEM` in `cli/src/bin/wfsim-board.rs`.
+# of the BOARD. Matches `INDEX_STEM` in `cli/src/board/publish.rs`.
 INDEX = "index"
 
 
