@@ -5628,6 +5628,67 @@ function renderEnemyAll() {
   );
 }
 
+/// OPEN A CUSTOM TARGET for editing by name, or null for the list.
+function openEnemy(name) {
+  activeEnemy = name;
+  if (name) localStorage.setItem(presetActiveKey(ENEMIES), name);
+  else localStorage.removeItem(presetActiveKey(ENEMIES));
+  enemyDoc = null;
+  renderEnemies();
+}
+/// "+ new target": a blank one, saved and opened. Returns its name.
+function newEnemy() {
+  const ps = loadPresetList(ENEMIES);
+  const name = freeName(ps, (n) => autoPresetName("target", n));
+  ps.push({ name, savedAt: Date.now(), state: blankEnemy() });
+  storePresetList(ENEMIES, ps);
+  openEnemy(name);
+  return name;
+}
+/// ⧉ on the open target: a copy, saved and opened. Returns its name.
+function copyEnemy() {
+  const ps = loadPresetList(ENEMIES);
+  const cur = ps.find((x) => x.name === activeEnemyName());
+  if (!cur) return null;
+  const name = freeName(ps, (n) => `${cur.name} (${n})`);
+  ps.push({ name, savedAt: Date.now(), state: JSON.parse(JSON.stringify(cur.state)) });
+  storePresetList(ENEMIES, ps);
+  openEnemy(name);
+  return name;
+}
+
+/// A TARGET'S FIELDS, WRITTEN — the one place their rules live. Every number is
+/// 0 or more; a part is named, weighted, and says whether it is a head and
+/// whether it multiplies crits; immunities keep the damage types' own order.
+/// `damage_modifiers: "faction"` switches the target to a column of its own
+/// SEEDED FROM ITS FACTION, so the starting point is what it already was;
+/// `null` hands the column back to the faction.
+function writeEnemyDoc(d, patch) {
+  const n = (v) => Math.max(0, Number(v) || 0);
+  if (patch.faction != null) d.faction = patch.faction;
+  if (patch.scaling_faction != null) d.scaling_faction = patch.scaling_faction;
+  if (patch.can_be_eximus != null) d.can_be_eximus = !!patch.can_be_eximus;
+  for (const [k, v] of Object.entries(patch.stats || {})) d.stats[k] = n(v);
+  if ("damage_modifiers" in patch) {
+    const col = Object.fromEntries((((META.factions || []).find((f) => f.id === d.faction) || {}).modifiers || [])
+      .map((m) => [m.type, m.mult]));
+    const seed = () => Object.fromEntries(DAMAGE_TYPES.map((k) => [k, col[k] === undefined ? 1 : col[k]]));
+    const dm = patch.damage_modifiers;
+    d.damage_modifiers = dm === null ? null : dm === "faction" ? seed()
+      : { ...(d.damage_modifiers || seed()), ...Object.fromEntries(Object.entries(dm).map(([k, v]) => [k, n(v)])) };
+  }
+  if (patch.status_immunities) {
+    const on = new Set(patch.status_immunities);
+    d.status_immunities = DAMAGE_TYPES.filter((x) => on.has(x));
+  }
+  if (patch.body_parts) {
+    d.body_parts = patch.body_parts.map((b) => ({
+      name: String(b.name || "").trim() || "part", multiplier: n(b.multiplier ?? 1),
+      is_head: !!b.is_head, crit_bonus: !!b.crit_bonus,
+    }));
+  }
+}
+
 function renderEnemyTools() {
   const box = $("enemy-tools");
   if (!box) return;
@@ -5650,30 +5711,12 @@ function renderEnemyTools() {
   }
   wireUndoButtons(box, ENEMIES);
   const q = (s) => box.querySelector(s);
-  const openIt = (name) => {
-    activeEnemy = name;
-    if (name) localStorage.setItem(presetActiveKey(ENEMIES), name);
-    else localStorage.removeItem(presetActiveKey(ENEMIES));
-    enemyDoc = null;
-    renderEnemies();
-  };
+  const openIt = openEnemy;
   const click = (sel, fn) => { const b = q(sel); if (b) b.onclick = (e) => { e.stopPropagation(); fn(); }; };
 
-  click(".cu-new", () => {
-    const ps2 = loadPresetList(ENEMIES);
-    const name = freeName(ps2, (n) => autoPresetName("target", n));
-    ps2.push({ name, savedAt: Date.now(), state: blankEnemy() });
-    storePresetList(ENEMIES, ps2);
-    openIt(name);
-  });
+  click(".cu-new", newEnemy);
   click(".cu-back", () => openIt(null));
-  click(".cu-dup", () => {
-    const ps2 = loadPresetList(ENEMIES);
-    const name = freeName(ps2, (n) => `${cur.name} (${n})`);
-    ps2.push({ name, savedAt: Date.now(), state: JSON.parse(JSON.stringify(cur.state)) });
-    storePresetList(ENEMIES, ps2);
-    openIt(name);
-  });
+  click(".cu-dup", copyEnemy);
   click(".cu-del", () => {
     const ps2 = loadPresetList(ENEMIES).filter((x) => x.name !== cur.name);
     storePresetList(ENEMIES, ps2);
@@ -5785,61 +5828,38 @@ function renderEnemyForm() {
       </div>`).join("")}</div>`;
 
   const commit = () => { saveEnemyDoc(); renderEnemyForm(); renderEnemyAll(); };
-  const setPath = (path, val) => {
-    const [a, b] = path.split(".");
-    if (b) d[a][b] = val; else d[a] = val;
-  };
   box.querySelectorAll("[data-en-k]").forEach((el) => {
     el.onchange = () => {
-      setPath(el.dataset.enK, el.type === "checkbox" ? el.checked
-        : el.type === "number" ? Math.max(0, Number(el.value) || 0)
-        : el.value);
+      const [a, b] = el.dataset.enK.split(".");
+      const v = el.type === "checkbox" ? el.checked : el.value;
+      writeEnemyDoc(d, b ? { [a]: { [b]: v } } : { [a]: v });
       commit();
     };
   });
   const oc = $("en-own-col");
-  if (oc) oc.onchange = () => {
-    // Switching ON copies the faction's column in, so the starting point is
-    // what this target already was rather than fifteen ones.
-    d.damage_modifiers = oc.checked
-      ? Object.fromEntries(DAMAGE_TYPES.map((k) => [k, factionCol[k] === undefined ? 1 : factionCol[k]]))
-      : null;
-    commit();
-  };
+  if (oc) oc.onchange = () => { writeEnemyDoc(d, { damage_modifiers: oc.checked ? "faction" : null }); commit(); };
   box.querySelectorAll("[data-en-si]").forEach((el) => {
     el.onchange = () => {
-      const k = el.dataset.enSi;
       const cur = new Set(d.status_immunities || []);
-      if (el.checked) cur.add(k); else cur.delete(k);
-      d.status_immunities = DAMAGE_TYPES.filter((x) => cur.has(x));
+      if (el.checked) cur.add(el.dataset.enSi); else cur.delete(el.dataset.enSi);
+      writeEnemyDoc(d, { status_immunities: [...cur] });
       commit();
     };
   });
   box.querySelectorAll("[data-en-dm]").forEach((el) => {
-    el.onchange = () => {
-      d.damage_modifiers = { ...(d.damage_modifiers || {}), [el.dataset.enDm]: Math.max(0, Number(el.value) || 0) };
-      commit();
-    };
+    el.onchange = () => { writeEnemyDoc(d, { damage_modifiers: { [el.dataset.enDm]: el.value } }); commit(); };
   });
+  const parts = (f) => { const next = d.body_parts.map((b) => ({ ...b })); f(next); writeEnemyDoc(d, { body_parts: next }); commit(); };
   box.querySelectorAll(".en-part").forEach((row) => {
     const i = Number(row.dataset.i);
     row.querySelectorAll("[data-en-p]").forEach((el) => {
-      el.onchange = () => {
-        const k = el.dataset.enP;
-        d.body_parts[i][k] = el.type === "checkbox" ? el.checked
-          : k === "name" ? (el.value.trim() || "part")
-          : Math.max(0, Number(el.value) || 0);
-        commit();
-      };
+      el.onchange = () => parts((next) => { next[i][el.dataset.enP] = el.type === "checkbox" ? el.checked : el.value; });
     });
     const del = row.querySelector(".en-del-part");
-    if (del) del.onclick = () => { d.body_parts.splice(i, 1); commit(); };
+    if (del) del.onclick = () => parts((next) => { next.splice(i, 1); });
   });
   const add = $("en-add-part");
-  if (add) add.onclick = () => {
-    d.body_parts.push({ name: "part", multiplier: 1, is_head: false, crit_bonus: false });
-    commit();
-  };
+  if (add) add.onclick = () => parts((next) => { next.push({ name: "part", multiplier: 1, is_head: false, crit_bonus: false }); });
 }
 
 function renderRivenTools() {
@@ -23344,6 +23364,7 @@ const AGENT_KINDS = {
   array: (v) => Array.isArray(v),
   boolean: (v) => typeof v === "boolean",
   scalar: (v) => typeof v === "boolean" || (typeof v === "number" && Number.isFinite(v)),
+  any: (v) => v !== undefined,
   seat: (v) => agentSeat(v) >= 0,
 };
 
@@ -23424,9 +23445,10 @@ const agentTools = () => AGENT_ACTIONS.map((a) => ({
     properties: Object.fromEntries(Object.entries(a.args || {}).map(([k, s]) => [k, {
       // A NULLABLE argument says so in its type, or a model that follows the
       // schema can never send the null that empties a slot.
-      type: ((ts) => (ts.length === 1 ? ts[0] : ts))(
+      // AN "any" ARGUMENT HAS NO TYPE in the schema; the action checks it.
+      ...(s.kind === "any" ? {} : { type: ((ts) => (ts.length === 1 ? ts[0] : ts))(
         [].concat(s.kind === "seat" ? ["string", "integer"] : s.kind === "scalar" ? ["boolean", "number"] : s.kind,
-          s.nullable ? ["null"] : [])),
+          s.nullable ? ["null"] : [])) }),
       description: s.what,
       ...(s.kind === "array" ? { items: { type: "object" } } : {}),
       ...(s.enum ? { enum: s.enum() } : {}),
@@ -23546,7 +23568,6 @@ const AGENT_EXEMPT = [
   { sel: "#opt-fight-half", kind: "view", why: "the simulator's fight, shown read-only beside the search" },
   { sel: ".cu-ren", kind: "reader", why: "renaming a riven or a target is the reader's" },
   { sel: ".cu-del", kind: "reader", why: "deleting a riven or a target is the reader's" },
-  { sel: "#enemy-block", kind: "todo", why: "making custom targets" },
 ];
 
 /// THE OPEN RIVEN AS A CALLER READS IT: what the engine made of it — the
@@ -23609,8 +23630,83 @@ function agentReach() {
   };
 }
 
+/// THE OPEN CUSTOM TARGET as a caller reads it.
+const agentEnemyDoc = () => ({ name: activeEnemyName(), id: enemyId(activeEnemyName()), ...JSON.parse(JSON.stringify(enemyDoc)) });
+
 /// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
+  {
+    id: "enemies.targets.list",
+    query: true,
+    what: "List the custom targets the reader has made, with the id a fight names each one by (simulator.scenario.set with patch {enemy: id}).",
+    anchor: "#enemy-tools, #enemy-all",
+    args: {},
+    run() {
+      return { open: activeEnemyName() || null, targets: loadPresetList(ENEMIES).map((p) => {
+        const d = { ...blankEnemy(), ...(p.state || {}) };
+        return { name: p.name, id: enemyId(p.name), faction: d.faction, health: d.stats.health, shield: d.stats.shield, armor: d.stats.armor };
+      }) };
+    },
+  },
+  {
+    id: "enemies.target.new",
+    what: "Make a blank custom target — a plain humanoid, every number meant to be replaced — and open it.",
+    anchor: "#enemy-tools",
+    args: {},
+    run() { return { target: newEnemy() }; },
+  },
+  {
+    id: "enemies.target.copy",
+    what: "Duplicate the open custom target and open the copy.",
+    anchor: "#enemy-tools",
+    args: {},
+    run() { const n = copyEnemy(); return n ? { target: n } : agentNo("no_target_open", { try: "enemies.target.open" }); },
+  },
+  {
+    id: "enemies.target.open",
+    what: "Open a custom target for editing by name.",
+    anchor: "#enemy-tools, #enemy-all",
+    args: { name: { kind: "string", required: true, what: "the target's name" } },
+    run({ name }) {
+      const ps = loadPresetList(ENEMIES);
+      if (!ps.some((p) => p.name === name)) return agentNo("unknown_target", { alternatives: ps.map((p) => p.name).slice(0, 12) });
+      openEnemy(name);
+      return agentEnemyDoc();
+    },
+  },
+  {
+    id: "enemies.target.set",
+    what: "Write fields of the open custom target: faction, scaling_faction, can_be_eximus, stats {base_level, health, shield, armor, overguard, affinity}, damage_modifiers (a column of multipliers by damage type, \"faction\" to start one from the faction's, or null for the faction's own), status_immunities (the types whose procs cannot land), body_parts [{name, multiplier, is_head, crit_bonus}].",
+    anchor: "#enemy-form",
+    args: {
+      faction: { kind: "string", what: "faction id or unknown" },
+      scaling_faction: { kind: "string", what: "how its level scales", enum: () => SCALING_FACTIONS },
+      can_be_eximus: { kind: "boolean", what: "an Eximus variant exists" },
+      stats: { kind: "object", what: "the numbers to change" },
+      damage_modifiers: { kind: "any", nullable: true, what: "an object of multipliers by damage type, \"faction\", or null" },
+      status_immunities: { kind: "array", what: "damage type ids" },
+      body_parts: { kind: "array", what: "every part, replacing the list; at least one" },
+    },
+    run(patch) {
+      if (!enemyDoc) return agentNo("no_target_open", { try: "enemies.target.new" });
+      const factions = ["unknown"].concat((META.factions || []).map((f) => f.id));
+      if (patch.faction != null && !factions.includes(patch.faction)) return agentNo("bad_argument", { argument: "faction", alternatives: factions });
+      const statKeys = Object.keys(blankEnemy().stats);
+      const badStat = Object.keys(patch.stats || {}).find((k) => !statKeys.includes(k));
+      if (badStat) return agentNo("bad_argument", { argument: "stats", got: badStat, alternatives: statKeys });
+      const dm = patch.damage_modifiers;
+      if (dm !== undefined && dm !== null && dm !== "faction" && (typeof dm !== "object" || Object.keys(dm).some((k) => !DAMAGE_TYPES.includes(k)))) {
+        return agentNo("bad_argument", { argument: "damage_modifiers", alternatives: DAMAGE_TYPES });
+      }
+      if (patch.status_immunities && patch.status_immunities.some((k) => !DAMAGE_TYPES.includes(k))) {
+        return agentNo("bad_argument", { argument: "status_immunities", alternatives: DAMAGE_TYPES });
+      }
+      if (patch.body_parts && !patch.body_parts.length) return agentNo("bad_argument", { argument: "body_parts", because: "a target has at least one part" });
+      writeEnemyDoc(enemyDoc, patch);
+      saveEnemyDoc(); renderEnemies();
+      return agentEnemyDoc();
+    },
+  },
   {
     id: "builder.forma.read",
     query: true,
@@ -24841,6 +24937,14 @@ const nona = { transcript: [], busy: false, abort: null, owned: new Set(), trail
 /// as often as the model obeys. The first change to a build or a fight that
 /// she did not make herself branches it first.
 async function nonaBranch(id) {
+  // A CUSTOM TARGET IS THE READER'S ITEM too.
+  if (id === "enemies.target.set") {
+    const open = activeEnemyName();
+    if (!open || nona.owned.has(`target:${open}`)) return null;
+    const r = await window.wfsim.do("enemies.target.copy", {});
+    if (r && r.ok) { nona.owned.add(`target:${r.target}`); return r.target; }
+    return null;
+  }
   // A RIVEN IS THE READER'S ITEM like a build is: edited on a copy too.
   if (id === "rivens.card.set") {
     const open = activeRivenId();
@@ -24877,6 +24981,7 @@ async function nonaRunTool(call) {
     nona.owned.add(`${call.args.bar}:${r.preset}`);
   }
   if (r && r.ok && (id === "rivens.card.new" || id === "rivens.card.copy")) nona.owned.add(`riven:${r.riven}`);
+  if (r && r.ok && (id === "enemies.target.new" || id === "enemies.target.copy")) nona.owned.add(`target:${r.target}`);
   return branched ? { ...r, branched_to_copy: branched } : r;
 }
 

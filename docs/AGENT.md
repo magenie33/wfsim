@@ -3,11 +3,12 @@
 **Status: phase 0 implemented** — `window.wfsim` in `web/src/static/app.js`,
 asserted by `scripts/check_agent_door.mjs`. It covers the loop that answers a
 question: open a weapon, change the build, change the fight, run it, read the
-number. The build is reachable axis by axis — mods and their ranks, slot
-polarities and the Forma plan, arcanes, evolutions, mode, valence — and the
-observation carries capacity, Forma and the active presets. Queries read the
-stats panel, the last run and the leaderboard, and find weapons, mods, arcanes
-and targets.
+number. Every control a reader can use on a weapon page is on the door or
+named in `AGENT_EXEMPT` with its reason (`check_agent_coverage`), and the
+`todo` kind — the door's backlog — is empty: the build axis by axis, the Forma
+planner, rivens, the fight's own editors and its arena, custom targets, the
+search's scope and run, every preset bar and its undo. Queries read the stats
+panel, the last run and the leaderboard, and find what the page can pick.
 
 Everything that drives the page from outside goes through one door:
 

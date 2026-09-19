@@ -265,6 +265,32 @@ check("...a part that does not exist is refused, and so is a part on a weapon wi
   more.badPart.ok === false && more.noParts.ok === false && more.noParts.reason === "no_parts",
   JSON.stringify([more.badPart, more.noParts]));
 
+// ---- custom targets -----------------------------------------------------------
+
+const tgt = await evaluate(`(async () => {
+  const out = {};
+  out.made = await window.wfsim.do("enemies.target.new", {});
+  out.set = await window.wfsim.do("enemies.target.set", {
+    faction: "corpus", stats: { health: 5000, armor: 300 }, status_immunities: ["slash", "viral"],
+    damage_modifiers: "faction", body_parts: [{ name: "core", multiplier: 2.5, is_head: true, crit_bonus: true }] });
+  out.col = await window.wfsim.do("enemies.target.set", { damage_modifiers: { impact: 0 } });
+  out.badStat = await window.wfsim.do("enemies.target.set", { stats: { speed: 3 } });
+  out.noParts = await window.wfsim.do("enemies.target.set", { body_parts: [] });
+  out.list = await window.wfsim.do("enemies.targets.list", {});
+  out.fight = await window.wfsim.do("simulator.scenario.set", { patch: { enemy: out.set.id } });
+  out.inFight = sim.enemy === out.set.id;
+  return out;
+})()`, { awaitPromise: true });
+
+check("a custom target is made and written through the form's own rules",
+  tgt.made.ok && tgt.set.ok && tgt.set.stats.health === 5000 && tgt.set.status_immunities.join() === "slash,viral"
+  && tgt.set.body_parts[0].name === "core" && tgt.set.damage_modifiers && tgt.col.damage_modifiers.impact === 0,
+  JSON.stringify(tgt.set).slice(0, 300));
+check("...a stat it does not have and a target with no parts are refused",
+  tgt.badStat.ok === false && tgt.noParts.ok === false, JSON.stringify([tgt.badStat, tgt.noParts]));
+check("...it lists, and a fight can be against it", tgt.list.targets.some(t => t.id === tgt.set.id) && tgt.fight.ok && tgt.inFight,
+  JSON.stringify(tgt.fight));
+
 // ---- the Forma planner --------------------------------------------------------
 
 const forma = await evaluate(`(async () => {
